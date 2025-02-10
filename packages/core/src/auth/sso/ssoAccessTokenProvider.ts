@@ -26,7 +26,7 @@ import { AwsLoginWithBrowser, AwsRefreshCredentials, telemetry } from '../../sha
 import { indent, toBase64URL } from '../../shared/utilities/textUtilities'
 import { AuthSSOServer } from './server'
 import { CancellationError, sleep } from '../../shared/utilities/timeoutUtils'
-import { getIdeProperties, isAmazonQ, isCloud9 } from '../../shared/extensionUtilities'
+import { clientName, isAmazonQ } from '../../shared/extensionUtilities'
 import { randomBytes, createHash } from 'crypto'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { randomUUID } from '../../shared/crypto'
@@ -438,10 +438,9 @@ function getSessionDuration(id: string) {
  */
 export class DeviceFlowAuthorization extends SsoAccessTokenProvider {
     override async registerClient(): Promise<ClientRegistration> {
-        const companyName = getIdeProperties().company
         return this.oidc.registerClient(
             {
-                clientName: isCloud9() ? `${companyName} Cloud9` : `${companyName} IDE Extensions for VSCode`,
+                clientName: clientName(),
                 clientType: clientRegistrationType,
                 scopes: this.profile.scopes,
             },
@@ -543,11 +542,10 @@ export class DeviceFlowAuthorization extends SsoAccessTokenProvider {
  */
 class AuthFlowAuthorization extends SsoAccessTokenProvider {
     override async registerClient(): Promise<ClientRegistration> {
-        const companyName = getIdeProperties().company
         return this.oidc.registerClient(
             {
                 // All AWS extensions (Q, Toolkit) for a given IDE use the same client name.
-                clientName: isCloud9() ? `${companyName} Cloud9` : `${companyName} IDE Extensions for VSCode`,
+                clientName: clientName(),
                 clientType: clientRegistrationType,
                 scopes: this.profile.scopes,
                 grantTypes: [authorizationGrantType, refreshGrantType],
@@ -653,11 +651,10 @@ class WebAuthorization extends SsoAccessTokenProvider {
     private redirectUri = 'http://127.0.0.1:54321/oauth/callback'
 
     override async registerClient(): Promise<ClientRegistration> {
-        const companyName = getIdeProperties().company
         return this.oidc.registerClient(
             {
                 // All AWS extensions (Q, Toolkit) for a given IDE use the same client name.
-                clientName: isCloud9() ? `${companyName} Cloud9` : `${companyName} IDE Extensions for VSCode`,
+                clientName: clientName(),
                 clientType: clientRegistrationType,
                 scopes: this.profile.scopes,
                 grantTypes: [authorizationGrantType, refreshGrantType],

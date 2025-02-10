@@ -11,7 +11,7 @@ import { registerInlineCompletion } from '../app/inline/completion'
 import { AmazonQLspAuth, encryptionKey, notificationTypes } from './auth'
 import { AuthUtil } from 'aws-core-vscode/codewhisperer'
 import { ConnectionMetadata } from '@aws/language-server-runtimes/protocol'
-import { ResourcePaths, Settings, createServerOptions, globals } from 'aws-core-vscode/shared'
+import { ResourcePaths, Settings, clientName, createServerOptions, globals } from 'aws-core-vscode/shared'
 
 const localize = nls.loadMessageBundle()
 
@@ -48,7 +48,7 @@ export async function startLanguageServer(extensionContext: vscode.ExtensionCont
                     name: env.appName,
                     version: version,
                     extension: {
-                        name: `AWS IDE Extensions for VSCode`, // TODO change this to C9/Amazon
+                        name: clientName(),
                         version: '0.0.1',
                     },
                     clientId: crypto.randomUUID(),
