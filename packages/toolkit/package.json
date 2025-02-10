@@ -1412,6 +1412,11 @@
                     "command": "aws.openInApplicationComposer",
                     "when": "isFileSystemResource && !(resourceFilename =~ /^.*\\.tc\\.json$/) && resourceFilename =~ /^.*\\.(json|yml|yaml|template)$/",
                     "group": "z_aws@1"
+                },
+                {
+                    "command": "aws.stepfunctions.openWithWorkflowStudio",
+                    "when": "isFileSystemResource && resourceFilename =~ /^.*\\.asl\\.(json|yml|yaml)$/",
+                    "group": "z_aws@1"
                 }
             ],
             "view/item/context": [
@@ -3918,6 +3923,16 @@
                 }
             },
             {
+                "command": "aws.stepfunctions.openWithWorkflowStudio",
+                "title": "%AWS.command.stepFunctions.openWithWorkflowStudio%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
                 "command": "aws.createNewThreatComposer",
                 "title": "%AWS.command.threatComposer.createNew%",
                 "category": "%AWS.title%",
@@ -4654,7 +4669,8 @@
         ],
         "configurationDefaults": {
             "workbench.editorAssociations": {
-                "{git,gitlens,conflictResolution,vscode-local-history}:/**/*.tc.json": "default"
+                "{git,gitlens,conflictResolution,vscode-local-history}:/**/*.tc.json": "default",
+                "{git,gitlens,conflictResolution,vscode-local-history}:/**/*.{asl.json,asl.yaml,asl.yml}": "default"
             }
         }
     },

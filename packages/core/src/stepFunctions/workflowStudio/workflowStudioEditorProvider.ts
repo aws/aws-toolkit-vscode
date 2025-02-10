@@ -12,9 +12,10 @@ import { telemetry } from '../../shared/telemetry/telemetry'
 import globals from '../../shared/extensionGlobals'
 import { getRandomString, getStringHash } from '../../shared/utilities/textUtilities'
 import { ToolkitError } from '../../shared/errors'
+import { getTabSizeSetting } from '../../shared/utilities/editorUtilities'
 import { WorkflowStudioEditor } from './workflowStudioEditor'
 import { i18n } from '../../shared/i18n-helper'
-import { isInvalidJsonFile } from '../utils'
+import { isInvalidJsonFile, isInvalidYamlFile } from '../utils'
 
 const isLocalDev = false
 const localhost = 'http://127.0.0.1:3002'
@@ -72,9 +73,6 @@ export class WorkflowStudioEditorProvider implements vscode.CustomTextEditorProv
      * @private
      */
     private getWebviewContent = async () => {
-        if (!this.webviewHtml) {
-            await this.fetchWebviewHtml()
-        }
         let htmlFileSplit = this.webviewHtml.split('<head>')
 
         // Set asset source to CDN
@@ -86,13 +84,15 @@ export class WorkflowStudioEditorProvider implements vscode.CustomTextEditorProv
         const localeTag = `<meta name='locale' content='${locale}'>`
         const theme = vscode.window.activeColorTheme.kind
         const isDarkMode = theme === vscode.ColorThemeKind.Dark || theme === vscode.ColorThemeKind.HighContrast
+        const tabSizeTag = `<meta name='tab-size' content='${getTabSizeSetting()}'>`
         const darkModeTag = `<meta name='dark-mode' content='${isDarkMode}'>`
-        let html = `${htmlFileSplit[0]} <head> ${baseTag} ${localeTag} ${darkModeTag} ${htmlFileSplit[1]}`
+        let html = `${htmlFileSplit[0]} <head> ${baseTag} ${localeTag} ${darkModeTag} ${tabSizeTag} ${htmlFileSplit[1]}`
 
         const nonce = getRandomString()
+        const localDevURL = isLocalDev ? localhost : ''
         htmlFileSplit = html.split("script-src 'self'")
 
-        html = `${htmlFileSplit[0]} script-src 'self' 'nonce-${nonce}' ${isLocalDev && localhost} ${htmlFileSplit[1]}`
+        html = `${htmlFileSplit[0]} script-src 'self' 'nonce-${nonce}' ${localDevURL} ${htmlFileSplit[1]}`
         htmlFileSplit = html.split('<body>')
 
         const script = await fs.readFileText(
@@ -115,35 +115,56 @@ export class WorkflowStudioEditorProvider implements vscode.CustomTextEditorProv
         _token: vscode.CancellationToken
     ): Promise<void> {
         await telemetry.stepfunctions_openWorkflowStudio.run(async () => {
-            // For invalid JSON, open default editor and show warning message
-            if (isInvalidJsonFile(document)) {
+            const reopenWithDefaultEditor = async () => {
                 await vscode.commands.executeCommand('vscode.openWith', document.uri, 'default')
                 webviewPanel.dispose()
-                void vscode.window.showWarningMessage(i18n('AWS.stepFunctions.workflowStudio.actions.invalidJson'))
+            }
 
+            const isInvalidJson = isInvalidJsonFile(document)
+            const isInvalidYaml = isInvalidYamlFile(document)
+
+            if (isInvalidJson || isInvalidYaml) {
+                const language = isInvalidJson ? 'JSON' : 'YAML'
+                const errorKey = isInvalidJson ? 'InvalidJSONContent' : 'InvalidYAMLContent'
+
+                await reopenWithDefaultEditor()
+                void vscode.window.showWarningMessage(i18n(`AWS.stepFunctions.workflowStudio.actions.${errorKey}`))
                 throw ToolkitError.chain(
-                    'Invalid JSON file',
-                    'The Workflow Studio editor was not opened because the JSON in the file is invalid',
-                    {
-                        code: 'InvalidJSONContent',
-                    }
+                    `Invalid ${language} file`,
+                    `The Workflow Studio editor was not opened because the ${language} in the file is invalid`,
+                    { code: errorKey }
                 )
             }
 
             if (!this.webviewHtml) {
-                await this.fetchWebviewHtml()
+                try {
+                    await this.fetchWebviewHtml()
+                } catch (e) {
+                    await reopenWithDefaultEditor()
+
+                    void vscode.window.showWarningMessage(
+                        i18n('AWS.stepFunctions.workflowStudio.actions.webviewFetchFailed')
+                    )
+                    throw ToolkitError.chain(
+                        'Failed to fetch editor content',
+                        'Could not retrieve content for the Workflow Studio editor',
+                        {
+                            code: 'webviewFetchFailed',
+                        }
+                    )
+                }
             }
 
             if (clientId === '') {
                 clientId = getClientId(globals.globalState)
             }
-            // Attempt to retrieve existing visualization if it exists.
-            const existingVisualization = this.managedVisualizations.get(document.uri.fsPath)
 
+            const existingVisualization = this.managedVisualizations.get(document.uri.fsPath)
             if (existingVisualization) {
-                existingVisualization.showPanel()
+                // Prevent opening multiple custom editors for a single file
+                await reopenWithDefaultEditor()
             } else {
-                // Existing visualization does not exist, construct new visualization
+                // Construct new visualization
                 try {
                     const fileId = getStringHash(`${document.uri.fsPath}${clientId}`)
                     const newVisualization = new WorkflowStudioEditor(
