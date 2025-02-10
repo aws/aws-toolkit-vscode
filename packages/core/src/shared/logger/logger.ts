@@ -11,9 +11,11 @@ export type LogTopic =
     | 'notifications'
     | 'test'
     | 'childProcess'
-    | 'unknown'
-    | 'chat'
     | 'lsp'
+    | 'amazonqWorkspaceLsp'
+    | 'amazonqLsp'
+    | 'chat'
+    | 'unknown'
 
 class ErrorLog {
     constructor(

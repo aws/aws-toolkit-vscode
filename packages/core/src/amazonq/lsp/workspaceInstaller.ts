@@ -10,11 +10,12 @@ import { LanguageServerResolver } from '../../shared/lsp/lspResolver'
 import { Range } from 'semver'
 import { getNodeExecutableName } from '../../shared/lsp/utils/platform'
 import { fs } from '../../shared/fs/fs'
-import { cleanLspDownloads } from '../../shared'
+import { cleanLspDownloads, getLogger } from '../../shared'
 
 const manifestUrl = 'https://aws-toolkit-language-servers.amazonaws.com/q-context/manifest.json'
 // this LSP client in Q extension is only going to work with these LSP server versions
 const supportedLspServerVersions = '0.1.35'
+const logger = getLogger('amazonqWorkspaceLsp')
 
 export class WorkspaceLSPResolver implements LspResolver {
     async resolve(): Promise<LspResolution> {
@@ -31,7 +32,11 @@ export class WorkspaceLSPResolver implements LspResolver {
         const nodePath = path.join(installationResult.assetDirectory, nodeName)
         await fs.chmod(nodePath, 0o755)
 
-        await cleanLspDownloads(manifest.versions, path.basename(installationResult.assetDirectory))
+        const deletedVersions = await cleanLspDownloads(
+            manifest.versions,
+            path.basename(installationResult.assetDirectory)
+        )
+        logger.debug(`cleaning old LSP versions deleted ${deletedVersions.length} versions`)
         return {
             ...installationResult,
             resourcePaths: {
