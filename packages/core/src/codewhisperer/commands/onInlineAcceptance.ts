@@ -152,7 +152,8 @@ async function promoteNextSessionIfAvailable(acceptanceEntry: OnRecommendationAc
         const nextSession = CodeWhispererSessionState.instance.getNextSession()
         nextSession.startPos = acceptanceEntry.editor.selection.active
         CodeWhispererSessionState.instance.setSession(nextSession)
-        if (nextSession.recommendations.length) {
+
+        if (nextSession.recommendations.length && acceptanceEntry.sessionId === nextSession.sessionId) {
             await RecommendationHandler.instance.tryShowRecommendation()
         }
     }
