@@ -598,29 +598,39 @@ export async function hasSso(
     kind: SsoKind = 'any',
     allConnections = () => Auth.instance.listConnections()
 ): Promise<boolean> {
-    return (await findSsoConnections(kind, allConnections)).length > 0
+    return telemetry.function_call.run(
+        async () => {
+            return (await findSsoConnections(kind, allConnections)).length > 0
+        },
+        { emit: false, functionId: { name: 'hasSso', class: 'utils' } }
+    )
 }
 
 export async function findSsoConnections(
     kind: SsoKind = 'any',
     allConnections = () => Auth.instance.listConnections()
 ): Promise<SsoConnection[]> {
-    let predicate: (c?: Connection) => boolean
-    switch (kind) {
-        case 'codewhisperer':
-            predicate = (conn?: Connection) => {
-                return isIdcSsoConnection(conn) && isValidCodeWhispererCoreConnection(conn)
+    return telemetry.function_call.run(
+        async () => {
+            let predicate: (c?: Connection) => boolean
+            switch (kind) {
+                case 'codewhisperer':
+                    predicate = (conn?: Connection) => {
+                        return isIdcSsoConnection(conn) && isValidCodeWhispererCoreConnection(conn)
+                    }
+                    break
+                case 'codecatalyst':
+                    predicate = (conn?: Connection) => {
+                        return isIdcSsoConnection(conn) && isValidCodeCatalystConnection(conn)
+                    }
+                    break
+                case 'any':
+                    predicate = isIdcSsoConnection
             }
-            break
-        case 'codecatalyst':
-            predicate = (conn?: Connection) => {
-                return isIdcSsoConnection(conn) && isValidCodeCatalystConnection(conn)
-            }
-            break
-        case 'any':
-            predicate = isIdcSsoConnection
-    }
-    return (await allConnections()).filter(predicate).filter(isIdcSsoConnection)
+            return (await allConnections()).filter(predicate).filter(isIdcSsoConnection)
+        },
+        { emit: false, functionId: { name: 'findSsoConnections', class: 'utils' } }
+    )
 }
 
 export type BuilderIdKind = 'any' | 'codewhisperer' | 'codecatalyst'
@@ -635,29 +645,42 @@ export async function hasBuilderId(
     kind: BuilderIdKind = 'any',
     allConnections = () => Auth.instance.listConnections()
 ): Promise<boolean> {
-    return (await findBuilderIdConnections(kind, allConnections)).length > 0
+    return telemetry.function_call.run(
+        async () => {
+            return (await findBuilderIdConnections(kind, allConnections)).length > 0
+        },
+        { emit: false, functionId: { name: 'hasBuilderId', class: 'utils' } }
+    )
 }
 
 async function findBuilderIdConnections(
     kind: BuilderIdKind = 'any',
     allConnections = () => Auth.instance.listConnections()
 ): Promise<SsoConnection[]> {
-    let predicate: (c?: Connection) => boolean
-    switch (kind) {
-        case 'codewhisperer':
-            predicate = (conn?: Connection) => {
-                return isBuilderIdConnection(conn) && isValidCodeWhispererCoreConnection(conn)
+    return telemetry.function_call.run(
+        async () => {
+            let predicate: (c?: Connection) => boolean
+            switch (kind) {
+                case 'codewhisperer':
+                    predicate = (conn?: Connection) => {
+                        return isBuilderIdConnection(conn) && isValidCodeWhispererCoreConnection(conn)
+                    }
+                    break
+                case 'codecatalyst':
+                    predicate = (conn?: Connection) => {
+                        return isBuilderIdConnection(conn) && isValidCodeCatalystConnection(conn)
+                    }
+                    break
+                case 'any':
+                    predicate = isBuilderIdConnection
             }
-            break
-        case 'codecatalyst':
-            predicate = (conn?: Connection) => {
-                return isBuilderIdConnection(conn) && isValidCodeCatalystConnection(conn)
-            }
-            break
-        case 'any':
-            predicate = isBuilderIdConnection
-    }
-    return (await allConnections()).filter(predicate).filter(isAnySsoConnection)
+            return (await allConnections()).filter(predicate).filter(isAnySsoConnection)
+        },
+        {
+            emit: false,
+            functionId: { name: 'findBuilderIdConnections', class: 'utils' },
+        }
+    )
 }
 
 /**

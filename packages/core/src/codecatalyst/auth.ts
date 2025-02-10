@@ -203,6 +203,7 @@ export class CodeCatalystAuthenticationProvider {
      * This cannot create a Builder ID, but will return an existing Builder ID,
      * upgrading the scopes if necessary.
      */
+    @withTelemetryContext({ name: 'tryGetBuilderIdConnection', class: authClassName })
     public async tryGetBuilderIdConnection(): Promise<SsoConnection> {
         if (this.activeConnection && isBuilderIdConnection(this.activeConnection)) {
             return this.activeConnection

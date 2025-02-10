@@ -495,10 +495,15 @@ async function editSsoConnections() {
 }
 
 async function deleteSsoConnections() {
-    const conns = targetAuth.listConnections()
-    const ssoConns = (await conns).filter(isAnySsoConnection)
-    await Promise.all(ssoConns.map((conn) => targetAuth.deleteConnection(conn)))
-    void vscode.window.showInformationMessage(`Deleted: ${ssoConns.map((c) => c.startUrl).join(', ')}`)
+    return telemetry.function_call.run(
+        async () => {
+            const conns = targetAuth.listConnections()
+            const ssoConns = (await conns).filter(isAnySsoConnection)
+            await Promise.all(ssoConns.map((conn) => targetAuth.deleteConnection(conn)))
+            void vscode.window.showInformationMessage(`Deleted: ${ssoConns.map((c) => c.startUrl).join(', ')}`)
+        },
+        { emit: false, functionId: { name: 'deleteSsoConnectionsDev', class: 'activation' } }
+    )
 }
 
 async function expireSsoConnections() {
@@ -509,7 +514,7 @@ async function expireSsoConnections() {
             await Promise.all(ssoConns.map((conn) => targetAuth.expireConnection(conn)))
             void vscode.window.showInformationMessage(`Expired: ${ssoConns.map((c) => c.startUrl).join(', ')}`)
         },
-        { emit: false, functionId: { name: 'expireSsoConnectionsDev' } }
+        { emit: false, functionId: { name: 'expireSsoConnectionsDev', class: 'activation' } }
     )
 }
 

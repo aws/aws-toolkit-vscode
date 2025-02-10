@@ -21,7 +21,9 @@ import { CodeCatalystAuthenticationProvider } from '../../../../codecatalyst/aut
 import { AuthError, AuthFlowState } from '../types'
 import { setContext } from '../../../../shared'
 import { builderIdStartUrl } from '../../../../auth/sso/constants'
+import { withTelemetryContext } from '../../../../shared/telemetry/util'
 
+const loginWebviewClass = 'ToolkitLoginWebview'
 export class ToolkitLoginWebview extends CommonAuthWebview {
     public override id: string = 'aws.toolkit.AmazonCommonAuth'
     public static sourcePath: string = 'vue/src/login/webview/vue/toolkit/index.js'
@@ -147,6 +149,7 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
         return connections
     }
 
+    @withTelemetryContext({ name: 'listSsoConnections', class: loginWebviewClass })
     async listSsoConnections(): Promise<SsoConnection[]> {
         return (await Auth.instance.listConnections()).filter((conn) => isSsoConnection(conn)) as SsoConnection[]
     }

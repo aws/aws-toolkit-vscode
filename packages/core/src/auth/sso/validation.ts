@@ -18,6 +18,7 @@ export function validateSsoUrlFormat(url: string) {
     }
 }
 
+// TODO: Remove this if unused?
 export async function validateIsNewSsoUrlAsync(
     auth: Auth,
     url: string,

@@ -476,6 +476,7 @@ export class AuthUtil {
      * auth connections that the Amazon Q extension has cached. We need to remove these
      * as they are irrelevant to the Q extension and can cause issues.
      */
+    @withTelemetryContext({ name: 'clearExtraConnections', class: authClassName })
     public async clearExtraConnections(): Promise<void> {
         const currentQConn = this.conn
         // Q currently only maintains 1 connection at a time, so we assume everything else is extra.

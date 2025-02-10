@@ -324,40 +324,45 @@ function recordToolkitInitialization(activationStartedOn: number, settingsValid:
 }
 
 async function getAuthState(): Promise<Omit<AuthUserState, 'source'>> {
-    let authStatus: AuthStatus = 'notConnected'
-    const enabledConnections: Set<AuthFormId> = new Set()
-    const enabledScopes: Set<string> = new Set()
-    if (Auth.instance.hasConnections) {
-        authStatus = 'expired'
-        for (const conn of await Auth.instance.listConnections()) {
-            const state = Auth.instance.getConnectionState(conn)
-            if (state === 'valid') {
-                authStatus = 'connected'
-            }
+    return telemetry.function_call.run(
+        async () => {
+            let authStatus: AuthStatus = 'notConnected'
+            const enabledConnections: Set<AuthFormId> = new Set()
+            const enabledScopes: Set<string> = new Set()
+            if (Auth.instance.hasConnections) {
+                authStatus = 'expired'
+                for (const conn of await Auth.instance.listConnections()) {
+                    const state = Auth.instance.getConnectionState(conn)
+                    if (state === 'valid') {
+                        authStatus = 'connected'
+                    }
 
-            for (const id of getAuthFormIdsFromConnection(conn)) {
-                enabledConnections.add(id)
-            }
-            if (isSsoConnection(conn)) {
-                if (conn.scopes) {
-                    for (const s of conn.scopes) {
-                        enabledScopes.add(s)
+                    for (const id of getAuthFormIdsFromConnection(conn)) {
+                        enabledConnections.add(id)
+                    }
+                    if (isSsoConnection(conn)) {
+                        if (conn.scopes) {
+                            for (const s of conn.scopes) {
+                                enabledScopes.add(s)
+                            }
+                        }
                     }
                 }
             }
-        }
-    }
 
-    // There may be other SSO connections in toolkit, but there is no use case for
-    // displaying registration info for non-active connections at this time.
-    const activeConn = Auth.instance.activeConnection
-    if (activeConn?.type === 'sso') {
-        telemetry.record(await getTelemetryMetadataForConn(activeConn))
-    }
+            // There may be other SSO connections in toolkit, but there is no use case for
+            // displaying registration info for non-active connections at this time.
+            const activeConn = Auth.instance.activeConnection
+            if (activeConn?.type === 'sso') {
+                telemetry.record(await getTelemetryMetadataForConn(activeConn))
+            }
 
-    return {
-        authStatus,
-        authEnabledConnections: [...enabledConnections].sort().join(','),
-        authScopes: [...enabledScopes].sort().join(','),
-    }
+            return {
+                authStatus,
+                authEnabledConnections: [...enabledConnections].sort().join(','),
+                authScopes: [...enabledScopes].sort().join(','),
+            }
+        },
+        { emit: false, functionId: { name: 'getAuthState', class: 'extensionNode' } }
+    )
 }
