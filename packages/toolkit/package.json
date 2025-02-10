@@ -3892,11 +3892,6 @@
                 "enablement": "aws.isDevMode"
             },
             {
-                "command": "aws.dev.viewLogs",
-                "title": "Watch Logs",
-                "category": "AWS (Developer)"
-            },
-            {
                 "command": "aws.openInApplicationComposerDialog",
                 "title": "%AWS.command.applicationComposer.openDialog%",
                 "category": "%AWS.title%",

@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Fix language server start failure in AL2023 ARM64"
-}

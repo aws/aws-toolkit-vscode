@@ -21,7 +21,7 @@ import { SsoClient } from './sso/clients'
 import { getLogger } from '../shared/logger'
 import { CredentialsProviderManager } from './providers/credentialsProviderManager'
 import { asString, CredentialsId, CredentialsProvider, fromString } from './providers/credentials'
-import { once } from '../shared/utilities/functionUtils'
+import { keyedDebounce, once } from '../shared/utilities/functionUtils'
 import { CredentialsSettings } from './credentials/utils'
 import {
     extractDataFromSection,
@@ -102,23 +102,6 @@ interface AuthService {
      * **IAM connections are not implemented**
      */
     updateConnection(connection: Pick<Connection, 'id'>, profile: Profile): Promise<Connection>
-}
-
-function keyedDebounce<T, U extends any[], K extends string = string>(
-    fn: (key: K, ...args: U) => Promise<T>
-): typeof fn {
-    const pending = new Map<K, Promise<T>>()
-
-    return (key, ...args) => {
-        if (pending.has(key)) {
-            return pending.get(key)!
-        }
-
-        const promise = fn(key, ...args).finally(() => pending.delete(key))
-        pending.set(key, promise)
-
-        return promise
-    }
 }
 
 export interface ConnectionStateChangeEvent {

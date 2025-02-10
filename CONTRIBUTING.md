@@ -368,31 +368,28 @@ The `aws.dev.forceDevMode` setting enables or disables Toolkit "dev mode". Witho
         ```
         tail -F ~/awstoolkit.log
         ```
--   Use the `AWS (Developer): Watch Logs` command to watch and filter Toolkit logs (including
-    telemetry) in VSCode.
-    -   Only available if you enabled "dev mode" (`aws.dev.forceDevMode` setting, see above).
-    -   Enter text in the Debug Console filter box to show only log messages with that text. <br/>
-        <img src="./docs/images/debug-console-filter.png" alt="VSCode Debug Console" width="320"/>
+-   Use the Output panel to watch and filter Toolkit logs (including telemetry) in VSCode.
+    -   Enter text in the Output panel filter box to show only log messages with that text.
 
 #### Enabling Debug Logs
 
 How to enable more detailed debug logs in the extensions.
 If you need to report an issue attach these to give the most detailed information.
 
-1. Open the Command Palette (`cmd/ctrl` + `shift` + `p`), then search for "View Logs". Choose the correct option for the extension you want, eg: `AWS: View Logs` or `Amazon Q: View Logs`
-   ![](./docs/images/logsView.png)
+1. Open the Command Palette (`cmd/ctrl` + `shift` + `p`), then search for "View Logs". Choose either `AWS: View Logs` or `Amazon Q: View Logs`.
+    - ![](./docs/images/logsView.png)
 2. Click the gear icon on the bottom right and select `Debug`
-   ![](./docs/images/logsSetDebug.png)
+    - ![](./docs/images/logsSetDebug.png)
 3. Click the gear icon again and select `Set As Default`. This will ensure we stay in `Debug` until explicitly changed
-   ![](./docs/images/logsSetDefault.png)
+    - ![](./docs/images/logsSetDefault.png)
 4. Open the Command Palette again and select `Reload Window`.
 5. Now you should see additional `[debug]` prefixed logs in the output.
-   ![](./docs/images/logsDebugLog.png)
+    - ![](./docs/images/logsDebugLog.png)
 
 ### Telemetry
 
 -   See [docs/telemetry.md](./docs/telemetry.md) for guidelines on developing telemetry in this project.
--   To watch Toolkit telemetry events, use the `AWS (Developer): Watch Logs` command (see [Logging](#logging) above) and enter "telemetry" in the Debug Console filter box.
+-   To watch Toolkit telemetry events, use the `Amazon Q: View Logs` command (see [Logging](#logging) above) and enter "telemetry" in the filter box.
 
 ### Service Endpoints
 
