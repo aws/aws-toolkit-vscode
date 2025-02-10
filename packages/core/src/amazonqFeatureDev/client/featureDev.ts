@@ -10,7 +10,7 @@ import { ServiceOptions } from '../../shared/awsClientBuilder'
 import globals from '../../shared/extensionGlobals'
 import { getLogger } from '../../shared/logger'
 import * as FeatureDevProxyClient from './featuredevproxyclient'
-import { featureName, startTaskAssisLimitReachedMessage } from '../constants'
+import { featureName, startTaskAssistLimitReachedMessage } from '../constants'
 import { CodeReference } from '../../amazonq/webview/ui/connector'
 import {
     ApiError,
@@ -185,7 +185,7 @@ export class FeatureDevClient {
             )
             if (isAwsError(e)) {
                 // API Front-end will throw Throttling if conversation limit is reached. API Front-end monitors StartCodeGeneration for throttling
-                if (e.code === 'ThrottlingException' && e.message.includes(startTaskAssisLimitReachedMessage)) {
+                if (e.code === 'ThrottlingException' && e.message.includes(startTaskAssistLimitReachedMessage)) {
                     throw new MonthlyConversationLimitError(e.message)
                 }
                 // BE service will throw ServiceQuota if code generation iteration limit is reached
