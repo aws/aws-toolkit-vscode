@@ -48,10 +48,6 @@ export class ToolkitLogger extends BaseLogger implements vscode.Disposable {
         })
     }
 
-    public enableDebugConsole(): void {
-        this.logToConsole()
-    }
-
     public setLogLevel(logLevel: LogLevel) {
         if (this.logger.level === logLevel) {
             return
