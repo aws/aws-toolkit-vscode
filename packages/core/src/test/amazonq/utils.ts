@@ -10,7 +10,7 @@ import { ChatControllerEventEmitters, FeatureDevController } from '../../amazonq
 import { FeatureDevChatSessionStorage } from '../../amazonqFeatureDev/storages/chatSession'
 import { createTestWorkspaceFolder } from '../testUtil'
 import { Session } from '../../amazonqFeatureDev/session/session'
-import { SessionState } from '../../amazonqFeatureDev/types'
+import { SessionState, SessionStateAction, SessionStateConfig } from '../../amazonq/commons/types'
 import { FeatureDevClient } from '../../amazonqFeatureDev/client/featureDev'
 import { VirtualMemoryFile } from '../../shared/virtualMemoryFile'
 import path from 'path'
@@ -18,6 +18,9 @@ import { featureDevChat } from '../../amazonqFeatureDev/constants'
 import { Messenger } from '../../amazonq/commons/connector/baseMessenger'
 import { AppToWebViewMessageDispatcher } from '../../amazonq/commons/connector/connectorMessages'
 import { createSessionConfig } from '../../amazonq/commons/session/sessionConfigFactory'
+import { VirtualFileSystem } from '../../shared'
+import { TelemetryHelper } from '../../amazonq/util/telemetryHelper'
+import { FeatureClient } from '../../amazonq/client/client'
 
 export function createMessenger(): Messenger {
     return new Messenger(
@@ -118,5 +121,62 @@ export async function createController(): Promise<ControllerSetup> {
         workspaceFolder: testWorkspaceFolder,
         messenger,
         sessionStorage,
+    }
+}
+
+export function createMockSessionStateAction(msg?: string): SessionStateAction {
+    return {
+        task: 'test-task',
+        msg: msg ?? 'test-msg',
+        fs: new VirtualFileSystem(),
+        messenger: new Messenger(
+            new AppToWebViewMessageDispatcher(new MessagePublisher<any>(new vscode.EventEmitter<any>())),
+            featureDevChat
+        ),
+        telemetry: new TelemetryHelper(),
+        uploadHistory: {},
+    }
+}
+
+export interface TestSessionMocks {
+    getCodeGeneration?: sinon.SinonStub
+    exportResultArchive?: sinon.SinonStub
+    createUploadUrl?: sinon.SinonStub
+}
+
+export interface SessionTestConfig {
+    conversationId: string
+    uploadId: string
+    workspaceFolder: vscode.WorkspaceFolder
+    currentCodeGenerationId?: string
+}
+
+export function createMockSessionStateConfig(config: SessionTestConfig, mocks: TestSessionMocks): SessionStateConfig {
+    return {
+        workspaceRoots: ['fake-source'],
+        workspaceFolders: [config.workspaceFolder],
+        conversationId: config.conversationId,
+        proxyClient: {
+            createConversation: () => sinon.stub(),
+            createUploadUrl: () => mocks.createUploadUrl!(),
+            startCodeGeneration: () => sinon.stub(),
+            getCodeGeneration: () => mocks.getCodeGeneration!(),
+            exportResultArchive: () => mocks.exportResultArchive!(),
+        } as unknown as FeatureClient,
+        uploadId: config.uploadId,
+        currentCodeGenerationId: config.currentCodeGenerationId,
+    }
+}
+
+export async function createBasicTestConfig(
+    conversationId: string = 'conversation-id',
+    uploadId: string = 'upload-id',
+    currentCodeGenerationId: string = ''
+): Promise<SessionTestConfig> {
+    return {
+        conversationId,
+        uploadId,
+        workspaceFolder: await createTestWorkspaceFolder('fake-root'),
+        currentCodeGenerationId,
     }
 }

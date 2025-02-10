@@ -30,7 +30,13 @@ import {
 import { codeGenRetryLimit, defaultRetryLimit } from '../../limits'
 import { Session } from '../../session/session'
 import { featureDevScheme, featureName, generateDevFilePrompt } from '../../constants'
-import { DeletedFileInfo, DevPhase, MetricDataOperationName, MetricDataResult, type NewFileInfo } from '../../types'
+import {
+    DeletedFileInfo,
+    DevPhase,
+    MetricDataOperationName,
+    MetricDataResult,
+    type NewFileInfo,
+} from '../../../amazonq/commons/types'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import { AuthController } from '../../../amazonq/auth/controller'
 import { getLogger } from '../../../shared/logger/logger'
@@ -38,7 +44,7 @@ import { submitFeedback } from '../../../feedback/vue/submitFeedback'
 import { placeholder } from '../../../shared/vscode/commands2'
 import { EditorContentController } from '../../../amazonq/commons/controllers/contentController'
 import { openUrl } from '../../../shared/utilities/vsCodeUtils'
-import { checkForDevFile, getPathsFromZipFilePath } from '../../util/files'
+import { checkForDevFile, getPathsFromZipFilePath } from '../../../amazonq/util/files'
 import { examples, messageWithConversationId } from '../../userFacingText'
 import { getWorkspaceFoldersByPrefixes } from '../../../shared/utilities/workspaceUtils'
 import { openDeletedDiff, openDiff } from '../../../amazonq/commons/diff'
