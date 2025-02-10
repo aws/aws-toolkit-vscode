@@ -471,11 +471,30 @@ describe('Controller', () => {
                 ['EmptyPatchException', MetricDataResult.LlmFailure],
                 [PromptRefusalException.name, MetricDataResult.Error],
                 [NoChangeRequiredException.name, MetricDataResult.Error],
+                [MonthlyConversationLimitError.name, MetricDataResult.Error],
+                [CodeIterationLimitError.name, MetricDataResult.Error],
             ])
 
             function getMetricResult(error: ToolkitError): MetricDataResult {
                 if (error instanceof FeatureDevServiceError && error.code) {
                     return errorResultMapping.get(error.code) ?? MetricDataResult.Error
+                }
+                if (
+                    error.code === 'StartCodeGenerationFailed' &&
+                    (error.message.includes('Improperly formed request') ||
+                        error.message.includes('Resource not found'))
+                ) {
+                    return MetricDataResult.Error
+                }
+                if (error.message.includes('StartTaskAssistCodeGeneration reached for this month.')) {
+                    return MetricDataResult.Error
+                }
+                if (
+                    error.message.includes(
+                        'The folder you chose did not contain any source files in a supported language. Choose another folder and try again.'
+                    )
+                ) {
+                    return MetricDataResult.Error
                 }
                 return errorResultMapping.get(error.constructor.name) ?? MetricDataResult.Fault
             }

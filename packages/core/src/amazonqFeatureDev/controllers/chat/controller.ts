@@ -29,7 +29,13 @@ import {
 } from '../../errors'
 import { codeGenRetryLimit, defaultRetryLimit } from '../../limits'
 import { Session } from '../../session/session'
-import { featureDevScheme, featureName, generateDevFilePrompt } from '../../constants'
+import {
+    clientErrorMessages,
+    featureDevScheme,
+    featureName,
+    generateDevFilePrompt,
+    startCodeGenClientErrorMessages,
+} from '../../constants'
 import { DeletedFileInfo, DevPhase, MetricDataOperationName, MetricDataResult, type NewFileInfo } from '../../types'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import { AuthController } from '../../../amazonq/auth/controller'
@@ -555,12 +561,22 @@ export class FeatureDevController {
                         result = MetricDataResult.Fault
                     }
                     break
+                case MonthlyConversationLimitError.name:
+                case CodeIterationLimitError.name:
                 case PromptRefusalException.name:
                 case NoChangeRequiredException.name:
                     result = MetricDataResult.Error
                     break
                 default:
-                    result = MetricDataResult.Fault
+                    if (
+                        (err.code === 'StartCodeGenerationFailed' &&
+                            startCodeGenClientErrorMessages.some((msg) => err.message.includes(msg))) ||
+                        clientErrorMessages.some((msg) => err.message.includes(msg))
+                    ) {
+                        result = MetricDataResult.Error
+                    } else {
+                        result = MetricDataResult.Fault
+                    }
                     break
             }
 
