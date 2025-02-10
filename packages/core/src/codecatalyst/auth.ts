@@ -8,7 +8,7 @@ import { onAccessDeniedException, CodeCatalystClient, createClient } from '../sh
 import { Auth } from '../auth/auth'
 import * as localizedText from '../shared/localizedText'
 import { getSecondaryAuth, setScopes } from '../auth/secondaryAuth'
-import { getLogger } from '../shared/logger'
+import { getLogger } from '../shared/logger/logger'
 import globals from '../shared/extensionGlobals'
 import { ToolkitError, isAwsError } from '../shared/errors'
 import { MetricName, MetricShapes, telemetry } from '../shared/telemetry/telemetry'

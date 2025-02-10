@@ -10,7 +10,7 @@ import { ParsedIniData, SharedConfigFiles } from '@smithy/shared-ini-file-loader
 import { chain } from '@aws-sdk/property-provider'
 import { fromInstanceMetadata, fromContainerMetadata } from '@aws-sdk/credential-provider-imds'
 import { fromEnv } from '@aws-sdk/credential-provider-env'
-import { getLogger } from '../../shared/logger'
+import { getLogger } from '../../shared/logger/logger'
 import { getStringHash } from '../../shared/utilities/textUtilities'
 import { getMfaTokenFromUser, resolveProviderWithCancel } from '../credentials/utils'
 import { CredentialsProvider, CredentialsProviderType, CredentialsId } from './credentials'

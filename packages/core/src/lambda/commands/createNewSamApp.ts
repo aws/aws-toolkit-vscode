@@ -22,7 +22,7 @@ import { ActivationReloadState, SamInitState } from '../../shared/activationRelo
 import { AwsContext } from '../../shared/awsContext'
 
 import { fileExists, isInDirectory, readFileAsString } from '../../shared/filesystemUtilities'
-import { getLogger } from '../../shared/logger'
+import { getLogger } from '../../shared/logger/logger'
 import { RegionProvider } from '../../shared/regions/regionProvider'
 import { getSamCliVersion, getSamCliContext, SamCliContext } from '../../shared/sam/cli/samCliContext'
 import { runSamCliInit, SamCliInitArgs } from '../../shared/sam/cli/samCliInit'
@@ -46,7 +46,7 @@ import { telemetry } from '../../shared/telemetry/telemetry'
 import { LambdaArchitecture, Result, Runtime } from '../../shared/telemetry/telemetry'
 import { getTelemetryReason, getTelemetryResult } from '../../shared/errors'
 import { openUrl, replaceVscodeVars } from '../../shared/utilities/vsCodeUtils'
-import { fs } from '../../shared'
+import { fs } from '../../shared/fs/fs'
 import { ChildProcess } from '../../shared/utilities/processUtils'
 
 export const samInitTemplateFiles: string[] = ['template.yaml', 'template.yml']

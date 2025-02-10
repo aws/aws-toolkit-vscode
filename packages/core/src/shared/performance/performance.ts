@@ -4,7 +4,7 @@
  */
 
 import assert from 'assert'
-import { getLogger } from '../logger'
+import { getLogger } from '../logger/logger'
 
 interface PerformanceMetrics {
     /**

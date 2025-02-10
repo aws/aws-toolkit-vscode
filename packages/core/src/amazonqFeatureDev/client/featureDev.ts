@@ -8,7 +8,7 @@ import { omit } from 'lodash'
 import { AuthUtil } from '../../codewhisperer/util/authUtil'
 import { ServiceOptions } from '../../shared/awsClientBuilder'
 import globals from '../../shared/extensionGlobals'
-import { getLogger } from '../../shared/logger'
+import { getLogger } from '../../shared/logger/logger'
 import * as FeatureDevProxyClient from './featuredevproxyclient'
 import { featureName } from '../constants'
 import { CodeReference } from '../../amazonq/webview/ui/connector'
@@ -25,7 +25,7 @@ import { createCodeWhispererChatStreamingClient } from '../../shared/clients/cod
 import { getClientId, getOptOutPreference, getOperatingSystem } from '../../shared/telemetry/util'
 import { extensionVersion } from '../../shared/vscode/env'
 import apiConfig = require('./codewhispererruntime-2022-11-11.json')
-import { UserWrittenCodeTracker } from '../../codewhisperer'
+import { UserWrittenCodeTracker } from '../../codewhisperer/tracker/userWrittenCodeTracker'
 import {
     FeatureDevCodeAcceptanceEvent,
     FeatureDevCodeGenerationEvent,

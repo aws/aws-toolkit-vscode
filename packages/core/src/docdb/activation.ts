@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Commands } from '../shared'
+import { Commands } from '../shared/vscode/commands2'
 import { ExtContext } from '../shared/extensions'
 import { DBResourceNode } from './explorer/dbResourceNode'
 import { DocumentDBNode } from './explorer/docdbNode'
@@ -23,7 +23,7 @@ import { renameInstance } from './commands/renameInstance'
 import { addTag, listTags, removeTag } from './commands/tagCommands'
 import { Uri } from 'vscode'
 import { openUrl } from '../shared/utilities/vsCodeUtils'
-import { getLogger } from '../shared/logger'
+import { getLogger } from '../shared/logger/logger'
 
 /**
  * A utility function to automatically invoke trackChanges after a command.

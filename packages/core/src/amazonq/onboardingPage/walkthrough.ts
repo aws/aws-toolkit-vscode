@@ -6,7 +6,7 @@
 import { focusAmazonQPanel } from '../../codewhispererChat/commands/registerCommands'
 import globals, { isWeb } from '../../shared/extensionGlobals'
 import { VSCODE_EXTENSION_ID } from '../../shared/extensions'
-import { getLogger } from '../../shared/logger'
+import { getLogger } from '../../shared/logger/logger'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { Commands, placeholder } from '../../shared/vscode/commands2'
 import vscode from 'vscode'

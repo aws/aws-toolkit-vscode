@@ -28,14 +28,16 @@ import * as model from '../../codewhisperer/models/model'
 import { stub } from '../utilities/stubber'
 import { Dirent } from 'fs' // eslint-disable-line no-restricted-imports
 
-export async function resetCodeWhispererGlobalVariables() {
+export async function resetCodeWhispererGlobalVariables(clearGlobalState: boolean = true) {
     vsCodeState.isIntelliSenseActive = false
     vsCodeState.isCodeWhispererEditing = false
     CodeWhispererCodeCoverageTracker.instances.clear()
     globals.telemetry.logger.clear()
     const session = CodeWhispererSessionState.instance.getSession()
     session.reset()
-    await globals.globalState.clear()
+    if (clearGlobalState) {
+        await globals.globalState.clear()
+    }
     await CodeSuggestionsState.instance.setSuggestionsEnabled(true)
     await RecommendationHandler.instance.clearInlineCompletionStates()
 }

@@ -20,7 +20,7 @@ import {
     AppcomposerInitializeProject,
     telemetry,
 } from '../../shared/telemetry/telemetry'
-import { getLogger } from '../../shared/logger'
+import { getLogger } from '../../shared/logger/logger'
 
 export function emitTelemetryMessageHandler(message: EmitTelemetryMessage) {
     try {
