@@ -4,8 +4,8 @@
  */
 
 import AsyncLock from 'async-lock'
-import { globals } from '../../shared'
-import { telemetry } from '../../shared/telemetry'
+import globals from '../../shared/extensionGlobals'
+import { telemetry } from '../../shared/telemetry/telemetry'
 import { Event, uiEventRecorder } from '../util/eventRecorder'
 import { CWCTelemetryHelper } from '../../codewhispererChat/controllers/chat/telemetryHelper'
 import { TabType } from '../webview/ui/storages/tabsStorage'

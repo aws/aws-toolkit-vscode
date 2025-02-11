@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { globals } from '../../shared'
+import globals from '../../shared/extensionGlobals'
 import { getLogger } from '../../shared/logger/logger'
 import { AmazonqApproachInvoke, AmazonqCodeGenerationInvoke, Span } from '../../shared/telemetry/telemetry'
 import { LLMResponseType } from '../types'

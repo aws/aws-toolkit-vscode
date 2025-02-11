@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import { ToolkitError, UnknownError } from '../errors'
 import { ChildProcess, ChildProcessResult } from '../utilities/processUtils'
 import { CancellationError } from '../utilities/timeoutUtils'
-import { getLogger } from '../logger'
+import { getLogger } from '../logger/logger'
 import { isAutomation } from '../vscode/env'
 import { throwIfErrorMatches } from './utils'
 

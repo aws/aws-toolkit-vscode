@@ -7,10 +7,8 @@ import { docScheme, featureName, Mode } from '../constants'
 import { DeletedFileInfo, Interaction, NewFileInfo, SessionState, SessionStateConfig } from '../types'
 import { PrepareCodeGenState } from './sessionState'
 import { telemetry } from '../../shared/telemetry/telemetry'
-import { extensionVersion, fs, getLogger, globals } from '../../shared'
 import { AuthUtil } from '../../codewhisperer/util/authUtil'
 import { SessionConfig } from '../../amazonq/commons/session/sessionConfigFactory'
-import { ReferenceLogViewProvider } from '../../codewhisperer'
 import path from 'path'
 import { FeatureDevClient } from '../../amazonqFeatureDev/client/featureDev'
 import { TelemetryHelper } from '../../amazonqFeatureDev/util/telemetryHelper'
@@ -27,6 +25,11 @@ import {
 import { getClientId, getOperatingSystem, getOptOutPreference } from '../../shared/telemetry/util'
 import { DocMessenger } from '../messenger'
 import { computeDiff } from '../../amazonq/commons/diff'
+import { ReferenceLogViewProvider } from '../../codewhisperer/service/referenceLogViewProvider'
+import fs from '../../shared/fs/fs'
+import globals from '../../shared/extensionGlobals'
+import { extensionVersion } from '../../shared/vscode/env'
+import { getLogger } from '../../shared/logger/logger'
 
 export class Session {
     private _state?: SessionState | Omit<SessionState, 'uploadId'>

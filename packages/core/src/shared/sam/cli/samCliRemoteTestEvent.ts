@@ -8,7 +8,7 @@ import { logAndThrowIfUnexpectedExitCode, SamCliProcessInvoker } from './samCliI
 import path from 'path'
 import * as os from 'os'
 import { getSpawnEnv } from '../../env/resolveEnv'
-import { getLogger } from '../../../shared/logger'
+import { getLogger } from '../../../shared/logger/logger'
 
 export const TestEventsOperation = {
     List: 'list',

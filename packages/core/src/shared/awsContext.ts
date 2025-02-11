@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import * as AWS from '@aws-sdk/types'
-import { getLogger } from '../shared/logger'
+import { getLogger } from '../shared/logger/logger'
 import { ClassToInterfaceType } from './utilities/tsUtils'
 import { CredentialsShim } from '../auth/deprecated/loginManager'
 export interface AwsContextCredentials {

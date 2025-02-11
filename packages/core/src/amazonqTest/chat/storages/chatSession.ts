@@ -5,7 +5,7 @@
  */
 
 import { Session } from '../session/session'
-import { getLogger } from '../../../shared/logger'
+import { getLogger } from '../../../shared/logger/logger'
 
 export class SessionNotFoundError extends Error {}
 

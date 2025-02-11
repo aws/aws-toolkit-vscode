@@ -10,7 +10,7 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import { getIdeProperties } from '../extensionUtilities'
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../filesystemUtilities'
-import { getLogger } from '../logger'
+import { getLogger } from '../logger/logger'
 import { HttpResourceFetcher } from '../resourcefetcher/node/httpResourceFetcher'
 import { ChildProcess } from './processUtils'
 

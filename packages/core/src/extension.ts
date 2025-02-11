@@ -49,8 +49,10 @@ import { registerCommands } from './commands'
 // In web mode everything must be in a single file, so things like the endpoints file will not be available.
 // The following imports the endpoints file, which causes webpack to bundle it in the final output file
 import endpoints from '../resources/endpoints.json'
-import { getLogger, maybeShowMinVscodeWarning, setupUninstallHandler } from './shared'
 import { showViewLogsMessage } from './shared/utilities/messages'
+import { setupUninstallHandler } from './shared/handleUninstall'
+import { maybeShowMinVscodeWarning } from './shared/extensionStartup'
+import { getLogger } from './shared/logger/logger'
 
 disableAwsSdkWarning()
 

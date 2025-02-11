@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { ToolkitError, isUserCancelledError, resolveErrorMessageToDisplay } from '../errors'
-import { getLogger } from '../logger'
+import { getLogger } from '../logger/logger'
 import { showMessageWithUrl } from './messages'
 import { Logging } from '../logger/commands'
 

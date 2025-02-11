@@ -15,7 +15,7 @@ import fs from '../../../shared/fs/fs'
 import globals from '../../../shared/extensionGlobals'
 import { ChatSessionManager } from '../../../amazonqGumby/chat/storages/chatSession'
 import { AbsolutePathDetectedError } from '../../../amazonqGumby/errors'
-import { getLogger } from '../../../shared/logger'
+import { getLogger } from '../../../shared/logger/logger'
 import { isWin } from '../../../shared/vscode/env'
 
 export function getDependenciesFolderInfo(): FolderInfo {
