@@ -181,6 +181,7 @@ export class RecommendationHandler {
 
         if (!editor) {
             return Promise.resolve<GetRecommendationsResponse>({
+                sessionId: '',
                 result: invocationResult,
                 errorMessage: errorMessage,
                 recommendationCount: 0,
@@ -259,6 +260,7 @@ export class RecommendationHandler {
                     errorMessage = `${languageName} is currently not supported by Amazon Q inline suggestions`
                 }
                 return Promise.resolve<GetRecommendationsResponse>({
+                    sessionId: '',
                     result: invocationResult,
                     errorMessage: errorMessage,
                     recommendationCount: 0,
@@ -390,6 +392,7 @@ export class RecommendationHandler {
 
         if (!isNextSession && this.isCancellationRequested()) {
             return Promise.resolve<GetRecommendationsResponse>({
+                sessionId: '',
                 result: invocationResult,
                 errorMessage: errorMessage,
                 recommendationCount: currentSession.recommendations.length,
@@ -450,6 +453,7 @@ export class RecommendationHandler {
             }
         }
         return Promise.resolve<GetRecommendationsResponse>({
+            sessionId: sessionId,
             result: invocationResult,
             errorMessage: errorMessage,
             recommendationCount: currentSession.recommendations.length,
@@ -638,7 +642,7 @@ export class RecommendationHandler {
         const session = CodeWhispererSessionState.instance.getSession()
 
         if (!indexShift && session.recommendations.length) {
-            await this.fetchNextRecommendations()
+            await this.fetchNextRecommendations(session)
         }
         await lock.acquire(updateInlineLockKey, async () => {
             if (!vscode.window.state.focused) {
@@ -717,15 +721,14 @@ export class RecommendationHandler {
         }
     }
 
-    async fetchNextRecommendations() {
-        const session = CodeWhispererSessionState.instance.getSession()
+    async fetchNextRecommendations(session: CodeWhispererSession) {
         const client = new codewhispererClient.DefaultCodeWhispererClient()
         const editor = vscode.window.activeTextEditor
         if (!editor) {
             return
         }
 
-        await this.getRecommendations(
+        const nextResp = await this.getRecommendations(
             client,
             editor,
             session.triggerType,
@@ -737,6 +740,11 @@ export class RecommendationHandler {
             false,
             true
         )
+
+        const nextSessionId = nextResp.sessionId
+        if (nextSessionId.length === 0 || nextSessionId !== session.sessionId) {
+            CodeWhispererSessionState.instance.getNextSession().reset()
+        }
     }
 
     async tryShowRecommendation() {

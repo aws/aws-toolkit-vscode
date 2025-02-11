@@ -81,6 +81,7 @@ export interface CodeWhispererSupplementalContextItem {
 
 // This response struct can contain more info as needed
 export interface GetRecommendationsResponse {
+    readonly sessionId: string
     readonly result: 'Succeeded' | 'Failed'
     readonly recommendationCount: number
     readonly errorMessage: string | undefined
