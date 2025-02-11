@@ -15,6 +15,7 @@ import {
     createUserFacingErrorMessage,
     denyListedErrors,
     FeatureDevServiceError,
+    isAPIClientError,
     MonthlyConversationLimitError,
     NoChangeRequiredException,
     PrepareRepoFailedError,
@@ -555,12 +556,18 @@ export class FeatureDevController {
                         result = MetricDataResult.Fault
                     }
                     break
+                case MonthlyConversationLimitError.name:
+                case CodeIterationLimitError.name:
                 case PromptRefusalException.name:
                 case NoChangeRequiredException.name:
                     result = MetricDataResult.Error
                     break
                 default:
-                    result = MetricDataResult.Fault
+                    if (isAPIClientError(err)) {
+                        result = MetricDataResult.Error
+                    } else {
+                        result = MetricDataResult.Fault
+                    }
                     break
             }
 
