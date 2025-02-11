@@ -424,7 +424,7 @@
         "compileOnly": "tsc -p ./",
         "compileDev": "npm run compile -- --mode development",
         "webpackDev": "webpack --mode development",
-        "serveVue": "webpack serve --config-name vue --mode development",
+        "serveVue": "ts-node ./scripts/build/checkServerPort.ts && webpack serve --port 8080 --config-name vue --mode development",
         "watch": "npm run clean && npm run buildScripts && npm run compileOnly -- --watch",
         "lint": "ts-node ./scripts/lint/testLint.ts",
         "generateClients": "ts-node ./scripts/build/generateServiceClient.ts ",
