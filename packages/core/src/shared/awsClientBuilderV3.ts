@@ -9,10 +9,13 @@ import { AwsCredentialIdentityProvider, RetryStrategyV2 } from '@smithy/types'
 import { getUserAgent } from './telemetry/util'
 import { DevSettings } from './settings'
 import {
+    BuildHandler,
+    BuildMiddleware,
     DeserializeHandler,
-    DeserializeHandlerOptions,
     DeserializeMiddleware,
     Handler,
+    FinalizeHandler,
+    FinalizeRequestMiddleware,
     HandlerExecutionContext,
     MetadataBearer,
     MiddlewareStack,
@@ -22,13 +25,14 @@ import {
     RetryStrategy,
     UserAgent,
 } from '@aws-sdk/types'
-import { HttpResponse } from '@aws-sdk/protocol-http'
+import { HttpResponse, HttpRequest } from '@aws-sdk/protocol-http'
 import { ConfiguredRetryStrategy } from '@smithy/util-retry'
 import { telemetry } from './telemetry/telemetry'
 import { getRequestId, getTelemetryReason, getTelemetryReasonDesc, getTelemetryResult } from './errors'
 import { extensionVersion } from './vscode/env'
 import { getLogger } from './logger/logger'
 import { partialClone } from './utilities/collectionUtils'
+import { selectFrom } from './utilities/tsUtils'
 
 export type AwsClientConstructor<C> = new (o: AwsClientOptions) => C
 
@@ -105,8 +109,9 @@ export class AWSClientBuilderV3 {
         }
 
         const service = new type(opt)
-        // TODO: add middleware for logging, telemetry, endpoints.
-        service.middlewareStack.add(telemetryMiddleware, { step: 'deserialize' } as DeserializeHandlerOptions)
+        service.middlewareStack.add(telemetryMiddleware, { step: 'deserialize' })
+        service.middlewareStack.add(loggingMiddleware, { step: 'finalizeRequest' })
+        service.middlewareStack.add(getEndpointMiddleware(settings), { step: 'build' })
         return service
     }
 }
@@ -132,29 +137,67 @@ export function recordErrorTelemetry(err: Error, serviceName?: string) {
 function logAndThrow(e: any, serviceId: string, errorMessageAppend: string): never {
     if (e instanceof Error) {
         recordErrorTelemetry(e, serviceId)
-        const err = { ...e }
-        delete err['stack']
-        getLogger().error('API Response %s: %O', errorMessageAppend, err)
+        getLogger().error('API Response %s: %O', errorMessageAppend, e)
     }
     throw e
 }
-/**
- * Telemetry logic to be added to all created clients. Adds logging and emitting metric on errors.
- */
-const telemetryMiddleware: DeserializeMiddleware<any, any> =
-    (next: DeserializeHandler<any, any>, context: HandlerExecutionContext) => async (args: any) => {
-        if (!HttpResponse.isInstance(args.request)) {
-            return next(args)
-        }
-        const serviceId = getServiceId(context as object)
-        const { hostname, path } = args.request
-        const logTail = `(${hostname} ${path})`
-        const result = await next(args).catch((e: any) => logAndThrow(e, serviceId, logTail))
-        if (HttpResponse.isInstance(result.response)) {
-            // TODO: omit credentials / sensitive info from the logs / telemetry.
-            const output = partialClone(result.output, 3)
-            getLogger().debug('API Response %s: %O', logTail, output)
-        }
 
-        return result
+const telemetryMiddleware: DeserializeMiddleware<any, any> =
+    (next: DeserializeHandler<any, any>, context: HandlerExecutionContext) => async (args: any) =>
+        emitOnRequest(next, context, args)
+
+const loggingMiddleware: FinalizeRequestMiddleware<any, any> = (next: FinalizeHandler<any, any>) => async (args: any) =>
+    logOnRequest(next, args)
+
+function getEndpointMiddleware(settings: DevSettings = DevSettings.instance): BuildMiddleware<any, any> {
+    return (next: BuildHandler<any, any>, context: HandlerExecutionContext) => async (args: any) =>
+        overwriteEndpoint(next, context, settings, args)
+}
+
+export async function emitOnRequest(next: DeserializeHandler<any, any>, context: HandlerExecutionContext, args: any) {
+    if (!HttpResponse.isInstance(args.request)) {
+        return next(args)
     }
+    const serviceId = getServiceId(context as object)
+    const { hostname, path } = args.request
+    const logTail = `(${hostname} ${path})`
+    try {
+        const result = await next(args)
+        if (HttpResponse.isInstance(result.response)) {
+            // TODO: omit credentials / sensitive info from the telemetry.
+            const output = partialClone(result.output, 3)
+            getLogger().debug(`API Response %s: %O`, logTail, output)
+        }
+        return result
+    } catch (e: any) {
+        logAndThrow(e, serviceId, logTail)
+    }
+}
+
+export async function logOnRequest(next: FinalizeHandler<any, any>, args: any) {
+    if (HttpRequest.isInstance(args.request)) {
+        const { hostname, path } = args.request
+        // TODO: omit credentials / sensitive info from the logs.
+        const input = partialClone(args.input, 3)
+        getLogger().debug(`API Request (%s %s): %O`, hostname, path, input)
+    }
+    return next(args)
+}
+
+export function overwriteEndpoint(
+    next: BuildHandler<any, any>,
+    context: HandlerExecutionContext,
+    settings: DevSettings,
+    args: any
+) {
+    if (HttpRequest.isInstance(args.request)) {
+        const serviceId = getServiceId(context as object)
+        const endpoint = serviceId ? settings.get('endpoints', {})[serviceId] : undefined
+        if (endpoint) {
+            const url = new URL(endpoint)
+            Object.assign(args.request, selectFrom(url, 'hostname', 'port', 'protocol', 'pathname'))
+            args.request.path = args.request.pathname
+        }
+    }
+    return next(args)
+}
