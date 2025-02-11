@@ -4,7 +4,6 @@
  */
 
 import * as AWS from '@aws-sdk/types'
-import { fromIni } from '@aws-sdk/credential-provider-ini'
 import { fromProcess } from '@aws-sdk/credential-provider-process'
 import { ParsedIniData } from '@smithy/types'
 import { chain } from '@aws-sdk/property-provider'
@@ -24,14 +23,15 @@ import {
     getRequiredFields,
     getSectionDataOrThrow,
     getSectionOrThrow,
+    isProfileSection,
     Profile,
     Section,
 } from '../credentials/sharedCredentials'
-import { SectionName, SharedCredentialsKeys } from '../credentials/types'
+import { CredentialsData, SectionName, SharedCredentialsKeys } from '../credentials/types'
 import { SsoProfile, hasScopes, scopesSsoAccountAccess } from '../connection'
 import { builderIdStartUrl } from '../sso/constants'
-// TODO: There must be a better way to import this.
-import { AssumeRoleParams } from '@aws-sdk/credential-provider-ini/dist-types/resolveAssumeRoleCredentials'
+import { ToolkitError } from '../../shared/errors'
+import { toRecord } from '../../shared/utilities/collectionUtils'
 
 const credentialSources = {
     ECS_CONTAINER: 'EcsContainer',
@@ -378,37 +378,59 @@ export class SharedCredentialsProvider implements CredentialsProvider {
     }
 
     private makeSharedIniFileCredentialsProvider(loadedCreds?: ParsedIniData): AWS.CredentialProvider {
-        const assumeRole = async (credentials: AWS.Credentials, params: AssumeRoleParams) => {
-            const region = this.getDefaultRegion() ?? 'us-east-1'
-            const stsClient = new DefaultStsClient(region, credentials)
-            const response = await stsClient.assumeRole(params)
-            return {
-                accessKeyId: response.Credentials!.AccessKeyId!,
-                secretAccessKey: response.Credentials!.SecretAccessKey!,
-                sessionToken: response.Credentials?.SessionToken,
-                expiration: response.Credentials?.Expiration,
-            }
-        }
-
-        // TODO: reimplement this workaround, and confirm that it is still needed.
         // Our credentials logic merges profiles from the credentials and config files but SDK v3 does not
         // This can cause odd behavior where the Toolkit can switch to a profile but not authenticate with it
         // So the workaround is to do give the SDK the merged profiles directly
-        // const profileSections = this.sections.filter(isProfileSection)
-        // const profiles = toRecord(
-        //     profileSections.map((s) => s.name),
-        //     (k) => this.getProfile(k)
-        // )
+        const profileSections = this.sections.filter(isProfileSection)
+        const profiles = toRecord(
+            profileSections.map((s) => s.name),
+            (k) => this.getProfile(k)
+        )
 
-        return fromIni({
-            profile: this.profileName,
-            mfaCodeProvider: async (mfaSerial) => await getMfaTokenFromUser(mfaSerial, this.profileName),
-            roleAssumer: assumeRole,
-            // loadedConfig: Promise.resolve({
-            //     credentialsFile: loadedCreds ?? profiles,
-            //     configFile: {},
-            // } as SharedConfigFiles),
-        })
+        return async () => {
+            const iniData = loadedCreds ?? profiles
+            const profile: CredentialsData = iniData[this.profileName]
+            if (!profile) {
+                throw new ToolkitError(`auth: Profile ${this.profileName} not found`)
+            }
+            // No role to assume, return static credentials.
+            if (!profile.role_arn) {
+                return {
+                    accessKeyId: profile.aws_access_key_id!,
+                    secretAccessKey: profile.aws_secret_access_key!,
+                    sessionToken: profile.aws_session_token,
+                }
+            }
+            if (!profile.source_profile || !iniData[profile.source_profile]) {
+                throw new ToolkitError(
+                    `auth: Profile ${this.profileName} is missing source_profile for role assumption`
+                )
+            }
+            // Use source profile to assume IAM role based on role ARN provided.
+            const sourceProfile = iniData[profile.source_profile!]
+            const stsClient = new DefaultStsClient(this.getDefaultRegion() ?? 'us-east-1', {
+                accessKeyId: sourceProfile.aws_access_key_id!,
+                secretAccessKey: sourceProfile.aws_secret_access_key!,
+            })
+            // Prompt for MFA Token if needed.
+            const assumeRoleReq = {
+                RoleArn: profile.role_arn,
+                RoleSessionName: 'AssumeRoleSession',
+                ...(profile.mfa_serial
+                    ? {
+                          SerialNumber: profile.mfa_serial,
+                          TokenCode: await getMfaTokenFromUser(profile.mfa_serial, this.profileName),
+                      }
+                    : {}),
+            }
+            const assumeRoleRsp = await stsClient.assumeRole(assumeRoleReq)
+            return {
+                accessKeyId: assumeRoleRsp.Credentials!.AccessKeyId!,
+                secretAccessKey: assumeRoleRsp.Credentials!.SecretAccessKey!,
+                sessionToken: assumeRoleRsp.Credentials?.SessionToken,
+                expiration: assumeRoleRsp.Credentials?.Expiration,
+            }
+        }
     }
 
     private makeSourcedCredentialsProvider(): AWS.CredentialProvider {
