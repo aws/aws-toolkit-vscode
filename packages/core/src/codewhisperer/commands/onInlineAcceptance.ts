@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+/* eslint-disable aws-toolkits/no-console-log */
+
 import * as vscode from 'vscode'
 import * as CodeWhispererConstants from '../models/constants'
 import { vsCodeState, OnRecommendationAcceptanceEntry } from '../models/model'
@@ -53,6 +55,8 @@ export const acceptSuggestion = Commands.declare(
                 traceId: TelemetryHelper.instance.traceId,
             })
 
+            console.log('accepted completion')
+
             RecommendationService.instance.incrementAcceptedCount()
             const editor = vscode.window.activeTextEditor
             await Container.instance.lineAnnotationController.refresh(editor, 'codewhisperer')
@@ -76,10 +80,13 @@ export const acceptSuggestion = Commands.declare(
  * This function is called when user accepts a intelliSense suggestion or an inline suggestion
  */
 export async function onInlineAcceptance(acceptanceEntry: OnRecommendationAcceptanceEntry) {
+    console.log('accepted inline completion')
     RecommendationHandler.instance.cancelPaginatedRequest()
     RecommendationHandler.instance.disposeInlineCompletion()
+    console.log('accepted editor is: %O', acceptanceEntry.editor)
 
     if (acceptanceEntry.editor) {
+        console.log('editor was accepted')
         await sleep(CodeWhispererConstants.vsCodeCursorUpdateDelay)
         const languageContext = runtimeLanguageContext.getLanguageContext(
             acceptanceEntry.editor.document.languageId,
@@ -105,6 +112,7 @@ export async function onInlineAcceptance(acceptanceEntry: OnRecommendationAccept
         } catch (error) {
             getLogger().error(`${error} in handling extra brackets or imports`)
         } finally {
+            console.log('finished editing after acceptance')
             vsCodeState.isCodeWhispererEditing = false
         }
 

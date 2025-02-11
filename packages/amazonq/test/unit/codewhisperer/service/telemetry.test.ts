@@ -26,8 +26,18 @@ import {
     vsCodeCursorUpdateDelay,
     AuthUtil,
 } from 'aws-core-vscode/codewhisperer'
-import { sleep, waitUntil, env, CodewhispererUserTriggerDecision } from 'aws-core-vscode/shared'
+import { env, CodewhispererUserTriggerDecision } from 'aws-core-vscode/shared'
 import { resetCodeWhispererGlobalVariables } from 'aws-core-vscode/test'
+import {
+    acceptByTab,
+    backspace,
+    closeActiveEditor,
+    navigateNext,
+    navigatePrev,
+    rejectByEsc,
+    typing,
+    waitUntilSuggestionSeen,
+} from '../testUtil'
 
 type CodeWhispererResponse = ListRecommendationsResponse & {
     $response: { requestId: string; httpResponse: { headers: { [key: string]: string } } }
@@ -515,87 +525,6 @@ async function manualTrigger(
 ) {
     await invokeRecommendation(editor, client, config)
     await waitUntilSuggestionSeen()
-}
-
-// Note: RecommendationHandler.isSuggestionVisible seems not to work well, hence not using it
-async function waitUntilSuggestionSeen(index: number = 0) {
-    const state = await waitUntil(
-        async () => {
-            const r = session.getSuggestionState(index)
-            if (r) {
-                return r
-            }
-        },
-        {
-            interval: 500,
-        }
-    )
-
-    assert.ok(state === 'Showed')
-}
-
-async function acceptByTab() {
-    const editor = vscode.window.activeTextEditor
-    if (!editor) {
-        throw new Error('no active editor')
-    }
-    const originalContent = editor.document.getText()
-    // we have to wait until the inline suggestion is shown in the editor however we don't have an useable API for that so hacky wait to know if the accept is taking effect
-    await waitUntil(
-        async () => {
-            await sleep(50)
-            await vscode.commands.executeCommand('editor.action.inlineSuggest.commit')
-            if (editor.document.getText() !== originalContent) {
-                return true
-            }
-        },
-        { interval: 10 }
-    )
-
-    // required because oninlineAcceptance has sleep(vsCodeCursorUpdateDelay), otherwise assertion will be executed "before" onAcceptance hook
-    await sleep(vsCodeCursorUpdateDelay + 50)
-}
-
-async function rejectByEsc() {
-    return vscode.commands.executeCommand('aws.amazonq.rejectCodeSuggestion')
-}
-
-async function navigateNext() {
-    return vscode.commands.executeCommand('editor.action.inlineSuggest.showNext')
-}
-
-async function navigatePrev() {
-    return vscode.commands.executeCommand('editor.action.inlineSuggest.showPrevious')
-}
-
-async function closeActiveEditor() {
-    return vscode.commands.executeCommand('workbench.action.closeActiveEditor')
-}
-
-async function typing(editor: vscode.TextEditor, s: string) {
-    const initialContent = editor.document.getText()
-    const positionBefore = editor.document.offsetAt(editor.selection.active)
-
-    await editor.edit((edit) => {
-        edit.insert(editor.selection.active, s)
-    })
-
-    await assertTextEditorContains(initialContent + s)
-    await waitUntil(
-        async () => {
-            const positionPendingUpdate = editor.document.offsetAt(editor.selection.active)
-            if (positionPendingUpdate === positionBefore + s.length) {
-                return true
-            }
-        },
-        { interval: 50 }
-    )
-    const positionAfter = editor.document.offsetAt(editor.selection.active)
-    assert.strictEqual(positionAfter, positionBefore + s.length)
-}
-
-async function backspace(editor: vscode.TextEditor) {
-    return vscode.commands.executeCommand('deleteLeft')
 }
 
 function aResponse(

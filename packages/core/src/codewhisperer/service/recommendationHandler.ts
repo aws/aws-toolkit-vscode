@@ -63,6 +63,8 @@ const rejectCommand = Commands.declare('aws.amazonq.rejectCodeSuggestion', () =>
         traceId: TelemetryHelper.instance.traceId,
     })
 
+    // eslint-disable-next-line aws-toolkits/no-console-log
+    console.log('hiding inlineSuggest')
     await vscode.commands.executeCommand('editor.action.inlineSuggest.hide')
     RecommendationHandler.instance.reportUserDecisions(-1)
     await Commands.tryExecute('aws.amazonq.refreshAnnotation')
@@ -465,6 +467,8 @@ export class RecommendationHandler {
             // fix a regression that requires user to hit Esc twice to clear inline ghost text
             // because disposing a provider does not clear the UX
             if (isVscHavingRegressionInlineCompletionApi()) {
+                // eslint-disable-next-line aws-toolkits/no-console-log
+                console.log('hiding inlineSuggest')
                 await vscode.commands.executeCommand('editor.action.inlineSuggest.hide')
             }
         } finally {
@@ -565,6 +569,8 @@ export class RecommendationHandler {
     }
 
     public disposeInlineCompletion() {
+        // eslint-disable-next-line aws-toolkits/no-console-log
+        console.log('disposing of inline provider')
         this.inlineCompletionProviderDisposable?.dispose()
         this.inlineCompletionProvider = undefined
     }
@@ -594,10 +600,17 @@ export class RecommendationHandler {
 
     async showRecommendation(indexShift: number, noSuggestionVisible: boolean = false) {
         await lock.acquire(updateInlineLockKey, async () => {
+            // eslint-disable-next-line aws-toolkits/no-console-log
+            console.log('aquired the lock')
+
+            // eslint-disable-next-line aws-toolkits/no-console-log
+            console.log('is window focused: %O', vscode.window.state.focused)
             if (!vscode.window.state.focused) {
                 this.reportDiscardedUserDecisions()
                 return
             }
+            // eslint-disable-next-line aws-toolkits/no-console-log
+            console.log('setting inline provider')
             const inlineCompletionProvider = new CWInlineCompletionItemProvider(
                 this.inlineCompletionProvider?.getActiveItemIndex,
                 indexShift,
@@ -613,15 +626,20 @@ export class RecommendationHandler {
                 inlineCompletionProvider
             )
             this.inlineCompletionProvider = inlineCompletionProvider
-
+            // eslint-disable-next-line aws-toolkits/no-console-log
+            console.log('no suggestion visible: %O', noSuggestionVisible)
             if (isVscHavingRegressionInlineCompletionApi() && !noSuggestionVisible) {
                 // fix a regression in new VS Code when disposing and re-registering
                 // a new provider does not auto refresh the inline suggestion widget
                 // by manually refresh it
+                // eslint-disable-next-line aws-toolkits/no-console-log
+                console.log('hiding inlineSuggest')
                 await vscode.commands.executeCommand('editor.action.inlineSuggest.hide')
                 await vscode.commands.executeCommand('editor.action.inlineSuggest.trigger')
             }
             if (noSuggestionVisible) {
+                // eslint-disable-next-line aws-toolkits/no-console-log
+                console.log('showing a suggestion')
                 await vscode.commands.executeCommand(`editor.action.inlineSuggest.trigger`)
                 this.sendPerceivedLatencyTelemetry()
             }
@@ -656,17 +674,33 @@ export class RecommendationHandler {
 
     async tryShowRecommendation() {
         const editor = vscode.window.activeTextEditor
+        // eslint-disable-next-line aws-toolkits/no-console-log
+        console.log('editor is: %O', editor === undefined)
         if (editor === undefined) {
             return
         }
+        // eslint-disable-next-line aws-toolkits/no-console-log
+        console.log('isSuggestionVisible: %O', this.isSuggestionVisible())
         if (this.isSuggestionVisible()) {
             // do not force refresh the tooltip to avoid suggestion "flashing"
             return
         }
+
+        // eslint-disable-next-line aws-toolkits/no-console-log
+        console.log('selection is before: %O', editor.selection.active.isBefore(session.startPos))
+        // eslint-disable-next-line aws-toolkits/no-console-log
+        console.log(
+            'document paths: %O, %O, %O',
+            editor.document.uri.fsPath,
+            this.documentUri?.fsPath,
+            editor.document.uri.fsPath !== this.documentUri?.fsPath
+        )
         if (
             editor.selection.active.isBefore(session.startPos) ||
             editor.document.uri.fsPath !== this.documentUri?.fsPath
         ) {
+            // eslint-disable-next-line aws-toolkits/no-console-log
+            console.log('discarding the entries')
             for (const [i, _] of session.recommendations.entries()) {
                 session.setSuggestionState(i, 'Discard')
             }

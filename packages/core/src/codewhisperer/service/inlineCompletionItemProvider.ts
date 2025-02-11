@@ -2,6 +2,8 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
+
+/* eslint-disable aws-toolkits/no-console-log */
 import vscode, { Position } from 'vscode'
 import { getPrefixSuffixOverlap } from '../util/commonUtil'
 import { Recommendation } from '../client/codewhisperer'
@@ -94,6 +96,8 @@ export class CWInlineCompletionItemProvider implements vscode.InlineCompletionIt
         index: number,
         prefix: string
     ): vscode.InlineCompletionItem | undefined {
+        // eslint-disable-next-line aws-toolkits/no-console-log
+        console.log('creating inline completion results')
         if (!r.content.startsWith(prefix)) {
             return undefined
         }
@@ -129,17 +133,15 @@ export class CWInlineCompletionItemProvider implements vscode.InlineCompletionIt
         }
     }
 
-    // the returned completion items will always only contain one valid item
-    // this is to trace the current index of visible completion item
-    // so that reference tracker can show
-    // This hack can be removed once inlineCompletionAdditions API becomes public
-    provideInlineCompletionItems(
+    _completion(
         document: vscode.TextDocument,
         position: vscode.Position,
         _context: vscode.InlineCompletionContext,
         _token: vscode.CancellationToken
     ): vscode.ProviderResult<vscode.InlineCompletionItem[] | vscode.InlineCompletionList> {
+        console.log('providing inline completion items')
         if (position.line < 0 || position.isBefore(this.startPos)) {
+            console.log(`no completions: %O : %O`, position.line, position.isBefore(this.startPos))
             application()._clearCodeWhispererUIListener.fire()
             this.activeItemIndex = undefined
             return
@@ -161,6 +163,7 @@ export class CWInlineCompletionItemProvider implements vscode.InlineCompletionIt
         for (const i of iteratingIndexes) {
             const r = session.recommendations[i]
             const item = this.getInlineCompletionItem(document, r, start, end, i, prefix)
+            console.log('Got completion item: %O', item)
             if (item === undefined) {
                 continue
             }
@@ -190,5 +193,20 @@ export class CWInlineCompletionItemProvider implements vscode.InlineCompletionIt
         application()._clearCodeWhispererUIListener.fire()
         this.activeItemIndex = undefined
         return []
+    }
+
+    // the returned completion items will always only contain one valid item
+    // this is to trace the current index of visible completion item
+    // so that reference tracker can show
+    // This hack can be removed once inlineCompletionAdditions API becomes public
+    provideInlineCompletionItems(
+        document: vscode.TextDocument,
+        position: vscode.Position,
+        _context: vscode.InlineCompletionContext,
+        _token: vscode.CancellationToken
+    ): vscode.ProviderResult<vscode.InlineCompletionItem[] | vscode.InlineCompletionList> {
+        const result = this._completion(document, position, _context, _token)
+        console.log('completion result: %O', result)
+        return result
     }
 }

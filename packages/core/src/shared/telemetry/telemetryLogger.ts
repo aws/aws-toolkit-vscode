@@ -125,4 +125,8 @@ export class TelemetryLogger {
     public queryRegex(re: RegExp | string): MetricDatum[] {
         return this._metrics.filter((m) => m.Metadata?.some((md) => md.Value?.match(re) || md.Key?.match(re)))
     }
+
+    public list() {
+        return this._metrics
+    }
 }
