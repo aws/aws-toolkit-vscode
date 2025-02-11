@@ -19,7 +19,7 @@ import { Commands } from '../../shared/vscode/commands2'
 import { CodeWhispererSessionState } from '../util/codeWhispererSession'
 import { RecommendationHandler } from '../service/recommendationHandler'
 import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
-import { setContext } from '../../shared'
+import { setContext } from '../../shared/vscode/setContext'
 import { TelemetryHelper } from '../util/telemetryHelper'
 
 const case3TimeWindow = 30000 // 30 seconds

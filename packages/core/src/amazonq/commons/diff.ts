@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { fs } from '../../shared'
+import { fs } from '../../shared/fs/fs'
 import { diffLines } from 'diff'
 
 export async function openDiff(leftPath: string, rightPath: string, tabId: string, scheme: string) {

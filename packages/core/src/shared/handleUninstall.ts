@@ -10,7 +10,7 @@ import { existsSync } from 'fs' // eslint-disable-line no-restricted-imports
 import * as semver from 'semver'
 import { join } from 'path'
 import { getLogger } from './logger/logger'
-import { telemetry } from './telemetry'
+import { telemetry } from './telemetry/telemetry'
 import { VSCODE_EXTENSION_ID } from './extensions'
 
 /**

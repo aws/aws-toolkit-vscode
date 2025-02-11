@@ -6,7 +6,7 @@
 import { SpawnOptions } from 'child_process' // eslint-disable-line no-restricted-imports
 import { pushIf } from '../../utilities/collectionUtils'
 import * as nls from 'vscode-nls'
-import { getLogger, getDebugConsoleLogger, Logger } from '../../logger'
+import { getLogger, getDebugConsoleLogger, Logger } from '../../logger/logger'
 import { ChildProcess } from '../../utilities/processUtils'
 import { Timeout } from '../../utilities/timeoutUtils'
 import { removeAnsi } from '../../utilities/textUtilities'

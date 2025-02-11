@@ -32,7 +32,9 @@ import {
 } from './types'
 import { Writable } from 'stream'
 import { CodeWhispererSettings } from '../../codewhisperer/util/codewhispererSettings'
-import { fs, getLogger, globals } from '../../shared'
+import { fs } from '../../shared/fs/fs'
+import { getLogger } from '../../shared/logger/logger'
+import globals from '../../shared/extensionGlobals'
 
 const localize = nls.loadMessageBundle()
 

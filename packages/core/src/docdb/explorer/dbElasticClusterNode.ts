@@ -12,7 +12,7 @@ import { DocDBContext } from './docdbContext'
 import { copyToClipboard } from '../../shared/utilities/messages'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { getAwsConsoleUrl } from '../../shared/awsConsole'
-import { getLogger } from '../../shared/logger'
+import { getLogger } from '../../shared/logger/logger'
 
 /**
  * An AWS Explorer node representing DocumentDB elastic clusters.

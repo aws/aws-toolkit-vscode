@@ -11,7 +11,7 @@ const localize = nls.loadMessageBundle()
 import * as vscode from 'vscode'
 import { AwsContext } from '../awsContext'
 import { DefaultTelemetryService } from './telemetryService'
-import { getLogger } from '../logger'
+import { getLogger } from '../logger/logger'
 import { getComputeRegion, isAmazonQ, productName } from '../extensionUtilities'
 import { openSettingsId, Settings } from '../settings'
 import { getSessionId, TelemetryConfig } from './util'

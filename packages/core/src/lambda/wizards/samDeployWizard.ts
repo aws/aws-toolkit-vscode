@@ -11,7 +11,7 @@ const localize = nls.loadMessageBundle()
 import * as path from 'path'
 import * as vscode from 'vscode'
 import * as localizedText from '../../shared/localizedText'
-import { getLogger } from '../../shared/logger'
+import { getLogger } from '../../shared/logger/logger'
 import { createHelpButton } from '../../shared/ui/buttons'
 import * as input from '../../shared/ui/input'
 import * as picker from '../../shared/ui/picker'

@@ -22,7 +22,7 @@ import { getSourceNode } from '../shared/utilities/treeNodeUtils'
 import { tailLogGroup } from '../awsService/cloudWatchLogs/commands/tailLogGroup'
 import { liveTailRegistry, liveTailCodeLensProvider } from '../awsService/cloudWatchLogs/activation'
 import { getFunctionLogGroupName } from '../awsService/cloudWatchLogs/activation'
-import { ToolkitError, isError } from '../shared'
+import { ToolkitError, isError } from '../shared/errors'
 import { LogStreamFilterResponse } from '../awsService/cloudWatchLogs/wizard/liveTailLogStreamSubmenu'
 
 /**

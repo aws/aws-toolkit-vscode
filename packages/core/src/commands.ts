@@ -32,7 +32,7 @@ import {
     promptAndUseConnection,
 } from './auth/utils'
 import { showCodeWhispererConnectionPrompt } from './codewhisperer/util/showSsoPrompt'
-import { CommonAuthWebview } from './login/webview'
+import { CommonAuthWebview } from './login/webview/vue/backend'
 import { AuthSource, AuthSources } from './login/webview/util'
 import { ServiceItemId, isServiceItemId } from './login/webview/vue/types'
 import { authHelpUrl } from './shared/constants'
@@ -46,7 +46,7 @@ import { Commands, VsCodeCommandArg, placeholder, vscodeComponent } from './shar
 import { isValidResponse } from './shared/wizards/wizard'
 import { CancellationError } from './shared/utilities/timeoutUtils'
 import { ToolkitError } from './shared/errors'
-import { setContext } from './shared'
+import { setContext } from './shared/vscode/setContext'
 
 function switchConnections(auth: Auth | TreeNode | unknown) {
     if (!(auth instanceof Auth)) {
