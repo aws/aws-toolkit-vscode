@@ -82,16 +82,39 @@ describe('CodeWhisperer-customizationUtils', function () {
         assert.strictEqual(actualCustomization.name, selectedCustomization.name)
     })
 
-    it.skip('Returns AB customization', async function () {
-        sinon.stub(AuthUtil.instance, 'isValidEnterpriseSsoInUse').returns(true)
+    it(`setSelectedCsutomization should set correctly if override is false or not specified`, async function () {
+        await setSelectedCustomization({ arn: 'FOO' }, false)
+        assert.strictEqual(getSelectedCustomization().arn, 'FOO')
 
-        await setSelectedCustomization({
-            arn: '',
-            name: '',
-        })
+        await setSelectedCustomization({ arn: 'BAR' })
+        assert.strictEqual(getSelectedCustomization().arn, 'BAR')
 
-        const returnedCustomization = getSelectedCustomization()
+        await setSelectedCustomization({ arn: 'BAZ' })
+        assert.strictEqual(getSelectedCustomization().arn, 'BAZ')
 
-        assert.strictEqual(returnedCustomization.name, featureCustomization.name)
+        await setSelectedCustomization({ arn: 'QOO' }, false)
+        assert.strictEqual(getSelectedCustomization().arn, 'QOO')
+    })
+
+    it(`setSelectedCsutomization should only do once for override per customization arn`, async function () {
+        await setSelectedCustomization({ arn: 'OVERRIDE' }, true)
+        assert.strictEqual(getSelectedCustomization().arn, 'OVERRIDE')
+
+        await setSelectedCustomization({ arn: 'FOO' }, false)
+        assert.strictEqual(getSelectedCustomization().arn, 'FOO')
+
+        // Should NOT override only happen per customization arn
+        await setSelectedCustomization({ arn: 'OVERRIDE' }, true)
+        assert.strictEqual(getSelectedCustomization().arn, 'FOO')
+
+        await setSelectedCustomization({ arn: 'FOO' }, false)
+        assert.strictEqual(getSelectedCustomization().arn, 'FOO')
+
+        await setSelectedCustomization({ arn: 'BAR' }, false)
+        assert.strictEqual(getSelectedCustomization().arn, 'BAR')
+
+        // Sould override as it's a different arn
+        await setSelectedCustomization({ arn: 'OVERRIDE_V2' }, true)
+        assert.strictEqual(getSelectedCustomization().arn, 'OVERRIDE_V2')
     })
 })
