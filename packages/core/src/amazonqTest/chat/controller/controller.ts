@@ -58,7 +58,7 @@ import {
 import { UserIntent } from '@amzn/codewhisperer-streaming'
 import { getSelectedCustomization } from '../../../codewhisperer/util/customizationUtil'
 import { createCodeWhispererChatStreamingClient } from '../../../shared/clients/codewhispererChatClient'
-import { ChatTriggerType } from '../../../codewhispererChat/controllers/chat/model'
+import { ChatItemVotedMessage, ChatTriggerType } from '../../../codewhispererChat/controllers/chat/model'
 import { triggerPayloadToChatRequest } from '../../../codewhispererChat/controllers/chat/chatRequest/converter'
 import { EditorContentController } from '../../../amazonq/commons/controllers/contentController'
 import { amazonQTabSuffix } from '../../../shared/constants'
@@ -66,6 +66,7 @@ import { applyChanges } from '../../../shared/utilities/textDocumentUtilities'
 import { telemetry } from '../../../shared/telemetry/telemetry'
 import { CodeReference } from '../../../amazonq'
 import { CodeWhispererSettings } from '../../../codewhisperer/util/codewhispererSettings'
+import globals from '../../../shared/extensionGlobals'
 
 export interface TestChatControllerEventEmitters {
     readonly tabOpened: vscode.EventEmitter<any>
@@ -82,6 +83,8 @@ export interface TestChatControllerEventEmitters {
     readonly errorThrown: vscode.EventEmitter<any>
     readonly insertCodeAtCursorPosition: vscode.EventEmitter<any>
     readonly processResponseBodyLinkClick: vscode.EventEmitter<any>
+    readonly processChatItemVotedMessage: vscode.EventEmitter<any>
+    readonly processChatItemFeedbackMessage: vscode.EventEmitter<any>
 }
 
 type OpenDiffMessage = {
@@ -160,6 +163,18 @@ export class TestController {
             return this.processLink(data)
         })
 
+        this.chatControllerMessageListeners.processChatItemVotedMessage.event((data) => {
+            this.processChatItemVotedMessage(data).catch((e) => {
+                getLogger().error('processChatItemVotedMessage failed: %s', (e as Error).message)
+            })
+        })
+
+        this.chatControllerMessageListeners.processChatItemFeedbackMessage.event((data) => {
+            this.processChatItemFeedbackMessage(data).catch((e) => {
+                getLogger().error('processChatItemFeedbackMessage failed: %s', (e as Error).message)
+            })
+        })
+
         this.chatControllerMessageListeners.followUpClicked.event((data) => {
             switch (data.followUp.type) {
                 case FollowUpTypes.ViewDiff:
@@ -207,6 +222,31 @@ export class TestController {
             logger.error('tabOpened failed: %O', err)
             this.messenger.sendErrorMessage(err.message, message.tabID)
         }
+    }
+
+    private async processChatItemVotedMessage(message: ChatItemVotedMessage) {
+        const session = this.sessionStorage.getSession()
+
+        telemetry.amazonq_feedback.emit({
+            featureId: 'amazonQTest',
+            amazonqConversationId: session.startTestGenerationRequestId,
+            credentialStartUrl: AuthUtil.instance.startUrl,
+            interactionType: message.vote,
+        })
+    }
+
+    private async processChatItemFeedbackMessage(message: any) {
+        const session = this.sessionStorage.getSession()
+
+        await globals.telemetry.postFeedback({
+            comment: `${JSON.stringify({
+                type: 'testgen-chat-answer-feedback',
+                amazonqConversationId: session.startTestGenerationRequestId,
+                reason: message?.selectedOption,
+                userComment: message?.comment,
+            })}`,
+            sentiment: 'Negative',
+        })
     }
 
     private async tabClosed(data: any) {
