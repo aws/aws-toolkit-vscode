@@ -4,7 +4,6 @@
  */
 
 import fs from '../fs/fs'
-import * as vscode from 'vscode'
 import { ToolkitError } from '../errors'
 import * as semver from 'semver'
 import * as path from 'path'
@@ -35,6 +34,7 @@ export class LanguageServerResolver {
      */
     async resolve() {
         const timeout = new Timeout(5000)
+        await showMessageWithCancel(`Downloading '${this.lsName}' language server`, timeout)
         function getServerVersion(result: LspResult) {
             return {
                 languageServerVersion: result.version,
