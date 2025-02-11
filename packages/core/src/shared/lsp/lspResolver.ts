@@ -14,6 +14,8 @@ import { getApplicationSupportFolder } from '../vscode/env'
 import { createHash } from '../crypto'
 import { lspSetupStage, StageResolver, tryStageResolvers } from './utils/setupStage'
 import { HttpResourceFetcher } from '../resourcefetcher/httpResourceFetcher'
+import { showMessageWithCancel } from '../../shared/utilities/messages'
+import { Timeout } from '../utilities/timeoutUtils'
 
 export class LanguageServerResolver {
     constructor(
@@ -31,31 +33,37 @@ export class LanguageServerResolver {
      * @throws ToolkitError if no compatible version can be found
      */
     async resolve() {
-        const latestVersion = this.latestCompatibleLspVersion()
-        const targetContents = this.getLSPTargetContents(latestVersion)
-        const cacheDirectory = this.getDownloadDirectory(latestVersion.serverVersion)
-
-        const serverResolvers: StageResolver<LspResult>[] = [
-            {
-                resolve: async () => await this.getLocalServer(cacheDirectory, latestVersion, targetContents),
-                telemetryMetadata: { id: this.lsName, languageServerLocation: 'cache' },
-            },
-            {
-                resolve: async () => await this.fetchRemoteServer(cacheDirectory, latestVersion, targetContents),
-                telemetryMetadata: { id: this.lsName, languageServerLocation: 'remote' },
-            },
-            {
-                resolve: async () => await this.getFallbackServer(latestVersion),
-                telemetryMetadata: { id: this.lsName, languageServerLocation: 'fallback' },
-            },
-        ]
-
-        return await tryStageResolvers('getServer', serverResolvers, getServerVersion)
-
+        const timeout = new Timeout(5000)
+        await showMessageWithCancel(`Downloading '${this.lsName}' language server`, timeout)
         function getServerVersion(result: LspResult) {
             return {
                 languageServerVersion: result.version,
             }
+        }
+        try {
+            const latestVersion = this.latestCompatibleLspVersion()
+            const targetContents = this.getLSPTargetContents(latestVersion)
+            const cacheDirectory = this.getDownloadDirectory(latestVersion.serverVersion)
+
+            const serverResolvers: StageResolver<LspResult>[] = [
+                {
+                    resolve: async () => await this.getLocalServer(cacheDirectory, latestVersion, targetContents),
+                    telemetryMetadata: { id: this.lsName, languageServerLocation: 'cache' },
+                },
+                {
+                    resolve: async () => await this.fetchRemoteServer(cacheDirectory, latestVersion, targetContents),
+                    telemetryMetadata: { id: this.lsName, languageServerLocation: 'remote' },
+                },
+                {
+                    resolve: async () => await this.getFallbackServer(latestVersion),
+                    telemetryMetadata: { id: this.lsName, languageServerLocation: 'fallback' },
+                },
+            ]
+
+            return await tryStageResolvers('getServer', serverResolvers, getServerVersion)
+        } finally {
+            logger.info(`Finished setting up LSP server`)
+            timeout.cancel()
         }
     }
 
