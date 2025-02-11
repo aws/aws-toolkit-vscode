@@ -24,9 +24,8 @@ import {
     UpdatePlaceholderMessage,
     UpdatePromptProgressMessage,
 } from './connectorMessages'
-import { FollowUpTypes } from '../types'
+import { DeletedFileInfo, FollowUpTypes, NewFileInfo } from '../types'
 import { messageWithConversationId } from '../../../amazonqFeatureDev/userFacingText'
-import { DeletedFileInfo, NewFileInfo } from '../../../amazonqFeatureDev/types'
 import { FeatureAuthState } from '../../../codewhisperer/util/authUtil'
 
 export class Messenger {

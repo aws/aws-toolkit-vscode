@@ -28,7 +28,6 @@ import { Range } from '../client/codewhispereruserclient'
 let spawnResult: ChildProcess | null = null
 let isCancelled = false
 export async function startTestGenerationProcess(
-    fileName: string,
     filePath: string,
     userInputPrompt: string,
     tabID: string,
@@ -116,7 +115,7 @@ export async function startTestGenerationProcess(
         const jobStatus = await pollTestJobStatus(
             testJob.testGenerationJob.testGenerationJobId,
             testJob.testGenerationJob.testGenerationJobGroupName,
-            fileName,
+            filePath,
             initialExecution
         )
         // TODO: Send status to test summary
