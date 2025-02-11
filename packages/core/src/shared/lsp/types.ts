@@ -4,7 +4,7 @@
  */
 
 import { getLogger } from '../logger/logger'
-import { LanguageServerLocation, ManifestLocation } from '../telemetry'
+import { LanguageServerLocation, ManifestLocation } from '../telemetry/telemetry'
 
 export const logger = getLogger('lsp')
 

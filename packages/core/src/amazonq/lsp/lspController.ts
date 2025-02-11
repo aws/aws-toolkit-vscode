@@ -15,7 +15,7 @@ import { isCloud9 } from '../../shared/extensionUtilities'
 import globals, { isWeb } from '../../shared/extensionGlobals'
 import { isAmazonInternalOs } from '../../shared/vscode/env'
 import { WorkspaceLSPResolver } from './workspaceInstaller'
-import { lspSetupStage } from '../../shared'
+import { lspSetupStage } from '../../shared/lsp/utils/setupStage'
 
 export interface Chunk {
     readonly filePath: string

@@ -10,7 +10,8 @@ import { LanguageServerResolver } from '../../shared/lsp/lspResolver'
 import { Range } from 'semver'
 import { getNodeExecutableName } from '../../shared/lsp/utils/platform'
 import { fs } from '../../shared/fs/fs'
-import { cleanLspDownloads, getLogger } from '../../shared'
+import { cleanLspDownloads } from '../../shared/lsp/utils/cleanup'
+import { getLogger } from '../../shared/logger/logger'
 
 const manifestUrl = 'https://aws-toolkit-language-servers.amazonaws.com/q-context/manifest.json'
 // this LSP client in Q extension is only going to work with these LSP server versions

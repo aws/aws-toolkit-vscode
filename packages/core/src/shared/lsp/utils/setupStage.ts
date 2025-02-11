@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { LanguageServerSetup, LanguageServerSetupStage, telemetry } from '../../telemetry'
+import { LanguageServerSetup, LanguageServerSetupStage, telemetry } from '../../telemetry/telemetry'
 import { tryFunctions } from '../../utilities/tsUtils'
 
 /**
