@@ -82,7 +82,7 @@ describe('CodeWhisperer-customizationUtils', function () {
         assert.strictEqual(actualCustomization.name, selectedCustomization.name)
     })
 
-    it(`setSelectedCsutomization should set correctly if override is false or not specified`, async function () {
+    it(`setSelectedCustomization should set to the customization provided if override option is false or not specified`, async function () {
         await setSelectedCustomization({ arn: 'FOO' }, false)
         assert.strictEqual(getSelectedCustomization().arn, 'FOO')
 
@@ -96,7 +96,7 @@ describe('CodeWhisperer-customizationUtils', function () {
         assert.strictEqual(getSelectedCustomization().arn, 'QOO')
     })
 
-    it(`setSelectedCsutomization should only do once for override per customization arn`, async function () {
+    it(`setSelectedCustomization should only set to the customization provided once for override per customization arn if override is true`, async function () {
         await setSelectedCustomization({ arn: 'OVERRIDE' }, true)
         assert.strictEqual(getSelectedCustomization().arn, 'OVERRIDE')
 
