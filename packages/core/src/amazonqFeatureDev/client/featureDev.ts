@@ -10,7 +10,7 @@ import { ServiceOptions } from '../../shared/awsClientBuilder'
 import globals from '../../shared/extensionGlobals'
 import { getLogger } from '../../shared/logger/logger'
 import * as FeatureDevProxyClient from './featuredevproxyclient'
-import { featureName } from '../constants'
+import { featureName, startTaskAssistLimitReachedMessage } from '../constants'
 import { CodeReference } from '../../amazonq/webview/ui/connector'
 import {
     ApiError,
@@ -32,6 +32,7 @@ import {
     MetricData,
     TelemetryEvent,
 } from './featuredevproxyclient'
+import { FeatureClient } from '../../amazonq/client/client'
 
 // Re-enable once BE is able to handle retries.
 const writeAPIRetryOptions = {
@@ -62,7 +63,7 @@ export async function createFeatureDevProxyClient(options?: Partial<ServiceOptio
     )) as FeatureDevProxyClient
 }
 
-export class FeatureDevClient {
+export class FeatureDevClient implements FeatureClient {
     public async getClient(options?: Partial<ServiceOptions>) {
         // Should not be stored for the whole session.
         // Client has to be reinitialized for each request so we always have a fresh bearerToken
@@ -185,10 +186,7 @@ export class FeatureDevClient {
             )
             if (isAwsError(e)) {
                 // API Front-end will throw Throttling if conversation limit is reached. API Front-end monitors StartCodeGeneration for throttling
-                if (
-                    e.code === 'ThrottlingException' &&
-                    e.message.includes('StartTaskAssistCodeGeneration reached for this month.')
-                ) {
+                if (e.code === 'ThrottlingException' && e.message.includes(startTaskAssistLimitReachedMessage)) {
                     throw new MonthlyConversationLimitError(e.message)
                 }
                 // BE service will throw ServiceQuota if code generation iteration limit is reached
