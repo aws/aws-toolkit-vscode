@@ -9,7 +9,7 @@ import { EnvironmentVariables } from '../../shared/environmentVariables'
 import { CredentialType } from '../../shared/telemetry/telemetry.gen'
 import { getStringHash } from '../../shared/utilities/textUtilities'
 import { CredentialsId, CredentialsProvider, CredentialsProviderType } from './credentials'
-import { getLogger } from '../../shared/logger'
+import { getLogger } from '../../shared/logger/logger'
 import globals from '../../shared/extensionGlobals'
 
 /**

@@ -14,7 +14,7 @@
 import * as vscode from 'vscode'
 import http from 'http'
 import https from 'https'
-import { getLogger } from '../../shared/logger'
+import { getLogger } from '../../shared/logger/logger'
 
 // The path to the exported class can be found in the npm contents
 // https://www.npmjs.com/package/@vscode/proxy-agent?activeTab=code

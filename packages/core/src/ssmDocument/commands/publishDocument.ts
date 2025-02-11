@@ -11,7 +11,7 @@ import { DefaultSsmDocumentClient, SsmDocumentClient } from '../../shared/client
 import { ssmJson, ssmYaml } from '../../shared/constants'
 
 import * as localizedText from '../../shared/localizedText'
-import { getLogger, Logger } from '../../shared/logger'
+import { getLogger, Logger } from '../../shared/logger/logger'
 import {
     PublishSSMDocumentAction,
     PublishSSMDocumentWizard,

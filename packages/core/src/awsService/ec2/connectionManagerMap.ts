@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { getLogger } from '../../shared'
+import { getLogger } from '../../shared/logger/logger'
 import { Ec2Connecter } from './model'
 
 export class Ec2ConnecterMap extends Map<string, Ec2Connecter> {

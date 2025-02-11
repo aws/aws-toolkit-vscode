@@ -4,8 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { Logger, LogLevel, getLogger } from '.'
-import { fromVscodeLogLevel, setLogger } from './logger'
+import { Logger, LogLevel, getLogger, fromVscodeLogLevel, setLogger } from './logger'
 import { ToolkitLogger } from './toolkitLogger'
 import { Settings } from '../settings'
 import { Logging } from './commands'

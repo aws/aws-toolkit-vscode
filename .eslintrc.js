@@ -180,6 +180,7 @@ module.exports = {
         'aws-toolkits/no-console-log': 'error',
         'aws-toolkits/no-json-stringify-in-log': 'error',
         'aws-toolkits/no-printf-mismatch': 'error',
+        'aws-toolkits/no-index-import': 'error',
         'no-restricted-imports': [
             'error',
             {

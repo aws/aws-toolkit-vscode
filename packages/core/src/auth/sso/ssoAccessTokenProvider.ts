@@ -21,7 +21,7 @@ import {
     isClientFault,
     isNetworkError,
 } from '../../shared/errors'
-import { getLogger } from '../../shared/logger'
+import { getLogger } from '../../shared/logger/logger'
 import { AwsLoginWithBrowser, AwsRefreshCredentials, telemetry } from '../../shared/telemetry/telemetry'
 import { indent, toBase64URL } from '../../shared/utilities/textUtilities'
 import { AuthSSOServer } from './server'
@@ -33,7 +33,7 @@ import { randomUUID } from '../../shared/crypto'
 import { getExtRuntimeContext } from '../../shared/vscode/env'
 import { showInputBox } from '../../shared/ui/inputPrompter'
 import { AmazonQPromptSettings, DevSettings, PromptSettings, ToolkitPromptSettings } from '../../shared/settings'
-import { debounce, onceChanged } from '../../shared/utilities/functionUtils'
+import { onceChanged } from '../../shared/utilities/functionUtils'
 import { NestedMap } from '../../shared/utilities/map'
 import { asStringifiedStack } from '../../shared/telemetry/spans'
 import { showViewLogsMessage } from '../../shared/utilities/messages'
@@ -97,20 +97,7 @@ export abstract class SsoAccessTokenProvider {
         this.reAuthState.set(this.profile, { reAuthReason: `invalidate():${reason}` })
     }
 
-    /**
-     * Sometimes we get many calls at once and this
-     * can trigger redundant disk reads, or token refreshes.
-     * We debounce to avoid this.
-     *
-     * NOTE: The property {@link getTokenDebounced()} does not work with being stubbed for tests, so
-     * this redundant function was created to work around that.
-     */
     public async getToken(): Promise<SsoToken | undefined> {
-        return this.getTokenDebounced()
-    }
-    private getTokenDebounced = debounce(() => this._getToken(), 50)
-    /** Exposed for testing purposes only */
-    public async _getToken(): Promise<SsoToken | undefined> {
         const data = await this.cache.token.load(this.tokenCacheKey)
         SsoAccessTokenProvider.logIfChanged(
             indent(

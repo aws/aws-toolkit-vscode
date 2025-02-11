@@ -18,8 +18,8 @@ import {
     sessionWriteFile,
     assertTelemetry,
 } from 'aws-core-vscode/test'
-import { CurrentWsFolders, CodeGenState, FeatureDevClient, featureDevScheme } from 'aws-core-vscode/amazonqFeatureDev'
-import { Messenger } from 'aws-core-vscode/amazonq'
+import { FeatureDevClient, featureDevScheme, FeatureDevCodeGenState } from 'aws-core-vscode/amazonqFeatureDev'
+import { Messenger, CurrentWsFolders } from 'aws-core-vscode/amazonq'
 import path from 'path'
 import { fs } from 'aws-core-vscode/shared'
 
@@ -75,7 +75,7 @@ describe('session', () => {
                 workspaceFolders,
             }
 
-            const codeGenState = new CodeGenState(
+            const codeGenState = new FeatureDevCodeGenState(
                 testConfig,
                 [
                     {

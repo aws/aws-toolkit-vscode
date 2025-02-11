@@ -6,7 +6,7 @@
 import * as AWS from 'aws-sdk'
 import { Token } from 'aws-sdk/lib/token'
 import { Connection } from '../connection'
-import { getLogger } from '../../shared/logger'
+import { getLogger } from '../../shared/logger/logger'
 
 /**
  * {@link AWS.Token} is defined when {@link Token} is imported.

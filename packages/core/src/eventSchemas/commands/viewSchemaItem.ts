@@ -7,7 +7,7 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
-import { getLogger, Logger } from '../../shared/logger'
+import { getLogger, Logger } from '../../shared/logger/logger'
 import { Result } from '../../shared/telemetry/telemetry'
 import { getTabSizeSetting } from '../../shared/utilities/editorUtilities'
 import { SchemaItemNode } from '../explorer/schemaItemNode'

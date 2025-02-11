@@ -15,7 +15,7 @@ import {
     getCodeCatalystConfig,
 } from '../shared/clients/codecatalystClient'
 import { DevEnvClient } from '../shared/clients/devenvClient'
-import { getLogger } from '../shared/logger'
+import { getLogger } from '../shared/logger/logger'
 import { AsyncCollection, toCollection } from '../shared/utilities/asyncCollection'
 import { getCodeCatalystSpaceName, getCodeCatalystProjectName, getCodeCatalystDevEnvId } from '../shared/vscode/env'
 import { sshAgentSocketVariable, startSshAgent, startVscodeRemote } from '../shared/extensions/ssh'
@@ -29,7 +29,7 @@ import { ToolkitError } from '../shared/errors'
 import { Result } from '../shared/utilities/result'
 import { EnvProvider, VscodeRemoteConnection, createBoundProcess, ensureDependencies } from '../shared/remoteSession'
 import { SshConfig, sshLogFileLocation } from '../shared/sshConfig'
-import { fs } from '../shared'
+import { fs } from '../shared/fs/fs'
 
 export type DevEnvironmentId = Pick<DevEnvironment, 'id' | 'org' | 'project'>
 export const connectScriptPrefix = 'codecatalyst_connect'

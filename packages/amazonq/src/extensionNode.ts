@@ -82,7 +82,7 @@ async function getAuthState(): Promise<Omit<AuthUserState, 'source'>> {
     try {
         // May call connection validate functions that try to refresh the token.
         // This could result in network errors.
-        authState = (await AuthUtil.instance.getChatAuthState(false)).codewhispererChat
+        authState = (await AuthUtil.instance._getChatAuthState(false)).codewhispererChat
     } catch (err) {
         if (
             isNetworkError(err) &&

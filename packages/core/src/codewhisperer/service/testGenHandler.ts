@@ -4,7 +4,7 @@
  */
 
 import { ZipMetadata } from '../util/zipUtil'
-import { getLogger } from '../../shared/logger'
+import { getLogger } from '../../shared/logger/logger'
 import * as CodeWhispererConstants from '../models/constants'
 import * as codewhispererClient from '../client/codewhisperer'
 import * as codeWhisperer from '../client/codewhisperer'
@@ -23,7 +23,6 @@ import {
     TestGenTimedOutError,
 } from '../../amazonqTest/error'
 import { getMd5, uploadArtifactToS3 } from './securityScanHandler'
-import { fs, randomUUID, sleep, tempDirPath, waitUntil } from '../../shared'
 import { ShortAnswer, testGenState } from '../models/model'
 import { ChatSessionManager } from '../../amazonqTest/chat/storages/chatSession'
 import { createCodeWhispererChatStreamingClient } from '../../shared/clients/codewhispererChatClient'
@@ -33,6 +32,10 @@ import path from 'path'
 import { ExportIntent } from '@amzn/codewhisperer-streaming'
 import { glob } from 'glob'
 import { UserWrittenCodeTracker } from '../tracker/userWrittenCodeTracker'
+import { randomUUID } from '../../shared/crypto'
+import { sleep } from '../../shared/utilities/timeoutUtils'
+import { tempDirPath } from '../../shared/filesystemUtilities'
+import fs from '../../shared/fs/fs'
 
 // TODO: Get TestFileName and Framework and to error message
 export function throwIfCancelled() {
@@ -54,39 +57,17 @@ export async function getPresignedUrlAndUploadTestGen(zipMetadata: ZipMetadata) 
         uploadIntent: CodeWhispererConstants.testGenUploadIntent,
     }
     logger.verbose(`Prepare for uploading src context...`)
-    let errorMessage = ''
-    const result = await waitUntil(
-        async () => {
-            try {
-                const srcResp = await codeWhisperer.codeWhispererClient.createUploadUrl(srcReq)
-                // Only return the response if it's successful, otherwise return false to continue retrying
-                return srcResp.$response?.httpResponse.statusCode === 200 ? srcResp : false
-            } catch (err: any) {
-                getLogger().error(
-                    `Failed getting presigned url for uploading src context. Request id: ${err.requestId}`
-                )
-                errorMessage = err.message
-                return false // Return false to continue retrying
-            }
-        },
-        {
-            interval: 200, // 200ms between attempts
-            timeout: 1000, // 1 second timeout
-            truthy: true,
-        }
-    )
-
-    if (!result) {
-        throw new CreateUploadUrlError(errorMessage)
-    }
-
-    logger.verbose(`CreateUploadUrlRequest requestId: ${result.$response.requestId}`)
+    const srcResp = await codeWhisperer.codeWhispererClient.createUploadUrl(srcReq).catch((err) => {
+        getLogger().error(`Failed getting presigned url for uploading src context. Request id: ${err.requestId}`)
+        throw new CreateUploadUrlError(err.message)
+    })
+    logger.verbose(`CreateUploadUrlRequest requestId: ${srcResp.$response.requestId}`)
     logger.verbose(`Complete Getting presigned Url for uploading src context.`)
     logger.verbose(`Uploading src context...`)
-    await uploadArtifactToS3(zipMetadata.zipFilePath, result, CodeWhispererConstants.FeatureUseCase.TEST_GENERATION)
+    await uploadArtifactToS3(zipMetadata.zipFilePath, srcResp, CodeWhispererConstants.FeatureUseCase.TEST_GENERATION)
     logger.verbose(`Complete uploading src context.`)
     const artifactMap: ArtifactMap = {
-        SourceCode: result.uploadId,
+        SourceCode: srcResp.uploadId,
     }
     return artifactMap
 }
@@ -124,31 +105,11 @@ export async function createTestJob(
     logger.debug('target line range start: %O', firstTargetLineRangeList?.start)
     logger.debug('target line range end: %O', firstTargetLineRangeList?.end)
 
-    let errorMessage = ''
-    const resp = await waitUntil(
-        async () => {
-            try {
-                const response = await codewhispererClient.codeWhispererClient.startTestGeneration(req)
-                // Only return the response if it's successful, otherwise return false to continue retrying
-                return response.$response?.httpResponse.statusCode === 200 ? response : false
-            } catch (err: any) {
-                ChatSessionManager.Instance.getSession().startTestGenerationRequestId = err.requestId
-                logger.error(`Failed creating test job. Request id: ${err.requestId}`)
-                errorMessage = err.message
-                return false // Return false to continue retrying
-            }
-        },
-        {
-            interval: 200, // 200ms between attempts
-            timeout: 1000, // 1 second timeout
-            truthy: true,
-        }
-    )
-
-    if (!resp) {
-        throw new CreateTestJobError(errorMessage)
-    }
-
+    const resp = await codewhispererClient.codeWhispererClient.startTestGeneration(req).catch((err) => {
+        ChatSessionManager.Instance.getSession().startTestGenerationRequestId = err.requestId
+        logger.error(`Failed creating test job. Request id: ${err.requestId}`)
+        throw new CreateTestJobError(err.message)
+    })
     logger.info('Unit test generation request id: %s', resp.$response.requestId)
     logger.debug('Unit test generation data: %O', resp.$response.data)
     ChatSessionManager.Instance.getSession().startTestGenerationRequestId = resp.$response.requestId
@@ -168,7 +129,7 @@ export async function createTestJob(
 export async function pollTestJobStatus(
     jobId: string,
     jobGroupName: string,
-    fileName: string,
+    filePath: string,
     initialExecution: boolean
 ) {
     const session = ChatSessionManager.Instance.getSession()
@@ -226,7 +187,7 @@ export async function pollTestJobStatus(
                             shortAnswer,
                             testGenerationJobGroupName: resp.testGenerationJob?.testGenerationJobGroupName,
                             testGenerationJobId: resp.testGenerationJob?.testGenerationJobId,
-                            fileName,
+                            filePath,
                         })
                     }
                 }

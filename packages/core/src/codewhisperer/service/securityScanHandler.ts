@@ -4,7 +4,7 @@
  */
 
 import { DefaultCodeWhispererClient } from '../client/codewhisperer'
-import { getLogger } from '../../shared/logger'
+import { getLogger } from '../../shared/logger/logger'
 import * as vscode from 'vscode'
 import {
     AggregatedCodeScanIssue,
@@ -14,7 +14,7 @@ import {
     CodeScanStoppedError,
     onDemandFileScanState,
 } from '../models/model'
-import { sleep, waitUntil } from '../../shared/utilities/timeoutUtils'
+import { sleep } from '../../shared/utilities/timeoutUtils'
 import * as codewhispererClient from '../client/codewhisperer'
 import * as CodeWhispererConstants from '../models/constants'
 import { existsSync, statSync, readFileSync } from 'fs' // eslint-disable-line no-restricted-imports
@@ -363,47 +363,29 @@ export async function uploadArtifactToS3(
         headersObj['x-amz-server-side-encryption-aws-kms-key-id'] = resp.kmsKeyArn
     }
 
-    let errorMessage = ''
-    const isCodeScan = featureUseCase === FeatureUseCase.CODE_SCAN
-    const result = await waitUntil(
-        async () => {
-            try {
-                const response = await request.fetch('PUT', resp.uploadUrl, {
-                    body: readFileSync(fileName),
-                    headers: resp?.requestHeaders ?? headersObj,
-                }).response
-
-                logger.debug(`StatusCode: ${response.status}, Text: ${response.statusText}`)
-                return response.status === 200 ? response : false
-            } catch (error) {
-                const featureType = isCodeScan ? 'security scans' : 'unit test generation'
-                const defaultMessage = isCodeScan ? 'Security scan failed.' : 'Test generation failed.'
-
-                getLogger().error(
-                    `Amazon Q is unable to upload workspace artifacts to Amazon S3 for ${featureType}. ` +
-                        'For more information, see the Amazon Q documentation or contact your network or organization administrator.'
-                )
-                const errorDesc = getTelemetryReasonDesc(error)
-                const errorCodes = new Map([
-                    ['403', '"PUT" request failed with code "403"'],
-                    ['503', '"PUT" request failed with code "503"'],
-                ])
-
-                errorMessage = errorDesc?.includes('"PUT" request failed with code "')
-                    ? (errorCodes.get(errorDesc.match(/\d+/)?.[0] ?? '') ?? errorDesc)
-                    : (errorDesc ?? defaultMessage)
-
-                return false // Return false to continue retrying
-            }
-        },
-        {
-            interval: 200, // 200ms between attempts
-            timeout: 1000, // 1 second timeout
-            truthy: true,
+    try {
+        const response = await request.fetch('PUT', resp.uploadUrl, {
+            body: readFileSync(fileName),
+            headers: resp?.requestHeaders ?? headersObj,
+        }).response
+        logger.debug(`StatusCode: ${response.status}, Text: ${response.statusText}`)
+    } catch (error) {
+        let errorMessage = ''
+        const isCodeScan = featureUseCase === FeatureUseCase.CODE_SCAN
+        const featureType = isCodeScan ? 'security scans' : 'unit test generation'
+        const defaultMessage = isCodeScan ? 'Security scan failed.' : 'Test generation failed.'
+        getLogger().error(
+            `Amazon Q is unable to upload workspace artifacts to Amazon S3 for ${featureType}. ` +
+                'For more information, see the Amazon Q documentation or contact your network or organization administrator.'
+        )
+        const errorDesc = getTelemetryReasonDesc(error)
+        if (errorDesc?.includes('"PUT" request failed with code "403"')) {
+            errorMessage = '"PUT" request failed with code "403"'
+        } else if (errorDesc?.includes('"PUT" request failed with code "503"')) {
+            errorMessage = '"PUT" request failed with code "503"'
+        } else {
+            errorMessage = errorDesc ?? defaultMessage
         }
-    )
-
-    if (!result) {
         throw isCodeScan ? new UploadArtifactToS3Error(errorMessage) : new UploadTestArtifactToS3Error(errorMessage)
     }
 }

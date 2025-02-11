@@ -4,7 +4,7 @@
  */
 import { Messenger } from '../amazonq/commons/connector/baseMessenger'
 import { AppToWebViewMessageDispatcher } from '../amazonq/commons/connector/connectorMessages'
-import { messageWithConversationId } from '../amazonqFeatureDev'
+import { messageWithConversationId } from '../amazonqFeatureDev/userFacingText'
 import { i18n } from '../shared/i18n-helper'
 import { docGenerationProgressMessage, DocGenerationStep, Mode, NewSessionFollowUps } from './constants'
 import { inProgress } from './types'
