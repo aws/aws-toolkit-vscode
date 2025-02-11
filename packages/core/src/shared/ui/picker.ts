@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
-import { getLogger } from '../logger'
+import { getLogger } from '../logger/logger'
 import { IteratorTransformer } from '../utilities/collectionUtils'
 import { createRefreshButton } from './buttons'
 

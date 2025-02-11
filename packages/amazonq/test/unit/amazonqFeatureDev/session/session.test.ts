@@ -18,8 +18,8 @@ import {
     sessionWriteFile,
     assertTelemetry,
 } from 'aws-core-vscode/test'
-import { CurrentWsFolders, CodeGenState, FeatureDevClient, featureDevScheme } from 'aws-core-vscode/amazonqFeatureDev'
-import { Messenger } from 'aws-core-vscode/amazonq'
+import { FeatureDevClient, featureDevScheme, FeatureDevCodeGenState } from 'aws-core-vscode/amazonqFeatureDev'
+import { Messenger, CurrentWsFolders } from 'aws-core-vscode/amazonq'
 import path from 'path'
 import { fs } from 'aws-core-vscode/shared'
 
@@ -38,8 +38,9 @@ describe('session', () => {
     describe('preloader', () => {
         it('emits start chat telemetry', async () => {
             const session = await createSession({ messenger, conversationID, scheme: featureDevScheme })
+            session.latestMessage = 'implement twosum in typescript'
 
-            await session.preloader('implement twosum in typescript')
+            await session.preloader()
 
             assertTelemetry('amazonq_startConversationInvoke', {
                 amazonqConversationId: conversationID,
@@ -74,7 +75,7 @@ describe('session', () => {
                 workspaceFolders,
             }
 
-            const codeGenState = new CodeGenState(
+            const codeGenState = new FeatureDevCodeGenState(
                 testConfig,
                 [
                     {

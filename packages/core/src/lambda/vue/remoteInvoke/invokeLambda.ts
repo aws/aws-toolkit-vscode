@@ -11,7 +11,7 @@ import { DefaultLambdaClient, LambdaClient } from '../../../shared/clients/lambd
 import * as picker from '../../../shared/ui/picker'
 import { ExtContext } from '../../../shared/extensions'
 
-import { getLogger } from '../../../shared/logger'
+import { getLogger } from '../../../shared/logger/logger'
 import { HttpResourceFetcher } from '../../../shared/resourcefetcher/httpResourceFetcher'
 import { sampleRequestPath } from '../../constants'
 import { LambdaFunctionNode } from '../../explorer/lambdaFunctionNode'
@@ -20,15 +20,15 @@ import { getSampleLambdaPayloads, SampleRequest } from '../../utils'
 import * as nls from 'vscode-nls'
 import { VueWebview } from '../../../webviews/main'
 import { telemetry, Result } from '../../../shared/telemetry/telemetry'
-import { decodeBase64 } from '../../../shared'
 import {
     runSamCliRemoteTestEvents,
     SamCliRemoteTestEventsParameters,
     TestEventsOperation,
 } from '../../../shared/sam/cli/samCliRemoteTestEvent'
 import { getSamCliContext } from '../../../shared/sam/cli/samCliContext'
-import { ToolkitError } from '../../../shared'
+import { ToolkitError } from '../../../shared/errors'
 import { basename } from 'path'
+import { decodeBase64 } from '../../../shared/utilities/textUtilities'
 
 const localize = nls.loadMessageBundle()
 

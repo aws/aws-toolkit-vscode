@@ -7,7 +7,7 @@ import { Lambda } from 'aws-sdk'
 import { _Blob } from 'aws-sdk/clients/lambda'
 import { ToolkitError } from '../errors'
 import globals from '../extensionGlobals'
-import { getLogger } from '../logger'
+import { getLogger } from '../logger/logger'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
 
 export type LambdaClient = ClassToInterfaceType<DefaultLambdaClient>

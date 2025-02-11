@@ -22,7 +22,7 @@ import {
 } from '../sam/debugger/awsSamDebugConfigurationValidator'
 import * as pathutils from '../utilities/pathUtils'
 import { tryGetAbsolutePath } from '../utilities/workspaceUtils'
-import { getLogger } from '../logger'
+import { getLogger } from '../logger/logger'
 import { makeFailedWriteMessage, showViewLogsMessage } from '../utilities/messages'
 import { openUrl } from '../utilities/vsCodeUtils'
 import globals from '../extensionGlobals'

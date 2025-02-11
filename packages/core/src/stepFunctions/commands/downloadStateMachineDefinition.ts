@@ -12,12 +12,12 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import { DefaultStepFunctionsClient, StepFunctionsClient } from '../../shared/clients/stepFunctionsClient'
 
-import { getLogger, Logger } from '../../shared/logger'
+import { getLogger, Logger } from '../../shared/logger/logger'
 import { Result } from '../../shared/telemetry/telemetry'
 import { StateMachineNode } from '../explorer/stepFunctionsNodes'
 import { previewStateMachineCommand } from '../activation'
 import { telemetry } from '../../shared/telemetry/telemetry'
-import { fs } from '../../shared'
+import { fs } from '../../shared/fs/fs'
 
 export async function downloadStateMachineDefinition(params: {
     outputChannel: vscode.OutputChannel

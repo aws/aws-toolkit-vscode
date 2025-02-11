@@ -4,7 +4,7 @@
  */
 
 import vscode from 'vscode'
-import { CodeWhispererConstants } from '../../codewhisperer'
+import { SecurityScanLanguageId } from '../../codewhisperer/models/constants'
 
 interface CommentConfig {
     lineComment?: string
@@ -13,7 +13,7 @@ interface CommentConfig {
 
 const defaultCommentConfig: CommentConfig = { lineComment: '//', blockComment: ['/*', '*/'] }
 
-const languageCommentConfig: Record<CodeWhispererConstants.SecurityScanLanguageId, CommentConfig | undefined> = {
+const languageCommentConfig: Record<SecurityScanLanguageId, CommentConfig | undefined> = {
     java: defaultCommentConfig,
     python: { lineComment: '#', blockComment: ["'''", "'''"] },
     javascript: defaultCommentConfig,
@@ -50,7 +50,7 @@ const languageCommentConfig: Record<CodeWhispererConstants.SecurityScanLanguageI
 }
 
 export function getLanguageCommentConfig(languageId: string): CommentConfig {
-    return languageCommentConfig[languageId as CodeWhispererConstants.SecurityScanLanguageId] ?? {}
+    return languageCommentConfig[languageId as SecurityScanLanguageId] ?? {}
 }
 
 export function detectCommentAboveLine(document: vscode.TextDocument, line: number, comment: string): boolean {

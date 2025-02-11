@@ -7,7 +7,7 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
-import { getLogger, Logger } from '../../shared/logger'
+import { getLogger, Logger } from '../../shared/logger/logger'
 import { DocumentItemNodeWriteable } from '../explorer/documentItemNodeWriteable'
 import { RegistryItemNode } from '../explorer/registryItemNode'
 import { showConfirmationMessage } from '../util/util'

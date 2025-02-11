@@ -24,7 +24,7 @@ import {
 } from '../../../auth/connection'
 import { Auth } from '../../../auth/auth'
 import { StaticProfile, StaticProfileKeyErrorMessage } from '../../../auth/credentials/types'
-import { telemetry } from '../../../shared/telemetry'
+import { telemetry } from '../../../shared/telemetry/telemetry'
 import { AuthAddConnection } from '../../../shared/telemetry/telemetry'
 import { AuthSources } from '../util'
 import { AuthEnabledFeatures, AuthError, AuthFlowState, AuthUiClick, userCancelled } from './types'

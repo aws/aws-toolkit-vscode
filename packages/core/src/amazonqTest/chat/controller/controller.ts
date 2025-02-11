@@ -13,29 +13,6 @@ import { ChatSessionManager } from '../storages/chatSession'
 import { BuildStatus, ConversationState, Session } from '../session/session'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import {
-    CodeWhispererConstants,
-    ReferenceLogViewProvider,
-    ShortAnswer,
-    ShortAnswerReference,
-    TelemetryHelper,
-    TestGenerationBuildStep,
-    testGenState,
-    tooManyRequestErrorMessage,
-    unitTestGenerationCancelMessage,
-    UserWrittenCodeTracker,
-} from '../../../codewhisperer'
-import {
-    fs,
-    getLogger,
-    getTelemetryReasonDesc,
-    i18n,
-    openUrl,
-    randomUUID,
-    sleep,
-    tempDirPath,
-    testGenerationLogsDir,
-} from '../../../shared'
-import {
     buildProgressField,
     cancellingProgressField,
     cancelTestGenButton,
@@ -46,7 +23,7 @@ import {
     testGenSummaryMessage,
 } from '../../models/constants'
 import MessengerUtils, { ButtonActions } from './messenger/messengerUtils'
-import { isAwsError } from '../../../shared/errors'
+import { getTelemetryReasonDesc, isAwsError } from '../../../shared/errors'
 import { ChatItemType } from '../../../amazonq/commons/model'
 import { ProgressField } from '@aws/mynah-ui'
 import { FollowUpTypes } from '../../../amazonq/commons/types'
@@ -64,8 +41,26 @@ import { EditorContentController } from '../../../amazonq/commons/controllers/co
 import { amazonQTabSuffix } from '../../../shared/constants'
 import { applyChanges } from '../../../shared/utilities/textDocumentUtilities'
 import { telemetry } from '../../../shared/telemetry/telemetry'
-import { CodeReference } from '../../../amazonq'
 import { CodeWhispererSettings } from '../../../codewhisperer/util/codewhispererSettings'
+import { openUrl } from '../../../shared/utilities/vsCodeUtils'
+import { getLogger } from '../../../shared/logger/logger'
+import { i18n } from '../../../shared/i18n-helper'
+import { sleep } from '../../../shared/utilities/timeoutUtils'
+import { fs } from '../../../shared/fs/fs'
+import { randomUUID } from '../../../shared/crypto'
+import { tempDirPath, testGenerationLogsDir } from '../../../shared/filesystemUtilities'
+import { CodeReference } from '../../../codewhispererChat/view/connector/connector'
+import { TelemetryHelper } from '../../../codewhisperer/util/telemetryHelper'
+import { ShortAnswer, ShortAnswerReference, testGenState } from '../../../codewhisperer/models/model'
+import {
+    referenceLogText,
+    TestGenerationBuildStep,
+    tooManyRequestErrorMessage,
+    unitTestGenerationCancelMessage,
+    utgLimitReached,
+} from '../../../codewhisperer/models/constants'
+import { UserWrittenCodeTracker } from '../../../codewhisperer/tracker/userWrittenCodeTracker'
+import { ReferenceLogViewProvider } from '../../../codewhisperer/service/referenceLogViewProvider'
 
 export interface TestChatControllerEventEmitters {
     readonly tabOpened: vscode.EventEmitter<any>
@@ -281,7 +276,7 @@ export class TestController {
 
         // If user reached monthly limit for builderId
         if (error.code === 'CreateTestJobError') {
-            if (error.message.includes(CodeWhispererConstants.utgLimitReached)) {
+            if (error.message.includes(utgLimitReached)) {
                 getLogger().error('Monthly quota reached for QSDA actions.')
                 return this.messenger.sendMessage(
                     i18n('AWS.amazonq.featureDev.error.monthlyLimitReached'),
@@ -499,7 +494,7 @@ export class TestController {
                  * Get Diff from exportResultArchive API
                  */
                 ChatSessionManager.Instance.setIsInProgress(true)
-                await startTestGenerationProcess(fileName, filePath, message.prompt, tabID, true, selectionRange)
+                await startTestGenerationProcess(filePath, message.prompt, tabID, true, selectionRange)
             }
         } catch (err: any) {
             // TODO: refactor error handling to be more robust
@@ -554,12 +549,15 @@ export class TestController {
         testGenerationJobGroupName: string
         testGenerationJobId: string
         type: ChatItemType
-        fileName: string
+        filePath: string
     }) {
         this.messenger.sendShortSummary({
             type: 'answer',
             tabID: message.tabID,
-            message: testGenSummaryMessage(message.fileName, message.shortAnswer?.planSummary?.replaceAll('```', '')),
+            message: testGenSummaryMessage(
+                path.basename(message.shortAnswer?.sourceFilePath ?? message.filePath),
+                message.shortAnswer?.planSummary?.replaceAll('```', '')
+            ),
             canBeVoted: true,
             filePath: message.shortAnswer?.testFilePath,
         })
@@ -713,7 +711,7 @@ export class TestController {
             getLogger().debug('Extracted code slice: %s', code)
             const referenceLog =
                 `[${time}] Accepted recommendation ` +
-                CodeWhispererConstants.referenceLogText(
+                referenceLogText(
                     `<br><code>${code}</code><br>`,
                     reference.licenseName!,
                     reference.repository!,
@@ -1122,13 +1120,7 @@ export class TestController {
                 canBeVoted: false,
                 messageId: TestNamedMessages.TEST_GENERATION_BUILD_STATUS_MESSAGE,
             })
-            await startTestGenerationProcess(
-                path.basename(session.sourceFilePath),
-                session.sourceFilePath,
-                '',
-                data.tabID,
-                false
-            )
+            await startTestGenerationProcess(session.sourceFilePath, '', data.tabID, false)
         }
         // TODO: Skip this if startTestGenerationProcess timeouts
         if (session.generatedFilePath) {
@@ -1317,7 +1309,7 @@ export class TestController {
         if (session.tabID) {
             getLogger().debug('Setting input state with tabID: %s', session.tabID)
             this.messenger.sendChatInputEnabled(session.tabID, true)
-            this.messenger.sendUpdatePlaceholder(session.tabID, '/test Generate unit tests') // TODO: Change according to the UX
+            this.messenger.sendUpdatePlaceholder(session.tabID, 'Enter "/" for quick actions')
         }
         getLogger().debug(
             'Deleting output.log and temp result directory. testGenerationLogsDir: %s',

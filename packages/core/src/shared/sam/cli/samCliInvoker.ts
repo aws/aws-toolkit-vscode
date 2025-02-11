@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as logger from '../../logger'
+import * as logger from '../../logger/logger'
 import { ChildProcess, ChildProcessResult } from '../../utilities/processUtils'
 import {
     addTelemetryEnvVar,

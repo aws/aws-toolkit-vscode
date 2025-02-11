@@ -4,7 +4,7 @@
  */
 import * as vscode from 'vscode'
 import { FolderInfo, transformByQState } from '../../models/model'
-import { getLogger } from '../../../shared/logger'
+import { getLogger } from '../../../shared/logger/logger'
 import * as CodeWhispererConstants from '../../models/constants'
 // Consider using ChildProcess once we finalize all spawnSync calls
 import { spawnSync } from 'child_process' // eslint-disable-line no-restricted-imports

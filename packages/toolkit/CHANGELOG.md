@@ -1,3 +1,18 @@
+## 3.45.0 2025-02-05
+
+- **Feature** Add support for DocumentDB clusters
+- **Feature** Step Functions: Upgrade amazon-states-language-service to 1.15. This new version enhance autocomplete for variable and JSONata expression in JSON ASL files.
+
+## 3.44.0 2025-01-30
+
+- **Bug Fix** Policy Checks selected profile is always default
+- **Feature** From the Lambda treeview in AWS Explorer, you can now right-click on a function name and start a CloudWatch Logs Live Tail sessions for the selected function.
+- **Feature** EC2 is now available in AWS Explorer:
+
+1. Remote-connect VSCode to your EC2 instances.
+2. Open terminal to your EC2 instances.
+3. Start, stop, and visit the Launch page.
+
 ## 3.43.0 2025-01-23
 
 - **Bug Fix** AppBuilder: Update error messaging to make more legible and actionable

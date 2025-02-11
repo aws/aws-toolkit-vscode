@@ -17,7 +17,7 @@ import { registerToolView } from '../awsexplorer/activationShared'
 import { readonlyDocument } from '../shared/utilities/textDocumentUtilities'
 import { openUrl } from '../shared/utilities/vsCodeUtils'
 import { telemetry } from '../shared/telemetry/telemetry'
-import { globals } from '../shared'
+import globals from '../shared/extensionGlobals'
 
 const localize = nls.loadMessageBundle()
 const logger = getLogger('notifications')

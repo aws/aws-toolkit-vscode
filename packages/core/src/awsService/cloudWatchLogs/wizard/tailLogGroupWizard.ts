@@ -4,7 +4,8 @@
  */
 
 import * as nls from 'vscode-nls'
-import { globals, ToolkitError } from '../../../shared'
+import globals from '../../../shared/extensionGlobals'
+import { ToolkitError } from '../../../shared/errors'
 import { DefaultCloudWatchLogsClient } from '../../../shared/clients/cloudWatchLogsClient'
 import { cwlFilterPatternHelpUrl } from '../../../shared/constants'
 import { createBackButton, createExitButton, createHelpButton } from '../../../shared/ui/buttons'
@@ -24,7 +25,7 @@ export interface TailLogGroupWizardResponse {
 }
 
 export class TailLogGroupWizard extends Wizard<TailLogGroupWizardResponse> {
-    public constructor(logGroupInfo?: CloudWatchLogsGroupInfo) {
+    public constructor(logGroupInfo?: CloudWatchLogsGroupInfo, logStreamInfo?: LogStreamFilterResponse) {
         super({
             initState: {
                 regionLogGroupSubmenuResponse: logGroupInfo
@@ -33,6 +34,7 @@ export class TailLogGroupWizard extends Wizard<TailLogGroupWizardResponse> {
                           region: logGroupInfo.regionName,
                       }
                     : undefined,
+                logStreamFilter: logStreamInfo ?? undefined,
             },
         })
         this.form.regionLogGroupSubmenuResponse.bindPrompter(createRegionLogGroupSubmenu)

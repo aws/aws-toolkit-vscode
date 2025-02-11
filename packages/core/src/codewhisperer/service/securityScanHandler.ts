@@ -4,7 +4,7 @@
  */
 
 import { DefaultCodeWhispererClient } from '../client/codewhisperer'
-import { getLogger } from '../../shared/logger'
+import { getLogger } from '../../shared/logger/logger'
 import * as vscode from 'vscode'
 import {
     AggregatedCodeScanIssue,
@@ -83,7 +83,7 @@ export async function listScanResults(
             if (existsSync(filePath) && statSync(filePath).isFile()) {
                 const aggregatedCodeScanIssue: AggregatedCodeScanIssue = {
                     filePath: filePath,
-                    issues: issues.map((issue) => mapRawToCodeScanIssue(issue, editor, jobId)),
+                    issues: issues.map((issue) => mapRawToCodeScanIssue(issue, editor, jobId, scope)),
                 }
                 aggregatedCodeScanIssueList.push(aggregatedCodeScanIssue)
             }
@@ -92,7 +92,7 @@ export async function listScanResults(
         if (existsSync(maybeAbsolutePath) && statSync(maybeAbsolutePath).isFile()) {
             const aggregatedCodeScanIssue: AggregatedCodeScanIssue = {
                 filePath: maybeAbsolutePath,
-                issues: issues.map((issue) => mapRawToCodeScanIssue(issue, editor, jobId)),
+                issues: issues.map((issue) => mapRawToCodeScanIssue(issue, editor, jobId, scope)),
             }
             aggregatedCodeScanIssueList.push(aggregatedCodeScanIssue)
         }
@@ -103,7 +103,8 @@ export async function listScanResults(
 function mapRawToCodeScanIssue(
     issue: RawCodeScanIssue,
     editor: vscode.TextEditor | undefined,
-    jobId: string
+    jobId: string,
+    scope: CodeWhispererConstants.CodeAnalysisScope
 ): CodeScanIssue {
     const isIssueTitleIgnored = CodeWhispererSettings.instance.getIgnoredSecurityIssues().includes(issue.title)
     const isSingleIssueIgnored =
@@ -130,6 +131,7 @@ function mapRawToCodeScanIssue(
         visible: !isIssueTitleIgnored && !isSingleIssueIgnored,
         scanJobId: jobId,
         language,
+        autoDetected: scope === CodeWhispererConstants.CodeAnalysisScope.FILE_AUTO,
     }
 }
 

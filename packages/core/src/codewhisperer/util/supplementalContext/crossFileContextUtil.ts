@@ -4,7 +4,6 @@
  */
 
 import * as vscode from 'vscode'
-import { FeatureConfigProvider, fs } from '../../../shared'
 import path = require('path')
 import { BM25Document, BM25Okapi } from './rankBm25'
 import {
@@ -23,6 +22,8 @@ import {
 } from '../../models/model'
 import { LspController } from '../../../amazonq/lsp/lspController'
 import { waitUntil } from '../../../shared/utilities/timeoutUtils'
+import { FeatureConfigProvider } from '../../../shared/featureConfig'
+import fs from '../../../shared/fs/fs'
 
 type CrossFileSupportedLanguage =
     | 'java'

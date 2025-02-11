@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Loggable, LogLevel } from '../shared/logger'
+import { Loggable, LogLevel } from '../shared/logger/logger'
 import { BaseLogger, compareLogLevel } from '../shared/logger/logger'
 import { Uri } from 'vscode'
 import util from 'util'
@@ -22,8 +22,6 @@ export class TestLogger extends BaseLogger {
     public constructor(private logLevel: LogLevel = 'debug') {
         super()
     }
-
-    public enableDebugConsole(): void {}
 
     public getLoggedEntries(...logLevels: LogLevel[]): Loggable[] {
         return this.loggedEntries

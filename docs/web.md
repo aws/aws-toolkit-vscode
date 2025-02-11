@@ -16,7 +16,7 @@ You can run the Web mode implementation of the extension in the following ways.
 -   To see logs, using the Command Palette search: `Toggle Developer Tools`. Then go to the `Console` tab. In web mode VS Code seems to duplicate log messages, idk how to fix this.
 -   The difference between web mode and Node.js/desktop is that in web mode everything runs in browser environment so certain things like Node.js modules will **not** be available.
 
-## Running in an actual Browser
+## Running in an actual Browser (Recommended)
 
 The following steps will result in a Chrome window running with VS Code
 and the web version of the AWS Toolkit extension installed:
@@ -43,7 +43,7 @@ and the web version of the AWS Toolkit extension installed:
     const context = browser
     ```
 
-2. In the `Run & Debug` menu select the `Extension (Chrome)` option
+2. In the `Run & Debug` menu select the `Extension Web` option
 
 > Note: To stop the debug session, you need to click the read `Disconnect` button multiple times
 
@@ -61,6 +61,12 @@ do the following:
 -   Temporarily remove `--browserOption=--disable-web-security`
 
 Now when you run the extension in the browser it will do CORS checks.
+
+### Troubleshooting
+
+-   `Extension Web` fails to launch
+    -   Update `@vscode/test-web` by running `$ npm install @vscode/test-web@latest`
+    -   Update/install playwright with `$ npx playwright install`. This will be mentioned in one of the build tasks outputs.
 
 ## Running in [vscode.dev](https://vscode.dev)
 

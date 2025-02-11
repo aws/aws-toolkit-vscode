@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import * as codecatalyst from './clients/codecatalystClient'
 import * as codewhisperer from '../codewhisperer/client/codewhisperer'
-import { getLogger } from './logger'
+import { getLogger } from './logger/logger'
 import {
     cast,
     FromDescriptor,

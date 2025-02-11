@@ -9,7 +9,7 @@ const localize = nls.loadMessageBundle()
 import { SSM } from 'aws-sdk'
 import * as vscode from 'vscode'
 import { AwsContext } from '../../shared/awsContext'
-import { getLogger, Logger } from '../../shared/logger'
+import { getLogger, Logger } from '../../shared/logger/logger'
 import * as picker from '../../shared/ui/picker'
 import { DocumentItemNodeWriteable } from '../explorer/documentItemNodeWriteable'
 import { showViewLogsMessage } from '../../shared/utilities/messages'

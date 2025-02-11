@@ -10,7 +10,6 @@ import { createPlaceholderItem } from '../../../../shared/treeview/utils'
 import * as nls from 'vscode-nls'
 
 import { getLogger } from '../../../../shared/logger/logger'
-import { FunctionConfiguration, LambdaClient, GetFunctionCommand } from '@aws-sdk/client-lambda'
 import { DefaultLambdaClient } from '../../../../shared/clients/lambdaClient'
 import globals from '../../../../shared/extensionGlobals'
 import { defaultPartition } from '../../../../shared/regions/regionProvider'
@@ -27,8 +26,7 @@ import {
     SERVERLESS_API_TYPE,
     s3BucketType,
 } from '../../../../shared/cloudformation/cloudformation'
-import { ToolkitError } from '../../../../shared'
-import { getIAMConnection } from '../../../../auth/utils'
+import { ToolkitError } from '../../../../shared/errors'
 
 const localize = nls.loadMessageBundle()
 export interface DeployedResource {
@@ -89,8 +87,6 @@ export async function generateDeployedNode(
                 const defaultClient = new DefaultLambdaClient(regionCode)
                 const lambdaNode = new LambdaNode(regionCode, defaultClient)
                 let configuration: Lambda.FunctionConfiguration
-                let v3configuration
-                let logGroupName
                 try {
                     configuration = (await defaultClient.getFunction(deployedResource.PhysicalResourceId))
                         .Configuration as Lambda.FunctionConfiguration
@@ -101,31 +97,6 @@ export async function generateDeployedNode(
                         code: 'lambdaClientError',
                     })
                 }
-                const connection = await getIAMConnection({ prompt: false })
-                if (!connection || connection.type !== 'iam') {
-                    return [
-                        createPlaceholderItem(
-                            localize(
-                                'AWS.appBuilder.explorerNode.unavailableDeployedResource',
-                                '[Failed to retrive deployed resource. Ensure your AWS account is connected.]'
-                            )
-                        ),
-                    ]
-                }
-                const cred = await connection.getCredentials()
-                const v3Client = new LambdaClient({ region: regionCode, credentials: cred })
-
-                const v3command = new GetFunctionCommand({ FunctionName: deployedResource.PhysicalResourceId })
-                try {
-                    v3configuration = (await v3Client.send(v3command)).Configuration as FunctionConfiguration
-                    logGroupName = v3configuration.LoggingConfig?.LogGroup
-                } catch (error: any) {
-                    getLogger().error('Error getting Lambda V3 configuration: %O', error)
-                }
-                newDeployedResource.configuration = {
-                    ...newDeployedResource.configuration,
-                    logGroupName: logGroupName,
-                } as any
                 break
             }
             case s3BucketType: {

@@ -1,3 +1,20 @@
+## 1.46.0 2025-02-05
+
+- **Bug Fix** Citation links are not clickable as numbers, but appear as non-clickable texts
+- **Bug Fix** Fix language server start failure in AL2023 ARM64
+- **Bug Fix** /review: Auto-review issues did not populate code issues list
+- **Bug Fix** Amazon Q: Fix code upload error when using /dev or /doc on Remote SSH
+- **Bug Fix** /test placeholder text aligned across IDEs
+- **Bug Fix** Inline: Typos in the first example suggestion
+- **Feature** Inline suggestions: Pre-fetch recommendations to reduce suggestion latency.
+- **Feature** Added github issue link and description to the chat answer feedback form
+
+## 1.45.0 2025-01-30
+
+- **Bug Fix** Allow AB users with an overridden customization to go back to the default customization
+- **Bug Fix** For security reasons, disabled auto linkify for link texts coming in markdown other than [TEXT](URL) format
+- **Feature** Add setting to allow Q /dev to run code and test commands
+
 ## 1.44.0 2025-01-23
 
 - **Bug Fix** Amazon Q: word duplication when pressing tab on context selector fixed
