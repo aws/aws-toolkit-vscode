@@ -40,9 +40,6 @@ export class UIMessageListener {
             case 'auth-follow-up-was-clicked':
                 this.authClicked(msg)
                 break
-            case 'review':
-                this.scan(msg)
-                break
             case 'form-action-click':
                 this.formActionClicked(msg)
                 break
@@ -56,12 +53,6 @@ export class UIMessageListener {
                 this.processFileClick(msg)
                 break
         }
-    }
-
-    private scan(msg: UIMessage) {
-        this.scanControllerEventsEmitters?.runScan.fire({
-            tabID: msg.tabID,
-        })
     }
 
     private formActionClicked(msg: UIMessage) {
