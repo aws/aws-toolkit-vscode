@@ -498,7 +498,7 @@ export class TestController {
                  * Get Diff from exportResultArchive API
                  */
                 ChatSessionManager.Instance.setIsInProgress(true)
-                await startTestGenerationProcess(fileName, filePath, userPrompt, tabID, true, selectionRange)
+                await startTestGenerationProcess(filePath, message.prompt, tabID, true, selectionRange)
             }
         } catch (err: any) {
             // TODO: refactor error handling to be more robust
@@ -553,12 +553,15 @@ export class TestController {
         testGenerationJobGroupName: string
         testGenerationJobId: string
         type: ChatItemType
-        fileName: string
+        filePath: string
     }) {
         this.messenger.sendShortSummary({
             type: 'answer',
             tabID: message.tabID,
-            message: testGenSummaryMessage(message.fileName, message.shortAnswer?.planSummary?.replaceAll('```', '')),
+            message: testGenSummaryMessage(
+                path.basename(message.shortAnswer?.sourceFilePath ?? message.filePath),
+                message.shortAnswer?.planSummary?.replaceAll('```', '')
+            ),
             canBeVoted: true,
             filePath: message.shortAnswer?.testFilePath,
         })
@@ -1121,13 +1124,7 @@ export class TestController {
                 canBeVoted: false,
                 messageId: TestNamedMessages.TEST_GENERATION_BUILD_STATUS_MESSAGE,
             })
-            await startTestGenerationProcess(
-                path.basename(session.sourceFilePath),
-                session.sourceFilePath,
-                '',
-                data.tabID,
-                false
-            )
+            await startTestGenerationProcess(session.sourceFilePath, '', data.tabID, false)
         }
         // TODO: Skip this if startTestGenerationProcess timeouts
         if (session.generatedFilePath) {

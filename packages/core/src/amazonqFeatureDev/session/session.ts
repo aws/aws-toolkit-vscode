@@ -5,7 +5,7 @@
 
 import * as path from 'path'
 
-import { ConversationNotStartedState, PrepareCodeGenState } from './sessionState'
+import { ConversationNotStartedState, FeatureDevPrepareCodeGenState } from './sessionState'
 import {
     type DeletedFileInfo,
     type Interaction,
@@ -13,14 +13,14 @@ import {
     type SessionState,
     type SessionStateConfig,
     UpdateFilesPathsParams,
-} from '../types'
+} from '../../amazonq/commons/types'
 import { ConversationIdNotFoundError } from '../errors'
 import { featureDevChat, referenceLogText, featureDevScheme } from '../constants'
 import fs from '../../shared/fs/fs'
 import { FeatureDevClient } from '../client/featureDev'
 import { codeGenRetryLimit } from '../limits'
 import { telemetry } from '../../shared/telemetry/telemetry'
-import { TelemetryHelper } from '../util/telemetryHelper'
+import { TelemetryHelper } from '../../amazonq/util/telemetryHelper'
 import { ReferenceLogViewProvider } from '../../codewhisperer/service/referenceLogViewProvider'
 import { AuthUtil } from '../../codewhisperer/util/authUtil'
 import { getLogger } from '../../shared/logger/logger'
@@ -92,7 +92,7 @@ export class Session {
             span.record({ amazonqConversationId: this._conversationId, credentialStartUrl: AuthUtil.instance.startUrl })
         })
 
-        this._state = new PrepareCodeGenState(
+        this._state = new FeatureDevPrepareCodeGenState(
             {
                 ...this.getSessionStateConfig(),
                 conversationId: this.conversationId,
