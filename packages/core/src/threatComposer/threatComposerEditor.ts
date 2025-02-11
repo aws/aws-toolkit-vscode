@@ -12,7 +12,7 @@ import { telemetry } from '../shared/telemetry/telemetry'
 import { onFileChanged } from './handlers/onFileChangedHandler'
 import { onThemeChanged } from './handlers/onThemeChangedHandler'
 import { sendThreatComposerOpenCancelled } from './handlers/webviewTelemetryHandler'
-import { getLogger } from '../shared/logger'
+import { getLogger } from '../shared/logger/logger'
 
 const localize = nls.loadMessageBundle()
 

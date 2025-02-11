@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 
 import { AslVisualizationCDK } from './aslVisualizationCDK'
 import { AbstractAslVisualizationManager } from './abstractAslVisualizationManager'
-import { getLogger } from '../../../shared/logger'
+import { getLogger } from '../../../shared/logger/logger'
 
 export class AslVisualizationCDKManager extends AbstractAslVisualizationManager<AslVisualizationCDK> {
     protected readonly name: string = 'AslVisualizationCDKManager'

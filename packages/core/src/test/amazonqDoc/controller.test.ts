@@ -16,7 +16,7 @@ import {
     updateFilePaths,
 } from './utils'
 import { CurrentWsFolders, NewFileInfo } from '../../amazonqDoc/types'
-import { CodeGenState, docScheme, Session } from '../../amazonqDoc'
+import { DocCodeGenState, docScheme, Session } from '../../amazonqDoc'
 import { AuthUtil } from '../../codewhisperer'
 import { FeatureDevClient } from '../../amazonqFeatureDev'
 import { waitUntil } from '../../shared'
@@ -69,7 +69,7 @@ describe('Controller - Doc Generation', () => {
             workspaceFolders,
         }
 
-        const codeGenState = new CodeGenState(testConfig, getFilePaths(controllerSetup), [], [], tabID, 0, {})
+        const codeGenState = new DocCodeGenState(testConfig, getFilePaths(controllerSetup), [], [], tabID, 0, {})
         return createSession({
             messenger: controllerSetup.messenger,
             sessionState: codeGenState,

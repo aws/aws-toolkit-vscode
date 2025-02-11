@@ -19,7 +19,7 @@ import { isValidResponse, isWizardControl, Wizard, WIZARD_RETRY } from '../../..
 import { cwlUriSchema, msgKey, recordTelemetryFilter } from '../cloudWatchLogsUtils'
 import { DefaultCloudWatchLogsClient } from '../../../shared/clients/cloudWatchLogsClient'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
-import { getLogger } from '../../../shared/logger'
+import { getLogger } from '../../../shared/logger/logger'
 import { TimeFilterResponse, TimeFilterSubmenu } from '../timeFilterSubmenu'
 import { CloudWatchLogs } from 'aws-sdk'
 import { ExtendedInputBoxOptions, InputBox, InputBoxPrompter } from '../../../shared/ui/inputPrompter'

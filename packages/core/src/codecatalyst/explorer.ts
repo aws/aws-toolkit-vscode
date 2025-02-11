@@ -12,7 +12,7 @@ import { CodeCatalystAuthenticationProvider } from './auth'
 import { CodeCatalystCommands, codecatalystConnectionsCmd } from './commands'
 import { ConnectedDevEnv, getDevfileLocation, getThisDevEnv } from './model'
 import * as codecatalyst from './model'
-import { getLogger } from '../shared/logger'
+import { getLogger } from '../shared/logger/logger'
 import { SsoConnection } from '../auth/connection'
 import { openUrl } from '../shared/utilities/vsCodeUtils'
 

@@ -8,8 +8,8 @@ import { inspect } from 'util'
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { DocumentDBClient } from '../../shared/clients/docdbClient'
-import { waitUntil } from '../../shared'
-import { getLogger } from '../../shared/logger'
+import { waitUntil } from '../../shared/utilities/timeoutUtils'
+import { getLogger } from '../../shared/logger/logger'
 import { PollingSet } from '../../shared/utilities/pollingSet'
 
 /** An AWS Explorer node representing a DocumentDB resource. */

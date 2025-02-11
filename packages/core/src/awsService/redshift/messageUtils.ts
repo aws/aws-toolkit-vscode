@@ -4,7 +4,7 @@
  */
 
 import globals from '../../shared/extensionGlobals'
-import { getLogger } from '../../shared/logger'
+import { getLogger } from '../../shared/logger/logger'
 import { showViewLogsMessage } from '../../shared/utilities/messages'
 
 /**

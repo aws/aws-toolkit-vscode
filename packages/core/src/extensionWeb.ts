@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { getLogger } from './shared/logger'
+import { getLogger } from './shared/logger/logger'
 import { activateCommon, deactivateCommon } from './extension'
 import { activateWebShared } from './extensionWebShared'
 

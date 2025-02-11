@@ -13,29 +13,6 @@ import { ChatSessionManager } from '../storages/chatSession'
 import { BuildStatus, ConversationState, Session } from '../session/session'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import {
-    CodeWhispererConstants,
-    ReferenceLogViewProvider,
-    ShortAnswer,
-    ShortAnswerReference,
-    TelemetryHelper,
-    TestGenerationBuildStep,
-    testGenState,
-    tooManyRequestErrorMessage,
-    unitTestGenerationCancelMessage,
-    UserWrittenCodeTracker,
-} from '../../../codewhisperer'
-import {
-    fs,
-    getLogger,
-    getTelemetryReasonDesc,
-    i18n,
-    openUrl,
-    randomUUID,
-    sleep,
-    tempDirPath,
-    testGenerationLogsDir,
-} from '../../../shared'
-import {
     buildProgressField,
     cancellingProgressField,
     cancelTestGenButton,
@@ -44,9 +21,10 @@ import {
     testGenCompletedField,
     testGenProgressField,
     testGenSummaryMessage,
+    maxUserPromptLength,
 } from '../../models/constants'
 import MessengerUtils, { ButtonActions } from './messenger/messengerUtils'
-import { isAwsError } from '../../../shared/errors'
+import { getTelemetryReasonDesc, isAwsError } from '../../../shared/errors'
 import { ChatItemType } from '../../../amazonq/commons/model'
 import { ProgressField } from '@aws/mynah-ui'
 import { FollowUpTypes } from '../../../amazonq/commons/types'
@@ -64,9 +42,27 @@ import { EditorContentController } from '../../../amazonq/commons/controllers/co
 import { amazonQTabSuffix } from '../../../shared/constants'
 import { applyChanges } from '../../../shared/utilities/textDocumentUtilities'
 import { telemetry } from '../../../shared/telemetry/telemetry'
-import { CodeReference } from '../../../amazonq'
 import { CodeWhispererSettings } from '../../../codewhisperer/util/codewhispererSettings'
 import globals from '../../../shared/extensionGlobals'
+import { openUrl } from '../../../shared/utilities/vsCodeUtils'
+import { getLogger } from '../../../shared/logger/logger'
+import { i18n } from '../../../shared/i18n-helper'
+import { sleep } from '../../../shared/utilities/timeoutUtils'
+import { fs } from '../../../shared/fs/fs'
+import { randomUUID } from '../../../shared/crypto'
+import { tempDirPath, testGenerationLogsDir } from '../../../shared/filesystemUtilities'
+import { CodeReference } from '../../../codewhispererChat/view/connector/connector'
+import { TelemetryHelper } from '../../../codewhisperer/util/telemetryHelper'
+import { ShortAnswer, ShortAnswerReference, testGenState } from '../../../codewhisperer/models/model'
+import {
+    referenceLogText,
+    TestGenerationBuildStep,
+    tooManyRequestErrorMessage,
+    unitTestGenerationCancelMessage,
+    utgLimitReached,
+} from '../../../codewhisperer/models/constants'
+import { UserWrittenCodeTracker } from '../../../codewhisperer/tracker/userWrittenCodeTracker'
+import { ReferenceLogViewProvider } from '../../../codewhisperer/service/referenceLogViewProvider'
 
 export interface TestChatControllerEventEmitters {
     readonly tabOpened: vscode.EventEmitter<any>
@@ -321,7 +317,7 @@ export class TestController {
 
         // If user reached monthly limit for builderId
         if (error.code === 'CreateTestJobError') {
-            if (error.message.includes(CodeWhispererConstants.utgLimitReached)) {
+            if (error.message.includes(utgLimitReached)) {
                 getLogger().error('Monthly quota reached for QSDA actions.')
                 return this.messenger.sendMessage(
                     i18n('AWS.amazonq.featureDev.error.monthlyLimitReached'),
@@ -410,7 +406,8 @@ export class TestController {
         getLogger().debug('startTestGen tabId: %O', message.tabID)
         let fileName = ''
         let filePath = ''
-        let userMessage = ''
+        let userFacingMessage = ''
+        let userPrompt = ''
         session.testGenerationStartTime = performance.now()
 
         try {
@@ -426,6 +423,8 @@ export class TestController {
                 )
                 return
             }
+            // Truncating the user prompt if the prompt is more than 4096.
+            userPrompt = message.prompt.slice(0, maxUserPromptLength)
 
             // check that the session is authenticated
             const authState = await AuthUtil.instance.getChatAuthState()
@@ -470,16 +469,16 @@ export class TestController {
             getLogger().debug(`File path: ${fileEditorToTest.document.uri.fsPath}`)
             filePath = fileEditorToTest.document.uri.fsPath
             fileName = path.basename(filePath)
-            userMessage = message.prompt
+            userFacingMessage = userPrompt
                 ? regenerateTests
-                    ? `${message.prompt}`
-                    : `/test ${message.prompt}`
+                    ? `${userPrompt}`
+                    : `/test ${userPrompt}`
                 : `/test Generate unit tests for \`${fileName}\``
 
-            session.hasUserPromptSupplied = message.prompt.length > 0
+            session.hasUserPromptSupplied = userPrompt.length > 0
 
             // displaying user message prompt in Test tab
-            this.messenger.sendMessage(userMessage, tabID, 'prompt')
+            this.messenger.sendMessage(userFacingMessage, tabID, 'prompt')
             this.messenger.sendChatInputEnabled(tabID, false)
             this.sessionStorage.getSession().conversationState = ConversationState.IN_PROGRESS
             this.messenger.sendUpdatePromptProgress(message.tabID, testGenProgressField)
@@ -505,7 +504,7 @@ export class TestController {
                 this.messenger.sendMessage(unsupportedMessage, tabID, 'answer')
                 await this.onCodeGeneration(
                     session,
-                    message.prompt,
+                    userPrompt,
                     tabID,
                     fileName,
                     filePath,
@@ -539,7 +538,7 @@ export class TestController {
                  * Get Diff from exportResultArchive API
                  */
                 ChatSessionManager.Instance.setIsInProgress(true)
-                await startTestGenerationProcess(fileName, filePath, message.prompt, tabID, true, selectionRange)
+                await startTestGenerationProcess(filePath, message.prompt, tabID, true, selectionRange)
             }
         } catch (err: any) {
             // TODO: refactor error handling to be more robust
@@ -594,12 +593,15 @@ export class TestController {
         testGenerationJobGroupName: string
         testGenerationJobId: string
         type: ChatItemType
-        fileName: string
+        filePath: string
     }) {
         this.messenger.sendShortSummary({
             type: 'answer',
             tabID: message.tabID,
-            message: testGenSummaryMessage(message.fileName, message.shortAnswer?.planSummary?.replaceAll('```', '')),
+            message: testGenSummaryMessage(
+                path.basename(message.shortAnswer?.sourceFilePath ?? message.filePath),
+                message.shortAnswer?.planSummary?.replaceAll('```', '')
+            ),
             canBeVoted: true,
             filePath: message.shortAnswer?.testFilePath,
         })
@@ -753,7 +755,7 @@ export class TestController {
             getLogger().debug('Extracted code slice: %s', code)
             const referenceLog =
                 `[${time}] Accepted recommendation ` +
-                CodeWhispererConstants.referenceLogText(
+                referenceLogText(
                     `<br><code>${code}</code><br>`,
                     reference.licenseName!,
                     reference.repository!,
@@ -1162,13 +1164,7 @@ export class TestController {
                 canBeVoted: false,
                 messageId: TestNamedMessages.TEST_GENERATION_BUILD_STATUS_MESSAGE,
             })
-            await startTestGenerationProcess(
-                path.basename(session.sourceFilePath),
-                session.sourceFilePath,
-                '',
-                data.tabID,
-                false
-            )
+            await startTestGenerationProcess(session.sourceFilePath, '', data.tabID, false)
         }
         // TODO: Skip this if startTestGenerationProcess timeouts
         if (session.generatedFilePath) {
