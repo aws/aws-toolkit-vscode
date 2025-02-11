@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import { ToolkitError } from '../../shared/errors'
 import globals from '../../shared/extensionGlobals'
-import { getLogger } from '../../shared/logger'
+import { getLogger } from '../../shared/logger/logger'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { VirtualFileSystem } from '../../shared/virtualFilesystem'
 import { DocGenerationStep, docScheme, getFileSummaryPercentage, Mode } from '../constants'
@@ -28,14 +28,10 @@ import {
     SessionStateInteraction,
     SessionStatePhase,
 } from '../types'
-import {
-    EmptyCodeGenID,
-    Intent,
-    TelemetryHelper,
-    getDeletedFileInfos,
-    prepareRepoData,
-    registerNewFiles,
-} from '../../amazonqFeatureDev'
+import { TelemetryHelper } from '../../amazonqFeatureDev/util/telemetryHelper'
+import { EmptyCodeGenID, getDeletedFileInfos, registerNewFiles } from '../../amazonqFeatureDev/session/sessionState'
+import { Intent } from '../../amazonqFeatureDev/types'
+import { prepareRepoData } from '../../amazonqFeatureDev/util/files'
 import { uploadCode } from '../../amazonqFeatureDev/util/upload'
 import {
     ContentLengthError,

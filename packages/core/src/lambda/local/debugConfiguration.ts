@@ -18,7 +18,7 @@ import { tryGetAbsolutePath } from '../../shared/utilities/workspaceUtils'
 import { Architecture, RuntimeFamily } from '../models/samLambdaRuntime'
 import { SamLaunchRequestArgs } from '../../shared/sam/debugger/awsSamDebugger'
 
-import { getLogger } from '../../shared/logger'
+import { getLogger } from '../../shared/logger/logger'
 import globals from '../../shared/extensionGlobals'
 
 /**

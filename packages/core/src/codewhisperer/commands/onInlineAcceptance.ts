@@ -30,7 +30,7 @@ import { CodeWhispererSessionState } from '../util/codeWhispererSession'
 import path from 'path'
 import { RecommendationService } from '../service/recommendationService'
 import { Container } from '../service/serviceContainer'
-import { telemetry } from '../../shared/telemetry'
+import { telemetry } from '../../shared/telemetry/telemetry'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { UserWrittenCodeTracker } from '../tracker/userWrittenCodeTracker'
 

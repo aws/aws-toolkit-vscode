@@ -14,7 +14,7 @@ import { CloudWatchLogs } from 'aws-sdk'
 import { AWSResourceNode } from '../../../shared/treeview/nodes/awsResourceNode'
 
 import * as nls from 'vscode-nls'
-import { getLogger } from '../../../shared/logger'
+import { getLogger } from '../../../shared/logger/logger'
 import { getIcon } from '../../../shared/icons'
 import { DefaultCloudWatchLogsClient } from '../../../shared/clients/cloudWatchLogsClient'
 const localize = nls.loadMessageBundle()

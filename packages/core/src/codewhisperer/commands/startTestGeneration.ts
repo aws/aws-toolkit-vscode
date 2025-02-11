@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { getLogger } from '../../shared/logger'
+import { getLogger } from '../../shared/logger/logger'
 import { ZipUtil } from '../util/zipUtil'
 import { ArtifactMap } from '../client/codewhisperer'
 import { testGenerationLogsDir } from '../../shared/filesystemUtilities'

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { getLogger } from '../../../shared/logger'
+import { getLogger } from '../../../shared/logger/logger'
 import { S3FileNode } from '../explorer/s3FileNode'
 import { uploadFileCommand } from './uploadFile'
 

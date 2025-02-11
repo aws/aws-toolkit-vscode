@@ -24,6 +24,7 @@ import {
     ContentLengthError,
     createUserFacingErrorMessage,
     FeatureDevServiceError,
+    isAPIClientError,
     MonthlyConversationLimitError,
     NoChangeRequiredException,
     PrepareRepoFailedError,
@@ -471,11 +472,16 @@ describe('Controller', () => {
                 ['EmptyPatchException', MetricDataResult.LlmFailure],
                 [PromptRefusalException.name, MetricDataResult.Error],
                 [NoChangeRequiredException.name, MetricDataResult.Error],
+                [MonthlyConversationLimitError.name, MetricDataResult.Error],
+                [CodeIterationLimitError.name, MetricDataResult.Error],
             ])
 
             function getMetricResult(error: ToolkitError): MetricDataResult {
                 if (error instanceof FeatureDevServiceError && error.code) {
                     return errorResultMapping.get(error.code) ?? MetricDataResult.Error
+                }
+                if (isAPIClientError(error)) {
+                    return MetricDataResult.Error
                 }
                 return errorResultMapping.get(error.constructor.name) ?? MetricDataResult.Fault
             }

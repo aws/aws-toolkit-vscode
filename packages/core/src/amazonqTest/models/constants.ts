@@ -4,7 +4,7 @@
  */
 import { ProgressField, MynahIcons, ChatItemButton } from '@aws/mynah-ui'
 import { ButtonActions } from '../chat/controller/messenger/messengerUtils'
-import { TestGenerationBuildStep } from '../../codewhisperer'
+import { TestGenerationBuildStep } from '../../codewhisperer/models/constants'
 import { ChatSessionManager } from '../chat/storages/chatSession'
 import { BuildStatus } from '../chat/session/session'
 

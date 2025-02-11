@@ -4,7 +4,8 @@
  */
 
 import * as vscode from 'vscode'
-import { getLogger, ToolkitError } from '../../shared'
+import { ToolkitError } from '../../shared/errors'
+import { getLogger } from '../../shared/logger/logger'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { showViewLogsMessage } from '../../shared/utilities/messages'
 import { DBInstanceNode } from '../explorer/dbInstanceNode'
@@ -12,7 +13,7 @@ import { DBCluster, ModifyDBInstanceMessage } from '@aws-sdk/client-docdb'
 import { DBStorageType, DocumentDBClient } from '../../shared/clients/docdbClient'
 import { createQuickPick, DataQuickPickItem } from '../../shared/ui/pickerPrompter'
 import { isValidResponse } from '../../shared/wizards/wizard'
-import { telemetry } from '../../shared/telemetry'
+import { telemetry } from '../../shared/telemetry/telemetry'
 import { assertNodeAvailable } from '../utils'
 
 /**

@@ -27,7 +27,7 @@ import { connectToEnterpriseSso, getStartUrl } from '../util/getStartUrl'
 import { showCodeWhispererConnectionPrompt } from '../util/showSsoPrompt'
 import { ReferenceLogViewProvider } from '../service/referenceLogViewProvider'
 import { AuthUtil } from '../util/authUtil'
-import { getLogger } from '../../shared/logger'
+import { getLogger } from '../../shared/logger/logger'
 import { isExtensionActive, isExtensionInstalled, localize, openUrl } from '../../shared/utilities/vsCodeUtils'
 import {
     getPersistedCustomizations,
@@ -44,7 +44,8 @@ import {
 import { Mutable } from '../../shared/utilities/tsUtils'
 import { CodeWhispererSource } from './types'
 import { TelemetryHelper } from '../util/telemetryHelper'
-import { Auth, AwsConnection } from '../../auth'
+import { Auth } from '../../auth/auth'
+import { AwsConnection } from '../../auth/connection'
 import { once } from '../../shared/utilities/functionUtils'
 import { focusAmazonQPanel } from '../../codewhispererChat/commands/registerCommands'
 import { removeDiagnostic } from '../service/diagnosticsProvider'
@@ -61,13 +62,13 @@ import { SecurityIssueProvider } from '../service/securityIssueProvider'
 import { CodeWhispererSettings } from '../util/codewhispererSettings'
 import { closeDiff, getPatchedCode } from '../../shared/utilities/diffUtils'
 import { insertCommentAboveLine } from '../../shared/utilities/commentUtils'
-import { cancel, confirm } from '../../shared'
 import { startCodeFixGeneration } from './startCodeFixGeneration'
 import { DefaultAmazonQAppInitContext } from '../../amazonq/apps/initContext'
 import path from 'path'
 import { UserWrittenCodeTracker } from '../tracker/userWrittenCodeTracker'
 import { parsePatch } from 'diff'
 import { createCodeIssueGroupingStrategyPrompter } from '../ui/prompters'
+import { cancel, confirm } from '../../shared/localizedText'
 
 const MessageTimeOut = 5_000
 

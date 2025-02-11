@@ -18,7 +18,7 @@ import { pageableToCollection } from '../../shared/utilities/collectionUtils'
 import apiConfig = require('./service-2.json')
 import userApiConfig = require('./user-service-2.json')
 import { CodeWhispererSessionState } from '../util/codeWhispererSession'
-import { getLogger } from '../../shared/logger'
+import { getLogger } from '../../shared/logger/logger'
 import { indent } from '../../shared/utilities/textUtilities'
 import { keepAliveHeader } from './agent'
 import { getClientId, getOptOutPreference, getOperatingSystem } from '../../shared/telemetry/util'

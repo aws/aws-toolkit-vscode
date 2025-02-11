@@ -10,7 +10,9 @@ import { AuthUtil } from '../util/authUtil'
 import { getSelectedCustomization } from '../util/customizationUtil'
 import { codeWhispererClient as client } from '../client/codewhisperer'
 import { isAwsError } from '../../shared/errors'
-import { CodewhispererLanguage, globals, undefinedIfEmpty } from '../../shared'
+import { undefinedIfEmpty } from '../../shared/utilities/textUtilities'
+import { CodewhispererLanguage } from '../../shared/telemetry/telemetry'
+import globals from '../../shared/extensionGlobals'
 
 /**
  * This singleton class is mainly used for calculating the user written code

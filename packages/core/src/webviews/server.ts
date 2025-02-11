@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { getLogger } from '../shared/logger'
+import { getLogger } from '../shared/logger/logger'
 import { Message } from './client'
 import { AsyncResource } from 'async_hooks'
 import { ToolkitError } from '../shared/errors'
