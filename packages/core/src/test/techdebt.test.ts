@@ -39,11 +39,4 @@ describe('tech debt', function () {
         // This is relevant for the use of `fs.cpSync` in the copyFiles scripts.
         assert.ok(semver.lt(minNodejs, '18.0.0'), 'with node18+, we can remove the dependency on @types/node@18')
     })
-
-    it('remove debugging telemetry', async function () {
-        fixByDate(
-            '2025-02-11',
-            'Remove debugging telemetry in `packages/core/src/auth/providers/credentialsProviderManager.ts`. Should only need to remove the `emit: true` in the decorator.'
-        )
-    })
 })
