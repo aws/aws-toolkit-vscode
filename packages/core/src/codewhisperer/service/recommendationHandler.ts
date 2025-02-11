@@ -239,7 +239,9 @@ export class RecommendationHandler {
             )
         }
         const request = currentSession.requestContext.request
-        TelemetryHelper.instance.setPreprocessEndTime()
+        if (!isNextSession) {
+            TelemetryHelper.instance.setPreprocessEndTime()
+        }
 
         // set start pos for non pagination call or first pagination call
         if (!pagination || (pagination && page === 0)) {
