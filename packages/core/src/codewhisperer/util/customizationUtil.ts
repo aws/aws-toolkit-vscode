@@ -13,7 +13,7 @@ import { DataQuickPickItem, showQuickPick } from '../../shared/ui/pickerPrompter
 import { codeWhispererClient } from '../client/codewhisperer'
 import { Customization, ResourceArn } from '../client/codewhispereruserclient'
 import { codicon, getIcon } from '../../shared/icons'
-import { getLogger } from '../../shared/logger'
+import { getLogger } from '../../shared/logger/logger'
 import { showMessageWithUrl } from '../../shared/utilities/messages'
 import { parse } from '@aws-sdk/util-arn-parser'
 import { Commands } from '../../shared/vscode/commands2'

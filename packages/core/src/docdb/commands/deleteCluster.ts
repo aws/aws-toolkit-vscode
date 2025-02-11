@@ -4,13 +4,14 @@
  */
 
 import * as vscode from 'vscode'
-import { getLogger, ToolkitError } from '../../shared'
+import { ToolkitError } from '../../shared/errors'
+import { getLogger } from '../../shared/logger/logger'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { showViewLogsMessage } from '../../shared/utilities/messages'
 import { DBClusterNode } from '../explorer/dbClusterNode'
 import { showQuickPick } from '../../shared/ui/pickerPrompter'
 import { formatDate, formatTime } from '../../shared/date'
-import { telemetry } from '../../shared/telemetry'
+import { telemetry } from '../../shared/telemetry/telemetry'
 import { DBElasticClusterNode } from '../explorer/dbElasticClusterNode'
 import { assertNodeAvailable } from '../utils'
 

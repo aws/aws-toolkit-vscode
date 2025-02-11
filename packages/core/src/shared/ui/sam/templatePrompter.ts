@@ -5,7 +5,7 @@
 
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { getSamInitDocUrl } from '../..'
+import { getSamInitDocUrl } from '../../extensionUtilities'
 import * as CloudFormation from '../../cloudformation/cloudformation'
 import { CloudFormationTemplateRegistry } from '../../fs/templateRegistry'
 import { createCommonButtons } from '../buttons'

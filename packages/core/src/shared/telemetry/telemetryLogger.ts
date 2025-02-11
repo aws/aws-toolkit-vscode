@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { getLogger } from '../logger'
+import { getLogger } from '../logger/logger'
 import { DevSettings } from '../settings'
 import { isReleaseVersion } from '../vscode/env'
 import { MetricDatum, MetadataEntry } from './clienttelemetry'

@@ -4,10 +4,9 @@
  */
 
 import * as vscode from 'vscode'
-import { Logger } from '.'
 import { telemetry } from '../telemetry/telemetry'
 import { Commands } from '../vscode/commands2'
-import { getLogger } from './logger'
+import { getLogger, Logger } from './logger'
 import globals from '../extensionGlobals'
 
 function revealLines(editor: vscode.TextEditor, start: number, end: number): void {

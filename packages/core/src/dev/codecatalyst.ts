@@ -7,7 +7,7 @@ import { glob } from 'glob'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import * as manifest from '../../package.json'
-import { getLogger } from '../shared/logger'
+import { getLogger } from '../shared/logger/logger'
 import { selectCodeCatalystResource } from '../codecatalyst/wizards/selectResource'
 import { VSCODE_EXTENSION_ID } from '../shared/extensions'
 import { DevEnvironment, CodeCatalystClient } from '../shared/clients/codecatalystClient'
@@ -20,7 +20,7 @@ import { startVscodeRemote } from '../shared/extensions/ssh'
 import { isValidResponse } from '../shared/wizards/wizard'
 import { createQuickPick } from '../shared/ui/pickerPrompter'
 import { createCommonButtons } from '../shared/ui/buttons'
-import { fs } from '../shared'
+import { fs } from '../shared/fs/fs'
 
 type LazyProgress<T> = vscode.Progress<T> & vscode.Disposable & { getToken(): Timeout }
 

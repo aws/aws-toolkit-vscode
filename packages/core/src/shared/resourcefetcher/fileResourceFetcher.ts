@@ -4,7 +4,7 @@
  */
 
 import fs from '../fs/fs'
-import { getLogger, Logger } from '../logger'
+import { getLogger, Logger } from '../logger/logger'
 import { ResourceFetcher } from './resourcefetcher'
 
 export class FileResourceFetcher implements ResourceFetcher {

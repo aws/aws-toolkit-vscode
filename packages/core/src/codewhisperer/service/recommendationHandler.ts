@@ -18,7 +18,7 @@ import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { AWSError } from 'aws-sdk'
 import { isAwsError } from '../../shared/errors'
 import { TelemetryHelper } from '../util/telemetryHelper'
-import { getLogger } from '../../shared/logger'
+import { getLogger } from '../../shared/logger/logger'
 import { hasVendedIamCredentials } from '../../auth/auth'
 import {
     asyncCallWithTimeout,
