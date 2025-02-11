@@ -171,7 +171,7 @@ export class FeatureConfigProvider {
                         )
                         this.featureConfigs.delete(Features.customizationArnOverride)
                     } else {
-                        await setSelectedCustomization(targetCustomization)
+                        await setSelectedCustomization(targetCustomization, true)
                     }
 
                     await vscode.commands.executeCommand('aws.amazonq.refreshStatusBar')
