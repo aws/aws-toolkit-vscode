@@ -26,10 +26,10 @@ import {
 } from '@aws-sdk/types'
 import { HttpResponse, HttpRequest } from '@aws-sdk/protocol-http'
 import { ConfiguredRetryStrategy } from '@smithy/util-retry'
-import { telemetry } from './telemetry'
+import { telemetry } from './telemetry/telemetry'
 import { getRequestId, getTelemetryReason, getTelemetryReasonDesc, getTelemetryResult } from './errors'
-import { extensionVersion } from '.'
-import { getLogger } from './logger'
+import { extensionVersion } from './vscode/env'
+import { getLogger } from './logger/logger'
 import { partialClone } from './utilities/collectionUtils'
 import { selectFrom } from './utilities/tsUtils'
 
