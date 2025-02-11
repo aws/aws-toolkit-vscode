@@ -413,17 +413,16 @@ export class SharedCredentialsProvider implements CredentialsProvider {
                 secretAccessKey: sourceProfile.aws_secret_access_key!,
             })
             // Prompt for MFA Token if needed.
-            const assumeRoleReq = profile.mfa_serial
-                ? {
-                      RoleArn: profile.role_arn,
-                      RoleSessionName: 'AssumeRoleSession',
-                      SerialNumber: profile.mfa_serial,
-                      TokenCode: await getMfaTokenFromUser(profile.mfa_serial, this.profileName),
-                  }
-                : {
-                      RoleArn: profile.role_arn,
-                      RoleSessionName: 'AssumeRoleSession',
-                  }
+            const assumeRoleReq = {
+                RoleArn: profile.role_arn,
+                RoleSessionName: 'AssumeRoleSession',
+                ...(profile.mfa_serial
+                    ? {
+                          SerialNumber: profile.mfa_serial,
+                          TokenCode: await getMfaTokenFromUser(profile.mfa_serial, this.profileName),
+                      }
+                    : {}),
+            }
             const assumeRoleRsp = await stsClient.assumeRole(assumeRoleReq)
             return {
                 accessKeyId: assumeRoleRsp.Credentials!.AccessKeyId!,
