@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import * as localizedText from '../../../shared/localizedText'
-import { getLogger } from '../../../shared/logger'
+import { getLogger } from '../../../shared/logger/logger'
 import { localize } from '../../../shared/utilities/vsCodeUtils'
 import { IotThingNode } from '../explorer/iotThingNode'
 import { showViewLogsMessage, showConfirmationMessage } from '../../../shared/utilities/messages'

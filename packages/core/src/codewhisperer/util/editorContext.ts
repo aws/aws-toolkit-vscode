@@ -17,7 +17,7 @@ import { selectFrom } from '../../shared/utilities/tsUtils'
 import { checkLeftContextKeywordsForJson } from './commonUtil'
 import { CodeWhispererSupplementalContext } from '../models/model'
 import { getOptOutPreference } from '../../shared/telemetry/util'
-import { indent } from '../../shared'
+import { indent } from '../../shared/utilities/textUtilities'
 
 let tabSize: number = getTabSizeSetting()
 

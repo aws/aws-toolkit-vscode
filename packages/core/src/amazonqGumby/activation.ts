@@ -16,7 +16,7 @@ import { transformByQState } from '../codewhisperer/models/model'
 import { ProposedTransformationExplorer } from '../codewhisperer/service/transformByQ/transformationResultsViewProvider'
 import { CodeTransformTelemetryState } from './telemetry/codeTransformTelemetryState'
 import { telemetry } from '../shared/telemetry/telemetry'
-import { setContext } from '../shared'
+import { setContext } from '../shared/vscode/setContext'
 
 export async function activate(context: ExtContext) {
     void setContext('gumby.wasQCodeTransformationUsed', false)

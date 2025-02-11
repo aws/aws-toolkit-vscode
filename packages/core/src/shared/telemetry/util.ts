@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import { env, version } from 'vscode'
 import * as os from 'os'
-import { getLogger } from '../logger'
+import { getLogger } from '../logger/logger'
 import { fromExtensionManifest, Settings } from '../settings'
 import { memoize, once } from '../utilities/functionUtils'
 import {

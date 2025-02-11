@@ -8,9 +8,9 @@ import { omit } from 'lodash'
 import { AuthUtil } from '../../codewhisperer/util/authUtil'
 import { ServiceOptions } from '../../shared/awsClientBuilder'
 import globals from '../../shared/extensionGlobals'
-import { getLogger } from '../../shared/logger'
+import { getLogger } from '../../shared/logger/logger'
 import * as FeatureDevProxyClient from './featuredevproxyclient'
-import { featureName } from '../constants'
+import { featureName, startTaskAssistLimitReachedMessage } from '../constants'
 import { CodeReference } from '../../amazonq/webview/ui/connector'
 import {
     ApiError,
@@ -25,7 +25,7 @@ import { createCodeWhispererChatStreamingClient } from '../../shared/clients/cod
 import { getClientId, getOptOutPreference, getOperatingSystem } from '../../shared/telemetry/util'
 import { extensionVersion } from '../../shared/vscode/env'
 import apiConfig = require('./codewhispererruntime-2022-11-11.json')
-import { UserWrittenCodeTracker } from '../../codewhisperer'
+import { UserWrittenCodeTracker } from '../../codewhisperer/tracker/userWrittenCodeTracker'
 import {
     FeatureDevCodeAcceptanceEvent,
     FeatureDevCodeGenerationEvent,
@@ -185,10 +185,7 @@ export class FeatureDevClient {
             )
             if (isAwsError(e)) {
                 // API Front-end will throw Throttling if conversation limit is reached. API Front-end monitors StartCodeGeneration for throttling
-                if (
-                    e.code === 'ThrottlingException' &&
-                    e.message.includes('StartTaskAssistCodeGeneration reached for this month.')
-                ) {
+                if (e.code === 'ThrottlingException' && e.message.includes(startTaskAssistLimitReachedMessage)) {
                     throw new MonthlyConversationLimitError(e.message)
                 }
                 // BE service will throw ServiceQuota if code generation iteration limit is reached

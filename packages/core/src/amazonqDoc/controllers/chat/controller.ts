@@ -18,7 +18,7 @@ import {
     findReadmePath,
 } from '../../constants'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
-import { getLogger } from '../../../shared/logger'
+import { getLogger } from '../../../shared/logger/logger'
 
 import { Session } from '../../session/session'
 import { i18n } from '../../../shared/i18n-helper'

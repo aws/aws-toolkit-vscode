@@ -14,7 +14,7 @@ import { ProgressLocation } from 'vscode'
 import { Stage } from 'aws-sdk/clients/apigateway'
 import { DefaultApiGatewayClient } from '../../../shared/clients/apiGatewayClient'
 import { defaultDnsSuffix, RegionProvider } from '../../../shared/regions/regionProvider'
-import { getLogger } from '../../../shared/logger'
+import { getLogger } from '../../../shared/logger/logger'
 import { telemetry } from '../../../shared/telemetry/telemetry'
 
 interface StageInvokeUrlQuickPick extends vscode.QuickPickItem {

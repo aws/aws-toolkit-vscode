@@ -36,8 +36,9 @@ import { CodeReference } from '../../../../amazonq/webview/ui/apps/amazonqCommon
 import { getHttpStatusCode, getRequestId, getTelemetryReasonDesc, ToolkitError } from '../../../../shared/errors'
 import { sleep, waitUntil } from '../../../../shared/utilities/timeoutUtils'
 import { keys } from '../../../../shared/utilities/tsUtils'
-import { TelemetryHelper, testGenState } from '../../../../codewhisperer'
 import { cancellingProgressField, testGenCompletedField } from '../../../models/constants'
+import { testGenState } from '../../../../codewhisperer/models/model'
+import { TelemetryHelper } from '../../../../codewhisperer/util/telemetryHelper'
 
 export type UnrecoverableErrorType = 'no-project-found' | 'no-open-file-found' | 'invalid-file-type'
 

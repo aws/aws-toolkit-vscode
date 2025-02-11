@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { globals } from '../../shared'
+import globals from '../../shared/extensionGlobals'
 import { DocDBEngine, DocumentDBClient } from '../../shared/clients/docdbClient'
 import { createExitPrompter } from '../../shared/ui/common/exitPrompter'
 import { createRegionPrompter } from '../../shared/ui/common/region'

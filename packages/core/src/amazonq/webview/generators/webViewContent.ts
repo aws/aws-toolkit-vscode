@@ -6,7 +6,9 @@
 import path from 'path'
 import { Uri, Webview } from 'vscode'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
-import { FeatureConfigProvider, FeatureContext, globals, isSageMaker } from '../../../shared'
+import { FeatureConfigProvider, FeatureContext } from '../../../shared/featureConfig'
+import globals from '../../../shared/extensionGlobals'
+import { isSageMaker } from '../../../shared/extensionUtilities'
 
 export class WebViewContentGenerator {
     private async generateFeatureConfigsData(): Promise<string> {

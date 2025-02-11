@@ -4,13 +4,13 @@
  */
 
 import * as vscode from 'vscode'
-import { getLogger } from '../../shared/logger'
-import { telemetry } from '../../shared/telemetry'
+import { getLogger } from '../../shared/logger/logger'
+import { telemetry } from '../../shared/telemetry/telemetry'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { DBClusterNode } from '../explorer/dbClusterNode'
 import { DBGlobalClusterNode } from '../explorer/dbGlobalClusterNode'
 import { DefaultDocumentDBClient } from '../../shared/clients/docdbClient'
-import { ToolkitError } from '../../shared'
+import { ToolkitError } from '../../shared/errors'
 import { showViewLogsMessage } from '../../shared/utilities/messages'
 import { isValidResponse } from '../../shared/wizards/wizard'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'

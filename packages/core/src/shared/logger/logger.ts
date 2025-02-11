@@ -261,3 +261,5 @@ export function getNullLogger(type?: 'debugConsole' | 'main'): Logger {
 export function setLogger(logger: Logger | undefined, type?: 'debugConsole' | 'main') {
     toolkitLoggers[type ?? 'main'] = logger
 }
+
+export type Loggable = Error | string

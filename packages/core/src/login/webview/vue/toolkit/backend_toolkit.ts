@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import { tryAddCredentials } from '../../../../auth/utils'
-import { getLogger } from '../../../../shared/logger'
+import { getLogger } from '../../../../shared/logger/logger'
 import { CommonAuthWebview } from '../backend'
 import {
     AwsConnection,
@@ -19,7 +19,7 @@ import {
 import { Auth } from '../../../../auth/auth'
 import { CodeCatalystAuthenticationProvider } from '../../../../codecatalyst/auth'
 import { AuthError, AuthFlowState } from '../types'
-import { setContext } from '../../../../shared'
+import { setContext } from '../../../../shared/vscode/setContext'
 import { builderIdStartUrl } from '../../../../auth/sso/constants'
 
 export class ToolkitLoginWebview extends CommonAuthWebview {

@@ -16,8 +16,8 @@ import { AmazonqCreateUpload, Span, telemetry as amznTelemetry } from '../../sha
 import { TelemetryHelper } from './telemetryHelper'
 import { maxRepoSizeBytes } from '../constants'
 import { isCodeFile } from '../../shared/filetypes'
-import { fs } from '../../shared'
-import { CodeWhispererSettings } from '../../codewhisperer'
+import { fs } from '../../shared/fs/fs'
+import { CodeWhispererSettings } from '../../codewhisperer/util/codewhispererSettings'
 import { ZipStream } from '../../shared/utilities/zipStream'
 
 export async function checkForDevFile(root: string) {
