@@ -10,7 +10,7 @@ import { CurrentWsFolders, collectFilesForIndex } from '../../shared/utilities/w
 import { LspClient } from './lspClient'
 import { RelevantTextDocument } from '@amzn/codewhisperer-streaming'
 import { activate as activateLsp } from './lspClient'
-import { telemetry } from '../../shared/telemetry'
+import { telemetry } from '../../shared/telemetry/telemetry'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import globals, { isWeb } from '../../shared/extensionGlobals'
 import { isAmazonInternalOs } from '../../shared/vscode/env'

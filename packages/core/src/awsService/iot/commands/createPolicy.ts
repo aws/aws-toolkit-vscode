@@ -4,11 +4,11 @@
  */
 
 import * as vscode from 'vscode'
-import { getLogger } from '../../../shared/logger'
+import { getLogger } from '../../../shared/logger/logger'
 import { localize } from '../../../shared/utilities/vsCodeUtils'
 import { showViewLogsMessage } from '../../../shared/utilities/messages'
 import { IotPolicyFolderNode } from '../explorer/iotPolicyFolderNode'
-import { fs } from '../../../shared'
+import { fs } from '../../../shared/fs/fs'
 
 /**
  * Creates a policy from a policy document.

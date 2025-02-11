@@ -28,7 +28,7 @@ import {
     getTelemetryMetadataForConn,
     ProfileNotFoundError,
 } from '../../auth/connection'
-import { getLogger } from '../../shared/logger'
+import { getLogger } from '../../shared/logger/logger'
 import { Commands, placeholder } from '../../shared/vscode/commands2'
 import { vsCodeState } from '../models/model'
 import { onceChanged, once } from '../../shared/utilities/functionUtils'

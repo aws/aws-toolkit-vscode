@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { getLogger, removeAnsi } from '../../shared'
+import { removeAnsi } from '../../shared/utilities/textUtilities'
+import { getLogger } from '../../shared/logger/logger'
 import { ChildProcess, ChildProcessOptions } from '../../shared/utilities/processUtils'
 import { Uri } from 'vscode'
 

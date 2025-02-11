@@ -4,7 +4,12 @@
  */
 
 import { ToolkitError } from '../shared/errors'
-import { featureName } from './constants'
+import {
+    featureName,
+    clientErrorMessages,
+    startCodeGenClientErrorMessages,
+    startTaskAssistLimitReachedMessage,
+} from './constants'
 import { uploadCodeError } from './userFacingText'
 import { i18n } from '../shared/i18n-helper'
 
@@ -139,4 +144,13 @@ export function createUserFacingErrorMessage(message: string) {
         return `${featureName} API request failed`
     }
     return message
+}
+
+export function isAPIClientError(error: { code?: string; message: string }): boolean {
+    return (
+        (error.code === 'StartCodeGenerationFailed' &&
+            startCodeGenClientErrorMessages.some((msg: string) => error.message.includes(msg))) ||
+        clientErrorMessages.some((msg: string) => error.message.includes(msg)) ||
+        error.message.includes(startTaskAssistLimitReachedMessage)
+    )
 }

@@ -30,7 +30,11 @@ import {
     Usage,
 } from './types'
 import { CodeWhispererSettings } from '../../codewhisperer/util/codewhispererSettings'
-import { ResourcePaths, createServerOptions, fs, getLogger, globals } from '../../shared'
+import { fs } from '../../shared/fs/fs'
+import { getLogger } from '../../shared/logger/logger'
+import globals from '../../shared/extensionGlobals'
+import { ResourcePaths } from '../../shared/lsp/types'
+import { createServerOptions } from '../../shared/lsp/utils/platform'
 
 const localize = nls.loadMessageBundle()
 

@@ -12,10 +12,10 @@ import { makeChildrenNodes } from '../../shared/treeview/utils'
 import { DBElasticCluster, DocumentDBClient } from '../../shared/clients/docdbClient'
 import { DBClusterNode } from './dbClusterNode'
 import { DBElasticClusterNode } from './dbElasticClusterNode'
-import { telemetry } from '../../shared/telemetry'
+import { telemetry } from '../../shared/telemetry/telemetry'
 import { DBGlobalClusterNode } from './dbGlobalClusterNode'
 import { DBCluster } from '@aws-sdk/client-docdb'
-import { getLogger } from '../../shared/logger'
+import { getLogger } from '../../shared/logger/logger'
 import { DBResourceNode } from './dbResourceNode'
 
 /**

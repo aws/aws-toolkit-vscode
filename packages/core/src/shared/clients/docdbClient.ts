@@ -4,7 +4,7 @@
  */
 
 import globals from '../extensionGlobals'
-import { getLogger } from '../logger'
+import { getLogger } from '../logger/logger'
 import { getUserAgent } from '../telemetry/util'
 import { ToolkitError } from '../errors'
 import { InterfaceNoSymbol } from '../utilities/tsUtils'

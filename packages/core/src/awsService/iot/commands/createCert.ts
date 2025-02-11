@@ -5,13 +5,13 @@
 
 import * as vscode from 'vscode'
 import * as path from 'path'
-import { getLogger } from '../../../shared/logger'
+import { getLogger } from '../../../shared/logger/logger'
 import { localize } from '../../../shared/utilities/vsCodeUtils'
 import { showViewLogsMessage } from '../../../shared/utilities/messages'
 import { IotCertsFolderNode } from '../explorer/iotCertFolderNode'
 import { fileExists } from '../../../shared/filesystemUtilities'
 import { Iot } from 'aws-sdk'
-import { fs } from '../../../shared'
+import { fs } from '../../../shared/fs/fs'
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
 const MODE_RW_R_R = 0o644 // File permission 0644 rw-r--r-- for PEM files.

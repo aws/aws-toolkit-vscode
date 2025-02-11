@@ -14,7 +14,9 @@ import {
     LiveTailSessionUpdate,
     StartLiveTailResponseStream,
 } from '@aws-sdk/client-cloudwatch-logs'
-import { getLogger, globals, ToolkitError } from '../../../shared'
+import { ToolkitError } from '../../../shared/errors'
+import { getLogger } from '../../../shared/logger/logger'
+import globals from '../../../shared/extensionGlobals'
 import { uriToKey } from '../cloudWatchLogsUtils'
 import { LiveTailCodeLensProvider } from '../document/liveTailCodeLensProvider'
 import { LogStreamFilterResponse } from '../wizard/liveTailLogStreamSubmenu'

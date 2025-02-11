@@ -6,7 +6,7 @@
 import * as semver from 'semver'
 import * as vscode from 'vscode'
 import globals from '../../shared/extensionGlobals'
-import { getLogger } from '../../shared/logger'
+import { getLogger } from '../../shared/logger/logger'
 
 import { Wizard } from '../../shared/wizards/wizard'
 import { createQuickPick } from '../../shared/ui/pickerPrompter'
@@ -16,7 +16,7 @@ import { ToolkitError } from '../../shared/errors'
 import { createSingleFileDialog } from '../../shared/ui/common/openDialog'
 import { fs } from '../../shared/fs/fs'
 import path from 'path'
-import { telemetry } from '../../shared/telemetry'
+import { telemetry } from '../../shared/telemetry/telemetry'
 
 import { minSamCliVersionForAppBuilderSupport } from '../../shared/sam/cli/samCliValidator'
 import { SamCliInfoInvocation } from '../../shared/sam/cli/samCliInfo'

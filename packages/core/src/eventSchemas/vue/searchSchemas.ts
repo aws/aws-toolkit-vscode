@@ -14,7 +14,7 @@ import { SchemasNode } from '../explorer/schemasNode'
 import { listRegistryItems, searchSchemas } from '../utils'
 import { DefaultSchemaClient, SchemaClient } from '../../shared/clients/schemaClient'
 
-import { getLogger, Logger } from '../../shared/logger'
+import { getLogger, Logger } from '../../shared/logger/logger'
 import { Result } from '../../shared/telemetry/telemetry'
 import { toArrayAsync } from '../../shared/utilities/collectionUtils'
 import { getTabSizeSetting } from '../../shared/utilities/editorUtilities'
