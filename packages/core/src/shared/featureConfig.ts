@@ -21,7 +21,7 @@ import { getClientId, getOperatingSystem } from './telemetry/util'
 import { extensionVersion } from './vscode/env'
 import { telemetry } from './telemetry/telemetry'
 import { Commands } from './vscode/commands2'
-import { setSelectedCustomization } from '../codewhisperer'
+import { setSelectedCustomization } from '../codewhisperer/util/customizationUtil'
 
 const localize = nls.loadMessageBundle()
 
