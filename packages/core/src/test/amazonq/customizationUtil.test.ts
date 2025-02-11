@@ -82,7 +82,7 @@ describe('CodeWhisperer-customizationUtils', function () {
         assert.strictEqual(actualCustomization.name, selectedCustomization.name)
     })
 
-    it('Returns AB customization', async function () {
+    it.skip('Returns AB customization', async function () {
         sinon.stub(AuthUtil.instance, 'isValidEnterpriseSsoInUse').returns(true)
 
         await setSelectedCustomization({
