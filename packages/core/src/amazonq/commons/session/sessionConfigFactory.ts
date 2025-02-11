@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import { WorkspaceFolderNotFoundError } from '../../../amazonqFeatureDev/errors'
-import { CurrentWsFolders } from '../../../amazonqFeatureDev/types'
+import { CurrentWsFolders } from '../types'
 import { VirtualFileSystem } from '../../../shared/virtualFilesystem'
 import { VirtualMemoryFile } from '../../../shared/virtualMemoryFile'
 

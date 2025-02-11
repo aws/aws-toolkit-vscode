@@ -129,7 +129,7 @@ export async function createTestJob(
 export async function pollTestJobStatus(
     jobId: string,
     jobGroupName: string,
-    fileName: string,
+    filePath: string,
     initialExecution: boolean
 ) {
     const session = ChatSessionManager.Instance.getSession()
@@ -187,7 +187,7 @@ export async function pollTestJobStatus(
                             shortAnswer,
                             testGenerationJobGroupName: resp.testGenerationJob?.testGenerationJobGroupName,
                             testGenerationJobId: resp.testGenerationJob?.testGenerationJobId,
-                            fileName,
+                            filePath,
                         })
                     }
                 }

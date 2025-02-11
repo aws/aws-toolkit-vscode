@@ -5,20 +5,24 @@
 
 import * as vscode from 'vscode'
 import * as path from 'path'
-import { collectFiles } from '../../shared/utilities/workspaceUtils'
+import { collectFiles, getWorkspaceFoldersByPrefixes } from '../../shared/utilities/workspaceUtils'
 
-import { ContentLengthError, PrepareRepoFailedError } from '../errors'
+import { ContentLengthError, PrepareRepoFailedError } from '../../amazonqFeatureDev/errors'
 import { getLogger } from '../../shared/logger/logger'
-import { maxFileSizeBytes } from '../limits'
-import { CurrentWsFolders } from '../types'
+import { maxFileSizeBytes } from '../../amazonqFeatureDev/limits'
+import { CurrentWsFolders, DeletedFileInfo, NewFileInfo, NewFileZipContents } from '../../amazonqDoc/types'
 import { hasCode, ToolkitError } from '../../shared/errors'
-import { AmazonqCreateUpload, Span, telemetry as amznTelemetry } from '../../shared/telemetry/telemetry'
-import { TelemetryHelper } from './telemetryHelper'
-import { maxRepoSizeBytes } from '../constants'
+import { AmazonqCreateUpload, Span, telemetry as amznTelemetry, telemetry } from '../../shared/telemetry/telemetry'
+import { maxRepoSizeBytes } from '../../amazonqFeatureDev/constants'
 import { isCodeFile } from '../../shared/filetypes'
 import { fs } from '../../shared/fs/fs'
+import { VirtualFileSystem } from '../../shared/virtualFilesystem'
+import { VirtualMemoryFile } from '../../shared/virtualMemoryFile'
 import { CodeWhispererSettings } from '../../codewhisperer/util/codewhispererSettings'
 import { ZipStream } from '../../shared/utilities/zipStream'
+import { isPresent } from '../../shared/utilities/collectionUtils'
+import { AuthUtil } from '../../codewhisperer/util/authUtil'
+import { TelemetryHelper } from '../util/telemetryHelper'
 
 export async function checkForDevFile(root: string) {
     const devFilePath = root + '/devfile.yaml'
@@ -162,4 +166,80 @@ export function getPathsFromZipFilePath(
         relativePath: zipFilePath.substring(prefix.length + 1),
         workspaceFolder,
     }
+}
+
+export function getDeletedFileInfos(deletedFiles: string[], workspaceFolders: CurrentWsFolders): DeletedFileInfo[] {
+    const workspaceFolderPrefixes = getWorkspaceFoldersByPrefixes(workspaceFolders)
+    return deletedFiles
+        .map((deletedFilePath) => {
+            const prefix =
+                workspaceFolderPrefixes === undefined
+                    ? ''
+                    : deletedFilePath.substring(0, deletedFilePath.indexOf(path.sep))
+            const folder = workspaceFolderPrefixes === undefined ? workspaceFolders[0] : workspaceFolderPrefixes[prefix]
+            if (folder === undefined) {
+                getLogger().error(`No workspace folder found for file: ${deletedFilePath} and prefix: ${prefix}`)
+                return undefined
+            }
+            const prefixLength = workspaceFolderPrefixes === undefined ? 0 : prefix.length + 1
+            return {
+                zipFilePath: deletedFilePath,
+                workspaceFolder: folder,
+                relativePath: deletedFilePath.substring(prefixLength),
+                rejected: false,
+                changeApplied: false,
+            }
+        })
+        .filter(isPresent)
+}
+
+export function registerNewFiles(
+    fs: VirtualFileSystem,
+    newFileContents: NewFileZipContents[],
+    uploadId: string,
+    workspaceFolders: CurrentWsFolders,
+    conversationId: string,
+    scheme: string
+): NewFileInfo[] {
+    const result: NewFileInfo[] = []
+    const workspaceFolderPrefixes = getWorkspaceFoldersByPrefixes(workspaceFolders)
+    for (const { zipFilePath, fileContent } of newFileContents) {
+        const encoder = new TextEncoder()
+        const contents = encoder.encode(fileContent)
+        const generationFilePath = path.join(uploadId, zipFilePath)
+        const uri = vscode.Uri.from({ scheme, path: generationFilePath })
+        fs.registerProvider(uri, new VirtualMemoryFile(contents))
+        const prefix =
+            workspaceFolderPrefixes === undefined ? '' : zipFilePath.substring(0, zipFilePath.indexOf(path.sep))
+        const folder =
+            workspaceFolderPrefixes === undefined
+                ? workspaceFolders[0]
+                : (workspaceFolderPrefixes[prefix] ??
+                  workspaceFolderPrefixes[
+                      Object.values(workspaceFolderPrefixes).find((val) => val.index === 0)?.name ?? ''
+                  ])
+        if (folder === undefined) {
+            telemetry.toolkit_trackScenario.emit({
+                count: 1,
+                amazonqConversationId: conversationId,
+                credentialStartUrl: AuthUtil.instance.startUrl,
+                scenario: 'wsOrphanedDocuments',
+            })
+            getLogger().error(`No workspace folder found for file: ${zipFilePath} and prefix: ${prefix}`)
+            continue
+        }
+        result.push({
+            zipFilePath,
+            fileContent,
+            virtualMemoryUri: uri,
+            workspaceFolder: folder,
+            relativePath: zipFilePath.substring(
+                workspaceFolderPrefixes === undefined ? 0 : prefix.length > 0 ? prefix.length + 1 : 0
+            ),
+            rejected: false,
+            changeApplied: false,
+        })
+    }
+
+    return result
 }
