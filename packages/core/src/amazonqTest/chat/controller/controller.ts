@@ -21,6 +21,7 @@ import {
     testGenCompletedField,
     testGenProgressField,
     testGenSummaryMessage,
+    maxUserPromptLength,
 } from '../../models/constants'
 import MessengerUtils, { ButtonActions } from './messenger/messengerUtils'
 import { getTelemetryReasonDesc, isAwsError } from '../../../shared/errors'
@@ -365,7 +366,8 @@ export class TestController {
         getLogger().debug('startTestGen tabId: %O', message.tabID)
         let fileName = ''
         let filePath = ''
-        let userMessage = ''
+        let userFacingMessage = ''
+        let userPrompt = ''
         session.testGenerationStartTime = performance.now()
 
         try {
@@ -381,6 +383,8 @@ export class TestController {
                 )
                 return
             }
+            // Truncating the user prompt if the prompt is more than 4096.
+            userPrompt = message.prompt.slice(0, maxUserPromptLength)
 
             // check that the session is authenticated
             const authState = await AuthUtil.instance.getChatAuthState()
@@ -425,16 +429,16 @@ export class TestController {
             getLogger().debug(`File path: ${fileEditorToTest.document.uri.fsPath}`)
             filePath = fileEditorToTest.document.uri.fsPath
             fileName = path.basename(filePath)
-            userMessage = message.prompt
+            userFacingMessage = userPrompt
                 ? regenerateTests
-                    ? `${message.prompt}`
-                    : `/test ${message.prompt}`
+                    ? `${userPrompt}`
+                    : `/test ${userPrompt}`
                 : `/test Generate unit tests for \`${fileName}\``
 
-            session.hasUserPromptSupplied = message.prompt.length > 0
+            session.hasUserPromptSupplied = userPrompt.length > 0
 
             // displaying user message prompt in Test tab
-            this.messenger.sendMessage(userMessage, tabID, 'prompt')
+            this.messenger.sendMessage(userFacingMessage, tabID, 'prompt')
             this.messenger.sendChatInputEnabled(tabID, false)
             this.sessionStorage.getSession().conversationState = ConversationState.IN_PROGRESS
             this.messenger.sendUpdatePromptProgress(message.tabID, testGenProgressField)
@@ -460,7 +464,7 @@ export class TestController {
                 this.messenger.sendMessage(unsupportedMessage, tabID, 'answer')
                 await this.onCodeGeneration(
                     session,
-                    message.prompt,
+                    userPrompt,
                     tabID,
                     fileName,
                     filePath,
