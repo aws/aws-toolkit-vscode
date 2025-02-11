@@ -51,7 +51,7 @@ export class InvalidSourceZipError extends SecurityScanError {
 
 export class NoSourceFilesError extends SecurityScanError {
     constructor() {
-        super('Project does not contain valid files to scan', 'NoSourceFilesError', noSourceFilesErrorMessage)
+        super('Project does not contain valid files.', 'NoSourceFilesError', noSourceFilesErrorMessage)
     }
 }
 
