@@ -49,6 +49,7 @@ describe('inlineCompletionService', function () {
             const session = CodeWhispererSessionState.instance.getSession()
             const mockEditor = createMockTextEditor()
             sinon.stub(RecommendationHandler.instance, 'getRecommendations').resolves({
+                sessionId: 'foo',
                 result: 'Succeeded',
                 errorMessage: undefined,
                 recommendationCount: 1,

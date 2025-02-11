@@ -154,6 +154,9 @@ async function promoteNextSessionIfAvailable(acceptanceEntry: OnRecommendationAc
         CodeWhispererSessionState.instance.setSession(nextSession)
 
         if (nextSession.recommendations.length && acceptanceEntry.sessionId === nextSession.sessionId) {
+            getLogger().debug(
+                `next session id ${nextSession.sessionId} mismatched previous session id ${acceptanceEntry.sessionId}, aborting promoteNextSession`
+            )
             await RecommendationHandler.instance.tryShowRecommendation()
         }
     }

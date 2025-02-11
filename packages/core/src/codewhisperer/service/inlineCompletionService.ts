@@ -85,6 +85,7 @@ export class InlineCompletionService {
     ): Promise<GetRecommendationsResponse> {
         if (vsCodeState.isCodeWhispererEditing || RecommendationHandler.instance.isSuggestionVisible()) {
             return {
+                sessionId: '',
                 result: 'Failed',
                 errorMessage: 'Amazon Q is already running',
                 recommendationCount: 0,
@@ -104,6 +105,7 @@ export class InlineCompletionService {
         if (AuthUtil.instance.isConnectionExpired()) {
             await AuthUtil.instance.notifyReauthenticate(isAutoTrigger)
             return {
+                sessionId: '',
                 result: 'Failed',
                 errorMessage: 'auth',
                 recommendationCount: 0,
@@ -115,6 +117,7 @@ export class InlineCompletionService {
         RecommendationHandler.instance.checkAndResetCancellationTokens()
         RecommendationHandler.instance.documentUri = editor.document.uri
         let response: GetRecommendationsResponse = {
+            sessionId: '',
             result: 'Failed',
             errorMessage: undefined,
             recommendationCount: 0,
@@ -140,6 +143,7 @@ export class InlineCompletionService {
                         void showTimedMessage(response.errorMessage ? response.errorMessage : noSuggestions, 2000)
                     }
                     return {
+                        sessionId: '',
                         result: 'Failed',
                         errorMessage: 'cancelled',
                         recommendationCount: 0,
@@ -160,6 +164,7 @@ export class InlineCompletionService {
         TelemetryHelper.instance.tryRecordClientComponentLatency()
 
         return {
+            sessionId: response.sessionId,
             result: 'Succeeded',
             errorMessage: undefined,
             recommendationCount: session.recommendations.length,

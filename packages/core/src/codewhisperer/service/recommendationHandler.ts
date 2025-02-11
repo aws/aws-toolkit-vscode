@@ -288,6 +288,8 @@ export class RecommendationHandler {
             requestId = resp?.$response && resp?.$response?.requestId
             nextToken = resp?.nextToken ? resp?.nextToken : ''
             sessionId = resp?.$response?.httpResponse?.headers['x-amzn-sessionid']
+            getLogger().debug(`${isNextSession ? 'current' : 'next'} session id: ${sessionId}`)
+
             TelemetryHelper.instance.setFirstResponseRequestId(requestId)
             if (page === 0) {
                 currentSession.setTimeToFirstRecommendation(performance.now())
@@ -743,6 +745,9 @@ export class RecommendationHandler {
 
         const nextSessionId = nextResp.sessionId
         if (nextSessionId.length === 0 || nextSessionId !== session.sessionId) {
+            getLogger().debug(
+                `next session id ${nextSessionId} mismatch previous session id ${session.sessionId}, resetting next session`
+            )
             CodeWhispererSessionState.instance.getNextSession().reset()
         }
     }
