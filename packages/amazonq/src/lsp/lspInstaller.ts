@@ -42,7 +42,7 @@ export class AmazonQLSPResolver implements LspResolver {
             manifest,
             name,
             new Range(supportedLspServerVersions)
-        ).resolveWithProgress()
+        ).resolve()
 
         const nodePath = path.join(installationResult.assetDirectory, `servers/${getNodeExecutableName()}`)
         await fs.chmod(nodePath, 0o755)

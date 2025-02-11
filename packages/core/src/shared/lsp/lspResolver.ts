@@ -14,6 +14,8 @@ import { TargetContent, logger, LspResult, LspVersion, Manifest } from './types'
 import { getApplicationSupportFolder } from '../vscode/env'
 import { createHash } from '../crypto'
 import { HttpResourceFetcher } from '../resourcefetcher/httpResourceFetcher'
+import { showMessageWithCancel } from '../../shared/utilities/messages'
+import { Timeout } from '../utilities/timeoutUtils'
 
 export class LanguageServerResolver {
     constructor(
@@ -23,20 +25,6 @@ export class LanguageServerResolver {
         private readonly _defaultDownloadFolder?: string
     ) {}
 
-    // wraps the resolver to show download status message
-    async resolveWithProgress() {
-        return vscode.window.withProgress(
-            {
-                location: vscode.ProgressLocation.Notification,
-                title: `Downloading '${this.lsName}' language server`,
-                cancellable: false,
-            },
-            async (progress) => {
-                return this.resolve()
-            }
-        )
-    }
-
     /**
      * Downloads and sets up the Language Server, attempting different locations in order:
      * 1. Local cache
@@ -45,7 +33,9 @@ export class LanguageServerResolver {
      * @throws ToolkitError if no compatible version can be found
      */
     async resolve() {
+        const timeout = new Timeout(5000)
         try {
+            await showMessageWithCancel(`Downloading '${this.lsName}' language server`, timeout)
             const result: LspResult = {
                 location: 'unknown',
                 version: '',
@@ -105,6 +95,7 @@ export class LanguageServerResolver {
             return result
         } finally {
             logger.info(`Finished setting up LSP server`)
+            timeout.cancel()
         }
     }
 
