@@ -1,4 +1,4 @@
 {
 	"type": "Bug Fix",
-	"description": "Code review starts automatically when clicking \"Full project scan\" button"
+	"description": "/review: Code review starts automatically when invoked from menu"
 }
