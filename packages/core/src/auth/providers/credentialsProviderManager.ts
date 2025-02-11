@@ -3,10 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { oneDay } from '../../shared/datetime'
 import { getLogger } from '../../shared/logger/logger'
 import { AwsLoadCredentials, telemetry } from '../../shared/telemetry/telemetry'
 import { withTelemetryContext } from '../../shared/telemetry/util'
-import { cancellableDebounce } from '../../shared/utilities/functionUtils'
+import { debounce } from '../../shared/utilities/functionUtils'
 import {
     asString,
     CredentialsProvider,
@@ -26,13 +27,13 @@ export class CredentialsProviderManager {
     private readonly providerFactories: CredentialsProviderFactory[] = []
     private readonly providers: CredentialsProvider[] = []
 
-    @withTelemetryContext({ name: 'getAllCredentialsProvider', class: credentialsProviderManagerClassName, emit: true })
+    @withTelemetryContext({ name: 'getAllCredentialsProvider', class: credentialsProviderManagerClassName })
     public async getAllCredentialsProviders(): Promise<CredentialsProvider[]> {
         let providers: CredentialsProvider[] = []
 
         for (const provider of this.providers) {
             if (await provider.isAvailable()) {
-                telemetry.aws_loadCredentials.emit({
+                void this.emitWithDebounce({
                     credentialSourceId: credentialsProviderToTelemetryType(
                         provider.getCredentialsId().credentialSource
                     ),
@@ -61,10 +62,7 @@ export class CredentialsProviderManager {
 
         return providers
     }
-    private emitWithDebounce = cancellableDebounce(
-        (m: AwsLoadCredentials) => telemetry.aws_loadCredentials.emit(m),
-        100
-    ).promise
+    private emitWithDebounce = debounce((m: AwsLoadCredentials) => telemetry.aws_loadCredentials.emit(m), oneDay)
     /**
      * Returns a map of `CredentialsProviderId` string-forms to object-forms,
      * from all credential sources. Only available providers are returned.
