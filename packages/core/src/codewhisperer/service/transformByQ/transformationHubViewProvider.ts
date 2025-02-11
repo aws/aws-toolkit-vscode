@@ -13,7 +13,7 @@ import {
     sessionJobHistory,
     transformByQState,
 } from '../../models/model'
-import { getLogger } from '../../../shared/logger'
+import { getLogger } from '../../../shared/logger/logger'
 import { getTransformationSteps } from './transformApiHandler'
 import {
     TransformationSteps,

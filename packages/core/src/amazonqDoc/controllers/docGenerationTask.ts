@@ -3,24 +3,27 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import {
-    DocGenerationEvent,
-    DocGenerationFolderLevel,
-    DocGenerationInteractionType,
-    DocGenerationUserDecision,
+    DocFolderLevel,
+    DocInteractionType,
+    DocUserDecision,
+    DocV2AcceptanceEvent,
+    DocV2GenerationEvent,
 } from '../../codewhisperer/client/codewhispereruserclient'
-import { getLogger } from '../../shared'
+import { getLogger } from '../../shared/logger/logger'
 
 export class DocGenerationTask {
     // Telemetry fields
     public conversationId?: string
-    public numberOfAddChars?: number
-    public numberOfAddLines?: number
-    public numberOfAddFiles?: number
-    public userDecision?: DocGenerationUserDecision
-    public interactionType?: DocGenerationInteractionType
-    public userIdentity?: string
-    public numberOfNavigation = 0
-    public folderLevel: DocGenerationFolderLevel = 'ENTIRE_WORKSPACE'
+    public numberOfAddedChars?: number
+    public numberOfAddedLines?: number
+    public numberOfAddedFiles?: number
+    public numberOfGeneratedChars?: number
+    public numberOfGeneratedLines?: number
+    public numberOfGeneratedFiles?: number
+    public userDecision?: DocUserDecision
+    public interactionType?: DocInteractionType
+    public numberOfNavigations = 0
+    public folderLevel: DocFolderLevel = 'ENTIRE_WORKSPACE'
 
     constructor(conversationId?: string) {
         this.conversationId = conversationId
@@ -32,17 +35,36 @@ export class DocGenerationTask {
             .map(([key]) => key)
 
         if (undefinedProps.length > 0) {
-            getLogger().debug(`DocGenerationEvent has undefined properties: ${undefinedProps.join(', ')}`)
+            getLogger().debug(`DocV2GenerationEvent has undefined properties: ${undefinedProps.join(', ')}`)
         }
-        const event: DocGenerationEvent = {
+        const event: DocV2GenerationEvent = {
             conversationId: this.conversationId ?? '',
-            numberOfAddChars: this.numberOfAddChars,
-            numberOfAddLines: this.numberOfAddLines,
-            numberOfAddFiles: this.numberOfAddFiles,
-            userDecision: this.userDecision,
+            numberOfGeneratedChars: this.numberOfGeneratedChars ?? 0,
+            numberOfGeneratedLines: this.numberOfGeneratedLines ?? 0,
+            numberOfGeneratedFiles: this.numberOfGeneratedFiles ?? 0,
             interactionType: this.interactionType,
-            userIdentity: this.userIdentity,
-            numberOfNavigation: this.numberOfNavigation,
+            numberOfNavigations: this.numberOfNavigations,
+            folderLevel: this.folderLevel,
+        }
+        return event
+    }
+
+    public docAcceptanceEventBase() {
+        const undefinedProps = Object.entries(this)
+            .filter(([key, value]) => value === undefined)
+            .map(([key]) => key)
+
+        if (undefinedProps.length > 0) {
+            getLogger().debug(`DocV2AcceptanceEvent has undefined properties: ${undefinedProps.join(', ')}`)
+        }
+        const event: DocV2AcceptanceEvent = {
+            conversationId: this.conversationId ?? '',
+            numberOfAddedChars: this.numberOfAddedChars ?? 0,
+            numberOfAddedLines: this.numberOfAddedLines ?? 0,
+            numberOfAddedFiles: this.numberOfAddedFiles ?? 0,
+            userDecision: this.userDecision ?? 'ACCEPTED',
+            interactionType: this.interactionType ?? 'GENERATE_README',
+            numberOfNavigations: this.numberOfNavigations ?? 0,
             folderLevel: this.folderLevel,
         }
         return event
@@ -50,13 +72,15 @@ export class DocGenerationTask {
 
     public reset() {
         this.conversationId = undefined
-        this.numberOfAddChars = undefined
-        this.numberOfAddLines = undefined
-        this.numberOfAddFiles = undefined
+        this.numberOfAddedChars = undefined
+        this.numberOfAddedLines = undefined
+        this.numberOfAddedFiles = undefined
+        this.numberOfGeneratedChars = undefined
+        this.numberOfGeneratedLines = undefined
+        this.numberOfGeneratedFiles = undefined
         this.userDecision = undefined
         this.interactionType = undefined
-        this.userIdentity = undefined
-        this.numberOfNavigation = 0
+        this.numberOfNavigations = 0
         this.folderLevel = 'ENTIRE_WORKSPACE'
     }
 }

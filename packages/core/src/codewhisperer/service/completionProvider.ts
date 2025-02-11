@@ -9,12 +9,13 @@ import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { Recommendation } from '../client/codewhisperer'
 import { LicenseUtil } from '../util/licenseUtil'
 import { RecommendationHandler } from './recommendationHandler'
-import { session } from '../util/codeWhispererSession'
+import { CodeWhispererSessionState } from '../util/codeWhispererSession'
 import path from 'path'
 /**
  * completion provider for intelliSense popup
  */
 export function getCompletionItems(document: vscode.TextDocument, position: vscode.Position) {
+    const session = CodeWhispererSessionState.instance.getSession()
     const completionItems: vscode.CompletionItem[] = []
     for (const [index, recommendation] of session.recommendations.entries()) {
         completionItems.push(getCompletionItem(document, position, recommendation, index))
@@ -29,6 +30,7 @@ export function getCompletionItem(
     recommendationDetail: Recommendation,
     recommendationIndex: number
 ) {
+    const session = CodeWhispererSessionState.instance.getSession()
     const start = session.startPos
     const range = new vscode.Range(start, start)
     const recommendation = recommendationDetail.content

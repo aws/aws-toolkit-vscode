@@ -4,13 +4,12 @@
  */
 
 import { getLogger } from '../logger/logger'
+import { LanguageServerLocation, ManifestLocation } from '../telemetry/telemetry'
 
 export const logger = getLogger('lsp')
 
-type Location = 'remote' | 'cache' | 'override' | 'fallback' | 'unknown'
-
 export interface LspResult {
-    location: Location
+    location: LanguageServerLocation
     version: string
     assetDirectory: string
 }
@@ -53,6 +52,7 @@ export interface Manifest {
     artifactDescription: string
     isManifestDeprecated: boolean
     versions: LspVersion[]
+    location?: ManifestLocation
 }
 
 export interface VersionRange {

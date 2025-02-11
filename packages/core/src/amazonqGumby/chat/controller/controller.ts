@@ -12,7 +12,7 @@ import { GumbyNamedMessages, Messenger } from './messenger/messenger'
 import { AuthController } from '../../../amazonq/auth/controller'
 import { ChatSessionManager } from '../storages/chatSession'
 import { ConversationState, Session } from '../session/session'
-import { getLogger } from '../../../shared/logger'
+import { getLogger } from '../../../shared/logger/logger'
 import { featureName } from '../../models/constants'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import {
@@ -482,6 +482,12 @@ export class GumbyController {
                 toJDKVersion,
                 message.tabID
             )
+
+            // do not allow downgrades (only this combination can be selected in the UI)
+            if (fromJDKVersion === JDKVersion.JDK21 && toJDKVersion === JDKVersion.JDK17) {
+                this.messenger.sendUnrecoverableErrorResponse('invalid-from-to-jdk', message.tabID)
+                return
+            }
 
             await processLanguageUpgradeTransformFormInput(pathToProject, fromJDKVersion, toJDKVersion)
             await this.messenger.sendSkipTestsPrompt(message.tabID)

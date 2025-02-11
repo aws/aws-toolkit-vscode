@@ -8,6 +8,7 @@ import { ToolkitError } from '../errors'
 import { Timeout } from '../utilities/timeoutUtils'
 import globals from '../extensionGlobals'
 import { Manifest } from './types'
+import { StageResolver, tryStageResolvers } from './utils/setupStage'
 import { HttpResourceFetcher } from '../resourcefetcher/httpResourceFetcher'
 
 const logger = getLogger('lsp')
@@ -19,7 +20,7 @@ interface StorageManifest {
 
 type ManifestStorage = Record<string, StorageManifest>
 
-const manifestStorageKey = 'aws.toolkit.lsp.manifest'
+export const manifestStorageKey = 'aws.toolkit.lsp.manifest'
 const manifestTimeoutMs = 15000
 
 export class ManifestResolver {
@@ -32,10 +33,23 @@ export class ManifestResolver {
      * Fetches the latest manifest, falling back to local cache on failure
      */
     async resolve(): Promise<Manifest> {
-        try {
-            return await this.fetchRemoteManifest()
-        } catch (error) {
-            return await this.getLocalManifest()
+        const resolvers: StageResolver<Manifest>[] = [
+            {
+                resolve: async () => await this.fetchRemoteManifest(),
+                telemetryMetadata: { id: this.lsName, manifestLocation: 'remote' },
+            },
+            {
+                resolve: async () => await this.getLocalManifest(),
+                telemetryMetadata: { id: this.lsName, manifestLocation: 'cache' },
+            },
+        ]
+
+        return await tryStageResolvers('getManifest', resolvers, extractMetadata)
+
+        function extractMetadata(r: Manifest) {
+            return {
+                manifestSchemaVersion: r.manifestSchemaVersion,
+            }
         }
     }
 
@@ -52,7 +66,7 @@ export class ManifestResolver {
         const manifest = this.parseManifest(resp.content)
         await this.saveManifest(resp.eTag, resp.content)
         this.checkDeprecation(manifest)
-
+        manifest.location = 'remote'
         return manifest
     }
 
@@ -67,6 +81,7 @@ export class ManifestResolver {
 
         const manifest = this.parseManifest(manifestData.content)
         this.checkDeprecation(manifest)
+        manifest.location = 'cache'
         return manifest
     }
 

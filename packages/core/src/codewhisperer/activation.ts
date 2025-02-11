@@ -21,7 +21,7 @@ import { CodeWhispererSettings } from './util/codewhispererSettings'
 import { ExtContext } from '../shared/extensions'
 import { CodeWhispererTracker } from './tracker/codewhispererTracker'
 import * as codewhispererClient from './client/codewhisperer'
-import { getLogger } from '../shared/logger'
+import { getLogger } from '../shared/logger/logger'
 import {
     enableCodeSuggestions,
     toggleCodeSuggestions,
@@ -83,7 +83,7 @@ import { securityScanLanguageContext } from './util/securityScanLanguageContext'
 import { registerWebviewErrorHandler } from '../webviews/server'
 import { logAndShowError, logAndShowWebviewError } from '../shared/utilities/logAndShowUtils'
 import { openSettings } from '../shared/settings'
-import { telemetry } from '../shared/telemetry'
+import { telemetry } from '../shared/telemetry/telemetry'
 import { FeatureConfigProvider } from '../shared/featureConfig'
 import { SecurityIssueProvider } from './service/securityIssueProvider'
 import { SecurityIssueTreeViewProvider } from './service/securityIssueTreeViewProvider'
@@ -493,6 +493,9 @@ export async function activate(context: ExtContext): Promise<void> {
                               CodeWhispererConstants.amazonqIgnoreNextLine
                           )
                 )
+            }),
+            vscode.window.createTreeView(SecurityIssueTreeViewProvider.viewType, {
+                treeDataProvider: SecurityIssueTreeViewProvider.instance,
             })
         )
     }

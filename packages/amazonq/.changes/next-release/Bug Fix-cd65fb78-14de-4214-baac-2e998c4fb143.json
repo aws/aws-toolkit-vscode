@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Amazon Q /test: Q identify active test file and infer source file for test generation."
+}

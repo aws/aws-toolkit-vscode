@@ -7,7 +7,7 @@ import { Ides } from 'aws-sdk/clients/codecatalyst'
 import * as vscode from 'vscode'
 import { CodeCatalystResource, getCodeCatalystConfig } from '../shared/clients/codecatalystClient'
 import { pushIf } from '../shared/utilities/collectionUtils'
-import { getLogger } from '../shared/logger'
+import { getLogger } from '../shared/logger/logger'
 
 /**
  * Builds a web URL from the given CodeCatalyst object.

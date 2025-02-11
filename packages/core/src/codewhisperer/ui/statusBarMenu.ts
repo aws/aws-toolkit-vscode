@@ -29,7 +29,7 @@ import { CodeScansState, CodeSuggestionsState, vsCodeState } from '../models/mod
 import { Commands } from '../../shared/vscode/commands2'
 import { createExitButton } from '../../shared/ui/buttons'
 import { telemetry } from '../../shared/telemetry/telemetry'
-import { getLogger } from '../../shared/logger'
+import { getLogger } from '../../shared/logger/logger'
 
 function getAmazonQCodeWhispererNodes() {
     const autoTriggerEnabled = CodeSuggestionsState.instance.isSuggestionsEnabled()

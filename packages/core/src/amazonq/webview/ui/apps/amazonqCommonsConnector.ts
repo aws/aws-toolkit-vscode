@@ -130,8 +130,8 @@ export class Connector {
         this.sendMessageToExtension(createClickTelemetry(`amazonq-explore-${actionId}`))
 
         this.sendMessageToExtension({
-            command: 'open-user-guide',
-            userGuideLink,
+            command: 'open-link',
+            link: userGuideLink,
         })
     }
 

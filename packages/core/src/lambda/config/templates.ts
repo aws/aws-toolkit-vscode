@@ -11,13 +11,13 @@ import * as _path from 'path'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import * as fsUtils from '../../shared/filesystemUtilities'
-import { getLogger, Logger } from '../../shared/logger'
+import { getLogger, Logger } from '../../shared/logger/logger'
 import { ReadonlyJsonObject } from '../../shared/sam/debugger/awsSamDebugConfiguration'
 import { getTabSizeSetting } from '../../shared/utilities/editorUtilities'
 import { getNormalizedRelativePath } from '../../shared/utilities/pathUtils'
 import { saveDocumentIfDirty } from '../../shared/utilities/textDocumentUtilities'
 import { access } from 'fs/promises'
-import { fs } from '../../shared'
+import { fs } from '../../shared/fs/fs'
 
 const localize = nls.loadMessageBundle()
 

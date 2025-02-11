@@ -627,9 +627,17 @@
                 "unmodifiedAcceptedCharacterCount": { "shape": "PrimitiveInteger" },
                 "totalNewCodeCharacterCount": { "shape": "PrimitiveInteger" },
                 "totalNewCodeLineCount": { "shape": "PrimitiveInteger" },
-                "userWrittenCodeCharacterCount": { "shape": "PrimitiveInteger" },
-                "userWrittenCodeLineCount": { "shape": "PrimitiveInteger" }
+                "userWrittenCodeCharacterCount": { "shape": "CodeCoverageEventUserWrittenCodeCharacterCountInteger" },
+                "userWrittenCodeLineCount": { "shape": "CodeCoverageEventUserWrittenCodeLineCountInteger" }
             }
+        },
+        "CodeCoverageEventUserWrittenCodeCharacterCountInteger": {
+            "type": "integer",
+            "min": 0
+        },
+        "CodeCoverageEventUserWrittenCodeLineCountInteger": {
+            "type": "integer",
+            "min": 0
         },
         "CodeFixAcceptanceEvent": {
             "type": "structure",
@@ -1018,6 +1026,11 @@
             "min": 1,
             "pattern": "[-a-zA-Z0-9._]*"
         },
+        "DocFolderLevel": {
+            "type": "string",
+            "documentation": "<p>Specifies the folder depth level where the document should be generated</p>",
+            "enum": ["SUB_FOLDER", "ENTIRE_WORKSPACE"]
+        },
         "DocGenerationEvent": {
             "type": "structure",
             "required": ["conversationId"],
@@ -1026,26 +1039,97 @@
                 "numberOfAddChars": { "shape": "PrimitiveInteger" },
                 "numberOfAddLines": { "shape": "PrimitiveInteger" },
                 "numberOfAddFiles": { "shape": "PrimitiveInteger" },
-                "userDecision": { "shape": "DocGenerationUserDecision" },
-                "interactionType": { "shape": "DocGenerationInteractionType" },
+                "userDecision": { "shape": "DocUserDecision" },
+                "interactionType": { "shape": "DocInteractionType" },
                 "userIdentity": { "shape": "String" },
                 "numberOfNavigation": { "shape": "PrimitiveInteger" },
-                "folderLevel": { "shape": "DocGenerationFolderLevel" }
-            }
+                "folderLevel": { "shape": "DocFolderLevel" }
+            },
+            "documentation": "<p>Deprecated: use DocV2AcceptanceEvent for tracking acceptance and DocV2GenerationEvent for tracking generation</p>"
         },
-        "DocGenerationFolderLevel": {
+        "DocInteractionType": {
             "type": "string",
-            "documentation": "<p>Doc Generation Folder Level</p>",
-            "enum": ["SUB_FOLDER", "ENTIRE_WORKSPACE"]
-        },
-        "DocGenerationInteractionType": {
-            "type": "string",
-            "documentation": "<p>Doc Generation Interaction Type</p>",
+            "documentation": "<p>Tracks whether user chose to generate a new document, update an existing one, or edit document</p>",
             "enum": ["GENERATE_README", "UPDATE_README", "EDIT_README"]
         },
-        "DocGenerationUserDecision": {
+        "DocUserDecision": {
             "type": "string",
             "enum": ["ACCEPT", "REJECT"]
+        },
+        "DocV2AcceptanceEvent": {
+            "type": "structure",
+            "required": [
+                "conversationId",
+                "numberOfAddedChars",
+                "numberOfAddedLines",
+                "numberOfAddedFiles",
+                "userDecision",
+                "interactionType",
+                "numberOfNavigations",
+                "folderLevel"
+            ],
+            "members": {
+                "conversationId": { "shape": "ConversationId" },
+                "numberOfAddedChars": { "shape": "DocV2AcceptanceEventNumberOfAddedCharsInteger" },
+                "numberOfAddedLines": { "shape": "DocV2AcceptanceEventNumberOfAddedLinesInteger" },
+                "numberOfAddedFiles": { "shape": "DocV2AcceptanceEventNumberOfAddedFilesInteger" },
+                "userDecision": { "shape": "DocUserDecision" },
+                "interactionType": { "shape": "DocInteractionType" },
+                "numberOfNavigations": { "shape": "DocV2AcceptanceEventNumberOfNavigationsInteger" },
+                "folderLevel": { "shape": "DocFolderLevel" }
+            },
+            "documentation": "<p>Interaction event for /doc, emitted when user accepts or rejects the generated content</p>"
+        },
+        "DocV2AcceptanceEventNumberOfAddedCharsInteger": {
+            "type": "integer",
+            "min": 0
+        },
+        "DocV2AcceptanceEventNumberOfAddedFilesInteger": {
+            "type": "integer",
+            "min": 0
+        },
+        "DocV2AcceptanceEventNumberOfAddedLinesInteger": {
+            "type": "integer",
+            "min": 0
+        },
+        "DocV2AcceptanceEventNumberOfNavigationsInteger": {
+            "type": "integer",
+            "min": 0
+        },
+        "DocV2GenerationEvent": {
+            "type": "structure",
+            "required": [
+                "conversationId",
+                "numberOfGeneratedChars",
+                "numberOfGeneratedLines",
+                "numberOfGeneratedFiles"
+            ],
+            "members": {
+                "conversationId": { "shape": "ConversationId" },
+                "numberOfGeneratedChars": { "shape": "DocV2GenerationEventNumberOfGeneratedCharsInteger" },
+                "numberOfGeneratedLines": { "shape": "DocV2GenerationEventNumberOfGeneratedLinesInteger" },
+                "numberOfGeneratedFiles": { "shape": "DocV2GenerationEventNumberOfGeneratedFilesInteger" },
+                "interactionType": { "shape": "DocInteractionType" },
+                "numberOfNavigations": { "shape": "DocV2GenerationEventNumberOfNavigationsInteger" },
+                "folderLevel": { "shape": "DocFolderLevel" }
+            },
+            "documentation": "<p>Generation event for /doc, emitted when user requests document generation</p>"
+        },
+        "DocV2GenerationEventNumberOfGeneratedCharsInteger": {
+            "type": "integer",
+            "min": 0
+        },
+        "DocV2GenerationEventNumberOfGeneratedFilesInteger": {
+            "type": "integer",
+            "min": 0
+        },
+        "DocV2GenerationEventNumberOfGeneratedLinesInteger": {
+            "type": "integer",
+            "min": 0
+        },
+        "DocV2GenerationEventNumberOfNavigationsInteger": {
+            "type": "integer",
+            "min": 0
         },
         "DocumentSymbol": {
             "type": "structure",
@@ -2094,7 +2178,7 @@
         },
         "StartCodeFixJobRequestDescriptionString": {
             "type": "string",
-            "max": 2000,
+            "max": 5000,
             "min": 1,
             "sensitive": true
         },
@@ -2421,6 +2505,8 @@
                 "inlineChatEvent": { "shape": "InlineChatEvent" },
                 "transformEvent": { "shape": "TransformEvent" },
                 "docGenerationEvent": { "shape": "DocGenerationEvent" },
+                "docV2GenerationEvent": { "shape": "DocV2GenerationEvent" },
+                "docV2AcceptanceEvent": { "shape": "DocV2AcceptanceEvent" },
                 "testGenerationEvent": { "shape": "TestGenerationEvent" }
             },
             "union": true
@@ -2563,11 +2649,17 @@
             "type": "structure",
             "required": ["message"],
             "members": {
-                "message": { "shape": "String" }
+                "message": { "shape": "String" },
+                "reason": { "shape": "ThrottlingExceptionReason" }
             },
             "documentation": "<p>This exception is thrown when request was denied due to request throttling.</p>",
             "exception": true,
             "retryable": { "throttling": true }
+        },
+        "ThrottlingExceptionReason": {
+            "type": "string",
+            "documentation": "<p>Reason for ThrottlingException</p>",
+            "enum": ["MONTHLY_REQUEST_COUNT"]
         },
         "Timestamp": { "type": "timestamp" },
         "TransformEvent": {
@@ -2606,7 +2698,7 @@
         },
         "TransformationJavaRuntimeEnv": {
             "type": "string",
-            "enum": ["JVM_8", "JVM_11", "JVM_17"]
+            "enum": ["JVM_8", "JVM_11", "JVM_17", "JVM_21"]
         },
         "TransformationJob": {
             "type": "structure",
@@ -2629,7 +2721,7 @@
         },
         "TransformationLanguage": {
             "type": "string",
-            "enum": ["JAVA_8", "JAVA_11", "JAVA_17", "C_SHARP", "COBOL", "PL_I", "JCL"]
+            "enum": ["JAVA_8", "JAVA_11", "JAVA_17", "JAVA_21", "C_SHARP", "COBOL", "PL_I", "JCL"]
         },
         "TransformationLanguages": {
             "type": "list",

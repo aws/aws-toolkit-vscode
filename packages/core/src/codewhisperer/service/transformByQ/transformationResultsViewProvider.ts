@@ -18,7 +18,7 @@ import {
     TransformationType,
 } from '../../models/model'
 import { ExportResultArchiveStructure, downloadExportResultArchive } from '../../../shared/utilities/download'
-import { getLogger } from '../../../shared/logger'
+import { getLogger } from '../../../shared/logger/logger'
 import { telemetry } from '../../../shared/telemetry/telemetry'
 import { CodeTransformTelemetryState } from '../../../amazonqGumby/telemetry/codeTransformTelemetryState'
 import * as CodeWhispererConstants from '../../models/constants'

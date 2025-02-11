@@ -37,6 +37,7 @@ import { activate as activateDev } from './dev/activation'
 import * as beta from './dev/beta'
 import { activate as activateApplicationComposer } from './applicationcomposer/activation'
 import { activate as activateRedshift } from './awsService/redshift/activation'
+import { activate as activateDocumentDb } from './docdb/activation'
 import { activate as activateIamPolicyChecks } from './awsService/accessanalyzer/activation'
 import { activate as activateNotifications } from './notifications/activation'
 import { SchemaService } from './shared/schemas'
@@ -45,6 +46,7 @@ import globals from './shared/extensionGlobals'
 import { Experiments, Settings, showSettingsFailedMsg } from './shared/settings'
 import { isReleaseVersion } from './shared/vscode/env'
 import { AuthStatus, AuthUserState, telemetry } from './shared/telemetry/telemetry'
+import { ExtStartUpSources } from './shared/telemetry/util'
 import { Auth } from './auth/auth'
 import { getTelemetryMetadataForConn } from './auth/connection'
 import { registerSubmitFeedback } from './feedback/vue/submitFeedback'
@@ -52,12 +54,13 @@ import { activateCommon, deactivateCommon } from './extension'
 import { learnMoreAmazonQCommand, qExtensionPageCommand, dismissQTree } from './amazonq/explorer/amazonQChildrenNodes'
 import { codeWhispererCoreScopes } from './codewhisperer/util/authUtil'
 import { installAmazonQExtension } from './codewhisperer/commands/basicCommands'
-import { isExtensionInstalled, VSCODE_EXTENSION_ID } from './shared/utilities'
+import { VSCODE_EXTENSION_ID } from './shared/extensions'
+import { isExtensionInstalled } from './shared/utilities/vsCodeUtils'
 import { ExtensionUse, getAuthFormIdsFromConnection, initializeCredentialsProviderManager } from './auth/utils'
-import { ExtStartUpSources } from './shared/telemetry'
 import { activate as activateThreatComposerEditor } from './threatComposer/activation'
 import { isSsoConnection, hasScopes } from './auth/connection'
-import { CrashMonitoring, setContext } from './shared'
+import { CrashMonitoring } from './shared/crashMonitoring'
+import { setContext } from './shared/vscode/setContext'
 import { AuthFormId } from './login/webview/vue/types'
 
 let localize: nls.LocalizeFunc
@@ -198,6 +201,8 @@ export async function activate(context: vscode.ExtensionContext) {
         await activateRedshift(extContext)
 
         await activateAppBuilder(extContext)
+
+        await activateDocumentDb(extContext)
 
         await activateIamPolicyChecks(extContext)
 

@@ -6,7 +6,7 @@
 import { UserIntent } from '@amzn/codewhisperer-streaming'
 import { EditorContextCommand } from '../../../commands/registerCommands'
 import { PromptMessage } from '../model'
-import { Auth } from '../../../../auth'
+import { Auth } from '../../../../auth/auth'
 
 export class UserIntentRecognizer {
     public getFromContextMenuCommand(command: EditorContextCommand): UserIntent | undefined {

@@ -10,11 +10,11 @@ const localize = nls.loadMessageBundle()
 
 import AdmZip from 'adm-zip'
 import * as path from 'path'
-import { fs } from '../../shared'
+import { fs } from '../../shared/fs/fs'
 import { showConfirmationMessage, showViewLogsMessage } from '../../shared/utilities/messages'
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../shared/filesystemUtilities'
 import * as localizedText from '../../shared/localizedText'
-import { getLogger } from '../../shared/logger'
+import { getLogger } from '../../shared/logger/logger'
 import { SamCliBuildInvocation } from '../../shared/sam/cli/samCliBuild'
 import { getSamCliContext } from '../../shared/sam/cli/samCliContext'
 import { SamTemplateGenerator } from '../../shared/templates/sam/samTemplateGenerator'

@@ -8,7 +8,7 @@ import { copyToClipboard } from '../../shared/utilities/messages'
 import { Ec2Selection } from './prompter'
 import { sshLogFileLocation } from '../../shared/sshConfig'
 import { SSM } from 'aws-sdk'
-import { getLogger } from '../../shared/logger'
+import { getLogger } from '../../shared/logger/logger'
 
 export function getIconCode(instance: SafeEc2Instance) {
     if (instance.LastSeenStatus === 'running') {

@@ -6,12 +6,14 @@
 import vscode from 'vscode'
 import { startLanguageServer } from './client'
 import { AmazonQLSPResolver } from './lspInstaller'
-import { Commands, ToolkitError } from 'aws-core-vscode/shared'
+import { Commands, lspSetupStage, ToolkitError } from 'aws-core-vscode/shared'
 
 export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
     try {
-        const installResult = await new AmazonQLSPResolver().resolve()
-        await startLanguageServer(ctx, installResult.resourcePaths)
+        await lspSetupStage('all', async () => {
+            const installResult = await new AmazonQLSPResolver().resolve()
+            await lspSetupStage('launch', async () => await startLanguageServer(ctx, installResult.resourcePaths))
+        })
         ctx.subscriptions.push(
             Commands.register({ id: 'aws.amazonq.invokeInlineCompletion', autoconnect: true }, async () => {
                 await vscode.commands.executeCommand('editor.action.inlineSuggest.trigger')
