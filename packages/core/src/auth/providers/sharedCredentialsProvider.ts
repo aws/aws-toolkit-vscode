@@ -31,7 +31,7 @@ import {
 import { CredentialsData, SectionName, SharedCredentialsKeys } from '../credentials/types'
 import { SsoProfile, hasScopes, scopesSsoAccountAccess } from '../connection'
 import { builderIdStartUrl } from '../sso/constants'
-import { ToolkitError } from '../../shared'
+import { ToolkitError } from '../../shared/errors'
 
 const credentialSources = {
     ECS_CONTAINER: 'EcsContainer',
