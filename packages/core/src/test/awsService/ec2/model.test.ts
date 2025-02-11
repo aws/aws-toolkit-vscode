@@ -6,7 +6,7 @@
 import assert from 'assert'
 import * as sinon from 'sinon'
 import { Ec2Connecter, getRemoveLinesCommand } from '../../../awsService/ec2/model'
-import { SsmClient } from '../../../shared/clients/ssmClient'
+import { SsmClient } from '../../../shared/clients/ssm'
 import { Ec2Client } from '../../../shared/clients/ec2Client'
 import { Ec2Selection } from '../../../awsService/ec2/prompter'
 import { ToolkitError } from '../../../shared/errors'

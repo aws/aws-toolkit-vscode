@@ -13,6 +13,7 @@ import {
     BuildMiddleware,
     DeserializeHandler,
     DeserializeMiddleware,
+    Handler,
     FinalizeHandler,
     FinalizeRequestMiddleware,
     HandlerExecutionContext,
@@ -37,10 +38,18 @@ export type AwsClientConstructor<C> = new (o: AwsClientOptions) => C
 
 // AWS-SDKv3 does not export generic types for clients so we need to build them as needed
 // https://github.com/aws/aws-sdk-js-v3/issues/5856#issuecomment-2096950979
-interface AwsClient {
+export interface AwsClient {
     middlewareStack: {
         add: MiddlewareStack<any, MetadataBearer>['add']
     }
+    send: (command: AwsCommand, options?: any) => Promise<any>
+    destroy: () => void
+}
+
+export interface AwsCommand {
+    input: object
+    middlewareStack: any
+    resolveMiddleware: (stack: any, configuration: any, options: any) => Handler<any, any>
 }
 
 interface AwsClientOptions {
