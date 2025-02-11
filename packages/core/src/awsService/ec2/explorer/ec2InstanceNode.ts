@@ -12,7 +12,7 @@ import { getIconCode } from '../utils'
 import { Ec2Selection } from '../prompter'
 import { Ec2Node, Ec2ParentNode } from './ec2ParentNode'
 import { EC2 } from 'aws-sdk'
-import { getLogger } from '../../../shared'
+import { getLogger } from '../../../shared/logger/logger'
 
 export const Ec2InstanceRunningContext = 'awsEc2RunningNode'
 export const Ec2InstanceStoppedContext = 'awsEc2StoppedNode'

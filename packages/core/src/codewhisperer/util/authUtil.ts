@@ -28,7 +28,7 @@ import {
     getTelemetryMetadataForConn,
     ProfileNotFoundError,
 } from '../../auth/connection'
-import { getLogger } from '../../shared/logger'
+import { getLogger } from '../../shared/logger/logger'
 import { Commands, placeholder } from '../../shared/vscode/commands2'
 import { vsCodeState } from '../models/model'
 import { onceChanged, once } from '../../shared/utilities/functionUtils'
@@ -44,6 +44,7 @@ import { telemetry } from '../../shared/telemetry/telemetry'
 import { asStringifiedStack } from '../../shared/telemetry/spans'
 import { withTelemetryContext } from '../../shared/telemetry/util'
 import { focusAmazonQPanel } from '../../codewhispererChat/commands/registerCommands'
+import { throttle } from 'lodash'
 
 /** Backwards compatibility for connections w pre-chat scopes */
 export const codeWhispererCoreScopes = [...scopesCodeWhispererCore]
@@ -402,9 +403,23 @@ export class AuthUtil {
      *
      * By default, network errors are ignored when determining auth state since they may be silently
      * recoverable later.
+     *
+     * THROTTLE: This function is called in rapid succession by Amazon Q features and can lead to
+     *           a barrage of disk access and/or token refreshes. We throttle to deal with this.
+     *
+     *           Note we do an explicit cast of the return type due to Lodash types incorrectly indicating
+     *           a FeatureAuthState or undefined can be returned. But since we set `leading: true`
+     *           it will always return FeatureAuthState
+     */
+    public getChatAuthState = throttle(() => this._getChatAuthState(), 2000, {
+        leading: true,
+    }) as () => Promise<FeatureAuthState>
+    /**
+     * IMPORTANT: Only use this if you do NOT want to swallow network errors, otherwise use {@link getChatAuthState()}
+     * @param ignoreNetErr swallows network errors
      */
     @withTelemetryContext({ name: 'getChatAuthState', class: authClassName })
-    public async getChatAuthState(ignoreNetErr: boolean = true): Promise<FeatureAuthState> {
+    public async _getChatAuthState(ignoreNetErr: boolean = true): Promise<FeatureAuthState> {
         // The state of the connection may not have been properly validated
         // and the current state we see may be stale, so refresh for latest state.
         if (ignoreNetErr) {

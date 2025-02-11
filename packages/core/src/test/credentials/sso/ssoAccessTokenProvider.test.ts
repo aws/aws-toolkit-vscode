@@ -156,20 +156,6 @@ describe('SsoAccessTokenProvider', function () {
             assert.strictEqual(cachedToken, undefined)
         })
 
-        it('concurrent calls are debounced', async function () {
-            const validToken = createToken(hourInMs)
-            await cache.token.save(startUrl, { region, startUrl, token: validToken })
-            const actualGetToken = sinon.spy(sut, '_getToken')
-
-            const result = await Promise.all([sut.getToken(), sut.getToken(), sut.getToken()])
-
-            // Subsequent other calls were debounced so this was only called once
-            assert.strictEqual(actualGetToken.callCount, 1)
-            for (const r of result) {
-                assert.deepStrictEqual(r, validToken)
-            }
-        })
-
         describe('Exceptions', function () {
             it('drops expired tokens if failure was a client-fault', async function () {
                 const exception = new UnauthorizedClientException({ message: '', $metadata: {} })

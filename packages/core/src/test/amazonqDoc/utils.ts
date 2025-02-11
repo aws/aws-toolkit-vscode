@@ -1,0 +1,249 @@
+/*!
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import * as vscode from 'vscode'
+import * as sinon from 'sinon'
+import { MessagePublisher } from '../../amazonq/messages/messagePublisher'
+import { ChatControllerEventEmitters, DocController } from '../../amazonqDoc/controllers/chat/controller'
+import { DocChatSessionStorage } from '../../amazonqDoc/storages/chatSession'
+import { createTestWorkspaceFolder } from '../testUtil'
+import { Session } from '../../amazonqDoc/session/session'
+import { NewFileInfo, SessionState } from '../../amazonqDoc/types'
+import { FeatureDevClient } from '../../amazonqFeatureDev/client/featureDev'
+import { VirtualMemoryFile } from '../../shared/virtualMemoryFile'
+import path from 'path'
+import { docChat } from '../../amazonqDoc/constants'
+import { DocMessenger } from '../../amazonqDoc/messenger'
+import { AppToWebViewMessageDispatcher } from '../../amazonq/commons/connector/connectorMessages'
+import { createSessionConfig } from '../../amazonq/commons/session/sessionConfigFactory'
+import { DocGenerationTask } from '../../amazonqDoc/controllers/docGenerationTask'
+import { DocV2GenerationEvent, DocV2AcceptanceEvent } from '../../amazonqFeatureDev/client/featuredevproxyclient'
+import { FollowUpTypes } from '../../amazonq/commons/types'
+
+export function createMessenger(): DocMessenger {
+    return new DocMessenger(
+        new AppToWebViewMessageDispatcher(new MessagePublisher(sinon.createStubInstance(vscode.EventEmitter))),
+        docChat
+    )
+}
+
+export function createMockChatEmitters(): ChatControllerEventEmitters {
+    return {
+        processHumanChatMessage: new vscode.EventEmitter<any>(),
+        followUpClicked: new vscode.EventEmitter<any>(),
+        openDiff: new vscode.EventEmitter<any>(),
+        processChatItemVotedMessage: new vscode.EventEmitter<any>(),
+        processChatItemFeedbackMessage: new vscode.EventEmitter<any>(),
+        stopResponse: new vscode.EventEmitter<any>(),
+        tabOpened: new vscode.EventEmitter<any>(),
+        tabClosed: new vscode.EventEmitter<any>(),
+        authClicked: new vscode.EventEmitter<any>(),
+        processResponseBodyLinkClick: new vscode.EventEmitter<any>(),
+        insertCodeAtPositionClicked: new vscode.EventEmitter<any>(),
+        fileClicked: new vscode.EventEmitter<any>(),
+        formActionClicked: new vscode.EventEmitter<any>(),
+    }
+}
+
+export interface ControllerSetup {
+    emitters: ChatControllerEventEmitters
+    workspaceFolder: vscode.WorkspaceFolder
+    messenger: DocMessenger
+    sessionStorage: DocChatSessionStorage
+}
+
+export async function createSession({
+    messenger,
+    sessionState,
+    scheme,
+    conversationID = '0',
+    tabID = '0',
+    uploadID = '0',
+}: {
+    messenger: DocMessenger
+    scheme: string
+    sessionState?: Omit<SessionState, 'uploadId'>
+    conversationID?: string
+    tabID?: string
+    uploadID?: string
+}) {
+    const sessionConfig = await createSessionConfig(scheme)
+
+    const client = sinon.createStubInstance(FeatureDevClient)
+    client.createConversation.resolves(conversationID)
+    const session = new Session(sessionConfig, messenger, tabID, sessionState, client)
+
+    sinon.stub(session, 'conversationId').get(() => conversationID)
+    sinon.stub(session, 'uploadId').get(() => uploadID)
+
+    return session
+}
+
+export async function sessionRegisterProvider(session: Session, uri: vscode.Uri, fileContents: Uint8Array) {
+    session.config.fs.registerProvider(uri, new VirtualMemoryFile(fileContents))
+}
+
+export function generateVirtualMemoryUri(uploadID: string, filePath: string, scheme: string) {
+    const generationFilePath = path.join(uploadID, filePath)
+    const uri = vscode.Uri.from({ scheme, path: generationFilePath })
+    return uri
+}
+
+export async function sessionWriteFile(session: Session, uri: vscode.Uri, encodedContent: Uint8Array) {
+    await session.config.fs.writeFile(uri, encodedContent, {
+        create: true,
+        overwrite: true,
+    })
+}
+
+export async function createController(): Promise<ControllerSetup> {
+    const messenger = createMessenger()
+
+    // Create a new workspace root
+    const testWorkspaceFolder = await createTestWorkspaceFolder()
+    sinon.stub(vscode.workspace, 'workspaceFolders').value([testWorkspaceFolder])
+
+    const sessionStorage = new DocChatSessionStorage(messenger)
+
+    const mockChatControllerEventEmitters = createMockChatEmitters()
+
+    new DocController(
+        mockChatControllerEventEmitters,
+        messenger,
+        sessionStorage,
+        sinon.createStubInstance(vscode.EventEmitter).event
+    )
+
+    new DocGenerationTask()
+
+    return {
+        emitters: mockChatControllerEventEmitters,
+        workspaceFolder: testWorkspaceFolder,
+        messenger,
+        sessionStorage,
+    }
+}
+
+export type EventParams = {
+    type: 'generation' | 'acceptance'
+    chars: number
+    lines: number
+    files: number
+    interactionType: 'GENERATE_README' | 'UPDATE_README' | 'EDIT_README'
+    callIndex?: number
+    conversationId: string
+}
+/**
+ * Metrics for measuring README content changes in documentation generation tests.
+ */
+export const EventMetrics = {
+    /**
+     * Initial README content measurements
+     * Generated using ReadmeBuilder.createBaseReadme()
+     */
+    INITIAL_README: {
+        chars: 265,
+        lines: 16,
+        files: 1,
+    },
+    /**
+     * Repository Structure section measurements
+     * Differential metrics when adding repository structure documentation compare to the initial readme
+     */
+    REPO_STRUCTURE: {
+        chars: 60,
+        lines: 8,
+        files: 1,
+    },
+    /**
+     * Data Flow section measurements
+     * Differential metrics when adding data flow documentation compare to the initial readme
+     */
+    DATA_FLOW: {
+        chars: 180,
+        lines: 11,
+        files: 1,
+    },
+} as const
+
+export function createExpectedEvent(params: EventParams) {
+    const baseEvent = {
+        conversationId: params.conversationId,
+        numberOfNavigations: 1,
+        folderLevel: 'ENTIRE_WORKSPACE',
+        interactionType: params.interactionType,
+    }
+
+    if (params.type === 'generation') {
+        return {
+            ...baseEvent,
+            numberOfGeneratedChars: params.chars,
+            numberOfGeneratedLines: params.lines,
+            numberOfGeneratedFiles: params.files,
+        } as DocV2GenerationEvent
+    } else {
+        return {
+            ...baseEvent,
+            numberOfAddedChars: params.chars,
+            numberOfAddedLines: params.lines,
+            numberOfAddedFiles: params.files,
+            userDecision: 'ACCEPT',
+        } as DocV2AcceptanceEvent
+    }
+}
+
+export async function assertTelemetry(params: {
+    spy: sinon.SinonStub
+    expectedEvent: DocV2GenerationEvent | DocV2AcceptanceEvent
+    type: 'generation' | 'acceptance'
+    callIndex?: number
+}) {
+    await new Promise((resolve) => setTimeout(resolve, 100))
+    const spyCall = params.callIndex !== undefined ? params.spy.getCall(params.callIndex) : params.spy
+    sinon.assert.calledWith(spyCall, sinon.match(params.expectedEvent), params.type)
+}
+
+export async function updateFilePaths(
+    session: Session,
+    content: string,
+    uploadId: string,
+    docScheme: string,
+    workspaceFolder: any
+) {
+    const updatedFilePaths: NewFileInfo[] = [
+        {
+            zipFilePath: path.normalize('README.md'),
+            relativePath: path.normalize('README.md'),
+            fileContent: content,
+            rejected: false,
+            virtualMemoryUri: generateVirtualMemoryUri(uploadId, path.normalize('README.md'), docScheme),
+            workspaceFolder: workspaceFolder,
+            changeApplied: false,
+        },
+    ]
+
+    Object.defineProperty(session.state, 'filePaths', {
+        get: () => updatedFilePaths,
+        configurable: true,
+    })
+}
+
+export const FollowUpSequences = {
+    generateReadme: [FollowUpTypes.NewTask, FollowUpTypes.CreateDocumentation, FollowUpTypes.ProceedFolderSelection],
+    updateReadme: [
+        FollowUpTypes.NewTask,
+        FollowUpTypes.UpdateDocumentation,
+        FollowUpTypes.SynchronizeDocumentation,
+        FollowUpTypes.ProceedFolderSelection,
+    ],
+    editReadme: [
+        FollowUpTypes.NewTask,
+        FollowUpTypes.UpdateDocumentation,
+        FollowUpTypes.EditDocumentation,
+        FollowUpTypes.ProceedFolderSelection,
+    ],
+    makeChanges: [FollowUpTypes.MakeChanges],
+    acceptContent: [FollowUpTypes.AcceptChanges],
+}

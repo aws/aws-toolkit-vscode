@@ -8,7 +8,7 @@ import * as url from 'url'
 import _ from 'lodash'
 import { AWSError, S3 } from 'aws-sdk'
 import { inspect } from 'util'
-import { getLogger } from '../logger'
+import { getLogger } from '../logger/logger'
 import { bufferToStream, DefaultFileStreams, FileStreams, pipe } from '../utilities/streamUtilities'
 import { assertHasProps, InterfaceNoSymbol, isNonNullable, RequiredProps } from '../utilities/tsUtils'
 import { Readable } from 'stream'
@@ -463,7 +463,7 @@ export class DefaultS3Client {
                 MaxKeys: request.maxResults ?? DEFAULT_MAX_KEYS,
                 /**
                  * Set '' as the default prefix to ensure that the bucket's content will be displayed
-                 * when the user has at least list access to the root of the bucket.
+                 * when the user has at least list access to the root of the bucket
                  * https://github.com/aws/aws-toolkit-vscode/issues/4643
                  * @default ''
                  */

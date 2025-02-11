@@ -9,7 +9,7 @@ import { FollowUpGenerator } from '../followUps/generator'
 import { QuickActionGenerator } from '../quickActions/generator'
 import { TabTypeDataMap } from './constants'
 import { agentWalkthroughDataModel } from '../walkthrough/agent'
-import { FeatureContext } from '../../../../shared'
+import { FeatureContext } from '../../../../shared/featureConfig'
 
 export interface TabDataGeneratorProps {
     isFeatureDevEnabled: boolean

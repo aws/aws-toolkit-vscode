@@ -30,14 +30,14 @@ import {
 } from './model'
 import { TriggerEvent, TriggerEventsStorage } from '../../storages/triggerEvents'
 import globals from '../../../shared/extensionGlobals'
-import { getLogger } from '../../../shared/logger'
+import { getLogger } from '../../../shared/logger/logger'
 import { codeWhispererClient } from '../../../codewhisperer/client/codewhisperer'
 import { isAwsError } from '../../../shared/errors'
 import { ChatMessageInteractionType } from '../../../codewhisperer/client/codewhispereruserclient'
 import { supportedLanguagesList } from '../chat/chatRequest/converter'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import { getSelectedCustomization } from '../../../codewhisperer/util/customizationUtil'
-import { undefinedIfEmpty } from '../../../shared'
+import { undefinedIfEmpty } from '../../../shared/utilities/textUtilities'
 
 export function logSendTelemetryEventFailure(error: any) {
     let requestId: string | undefined

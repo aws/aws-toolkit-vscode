@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import * as localizedText from '../localizedText'
-import { getLogger } from '../../shared/logger'
+import { getLogger } from '../../shared/logger/logger'
 import { ProgressEntry } from '../../shared/vscode/window'
 import { getIdeProperties } from '../extensionUtilities'
 import { sleep } from './timeoutUtils'

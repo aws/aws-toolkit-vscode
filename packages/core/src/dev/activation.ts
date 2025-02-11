@@ -15,11 +15,11 @@ import { Wizard } from '../shared/wizards/wizard'
 import { deleteDevEnvCommand, installVsixCommand, openTerminalCommand } from './codecatalyst'
 import { isAnySsoConnection } from '../auth/connection'
 import { Auth } from '../auth/auth'
-import { getLogger } from '../shared/logger'
+import { getLogger } from '../shared/logger/logger'
 import { entries } from '../shared/utilities/tsUtils'
 import { getEnvironmentSpecificMemento } from '../shared/utilities/mementos'
-import { setContext } from '../shared'
-import { telemetry } from '../shared/telemetry'
+import { setContext } from '../shared/vscode/setContext'
+import { telemetry } from '../shared/telemetry/telemetry'
 import { getSessionId } from '../shared/telemetry/util'
 import { NotificationsController } from '../notifications/controller'
 import { DevNotificationsState } from '../notifications/types'
@@ -199,20 +199,6 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
                     .filter((e) => (opts.menuOptions ?? Object.keys(options)).includes(e[0]))
                     .map((e) => e[1])
             )
-        }),
-        // "AWS (Developer): Watch Logs"
-        Commands.register('aws.dev.viewLogs', async () => {
-            // HACK: Use startDebugging() so we can use the DEBUG CONSOLE (which supports
-            // user-defined filtering, unlike the OUTPUT panel).
-            await vscode.debug.startDebugging(undefined, {
-                name: 'aws-dev-log',
-                request: 'launch',
-                type: 'node', // Nonsense, to force the debugger to start.
-            })
-            getLogger().enableDebugConsole()
-            if (!getLogger().logLevelEnabled('debug')) {
-                getLogger().setLogLevel('debug')
-            }
         })
     )
 

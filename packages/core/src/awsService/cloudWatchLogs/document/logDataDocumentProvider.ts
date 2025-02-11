@@ -4,7 +4,7 @@
  */
 import * as vscode from 'vscode'
 import { CloudWatchLogsGroupInfo, LogDataRegistry, UriString } from '../registry/logDataRegistry'
-import { getLogger } from '../../../shared/logger'
+import { getLogger } from '../../../shared/logger/logger'
 import { generateTextFromLogEvents, LineToLogStreamMap } from './textContent'
 import { cwlUriSchema } from '../cloudWatchLogsUtils'
 

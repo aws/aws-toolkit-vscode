@@ -16,9 +16,11 @@ import AdmZip from 'adm-zip'
 import { RelevantTextDocument } from '@amzn/codewhisperer-streaming'
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../shared/filesystemUtilities'
 import { activate as activateLsp } from './lspClient'
-import { telemetry } from '../../shared/telemetry'
+import { telemetry } from '../../shared/telemetry/telemetry'
 import { isCloud9 } from '../../shared/extensionUtilities'
-import { fs, globals, ToolkitError } from '../../shared'
+import { fs } from '../../shared/fs/fs'
+import globals from '../../shared/extensionGlobals'
+import { ToolkitError } from '../../shared/errors'
 import { isWeb } from '../../shared/extensionGlobals'
 import { getUserAgent } from '../../shared/telemetry/util'
 import { isAmazonInternalOs } from '../../shared/vscode/env'
@@ -58,7 +60,7 @@ export interface Manifest {
 }
 const manifestUrl = 'https://aws-toolkit-language-servers.amazonaws.com/q-context/manifest.json'
 // this LSP client in Q extension is only going to work with these LSP server versions
-const supportedLspServerVersions = ['0.1.32']
+const supportedLspServerVersions = ['0.1.35']
 
 const nodeBinName = process.platform === 'win32' ? 'node.exe' : 'node'
 

@@ -13,7 +13,7 @@ import { DataQuickPickItem, showQuickPick } from '../../shared/ui/pickerPrompter
 import { codeWhispererClient } from '../client/codewhisperer'
 import { Customization, ResourceArn } from '../client/codewhispereruserclient'
 import { codicon, getIcon } from '../../shared/icons'
-import { getLogger } from '../../shared/logger'
+import { getLogger } from '../../shared/logger/logger'
 import { showMessageWithUrl } from '../../shared/utilities/messages'
 import { parse } from '@aws-sdk/util-arn-parser'
 import { Commands } from '../../shared/vscode/commands2'
@@ -113,7 +113,7 @@ export const getSelectedCustomization = (): Customization => {
     )
     const selectedCustomization = selectedCustomizationArr[AuthUtil.instance.conn.label]
 
-    if (selectedCustomization && selectedCustomization.name !== baseCustomization.name) {
+    if (selectedCustomization && selectedCustomization.name !== '') {
         return selectedCustomization
     } else {
         const customizationFeature = FeatureConfigProvider.getFeature(Features.customizationArnOverride)

@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { getLogger } from '../../shared/logger'
+import { getLogger } from '../../shared/logger/logger'
 import { runSamCliListResource } from '../../shared/sam/cli/samCliListResources'
 
 export interface StackResource {

@@ -8,7 +8,7 @@ const localize = nls.loadMessageBundle()
 import { debounce } from 'lodash'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { getLogger, Logger } from '../../../shared/logger'
+import { getLogger, Logger } from '../../../shared/logger/logger'
 import { isDocumentValid } from '../../utils'
 import * as yaml from 'js-yaml'
 
