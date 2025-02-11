@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ShortAnswer, ShortAnswerReference } from '../../../codewhisperer'
+import { ShortAnswer, ShortAnswerReference } from '../../../codewhisperer/models/model'
 import { TestGenerationJob } from '../../../codewhisperer/client/codewhispereruserclient'
 
 export enum ConversationState {

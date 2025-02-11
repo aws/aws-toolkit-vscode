@@ -5,11 +5,12 @@
 
 import * as vscode from 'vscode'
 import * as localizedText from '../../shared/localizedText'
-import { getLogger, ToolkitError } from '../../shared'
+import { ToolkitError } from '../../shared/errors'
+import { getLogger } from '../../shared/logger/logger'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { showConfirmationMessage, showViewLogsMessage } from '../../shared/utilities/messages'
-import { telemetry } from '../../shared/telemetry'
+import { telemetry } from '../../shared/telemetry/telemetry'
 import { DBInstanceNode } from '../explorer/dbInstanceNode'
 import { assertNodeAvailable } from '../utils'
 

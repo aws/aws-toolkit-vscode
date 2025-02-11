@@ -8,14 +8,14 @@ import * as assert from 'assert'
 import * as path from 'path'
 import sinon from 'sinon'
 import { waitUntil } from '../../../../shared/utilities/timeoutUtils'
-import { ControllerSetup, createController, createSession, generateVirtualMemoryUri } from '../../utils'
+import { ControllerSetup, createController, createSession, generateVirtualMemoryUri } from '../../../amazonq/utils'
 import {
     CurrentWsFolders,
     DeletedFileInfo,
     MetricDataOperationName,
     MetricDataResult,
     NewFileInfo,
-} from '../../../../amazonqFeatureDev/types'
+} from '../../../../amazonq/commons/types'
 import { Session } from '../../../../amazonqFeatureDev/session/session'
 import { Prompter } from '../../../../shared/ui/prompter'
 import { assertTelemetry, toFile } from '../../../testUtil'
@@ -24,6 +24,7 @@ import {
     ContentLengthError,
     createUserFacingErrorMessage,
     FeatureDevServiceError,
+    isAPIClientError,
     MonthlyConversationLimitError,
     NoChangeRequiredException,
     PrepareRepoFailedError,
@@ -35,7 +36,10 @@ import {
     UserMessageNotFoundError,
     ZipFileError,
 } from '../../../../amazonqFeatureDev/errors'
-import { CodeGenState, PrepareCodeGenState } from '../../../../amazonqFeatureDev/session/sessionState'
+import {
+    FeatureDevCodeGenState,
+    FeatureDevPrepareCodeGenState,
+} from '../../../../amazonqFeatureDev/session/sessionState'
 import { FeatureDevClient } from '../../../../amazonqFeatureDev/client/featureDev'
 import { createAmazonQUri } from '../../../../amazonq/commons/diff'
 import { AuthUtil } from '../../../../codewhisperer'
@@ -91,6 +95,37 @@ describe('Controller', () => {
             changeApplied: false,
         },
     ]
+
+    async function createCodeGenState() {
+        mockGetCodeGeneration = sinon.stub().resolves({ codeGenerationStatus: { status: 'Complete' } })
+
+        const workspaceFolders = [controllerSetup.workspaceFolder] as CurrentWsFolders
+        const testConfig = {
+            conversationId: conversationID,
+            proxyClient: {
+                createConversation: () => sinon.stub(),
+                createUploadUrl: () => sinon.stub(),
+                generatePlan: () => sinon.stub(),
+                startCodeGeneration: () => sinon.stub(),
+                getCodeGeneration: () => mockGetCodeGeneration(),
+                exportResultArchive: () => sinon.stub(),
+            } as unknown as FeatureDevClient,
+            workspaceRoots: [''],
+            uploadId: uploadID,
+            workspaceFolders,
+        }
+
+        const codeGenState = new FeatureDevCodeGenState(testConfig, getFilePaths(controllerSetup), [], [], tabID, 0, {})
+        const newSession = await createSession({
+            messenger: controllerSetup.messenger,
+            sessionState: codeGenState,
+            conversationID,
+            tabID,
+            uploadID,
+            scheme: featureDevScheme,
+        })
+        return newSession
+    }
 
     before(() => {
         sinon.stub(performance, 'now').returns(0)
@@ -276,37 +311,6 @@ describe('Controller', () => {
     })
 
     describe('fileClicked', () => {
-        async function createCodeGenState() {
-            mockGetCodeGeneration = sinon.stub().resolves({ codeGenerationStatus: { status: 'Complete' } })
-
-            const workspaceFolders = [controllerSetup.workspaceFolder] as CurrentWsFolders
-            const testConfig = {
-                conversationId: conversationID,
-                proxyClient: {
-                    createConversation: () => sinon.stub(),
-                    createUploadUrl: () => sinon.stub(),
-                    generatePlan: () => sinon.stub(),
-                    startCodeGeneration: () => sinon.stub(),
-                    getCodeGeneration: () => mockGetCodeGeneration(),
-                    exportResultArchive: () => sinon.stub(),
-                } as unknown as FeatureDevClient,
-                workspaceRoots: [''],
-                uploadId: uploadID,
-                workspaceFolders,
-            }
-
-            const codeGenState = new CodeGenState(testConfig, getFilePaths(controllerSetup), [], [], tabID, 0, {})
-            const newSession = await createSession({
-                messenger: controllerSetup.messenger,
-                sessionState: codeGenState,
-                conversationID,
-                tabID,
-                uploadID,
-                scheme: featureDevScheme,
-            })
-            return newSession
-        }
-
         async function fileClicked(
             getSessionStub: sinon.SinonStub<[tabID: string], Promise<Session>>,
             action: string,
@@ -352,7 +356,7 @@ describe('Controller', () => {
     describe('insertCode', () => {
         it('sets the number of files accepted counting also deleted files', async () => {
             async function insertCode() {
-                const initialState = new PrepareCodeGenState(
+                const initialState = new FeatureDevPrepareCodeGenState(
                     {
                         conversationId: conversationID,
                         proxyClient: new FeatureDevClient(),
@@ -471,44 +475,18 @@ describe('Controller', () => {
                 ['EmptyPatchException', MetricDataResult.LlmFailure],
                 [PromptRefusalException.name, MetricDataResult.Error],
                 [NoChangeRequiredException.name, MetricDataResult.Error],
+                [MonthlyConversationLimitError.name, MetricDataResult.Error],
+                [CodeIterationLimitError.name, MetricDataResult.Error],
             ])
 
             function getMetricResult(error: ToolkitError): MetricDataResult {
                 if (error instanceof FeatureDevServiceError && error.code) {
                     return errorResultMapping.get(error.code) ?? MetricDataResult.Error
                 }
-                return errorResultMapping.get(error.constructor.name) ?? MetricDataResult.Fault
-            }
-
-            async function createCodeGenState() {
-                mockGetCodeGeneration = sinon.stub().resolves({ codeGenerationStatus: { status: 'Complete' } })
-
-                const workspaceFolders = [controllerSetup.workspaceFolder] as CurrentWsFolders
-                const testConfig = {
-                    conversationId: conversationID,
-                    proxyClient: {
-                        createConversation: () => sinon.stub(),
-                        createUploadUrl: () => sinon.stub(),
-                        generatePlan: () => sinon.stub(),
-                        startCodeGeneration: () => sinon.stub(),
-                        getCodeGeneration: () => mockGetCodeGeneration(),
-                        exportResultArchive: () => sinon.stub(),
-                    } as unknown as FeatureDevClient,
-                    workspaceRoots: [''],
-                    uploadId: uploadID,
-                    workspaceFolders,
+                if (isAPIClientError(error)) {
+                    return MetricDataResult.Error
                 }
-
-                const codeGenState = new CodeGenState(testConfig, getFilePaths(controllerSetup), [], [], tabID, 0, {})
-                const newSession = await createSession({
-                    messenger: controllerSetup.messenger,
-                    sessionState: codeGenState,
-                    conversationID,
-                    tabID,
-                    uploadID,
-                    scheme: featureDevScheme,
-                })
-                return newSession
+                return errorResultMapping.get(error.constructor.name) ?? MetricDataResult.Fault
             }
 
             async function verifyException(error: ToolkitError) {

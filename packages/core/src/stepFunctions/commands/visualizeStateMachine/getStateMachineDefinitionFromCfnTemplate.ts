@@ -4,7 +4,7 @@
  */
 
 import * as fs from 'fs' // eslint-disable-line no-restricted-imports
-import { getLogger, Logger } from '../../../shared/logger'
+import { getLogger, Logger } from '../../../shared/logger/logger'
 
 /**
  * @param {string} uniqueIdentifier - unique identifier of state machine

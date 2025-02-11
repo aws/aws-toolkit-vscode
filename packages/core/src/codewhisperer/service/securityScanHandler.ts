@@ -4,7 +4,7 @@
  */
 
 import { DefaultCodeWhispererClient } from '../client/codewhisperer'
-import { getLogger } from '../../shared/logger'
+import { getLogger } from '../../shared/logger/logger'
 import * as vscode from 'vscode'
 import {
     AggregatedCodeScanIssue,

@@ -4,7 +4,7 @@
  */
 
 import { VSCODE_EXTENSION_ID } from '../extensions'
-import { getLogger, Logger } from '../logger'
+import { getLogger, Logger } from '../logger/logger'
 import { ResourceFetcher } from './resourcefetcher'
 import { Timeout, CancelEvent, waitUntil } from '../utilities/timeoutUtils'
 import request, { RequestError } from '../request'

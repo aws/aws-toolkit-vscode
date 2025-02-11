@@ -9,7 +9,7 @@ import {
     DocV2AcceptanceEvent,
     DocV2GenerationEvent,
 } from '../../codewhisperer/client/codewhispereruserclient'
-import { getLogger } from '../../shared'
+import { getLogger } from '../../shared/logger/logger'
 
 export class DocGenerationTask {
     // Telemetry fields

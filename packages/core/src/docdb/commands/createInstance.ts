@@ -4,8 +4,9 @@
  */
 
 import * as vscode from 'vscode'
-import { getLogger, ToolkitError } from '../../shared'
-import { telemetry } from '../../shared/telemetry'
+import { ToolkitError } from '../../shared/errors'
+import { getLogger } from '../../shared/logger/logger'
+import { telemetry } from '../../shared/telemetry/telemetry'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { showViewLogsMessage } from '../../shared/utilities/messages'
 import { DBClusterNode } from '../explorer/dbClusterNode'

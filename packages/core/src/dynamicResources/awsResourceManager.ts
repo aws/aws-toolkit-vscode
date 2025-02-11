@@ -18,7 +18,7 @@ import { getTabSizeSetting } from '../shared/utilities/editorUtilities'
 import { ResourceNode } from './explorer/nodes/resourceNode'
 import { ResourceTypeNode } from './explorer/nodes/resourceTypeNode'
 import globals from '../shared/extensionGlobals'
-import { fs } from '../shared'
+import { fs } from '../shared/fs/fs'
 
 export const resourceFileGlobPattern = '**/*.awsResource.json'
 

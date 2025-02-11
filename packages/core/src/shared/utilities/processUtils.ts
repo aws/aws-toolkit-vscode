@@ -5,10 +5,9 @@
 
 import * as proc from 'child_process' // eslint-disable-line no-restricted-imports
 import * as crossSpawn from 'cross-spawn'
-import * as logger from '../logger'
+import * as logger from '../logger/logger'
 import { Timeout, CancellationError, waitUntil } from './timeoutUtils'
 import { PollingSet } from './pollingSet'
-import { getLogger } from '../logger/logger'
 
 export interface RunParameterContext {
     /** Reports an error parsed from the stdin/stdout streams. */
@@ -73,7 +72,7 @@ export class ChildProcessTracker {
         memory: 100 * 1024 * 1024, // 100 MB
         cpu: 50,
     }
-    static readonly logger = getLogger('childProcess')
+    static readonly logger = logger.getLogger('childProcess')
     #processByPid: Map<number, ChildProcess> = new Map<number, ChildProcess>()
     #pids: PollingSet<number>
 

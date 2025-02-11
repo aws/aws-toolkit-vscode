@@ -44,7 +44,7 @@ import { CodeCatalystAuthenticationProvider } from '../../codecatalyst/auth'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { AuthSources } from './util'
 import { AuthFlowStates } from './vue/types'
-import { getTelemetryMetadataForConn } from '../../auth'
+import { getTelemetryMetadataForConn } from '../../auth/connection'
 import { AuthUtil } from '../../codewhisperer/util/authUtil'
 
 export class CommonAuthViewProvider implements WebviewViewProvider {

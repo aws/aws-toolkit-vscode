@@ -18,7 +18,7 @@ import {
     findReadmePath,
 } from '../../constants'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
-import { getLogger } from '../../../shared/logger'
+import { getLogger } from '../../../shared/logger/logger'
 
 import { Session } from '../../session/session'
 import { i18n } from '../../../shared/i18n-helper'
@@ -41,7 +41,7 @@ import {
     getWorkspaceRelativePath,
     isMultiRootWorkspace,
 } from '../../../shared/utilities/workspaceUtils'
-import { getPathsFromZipFilePath } from '../../../amazonqFeatureDev/util/files'
+import { getPathsFromZipFilePath } from '../../../amazonq/util/files'
 import { FollowUpTypes } from '../../../amazonq/commons/types'
 import { DocGenerationTask } from '../docGenerationTask'
 import { DevPhase } from '../../types'

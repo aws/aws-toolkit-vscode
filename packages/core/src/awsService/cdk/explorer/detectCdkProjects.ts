@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import * as path from 'path'
-import { getLogger } from '../../../shared/logger'
+import { getLogger } from '../../../shared/logger/logger'
 import { CdkAppLocation } from './cdkProject'
 
 export async function detectCdkProjects(
