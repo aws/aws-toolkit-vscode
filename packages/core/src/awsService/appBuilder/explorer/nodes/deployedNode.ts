@@ -26,7 +26,7 @@ import {
     SERVERLESS_API_TYPE,
     s3BucketType,
 } from '../../../../shared/cloudformation/cloudformation'
-import { ToolkitError } from '../../../../shared'
+import { ToolkitError } from '../../../../shared/errors'
 
 const localize = nls.loadMessageBundle()
 export interface DeployedResource {

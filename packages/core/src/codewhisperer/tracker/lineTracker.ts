@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import { isTextEditor } from '../../shared/utilities/editorUtilities'
-import { setContext } from '../../shared'
+import { setContext } from '../../shared/vscode/setContext'
 
 export interface LineSelection {
     anchor: number

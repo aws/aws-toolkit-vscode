@@ -12,7 +12,7 @@ import {
     TextDocument,
 } from '@amzn/codewhisperer-streaming'
 import { ChatTriggerType, TriggerPayload } from '../model'
-import { undefinedIfEmpty } from '../../../../shared'
+import { undefinedIfEmpty } from '../../../../shared/utilities/textUtilities'
 
 const fqnNameSizeDownLimit = 1
 const fqnNameSizeUpLimit = 256

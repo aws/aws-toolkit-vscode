@@ -11,7 +11,7 @@ const localize = nls.loadMessageBundle()
 import * as vscode from 'vscode'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { AwsContext } from '../../shared/awsContext'
-import { getLogger } from '../../shared/logger'
+import { getLogger } from '../../shared/logger/logger'
 import { CredentialSourceId, CredentialType, Result } from '../../shared/telemetry/telemetry'
 import { CredentialsStore } from '../credentials/store'
 import { CredentialsSettings, showLoginFailedMessage } from '../credentials/utils'

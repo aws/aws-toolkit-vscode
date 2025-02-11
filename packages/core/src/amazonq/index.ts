@@ -43,7 +43,7 @@ export { ExtensionMessage } from '../amazonq/webview/ui/commands'
 export { CodeReference } from '../codewhispererChat/view/connector/connector'
 export { extractAuthFollowUp } from './util/authUtils'
 export { Messenger } from './commons/connector/baseMessenger'
-import { FeatureContext } from '../shared'
+import { FeatureContext } from '../shared/featureConfig'
 
 /**
  * main from createMynahUI is a purely browser dependency. Due to this

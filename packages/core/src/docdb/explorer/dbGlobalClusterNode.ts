@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import { inspect } from 'util'
 import { makeChildrenNodes } from '../../shared/treeview/utils'
 import { localize } from '../../shared/utilities/vsCodeUtils'
-import { telemetry } from '../../shared/telemetry'
+import { telemetry } from '../../shared/telemetry/telemetry'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
 import { DBClusterNode, DBClusterRole } from './dbClusterNode'
@@ -17,7 +17,7 @@ import { DBResourceNode } from './dbResourceNode'
 import { DocDBContext } from './docdbContext'
 import { copyToClipboard } from '../../shared/utilities/messages'
 import { getAwsConsoleUrl } from '../../shared/awsConsole'
-import { getLogger } from '../../shared/logger'
+import { getLogger } from '../../shared/logger/logger'
 
 function getRegionFromArn(arn: string) {
     const match = arn.match(/:rds:([^:]+):.*:cluster:/)

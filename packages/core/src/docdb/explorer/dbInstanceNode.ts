@@ -11,9 +11,9 @@ import { DBResourceNode } from './dbResourceNode'
 import { DBClusterNode } from './dbClusterNode'
 import { ModifyDBInstanceMessage } from '@aws-sdk/client-docdb'
 import { copyToClipboard } from '../../shared/utilities/messages'
-import { toTitleCase } from '../../shared'
 import { getAwsConsoleUrl } from '../../shared/awsConsole'
-import { getLogger } from '../../shared/logger'
+import { getLogger } from '../../shared/logger/logger'
+import { toTitleCase } from '../../shared/utilities/textUtilities'
 
 /**
  * An AWS Explorer node representing a DocumentDB instance.

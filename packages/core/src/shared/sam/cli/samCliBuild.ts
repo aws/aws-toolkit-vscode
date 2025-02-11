@@ -4,7 +4,7 @@
  */
 
 import { fileExists } from '../../filesystemUtilities'
-import { getLogger, Logger } from '../../logger'
+import { getLogger, Logger } from '../../logger/logger'
 import { logAndThrowIfUnexpectedExitCode, SamCliProcessInvoker } from './samCliInvokerUtils'
 import { pushIf } from '../../utilities/collectionUtils'
 import { localize } from '../../utilities/vsCodeUtils'

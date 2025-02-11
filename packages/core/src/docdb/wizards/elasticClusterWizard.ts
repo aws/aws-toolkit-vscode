@@ -11,7 +11,7 @@ import { createInputBox } from '../../shared/ui/inputPrompter'
 import { DataQuickPickItem, createQuickPick } from '../../shared/ui/pickerPrompter'
 import { createCommonButtons } from '../../shared/ui/buttons'
 import { Auth, CreateClusterInput } from '@aws-sdk/client-docdb-elastic'
-import { Prompter } from '../../shared'
+import { Prompter } from '../../shared/ui/prompter'
 
 const DocDBElasticHelpUrl = 'https://docs.aws.amazon.com/documentdb/latest/developerguide/elastic-how-it-works.html'
 const DefaultShardCount = 2

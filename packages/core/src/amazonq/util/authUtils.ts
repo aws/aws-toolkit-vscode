@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { FeatureAuthState } from '../../codewhisperer'
+import { FeatureAuthState } from '../../codewhisperer/util/authUtil'
 import { AuthFollowUpType, AuthMessageDataMap } from '../auth/model'
 
 /**

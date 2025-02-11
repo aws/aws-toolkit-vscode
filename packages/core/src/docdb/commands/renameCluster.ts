@@ -4,13 +4,15 @@
  */
 
 import * as vscode from 'vscode'
-import { getLogger, sleep, ToolkitError } from '../../shared'
+import { ToolkitError } from '../../shared/errors'
+import { getLogger } from '../../shared/logger/logger'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { showViewLogsMessage } from '../../shared/utilities/messages'
 import { assertNodeAvailable, validateClusterName } from '../utils'
 import { DBClusterNode } from '../explorer/dbClusterNode'
 import { DBGlobalClusterNode } from '../explorer/dbGlobalClusterNode'
-import { telemetry } from '../../shared/telemetry'
+import { telemetry } from '../../shared/telemetry/telemetry'
+import { sleep } from '../../shared/utilities/timeoutUtils'
 
 /**
  * Renames a DocumentDB cluster.
