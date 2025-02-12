@@ -32,6 +32,7 @@ import {
     scanSummaryMessage,
 } from '../../models/constants'
 import path from 'path'
+import { telemetry } from 'aws-core-vscode/telemetry'
 
 export class ScanController {
     private readonly messenger: Messenger
@@ -97,6 +98,15 @@ export class ScanController {
 
         this.chatControllerMessageListeners.scanCancelled.event((data) => {
             return this.handleScanCancelled(data)
+        })
+
+        this.chatControllerMessageListeners.processChatItemVotedMessage.event((data) => {
+            telemetry.amazonq_feedback.emit({
+                featureId: 'amazonQReview',
+                amazonqConversationId: this.sessionStorage.getSession().scanUuid,
+                credentialStartUrl: AuthUtil.instance.startUrl,
+                interactionType: data.vote,
+            })
         })
     }
 
