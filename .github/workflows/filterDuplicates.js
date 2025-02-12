@@ -112,7 +112,7 @@ async function run() {
     if (filteredDuplicates.length > 0) {
         console.log(formatDuplicates(filteredDuplicates, commitHash, repoName))
         console.log(
-            '*Hint: if these duplicates appear unrelated to the changes, please rebased with the newest version of the target branch.*'
+            '* Hint: if these duplicates appear unrelated to the changes, please rebased with the newest version of the target branch.'
         )
         process.exit(1)
     }
