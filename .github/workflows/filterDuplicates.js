@@ -110,6 +110,9 @@ async function run() {
     console.log('%s files changes', changes.size)
     console.log('%s duplicates found', filteredDuplicates.length)
     if (filteredDuplicates.length > 0) {
+        console.log(
+            'NOTE: if these duplicates appear unrelated to the changes, please rebased with the newest version of the target branch.'
+        )
         console.log(formatDuplicates(filteredDuplicates, commitHash, repoName))
         process.exit(1)
     }
