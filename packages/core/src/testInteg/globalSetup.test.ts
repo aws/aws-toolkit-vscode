@@ -17,7 +17,7 @@ import * as testUtil from '../test/testUtil'
 import { DeviceFlowAuthorization } from '../auth/sso/ssoAccessTokenProvider'
 import { globals } from '../shared'
 import { GlobalState } from '../shared/globalState'
-import { FakeExtensionContext, FakeMemento } from '../test/fakeExtensionContext'
+import { FakeExtensionContext } from '../test/fakeExtensionContext'
 
 // ASSUMPTION: Tests are not run concurrently
 
