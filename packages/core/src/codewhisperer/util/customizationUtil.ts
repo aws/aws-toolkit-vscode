@@ -18,7 +18,6 @@ import { showMessageWithUrl } from '../../shared/utilities/messages'
 import { parse } from '@aws-sdk/util-arn-parser'
 import { Commands } from '../../shared/vscode/commands2'
 import { vsCodeState } from '../models/model'
-import { FeatureConfigProvider, Features } from '../../shared/featureConfig'
 
 /**
  *
@@ -92,10 +91,7 @@ export const baseCustomization = {
 }
 
 /**
- * Gets the customization that should be used for user requests. If a user has manually selected
- * a customization, always respect that choice. If not, check if the user is part of an AB
- * group assigned a specific customization. If so, use that customization. If not, use the
- * base customization.
+ * @returns customization selected by users, `baseCustomization` if none is selected
  */
 export const getSelectedCustomization = (): Customization => {
     if (
@@ -116,24 +112,26 @@ export const getSelectedCustomization = (): Customization => {
     if (selectedCustomization && selectedCustomization.name !== '') {
         return selectedCustomization
     } else {
-        const customizationFeature = FeatureConfigProvider.getFeature(Features.customizationArnOverride)
-        const arnOverride = customizationFeature?.value.stringValue
-        const customizationOverrideName = customizationFeature?.variation
-        if (arnOverride === undefined) {
-            return baseCustomization
-        } else {
-            return {
-                arn: arnOverride,
-                name: customizationOverrideName,
-                description: baseCustomization.description,
-            }
-        }
+        return baseCustomization
     }
 }
 
-export const setSelectedCustomization = async (customization: Customization) => {
+/**
+ * @param customization customization to select
+ * @param isOverride if the API call is made from us (Q) but not users' intent, set isOverride to TRUE
+ * Override happens when ALL following conditions are met
+ *  1. service returns non-empty override customization arn, refer to [featureConfig.ts]
+ *  2. the override customization arn is different from the previous override customization if any. The purpose is to only do override once on users' behalf.
+ */
+export const setSelectedCustomization = async (customization: Customization, isOverride: boolean = false) => {
     if (!AuthUtil.instance.isValidEnterpriseSsoInUse() || !AuthUtil.instance.conn) {
         return
+    }
+    if (isOverride) {
+        const previousOverride = globals.globalState.tryGet<string>('aws.amazonq.customization.override', String)
+        if (customization.arn === previousOverride) {
+            return
+        }
     }
     const selectedCustomizationObj = globals.globalState.tryGet<{ [label: string]: Customization }>(
         'CODEWHISPERER_SELECTED_CUSTOMIZATION',
@@ -144,6 +142,9 @@ export const setSelectedCustomization = async (customization: Customization) => 
     getLogger().debug(`Selected customization ${customization.name} for ${AuthUtil.instance.conn.label}`)
 
     await globals.globalState.update('CODEWHISPERER_SELECTED_CUSTOMIZATION', selectedCustomizationObj)
+    if (isOverride) {
+        await globals.globalState.update('aws.amazonq.customization.override', customization.arn)
+    }
     vsCodeState.isFreeTierLimitReached = false
     await Commands.tryExecute('aws.amazonq.refreshStatusBar')
 }
