@@ -90,13 +90,16 @@ export function insertCommentAboveLine(document: vscode.TextDocument, line: numb
     }
 
     const edit = new vscode.WorkspaceEdit()
-    const position = new vscode.Position(line, 0)
+    const previousLine = Math.max(0, line - 1)
+    const previousLineLength = previousLine > 0 ? document.lineAt(previousLine).text.length : 0
+    const position = new vscode.Position(previousLine, previousLineLength)
     const indent = ' '.repeat(Math.max(0, document.lineAt(line).firstNonWhitespaceCharacterIndex))
+    const commentPrefix = line === 0 ? '' : '\n'
     const commentText = lineComment
-        ? `${indent}${lineComment} ${comment}\n`
+        ? `${commentPrefix}${indent}${lineComment} ${comment}`
         : blockComment?.[0] && blockComment[1]
-          ? `${indent}${blockComment[0]} ${comment} ${blockComment[1]}\n`
-          : `${indent}${defaultCommentConfig.lineComment} ${comment}\n`
+          ? `${commentPrefix}${indent}${blockComment[0]} ${comment} ${blockComment[1]}`
+          : `${commentPrefix}${indent}${defaultCommentConfig.lineComment} ${comment}`
     edit.insert(document.uri, position, commentText)
     void vscode.workspace.applyEdit(edit)
 }

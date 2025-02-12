@@ -77,7 +77,7 @@ describe('CommentUtils', function () {
 
             const document = createMockDocument('foo = 1\nbar = 2', 'foo.py', 'python')
             insertCommentAboveLine(document, 1, 'some-comment')
-            assert.ok(insertMock.calledOnceWith(document.uri, new vscode.Position(1, 0), '# some-comment\n'))
+            assert.ok(insertMock.calledOnceWith(document.uri, new vscode.Position(0, 0), '\n# some-comment'))
         })
 
         it('should indent the comment by the same amount as the current line', function () {
@@ -86,7 +86,7 @@ describe('CommentUtils', function () {
 
             const document = createMockDocument('    foo = 1\n    bar = 2', 'foo.py', 'python')
             insertCommentAboveLine(document, 1, 'some-comment')
-            assert.ok(insertMock.calledOnceWith(document.uri, new vscode.Position(1, 0), '    # some-comment\n'))
+            assert.ok(insertMock.calledOnceWith(document.uri, new vscode.Position(0, 0), '\n    # some-comment'))
         })
 
         it('should fallback to block comment if line comment is undefined', function () {
@@ -95,7 +95,7 @@ describe('CommentUtils', function () {
 
             const document = createMockDocument('<aaa>\n  <bbb></bbb>\n</aaa>', 'foo.xml', 'xml')
             insertCommentAboveLine(document, 1, 'some-comment')
-            assert.ok(insertMock.calledOnceWith(document.uri, new vscode.Position(1, 0), '  <!-- some-comment -->\n'))
+            assert.ok(insertMock.calledOnceWith(document.uri, new vscode.Position(0, 0), '\n  <!-- some-comment -->'))
         })
     })
 })

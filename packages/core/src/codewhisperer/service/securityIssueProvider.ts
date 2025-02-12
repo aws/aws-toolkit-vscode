@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { AggregatedCodeScanIssue, CodeScanIssue, CodeScansState, SuggestedFix } from '../models/model'
+import { AggregatedCodeScanIssue, CodeScanIssue, SuggestedFix } from '../models/model'
 export class SecurityIssueProvider {
     static #instance: SecurityIssueProvider
     public static get instance() {
@@ -53,11 +53,7 @@ export class SecurityIssueProvider {
                             event.document.lineAt(issue.endLine - 1)?.range.end.character ?? 0
                         )
                         const intersection = changedRange.intersection(range)
-                        return !(
-                            intersection &&
-                            (/\S/.test(changedText) || changedText === '') &&
-                            !CodeScansState.instance.isScansEnabled()
-                        )
+                        return !(intersection && (/\S/.test(changedText) || changedText === ''))
                     })
                     .map((issue) => {
                         if (issue.startLine < changedRange.end.line) {
@@ -131,5 +127,33 @@ export class SecurityIssueProvider {
                 issues: group.issues.map((i) => (i.findingId === issue.findingId ? issue : i)),
             }
         })
+    }
+
+    public mergeIssues(newIssues: AggregatedCodeScanIssue) {
+        const existingGroup = this._issues.find((group) => group.filePath === newIssues.filePath)
+        if (!existingGroup) {
+            this._issues.push(newIssues)
+            return
+        }
+
+        this._issues = this._issues.map((group) =>
+            group.filePath !== newIssues.filePath
+                ? group
+                : {
+                      ...group,
+                      issues: [
+                          ...group.issues,
+                          ...newIssues.issues.filter((issue) => !this.isExistingIssue(issue, newIssues.filePath)),
+                      ],
+                  }
+        )
+    }
+
+    private isExistingIssue(issue: CodeScanIssue, filePath: string) {
+        return this._issues
+            .find((group) => group.filePath === filePath)
+            ?.issues.find(
+                (i) => i.title === issue.title && i.startLine === issue.startLine && i.endLine === issue.endLine
+            )
     }
 }
