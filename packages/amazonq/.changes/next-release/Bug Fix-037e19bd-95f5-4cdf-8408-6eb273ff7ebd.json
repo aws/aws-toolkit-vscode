@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Stuck on `Uploading code...` for /dev and /doc in some multi-root workspaces"
+}
