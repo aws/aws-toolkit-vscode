@@ -30,4 +30,5 @@ export interface ScanChatControllerEventEmitters {
     readonly processResponseBodyLinkClick: vscode.EventEmitter<any>
     readonly fileClicked: vscode.EventEmitter<any>
     readonly scanCancelled: vscode.EventEmitter<any>
+    readonly processChatItemVotedMessage: vscode.EventEmitter<any>
 }

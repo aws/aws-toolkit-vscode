@@ -602,6 +602,9 @@ export class Connector {
             case 'featuredev':
                 this.featureDevChatConnector.sendFeedback(tabId, feedbackPayload)
                 break
+            case 'testgen':
+                this.testChatConnector.onSendFeedback(tabId, feedbackPayload)
+                break
             case 'cwc':
                 this.cwChatConnector.onSendFeedback(tabId, feedbackPayload)
                 break
