@@ -55,6 +55,9 @@ export class UIMessageListener {
             case 'file-click':
                 this.processFileClick(msg)
                 break
+            case 'chat-item-voted':
+                this.chatItemVoted(msg)
+                break
         }
     }
 
@@ -110,6 +113,14 @@ export class UIMessageListener {
             tabID: msg.tabID,
             messageId: msg.messageId,
             filePath: msg.filePath,
+        })
+    }
+
+    private chatItemVoted(msg: any) {
+        this.scanControllerEventsEmitters?.processChatItemVotedMessage.fire({
+            tabID: msg.tabID,
+            command: msg.command,
+            vote: msg.vote,
         })
     }
 }
