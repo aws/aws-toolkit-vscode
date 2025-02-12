@@ -6,7 +6,7 @@ import * as vscode from 'vscode'
 import { TreeNode } from '../../../../shared/treeview/resourceTreeDataProvider'
 import { getIcon } from '../../../../shared/icons'
 import { CloudFormationClient, DescribeStacksCommand } from '@aws-sdk/client-cloudformation'
-import { ToolkitError } from '../../../../shared'
+import { ToolkitError } from '../../../../shared/errors'
 import { getIAMConnection } from '../../../../auth/utils'
 
 export class StackNameNode implements TreeNode {

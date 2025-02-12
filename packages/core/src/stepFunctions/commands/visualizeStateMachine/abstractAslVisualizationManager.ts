@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { StateMachineGraphCache } from '../../utils'
 
-import { Logger } from '../../../shared/logger'
+import { Logger } from '../../../shared/logger/logger'
 import { AslVisualization } from './aslVisualization'
 
 const localize = nls.loadMessageBundle()

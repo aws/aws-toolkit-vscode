@@ -4,7 +4,8 @@
  */
 
 import * as nls from 'vscode-nls'
-import { globals, ToolkitError } from '../../../shared'
+import globals from '../../../shared/extensionGlobals'
+import { ToolkitError } from '../../../shared/errors'
 import { DefaultCloudWatchLogsClient } from '../../../shared/clients/cloudWatchLogsClient'
 import { cwlFilterPatternHelpUrl } from '../../../shared/constants'
 import { createBackButton, createExitButton, createHelpButton } from '../../../shared/ui/buttons'

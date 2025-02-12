@@ -8,7 +8,7 @@ import * as mime from 'mime-types'
 import * as vscode from 'vscode'
 import { statSync } from 'fs' // eslint-disable-line no-restricted-imports
 import { S3 } from 'aws-sdk'
-import { getLogger } from '../../../shared/logger'
+import { getLogger } from '../../../shared/logger/logger'
 import { S3Node } from '../explorer/s3Nodes'
 import { readablePath } from '../util'
 import { localize } from '../../../shared/utilities/vsCodeUtils'

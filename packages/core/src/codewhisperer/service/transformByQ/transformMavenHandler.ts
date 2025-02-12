@@ -4,7 +4,7 @@
  */
 import * as vscode from 'vscode'
 import { FolderInfo, transformByQState } from '../../models/model'
-import { getLogger } from '../../../shared/logger'
+import { getLogger } from '../../../shared/logger/logger'
 import * as CodeWhispererConstants from '../../models/constants'
 // Consider using ChildProcess once we finalize all spawnSync calls
 import { spawnSync } from 'child_process' // eslint-disable-line no-restricted-imports
@@ -13,6 +13,7 @@ import { CodeTransformTelemetryState } from '../../../amazonqGumby/telemetry/cod
 import { ToolkitError } from '../../../shared/errors'
 import { setMaven, writeLogs } from './transformFileHandler'
 import { throwIfCancelled } from './transformApiHandler'
+import { sleep } from '../../../shared/utilities/timeoutUtils'
 
 // run 'install' with either 'mvnw.cmd', './mvnw', or 'mvn' (if wrapper exists, we use that, otherwise we use regular 'mvn')
 function installProjectDependencies(dependenciesFolder: FolderInfo, modulePath: string) {
@@ -110,6 +111,8 @@ function copyProjectDependencies(dependenciesFolder: FolderInfo, modulePath: str
 export async function prepareProjectDependencies(dependenciesFolder: FolderInfo, rootPomPath: string) {
     await setMaven()
     getLogger().info('CodeTransformation: running Maven copy-dependencies')
+    // pause to give chat time to update
+    await sleep(100)
     try {
         copyProjectDependencies(dependenciesFolder, rootPomPath)
     } catch (err) {

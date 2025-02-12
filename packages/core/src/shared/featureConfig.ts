@@ -13,14 +13,15 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { codeWhispererClient as client } from '../codewhisperer/client/codewhisperer'
 import { AuthUtil } from '../codewhisperer/util/authUtil'
-import { getLogger } from './logger'
+import { getLogger } from './logger/logger'
 import { isBuilderIdConnection, isIdcSsoConnection } from '../auth/connection'
 import { CodeWhispererSettings } from '../codewhisperer/util/codewhispererSettings'
 import globals from './extensionGlobals'
 import { getClientId, getOperatingSystem } from './telemetry/util'
 import { extensionVersion } from './vscode/env'
-import { telemetry } from './telemetry'
+import { telemetry } from './telemetry/telemetry'
 import { Commands } from './vscode/commands2'
+import { setSelectedCustomization } from '../codewhisperer/util/customizationUtil'
 
 const localize = nls.loadMessageBundle()
 
@@ -148,7 +149,7 @@ export class FeatureConfigProvider {
                 if (isBuilderIdConnection(AuthUtil.instance.conn)) {
                     this.featureConfigs.delete(Features.customizationArnOverride)
                 } else if (isIdcSsoConnection(AuthUtil.instance.conn)) {
-                    let availableCustomizations = undefined
+                    let availableCustomizations: Customization[] = []
                     try {
                         const items: Customization[] = []
                         const response = await client.listAvailableCustomizations()
@@ -157,17 +158,20 @@ export class FeatureConfigProvider {
                         )) {
                             items.push(...customizations)
                         }
-                        availableCustomizations = items.map((c) => c.arn)
+                        availableCustomizations = items
                     } catch (e) {
                         getLogger().debug('amazonq: Failed to list available customizations')
                     }
 
                     // If customizationArn from A/B is not available in listAvailableCustomizations response, don't use this value
-                    if (!availableCustomizations?.includes(customizationArnOverride)) {
+                    const targetCustomization = availableCustomizations?.find((c) => c.arn === customizationArnOverride)
+                    if (!targetCustomization) {
                         getLogger().debug(
                             `Customization arn ${customizationArnOverride} not available in listAvailableCustomizations, not using`
                         )
                         this.featureConfigs.delete(Features.customizationArnOverride)
+                    } else {
+                        await setSelectedCustomization(targetCustomization, true)
                     }
 
                     await vscode.commands.executeCommand('aws.amazonq.refreshStatusBar')

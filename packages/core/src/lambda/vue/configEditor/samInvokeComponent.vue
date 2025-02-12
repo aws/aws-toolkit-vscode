@@ -29,9 +29,6 @@
                     debugger to the code running in a local Docker container. open
                     <a href="#" @click.prevent="openLaunchJson">launch.json</a>.<br />
                     <br />
-                    <strong>Note:</strong> If you are accessing environment variables in your function code, ensure you
-                    input them in the "Additional fields -> Lambda -> Environment variables" section, following JSON
-                    format:<code>{"KEY":"VALUE"}</code>
                 </em>
             </p>
             <settings-panel id="config-panel" title="General configuration" description="" :start-collapsed="false">

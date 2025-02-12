@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { getLogger } from '../../shared/logger'
+import { getLogger } from '../../shared/logger/logger'
 import { ZipUtil } from '../util/zipUtil'
 import { ArtifactMap } from '../client/codewhisperer'
 import { testGenerationLogsDir } from '../../shared/filesystemUtilities'
@@ -28,7 +28,6 @@ import { Range } from '../client/codewhispereruserclient'
 let spawnResult: ChildProcess | null = null
 let isCancelled = false
 export async function startTestGenerationProcess(
-    fileName: string,
     filePath: string,
     userInputPrompt: string,
     tabID: string,
@@ -46,7 +45,7 @@ export async function startTestGenerationProcess(
             return
         }
         /**
-         * Zip the project
+         * Step 1: Zip the project
          */
 
         const zipUtil = new ZipUtil()
@@ -116,7 +115,7 @@ export async function startTestGenerationProcess(
         const jobStatus = await pollTestJobStatus(
             testJob.testGenerationJob.testGenerationJobId,
             testJob.testGenerationJob.testGenerationJobGroupName,
-            fileName,
+            filePath,
             initialExecution
         )
         // TODO: Send status to test summary

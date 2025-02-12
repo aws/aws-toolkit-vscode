@@ -10,7 +10,7 @@ const localize = nls.loadMessageBundle()
 import { CredentialsData, CredentialsKey, SectionName, SharedCredentialsKeys } from './types'
 import { ToolkitError } from '../../shared/errors'
 import { profileExists } from './sharedCredentials'
-import { getLogger } from '../../shared/logger'
+import { getLogger } from '../../shared/logger/logger'
 
 /** credentials keys and their associated error message, if they exists */
 type CredentialsErrors = CredentialsData
