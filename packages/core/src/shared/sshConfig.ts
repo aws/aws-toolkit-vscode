@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import * as path from 'path'
 import * as nls from 'vscode-nls'
-import { getLogger } from './logger'
+import { getLogger } from './logger/logger'
 import { ChildProcess, ChildProcessResult } from './utilities/processUtils'
 import { Result } from './utilities/result'
 import { ToolkitError } from './errors'

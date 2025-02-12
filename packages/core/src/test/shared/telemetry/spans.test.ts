@@ -102,7 +102,7 @@ describe('TelemetryTracer', function () {
             })
 
             assertTelemetry(metricName, { result: 'Succeeded', source: 'bar' })
-            assertTelemetry('apigateway_copyUrl', {} as MetricShapes['apigateway_copyUrl'])
+            assertTelemetry('apigateway_copyUrl', {})
         })
 
         it('writes to all new spans in the current context', function () {
@@ -112,7 +112,7 @@ describe('TelemetryTracer', function () {
             })
 
             assertTelemetry(metricName, { result: 'Succeeded', source: 'bar' })
-            assertTelemetry('apigateway_copyUrl', { result: 'Succeeded', source: 'bar' } as any)
+            assertTelemetry('apigateway_copyUrl', { result: 'Succeeded', source: 'bar' })
         })
 
         it('does not propagate state outside of the execution', function () {
@@ -310,7 +310,7 @@ describe('TelemetryTracer', function () {
             it('attaches the parent id to the child span', function () {
                 tracer.run(metricName, () => tracer.run(nestedName, () => {}))
                 assertTelemetry(metricName, { result: 'Succeeded' })
-                assertTelemetry(nestedName, { result: 'Succeeded', parentId: testId } as any)
+                assertTelemetry(nestedName, { result: 'Succeeded', parentId: testId })
             })
 
             it('should set trace id', function () {

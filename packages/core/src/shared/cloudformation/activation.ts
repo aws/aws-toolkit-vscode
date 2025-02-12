@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { getLogger } from '../logger'
+import { getLogger } from '../logger/logger'
 import { isToolkitActive, localize } from '../utilities/vsCodeUtils'
 
 import { AsyncCloudFormationTemplateRegistry, CloudFormationTemplateRegistry } from '../fs/templateRegistry'

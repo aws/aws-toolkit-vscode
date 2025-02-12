@@ -13,7 +13,7 @@ import {
     CodeTargetProperties,
     TemplateTargetProperties,
 } from './awsSamDebugConfiguration.gen'
-import { getLogger } from '../../logger'
+import { getLogger } from '../../logger/logger'
 
 export * from './awsSamDebugConfiguration.gen'
 

@@ -7,7 +7,7 @@ import { localize } from '../../../shared/utilities/vsCodeUtils'
 import { IotNode } from '../explorer/iotNodes'
 import { showViewLogsMessage } from '../../../shared/utilities/messages'
 import { copyToClipboard } from '../../../shared/utilities/messages'
-import { getLogger } from '../../../shared/logger'
+import { getLogger } from '../../../shared/logger/logger'
 
 /**
  * Copies the path to the folder or file represented by the given node.

@@ -22,7 +22,7 @@ import {
     TransformByQStoppedError,
     ZipManifest,
 } from '../../models/model'
-import { getLogger } from '../../../shared/logger'
+import { getLogger } from '../../../shared/logger/logger'
 import {
     CreateUploadUrlResponse,
     ProgressUpdates,
@@ -127,7 +127,9 @@ export async function uploadArtifactToS3(
                 if (response.status === 200) {
                     break
                 }
-                throw new Error('Upload failed')
+                throw new Error(
+                    `Upload failed, status = ${response.status}; full response: ${JSON.stringify(response)}`
+                )
             } catch (e: any) {
                 if (response && !retriableCodes.includes(response.status)) {
                     throw new Error(`Upload failed with status code = ${response.status}; did not automatically retry`)
@@ -169,7 +171,7 @@ export async function resumeTransformationJob(jobId: string, userActionStatus: T
         }
     } catch (e: any) {
         const errorMessage = `Resuming the job failed due to: ${(e as Error).message}`
-        getLogger().error(`CodeTransformation: ResumeTransformation error = ${errorMessage}`)
+        getLogger().error(`CodeTransformation: ResumeTransformation error = %O`, e)
         throw new Error(errorMessage)
     }
 }
@@ -180,18 +182,12 @@ export async function stopJob(jobId: string) {
     }
 
     try {
-        const response = await codeWhisperer.codeWhispererClient.codeModernizerStopCodeTransformation({
+        await codeWhisperer.codeWhispererClient.codeModernizerStopCodeTransformation({
             transformationJobId: jobId,
         })
-        if (response !== undefined) {
-            // always store request ID, but it will only show up in a notification if an error occurs
-            if (response.$response.requestId) {
-                transformByQState.setJobFailureMetadata(` (request ID: ${response.$response.requestId})`)
-            }
-        }
     } catch (e: any) {
-        const errorMessage = (e as Error).message
-        getLogger().error(`CodeTransformation: StopTransformation error = ${errorMessage}`)
+        transformByQState.setJobFailureMetadata(` (request ID: ${e.requestId ?? 'unavailable'})`)
+        getLogger().error(`CodeTransformation: StopTransformation error = %O`, e)
         throw new Error('Stop job failed')
     }
 }
@@ -209,12 +205,10 @@ export async function uploadPayload(payloadFileName: string, uploadContext?: Upl
             uploadIntent: CodeWhispererConstants.uploadIntent,
             uploadContext,
         })
-        if (response.$response.requestId) {
-            transformByQState.setJobFailureMetadata(` (request ID: ${response.$response.requestId})`)
-        }
     } catch (e: any) {
-        const errorMessage = `The upload failed due to: ${(e as Error).message}`
-        getLogger().error(`CodeTransformation: CreateUploadUrl error: = ${e}`)
+        const errorMessage = `Creating the upload URL failed due to: ${(e as Error).message}`
+        transformByQState.setJobFailureMetadata(` (request ID: ${e.requestId ?? 'unavailable'})`)
+        getLogger().error(`CodeTransformation: CreateUploadUrl error: = %O`, e)
         throw new Error(errorMessage)
     }
 
@@ -445,17 +439,15 @@ export async function startJob(uploadId: string) {
             transformationSpec: {
                 transformationType: CodeWhispererConstants.transformationType, // shared b/w language upgrades & sql conversions for now
                 source: { language: sourceLanguageVersion }, // dummy value of JDK8 used for SQL conversions just so that this API can be called
-                target: { language: targetLanguageVersion }, // always JDK17
+                target: { language: targetLanguageVersion }, // JAVA_17 or JAVA_21
             },
         })
         getLogger().info('CodeTransformation: called startJob API successfully')
-        if (response.$response.requestId) {
-            transformByQState.setJobFailureMetadata(` (request ID: ${response.$response.requestId})`)
-        }
         return response.transformationJobId
     } catch (e: any) {
         const errorMessage = `Starting the job failed due to: ${(e as Error).message}`
-        getLogger().error(`CodeTransformation: StartTransformation error = ${errorMessage}`)
+        transformByQState.setJobFailureMetadata(` (request ID: ${e.requestId ?? 'unavailable'})`)
+        getLogger().error(`CodeTransformation: StartTransformation error = %O`, e)
         throw new Error(errorMessage)
     }
 }
@@ -573,9 +565,6 @@ export async function getTransformationPlan(jobId: string) {
         response = await codeWhisperer.codeWhispererClient.codeModernizerGetCodeTransformationPlan({
             transformationJobId: jobId,
         })
-        if (response.$response.requestId) {
-            transformByQState.setJobFailureMetadata(` (request ID: ${response.$response.requestId})`)
-        }
 
         const stepZeroProgressUpdates = response.transformationPlan.transformationSteps[0].progressUpdates
 
@@ -618,13 +607,14 @@ export async function getTransformationPlan(jobId: string) {
         return plan
     } catch (e: any) {
         const errorMessage = (e as Error).message
-        getLogger().error(`CodeTransformation: GetTransformationPlan error = ${errorMessage}`)
+        transformByQState.setJobFailureMetadata(` (request ID: ${e.requestId ?? 'unavailable'})`)
+        getLogger().error(`CodeTransformation: GetTransformationPlan error = %O`, e)
 
         /* Means API call failed
          * If response is defined, means a display/parsing error occurred, so continue transformation
          */
         if (response === undefined) {
-            throw new Error('Get plan API call failed')
+            throw new Error(errorMessage)
         }
     }
 }
@@ -638,13 +628,10 @@ export async function getTransformationSteps(jobId: string, handleThrottleFlag: 
         const response = await codeWhisperer.codeWhispererClient.codeModernizerGetCodeTransformationPlan({
             transformationJobId: jobId,
         })
-        if (response.$response.requestId) {
-            transformByQState.setJobFailureMetadata(` (request ID: ${response.$response.requestId})`)
-        }
         return response.transformationPlan.transformationSteps.slice(1) // skip step 0 (contains supplemental info)
     } catch (e: any) {
-        const errorMessage = (e as Error).message
-        getLogger().error(`CodeTransformation: GetTransformationPlan error = ${errorMessage}`)
+        transformByQState.setJobFailureMetadata(` (request ID: ${e.requestId ?? 'unavailable'})`)
+        getLogger().error(`CodeTransformation: GetTransformationPlan error = %O`, e)
         throw e
     }
 }
@@ -682,7 +669,6 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
                 transformByQState.setJobFailureErrorNotification(
                     `${CodeWhispererConstants.failedToCompleteJobGenericNotification} ${errorMessage}`
                 )
-                transformByQState.setJobFailureMetadata(` (request ID: ${response.$response.requestId})`)
             }
             if (validStates.includes(status)) {
                 break
@@ -700,14 +686,12 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
              * is called, we break above on validStatesForCheckingDownloadUrl and check final status in finalizeTransformationJob
              */
             if (CodeWhispererConstants.failureStates.includes(status)) {
-                transformByQState.setJobFailureMetadata(` (request ID: ${response.$response.requestId})`)
-                throw new JobStoppedError(response.$response.requestId)
+                throw new JobStoppedError()
             }
             await sleep(CodeWhispererConstants.transformationJobPollingIntervalSeconds * 1000)
         } catch (e: any) {
-            let errorMessage = (e as Error).message
-            errorMessage += ` -- ${transformByQState.getJobFailureMetadata()}`
-            getLogger().error(`CodeTransformation: GetTransformation error = ${errorMessage}`)
+            getLogger().error(`CodeTransformation: GetTransformation error = %O`, e)
+            transformByQState.setJobFailureMetadata(` (request ID: ${e.requestId ?? 'unavailable'})`)
             throw e
         }
     }
@@ -752,7 +736,6 @@ export async function downloadResultArchive(
     pathToArchive: string,
     downloadArtifactType: TransformationDownloadArtifactType
 ) {
-    let downloadErrorMessage = undefined
     const cwStreamingClient = await createCodeWhispererChatStreamingClient()
 
     try {
@@ -765,8 +748,7 @@ export async function downloadResultArchive(
             pathToArchive
         )
     } catch (e: any) {
-        downloadErrorMessage = (e as Error).message
-        getLogger().error(`CodeTransformation: ExportResultArchive error = ${downloadErrorMessage}`)
+        getLogger().error(`CodeTransformation: ExportResultArchive error = %O`, e)
         throw e
     } finally {
         cwStreamingClient.destroy()
@@ -795,7 +777,7 @@ export async function downloadAndExtractResultArchive(
         zip.extractAllTo(pathToArchiveDir)
     } catch (e) {
         downloadErrorMessage = (e as Error).message
-        getLogger().error(`CodeTransformation: ExportResultArchive error = ${downloadErrorMessage}`)
+        getLogger().error(`CodeTransformation: ExportResultArchive error = %O`, e)
         throw new Error('Error downloading transformation result artifacts: ' + downloadErrorMessage)
     }
 }

@@ -2,7 +2,7 @@
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit",
     "description": "Including CodeCatalyst, Infrastructure Composer, and support for Lambda, S3, CloudWatch Logs, CloudFormation, and many other services.",
-    "version": "3.44.0-SNAPSHOT",
+    "version": "3.46.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
     ],
@@ -2151,6 +2151,90 @@
                     "group": "inline@2"
                 },
                 {
+                    "command": "aws.docdb.createCluster",
+                    "when": "view == aws.explorer && viewItem == awsDocDBNode",
+                    "group": "inline@1"
+                },
+                {
+                    "command": "aws.docdb.createCluster",
+                    "when": "view == aws.explorer && viewItem == awsDocDBNode",
+                    "group": "0@1"
+                },
+                {
+                    "command": "aws.docdb.startCluster",
+                    "when": "viewItem =~ /^awsDocDB-cluster-(regional|elastic)-stopped/",
+                    "group": "inline@1"
+                },
+                {
+                    "command": "aws.docdb.startCluster",
+                    "when": "viewItem =~ /^awsDocDB-cluster-(regional|elastic)-stopped/"
+                },
+                {
+                    "command": "aws.docdb.stopCluster",
+                    "when": "viewItem =~ /^awsDocDB-cluster-(regional|elastic)-running/",
+                    "group": "inline@1"
+                },
+                {
+                    "command": "aws.docdb.stopCluster",
+                    "when": "viewItem =~ /^awsDocDB-cluster-(regional|elastic)-running/"
+                },
+                {
+                    "command": "aws.docdb.renameCluster",
+                    "when": "viewItem =~ /^awsDocDB-cluster(?!.*-elastic.*)/",
+                    "group": "0@2"
+                },
+                {
+                    "command": "aws.docdb.deleteCluster",
+                    "when": "viewItem =~ /^awsDocDB-cluster-(regional|elastic)/",
+                    "group": "0@4"
+                },
+                {
+                    "command": "aws.docdb.createInstance",
+                    "when": "viewItem =~ /^awsDocDB-cluster-(?!elastic|global)(?!-stopped)/"
+                },
+                {
+                    "command": "aws.docdb.renameInstance",
+                    "when": " viewItem =~ /^awsDocDB-instance/",
+                    "group": "0@2"
+                },
+                {
+                    "command": "aws.docdb.modifyInstance",
+                    "when": " viewItem =~ /^awsDocDB-instance/",
+                    "group": "0@3"
+                },
+                {
+                    "command": "aws.docdb.rebootInstance",
+                    "when": "viewItem =~ /^awsDocDB-instance/",
+                    "group": "inline@1"
+                },
+                {
+                    "command": "aws.docdb.rebootInstance",
+                    "when": "viewItem =~ /^awsDocDB-instance/"
+                },
+                {
+                    "command": "aws.docdb.deleteInstance",
+                    "when": " viewItem =~ /^awsDocDB-instance/",
+                    "group": "0@4"
+                },
+                {
+                    "command": "aws.docdb.listTags",
+                    "when": "viewItem =~ /^awsDocDB-(?!cluster-global).*/"
+                },
+                {
+                    "command": "aws.docdb.viewConsole",
+                    "when": "viewItem =~ /^awsDocDB-/",
+                    "group": "0@1"
+                },
+                {
+                    "command": "aws.docdb.viewDocs",
+                    "when": "viewItem == awsDocDBNode"
+                },
+                {
+                    "command": "aws.docdb.copyEndpoint",
+                    "when": "viewItem =~ /^awsDocDB-/",
+                    "group": "0@1"
+                },
+                {
                     "command": "aws.appBuilder.tailLogs",
                     "when": "view =~ /^(aws.explorer|aws.appBuilder|aws.appBuilderForFileExplorer)$/ && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsCloudFormationFunctionNode)$/",
                     "group": "inline@3"
@@ -3808,11 +3892,6 @@
                 "enablement": "aws.isDevMode"
             },
             {
-                "command": "aws.dev.viewLogs",
-                "title": "Watch Logs",
-                "category": "AWS (Developer)"
-            },
-            {
                 "command": "aws.openInApplicationComposerDialog",
                 "title": "%AWS.command.applicationComposer.openDialog%",
                 "category": "%AWS.title%",
@@ -3854,6 +3933,155 @@
                 "title": "%AWS.command.threatComposer.newFile%",
                 "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.docdb.createCluster",
+                "title": "%AWS.command.docdb.createCluster%",
+                "icon": "$(add)",
+                "category": "%AWS.title%",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.docdb.createInstance",
+                "title": "%AWS.command.docdb.createInstance%",
+                "icon": "$(add)",
+                "category": "%AWS.title%",
+                "enablement": "(isCloud9 || !aws.isWebExtHost)",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.docdb.deleteInstance",
+                "title": "%AWS.generic.promptDelete%",
+                "category": "%AWS.title%",
+                "enablement": "(isCloud9 || !aws.isWebExtHost) && viewItem == awsDocDB-instance-available",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.docdb.renameInstance",
+                "title": "%AWS.generic.promptRename%",
+                "category": "%AWS.title%",
+                "enablement": "(isCloud9 || !aws.isWebExtHost) && viewItem == awsDocDB-instance-available",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.docdb.modifyInstance",
+                "title": "%AWS.command.docdb.modifyInstance%",
+                "category": "%AWS.title%",
+                "enablement": "isCloud9 || !aws.isWebExtHost && viewItem == awsDocDB-instance-available",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.docdb.rebootInstance",
+                "title": "%AWS.command.docdb.rebootInstance%",
+                "icon": "$(debug-restart)",
+                "category": "%AWS.title%",
+                "enablement": "(isCloud9 || !aws.isWebExtHost) && viewItem == awsDocDB-instance-available",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.docdb.renameCluster",
+                "title": "%AWS.generic.promptRename%",
+                "category": "%AWS.title%",
+                "enablement": "(isCloud9 || !aws.isWebExtHost) && viewItem =~ /^awsDocDB-cluster.*-running/",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.docdb.startCluster",
+                "title": "%AWS.command.docdb.startCluster%",
+                "icon": "$(debug-start)",
+                "category": "%AWS.title%",
+                "enablement": "!aws.isWebExtHost && viewItem =~ /^awsDocDB-cluster.*-stopped/"
+            },
+            {
+                "command": "aws.docdb.stopCluster",
+                "title": "%AWS.command.docdb.stopCluster%",
+                "icon": "$(debug-pause)",
+                "category": "%AWS.title%",
+                "enablement": "!aws.isWebExtHost && viewItem =~ /^awsDocDB-cluster.*-running/"
+            },
+            {
+                "command": "aws.docdb.deleteCluster",
+                "title": "%AWS.generic.promptDelete%",
+                "category": "%AWS.title%",
+                "enablement": "(isCloud9 || !aws.isWebExtHost) && viewItem =~ /^awsDocDB-cluster.*-running/",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.docdb.listTags",
+                "title": "%AWS.command.docdb.tags%",
+                "category": "%AWS.title%",
+                "enablement": "(isCloud9 || !aws.isWebExtHost) && viewItem =~ /^awsDocDB/",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.docdb.viewConsole",
+                "title": "%AWS.command.docdb.open%",
+                "category": "%AWS.title%",
+                "enablement": "(isCloud9 || !aws.isWebExtHost) && viewItem =~ /^awsDocDB/",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.docdb.viewDocs",
+                "title": "%AWS.generic.viewDocs%",
+                "category": "%AWS.title%",
+                "enablement": "(isCloud9 || !aws.isWebExtHost)",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.docdb.copyEndpoint",
+                "title": "%AWS.command.docdb.copyEndpoint%",
+                "category": "%AWS.title%",
+                "enablement": "(isCloud9 || !aws.isWebExtHost) && viewItem =~ /^awsDocDB/",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"

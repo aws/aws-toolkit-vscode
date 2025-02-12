@@ -4,7 +4,7 @@
  */
 
 import _ from 'lodash'
-import { getLogger } from '../logger'
+import { getLogger } from '../logger/logger'
 import type { KeyedCache } from './cacheUtils'
 
 /**

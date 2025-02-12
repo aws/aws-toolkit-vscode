@@ -8,7 +8,7 @@ import { MessagePublisher } from '../../messages/messagePublisher'
 import { CodeReference } from '../../webview/ui/connector'
 import { ChatItemAction, ProgressField, SourceLink } from '@aws/mynah-ui'
 import { ChatItemType } from '../model'
-import { DeletedFileInfo, NewFileInfo } from '../../../amazonqFeatureDev/types'
+import { DeletedFileInfo, NewFileInfo } from '../types'
 import { licenseText } from '../../../amazonqFeatureDev/constants'
 
 class UiMessage {

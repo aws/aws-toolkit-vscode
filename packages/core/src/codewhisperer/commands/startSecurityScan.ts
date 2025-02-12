@@ -8,7 +8,7 @@ import * as nls from 'vscode-nls'
 import { ArtifactMap, DefaultCodeWhispererClient } from '../client/codewhisperer'
 import { initSecurityScanRender } from '../service/diagnosticsProvider'
 import { SecurityPanelViewProvider } from '../views/securityPanelViewProvider'
-import { getLogger } from '../../shared/logger'
+import { getLogger } from '../../shared/logger/logger'
 import { makeLogger } from '../../shared/logger/activation'
 import * as CodeWhispererConstants from '../models/constants'
 import {
@@ -47,7 +47,7 @@ import {
     MaximumProjectScanReachedError,
     SecurityScanError,
 } from '../models/errors'
-import { SecurityIssuesTree } from '../service/securityIssueTreeViewProvider'
+import { SecurityIssueTreeViewProvider } from '../service/securityIssueTreeViewProvider'
 import { ChatSessionManager } from '../../amazonqScan/chat/storages/chatSession'
 import { TelemetryHelper } from '../util/telemetryHelper'
 
@@ -385,13 +385,6 @@ export function showSecurityScanResults(
     totalIssues: number
 ) {
     initSecurityScanRender(securityRecommendationCollection, context, editor, scope)
-    if (
-        totalIssues > 0 &&
-        (scope === CodeWhispererConstants.CodeAnalysisScope.PROJECT ||
-            scope === CodeWhispererConstants.CodeAnalysisScope.FILE_ON_DEMAND)
-    ) {
-        SecurityIssuesTree.instance.focus()
-    }
 
     if (scope === CodeWhispererConstants.CodeAnalysisScope.PROJECT) {
         populateCodeScanLogStream(zipMetadata.scannedFiles)
@@ -431,7 +424,7 @@ export function showScanResultsInChat(
 
     initSecurityScanRender(securityRecommendationCollection, context, editor, scope)
     if (totalIssues > 0) {
-        SecurityIssuesTree.instance.focus()
+        SecurityIssueTreeViewProvider.focus()
     }
 
     populateCodeScanLogStream(zipMetadata.scannedFiles)
@@ -531,7 +524,7 @@ function showScanCompletedNotification(total: number, scannedFiles: Set<string>)
     const items = [CodeWhispererConstants.showScannedFilesMessage]
     void vscode.window.showInformationMessage(`Code Review Completed`, ...items).then((value) => {
         if (total > 0 && value === CodeWhispererConstants.showScannedFilesMessage) {
-            SecurityIssuesTree.instance.focus()
+            SecurityIssueTreeViewProvider.focus()
         }
     })
 }

@@ -6,7 +6,6 @@
 import { CodeWhispererUserClient } from '../indexNode'
 import * as CodeWhispererConstants from '../models/constants'
 import { codeFixState } from '../models/model'
-import { getLogger, isAwsError, sleep } from '../../shared'
 import { ArtifactMap, CreateUploadUrlRequest, DefaultCodeWhispererClient } from '../client/codewhisperer'
 import {
     CodeFixJobStoppedError,
@@ -16,6 +15,9 @@ import {
     MonthlyCodeFixLimitError,
 } from '../models/errors'
 import { uploadArtifactToS3 } from './securityScanHandler'
+import { getLogger } from '../../shared/logger/logger'
+import { isAwsError } from '../../shared/errors'
+import { sleep } from '../../shared/utilities/timeoutUtils'
 
 export async function getPresignedUrlAndUpload(
     client: DefaultCodeWhispererClient,

@@ -1,0 +1,14 @@
+{
+	"date": "2025-02-05",
+	"version": "3.45.0",
+	"entries": [
+		{
+			"type": "Feature",
+			"description": "Add support for DocumentDB clusters"
+		},
+		{
+			"type": "Feature",
+			"description": "Step Functions: Upgrade amazon-states-language-service to 1.15. This new version enhance autocomplete for variable and JSONata expression in JSON ASL files."
+		}
+	]
+}

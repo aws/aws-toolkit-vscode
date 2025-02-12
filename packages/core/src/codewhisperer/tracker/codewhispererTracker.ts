@@ -15,7 +15,8 @@ import { codeWhispererClient } from '../client/codewhisperer'
 import { logSendTelemetryEventFailure } from '../../codewhispererChat/controllers/chat/telemetryHelper'
 import { Timeout } from '../../shared/utilities/timeoutUtils'
 import { getSelectedCustomization } from '../util/customizationUtil'
-import { isAwsError, undefinedIfEmpty } from '../../shared'
+import { isAwsError } from '../../shared/errors'
+import { undefinedIfEmpty } from '../../shared/utilities/textUtilities'
 import { getUnmodifiedAcceptedTokens } from '../util/commonUtil'
 
 /**

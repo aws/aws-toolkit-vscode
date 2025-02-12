@@ -52,6 +52,8 @@ export default class MessengerUtils {
                 javaHomePrompt += ` ${CodeWhispererConstants.macJavaVersionHomeHelpChatMessage(11)}`
             } else if (jdkVersion === JDKVersion.JDK17) {
                 javaHomePrompt += ` ${CodeWhispererConstants.macJavaVersionHomeHelpChatMessage(17)}`
+            } else if (jdkVersion === JDKVersion.JDK21) {
+                javaHomePrompt += ` ${CodeWhispererConstants.macJavaVersionHomeHelpChatMessage(21)}`
             }
         } else {
             javaHomePrompt += ` ${CodeWhispererConstants.linuxJavaHomeHelpChatMessage}`

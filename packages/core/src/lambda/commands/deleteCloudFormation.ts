@@ -10,7 +10,7 @@ import * as vscode from 'vscode'
 import { DefaultCloudFormationClient } from '../../shared/clients/cloudFormationClient'
 
 import * as localizedText from '../../shared/localizedText'
-import { getLogger, Logger } from '../../shared/logger'
+import { getLogger, Logger } from '../../shared/logger/logger'
 import { Result } from '../../shared/telemetry/telemetry'
 import { CloudFormationStackNode } from '../explorer/cloudFormationNodes'
 import { showConfirmationMessage } from '../../shared/utilities/messages'

@@ -26,7 +26,7 @@ import { TextMessageHandler } from './messages/handler'
 import { MessageController } from './messages/controller'
 import { getActions, getDetails } from './diffTree/actions'
 import { DiffTreeFileInfo } from './diffTree/types'
-import { FeatureContext } from '../../../shared'
+import { FeatureContext } from '../../../shared/featureConfig'
 import { tryNewMap } from '../../util/functionUtils'
 import { welcomeScreenTabData } from './walkthrough/welcome'
 import { agentWalkthroughDataModel } from './walkthrough/agent'
@@ -833,6 +833,12 @@ export const createMynahUI = (
             mouseEvent?.stopPropagation()
             mouseEvent?.stopImmediatePropagation()
             connector.onResponseBodyLinkClick(tabId, messageId, link)
+        },
+        onFormLinkClick: (link, mouseEvent) => {
+            mouseEvent?.preventDefault()
+            mouseEvent?.stopPropagation()
+            mouseEvent?.stopImmediatePropagation()
+            connector.onLinkClick(link)
         },
         onInfoLinkClick: (tabId: string, link: string, mouseEvent?: MouseEvent) => {
             mouseEvent?.preventDefault()
