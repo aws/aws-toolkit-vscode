@@ -11,6 +11,8 @@ import { BuildStatus } from '../chat/session/session'
 // For uniquely identifiying which chat messages should be routed to Test
 export const testChat = 'testChat'
 
+export const maxUserPromptLength = 4096 // user prompt character limit from MPS and API model.
+
 export const cancelTestGenButton: ChatItemButton = {
     id: ButtonActions.STOP_TEST_GEN,
     text: 'Cancel',
