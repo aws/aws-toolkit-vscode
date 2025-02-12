@@ -152,7 +152,6 @@ export class UIMessageListener {
             tabID: msg.tabID,
             command: msg.command,
             vote: msg.vote,
-            messageId: msg.messageId,
         })
     }
 
