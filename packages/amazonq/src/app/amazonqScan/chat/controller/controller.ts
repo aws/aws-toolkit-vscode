@@ -49,7 +49,7 @@ export class ScanController {
         this.authController = new AuthController()
 
         this.chatControllerMessageListeners.tabOpened.event((data) => {
-            return this.tabOpened(data)
+            return this.tabOpened(data).then(() => this.scanInitiated(data))
         })
 
         this.chatControllerMessageListeners.tabClosed.event((data) => {
@@ -58,10 +58,6 @@ export class ScanController {
 
         this.chatControllerMessageListeners.authClicked.event((data) => {
             this.authClicked(data)
-        })
-
-        this.chatControllerMessageListeners.runScan.event((data) => {
-            return this.scanInitiated(data)
         })
 
         this.chatControllerMessageListeners.formActionClicked.event((data) => {
