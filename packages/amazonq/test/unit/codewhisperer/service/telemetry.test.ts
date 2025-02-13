@@ -23,7 +23,6 @@ import {
     ConfigurationEntry,
     RecommendationHandler,
     session,
-    vsCodeCursorUpdateDelay,
     AuthUtil,
 } from 'aws-core-vscode/codewhisperer'
 import { env, CodewhispererUserTriggerDecision } from 'aws-core-vscode/shared'

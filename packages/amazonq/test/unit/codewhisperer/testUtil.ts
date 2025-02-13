@@ -5,13 +5,12 @@
 
 import assert from 'assert'
 import vscode from 'vscode'
-import { CodeWhispererSessionState, vsCodeCursorUpdateDelay } from 'aws-core-vscode/codewhisperer'
+import { session, vsCodeCursorUpdateDelay } from 'aws-core-vscode/codewhisperer'
 import { sleep, waitUntil } from 'aws-core-vscode/shared'
 import { assertTextEditorContains } from 'aws-core-vscode/test'
 
 // Note: RecommendationHandler.isSuggestionVisible seems not to work well, hence not using it
 export async function waitUntilSuggestionSeen(index: number = 0) {
-    const session = CodeWhispererSessionState.instance.getSession()
     const ok = await waitUntil(
         async () => {
             console.log('Suggestion state: %O', session.getSuggestionState(index))
