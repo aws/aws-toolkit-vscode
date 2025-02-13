@@ -49,8 +49,8 @@ export function productName() {
 }
 
 /** Gets the client name stored in oidc */
-export const clientName = once(_clientName)
-function _clientName() {
+export const oidcClientName = once(_oidcClientName)
+function _oidcClientName() {
     const companyName = getIdeProperties().company
     return isCloud9() ? `${companyName} Cloud9` : `${companyName} IDE Extensions for VSCode`
 }

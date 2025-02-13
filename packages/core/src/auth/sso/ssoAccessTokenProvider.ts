@@ -26,7 +26,7 @@ import { AwsLoginWithBrowser, AwsRefreshCredentials, telemetry } from '../../sha
 import { indent, toBase64URL } from '../../shared/utilities/textUtilities'
 import { AuthSSOServer } from './server'
 import { CancellationError, sleep } from '../../shared/utilities/timeoutUtils'
-import { clientName, isAmazonQ } from '../../shared/extensionUtilities'
+import { oidcClientName, isAmazonQ } from '../../shared/extensionUtilities'
 import { randomBytes, createHash } from 'crypto'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { randomUUID } from '../../shared/crypto'
@@ -440,7 +440,7 @@ export class DeviceFlowAuthorization extends SsoAccessTokenProvider {
     override async registerClient(): Promise<ClientRegistration> {
         return this.oidc.registerClient(
             {
-                clientName: clientName(),
+                clientName: oidcClientName(),
                 clientType: clientRegistrationType,
                 scopes: this.profile.scopes,
             },
@@ -545,7 +545,7 @@ class AuthFlowAuthorization extends SsoAccessTokenProvider {
         return this.oidc.registerClient(
             {
                 // All AWS extensions (Q, Toolkit) for a given IDE use the same client name.
-                clientName: clientName(),
+                clientName: oidcClientName(),
                 clientType: clientRegistrationType,
                 scopes: this.profile.scopes,
                 grantTypes: [authorizationGrantType, refreshGrantType],
@@ -654,7 +654,7 @@ class WebAuthorization extends SsoAccessTokenProvider {
         return this.oidc.registerClient(
             {
                 // All AWS extensions (Q, Toolkit) for a given IDE use the same client name.
-                clientName: clientName(),
+                clientName: oidcClientName(),
                 clientType: clientRegistrationType,
                 scopes: this.profile.scopes,
                 grantTypes: [authorizationGrantType, refreshGrantType],
