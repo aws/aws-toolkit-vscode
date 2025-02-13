@@ -173,7 +173,6 @@ describe('Amazon Q Test Generation', function () {
                     await tab.waitForButtons([FollowUpTypes.ViewDiff])
                     tab.clickButton(FollowUpTypes.ViewDiff)
                     await tab.waitForChatFinishesLoading()
-                    console.log('beforeEach valid language')
                 })
 
                 describe('View diff', async () => {
