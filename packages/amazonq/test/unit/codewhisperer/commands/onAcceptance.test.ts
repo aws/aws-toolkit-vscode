@@ -9,21 +9,19 @@ import * as sinon from 'sinon'
 import {
     onAcceptance,
     AcceptedSuggestionEntry,
-    CodeWhispererSessionState,
+    session,
     CodeWhispererTracker,
     RecommendationHandler,
     AuthUtil,
-    CodeWhispererSession,
 } from 'aws-core-vscode/codewhisperer'
 import { resetCodeWhispererGlobalVariables, createMockTextEditor } from 'aws-core-vscode/test'
 import { assertTelemetryCurried } from 'aws-core-vscode/test'
 
 describe('onAcceptance', function () {
-    let session: CodeWhispererSession
     describe('onAcceptance', function () {
         beforeEach(async function () {
-            session = CodeWhispererSessionState.instance.getSession()
             await resetCodeWhispererGlobalVariables()
+            session.reset()
         })
 
         afterEach(function () {
