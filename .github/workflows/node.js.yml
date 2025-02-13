@@ -84,6 +84,11 @@ jobs:
                   git remote add forkUpstream https://github.com/$REPO_NAME  # URL of the fork
                   git fetch forkUpstream  # Fetch fork
 
+            - name: Attempt to merge target
+              env:
+                  TARGET_BRANCH: ${{ github.event.pull_request.base.ref }}
+              run: git merge origin/$TARGET_BRANCH --no-commit --no-ff || echo "Failed to merge target branch"
+
             - name: Compute git diff
               env:
                   CURRENT_BRANCH: ${{ github.head_ref }}
