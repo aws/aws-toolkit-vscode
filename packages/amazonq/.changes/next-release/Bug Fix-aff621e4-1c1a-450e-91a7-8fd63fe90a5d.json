@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Amazon Q /test: Truncating user input to 4096 characters for unit test generation."
-}
