@@ -154,6 +154,23 @@ export async function activateAmazonQCommon(context: vscode.ExtensionContext, is
             void focusAmazonQPanel.execute(placeholder, 'firstStartUp')
         }, 1000)
     }
+
+    context.subscriptions.push(
+        Experiments.instance.onDidChange(async (event) => {
+            if (event.key === 'amazonqLSP') {
+                await vscode.window
+                    .showInformationMessage(
+                        'Amazon Q LSP setting has changed. Reload VS Code for the changes to take effect.',
+                        'Reload Now'
+                    )
+                    .then(async (selection) => {
+                        if (selection === 'Reload Now') {
+                            await vscode.commands.executeCommand('workbench.action.reloadWindow')
+                        }
+                    })
+            }
+        })
+    )
 }
 
 export async function deactivateCommon() {
