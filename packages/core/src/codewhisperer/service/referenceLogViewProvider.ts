@@ -10,7 +10,7 @@ import * as CodeWhispererConstants from '../models/constants'
 import { CodeWhispererSettings } from '../util/codewhispererSettings'
 import globals from '../../shared/extensionGlobals'
 import { AuthUtil } from '../util/authUtil'
-import { CodeWhispererSessionState } from '../util/codeWhispererSession'
+import { session } from '../util/codeWhispererSession'
 
 export class ReferenceLogViewProvider implements vscode.WebviewViewProvider {
     public static readonly viewType = 'aws.codeWhisperer.referenceLog'
@@ -68,7 +68,6 @@ export class ReferenceLogViewProvider implements vscode.WebviewViewProvider {
                 reference.recommendationContentSpan.start,
                 reference.recommendationContentSpan.end
             )
-            const session = CodeWhispererSessionState.instance.getSession()
             const firstCharLineNumber =
                 editor.document.positionAt(session.startCursorOffset + reference.recommendationContentSpan.start).line +
                 1

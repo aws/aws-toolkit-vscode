@@ -8,7 +8,7 @@ import * as vscode from 'vscode'
 import * as sinon from 'sinon'
 import {
     ReferenceInlineProvider,
-    CodeWhispererSessionState,
+    session,
     AuthUtil,
     DefaultCodeWhispererClient,
     RecommendationsList,
@@ -55,7 +55,6 @@ describe('recommendationHandler', function () {
         })
 
         it('should assign correct recommendations given input', async function () {
-            const session = CodeWhispererSessionState.instance.getSession()
             assert.strictEqual(CodeWhispererCodeCoverageTracker.instances.size, 0)
             assert.strictEqual(
                 CodeWhispererCodeCoverageTracker.getTracker(mockEditor.document.languageId)?.serviceInvocationCount,
@@ -75,7 +74,7 @@ describe('recommendationHandler', function () {
             }
             const handler = new RecommendationHandler()
             sinon.stub(handler, 'getServerResponse').resolves(mockServerResult)
-            await handler.getRecommendations(mockClient, mockEditor, 'AutoTrigger', config, session, 'Enter', false)
+            await handler.getRecommendations(mockClient, mockEditor, 'AutoTrigger', config, 'Enter', false)
             const actual = session.recommendations
             const expected: RecommendationsList = [{ content: "print('Hello World!')" }, { content: '' }]
             assert.deepStrictEqual(actual, expected)
@@ -86,7 +85,6 @@ describe('recommendationHandler', function () {
         })
 
         it('should assign request id correctly', async function () {
-            const session = CodeWhispererSessionState.instance.getSession()
             const mockServerResult = {
                 recommendations: [{ content: "print('Hello World!')" }, { content: '' }],
                 $response: {
@@ -101,7 +99,7 @@ describe('recommendationHandler', function () {
             const handler = new RecommendationHandler()
             sinon.stub(handler, 'getServerResponse').resolves(mockServerResult)
             sinon.stub(handler, 'isCancellationRequested').returns(false)
-            await handler.getRecommendations(mockClient, mockEditor, 'AutoTrigger', config, session, 'Enter', false)
+            await handler.getRecommendations(mockClient, mockEditor, 'AutoTrigger', config, 'Enter', false)
             assert.strictEqual(handler.requestId, 'test_request')
             assert.strictEqual(session.sessionId, 'test_request')
             assert.strictEqual(session.triggerType, 'AutoTrigger')
@@ -130,10 +128,9 @@ describe('recommendationHandler', function () {
                 strategy: 'empty',
             })
             sinon.stub(performance, 'now').returns(0.0)
-            const session = CodeWhispererSessionState.instance.getSession()
             session.startPos = new vscode.Position(1, 0)
             session.startCursorOffset = 2
-            await handler.getRecommendations(mockClient, mockEditor, 'AutoTrigger', config, session, 'Enter')
+            await handler.getRecommendations(mockClient, mockEditor, 'AutoTrigger', config, 'Enter')
             const assertTelemetry = assertTelemetryCurried('codewhisperer_serviceInvocation')
             assertTelemetry({
                 codewhispererRequestId: 'test_request',
@@ -170,11 +167,10 @@ describe('recommendationHandler', function () {
             const handler = new RecommendationHandler()
             sinon.stub(handler, 'getServerResponse').resolves(mockServerResult)
             sinon.stub(performance, 'now').returns(0.0)
-            const session = CodeWhispererSessionState.instance.getSession()
             session.startPos = new vscode.Position(1, 0)
             session.requestIdList = ['test_request_empty']
             session.startCursorOffset = 2
-            await handler.getRecommendations(mockClient, mockEditor, 'AutoTrigger', config, session, 'Enter')
+            await handler.getRecommendations(mockClient, mockEditor, 'AutoTrigger', config, 'Enter')
             const assertTelemetry = assertTelemetryCurried('codewhisperer_userDecision')
             assertTelemetry({
                 codewhispererRequestId: 'test_request_empty',
@@ -196,7 +192,6 @@ describe('recommendationHandler', function () {
             sinon.restore()
         })
         it('should return true if any response is not empty', function () {
-            const session = CodeWhispererSessionState.instance.getSession()
             const handler = new RecommendationHandler()
             session.recommendations = [
                 {
@@ -209,14 +204,12 @@ describe('recommendationHandler', function () {
         })
 
         it('should return false if response is empty', function () {
-            const session = CodeWhispererSessionState.instance.getSession()
             const handler = new RecommendationHandler()
             session.recommendations = []
             assert.ok(!handler.isValidResponse())
         })
 
         it('should return false if all response has no string length', function () {
-            const session = CodeWhispererSessionState.instance.getSession()
             const handler = new RecommendationHandler()
             session.recommendations = [{ content: '' }, { content: '' }]
             assert.ok(!handler.isValidResponse())
@@ -229,7 +222,6 @@ describe('recommendationHandler', function () {
         })
 
         it('should set the completion type to block given a multi-line suggestion', function () {
-            const session = CodeWhispererSessionState.instance.getSession()
             session.setCompletionType(0, { content: 'test\n\n   \t\r\nanother test' })
             assert.strictEqual(session.getCompletionType(0), 'Block')
 
@@ -241,7 +233,6 @@ describe('recommendationHandler', function () {
         })
 
         it('should set the completion type to line given a single-line suggestion', function () {
-            const session = CodeWhispererSessionState.instance.getSession()
             session.setCompletionType(0, { content: 'test' })
             assert.strictEqual(session.getCompletionType(0), 'Line')
 
@@ -250,7 +241,6 @@ describe('recommendationHandler', function () {
         })
 
         it('should set the completion type to line given a multi-line completion but only one-lien of non-blank sequence', function () {
-            const session = CodeWhispererSessionState.instance.getSession()
             session.setCompletionType(0, { content: 'test\n\t' })
             assert.strictEqual(session.getCompletionType(0), 'Line')
 
@@ -267,7 +257,6 @@ describe('recommendationHandler', function () {
 
     describe('on event change', async function () {
         beforeEach(function () {
-            const session = CodeWhispererSessionState.instance.getSession()
             const fakeReferences = [
                 {
                     message: '',
@@ -285,14 +274,12 @@ describe('recommendationHandler', function () {
         })
 
         it('should remove inline reference onEditorChange', async function () {
-            const session = CodeWhispererSessionState.instance.getSession()
             session.sessionId = 'aSessionId'
             RecommendationHandler.instance.requestId = 'aRequestId'
             await RecommendationHandler.instance.onEditorChange()
             assert.strictEqual(ReferenceInlineProvider.instance.refs.length, 0)
         })
         it('should remove inline reference onFocusChange', async function () {
-            const session = CodeWhispererSessionState.instance.getSession()
             session.sessionId = 'aSessionId'
             RecommendationHandler.instance.requestId = 'aRequestId'
             await RecommendationHandler.instance.onFocusChange()

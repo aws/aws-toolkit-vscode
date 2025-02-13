@@ -26,7 +26,7 @@ import {
 import { ReferenceLogViewProvider } from '../service/referenceLogViewProvider'
 import { ReferenceHoverProvider } from '../service/referenceHoverProvider'
 import { ImportAdderProvider } from '../service/importAdderProvider'
-import { CodeWhispererSessionState } from '../util/codeWhispererSession'
+import { session } from '../util/codeWhispererSession'
 import path from 'path'
 import { RecommendationService } from '../service/recommendationService'
 import { Container } from '../service/serviceContainer'
@@ -89,7 +89,6 @@ export async function onInlineAcceptance(acceptanceEntry: OnRecommendationAccept
         const end = acceptanceEntry.editor.selection.active
 
         vsCodeState.isCodeWhispererEditing = true
-        const session = CodeWhispererSessionState.instance.getSession()
         /**
          * Mitigation to right context handling mainly for auto closing bracket use case
          */
@@ -143,17 +142,5 @@ export async function onInlineAcceptance(acceptanceEntry: OnRecommendationAccept
         }
 
         RecommendationHandler.instance.reportUserDecisions(acceptanceEntry.acceptIndex)
-        await promoteNextSessionIfAvailable(acceptanceEntry)
-    }
-}
-
-async function promoteNextSessionIfAvailable(acceptanceEntry: OnRecommendationAcceptanceEntry) {
-    if (acceptanceEntry.acceptIndex === 0 && acceptanceEntry.editor) {
-        const nextSession = CodeWhispererSessionState.instance.getNextSession()
-        nextSession.startPos = acceptanceEntry.editor.selection.active
-        CodeWhispererSessionState.instance.setSession(nextSession)
-        if (nextSession.recommendations.length) {
-            await RecommendationHandler.instance.tryShowRecommendation()
-        }
     }
 }
