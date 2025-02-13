@@ -17,6 +17,9 @@ import { HttpResourceFetcher } from '../resourcefetcher/httpResourceFetcher'
 import { showMessageWithCancel } from '../../shared/utilities/messages'
 import { Timeout } from '../utilities/timeoutUtils'
 
+// max timeout for downloading remote LSP assets progress, the lowest possible is 3000, bounded by httpResourceFetcher's waitUntil
+const remoteDownloadTimeout = 5000
+
 export class LanguageServerResolver {
     constructor(
         private readonly manifest: Manifest,
@@ -89,10 +92,7 @@ export class LanguageServerResolver {
      * Returns a timeout to be passed down into httpFetcher to handle user cancellation
      */
     private async showDownloadProgress() {
-        const timeout = new Timeout(5000)
-        timeout?.token.onCancellationRequested((event) => {
-            logger.info('Remote download cancelled by user')
-        })
+        const timeout = new Timeout(remoteDownloadTimeout)
         await showMessageWithCancel(`Downloading '${this.lsName}' language server`, timeout)
         return timeout
     }
