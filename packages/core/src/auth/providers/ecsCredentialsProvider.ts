@@ -4,7 +4,7 @@
  */
 
 import { Credentials, CredentialProvider } from '@aws-sdk/types'
-import { fromContainerMetadata } from '@aws-sdk/credential-provider-imds'
+import { fromContainerMetadata } from '@smithy/credential-provider-imds'
 import { EnvironmentVariables } from '../../shared/environmentVariables'
 import { CredentialType } from '../../shared/telemetry/telemetry.gen'
 import { getStringHash } from '../../shared/utilities/textUtilities'
