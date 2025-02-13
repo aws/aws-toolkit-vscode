@@ -8,6 +8,10 @@
  *
  * It uses a regex instead of mocha's loader, because mocha's
  * loader can't resolve vscode by default
+ *
+ * Note: This script doesn't handle cases where teams use this.skip() inside of their tests
+ *
+ * Usage: node skippedTestReport.js <directoryPath>
  */
 
 import * as fs from 'fs'
