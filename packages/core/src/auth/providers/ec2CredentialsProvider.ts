@@ -4,7 +4,7 @@
  */
 
 import { Credentials } from '@aws-sdk/types'
-import { fromInstanceMetadata } from '@aws-sdk/credential-provider-imds'
+import { fromInstanceMetadata } from '@smithy/credential-provider-imds'
 import { DefaultEc2MetadataClient } from '../../shared/clients/ec2MetadataClient'
 import { Ec2MetadataClient } from '../../shared/clients/ec2MetadataClient'
 import { getLogger } from '../../shared/logger/logger'
