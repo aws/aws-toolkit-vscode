@@ -1,3 +1,7 @@
+## 3.46.0 2025-02-13
+
+- **Feature** Lambda: Support for environment variables in the editor webview.
+
 ## 3.45.0 2025-02-05
 
 - **Feature** Add support for DocumentDB clusters
