@@ -19,10 +19,9 @@ import { KeyStrokeHandler } from '../../codewhisperer/service/keyStrokeHandler'
 import { sleep } from '../../shared/utilities/timeoutUtils'
 import { invokeRecommendation } from '../../codewhisperer/commands/invokeRecommendation'
 import { getTestWorkspaceFolder } from '../../testInteg/integrationTestsUtilities'
-import { CodeWhispererSessionState } from '../../codewhisperer/util/codeWhispererSession'
+import { session } from '../../codewhisperer/util/codeWhispererSession'
 
 describe('CodeWhisperer service invocation', async function () {
-    const session = CodeWhispererSessionState.instance.getSession()
     let validConnection: boolean
     const client = new codewhispererClient.DefaultCodeWhispererClient()
     const config: ConfigurationEntry = {

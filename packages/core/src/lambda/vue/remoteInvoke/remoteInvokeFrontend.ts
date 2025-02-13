@@ -132,6 +132,21 @@ export default defineComponent({
                 }
             )
         },
+
+        async loadRemoteTestEvents() {
+            const shouldLoadEvents =
+                this.payload === 'savedEvents' &&
+                this.initialData.FunctionArn &&
+                this.initialData.FunctionRegion &&
+                !this.initialData.TestEvents
+
+            if (shouldLoadEvents) {
+                this.initialData.TestEvents = await client.listRemoteTestEvents(
+                    this.initialData.FunctionArn,
+                    this.initialData.FunctionRegion
+                )
+            }
+        },
     },
     mixins: [saveData],
 })

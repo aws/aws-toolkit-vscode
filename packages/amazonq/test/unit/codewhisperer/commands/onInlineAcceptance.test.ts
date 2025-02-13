@@ -8,22 +8,15 @@ import * as vscode from 'vscode'
 import * as sinon from 'sinon'
 import { resetCodeWhispererGlobalVariables, createMockTextEditor } from 'aws-core-vscode/test'
 import { assertTelemetryCurried } from 'aws-core-vscode/test'
-import {
-    onInlineAcceptance,
-    RecommendationHandler,
-    AuthUtil,
-    CodeWhispererSessionState,
-    CodeWhispererSession,
-} from 'aws-core-vscode/codewhisperer'
+import { onInlineAcceptance, RecommendationHandler, AuthUtil, session } from 'aws-core-vscode/codewhisperer'
 import { globals } from 'aws-core-vscode/shared'
 import { extensionVersion } from 'aws-core-vscode/shared'
 
 describe('onInlineAcceptance', function () {
-    let session: CodeWhispererSession
     describe('onInlineAcceptance', function () {
         beforeEach(async function () {
-            session = CodeWhispererSessionState.instance.getSession()
             await resetCodeWhispererGlobalVariables()
+            session.reset()
         })
 
         afterEach(function () {
