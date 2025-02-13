@@ -37,10 +37,11 @@
         "clean": "npm run clean -w packages/ -w plugins/",
         "reset": "npm run clean && ts-node ./scripts/clean.ts node_modules && npm install",
         "generateNonCodeFiles": "npm run generateNonCodeFiles -w packages/ --if-present",
-        "mergeReports": "ts-node ./scripts/mergeReports.ts"
+        "mergeReports": "ts-node ./scripts/mergeReports.ts",
+        "skippedTestReport": "ts-node ./scripts/skippedTestReport.ts ./packages/amazonq/test/e2e/"
     },
     "devDependencies": {
-        "@aws-toolkits/telemetry": "^1.0.295",
+        "@aws-toolkits/telemetry": "^1.0.296",
         "@playwright/browser-chromium": "^1.43.1",
         "@stylistic/eslint-plugin": "^2.11.0",
         "@types/he": "^1.2.3",

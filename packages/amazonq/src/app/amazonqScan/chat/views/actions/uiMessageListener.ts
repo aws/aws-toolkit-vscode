@@ -40,9 +40,6 @@ export class UIMessageListener {
             case 'auth-follow-up-was-clicked':
                 this.authClicked(msg)
                 break
-            case 'review':
-                this.scan(msg)
-                break
             case 'form-action-click':
                 this.formActionClicked(msg)
                 break
@@ -55,13 +52,10 @@ export class UIMessageListener {
             case 'file-click':
                 this.processFileClick(msg)
                 break
+            case 'chat-item-voted':
+                this.chatItemVoted(msg)
+                break
         }
-    }
-
-    private scan(msg: UIMessage) {
-        this.scanControllerEventsEmitters?.runScan.fire({
-            tabID: msg.tabID,
-        })
     }
 
     private formActionClicked(msg: UIMessage) {
@@ -110,6 +104,14 @@ export class UIMessageListener {
             tabID: msg.tabID,
             messageId: msg.messageId,
             filePath: msg.filePath,
+        })
+    }
+
+    private chatItemVoted(msg: any) {
+        this.scanControllerEventsEmitters?.processChatItemVotedMessage.fire({
+            tabID: msg.tabID,
+            command: msg.command,
+            vote: msg.vote,
         })
     }
 }

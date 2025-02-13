@@ -25,7 +25,6 @@ export function init(appContext: AmazonQAppInitContext) {
         authClicked: new vscode.EventEmitter<any>(),
         tabOpened: new vscode.EventEmitter<any>(),
         tabClosed: new vscode.EventEmitter<any>(),
-        runScan: new vscode.EventEmitter<any>(),
         formActionClicked: new vscode.EventEmitter<any>(),
         errorThrown: new vscode.EventEmitter<any>(),
         showSecurityScan: new vscode.EventEmitter<any>(),
@@ -35,6 +34,7 @@ export function init(appContext: AmazonQAppInitContext) {
         processResponseBodyLinkClick: new vscode.EventEmitter<any>(),
         fileClicked: new vscode.EventEmitter<any>(),
         scanCancelled: new vscode.EventEmitter<any>(),
+        processChatItemVotedMessage: new vscode.EventEmitter<any>(),
     }
     const dispatcher = new AppToWebViewMessageDispatcher(appContext.getAppsToWebViewMessagePublisher())
     const messenger = new Messenger(dispatcher)

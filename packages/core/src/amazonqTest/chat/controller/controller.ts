@@ -21,6 +21,7 @@ import {
     testGenCompletedField,
     testGenProgressField,
     testGenSummaryMessage,
+    maxUserPromptLength,
 } from '../../models/constants'
 import MessengerUtils, { ButtonActions } from './messenger/messengerUtils'
 import { getTelemetryReasonDesc, isAwsError } from '../../../shared/errors'
@@ -35,13 +36,14 @@ import {
 import { UserIntent } from '@amzn/codewhisperer-streaming'
 import { getSelectedCustomization } from '../../../codewhisperer/util/customizationUtil'
 import { createCodeWhispererChatStreamingClient } from '../../../shared/clients/codewhispererChatClient'
-import { ChatTriggerType } from '../../../codewhispererChat/controllers/chat/model'
+import { ChatItemVotedMessage, ChatTriggerType } from '../../../codewhispererChat/controllers/chat/model'
 import { triggerPayloadToChatRequest } from '../../../codewhispererChat/controllers/chat/chatRequest/converter'
 import { EditorContentController } from '../../../amazonq/commons/controllers/contentController'
 import { amazonQTabSuffix } from '../../../shared/constants'
 import { applyChanges } from '../../../shared/utilities/textDocumentUtilities'
 import { telemetry } from '../../../shared/telemetry/telemetry'
 import { CodeWhispererSettings } from '../../../codewhisperer/util/codewhispererSettings'
+import globals from '../../../shared/extensionGlobals'
 import { openUrl } from '../../../shared/utilities/vsCodeUtils'
 import { getLogger } from '../../../shared/logger/logger'
 import { i18n } from '../../../shared/i18n-helper'
@@ -77,6 +79,8 @@ export interface TestChatControllerEventEmitters {
     readonly errorThrown: vscode.EventEmitter<any>
     readonly insertCodeAtCursorPosition: vscode.EventEmitter<any>
     readonly processResponseBodyLinkClick: vscode.EventEmitter<any>
+    readonly processChatItemVotedMessage: vscode.EventEmitter<any>
+    readonly processChatItemFeedbackMessage: vscode.EventEmitter<any>
 }
 
 type OpenDiffMessage = {
@@ -155,6 +159,18 @@ export class TestController {
             return this.processLink(data)
         })
 
+        this.chatControllerMessageListeners.processChatItemVotedMessage.event((data) => {
+            this.processChatItemVotedMessage(data).catch((e) => {
+                getLogger().error('processChatItemVotedMessage failed: %s', (e as Error).message)
+            })
+        })
+
+        this.chatControllerMessageListeners.processChatItemFeedbackMessage.event((data) => {
+            this.processChatItemFeedbackMessage(data).catch((e) => {
+                getLogger().error('processChatItemFeedbackMessage failed: %s', (e as Error).message)
+            })
+        })
+
         this.chatControllerMessageListeners.followUpClicked.event((data) => {
             switch (data.followUp.type) {
                 case FollowUpTypes.ViewDiff:
@@ -202,6 +218,31 @@ export class TestController {
             logger.error('tabOpened failed: %O', err)
             this.messenger.sendErrorMessage(err.message, message.tabID)
         }
+    }
+
+    private async processChatItemVotedMessage(message: ChatItemVotedMessage) {
+        const session = this.sessionStorage.getSession()
+
+        telemetry.amazonq_feedback.emit({
+            featureId: 'amazonQTest',
+            amazonqConversationId: session.startTestGenerationRequestId,
+            credentialStartUrl: AuthUtil.instance.startUrl,
+            interactionType: message.vote,
+        })
+    }
+
+    private async processChatItemFeedbackMessage(message: any) {
+        const session = this.sessionStorage.getSession()
+
+        await globals.telemetry.postFeedback({
+            comment: `${JSON.stringify({
+                type: 'testgen-chat-answer-feedback',
+                amazonqConversationId: session.startTestGenerationRequestId,
+                reason: message?.selectedOption,
+                userComment: message?.comment,
+            })}`,
+            sentiment: 'Negative',
+        })
     }
 
     private async tabClosed(data: any) {
@@ -365,7 +406,8 @@ export class TestController {
         getLogger().debug('startTestGen tabId: %O', message.tabID)
         let fileName = ''
         let filePath = ''
-        let userMessage = ''
+        let userFacingMessage = ''
+        let userPrompt = ''
         session.testGenerationStartTime = performance.now()
 
         try {
@@ -381,6 +423,8 @@ export class TestController {
                 )
                 return
             }
+            // Truncating the user prompt if the prompt is more than 4096.
+            userPrompt = message.prompt.slice(0, maxUserPromptLength)
 
             // check that the session is authenticated
             const authState = await AuthUtil.instance.getChatAuthState()
@@ -425,16 +469,16 @@ export class TestController {
             getLogger().debug(`File path: ${fileEditorToTest.document.uri.fsPath}`)
             filePath = fileEditorToTest.document.uri.fsPath
             fileName = path.basename(filePath)
-            userMessage = message.prompt
+            userFacingMessage = userPrompt
                 ? regenerateTests
-                    ? `${message.prompt}`
-                    : `/test ${message.prompt}`
+                    ? `${userPrompt}`
+                    : `/test ${userPrompt}`
                 : `/test Generate unit tests for \`${fileName}\``
 
-            session.hasUserPromptSupplied = message.prompt.length > 0
+            session.hasUserPromptSupplied = userPrompt.length > 0
 
             // displaying user message prompt in Test tab
-            this.messenger.sendMessage(userMessage, tabID, 'prompt')
+            this.messenger.sendMessage(userFacingMessage, tabID, 'prompt')
             this.messenger.sendChatInputEnabled(tabID, false)
             this.sessionStorage.getSession().conversationState = ConversationState.IN_PROGRESS
             this.messenger.sendUpdatePromptProgress(message.tabID, testGenProgressField)
@@ -460,7 +504,7 @@ export class TestController {
                 this.messenger.sendMessage(unsupportedMessage, tabID, 'answer')
                 await this.onCodeGeneration(
                     session,
-                    message.prompt,
+                    userPrompt,
                     tabID,
                     fileName,
                     filePath,
