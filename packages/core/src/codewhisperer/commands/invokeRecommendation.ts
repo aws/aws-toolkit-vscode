@@ -8,7 +8,7 @@ import { vsCodeState, ConfigurationEntry } from '../models/model'
 import { resetIntelliSenseState } from '../util/globalStateUtil'
 import { DefaultCodeWhispererClient } from '../client/codewhisperer'
 import { RecommendationHandler } from '../service/recommendationHandler'
-import { CodeWhispererSessionState } from '../util/codeWhispererSession'
+import { session } from '../util/codeWhispererSession'
 import { RecommendationService } from '../service/recommendationService'
 
 /**
@@ -33,7 +33,6 @@ export async function invokeRecommendation(
     /**
      * When using intelliSense, if invocation position changed, reject previous active recommendations
      */
-    const session = CodeWhispererSessionState.instance.getSession()
     if (vsCodeState.isIntelliSenseActive && editor.selection.active !== session.startPos) {
         resetIntelliSenseState(
             config.isManualTriggerEnabled,
