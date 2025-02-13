@@ -160,7 +160,7 @@ export async function activateAmazonQCommon(context: vscode.ExtensionContext, is
             if (event.key === 'amazonqLSP') {
                 await vscode.window
                     .showInformationMessage(
-                        'Amazon Q LSP setting has changed. Please reload VS Code for the changes to take effect.',
+                        'Amazon Q LSP setting has changed. Reload VS Code for the changes to take effect.',
                         'Reload Now'
                     )
                     .then(async (selection) => {
