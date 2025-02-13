@@ -22,8 +22,6 @@ describe('getAmazonQLspConfig', () => {
         sandbox = sinon.createSandbox()
 
         serviceConfigStub = sandbox.stub()
-
-        // Create the DevSettings mock with the properly typed stub
         sandbox.stub(DevSettings, 'instance').get(() => ({
             getServiceConfig: serviceConfigStub,
         }))
@@ -33,7 +31,7 @@ describe('getAmazonQLspConfig', () => {
         sandbox.restore()
     })
 
-    it('uses default config when no overrides are present', () => {
+    it('uses default config', () => {
         serviceConfigStub.returns({})
         const config = getAmazonQLspConfig()
         assert.deepStrictEqual(config, defaultAmazonQLspConfig)
@@ -50,7 +48,7 @@ describe('getAmazonQLspConfig', () => {
         })
     })
 
-    it('override default settings', () => {
+    it('overrides default settings', () => {
         serviceConfigStub.returns(settingConfig)
 
         const config = getAmazonQLspConfig()

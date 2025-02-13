@@ -427,7 +427,7 @@ Example:
 }
 ```
 
-<a name="amazonqLsp-settings">Overrides specifically for the language server can be set using the `aws.dev.amazonqLsp` setting. This is a JSON object consisting of keys/values required to override language server: `manifestUrl`, 'supportedVersions', 'id', and 'locationOverride'.</a>
+<a name="amazonqLsp-settings">Overrides specifically for the Amazon Q language server can be set using the `aws.dev.amazonqLsp` setting. This is a JSON object consisting of keys/values required to override language server: `manifestUrl`, `supportedVersions`, `id`, and `locationOverride`.</a>
 
 Example:
 
@@ -435,8 +435,8 @@ Example:
 "aws.dev.amazonqLsp": {
     "manifestUrl": "https://custom.url/manifest.json",
     "supportedVersions": "4.0.0",
-    "id": "AmazonQSetting",
-    "locationOverride": "/custom/path",
+    "id": "AmazonQ",
+    "locationOverride": "/custom/path/to/local/lsp/folder",
 }
 ```
 
