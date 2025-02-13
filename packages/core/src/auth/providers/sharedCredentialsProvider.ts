@@ -18,6 +18,7 @@ import { assertHasProps, getMissingProps, hasProps } from '../../shared/utilitie
 import { DefaultStsClient } from '../../shared/clients/stsClient'
 import { SsoAccessTokenProvider } from '../sso/ssoAccessTokenProvider'
 import { SsoClient } from '../sso/clients'
+import { toRecord } from '../../shared/utilities/collectionUtils'
 import {
     extractDataFromSection,
     getRequiredFields,
@@ -31,7 +32,6 @@ import { CredentialsData, SectionName, SharedCredentialsKeys } from '../credenti
 import { SsoProfile, hasScopes, scopesSsoAccountAccess } from '../connection'
 import { builderIdStartUrl } from '../sso/constants'
 import { ToolkitError } from '../../shared/errors'
-import { toRecord } from '../../shared/utilities/collectionUtils'
 
 const credentialSources = {
     ECS_CONTAINER: 'EcsContainer',
