@@ -14,7 +14,7 @@ import {
     CodeSuggestionsState,
     ConfigurationEntry,
     CWInlineCompletionItemProvider,
-    CodeWhispererSessionState,
+    session,
     AuthUtil,
     listCodeWhispererCommandsId,
     DefaultCodeWhispererClient,
@@ -46,7 +46,6 @@ describe('inlineCompletionService', function () {
         })
 
         it('should call checkAndResetCancellationTokens before showing inline and next token to be null', async function () {
-            const session = CodeWhispererSessionState.instance.getSession()
             const mockEditor = createMockTextEditor()
             sinon.stub(RecommendationHandler.instance, 'getRecommendations').resolves({
                 result: 'Succeeded',
@@ -71,7 +70,6 @@ describe('inlineCompletionService', function () {
 
     describe('clearInlineCompletionStates', function () {
         it('should remove inline reference and recommendations', async function () {
-            const session = CodeWhispererSessionState.instance.getSession()
             const fakeReferences = [
                 {
                     message: '',

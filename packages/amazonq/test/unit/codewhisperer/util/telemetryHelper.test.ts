@@ -5,7 +5,7 @@
 
 import assert from 'assert'
 import { assertTelemetryCurried, resetCodeWhispererGlobalVariables } from 'aws-core-vscode/test'
-import { TelemetryHelper, Completion, CodeWhispererSessionState } from 'aws-core-vscode/codewhisperer'
+import { TelemetryHelper, Completion, session } from 'aws-core-vscode/codewhisperer'
 import {
     CodewhispererCompletionType,
     CodewhispererSuggestionState,
@@ -39,7 +39,6 @@ function aCompletion(): Completion {
 }
 
 describe('telemetryHelper', function () {
-    const session = CodeWhispererSessionState.instance.getSession()
     describe('clientComponentLatency', function () {
         let sut: TelemetryHelper
 
@@ -49,7 +48,6 @@ describe('telemetryHelper', function () {
 
         afterEach(function () {
             sinon.restore()
-            session.reset()
         })
 
         it('resetClientComponentLatencyTime should reset state variables', function () {

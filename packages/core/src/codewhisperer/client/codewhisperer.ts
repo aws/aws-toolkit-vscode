@@ -17,7 +17,7 @@ import { isSsoConnection } from '../../auth/connection'
 import { pageableToCollection } from '../../shared/utilities/collectionUtils'
 import apiConfig = require('./service-2.json')
 import userApiConfig = require('./user-service-2.json')
-import { CodeWhispererSessionState } from '../util/codeWhispererSession'
+import { session } from '../util/codeWhispererSession'
 import { getLogger } from '../../shared/logger/logger'
 import { indent } from '../../shared/utilities/textUtilities'
 import { keepAliveHeader } from './agent'
@@ -133,7 +133,6 @@ export class DefaultCodeWhispererClient {
     }
 
     async createUserSdkClient(maxRetries?: number): Promise<CodeWhispererUserClient> {
-        const session = CodeWhispererSessionState.instance.getSession()
         const isOptedOut = CodeWhispererSettings.instance.isOptoutEnabled()
         session.setFetchCredentialStart()
         const bearerToken = await AuthUtil.instance.getBearerToken()
