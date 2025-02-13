@@ -7,6 +7,7 @@ import assert from 'assert'
 import sinon from 'sinon'
 import { AmazonQLSPResolver } from '../../../src/lsp/lspInstaller'
 import {
+    DevSettings,
     fs,
     globals,
     LanguageServerResolver,
@@ -67,7 +68,7 @@ describe('AmazonQLSPInstaller', () => {
     })
 
     afterEach(async () => {
-        delete process.env.AWS_LANGUAGE_SERVER_OVERRIDE
+        delete process.env.__AMAZONQLSP_LOCATION_OVERRIDE
         sandbox.restore()
         await fs.delete(tempDir, {
             recursive: true,
@@ -79,9 +80,25 @@ describe('AmazonQLSPInstaller', () => {
     })
 
     describe('resolve()', () => {
-        it('uses AWS_LANGUAGE_SERVER_OVERRIDE', async () => {
+        it('uses dev setting override', async () => {
+            const locationOverride = '/custom/path/to/lsp'
+            const serviceConfigStub = sandbox.stub().returns({
+                locationOverride,
+            })
+            sandbox.stub(DevSettings, 'instance').get(() => ({
+                getServiceConfig: serviceConfigStub,
+            }))
+
+            const result = await resolver.resolve()
+
+            assert.strictEqual(result.assetDirectory, locationOverride)
+            assert.strictEqual(result.location, 'override')
+            assert.strictEqual(result.version, '0.0.0')
+        })
+
+        it('uses environment variable override', async () => {
             const overridePath = '/custom/path/to/lsp'
-            process.env.AWS_LANGUAGE_SERVER_OVERRIDE = overridePath
+            process.env.__AMAZONQLSP_LOCATION_OVERRIDE = overridePath
 
             const result = await resolver.resolve()
 
