@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "`Send to prompt` and other context menu options not sent if chat was closed"
-}
