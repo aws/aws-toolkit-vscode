@@ -16,6 +16,8 @@ import * as tokenProvider from '../auth/sso/ssoAccessTokenProvider'
 import * as testUtil from '../test/testUtil'
 import { DeviceFlowAuthorization } from '../auth/sso/ssoAccessTokenProvider'
 import { globals } from '../shared'
+import { GlobalState } from '../shared/globalState'
+import { FakeExtensionContext } from '../test/fakeExtensionContext'
 
 // ASSUMPTION: Tests are not run concurrently
 
@@ -48,6 +50,15 @@ export async function mochaGlobalSetup(extensionId: string) {
         if (getLogger() instanceof ToolkitLogger) {
             ;(getLogger() as ToolkitLogger).logToConsole()
         }
+
+        const fakeContext = await FakeExtensionContext.create()
+        const testFolder = await testUtil.TestFolder.create()
+        fakeContext.globalStorageUri = vscode.Uri.parse(testFolder.pathFrom('.'))
+        fakeContext.extensionPath = globals.context.extensionPath
+        Object.assign(globals, {
+            // eslint-disable-next-line aws-toolkits/no-banned-usages
+            globalState: new GlobalState(fakeContext.globalState),
+        })
     }
 }
 
@@ -58,9 +69,12 @@ export async function mochaGlobalTeardown(this: Mocha.Context) {
 }
 
 export const mochaHooks = {
-    beforeEach(this: Mocha.Context) {
+    async beforeEach(this: Mocha.Context) {
         globals.telemetry.clearRecords()
         globals.telemetry.logger.clear()
+
+        // mochaGlobalSetup() set this to a fake, so it's safe to clear it here.
+        await globals.globalState.clear()
     },
     afterEach(this: Mocha.Context) {
         patchWindow()
