@@ -23,7 +23,6 @@ export function getAmazonQLspConfig(): AmazonQLspConfig {
     return {
         ...defaultAmazonQLspConfig,
         ...(DevSettings.instance.getServiceConfig('amazonqLsp', {}) as AmazonQLspConfig),
-        // Environment variable overrides
         ...getServiceEnvVarConfig('amazonqLsp', Object.keys(defaultAmazonQLspConfig)),
     }
 }
