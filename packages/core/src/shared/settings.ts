@@ -757,6 +757,7 @@ const devSettings = {
     endpoints: Record(String, String),
     codecatalystService: Record(String, String),
     codewhispererService: Record(String, String),
+    amazonqLsp: Record(String, String),
     ssoCacheDirectory: String,
     autofillStartUrl: String,
     webAuth: Boolean,
@@ -769,6 +770,7 @@ type ServiceClients = keyof ServiceTypeMap
 interface ServiceTypeMap {
     codecatalystService: codecatalyst.CodeCatalystConfig
     codewhispererService: codewhisperer.CodeWhispererConfig
+    amazonqLsp: object // type is provided inside of amazon q
 }
 
 /**

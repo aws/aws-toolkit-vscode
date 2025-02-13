@@ -5,7 +5,7 @@
 
 import assert from 'assert'
 import sinon from 'sinon'
-import { AmazonQLSPResolver, manifestURL, supportedLspServerVersions } from '../../../src/lsp/lspInstaller'
+import { AmazonQLSPResolver } from '../../../src/lsp/lspInstaller'
 import {
     fs,
     globals,
@@ -19,6 +19,7 @@ import * as semver from 'semver'
 import { assertTelemetry } from 'aws-core-vscode/test'
 import { LspController } from 'aws-core-vscode/amazonq'
 import { LanguageServerSetup } from 'aws-core-vscode/telemetry'
+import { AmazonQLspConfig, getAmazonQLspConfig } from '../../../src/lsp/config'
 
 function createVersion(version: string) {
     return {
@@ -48,9 +49,11 @@ describe('AmazonQLSPInstaller', () => {
     // If globalState contains an ETag that is up to date with remote, we won't fetch it resulting in inconsistent behavior.
     // Therefore, we clear it temporarily for these tests to ensure consistent behavior.
     let manifestStorage: { [key: string]: any }
+    let lspConfig: AmazonQLspConfig
 
     before(async () => {
         manifestStorage = globals.globalState.get(manifestStorageKey) || {}
+        lspConfig = getAmazonQLspConfig()
     })
 
     beforeEach(async () => {
@@ -93,14 +96,14 @@ describe('AmazonQLSPInstaller', () => {
 
             assert.ok(download.assetDirectory.startsWith(tempDir))
             assert.deepStrictEqual(download.location, 'remote')
-            assert.ok(semver.satisfies(download.version, supportedLspServerVersions))
+            assert.ok(semver.satisfies(download.version, lspConfig.supportedVersions))
 
             // Second try - Should see the contents in the cache
             const cache = await resolver.resolve()
 
             assert.ok(cache.assetDirectory.startsWith(tempDir))
             assert.deepStrictEqual(cache.location, 'cache')
-            assert.ok(semver.satisfies(cache.version, supportedLspServerVersions))
+            assert.ok(semver.satisfies(cache.version, lspConfig.supportedVersions))
 
             /**
              * Always make sure the latest version is one patch higher. This stops a problem
@@ -135,7 +138,7 @@ describe('AmazonQLSPInstaller', () => {
 
             assert.ok(fallback.assetDirectory.startsWith(tempDir))
             assert.deepStrictEqual(fallback.location, 'fallback')
-            assert.ok(semver.satisfies(fallback.version, supportedLspServerVersions))
+            assert.ok(semver.satisfies(fallback.version, lspConfig.supportedVersions))
 
             /* First Try Telemetry
                     getManifest: remote succeeds
@@ -144,25 +147,25 @@ describe('AmazonQLSPInstaller', () => {
             */
             const firstTryTelemetry: Partial<LanguageServerSetup>[] = [
                 {
-                    id: 'AmazonQ',
+                    id: lspConfig.id,
                     manifestLocation: 'remote',
                     languageServerSetupStage: 'getManifest',
                     result: 'Succeeded',
                 },
                 {
-                    id: 'AmazonQ',
+                    id: lspConfig.id,
                     languageServerLocation: 'cache',
                     languageServerSetupStage: 'getServer',
                     result: 'Failed',
                 },
                 {
-                    id: 'AmazonQ',
+                    id: lspConfig.id,
                     languageServerLocation: 'remote',
                     languageServerSetupStage: 'validate',
                     result: 'Succeeded',
                 },
                 {
-                    id: 'AmazonQ',
+                    id: lspConfig.id,
                     languageServerLocation: 'remote',
                     languageServerSetupStage: 'getServer',
                     result: 'Succeeded',
@@ -176,19 +179,19 @@ describe('AmazonQLSPInstaller', () => {
             */
             const secondTryTelemetry: Partial<LanguageServerSetup>[] = [
                 {
-                    id: 'AmazonQ',
+                    id: lspConfig.id,
                     manifestLocation: 'remote',
                     languageServerSetupStage: 'getManifest',
                     result: 'Failed',
                 },
                 {
-                    id: 'AmazonQ',
+                    id: lspConfig.id,
                     manifestLocation: 'cache',
                     languageServerSetupStage: 'getManifest',
                     result: 'Succeeded',
                 },
                 {
-                    id: 'AmazonQ',
+                    id: lspConfig.id,
                     languageServerLocation: 'cache',
                     languageServerSetupStage: 'getServer',
                     result: 'Succeeded',
@@ -202,19 +205,19 @@ describe('AmazonQLSPInstaller', () => {
             */
             const thirdTryTelemetry: Partial<LanguageServerSetup>[] = [
                 {
-                    id: 'AmazonQ',
+                    id: lspConfig.id,
                     languageServerLocation: 'cache',
                     languageServerSetupStage: 'getServer',
                     result: 'Failed',
                 },
                 {
-                    id: 'AmazonQ',
+                    id: lspConfig.id,
                     languageServerLocation: 'remote',
                     languageServerSetupStage: 'getServer',
                     result: 'Failed',
                 },
                 {
-                    id: 'AmazonQ',
+                    id: lspConfig.id,
                     languageServerLocation: 'fallback',
                     languageServerSetupStage: 'getServer',
                     result: 'Succeeded',
@@ -227,7 +230,7 @@ describe('AmazonQLSPInstaller', () => {
         })
 
         it('resolves release candidiates', async () => {
-            const original = new ManifestResolver(manifestURL, 'AmazonQ').resolve()
+            const original = new ManifestResolver(lspConfig.manifestUrl, lspConfig.id).resolve()
             sandbox.stub(ManifestResolver.prototype, 'resolve').callsFake(async () => {
                 const originalManifest = await original
 

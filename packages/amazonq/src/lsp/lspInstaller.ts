@@ -16,37 +16,34 @@ import {
 } from 'aws-core-vscode/shared'
 import path from 'path'
 import { Range } from 'semver'
+import { getAmazonQLspConfig } from './config'
 
-export const manifestURL = 'https://aws-toolkit-language-servers.amazonaws.com/codewhisperer/0/manifest.json'
-export const supportedLspServerVersions = new Range('^3.1.1', {
-    includePrerelease: true,
-})
 const logger = getLogger('amazonqLsp')
 
 export class AmazonQLSPResolver implements LspResolver {
     async resolve(): Promise<LspResolution> {
-        const overrideLocation = process.env.AWS_LANGUAGE_SERVER_OVERRIDE
-        if (overrideLocation) {
-            logger.info(`Using language server override location: ${overrideLocation}`)
-            void vscode.window.showInformationMessage(`Using language server override location: ${overrideLocation}`)
+        const { id, manifestUrl, supportedVersions, locationOverride } = getAmazonQLspConfig()
+        if (locationOverride) {
+            void vscode.window.showInformationMessage(`Using language server override location: ${locationOverride}`)
             return {
-                assetDirectory: overrideLocation,
+                assetDirectory: locationOverride,
                 location: 'override',
                 version: '0.0.0',
                 resourcePaths: {
-                    lsp: overrideLocation,
+                    lsp: locationOverride,
                     node: getNodeExecutableName(),
                 },
             }
         }
 
         // "AmazonQ" is shared across toolkits to provide a common access point, don't change it
-        const name = 'AmazonQ'
-        const manifest = await new ManifestResolver(manifestURL, name).resolve()
+        const manifest = await new ManifestResolver(manifestUrl, id).resolve()
         const installationResult = await new LanguageServerResolver(
             manifest,
-            name,
-            supportedLspServerVersions
+            id,
+            new Range(supportedVersions, {
+                includePrerelease: true,
+            })
         ).resolve()
 
         const nodePath = path.join(installationResult.assetDirectory, `servers/${getNodeExecutableName()}`)
