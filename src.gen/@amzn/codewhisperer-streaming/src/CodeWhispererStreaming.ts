@@ -4,11 +4,6 @@ import {
   CodeWhispererStreamingClientConfig,
 } from "./CodeWhispererStreamingClient";
 import {
-  ConverseStreamCommand,
-  ConverseStreamCommandInput,
-  ConverseStreamCommandOutput,
-} from "./commands/ConverseStreamCommand";
-import {
   ExportResultArchiveCommand,
   ExportResultArchiveCommandInput,
   ExportResultArchiveCommandOutput,
@@ -23,6 +18,11 @@ import {
   GenerateTaskAssistPlanCommandInput,
   GenerateTaskAssistPlanCommandOutput,
 } from "./commands/GenerateTaskAssistPlanCommand";
+import {
+  SendMessageCommand,
+  SendMessageCommandInput,
+  SendMessageCommandOutput,
+} from "./commands/SendMessageCommand";
 import { createAggregatedClient } from "@smithy/smithy-client";
 import { HttpHandlerOptions as __HttpHandlerOptions } from "@smithy/types";
 
@@ -30,7 +30,7 @@ const commands = {
   ExportResultArchiveCommand,
   GenerateAssistantResponseCommand,
   GenerateTaskAssistPlanCommand,
-  ConverseStreamCommand,
+  SendMessageCommand,
 }
 
 export interface CodeWhispererStreaming {
@@ -86,20 +86,20 @@ export interface CodeWhispererStreaming {
   ): void;
 
   /**
-   * @see {@link ConverseStreamCommand}
+   * @see {@link SendMessageCommand}
    */
-  converseStream(
-    args: ConverseStreamCommandInput,
+  sendMessage(
+    args: SendMessageCommandInput,
     options?: __HttpHandlerOptions,
-  ): Promise<ConverseStreamCommandOutput>;
-  converseStream(
-    args: ConverseStreamCommandInput,
-    cb: (err: any, data?: ConverseStreamCommandOutput) => void
+  ): Promise<SendMessageCommandOutput>;
+  sendMessage(
+    args: SendMessageCommandInput,
+    cb: (err: any, data?: SendMessageCommandOutput) => void
   ): void;
-  converseStream(
-    args: ConverseStreamCommandInput,
+  sendMessage(
+    args: SendMessageCommandInput,
     options: __HttpHandlerOptions,
-    cb: (err: any, data?: ConverseStreamCommandOutput) => void
+    cb: (err: any, data?: SendMessageCommandOutput) => void
   ): void;
 
 }
