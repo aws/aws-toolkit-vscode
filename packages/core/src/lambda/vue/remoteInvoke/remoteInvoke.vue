@@ -67,6 +67,7 @@
                                 value="savedEvents"
                                 v-model="payload"
                                 name="payload_request"
+                                @change="$emit('loadRemoteTestEvents')"
                             />
                             <label class="label-selector" for="savedEvents"> Remote saved events</label>
                         </div>

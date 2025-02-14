@@ -307,9 +307,6 @@ export class Connector {
             case 'doc':
                 this.docChatConnector.onTabOpen(tabID)
                 break
-            case 'review':
-                this.scanChatConnector.onTabOpen(tabID)
-                break
         }
     }
 

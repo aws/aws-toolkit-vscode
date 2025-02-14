@@ -16,7 +16,7 @@ import { MockDocument } from '../fake/fakeDocument'
 import { getLogger } from '../../shared/logger'
 import { CodeWhispererCodeCoverageTracker } from '../../codewhisperer/tracker/codewhispererCodeCoverageTracker'
 import globals from '../../shared/extensionGlobals'
-import { CodeWhispererSessionState } from '../../codewhisperer/util/codeWhispererSession'
+import { session } from '../../codewhisperer/util/codeWhispererSession'
 import { DefaultAWSClientBuilder, ServiceOptions } from '../../shared/awsClientBuilder'
 import { FakeAwsContext } from '../utilities/fakeAwsContext'
 import { HttpResponse, Service } from 'aws-sdk'
@@ -33,7 +33,6 @@ export async function resetCodeWhispererGlobalVariables(clearGlobalState: boolea
     vsCodeState.isCodeWhispererEditing = false
     CodeWhispererCodeCoverageTracker.instances.clear()
     globals.telemetry.logger.clear()
-    const session = CodeWhispererSessionState.instance.getSession()
     session.reset()
     if (clearGlobalState) {
         await globals.globalState.clear()
