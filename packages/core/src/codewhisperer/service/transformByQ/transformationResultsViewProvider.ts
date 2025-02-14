@@ -343,7 +343,10 @@ export class ProposedTransformationExplorer {
             }
 
             diffModel.clearChanges()
-            transformByQState.setSummaryFilePath('')
+            // update summary path to where it is locally after user accepts changes, so that View Summary button works
+            transformByQState.setSummaryFilePath(
+                path.join(transformByQState.getProjectPath(), ExportResultArchiveStructure.PathToSummary)
+            )
             transformByQState.setProjectCopyFilePath('')
             transformByQState.setResultArchiveFilePath('')
             transformDataProvider.refresh()
