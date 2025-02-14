@@ -79,6 +79,12 @@ export class qTestingFramework {
                 await ui.messageReceiver(event)
             })
         )
+
+        /**
+         * We need to manually indicate that the UI is ready since we are using a custom mynah UI event routing
+         * implementation instead of routing events through the real webview
+         **/
+        DefaultAmazonQAppInitContext.instance.getAppsToWebViewMessagePublisher().setUiReady()
     }
 
     /**
