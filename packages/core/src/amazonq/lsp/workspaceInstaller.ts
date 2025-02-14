@@ -4,49 +4,36 @@
  */
 
 import path from 'path'
-import { LspResolution, LspResolver } from '../../shared/lsp/types'
-import { ManifestResolver } from '../../shared/lsp/manifestResolver'
-import { LanguageServerResolver } from '../../shared/lsp/lspResolver'
-import { Range } from 'semver'
+import { ResourcePaths } from '../../shared/lsp/types'
 import { getNodeExecutableName } from '../../shared/lsp/utils/platform'
 import { fs } from '../../shared/fs/fs'
-import { cleanLspDownloads } from '../../shared/lsp/utils/cleanup'
-import { getLogger } from '../../shared/logger/logger'
+import { BaseLspInstaller } from '../../shared/lsp/lspInstaller'
+import { getAmazonQWorkspaceLspConfig } from './config'
 
-const manifestUrl = 'https://aws-toolkit-language-servers.amazonaws.com/q-context/manifest.json'
-// this LSP client in Q extension is only going to work with these LSP server versions
-const supportedLspServerVersions = '0.1.35'
-const logger = getLogger('amazonqWorkspaceLsp')
+export class WorkspaceLSPInstaller extends BaseLspInstaller {
+    constructor() {
+        super(getAmazonQWorkspaceLspConfig())
+    }
 
-export class WorkspaceLSPResolver implements LspResolver {
-    async resolve(): Promise<LspResolution> {
-        const name = 'AmazonQ-Workspace'
-        const manifest = await new ManifestResolver(manifestUrl, name).resolve()
-        const installationResult = await new LanguageServerResolver(
-            manifest,
-            name,
-            new Range(supportedLspServerVersions)
-        ).resolve()
+    protected override async postInstall(assetDirectory: string): Promise<void> {
+        const resourcePaths = this.resourcePaths(assetDirectory)
+        await fs.chmod(resourcePaths.node, 0o755)
+    }
 
-        const nodeName =
+    protected override resourcePaths(assetDirectory?: string): ResourcePaths {
+        // local version
+        if (!assetDirectory) {
+            return {
+                lsp: this.config.locationOverride ?? '',
+                node: getNodeExecutableName(),
+            }
+        }
+
+        const lspNodeName =
             process.platform === 'win32' ? getNodeExecutableName() : `node-${process.platform}-${process.arch}`
-        const nodePath = path.join(installationResult.assetDirectory, nodeName)
-        await fs.chmod(nodePath, 0o755)
-
-        const deletedVersions = await cleanLspDownloads(
-            manifest.versions,
-            path.basename(installationResult.assetDirectory)
-        )
-        logger.debug(`cleaning old LSP versions deleted ${deletedVersions.length} versions`)
         return {
-            ...installationResult,
-            resourcePaths: {
-                lsp: path.join(
-                    installationResult.assetDirectory,
-                    `qserver-${process.platform}-${process.arch}/qserver/lspServer.js`
-                ),
-                node: nodePath,
-            },
+            lsp: path.join(assetDirectory, `qserver-${process.platform}-${process.arch}/qserver/lspServer.js`),
+            node: path.join(assetDirectory, lspNodeName),
         }
     }
 }
