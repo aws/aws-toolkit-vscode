@@ -11,7 +11,7 @@ import { Messenger } from './framework/messenger'
 import { DefaultAmazonQAppInitContext, FollowUpTypes } from 'aws-core-vscode/amazonq'
 import { registerAuthHook, using, TestFolder, closeAllEditors } from 'aws-core-vscode/test'
 import { loginToIdC } from './utils/setup'
-import { waitUntil, workspaceUtils } from 'aws-core-vscode/shared'
+import { sleep, waitUntil, workspaceUtils } from 'aws-core-vscode/shared'
 
 describe('Amazon Q Test Generation', function () {
     let framework: qTestingFramework
@@ -75,10 +75,8 @@ describe('Amazon Q Test Generation', function () {
     })
 
     beforeEach(async () => {
-        await waitUntil(
-            async () => DefaultAmazonQAppInitContext.instance.getAppsToWebViewMessagePublisher().setUiReady(),
-            {}
-        )
+        DefaultAmazonQAppInitContext.instance.getAppsToWebViewMessagePublisher().setUiReady()
+        await sleep(1000)
         registerAuthHook('amazonq-test-account')
         framework = new qTestingFramework('testgen', true, [])
         tab = framework.createTab()
