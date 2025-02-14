@@ -440,6 +440,19 @@ Example:
 }
 ```
 
+<a name="amazonqWorkspaceLsp-settings">Overrides specifically for the Amazon Q Workspace Context language server can be set using the `aws.dev.amazonqWorkspaceLsp` setting. This is a JSON object consisting of keys/values required to override language server: `manifestUrl`, `supportedVersions`, `id`, and `locationOverride`.</a>
+
+Example:
+
+```json
+"aws.dev.amazonqWorkspaceLsp": {
+    "manifestUrl": "https://custom.url/manifest.json",
+    "supportedVersions": "4.0.0",
+    "id": "AmazonQ",
+    "locationOverride": "/custom/path/to/local/lsp/folder",
+}
+```
+
 ### Environment variables
 
 Environment variables can be used to modify the behaviour of VSCode. The following are environment variables that can be used to configure the extension:
