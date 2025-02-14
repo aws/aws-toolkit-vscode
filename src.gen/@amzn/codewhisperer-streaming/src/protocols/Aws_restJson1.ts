@@ -18,6 +18,7 @@ import {
 import { CodeWhispererStreamingServiceException as __BaseException } from "../models/CodeWhispererStreamingServiceException";
 import {
   AccessDeniedException,
+  AdditionalContentEntry,
   AppStudioState,
   AssistantResponseEvent,
   AssistantResponseMessage,
@@ -66,6 +67,12 @@ import {
   TextDocument,
   TextDocumentDiagnostic,
   ThrottlingException,
+  Tool,
+  ToolInputSchema,
+  ToolResult,
+  ToolResultContentBlock,
+  ToolSpecification,
+  ToolUseEvent,
   TransformationExportContext,
   UnitTestGenerationExportContext,
   UserInputMessage,
@@ -94,6 +101,7 @@ import {
   withBaseException,
 } from "@smithy/smithy-client";
 import {
+  DocumentType as __DocumentType,
   Endpoint as __Endpoint,
   EventStreamSerdeContext as __EventStreamSerdeContext,
   ResponseMetadata as __ResponseMetadata,
@@ -139,7 +147,7 @@ export const se_GenerateAssistantResponseCommand = async(
   b.bp("/generateAssistantResponse");
   let body: any;
   body = JSON.stringify(take(input, {
-    'conversationState': _ => _json(_),
+    'conversationState': _ => se_ConversationState(_, context),
     'profileArn': [],
   }));
   b.m("POST")
@@ -162,7 +170,7 @@ export const se_GenerateTaskAssistPlanCommand = async(
   b.bp("/generateTaskAssistPlan");
   let body: any;
   body = JSON.stringify(take(input, {
-    'conversationState': _ => _json(_),
+    'conversationState': _ => se_ConversationState(_, context),
     'workspaceState': _ => _json(_),
   }));
   b.m("POST")
@@ -185,7 +193,7 @@ export const se_SendMessageCommand = async(
   b.bp("/SendMessageStreaming");
   let body: any;
   body = JSON.stringify(take(input, {
-    'conversationState': _ => _json(_),
+    'conversationState': _ => se_ConversationState(_, context),
     'dryRun': [],
     'profileArn': [],
     'source': [],
@@ -544,6 +552,11 @@ const de_CommandError = async(
             interactionComponentsEvent: await de_InteractionComponentsEvent_event(event["interactionComponentsEvent"], context),
           };
         }
+        if (event["toolUseEvent"] != null) {
+          return {
+            toolUseEvent: await de_ToolUseEvent_event(event["toolUseEvent"], context),
+          };
+        }
         if (event["invalidStateEvent"] != null) {
           return {
             invalidStateEvent: await de_InvalidStateEvent_event(event["invalidStateEvent"], context),
@@ -696,6 +709,15 @@ const de_CommandError = async(
     Object.assign(contents, _json(data));
     return contents;
   }
+  const de_ToolUseEvent_event = async (
+    output: any,
+    context: __SerdeContext
+  ): Promise<ToolUseEvent> => {
+    const contents: ToolUseEvent = {} as any;
+    const data: any = await parseBody(output.body, context);
+    Object.assign(contents, _json(data));
+    return contents;
+  }
   const de_InteractionComponentsEvent_event = async (
     output: any,
     context: __SerdeContext
@@ -705,17 +727,57 @@ const de_CommandError = async(
     Object.assign(contents, de_InteractionComponentsEvent(data, context));
     return contents;
   }
+  // se_AdditionalContentEntry omitted.
+
+  // se_AdditionalContentList omitted.
+
   // se_AppStudioState omitted.
 
   // se_AssistantResponseMessage omitted.
 
-  // se_ChatHistory omitted.
+  /**
+   * serializeAws_restJson1ChatHistory
+   */
+  const se_ChatHistory = (
+    input: (ChatMessage)[],
+    context: __SerdeContext
+  ): any => {
+    return input.filter((e: any) => e != null).map(entry => {
+      return se_ChatMessage(entry, context);
+    });
+  }
 
-  // se_ChatMessage omitted.
+  /**
+   * serializeAws_restJson1ChatMessage
+   */
+  const se_ChatMessage = (
+    input: ChatMessage,
+    context: __SerdeContext
+  ): any => {
+    return ChatMessage.visit(input, {
+      assistantResponseMessage: value => ({ "assistantResponseMessage": _json(value) }),
+      userInputMessage: value => ({ "userInputMessage": se_UserInputMessage(value, context) }),
+      _: (name, value) => ({ name: value } as any)
+    });
+  }
 
   // se_ConsoleState omitted.
 
-  // se_ConversationState omitted.
+  /**
+   * serializeAws_restJson1ConversationState
+   */
+  const se_ConversationState = (
+    input: ConversationState,
+    context: __SerdeContext
+  ): any => {
+    return take(input, {
+      'chatTriggerType': [],
+      'conversationId': [],
+      'currentMessage': _ => se_ChatMessage(_, context),
+      'customizationArn': [],
+      'history': _ => se_ChatHistory(_, context),
+    });
+  }
 
   // se_CursorState omitted.
 
@@ -755,6 +817,16 @@ const de_CommandError = async(
 
   // se_RuntimeDiagnostic omitted.
 
+  /**
+   * serializeAws_restJson1SensitiveDocument
+   */
+  const se_SensitiveDocument = (
+    input: __DocumentType,
+    context: __SerdeContext
+  ): any => {
+    return input;
+  }
+
   // se_ShellHistory omitted.
 
   // se_ShellHistoryEntry omitted.
@@ -771,13 +843,148 @@ const de_CommandError = async(
 
   // se_TextDocumentDiagnostic omitted.
 
+  /**
+   * serializeAws_restJson1Tool
+   */
+  const se_Tool = (
+    input: Tool,
+    context: __SerdeContext
+  ): any => {
+    return Tool.visit(input, {
+      toolSpecification: value => ({ "toolSpecification": se_ToolSpecification(value, context) }),
+      _: (name, value) => ({ name: value } as any)
+    });
+  }
+
+  /**
+   * serializeAws_restJson1ToolInputSchema
+   */
+  const se_ToolInputSchema = (
+    input: ToolInputSchema,
+    context: __SerdeContext
+  ): any => {
+    return take(input, {
+      'json': _ => se_SensitiveDocument(_, context),
+    });
+  }
+
+  /**
+   * serializeAws_restJson1ToolResult
+   */
+  const se_ToolResult = (
+    input: ToolResult,
+    context: __SerdeContext
+  ): any => {
+    return take(input, {
+      'content': _ => se_ToolResultContent(_, context),
+      'status': [],
+      'toolUseId': [],
+    });
+  }
+
+  /**
+   * serializeAws_restJson1ToolResultContent
+   */
+  const se_ToolResultContent = (
+    input: (ToolResultContentBlock)[],
+    context: __SerdeContext
+  ): any => {
+    return input.filter((e: any) => e != null).map(entry => {
+      return se_ToolResultContentBlock(entry, context);
+    });
+  }
+
+  /**
+   * serializeAws_restJson1ToolResultContentBlock
+   */
+  const se_ToolResultContentBlock = (
+    input: ToolResultContentBlock,
+    context: __SerdeContext
+  ): any => {
+    return ToolResultContentBlock.visit(input, {
+      json: value => ({ "json": se_SensitiveDocument(value, context) }),
+      text: value => ({ "text": value }),
+      _: (name, value) => ({ name: value } as any)
+    });
+  }
+
+  /**
+   * serializeAws_restJson1ToolResults
+   */
+  const se_ToolResults = (
+    input: (ToolResult)[],
+    context: __SerdeContext
+  ): any => {
+    return input.filter((e: any) => e != null).map(entry => {
+      return se_ToolResult(entry, context);
+    });
+  }
+
+  /**
+   * serializeAws_restJson1Tools
+   */
+  const se_Tools = (
+    input: (Tool)[],
+    context: __SerdeContext
+  ): any => {
+    return input.filter((e: any) => e != null).map(entry => {
+      return se_Tool(entry, context);
+    });
+  }
+
+  /**
+   * serializeAws_restJson1ToolSpecification
+   */
+  const se_ToolSpecification = (
+    input: ToolSpecification,
+    context: __SerdeContext
+  ): any => {
+    return take(input, {
+      'description': [],
+      'inputSchema': _ => se_ToolInputSchema(_, context),
+      'name': [],
+    });
+  }
+
   // se_TransformationExportContext omitted.
 
   // se_UnitTestGenerationExportContext omitted.
 
-  // se_UserInputMessage omitted.
+  /**
+   * serializeAws_restJson1UserInputMessage
+   */
+  const se_UserInputMessage = (
+    input: UserInputMessage,
+    context: __SerdeContext
+  ): any => {
+    return take(input, {
+      'content': [],
+      'userInputMessageContext': _ => se_UserInputMessageContext(_, context),
+      'userIntent': [],
+    });
+  }
 
-  // se_UserInputMessageContext omitted.
+  /**
+   * serializeAws_restJson1UserInputMessageContext
+   */
+  const se_UserInputMessageContext = (
+    input: UserInputMessageContext,
+    context: __SerdeContext
+  ): any => {
+    return take(input, {
+      'additionalContext': _json,
+      'appStudioContext': _json,
+      'consoleState': _json,
+      'diagnostic': _json,
+      'editorState': _json,
+      'envState': _json,
+      'gitState': _json,
+      'shellState': _json,
+      'toolResults': _ => se_ToolResults(_, context),
+      'tools': _ => se_Tools(_, context),
+      'userSettings': _json,
+    });
+  }
 
   // se_UserSettings omitted.
 
@@ -832,6 +1039,8 @@ const de_CommandError = async(
   // de_SupplementaryWebLinks omitted.
 
   // de_SupplementaryWebLinksEvent omitted.
+
+  // de_ToolUseEvent omitted.
 
   /**
    * deserializeAws_restJson1InteractionComponentsEvent
