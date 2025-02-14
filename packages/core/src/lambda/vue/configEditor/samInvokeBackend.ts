@@ -13,6 +13,7 @@ import {
     AwsSamDebuggerConfiguration,
     isCodeTargetProperties,
     isTemplateTargetProperties,
+    TemplateTargetProperties,
 } from '../../../shared/sam/debugger/awsSamDebugConfiguration'
 import {
     DefaultAwsSamDebugConfigurationValidator,
@@ -433,15 +434,19 @@ export async function registerSamDebugInvokeVueCommand(
     context: vscode.ExtensionContext,
     params: { resource: ResourceNode }
 ) {
-    const launchConfig: AwsSamDebuggerConfiguration | undefined = undefined
     const resource = params?.resource.resource
     const source = 'AppBuilderLocalInvoke'
+    const launchConfigs = await new LaunchConfiguration(resource.location).getSamDebugConfigurations()
+    const launchConfig = launchConfigs.find(
+        (config) => (config.invokeTarget as TemplateTargetProperties).logicalId === resource.resource.Id
+    )
+
     const webview = new WebviewPanel(context, launchConfig, {
         logicalId: resource.resource.Id ?? '',
         region: resource.region ?? '',
         location: resource.location.fsPath,
         handler: resource.resource.Handler!,
-        runtime: resource.resource.Runtime!,
+        runtime: launchConfig?.lambda?.runtime ?? resource.resource.Runtime!,
         arn: resource.functionArn ?? '',
         stackName: resource.stackName ?? '',
         environment: resource.resource.Environment,
