@@ -488,7 +488,11 @@ Unlike the user setting overrides, not all of these environment variables have t
 -   `__AMAZONQLSP_MANIFEST_URL`: for aws.dev.amazonqLsp.manifestUrl
 -   `__AMAZONQLSP_SUPPORTED_VERSIONS`: for aws.dev.amazonqLsp.supportedVersions
 -   `__AMAZONQLSP_ID`: for aws.dev.amazonqLsp.id
--   `__AMAZONQLSP_LOCATION_OVERRIDE`: for aws.dev.amazonqLsp.locationOverride
+-   `__AMAZONQLSP_LOCATION_OVERRIDE`: for aws.dev.amazonqWorkspaceLsp.locationOverride
+-   `__AMAZONQWORKSPACELSP_MANIFEST_URL`: for aws.dev.amazonqWorkspaceLsp.manifestUrl
+-   `__AMAZONQWORKSPACELSP_SUPPORTED_VERSIONS`: for aws.dev.amazonqWorkspaceLsp.supportedVersions
+-   `__AMAZONQWORKSPACELSP_ID`: for aws.dev.amazonqWorkspaceLsp.id
+-   `__AMAZONQWORKSPACELSP_LOCATION_OVERRIDE`: for aws.dev.amazonqWorkspaceLsp.locationOverride
 
 #### Lambda
 
