@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "lambda: autoload debug config when Local invoke webview is opened"
+}
