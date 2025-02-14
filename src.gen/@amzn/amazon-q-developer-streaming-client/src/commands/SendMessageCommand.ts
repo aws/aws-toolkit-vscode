@@ -126,6 +126,7 @@ export interface SendMessageCommandOutput extends SendMessageResponse, __Metadat
  *                   value: "STRING_VALUE",
  *                 },
  *               ],
+ *               timezoneOffset: Number("int"),
  *             },
  *             appStudioContext: { // AppStudioState
  *               namespace: "STRING_VALUE", // required
@@ -266,6 +267,7 @@ export interface SendMessageCommandOutput extends SendMessageResponse, __Metadat
  *                 value: "STRING_VALUE",
  *               },
  *             ],
+ *             timezoneOffset: Number("int"),
  *           },
  *           appStudioContext: {
  *             namespace: "STRING_VALUE", // required
@@ -502,7 +504,7 @@ export interface SendMessageCommandOutput extends SendMessageResponse, __Metadat
  * //             section: { // Section
  * //               title: "STRING_VALUE", // required
  * //               content: [ // SectionComponentList // required
- * //                 { // SectionComponent Union: only one key present
+ * //                 { // SectionComponent
  * //                   text: "<Text>",
  * //                   alert: {
  * //                     type: "INFO" || "ERROR" || "WARNING", // required
@@ -521,12 +523,12 @@ export interface SendMessageCommandOutput extends SendMessageResponse, __Metadat
  * //                     resourceJsonString: "STRING_VALUE", // required
  * //                   },
  * //                   resourceList: { // ResourceList
- * //                     action: { // Action Union: only one key present
+ * //                     action: { // Action
  * //                       webLink: { // WebLink
  * //                         label: "STRING_VALUE", // required
  * //                         url: "STRING_VALUE", // required
  * //                       },
- * //                       moduleLink: { // ModuleLink Union: only one key present
+ * //                       moduleLink: { // ModuleLink
  * //                         cloudWatchTroubleshootingLink: { // CloudWatchTroubleshootingLink
  * //                           label: "STRING_VALUE", // required
  * //                           investigationPayload: "STRING_VALUE", // required
@@ -547,15 +549,28 @@ export interface SendMessageCommandOutput extends SendMessageResponse, __Metadat
  * //                   },
  * //                 },
  * //               ],
- * //             },
- * //             resource: "<Resource>",
- * //             resourceList: {
- * //               action: {//  Union: only one key present
+ * //               action: {
  * //                 webLink: {
  * //                   label: "STRING_VALUE", // required
  * //                   url: "STRING_VALUE", // required
  * //                 },
- * //                 moduleLink: {//  Union: only one key present
+ * //                 moduleLink: {
+ * //                   cloudWatchTroubleshootingLink: {
+ * //                     label: "STRING_VALUE", // required
+ * //                     investigationPayload: "STRING_VALUE", // required
+ * //                     defaultText: "STRING_VALUE",
+ * //                   },
+ * //                 },
+ * //               },
+ * //             },
+ * //             resource: "<Resource>",
+ * //             resourceList: {
+ * //               action: {
+ * //                 webLink: {
+ * //                   label: "STRING_VALUE", // required
+ * //                   url: "STRING_VALUE", // required
+ * //                 },
+ * //                 moduleLink: {
  * //                   cloudWatchTroubleshootingLink: {
  * //                     label: "STRING_VALUE", // required
  * //                     investigationPayload: "STRING_VALUE", // required
@@ -567,6 +582,7 @@ export interface SendMessageCommandOutput extends SendMessageResponse, __Metadat
  * //                 "<Resource>",
  * //               ],
  * //             },
+ * //             action: "<Action>",
  * //           },
  * //         },
  * //       ],
