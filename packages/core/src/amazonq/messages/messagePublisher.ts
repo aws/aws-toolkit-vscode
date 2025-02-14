@@ -30,6 +30,8 @@ export class UiMessagePublisher<T> extends MessagePublisher<T> {
     }
 
     public override publish(event: T): void {
+        super.publish(event)
+        return
         // immediately send if Chat UI is ready
         if (this.isUiReady) {
             super.publish(event)
