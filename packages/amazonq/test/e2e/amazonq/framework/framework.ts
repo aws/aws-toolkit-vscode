@@ -79,6 +79,8 @@ export class qTestingFramework {
                 await ui.messageReceiver(event)
             })
         )
+
+        DefaultAmazonQAppInitContext.instance.getAppsToWebViewMessagePublisher().setUiReady()
     }
 
     /**
