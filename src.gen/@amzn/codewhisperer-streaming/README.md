@@ -227,6 +227,13 @@ CreateProfile
 </details>
 <details>
 <summary>
+CreateWorkspace
+</summary>
+
+[Command API Reference](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/client/codewhispererstreaming/command/CreateWorkspaceCommand/) / [Input](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/Package/-aws-sdk-client-codewhispererstreaming/Interface/CreateWorkspaceCommandInput/) / [Output](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/Package/-aws-sdk-client-codewhispererstreaming/Interface/CreateWorkspaceCommandOutput/)
+</details>
+<details>
+<summary>
 DeleteCustomization
 </summary>
 
@@ -294,6 +301,13 @@ ListTagsForResource
 </summary>
 
 [Command API Reference](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/client/codewhispererstreaming/command/ListTagsForResourceCommand/) / [Input](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/Package/-aws-sdk-client-codewhispererstreaming/Interface/ListTagsForResourceCommandInput/) / [Output](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/Package/-aws-sdk-client-codewhispererstreaming/Interface/ListTagsForResourceCommandOutput/)
+</details>
+<details>
+<summary>
+ListWorkspaceMetadata
+</summary>
+
+[Command API Reference](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/client/codewhispererstreaming/command/ListWorkspaceMetadataCommand/) / [Input](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/Package/-aws-sdk-client-codewhispererstreaming/Interface/ListWorkspaceMetadataCommandInput/) / [Output](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/Package/-aws-sdk-client-codewhispererstreaming/Interface/ListWorkspaceMetadataCommandOutput/)
 </details>
 <details>
 <summary>
@@ -413,6 +427,13 @@ ListAvailableCustomizations
 </summary>
 
 [Command API Reference](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/client/codewhispererstreaming/command/ListAvailableCustomizationsCommand/) / [Input](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/Package/-aws-sdk-client-codewhispererstreaming/Interface/ListAvailableCustomizationsCommandInput/) / [Output](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/Package/-aws-sdk-client-codewhispererstreaming/Interface/ListAvailableCustomizationsCommandOutput/)
+</details>
+<details>
+<summary>
+ListAvailableProfiles
+</summary>
+
+[Command API Reference](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/client/codewhispererstreaming/command/ListAvailableProfilesCommand/) / [Input](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/Package/-aws-sdk-client-codewhispererstreaming/Interface/ListAvailableProfilesCommandInput/) / [Output](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/Package/-aws-sdk-client-codewhispererstreaming/Interface/ListAvailableProfilesCommandOutput/)
 </details>
 <details>
 <summary>
