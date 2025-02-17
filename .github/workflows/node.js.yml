@@ -91,8 +91,8 @@ jobs:
               # start the job if there are merge conflicts. https://github.com/orgs/community/discussions/11265
               # Also, because `git merge` makes a commit, we need to establish an identity to avoid 'Committer identity unknown' error
               run: |
-                  git config --global user.email "ci@node.js"
-                  git config --global user.name "ci"
+                  git config --global user.email "aws-toolkit-automation"
+                  git config --global user.name "<>"
                   git merge origin/$TARGET_BRANCH
 
             - name: Compute git diff
