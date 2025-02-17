@@ -496,27 +496,25 @@ describe('SharedCredentialsProvider', async function () {
             assert.strictEqual(creds.sessionToken, 'token')
         })
 
-        for (const _ of Array.from({ length: 1000 })) {
-            it('assumes role with mfa token', async function () {
-                const sections = await createTestSections(`
+        it('assumes role with mfa token', async function () {
+            const sections = await createTestSections(`
                     ${defaultSection}
                     [profile assume]
                     source_profile = default
                     role_arn = testarn
                     mfa_serial= mfaSerialToken
                     `)
-                const sut = new SharedCredentialsProvider('assume', sections)
+            const sut = new SharedCredentialsProvider('assume', sections)
 
-                getTestWindow().onDidShowInputBox((inputBox) => {
-                    inputBox.acceptValue('mfaToken')
-                })
-
-                const creds = await sut.getCredentials()
-                assert.strictEqual(creds.accessKeyId, 'id')
-                assert.strictEqual(creds.secretAccessKey, 'secret')
-                assert.strictEqual(creds.sessionToken, 'token')
+            getTestWindow().onDidShowInputBox((inputBox) => {
+                inputBox.acceptValue('mfaToken')
             })
-        }
+
+            const creds = await sut.getCredentials()
+            assert.strictEqual(creds.accessKeyId, 'id')
+            assert.strictEqual(creds.secretAccessKey, 'secret')
+            assert.strictEqual(creds.sessionToken, 'token')
+        })
 
         it('does not assume role when no roleArn is present', async function () {
             const sut = new SharedCredentialsProvider('default', await createTestSections(defaultSection))
