@@ -1387,6 +1387,11 @@
                     "group": "y_toolkitWalkthrough@1"
                 },
                 {
+                    "command": "aws.toolkit.lambda.serverlessLand",
+                    "when": "view =~ /^(aws.appBuilder|aws.appBuilderForFileExplorer)$/",
+                    "group": "y_toolkitWalkthrough@2"
+                },
+                {
                     "command": "aws.codecatalyst.cloneRepo",
                     "when": "view == aws.codecatalyst && !isCloud9 && aws.codecatalyst.connected",
                     "group": "1_codeCatalyst@1"
@@ -3169,6 +3174,17 @@
             {
                 "command": "aws.toolkit.lambda.openWalkthrough",
                 "title": "%AWS.toolkit.lambda.walkthrough.quickpickTitle%",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.toolkit.lambda.serverlessLand",
+                "title": "%AWS.toolkit.lambda.serverlessLand.quickpickTitle%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "category": "%AWS.title%",
                 "cloud9": {
