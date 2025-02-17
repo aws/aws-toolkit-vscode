@@ -44,6 +44,10 @@ const tasks: CopyTask[] = [
         target: path.join('../../node_modules', 'aws-ssm-document-language-service', 'dist', 'server.js.map'),
         destination: path.join('src', 'ssmDocument', 'ssm', 'server.js.map'),
     },
+    {
+        target: path.join('../core', 'src', 'awsService', 'appBuilder', 'serverlessLand', 'metadata.json'),
+        destination: path.join('src', 'awsService', 'appBuilder', 'serverlessLand', 'metadata.json'),
+    },
 ]
 
 function copy(task: CopyTask): void {

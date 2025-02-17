@@ -20,6 +20,7 @@ export interface CreateServerlessLandWizardForm {
     pattern: string
     runtime: string
     iac: string
+    assetName: string
 }
 
 /**
@@ -133,6 +134,9 @@ export class CreateServerlessLandWizard extends Wizard<CreateServerlessLandWizar
             }
             const selectedIac = iacResult
 
+            // Get Asset Name based on selected Pattern, Runtime and IaC
+            const assetName = this.metadataManager.getAssetName(selectedPattern, selectedRuntime, selectedIac)
+
             // Create and show location picker
             const locationPicker = createFolderPrompt(vscode.workspace.workspaceFolders ?? [], {
                 title: 'Select Project Location',
@@ -173,6 +177,7 @@ export class CreateServerlessLandWizard extends Wizard<CreateServerlessLandWizar
                 pattern: selectedPattern,
                 runtime: selectedRuntime,
                 iac: selectedIac,
+                assetName: assetName,
             }
         } catch (err) {
             throw new ToolkitError(`Failed to run wizard: ${err instanceof Error ? err.message : String(err)}`)
