@@ -29,6 +29,7 @@ import {
 } from './utils'
 import { getConfigFileUri, validateSamBuildConfig } from './config'
 import { runInTerminal } from './processTerminal'
+import { getLogger } from '../logger'
 
 const buildMementoRootKey = 'samcli.build.params'
 export interface BuildParams {
@@ -213,7 +214,7 @@ export async function runBuild(arg?: TreeNode): Promise<SamBuildResult> {
     // refactor
     const buildFlags: string[] =
         params.paramsSource === ParamsSource.Specify && params.buildFlags
-            ? JSON.parse(params.buildFlags)
+            ? resolveBuildFlags(JSON.parse(params.buildFlags))
             : await getBuildFlags(params.paramsSource, projectRoot, defaultFlags)
 
     // todo remove
@@ -280,4 +281,10 @@ function resolveBuildArgConflict(boundArgs: string[]): string[] {
     //     boundArgsSet.add('--no-beta-features')
     // }
     return Array.from(boundArgsSet)
+}
+export function resolveBuildFlags(buildFlags: string[]): string[] {
+    if (!buildFlags.includes('--use-container')) {
+        buildFlags.push('--no-use-container')
+    }
+    return buildFlags
 }

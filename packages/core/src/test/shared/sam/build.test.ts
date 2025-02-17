@@ -16,6 +16,7 @@ import {
     createParamsSourcePrompter,
     getBuildFlags,
     ParamsSource,
+    resolveBuildFlags,
     runBuild,
 } from '../../../shared/sam/build'
 import { TreeNode } from '../../../shared/treeview/resourceTreeDataProvider'
@@ -227,6 +228,14 @@ describe('SAM build helper functions', () => {
             assert.strictEqual(quickPick.placeholder, 'Select configuration options for sam build')
             assert.strictEqual(quickPick.items.length, 2)
             assert.deepStrictEqual(quickPick.items, expectedItems)
+        })
+    })
+
+    describe('resolveBuildFlags', () => {
+        it('should add --no-use-container if the buildFlags array does not contain --use-container', () => {
+            const buildFlags: string[] = ['--cached', '--debug', '--parallel']
+            const resolvedBuildFlags = ['--cached', '--debug', '--parallel', '--no-use-container']
+            assert.deepStrictEqual(resolvedBuildFlags, resolveBuildFlags(buildFlags))
         })
     })
 })
