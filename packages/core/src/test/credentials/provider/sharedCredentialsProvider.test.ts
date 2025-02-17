@@ -498,12 +498,12 @@ describe('SharedCredentialsProvider', async function () {
 
         it('assumes role with mfa token', async function () {
             const sections = await createTestSections(`
-                    ${defaultSection}
-                    [profile assume]
-                    source_profile = default
-                    role_arn = testarn
-                    mfa_serial= mfaSerialToken
-                    `)
+                ${defaultSection}
+                [profile assume]
+                source_profile = default
+                role_arn = testarn
+                mfa_serial= mfaSerialToken
+                `)
             const sut = new SharedCredentialsProvider('assume', sections)
 
             getTestWindow().onDidShowInputBox((inputBox) => {
