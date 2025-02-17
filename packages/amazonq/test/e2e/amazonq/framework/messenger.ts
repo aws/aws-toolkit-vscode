@@ -190,9 +190,9 @@ export class Messenger {
          * Wait until the chat has finished loading. This happens when a backend request
          * has finished and responded in the chat
          */
-        await waitUntil(
-            () => {
-                return Promise.resolve(event())
+        const ok = await waitUntil(
+            async () => {
+                return event()
             },
             {
                 interval: waitOverrides ? waitOverrides.waitIntervalInMs : this.waitIntervalInMs,
@@ -202,7 +202,7 @@ export class Messenger {
         )
 
         // Do another check just in case the waitUntil time'd out
-        if (!event()) {
+        if (!ok) {
             assert.fail(
                 `Event has not finished loading in: ${waitOverrides ? waitOverrides.waitTimeoutInMs : this.waitTimeoutInMs} ms`
             )

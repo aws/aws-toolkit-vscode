@@ -1,9 +1,9 @@
 // smithy-typescript generated code
 import {
-  QDeveloperStreamingClientResolvedConfig,
+  CodeWhispererStreamingClientResolvedConfig,
   ServiceInputTypes,
   ServiceOutputTypes,
-} from "../QDeveloperStreamingClient";
+} from "../CodeWhispererStreamingClient";
 import {
   SendMessageRequest,
   SendMessageRequestFilterSensitiveLog,
@@ -13,7 +13,7 @@ import {
 import {
   de_SendMessageCommand,
   se_SendMessageCommand,
-} from "../protocols/Aws_json1_0";
+} from "../protocols/Aws_restJson1";
 import { getSerdePlugin } from "@smithy/middleware-serde";
 import { Command as $Command } from "@smithy/smithy-client";
 import { MetadataBearer as __MetadataBearer } from "@smithy/types";
@@ -42,9 +42,9 @@ export interface SendMessageCommandOutput extends SendMessageResponse, __Metadat
  * @example
  * Use a bare-bones client and the command you need to make an API call.
  * ```javascript
- * import { QDeveloperStreamingClient, SendMessageCommand } from "@amzn/amazon-q-developer-streaming-client"; // ES Modules import
- * // const { QDeveloperStreamingClient, SendMessageCommand } = require("@amzn/amazon-q-developer-streaming-client"); // CommonJS import
- * const client = new QDeveloperStreamingClient(config);
+ * import { CodeWhispererStreamingClient, SendMessageCommand } from "@amzn/codewhisperer-streaming"; // ES Modules import
+ * // const { CodeWhispererStreamingClient, SendMessageCommand } = require("@amzn/codewhisperer-streaming"); // CommonJS import
+ * const client = new CodeWhispererStreamingClient(config);
  * const input = { // SendMessageRequest
  *   conversationState: { // ConversationState
  *     conversationId: "STRING_VALUE",
@@ -181,6 +181,36 @@ export interface SendMessageCommandOutput extends SendMessageResponse, __Metadat
  *             userSettings: { // UserSettings
  *               hasConsentedToCrossRegionCalls: true || false,
  *             },
+ *             additionalContext: [ // AdditionalContentList
+ *               { // AdditionalContentEntry
+ *                 name: "STRING_VALUE", // required
+ *                 description: "STRING_VALUE", // required
+ *                 innerContext: "STRING_VALUE",
+ *               },
+ *             ],
+ *             toolResults: [ // ToolResults
+ *               { // ToolResult
+ *                 toolUseId: "STRING_VALUE", // required
+ *                 content: [ // ToolResultContent // required
+ *                   { // ToolResultContentBlock Union: only one key present
+ *                     text: "STRING_VALUE",
+ *                     json: "DOCUMENT_VALUE",
+ *                   },
+ *                 ],
+ *                 status: "success" || "error",
+ *               },
+ *             ],
+ *             tools: [ // Tools
+ *               { // Tool Union: only one key present
+ *                 toolSpecification: { // ToolSpecification
+ *                   inputSchema: { // ToolInputSchema
+ *                     json: "DOCUMENT_VALUE",
+ *                   },
+ *                   name: "STRING_VALUE", // required
+ *                   description: "STRING_VALUE",
+ *                 },
+ *               },
+ *             ],
  *           },
  *           userIntent: "SUGGEST_ALTERNATE_IMPLEMENTATION" || "APPLY_COMMON_BEST_PRACTICES" || "IMPROVE_CODE" || "SHOW_EXAMPLES" || "CITE_SOURCES" || "EXPLAIN_LINE_BY_LINE" || "EXPLAIN_CODE_SELECTION" || "GENERATE_CLOUDFORMATION_TEMPLATE" || "GENERATE_UNIT_TESTS" || "CODE_GENERATION",
  *         },
@@ -303,6 +333,36 @@ export interface SendMessageCommandOutput extends SendMessageResponse, __Metadat
  *           userSettings: {
  *             hasConsentedToCrossRegionCalls: true || false,
  *           },
+ *           additionalContext: [
+ *             {
+ *               name: "STRING_VALUE", // required
+ *               description: "STRING_VALUE", // required
+ *               innerContext: "STRING_VALUE",
+ *             },
+ *           ],
+ *           toolResults: [
+ *             {
+ *               toolUseId: "STRING_VALUE", // required
+ *               content: [ // required
+ *                 {//  Union: only one key present
+ *                   text: "STRING_VALUE",
+ *                   json: "DOCUMENT_VALUE",
+ *                 },
+ *               ],
+ *               status: "success" || "error",
+ *             },
+ *           ],
+ *           tools: [
+ *             {//  Union: only one key present
+ *               toolSpecification: {
+ *                 inputSchema: {
+ *                   json: "DOCUMENT_VALUE",
+ *                 },
+ *                 name: "STRING_VALUE", // required
+ *                 description: "STRING_VALUE",
+ *               },
+ *             },
+ *           ],
  *         },
  *         userIntent: "SUGGEST_ALTERNATE_IMPLEMENTATION" || "APPLY_COMMON_BEST_PRACTICES" || "IMPROVE_CODE" || "SHOW_EXAMPLES" || "CITE_SOURCES" || "EXPLAIN_LINE_BY_LINE" || "EXPLAIN_CODE_SELECTION" || "GENERATE_CLOUDFORMATION_TEMPLATE" || "GENERATE_UNIT_TESTS" || "CODE_GENERATION",
  *       },
@@ -587,6 +647,12 @@ export interface SendMessageCommandOutput extends SendMessageResponse, __Metadat
  * //         },
  * //       ],
  * //     },
+ * //     toolUseEvent: { // ToolUseEvent
+ * //       toolUseId: "STRING_VALUE", // required
+ * //       name: "STRING_VALUE", // required
+ * //       input: "STRING_VALUE",
+ * //       stop: true || false,
+ * //     },
  * //     invalidStateEvent: { // InvalidStateEvent
  * //       reason: "INVALID_TASK_ASSIST_PLAN", // required
  * //       message: "STRING_VALUE", // required
@@ -603,7 +669,7 @@ export interface SendMessageCommandOutput extends SendMessageResponse, __Metadat
  * @returns {@link SendMessageCommandOutput}
  * @see {@link SendMessageCommandInput} for command's `input` shape.
  * @see {@link SendMessageCommandOutput} for command's `response` shape.
- * @see {@link QDeveloperStreamingClientResolvedConfig | config} for QDeveloperStreamingClient's `config` shape.
+ * @see {@link CodeWhispererStreamingClientResolvedConfig | config} for CodeWhispererStreamingClient's `config` shape.
  *
  * @throws {@link InternalServerException} (server fault)
  *  This exception is thrown when an unexpected error occurred during the processing of a request.
@@ -629,18 +695,18 @@ export interface SendMessageCommandOutput extends SendMessageResponse, __Metadat
  * @throws {@link AccessDeniedException} (client fault)
  *  This exception is thrown when the user does not have sufficient access to perform this action.
  *
- * @throws {@link QDeveloperStreamingServiceException}
- * <p>Base exception class for all service exceptions from QDeveloperStreaming service.</p>
+ * @throws {@link CodeWhispererStreamingServiceException}
+ * <p>Base exception class for all service exceptions from CodeWhispererStreaming service.</p>
  *
  */
-export class SendMessageCommand extends $Command.classBuilder<SendMessageCommandInput, SendMessageCommandOutput, QDeveloperStreamingClientResolvedConfig, ServiceInputTypes, ServiceOutputTypes>()
-      .m(function (this: any, Command: any, cs: any, config: QDeveloperStreamingClientResolvedConfig, o: any) {
+export class SendMessageCommand extends $Command.classBuilder<SendMessageCommandInput, SendMessageCommandOutput, CodeWhispererStreamingClientResolvedConfig, ServiceInputTypes, ServiceOutputTypes>()
+      .m(function (this: any, Command: any, cs: any, config: CodeWhispererStreamingClientResolvedConfig, o: any) {
           return [
 
   getSerdePlugin(config, this.serialize, this.deserialize),
       ];
   })
-  .s("AmazonQDeveloperStreamingService", "SendMessage", {
+  .s("AmazonCodeWhispererStreamingService", "SendMessage", {
 
     /**
      * @internal
@@ -649,7 +715,7 @@ export class SendMessageCommand extends $Command.classBuilder<SendMessageCommand
       output: true,
     },
   })
-  .n("QDeveloperStreamingClient", "SendMessageCommand")
+  .n("CodeWhispererStreamingClient", "SendMessageCommand")
   .f(SendMessageRequestFilterSensitiveLog, SendMessageResponseFilterSensitiveLog)
   .ser(se_SendMessageCommand)
   .de(de_SendMessageCommand)
