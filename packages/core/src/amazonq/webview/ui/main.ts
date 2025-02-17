@@ -55,6 +55,8 @@ export const createMynahUI = (
     // Store the mapping between messageId and messageUserIntent for amazonq_interactWithMessage telemetry
     const responseMetadata = new Map<string, string[]>()
 
+    let savedContextCommands: MynahUIDataModel['contextCommands'] = []
+
     window.addEventListener('error', (e) => {
         const { error, message } = e
         ideApi.postMessage({
@@ -503,7 +505,6 @@ export const createMynahUI = (
             if (!newTabID) {
                 return
             }
-
             tabsStorage.updateTabTypeFromUnknown(newTabID, tabType)
             connector.onKnownTabOpen(newTabID)
             connector.onUpdateTabType(newTabID)
@@ -557,6 +558,17 @@ export const createMynahUI = (
                 mynahUI.addChatItem(tabID, message)
             }
         },
+        onContextCommandDataReceived(data: MynahUIDataModel['contextCommands']) {
+            savedContextCommands = data
+            for (const tabID in mynahUI.getAllTabs()) {
+                const tabType = tabsStorage.getTab(tabID)?.type || ''
+                if (['cwc', 'unknown', 'welcome'].includes(tabType)) {
+                    mynahUI.updateStore(tabID, {
+                        contextCommands: savedContextCommands,
+                    })
+                }
+            }
+        },
     })
 
     mynahUI = new MynahUI({
@@ -587,6 +599,12 @@ export const createMynahUI = (
                 quickActionCommands: tabDataGenerator.quickActionsGenerator.generateForTab('unknown'),
                 ...(disclaimerCardActive ? { promptInputStickyCard: disclaimerCard } : {}),
             })
+            // add the cached context commands for file, folder, etc selection
+            if (savedContextCommands && savedContextCommands.length > 0) {
+                mynahUI.updateStore(tabID, {
+                    contextCommands: savedContextCommands,
+                })
+            }
             connector.onTabAdd(tabID)
         },
         onTabRemove: connector.onTabRemove,

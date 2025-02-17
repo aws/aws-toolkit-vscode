@@ -7,6 +7,7 @@ import { Timestamp } from 'aws-sdk/clients/apigateway'
 import { MessagePublisher } from '../../../amazonq/messages/messagePublisher'
 import { EditorContextCommandType } from '../../commands/registerCommands'
 import { AuthFollowUpType } from '../../../amazonq/auth/model'
+import { MynahUIDataModel } from '@aws/mynah-ui'
 
 class UiMessage {
     readonly time: number = Date.now()
@@ -132,6 +133,15 @@ export class OpenSettingsMessage extends UiMessage {
     override type = 'openSettingsMessage'
 }
 
+export class ContextCommandData extends UiMessage {
+    readonly data: MynahUIDataModel['contextCommands']
+    override type = 'contextCommandData'
+    constructor(data: MynahUIDataModel['contextCommands']) {
+        super('tab-1')
+        this.data = data
+    }
+}
+
 export interface ChatMessageProps {
     readonly message: string | undefined
     readonly messageType: ChatMessageType
@@ -241,6 +251,10 @@ export class AppToWebViewMessageDispatcher {
     }
 
     public sendOpenSettingsMessage(message: OpenSettingsMessage) {
+        this.appsToWebViewMessagePublisher.publish(message)
+    }
+
+    public sendContextCommandData(message: ContextCommandData) {
         this.appsToWebViewMessagePublisher.publish(message)
     }
 }

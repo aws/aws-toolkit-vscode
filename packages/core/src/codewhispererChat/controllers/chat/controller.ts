@@ -2,6 +2,7 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
+import * as path from 'path'
 import { Event as VSCodeEvent, Uri } from 'vscode'
 import { EditorContextExtractor } from '../../editor/context/extractor'
 import { ChatSessionStorage } from '../../storages/chatSession'
@@ -55,6 +56,9 @@ import { inspect } from '../../../shared/utilities/collectionUtils'
 import { DefaultAmazonQAppInitContext } from '../../../amazonq/apps/initContext'
 import globals from '../../../shared/extensionGlobals'
 import { waitUntil } from '../../../shared/utilities/timeoutUtils'
+import { MynahIconsType, MynahUIDataModel, QuickActionCommand } from '@aws/mynah-ui'
+import { LspClient } from '../../../amazonq'
+import { ContextCommandItem } from '../../../amazonq/lsp/types'
 
 export interface ChatControllerMessagePublishers {
     readonly processPromptChatMessage: MessagePublisher<PromptMessage>
@@ -74,6 +78,7 @@ export interface ChatControllerMessagePublishers {
     readonly processSourceLinkClick: MessagePublisher<SourceLinkClickMessage>
     readonly processResponseBodyLinkClick: MessagePublisher<ResponseBodyLinkClickMessage>
     readonly processFooterInfoLinkClick: MessagePublisher<FooterInfoLinkClick>
+    readonly processContextCommandUpdateMessage: MessagePublisher<void>
 }
 
 export interface ChatControllerMessageListeners {
@@ -94,6 +99,7 @@ export interface ChatControllerMessageListeners {
     readonly processSourceLinkClick: MessageListener<SourceLinkClickMessage>
     readonly processResponseBodyLinkClick: MessageListener<ResponseBodyLinkClickMessage>
     readonly processFooterInfoLinkClick: MessageListener<FooterInfoLinkClick>
+    readonly processContextCommandUpdateMessage: MessageListener<void>
 }
 
 export class ChatController {
@@ -210,6 +216,9 @@ export class ChatController {
         })
         this.chatControllerMessageListeners.processFooterInfoLinkClick.onMessage((data) => {
             return this.processFooterInfoLinkClick(data)
+        })
+        this.chatControllerMessageListeners.processContextCommandUpdateMessage.onMessage(() => {
+            return this.processContextCommandUpdateMessage()
         })
     }
 
@@ -349,6 +358,66 @@ export class ChatController {
                 this.telemetryHelper.recordExitFocusChat()
                 break
         }
+    }
+
+    private async processContextCommandUpdateMessage() {
+        // when UI is ready, refresh the context commands
+        const contextCommand: MynahUIDataModel['contextCommands'] = [
+            {
+                commands: [
+                    {
+                        command: '@workspace',
+                        description: 'Reference all code in workspace.',
+                    },
+                    {
+                        command: 'folder',
+                        children: [
+                            {
+                                groupName: 'Folders',
+                                commands: [],
+                            },
+                        ],
+                        description: 'All files within a specific folder',
+                        icon: 'folder' as MynahIconsType,
+                    },
+                    {
+                        command: 'file',
+                        children: [
+                            {
+                                groupName: 'Files',
+                                commands: [],
+                            },
+                        ],
+                        description: 'File',
+                        icon: 'file' as MynahIconsType,
+                    },
+                ],
+            },
+        ]
+        await LspClient.instance.waitUtilReady()
+        const contextCommandItems = await LspClient.instance.getContextCommandItems()
+        const folderCmd: QuickActionCommand = contextCommand[0].commands?.[1]
+        const filesCmd: QuickActionCommand = contextCommand[0].commands?.[2]
+
+        for (const contextCommandItem of contextCommandItems) {
+            const wsFolderName = path.basename(contextCommandItem.workspaceFolder)
+            if (contextCommandItem.type === 'file') {
+                filesCmd.children?.[0].commands.push({
+                    command: path.basename(contextCommandItem.relativePath),
+                    description: path.join(wsFolderName, contextCommandItem.relativePath),
+                    route: [contextCommandItem.workspaceFolder, contextCommandItem.relativePath],
+                    icon: 'file' as MynahIconsType,
+                })
+            } else {
+                folderCmd.children?.[0].commands.push({
+                    command: path.basename(contextCommandItem.relativePath),
+                    description: path.join(wsFolderName, contextCommandItem.relativePath),
+                    route: [contextCommandItem.workspaceFolder, contextCommandItem.relativePath],
+                    icon: 'folder' as MynahIconsType,
+                })
+            }
+        }
+        this.messenger.sendContextCommandData(contextCommand)
     }
 
     private processException(e: any, tabID: string) {
@@ -554,6 +623,7 @@ export class ChatController {
                         codeQuery: context?.focusAreaContext?.names,
                         userIntent: this.userIntentRecognizer.getFromPromptChatMessage(message),
                         customization: getSelectedCustomization(),
+                        context: message.context,
                     },
                     triggerID
                 )
@@ -595,6 +665,36 @@ export class ChatController {
         this.messenger.sendStaticTextResponse(responseType, triggerID, tabID)
     }
 
+    private async resolveContextCommandPayload(triggerPayload: TriggerPayload) {
+        if (triggerPayload.context === undefined || triggerPayload.context.length === 0) {
+            return
+        }
+        const contextCommands: ContextCommandItem[] = []
+        for (const context of triggerPayload.context) {
+            if (typeof context !== 'string' && context.route && context.route.length === 2) {
+                contextCommands.push({
+                    workspaceFolder: context.route?.[0] || '',
+                    type: context.icon === 'folder' ? 'folder' : 'file',
+                    relativePath: context.route?.[1] || '',
+                })
+            }
+        }
+        const prompts = await LspClient.instance.getContextCommandPrompt(contextCommands)
+        if (prompts.length > 0) {
+            triggerPayload.additionalContents = []
+            for (const prompt of prompts) {
+                triggerPayload.additionalContents.push({
+                    name: prompt.name,
+                    description: prompt.description,
+                    innerContext: prompt.content,
+                })
+            }
+            getLogger().info(
+                `Retrieved chunks of additional context count: ${triggerPayload.additionalContents.length} `
+            )
+        }
+    }
+
     private async generateResponse(
         triggerPayload: TriggerPayload & { projectContextQueryLatencyMs?: number },
         triggerID: string
@@ -627,6 +727,9 @@ export class ChatController {
             await this.messenger.sendAuthNeededExceptionMessage(credentialsState, tabID, triggerID)
             return
         }
+
+        await this.resolveContextCommandPayload(triggerPayload)
+        // TODO: resolve the context into real context up to 90k
         triggerPayload.useRelevantDocuments = false
         if (triggerPayload.message) {
             triggerPayload.useRelevantDocuments = triggerPayload.message.includes(`@workspace`)

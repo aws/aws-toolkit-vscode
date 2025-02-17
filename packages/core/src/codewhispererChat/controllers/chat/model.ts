@@ -4,12 +4,13 @@
  */
 
 import * as vscode from 'vscode'
-import { RelevantTextDocument, UserIntent } from '@amzn/codewhisperer-streaming'
+import { AdditionalContentEntry, RelevantTextDocument, UserIntent } from '@amzn/codewhisperer-streaming'
 import { MatchPolicy, CodeQuery } from '../../clients/chat/v0/model'
 import { Selection } from 'vscode'
 import { TabOpenType } from '../../../amazonq/webview/ui/storages/tabsStorage'
 import { CodeReference } from '../../view/connector/connector'
 import { Customization } from '../../../codewhisperer/client/codewhispereruserclient'
+import { QuickActionCommand } from '@aws/mynah-ui'
 
 export interface TriggerTabIDReceived {
     tabID: string
@@ -102,6 +103,7 @@ export interface PromptMessage {
     command: ChatPromptCommandType | undefined
     userIntent: UserIntent | undefined
     tabID: string
+    context?: string[] | QuickActionCommand[]
 }
 
 export interface PromptAnswer {
@@ -171,7 +173,9 @@ export interface TriggerPayload {
     readonly codeQuery: CodeQuery | undefined
     readonly userIntent: UserIntent | undefined
     readonly customization: Customization
+    readonly context?: string[] | QuickActionCommand[]
     relevantTextDocuments?: RelevantTextDocument[]
+    additionalContents?: AdditionalContentEntry[]
     useRelevantDocuments?: boolean
     traceId?: string
 }

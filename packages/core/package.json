@@ -510,7 +510,7 @@
         "@aws-sdk/property-provider": "<3.696.0",
         "@aws-sdk/smithy-client": "<3.696.0",
         "@aws-sdk/util-arn-parser": "<3.696.0",
-        "@aws/mynah-ui": "^4.22.1",
+        "@aws/mynah-ui": "^4.23.0-beta.5",
         "@gerhobbelt/gitignore-parser": "^0.2.0-9",
         "@iarna/toml": "^2.2.5",
         "@smithy/middleware-retry": "^3.0.0",

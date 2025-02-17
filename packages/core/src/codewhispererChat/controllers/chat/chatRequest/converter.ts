@@ -101,7 +101,6 @@ export function triggerPayloadToChatRequest(triggerPayload: TriggerPayload): { c
     // service will throw validation exception if string is empty
     const customizationArn: string | undefined = undefinedIfEmpty(triggerPayload.customization.arn)
     const chatTriggerType = triggerPayload.trigger === ChatTriggerType.InlineChatMessage ? 'INLINE_CHAT' : 'MANUAL'
-
     return {
         conversationState: {
             currentMessage: {
@@ -116,6 +115,7 @@ export function triggerPayloadToChatRequest(triggerPayload: TriggerPayload): { c
                             relevantDocuments,
                             useRelevantDocuments,
                         },
+                        additionalContext: triggerPayload.additionalContents,
                     },
                     userIntent: triggerPayload.userIntent,
                 },

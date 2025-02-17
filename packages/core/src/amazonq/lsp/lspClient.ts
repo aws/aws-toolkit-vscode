@@ -29,12 +29,18 @@ import {
     QueryRepomapIndexRequestType,
     GetRepomapIndexJSONRequestType,
     Usage,
+    GetContextCommandItemsRequestType,
+    ContextCommandItem,
+    GetIndexSequenceNumberRequestType,
+    GetContextCommandPromptRequestType,
+    AdditionalContextPrompt,
 } from './types'
 import { Writable } from 'stream'
 import { CodeWhispererSettings } from '../../codewhisperer/util/codewhispererSettings'
 import { fs } from '../../shared/fs/fs'
 import { getLogger } from '../../shared/logger/logger'
 import globals from '../../shared/extensionGlobals'
+import { waitUntil } from '../../shared'
 
 const localize = nls.loadMessageBundle()
 
@@ -168,6 +174,66 @@ export class LspClient {
             throw e
         }
     }
+
+    async getContextCommandItems(): Promise<ContextCommandItem[]> {
+        try {
+            const workspaceFolders = vscode.workspace.workspaceFolders || []
+            const request = JSON.stringify({
+                workspaceFolders: workspaceFolders.map((it) => it.uri.fsPath),
+            })
+            const resp: any = await this.client?.sendRequest(
+                GetContextCommandItemsRequestType,
+                await this.encrypt(request)
+            )
+            return resp
+        } catch (e) {
+            getLogger().error(`LspClient: getContextCommandItems error: ${e}`)
+            throw e
+        }
+    }
+
+    async getContextCommandPrompt(contextCommandItems: ContextCommandItem[]): Promise<AdditionalContextPrompt[]> {
+        try {
+            const request = JSON.stringify({
+                contextCommands: contextCommandItems,
+            })
+            const resp: any = await this.client?.sendRequest(
+                GetContextCommandPromptRequestType,
+                await this.encrypt(request)
+            )
+            return resp
+        } catch (e) {
+            getLogger().error(`LspClient: getContextCommandPrompt error: ${e}`)
+            throw e
+        }
+    }
+
+    async getIndexSequenceNumber(): Promise<number> {
+        try {
+            const request = JSON.stringify({})
+            const resp: any = await this.client?.sendRequest(
+                GetIndexSequenceNumberRequestType,
+                await this.encrypt(request)
+            )
+            return resp
+        } catch (e) {
+            getLogger().error(`LspClient: getIndexSequenceNumber error: ${e}`)
+            throw e
+        }
+    }
+
+    async waitUtilReady() {
+        return waitUntil(
+            async () => {
+                if (this.client === undefined) {
+                    return false
+                }
+                await this.client.onReady()
+                return true
+            },
+            { interval: 500, timeout: 60_000 * 3, truthy: true }
+        )
+    }
 }
 /**
  * Activates the language server, this will start LSP server running over IPC protocol.
@@ -261,16 +327,40 @@ export async function activate(extensionContext: ExtensionContext) {
                 void LspClient.instance.updateIndex([savedDocument.fsPath], 'update')
             }
         }),
-        vscode.workspace.onDidCreateFiles((e) => {
-            void LspClient.instance.updateIndex(
+        vscode.workspace.onDidCreateFiles(async (e) => {
+            const indexSeqNum = await LspClient.instance.getIndexSequenceNumber()
+            await LspClient.instance.updateIndex(
                 e.files.map((f) => f.fsPath),
                 'add'
             )
+            await waitUntil(
+                async () => {
+                    const newIndexSeqNum = await LspClient.instance.getIndexSequenceNumber()
+                    if (newIndexSeqNum > indexSeqNum) {
+                        await vscode.commands.executeCommand(`aws.amazonq.updateContextCommandItems`)
+                        return true
+                    }
+                    return false
+                },
+                { interval: 500, timeout: 10_000, truthy: true }
+            )
         }),
-        vscode.workspace.onDidDeleteFiles((e) => {
-            void LspClient.instance.updateIndex(
+        vscode.workspace.onDidDeleteFiles(async (e) => {
+            const indexSeqNum = await LspClient.instance.getIndexSequenceNumber()
+            await LspClient.instance.updateIndex(
                 e.files.map((f) => f.fsPath),
                 'remove'
+            )
+            await waitUntil(
+                async () => {
+                    const newIndexSeqNum = await LspClient.instance.getIndexSequenceNumber()
+                    if (newIndexSeqNum > indexSeqNum) {
+                        await vscode.commands.executeCommand(`aws.amazonq.updateContextCommandItems`)
+                        return true
+                    }
+                    return false
+                },
+                { interval: 500, timeout: 10_000, truthy: true }
             )
         })
     )

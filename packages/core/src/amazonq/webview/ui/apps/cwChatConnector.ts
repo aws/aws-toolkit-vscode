@@ -3,17 +3,19 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ChatItemType } from '@aws/mynah-ui'
+import { ChatItemType, MynahUIDataModel } from '@aws/mynah-ui'
 import { TabType } from '../storages/tabsStorage'
 import { CWCChatItem } from '../connector'
 import { BaseConnector, BaseConnectorProps } from './baseConnector'
 
 export interface ConnectorProps extends BaseConnectorProps {
     onCWCContextCommandMessage: (message: CWCChatItem, command?: string) => string | undefined
+    onContextCommandDataReceived: (data: MynahUIDataModel['contextCommands']) => void
 }
 
 export class Connector extends BaseConnector {
     private readonly onCWCContextCommandMessage
+    private readonly onContextCommandDataReceived
 
     override getTabType(): TabType {
         return 'cwc'
@@ -22,6 +24,7 @@ export class Connector extends BaseConnector {
     constructor(props: ConnectorProps) {
         super(props)
         this.onCWCContextCommandMessage = props.onCWCContextCommandMessage
+        this.onContextCommandDataReceived = props.onContextCommandDataReceived
     }
 
     onSourceLinkClick = (tabID: string, messageId: string, link: string): void => {
@@ -131,6 +134,12 @@ export class Connector extends BaseConnector {
         }
     }
 
+    processContextCommandData(messageData: any) {
+        if (messageData.data) {
+            this.onContextCommandDataReceived(messageData.data)
+        }
+    }
+
     handleMessageReceive = async (messageData: any): Promise<void> => {
         if (messageData.type === 'chatMessage') {
             await this.processChatMessage(messageData)
@@ -141,7 +150,10 @@ export class Connector extends BaseConnector {
             await this.processEditorContextCommandMessage(messageData)
             return
         }
-
+        if (messageData.type === 'contextCommandData') {
+            await this.processContextCommandData(messageData)
+            return
+        }
         // For other message types, call the base class handleMessageReceive
         await this.baseHandleMessageReceive(messageData)
     }

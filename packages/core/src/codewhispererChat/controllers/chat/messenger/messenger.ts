@@ -8,6 +8,7 @@ import {
     AppToWebViewMessageDispatcher,
     AuthNeededException,
     CodeReference,
+    ContextCommandData,
     EditorContextCommandMessage,
     OpenSettingsMessage,
     QuickActionMessage,
@@ -35,6 +36,7 @@ import { LspController } from '../../../../amazonq/lsp/lspController'
 import { extractCodeBlockLanguage } from '../../../../shared/markdown'
 import { extractAuthFollowUp } from '../../../../amazonq/util/authUtils'
 import { helpMessage } from '../../../../amazonq/webview/ui/texts/constants'
+import { MynahUIDataModel } from '@aws/mynah-ui'
 
 export type StaticTextResponseType = 'quick-action-help' | 'onboarding-help' | 'transform' | 'help'
 
@@ -481,5 +483,9 @@ export class Messenger {
 
     public sendOpenSettingsMessage(triggerId: string, tabID: string) {
         this.dispatcher.sendOpenSettingsMessage(new OpenSettingsMessage(tabID))
+    }
+
+    public sendContextCommandData(contextCommands: MynahUIDataModel['contextCommands']) {
+        this.dispatcher.sendContextCommandData(new ContextCommandData(contextCommands))
     }
 }

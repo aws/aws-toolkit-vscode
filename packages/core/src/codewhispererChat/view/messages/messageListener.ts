@@ -103,7 +103,15 @@ export class UIMessageListener {
                 break
             case 'open-settings':
                 this.processOpenSettings(msg)
+                break
+            case 'ui-is-ready':
+                this.processUIIsReady()
+                break
         }
+    }
+
+    private processUIIsReady() {
+        this.chatControllerMessagePublishers.processContextCommandUpdateMessage.publish()
     }
 
     private processOpenSettings(msg: any) {
@@ -228,6 +236,7 @@ export class UIMessageListener {
             tabID: msg.tabID,
             messageId: msg.messageId,
             userIntent: msg.userIntent !== '' ? msg.userIntent : undefined,
+            context: msg.chatContext,
         })
     }
 
