@@ -394,7 +394,10 @@ export class ChatController {
                 ],
             },
         ]
-        await LspClient.instance.waitUtilReady()
+        const lspClientReady = await LspClient.instance.waitUntilReady()
+        if (!lspClientReady) {
+            return
+        }
         const contextCommandItems = await LspClient.instance.getContextCommandItems()
         const folderCmd: QuickActionCommand = contextCommand[0].commands?.[1]
         const filesCmd: QuickActionCommand = contextCommand[0].commands?.[2]

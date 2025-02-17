@@ -40,7 +40,7 @@ import { CodeWhispererSettings } from '../../codewhisperer/util/codewhispererSet
 import { fs } from '../../shared/fs/fs'
 import { getLogger } from '../../shared/logger/logger'
 import globals from '../../shared/extensionGlobals'
-import { waitUntil } from '../../shared/utilities/timeoutUtils'
+import { sleep, waitUntil } from '../../shared/utilities/timeoutUtils'
 
 const localize = nls.loadMessageBundle()
 
@@ -222,9 +222,16 @@ export class LspClient {
         }
     }
 
-    async waitUtilReady() {
+    async waitUntilReady() {
         return waitUntil(
             async () => {
+                for (let i = 0; i < 5; i++) {
+                    if (this.client !== undefined) {
+                        break
+                    } else {
+                        await sleep(5_000)
+                    }
+                }
                 if (this.client === undefined) {
                     return false
                 }
