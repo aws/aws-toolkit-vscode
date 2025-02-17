@@ -497,7 +497,7 @@ describe('SharedCredentialsProvider', async function () {
         })
 
         for (const _ of Array.from({ length: 1000 })) {
-            it.only('assumes role with mfa token', async function () {
+            it('assumes role with mfa token', async function () {
                 const sections = await createTestSections(`
                     ${defaultSection}
                     [profile assume]
