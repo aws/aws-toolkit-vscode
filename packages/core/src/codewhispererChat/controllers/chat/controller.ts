@@ -682,6 +682,9 @@ export class ChatController {
                 })
             }
         }
+        if (contextCommands.length === 0) {
+            return
+        }
         const prompts = await LspClient.instance.getContextCommandPrompt(contextCommands)
         if (prompts.length > 0) {
             triggerPayload.additionalContents = []
