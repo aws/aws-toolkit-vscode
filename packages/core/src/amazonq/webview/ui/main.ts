@@ -505,6 +505,7 @@ export const createMynahUI = (
             if (!newTabID) {
                 return
             }
+
             tabsStorage.updateTabTypeFromUnknown(newTabID, tabType)
             connector.onKnownTabOpen(newTabID)
             connector.onUpdateTabType(newTabID)

@@ -150,6 +150,7 @@ export class Connector extends BaseConnector {
             await this.processEditorContextCommandMessage(messageData)
             return
         }
+
         if (messageData.type === 'contextCommandData') {
             await this.processContextCommandData(messageData)
             return

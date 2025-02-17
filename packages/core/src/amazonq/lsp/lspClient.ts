@@ -40,7 +40,7 @@ import { CodeWhispererSettings } from '../../codewhisperer/util/codewhispererSet
 import { fs } from '../../shared/fs/fs'
 import { getLogger } from '../../shared/logger/logger'
 import globals from '../../shared/extensionGlobals'
-import { waitUntil } from '../../shared'
+import { waitUntil } from '../../shared/utilities/timeoutUtils'
 
 const localize = nls.loadMessageBundle()
 
