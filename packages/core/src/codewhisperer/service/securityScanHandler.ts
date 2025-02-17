@@ -39,12 +39,13 @@ import {
     SecurityScanTimedOutError,
     UploadArtifactToS3Error,
 } from '../models/errors'
-import { getTelemetryReasonDesc } from '../../shared/errors'
+import { getTelemetryReasonDesc, isAwsError } from '../../shared/errors'
 import { CodeWhispererSettings } from '../util/codewhispererSettings'
 import { detectCommentAboveLine } from '../../shared/utilities/commentUtils'
 import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { FeatureUseCase } from '../models/constants'
 import { UploadTestArtifactToS3Error } from '../../amazonqTest/error'
+import { ChatSessionManager } from '../../amazonqTest/chat/storages/chatSession'
 
 export async function listScanResults(
     client: DefaultCodeWhispererClient,
@@ -385,6 +386,9 @@ export async function uploadArtifactToS3(
             errorMessage = '"PUT" request failed with code "503"'
         } else {
             errorMessage = errorDesc ?? defaultMessage
+        }
+        if (isAwsError(error) && featureUseCase === FeatureUseCase.TEST_GENERATION) {
+            ChatSessionManager.Instance.getSession().startTestGenerationRequestId = error.requestId
         }
         throw isCodeScan ? new UploadArtifactToS3Error(errorMessage) : new UploadTestArtifactToS3Error(errorMessage)
     }
