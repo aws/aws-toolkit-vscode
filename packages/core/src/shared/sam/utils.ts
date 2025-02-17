@@ -18,6 +18,7 @@ import { telemetry } from '../telemetry/telemetry'
 import globals from '../extensionGlobals'
 import { getLogger } from '../logger/logger'
 import { ChildProcessResult } from '../utilities/processUtils'
+import { buildProcessMementoRootKey, globalIdentifier } from './constants'
 
 /**
  * @description determines the root directory of the project given Template Item
@@ -108,6 +109,38 @@ export async function updateRecentResponse(
         getLogger().warn(`sam: unable to save response at key "${key}": %s`, err)
     }
 }
+
+/**
+ * Returns true if there's an ongoing build process for the provided template, false otherwise
+ * @Param templatePath The path to the template.yaml file
+ */
+function isBuildInProgress(templatePath: string): boolean {
+    const expirationDate = getRecentResponse(buildProcessMementoRootKey, globalIdentifier, templatePath)
+    if (expirationDate) {
+        return Date.now() < parseInt(expirationDate)
+    }
+    return false
+}
+
+/**
+ * Throws an error if there's a build in progress for the provided template
+ * @Param templatePath The path to the template.yaml file
+ */
+export function throwIfTemplateIsBeingBuilt(templatePath: string) {
+    if (isBuildInProgress(templatePath)) {
+        throw new ToolkitError('This template is already being built', { code: 'BuildInProgress' })
+    }
+}
+
+export async function registerTemplateBuild(templatePath: string) {
+    const expirationDate = Date.now() + 5 * 60 * 1000 // five minutes
+    await updateRecentResponse(buildProcessMementoRootKey, globalIdentifier, templatePath, expirationDate.toString())
+}
+
+export async function unregisterTemplateBuild(templatePath: string) {
+    await updateRecentResponse(buildProcessMementoRootKey, globalIdentifier, templatePath, undefined)
+}
+
 export function getSamCliErrorMessage(stderr: string): string {
     // Split the stderr string by newline, filter out empty lines, and get the last line
     const lines = stderr
