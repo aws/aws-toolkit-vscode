@@ -10,7 +10,7 @@ import { AmazonQAppInitContext } from '../amazonq/apps/initContext'
 import { MessagePublisher } from '../amazonq/messages/messagePublisher'
 import { MessageListener } from '../amazonq/messages/messageListener'
 import { fromQueryToParameters } from '../shared/utilities/uriUtils'
-import { getLogger } from '../shared/logger'
+import { getLogger } from '../shared/logger/logger'
 import { TabIdNotFoundError } from './errors'
 import { featureDevChat, featureDevScheme } from './constants'
 import globals from '../shared/extensionGlobals'
@@ -95,7 +95,9 @@ export function init(appContext: AmazonQAppInitContext) {
             authenticatingSessionIDs = authenticatingSessions.map((session) => session.tabID)
 
             // We've already authenticated these sessions
-            authenticatingSessions.forEach((session) => (session.isAuthenticating = false))
+            for (const session of authenticatingSessions) {
+                session.isAuthenticating = false
+            }
         }
 
         messenger.sendAuthenticationUpdate(authenticated, authenticatingSessionIDs)

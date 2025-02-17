@@ -11,7 +11,7 @@ const localize = nls.loadMessageBundle()
 import * as path from 'path'
 import * as vscode from 'vscode'
 import * as localizedText from '../../shared/localizedText'
-import { getLogger } from '../../shared/logger'
+import { getLogger } from '../../shared/logger/logger'
 import { createHelpButton } from '../../shared/ui/buttons'
 import * as input from '../../shared/ui/input'
 import * as picker from '../../shared/ui/picker'
@@ -946,11 +946,11 @@ async function getTemplateChoices(...workspaceFolders: vscode.Uri[]): Promise<Sa
     const uriToLabel: Map<vscode.Uri, string> = new Map<vscode.Uri, string>()
     const labelCounts: Map<string, number> = new Map()
 
-    templateUris.forEach((uri) => {
+    for (const uri of templateUris) {
         const label = SamTemplateQuickPickItem.getLabel(uri)
         uriToLabel.set(uri, label)
         labelCounts.set(label, 1 + (labelCounts.get(label) || 0))
-    })
+    }
 
     return Array.from(uriToLabel, ([uri, label]) => {
         const showWorkspaceFolderDetails: boolean = (labelCounts.get(label) || 0) > 1

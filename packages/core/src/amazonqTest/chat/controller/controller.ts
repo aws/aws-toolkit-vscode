@@ -13,27 +13,6 @@ import { ChatSessionManager } from '../storages/chatSession'
 import { BuildStatus, ConversationState, Session } from '../session/session'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import {
-    CodeWhispererConstants,
-    ReferenceLogViewProvider,
-    ShortAnswer,
-    ShortAnswerReference,
-    TelemetryHelper,
-    TestGenerationBuildStep,
-    testGenState,
-    unitTestGenerationCancelMessage,
-} from '../../../codewhisperer'
-import {
-    fs,
-    getLogger,
-    getTelemetryReasonDesc,
-    i18n,
-    openUrl,
-    randomUUID,
-    sleep,
-    tempDirPath,
-    testGenerationLogsDir,
-} from '../../../shared'
-import {
     buildProgressField,
     cancellingProgressField,
     cancelTestGenButton,
@@ -42,9 +21,10 @@ import {
     testGenCompletedField,
     testGenProgressField,
     testGenSummaryMessage,
+    maxUserPromptLength,
 } from '../../models/constants'
 import MessengerUtils, { ButtonActions } from './messenger/messengerUtils'
-import { isAwsError } from '../../../shared/errors'
+import { getTelemetryReasonDesc, isAwsError } from '../../../shared/errors'
 import { ChatItemType } from '../../../amazonq/commons/model'
 import { ProgressField } from '@aws/mynah-ui'
 import { FollowUpTypes } from '../../../amazonq/commons/types'
@@ -56,14 +36,33 @@ import {
 import { UserIntent } from '@amzn/codewhisperer-streaming'
 import { getSelectedCustomization } from '../../../codewhisperer/util/customizationUtil'
 import { createCodeWhispererChatStreamingClient } from '../../../shared/clients/codewhispererChatClient'
-import { ChatTriggerType } from '../../../codewhispererChat/controllers/chat/model'
+import { ChatItemVotedMessage, ChatTriggerType } from '../../../codewhispererChat/controllers/chat/model'
 import { triggerPayloadToChatRequest } from '../../../codewhispererChat/controllers/chat/chatRequest/converter'
 import { EditorContentController } from '../../../amazonq/commons/controllers/contentController'
 import { amazonQTabSuffix } from '../../../shared/constants'
 import { applyChanges } from '../../../shared/utilities/textDocumentUtilities'
 import { telemetry } from '../../../shared/telemetry/telemetry'
-import { CodeReference } from '../../../amazonq'
 import { CodeWhispererSettings } from '../../../codewhisperer/util/codewhispererSettings'
+import globals from '../../../shared/extensionGlobals'
+import { openUrl } from '../../../shared/utilities/vsCodeUtils'
+import { getLogger } from '../../../shared/logger/logger'
+import { i18n } from '../../../shared/i18n-helper'
+import { sleep } from '../../../shared/utilities/timeoutUtils'
+import { fs } from '../../../shared/fs/fs'
+import { randomUUID } from '../../../shared/crypto'
+import { tempDirPath, testGenerationLogsDir } from '../../../shared/filesystemUtilities'
+import { CodeReference } from '../../../codewhispererChat/view/connector/connector'
+import { TelemetryHelper } from '../../../codewhisperer/util/telemetryHelper'
+import { ShortAnswer, ShortAnswerReference, testGenState } from '../../../codewhisperer/models/model'
+import {
+    referenceLogText,
+    TestGenerationBuildStep,
+    tooManyRequestErrorMessage,
+    unitTestGenerationCancelMessage,
+    utgLimitReached,
+} from '../../../codewhisperer/models/constants'
+import { UserWrittenCodeTracker } from '../../../codewhisperer/tracker/userWrittenCodeTracker'
+import { ReferenceLogViewProvider } from '../../../codewhisperer/service/referenceLogViewProvider'
 
 export interface TestChatControllerEventEmitters {
     readonly tabOpened: vscode.EventEmitter<any>
@@ -80,6 +79,8 @@ export interface TestChatControllerEventEmitters {
     readonly errorThrown: vscode.EventEmitter<any>
     readonly insertCodeAtCursorPosition: vscode.EventEmitter<any>
     readonly processResponseBodyLinkClick: vscode.EventEmitter<any>
+    readonly processChatItemVotedMessage: vscode.EventEmitter<any>
+    readonly processChatItemFeedbackMessage: vscode.EventEmitter<any>
 }
 
 type OpenDiffMessage = {
@@ -158,6 +159,18 @@ export class TestController {
             return this.processLink(data)
         })
 
+        this.chatControllerMessageListeners.processChatItemVotedMessage.event((data) => {
+            this.processChatItemVotedMessage(data).catch((e) => {
+                getLogger().error('processChatItemVotedMessage failed: %s', (e as Error).message)
+            })
+        })
+
+        this.chatControllerMessageListeners.processChatItemFeedbackMessage.event((data) => {
+            this.processChatItemFeedbackMessage(data).catch((e) => {
+                getLogger().error('processChatItemFeedbackMessage failed: %s', (e as Error).message)
+            })
+        })
+
         this.chatControllerMessageListeners.followUpClicked.event((data) => {
             switch (data.followUp.type) {
                 case FollowUpTypes.ViewDiff:
@@ -207,6 +220,31 @@ export class TestController {
         }
     }
 
+    private async processChatItemVotedMessage(message: ChatItemVotedMessage) {
+        const session = this.sessionStorage.getSession()
+
+        telemetry.amazonq_feedback.emit({
+            featureId: 'amazonQTest',
+            amazonqConversationId: session.startTestGenerationRequestId,
+            credentialStartUrl: AuthUtil.instance.startUrl,
+            interactionType: message.vote,
+        })
+    }
+
+    private async processChatItemFeedbackMessage(message: any) {
+        const session = this.sessionStorage.getSession()
+
+        await globals.telemetry.postFeedback({
+            comment: `${JSON.stringify({
+                type: 'testgen-chat-answer-feedback',
+                amazonqConversationId: session.startTestGenerationRequestId,
+                reason: message?.selectedOption,
+                userComment: message?.comment,
+            })}`,
+            sentiment: 'Negative',
+        })
+    }
+
     private async tabClosed(data: any) {
         getLogger().debug('Tab closed with data tab id: %s', data.tabID)
         await this.sessionCleanUp()
@@ -241,71 +279,76 @@ export class TestController {
         // eslint-disable-next-line unicorn/no-null
         this.messenger.sendUpdatePromptProgress(data.tabID, null)
         const session = this.sessionStorage.getSession()
-        const isCancel = data.error.message === unitTestGenerationCancelMessage
-
+        const isCancel = data.error.uiMessage === unitTestGenerationCancelMessage
+        let telemetryErrorMessage = getTelemetryReasonDesc(data.error)
+        if (session.stopIteration) {
+            telemetryErrorMessage = getTelemetryReasonDesc(data.error.uiMessage.replaceAll('```', ''))
+        }
         TelemetryHelper.instance.sendTestGenerationToolkitEvent(
             session,
+            true,
             true,
             isCancel ? 'Cancelled' : 'Failed',
             session.startTestGenerationRequestId,
             performance.now() - session.testGenerationStartTime,
-            getTelemetryReasonDesc(data.error),
+            telemetryErrorMessage,
             session.isCodeBlockSelected,
             session.artifactsUploadDuration,
             session.srcPayloadSize,
             session.srcZipFileSize
         )
-
         if (session.stopIteration) {
             // Error from Science
-            this.messenger.sendMessage(data.error.message.replaceAll('```', ''), data.tabID, 'answer')
+            this.messenger.sendMessage(data.error.uiMessage.replaceAll('```', ''), data.tabID, 'answer')
         } else {
             isCancel
-                ? this.messenger.sendMessage(data.error.message, data.tabID, 'answer')
+                ? this.messenger.sendMessage(data.error.uiMessage, data.tabID, 'answer')
                 : this.sendErrorMessage(data)
         }
         await this.sessionCleanUp()
         return
     }
     // Client side error messages
-    private sendErrorMessage(data: { tabID: string; error: { code: string; message: string } }) {
+    private sendErrorMessage(data: {
+        tabID: string
+        error: { uiMessage: string; message: string; code: string; statusCode: string }
+    }) {
         const { error, tabID } = data
 
-        if (isAwsError(error)) {
-            if (error.code === 'ThrottlingException') {
-                // TODO: use the explicitly modeled exception reason for quota vs throttle
-                if (error.message.includes(CodeWhispererConstants.utgLimitReached)) {
-                    getLogger().error('Monthly quota reached for QSDA actions.')
-                    return this.messenger.sendMessage(
-                        i18n('AWS.amazonq.featureDev.error.monthlyLimitReached'),
-                        tabID,
-                        'answer'
-                    )
-                } else {
-                    getLogger().error('Too many requests.')
-                    // TODO: move to constants file
-                    this.messenger.sendErrorMessage('Too many requests. Please wait before retrying.', tabID)
-                }
-            } else {
-                // other service errors:
-                // AccessDeniedException - should not happen because access is validated before this point in the client
-                // ValidationException - shouldn't happen because client should not send malformed requests
-                // ConflictException - should not happen because the client will maintain proper state
-                // InternalServerException - shouldn't happen but needs to be caught
-                getLogger().error('Other error message: %s', error.message)
-                this.messenger.sendErrorMessage(
-                    'Encountered an unexpected error when generating tests. Please try again',
-                    tabID
+        // If user reached monthly limit for builderId
+        if (error.code === 'CreateTestJobError') {
+            if (error.message.includes(utgLimitReached)) {
+                getLogger().error('Monthly quota reached for QSDA actions.')
+                return this.messenger.sendMessage(
+                    i18n('AWS.amazonq.featureDev.error.monthlyLimitReached'),
+                    tabID,
+                    'answer'
                 )
             }
-        } else {
-            // other unexpected errors (TODO enumerate all other failure cases)
-            getLogger().error('Other error message: %s', error.message)
-            this.messenger.sendErrorMessage(
-                'Encountered an unexpected error when generating tests. Please try again',
-                tabID
-            )
+            if (error.message.includes('Too many requests')) {
+                getLogger().error(error.message)
+                return this.messenger.sendErrorMessage(tooManyRequestErrorMessage, tabID)
+            }
         }
+        if (isAwsError(error)) {
+            if (error.code === 'ThrottlingException') {
+                // TODO: use the explicitly modeled exception reason for quota vs throttle{
+                getLogger().error(error.message)
+                this.messenger.sendErrorMessage(tooManyRequestErrorMessage, tabID)
+                return
+            }
+            // other service errors:
+            // AccessDeniedException - should not happen because access is validated before this point in the client
+            // ValidationException - shouldn't happen because client should not send malformed requests
+            // ConflictException - should not happen because the client will maintain proper state
+            // InternalServerException - shouldn't happen but needs to be caught
+            getLogger().error('Other error message: %s', error.message)
+            this.messenger.sendErrorMessage('', tabID)
+            return
+        }
+        // other unexpected errors (TODO enumerate all other failure cases)
+        getLogger().error('Other error message: %s', error.uiMessage)
+        this.messenger.sendErrorMessage('', tabID)
     }
 
     // This function handles actions if user clicked on any Button one of these cases will be executed
@@ -363,7 +406,8 @@ export class TestController {
         getLogger().debug('startTestGen tabId: %O', message.tabID)
         let fileName = ''
         let filePath = ''
-        let userMessage = ''
+        let userFacingMessage = ''
+        let userPrompt = ''
         session.testGenerationStartTime = performance.now()
 
         try {
@@ -379,6 +423,8 @@ export class TestController {
                 )
                 return
             }
+            // Truncating the user prompt if the prompt is more than 4096.
+            userPrompt = message.prompt.slice(0, maxUserPromptLength)
 
             // check that the session is authenticated
             const authState = await AuthUtil.instance.getChatAuthState()
@@ -423,35 +469,47 @@ export class TestController {
             getLogger().debug(`File path: ${fileEditorToTest.document.uri.fsPath}`)
             filePath = fileEditorToTest.document.uri.fsPath
             fileName = path.basename(filePath)
-            userMessage = message.prompt
+            userFacingMessage = userPrompt
                 ? regenerateTests
-                    ? `${message.prompt}`
-                    : `/test ${message.prompt}`
+                    ? `${userPrompt}`
+                    : `/test ${userPrompt}`
                 : `/test Generate unit tests for \`${fileName}\``
 
-            session.hasUserPromptSupplied = message.prompt.length > 0
+            session.hasUserPromptSupplied = userPrompt.length > 0
 
             // displaying user message prompt in Test tab
-            this.messenger.sendMessage(userMessage, tabID, 'prompt')
+            this.messenger.sendMessage(userFacingMessage, tabID, 'prompt')
             this.messenger.sendChatInputEnabled(tabID, false)
             this.sessionStorage.getSession().conversationState = ConversationState.IN_PROGRESS
             this.messenger.sendUpdatePromptProgress(message.tabID, testGenProgressField)
 
             const language = await this.getLanguageForFilePath(filePath)
             session.fileLanguage = language
+            const workspaceFolder = vscode.workspace.getWorkspaceFolder(fileEditorToTest.document.uri)
 
             /*
                 For Re:Invent 2024 we are supporting only java and python for unit test generation, rest of the languages shows the similar experience as CWC
             */
-            if (language !== 'java' && language !== 'python') {
-                const unsupportedLanguage = language.charAt(0).toUpperCase() + language.slice(1)
-                let unsupportedMessage = `<span style="color: #EE9D28;">&#9888;<b>I'm sorry, but /test only supports Python and Java</b><br></span> While ${unsupportedLanguage} is not supported, I will generate a suggestion below. `
-                // handle the case when language is undefined
-                if (!unsupportedLanguage) {
-                    unsupportedMessage = `<span style="color: #EE9D28;">&#9888;<b>I'm sorry, but /test only supports Python and Java</b><br></span> I will still generate a suggestion below. `
+            if (!['java', 'python'].includes(language) || workspaceFolder === undefined) {
+                let unsupportedMessage: string
+                const unsupportedLanguage = language ? language.charAt(0).toUpperCase() + language.slice(1) : ''
+                if (!workspaceFolder) {
+                    // File is outside of workspace
+                    unsupportedMessage = `<span style="color: #EE9D28;">&#9888;<b>I can't generate tests for ${fileName}</b> because the file is outside of workspace scope.<br></span> I can still provide examples, instructions and code suggestions.`
+                } else if (unsupportedLanguage) {
+                    unsupportedMessage = `<span style="color: #EE9D28;">&#9888;<b>I'm sorry, but /test only supports Python and Java</b><br></span> While ${unsupportedLanguage} is not supported, I will generate a suggestion below.`
+                } else {
+                    unsupportedMessage = `<span style="color: #EE9D28;">&#9888;<b>I'm sorry, but /test only supports Python and Java</b><br></span> I will still generate a suggestion below.`
                 }
                 this.messenger.sendMessage(unsupportedMessage, tabID, 'answer')
-                await this.onCodeGeneration(session, message.prompt, tabID, fileName, filePath)
+                await this.onCodeGeneration(
+                    session,
+                    userPrompt,
+                    tabID,
+                    fileName,
+                    filePath,
+                    workspaceFolder !== undefined
+                )
             } else {
                 this.messenger.sendCapabilityCard({ tabID })
                 this.messenger.sendMessage(testGenSummaryMessage(fileName), message.tabID, 'answer-part')
@@ -480,7 +538,7 @@ export class TestController {
                  * Get Diff from exportResultArchive API
                  */
                 ChatSessionManager.Instance.setIsInProgress(true)
-                await startTestGenerationProcess(fileName, filePath, message.prompt, tabID, true, selectionRange)
+                await startTestGenerationProcess(filePath, message.prompt, tabID, true, selectionRange)
             }
         } catch (err: any) {
             // TODO: refactor error handling to be more robust
@@ -535,12 +593,15 @@ export class TestController {
         testGenerationJobGroupName: string
         testGenerationJobId: string
         type: ChatItemType
-        fileName: string
+        filePath: string
     }) {
         this.messenger.sendShortSummary({
             type: 'answer',
             tabID: message.tabID,
-            message: testGenSummaryMessage(message.fileName, message.shortAnswer?.planSummary?.replaceAll('```', '')),
+            message: testGenSummaryMessage(
+                path.basename(message.shortAnswer?.sourceFilePath ?? message.filePath),
+                message.shortAnswer?.planSummary?.replaceAll('```', '')
+            ),
             canBeVoted: true,
             filePath: message.shortAnswer?.testFilePath,
         })
@@ -651,12 +712,14 @@ export class TestController {
             acceptedLines = acceptedLines < 0 ? 0 : acceptedLines
             acceptedChars -= originalContent.length
             acceptedChars = acceptedChars < 0 ? 0 : acceptedChars
+            UserWrittenCodeTracker.instance.onQStartsMakingEdits()
             const document = await vscode.workspace.openTextDocument(absolutePath)
             await applyChanges(
                 document,
                 new vscode.Range(document.lineAt(0).range.start, document.lineAt(document.lineCount - 1).range.end),
                 updatedContent
             )
+            UserWrittenCodeTracker.instance.onQFinishesEdits()
         } else {
             await fs.writeFile(absolutePath, updatedContent)
         }
@@ -667,7 +730,7 @@ export class TestController {
         const fileName = path.basename(session.generatedFilePath)
         const time = new Date().toLocaleString()
         // TODO: this is duplicated in basicCommands.ts for scan (codewhisperer). Fix this later.
-        session.references.forEach((reference) => {
+        for (const reference of session.references) {
             getLogger().debug('Processing reference: %O', reference)
             // Log values for debugging
             getLogger().debug('updatedContent: %s', updatedContent)
@@ -692,7 +755,7 @@ export class TestController {
             getLogger().debug('Extracted code slice: %s', code)
             const referenceLog =
                 `[${time}] Accepted recommendation ` +
-                CodeWhispererConstants.referenceLogText(
+                referenceLogText(
                     `<br><code>${code}</code><br>`,
                     reference.licenseName!,
                     reference.repository!,
@@ -702,7 +765,7 @@ export class TestController {
                 '<br>'
             getLogger().debug('Adding reference log: %s', referenceLog)
             ReferenceLogViewProvider.instance.addReferenceLog(referenceLog)
-        })
+        }
 
         // TODO: see if there's a better way to check if active file is a diff
         if (vscode.window.tabGroups.activeTabGroup.activeTab?.label.includes(amazonQTabSuffix)) {
@@ -714,8 +777,12 @@ export class TestController {
         // this.messenger.sendMessage('Accepted', message.tabID, 'prompt')
         telemetry.ui_click.emit({ elementId: 'unitTestGeneration_acceptDiff' })
 
+        getLogger().info(
+            `Generated unit tests are accepted for ${session.fileLanguage ?? 'plaintext'} language with jobId: ${session.listOfTestGenerationJobId[0]}, jobGroupName: ${session.testGenerationJobGroupName}, result: Succeeded`
+        )
         TelemetryHelper.instance.sendTestGenerationToolkitEvent(
             session,
+            true,
             true,
             'Succeeded',
             session.startTestGenerationRequestId,
@@ -734,7 +801,6 @@ export class TestController {
         )
 
         await this.endSession(message, FollowUpTypes.SkipBuildAndFinish)
-        await this.sessionCleanUp()
         return
 
         if (session.listOfTestGenerationJobId.length === 1) {
@@ -794,20 +860,21 @@ export class TestController {
         message: string,
         tabID: string,
         fileName: string,
-        filePath: string
+        filePath: string,
+        fileInWorkspace: boolean
     ) {
         try {
             // TODO: Write this entire gen response to basiccommands and call here.
             const editorText = await fs.readFileText(filePath)
 
             const triggerPayload = {
-                query: `Generate unit tests for the following part of my code: ${message}`,
+                query: `Generate unit tests for the following part of my code: ${message?.trim() || fileName}`,
                 codeSelection: undefined,
                 trigger: ChatTriggerType.ChatMessage,
                 fileText: editorText,
                 fileLanguage: session.fileLanguage,
                 filePath: filePath,
-                message: `Generate unit tests for the following part of my code: ${message}`,
+                message: `Generate unit tests for the following part of my code: ${message?.trim() || fileName}`,
                 matchPolicy: undefined,
                 codeQuery: undefined,
                 userIntent: UserIntent.GENERATE_UNIT_TESTS,
@@ -816,13 +883,15 @@ export class TestController {
             const chatRequest = triggerPayloadToChatRequest(triggerPayload)
             const client = await createCodeWhispererChatStreamingClient()
             const response = await client.generateAssistantResponse(chatRequest)
+            UserWrittenCodeTracker.instance.onQFeatureInvoked()
             await this.messenger.sendAIResponse(
                 response,
                 session,
                 tabID,
                 randomUUID.toString(),
                 triggerPayload,
-                fileName
+                fileName,
+                fileInWorkspace
             )
         } finally {
             this.messenger.sendChatInputEnabled(tabID, true)
@@ -833,10 +902,13 @@ export class TestController {
 
     // TODO: Check if there are more cases to endSession if yes create a enum or type for step
     private async endSession(data: any, step: FollowUpTypes) {
+        this.messenger.sendMessage('Unit test generation completed.', data.tabID, 'answer')
+
         const session = this.sessionStorage.getSession()
         if (step === FollowUpTypes.RejectCode) {
             TelemetryHelper.instance.sendTestGenerationToolkitEvent(
                 session,
+                true,
                 true,
                 'Succeeded',
                 session.startTestGenerationRequestId,
@@ -853,16 +925,12 @@ export class TestController {
                 session.numberOfTestsGenerated,
                 session.linesOfCodeGenerated
             )
-
             telemetry.ui_click.emit({ elementId: 'unitTestGeneration_rejectDiff' })
         }
 
         await this.sessionCleanUp()
-        // TODO: revert 'Accepted' to 'Skip build and finish' once supported
-        const message = step === FollowUpTypes.RejectCode ? 'Rejected' : 'Accepted'
 
-        this.messenger.sendMessage(message, data.tabID, 'prompt')
-        this.messenger.sendMessage(`Unit test generation workflow is completed.`, data.tabID, 'answer')
+        // this.messenger.sendMessage(`Unit test generation workflow is completed.`, data.tabID, 'answer')
         this.messenger.sendChatInputEnabled(data.tabID, true)
         return
     }
@@ -1096,13 +1164,7 @@ export class TestController {
                 canBeVoted: false,
                 messageId: TestNamedMessages.TEST_GENERATION_BUILD_STATUS_MESSAGE,
             })
-            await startTestGenerationProcess(
-                path.basename(session.sourceFilePath),
-                session.sourceFilePath,
-                '',
-                data.tabID,
-                false
-            )
+            await startTestGenerationProcess(session.sourceFilePath, '', data.tabID, false)
         }
         // TODO: Skip this if startTestGenerationProcess timeouts
         if (session.generatedFilePath) {
@@ -1241,7 +1303,7 @@ export class TestController {
             groupName
         )
         if (session.listOfTestGenerationJobId.length && groupName) {
-            session.listOfTestGenerationJobId.forEach((id) => {
+            for (const id of session.listOfTestGenerationJobId) {
                 if (id === session.acceptedJobId) {
                     TelemetryHelper.instance.sendTestGenerationEvent(
                         groupName,
@@ -1267,7 +1329,7 @@ export class TestController {
                         0
                     )
                 }
-            })
+            }
         }
         session.listOfTestGenerationJobId = []
         session.testGenerationJobGroupName = undefined
@@ -1291,14 +1353,24 @@ export class TestController {
         if (session.tabID) {
             getLogger().debug('Setting input state with tabID: %s', session.tabID)
             this.messenger.sendChatInputEnabled(session.tabID, true)
-            this.messenger.sendUpdatePlaceholder(session.tabID, '/test Generate unit tests') // TODO: Change according to the UX
+            this.messenger.sendUpdatePlaceholder(session.tabID, 'Enter "/" for quick actions')
         }
         getLogger().debug(
             'Deleting output.log and temp result directory. testGenerationLogsDir: %s',
             testGenerationLogsDir
         )
-        await fs.delete(path.join(testGenerationLogsDir, 'output.log'))
-        await fs.delete(this.tempResultDirPath, { recursive: true })
+        const outputLogPath = path.join(testGenerationLogsDir, 'output.log')
+        if (await fs.existsFile(outputLogPath)) {
+            await fs.delete(outputLogPath)
+        }
+        if (
+            await fs
+                .stat(this.tempResultDirPath)
+                .then(() => true)
+                .catch(() => false)
+        ) {
+            await fs.delete(this.tempResultDirPath, { recursive: true })
+        }
     }
 
     // TODO: return build command when product approves

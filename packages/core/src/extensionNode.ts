@@ -17,7 +17,6 @@ import { AwsContextCommands } from './shared/awsContextCommands'
 import {
     getIdeProperties,
     getExtEnvironmentDetails,
-    isCloud9,
     isSageMaker,
     showWelcomeMessage,
 } from './shared/extensionUtilities'
@@ -38,6 +37,7 @@ import { activate as activateDev } from './dev/activation'
 import * as beta from './dev/beta'
 import { activate as activateApplicationComposer } from './applicationcomposer/activation'
 import { activate as activateRedshift } from './awsService/redshift/activation'
+import { activate as activateDocumentDb } from './docdb/activation'
 import { activate as activateIamPolicyChecks } from './awsService/accessanalyzer/activation'
 import { activate as activateNotifications } from './notifications/activation'
 import { SchemaService } from './shared/schemas'
@@ -46,19 +46,21 @@ import globals from './shared/extensionGlobals'
 import { Experiments, Settings, showSettingsFailedMsg } from './shared/settings'
 import { isReleaseVersion } from './shared/vscode/env'
 import { AuthStatus, AuthUserState, telemetry } from './shared/telemetry/telemetry'
-import { Auth, SessionSeparationPrompt } from './auth/auth'
+import { ExtStartUpSources } from './shared/telemetry/util'
+import { Auth } from './auth/auth'
 import { getTelemetryMetadataForConn } from './auth/connection'
 import { registerSubmitFeedback } from './feedback/vue/submitFeedback'
 import { activateCommon, deactivateCommon } from './extension'
 import { learnMoreAmazonQCommand, qExtensionPageCommand, dismissQTree } from './amazonq/explorer/amazonQChildrenNodes'
-import { AuthUtil, codeWhispererCoreScopes, isPreviousQUser } from './codewhisperer/util/authUtil'
+import { codeWhispererCoreScopes } from './codewhisperer/util/authUtil'
 import { installAmazonQExtension } from './codewhisperer/commands/basicCommands'
-import { isExtensionInstalled, VSCODE_EXTENSION_ID } from './shared/utilities'
+import { VSCODE_EXTENSION_ID } from './shared/extensions'
+import { isExtensionInstalled } from './shared/utilities/vsCodeUtils'
 import { ExtensionUse, getAuthFormIdsFromConnection, initializeCredentialsProviderManager } from './auth/utils'
-import { ExtStartUpSources } from './shared/telemetry'
 import { activate as activateThreatComposerEditor } from './threatComposer/activation'
 import { isSsoConnection, hasScopes } from './auth/connection'
-import { CrashMonitoring, setContext } from './shared'
+import { CrashMonitoring } from './shared/crashMonitoring'
+import { setContext } from './shared/vscode/setContext'
 import { AuthFormId } from './login/webview/vue/types'
 
 let localize: nls.LocalizeFunc
@@ -85,10 +87,9 @@ export async function activate(context: vscode.ExtensionContext) {
 
         const toolkitEnvDetails = getExtEnvironmentDetails()
         // Splits environment details by new line, filter removes the empty string
-        toolkitEnvDetails
-            .split(/\r?\n/)
-            .filter(Boolean)
-            .forEach((line) => getLogger().info(line))
+        for (const line of toolkitEnvDetails.split(/\r?\n/).filter(Boolean)) {
+            getLogger().info(line)
+        }
 
         globals.awsContextCommands = new AwsContextCommands(globals.regionProvider, Auth.instance)
         globals.schemaService = new SchemaService()
@@ -140,16 +141,8 @@ export async function activate(context: vscode.ExtensionContext) {
                             conn.scopes
                         )
                         await Auth.instance.forgetConnection(conn)
-                        await SessionSeparationPrompt.instance.showForCommand('aws.toolkit.auth.manageConnections')
                     }
                 }
-
-                // Display last prompt if connections were forgotten in prior sessions
-                // but the user did not interact or sign in again. Useful in case the user misses it the first time.
-                await SessionSeparationPrompt.instance.showAnyPreviousPrompt()
-
-                // MUST restore CW/Q auth so that we can see if this user is already a Q user.
-                await AuthUtil.instance.restore()
             },
             { emit: false, functionId: { name: 'activate', class: 'ExtensionNodeCore' } }
         )
@@ -191,25 +184,25 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await activateSchemas(extContext)
 
-        if (!isCloud9()) {
-            if (!isSageMaker()) {
-                // Amazon Q/CodeWhisperer Tree setup.
-                learnMoreAmazonQCommand.register()
-                qExtensionPageCommand.register()
-                dismissQTree.register()
-                installAmazonQExtension.register()
+        if (!isSageMaker()) {
+            // Amazon Q Tree setup.
+            learnMoreAmazonQCommand.register()
+            qExtensionPageCommand.register()
+            dismissQTree.register()
+            installAmazonQExtension.register()
 
-                await handleAmazonQInstall()
-            }
-            await activateApplicationComposer(context)
-            await activateThreatComposerEditor(context)
+            await handleAmazonQInstall()
         }
+        await activateApplicationComposer(context)
+        await activateThreatComposerEditor(context)
 
         await activateStepFunctions(context, globals.awsContext, globals.outputChannel)
 
         await activateRedshift(extContext)
 
         await activateAppBuilder(extContext)
+
+        await activateDocumentDb(extContext)
 
         await activateIamPolicyChecks(extContext)
 
@@ -273,52 +266,47 @@ export async function deactivate() {
 
 async function handleAmazonQInstall() {
     const dismissedInstall = globals.globalState.get<boolean>('aws.toolkit.amazonqInstall.dismissed')
-    if (isExtensionInstalled(VSCODE_EXTENSION_ID.amazonq) || dismissedInstall) {
+    if (dismissedInstall) {
+        return
+    }
+
+    if (isExtensionInstalled(VSCODE_EXTENSION_ID.amazonq)) {
+        await globals.globalState.update('aws.toolkit.amazonqInstall.dismissed', true)
         return
     }
 
     await telemetry.toolkit_showNotification.run(async () => {
-        if (isPreviousQUser()) {
-            await installAmazonQExtension.execute()
-            telemetry.record({ id: 'amazonQStandaloneInstalled' })
-            void vscode.window.showInformationMessage(
-                "Amazon Q is now its own extension.\n\nWe've auto-installed it for you with all the same features and settings from CodeWhisperer and Amazon Q chat."
+        telemetry.record({ id: 'amazonQStandaloneChange' })
+        void vscode.window
+            .showInformationMessage(
+                'Try Amazon Q, a generative AI assistant, with chat and code suggestions.',
+                'Install',
+                'Learn More'
             )
-            await globals.globalState.update('aws.toolkit.amazonqInstall.dismissed', true)
-        } else {
-            telemetry.record({ id: 'amazonQStandaloneChange' })
-            void vscode.window
-                .showInformationMessage(
-                    'Amazon Q has moved to its own extension.' +
-                        '\nInstall it to use Amazon Q, a generative AI assistant, with chat and code suggestions.',
-                    'Install',
-                    'Learn More'
-                )
-                .then(async (resp) => {
-                    await telemetry.toolkit_invokeAction.run(async () => {
-                        telemetry.record({
-                            source: ExtensionUse.instance.isFirstUse()
-                                ? ExtStartUpSources.firstStartUp
-                                : ExtStartUpSources.none,
-                        })
-
-                        if (resp === 'Learn More') {
-                            // Clicking learn more will open the q extension page
-                            telemetry.record({ action: 'learnMore' })
-                            await qExtensionPageCommand.execute()
-                            return
-                        }
-
-                        if (resp === 'Install') {
-                            telemetry.record({ action: 'installAmazonQ' })
-                            await installAmazonQExtension.execute()
-                        } else {
-                            telemetry.record({ action: 'dismissQNotification' })
-                        }
-                        await globals.globalState.update('aws.toolkit.amazonqInstall.dismissed', true)
+            .then(async (resp) => {
+                await telemetry.toolkit_invokeAction.run(async () => {
+                    telemetry.record({
+                        source: ExtensionUse.instance.isFirstUse()
+                            ? ExtStartUpSources.firstStartUp
+                            : ExtStartUpSources.none,
                     })
+
+                    if (resp === 'Learn More') {
+                        // Clicking learn more will open the q extension page
+                        telemetry.record({ action: 'learnMore' })
+                        await qExtensionPageCommand.execute()
+                        return
+                    }
+
+                    if (resp === 'Install') {
+                        telemetry.record({ action: 'installAmazonQ' })
+                        await installAmazonQExtension.execute()
+                    } else {
+                        telemetry.record({ action: 'dismissQNotification' })
+                    }
+                    await globals.globalState.update('aws.toolkit.amazonqInstall.dismissed', true)
                 })
-        }
+            })
     })
 }
 
@@ -343,17 +331,23 @@ async function getAuthState(): Promise<Omit<AuthUserState, 'source'>> {
     const enabledScopes: Set<string> = new Set()
     if (Auth.instance.hasConnections) {
         authStatus = 'expired'
-        ;(await Auth.instance.listConnections()).forEach((conn) => {
+        for (const conn of await Auth.instance.listConnections()) {
             const state = Auth.instance.getConnectionState(conn)
             if (state === 'valid') {
                 authStatus = 'connected'
             }
 
-            getAuthFormIdsFromConnection(conn).forEach((id) => enabledConnections.add(id))
-            if (isSsoConnection(conn)) {
-                conn.scopes?.forEach((s) => enabledScopes.add(s))
+            for (const id of getAuthFormIdsFromConnection(conn)) {
+                enabledConnections.add(id)
             }
-        })
+            if (isSsoConnection(conn)) {
+                if (conn.scopes) {
+                    for (const s of conn.scopes) {
+                        enabledScopes.add(s)
+                    }
+                }
+            }
+        }
     }
 
     // There may be other SSO connections in toolkit, but there is no use case for

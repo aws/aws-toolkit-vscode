@@ -58,6 +58,7 @@ export class AppRunnerNode extends AWSTreeNodeBase {
         while (true) {
             const next = await iterator.next()
 
+            // eslint-disable-next-line unicorn/no-array-for-each
             next.value.ServiceSummaryList.forEach((summary: AppRunner.Service) => services.push(summary))
 
             if (next.done) {
@@ -87,11 +88,12 @@ export class AppRunnerNode extends AWSTreeNodeBase {
             })
         )
 
+        // eslint-disable-next-line unicorn/no-array-for-each
         deletedNodeArns.forEach(this.deleteNode.bind(this))
     }
 
     public startPollingNode(id: string): void {
-        this.pollingSet.start(id)
+        this.pollingSet.add(id)
     }
 
     public stopPollingNode(id: string): void {

@@ -93,9 +93,10 @@ describe('ec2ParentNode', function () {
 
         assert.strictEqual(childNodes.length, instances.length, 'Unexpected child count')
 
-        childNodes.forEach((node) =>
+        for (const node of childNodes) {
             assert.ok(node instanceof Ec2InstanceNode, 'Expected child node to be Ec2InstanceNode')
-        )
+        }
+
         getInstanceStub.restore()
     })
 

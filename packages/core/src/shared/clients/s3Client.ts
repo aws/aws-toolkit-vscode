@@ -8,7 +8,7 @@ import * as url from 'url'
 import _ from 'lodash'
 import { AWSError, S3 } from 'aws-sdk'
 import { inspect } from 'util'
-import { getLogger } from '../logger'
+import { getLogger } from '../logger/logger'
 import { bufferToStream, DefaultFileStreams, FileStreams, pipe } from '../utilities/streamUtilities'
 import { assertHasProps, InterfaceNoSymbol, isNonNullable, RequiredProps } from '../utilities/tsUtils'
 import { Readable } from 'stream'
@@ -19,6 +19,7 @@ import { toStream } from '../utilities/collectionUtils'
 
 export const DEFAULT_MAX_KEYS = 300 // eslint-disable-line @typescript-eslint/naming-convention
 export const DEFAULT_DELIMITER = '/' // eslint-disable-line @typescript-eslint/naming-convention
+export const defaultPrefix = ''
 
 export type Bucket = InterfaceNoSymbol<DefaultBucket>
 export type Folder = InterfaceNoSymbol<DefaultFolder>
@@ -460,7 +461,13 @@ export class DefaultS3Client {
                 Bucket: bucket.name,
                 Delimiter: DEFAULT_DELIMITER,
                 MaxKeys: request.maxResults ?? DEFAULT_MAX_KEYS,
-                Prefix: request.folderPath,
+                /**
+                 * Set '' as the default prefix to ensure that the bucket's content will be displayed
+                 * when the user has at least list access to the root of the bucket
+                 * https://github.com/aws/aws-toolkit-vscode/issues/4643
+                 * @default ''
+                 */
+                Prefix: request.folderPath ?? defaultPrefix,
                 ContinuationToken: request.continuationToken,
             })
             .promise()

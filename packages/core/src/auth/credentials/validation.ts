@@ -10,7 +10,7 @@ const localize = nls.loadMessageBundle()
 import { CredentialsData, CredentialsKey, SectionName, SharedCredentialsKeys } from './types'
 import { ToolkitError } from '../../shared/errors'
 import { profileExists } from './sharedCredentials'
-import { getLogger } from '../../shared/logger'
+import { getLogger } from '../../shared/logger/logger'
 
 /** credentials keys and their associated error message, if they exists */
 type CredentialsErrors = CredentialsData
@@ -36,12 +36,12 @@ export function getCredentialsErrors(
     validateFunc: GetCredentialError = getCredentialError
 ): CredentialsErrors | undefined {
     const errors: CredentialsData = {}
-    Object.entries(data).forEach(([key, value]) => {
+    for (const [key, value] of Object.entries(data)) {
         if (!isCredentialsKey(key)) {
-            return
+            continue
         }
         errors[key] = validateFunc(key, value)
-    })
+    }
 
     const hasErrors = Object.values(errors).some(Boolean)
     if (!hasErrors) {

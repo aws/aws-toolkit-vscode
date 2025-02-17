@@ -24,8 +24,8 @@ export { init as featureDevChatAppInit } from '../amazonqFeatureDev/app'
 export { init as gumbyChatAppInit } from '../amazonqGumby/app'
 export { init as testChatAppInit } from '../amazonqTest/app'
 export { init as docChatAppInit } from '../amazonqDoc/app'
-export { activateBadge } from './util/viewBadgeHandler'
 export { amazonQHelpUrl } from '../shared/constants'
+export * as webviewConstants from './webview/ui/texts/constants'
 export { listCodeWhispererCommandsWalkthrough } from '../codewhisperer/ui/statusBarMenu'
 export { focusAmazonQPanel, focusAmazonQPanelKeybinding } from '../codewhispererChat/commands/registerCommands'
 export { TryChatCodeLensProvider, tryChatCodeLensCommand } from '../codewhispererChat/editor/codelens'
@@ -43,7 +43,7 @@ export { ExtensionMessage } from '../amazonq/webview/ui/commands'
 export { CodeReference } from '../codewhispererChat/view/connector/connector'
 export { extractAuthFollowUp } from './util/authUtils'
 export { Messenger } from './commons/connector/baseMessenger'
-import { FeatureContext } from '../shared'
+import { FeatureContext } from '../shared/featureConfig'
 
 /**
  * main from createMynahUI is a purely browser dependency. Due to this
@@ -55,11 +55,12 @@ export function createMynahUI(
     ideApi: any,
     amazonQEnabled: boolean,
     featureConfigsSerialized: [string, FeatureContext][],
+    welcomeCount: number,
     disabledCommands?: string[]
 ) {
     if (typeof window !== 'undefined') {
         const mynahUI = require('./webview/ui/main')
-        return mynahUI.createMynahUI(ideApi, amazonQEnabled, featureConfigsSerialized, true, disabledCommands)
+        return mynahUI.createMynahUI(ideApi, amazonQEnabled, featureConfigsSerialized, welcomeCount, disabledCommands)
     }
     throw new Error('Not implemented for node')
 }

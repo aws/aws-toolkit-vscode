@@ -7,7 +7,7 @@ import * as semver from 'semver'
 import * as vscode from 'vscode'
 import * as packageJson from '../../../package.json'
 import * as os from 'os'
-import { getLogger } from '../logger'
+import { getLogger } from '../logger/logger'
 import { onceChanged } from '../utilities/functionUtils'
 import { ChildProcess } from '../utilities/processUtils'
 import globals, { isWeb } from '../extensionGlobals'
@@ -149,6 +149,9 @@ export async function isCloudDesktop() {
     return (await new ChildProcess('/apollo/bin/getmyfabric').run().then((r) => r.exitCode)) === 0
 }
 
+export function isMac(): boolean {
+    return process.platform === 'darwin'
+}
 /** Returns true if OS is Windows. */
 export function isWin(): boolean {
     // if (isWeb()) {

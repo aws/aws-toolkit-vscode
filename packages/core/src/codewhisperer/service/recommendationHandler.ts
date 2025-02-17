@@ -13,8 +13,7 @@ import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { AWSError } from 'aws-sdk'
 import { isAwsError } from '../../shared/errors'
 import { TelemetryHelper } from '../util/telemetryHelper'
-import { getLogger } from '../../shared/logger'
-import { isCloud9 } from '../../shared/extensionUtilities'
+import { getLogger } from '../../shared/logger/logger'
 import { hasVendedIamCredentials } from '../../auth/auth'
 import {
     asyncCallWithTimeout,
@@ -44,6 +43,7 @@ import { openUrl } from '../../shared/utilities/vsCodeUtils'
 import { indent } from '../../shared/utilities/textUtilities'
 import path from 'path'
 import { isIamConnection } from '../../auth/connection'
+import { UserWrittenCodeTracker } from '../tracker/userWrittenCodeTracker'
 
 /**
  * This class is for getRecommendation/listRecommendation API calls and its states
@@ -63,9 +63,7 @@ const rejectCommand = Commands.declare('aws.amazonq.rejectCodeSuggestion', () =>
         traceId: TelemetryHelper.instance.traceId,
     })
 
-    if (!isCloud9('any')) {
-        await vscode.commands.executeCommand('editor.action.inlineSuggest.hide')
-    }
+    await vscode.commands.executeCommand('editor.action.inlineSuggest.hide')
     RecommendationHandler.instance.reportUserDecisions(-1)
     await Commands.tryExecute('aws.amazonq.refreshAnnotation')
 })
@@ -207,6 +205,8 @@ export class RecommendationHandler {
             session.requestContext = await EditorContext.buildGenerateRecommendationRequest(editor as vscode.TextEditor)
         }
         const request = session.requestContext.request
+        // record preprocessing end time
+        TelemetryHelper.instance.setPreprocessEndTime()
 
         // set start pos for non pagination call or first pagination call
         if (!pagination || (pagination && page === 0)) {
@@ -309,13 +309,14 @@ export class RecommendationHandler {
                 4,
                 true
             ).trimStart()
-            recommendations.forEach((item, index) => {
+            for (const [index, item] of recommendations.entries()) {
                 msg += `\n    ${index.toString().padStart(2, '0')}: ${indent(item.content, 8, true).trim()}`
                 session.requestIdList.push(requestId)
-            })
+            }
             getLogger().debug(msg)
             if (invocationResult === 'Succeeded') {
                 CodeWhispererCodeCoverageTracker.getTracker(session.language)?.incrementServiceInvocationCount()
+                UserWrittenCodeTracker.instance.onQFeatureInvoked()
             } else {
                 if (
                     (errorMessage?.includes(invalidCustomizationMessage) && errorCode === 'AccessDeniedException') ||
@@ -368,7 +369,7 @@ export class RecommendationHandler {
             TelemetryHelper.instance.setTypeAheadLength(typedPrefix.length)
             // mark suggestions that does not match typeahead when arrival as Discard
             // these suggestions can be marked as Showed if typeahead can be removed with new inline API
-            recommendations.forEach((r, i) => {
+            for (const [i, r] of recommendations.entries()) {
                 const recommendationIndex = i + session.recommendations.length
                 if (
                     !r.content.startsWith(typedPrefix) &&
@@ -377,7 +378,7 @@ export class RecommendationHandler {
                     session.setSuggestionState(recommendationIndex, 'Discard')
                 }
                 session.setCompletionType(recommendationIndex, r)
-            })
+            }
             session.recommendations = pagination ? session.recommendations.concat(recommendations) : recommendations
             if (isInlineCompletionEnabled() && this.hasAtLeastOneValidSuggestion(typedPrefix)) {
                 this._onDidReceiveRecommendation.fire()
@@ -472,9 +473,9 @@ export class RecommendationHandler {
     }
 
     reportDiscardedUserDecisions() {
-        session.recommendations.forEach((r, i) => {
+        for (const [i, _] of session.recommendations.entries()) {
             session.setSuggestionState(i, 'Discard')
-        })
+        }
         this.reportUserDecisions(-1)
     }
 
@@ -495,9 +496,7 @@ export class RecommendationHandler {
             session.suggestionStates,
             session.requestContext.supplementalMetadata
         )
-        if (isCloud9('any')) {
-            this.clearRecommendations()
-        } else if (isInlineCompletionEnabled()) {
+        if (isInlineCompletionEnabled()) {
             this.clearInlineCompletionStates().catch((e) => {
                 getLogger().error('clearInlineCompletionStates failed: %s', (e as Error).message)
             })
@@ -526,9 +525,9 @@ export class RecommendationHandler {
         // do not show recommendation if cursor is before invocation position
         // also mark as Discard
         if (editor.selection.active.isBefore(session.startPos)) {
-            session.recommendations.forEach((r, i) => {
+            for (const [i, _] of session.recommendations.entries()) {
                 session.setSuggestionState(i, 'Discard')
-            })
+            }
             reject()
             return false
         }
@@ -544,9 +543,9 @@ export class RecommendationHandler {
             )
         )
         if (!session.recommendations[0].content.startsWith(typedPrefix.trimStart())) {
-            session.recommendations.forEach((r, i) => {
+            for (const [i, _] of session.recommendations.entries()) {
                 session.setSuggestionState(i, 'Discard')
-            })
+            }
             reject()
             return false
         }
@@ -668,9 +667,9 @@ export class RecommendationHandler {
             editor.selection.active.isBefore(session.startPos) ||
             editor.document.uri.fsPath !== this.documentUri?.fsPath
         ) {
-            session.recommendations.forEach((r, i) => {
+            for (const [i, _] of session.recommendations.entries()) {
                 session.setSuggestionState(i, 'Discard')
-            })
+            }
             this.reportUserDecisions(-1)
         } else if (session.recommendations.length > 0) {
             await this.showRecommendation(0, true)

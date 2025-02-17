@@ -6,8 +6,9 @@
 import * as vscode from 'vscode'
 import * as fs from 'fs' // eslint-disable-line no-restricted-imports
 import path from 'path'
-import { getLogger } from '../../shared/logger'
+import { getLogger } from '../../shared/logger/logger'
 import * as CodeWhispererConstants from '../models/constants'
+import * as localizedText from '../../shared/localizedText'
 import {
     transformByQState,
     StepProgress,
@@ -75,10 +76,10 @@ import DependencyVersions from '../../amazonqGumby/models/dependencies'
 import { dependencyNoAvailableVersions } from '../../amazonqGumby/models/constants'
 import { HumanInTheLoopManager } from '../service/transformByQ/humanInTheLoopManager'
 import { setContext } from '../../shared/vscode/setContext'
-import { makeTemporaryToolkitFolder } from '../../shared'
 import globals from '../../shared/extensionGlobals'
 import { convertDateToTimestamp } from '../../shared/datetime'
 import { findStringInDirectory } from '../../shared/utilities/workspaceUtils'
+import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 
 function getFeedbackCommentData() {
     const jobId = transformByQState.getJobId()
@@ -103,8 +104,9 @@ export async function processSQLConversionTransformFormInput(pathToProject: stri
     transformByQState.setProjectName(path.basename(pathToProject))
     transformByQState.setProjectPath(pathToProject)
     transformByQState.setSchema(schema)
-    transformByQState.setSourceJDKVersion(JDKVersion.JDK8) // use dummy value of JDK8 so that startJob API can be called
-    // targetJDKVersion defaults to JDK17, the only supported version, which is fine
+    // use dummy values of JDK8 & JDK17 so that startJob API can be called
+    transformByQState.setSourceJDKVersion(JDKVersion.JDK8)
+    transformByQState.setTargetJDKVersion(JDKVersion.JDK17)
 }
 
 async function validateJavaHome(): Promise<boolean> {
@@ -118,6 +120,8 @@ async function validateJavaHome(): Promise<boolean> {
             javaVersionUsedByMaven = JDKVersion.JDK11
         } else if (javaVersionUsedByMaven === '17.') {
             javaVersionUsedByMaven = JDKVersion.JDK17
+        } else if (javaVersionUsedByMaven === '21.') {
+            javaVersionUsedByMaven = JDKVersion.JDK21
         }
     }
     if (javaVersionUsedByMaven !== transformByQState.getSourceJDKVersion()) {
@@ -233,7 +237,7 @@ export async function preTransformationUploadCode() {
     await vscode.commands.executeCommand('aws.amazonq.transformationHub.focus')
 
     void vscode.window.showInformationMessage(CodeWhispererConstants.jobStartedNotification, {
-        title: CodeWhispererConstants.jobStartedTitle,
+        title: localizedText.ok,
     })
 
     let uploadId = ''
@@ -263,6 +267,7 @@ export async function preTransformationUploadCode() {
 
             transformByQState.setPayloadFilePath(payloadFilePath)
             uploadId = await uploadPayload(payloadFilePath)
+            telemetry.record({ codeTransformJobId: uploadId }) // uploadId is re-used as jobId
         })
     } catch (err) {
         const errorMessage = (err as Error).message
@@ -652,14 +657,14 @@ export async function getValidSQLConversionCandidateProjects() {
         let resultLog = ''
         for (const project of javaProjects) {
             // as long as at least one of these strings is found, project contains embedded SQL statements
-            const searchStrings = ['oracle.jdbc.OracleDriver', 'jdbc:oracle:thin:@', 'jdbc:oracle:oci:@', 'jdbc:odbc:']
+            const searchStrings = ['oracle.jdbc.', 'jdbc:oracle:', 'jdbc:odbc:']
             for (const str of searchStrings) {
                 const spawnResult = await findStringInDirectory(str, project.path)
                 // just for telemetry purposes
                 if (spawnResult.error || spawnResult.stderr) {
-                    resultLog += `search failed: ${JSON.stringify(spawnResult)}`
+                    resultLog += `search error: ${JSON.stringify(spawnResult)}--`
                 } else {
-                    resultLog += `search succeeded: ${spawnResult.exitCode}`
+                    resultLog += `search complete (exit code: ${spawnResult.exitCode})--`
                 }
                 getLogger().info(`CodeTransformation: searching for ${str} in ${project.path}, result = ${resultLog}`)
                 if (spawnResult.exitCode === 0) {
@@ -735,21 +740,21 @@ export async function postTransformationJob() {
         const mavenVersionInfoMessage = `${versionInfo[0]} (${transformByQState.getMavenName()})`
         const javaVersionInfoMessage = `${versionInfo[1]} (${transformByQState.getMavenName()})`
 
-        // Note: IntelliJ implementation of ResultStatusMessage includes additional metadata such as jobId.
         telemetry.codeTransform_totalRunTime.emit({
             buildSystemVersion: mavenVersionInfoMessage,
             codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
+            codeTransformJobId: transformByQState.getJobId(),
             codeTransformResultStatusMessage: resultStatusMessage,
             codeTransformRunTimeLatency: durationInMs,
             codeTransformLocalJavaVersion: javaVersionInfoMessage,
             result: resultStatusMessage === TransformByQStatus.Succeeded ? MetadataResult.Pass : MetadataResult.Fail,
-            reason: resultStatusMessage,
+            reason: `${resultStatusMessage}-${chatMessage}`,
         })
     }
 
     if (transformByQState.isSucceeded()) {
         void vscode.window.showInformationMessage(CodeWhispererConstants.jobCompletedNotification(diffMessage), {
-            title: CodeWhispererConstants.transformationCompletedTitle,
+            title: localizedText.ok,
         })
     } else if (transformByQState.isPartiallySucceeded()) {
         void vscode.window
@@ -770,6 +775,12 @@ export async function postTransformationJob() {
 
     if (transformByQState.getPayloadFilePath() !== '') {
         fs.rmSync(transformByQState.getPayloadFilePath(), { recursive: true, force: true }) // delete ZIP if it exists
+    }
+
+    // attempt download for user
+    // TODO: refactor as explained here https://github.com/aws/aws-toolkit-vscode/pull/6519/files#r1946873107
+    if (transformByQState.isSucceeded() || transformByQState.isPartiallySucceeded()) {
+        await vscode.commands.executeCommand('aws.amazonq.transformationHub.reviewChanges.startReview')
     }
 }
 
@@ -825,6 +836,7 @@ export async function stopTransformByQ(jobId: string) {
     await telemetry.codeTransform_jobIsCancelledByUser.run(async () => {
         telemetry.record({
             codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
+            codeTransformJobId: jobId,
         })
         if (transformByQState.isRunning()) {
             getLogger().info('CodeTransformation: User requested to stop transformation. Stopping transformation.')

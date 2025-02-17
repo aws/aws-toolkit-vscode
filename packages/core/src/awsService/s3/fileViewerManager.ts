@@ -7,7 +7,7 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import * as mime from 'mime-types'
 import * as S3 from '../../shared/clients/s3Client'
-import { getLogger } from '../../shared/logger'
+import { getLogger } from '../../shared/logger/logger'
 import { showConfirmationMessage } from '../../shared/utilities/messages'
 import { localize, openUrl } from '../../shared/utilities/vsCodeUtils'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
@@ -346,7 +346,7 @@ export class S3FileViewerManager {
     }
 
     private async showEditNotification(): Promise<void> {
-        if (!(await this.settings.isPromptEnabled(promptOnEditKey))) {
+        if (!this.settings.isPromptEnabled(promptOnEditKey)) {
             return
         }
 

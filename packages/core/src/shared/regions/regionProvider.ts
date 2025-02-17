@@ -9,10 +9,10 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
-import { getLogger } from '../logger'
+import { getLogger } from '../logger/logger'
 import { Endpoints, loadEndpoints, Region } from './endpoints'
 import { AwsContext } from '../awsContext'
-import { getIdeProperties, isAmazonQ, isCloud9 } from '../extensionUtilities'
+import { getIdeProperties, isAmazonQ } from '../extensionUtilities'
 import { ResourceFetcher } from '../resourcefetcher/resourcefetcher'
 import { isSsoConnection } from '../../auth/connection'
 import { Auth } from '../../auth/auth'
@@ -128,26 +128,26 @@ export class RegionProvider {
 
     private loadFromEndpoints(endpoints: Endpoints) {
         this.regionData.clear()
-        endpoints.partitions.forEach((partition) => {
-            partition.regions.forEach((region) =>
+        for (const partition of endpoints.partitions) {
+            for (const region of partition.regions) {
                 this.regionData.set(region.id, {
                     dnsSuffix: partition.dnsSuffix,
                     partitionId: partition.id,
                     region: region,
                     serviceIds: [],
                 })
-            )
+            }
 
-            partition.services.forEach((service) => {
-                service.endpoints.forEach((endpoint) => {
+            for (const service of partition.services) {
+                for (const endpoint of service.endpoints) {
                     const regionData = this.regionData.get(endpoint.regionId)
 
                     if (regionData) {
                         regionData.serviceIds.push(service.id)
                     }
-                })
-            })
-        })
+                }
+            }
+        }
         this.onDidChangeEmitter.fire()
     }
 
@@ -162,49 +162,48 @@ export class RegionProvider {
         remote: () => Endpoints | Promise<Endpoints>
     }): RegionProvider {
         const instance = new this()
+        void instance.init(endpointsProvider)
+        return instance
+    }
 
-        async function load() {
-            getLogger().info('endpoints: retrieving AWS endpoints data')
-            instance.loadFromEndpoints(await endpointsProvider.local())
+    async init(endpointsProvider: {
+        local: () => Endpoints | Promise<Endpoints>
+        remote: () => Endpoints | Promise<Endpoints>
+    }) {
+        getLogger().info('endpoints: retrieving AWS endpoints data')
 
-            try {
-                instance.loadFromEndpoints(await endpointsProvider.remote())
-            } catch (err) {
-                getLogger().warn(
-                    `endpoints: failed to load from remote source, region data may appear outdated: %s`,
-                    err
-                )
-            }
+        try {
+            this.loadFromEndpoints(await endpointsProvider.local())
+        } catch (err) {
+            getLogger().warn(`endpoints: failed to load from local source: %s`, err)
         }
 
-        load().catch((err) => {
-            getLogger().error('Failure while loading Endpoints Manifest: %s', err)
+        try {
+            this.loadFromEndpoints(await endpointsProvider.remote())
+        } catch (err) {
+            getLogger().warn(`endpoints: failed to load from remote source, region data may appear outdated: %s`, err)
+        }
 
-            return vscode.window.showErrorMessage(
+        if (this.getRegions().length === 0) {
+            void vscode.window.showErrorMessage(
                 `${localize(
                     'AWS.error.endpoint.load.failure',
                     'The {0} Toolkit was unable to load endpoints data.',
                     getIdeProperties().company
-                )} ${
-                    isCloud9()
-                        ? localize(
-                              'AWS.error.impactedFunctionalityReset.cloud9',
-                              'Toolkit functionality may be impacted until the Cloud9 browser tab is refreshed.'
-                          )
-                        : localize(
-                              'AWS.error.impactedFunctionalityReset.vscode',
-                              'Toolkit functionality may be impacted until VS Code is restarted.'
-                          )
-                }`
+                )} ${localize(
+                    'AWS.error.impactedFunctionalityReset.vscode',
+                    'Toolkit functionality may be impacted until VS Code is restarted.'
+                )}`
             )
-        })
-
-        return instance
+        }
     }
 }
 
-export async function getEndpointsFromFetcher(fetcher: ResourceFetcher): Promise<Endpoints> {
-    const endpointsJson = await fetcher.get()
+export async function getEndpointsFromFetcher(
+    fetcher: ResourceFetcher<string> | ResourceFetcher<Response>
+): Promise<Endpoints> {
+    const contents = await fetcher.get()
+    const endpointsJson = typeof contents === 'string' ? contents : await contents?.text()
     if (!endpointsJson) {
         throw new Error('Failed to get resource')
     }

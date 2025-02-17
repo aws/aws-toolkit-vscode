@@ -27,8 +27,7 @@ import { connectToEnterpriseSso, getStartUrl } from '../util/getStartUrl'
 import { showCodeWhispererConnectionPrompt } from '../util/showSsoPrompt'
 import { ReferenceLogViewProvider } from '../service/referenceLogViewProvider'
 import { AuthUtil } from '../util/authUtil'
-import { isCloud9 } from '../../shared/extensionUtilities'
-import { getLogger } from '../../shared/logger'
+import { getLogger } from '../../shared/logger/logger'
 import { isExtensionActive, isExtensionInstalled, localize, openUrl } from '../../shared/utilities/vsCodeUtils'
 import {
     getPersistedCustomizations,
@@ -45,12 +44,13 @@ import {
 import { Mutable } from '../../shared/utilities/tsUtils'
 import { CodeWhispererSource } from './types'
 import { TelemetryHelper } from '../util/telemetryHelper'
-import { Auth, AwsConnection } from '../../auth'
+import { Auth } from '../../auth/auth'
+import { AwsConnection } from '../../auth/connection'
 import { once } from '../../shared/utilities/functionUtils'
 import { focusAmazonQPanel } from '../../codewhispererChat/commands/registerCommands'
 import { removeDiagnostic } from '../service/diagnosticsProvider'
 import { SsoAccessTokenProvider } from '../../auth/sso/ssoAccessTokenProvider'
-import { ToolkitError, getTelemetryReason, getTelemetryReasonDesc } from '../../shared/errors'
+import { ToolkitError, getErrorMsg, getTelemetryReason, getTelemetryReasonDesc } from '../../shared/errors'
 import { isRemoteWorkspace } from '../../shared/vscode/env'
 import { isBuilderIdConnection } from '../../auth/connection'
 import globals from '../../shared/extensionGlobals'
@@ -62,10 +62,13 @@ import { SecurityIssueProvider } from '../service/securityIssueProvider'
 import { CodeWhispererSettings } from '../util/codewhispererSettings'
 import { closeDiff, getPatchedCode } from '../../shared/utilities/diffUtils'
 import { insertCommentAboveLine } from '../../shared/utilities/commentUtils'
-import { cancel, confirm } from '../../shared'
 import { startCodeFixGeneration } from './startCodeFixGeneration'
 import { DefaultAmazonQAppInitContext } from '../../amazonq/apps/initContext'
 import path from 'path'
+import { UserWrittenCodeTracker } from '../tracker/userWrittenCodeTracker'
+import { parsePatch } from 'diff'
+import { createCodeIssueGroupingStrategyPrompter } from '../ui/prompters'
+import { cancel, confirm } from '../../shared/localizedText'
 
 const MessageTimeOut = 5_000
 
@@ -104,9 +107,7 @@ export const enableCodeSuggestions = Commands.declare(
             await setContext('aws.codewhisperer.connected', true)
             await setContext('aws.codewhisperer.connectionExpired', false)
             vsCodeState.isFreeTierLimitReached = false
-            if (!isCloud9()) {
-                await vscode.commands.executeCommand('aws.amazonq.refreshStatusBar')
-            }
+            await vscode.commands.executeCommand('aws.amazonq.refreshStatusBar')
         }
 )
 
@@ -447,9 +448,12 @@ export const applySecurityFix = Commands.declare(
             result: 'Succeeded',
             credentialStartUrl: AuthUtil.instance.startUrl,
             codeFixAction: 'applyFix',
+            autoDetected: targetIssue.autoDetected,
+            codewhispererCodeScanJobId: targetIssue.scanJobId,
         }
         let languageId = undefined
         try {
+            UserWrittenCodeTracker.instance.onQStartsMakingEdits()
             const document = await vscode.workspace.openTextDocument(targetFilePath)
             languageId = document.languageId
             const updatedContent = await getPatchedCode(targetFilePath, suggestedFix.code)
@@ -459,11 +463,21 @@ export const applySecurityFix = Commands.declare(
             }
 
             const edit = new vscode.WorkspaceEdit()
-            edit.replace(
-                document.uri,
-                new vscode.Range(document.lineAt(0).range.start, document.lineAt(document.lineCount - 1).range.end),
-                updatedContent
-            )
+            const diffs = parsePatch(suggestedFix.code)
+            for (const diff of diffs) {
+                for (const hunk of [...diff.hunks].reverse()) {
+                    const startLine = document.lineAt(hunk.oldStart - 1)
+                    const endLine = document.lineAt(hunk.oldStart - 1 + hunk.oldLines - 1)
+                    const range = new vscode.Range(startLine.range.start, endLine.range.end)
+
+                    const newText = updatedContent
+                        .split('\n')
+                        .slice(hunk.newStart - 1, hunk.newStart - 1 + hunk.newLines)
+                        .join('\n')
+
+                    edit.replace(document.uri, range, newText)
+                }
+            }
             const isApplied = await vscode.workspace.applyEdit(edit)
             if (isApplied) {
                 void document.save().then((didSave) => {
@@ -478,42 +492,44 @@ export const applySecurityFix = Commands.declare(
             const fileName = path.basename(targetFilePath)
             const time = new Date().toLocaleString()
             // TODO: this is duplicated in controller.ts for test. Fix this later.
-            suggestedFix.references?.forEach((reference) => {
-                getLogger().debug('Processing reference: %O', reference)
-                // Log values for debugging
-                getLogger().debug('suggested fix code: %s', suggestedFix.code)
-                getLogger().debug('updated content: %s', updatedContent)
-                getLogger().debug(
-                    'start: %d, end: %d',
-                    reference.recommendationContentSpan?.start,
-                    reference.recommendationContentSpan?.end
-                )
-                // given a start and end index, figure out which line number they belong to when splitting a string on /n characters
-                const getLineNumber = (content: string, index: number): number => {
-                    const lines = content.slice(0, index).split('\n')
-                    return lines.length
+            if (suggestedFix.references) {
+                for (const reference of suggestedFix.references) {
+                    getLogger().debug('Processing reference: %O', reference)
+                    // Log values for debugging
+                    getLogger().debug('suggested fix code: %s', suggestedFix.code)
+                    getLogger().debug('updated content: %s', updatedContent)
+                    getLogger().debug(
+                        'start: %d, end: %d',
+                        reference.recommendationContentSpan?.start,
+                        reference.recommendationContentSpan?.end
+                    )
+                    // given a start and end index, figure out which line number they belong to when splitting a string on /n characters
+                    const getLineNumber = (content: string, index: number): number => {
+                        const lines = content.slice(0, index).split('\n')
+                        return lines.length
+                    }
+                    const startLine = getLineNumber(updatedContent, reference.recommendationContentSpan!.start!)
+                    const endLine = getLineNumber(updatedContent, reference.recommendationContentSpan!.end!)
+                    getLogger().debug('startLine: %d, endLine: %d', startLine, endLine)
+                    const code = updatedContent.slice(
+                        reference.recommendationContentSpan?.start,
+                        reference.recommendationContentSpan?.end
+                    )
+                    getLogger().debug('Extracted code slice: %s', code)
+                    const referenceLog =
+                        `[${time}] Accepted recommendation ` +
+                        CodeWhispererConstants.referenceLogText(
+                            `<br><code>${code}</code><br>`,
+                            reference.licenseName!,
+                            reference.repository!,
+                            fileName,
+                            startLine === endLine ? `(line at ${startLine})` : `(lines from ${startLine} to ${endLine})`
+                        ) +
+                        '<br>'
+                    getLogger().debug('Adding reference log: %s', referenceLog)
+                    ReferenceLogViewProvider.instance.addReferenceLog(referenceLog)
                 }
-                const startLine = getLineNumber(updatedContent, reference.recommendationContentSpan!.start!)
-                const endLine = getLineNumber(updatedContent, reference.recommendationContentSpan!.end!)
-                getLogger().debug('startLine: %d, endLine: %d', startLine, endLine)
-                const code = updatedContent.slice(
-                    reference.recommendationContentSpan?.start,
-                    reference.recommendationContentSpan?.end
-                )
-                getLogger().debug('Extracted code slice: %s', code)
-                const referenceLog =
-                    `[${time}] Accepted recommendation ` +
-                    CodeWhispererConstants.referenceLogText(
-                        `<br><code>${code}</code><br>`,
-                        reference.licenseName!,
-                        reference.repository!,
-                        fileName,
-                        startLine === endLine ? `(line at ${startLine})` : `(lines from ${startLine} to ${endLine})`
-                    ) +
-                    '<br>'
-                getLogger().debug('Adding reference log: %s', referenceLog)
-                ReferenceLogViewProvider.instance.addReferenceLog(referenceLog)
-            })
+            }
 
             removeDiagnostic(document.uri, targetIssue)
             SecurityIssueProvider.instance.removeIssue(document.uri, targetIssue)
@@ -552,6 +568,7 @@ export const applySecurityFix = Commands.declare(
                 applyFixTelemetryEntry.result,
                 !!targetIssue.suggestedFixes.length
             )
+            UserWrittenCodeTracker.instance.onQFinishesEdits()
         }
     }
 )
@@ -664,7 +681,8 @@ export const generateFix = Commands.declare(
                         })
                     await updateSecurityIssueWebview({
                         isGenerateFixLoading: true,
-                        isGenerateFixError: false,
+                        // eslint-disable-next-line unicorn/no-null
+                        generateFixError: null,
                         context: context.extensionContext,
                         filePath: targetFilePath,
                         shouldRefreshView: false,
@@ -696,6 +714,7 @@ export const generateFix = Commands.declare(
                     } else {
                         hasSuggestedFix = suggestedFix !== undefined
                     }
+                    telemetry.record({ includesFix: hasSuggestedFix })
                     const updatedIssue: CodeScanIssue = {
                         ...targetIssue,
                         fixJobId: jobId,
@@ -721,25 +740,29 @@ export const generateFix = Commands.declare(
                     SecurityIssueProvider.instance.updateIssue(updatedIssue, targetFilePath)
                     SecurityIssueTreeViewProvider.instance.refresh()
                 } catch (err) {
+                    const error = err instanceof Error ? err : new TypeError('Unexpected error')
                     await updateSecurityIssueWebview({
                         issue: targetIssue,
                         isGenerateFixLoading: false,
-                        isGenerateFixError: true,
+                        generateFixError: getErrorMsg(error, true),
                         filePath: targetFilePath,
                         context: context.extensionContext,
-                        shouldRefreshView: true,
+                        shouldRefreshView: false,
                     })
                     SecurityIssueProvider.instance.updateIssue(targetIssue, targetFilePath)
                     SecurityIssueTreeViewProvider.instance.refresh()
                     throw err
+                } finally {
+                    telemetry.record({
+                        component: targetSource,
+                        detectorId: targetIssue.detectorId,
+                        findingId: targetIssue.findingId,
+                        ruleId: targetIssue.ruleId,
+                        variant: refresh ? 'refresh' : undefined,
+                        autoDetected: targetIssue.autoDetected,
+                        codewhispererCodeScanJobId: targetIssue.scanJobId,
+                    })
                 }
-                telemetry.record({
-                    component: targetSource,
-                    detectorId: targetIssue.detectorId,
-                    findingId: targetIssue.findingId,
-                    ruleId: targetIssue.ruleId,
-                    variant: refresh ? 'refresh' : undefined,
-                })
             })
         }
 )
@@ -870,6 +893,14 @@ export const showSecurityIssueFilters = Commands.declare({ id: 'aws.amazonq.secu
         })
     }
 })
+
+export const showCodeIssueGroupingQuickPick = Commands.declare(
+    { id: 'aws.amazonq.codescan.showGroupingStrategy' },
+    () => async () => {
+        const prompter = createCodeIssueGroupingStrategyPrompter()
+        await prompter.prompt()
+    }
+)
 
 export const focusIssue = Commands.declare(
     { id: 'aws.amazonq.security.focusIssue' },

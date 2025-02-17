@@ -1,0 +1,58 @@
+{
+	"date": "2025-01-09",
+	"version": "1.42.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q /doc: Improve button text phrasing"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q /dev: Fix issue when files are deleted while preparing context"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q Code Transformation: allow POSTGRESQL as target DB for SQL conversions"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Fix context menu displaying when typing @, even though input is disallowed"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q can update mvn and gradle build files"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "/transform: use correct documentation link in SQL conversion help message"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Up/down history navigation only triggering on first/last line of prompt input"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q /test: Fix to redirect /test to generate tests in chat for external files out of workspace scope."
+		},
+		{
+			"type": "Bug Fix",
+			"description": "/review: Code block extends beyond page margins in code issue detail view"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q Code Transformation: retry project upload up to 3 times"
+		},
+		{
+			"type": "Feature",
+			"description": "Amazon Q Code Transformation: add view summary button in chat"
+		},
+		{
+			"type": "Feature",
+			"description": "Amazon Q: new code syntax highlighter for improved accuracy"
+		},
+		{
+			"type": "Removal",
+			"description": "Settings: No longer migrate old CodeWhisperer settings or initialize telemetry setting from AWS Toolkit."
+		}
+	]
+}

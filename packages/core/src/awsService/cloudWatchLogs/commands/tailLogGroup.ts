@@ -14,18 +14,22 @@ import {
     LiveTailSessionUpdate,
     StartLiveTailResponseStream,
 } from '@aws-sdk/client-cloudwatch-logs'
-import { getLogger, globals, ToolkitError } from '../../../shared'
+import { ToolkitError } from '../../../shared/errors'
+import { getLogger } from '../../../shared/logger/logger'
+import globals from '../../../shared/extensionGlobals'
 import { uriToKey } from '../cloudWatchLogsUtils'
 import { LiveTailCodeLensProvider } from '../document/liveTailCodeLensProvider'
+import { LogStreamFilterResponse } from '../wizard/liveTailLogStreamSubmenu'
 
 export async function tailLogGroup(
     registry: LiveTailSessionRegistry,
     source: string,
     codeLensProvider: LiveTailCodeLensProvider,
-    logData?: { regionName: string; groupName: string }
+    logData?: { regionName: string; groupName: string },
+    logStreamFilterData?: LogStreamFilterResponse
 ): Promise<void> {
     await telemetry.cloudwatchlogs_startLiveTail.run(async (span) => {
-        const wizard = new TailLogGroupWizard(logData)
+        const wizard = new TailLogGroupWizard(logData, logStreamFilterData)
         const wizardResponse = await wizard.run()
         if (!wizardResponse) {
             throw new CancellationError('user')
@@ -77,7 +81,9 @@ export async function tailLogGroup(
             })
             await handleSessionStream(stream, document, session)
         } finally {
-            disposables.forEach((disposable) => disposable.dispose())
+            for (const disposable of disposables) {
+                disposable.dispose()
+            }
         }
     })
 }
@@ -138,6 +144,7 @@ async function handleSessionStream(
                     // amount of new lines can push bottom of file out of view before scrolling.
                     const editorsToScroll = getTextEditorsToScroll(document)
                     await updateTextDocumentWithNewLogEvents(formattedLogEvents, document, session.maxLines)
+                    // eslint-disable-next-line unicorn/no-array-for-each
                     editorsToScroll.forEach(scrollTextEditorToBottom)
                 }
                 session.eventRate = eventRate(event.sessionUpdate)
@@ -200,9 +207,10 @@ async function updateTextDocumentWithNewLogEvents(
     maxLines: number
 ) {
     const edit = new vscode.WorkspaceEdit()
-    formattedLogEvents.forEach((formattedLogEvent) =>
+    for (const formattedLogEvent of formattedLogEvents) {
         edit.insert(document.uri, new vscode.Position(document.lineCount, 0), formattedLogEvent)
-    )
+    }
+
     if (document.lineCount + formattedLogEvents.length > maxLines) {
         trimOldestLines(formattedLogEvents.length, maxLines, document, edit)
     }
@@ -270,14 +278,15 @@ function closeSessionWhenAllEditorsClosed(
 
 function isLiveTailSessionOpenInAnyTab(liveTailSession: LiveTailSession) {
     let isOpen = false
+    // eslint-disable-next-line unicorn/no-array-for-each
     vscode.window.tabGroups.all.forEach(async (tabGroup) => {
-        tabGroup.tabs.forEach((tab) => {
+        for (const tab of tabGroup.tabs) {
             if (tab.input instanceof vscode.TabInputText) {
                 if (liveTailSession.uri.toString() === tab.input.uri.toString()) {
                     isOpen = true
                 }
             }
-        })
+        }
     })
     return isOpen
 }

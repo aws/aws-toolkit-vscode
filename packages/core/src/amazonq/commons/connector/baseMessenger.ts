@@ -5,7 +5,6 @@
 
 import { ChatItemAction, ProgressField } from '@aws/mynah-ui'
 import { AuthFollowUpType, AuthMessageDataMap } from '../../../amazonq/auth/model'
-import { FeatureAuthState } from '../../../codewhisperer'
 import { i18n } from '../../../shared/i18n-helper'
 import { CodeReference } from '../../../amazonq/webview/ui/connector'
 
@@ -25,9 +24,9 @@ import {
     UpdatePlaceholderMessage,
     UpdatePromptProgressMessage,
 } from './connectorMessages'
-import { FollowUpTypes } from '../types'
+import { DeletedFileInfo, FollowUpTypes, NewFileInfo } from '../types'
 import { messageWithConversationId } from '../../../amazonqFeatureDev/userFacingText'
-import { DeletedFileInfo, NewFileInfo } from '../../../amazonqFeatureDev/types'
+import { FeatureAuthState } from '../../../codewhisperer/util/authUtil'
 
 export class Messenger {
     public constructor(
@@ -85,6 +84,7 @@ export class Messenger {
             type: 'answer',
             tabID: tabID,
             message: i18n('AWS.amazonq.featureDev.error.monthlyLimitReached'),
+            disableChatInput: true,
         })
         this.sendUpdatePlaceholder(tabID, i18n('AWS.amazonq.featureDev.placeholder.chatInputDisabled'))
     }

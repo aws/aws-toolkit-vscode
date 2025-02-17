@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { getLogger, Logger } from '../../logger'
+import { getLogger, Logger } from '../../logger/logger'
 import { mergeResolvedShellPath } from '../../env/resolveEnv'
 import { ChildProcess } from '../../utilities/processUtils'
 

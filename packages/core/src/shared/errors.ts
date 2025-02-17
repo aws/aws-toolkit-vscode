@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import { AWSError } from 'aws-sdk'
-import { ServiceException } from '@aws-sdk/smithy-client'
+import { ServiceException } from '@smithy/smithy-client'
 import { isThrottlingError, isTransientError } from '@smithy/service-error-classification'
 import { Result } from './telemetry/telemetry'
 import { CancellationError } from './utilities/timeoutUtils'
@@ -599,7 +599,7 @@ export function isAwsError(error: unknown): error is AWSError & { error_descript
     return error instanceof Error && hasCode(error) && hasTime(error)
 }
 
-function hasCode<T>(error: T): error is T & { code: string } {
+export function hasCode<T>(error: T): error is T & { code: string } {
     return typeof (error as { code?: unknown }).code === 'string'
 }
 

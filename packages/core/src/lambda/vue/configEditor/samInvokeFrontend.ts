@@ -345,6 +345,11 @@ export default defineComponent({
                             this.launchConfig.invokeTarget.lambdaHandler = this.resourceData.handler
                             if (this.launchConfig.lambda) {
                                 this.launchConfig.lambda.runtime = this.resourceData.runtime
+                                if (this.resourceData.environment?.Variables !== undefined) {
+                                    this.environmentVariables.value = JSON.stringify(
+                                        this.resourceData.environment?.Variables
+                                    )
+                                }
                             }
                         }
                     },
@@ -448,9 +453,9 @@ export default defineComponent({
         },
         clearForm() {
             const init = initData()
-            Object.keys(init).forEach((k) => {
+            for (const k of Object.keys(init)) {
                 ;(this as any)[k] = init[k as keyof typeof init]
-            })
+            }
         },
     },
 })

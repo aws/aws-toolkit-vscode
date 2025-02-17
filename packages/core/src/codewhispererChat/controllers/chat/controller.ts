@@ -49,11 +49,12 @@ import { CodeWhispererSettings } from '../../../codewhisperer/util/codewhisperer
 import { getSelectedCustomization } from '../../../codewhisperer/util/customizationUtil'
 import { getHttpStatusCode, AwsClientResponseError } from '../../../shared/errors'
 import { uiEventRecorder } from '../../../amazonq/util/eventRecorder'
-import { globals, waitUntil } from '../../../shared'
-import { telemetry } from '../../../shared/telemetry'
+import { telemetry } from '../../../shared/telemetry/telemetry'
 import { isSsoConnection } from '../../../auth/connection'
 import { inspect } from '../../../shared/utilities/collectionUtils'
 import { DefaultAmazonQAppInitContext } from '../../../amazonq/apps/initContext'
+import globals from '../../../shared/extensionGlobals'
+import { waitUntil } from '../../../shared/utilities/timeoutUtils'
 
 export interface ChatControllerMessagePublishers {
     readonly processPromptChatMessage: MessagePublisher<PromptMessage>
@@ -231,17 +232,19 @@ export class ChatController {
         this.openLinkInExternalBrowser(click)
     }
 
-    private processQuickActionCommand(quickActionCommand: ChatPromptCommandType) {
+    private processQuickActionCommand(message: PromptMessage) {
         this.editorContextExtractor
             .extractContextForTrigger('QuickAction')
             .then((context) => {
                 const triggerID = randomUUID()
 
+                const quickActionCommand = message.command as ChatPromptCommandType
+
                 this.messenger.sendQuickActionMessage(quickActionCommand, triggerID)
 
                 this.triggerEventsStorage.addTriggerEvent({
                     id: triggerID,
-                    tabID: undefined,
+                    tabID: message.tabID,
                     message: undefined,
                     type: 'quick_action',
                     quickAction: quickActionCommand,
@@ -484,7 +487,7 @@ export class ChatController {
                 recordTelemetryChatRunCommand('clear')
                 return
             default:
-                this.processQuickActionCommand(message.command)
+                this.processQuickActionCommand(message)
         }
     }
 
@@ -632,11 +635,11 @@ export class ChatController {
                 if (CodeWhispererSettings.instance.isLocalIndexEnabled()) {
                     const start = performance.now()
                     triggerPayload.relevantTextDocuments = await LspController.instance.query(triggerPayload.message)
-                    triggerPayload.relevantTextDocuments.forEach((doc) => {
+                    for (const doc of triggerPayload.relevantTextDocuments) {
                         getLogger().info(
                             `amazonq: Using workspace files ${doc.relativeFilePath}, content(partial): ${doc.text?.substring(0, 200)}`
                         )
-                    })
+                    }
                     triggerPayload.projectContextQueryLatencyMs = performance.now() - start
                 } else {
                     this.messenger.sendOpenSettingsMessage(triggerID, tabID)

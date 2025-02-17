@@ -7,7 +7,7 @@ import * as crypto from 'crypto'
 import * as os from 'os'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { getLogger } from './logger'
+import { getLogger } from './logger/logger'
 import * as pathutils from './utilities/pathUtils'
 import globals from '../shared/extensionGlobals'
 import fs from '../shared/fs/fs'
@@ -39,7 +39,6 @@ export async function getDirSize(dirPath: string, startTime: number, duration: n
             return getDirSize(filePath, startTime, duration)
         }
         if (type === vscode.FileType.File) {
-            // TODO: This is SLOW on Cloud9.
             const stat = await fs.stat(filePath)
             return stat.size
         }

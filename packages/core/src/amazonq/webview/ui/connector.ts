@@ -131,6 +131,13 @@ export class Connector {
         }
     }
 
+    onLinkClick = (link: string): void => {
+        this.sendMessageToExtension({
+            command: 'open-link',
+            link,
+        })
+    }
+
     onResponseBodyLinkClick = (tabID: string, messageId: string, link: string): void => {
         switch (this.tabsStorage.getTab(tabID)?.type) {
             case 'cwc':
@@ -299,9 +306,6 @@ export class Connector {
                 break
             case 'doc':
                 this.docChatConnector.onTabOpen(tabID)
-                break
-            case 'review':
-                this.scanChatConnector.onTabOpen(tabID)
                 break
         }
     }
@@ -594,6 +598,9 @@ export class Connector {
         switch (this.tabsStorage.getTab(tabId)?.type) {
             case 'featuredev':
                 this.featureDevChatConnector.sendFeedback(tabId, feedbackPayload)
+                break
+            case 'testgen':
+                this.testChatConnector.onSendFeedback(tabId, feedbackPayload)
                 break
             case 'cwc':
                 this.cwChatConnector.onSendFeedback(tabId, feedbackPayload)

@@ -36,8 +36,9 @@ import { CodeReference } from '../../../../amazonq/webview/ui/apps/amazonqCommon
 import { getHttpStatusCode, getRequestId, getTelemetryReasonDesc, ToolkitError } from '../../../../shared/errors'
 import { sleep, waitUntil } from '../../../../shared/utilities/timeoutUtils'
 import { keys } from '../../../../shared/utilities/tsUtils'
-import { TelemetryHelper, testGenState } from '../../../../codewhisperer'
 import { cancellingProgressField, testGenCompletedField } from '../../../models/constants'
+import { testGenState } from '../../../../codewhisperer/models/model'
+import { TelemetryHelper } from '../../../../codewhisperer/util/telemetryHelper'
 
 export type UnrecoverableErrorType = 'no-project-found' | 'no-open-file-found' | 'invalid-file-type'
 
@@ -183,7 +184,8 @@ export class Messenger {
         tabID: string,
         triggerID: string,
         triggerPayload: TriggerPayload,
-        fileName: string
+        fileName: string,
+        fileInWorkspace: boolean
     ) {
         let message = ''
         let messageId = response.$metadata.requestId ?? ''
@@ -277,12 +279,25 @@ export class Messenger {
                     TelemetryHelper.instance.sendTestGenerationToolkitEvent(
                         session,
                         false,
+                        fileInWorkspace,
                         'Cancelled',
                         messageId,
                         performance.now() - session.testGenerationStartTime,
-                        getTelemetryReasonDesc(CodeWhispererConstants.unitTestGenerationCancelMessage)
+                        getTelemetryReasonDesc(
+                            `TestGenCancelled: ${CodeWhispererConstants.unitTestGenerationCancelMessage}`
+                        ),
+                        undefined,
+                        undefined,
+                        undefined,
+                        undefined,
+                        undefined,
+                        undefined,
+                        undefined,
+                        undefined,
+                        undefined,
+                        undefined,
+                        'TestGenCancelled'
                     )
-
                     this.dispatcher.sendUpdatePromptProgress(
                         new UpdatePromptProgressMessage(tabID, cancellingProgressField)
                     )
@@ -291,11 +306,12 @@ export class Messenger {
                     TelemetryHelper.instance.sendTestGenerationToolkitEvent(
                         session,
                         false,
+                        fileInWorkspace,
                         'Succeeded',
                         messageId,
-                        performance.now() - session.testGenerationStartTime
+                        performance.now() - session.testGenerationStartTime,
+                        undefined
                     )
-
                     this.dispatcher.sendUpdatePromptProgress(
                         new UpdatePromptProgressMessage(tabID, testGenCompletedField)
                     )

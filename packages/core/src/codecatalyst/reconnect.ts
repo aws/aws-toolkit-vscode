@@ -7,7 +7,7 @@ import * as nls from 'vscode-nls'
 import * as vscode from 'vscode'
 import { CodeCatalystClient, createClient, DevEnvironment } from '../shared/clients/codecatalystClient'
 import { ExtContext } from '../shared/extensions'
-import { getLogger } from '../shared/logger'
+import { getLogger } from '../shared/logger/logger'
 import { sleep } from '../shared/utilities/timeoutUtils'
 import { DevEnvironmentSettings } from './commands'
 import { codeCatalystConnectCommand, DevEnvironmentId, DevEnvMemento } from './model'
@@ -180,10 +180,9 @@ async function pollDevEnvs(
                     // Don't watch this devenv, it is already being re-opened in SSH.
                     delete devenvs[id]
                 } else if (!isDevenvVscode(metadata.ides)) {
-                    // Technically vscode _can_ connect to a ideRuntime=jetbrains/cloud9 devenv, but
-                    // we refuse to anyway so that the experience is consistent with other IDEs
-                    // (jetbrains/cloud9) which are not capable of connecting to a devenv that lacks
-                    // their runtime/bootstrap files.
+                    // Technically vscode _can_ connect to a ideRuntime=jetbrains devenv, but
+                    // we refuse to anyway so that the experience is consistent since that devenv
+                    // is not capable of connecting to a devenv that lacks their runtime/bootstrap files.
                     const ide = metadata.ides?.[0]
                     const toIde = ide ? ` to "${ide.name}"` : ''
                     progress.report({ message: `Dev Environment ${devenvName} was switched${toIde}` })

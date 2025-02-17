@@ -158,6 +158,8 @@ module.exports = {
         'unicorn/prefer-reflect-apply': 'error',
         'unicorn/prefer-string-trim-start-end': 'error',
         'unicorn/prefer-type-error': 'error',
+        // Discourage `.forEach` because it can lead to accidental, incorrect use of async callbacks.
+        'unicorn/no-array-for-each': 'error',
         'security-node/detect-child-process': 'error',
 
         'header/header': [
@@ -178,6 +180,7 @@ module.exports = {
         'aws-toolkits/no-console-log': 'error',
         'aws-toolkits/no-json-stringify-in-log': 'error',
         'aws-toolkits/no-printf-mismatch': 'error',
+        'aws-toolkits/no-index-import': 'error',
         'no-restricted-imports': [
             'error',
             {
@@ -199,8 +202,20 @@ module.exports = {
                         name: 'fs',
                         message: 'Avoid node:fs and use shared/fs/fs.ts when possible.',
                     },
+                    {
+                        name: 'child_process',
+                        message:
+                            'Avoid child_process, use ChildProcess from `shared/utilities/processUtils.ts` instead.',
+                    },
+                    {
+                        name: '..',
+                        message:
+                            'Avoid importing from index.ts files as it can lead to circular dependencies. Import from the module directly instead.',
+                    },
                 ],
             },
         ],
+
+        'prettier/prettier': ['error', { endOfLine: 'auto' }],
     },
 }

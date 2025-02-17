@@ -19,6 +19,7 @@ import { getTestWindow } from '../../../shared/vscode/window'
 import { CloudWatchLogsSettings, uriToKey } from '../../../../awsService/cloudWatchLogs/cloudWatchLogsUtils'
 import { DefaultAwsContext, ToolkitError, waitUntil } from '../../../../shared'
 import { LiveTailCodeLensProvider } from '../../../../awsService/cloudWatchLogs/document/liveTailCodeLensProvider'
+import { PrompterTester } from '../../../shared/wizards/prompterTester'
 
 describe('TailLogGroup', function () {
     const testLogGroup = 'test-log-group'
@@ -56,15 +57,21 @@ describe('TailLogGroup', function () {
             getSessionUpdateFrame(false, `${testMessage}-2`, startTimestamp + 2000),
             getSessionUpdateFrame(false, `${testMessage}-3`, startTimestamp + 3000),
         ]
-        // Returns the configured update frames and then indefinitely blocks.
+        // Returns the configured update frames and then blocks until an AbortController is signaled.
         // This keeps the stream 'open', simulating an open network stream waiting for new events.
         // If the stream were to close, the event listeners in the TailLogGroup command would dispose,
         // breaking the 'closes tab closes session' assertions this test makes.
-        async function* generator(): AsyncIterable<StartLiveTailResponseStream> {
+        const controller = new AbortController()
+        const p = new Promise((resolve, reject) => {
+            controller.signal.addEventListener('abort', () => {
+                reject()
+            })
+        })
+        async function* generator() {
             for (const frame of updateFrames) {
                 yield frame
             }
-            await new Promise(() => {})
+            await p
         }
 
         startLiveTailSessionSpy = sandbox
@@ -84,17 +91,23 @@ describe('TailLogGroup', function () {
         })
 
         // The mock stream doesn't 'close', causing tailLogGroup to not return. If we `await`, it will never resolve.
-        // Run it in the background and use waitUntil to poll its state.
+        // Run it in the background and use waitUntil to poll its state. Due to the test setup, we expect this to throw
+        // after the abortController is fired at the end of the test.
         void tailLogGroup(registry, testSource, codeLensProvider, {
             groupName: testLogGroup,
             regionName: testRegion,
+        }).catch((e) => {
+            const err = e as Error
+            assert.strictEqual(err.message.startsWith('Unexpected on-stream exception while tailing session:'), true)
         })
         await waitUntil(async () => registry.size !== 0, { interval: 100, timeout: 1000 })
 
         // registry is asserted to have only one entry, so this is assumed to be the session that was
         // started in this test.
         let sessionUri: vscode.Uri | undefined
-        registry.forEach((session) => (sessionUri = session.uri))
+        for (const [_, session] of registry) {
+            sessionUri = session.uri
+        }
         if (sessionUri === undefined) {
             throw Error
         }
@@ -117,12 +130,59 @@ describe('TailLogGroup', function () {
 
         // Test that closing all tabs the session's document is open in will cause the session to close
         let tabs: vscode.Tab[] = []
-        window.tabGroups.all.forEach((tabGroup) => {
+        for (const tabGroup of window.tabGroups.all) {
             tabs = tabs.concat(getLiveTailSessionTabsFromTabGroup(tabGroup, sessionUri!))
-        })
+        }
         await Promise.all(tabs.map((tab) => window.tabGroups.close(tab)))
+
+        // Before the test ends, signal the abort controller, interrupting the mock response stream. This
+        // causes `handleSessionStream` in TailLogGroup to throw, triggering the disposables to dispose.
+        controller.abort()
+
         assert.strictEqual(registry.size, 0)
         assert.strictEqual(stopLiveTailSessionSpy.calledOnce, true)
+    })
+
+    it(`doesn't ask for stream filter if passed as parameter`, async function () {
+        sandbox.stub(DefaultAwsContext.prototype, 'getCredentialAccountId').returns(testAwsAccountId)
+        sandbox.stub(DefaultAwsContext.prototype, 'getCredentials').returns(Promise.resolve(testAwsCredentials))
+
+        // Returns one frame
+        async function* generator(): AsyncIterable<StartLiveTailResponseStream> {
+            yield getSessionUpdateFrame(false, `${testMessage}-1`, 1732276800000)
+        }
+
+        startLiveTailSessionSpy = sandbox
+            .stub(LiveTailSession.prototype, 'startLiveTailSession')
+            .returns(Promise.resolve(generator()))
+
+        const prompterTester = PrompterTester.init()
+            .handleInputBox('Provide log event filter pattern', (inputBox) => {
+                inputBox.acceptValue('filter')
+            })
+            .build()
+
+        // Set maxLines to 1.
+        cloudwatchSettingsSpy = sandbox.stub(CloudWatchLogsSettings.prototype, 'get').returns(1)
+
+        // The mock stream doesn't 'close', causing tailLogGroup to not return. If we `await`, it will never resolve.
+        // Run it in the background and use waitUntil to poll its state.
+        void tailLogGroup(
+            registry,
+            testSource,
+            codeLensProvider,
+            {
+                groupName: testLogGroup,
+                regionName: testRegion,
+            },
+            { type: 'all' }
+        )
+        await waitUntil(async () => registry.size !== 0, { interval: 100, timeout: 1000 })
+
+        prompterTester.assertCall('Provide log event filter pattern', 1)
+
+        assert.strictEqual(startLiveTailSessionSpy.calledOnce, true)
+        assert.strictEqual(registry.size, 1)
     })
 
     it('throws if crendentials are undefined', async function () {

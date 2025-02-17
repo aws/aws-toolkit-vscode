@@ -9,7 +9,7 @@ import { AmazonQAppInitContext } from '../amazonq/apps/initContext'
 import { MessagePublisher } from '../amazonq/messages/messagePublisher'
 import { MessageListener } from '../amazonq/messages/messageListener'
 import { fromQueryToParameters } from '../shared/utilities/uriUtils'
-import { getLogger } from '../shared/logger'
+import { getLogger } from '../shared/logger/logger'
 import { AuthUtil } from '../codewhisperer/util/authUtil'
 import { debounce } from 'lodash'
 import { DocChatSessionStorage } from './storages/chatSession'
@@ -89,7 +89,9 @@ export function init(appContext: AmazonQAppInitContext) {
             authenticatingSessionIDs = authenticatingSessions.map((session: any) => session.tabID)
 
             // We've already authenticated these sessions
-            authenticatingSessions.forEach((session: any) => (session.isAuthenticating = false))
+            for (const session of authenticatingSessions) {
+                session.isAuthenticating = false
+            }
         }
 
         messenger.sendAuthenticationUpdate(authenticated, authenticatingSessionIDs)

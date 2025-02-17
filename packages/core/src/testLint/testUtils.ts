@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { SpawnSyncOptions, spawnSync } from 'child_process'
+import { SpawnSyncOptions, spawnSync } from 'child_process' // eslint-disable-line no-restricted-imports
 
 export function runCmd(args: string[], options?: SpawnSyncOptions & { throws?: boolean }) {
     const result = spawnSync(args[0], args.slice(1), options)

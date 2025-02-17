@@ -7,12 +7,14 @@ import { Webview, Uri } from 'vscode'
 import { MessagePublisher } from '../../messages/messagePublisher'
 import { MessageListener } from '../../messages/messageListener'
 import { TabType } from '../ui/storages/tabsStorage'
-import { getLogger } from '../../../shared/logger'
+import { getLogger } from '../../../shared/logger/logger'
 import { amazonqMark } from '../../../shared/performance/marks'
-import { telemetry } from '../../../shared/telemetry'
+import { telemetry } from '../../../shared/telemetry/telemetry'
 import { AmazonQChatMessageDuration } from '../../messages/chatMessageDuration'
-import { globals, openUrl } from '../../../shared'
 import { isClickTelemetry, isOpenAgentTelemetry } from '../ui/telemetry/actions'
+import globals from '../../../shared/extensionGlobals'
+import { openUrl } from '../../../shared/utilities/vsCodeUtils'
+import { DefaultAmazonQAppInitContext } from '../../apps/initContext'
 
 export function dispatchWebViewMessagesToApps(
     webview: Webview,
@@ -21,12 +23,12 @@ export function dispatchWebViewMessagesToApps(
     webview.onDidReceiveMessage((msg) => {
         switch (msg.command) {
             case 'ui-is-ready': {
+                DefaultAmazonQAppInitContext.instance.getAppsToWebViewMessagePublisher().setUiReady()
                 /**
                  * ui-is-ready isn't associated to any tab so just record the telemetry event and continue.
                  * This would be equivalent of the duration between "user clicked open q" and "ui has become available"
                  * NOTE: Amazon Q UI is only loaded ONCE. The state is saved between each hide/show of the webview.
                  */
-
                 telemetry.webview_load.emit({
                     webviewName: 'amazonq',
                     duration: performance.measure(amazonqMark.uiReady, amazonqMark.open).duration,
@@ -48,9 +50,9 @@ export function dispatchWebViewMessagesToApps(
                 AmazonQChatMessageDuration.stopChatMessageTelemetry(msg)
                 return
             }
-            case 'open-user-guide': {
-                const { userGuideLink } = msg
-                void openUrl(Uri.parse(userGuideLink))
+            case 'open-link': {
+                const { link } = msg
+                void openUrl(Uri.parse(link))
                 return
             }
             case 'send-telemetry': {
@@ -72,6 +74,11 @@ export function dispatchWebViewMessagesToApps(
             }
             case 'disclaimer-acknowledged': {
                 globals.globalState.tryUpdate('aws.amazonq.disclaimerAcknowledged', true)
+                return
+            }
+            case 'update-welcome-count': {
+                const currentLoadCount = globals.globalState.tryGet('aws.amazonq.welcomeChatShowCount', Number, 0)
+                void globals.globalState.tryUpdate('aws.amazonq.welcomeChatShowCount', currentLoadCount + 1)
                 return
             }
         }

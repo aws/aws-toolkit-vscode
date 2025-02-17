@@ -7,7 +7,7 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
-import { getLogger } from '../../../../shared/logger'
+import { getLogger } from '../../../../shared/logger/logger'
 import { ResourceTreeEntity, SamAppLocation, getApp, getStackName } from '../samProject'
 import { ResourceNode, generateResourceNodes } from './resourceNode'
 import { TreeNode } from '../../../../shared/treeview/resourceTreeDataProvider'
@@ -73,7 +73,7 @@ export class AppNode implements TreeNode {
                 createPlaceholderItem(
                     localize(
                         'AWS.appBuilder.explorerNode.app.noResourceTree',
-                        '[Unable to load Resource tree for this App. Update SAM template]'
+                        '[Unable to load resource tree for this app. Ensure SAM template is correct.]'
                     )
                 ),
             ]

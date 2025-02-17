@@ -14,27 +14,14 @@ import {
   se_ExportResultArchiveCommand,
 } from "../protocols/Aws_restJson1";
 import { getSerdePlugin } from "@smithy/middleware-serde";
-import {
-  HttpRequest as __HttpRequest,
-  HttpResponse as __HttpResponse,
-} from "@smithy/protocol-http";
 import { Command as $Command } from "@smithy/smithy-client";
-import {
-  FinalizeHandlerArguments,
-  Handler,
-  HandlerExecutionContext,
-  MiddlewareStack,
-  SMITHY_CONTEXT_KEY,
-  EventStreamSerdeContext as __EventStreamSerdeContext,
-  HttpHandlerOptions as __HttpHandlerOptions,
-  MetadataBearer as __MetadataBearer,
-  SerdeContext as __SerdeContext,
-} from "@smithy/types";
+import { MetadataBearer as __MetadataBearer } from "@smithy/types";
 
 /**
  * @public
  */
-export { __MetadataBearer, $Command };
+export type { __MetadataBearer };
+export { $Command };
 /**
  * @public
  *
@@ -49,7 +36,6 @@ export interface ExportResultArchiveCommandInput extends ExportResultArchiveRequ
 export interface ExportResultArchiveCommandOutput extends ExportResultArchiveResponse, __MetadataBearer {}
 
 /**
- * @public
  * API to export operation result as an archive
  * @example
  * Use a bare-bones client and the command you need to make an API call.
@@ -59,11 +45,15 @@ export interface ExportResultArchiveCommandOutput extends ExportResultArchiveRes
  * const client = new CodeWhispererStreamingClient(config);
  * const input = { // ExportResultArchiveRequest
  *   exportId: "STRING_VALUE", // required
- *   exportIntent: "TRANSFORMATION" || "TASK_ASSIST", // required
+ *   exportIntent: "TRANSFORMATION" || "TASK_ASSIST" || "UNIT_TESTS", // required
  *   exportContext: { // ExportContext Union: only one key present
  *     transformationExportContext: { // TransformationExportContext
  *       downloadArtifactId: "STRING_VALUE", // required
- *       downloadArtifactType: "ClientInstructions" || "Logs", // required
+ *       downloadArtifactType: "ClientInstructions" || "Logs" || "GeneratedCode", // required
+ *     },
+ *     unitTestGenerationExportContext: { // UnitTestGenerationExportContext
+ *       testGenerationJobGroupName: "STRING_VALUE", // required
+ *       testGenerationJobId: "STRING_VALUE",
  *     },
  *   },
  * };
@@ -78,7 +68,7 @@ export interface ExportResultArchiveCommandOutput extends ExportResultArchiveRes
  * //       contentChecksumType: "SHA_256",
  * //     },
  * //     binaryPayloadEvent: { // BinaryPayloadEvent
- * //       bytes: "BLOB_VALUE",
+ * //       bytes: new Uint8Array(),
  * //     },
  * //     internalServerException: { // InternalServerException
  * //       message: "STRING_VALUE", // required
@@ -115,76 +105,38 @@ export interface ExportResultArchiveCommandOutput extends ExportResultArchiveRes
  * @throws {@link CodeWhispererStreamingServiceException}
  * <p>Base exception class for all service exceptions from CodeWhispererStreaming service.</p>
  *
+ * @public
  */
-export class ExportResultArchiveCommand extends $Command<ExportResultArchiveCommandInput, ExportResultArchiveCommandOutput, CodeWhispererStreamingClientResolvedConfig> {
-  // Start section: command_properties
-  // End section: command_properties
+export class ExportResultArchiveCommand extends $Command.classBuilder<ExportResultArchiveCommandInput, ExportResultArchiveCommandOutput, CodeWhispererStreamingClientResolvedConfig, ServiceInputTypes, ServiceOutputTypes>()
+      .m(function (this: any, Command: any, cs: any, config: CodeWhispererStreamingClientResolvedConfig, o: any) {
+          return [
 
-  /**
-   * @public
-   */
-  constructor(readonly input: ExportResultArchiveCommandInput) {
-    // Start section: command_constructor
-    super();
-    // End section: command_constructor
-  }
+  getSerdePlugin(config, this.serialize, this.deserialize),
+      ];
+  })
+  .s("AmazonCodeWhispererStreamingService", "ExportResultArchive", {
 
-  /**
-   * @internal
-   */
-  resolveMiddleware(
-    clientStack: MiddlewareStack<ServiceInputTypes, ServiceOutputTypes>,
-    configuration: CodeWhispererStreamingClientResolvedConfig,
-    options?: __HttpHandlerOptions
-  ): Handler<ExportResultArchiveCommandInput, ExportResultArchiveCommandOutput> {
-    this.middlewareStack.use(getSerdePlugin(configuration, this.serialize, this.deserialize));
-
-    const stack = clientStack.concat(this.middlewareStack);
-
-    const { logger } = configuration;
-    const clientName = "CodeWhispererStreamingClient";
-    const commandName = "ExportResultArchiveCommand";
-    const handlerExecutionContext: HandlerExecutionContext = {
-      logger,
-      clientName,
-      commandName,
-      inputFilterSensitiveLog:
-        (_: any) => _,
-      outputFilterSensitiveLog:
-        ExportResultArchiveResponseFilterSensitiveLog,
-      [SMITHY_CONTEXT_KEY]: {
-        service: "AmazonCodeWhispererStreamingService",
-        operation: "ExportResultArchive",
-      },
-    }
-    const { requestHandler } = configuration;
-    return stack.resolve(
-      (request: FinalizeHandlerArguments<any>) =>
-        requestHandler.handle(request.request as __HttpRequest, options || {}),
-      handlerExecutionContext
-    );
-  }
-
-  /**
-   * @internal
-   */
-  private serialize(
-    input: ExportResultArchiveCommandInput,
-    context: __SerdeContext
-  ): Promise<__HttpRequest> {
-    return se_ExportResultArchiveCommand(input, context);
-  }
-
-  /**
-   * @internal
-   */
-  private deserialize(
-    output: __HttpResponse,
-    context: __SerdeContext & __EventStreamSerdeContext
-  ): Promise<ExportResultArchiveCommandOutput> {
-    return de_ExportResultArchiveCommand(output, context);
-  }
-
-  // Start section: command_body_extra
-  // End section: command_body_extra
+    /**
+     * @internal
+     */
+    eventStream: {
+      output: true,
+    },
+  })
+  .n("CodeWhispererStreamingClient", "ExportResultArchiveCommand")
+  .f(void 0, ExportResultArchiveResponseFilterSensitiveLog)
+  .ser(se_ExportResultArchiveCommand)
+  .de(de_ExportResultArchiveCommand)
+.build() {
+/** @internal type navigation helper, not in runtime. */
+declare protected static __types: {
+  api: {
+      input: ExportResultArchiveRequest;
+      output: ExportResultArchiveResponse;
+  };
+  sdk: {
+      input: ExportResultArchiveCommandInput;
+      output: ExportResultArchiveCommandOutput;
+  };
+};
 }

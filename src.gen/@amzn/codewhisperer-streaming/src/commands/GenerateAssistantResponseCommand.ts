@@ -15,27 +15,14 @@ import {
   se_GenerateAssistantResponseCommand,
 } from "../protocols/Aws_restJson1";
 import { getSerdePlugin } from "@smithy/middleware-serde";
-import {
-  HttpRequest as __HttpRequest,
-  HttpResponse as __HttpResponse,
-} from "@smithy/protocol-http";
 import { Command as $Command } from "@smithy/smithy-client";
-import {
-  FinalizeHandlerArguments,
-  Handler,
-  HandlerExecutionContext,
-  MiddlewareStack,
-  SMITHY_CONTEXT_KEY,
-  EventStreamSerdeContext as __EventStreamSerdeContext,
-  HttpHandlerOptions as __HttpHandlerOptions,
-  MetadataBearer as __MetadataBearer,
-  SerdeContext as __SerdeContext,
-} from "@smithy/types";
+import { MetadataBearer as __MetadataBearer } from "@smithy/types";
 
 /**
  * @public
  */
-export { __MetadataBearer, $Command };
+export type { __MetadataBearer };
+export { $Command };
 /**
  * @public
  *
@@ -50,7 +37,6 @@ export interface GenerateAssistantResponseCommandInput extends GenerateAssistant
 export interface GenerateAssistantResponseCommandOutput extends GenerateAssistantResponseResponse, __MetadataBearer {}
 
 /**
- * @public
  * API to generate assistant response.
  * @example
  * Use a bare-bones client and the command you need to make an API call.
@@ -139,6 +125,7 @@ export interface GenerateAssistantResponseCommandOutput extends GenerateAssistan
  *                   value: "STRING_VALUE",
  *                 },
  *               ],
+ *               timezoneOffset: Number("int"),
  *             },
  *             appStudioContext: { // AppStudioState
  *               namespace: "STRING_VALUE", // required
@@ -184,12 +171,47 @@ export interface GenerateAssistantResponseCommandOutput extends GenerateAssistan
  *             },
  *             consoleState: { // ConsoleState
  *               region: "STRING_VALUE",
+ *               consoleUrl: "STRING_VALUE",
+ *               serviceId: "STRING_VALUE",
+ *               serviceConsolePage: "STRING_VALUE",
+ *               serviceSubconsolePage: "STRING_VALUE",
+ *               taskName: "STRING_VALUE",
  *             },
  *             userSettings: { // UserSettings
  *               hasConsentedToCrossRegionCalls: true || false,
  *             },
+ *             additionalContext: [ // AdditionalContentList
+ *               { // AdditionalContentEntry
+ *                 name: "STRING_VALUE", // required
+ *                 description: "STRING_VALUE", // required
+ *                 innerContext: "STRING_VALUE",
+ *               },
+ *             ],
+ *             toolResults: [ // ToolResults
+ *               { // ToolResult
+ *                 toolUseId: "STRING_VALUE", // required
+ *                 content: [ // ToolResultContent // required
+ *                   { // ToolResultContentBlock Union: only one key present
+ *                     text: "STRING_VALUE",
+ *                     json: "DOCUMENT_VALUE",
+ *                   },
+ *                 ],
+ *                 status: "success" || "error",
+ *               },
+ *             ],
+ *             tools: [ // Tools
+ *               { // Tool Union: only one key present
+ *                 toolSpecification: { // ToolSpecification
+ *                   inputSchema: { // ToolInputSchema
+ *                     json: "DOCUMENT_VALUE",
+ *                   },
+ *                   name: "STRING_VALUE", // required
+ *                   description: "STRING_VALUE",
+ *                 },
+ *               },
+ *             ],
  *           },
- *           userIntent: "SUGGEST_ALTERNATE_IMPLEMENTATION" || "APPLY_COMMON_BEST_PRACTICES" || "IMPROVE_CODE" || "SHOW_EXAMPLES" || "CITE_SOURCES" || "EXPLAIN_LINE_BY_LINE" || "EXPLAIN_CODE_SELECTION" || "GENERATE_CLOUDFORMATION_TEMPLATE" || "GENERATE_UNIT_TESTS",
+ *           userIntent: "SUGGEST_ALTERNATE_IMPLEMENTATION" || "APPLY_COMMON_BEST_PRACTICES" || "IMPROVE_CODE" || "SHOW_EXAMPLES" || "CITE_SOURCES" || "EXPLAIN_LINE_BY_LINE" || "EXPLAIN_CODE_SELECTION" || "GENERATE_CLOUDFORMATION_TEMPLATE" || "GENERATE_UNIT_TESTS" || "CODE_GENERATION",
  *         },
  *         assistantResponseMessage: { // AssistantResponseMessage
  *           messageId: "STRING_VALUE",
@@ -214,7 +236,7 @@ export interface GenerateAssistantResponseCommandOutput extends GenerateAssistan
  *           ],
  *           followupPrompt: { // FollowupPrompt
  *             content: "STRING_VALUE", // required
- *             userIntent: "SUGGEST_ALTERNATE_IMPLEMENTATION" || "APPLY_COMMON_BEST_PRACTICES" || "IMPROVE_CODE" || "SHOW_EXAMPLES" || "CITE_SOURCES" || "EXPLAIN_LINE_BY_LINE" || "EXPLAIN_CODE_SELECTION" || "GENERATE_CLOUDFORMATION_TEMPLATE" || "GENERATE_UNIT_TESTS",
+ *             userIntent: "SUGGEST_ALTERNATE_IMPLEMENTATION" || "APPLY_COMMON_BEST_PRACTICES" || "IMPROVE_CODE" || "SHOW_EXAMPLES" || "CITE_SOURCES" || "EXPLAIN_LINE_BY_LINE" || "EXPLAIN_CODE_SELECTION" || "GENERATE_CLOUDFORMATION_TEMPLATE" || "GENERATE_UNIT_TESTS" || "CODE_GENERATION",
  *           },
  *         },
  *       },
@@ -274,6 +296,7 @@ export interface GenerateAssistantResponseCommandOutput extends GenerateAssistan
  *                 value: "STRING_VALUE",
  *               },
  *             ],
+ *             timezoneOffset: Number("int"),
  *           },
  *           appStudioContext: {
  *             namespace: "STRING_VALUE", // required
@@ -300,12 +323,47 @@ export interface GenerateAssistantResponseCommandOutput extends GenerateAssistan
  *           },
  *           consoleState: {
  *             region: "STRING_VALUE",
+ *             consoleUrl: "STRING_VALUE",
+ *             serviceId: "STRING_VALUE",
+ *             serviceConsolePage: "STRING_VALUE",
+ *             serviceSubconsolePage: "STRING_VALUE",
+ *             taskName: "STRING_VALUE",
  *           },
  *           userSettings: {
  *             hasConsentedToCrossRegionCalls: true || false,
  *           },
+ *           additionalContext: [
+ *             {
+ *               name: "STRING_VALUE", // required
+ *               description: "STRING_VALUE", // required
+ *               innerContext: "STRING_VALUE",
+ *             },
+ *           ],
+ *           toolResults: [
+ *             {
+ *               toolUseId: "STRING_VALUE", // required
+ *               content: [ // required
+ *                 {//  Union: only one key present
+ *                   text: "STRING_VALUE",
+ *                   json: "DOCUMENT_VALUE",
+ *                 },
+ *               ],
+ *               status: "success" || "error",
+ *             },
+ *           ],
+ *           tools: [
+ *             {//  Union: only one key present
+ *               toolSpecification: {
+ *                 inputSchema: {
+ *                   json: "DOCUMENT_VALUE",
+ *                 },
+ *                 name: "STRING_VALUE", // required
+ *                 description: "STRING_VALUE",
+ *               },
+ *             },
+ *           ],
  *         },
- *         userIntent: "SUGGEST_ALTERNATE_IMPLEMENTATION" || "APPLY_COMMON_BEST_PRACTICES" || "IMPROVE_CODE" || "SHOW_EXAMPLES" || "CITE_SOURCES" || "EXPLAIN_LINE_BY_LINE" || "EXPLAIN_CODE_SELECTION" || "GENERATE_CLOUDFORMATION_TEMPLATE" || "GENERATE_UNIT_TESTS",
+ *         userIntent: "SUGGEST_ALTERNATE_IMPLEMENTATION" || "APPLY_COMMON_BEST_PRACTICES" || "IMPROVE_CODE" || "SHOW_EXAMPLES" || "CITE_SOURCES" || "EXPLAIN_LINE_BY_LINE" || "EXPLAIN_CODE_SELECTION" || "GENERATE_CLOUDFORMATION_TEMPLATE" || "GENERATE_UNIT_TESTS" || "CODE_GENERATION",
  *       },
  *       assistantResponseMessage: {
  *         messageId: "STRING_VALUE",
@@ -330,11 +388,11 @@ export interface GenerateAssistantResponseCommandOutput extends GenerateAssistan
  *         ],
  *         followupPrompt: {
  *           content: "STRING_VALUE", // required
- *           userIntent: "SUGGEST_ALTERNATE_IMPLEMENTATION" || "APPLY_COMMON_BEST_PRACTICES" || "IMPROVE_CODE" || "SHOW_EXAMPLES" || "CITE_SOURCES" || "EXPLAIN_LINE_BY_LINE" || "EXPLAIN_CODE_SELECTION" || "GENERATE_CLOUDFORMATION_TEMPLATE" || "GENERATE_UNIT_TESTS",
+ *           userIntent: "SUGGEST_ALTERNATE_IMPLEMENTATION" || "APPLY_COMMON_BEST_PRACTICES" || "IMPROVE_CODE" || "SHOW_EXAMPLES" || "CITE_SOURCES" || "EXPLAIN_LINE_BY_LINE" || "EXPLAIN_CODE_SELECTION" || "GENERATE_CLOUDFORMATION_TEMPLATE" || "GENERATE_UNIT_TESTS" || "CODE_GENERATION",
  *         },
  *       },
  *     },
- *     chatTriggerType: "MANUAL" || "DIAGNOSTIC", // required
+ *     chatTriggerType: "MANUAL" || "DIAGNOSTIC" || "INLINE_CHAT", // required
  *     customizationArn: "STRING_VALUE",
  *   },
  *   profileArn: "STRING_VALUE",
@@ -346,10 +404,12 @@ export interface GenerateAssistantResponseCommandOutput extends GenerateAssistan
  * //   generateAssistantResponseResponse: { // ChatResponseStream Union: only one key present
  * //     messageMetadataEvent: { // MessageMetadataEvent
  * //       conversationId: "STRING_VALUE",
+ * //       utteranceId: "STRING_VALUE",
  * //     },
  * //     assistantResponseEvent: { // AssistantResponseEvent
  * //       content: "STRING_VALUE", // required
  * //     },
+ * //     dryRunSucceedEvent: {},
  * //     codeReferenceEvent: { // CodeReferenceEvent
  * //       references: [ // References
  * //         { // Reference
@@ -375,7 +435,7 @@ export interface GenerateAssistantResponseCommandOutput extends GenerateAssistan
  * //     followupPromptEvent: { // FollowupPromptEvent
  * //       followupPrompt: { // FollowupPrompt
  * //         content: "STRING_VALUE", // required
- * //         userIntent: "SUGGEST_ALTERNATE_IMPLEMENTATION" || "APPLY_COMMON_BEST_PRACTICES" || "IMPROVE_CODE" || "SHOW_EXAMPLES" || "CITE_SOURCES" || "EXPLAIN_LINE_BY_LINE" || "EXPLAIN_CODE_SELECTION" || "GENERATE_CLOUDFORMATION_TEMPLATE" || "GENERATE_UNIT_TESTS",
+ * //         userIntent: "SUGGEST_ALTERNATE_IMPLEMENTATION" || "APPLY_COMMON_BEST_PRACTICES" || "IMPROVE_CODE" || "SHOW_EXAMPLES" || "CITE_SOURCES" || "EXPLAIN_LINE_BY_LINE" || "EXPLAIN_CODE_SELECTION" || "GENERATE_CLOUDFORMATION_TEMPLATE" || "GENERATE_UNIT_TESTS" || "CODE_GENERATION",
  * //       },
  * //     },
  * //     codeEvent: { // CodeEvent
@@ -389,6 +449,207 @@ export interface GenerateAssistantResponseCommandOutput extends GenerateAssistan
  * //           },
  * //         },
  * //       },
+ * //     },
+ * //     interactionComponentsEvent: { // InteractionComponentsEvent
+ * //       interactionComponentEntries: [ // InteractionComponentEntryList // required
+ * //         { // InteractionComponentEntry
+ * //           interactionComponentId: "STRING_VALUE",
+ * //           interactionComponent: { // InteractionComponent
+ * //             text: { // Text
+ * //               content: "STRING_VALUE", // required
+ * //             },
+ * //             alert: { // Alert
+ * //               type: "INFO" || "ERROR" || "WARNING", // required
+ * //               content: [ // AlertComponentList // required
+ * //                 { // AlertComponent
+ * //                   text: {
+ * //                     content: "STRING_VALUE", // required
+ * //                   },
+ * //                 },
+ * //               ],
+ * //             },
+ * //             infrastructureUpdate: { // InfrastructureUpdate
+ * //               transition: { // InfrastructureUpdateTransition
+ * //                 currentState: "STRING_VALUE", // required
+ * //                 nextState: "STRING_VALUE", // required
+ * //               },
+ * //             },
+ * //             progress: { // Progress
+ * //               content: [ // ProgressComponentList // required
+ * //                 { // ProgressComponent
+ * //                   step: { // Step
+ * //                     id: Number("int"), // required
+ * //                     state: "FAILED" || "SUCCEEDED" || "STOPPED" || "PENDING" || "IN_PROGRESS" || "LOADING" || "PAUSED", // required
+ * //                     label: "STRING_VALUE", // required
+ * //                     content: [ // StepComponentList
+ * //                       { // StepComponent
+ * //                         text: "<Text>",
+ * //                       },
+ * //                     ],
+ * //                   },
+ * //                 },
+ * //               ],
+ * //             },
+ * //             step: {
+ * //               id: Number("int"), // required
+ * //               state: "FAILED" || "SUCCEEDED" || "STOPPED" || "PENDING" || "IN_PROGRESS" || "LOADING" || "PAUSED", // required
+ * //               label: "STRING_VALUE", // required
+ * //               content: [
+ * //                 {
+ * //                   text: "<Text>",
+ * //                 },
+ * //               ],
+ * //             },
+ * //             taskDetails: { // TaskDetails
+ * //               overview: { // TaskOverview
+ * //                 label: "STRING_VALUE", // required
+ * //                 description: "STRING_VALUE", // required
+ * //               },
+ * //               content: [ // TaskComponentList // required
+ * //                 { // TaskComponent
+ * //                   text: "<Text>",
+ * //                   infrastructureUpdate: {
+ * //                     transition: {
+ * //                       currentState: "STRING_VALUE", // required
+ * //                       nextState: "STRING_VALUE", // required
+ * //                     },
+ * //                   },
+ * //                   alert: {
+ * //                     type: "INFO" || "ERROR" || "WARNING", // required
+ * //                     content: [ // required
+ * //                       {
+ * //                         text: "<Text>",
+ * //                       },
+ * //                     ],
+ * //                   },
+ * //                   progress: {
+ * //                     content: [ // required
+ * //                       {
+ * //                         step: "<Step>",
+ * //                       },
+ * //                     ],
+ * //                   },
+ * //                 },
+ * //               ],
+ * //               actions: [ // TaskActionList
+ * //                 { // TaskAction
+ * //                   label: "STRING_VALUE", // required
+ * //                   note: { // TaskActionNote
+ * //                     content: "STRING_VALUE", // required
+ * //                     type: "INFO" || "WARNING",
+ * //                   },
+ * //                   primary: true || false,
+ * //                   disabled: true || false,
+ * //                   payload: { // TaskActionPayload // required
+ * //                     "<keys>": "STRING_VALUE",
+ * //                   },
+ * //                   confirmation: { // TaskActionConfirmation
+ * //                     content: "STRING_VALUE",
+ * //                   },
+ * //                 },
+ * //               ],
+ * //             },
+ * //             taskReference: { // TaskReference
+ * //               taskId: "STRING_VALUE", // required
+ * //             },
+ * //             suggestions: { // Suggestions
+ * //               items: [ // SuggestionList // required
+ * //                 { // Suggestion
+ * //                   value: "STRING_VALUE", // required
+ * //                 },
+ * //               ],
+ * //             },
+ * //             section: { // Section
+ * //               title: "STRING_VALUE", // required
+ * //               content: [ // SectionComponentList // required
+ * //                 { // SectionComponent
+ * //                   text: "<Text>",
+ * //                   alert: {
+ * //                     type: "INFO" || "ERROR" || "WARNING", // required
+ * //                     content: [ // required
+ * //                       {
+ * //                         text: "<Text>",
+ * //                       },
+ * //                     ],
+ * //                   },
+ * //                   resource: { // Resource
+ * //                     title: "STRING_VALUE", // required
+ * //                     link: "STRING_VALUE", // required
+ * //                     description: "STRING_VALUE", // required
+ * //                     type: "STRING_VALUE", // required
+ * //                     ARN: "STRING_VALUE", // required
+ * //                     resourceJsonString: "STRING_VALUE", // required
+ * //                   },
+ * //                   resourceList: { // ResourceList
+ * //                     action: { // Action
+ * //                       webLink: { // WebLink
+ * //                         label: "STRING_VALUE", // required
+ * //                         url: "STRING_VALUE", // required
+ * //                       },
+ * //                       moduleLink: { // ModuleLink
+ * //                         cloudWatchTroubleshootingLink: { // CloudWatchTroubleshootingLink
+ * //                           label: "STRING_VALUE", // required
+ * //                           investigationPayload: "STRING_VALUE", // required
+ * //                           defaultText: "STRING_VALUE",
+ * //                         },
+ * //                       },
+ * //                     },
+ * //                     items: [ // Resources // required
+ * //                       {
+ * //                         title: "STRING_VALUE", // required
+ * //                         link: "STRING_VALUE", // required
+ * //                         description: "STRING_VALUE", // required
+ * //                         type: "STRING_VALUE", // required
+ * //                         ARN: "STRING_VALUE", // required
+ * //                         resourceJsonString: "STRING_VALUE", // required
+ * //                       },
+ * //                     ],
+ * //                   },
+ * //                 },
+ * //               ],
+ * //               action: {
+ * //                 webLink: {
+ * //                   label: "STRING_VALUE", // required
+ * //                   url: "STRING_VALUE", // required
+ * //                 },
+ * //                 moduleLink: {
+ * //                   cloudWatchTroubleshootingLink: {
+ * //                     label: "STRING_VALUE", // required
+ * //                     investigationPayload: "STRING_VALUE", // required
+ * //                     defaultText: "STRING_VALUE",
+ * //                   },
+ * //                 },
+ * //               },
+ * //             },
+ * //             resource: "<Resource>",
+ * //             resourceList: {
+ * //               action: {
+ * //                 webLink: {
+ * //                   label: "STRING_VALUE", // required
+ * //                   url: "STRING_VALUE", // required
+ * //                 },
+ * //                 moduleLink: {
+ * //                   cloudWatchTroubleshootingLink: {
+ * //                     label: "STRING_VALUE", // required
+ * //                     investigationPayload: "STRING_VALUE", // required
+ * //                     defaultText: "STRING_VALUE",
+ * //                   },
+ * //                 },
+ * //               },
+ * //               items: [ // required
+ * //                 "<Resource>",
+ * //               ],
+ * //             },
+ * //             action: "<Action>",
+ * //           },
+ * //         },
+ * //       ],
+ * //     },
+ * //     toolUseEvent: { // ToolUseEvent
+ * //       toolUseId: "STRING_VALUE", // required
+ * //       name: "STRING_VALUE", // required
+ * //       input: "STRING_VALUE",
+ * //       stop: true || false,
  * //     },
  * //     invalidStateEvent: { // InvalidStateEvent
  * //       reason: "INVALID_TASK_ASSIST_PLAN", // required
@@ -423,76 +684,38 @@ export interface GenerateAssistantResponseCommandOutput extends GenerateAssistan
  * @throws {@link CodeWhispererStreamingServiceException}
  * <p>Base exception class for all service exceptions from CodeWhispererStreaming service.</p>
  *
+ * @public
  */
-export class GenerateAssistantResponseCommand extends $Command<GenerateAssistantResponseCommandInput, GenerateAssistantResponseCommandOutput, CodeWhispererStreamingClientResolvedConfig> {
-  // Start section: command_properties
-  // End section: command_properties
+export class GenerateAssistantResponseCommand extends $Command.classBuilder<GenerateAssistantResponseCommandInput, GenerateAssistantResponseCommandOutput, CodeWhispererStreamingClientResolvedConfig, ServiceInputTypes, ServiceOutputTypes>()
+      .m(function (this: any, Command: any, cs: any, config: CodeWhispererStreamingClientResolvedConfig, o: any) {
+          return [
 
-  /**
-   * @public
-   */
-  constructor(readonly input: GenerateAssistantResponseCommandInput) {
-    // Start section: command_constructor
-    super();
-    // End section: command_constructor
-  }
+  getSerdePlugin(config, this.serialize, this.deserialize),
+      ];
+  })
+  .s("AmazonCodeWhispererStreamingService", "GenerateAssistantResponse", {
 
-  /**
-   * @internal
-   */
-  resolveMiddleware(
-    clientStack: MiddlewareStack<ServiceInputTypes, ServiceOutputTypes>,
-    configuration: CodeWhispererStreamingClientResolvedConfig,
-    options?: __HttpHandlerOptions
-  ): Handler<GenerateAssistantResponseCommandInput, GenerateAssistantResponseCommandOutput> {
-    this.middlewareStack.use(getSerdePlugin(configuration, this.serialize, this.deserialize));
-
-    const stack = clientStack.concat(this.middlewareStack);
-
-    const { logger } = configuration;
-    const clientName = "CodeWhispererStreamingClient";
-    const commandName = "GenerateAssistantResponseCommand";
-    const handlerExecutionContext: HandlerExecutionContext = {
-      logger,
-      clientName,
-      commandName,
-      inputFilterSensitiveLog:
-        GenerateAssistantResponseRequestFilterSensitiveLog,
-      outputFilterSensitiveLog:
-        GenerateAssistantResponseResponseFilterSensitiveLog,
-      [SMITHY_CONTEXT_KEY]: {
-        service: "AmazonCodeWhispererStreamingService",
-        operation: "GenerateAssistantResponse",
-      },
-    }
-    const { requestHandler } = configuration;
-    return stack.resolve(
-      (request: FinalizeHandlerArguments<any>) =>
-        requestHandler.handle(request.request as __HttpRequest, options || {}),
-      handlerExecutionContext
-    );
-  }
-
-  /**
-   * @internal
-   */
-  private serialize(
-    input: GenerateAssistantResponseCommandInput,
-    context: __SerdeContext
-  ): Promise<__HttpRequest> {
-    return se_GenerateAssistantResponseCommand(input, context);
-  }
-
-  /**
-   * @internal
-   */
-  private deserialize(
-    output: __HttpResponse,
-    context: __SerdeContext & __EventStreamSerdeContext
-  ): Promise<GenerateAssistantResponseCommandOutput> {
-    return de_GenerateAssistantResponseCommand(output, context);
-  }
-
-  // Start section: command_body_extra
-  // End section: command_body_extra
+    /**
+     * @internal
+     */
+    eventStream: {
+      output: true,
+    },
+  })
+  .n("CodeWhispererStreamingClient", "GenerateAssistantResponseCommand")
+  .f(GenerateAssistantResponseRequestFilterSensitiveLog, GenerateAssistantResponseResponseFilterSensitiveLog)
+  .ser(se_GenerateAssistantResponseCommand)
+  .de(de_GenerateAssistantResponseCommand)
+.build() {
+/** @internal type navigation helper, not in runtime. */
+declare protected static __types: {
+  api: {
+      input: GenerateAssistantResponseRequest;
+      output: GenerateAssistantResponseResponse;
+  };
+  sdk: {
+      input: GenerateAssistantResponseCommandInput;
+      output: GenerateAssistantResponseCommandOutput;
+  };
+};
 }

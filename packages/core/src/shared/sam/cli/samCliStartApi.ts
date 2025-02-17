@@ -4,7 +4,7 @@
  */
 
 import { fileExists } from '../../filesystemUtilities'
-import { getLogger } from '../../logger'
+import { getLogger } from '../../logger/logger'
 import { pushIf } from '../../utilities/collectionUtils'
 
 export interface SamCliStartApiArguments {

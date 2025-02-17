@@ -6,9 +6,9 @@
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import * as localizedText from '../localizedText'
-import { getLogger } from '../../shared/logger'
+import { getLogger } from '../../shared/logger/logger'
 import { ProgressEntry } from '../../shared/vscode/window'
-import { getIdeProperties, isCloud9 } from '../extensionUtilities'
+import { getIdeProperties } from '../extensionUtilities'
 import { sleep } from './timeoutUtils'
 import { Timeout } from './timeoutUtils'
 import { addCodiconToString } from './textUtilities'
@@ -194,7 +194,7 @@ export async function showReauthenticateMessage({
     reauthFunc: () => Promise<void>
     source?: string
 }) {
-    const shouldShow = await settings.isPromptEnabled(suppressId as any)
+    const shouldShow = settings.isPromptEnabled(suppressId as any)
     if (!shouldShow) {
         return
     }
@@ -247,11 +247,6 @@ async function showProgressWithTimeout(
     if (showAfterMs === 0) {
         showAfterMs = 1 // Show immediately.
     }
-    // Cloud9 doesn't support `ProgressLocation.Notification`. User won't be able to cancel.
-    if (isCloud9()) {
-        options.location = vscode.ProgressLocation.Window
-    }
-
     // See also: codecatalyst.ts:LazyProgress
     const progressPromise: Promise<vscode.Progress<{ message?: string; increment?: number }>> = new Promise(
         (resolve, reject) => {

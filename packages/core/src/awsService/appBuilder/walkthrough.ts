@@ -6,7 +6,7 @@
 import * as semver from 'semver'
 import * as vscode from 'vscode'
 import globals from '../../shared/extensionGlobals'
-import { getLogger } from '../../shared/logger'
+import { getLogger } from '../../shared/logger/logger'
 
 import { Wizard } from '../../shared/wizards/wizard'
 import { createQuickPick } from '../../shared/ui/pickerPrompter'
@@ -16,7 +16,7 @@ import { ToolkitError } from '../../shared/errors'
 import { createSingleFileDialog } from '../../shared/ui/common/openDialog'
 import { fs } from '../../shared/fs/fs'
 import path from 'path'
-import { telemetry } from '../../shared/telemetry'
+import { telemetry } from '../../shared/telemetry/telemetry'
 
 import { minSamCliVersionForAppBuilderSupport } from '../../shared/sam/cli/samCliValidator'
 import { SamCliInfoInvocation } from '../../shared/sam/cli/samCliInfo'
@@ -148,13 +148,13 @@ export async function getTutorial(
     const appSelected = appMap.get(project + runtime)
     telemetry.record({ action: project + runtime, source: source ?? 'AppBuilderWalkthrough' })
     if (!appSelected) {
-        throw new ToolkitError(`Tried to get template '${project}+${runtime}', but it hasn't been registered.`)
+        throw new ToolkitError(`Template '${project}+${runtime}' does not exist, choose another template.`)
     }
 
     try {
         await getPattern(serverlessLandOwner, serverlessLandRepo, appSelected.asset, outputDir, true)
     } catch (error) {
-        throw new ToolkitError(`Error occurred while fetching the pattern from serverlessland: ${error}`)
+        throw new ToolkitError(`An error occurred while fetching this pattern from Serverless Land: ${error}`)
     }
 }
 
@@ -190,7 +190,7 @@ export async function genWalkthroughProject(
             'No'
         )
         if (choice !== 'Yes') {
-            throw new ToolkitError(`${defaultTemplateName} already exist`)
+            throw new ToolkitError(`A file named ${defaultTemplateName} already exists in this path.`)
         }
     }
 
@@ -256,9 +256,9 @@ export async function initWalkthroughProjectCommand() {
     let runtimeSelected: TutorialRuntimeOptions | undefined = undefined
     try {
         if (!walkthroughSelected || !(typeof walkthroughSelected === 'string')) {
-            getLogger().info('exit on no walkthrough selected')
+            getLogger().info('No walkthrough selected - exiting')
             void vscode.window.showErrorMessage(
-                localize('AWS.toolkit.lambda.walkthroughNotSelected', 'Please select a template first')
+                localize('AWS.toolkit.lambda.walkthroughNotSelected', 'Select a template in the walkthrough.')
             )
             return
         }
@@ -322,7 +322,7 @@ export async function getOrUpdateOrInstallSAMCli(source: string) {
             }
         }
     } catch (err) {
-        throw ToolkitError.chain(err, 'Failed to install or detect SAM')
+        throw ToolkitError.chain(err, 'Failed to install or detect SAM.')
     } finally {
         telemetry.record({ source: source, toolId: 'sam-cli' })
     }

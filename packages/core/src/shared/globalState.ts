@@ -32,6 +32,7 @@ export type globalKey =
     | 'aws.amazonq.hasShownWalkthrough'
     | 'aws.amazonq.showTryChatCodeLens'
     | 'aws.amazonq.securityIssueFilters'
+    | 'aws.amazonq.codescan.groupingStrategy'
     | 'aws.amazonq.notifications'
     | 'aws.amazonq.welcomeChatShowCount'
     | 'aws.amazonq.disclaimerAcknowledged'
@@ -44,8 +45,7 @@ export type globalKey =
     | 'aws.toolkit.amazonq.dismissed'
     | 'aws.toolkit.amazonqInstall.dismissed'
     | 'aws.amazonq.workspaceIndexToggleOn'
-    | 'aws.toolkit.separationPromptCommand'
-    | 'aws.toolkit.separationPromptDismissed'
+    | 'aws.amazonq.customization.override'
     // Deprecated/legacy names. New keys should start with "aws.".
     | '#sessionCreationDates' // Legacy name from `ssoAccessTokenProvider.ts`.
     | 'CODECATALYST_RECONNECT'
@@ -60,7 +60,6 @@ export type globalKey =
     | 'dev.beta'
     | 'globalsMostRecentVersion'
     | 'gumby.wasQCodeTransformationUsed'
-    | 'hasAlreadyOpenedAmazonQ'
     | 'isExtensionFirstUse'
     | 'lastExtensionVersion'
     | 'lastSelectedRegion'

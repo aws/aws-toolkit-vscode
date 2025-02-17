@@ -6,7 +6,9 @@
 import path from 'path'
 import { Uri, Webview } from 'vscode'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
-import { FeatureConfigProvider, FeatureContext, globals, isSageMaker } from '../../../shared'
+import { FeatureConfigProvider, FeatureContext } from '../../../shared/featureConfig'
+import globals from '../../../shared/extensionGlobals'
+import { isSageMaker } from '../../../shared/extensionUtilities'
 
 export class WebViewContentGenerator {
     private async generateFeatureConfigsData(): Promise<string> {
@@ -23,7 +25,7 @@ export class WebViewContentGenerator {
         return JSON.stringify(Array.from(featureConfigs.entries()))
     }
 
-    public async generate(extensionURI: Uri, webView: Webview, showWelcomePage: boolean): Promise<string> {
+    public async generate(extensionURI: Uri, webView: Webview): Promise<string> {
         const entrypoint = process.env.WEBPACK_DEVELOPER_SERVER
             ? 'http: localhost'
             : 'https: file+.vscode-resources.vscode-cdn.net'
@@ -47,14 +49,14 @@ export class WebViewContentGenerator {
             <head>
                 <meta http-equiv="Content-Security-Policy" content="${contentPolicy}">
                 <title>Amazon Q (Preview)</title>
-                ${await this.generateJS(extensionURI, webView, showWelcomePage)}
+                ${await this.generateJS(extensionURI, webView)}
             </head>
             <body ${featureDataAttributes}>
             </body>
         </html>`
     }
 
-    private async generateJS(extensionURI: Uri, webView: Webview, showWelcomePage: boolean): Promise<string> {
+    private async generateJS(extensionURI: Uri, webView: Webview): Promise<string> {
         const source = path.join('vue', 'src', 'amazonq', 'webview', 'ui', 'amazonq-ui.js') // Sent to dist/vue folder in webpack.
         const assetsPath = Uri.joinPath(extensionURI)
         const javascriptUri = Uri.joinPath(assetsPath, 'dist', source)
@@ -80,6 +82,8 @@ export class WebViewContentGenerator {
         const disabledCommandsString = isSageMaker() ? `['/dev', '/transform']` : '[]'
         const disclaimerAcknowledged = globals.globalState.tryGet('aws.amazonq.disclaimerAcknowledged', Boolean, false)
 
+        const welcomeLoadCount = globals.globalState.tryGet('aws.amazonq.welcomeChatShowCount', Number, 0)
+
         return `
         <script type="text/javascript" src="${javascriptEntrypoint.toString()}" defer onload="init()"></script>
         ${cssLinks}
@@ -87,7 +91,7 @@ export class WebViewContentGenerator {
             const init = () => {
                 createMynahUI(acquireVsCodeApi(), ${
                     (await AuthUtil.instance.getChatAuthState()).amazonQ === 'connected'
-                },${featureConfigsString},${showWelcomePage},${disclaimerAcknowledged},${disabledCommandsString});
+                },${featureConfigsString},${welcomeLoadCount},${disclaimerAcknowledged},${disabledCommandsString});
             }
         </script>
         `

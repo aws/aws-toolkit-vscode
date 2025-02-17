@@ -10,7 +10,7 @@
 import * as vscode from 'vscode'
 import * as path from 'path'
 import * as nls from 'vscode-nls'
-import * as cp from 'child_process'
+import { spawn } from 'child_process' // eslint-disable-line no-restricted-imports
 import * as crypto from 'crypto'
 import * as jose from 'jose'
 
@@ -32,7 +32,9 @@ import {
 } from './types'
 import { Writable } from 'stream'
 import { CodeWhispererSettings } from '../../codewhisperer/util/codewhispererSettings'
-import { fs, getLogger, globals } from '../../shared'
+import { fs } from '../../shared/fs/fs'
+import { getLogger } from '../../shared/logger/logger'
+import globals from '../../shared/extensionGlobals'
 
 const localize = nls.loadMessageBundle()
 
@@ -199,7 +201,7 @@ export async function activate(extensionContext: ExtensionContext) {
 
     const nodename = process.platform === 'win32' ? 'node.exe' : 'node'
 
-    const child = cp.spawn(extensionContext.asAbsolutePath(path.join('resources', nodename)), [
+    const child = spawn(extensionContext.asAbsolutePath(path.join('resources', nodename)), [
         serverModule,
         ...debugOptions.execArgv,
     ])

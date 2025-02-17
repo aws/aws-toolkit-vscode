@@ -10,17 +10,17 @@ const localize = nls.loadMessageBundle()
 
 import AdmZip from 'adm-zip'
 import * as path from 'path'
-import { fs } from '../../shared'
+import { fs } from '../../shared/fs/fs'
 import { showConfirmationMessage, showViewLogsMessage } from '../../shared/utilities/messages'
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../shared/filesystemUtilities'
 import * as localizedText from '../../shared/localizedText'
-import { getLogger } from '../../shared/logger'
+import { getLogger } from '../../shared/logger/logger'
 import { SamCliBuildInvocation } from '../../shared/sam/cli/samCliBuild'
 import { getSamCliContext } from '../../shared/sam/cli/samCliContext'
 import { SamTemplateGenerator } from '../../shared/templates/sam/samTemplateGenerator'
 import { addCodiconToString } from '../../shared/utilities/textUtilities'
 import { getLambdaDetails, listLambdaFunctions } from '../utils'
-import { getIdeProperties, isCloud9 } from '../../shared/extensionUtilities'
+import { getIdeProperties } from '../../shared/extensionUtilities'
 import { createQuickPick, DataQuickPickItem } from '../../shared/ui/pickerPrompter'
 import { createCommonButtons } from '../../shared/ui/buttons'
 import { StepEstimator, Wizard, WIZARD_BACK } from '../../shared/wizards/wizard'
@@ -481,10 +481,7 @@ async function uploadZipBuffer(
     )
 }
 
-export async function findApplicationJsonFile(
-    startPath: vscode.Uri,
-    cloud9 = isCloud9()
-): Promise<vscode.Uri | undefined> {
+export async function findApplicationJsonFile(startPath: vscode.Uri): Promise<vscode.Uri | undefined> {
     if (!(await fs.exists(startPath.fsPath))) {
         getLogger().error(
             'findApplicationJsonFile() invalid path (not accessible or does not exist): "%s"',

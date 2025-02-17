@@ -9,7 +9,7 @@ import { IAM, StepFunctions } from 'aws-sdk'
 import * as vscode from 'vscode'
 import { StepFunctionsClient } from '../shared/clients/stepFunctionsClient'
 import { fileExists } from '../shared/filesystemUtilities'
-import { getLogger, Logger } from '../shared/logger'
+import { getLogger, Logger } from '../shared/logger/logger'
 import {
     DiagnosticSeverity,
     DocumentLanguageSettings,
@@ -19,7 +19,7 @@ import {
 import { HttpResourceFetcher } from '../shared/resourcefetcher/httpResourceFetcher'
 import globals from '../shared/extensionGlobals'
 import { fromExtensionManifest } from '../shared/settings'
-import { fs } from '../shared'
+import { fs } from '../shared/fs/fs'
 
 const documentSettings: DocumentLanguageSettings = { comments: 'error', trailingCommas: 'error' }
 const languageService = getLanguageService({})
@@ -132,13 +132,13 @@ export class StateMachineGraphCache {
         }
 
         if (!cssExists) {
-            // Help users setup on disconnected C9/VSCode instances.
+            // Help users setup on disconnected VSCode instances.
             this.logger.error(
                 `Failed to locate cached State Machine Graph css assets. Expected to find: "${visualizationCssUrl}" at "${this.cssFilePath}"`
             )
         }
         if (!jsExists) {
-            // Help users setup on disconnected C9/VSCode instances.
+            // Help users setup on disconnected VSCode instances.
             this.logger.error(
                 `Failed to locate cached State Machine Graph js assets. Expected to find: "${visualizationScriptUrl}" at "${this.jsFilePath}"`
             )
@@ -179,8 +179,8 @@ async function httpsGetRequestWrapper(url: string): Promise<string> {
     const logger = getLogger()
     logger.verbose('Step Functions is getting content...')
 
-    const fetcher = new HttpResourceFetcher(url, { showUrl: true })
-    const val = await fetcher.get()
+    const fetcher = await new HttpResourceFetcher(url, { showUrl: true }).get()
+    const val = await fetcher?.text()
 
     if (!val) {
         const message = 'Step Functions was unable to get content.'

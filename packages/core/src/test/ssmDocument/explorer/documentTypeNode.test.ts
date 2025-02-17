@@ -29,9 +29,9 @@ describe('DocumentTypeNode', function () {
         const childNodes = await testNode.getChildren()
 
         assert.strictEqual(childNodes.length, expectedChildNodeNames.length)
-        childNodes.forEach((child, index) => {
+        for (const [index, child] of childNodes.entries()) {
             assert.strictEqual(child.label, expectedChildNodeNames[index])
-        })
+        }
     })
 
     it('handles error', async function () {

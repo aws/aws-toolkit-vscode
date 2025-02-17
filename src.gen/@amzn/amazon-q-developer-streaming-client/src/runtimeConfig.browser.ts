@@ -3,7 +3,7 @@
 import packageInfo from "../package.json"; // eslint-disable-line
 
 import { Sha256 } from "@aws-crypto/sha256-browser";
-import { defaultUserAgent } from "@aws-sdk/util-user-agent-browser";
+import { createDefaultUserAgentProvider } from "@aws-sdk/util-user-agent-browser";
 import {
   DEFAULT_USE_DUALSTACK_ENDPOINT,
   DEFAULT_USE_FIPS_ENDPOINT,
@@ -38,7 +38,7 @@ export const getRuntimeConfig = (config: QDeveloperStreamingClientConfig) => {
     defaultsMode,
     bodyLengthChecker: config?.bodyLengthChecker ?? calculateBodyLength,
     credentialDefaultProvider: config?.credentialDefaultProvider ?? ((_: unknown) => () => Promise.reject(new Error("Credential is missing"))),
-    defaultUserAgentProvider: config?.defaultUserAgentProvider ?? defaultUserAgent({serviceId: clientSharedValues.serviceId, clientVersion: packageInfo.version}),
+    defaultUserAgentProvider: config?.defaultUserAgentProvider ?? createDefaultUserAgentProvider({serviceId: clientSharedValues.serviceId, clientVersion: packageInfo.version}),
     eventStreamSerdeProvider: config?.eventStreamSerdeProvider ?? eventStreamSerdeProvider,
     maxAttempts: config?.maxAttempts ?? DEFAULT_MAX_ATTEMPTS,
     region: config?.region ?? invalidProvider("Region is missing"),

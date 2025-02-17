@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { globals } from '..'
+import globals from '../../shared/extensionGlobals'
 
 /**
  * A useful abstraction that does the following:
@@ -45,8 +45,14 @@ export class PollingSet<T> extends Set<T> {
         }
     }
 
-    public start(id: T): void {
-        this.add(id)
+    public override add(id: T) {
+        super.add(id)
         this.pollTimer = this.pollTimer ?? globals.clock.setInterval(() => this.poll(), this.interval)
+        return this
+    }
+
+    public override clear(): void {
+        this.clearTimer()
+        super.clear()
     }
 }

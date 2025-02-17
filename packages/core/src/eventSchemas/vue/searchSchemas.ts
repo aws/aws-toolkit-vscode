@@ -14,7 +14,7 @@ import { SchemasNode } from '../explorer/schemasNode'
 import { listRegistryItems, searchSchemas } from '../utils'
 import { DefaultSchemaClient, SchemaClient } from '../../shared/clients/schemaClient'
 
-import { getLogger, Logger } from '../../shared/logger'
+import { getLogger, Logger } from '../../shared/logger/logger'
 import { Result } from '../../shared/telemetry/telemetry'
 import { toArrayAsync } from '../../shared/utilities/collectionUtils'
 import { getTabSizeSetting } from '../../shared/utilities/editorUtilities'
@@ -151,7 +151,9 @@ export async function getRegistryNames(node: RegistryItemNode | SchemasNode, cli
     if (node instanceof SchemasNode) {
         try {
             const registries = await toArrayAsync(listRegistryItems(client))
-            registries.forEach((element) => registryNames.push(element.RegistryName!))
+            for (const element of registries) {
+                registryNames.push(element.RegistryName!)
+            }
         } catch (err) {
             const error = err as Error
             getLogger().error(error)
