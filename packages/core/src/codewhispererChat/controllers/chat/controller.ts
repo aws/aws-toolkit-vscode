@@ -57,7 +57,7 @@ import { DefaultAmazonQAppInitContext } from '../../../amazonq/apps/initContext'
 import globals from '../../../shared/extensionGlobals'
 import { waitUntil } from '../../../shared/utilities/timeoutUtils'
 import { MynahIconsType, MynahUIDataModel, QuickActionCommand } from '@aws/mynah-ui'
-import { LspClient } from '../../../amazonq'
+import { LspClient } from '../../../amazonq/lsp/lspClient'
 import { ContextCommandItem } from '../../../amazonq/lsp/types'
 
 export interface ChatControllerMessagePublishers {
