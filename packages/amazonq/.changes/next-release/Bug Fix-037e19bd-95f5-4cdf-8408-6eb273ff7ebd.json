@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "/dev and /doc: Multi-root workspace with duplicate files causes infinite 'Uploading code...' loop"
+}
