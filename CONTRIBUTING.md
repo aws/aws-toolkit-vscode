@@ -427,6 +427,19 @@ Example:
 }
 ```
 
+<a name="amazonqLsp-settings">Overrides specifically for the Amazon Q language server can be set using the `aws.dev.amazonqLsp` setting. This is a JSON object consisting of keys/values required to override language server: `manifestUrl`, `supportedVersions`, `id`, and `locationOverride`.</a>
+
+Example:
+
+```json
+"aws.dev.amazonqLsp": {
+    "manifestUrl": "https://custom.url/manifest.json",
+    "supportedVersions": "4.0.0",
+    "id": "AmazonQ",
+    "locationOverride": "/custom/path/to/local/lsp/folder",
+}
+```
+
 ### Environment variables
 
 Environment variables can be used to modify the behaviour of VSCode. The following are environment variables that can be used to configure the extension:
@@ -472,6 +485,10 @@ Unlike the user setting overrides, not all of these environment variables have t
 
 -   `__CODEWHISPERER_REGION`: for aws.dev.codewhispererService.region
 -   `__CODEWHISPERER_ENDPOINT`: for aws.dev.codewhispererService.endpoint
+-   `__AMAZONQLSP_MANIFEST_URL`: for aws.dev.amazonqLsp.manifestUrl
+-   `__AMAZONQLSP_SUPPORTED_VERSIONS`: for aws.dev.amazonqLsp.supportedVersions
+-   `__AMAZONQLSP_ID`: for aws.dev.amazonqLsp.id
+-   `__AMAZONQLSP_LOCATION_OVERRIDE`: for aws.dev.amazonqLsp.locationOverride
 
 #### Lambda
 
