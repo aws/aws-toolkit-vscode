@@ -1,4 +1,4 @@
 {
 	"type": "Bug Fix",
-	"description": "Stuck on `Uploading code...` for /dev and /doc in some multi-root workspaces"
+	"description": "/dev and /doc: Multi-root workspace with duplicate files causes infinite 'Uploading code...' loop"
 }
