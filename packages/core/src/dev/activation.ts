@@ -26,6 +26,7 @@ import { DevNotificationsState } from '../notifications/types'
 import { QuickPickItem } from 'vscode'
 import { ChildProcess } from '../shared/utilities/processUtils'
 import { WorkspaceLSPResolver } from '../amazonq/lsp/workspaceInstaller'
+import * as ManifestResolver from '../shared/lsp/manifestResolver'
 
 interface MenuOption {
     readonly label: string
@@ -453,9 +454,15 @@ const resettableFeatures: readonly ResettableFeature[] = [
     },
     {
         name: 'workspace lsp',
-        label: 'Lsp',
+        label: 'Lsp Download',
         detail: 'Resets workspace LSP',
         executor: resetWorkspaceLspDownload,
+    },
+    {
+        name: 'lsp global state',
+        label: 'Lsp State',
+        detail: 'Resets LSP manifest global state',
+        executor: resetLSPGlobalState,
     },
 ] as const
 
@@ -547,6 +554,10 @@ async function resetNotificationsState() {
 
 async function resetWorkspaceLspDownload() {
     await new WorkspaceLSPResolver().resolve()
+}
+
+async function resetLSPGlobalState() {
+    await ManifestResolver.resetManifestState()
 }
 
 async function editNotifications() {

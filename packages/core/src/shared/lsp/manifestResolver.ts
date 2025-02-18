@@ -11,18 +11,24 @@ import globals from '../extensionGlobals'
 import { Manifest } from './types'
 import { StageResolver, tryStageResolvers } from './utils/setupStage'
 import { HttpResourceFetcher } from '../resourcefetcher/httpResourceFetcher'
+import * as localizedText from '../localizedText'
 
 const logger = getLogger('lsp')
 
 interface StorageManifest {
     etag: string
     content: string
+    muteDeprecation: boolean
 }
 
 type ManifestStorage = Record<string, StorageManifest>
 
 export const manifestStorageKey = 'aws.toolkit.lsp.manifest'
 const manifestTimeoutMs = 15000
+
+export async function resetManifestState() {
+    await globals.globalState.update(manifestStorageKey, {})
+}
 
 export class ManifestResolver {
     constructor(
@@ -98,22 +104,42 @@ export class ManifestResolver {
         }
     }
 
+    /**
+     * Check if the current manifest is deprecated.
+     * If yes and user hasn't muted this notification, shows a toast message with two buttons:
+     * - OK: close and do nothing
+     * - Don't Show Again: Update global state (muteDecprecation) so the deprecation message is never shown for this manifest.
+     * @param manifest
+     */
     private checkDeprecation(manifest: Manifest): void {
-        if (manifest.isManifestDeprecated) {
+        if (manifest.isManifestDeprecated && !this.getStorage()[this.lsName].muteDeprecation) {
             const deprecationMessage = `${this.lsName} manifest is deprecated. No future updates will be available.`
             logger.info(deprecationMessage)
-            void vscode.window.showInformationMessage(deprecationMessage)
+
+            void vscode.window
+                .showInformationMessage(deprecationMessage, localizedText.ok, localizedText.dontShow)
+                .then((button) => {
+                    if (button === localizedText.dontShow) {
+                        this.getStorage()[this.lsName].muteDeprecation = true
+                    }
+                })
         }
     }
 
     private async saveManifest(etag: string, content: string): Promise<void> {
         const storage = this.getStorage()
 
+        // Only true when incoming manifest is deprecated & existing muteDeprecation is true (set by user)
+        const muteDeprecation =
+            (storage[this.lsName] ? storage[this.lsName].muteDeprecation : false) &&
+            (JSON.parse(content) as Manifest).isManifestDeprecated
+
         globals.globalState.tryUpdate(manifestStorageKey, {
             ...storage,
             [this.lsName]: {
                 etag,
                 content,
+                muteDeprecation,
             },
         })
     }
