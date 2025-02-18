@@ -130,6 +130,13 @@ export async function promptUser({
         for (const d of disposables) {
             d.dispose() as void
         }
-        inputBox.hide()
+        try {
+            inputBox.hide()
+        } catch (e) {
+            console.log(`Error hiding input box: %O`, e)
+            console.log(`input box: %O`, inputBox)
+            console.log(`typeof input box: %O`, typeof inputBox)
+            throw e
+        }
     }
 }
