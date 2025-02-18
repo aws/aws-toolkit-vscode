@@ -14,15 +14,13 @@ phases:
     build:
         commands:
             - echo "TARGET_EXTENSION=${TARGET_EXTENSION}"
-            - EXTENSION_NAME=$([ "$TARGET_EXTENSION" = "amazonq" ] && echo "Amazon Q" || echo "AWS Toolkit")
-            - VERSION=$(node -e "console.log(require('./packages/${TARGET_EXTENSION}/package.json').version);")
-            - CHANGELOG=$(cat packages/${TARGET_EXTENSION}/CHANGELOG.md | perl -ne 'BEGIN{$/="\n\n"} print if $. == 2')
-            - MESSAGE=$(envsubst < "$GITHUB_WORKSPACE/buildspec/release/notify.txt")
-            - DATA="{'Content':'${MESSAGE}'}"
+            - export EXTENSION_NAME=$([ "$TARGET_EXTENSION" = "amazonq" ] && echo "Amazon Q" || echo "AWS Toolkit")
+            - export VERSION=$(node -e "console.log(require('./packages/${TARGET_EXTENSION}/package.json').version);")
+            - export CHANGELOG=$(cat packages/${TARGET_EXTENSION}/CHANGELOG.md | perl -ne 'BEGIN{$/="\n\n"} print if $. == 2')
+            - MESSAGE=$(envsubst < ./buildspec/release/notify.txt)
             - |
-                # TODO: Enable for prod only after testing
-                if [ "$STAGE" = "prod" ]; then
-                  echo "SKIPPED (stage=${STAGE}): 'curl -v POST \"[SLACK_URL]\" -H \"Content-Type:application/json\" --data $DATA'"
+                if [ "$STAGE" != "prod" ]; then
+                  echo "SKIPPED (stage=${STAGE}): 'curl -v POST \"[NOTIFY_URL]\" -H \"Content-Type:application/json\" --data \"{\"Content\":\"${MESSAGE}\"}\"'"
                   exit 0
                 fi
-                curl -v POST "${NOTIFY_URL}" -H "Content-Type:application/json" --data $DATA
+                curl -v POST "${NOTIFY_URL}" -H "Content-Type:application/json" --data "{\"Content\":\"${MESSAGE}\"}"
