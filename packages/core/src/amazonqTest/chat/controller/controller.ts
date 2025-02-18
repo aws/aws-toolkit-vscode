@@ -63,6 +63,7 @@ import {
 } from '../../../codewhisperer/models/constants'
 import { UserWrittenCodeTracker } from '../../../codewhisperer/tracker/userWrittenCodeTracker'
 import { ReferenceLogViewProvider } from '../../../codewhisperer/service/referenceLogViewProvider'
+import { Auth } from '../../../auth/auth'
 
 export interface TestChatControllerEventEmitters {
     readonly tabOpened: vscode.EventEmitter<any>
@@ -800,8 +801,10 @@ export class TestController {
             session.linesOfCodeGenerated
         )
 
-        await this.endSession(message, FollowUpTypes.SkipBuildAndFinish)
-        return
+        if (!Auth.instance.isInternalAmazonUser()) {
+            await this.endSession(message, FollowUpTypes.SkipBuildAndFinish)
+            return
+        }
 
         if (session.listOfTestGenerationJobId.length === 1) {
             this.startInitialBuild(message)
@@ -941,12 +944,17 @@ export class TestController {
 
     private startInitialBuild(data: any) {
         // TODO: Remove the fallback build command after stable version of backend build command.
-        const userMessage = `Would you like me to help build and execute the test? I will need you to let me know what build command to run if you do.`
+        const userMessage = `Would you like me to help build and execute the test? I’ll run following commands.\n\`\`\`sh\n${this.sessionStorage.getSession().shortAnswer?.buildCommand}\n`
         const followUps: FollowUps = {
             text: '',
             options: [
                 {
-                    pillText: `Specify command then build and execute`,
+                    pillText: `Build and execute`,
+                    type: FollowUpTypes.BuildAndExecute,
+                    status: 'primary',
+                },
+                {
+                    pillText: `Modify command`,
                     type: FollowUpTypes.ModifyCommands,
                     status: 'primary',
                 },
@@ -976,7 +984,6 @@ export class TestController {
         const listOfInstallationDependencies = ['']
         const installationDependencies = listOfInstallationDependencies.join('\n')
 
-        this.messenger.sendMessage('Build and execute', data.tabID, 'prompt')
         telemetry.ui_click.emit({ elementId: 'unitTestGeneration_buildAndExecute' })
 
         if (installationDependencies.length > 0) {
@@ -1025,11 +1032,6 @@ export class TestController {
         // const installationDependencies = session.shortAnswer?.installationDependencies ?? []
         // MOCK: ignoring the installation case until backend send response
         const installationDependencies: string[] = []
-        const buildCommands = session.updatedBuildCommands
-        if (!buildCommands) {
-            throw new Error('Build command not found')
-            return
-        }
 
         this.messenger.sendBuildProgressMessage({
             tabID: data.tabID,
@@ -1101,7 +1103,7 @@ export class TestController {
             messageId: TestNamedMessages.TEST_GENERATION_BUILD_STATUS_MESSAGE,
         })
 
-        const buildStatus = await runBuildCommand(buildCommands)
+        const buildStatus = await runBuildCommand(this.getBuildCommands())
         session.buildStatus = buildStatus
 
         if (buildStatus === BuildStatus.FAILURE) {
@@ -1229,10 +1231,17 @@ export class TestController {
             fileList: this.checkCodeDiffLengthAndBuildStatus({ codeDiffLength, buildStatus: session.buildStatus })
                 ? {
                       fileTreeTitle: 'READY FOR REVIEW',
-                      rootFolderTitle: 'tests',
+                      rootFolderTitle: path.basename(session.projectRootPath),
                       filePaths: [session.generatedFilePath],
                   }
                 : undefined,
+            codeReference: session.references.map(
+                (ref: ShortAnswerReference) =>
+                    ({
+                        ...ref,
+                        information: `${ref.licenseName} - <a href="${ref.url}">${ref.repository}</a>`,
+                    }) as CodeReference
+            ),
         })
         this.messenger.sendBuildProgressMessage({
             tabID: data.tabID,
@@ -1261,7 +1270,7 @@ export class TestController {
 
     private modifyBuildCommand(data: any) {
         this.sessionStorage.getSession().conversationState = ConversationState.WAITING_FOR_BUILD_COMMMAND_INPUT
-        this.messenger.sendMessage('Specify commands then build', data.tabID, 'prompt')
+        this.messenger.sendMessage('Modify Command', data.tabID, 'prompt')
         telemetry.ui_click.emit({ elementId: 'unitTestGeneration_modifyCommand' })
         this.messenger.sendMessage(
             'Sure, provide all command lines you’d like me to run to build.',
@@ -1374,21 +1383,16 @@ export class TestController {
     }
 
     // TODO: return build command when product approves
-    // private getBuildCommands = (): string[] => {
-    //     const session = this.sessionStorage.getSession()
-    //     if (session.updatedBuildCommands?.length) {
-    //         return [...session.updatedBuildCommands]
-    //     }
+    private getBuildCommands = (): string[] => {
+        const session = this.sessionStorage.getSession()
+        if (session.updatedBuildCommands?.length) {
+            return [...session.updatedBuildCommands]
+        }
 
-    //     // For Internal amazon users only
-    //     if (Auth.instance.isInternalAmazonUser()) {
-    //         return ['brazil-build release']
-    //     }
-
-    //     if (session.shortAnswer && Array.isArray(session.shortAnswer?.buildCommands)) {
-    //         return [...session.shortAnswer.buildCommands]
-    //     }
-
-    //     return ['source qdev-wbr/.venv/bin/activate && pytest --continue-on-collection-errors']
-    // }
+        if (session.shortAnswer && session.shortAnswer?.buildCommand) {
+            return [session.shortAnswer.buildCommand]
+        }
+        // TODO: Add a generic command here for external launch according to the build system.
+        return ['brazil-build release']
+    }
 }
