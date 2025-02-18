@@ -23,7 +23,7 @@ export function init(appContext: AmazonQAppInitContext) {
         authClicked: new vscode.EventEmitter<any>(),
         startTestGen: new vscode.EventEmitter<any>(),
         processHumanChatMessage: new vscode.EventEmitter<any>(),
-        updateShortAnswer: new vscode.EventEmitter<any>(),
+        updateTargetFileInfo: new vscode.EventEmitter<any>(),
         showCodeGenerationResults: new vscode.EventEmitter<any>(),
         openDiff: new vscode.EventEmitter<any>(),
         formActionClicked: new vscode.EventEmitter<any>(),
