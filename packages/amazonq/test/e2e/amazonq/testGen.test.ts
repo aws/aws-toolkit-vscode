@@ -14,6 +14,7 @@ import { loginToIdC } from './utils/setup'
 import { waitUntil, workspaceUtils } from 'aws-core-vscode/shared'
 import * as path from 'path'
 
+// test
 describe('Amazon Q Test Generation', function () {
     let framework: qTestingFramework
     let tab: Messenger
