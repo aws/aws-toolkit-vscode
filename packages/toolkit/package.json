@@ -1601,24 +1601,29 @@
                     "group": "0@1"
                 },
                 {
-                    "command": "aws.lambda.createNewSamApp",
+                    "command": "aws.toolkit.lambda.serverlessLand",
                     "when": "view == aws.explorer && viewItem == awsLambdaNode || viewItem == awsRegionNode",
                     "group": "1@1"
                 },
                 {
+                    "command": "aws.lambda.createNewSamApp",
+                    "when": "view == aws.explorer && viewItem == awsLambdaNode || viewItem == awsRegionNode",
+                    "group": "1@2"
+                },
+                {
                     "command": "aws.launchConfigForm",
                     "when": "view == aws.explorer && viewItem == awsLambdaNode || viewItem == awsRegionNode || viewItem == awsCloudFormationRootNode",
-                    "group": "1@1"
+                    "group": "1@2"
                 },
                 {
                     "command": "aws.deploySamApplication",
                     "when": "config.aws.samcli.legacyDeploy && view == aws.explorer && viewItem =~ /^(awsLambdaNode|awsRegionNode|awsCloudFormationRootNode)$/",
-                    "group": "1@2"
+                    "group": "1@3"
                 },
                 {
                     "command": "aws.samcli.sync",
                     "when": "!config.aws.samcli.legacyDeploy && view == aws.explorer && viewItem =~ /^(awsLambdaNode|awsRegionNode|awsCloudFormationRootNode)$/",
-                    "group": "1@2"
+                    "group": "1@3"
                 },
                 {
                     "command": "aws.ecr.copyTagUri",
