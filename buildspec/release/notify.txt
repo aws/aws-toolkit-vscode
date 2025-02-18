@@ -1,6 +1,6 @@
-Released ${EXTENSION_NAME} v${VERSION} for VSCode
+Released ${EXTENSION_NAME} v${VERSION} for VS Code
 
 ${CHANGELOG}
 
 Changelog: https://github.com/aws/aws-toolkit-vscode/blob/master/packages/${TARGET_EXTENSION}/CHANGELOG.md
-Release Arifact: https://github.com/aws/aws-toolkit-vscode/releases/tag/${TARGET_EXTENSION}/v${VERSION}
+Release Artifact: https://github.com/aws/aws-toolkit-vscode/releases/tag/${TARGET_EXTENSION}/v${VERSION}
