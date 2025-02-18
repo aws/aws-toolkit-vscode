@@ -96,6 +96,7 @@ export class Connector extends BaseConnector {
                 codeReference: messageData.codeReference,
                 userIntent: messageData.userIntent,
                 codeBlockLanguage: messageData.codeBlockLanguage,
+                contextList: messageData.contextList,
             }
 
             // If it is not there we will not set it
@@ -228,6 +229,16 @@ export class Connector extends BaseConnector {
             action: action,
             tabType: this.getTabType(),
             tabID: tabId,
+        })
+    }
+
+    onFileClick = (tabID: string, filePath: string, messageId?: string) => {
+        this.sendMessageToExtension({
+            command: 'file-click',
+            tabID,
+            messageId,
+            filePath,
+            tabType: 'cwc',
         })
     }
 }

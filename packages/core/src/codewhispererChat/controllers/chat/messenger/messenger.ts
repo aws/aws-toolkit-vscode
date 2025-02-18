@@ -25,7 +25,7 @@ import { ChatMessage, ErrorMessage, FollowUp, Suggestion } from '../../../view/c
 import { ChatSession } from '../../../clients/chat/v0/chat'
 import { ChatException } from './model'
 import { CWCTelemetryHelper } from '../telemetryHelper'
-import { ChatPromptCommandType, TriggerPayload } from '../model'
+import { ChatPromptCommandType, MergedRelevantDocument, TriggerPayload } from '../model'
 import { getHttpStatusCode, getRequestId, ToolkitError } from '../../../../shared/errors'
 import { keys } from '../../../../shared/utilities/tsUtils'
 import { getLogger } from '../../../../shared/logger/logger'
@@ -66,7 +66,11 @@ export class Messenger {
         )
     }
 
-    public sendInitalStream(tabID: string, triggerID: string) {
+    public sendInitalStream(
+        tabID: string,
+        triggerID: string,
+        mergedRelevantDocuments: MergedRelevantDocument[] | undefined
+    ) {
         this.dispatcher.sendChatMessage(
             new ChatMessage(
                 {
@@ -79,6 +83,7 @@ export class Messenger {
                     messageID: '',
                     userIntent: undefined,
                     codeBlockLanguage: undefined,
+                    contextList: mergedRelevantDocuments,
                 },
                 tabID
             )
@@ -191,6 +196,7 @@ export class Messenger {
                                     messageID,
                                     userIntent: triggerPayload.userIntent,
                                     codeBlockLanguage: codeBlockLanguage,
+                                    contextList: undefined,
                                 },
                                 tabID
                             )
@@ -269,6 +275,7 @@ export class Messenger {
                                 messageID,
                                 userIntent: triggerPayload.userIntent,
                                 codeBlockLanguage: codeBlockLanguage,
+                                contextList: undefined,
                             },
                             tabID
                         )
@@ -288,6 +295,7 @@ export class Messenger {
                                 messageID,
                                 userIntent: triggerPayload.userIntent,
                                 codeBlockLanguage: undefined,
+                                contextList: undefined,
                             },
                             tabID
                         )
@@ -306,6 +314,7 @@ export class Messenger {
                             messageID,
                             userIntent: triggerPayload.userIntent,
                             codeBlockLanguage: undefined,
+                            contextList: undefined,
                         },
                         tabID
                     )
@@ -404,6 +413,7 @@ export class Messenger {
                     messageID: 'static_message_' + triggerID,
                     userIntent: undefined,
                     codeBlockLanguage: undefined,
+                    contextList: undefined,
                 },
                 tabID
             )

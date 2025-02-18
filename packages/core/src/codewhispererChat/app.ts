@@ -27,6 +27,7 @@ import {
     UIFocusMessage,
     AcceptDiff,
     QuickCommandGroupActionClick,
+    FileClick,
 } from './controllers/chat/model'
 import { EditorContextCommand, registerCommands } from './commands/registerCommands'
 import { ContextSelectedMessage, CustomFormActionMessage } from './view/connector/connector'
@@ -54,6 +55,7 @@ export function init(appContext: AmazonQAppInitContext) {
         processQuickCommandGroupActionClicked: new EventEmitter<QuickCommandGroupActionClick>(),
         processCustomFormAction: new EventEmitter<CustomFormActionMessage>(),
         processContextSelected: new EventEmitter<ContextSelectedMessage>(),
+        processFileClick: new EventEmitter<FileClick>(),
     }
 
     const cwChatControllerMessageListeners = {
@@ -113,6 +115,9 @@ export function init(appContext: AmazonQAppInitContext) {
         ),
         processContextSelected: new MessageListener<ContextSelectedMessage>(
             cwChatControllerEventEmitters.processContextSelected
+        ),
+        processFileClick: new MessageListener<FileClick>(
+            cwChatControllerEventEmitters.processFileClick
         ),
     }
 
@@ -175,6 +180,9 @@ export function init(appContext: AmazonQAppInitContext) {
         ),
         processContextSelected: new MessagePublisher<ContextSelectedMessage>(
             cwChatControllerEventEmitters.processContextSelected
+        ),
+        processFileClick: new MessagePublisher<FileClick>(
+            cwChatControllerEventEmitters.processFileClick
         ),
     }
 

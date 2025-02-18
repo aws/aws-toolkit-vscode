@@ -8,6 +8,7 @@ import { MessagePublisher } from '../../../amazonq/messages/messagePublisher'
 import { EditorContextCommandType } from '../../commands/registerCommands'
 import { AuthFollowUpType } from '../../../amazonq/auth/model'
 import { ChatItemButton, ChatItemFormItem, MynahUIDataModel, QuickActionCommand } from '@aws/mynah-ui'
+import { MergedRelevantDocument } from '../../controllers/chat/model'
 
 class UiMessage {
     readonly time: number = Date.now()
@@ -206,6 +207,7 @@ export interface ChatMessageProps {
     readonly messageID: string
     readonly userIntent: string | undefined
     readonly codeBlockLanguage: string | undefined
+    readonly contextList: MergedRelevantDocument[] | undefined
 }
 
 export class ChatMessage extends UiMessage {
@@ -220,6 +222,7 @@ export class ChatMessage extends UiMessage {
     readonly messageID: string | undefined
     readonly userIntent: string | undefined
     readonly codeBlockLanguage: string | undefined
+    readonly contextList: MergedRelevantDocument[] | undefined
     override type = 'chatMessage'
 
     constructor(props: ChatMessageProps, tabID: string) {
@@ -234,6 +237,7 @@ export class ChatMessage extends UiMessage {
         this.messageID = props.messageID
         this.userIntent = props.userIntent
         this.codeBlockLanguage = props.codeBlockLanguage
+        this.contextList = props.contextList
     }
 }
 

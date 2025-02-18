@@ -62,6 +62,12 @@ export interface CWCChatItem extends ChatItem {
     traceId?: string
     userIntent?: UserIntent
     codeBlockLanguage?: string
+    contextList?: Context[]
+}
+
+export interface Context {
+    relativeFilePath: string
+    lineRanges: Array<{ first: number; second: number }> // List of [startLine, endLine] tuples
 }
 
 export interface ConnectorProps {
@@ -603,6 +609,9 @@ export class Connector {
                 break
             case 'doc':
                 this.docChatConnector.onOpenDiff(tabID, filePath, deleted)
+                break
+            case 'cwc':
+                this.cwChatConnector.onFileClick(tabID, filePath, messageId)
                 break
         }
     }

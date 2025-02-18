@@ -115,6 +115,10 @@ export class UIMessageListener {
                 break
             case 'context-selected':
                 this.processContextSelected(msg)
+                break
+            case 'file-click':
+                this.fileClick(msg)
+                break
         }
     }
 
@@ -286,6 +290,15 @@ export class UIMessageListener {
             command: msg.command,
             selectedOption: msg.selectedOption,
             comment: msg.comment,
+        })
+    }
+
+    private fileClick(msg: any) {
+        this.chatControllerMessagePublishers.processFileClick.publish({
+            messageId: msg.messageId,
+            tabID: msg.tabID,
+            command: msg.command,
+            filePath: msg.filePath,
         })
     }
 }

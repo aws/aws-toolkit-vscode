@@ -31,6 +31,8 @@ export interface Chunk {
     readonly context?: string
     readonly relativePath?: string
     readonly programmingLanguage?: string
+    readonly startLine?: number
+    readonly endLine?: number
 }
 
 export interface Content {
@@ -292,11 +294,15 @@ export class LspController {
                         programmingLanguage: {
                             languageName: chunk.programmingLanguage,
                         },
+                        startLine: chunk.startLine ?? -1,
+                        endLine: chunk.endLine ?? -1,
                     })
                 } else {
                     resp.push({
                         text: text,
                         relativeFilePath: chunk.relativePath ? chunk.relativePath : path.basename(chunk.filePath),
+                        startLine: chunk.startLine ?? -1,
+                        endLine: chunk.endLine ?? -1,
                     })
                 }
             }

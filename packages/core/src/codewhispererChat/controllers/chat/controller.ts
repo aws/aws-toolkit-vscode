@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as path from 'path'
-import { Event as VSCodeEvent, Uri } from 'vscode'
+import { Event as VSCodeEvent, Uri, workspace, window, ViewColumn, Position, Selection } from 'vscode'
 import { EditorContextExtractor } from '../../editor/context/extractor'
 import { ChatSessionStorage } from '../../storages/chatSession'
 import { Messenger, MessengerResponseType, StaticTextResponseType } from './messenger/messenger'
@@ -28,6 +28,8 @@ import {
     ViewDiff,
     AcceptDiff,
     QuickCommandGroupActionClick,
+    MergedRelevantDocument,
+    FileClick,
 } from './model'
 import {
     AppToWebViewMessageDispatcher,
@@ -41,7 +43,7 @@ import { EditorContextCommand } from '../../commands/registerCommands'
 import { PromptsGenerator } from './prompts/promptsGenerator'
 import { TriggerEventsStorage } from '../../storages/triggerEvents'
 import { SendMessageRequest } from '@amzn/amazon-q-developer-streaming-client'
-import { CodeWhispererStreamingServiceException } from '@amzn/codewhisperer-streaming'
+import { CodeWhispererStreamingServiceException, RelevantTextDocument } from '@amzn/codewhisperer-streaming'
 import { UserIntentRecognizer } from './userIntent/userIntentRecognizer'
 import { CWCTelemetryHelper, recordTelemetryChatRunCommand } from './telemetryHelper'
 import { CodeWhispererTracker } from '../../../codewhisperer/tracker/codewhispererTracker'
@@ -90,6 +92,7 @@ export interface ChatControllerMessagePublishers {
     readonly processQuickCommandGroupActionClicked: MessagePublisher<QuickCommandGroupActionClick>
     readonly processCustomFormAction: MessagePublisher<CustomFormActionMessage>
     readonly processContextSelected: MessagePublisher<ContextSelectedMessage>
+    readonly processFileClick: MessagePublisher<FileClick>
 }
 
 export interface ChatControllerMessageListeners {
@@ -114,6 +117,7 @@ export interface ChatControllerMessageListeners {
     readonly processQuickCommandGroupActionClicked: MessageListener<QuickCommandGroupActionClick>
     readonly processCustomFormAction: MessageListener<CustomFormActionMessage>
     readonly processContextSelected: MessageListener<ContextSelectedMessage>
+    readonly processFileClick: MessageListener<FileClick>
 }
 
 export class ChatController {
@@ -242,6 +246,9 @@ export class ChatController {
         })
         this.chatControllerMessageListeners.processContextSelected.onMessage((data) => {
             return this.processContextSelected(data)
+        })
+        this.chatControllerMessageListeners.processFileClick.onMessage((data) => {
+            return this.processFileClickMessage(data)
         })
     }
 
@@ -524,6 +531,7 @@ export class ChatController {
             `Create a saved prompt`
         )
     }
+
     private processQuickCommandGroupActionClicked(message: QuickCommandGroupActionClick) {
         if (message.actionId === 'create-prompt') {
             this.handlePromptCreate(message.tabID)
@@ -557,6 +565,36 @@ export class ChatController {
         if (message.tabID && message.contextItem.command === createPromptCommand) {
             this.handlePromptCreate(message.tabID)
         }
+    }
+    private async processFileClickMessage(message: FileClick) {
+        let session = this.sessionStorage.getSession(message.tabID)
+        // TODO remove currentContextId but use messageID to track context for each answer message
+        const lineRanges = session.contexts.get(session.currentContextId)?.get(message.filePath)
+
+        if (!lineRanges) {
+            return
+        }
+        const projectRoot = workspace.workspaceFolders?.[0]?.uri.fsPath
+        if (!projectRoot) {
+            return
+        }
+
+        const absoluteFilePath = path.join(projectRoot, message.filePath)
+
+        // Open the file in VSCode
+        const document = await workspace.openTextDocument(absoluteFilePath)
+        const editor = await window.showTextDocument(document, ViewColumn.Active)
+
+        // Create multiple selections based on line ranges
+        const selections: Selection[] = lineRanges.map(({ first, second }) => {
+            const startPosition = new Position(first - 1, 0) // Convert 1-based to 0-based
+            const endPosition = new Position(second - 1, document.lineAt(second - 1).range.end.character)
+            return new Selection(startPosition.line, startPosition.character, endPosition.line, endPosition.character)
+        })
+
+        // Apply multiple selections to the editor using the new API
+        editor.selection = selections[0] // Set the first selection as active
+        editor.selections = selections // Apply multiple selections
     }
 
     private processException(e: any, tabID: string) {
@@ -880,9 +918,12 @@ export class ChatController {
                 if (CodeWhispererSettings.instance.isLocalIndexEnabled()) {
                     const start = performance.now()
                     triggerPayload.relevantTextDocuments = await LspController.instance.query(triggerPayload.message)
+                    triggerPayload.mergedRelevantDocuments = this.mergeRelevantTextDocuments(
+                        triggerPayload.relevantTextDocuments
+                    )
                     for (const doc of triggerPayload.relevantTextDocuments) {
                         getLogger().info(
-                            `amazonq: Using workspace files ${doc.relativeFilePath}, content(partial): ${doc.text?.substring(0, 200)}`
+                            `amazonq: Using workspace files ${doc.relativeFilePath}, content(partial): ${doc.text?.substring(0, 200)}, start line: ${doc.startLine}, end line: ${doc.endLine}`
                         )
                     }
                     triggerPayload.projectContextQueryLatencyMs = performance.now() - start
@@ -904,12 +945,25 @@ export class ChatController {
                     },
                     { timeout: 500, interval: 200, truthy: false }
                 )
+                triggerPayload.mergedRelevantDocuments = this.mergeRelevantTextDocuments(
+                    triggerPayload.relevantTextDocuments
+                )
                 triggerPayload.projectContextQueryLatencyMs = performance.now() - start
             }
         }
 
         const request = triggerPayloadToChatRequest(triggerPayload)
         const session = this.sessionStorage.getSession(tabID)
+
+        session.currentContextId++
+        session.contexts.set(session.currentContextId, new Map())
+        triggerPayload.mergedRelevantDocuments?.forEach((doc) => {
+            const currentContext = session.contexts.get(session.currentContextId)
+            if (currentContext) {
+                currentContext.set(doc.relativeFilePath, doc.lineRanges)
+            }
+        })
+
         getLogger().info(
             `request from tab: ${tabID} conversationID: ${session.sessionIdentifier} request: ${inspect(request, {
                 depth: 12,
@@ -918,7 +972,7 @@ export class ChatController {
         let response: MessengerResponseType | undefined = undefined
         session.createNewTokenSource()
         try {
-            this.messenger.sendInitalStream(tabID, triggerID)
+            this.messenger.sendInitalStream(tabID, triggerID, triggerPayload.mergedRelevantDocuments)
             this.telemetryHelper.setConversationStreamStartTime(tabID)
             if (isSsoConnection(AuthUtil.instance.conn)) {
                 const { $metadata, generateAssistantResponseResponse } = await session.chatSso(request)
@@ -947,5 +1001,45 @@ export class ChatController {
             // clears session, record telemetry before this call
             this.processException(e, tabID)
         }
+    }
+
+    private mergeRelevantTextDocuments(
+        documents: RelevantTextDocument[] | undefined
+    ): MergedRelevantDocument[] | undefined {
+        if (documents === undefined) {
+            return undefined
+        }
+        return Object.entries(
+            documents.reduce<Record<string, { first: number; second: number }[]>>((acc, doc) => {
+                if (!doc.relativeFilePath || doc.startLine === undefined || doc.endLine === undefined) {
+                    return acc // Skip invalid documents
+                }
+
+                if (!acc[doc.relativeFilePath]) {
+                    acc[doc.relativeFilePath] = []
+                }
+                acc[doc.relativeFilePath].push({ first: doc.startLine, second: doc.endLine })
+                return acc
+            }, {})
+        ).map(([filePath, ranges]) => {
+            // Sort by startLine
+            const sortedRanges = ranges.sort((a, b) => a.first - b.first)
+
+            const mergedRanges: { first: number; second: number }[] = []
+            for (const { first, second } of sortedRanges) {
+                if (mergedRanges.length === 0 || mergedRanges[mergedRanges.length - 1].second < first - 1) {
+                    // If no overlap, add new range
+                    mergedRanges.push({ first, second })
+                } else {
+                    // Merge overlapping or consecutive ranges
+                    mergedRanges[mergedRanges.length - 1].second = Math.max(
+                        mergedRanges[mergedRanges.length - 1].second,
+                        second
+                    )
+                }
+            }
+
+            return { relativeFilePath: filePath, lineRanges: mergedRanges }
+        })
     }
 }

@@ -368,6 +368,30 @@ export const createMynahUI = (
                 return
             }
 
+            if (item.contextList !== undefined && item.contextList.length > 0) {
+                item.header = {
+                    fileList: {
+                        fileTreeTitle: '',
+                        filePaths: item.contextList.map((file) => file.relativeFilePath),
+                        rootFolderTitle: 'Context',
+                        collapsedByDefault: true,
+                        hideFileCount: true,
+                        details: Object.fromEntries(
+                            item.contextList.map((file) => [
+                                file.relativeFilePath,
+                                {
+                                    label: file.lineRanges
+                                        .map((range) => `line ${range.first} - ${range.second}`)
+                                        .join(', '),
+                                    description: file.relativeFilePath,
+                                    clickable: true,
+                                },
+                            ])
+                        ),
+                    },
+                }
+            }
+
             if (
                 item.body !== undefined ||
                 item.relatedContent !== undefined ||
