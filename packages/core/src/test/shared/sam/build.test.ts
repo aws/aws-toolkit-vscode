@@ -27,12 +27,14 @@ import { getProjectRootUri } from '../../../shared/sam/utils'
 import sinon from 'sinon'
 import { createMultiPick, DataQuickPickItem } from '../../../shared/ui/pickerPrompter'
 import * as config from '../../../shared/sam/config'
+import * as utils from '../../../shared/sam/utils'
 import { PrompterTester } from '../wizards/prompterTester'
 import { getWorkspaceFolder, TestFolder } from '../../testUtil'
 import { samconfigCompleteData, validTemplateData } from './samTestUtils'
 import { CloudFormationTemplateRegistry } from '../../../shared/fs/templateRegistry'
 import { getTestWindow } from '../vscode/window'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
+import { SemVer } from 'semver'
 
 describe('SAM BuildWizard', async function () {
     const createTester = async (params?: Partial<BuildParams>, arg?: TreeNode | undefined) =>
@@ -232,10 +234,42 @@ describe('SAM build helper functions', () => {
     })
 
     describe('resolveBuildFlags', () => {
-        it('should add --no-use-container if the buildFlags array does not contain --use-container', () => {
+        let sandbox: sinon.SinonSandbox
+        let pathAndVersionStub: sinon.SinonStub<any[], any>
+
+        beforeEach(() => {
+            sandbox = sinon.createSandbox()
+        })
+
+        afterEach(() => {
+            sandbox.restore()
+        })
+
+        it('should add --no-use-container if the buildFlags array does not contain --use-container', async () => {
+            const normalVersion = { path: 'file:///path/to/cli', parsedVersion: new SemVer('1.133.0') }
+            pathAndVersionStub = sandbox.stub().resolves(normalVersion)
+            sandbox.stub(utils, 'getSamCliPathAndVersion').callsFake(pathAndVersionStub)
             const buildFlags: string[] = ['--cached', '--debug', '--parallel']
             const resolvedBuildFlags = ['--cached', '--debug', '--parallel', '--no-use-container']
-            assert.deepStrictEqual(resolvedBuildFlags, resolveBuildFlags(buildFlags))
+            assert.deepEqual(resolvedBuildFlags, await resolveBuildFlags(buildFlags, normalVersion.parsedVersion))
+        })
+
+        it('should return the original buildFlags array if SAM CLI version is less than 1.133', async () => {
+            const lowerVersion = { path: 'file:///path/to/cli', parsedVersion: new SemVer('1.110.0') }
+            const pathAndVersionStub = sandbox.stub().resolves(lowerVersion)
+            sandbox.stub(utils, 'getSamCliPathAndVersion').callsFake(pathAndVersionStub)
+            const buildFlags = ['--cached', '--parallel', '--save-params']
+            const resolvedBuildFlags = await resolveBuildFlags(buildFlags, lowerVersion.parsedVersion)
+            assert.deepEqual(resolvedBuildFlags, buildFlags)
+        })
+
+        it('should not add "--no-use-container" if "--use-container" is already present', async () => {
+            const normalVersion = { path: 'file:///path/to/cli', parsedVersion: new SemVer('1.110.0') }
+            pathAndVersionStub = sandbox.stub().resolves(normalVersion)
+            sandbox.stub(utils, 'getSamCliPathAndVersion').callsFake(pathAndVersionStub)
+            const buildFlags = ['--cached', '--parallel', '--save-params', '--use-container']
+            const resolvedBuildFlags = await resolveBuildFlags(buildFlags, normalVersion.parsedVersion)
+            assert.deepStrictEqual(resolvedBuildFlags, buildFlags)
         })
     })
 })
