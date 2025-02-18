@@ -35,13 +35,13 @@ import { BaseChatSessionStorage } from '../../../amazonq/commons/baseChatStorage
 import { DocMessenger } from '../../messenger'
 import { AuthController } from '../../../amazonq/auth/controller'
 import { openUrl } from '../../../shared/utilities/vsCodeUtils'
-import { openDeletedDiff, openDiff } from '../../../amazonq/commons/diff'
+import { createAmazonQUri, openDeletedDiff, openDiff } from '../../../amazonq/commons/diff'
 import {
     getWorkspaceFoldersByPrefixes,
     getWorkspaceRelativePath,
     isMultiRootWorkspace,
 } from '../../../shared/utilities/workspaceUtils'
-import { getPathsFromZipFilePath } from '../../../amazonq/util/files'
+import { getPathsFromZipFilePath, SvgFileExtension } from '../../../amazonq/util/files'
 import { FollowUpTypes } from '../../../amazonq/commons/types'
 import { DocGenerationTask } from '../docGenerationTask'
 import { DevPhase } from '../../types'
@@ -204,7 +204,13 @@ export class DocController {
                     uploadId = session?.state?.uploadHistory[codeGenerationId].uploadId
                 }
                 const rightPath = path.join(uploadId, zipFilePath)
-                await openDiff(pathInfos.absolutePath, rightPath, tabId, this.scheme)
+                if (rightPath.toLowerCase().endsWith(SvgFileExtension)) {
+                    const rightPathUri = createAmazonQUri(rightPath, tabId, this.scheme)
+                    const infraDiagramContent = await vscode.workspace.openTextDocument(rightPathUri)
+                    await vscode.window.showTextDocument(infraDiagramContent)
+                } else {
+                    await openDiff(pathInfos.absolutePath, rightPath, tabId, this.scheme)
+                }
             }
         }
     }

@@ -77,7 +77,9 @@ export class MockCodeGenState implements SessionState {
             const files = await collectFiles(
                 this.config.workspaceFolders.map((f) => path.join(f.uri.fsPath, './mock-data')),
                 this.config.workspaceFolders,
-                false
+                {
+                    excludeByGitIgnore: false,
+                }
             )
             const newFileContents = files.map((f) => ({
                 zipFilePath: f.zipFilePath,

@@ -8,7 +8,7 @@ import { DocGenerationStep, docScheme, getFileSummaryPercentage, Mode } from '..
 
 import { i18n } from '../../shared/i18n-helper'
 
-import { NewFileInfo, SessionState, SessionStateAction, SessionStateConfig } from '../types'
+import { CurrentWsFolders, NewFileInfo, SessionState, SessionStateAction, SessionStateConfig } from '../types'
 import {
     ContentLengthError,
     DocServiceError,
@@ -23,6 +23,8 @@ import {
 import { DocMessenger } from '../messenger'
 import { BaseCodeGenState, BasePrepareCodeGenState, CreateNextStateParams } from '../../amazonq/session/sessionState'
 import { Intent } from '../../amazonq/commons/types'
+import { AmazonqCreateUpload, Span } from '../../shared/telemetry/telemetry'
+import { prepareRepoData, PrepareRepoDataOptions } from '../../amazonq/util/files'
 
 export class DocCodeGenState extends BaseCodeGenState {
     protected handleProgress(messenger: DocMessenger, action: SessionStateAction, detail?: string): void {
@@ -131,5 +133,17 @@ export class DocPrepareCodeGenState extends BasePrepareCodeGenState {
 
     protected override createNextState(config: SessionStateConfig): SessionState {
         return super.createNextState(config, DocCodeGenState)
+    }
+
+    protected override async prepareProjectZip(
+        workspaceRoots: string[],
+        workspaceFolders: CurrentWsFolders,
+        span: Span<AmazonqCreateUpload>,
+        options: PrepareRepoDataOptions
+    ) {
+        return await prepareRepoData(workspaceRoots, workspaceFolders, span, {
+            ...options,
+            isIncludeInfraDiagram: true,
+        })
     }
 }
