@@ -181,6 +181,36 @@ export interface SendMessageCommandOutput extends SendMessageResponse, __Metadat
  *             userSettings: { // UserSettings
  *               hasConsentedToCrossRegionCalls: true || false,
  *             },
+ *             additionalContext: [ // AdditionalContentList
+ *               { // AdditionalContentEntry
+ *                 name: "STRING_VALUE", // required
+ *                 description: "STRING_VALUE", // required
+ *                 innerContext: "STRING_VALUE",
+ *               },
+ *             ],
+ *             toolResults: [ // ToolResults
+ *               { // ToolResult
+ *                 toolUseId: "STRING_VALUE", // required
+ *                 content: [ // ToolResultContent // required
+ *                   { // ToolResultContentBlock Union: only one key present
+ *                     text: "STRING_VALUE",
+ *                     json: "DOCUMENT_VALUE",
+ *                   },
+ *                 ],
+ *                 status: "success" || "error",
+ *               },
+ *             ],
+ *             tools: [ // Tools
+ *               { // Tool Union: only one key present
+ *                 toolSpecification: { // ToolSpecification
+ *                   inputSchema: { // ToolInputSchema
+ *                     json: "DOCUMENT_VALUE",
+ *                   },
+ *                   name: "STRING_VALUE", // required
+ *                   description: "STRING_VALUE",
+ *                 },
+ *               },
+ *             ],
  *           },
  *           userIntent: "SUGGEST_ALTERNATE_IMPLEMENTATION" || "APPLY_COMMON_BEST_PRACTICES" || "IMPROVE_CODE" || "SHOW_EXAMPLES" || "CITE_SOURCES" || "EXPLAIN_LINE_BY_LINE" || "EXPLAIN_CODE_SELECTION" || "GENERATE_CLOUDFORMATION_TEMPLATE" || "GENERATE_UNIT_TESTS" || "CODE_GENERATION",
  *         },
@@ -303,6 +333,36 @@ export interface SendMessageCommandOutput extends SendMessageResponse, __Metadat
  *           userSettings: {
  *             hasConsentedToCrossRegionCalls: true || false,
  *           },
+ *           additionalContext: [
+ *             {
+ *               name: "STRING_VALUE", // required
+ *               description: "STRING_VALUE", // required
+ *               innerContext: "STRING_VALUE",
+ *             },
+ *           ],
+ *           toolResults: [
+ *             {
+ *               toolUseId: "STRING_VALUE", // required
+ *               content: [ // required
+ *                 {//  Union: only one key present
+ *                   text: "STRING_VALUE",
+ *                   json: "DOCUMENT_VALUE",
+ *                 },
+ *               ],
+ *               status: "success" || "error",
+ *             },
+ *           ],
+ *           tools: [
+ *             {//  Union: only one key present
+ *               toolSpecification: {
+ *                 inputSchema: {
+ *                   json: "DOCUMENT_VALUE",
+ *                 },
+ *                 name: "STRING_VALUE", // required
+ *                 description: "STRING_VALUE",
+ *               },
+ *             },
+ *           ],
  *         },
  *         userIntent: "SUGGEST_ALTERNATE_IMPLEMENTATION" || "APPLY_COMMON_BEST_PRACTICES" || "IMPROVE_CODE" || "SHOW_EXAMPLES" || "CITE_SOURCES" || "EXPLAIN_LINE_BY_LINE" || "EXPLAIN_CODE_SELECTION" || "GENERATE_CLOUDFORMATION_TEMPLATE" || "GENERATE_UNIT_TESTS" || "CODE_GENERATION",
  *       },
@@ -586,6 +646,12 @@ export interface SendMessageCommandOutput extends SendMessageResponse, __Metadat
  * //           },
  * //         },
  * //       ],
+ * //     },
+ * //     toolUseEvent: { // ToolUseEvent
+ * //       toolUseId: "STRING_VALUE", // required
+ * //       name: "STRING_VALUE", // required
+ * //       input: "STRING_VALUE",
+ * //       stop: true || false,
  * //     },
  * //     invalidStateEvent: { // InvalidStateEvent
  * //       reason: "INVALID_TASK_ASSIST_PLAN", // required
