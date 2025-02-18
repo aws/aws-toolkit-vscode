@@ -1,19 +1,50 @@
 {
-	"folders": [
-		{
-			"path": "."
-		},
-		{
-			"path": "packages/toolkit"
-		},
-		{
-			"path": "packages/core"
-		},
-		{
-			"path": "packages/amazonq"
-		}
-	],
-	"settings": {
-		"typescript.tsdk": "node_modules/typescript/lib"
-	}
+    "folders": [
+        {
+            "path": ".",
+        },
+        {
+            "path": "packages/toolkit",
+        },
+        {
+            "path": "packages/core",
+        },
+        {
+            "path": "packages/amazonq",
+        },
+    ],
+    "settings": {
+        "typescript.tsdk": "node_modules/typescript/lib",
+    },
+    "launch": {
+        "configurations": [
+            {
+                "type": "aws-sam",
+                "request": "direct-invoke",
+                "name": "core:src/awsService/appBuilder/serverlessLand.getProjectUri (nodejs14.x)",
+                "invokeTarget": {
+                    "target": "code",
+                    "projectRoot": "/Users/vanditap/src/github.com/aws-toolkit-vscode/packages/core",
+                    "lambdaHandler": "src/awsService/appBuilder/serverlessLand.getProjectUri",
+                },
+                "lambda": {
+                    "runtime": "nodejs14.x",
+                    "payload": {},
+                    "environmentVariables": {},
+                },
+            },
+            {
+                "name": "Test Lint",
+                "type": "node",
+                "request": "launch",
+                "program": "${workspaceFolder}/scripts/lint/testLint.ts",
+                "outFiles": ["${workspaceFolder}/dist/**/*.js"],
+                "preLaunchTask": "build",
+                "presentation": {
+                    "group": "7_TestLint",
+                    "order": 1,
+                },
+            },
+        ],
+    },
 }
