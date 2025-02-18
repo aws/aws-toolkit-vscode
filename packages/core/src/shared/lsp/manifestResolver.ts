@@ -108,21 +108,22 @@ export class ManifestResolver {
      * Check if the current manifest is deprecated.
      * If yes and user hasn't muted this notification, shows a toast message with two buttons:
      * - OK: close and do nothing
-     * - Don't Show Again: Update global state (muteDecprecation) so the deprecation message is never shown for this manifest.
+     * - Don't Show Again: Update global state (muteDeprecation) so the deprecation message is never shown for this manifest.
      * @param manifest
      */
     private checkDeprecation(manifest: Manifest): void {
-        if (manifest.isManifestDeprecated && !this.getStorage()[this.lsName].muteDeprecation) {
-            const deprecationMessage = `${this.lsName} manifest is deprecated. No future updates will be available.`
+        const deprecationMessage = `${this.lsName} manifest is deprecated. No future updates will be available.`
+        if (manifest.isManifestDeprecated) {
             logger.info(deprecationMessage)
-
-            void vscode.window
-                .showInformationMessage(deprecationMessage, localizedText.ok, localizedText.dontShow)
-                .then((button) => {
-                    if (button === localizedText.dontShow) {
-                        this.getStorage()[this.lsName].muteDeprecation = true
-                    }
-                })
+            if (!this.getStorage()[this.lsName].muteDeprecation) {
+                void vscode.window
+                    .showInformationMessage(deprecationMessage, localizedText.ok, localizedText.dontShow)
+                    .then((button) => {
+                        if (button === localizedText.dontShow) {
+                            this.getStorage()[this.lsName].muteDeprecation = true
+                        }
+                    })
+            }
         }
     }
 
