@@ -20,6 +20,6 @@
 		</checkbox>
 	</div>
 </checklist>
-<checkbox class="theme-picker-link" when-checked="command:aws.lambda.createNewSamApp" checked-on="false">
+<checkbox class="theme-picker-link" when-checked="command:aws.toolkit.lambda.serverlessLand" checked-on="false">
 	See more application example...
 </checkbox>
