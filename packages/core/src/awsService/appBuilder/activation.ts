@@ -23,7 +23,7 @@ import { ResourceNode } from './explorer/nodes/resourceNode'
 import { getSyncWizard, runSync } from '../../shared/sam/sync'
 import { getDeployWizard, runDeploy } from '../../shared/sam/deploy'
 import { DeployTypeWizard } from './wizards/deployTypeWizard'
-import { createNewServerlessLandProject } from './serverlessLand'
+import { createNewServerlessLandProject } from './serverlessLand/serverlessLandMain'
 export const templateToOpenAppComposer = 'aws.toolkit.appComposer.templateToOpenOnStart'
 
 /**
