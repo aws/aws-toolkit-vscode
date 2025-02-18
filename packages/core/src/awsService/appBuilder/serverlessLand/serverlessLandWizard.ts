@@ -12,7 +12,7 @@ import { createQuickPick } from '../../../shared/ui/pickerPrompter'
 import { createFolderPrompt } from '../../../shared/ui/common/location'
 import { Region } from '../../../shared/regions/endpoints'
 import { createExitPrompter } from '../../../shared/ui/common/exitPrompter'
-import { MetadataManager } from '../models/serverlesslandMetadataManager'
+import { MetadataManager } from './serverlesslandMetadataManager'
 import { ToolkitError } from '../../../shared/errors'
 
 export interface CreateServerlessLandWizardForm {
@@ -48,7 +48,7 @@ export class CreateServerlessLandWizard extends Wizard<CreateServerlessLandWizar
                 'src',
                 'awsService',
                 'appBuilder',
-                'models',
+                'serverlessLand',
                 'serverlessland-metadata.json'
             )
             await this.metadataManager.loadMetadata(metadataPath)
