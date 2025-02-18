@@ -16,6 +16,7 @@ import {
     createParamsSourcePrompter,
     getBuildFlags,
     ParamsSource,
+    resolveBuildFlags,
     runBuild,
 } from '../../../shared/sam/build'
 import { TreeNode } from '../../../shared/treeview/resourceTreeDataProvider'
@@ -26,12 +27,14 @@ import { getProjectRootUri } from '../../../shared/sam/utils'
 import sinon from 'sinon'
 import { createMultiPick, DataQuickPickItem } from '../../../shared/ui/pickerPrompter'
 import * as config from '../../../shared/sam/config'
+import * as utils from '../../../shared/sam/utils'
 import { PrompterTester } from '../wizards/prompterTester'
 import { getWorkspaceFolder, TestFolder } from '../../testUtil'
 import { samconfigCompleteData, validTemplateData } from './samTestUtils'
 import { CloudFormationTemplateRegistry } from '../../../shared/fs/templateRegistry'
 import { getTestWindow } from '../vscode/window'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
+import { SemVer } from 'semver'
 
 describe('SAM BuildWizard', async function () {
     const createTester = async (params?: Partial<BuildParams>, arg?: TreeNode | undefined) =>
@@ -227,6 +230,38 @@ describe('SAM build helper functions', () => {
             assert.strictEqual(quickPick.placeholder, 'Select configuration options for sam build')
             assert.strictEqual(quickPick.items.length, 2)
             assert.deepStrictEqual(quickPick.items, expectedItems)
+        })
+    })
+
+    describe('resolveBuildFlags', () => {
+        let sandbox: sinon.SinonSandbox
+        beforeEach(() => {
+            sandbox = sinon.createSandbox()
+        })
+
+        afterEach(() => {
+            sandbox.restore()
+        })
+
+        it('uses --no-use-container when --use-container is absent', async () => {
+            const normalVersion = new SemVer('1.133.0')
+            const buildFlags = ['--cached', '--debug', '--parallel']
+            const expectedBuildFlags = ['--cached', '--debug', '--parallel', '--no-use-container']
+            return testResolveBuildFlags(sandbox, normalVersion, buildFlags, expectedBuildFlags)
+        })
+
+        it('preserves buildFlags when SAM CLI version < 1.133', async () => {
+            const lowerVersion = new SemVer('1.110.0')
+            const buildFlags = ['--cached', '--parallel', '--save-params']
+            const expectedBuildFlags = ['--cached', '--parallel', '--save-params']
+            return testResolveBuildFlags(sandbox, lowerVersion, buildFlags, expectedBuildFlags)
+        })
+
+        it('respects existing --use-container flag', async () => {
+            const normalVersion = new SemVer('1.110.0')
+            const buildFlags = ['--cached', '--parallel', '--save-params', '--use-container']
+            const expectedBuildFlags = ['--cached', '--parallel', '--save-params', '--use-container']
+            return testResolveBuildFlags(sandbox, normalVersion, buildFlags, expectedBuildFlags)
         })
     })
 })
@@ -551,3 +586,16 @@ describe('SAM runBuild', () => {
         })
     })
 })
+
+function testResolveBuildFlags(
+    sandbox: sinon.SinonSandbox,
+    parsedVersion: SemVer,
+    buildFlags: string[],
+    expectedBuildFlags: string[]
+) {
+    const pathAndVersionStub = sandbox.stub().resolves({ path: 'file:///path/to/cli', parsedVersion })
+    sandbox.stub(utils, 'getSamCliPathAndVersion').callsFake(pathAndVersionStub)
+    return resolveBuildFlags(buildFlags, parsedVersion).then((resolvedBuildFlags) => {
+        assert.deepEqual(resolvedBuildFlags, expectedBuildFlags)
+    })
+}

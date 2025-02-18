@@ -26,7 +26,7 @@ import { TextMessageHandler } from './messages/handler'
 import { MessageController } from './messages/controller'
 import { getActions, getDetails } from './diffTree/actions'
 import { DiffTreeFileInfo } from './diffTree/types'
-import { FeatureContext } from '../../../shared'
+import { FeatureContext } from '../../../shared/featureConfig'
 import { tryNewMap } from '../../util/functionUtils'
 import { welcomeScreenTabData } from './walkthrough/welcome'
 import { agentWalkthroughDataModel } from './walkthrough/agent'
@@ -609,7 +609,7 @@ export const createMynahUI = (
                 mynahUI.addChatItem(tabID, {
                     type: ChatItemType.ANSWER_STREAM,
                 })
-            } else if (tabType === 'gumby') {
+            } else if (tabType === 'gumby' || tabType === 'testgen') {
                 connector.requestAnswer(tabID, {
                     chatMessage: prompt.prompt ?? '',
                 })

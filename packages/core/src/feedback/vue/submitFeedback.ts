@@ -4,7 +4,7 @@
  */
 
 import globals from '../../shared/extensionGlobals'
-import { getLogger } from '../../shared/logger'
+import { getLogger } from '../../shared/logger/logger'
 import * as vscode from 'vscode'
 import { TelemetryService } from '../../shared/telemetry/telemetryService'
 import { localize } from '../../shared/utilities/vsCodeUtils'

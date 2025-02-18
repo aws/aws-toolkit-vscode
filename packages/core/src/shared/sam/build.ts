@@ -29,6 +29,7 @@ import {
 } from './utils'
 import { getConfigFileUri, validateSamBuildConfig } from './config'
 import { runInTerminal } from './processTerminal'
+import { SemVer } from 'semver'
 
 const buildMementoRootKey = 'samcli.build.params'
 export interface BuildParams {
@@ -210,10 +211,13 @@ export async function runBuild(arg?: TreeNode): Promise<SamBuildResult> {
     const projectRoot = params.projectRoot
 
     const defaultFlags: string[] = ['--cached', '--parallel', '--save-params', '--use-container']
+
+    const { path: samCliPath, parsedVersion } = await getSamCliPathAndVersion()
+
     // refactor
     const buildFlags: string[] =
         params.paramsSource === ParamsSource.Specify && params.buildFlags
-            ? JSON.parse(params.buildFlags)
+            ? await resolveBuildFlags(JSON.parse(params.buildFlags), parsedVersion)
             : await getBuildFlags(params.paramsSource, projectRoot, defaultFlags)
 
     // todo remove
@@ -229,8 +233,6 @@ export async function runBuild(arg?: TreeNode): Promise<SamBuildResult> {
     await updateRecentResponse(buildMementoRootKey, 'global', 'templatePath', templatePath)
 
     try {
-        const { path: samCliPath } = await getSamCliPathAndVersion()
-
         // Create a child process to run the SAM build command
         const buildProcess = new ChildProcess(samCliPath, ['build', ...buildFlags], {
             spawnOptions: await addTelemetryEnvVar({
@@ -280,4 +282,14 @@ function resolveBuildArgConflict(boundArgs: string[]): string[] {
     //     boundArgsSet.add('--no-beta-features')
     // }
     return Array.from(boundArgsSet)
+}
+export async function resolveBuildFlags(buildFlags: string[], samCliVersion: SemVer | null): Promise<string[]> {
+    // --no-use-container was not added until v1.133.0
+    if (samCliVersion?.compare('1.133.0') ?? -1 < 0) {
+        return buildFlags
+    }
+    if (!buildFlags.includes('--use-container')) {
+        buildFlags.push('--no-use-container')
+    }
+    return buildFlags
 }

@@ -2,8 +2,8 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import { i18n } from '../../shared'
 import { ToolkitError } from '../../shared/errors'
+import { i18n } from '../../shared/i18n-helper'
 import {
     DefaultCodeScanErrorMessage,
     FileSizeExceededErrorMessage,
@@ -51,7 +51,7 @@ export class InvalidSourceZipError extends SecurityScanError {
 
 export class NoSourceFilesError extends SecurityScanError {
     constructor() {
-        super('Project does not contain valid files to scan', 'NoSourceFilesError', noSourceFilesErrorMessage)
+        super('Project does not contain valid files.', 'NoSourceFilesError', noSourceFilesErrorMessage)
     }
 }
 

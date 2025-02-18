@@ -1,3 +1,14 @@
+## 1.47.0 2025-02-13
+
+- **Bug Fix** `Send to prompt` and other context menu options not sent if chat was closed
+- **Bug Fix** Amazon Q /test: Truncating user input to 4096 characters for unit test generation.
+- **Bug Fix** Amazon Q /test: Q identify active test file and infer source file for test generation.
+- **Bug Fix** /review: Code review starts automatically when invoked from menu
+- **Feature** Amazon Q /dev: support `.hbs`, `.gjs`, `.gts`, `.astro`, `.mdx`, `.svelte`, `.erb`, `.rake` files
+- **Feature** /transform: automatically download results when ready
+- **Feature** /transform: support Java 21 transformations
+- **Removal** Reverted prefetch logic to enable more stable inline completion
+
 ## 1.46.0 2025-02-05
 
 - **Bug Fix** Citation links are not clickable as numbers, but appear as non-clickable texts

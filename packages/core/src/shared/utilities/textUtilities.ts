@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import * as crypto from 'crypto'
 import * as fs from 'fs' // eslint-disable-line no-restricted-imports
 import { default as stripAnsi } from 'strip-ansi'
-import { getLogger } from '../logger'
+import { getLogger } from '../logger/logger'
 
 /**
  * Truncates string `s` if it exceeds `n` chars.

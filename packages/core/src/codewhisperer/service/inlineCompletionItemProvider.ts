@@ -5,7 +5,7 @@
 import vscode, { Position } from 'vscode'
 import { getPrefixSuffixOverlap } from '../util/commonUtil'
 import { Recommendation } from '../client/codewhisperer'
-import { CodeWhispererSessionState } from '../util/codeWhispererSession'
+import { session } from '../util/codeWhispererSession'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { ReferenceInlineProvider } from './referenceInlineProvider'
@@ -21,7 +21,6 @@ export class CWInlineCompletionItemProvider implements vscode.InlineCompletionIt
     private requestId: string
     private startPos: Position
     private nextToken: string
-    private session = CodeWhispererSessionState.instance.getSession()
 
     private _onDidShow: vscode.EventEmitter<void> = new vscode.EventEmitter<void>()
     public readonly onDidShow: vscode.Event<void> = this._onDidShow.event
@@ -101,8 +100,8 @@ export class CWInlineCompletionItemProvider implements vscode.InlineCompletionIt
         const effectiveStart = document.positionAt(document.offsetAt(start) + prefix.length)
         const truncatedSuggestion = this.truncateOverlapWithRightContext(document, r.content, end)
         if (truncatedSuggestion.length === 0) {
-            if (this.session.getSuggestionState(index) !== 'Showed') {
-                this.session.setSuggestionState(index, 'Discard')
+            if (session.getSuggestionState(index) !== 'Showed') {
+                session.setSuggestionState(index, 'Discard')
             }
             return undefined
         }
@@ -119,9 +118,9 @@ export class CWInlineCompletionItemProvider implements vscode.InlineCompletionIt
                     index,
                     truncatedSuggestion,
                     this.requestId,
-                    this.session.sessionId,
-                    this.session.triggerType,
-                    this.session.getCompletionType(index),
+                    session.sessionId,
+                    session.triggerType,
+                    session.getCompletionType(index),
                     runtimeLanguageContext.getLanguageContext(document.languageId, path.extname(document.fileName))
                         .language,
                     r.references,
@@ -156,22 +155,22 @@ export class CWInlineCompletionItemProvider implements vscode.InlineCompletionIt
         const end = position
         const iteratingIndexes = this.getIteratingIndexes()
         const prefix = document.getText(new vscode.Range(start, end)).replace(/\r\n/g, '\n')
-        const matchedCount = this.session.recommendations.filter(
+        const matchedCount = session.recommendations.filter(
             (r) => r.content.length > 0 && r.content.startsWith(prefix) && r.content !== prefix
         ).length
         for (const i of iteratingIndexes) {
-            const r = this.recommendations[i]
+            const r = session.recommendations[i]
             const item = this.getInlineCompletionItem(document, r, start, end, i, prefix)
             if (item === undefined) {
                 continue
             }
             this.activeItemIndex = i
-            this.session.setSuggestionState(i, 'Showed')
+            session.setSuggestionState(i, 'Showed')
             ReferenceInlineProvider.instance.setInlineReference(this.startPos.line, r.content, r.references)
             ImportAdderProvider.instance.onShowRecommendation(document, this.startPos.line, r)
             this.nextMove = 0
             TelemetryHelper.instance.setFirstSuggestionShowTime()
-            this.session.setPerceivedLatency()
+            session.setPerceivedLatency()
             UserWrittenCodeTracker.instance.onQStartsMakingEdits()
             this._onDidShow.fire()
             if (matchedCount >= 2 || this.nextToken !== '') {

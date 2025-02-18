@@ -483,15 +483,6 @@ const de_CommandError = async(
     Object.assign(contents, _json(data));
     return contents;
   }
-  const de_InteractionComponentsEvent_event = async (
-    output: any,
-    context: __SerdeContext
-  ): Promise<InteractionComponentsEvent> => {
-    const contents: InteractionComponentsEvent = {} as any;
-    const data: any = await parseBody(output.body, context);
-    Object.assign(contents, de_InteractionComponentsEvent(data, context));
-    return contents;
-  }
   const de_InternalServerException_event = async (
     output: any,
     context: __SerdeContext
@@ -548,6 +539,15 @@ const de_CommandError = async(
       body: await parseBody(output.body, context)
     };
     return de_ValidationExceptionRes(parsedOutput, context);
+  }
+  const de_InteractionComponentsEvent_event = async (
+    output: any,
+    context: __SerdeContext
+  ): Promise<InteractionComponentsEvent> => {
+    const contents: InteractionComponentsEvent = {} as any;
+    const data: any = await parseBody(output.body, context);
+    Object.assign(contents, de_InteractionComponentsEvent(data, context));
+    return contents;
   }
   // se_AppStudioState omitted.
 
@@ -666,44 +666,6 @@ const de_CommandError = async(
 
   // de_IntentsEvent omitted.
 
-  /**
-   * deserializeAws_json1_0InteractionComponentEntry
-   */
-  const de_InteractionComponentEntry = (
-    output: any,
-    context: __SerdeContext
-  ): InteractionComponentEntry => {
-    return take(output, {
-      'interactionComponent': (_: any) => de_InteractionComponent(_, context),
-      'interactionComponentId': __expectString,
-    }) as any;
-  }
-
-  /**
-   * deserializeAws_json1_0InteractionComponentEntryList
-   */
-  const de_InteractionComponentEntryList = (
-    output: any,
-    context: __SerdeContext
-  ): (InteractionComponentEntry)[] => {
-    const retVal = (output || []).filter((e: any) => e != null).map((entry: any) => {
-      return de_InteractionComponentEntry(entry, context);
-    });
-    return retVal;
-  }
-
-  /**
-   * deserializeAws_json1_0InteractionComponentsEvent
-   */
-  const de_InteractionComponentsEvent = (
-    output: any,
-    context: __SerdeContext
-  ): InteractionComponentsEvent => {
-    return take(output, {
-      'interactionComponentEntries': (_: any) => de_InteractionComponentEntryList(_, context),
-    }) as any;
-  }
-
   // de_InternalServerException omitted.
 
   // de_InvalidStateEvent omitted.
@@ -730,6 +692,18 @@ const de_CommandError = async(
 
   // de_ValidationException omitted.
 
+  /**
+   * deserializeAws_json1_0InteractionComponentsEvent
+   */
+  const de_InteractionComponentsEvent = (
+    output: any,
+    context: __SerdeContext
+  ): InteractionComponentsEvent => {
+    return take(output, {
+      'interactionComponentEntries': (_: any) => de_InteractionComponentEntryList(_, context),
+    }) as any;
+  }
+
   // de_Action omitted.
 
   // de_Alert omitted.
@@ -752,6 +726,7 @@ const de_CommandError = async(
     context: __SerdeContext
   ): InteractionComponent => {
     return take(output, {
+      'action': _json,
       'alert': _json,
       'infrastructureUpdate': _json,
       'progress': _json,
@@ -764,6 +739,32 @@ const de_CommandError = async(
       'taskReference': _json,
       'text': _json,
     }) as any;
+  }
+
+  /**
+   * deserializeAws_json1_0InteractionComponentEntry
+   */
+  const de_InteractionComponentEntry = (
+    output: any,
+    context: __SerdeContext
+  ): InteractionComponentEntry => {
+    return take(output, {
+      'interactionComponent': (_: any) => de_InteractionComponent(_, context),
+      'interactionComponentId': __expectString,
+    }) as any;
+  }
+
+  /**
+   * deserializeAws_json1_0InteractionComponentEntryList
+   */
+  const de_InteractionComponentEntryList = (
+    output: any,
+    context: __SerdeContext
+  ): (InteractionComponentEntry)[] => {
+    const retVal = (output || []).filter((e: any) => e != null).map((entry: any) => {
+      return de_InteractionComponentEntry(entry, context);
+    });
+    return retVal;
   }
 
   // de_ModuleLink omitted.

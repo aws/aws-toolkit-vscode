@@ -20,6 +20,12 @@ export const generateDevFilePrompt =
 // Max allowed size for file collection
 export const maxRepoSizeBytes = 200 * 1024 * 1024
 
+export const startCodeGenClientErrorMessages = ['Improperly formed request', 'Resource not found']
+export const startTaskAssistLimitReachedMessage = 'StartTaskAssistCodeGeneration reached for this month.'
+export const clientErrorMessages = [
+    'The folder you chose did not contain any source files in a supported language. Choose another folder and try again.',
+]
+
 // License text that's used in codewhisperer reference log
 export const referenceLogText = (reference: CodeReference) =>
     `[${new Date().toLocaleString()}] Accepted recommendation from Amazon Q. Code provided with reference under <a href="${LicenseUtil.getLicenseHtml(

@@ -22,7 +22,7 @@ import {
     invokeRecommendation,
     ConfigurationEntry,
     RecommendationHandler,
-    CodeWhispererSessionState,
+    session,
     vsCodeCursorUpdateDelay,
     AuthUtil,
 } from 'aws-core-vscode/codewhisperer'
@@ -36,7 +36,6 @@ type CodeWhispererResponse = ListRecommendationsResponse & {
 let tempFolder: string
 
 describe.skip('CodeWhisperer telemetry', async function () {
-    const session = CodeWhispererSessionState.instance.getSession()
     let sandbox: sinon.SinonSandbox
     let client: DefaultCodeWhispererClient
 
@@ -520,7 +519,6 @@ async function manualTrigger(
 
 // Note: RecommendationHandler.isSuggestionVisible seems not to work well, hence not using it
 async function waitUntilSuggestionSeen(index: number = 0) {
-    const session = CodeWhispererSessionState.instance.getSession()
     const state = await waitUntil(
         async () => {
             const r = session.getSuggestionState(index)

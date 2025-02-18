@@ -18,7 +18,7 @@ import {
     TransformationType,
 } from '../../models/model'
 import { ExportResultArchiveStructure, downloadExportResultArchive } from '../../../shared/utilities/download'
-import { getLogger } from '../../../shared/logger'
+import { getLogger } from '../../../shared/logger/logger'
 import { telemetry } from '../../../shared/telemetry/telemetry'
 import { CodeTransformTelemetryState } from '../../../amazonqGumby/telemetry/codeTransformTelemetryState'
 import * as CodeWhispererConstants from '../../models/constants'
@@ -343,7 +343,10 @@ export class ProposedTransformationExplorer {
             }
 
             diffModel.clearChanges()
-            transformByQState.setSummaryFilePath('')
+            // update summary path to where it is locally after user accepts changes, so that View Summary button works
+            transformByQState.setSummaryFilePath(
+                path.join(transformByQState.getProjectPath(), ExportResultArchiveStructure.PathToSummary)
+            )
             transformByQState.setProjectCopyFilePath('')
             transformByQState.setResultArchiveFilePath('')
             transformDataProvider.refresh()

@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { getLogger } from '../../shared/logger'
+import { getLogger } from '../../shared/logger/logger'
 import { getStartUrl } from './getStartUrl'
 import { showQuickPick } from '../../shared/ui/pickerPrompter'
 import { AuthUtil } from './authUtil'

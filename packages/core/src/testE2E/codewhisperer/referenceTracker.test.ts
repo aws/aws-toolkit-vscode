@@ -10,7 +10,7 @@ import { setValidConnection, skipTestIfNoValidConn } from '../util/connection'
 import { RecommendationHandler } from '../../codewhisperer/service/recommendationHandler'
 import { createMockTextEditor, resetCodeWhispererGlobalVariables } from '../../test/codewhisperer/testUtil'
 import { invokeRecommendation } from '../../codewhisperer/commands/invokeRecommendation'
-import { CodeWhispererSessionState } from '../../codewhisperer/util/codeWhispererSession'
+import { session } from '../../codewhisperer/util/codeWhispererSession'
 
 /*
 New model deployment may impact references returned. 
@@ -47,7 +47,6 @@ describe('CodeWhisperer service invocation', async function () {
         isAutomatedTriggerEnabled: true,
         isSuggestionsWithCodeReferencesEnabled: false,
     }
-    const session = CodeWhispererSessionState.instance.getSession()
 
     before(async function () {
         validConnection = await setValidConnection()

@@ -8,7 +8,7 @@ const localize = nls.loadMessageBundle()
 
 import { DefaultStepFunctionsClient } from '../../../shared/clients/stepFunctionsClient'
 
-import { getLogger } from '../../../shared/logger'
+import { getLogger } from '../../../shared/logger/logger'
 import { Result } from '../../../shared/telemetry/telemetry'
 import { StateMachineNode } from '../../explorer/stepFunctionsNodes'
 import { ExtContext } from '../../../shared/extensions'

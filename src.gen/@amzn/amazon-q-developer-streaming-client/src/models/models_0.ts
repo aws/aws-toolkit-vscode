@@ -28,7 +28,7 @@ export class AccessDeniedException extends __BaseException {
    * Reason for AccessDeniedException
    * @public
    */
-  reason?: AccessDeniedExceptionReason;
+  reason?: AccessDeniedExceptionReason | undefined;
 
   /**
    * @internal
@@ -87,6 +87,18 @@ export class ResourceNotFoundException extends __BaseException {
 }
 
 /**
+ * @public
+ * @enum
+ */
+export const ThrottlingExceptionReason = {
+  MONTHLY_REQUEST_COUNT: "MONTHLY_REQUEST_COUNT",
+} as const
+/**
+ * @public
+ */
+export type ThrottlingExceptionReason = typeof ThrottlingExceptionReason[keyof typeof ThrottlingExceptionReason]
+
+/**
  * This exception is thrown when request was denied due to request throttling.
  * @public
  */
@@ -97,6 +109,12 @@ export class ThrottlingException extends __BaseException {
     throttling: true,
   };
   /**
+   * Reason for ThrottlingException
+   * @public
+   */
+  reason?: ThrottlingExceptionReason | undefined;
+
+  /**
    * @internal
    */
   constructor(opts: __ExceptionOptionType<ThrottlingException, __BaseException>) {
@@ -106,6 +124,7 @@ export class ThrottlingException extends __BaseException {
       ...opts
     });
     Object.setPrototypeOf(this, ThrottlingException.prototype);
+    this.reason = opts.reason;
   }
 }
 
@@ -134,7 +153,7 @@ export class ValidationException extends __BaseException {
    * Reason for ValidationException
    * @public
    */
-  reason?: ValidationExceptionReason;
+  reason?: ValidationExceptionReason | undefined;
 
   /**
    * @internal
@@ -159,25 +178,25 @@ export interface AppStudioState {
    * The namespace of the context. Examples: 'ui.Button', 'ui.Table.DataSource', 'ui.Table.RowActions.Button', 'logic.invokeAWS', 'logic.JavaScript'
    * @public
    */
-  namespace: string | undefined;
+  namespace: string;
 
   /**
    * The name of the property. Examples: 'visibility', 'disability', 'value', 'code'
    * @public
    */
-  propertyName: string | undefined;
+  propertyName: string;
 
   /**
    * The value of the property.
    * @public
    */
-  propertyValue?: string;
+  propertyValue?: string | undefined;
 
   /**
    * Context about how the property is used
    * @public
    */
-  propertyContext: string | undefined;
+  propertyContext: string;
 }
 
 /**
@@ -208,7 +227,7 @@ export interface AssistantResponseEvent {
    * The content of the text message in markdown format.
    * @public
    */
-  content: string | undefined;
+  content: string;
 }
 
 /**
@@ -281,13 +300,13 @@ export interface FollowupPrompt {
    * The content of the text message in markdown format.
    * @public
    */
-  content: string | undefined;
+  content: string;
 
   /**
    * User Intent
    * @public
    */
-  userIntent?: UserIntent;
+  userIntent?: UserIntent | undefined;
 }
 
 /**
@@ -305,8 +324,8 @@ export const FollowupPromptFilterSensitiveLog = (obj: FollowupPrompt): any => ({
  * @public
  */
 export interface Span {
-  start?: number;
-  end?: number;
+  start?: number | undefined;
+  end?: number | undefined;
 }
 
 /**
@@ -318,25 +337,25 @@ export interface Reference {
    * License name
    * @public
    */
-  licenseName?: string;
+  licenseName?: string | undefined;
 
   /**
    * Code Repsitory for the associated reference
    * @public
    */
-  repository?: string;
+  repository?: string | undefined;
 
   /**
    * Respository URL
    * @public
    */
-  url?: string;
+  url?: string | undefined;
 
   /**
    * Span / Range for the Reference
    * @public
    */
-  recommendationContentSpan?: Span;
+  recommendationContentSpan?: Span | undefined;
 }
 
 /**
@@ -348,19 +367,19 @@ export interface SupplementaryWebLink {
    * URL of the web reference link
    * @public
    */
-  url: string | undefined;
+  url: string;
 
   /**
    * Title of the web reference link
    * @public
    */
-  title: string | undefined;
+  title: string;
 
   /**
    * Relevant text snippet from the link
    * @public
    */
-  snippet?: string;
+  snippet?: string | undefined;
 }
 
 /**
@@ -388,31 +407,31 @@ export interface AssistantResponseMessage {
    * Unique identifier for the chat message
    * @public
    */
-  messageId?: string;
+  messageId?: string | undefined;
 
   /**
    * The content of the text message in markdown format.
    * @public
    */
-  content: string | undefined;
+  content: string;
 
   /**
    * Web References
    * @public
    */
-  supplementaryWebLinks?: (SupplementaryWebLink)[];
+  supplementaryWebLinks?: (SupplementaryWebLink)[] | undefined;
 
   /**
    * Code References
    * @public
    */
-  references?: (Reference)[];
+  references?: (Reference)[] | undefined;
 
   /**
    * Followup Prompt
    * @public
    */
-  followupPrompt?: FollowupPrompt;
+  followupPrompt?: FollowupPrompt | undefined;
 }
 
 /**
@@ -459,7 +478,7 @@ export class ConflictException extends __BaseException {
    * Reason for ConflictException
    * @public
    */
-  reason?: ConflictExceptionReason;
+  reason?: ConflictExceptionReason | undefined;
 
   /**
    * @internal
@@ -480,7 +499,7 @@ export class ConflictException extends __BaseException {
  * @public
  */
 export interface ProgrammingLanguage {
-  languageName: string | undefined;
+  languageName: string;
 }
 
 /**
@@ -488,12 +507,12 @@ export interface ProgrammingLanguage {
  * @public
  */
 export interface ConsoleState {
-  region?: string;
-  consoleUrl?: string;
-  serviceId?: string;
-  serviceConsolePage?: string;
-  serviceSubconsolePage?: string;
-  taskName?: string;
+  region?: string | undefined;
+  consoleUrl?: string | undefined;
+  serviceId?: string | undefined;
+  serviceConsolePage?: string | undefined;
+  serviceSubconsolePage?: string | undefined;
+  taskName?: string | undefined;
 }
 
 /**
@@ -533,19 +552,19 @@ export interface RuntimeDiagnostic {
    * A human-readable string describing the source of the diagnostic
    * @public
    */
-  source: string | undefined;
+  source: string;
 
   /**
    * Diagnostic Error type
    * @public
    */
-  severity: DiagnosticSeverity | undefined;
+  severity: DiagnosticSeverity;
 
   /**
    * The diagnostic's message.
    * @public
    */
-  message: string | undefined;
+  message: string;
 }
 
 /**
@@ -582,19 +601,19 @@ export interface DocumentSymbol {
    * Name of the Document Symbol
    * @public
    */
-  name: string | undefined;
+  name: string;
 
   /**
    * Symbol type - DECLARATION / USAGE
    * @public
    */
-  type: SymbolType | undefined;
+  type: SymbolType;
 
   /**
    * Symbol package / source for FullyQualified names
    * @public
    */
-  source?: string;
+  source?: string | undefined;
 }
 
 /**
@@ -606,25 +625,25 @@ export interface TextDocument {
    * Filepath relative to the root of the workspace
    * @public
    */
-  relativeFilePath: string | undefined;
+  relativeFilePath: string;
 
   /**
    * The text document's language identifier.
    * @public
    */
-  programmingLanguage?: ProgrammingLanguage;
+  programmingLanguage?: ProgrammingLanguage | undefined;
 
   /**
    * Content of the text document
    * @public
    */
-  text?: string;
+  text?: string | undefined;
 
   /**
    * DocumentSymbols parsed from a text document
    * @public
    */
-  documentSymbols?: (DocumentSymbol)[];
+  documentSymbols?: (DocumentSymbol)[] | undefined;
 }
 
 /**
@@ -649,13 +668,13 @@ export interface Position {
    * Line position in a document.
    * @public
    */
-  line: number | undefined;
+  line: number;
 
   /**
    * Character offset on a line in a document (zero-based)
    * @public
    */
-  character: number | undefined;
+  character: number;
 }
 
 /**
@@ -667,13 +686,13 @@ export interface Range {
    * The range's start position.
    * @public
    */
-  start: Position | undefined;
+  start: Position;
 
   /**
    * The range's end position.
    * @public
    */
-  end: Position | undefined;
+  end: Position;
 }
 
 /**
@@ -685,31 +704,31 @@ export interface TextDocumentDiagnostic {
    * Represents a Text Document associated with Diagnostic
    * @public
    */
-  document: TextDocument | undefined;
+  document: TextDocument;
 
   /**
    * The range at which the message applies.
    * @public
    */
-  range: Range | undefined;
+  range: Range;
 
   /**
    * A human-readable string describing the source of the diagnostic
    * @public
    */
-  source: string | undefined;
+  source: string;
 
   /**
    * Diagnostic Error type
    * @public
    */
-  severity: DiagnosticSeverity | undefined;
+  severity: DiagnosticSeverity;
 
   /**
    * The diagnostic's message.
    * @public
    */
-  message: string | undefined;
+  message: string;
 }
 
 /**
@@ -869,25 +888,25 @@ export interface RelevantTextDocument {
    * Filepath relative to the root of the workspace
    * @public
    */
-  relativeFilePath: string | undefined;
+  relativeFilePath: string;
 
   /**
    * The text document's language identifier.
    * @public
    */
-  programmingLanguage?: ProgrammingLanguage;
+  programmingLanguage?: ProgrammingLanguage | undefined;
 
   /**
    * Content of the text document
    * @public
    */
-  text?: string;
+  text?: string | undefined;
 
   /**
    * DocumentSymbols parsed from a text document
    * @public
    */
-  documentSymbols?: (DocumentSymbol)[];
+  documentSymbols?: (DocumentSymbol)[] | undefined;
 }
 
 /**
@@ -912,25 +931,25 @@ export interface EditorState {
    * Represents currently edited file
    * @public
    */
-  document?: TextDocument;
+  document?: TextDocument | undefined;
 
   /**
    * Position of the cursor
    * @public
    */
-  cursorState?: CursorState;
+  cursorState?: CursorState | undefined;
 
   /**
    * Represents IDE provided relevant files
    * @public
    */
-  relevantDocuments?: (RelevantTextDocument)[];
+  relevantDocuments?: (RelevantTextDocument)[] | undefined;
 
   /**
    * Whether service should use relevant document in prompt
    * @public
    */
-  useRelevantDocuments?: boolean;
+  useRelevantDocuments?: boolean | undefined;
 }
 
 /**
@@ -961,13 +980,13 @@ export interface EnvironmentVariable {
    * The key of an environment variable
    * @public
    */
-  key?: string;
+  key?: string | undefined;
 
   /**
    * The value of an environment variable
    * @public
    */
-  value?: string;
+  value?: string | undefined;
 }
 
 /**
@@ -992,19 +1011,25 @@ export interface EnvState {
    * The name of the operating system in use
    * @public
    */
-  operatingSystem?: string;
+  operatingSystem?: string | undefined;
 
   /**
    * The current working directory of the environment
    * @public
    */
-  currentWorkingDirectory?: string;
+  currentWorkingDirectory?: string | undefined;
 
   /**
    * The environment variables set in the current environment
    * @public
    */
-  environmentVariables?: (EnvironmentVariable)[];
+  environmentVariables?: (EnvironmentVariable)[] | undefined;
+
+  /**
+   * Local timezone offset of the client. For more information, see documentation https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/getTimezoneOffset
+   * @public
+   */
+  timezoneOffset?: number | undefined;
 }
 
 /**
@@ -1032,7 +1057,7 @@ export interface GitState {
    * The output of the command `git status --porcelain=v1 -b`
    * @public
    */
-  status?: string;
+  status?: string | undefined;
 }
 
 /**
@@ -1054,31 +1079,31 @@ export interface ShellHistoryEntry {
    * The shell command that was run
    * @public
    */
-  command: string | undefined;
+  command: string;
 
   /**
    * The directory the command was ran in
    * @public
    */
-  directory?: string;
+  directory?: string | undefined;
 
   /**
    * The exit code of the command after it finished
    * @public
    */
-  exitCode?: number;
+  exitCode?: number | undefined;
 
   /**
    * The stdout from the command
    * @public
    */
-  stdout?: string;
+  stdout?: string | undefined;
 
   /**
    * The stderr from the command
    * @public
    */
-  stderr?: string;
+  stderr?: string | undefined;
 }
 
 /**
@@ -1109,13 +1134,13 @@ export interface ShellState {
    * The name of the current shell
    * @public
    */
-  shellName: string | undefined;
+  shellName: string;
 
   /**
    * The history previous shell commands for the current shell
    * @public
    */
-  shellHistory?: (ShellHistoryEntry)[];
+  shellHistory?: (ShellHistoryEntry)[] | undefined;
 }
 
 /**
@@ -1136,7 +1161,7 @@ export const ShellStateFilterSensitiveLog = (obj: ShellState): any => ({
  * @public
  */
 export interface UserSettings {
-  hasConsentedToCrossRegionCalls?: boolean;
+  hasConsentedToCrossRegionCalls?: boolean | undefined;
 }
 
 /**
@@ -1148,49 +1173,49 @@ export interface UserInputMessageContext {
    * Editor state chat message context.
    * @public
    */
-  editorState?: EditorState;
+  editorState?: EditorState | undefined;
 
   /**
    * Shell state chat message context.
    * @public
    */
-  shellState?: ShellState;
+  shellState?: ShellState | undefined;
 
   /**
    * Git state chat message context.
    * @public
    */
-  gitState?: GitState;
+  gitState?: GitState | undefined;
 
   /**
    * Environment state chat message context.
    * @public
    */
-  envState?: EnvState;
+  envState?: EnvState | undefined;
 
   /**
    * The state of a user's AppStudio UI when sending a message.
    * @public
    */
-  appStudioContext?: AppStudioState;
+  appStudioContext?: AppStudioState | undefined;
 
   /**
    * Diagnostic chat message context.
    * @public
    */
-  diagnostic?: Diagnostic;
+  diagnostic?: Diagnostic | undefined;
 
   /**
    * Contextual information about the environment from which the user is calling.
    * @public
    */
-  consoleState?: ConsoleState;
+  consoleState?: ConsoleState | undefined;
 
   /**
    * Settings information, e.g., whether the user has enabled cross-region API calls.
    * @public
    */
-  userSettings?: UserSettings;
+  userSettings?: UserSettings | undefined;
 }
 
 /**
@@ -1230,19 +1255,19 @@ export interface UserInputMessage {
    * The content of the chat message.
    * @public
    */
-  content: string | undefined;
+  content: string;
 
   /**
    * Chat message context associated with the Chat Message
    * @public
    */
-  userInputMessageContext?: UserInputMessageContext;
+  userInputMessageContext?: UserInputMessageContext | undefined;
 
   /**
    * User Intent
    * @public
    */
-  userIntent?: UserIntent;
+  userIntent?: UserIntent | undefined;
 }
 
 /**
@@ -1338,7 +1363,7 @@ export interface CodeEvent {
    * Generated code snippet.
    * @public
    */
-  content: string | undefined;
+  content: string;
 }
 
 /**
@@ -1360,7 +1385,7 @@ export interface CodeReferenceEvent {
    * Code References for Assistant Response Message
    * @public
    */
-  references?: (Reference)[];
+  references?: (Reference)[] | undefined;
 }
 
 /**
@@ -1379,7 +1404,7 @@ export interface FollowupPromptEvent {
    * Followup Prompt for the Assistant Response
    * @public
    */
-  followupPrompt?: FollowupPrompt;
+  followupPrompt?: FollowupPrompt | undefined;
 }
 
 /**
@@ -1455,7 +1480,7 @@ export interface IntentsEvent {
    * A map of Intent objects
    * @public
    */
-  intents?: Partial<Record<IntentType, Record<string, IntentDataType>>>;
+  intents?: Partial<Record<IntentType, Record<string, IntentDataType>>> | undefined;
 }
 
 /**
@@ -1469,6 +1494,118 @@ export const IntentsEventFilterSensitiveLog = (obj: IntentsEvent): any => ({
 })
 
 /**
+ * For CloudWatch Troubleshooting Link Module
+ * @public
+ */
+export interface CloudWatchTroubleshootingLink {
+  /**
+   * A label for the link.
+   * @public
+   */
+  label: string;
+
+  /**
+   * Stringified JSON payload. See spec here https://code.amazon.com/packages/CloudWatchOdysseyModel/blobs/50c0832f0e393e4ab68827eb4f04d832366821c1/--/model/events.smithy#L28 .
+   * @public
+   */
+  investigationPayload: string;
+
+  /**
+   * Fallback string, if target channel does not support the CloudWatchTroubleshootingLink.
+   * @public
+   */
+  defaultText?: string | undefined;
+}
+
+/**
+ * @internal
+ */
+export const CloudWatchTroubleshootingLinkFilterSensitiveLog = (obj: CloudWatchTroubleshootingLink): any => ({
+  ...obj,
+  ...(obj.label && { label:
+    SENSITIVE_STRING
+  }),
+  ...(obj.investigationPayload && { investigationPayload:
+    SENSITIVE_STRING
+  }),
+  ...(obj.defaultText && { defaultText:
+    SENSITIVE_STRING
+  }),
+})
+
+/**
+ * @public
+ */
+export interface ModuleLink {
+  /**
+   * For CloudWatch Troubleshooting Link Module
+   * @public
+   */
+  cloudWatchTroubleshootingLink?: CloudWatchTroubleshootingLink | undefined;
+}
+
+/**
+ * @internal
+ */
+export const ModuleLinkFilterSensitiveLog = (obj: ModuleLink): any => ({
+  ...obj,
+  ...(obj.cloudWatchTroubleshootingLink && { cloudWatchTroubleshootingLink:
+    CloudWatchTroubleshootingLinkFilterSensitiveLog(obj.cloudWatchTroubleshootingLink)
+  }),
+})
+
+/**
+ * @public
+ */
+export interface WebLink {
+  /**
+   * A label for the link
+   * @public
+   */
+  label: string;
+
+  /**
+   * URL of the Weblink
+   * @public
+   */
+  url: string;
+}
+
+/**
+ * @internal
+ */
+export const WebLinkFilterSensitiveLog = (obj: WebLink): any => ({
+  ...obj,
+  ...(obj.label && { label:
+    SENSITIVE_STRING
+  }),
+  ...(obj.url && { url:
+    SENSITIVE_STRING
+  }),
+})
+
+/**
+ * @public
+ */
+export interface Action {
+  webLink?: WebLink | undefined;
+  moduleLink?: ModuleLink | undefined;
+}
+
+/**
+ * @internal
+ */
+export const ActionFilterSensitiveLog = (obj: Action): any => ({
+  ...obj,
+  ...(obj.webLink && { webLink:
+    WebLinkFilterSensitiveLog(obj.webLink)
+  }),
+  ...(obj.moduleLink && { moduleLink:
+    ModuleLinkFilterSensitiveLog(obj.moduleLink)
+  }),
+})
+
+/**
  * Structure representing a simple text component with sensitive content, which can include Markdown formatting.
  * @public
  */
@@ -1477,7 +1614,7 @@ export interface Text {
    * Contains text content that may include sensitive information and can support Markdown formatting.
    * @public
    */
-  content: string | undefined;
+  content: string;
 }
 
 /**
@@ -1498,7 +1635,7 @@ export interface AlertComponent {
    * Structure representing a simple text component with sensitive content, which can include Markdown formatting.
    * @public
    */
-  text?: Text;
+  text?: Text | undefined;
 }
 
 /**
@@ -1543,13 +1680,13 @@ export interface Alert {
    * Enum defining types of alerts that can be issued.
    * @public
    */
-  type: AlertType | undefined;
+  type: AlertType;
 
   /**
    * Contains the content of the alert, which may include sensitive information.
    * @public
    */
-  content: (AlertComponent)[] | undefined;
+  content: (AlertComponent)[];
 }
 
 /**
@@ -1574,13 +1711,13 @@ export interface InfrastructureUpdateTransition {
    * The current state of the infrastructure before the update.
    * @public
    */
-  currentState: string | undefined;
+  currentState: string;
 
   /**
    * The next state of the infrastructure following the update.
    * @public
    */
-  nextState: string | undefined;
+  nextState: string;
 }
 
 /**
@@ -1605,7 +1742,7 @@ export interface InfrastructureUpdate {
    * Structure describing a transition between two states in an infrastructure update.
    * @public
    */
-  transition?: InfrastructureUpdateTransition;
+  transition?: InfrastructureUpdateTransition | undefined;
 }
 
 /**
@@ -1626,7 +1763,7 @@ export interface StepComponent {
    * Structure representing a simple text component with sensitive content, which can include Markdown formatting.
    * @public
    */
-  text?: Text;
+  text?: Text | undefined;
 }
 
 /**
@@ -1687,25 +1824,25 @@ export interface Step {
    * A unique identifier for the step. It must be a non-negative integer to ensure each step is distinct.
    * @public
    */
-  id: number | undefined;
+  id: number;
 
   /**
    * Enum representing all possible step states, combining terminal and non-terminal states.
    * @public
    */
-  state: StepState | undefined;
+  state: StepState;
 
   /**
    * A label for the step, providing a concise description.
    * @public
    */
-  label: string | undefined;
+  label: string;
 
   /**
    * Optional content providing additional details about the step.
    * @public
    */
-  content?: (StepComponent)[];
+  content?: (StepComponent)[] | undefined;
 }
 
 /**
@@ -1732,7 +1869,7 @@ export interface ProgressComponent {
    * Structure representing an individual step in a process.
    * @public
    */
-  step?: Step;
+  step?: Step | undefined;
 }
 
 /**
@@ -1754,7 +1891,7 @@ export interface Progress {
    * A collection of steps that make up a process. Each step is detailed using the Step structure.
    * @public
    */
-  content: (ProgressComponent)[] | undefined;
+  content: (ProgressComponent)[];
 }
 
 /**
@@ -1779,37 +1916,37 @@ export interface Resource {
    * Card title.
    * @public
    */
-  title: string | undefined;
+  title: string;
 
   /**
    * Link for the resource item
    * @public
    */
-  link: string | undefined;
+  link: string;
 
   /**
    * Short text about that resource for example Region: us-east-1
    * @public
    */
-  description: string | undefined;
+  description: string;
 
   /**
    * Resource type e.g AWS EC2
    * @public
    */
-  type: string | undefined;
+  type: string;
 
   /**
    * Amazon resource number e.g arn:aws:aec:.....
    * @public
    */
-  ARN: string | undefined;
+  ARN: string;
 
   /**
    * A stringified object
    * @public
    */
-  resourceJsonString: string | undefined;
+  resourceJsonString: string;
 }
 
 /**
@@ -1838,192 +1975,6 @@ export const ResourceFilterSensitiveLog = (obj: Resource): any => ({
 })
 
 /**
- * For CloudWatch Troubleshooting Link Module
- * @public
- */
-export interface CloudWatchTroubleshootingLink {
-  /**
-   * A label for the link.
-   * @public
-   */
-  label: string | undefined;
-
-  /**
-   * Stringified JSON payload. See spec here https://code.amazon.com/packages/CloudWatchOdysseyModel/blobs/50c0832f0e393e4ab68827eb4f04d832366821c1/--/model/events.smithy#L28 .
-   * @public
-   */
-  investigationPayload: string | undefined;
-
-  /**
-   * Fallback string, if target channel does not support the CloudWatchTroubleshootingLink.
-   * @public
-   */
-  defaultText?: string;
-}
-
-/**
- * @internal
- */
-export const CloudWatchTroubleshootingLinkFilterSensitiveLog = (obj: CloudWatchTroubleshootingLink): any => ({
-  ...obj,
-  ...(obj.label && { label:
-    SENSITIVE_STRING
-  }),
-  ...(obj.investigationPayload && { investigationPayload:
-    SENSITIVE_STRING
-  }),
-  ...(obj.defaultText && { defaultText:
-    SENSITIVE_STRING
-  }),
-})
-
-/**
- * @public
- */
-export type ModuleLink =
-  | ModuleLink.CloudWatchTroubleshootingLinkMember
-  | ModuleLink.$UnknownMember
-
-/**
- * @public
- */
-export namespace ModuleLink {
-
-  /**
-   * For CloudWatch Troubleshooting Link Module
-   * @public
-   */
-  export interface CloudWatchTroubleshootingLinkMember {
-    cloudWatchTroubleshootingLink: CloudWatchTroubleshootingLink;
-    $unknown?: never;
-  }
-
-  /**
-   * @public
-   */
-  export interface $UnknownMember {
-    cloudWatchTroubleshootingLink?: never;
-    $unknown: [string, any];
-  }
-
-  export interface Visitor<T> {
-    cloudWatchTroubleshootingLink: (value: CloudWatchTroubleshootingLink) => T;
-    _: (name: string, value: any) => T;
-  }
-
-  export const visit = <T>(
-    value: ModuleLink,
-    visitor: Visitor<T>
-  ): T => {
-    if (value.cloudWatchTroubleshootingLink !== undefined) return visitor.cloudWatchTroubleshootingLink(value.cloudWatchTroubleshootingLink);
-    return visitor._(value.$unknown[0], value.$unknown[1]);
-  }
-
-}
-/**
- * @internal
- */
-export const ModuleLinkFilterSensitiveLog = (obj: ModuleLink): any => {
-  if (obj.cloudWatchTroubleshootingLink !== undefined) return {cloudWatchTroubleshootingLink:
-    CloudWatchTroubleshootingLinkFilterSensitiveLog(obj.cloudWatchTroubleshootingLink)
-  };
-  if (obj.$unknown !== undefined) return {[obj.$unknown[0]]: 'UNKNOWN'};
-}
-
-/**
- * @public
- */
-export interface WebLink {
-  /**
-   * A label for the link
-   * @public
-   */
-  label: string | undefined;
-
-  /**
-   * URL of the Weblink
-   * @public
-   */
-  url: string | undefined;
-}
-
-/**
- * @internal
- */
-export const WebLinkFilterSensitiveLog = (obj: WebLink): any => ({
-  ...obj,
-  ...(obj.label && { label:
-    SENSITIVE_STRING
-  }),
-  ...(obj.url && { url:
-    SENSITIVE_STRING
-  }),
-})
-
-/**
- * @public
- */
-export type Action =
-  | Action.ModuleLinkMember
-  | Action.WebLinkMember
-  | Action.$UnknownMember
-
-/**
- * @public
- */
-export namespace Action {
-
-  export interface WebLinkMember {
-    webLink: WebLink;
-    moduleLink?: never;
-    $unknown?: never;
-  }
-
-  export interface ModuleLinkMember {
-    webLink?: never;
-    moduleLink: ModuleLink;
-    $unknown?: never;
-  }
-
-  /**
-   * @public
-   */
-  export interface $UnknownMember {
-    webLink?: never;
-    moduleLink?: never;
-    $unknown: [string, any];
-  }
-
-  export interface Visitor<T> {
-    webLink: (value: WebLink) => T;
-    moduleLink: (value: ModuleLink) => T;
-    _: (name: string, value: any) => T;
-  }
-
-  export const visit = <T>(
-    value: Action,
-    visitor: Visitor<T>
-  ): T => {
-    if (value.webLink !== undefined) return visitor.webLink(value.webLink);
-    if (value.moduleLink !== undefined) return visitor.moduleLink(value.moduleLink);
-    return visitor._(value.$unknown[0], value.$unknown[1]);
-  }
-
-}
-/**
- * @internal
- */
-export const ActionFilterSensitiveLog = (obj: Action): any => {
-  if (obj.webLink !== undefined) return {webLink:
-    WebLinkFilterSensitiveLog(obj.webLink)
-  };
-  if (obj.moduleLink !== undefined) return {moduleLink:
-    ModuleLinkFilterSensitiveLog(obj.moduleLink)
-  };
-  if (obj.$unknown !== undefined) return {[obj.$unknown[0]]: 'UNKNOWN'};
-}
-
-/**
  * Structure representing a list of Items
  * @public
  */
@@ -2032,13 +1983,13 @@ export interface ResourceList {
    * Action associated with the list
    * @public
    */
-  action?: Action;
+  action?: Action | undefined;
 
   /**
    * List of resources
    * @public
    */
-  items: (Resource)[] | undefined;
+  items: (Resource)[];
 }
 
 /**
@@ -2060,115 +2011,50 @@ export const ResourceListFilterSensitiveLog = (obj: ResourceList): any => ({
 /**
  * @public
  */
-export type SectionComponent =
-  | SectionComponent.AlertMember
-  | SectionComponent.ResourceMember
-  | SectionComponent.ResourceListMember
-  | SectionComponent.TextMember
-  | SectionComponent.$UnknownMember
-
-/**
- * @public
- */
-export namespace SectionComponent {
-
+export interface SectionComponent {
   /**
    * Structure representing a simple text component with sensitive content, which can include Markdown formatting.
    * @public
    */
-  export interface TextMember {
-    text: Text;
-    alert?: never;
-    resource?: never;
-    resourceList?: never;
-    $unknown?: never;
-  }
+  text?: Text | undefined;
 
   /**
    * Structure representing an alert with a type and content.
    * @public
    */
-  export interface AlertMember {
-    text?: never;
-    alert: Alert;
-    resource?: never;
-    resourceList?: never;
-    $unknown?: never;
-  }
+  alert?: Alert | undefined;
 
   /**
    * Structure representing a resource item
    * @public
    */
-  export interface ResourceMember {
-    text?: never;
-    alert?: never;
-    resource: Resource;
-    resourceList?: never;
-    $unknown?: never;
-  }
+  resource?: Resource | undefined;
 
   /**
    * Structure representing a list of Items
    * @public
    */
-  export interface ResourceListMember {
-    text?: never;
-    alert?: never;
-    resource?: never;
-    resourceList: ResourceList;
-    $unknown?: never;
-  }
-
-  /**
-   * @public
-   */
-  export interface $UnknownMember {
-    text?: never;
-    alert?: never;
-    resource?: never;
-    resourceList?: never;
-    $unknown: [string, any];
-  }
-
-  export interface Visitor<T> {
-    text: (value: Text) => T;
-    alert: (value: Alert) => T;
-    resource: (value: Resource) => T;
-    resourceList: (value: ResourceList) => T;
-    _: (name: string, value: any) => T;
-  }
-
-  export const visit = <T>(
-    value: SectionComponent,
-    visitor: Visitor<T>
-  ): T => {
-    if (value.text !== undefined) return visitor.text(value.text);
-    if (value.alert !== undefined) return visitor.alert(value.alert);
-    if (value.resource !== undefined) return visitor.resource(value.resource);
-    if (value.resourceList !== undefined) return visitor.resourceList(value.resourceList);
-    return visitor._(value.$unknown[0], value.$unknown[1]);
-  }
-
+  resourceList?: ResourceList | undefined;
 }
+
 /**
  * @internal
  */
-export const SectionComponentFilterSensitiveLog = (obj: SectionComponent): any => {
-  if (obj.text !== undefined) return {text:
+export const SectionComponentFilterSensitiveLog = (obj: SectionComponent): any => ({
+  ...obj,
+  ...(obj.text && { text:
     TextFilterSensitiveLog(obj.text)
-  };
-  if (obj.alert !== undefined) return {alert:
+  }),
+  ...(obj.alert && { alert:
     AlertFilterSensitiveLog(obj.alert)
-  };
-  if (obj.resource !== undefined) return {resource:
+  }),
+  ...(obj.resource && { resource:
     ResourceFilterSensitiveLog(obj.resource)
-  };
-  if (obj.resourceList !== undefined) return {resourceList:
+  }),
+  ...(obj.resourceList && { resourceList:
     ResourceListFilterSensitiveLog(obj.resourceList)
-  };
-  if (obj.$unknown !== undefined) return {[obj.$unknown[0]]: 'UNKNOWN'};
-}
+  }),
+})
 
 /**
  * Structure representing a collapsable section
@@ -2179,13 +2065,19 @@ export interface Section {
    * Contains text content that may include sensitive information and can support Markdown formatting.
    * @public
    */
-  title: string | undefined;
+  title: string;
 
   /**
-   * Contains a list of interaction components e.g Text, Alert ,List ...etc
+   * Contains a list of interaction components e.g Text, Alert, List, etc.
    * @public
    */
-  content: (SectionComponent)[] | undefined;
+  content: (SectionComponent)[];
+
+  /**
+   * Action associated with the Section
+   * @public
+   */
+  action?: Action | undefined;
 }
 
 /**
@@ -2202,6 +2094,9 @@ export const SectionFilterSensitiveLog = (obj: Section): any => ({
       SectionComponentFilterSensitiveLog(item)
     )
   }),
+  ...(obj.action && { action:
+    ActionFilterSensitiveLog(obj.action)
+  }),
 })
 
 /**
@@ -2209,16 +2104,39 @@ export const SectionFilterSensitiveLog = (obj: Section): any => ({
  * @public
  */
 export interface Suggestion {
-  value: string | undefined;
+  value: string;
 }
+
+/**
+ * @internal
+ */
+export const SuggestionFilterSensitiveLog = (obj: Suggestion): any => ({
+  ...obj,
+  ...(obj.value && { value:
+    SENSITIVE_STRING
+  }),
+})
 
 /**
  * Structure containing a list of suggestions.
  * @public
  */
 export interface Suggestions {
-  items: (Suggestion)[] | undefined;
+  items: (Suggestion)[];
 }
+
+/**
+ * @internal
+ */
+export const SuggestionsFilterSensitiveLog = (obj: Suggestions): any => ({
+  ...obj,
+  ...(obj.items && { items:
+    obj.items.map(
+      item =>
+      SuggestionFilterSensitiveLog(item)
+    )
+  }),
+})
 
 /**
  * Structure representing a confirmation message related to a task action.
@@ -2229,7 +2147,7 @@ export interface TaskActionConfirmation {
    * Confirmation message related to the action note, which may include sensitive information.
    * @public
    */
-  content?: string;
+  content?: string | undefined;
 }
 
 /**
@@ -2270,13 +2188,13 @@ export interface TaskActionNote {
    * Content of the note, which may include sensitive information.
    * @public
    */
-  content: string | undefined;
+  content: string;
 
   /**
    * Enum defining the types of notes that can be associated with a task action.
    * @public
    */
-  type?: TaskActionNoteType;
+  type?: TaskActionNoteType | undefined;
 }
 
 /**
@@ -2298,37 +2216,37 @@ export interface TaskAction {
    * A label for the action.
    * @public
    */
-  label: string | undefined;
+  label: string;
 
   /**
    * Structure representing a note associated with a task action.
    * @public
    */
-  note?: TaskActionNote;
+  note?: TaskActionNote | undefined;
 
   /**
    * Indicates whether the action is primary or not.
    * @public
    */
-  primary?: boolean;
+  primary?: boolean | undefined;
 
   /**
    * Indicates whether the action is disabled or not.
    * @public
    */
-  disabled?: boolean;
+  disabled?: boolean | undefined;
 
   /**
    * Map representing key-value pairs for the payload of a task action.
    * @public
    */
-  payload: Record<string, string> | undefined;
+  payload: Record<string, string>;
 
   /**
    * Structure representing a confirmation message related to a task action.
    * @public
    */
-  confirmation?: TaskActionConfirmation;
+  confirmation?: TaskActionConfirmation | undefined;
 }
 
 /**
@@ -2359,25 +2277,25 @@ export interface TaskComponent {
    * Structure representing a simple text component with sensitive content, which can include Markdown formatting.
    * @public
    */
-  text?: Text;
+  text?: Text | undefined;
 
   /**
    * Structure representing different types of infrastructure updates.
    * @public
    */
-  infrastructureUpdate?: InfrastructureUpdate;
+  infrastructureUpdate?: InfrastructureUpdate | undefined;
 
   /**
    * Structure representing an alert with a type and content.
    * @public
    */
-  alert?: Alert;
+  alert?: Alert | undefined;
 
   /**
    * Structure representing a collection of steps in a process.
    * @public
    */
-  progress?: Progress;
+  progress?: Progress | undefined;
 }
 
 /**
@@ -2408,13 +2326,13 @@ export interface TaskOverview {
    * A label for the task overview.
    * @public
    */
-  label: string | undefined;
+  label: string;
 
   /**
    * Text description providing details about the task. This field may include sensitive information and supports Markdown formatting.
    * @public
    */
-  description: string | undefined;
+  description: string;
 }
 
 /**
@@ -2439,19 +2357,19 @@ export interface TaskDetails {
    * Structure representing an overview of a task, including a label and description.
    * @public
    */
-  overview: TaskOverview | undefined;
+  overview: TaskOverview;
 
   /**
    * Lists the components that can be used to form the task's content.
    * @public
    */
-  content: (TaskComponent)[] | undefined;
+  content: (TaskComponent)[];
 
   /**
    * Optional list of actions associated with the task.
    * @public
    */
-  actions?: (TaskAction)[];
+  actions?: (TaskAction)[] | undefined;
 }
 
 /**
@@ -2485,7 +2403,7 @@ export interface TaskReference {
    * Unique identifier for the task.
    * @public
    */
-  taskId: string | undefined;
+  taskId: string;
 }
 
 /**
@@ -2497,67 +2415,69 @@ export interface InteractionComponent {
    * Structure representing a simple text component with sensitive content, which can include Markdown formatting.
    * @public
    */
-  text?: Text;
+  text?: Text | undefined;
 
   /**
    * Structure representing an alert with a type and content.
    * @public
    */
-  alert?: Alert;
+  alert?: Alert | undefined;
 
   /**
    * Structure representing different types of infrastructure updates.
    * @public
    */
-  infrastructureUpdate?: InfrastructureUpdate;
+  infrastructureUpdate?: InfrastructureUpdate | undefined;
 
   /**
    * Structure representing a collection of steps in a process.
    * @public
    */
-  progress?: Progress;
+  progress?: Progress | undefined;
 
   /**
    * Structure representing an individual step in a process.
    * @public
    */
-  step?: Step;
+  step?: Step | undefined;
 
   /**
    * Structure containing details about a task.
    * @public
    */
-  taskDetails?: TaskDetails;
+  taskDetails?: TaskDetails | undefined;
 
   /**
    * Structure representing a reference to a task.
    * @public
    */
-  taskReference?: TaskReference;
+  taskReference?: TaskReference | undefined;
 
   /**
    * Structure containing a list of suggestions.
    * @public
    */
-  suggestions?: Suggestions;
+  suggestions?: Suggestions | undefined;
 
   /**
    * Structure representing a collapsable section
    * @public
    */
-  section?: Section;
+  section?: Section | undefined;
 
   /**
    * Structure representing a resource item
    * @public
    */
-  resource?: Resource;
+  resource?: Resource | undefined;
 
   /**
    * Structure representing a list of Items
    * @public
    */
-  resourceList?: ResourceList;
+  resourceList?: ResourceList | undefined;
+
+  action?: Action | undefined;
 }
 
 /**
@@ -2583,6 +2503,9 @@ export const InteractionComponentFilterSensitiveLog = (obj: InteractionComponent
   ...(obj.taskDetails && { taskDetails:
     TaskDetailsFilterSensitiveLog(obj.taskDetails)
   }),
+  ...(obj.suggestions && { suggestions:
+    SuggestionsFilterSensitiveLog(obj.suggestions)
+  }),
   ...(obj.section && { section:
     SectionFilterSensitiveLog(obj.section)
   }),
@@ -2591,6 +2514,9 @@ export const InteractionComponentFilterSensitiveLog = (obj: InteractionComponent
   }),
   ...(obj.resourceList && { resourceList:
     ResourceListFilterSensitiveLog(obj.resourceList)
+  }),
+  ...(obj.action && { action:
+    ActionFilterSensitiveLog(obj.action)
   }),
 })
 
@@ -2604,13 +2530,13 @@ export interface InteractionComponentEntry {
    *         stream response. This field is optional.
    * @public
    */
-  interactionComponentId?: string;
+  interactionComponentId?: string | undefined;
 
   /**
    * Interaction component
    * @public
    */
-  interactionComponent: InteractionComponent | undefined;
+  interactionComponent: InteractionComponent;
 }
 
 /**
@@ -2632,7 +2558,7 @@ export interface InteractionComponentsEvent {
    * List of identifiable interaction components
    * @public
    */
-  interactionComponentEntries: (InteractionComponentEntry)[] | undefined;
+  interactionComponentEntries: (InteractionComponentEntry)[];
 }
 
 /**
@@ -2669,9 +2595,9 @@ export interface InvalidStateEvent {
    * Reasons for Invalid State Event
    * @public
    */
-  reason: InvalidStateReason | undefined;
+  reason: InvalidStateReason;
 
-  message: string | undefined;
+  message: string;
 }
 
 /**
@@ -2683,13 +2609,13 @@ export interface MessageMetadataEvent {
    * Unique identifier for the conversation
    * @public
    */
-  conversationId?: string;
+  conversationId?: string | undefined;
 
   /**
    * Unique identifier for the utterance
    * @public
    */
-  utteranceId?: string;
+  utteranceId?: string | undefined;
 }
 
 /**
@@ -2701,7 +2627,7 @@ export interface SupplementaryWebLinksEvent {
    * Web References for Assistant Response Message
    * @public
    */
-  supplementaryWebLinks?: (SupplementaryWebLink)[];
+  supplementaryWebLinks?: (SupplementaryWebLink)[] | undefined;
 }
 
 /**
@@ -3127,27 +3053,27 @@ export interface ConversationState {
    * Unique identifier for the chat conversation stream
    * @public
    */
-  conversationId?: string;
+  conversationId?: string | undefined;
 
   /**
    * Holds the history of chat messages.
    * @public
    */
-  history?: (ChatMessage)[];
+  history?: (ChatMessage)[] | undefined;
 
   /**
    * Holds the current message being processed or displayed.
    * @public
    */
-  currentMessage: ChatMessage | undefined;
+  currentMessage: ChatMessage;
 
   /**
    * Trigger Reason for Chat
    * @public
    */
-  chatTriggerType: ChatTriggerType | undefined;
+  chatTriggerType: ChatTriggerType;
 
-  customizationArn?: string;
+  customizationArn?: string | undefined;
 }
 
 /**
@@ -3173,7 +3099,7 @@ export const ConversationStateFilterSensitiveLog = (obj: ConversationState): any
 export class DryRunOperationException extends __BaseException {
   readonly name: "DryRunOperationException" = "DryRunOperationException";
   readonly $fault: "client" = "client";
-  responseCode?: number;
+  responseCode?: number | undefined;
   /**
    * @internal
    */
@@ -3258,6 +3184,10 @@ export const Origin = {
    */
   MOBILE: "MOBILE",
   /**
+   * Amazon SageMaker's Rome Chat.
+   */
+  SAGE_MAKER: "SAGE_MAKER",
+  /**
    * Internal Service Traffic (Integ Tests, Canaries, etc.). This is the default when no Origin header present in request.
    */
   SERVICE_INTERNAL: "SERVICE_INTERNAL",
@@ -3284,16 +3214,16 @@ export interface SendMessageRequest {
    * Structure to represent the current state of a chat conversation.
    * @public
    */
-  conversationState: ConversationState | undefined;
+  conversationState: ConversationState;
 
-  profileArn?: string;
+  profileArn?: string | undefined;
   /**
    * The origin of the caller
    * @public
    */
-  source?: Origin;
+  source?: Origin | undefined;
 
-  dryRun?: boolean;
+  dryRun?: boolean | undefined;
 }
 
 /**
@@ -3315,7 +3245,7 @@ export interface SendMessageResponse {
    * Streaming events from UniDirectional Streaming Conversational APIs.
    * @public
    */
-  sendMessageResponse: AsyncIterable<ChatResponseStream> | undefined;
+  sendMessageResponse: AsyncIterable<ChatResponseStream>;
 }
 
 /**
@@ -3336,13 +3266,13 @@ export interface GenerateCodeFromCommandsRequest {
    * Format of the output - language/format eg. typescript/cdk
    * @public
    */
-  outputFormat: OutputFormat | undefined;
+  outputFormat: OutputFormat;
 
   /**
    * CommandInput can be extended to either a list of strings or a single string.
    * @public
    */
-  commands: CommandInput | undefined;
+  commands: CommandInput;
 }
 
 /**
@@ -3478,7 +3408,7 @@ export interface GenerateCodeFromCommandsResponse {
    * Streaming events from UniDirectional streaming infrastructure code generation APIs.
    * @public
    */
-  generatedCodeFromCommandsResponse: AsyncIterable<GenerateCodeFromCommandsResponseStream> | undefined;
+  generatedCodeFromCommandsResponse: AsyncIterable<GenerateCodeFromCommandsResponseStream>;
 }
 
 /**
