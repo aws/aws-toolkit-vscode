@@ -570,7 +570,7 @@ export class ChatController {
         }
     }
     private async processFileClickMessage(message: FileClick) {
-        let session = this.sessionStorage.getSession(message.tabID)
+        const session = this.sessionStorage.getSession(message.tabID)
         // TODO remove currentContextId but use messageID to track context for each answer message
         const lineRanges = session.contexts.get(session.currentContextId)?.get(message.filePath)
 
@@ -915,9 +915,11 @@ export class ChatController {
         // TODO: resolve the context into real context up to 90k
         triggerPayload.useRelevantDocuments = false
         if (triggerPayload.message) {
-            triggerPayload.useRelevantDocuments = triggerPayload.message.includes(`@workspace`)
+            triggerPayload.useRelevantDocuments = triggerPayload.context?.some(
+                (context) => typeof context !== 'string' && context.command === '@workspace'
+            )
             if (triggerPayload.useRelevantDocuments) {
-                triggerPayload.message = triggerPayload.message.replace(/@workspace/g, '')
+                triggerPayload.message = triggerPayload.message.replace(/workspace/, '')
                 if (CodeWhispererSettings.instance.isLocalIndexEnabled()) {
                     const start = performance.now()
                     triggerPayload.relevantTextDocuments = await LspController.instance.query(triggerPayload.message)
@@ -960,12 +962,14 @@ export class ChatController {
 
         session.currentContextId++
         session.contexts.set(session.currentContextId, new Map())
-        triggerPayload.mergedRelevantDocuments?.forEach((doc) => {
-            const currentContext = session.contexts.get(session.currentContextId)
-            if (currentContext) {
-                currentContext.set(doc.relativeFilePath, doc.lineRanges)
+        if (triggerPayload.mergedRelevantDocuments) {
+            for (const doc of triggerPayload.mergedRelevantDocuments) {
+                const currentContext = session.contexts.get(session.currentContextId)
+                if (currentContext) {
+                    currentContext.set(doc.relativeFilePath, doc.lineRanges)
+                }
             }
-        })
+        }
 
         getLogger().info(
             `request from tab: ${tabID} conversationID: ${session.sessionIdentifier} request: ${inspect(request, {
