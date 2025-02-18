@@ -1165,7 +1165,7 @@ export interface FolderInfo {
     name: string
 }
 
-export interface ShortAnswerReference {
+export interface Reference {
     licenseName?: string
     repository?: string
     url?: string
@@ -1175,6 +1175,7 @@ export interface ShortAnswerReference {
     }
 }
 
+// TODO: remove ShortAnswer because it will be deprecated
 export interface ShortAnswer {
     testFilePath: string
     buildCommands: string[]
@@ -1185,6 +1186,6 @@ export interface ShortAnswer {
     testCoverage?: number
     stopIteration?: string
     errorMessage?: string
-    codeReferences?: ShortAnswerReference[]
+    codeReferences?: References
     numberOfTestMethods?: number
 }

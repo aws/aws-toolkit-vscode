@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ShortAnswer, ShortAnswerReference } from '../../../codewhisperer/models/model'
-import { TestGenerationJob } from '../../../codewhisperer/client/codewhispereruserclient'
+import { ShortAnswer, Reference } from '../../../codewhisperer/models/model'
+import { TargetFileInfo, TestGenerationJob } from '../../../codewhisperer/client/codewhispereruserclient'
 
 export enum ConversationState {
     IDLE,
@@ -42,6 +42,7 @@ export class Session {
     public projectRootPath: string = ''
     public fileLanguage: string | undefined = 'plaintext'
     public stopIteration: boolean = false
+    public targetFileInfo: TargetFileInfo | undefined
 
     // Telemetry
     public testGenerationStartTime: number = 0
@@ -64,7 +65,7 @@ export class Session {
     public testCoveragePercentage: number = 90
     public isInProgress: boolean = false
     public acceptedJobId = ''
-    public references: ShortAnswerReference[] = []
+    public references: Reference[] = []
 
     constructor() {}
 
