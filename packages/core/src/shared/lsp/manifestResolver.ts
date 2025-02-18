@@ -132,10 +132,7 @@ export class ManifestResolver {
     private async saveManifest(etag: string, content: string): Promise<void> {
         const storage = this.getStorage()
 
-        // Only true when incoming manifest is deprecated & existing muteDeprecation is true (set by user)
-        const muteDeprecation =
-            (storage[this.lsName] ? storage[this.lsName].muteDeprecation : false) &&
-            this.parseManifest(content).isManifestDeprecated
+        const muteDeprecation = storage[this.lsName]?.muteDeprecation ?? false
 
         globals.globalState.tryUpdate(manifestStorageKey, {
             ...storage,
