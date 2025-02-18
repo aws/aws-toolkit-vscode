@@ -112,18 +112,20 @@ export class ManifestResolver {
      * @param manifest
      */
     private checkDeprecation(manifest: Manifest): void {
+        if (!manifest.isManifestDeprecated) {
+            return
+        }
+
         const deprecationMessage = `${this.lsName} manifest is deprecated. No future updates will be available.`
-        if (manifest.isManifestDeprecated) {
-            logger.info(deprecationMessage)
-            if (!this.getStorage()[this.lsName].muteDeprecation) {
-                void vscode.window
-                    .showInformationMessage(deprecationMessage, localizedText.ok, localizedText.dontShow)
-                    .then((button) => {
-                        if (button === localizedText.dontShow) {
-                            this.getStorage()[this.lsName].muteDeprecation = true
-                        }
-                    })
-            }
+        logger.info(deprecationMessage)
+        if (!this.getStorage()[this.lsName].muteDeprecation) {
+            void vscode.window
+                .showInformationMessage(deprecationMessage, localizedText.ok, localizedText.dontShow)
+                .then((button) => {
+                    if (button === localizedText.dontShow) {
+                        this.getStorage()[this.lsName].muteDeprecation = true
+                    }
+                })
         }
     }
 
@@ -133,7 +135,7 @@ export class ManifestResolver {
         // Only true when incoming manifest is deprecated & existing muteDeprecation is true (set by user)
         const muteDeprecation =
             (storage[this.lsName] ? storage[this.lsName].muteDeprecation : false) &&
-            (JSON.parse(content) as Manifest).isManifestDeprecated
+            this.parseManifest(content).isManifestDeprecated
 
         globals.globalState.tryUpdate(manifestStorageKey, {
             ...storage,
