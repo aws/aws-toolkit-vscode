@@ -9,9 +9,10 @@ import { qTestingFramework } from './framework/framework'
 import sinon from 'sinon'
 import { Messenger } from './framework/messenger'
 import { FollowUpTypes } from 'aws-core-vscode/amazonq'
-import { registerAuthHook, using, TestFolder, closeAllEditors } from 'aws-core-vscode/test'
+import { registerAuthHook, using, TestFolder, closeAllEditors, getTestWorkspaceFolder } from 'aws-core-vscode/test'
 import { loginToIdC } from './utils/setup'
 import { waitUntil, workspaceUtils } from 'aws-core-vscode/shared'
+import * as path from 'path'
 
 describe('Amazon Q Test Generation', function () {
     let framework: qTestingFramework
@@ -20,11 +21,13 @@ describe('Amazon Q Test Generation', function () {
     const testFiles = [
         {
             language: 'python',
-            filePath: 'python3.7-image-sam-app/hello_world/app.py',
+            filePath: 'testGenFolder/src/main/math.py',
+            testFilePath: 'testGenFolder/src/test/test_math.py',
         },
         {
             language: 'java',
-            filePath: 'java17-gradle/HelloWorldFunction/src/main/java/helloworld/App.java',
+            filePath: 'testGenFolder/src/main/Math.java',
+            testFilePath: 'testGenFolder/src/test/MathTest.java',
         },
     ]
 
@@ -33,14 +36,15 @@ describe('Amazon Q Test Generation', function () {
         // must be atleast one unsupported language here for testing
         {
             language: 'typescript',
-            filePath: 'ts-plain-sam-app/src/app.ts',
+            filePath: 'testGenFolder/src/main/math.ts',
         },
         {
             language: 'javascript',
-            filePath: 'js-plain-sam-app/src/app.js',
+            filePath: 'testGenFolder/src/main/math.js',
         },
     ]
 
+    // handles opening the file since /test must be called on an active file
     async function setupTestDocument(filePath: string, language: string) {
         const document = await waitUntil(async () => {
             const doc = await workspaceUtils.openTextDocument(filePath)
@@ -57,7 +61,7 @@ describe('Amazon Q Test Generation', function () {
 
         const activeEditor = vscode.window.activeTextEditor
         if (!activeEditor || activeEditor.document.uri.fsPath !== document.uri.fsPath) {
-            assert.fail(`Failed to make temp file active`)
+            assert.fail(`Failed to make ${language} file active`)
         }
     }
 
@@ -66,6 +70,15 @@ describe('Amazon Q Test Generation', function () {
             waitTimeoutInMs: 5000,
             waitIntervalInMs: 1000,
         })
+    }
+
+    // clears test file to a blank file
+    // not cleaning up test file may possibly cause bloat in CI since testFixtures does not get reset
+    async function cleanupTestFile(testFilePath: string) {
+        const workspaceFolder = getTestWorkspaceFolder()
+        const absoluteTestFilePath = path.join(workspaceFolder, testFilePath)
+        const testFileUri = vscode.Uri.file(absoluteTestFilePath)
+        await vscode.workspace.fs.writeFile(testFileUri, Buffer.from('', 'utf-8'))
     }
 
     before(async function () {
@@ -112,7 +125,7 @@ describe('Amazon Q Test Generation', function () {
     })
 
     describe('/test entry', () => {
-        describe('Unsupported language', () => {
+        describe('Unsupported language file', () => {
             const { language, filePath } = unsupportedLanguages[0]
 
             beforeEach(async () => {
@@ -134,13 +147,13 @@ describe('Amazon Q Test Generation', function () {
             })
         })
 
-        describe('External file', async () => {
+        describe('External file out of project', async () => {
             let testFolder: TestFolder
             let fileName: string
 
             beforeEach(async () => {
                 testFolder = await TestFolder.create()
-                fileName = 'test.py'
+                fileName = 'math.py'
                 const filePath = await testFolder.write(fileName, 'def add(a, b): return a + b')
 
                 const document = await vscode.workspace.openTextDocument(filePath)
@@ -162,10 +175,8 @@ describe('Amazon Q Test Generation', function () {
             })
         })
 
-        for (const { language, filePath } of testFiles) {
-            // skipping for now since this test is flaky. passes locally, but only half the time in CI
-            // have tried retries for setupTestDocument, openTextDocument, and showTextDocument
-            describe.skip(`${language} file`, () => {
+        for (const { language, filePath, testFilePath } of testFiles) {
+            describe(`/test on ${language} file`, () => {
                 beforeEach(async () => {
                     await waitUntil(async () => await setupTestDocument(filePath, language), {})
 
@@ -177,7 +188,7 @@ describe('Amazon Q Test Generation', function () {
                     await tab.waitForChatFinishesLoading()
                 })
 
-                describe('View diff', async () => {
+                describe('View diff of test file', async () => {
                     it('Clicks on view diff', async () => {
                         const chatItems = tab.getChatItems()
                         const viewDiffMessage = chatItems[5]
@@ -190,7 +201,14 @@ describe('Amazon Q Test Generation', function () {
                     })
                 })
 
-                describe('Accept code', async () => {
+                describe('Accept unit tests', async () => {
+                    afterEach(async () => {
+                        // this e2e test generates unit tests, so we want to clean them up after this test is done
+                        await waitUntil(async () => {
+                            await cleanupTestFile(testFilePath)
+                        }, {})
+                    })
+
                     it('Clicks on accept', async () => {
                         await tab.waitForButtons([FollowUpTypes.AcceptCode, FollowUpTypes.RejectCode])
                         tab.clickButton(FollowUpTypes.AcceptCode)
@@ -204,7 +222,7 @@ describe('Amazon Q Test Generation', function () {
                     })
                 })
 
-                describe('Reject code', async () => {
+                describe('Reject unit tests', async () => {
                     it('Clicks on reject', async () => {
                         await tab.waitForButtons([FollowUpTypes.AcceptCode, FollowUpTypes.RejectCode])
                         tab.clickButton(FollowUpTypes.RejectCode)
