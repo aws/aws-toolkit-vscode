@@ -141,6 +141,12 @@ export interface FooterInfoLinkClick {
     link: string
 }
 
+export interface QuickCommandGroupActionClick {
+    command: string
+    actionId: string
+    tabID: string
+}
+
 export interface ChatItemVotedMessage {
     tabID: string
     command: string

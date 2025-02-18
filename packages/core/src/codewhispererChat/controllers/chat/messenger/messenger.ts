@@ -12,6 +12,7 @@ import {
     EditorContextCommandMessage,
     OpenSettingsMessage,
     QuickActionMessage,
+    ShowCustomFormMessage,
 } from '../../../view/connector/connector'
 import { EditorContextCommandType } from '../../../commands/registerCommands'
 import { ChatResponseStream as qdevChatResponseStream } from '@amzn/amazon-q-developer-streaming-client'
@@ -36,7 +37,7 @@ import { LspController } from '../../../../amazonq/lsp/lspController'
 import { extractCodeBlockLanguage } from '../../../../shared/markdown'
 import { extractAuthFollowUp } from '../../../../amazonq/util/authUtils'
 import { helpMessage } from '../../../../amazonq/webview/ui/texts/constants'
-import { MynahUIDataModel } from '@aws/mynah-ui'
+import { ChatItemButton, ChatItemFormItem, MynahUIDataModel } from '@aws/mynah-ui'
 
 export type StaticTextResponseType = 'quick-action-help' | 'onboarding-help' | 'transform' | 'help'
 
@@ -487,5 +488,17 @@ export class Messenger {
 
     public sendContextCommandData(contextCommands: MynahUIDataModel['contextCommands']) {
         this.dispatcher.sendContextCommandData(new ContextCommandData(contextCommands))
+    }
+
+    public showCustomForm(
+        tabID: string,
+        formItems?: ChatItemFormItem[],
+        buttons?: ChatItemButton[],
+        title?: string,
+        description?: string
+    ) {
+        this.dispatcher.sendShowCustomFormMessage(
+            new ShowCustomFormMessage(tabID, formItems, buttons, title, description)
+        )
     }
 }

@@ -42,5 +42,6 @@ type MessageCommand =
     | 'open-link'
     | 'send-telemetry'
     | 'update-welcome-count'
+    | 'quick-command-group-action-click'
 
 export type ExtensionMessage = Record<string, any> & { command: MessageCommand }

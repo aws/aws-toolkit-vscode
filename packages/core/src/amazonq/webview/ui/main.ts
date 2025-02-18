@@ -13,6 +13,8 @@ import {
     NotificationType,
     ReferenceTrackerInformation,
     ProgressField,
+    ChatItemButton,
+    ChatItemFormItem,
 } from '@aws/mynah-ui'
 import { ChatPrompt } from '@aws/mynah-ui/dist/static'
 import { TabsStorage, TabType } from './storages/tabsStorage'
@@ -570,6 +572,15 @@ export const createMynahUI = (
                 }
             }
         },
+        onShowCustomForm(
+            tabId: string,
+            formItems?: ChatItemFormItem[],
+            buttons?: ChatItemButton[],
+            title?: string,
+            description?: string
+        ) {
+            mynahUI.showCustomForm(tabId, formItems, buttons, title, description)
+        },
     })
 
     mynahUI = new MynahUI({
@@ -670,6 +681,7 @@ export const createMynahUI = (
             // handler for the cwc panel
             textMessageHandler.handle(prompt, tabID, eventId as string)
         },
+        onQuickCommandGroupActionClick: connector.onQuickCommandGroupActionClick,
         onVote: connector.onChatItemVoted,
         onInBodyButtonClicked: (tabId, messageId, action, eventId) => {
             switch (action.id) {

@@ -26,8 +26,10 @@ import {
     TriggerTabIDReceived,
     UIFocusMessage,
     AcceptDiff,
+    QuickCommandGroupActionClick,
 } from './controllers/chat/model'
 import { EditorContextCommand, registerCommands } from './commands/registerCommands'
+import { CustomFormActionMessage } from './view/connector/connector'
 
 export function init(appContext: AmazonQAppInitContext) {
     const cwChatControllerEventEmitters = {
@@ -49,6 +51,8 @@ export function init(appContext: AmazonQAppInitContext) {
         processResponseBodyLinkClick: new EventEmitter<ResponseBodyLinkClickMessage>(),
         processFooterInfoLinkClick: new EventEmitter<FooterInfoLinkClick>(),
         processContextCommandUpdateMessage: new EventEmitter<any>(),
+        processQuickCommandGroupActionClicked: new EventEmitter<QuickCommandGroupActionClick>(),
+        processCustomFormAction: new EventEmitter<CustomFormActionMessage>(),
     }
 
     const cwChatControllerMessageListeners = {
@@ -99,6 +103,12 @@ export function init(appContext: AmazonQAppInitContext) {
         ),
         processContextCommandUpdateMessage: new MessageListener<void>(
             cwChatControllerEventEmitters.processContextCommandUpdateMessage
+        ),
+        processQuickCommandGroupActionClicked: new MessageListener<QuickCommandGroupActionClick>(
+            cwChatControllerEventEmitters.processQuickCommandGroupActionClicked
+        ),
+        processCustomFormAction: new MessageListener<CustomFormActionMessage>(
+            cwChatControllerEventEmitters.processCustomFormAction
         ),
     }
 
@@ -152,6 +162,12 @@ export function init(appContext: AmazonQAppInitContext) {
         ),
         processContextCommandUpdateMessage: new MessagePublisher<void>(
             cwChatControllerEventEmitters.processContextCommandUpdateMessage
+        ),
+        processQuickCommandGroupActionClicked: new MessagePublisher<QuickCommandGroupActionClick>(
+            cwChatControllerEventEmitters.processQuickCommandGroupActionClicked
+        ),
+        processCustomFormAction: new MessagePublisher<CustomFormActionMessage>(
+            cwChatControllerEventEmitters.processCustomFormAction
         ),
     }
 

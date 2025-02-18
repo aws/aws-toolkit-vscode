@@ -107,11 +107,29 @@ export class UIMessageListener {
             case 'ui-is-ready':
                 this.processUIIsReady()
                 break
+            case 'quick-command-group-action-click':
+                this.quickCommandGroupActionClicked(msg)
+                break
+            case 'form-action-click':
+                this.processCustomFormAction(msg)
+                break
         }
     }
 
     private processUIIsReady() {
         this.chatControllerMessagePublishers.processContextCommandUpdateMessage.publish()
+    }
+
+    private processCustomFormAction(msg: any) {
+        this.chatControllerMessagePublishers.processCustomFormAction.publish({ tabID: msg.tabID, ...msg })
+    }
+
+    private quickCommandGroupActionClicked(msg: any) {
+        this.chatControllerMessagePublishers.processQuickCommandGroupActionClicked.publish({
+            tabID: msg.tabID,
+            actionId: msg.actionId,
+            command: 'quick-command-group-action-click',
+        })
     }
 
     private processOpenSettings(msg: any) {

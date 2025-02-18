@@ -27,8 +27,9 @@ import {
     FooterInfoLinkClick,
     ViewDiff,
     AcceptDiff,
+    QuickCommandGroupActionClick,
 } from './model'
-import { AppToWebViewMessageDispatcher } from '../../view/connector/connector'
+import { AppToWebViewMessageDispatcher, CustomFormActionMessage } from '../../view/connector/connector'
 import { MessagePublisher } from '../../../amazonq/messages/messagePublisher'
 import { MessageListener } from '../../../amazonq/messages/messageListener'
 import { EditorContentController } from '../../../amazonq/commons/controllers/contentController'
@@ -59,6 +60,9 @@ import { waitUntil } from '../../../shared/utilities/timeoutUtils'
 import { MynahIconsType, MynahUIDataModel, QuickActionCommand } from '@aws/mynah-ui'
 import { LspClient } from '../../../amazonq/lsp/lspClient'
 import { ContextCommandItem } from '../../../amazonq/lsp/types'
+import { workspaceCommand } from '../../../amazonq/webview/ui/tabs/constants'
+import fs from '../../../shared/fs/fs'
+import * as vscode from 'vscode'
 
 export interface ChatControllerMessagePublishers {
     readonly processPromptChatMessage: MessagePublisher<PromptMessage>
@@ -79,6 +83,8 @@ export interface ChatControllerMessagePublishers {
     readonly processResponseBodyLinkClick: MessagePublisher<ResponseBodyLinkClickMessage>
     readonly processFooterInfoLinkClick: MessagePublisher<FooterInfoLinkClick>
     readonly processContextCommandUpdateMessage: MessagePublisher<void>
+    readonly processQuickCommandGroupActionClicked: MessagePublisher<QuickCommandGroupActionClick>
+    readonly processCustomFormAction: MessagePublisher<CustomFormActionMessage>
 }
 
 export interface ChatControllerMessageListeners {
@@ -100,6 +106,8 @@ export interface ChatControllerMessageListeners {
     readonly processResponseBodyLinkClick: MessageListener<ResponseBodyLinkClickMessage>
     readonly processFooterInfoLinkClick: MessageListener<FooterInfoLinkClick>
     readonly processContextCommandUpdateMessage: MessageListener<void>
+    readonly processQuickCommandGroupActionClicked: MessageListener<QuickCommandGroupActionClick>
+    readonly processCustomFormAction: MessageListener<CustomFormActionMessage>
 }
 
 export class ChatController {
@@ -219,6 +227,12 @@ export class ChatController {
         })
         this.chatControllerMessageListeners.processContextCommandUpdateMessage.onMessage(() => {
             return this.processContextCommandUpdateMessage()
+        })
+        this.chatControllerMessageListeners.processQuickCommandGroupActionClicked.onMessage((data) => {
+            return this.processQuickCommandGroupActionClicked(data)
+        })
+        this.chatControllerMessageListeners.processCustomFormAction.onMessage((data) => {
+            return this.processCustomFormAction(data)
         })
     }
 
@@ -365,10 +379,7 @@ export class ChatController {
         const contextCommand: MynahUIDataModel['contextCommands'] = [
             {
                 commands: [
-                    {
-                        command: '@workspace',
-                        description: 'Reference all code in workspace.',
-                    },
+                    ...workspaceCommand.commands,
                     {
                         command: 'folder',
                         children: [
@@ -391,6 +402,25 @@ export class ChatController {
                         description: 'File',
                         icon: 'file' as MynahIconsType,
                     },
+                    {
+                        command: 'prompts',
+                        children: [
+                            {
+                                groupName: 'Prompts',
+                                actions: [
+                                    {
+                                        id: 'create-prompt',
+                                        icon: 'plus',
+                                        text: 'Create',
+                                        description: 'Create new prompt',
+                                    },
+                                ],
+                                commands: [],
+                            },
+                        ],
+                        description: 'Prompts',
+                        icon: 'magic' as MynahIconsType,
+                    },
                 ],
             },
         ]
@@ -401,6 +431,7 @@ export class ChatController {
         const contextCommandItems = await LspClient.instance.getContextCommandItems()
         const folderCmd: QuickActionCommand = contextCommand[0].commands?.[1]
         const filesCmd: QuickActionCommand = contextCommand[0].commands?.[2]
+        const promptsCmd: QuickActionCommand = contextCommand[0].commands?.[3]
 
         for (const contextCommandItem of contextCommandItems) {
             const wsFolderName = path.basename(contextCommandItem.workspaceFolder)
@@ -411,6 +442,15 @@ export class ChatController {
                     route: [contextCommandItem.workspaceFolder, contextCommandItem.relativePath],
                     icon: 'file' as MynahIconsType,
                 })
+
+                // If file is a .prompt type, add to prompts list
+                if (contextCommandItem.relativePath.endsWith('.prompt')) {
+                    promptsCmd.children?.[0].commands.push({
+                        command: path.basename(contextCommandItem.relativePath, '.prompt'),
+                        route: [contextCommandItem.workspaceFolder, contextCommandItem.relativePath],
+                        icon: 'magic' as MynahIconsType,
+                    })
+                }
             } else {
                 folderCmd.children?.[0].commands.push({
                     command: path.basename(contextCommandItem.relativePath),
@@ -420,7 +460,82 @@ export class ChatController {
                 })
             }
         }
+
+        // Check ~/.aws/prompts for saved prompts
+        try {
+            const systemPromptsDirectory = path.join(fs.getUserHomeDir(), '.aws', 'prompts')
+            const systemPromptFiles = await fs.readdir(systemPromptsDirectory)
+            promptsCmd.children?.[0].commands.push(
+                ...systemPromptFiles
+                    .filter(([name]) => name.endsWith('.prompt'))
+                    .map(([name]) => ({
+                        command: name.replace(/\.prompt$/, ''),
+                        icon: 'magic' as MynahIconsType,
+                        route: [systemPromptsDirectory, name],
+                    }))
+            )
+        } catch (e) {
+            getLogger().verbose(`Could not read prompts from ~/.aws/prompts: ${e}`)
+        }
+
         this.messenger.sendContextCommandData(contextCommand)
+    }
+
+    private async processQuickCommandGroupActionClicked(message: QuickCommandGroupActionClick) {
+        if (message.actionId === 'create-prompt') {
+            this.messenger.showCustomForm(
+                message.tabID,
+                [
+                    {
+                        id: 'prompt-name',
+                        type: 'textinput',
+                        mandatory: true,
+                        title: 'Prompt name',
+                        placeholder: 'Enter prompt name',
+                    },
+                    {
+                        id: 'shared-scope',
+                        type: 'select',
+                        title: 'Save globally for all projects?',
+                        mandatory: true,
+                        value: 'system',
+                        options: [
+                            { value: 'project', label: 'No' },
+                            { value: 'system', label: 'Yes' },
+                        ],
+                    },
+                ],
+                [
+                    { id: 'cancel-create-prompt', text: 'Cancel', status: 'clear' },
+                    { id: 'submit-create-prompt', text: 'Create', status: 'main' },
+                ],
+                `Create a saved prompt`,
+                'Use this prompt by typing `@` followed by the prompt name.'
+            )
+        }
+    }
+
+    private async processCustomFormAction(message: CustomFormActionMessage) {
+        if (message.tabID) {
+            if (message.action.id === 'submit-create-prompt') {
+                let promptsDirectory = path.join(fs.getUserHomeDir(), '.aws', 'prompts')
+                if (
+                    vscode.workspace.workspaceFolders?.[0] &&
+                    message.action.formItemValues?.['shared-scope'] === 'project'
+                ) {
+                    const workspaceUri = vscode.workspace.workspaceFolders[0].uri
+                    promptsDirectory = vscode.Uri.joinPath(workspaceUri, '.aws', 'prompts').fsPath
+                }
+
+                const title = message.action.formItemValues?.['prompt-name']
+                const newFilePath = path.join(promptsDirectory, title ? `${title}.prompt` : 'default.prompt')
+                const newFileContent = new Uint8Array(Buffer.from(''))
+                await fs.writeFile(newFilePath, newFileContent)
+                const newFileDoc = await vscode.workspace.openTextDocument(newFilePath)
+                await vscode.window.showTextDocument(newFileDoc)
+                // TO-DO: Trigger regeneration of prompt list in context menu
+            }
+        }
     }
 
     private processException(e: any, tabID: string) {

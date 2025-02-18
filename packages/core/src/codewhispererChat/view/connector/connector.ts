@@ -7,14 +7,14 @@ import { Timestamp } from 'aws-sdk/clients/apigateway'
 import { MessagePublisher } from '../../../amazonq/messages/messagePublisher'
 import { EditorContextCommandType } from '../../commands/registerCommands'
 import { AuthFollowUpType } from '../../../amazonq/auth/model'
-import { MynahUIDataModel } from '@aws/mynah-ui'
+import { ChatItemButton, ChatItemFormItem, MynahUIDataModel } from '@aws/mynah-ui'
 
 class UiMessage {
     readonly time: number = Date.now()
     readonly sender: string = 'CWChat'
     readonly type: string = ''
 
-    public constructor(protected tabID: string | undefined) {}
+    public constructor(public tabID: string | undefined) {}
 }
 
 export class ErrorMessage extends UiMessage {
@@ -142,6 +142,49 @@ export class ContextCommandData extends UiMessage {
     }
 }
 
+export class CustomFormActionMessage extends UiMessage {
+    override type = 'customFormActionMessage'
+    readonly action: {
+        id: string
+        text?: string | undefined
+        formItemValues?: Record<string, string> | undefined
+    }
+
+    constructor(
+        tabID: string,
+        action: {
+            id: string
+            text?: string | undefined
+            formItemValues?: Record<string, string> | undefined
+        }
+    ) {
+        super(tabID)
+        this.action = action
+    }
+}
+
+export class ShowCustomFormMessage extends UiMessage {
+    override type = 'showCustomFormMessage'
+    readonly formItems?: ChatItemFormItem[]
+    readonly buttons?: ChatItemButton[]
+    readonly title?: string
+    readonly description?: string
+
+    constructor(
+        tabID: string,
+        formItems?: ChatItemFormItem[],
+        buttons?: ChatItemButton[],
+        title?: string,
+        description?: string
+    ) {
+        super(tabID)
+        this.formItems = formItems
+        this.buttons = buttons
+        this.title = title
+        this.description = description
+    }
+}
+
 export interface ChatMessageProps {
     readonly message: string | undefined
     readonly messageType: ChatMessageType
@@ -255,6 +298,10 @@ export class AppToWebViewMessageDispatcher {
     }
 
     public sendContextCommandData(message: ContextCommandData) {
+        this.appsToWebViewMessagePublisher.publish(message)
+    }
+
+    public sendShowCustomFormMessage(message: ShowCustomFormMessage) {
         this.appsToWebViewMessagePublisher.publish(message)
     }
 }

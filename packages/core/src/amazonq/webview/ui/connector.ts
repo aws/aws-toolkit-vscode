@@ -14,6 +14,8 @@ import {
     ChatPrompt,
     MynahUIDataModel,
     QuickActionCommand,
+    ChatItemFormItem,
+    ChatItemButton,
 } from '@aws/mynah-ui'
 import { Connector as CWChatConnector } from './apps/cwChatConnector'
 import { Connector as FeatureDevChatConnector } from './apps/featureDevChatConnector'
@@ -91,6 +93,13 @@ export interface ConnectorProps {
     handleCommand: (chatPrompt: ChatPrompt, tabId: string) => void
     sendStaticMessages: (tabID: string, messages: ChatItem[]) => void
     onContextCommandDataReceived: (message: MynahUIDataModel['contextCommands']) => void
+    onShowCustomForm: (
+        tabId: string,
+        formItems?: ChatItemFormItem[],
+        buttons?: ChatItemButton[],
+        title?: string,
+        description?: string
+    ) => void
     tabsStorage: TabsStorage
 }
 
@@ -612,6 +621,14 @@ export class Connector {
         }
     }
 
+    onQuickCommandGroupActionClick = (tabId: string, action: { id: string }) => {
+        switch (this.tabsStorage.getTab(tabId)?.type) {
+            case 'cwc':
+                this.cwChatConnector.onQuickCommandGroupActionClick(tabId, action)
+                break
+        }
+    }
+
     onChatItemVoted = (tabId: string, messageId: string, vote: 'upvote' | 'downvote'): void | undefined => {
         switch (this.tabsStorage.getTab(tabId)?.type) {
             case 'cwc':
@@ -655,6 +672,8 @@ export class Connector {
                         type: '',
                         tabType: 'cwc',
                     })
+                } else {
+                    this.cwChatConnector.onCustomFormAction(tabId, action)
                 }
                 break
             case 'agentWalkthrough': {

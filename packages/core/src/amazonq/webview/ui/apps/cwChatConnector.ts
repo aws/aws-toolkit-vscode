@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ChatItemType, MynahUIDataModel } from '@aws/mynah-ui'
+import { ChatItemButton, ChatItemFormItem, ChatItemType, MynahUIDataModel } from '@aws/mynah-ui'
 import { TabType } from '../storages/tabsStorage'
 import { CWCChatItem } from '../connector'
 import { BaseConnector, BaseConnectorProps } from './baseConnector'
@@ -11,11 +11,19 @@ import { BaseConnector, BaseConnectorProps } from './baseConnector'
 export interface ConnectorProps extends BaseConnectorProps {
     onCWCContextCommandMessage: (message: CWCChatItem, command?: string) => string | undefined
     onContextCommandDataReceived: (data: MynahUIDataModel['contextCommands']) => void
+    onShowCustomForm: (
+        tabId: string,
+        formItems?: ChatItemFormItem[],
+        buttons?: ChatItemButton[],
+        title?: string,
+        description?: string
+    ) => void
 }
 
 export class Connector extends BaseConnector {
     private readonly onCWCContextCommandMessage
     private readonly onContextCommandDataReceived
+    private readonly onShowCustomForm
 
     override getTabType(): TabType {
         return 'cwc'
@@ -25,6 +33,7 @@ export class Connector extends BaseConnector {
         super(props)
         this.onCWCContextCommandMessage = props.onCWCContextCommandMessage
         this.onContextCommandDataReceived = props.onContextCommandDataReceived
+        this.onShowCustomForm = props.onShowCustomForm
     }
 
     onSourceLinkClick = (tabID: string, messageId: string, link: string): void => {
@@ -140,6 +149,16 @@ export class Connector extends BaseConnector {
         }
     }
 
+    private showCustomFormMessage = (messageData: any) => {
+        this.onShowCustomForm(
+            messageData.tabID,
+            messageData.formItems,
+            messageData.buttons,
+            messageData.title,
+            messageData.description
+        )
+    }
+
     handleMessageReceive = async (messageData: any): Promise<void> => {
         if (messageData.type === 'chatMessage') {
             await this.processChatMessage(messageData)
@@ -155,7 +174,45 @@ export class Connector extends BaseConnector {
             await this.processContextCommandData(messageData)
             return
         }
+        if (messageData.type === 'showCustomFormMessage') {
+            this.showCustomFormMessage(messageData)
+            return
+        }
+
+        if (messageData.type === 'customFormActionMessage') {
+            this.onCustomFormAction(messageData.tabID, messageData.action)
+            return
+        }
         // For other message types, call the base class handleMessageReceive
         await this.baseHandleMessageReceive(messageData)
+    }
+
+    onQuickCommandGroupActionClick = (tabID: string, action: { id: string }) => {
+        this.sendMessageToExtension({
+            command: 'quick-command-group-action-click',
+            actionId: action.id,
+            tabID,
+            tabType: this.getTabType(),
+        })
+    }
+
+    onCustomFormAction(
+        tabId: string,
+        action: {
+            id: string
+            text?: string | undefined
+            formItemValues?: Record<string, string> | undefined
+        }
+    ) {
+        if (action === undefined) {
+            return
+        }
+
+        this.sendMessageToExtension({
+            command: 'form-action-click',
+            action: action,
+            tabType: this.getTabType(),
+            tabID: tabId,
+        })
     }
 }
