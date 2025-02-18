@@ -2587,6 +2587,12 @@
                 },
                 "documentSymbols": {
                     "shape": "DocumentSymbols"
+                },
+                "startLine": {
+                    "shape": "Integer"
+                },
+                "endLine": {
+                    "shape": "Integer"
                 }
             }
         },

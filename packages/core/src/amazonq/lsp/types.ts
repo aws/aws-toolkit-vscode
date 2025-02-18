@@ -76,3 +76,42 @@ export type GetRepomapIndexJSONRequest = string
 export const GetRepomapIndexJSONRequestType: RequestType<GetRepomapIndexJSONRequest, any, any> = new RequestType(
     'lsp/getRepomapIndexJSON'
 )
+
+export type GetContextCommandItemsRequestPayload = { workspaceFolders: string[] }
+export type GetContextCommandItemsRequest = string
+export const GetContextCommandItemsRequestType: RequestType<GetContextCommandItemsRequest, any, any> = new RequestType(
+    'lsp/getContextCommandItems'
+)
+
+export type GetIndexSequenceNumberRequestPayload = {}
+export type GetIndexSequenceNumberRequest = string
+export const GetIndexSequenceNumberRequestType: RequestType<GetRepomapIndexJSONRequest, any, any> = new RequestType(
+    'lsp/getIndexSequenceNumber'
+)
+
+export type ContextCommandItemType = 'file' | 'folder'
+
+export interface ContextCommandItem {
+    workspaceFolder: string
+    type: ContextCommandItemType
+    relativePath: string
+}
+
+export type GetContextCommandPromptRequestPayload = {
+    contextCommands: {
+        workspaceFolder: string
+        type: 'file' | 'folder'
+        relativePath: string
+    }[]
+}
+export type GetContextCommandPromptRequest = string
+export const GetContextCommandPromptRequestType: RequestType<GetContextCommandPromptRequest, any, any> =
+    new RequestType('lsp/getContextCommandPrompt')
+
+export interface AdditionalContextPrompt {
+    content: string
+    name: string
+    description: string
+    startLine: number
+    endLine: number
+}

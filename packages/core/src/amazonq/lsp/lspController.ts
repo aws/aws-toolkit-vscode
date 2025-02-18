@@ -31,6 +31,8 @@ export interface Chunk {
     readonly context?: string
     readonly relativePath?: string
     readonly programmingLanguage?: string
+    readonly startLine?: number
+    readonly endLine?: number
 }
 
 export interface Content {
@@ -58,9 +60,9 @@ export interface Manifest {
         targets: Target[]
     }[]
 }
-const manifestUrl = 'https://aws-toolkit-language-servers.amazonaws.com/q-context/manifest.json'
+const manifestUrl = 'https://ducvaeoffl85c.cloudfront.net/manifest-0.1.37.json'
 // this LSP client in Q extension is only going to work with these LSP server versions
-const supportedLspServerVersions = ['0.1.35']
+const supportedLspServerVersions = ['0.1.37']
 
 const nodeBinName = process.platform === 'win32' ? 'node.exe' : 'node'
 
@@ -292,11 +294,15 @@ export class LspController {
                         programmingLanguage: {
                             languageName: chunk.programmingLanguage,
                         },
+                        startLine: chunk.startLine ?? -1,
+                        endLine: chunk.endLine ?? -1,
                     })
                 } else {
                     resp.push({
                         text: text,
                         relativeFilePath: chunk.relativePath ? chunk.relativePath : path.basename(chunk.filePath),
+                        startLine: chunk.startLine ?? -1,
+                        endLine: chunk.endLine ?? -1,
                     })
                 }
             }
