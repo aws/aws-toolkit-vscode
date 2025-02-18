@@ -15,6 +15,8 @@ import { fs, AmazonqCreateUpload, ZipStream } from 'aws-core-vscode/shared'
 import { MetricName, Span } from 'aws-core-vscode/telemetry'
 import sinon from 'sinon'
 import { CodeWhispererSettings } from 'aws-core-vscode/codewhisperer'
+import { CurrentWsFolders } from 'aws-core-vscode/amazonq'
+import path from 'path'
 
 const testDevfilePrepareRepo = async (devfileEnabled: boolean) => {
     const files: Record<string, string> = {
@@ -44,19 +46,24 @@ const testDevfilePrepareRepo = async (devfileEnabled: boolean) => {
         .stub(CodeWhispererSettings.instance, 'getAutoBuildSetting')
         .returns(devfileEnabled ? { [workspace.uri.fsPath]: true } : {})
 
-    await testPrepareRepoData(workspace, expectedFiles)
+    await testPrepareRepoData([workspace], expectedFiles)
 }
 
 const testPrepareRepoData = async (
-    workspace: vscode.WorkspaceFolder,
+    workspaces: vscode.WorkspaceFolder[],
     expectedFiles: string[],
     expectedTelemetryMetrics?: Array<{ metricName: MetricName; value: any }>
 ) => {
     expectedFiles.sort((a, b) => a.localeCompare(b))
     const telemetry = new TelemetryHelper()
-    const result = await prepareRepoData([workspace.uri.fsPath], [workspace], telemetry, {
-        record: () => {},
-    } as unknown as Span<AmazonqCreateUpload>)
+    const result = await prepareRepoData(
+        workspaces.map((ws) => ws.uri.fsPath),
+        workspaces as CurrentWsFolders,
+        telemetry,
+        {
+            record: () => {},
+        } as unknown as Span<AmazonqCreateUpload>
+    )
 
     assert.strictEqual(Buffer.isBuffer(result.zipFileBuffer), true)
     // checksum is not the same across different test executions because some unique random folder names are generated
@@ -87,7 +94,7 @@ describe('file utils', () => {
             await folder.write('file2.md', 'test content')
             const workspace = getWorkspaceFolder(folder.path)
 
-            await testPrepareRepoData(workspace, ['file1.md', 'file2.md'])
+            await testPrepareRepoData([workspace], ['file1.md', 'file2.md'])
         })
 
         it('prepareRepoData ignores denied file extensions', async function () {
@@ -96,7 +103,7 @@ describe('file utils', () => {
             const workspace = getWorkspaceFolder(folder.path)
 
             await testPrepareRepoData(
-                workspace,
+                [workspace],
                 [],
                 [{ metricName: 'amazonq_bundleExtensionIgnored', value: { filenameExt: 'mp4', count: 1 } }]
             )
@@ -125,6 +132,19 @@ describe('file utils', () => {
                     } as unknown as Span<AmazonqCreateUpload>),
                 ContentLengthError
             )
+        })
+
+        it('prepareRepoData properly handles multi-root workspaces', async function () {
+            const folder = await TestFolder.create()
+            const testFilePath = 'innerFolder/file.md'
+            await folder.write(testFilePath, 'test content')
+
+            // Add a folder and its subfolder to the workspace
+            const workspace1 = getWorkspaceFolder(folder.path)
+            const workspace2 = getWorkspaceFolder(folder.path + '/innerFolder')
+            const folderName = path.basename(folder.path)
+
+            await testPrepareRepoData([workspace1, workspace2], [`${folderName}_${workspace1.name}/${testFilePath}`])
         })
     })
 })
