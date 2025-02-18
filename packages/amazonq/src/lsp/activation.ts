@@ -5,13 +5,13 @@
 
 import vscode from 'vscode'
 import { startLanguageServer } from './client'
-import { AmazonQLSPResolver } from './lspInstaller'
+import { AmazonQLSPInstaller } from './lspInstaller'
 import { Commands, lspSetupStage, ToolkitError } from 'aws-core-vscode/shared'
 
 export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
     try {
         await lspSetupStage('all', async () => {
-            const installResult = await new AmazonQLSPResolver().resolve()
+            const installResult = await new AmazonQLSPInstaller().resolve()
             await lspSetupStage('launch', async () => await startLanguageServer(ctx, installResult.resourcePaths))
         })
         ctx.subscriptions.push(

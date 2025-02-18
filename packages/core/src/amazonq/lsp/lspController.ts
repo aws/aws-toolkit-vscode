@@ -14,7 +14,7 @@ import { telemetry } from '../../shared/telemetry/telemetry'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import globals, { isWeb } from '../../shared/extensionGlobals'
 import { isAmazonInternalOs } from '../../shared/vscode/env'
-import { WorkspaceLSPResolver } from './workspaceInstaller'
+import { WorkspaceLSPInstaller } from './workspaceInstaller'
 import { lspSetupStage } from '../../shared/lsp/utils/setupStage'
 
 export interface Chunk {
@@ -186,7 +186,7 @@ export class LspController {
 
     private async setupLsp(context: vscode.ExtensionContext) {
         await lspSetupStage('all', async () => {
-            const installResult = await new WorkspaceLSPResolver().resolve()
+            const installResult = await new WorkspaceLSPInstaller().resolve()
             await lspSetupStage('launch', async () => activateLsp(context, installResult.resourcePaths))
             this.logger.info('LspController: LSP activated')
         })
