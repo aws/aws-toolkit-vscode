@@ -235,8 +235,6 @@ describe('SAM build helper functions', () => {
 
     describe('resolveBuildFlags', () => {
         let sandbox: sinon.SinonSandbox
-        let pathAndVersionStub: sinon.SinonStub<any[], any>
-
         beforeEach(() => {
             sandbox = sinon.createSandbox()
         })
@@ -245,31 +243,25 @@ describe('SAM build helper functions', () => {
             sandbox.restore()
         })
 
-        it('should add --no-use-container if the buildFlags array does not contain --use-container', async () => {
-            const normalVersion = { path: 'file:///path/to/cli', parsedVersion: new SemVer('1.133.0') }
-            pathAndVersionStub = sandbox.stub().resolves(normalVersion)
-            sandbox.stub(utils, 'getSamCliPathAndVersion').callsFake(pathAndVersionStub)
-            const buildFlags: string[] = ['--cached', '--debug', '--parallel']
-            const resolvedBuildFlags = ['--cached', '--debug', '--parallel', '--no-use-container']
-            assert.deepEqual(resolvedBuildFlags, await resolveBuildFlags(buildFlags, normalVersion.parsedVersion))
+        it('uses --no-use-container when --use-container is absent', async () => {
+            const normalVersion = new SemVer('1.133.0')
+            const buildFlags = ['--cached', '--debug', '--parallel']
+            const expectedBuildFlags = ['--cached', '--debug', '--parallel', '--no-use-container']
+            return testResolveBuildFlags(sandbox, normalVersion, buildFlags, expectedBuildFlags)
         })
 
-        it('should return the original buildFlags array if SAM CLI version is less than 1.133', async () => {
-            const lowerVersion = { path: 'file:///path/to/cli', parsedVersion: new SemVer('1.110.0') }
-            const pathAndVersionStub = sandbox.stub().resolves(lowerVersion)
-            sandbox.stub(utils, 'getSamCliPathAndVersion').callsFake(pathAndVersionStub)
+        it('preserves buildFlags when SAM CLI version < 1.133', async () => {
+            const lowerVersion = new SemVer('1.110.0')
             const buildFlags = ['--cached', '--parallel', '--save-params']
-            const resolvedBuildFlags = await resolveBuildFlags(buildFlags, lowerVersion.parsedVersion)
-            assert.deepEqual(resolvedBuildFlags, buildFlags)
+            const expectedBuildFlags = ['--cached', '--parallel', '--save-params']
+            return testResolveBuildFlags(sandbox, lowerVersion, buildFlags, expectedBuildFlags)
         })
 
-        it('should not add "--no-use-container" if "--use-container" is already present', async () => {
-            const normalVersion = { path: 'file:///path/to/cli', parsedVersion: new SemVer('1.110.0') }
-            pathAndVersionStub = sandbox.stub().resolves(normalVersion)
-            sandbox.stub(utils, 'getSamCliPathAndVersion').callsFake(pathAndVersionStub)
+        it('respects existing --use-container flag', async () => {
+            const normalVersion = new SemVer('1.110.0')
             const buildFlags = ['--cached', '--parallel', '--save-params', '--use-container']
-            const resolvedBuildFlags = await resolveBuildFlags(buildFlags, normalVersion.parsedVersion)
-            assert.deepStrictEqual(resolvedBuildFlags, buildFlags)
+            const expectedBuildFlags = ['--cached', '--parallel', '--save-params', '--use-container']
+            return testResolveBuildFlags(sandbox, normalVersion, buildFlags, expectedBuildFlags)
         })
     })
 })
@@ -594,3 +586,16 @@ describe('SAM runBuild', () => {
         })
     })
 })
+
+function testResolveBuildFlags(
+    sandbox: sinon.SinonSandbox,
+    parsedVersion: SemVer,
+    buildFlags: string[],
+    expectedBuildFlags: string[]
+) {
+    const pathAndVersionStub = sandbox.stub().resolves({ path: 'file:///path/to/cli', parsedVersion })
+    sandbox.stub(utils, 'getSamCliPathAndVersion').callsFake(pathAndVersionStub)
+    return resolveBuildFlags(buildFlags, parsedVersion).then((resolvedBuildFlags) => {
+        assert.deepEqual(resolvedBuildFlags, expectedBuildFlags)
+    })
+}

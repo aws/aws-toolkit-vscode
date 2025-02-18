@@ -284,7 +284,7 @@ function resolveBuildArgConflict(boundArgs: string[]): string[] {
     return Array.from(boundArgsSet)
 }
 export async function resolveBuildFlags(buildFlags: string[], samCliVersion: SemVer | null): Promise<string[]> {
-    // const samCliVersion = (await getSamCliPathAndVersion()).parsedVersion
+    // --no-use-container was not added until v1.133.0
     if (samCliVersion?.compare('1.133.0') ?? -1 < 0) {
         return buildFlags
     }
