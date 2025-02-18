@@ -22,7 +22,9 @@ import vscode from 'vscode'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { ToolkitError } from '../../shared/errors'
 import { WorkflowStudioApiHandler } from './workflowStudioApiHandler'
-import { getLogger, globals } from '../../shared'
+import globals from '../../shared/extensionGlobals'
+import { getLogger } from '../../shared/logger/logger'
+
 const localize = nls.loadMessageBundle()
 
 /**

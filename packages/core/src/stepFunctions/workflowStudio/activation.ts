@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import { WorkflowStudioEditorProvider } from './workflowStudioEditorProvider'
 import { Commands } from '../../shared/vscode/commands2'
-import { globals } from '../../shared'
+import globals from '../../shared/extensionGlobals'
 
 /**
  * Activates the extension and registers all necessary components.

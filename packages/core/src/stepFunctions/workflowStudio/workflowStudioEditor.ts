@@ -13,7 +13,7 @@ import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { handleMessage } from './handleMessage'
 import { isInvalidJsonFile } from '../utils'
 import { setContext } from '../../shared/vscode/setContext'
-import { globals } from '../../shared'
+import globals from '../../shared/extensionGlobals'
 
 /**
  * The main class for Workflow Studio Editor. This class handles the creation and management

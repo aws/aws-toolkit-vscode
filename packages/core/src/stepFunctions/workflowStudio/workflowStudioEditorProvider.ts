@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { getLogger } from '../../shared/logger'
+import { getLogger } from '../../shared/logger/logger'
 import request from '../../shared/request'
 import fs from '../../shared/fs/fs'
 import { getClientId } from '../../shared/telemetry/util'
