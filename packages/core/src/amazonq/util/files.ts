@@ -48,8 +48,14 @@ export async function prepareRepoData(
 
         let totalBytes = 0
         const ignoredExtensionMap = new Map<string, number>()
+        const addedFilePaths = new Set()
 
         for (const file of files) {
+            if (addedFilePaths.has(file.zipFilePath)) {
+                continue
+            }
+            addedFilePaths.add(file.zipFilePath)
+
             let fileSize
             try {
                 fileSize = (await fs.stat(file.fileUri)).size
