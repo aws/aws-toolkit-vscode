@@ -682,6 +682,7 @@ export const createMynahUI = (
             textMessageHandler.handle(prompt, tabID, eventId as string)
         },
         onQuickCommandGroupActionClick: connector.onQuickCommandGroupActionClick,
+        onContextSelected: connector.onContextSelected,
         onVote: connector.onChatItemVoted,
         onInBodyButtonClicked: (tabId, messageId, action, eventId) => {
             switch (action.id) {

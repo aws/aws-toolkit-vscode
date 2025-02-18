@@ -3,10 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ChatItemButton, ChatItemFormItem, ChatItemType, MynahUIDataModel } from '@aws/mynah-ui'
+import { ChatItemButton, ChatItemFormItem, ChatItemType, MynahUIDataModel, QuickActionCommand } from '@aws/mynah-ui'
 import { TabType } from '../storages/tabsStorage'
 import { CWCChatItem } from '../connector'
 import { BaseConnector, BaseConnectorProps } from './baseConnector'
+import { createPromptCommand } from '../tabs/constants'
 
 export interface ConnectorProps extends BaseConnectorProps {
     onCWCContextCommandMessage: (message: CWCChatItem, command?: string) => string | undefined
@@ -171,7 +172,7 @@ export class Connector extends BaseConnector {
         }
 
         if (messageData.type === 'contextCommandData') {
-            await this.processContextCommandData(messageData)
+            this.processContextCommandData(messageData)
             return
         }
         if (messageData.type === 'showCustomFormMessage') {
@@ -194,6 +195,20 @@ export class Connector extends BaseConnector {
             tabID,
             tabType: this.getTabType(),
         })
+    }
+
+    onContextSelected = (tabID: string, contextItem: QuickActionCommand) => {
+        this.sendMessageToExtension({
+            command: 'context-selected',
+            contextItem,
+            tabID,
+            tabType: this.getTabType(),
+        })
+
+        if (contextItem.command === createPromptCommand) {
+            return false
+        }
+        return true
     }
 
     onCustomFormAction(

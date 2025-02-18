@@ -7,7 +7,7 @@ import { Timestamp } from 'aws-sdk/clients/apigateway'
 import { MessagePublisher } from '../../../amazonq/messages/messagePublisher'
 import { EditorContextCommandType } from '../../commands/registerCommands'
 import { AuthFollowUpType } from '../../../amazonq/auth/model'
-import { ChatItemButton, ChatItemFormItem, MynahUIDataModel } from '@aws/mynah-ui'
+import { ChatItemButton, ChatItemFormItem, MynahUIDataModel, QuickActionCommand } from '@aws/mynah-ui'
 
 class UiMessage {
     readonly time: number = Date.now()
@@ -182,6 +182,16 @@ export class ShowCustomFormMessage extends UiMessage {
         this.buttons = buttons
         this.title = title
         this.description = description
+    }
+}
+
+export class ContextSelectedMessage extends UiMessage {
+    override type = 'contextSelectedMessage'
+    readonly contextItem: QuickActionCommand
+
+    constructor(tabID: string, contextItem: QuickActionCommand) {
+        super(tabID)
+        this.contextItem = contextItem
     }
 }
 

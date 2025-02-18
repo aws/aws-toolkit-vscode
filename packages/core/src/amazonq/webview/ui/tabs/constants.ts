@@ -13,6 +13,8 @@ export type TabTypeData = {
     contextCommands?: QuickActionCommandGroup[]
 }
 
+export const createPromptCommand = 'Create a new prompt'
+
 export const workspaceCommand: QuickActionCommandGroup = {
     groupName: 'Mention code',
     commands: [

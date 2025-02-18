@@ -113,6 +113,8 @@ export class UIMessageListener {
             case 'form-action-click':
                 this.processCustomFormAction(msg)
                 break
+            case 'context-selected':
+                this.processContextSelected(msg)
         }
     }
 
@@ -122,6 +124,10 @@ export class UIMessageListener {
 
     private processCustomFormAction(msg: any) {
         this.chatControllerMessagePublishers.processCustomFormAction.publish({ tabID: msg.tabID, ...msg })
+    }
+
+    private processContextSelected(msg: any) {
+        this.chatControllerMessagePublishers.processContextSelected.publish({ tabID: msg.tabID, ...msg })
     }
 
     private quickCommandGroupActionClicked(msg: any) {

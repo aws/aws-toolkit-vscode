@@ -29,7 +29,7 @@ import {
     QuickCommandGroupActionClick,
 } from './controllers/chat/model'
 import { EditorContextCommand, registerCommands } from './commands/registerCommands'
-import { CustomFormActionMessage } from './view/connector/connector'
+import { ContextSelectedMessage, CustomFormActionMessage } from './view/connector/connector'
 
 export function init(appContext: AmazonQAppInitContext) {
     const cwChatControllerEventEmitters = {
@@ -53,6 +53,7 @@ export function init(appContext: AmazonQAppInitContext) {
         processContextCommandUpdateMessage: new EventEmitter<any>(),
         processQuickCommandGroupActionClicked: new EventEmitter<QuickCommandGroupActionClick>(),
         processCustomFormAction: new EventEmitter<CustomFormActionMessage>(),
+        processContextSelected: new EventEmitter<ContextSelectedMessage>(),
     }
 
     const cwChatControllerMessageListeners = {
@@ -109,6 +110,9 @@ export function init(appContext: AmazonQAppInitContext) {
         ),
         processCustomFormAction: new MessageListener<CustomFormActionMessage>(
             cwChatControllerEventEmitters.processCustomFormAction
+        ),
+        processContextSelected: new MessageListener<ContextSelectedMessage>(
+            cwChatControllerEventEmitters.processContextSelected
         ),
     }
 
@@ -168,6 +172,9 @@ export function init(appContext: AmazonQAppInitContext) {
         ),
         processCustomFormAction: new MessagePublisher<CustomFormActionMessage>(
             cwChatControllerEventEmitters.processCustomFormAction
+        ),
+        processContextSelected: new MessagePublisher<ContextSelectedMessage>(
+            cwChatControllerEventEmitters.processContextSelected
         ),
     }
 

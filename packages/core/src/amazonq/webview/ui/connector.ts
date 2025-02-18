@@ -623,9 +623,24 @@ export class Connector {
 
     onQuickCommandGroupActionClick = (tabId: string, action: { id: string }) => {
         switch (this.tabsStorage.getTab(tabId)?.type) {
+            case 'welcome':
+            case 'unknown':
             case 'cwc':
+                this.tabsStorage.updateTabTypeFromUnknown(tabId, 'cwc')
                 this.cwChatConnector.onQuickCommandGroupActionClick(tabId, action)
                 break
+        }
+    }
+
+    onContextSelected = (contextItem: QuickActionCommand, tabId: string) => {
+        switch (this.tabsStorage.getTab(tabId)?.type) {
+            case 'welcome':
+            case 'unknown':
+            case 'cwc':
+                this.tabsStorage.updateTabTypeFromUnknown(tabId, 'cwc')
+                return this.cwChatConnector.onContextSelected(tabId, contextItem)
+            default:
+                return true
         }
     }
 

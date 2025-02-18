@@ -29,7 +29,11 @@ import {
     AcceptDiff,
     QuickCommandGroupActionClick,
 } from './model'
-import { AppToWebViewMessageDispatcher, CustomFormActionMessage } from '../../view/connector/connector'
+import {
+    AppToWebViewMessageDispatcher,
+    ContextSelectedMessage,
+    CustomFormActionMessage,
+} from '../../view/connector/connector'
 import { MessagePublisher } from '../../../amazonq/messages/messagePublisher'
 import { MessageListener } from '../../../amazonq/messages/messageListener'
 import { EditorContentController } from '../../../amazonq/commons/controllers/contentController'
@@ -60,7 +64,7 @@ import { waitUntil } from '../../../shared/utilities/timeoutUtils'
 import { MynahIconsType, MynahUIDataModel, QuickActionCommand } from '@aws/mynah-ui'
 import { LspClient } from '../../../amazonq/lsp/lspClient'
 import { ContextCommandItem } from '../../../amazonq/lsp/types'
-import { workspaceCommand } from '../../../amazonq/webview/ui/tabs/constants'
+import { createPromptCommand, workspaceCommand } from '../../../amazonq/webview/ui/tabs/constants'
 import fs from '../../../shared/fs/fs'
 import * as vscode from 'vscode'
 
@@ -85,6 +89,7 @@ export interface ChatControllerMessagePublishers {
     readonly processContextCommandUpdateMessage: MessagePublisher<void>
     readonly processQuickCommandGroupActionClicked: MessagePublisher<QuickCommandGroupActionClick>
     readonly processCustomFormAction: MessagePublisher<CustomFormActionMessage>
+    readonly processContextSelected: MessagePublisher<ContextSelectedMessage>
 }
 
 export interface ChatControllerMessageListeners {
@@ -108,6 +113,7 @@ export interface ChatControllerMessageListeners {
     readonly processContextCommandUpdateMessage: MessageListener<void>
     readonly processQuickCommandGroupActionClicked: MessageListener<QuickCommandGroupActionClick>
     readonly processCustomFormAction: MessageListener<CustomFormActionMessage>
+    readonly processContextSelected: MessageListener<ContextSelectedMessage>
 }
 
 export class ChatController {
@@ -233,6 +239,9 @@ export class ChatController {
         })
         this.chatControllerMessageListeners.processCustomFormAction.onMessage((data) => {
             return this.processCustomFormAction(data)
+        })
+        this.chatControllerMessageListeners.processContextSelected.onMessage((data) => {
+            return this.processContextSelected(data)
         })
     }
 
@@ -411,7 +420,6 @@ export class ChatController {
                                     {
                                         id: 'create-prompt',
                                         icon: 'plus',
-                                        text: 'Create',
                                         description: 'Create new prompt',
                                     },
                                 ],
@@ -478,40 +486,47 @@ export class ChatController {
             getLogger().verbose(`Could not read prompts from ~/.aws/prompts: ${e}`)
         }
 
+        // Add create prompt button to the bottom of the prompts list
+        promptsCmd.children?.[0].commands.push({ command: createPromptCommand, icon: 'list-add' as MynahIconsType })
+
         this.messenger.sendContextCommandData(contextCommand)
     }
 
-    private async processQuickCommandGroupActionClicked(message: QuickCommandGroupActionClick) {
+    private handlePromptCreate(tabID: string) {
+        this.messenger.showCustomForm(
+            tabID,
+            [
+                {
+                    id: 'prompt-name',
+                    type: 'textinput',
+                    mandatory: true,
+                    title: 'Prompt name',
+                    placeholder: 'Enter prompt name',
+                    description: 'Use this prompt in the chat by typing `@` followed by the prompt name.',
+                },
+                {
+                    id: 'shared-scope',
+                    type: 'select',
+                    title: 'Save globally for all projects?',
+                    mandatory: true,
+                    value: 'system',
+                    description: 'If yes is selected, .prompt file will be saved in ~/.aws/prompts.',
+                    options: [
+                        { value: 'project', label: 'No' },
+                        { value: 'system', label: 'Yes' },
+                    ],
+                },
+            ],
+            [
+                { id: 'cancel-create-prompt', text: 'Cancel', status: 'clear' },
+                { id: 'submit-create-prompt', text: 'Create', status: 'main' },
+            ],
+            `Create a saved prompt`
+        )
+    }
+    private processQuickCommandGroupActionClicked(message: QuickCommandGroupActionClick) {
         if (message.actionId === 'create-prompt') {
-            this.messenger.showCustomForm(
-                message.tabID,
-                [
-                    {
-                        id: 'prompt-name',
-                        type: 'textinput',
-                        mandatory: true,
-                        title: 'Prompt name',
-                        placeholder: 'Enter prompt name',
-                    },
-                    {
-                        id: 'shared-scope',
-                        type: 'select',
-                        title: 'Save globally for all projects?',
-                        mandatory: true,
-                        value: 'system',
-                        options: [
-                            { value: 'project', label: 'No' },
-                            { value: 'system', label: 'Yes' },
-                        ],
-                    },
-                ],
-                [
-                    { id: 'cancel-create-prompt', text: 'Cancel', status: 'clear' },
-                    { id: 'submit-create-prompt', text: 'Create', status: 'main' },
-                ],
-                `Create a saved prompt`,
-                'Use this prompt by typing `@` followed by the prompt name.'
-            )
+            this.handlePromptCreate(message.tabID)
         }
     }
 
@@ -533,8 +548,14 @@ export class ChatController {
                 await fs.writeFile(newFilePath, newFileContent)
                 const newFileDoc = await vscode.workspace.openTextDocument(newFilePath)
                 await vscode.window.showTextDocument(newFileDoc)
-                // TO-DO: Trigger regeneration of prompt list in context menu
+                await this.processContextCommandUpdateMessage()
             }
+        }
+    }
+
+    private async processContextSelected(message: ContextSelectedMessage) {
+        if (message.tabID && message.contextItem.command === createPromptCommand) {
+            this.handlePromptCreate(message.tabID)
         }
     }
 
