@@ -688,17 +688,24 @@ export class ExtensionUse {
             return this.isFirstUseCurrentSession
         }
 
-        this.isFirstUseCurrentSession = globals.globalState.get('isExtensionFirstUse')
-        if (this.isFirstUseCurrentSession === undefined) {
+        // This is for sure not their first use
+        const isFirstUse = globals.globalState.tryGet('isExtensionFirstUse', Boolean)
+        if (isFirstUse === false) {
+            this.isFirstUseCurrentSession = isFirstUse
+            return this.isFirstUseCurrentSession
+        }
+
+        if (isAmazonQ()) {
+            this.isFirstUseCurrentSession = true
+        } else {
             // The variable in the store is not defined yet, fallback to checking if they have existing connections.
             this.isFirstUseCurrentSession = !hasExistingConnections()
-
-            getLogger().debug(
-                `isFirstUse: State not found, marking user as '${
-                    this.isFirstUseCurrentSession ? '' : 'NOT '
-                }first use' since they 'did ${this.isFirstUseCurrentSession ? 'NOT ' : ''}have existing connections'.`
-            )
         }
+        getLogger().debug(
+            `isFirstUse: State not found, marking user as '${
+                this.isFirstUseCurrentSession ? '' : 'NOT '
+            }first use' since they 'did ${this.isFirstUseCurrentSession ? 'NOT ' : ''}have existing connections'.`
+        )
 
         // Update state, so next time it is not first use
         this.updateMemento('isExtensionFirstUse', false)
