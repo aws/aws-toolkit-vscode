@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Amazon Q /test: Add the target source file to the zip archive before including files from the rest of the repository."
+}
