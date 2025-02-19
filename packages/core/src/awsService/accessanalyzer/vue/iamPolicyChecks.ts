@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import * as fs from 'fs' // eslint-disable-line no-restricted-imports
 import * as path from 'path'
-import { getLogger, Logger } from '../../../shared/logger'
+import { getLogger, Logger } from '../../../shared/logger/logger'
 import { localize } from '../../../shared/utilities/vsCodeUtils'
 import { VueWebview, VueWebviewPanel } from '../../../webviews/main'
 import { ExtContext } from '../../../shared/extensions'
@@ -14,7 +14,7 @@ import { telemetry } from '../../../shared/telemetry/telemetry'
 import { AccessAnalyzer, SharedIniFileCredentials } from 'aws-sdk'
 import { ToolkitError } from '../../../shared/errors'
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../../shared/filesystemUtilities'
-import { globals } from '../../../shared'
+import globals from '../../../shared/extensionGlobals'
 import {
     IamPolicyChecksConstants,
     PolicyChecksCheckType,

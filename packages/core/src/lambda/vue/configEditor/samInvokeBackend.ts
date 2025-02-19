@@ -7,12 +7,13 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { LaunchConfiguration } from '../../../shared/debug/launchConfiguration'
-import { getLogger } from '../../../shared/logger'
+import { getLogger } from '../../../shared/logger/logger'
 import { HttpResourceFetcher } from '../../../shared/resourcefetcher/httpResourceFetcher'
 import {
     AwsSamDebuggerConfiguration,
     isCodeTargetProperties,
     isTemplateTargetProperties,
+    TemplateTargetProperties,
 } from '../../../shared/sam/debugger/awsSamDebugConfiguration'
 import {
     DefaultAwsSamDebugConfigurationValidator,
@@ -31,8 +32,8 @@ import globals from '../../../shared/extensionGlobals'
 import { VueWebview } from '../../../webviews/main'
 import { Commands } from '../../../shared/vscode/commands2'
 import { telemetry } from '../../../shared/telemetry/telemetry'
-import { fs } from '../../../shared'
-import { ToolkitError } from '../../../shared'
+import { fs } from '../../../shared/fs/fs'
+import { ToolkitError } from '../../../shared/errors'
 import { ResourceNode } from '../../../awsService/appBuilder/explorer/nodes/resourceNode'
 
 const localize = nls.loadMessageBundle()
@@ -433,15 +434,19 @@ export async function registerSamDebugInvokeVueCommand(
     context: vscode.ExtensionContext,
     params: { resource: ResourceNode }
 ) {
-    const launchConfig: AwsSamDebuggerConfiguration | undefined = undefined
     const resource = params?.resource.resource
     const source = 'AppBuilderLocalInvoke'
+    const launchConfigs = await new LaunchConfiguration(resource.location).getSamDebugConfigurations()
+    const launchConfig = launchConfigs.find(
+        (config) => (config.invokeTarget as TemplateTargetProperties).logicalId === resource.resource.Id
+    )
+
     const webview = new WebviewPanel(context, launchConfig, {
         logicalId: resource.resource.Id ?? '',
         region: resource.region ?? '',
         location: resource.location.fsPath,
         handler: resource.resource.Handler!,
-        runtime: resource.resource.Runtime!,
+        runtime: launchConfig?.lambda?.runtime ?? resource.resource.Runtime!,
         arn: resource.functionArn ?? '',
         stackName: resource.stackName ?? '',
         environment: resource.resource.Environment,

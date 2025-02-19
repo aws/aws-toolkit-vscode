@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import { logAndThrowIfUnexpectedExitCode, SamCliProcessInvoker } from './samCliInvokerUtils'
 import { getSpawnEnv } from '../../env/resolveEnv'
-import { getLogger } from '../..'
+import { getLogger } from '../../logger/logger'
 
 export interface SamCliListResourcesParameters {
     templateFile: string

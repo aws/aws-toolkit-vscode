@@ -25,7 +25,7 @@ import { LiveTailSessionRegistry } from './registry/liveTailSessionRegistry'
 import { DeployedResourceNode } from '../appBuilder/explorer/nodes/deployedNode'
 import { isTreeNode } from '../../shared/treeview/resourceTreeDataProvider'
 import { getLogger } from '../../shared/logger/logger'
-import { ToolkitError } from '../../shared'
+import { ToolkitError } from '../../shared/errors'
 import { LiveTailCodeLensProvider } from './document/liveTailCodeLensProvider'
 
 export const liveTailRegistry = LiveTailSessionRegistry.instance

@@ -7,7 +7,7 @@ import { ExtensionMessage } from '../../../amazonq/webview/ui/commands'
 import { AuthController } from '../../../amazonq/auth/controller'
 import { ChatControllerMessagePublishers } from '../../controllers/chat/controller'
 import { ReferenceLogController } from './referenceLogController'
-import { getLogger } from '../../../shared/logger'
+import { getLogger } from '../../../shared/logger/logger'
 import { openSettingsId } from '../../../shared/settings'
 
 export interface UIMessageListenerProps {

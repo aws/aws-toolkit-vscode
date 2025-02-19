@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { ToolkitError } from '../shared'
+import { ToolkitError } from '../shared/errors'
 import { localize } from '../shared/utilities/vsCodeUtils'
 import { DBInstanceNode } from './explorer/dbInstanceNode'
 import { DBResourceNode } from './explorer/dbResourceNode'

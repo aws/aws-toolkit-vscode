@@ -84,6 +84,17 @@ jobs:
                   git remote add forkUpstream https://github.com/$REPO_NAME  # URL of the fork
                   git fetch forkUpstream  # Fetch fork
 
+            - name: Merge in target branch to avoid false negatives.
+              env:
+                  TARGET_BRANCH: ${{ github.event.pull_request.base.ref }}
+              # Note: "git merge" should always succeed here, because GHA won't
+              # start the job if there are merge conflicts. https://github.com/orgs/community/discussions/11265
+              # Also, because `git merge` makes a commit, we need to establish an identity to avoid 'Committer identity unknown' error
+              run: |
+                  git config --global user.name "aws-toolkit-automation"
+                  git config --global user.email "<>"
+                  git merge origin/$TARGET_BRANCH
+
             - name: Compute git diff
               env:
                   CURRENT_BRANCH: ${{ github.head_ref }}

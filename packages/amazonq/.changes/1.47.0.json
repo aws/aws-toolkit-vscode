@@ -1,0 +1,38 @@
+{
+	"date": "2025-02-13",
+	"version": "1.47.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "`Send to prompt` and other context menu options not sent if chat was closed"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q /test: Truncating user input to 4096 characters for unit test generation."
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q /test: Q identify active test file and infer source file for test generation."
+		},
+		{
+			"type": "Bug Fix",
+			"description": "/review: Code review starts automatically when invoked from menu"
+		},
+		{
+			"type": "Feature",
+			"description": "Amazon Q /dev: support `.hbs`, `.gjs`, `.gts`, `.astro`, `.mdx`, `.svelte`, `.erb`, `.rake` files"
+		},
+		{
+			"type": "Feature",
+			"description": "/transform: automatically download results when ready"
+		},
+		{
+			"type": "Feature",
+			"description": "/transform: support Java 21 transformations"
+		},
+		{
+			"type": "Removal",
+			"description": "Reverted prefetch logic to enable more stable inline completion"
+		}
+	]
+}

@@ -4,8 +4,8 @@
  */
 
 import * as vscode from 'vscode'
-import { getLogger } from '../../shared/logger'
-import { telemetry } from '../../shared/telemetry'
+import { getLogger } from '../../shared/logger/logger'
+import { telemetry } from '../../shared/telemetry/telemetry'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { DBClusterNode } from '../explorer/dbClusterNode'
 

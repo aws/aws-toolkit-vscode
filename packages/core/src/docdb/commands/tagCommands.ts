@@ -4,12 +4,12 @@
  */
 
 import * as vscode from 'vscode'
-import { getLogger } from '../../shared/logger'
-import { telemetry } from '../../shared/telemetry'
+import { getLogger } from '../../shared/logger/logger'
+import { telemetry } from '../../shared/telemetry/telemetry'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { DBResourceNode } from '../explorer/dbResourceNode'
 import { DataQuickPickItem, showQuickPick } from '../../shared/ui/pickerPrompter'
-import { ToolkitError } from '../../shared'
+import { ToolkitError } from '../../shared/errors'
 
 export async function listTags(node: DBResourceNode): Promise<void> {
     return telemetry.docdb_listTags.run(async () => {

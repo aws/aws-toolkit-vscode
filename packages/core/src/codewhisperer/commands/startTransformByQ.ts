@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import * as fs from 'fs' // eslint-disable-line no-restricted-imports
 import path from 'path'
-import { getLogger } from '../../shared/logger'
+import { getLogger } from '../../shared/logger/logger'
 import * as CodeWhispererConstants from '../models/constants'
 import * as localizedText from '../../shared/localizedText'
 import {
@@ -76,10 +76,10 @@ import DependencyVersions from '../../amazonqGumby/models/dependencies'
 import { dependencyNoAvailableVersions } from '../../amazonqGumby/models/constants'
 import { HumanInTheLoopManager } from '../service/transformByQ/humanInTheLoopManager'
 import { setContext } from '../../shared/vscode/setContext'
-import { makeTemporaryToolkitFolder } from '../../shared'
 import globals from '../../shared/extensionGlobals'
 import { convertDateToTimestamp } from '../../shared/datetime'
 import { findStringInDirectory } from '../../shared/utilities/workspaceUtils'
+import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 
 function getFeedbackCommentData() {
     const jobId = transformByQState.getJobId()
@@ -104,8 +104,9 @@ export async function processSQLConversionTransformFormInput(pathToProject: stri
     transformByQState.setProjectName(path.basename(pathToProject))
     transformByQState.setProjectPath(pathToProject)
     transformByQState.setSchema(schema)
-    transformByQState.setSourceJDKVersion(JDKVersion.JDK8) // use dummy value of JDK8 so that startJob API can be called
-    // targetJDKVersion defaults to JDK17, the only supported version, which is fine
+    // use dummy values of JDK8 & JDK17 so that startJob API can be called
+    transformByQState.setSourceJDKVersion(JDKVersion.JDK8)
+    transformByQState.setTargetJDKVersion(JDKVersion.JDK17)
 }
 
 async function validateJavaHome(): Promise<boolean> {
