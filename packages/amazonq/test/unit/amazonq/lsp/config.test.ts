@@ -18,13 +18,13 @@ for (const [name, config, defaultConfig, setEnv, resetEnv] of [
             process.env.__AMAZONQLSP_MANIFEST_URL = envConfig.manifestUrl
             process.env.__AMAZONQLSP_SUPPORTED_VERSIONS = envConfig.supportedVersions
             process.env.__AMAZONQLSP_ID = envConfig.id
-            process.env.__AMAZONQLSP_LOCATION_OVERRIDE = envConfig.locationOverride
+            process.env.__AMAZONQLSP_PATH = envConfig.path
         },
         () => {
             delete process.env.__AMAZONQLSP_MANIFEST_URL
             delete process.env.__AMAZONQLSP_SUPPORTED_VERSIONS
             delete process.env.__AMAZONQLSP_ID
-            delete process.env.__AMAZONQLSP_LOCATION_OVERRIDE
+            delete process.env.__AMAZONQLSP_PATH
         },
     ],
     [
@@ -35,13 +35,13 @@ for (const [name, config, defaultConfig, setEnv, resetEnv] of [
             process.env.__AMAZONQWORKSPACELSP_MANIFEST_URL = envConfig.manifestUrl
             process.env.__AMAZONQWORKSPACELSP_SUPPORTED_VERSIONS = envConfig.supportedVersions
             process.env.__AMAZONQWORKSPACELSP_ID = envConfig.id
-            process.env.__AMAZONQWORKSPACELSP_LOCATION_OVERRIDE = envConfig.locationOverride
+            process.env.__AMAZONQWORKSPACELSP_PATH = envConfig.path
         },
         () => {
             delete process.env.__AMAZONQWORKSPACELSP_MANIFEST_URL
             delete process.env.__AMAZONQWORKSPACELSP_SUPPORTED_VERSIONS
             delete process.env.__AMAZONQWORKSPACELSP_ID
-            delete process.env.__AMAZONQWORKSPACELSP_LOCATION_OVERRIDE
+            delete process.env.__AMAZONQWORKSPACELSP_PATH
         },
     ],
 ] as const) {
@@ -52,7 +52,7 @@ for (const [name, config, defaultConfig, setEnv, resetEnv] of [
             manifestUrl: 'https://custom.url/manifest.json',
             supportedVersions: '4.0.0',
             id: 'AmazonQSetting',
-            locationOverride: '/custom/path',
+            path: '/custom/path',
         }
 
         beforeEach(() => {
@@ -75,12 +75,12 @@ for (const [name, config, defaultConfig, setEnv, resetEnv] of [
         })
 
         it('overrides location', () => {
-            const locationOverride = '/custom/path/to/lsp'
-            serviceConfigStub.returns({ locationOverride })
+            const path = '/custom/path/to/lsp'
+            serviceConfigStub.returns({ path })
 
             assert.deepStrictEqual(config(), {
                 ...defaultConfig,
-                locationOverride,
+                path,
             })
         })
 
@@ -95,7 +95,7 @@ for (const [name, config, defaultConfig, setEnv, resetEnv] of [
                 manifestUrl: 'https://another-custom.url/manifest.json',
                 supportedVersions: '5.1.1',
                 id: 'AmazonQEnv',
-                locationOverride: '/some/new/custom/path',
+                path: '/some/new/custom/path',
             }
 
             setEnv(envConfig)

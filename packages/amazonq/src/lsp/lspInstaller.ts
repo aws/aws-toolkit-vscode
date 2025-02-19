@@ -7,7 +7,7 @@ import { fs, getNodeExecutableName, BaseLspInstaller, ResourcePaths } from 'aws-
 import path from 'path'
 import { getAmazonQLspConfig } from './config'
 
-export class AmazonQLspInstaller extends BaseLspInstaller {
+export class AmazonQLspInstaller extends BaseLspInstaller.BaseLspInstaller {
     constructor() {
         super(getAmazonQLspConfig(), 'amazonqLsp')
     }
