@@ -46,6 +46,7 @@ import { AuthSources } from './util'
 import { AuthFlowStates } from './vue/types'
 import { getTelemetryMetadataForConn } from '../../auth/connection'
 import { AuthUtil } from '../../codewhisperer/util/authUtil'
+import { ExtensionUse } from '../../auth/utils'
 
 export class CommonAuthViewProvider implements WebviewViewProvider {
     public readonly viewType: string
@@ -83,14 +84,22 @@ export class CommonAuthViewProvider implements WebviewViewProvider {
     ) {
         // Our callback won't fire on the first view.
         if (webviewView.visible) {
-            telemetry.auth_signInPageOpened.emit({ result: 'Succeeded', passive: true })
+            telemetry.auth_signInPageOpened.emit({
+                result: 'Succeeded',
+                passive: true,
+                source: ExtensionUse.instance.sourceForTelemetry(),
+            })
         }
 
         // This will fire whenever the user opens or closes the login page from 'somewhere else'
         // i.e. NOT when switching from/to the chat window, which uses the same view area.
         webviewView.onDidChangeVisibility(async () => {
             if (webviewView.visible) {
-                telemetry.auth_signInPageOpened.emit({ result: 'Succeeded', passive: true })
+                telemetry.auth_signInPageOpened.emit({
+                    result: 'Succeeded',
+                    passive: true,
+                    source: ExtensionUse.instance.sourceForTelemetry(),
+                })
             } else {
                 telemetry.auth_signInPageClosed.emit({ result: 'Succeeded', passive: true })
 
