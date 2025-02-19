@@ -709,6 +709,13 @@ export class ExtensionUse {
 
         if (isAmazonQ()) {
             this.isFirstUseCurrentSession = true
+            if (hasExistingConnections()) {
+                telemetry.function_call.emit({
+                    result: 'Failed',
+                    functionName: 'isFirstUse',
+                    reason: 'UnexpectedConnections',
+                })
+            }
         } else {
             // The variable in the store is not defined yet, fallback to checking if they have existing connections.
             this.isFirstUseCurrentSession = !hasExistingConnections()
