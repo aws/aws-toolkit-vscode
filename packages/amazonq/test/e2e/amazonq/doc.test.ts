@@ -18,11 +18,11 @@ import {
     docRejectConfirmation,
     Mode,
 } from 'aws-core-vscode/amazonqDoc'
+describe(' Amazon Q Doc Generation', () => {
+    for (let i = 0; i < 100; i++) {
+        console.log(`/doc Tests [${i + 1}/100]`)
 
-for (let i = 0; i < 100; i++) {
-    console.log(`/doc Tests [${i + 1}/100]`)
-    describe(`/doc Tests [${i + 1}/100]`, () => {
-        describe('Amazon Q Doc Generation', async function () {
+        describe(`/doc Tests [${i + 1}/100]`, async function () {
             let framework: qTestingFramework
             let tab: Messenger
             let workspaceUri: vscode.Uri
@@ -507,5 +507,5 @@ for (let i = 0; i < 100; i++) {
                 })
             })
         })
-    })
-}
+    }
+})
