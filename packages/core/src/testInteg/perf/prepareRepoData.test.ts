@@ -46,9 +46,14 @@ function performanceTestWrapper(numFiles: number, fileSize: number) {
                     return { workspace, fsSpy, numFiles, fileSize }
                 },
                 execute: async (setup: setupResult) => {
-                    return await prepareRepoData([setup.workspace.uri.fsPath], [setup.workspace], telemetry, {
-                        record: () => {},
-                    } as unknown as Span<AmazonqCreateUpload>)
+                    return await prepareRepoData(
+                        [setup.workspace.uri.fsPath],
+                        [setup.workspace],
+                        {
+                            record: () => {},
+                        } as unknown as Span<AmazonqCreateUpload>,
+                        { telemetry }
+                    )
                 },
                 verify: async (setup: setupResult, result: resultType) => {
                     verifyResult(setup, result, telemetry, numFiles * fileSize)

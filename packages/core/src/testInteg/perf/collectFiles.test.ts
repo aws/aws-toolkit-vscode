@@ -42,7 +42,7 @@ function performanceTestWrapper(totalFiles: number) {
                 },
                 execute: async ({ workspace }: { workspace: vscode.WorkspaceFolder }) => {
                     return {
-                        result: await collectFiles([workspace.uri.fsPath], [workspace], true),
+                        result: await collectFiles([workspace.uri.fsPath], [workspace]),
                     }
                 },
                 verify: (
