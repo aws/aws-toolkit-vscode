@@ -116,9 +116,7 @@ export function init(appContext: AmazonQAppInitContext) {
         processContextSelected: new MessageListener<ContextSelectedMessage>(
             cwChatControllerEventEmitters.processContextSelected
         ),
-        processFileClick: new MessageListener<FileClick>(
-            cwChatControllerEventEmitters.processFileClick
-        ),
+        processFileClick: new MessageListener<FileClick>(cwChatControllerEventEmitters.processFileClick),
     }
 
     const cwChatControllerMessagePublishers = {
@@ -181,9 +179,7 @@ export function init(appContext: AmazonQAppInitContext) {
         processContextSelected: new MessagePublisher<ContextSelectedMessage>(
             cwChatControllerEventEmitters.processContextSelected
         ),
-        processFileClick: new MessagePublisher<FileClick>(
-            cwChatControllerEventEmitters.processFileClick
-        ),
+        processFileClick: new MessagePublisher<FileClick>(cwChatControllerEventEmitters.processFileClick),
     }
 
     new CwChatController(

@@ -83,7 +83,6 @@ export const GetContextCommandItemsRequestType: RequestType<GetContextCommandIte
     'lsp/getContextCommandItems'
 )
 
-export type GetIndexSequenceNumberRequestPayload = {}
 export type GetIndexSequenceNumberRequest = string
 export const GetIndexSequenceNumberRequestType: RequestType<GetRepomapIndexJSONRequest, any, any> = new RequestType(
     'lsp/getIndexSequenceNumber'
