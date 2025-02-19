@@ -29,7 +29,7 @@ import {
     testSshConnection,
 } from '../../shared/extensions/ssh'
 import { getLogger } from '../../shared/logger/logger'
-import { CancellationError, Timeout } from '../../shared/utilities/timeoutUtils'
+import { CancellationError, Timeout, waitUntil } from '../../shared/utilities/timeoutUtils'
 import { showMessageWithCancel } from '../../shared/utilities/messages'
 import { SshConfig } from '../../shared/sshConfig'
 import { SshKeyPair } from './sshKeyPair'
@@ -150,8 +150,14 @@ export class Ec2Connecter implements vscode.Disposable {
         }
     }
 
-    private async checkForInstanceSsmError(selection: Ec2Selection): Promise<void> {
-        const isSsmAgentRunning = (await this.ssmClient.getInstanceAgentPingStatus(selection.instanceId)) === 'Online'
+    public async checkForInstanceSsmError(
+        selection: Ec2Selection,
+        options?: Partial<{ interval: number; timeout: number }>
+    ): Promise<void> {
+        const isSsmAgentRunning = await waitUntil(
+            async () => (await this.ssmClient.getInstanceAgentPingStatus(selection.instanceId)) === 'Online',
+            { interval: options?.interval ?? 500, timeout: options?.timeout ?? 5000 }
+        )
 
         if (!isSsmAgentRunning) {
             this.throwConnectionError('Is SSM Agent running on the target instance?', selection, {
