@@ -141,6 +141,11 @@ describe('getClientId', function () {
     }
 
     function setClientIdEnvVar(val: string | undefined) {
+        if (val === undefined) {
+            delete process.env[telemetryClientIdEnvKey]
+            return
+        }
+
         process.env[telemetryClientIdEnvKey] = val
     }
 
@@ -227,19 +232,19 @@ describe('getClientId', function () {
     describe('hadClientIdOnStartup', async function () {
         it('returns false when no existing clientId', async function () {
             const globalState = new GlobalState(new FakeMemento())
-            assert.strictEqual(hadClientIdOnStartup(globalState), false)
+            assert.strictEqual(hadClientIdOnStartup(globalState, testGetClientId), false)
         })
 
         it('returns true when existing env var clientId', async function () {
             const globalState = new GlobalState(new FakeMemento())
             setClientIdEnvVar('aaa-111')
-            assert.strictEqual(hadClientIdOnStartup(globalState), true)
+            assert.strictEqual(hadClientIdOnStartup(globalState, testGetClientId), true)
         })
 
         it('returns true when existing state clientId', async function () {
             const globalState = new GlobalState(new FakeMemento())
             await globalState.update('telemetryClientId', 'bbb-222')
-            assert.strictEqual(hadClientIdOnStartup(globalState), true)
+            assert.strictEqual(hadClientIdOnStartup(globalState, testGetClientId), true)
         })
     })
 })

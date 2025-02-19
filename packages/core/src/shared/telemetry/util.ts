@@ -217,9 +217,14 @@ let _hadClientIdOnStartup = false
 /**
  * Returns true if the ClientID existed before this session started
  */
-export const hadClientIdOnStartup = (globalState: GlobalState) => {
+export const hadClientIdOnStartup = (
+    globalState: GlobalState,
+    update = (globalState: GlobalState) => {
+        getClientId(globalState)
+    }
+) => {
     // triggers the flow that will update the state, if not done already
-    getClientId(globalState)
+    update(globalState)
 
     return _hadClientIdOnStartup
 }
