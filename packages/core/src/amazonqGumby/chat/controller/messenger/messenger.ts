@@ -125,12 +125,12 @@ export class Messenger {
             mandatory: true,
             options: [
                 {
-                    value: CodeWhispererConstants.runUnitTestsMessage,
-                    label: CodeWhispererConstants.runUnitTestsMessage,
-                },
-                {
                     value: CodeWhispererConstants.skipUnitTestsMessage,
                     label: CodeWhispererConstants.skipUnitTestsMessage,
+                },
+                {
+                    value: CodeWhispererConstants.runUnitTestsMessage,
+                    label: CodeWhispererConstants.runUnitTestsMessage,
                 },
             ],
         })
@@ -552,6 +552,12 @@ export class Messenger {
                 tabID
             )
         )
+
+        // TO-DO: make this `isPartiallySucceeded`
+        if (transformByQState.isSucceeded() && message == CodeWhispererConstants.viewProposedChangesChatMessage) {
+            // get permission to re-run job and view logs after partially successful job is downloaded
+            this.sendFeedbackFormMessage(tabID)
+        }
     }
 
     public sendTransformationIntroduction(tabID: string) {
@@ -798,5 +804,65 @@ ${codeSnippet}
                 tabID
             )
         )
+    }
+
+    public sendFeedbackFormMessage(tabID: string) {
+        const formItems: ChatItemFormItem[] = []
+        formItems.push({
+            id: 'TransformFeedbackRerunJob',
+            type: 'radiogroup',
+            title: 'To improve our service, do we have permission to re-run your job? (you will *not* be charged)',
+            mandatory: true,
+            options: [
+                {
+                    value: 'Yes',
+                    label: 'Yes',
+                },
+                {
+                    value: 'No',
+                    label: 'No',
+                },
+            ],
+        })
+
+        formItems.push({
+            id: 'TransformFeedbackViewLogs',
+            type: 'radiogroup',
+            title: 'Do we also have permission to view the logs associated with your job?',
+            mandatory: true,
+            options: [
+                {
+                    value: 'Yes',
+                    label: 'Yes',
+                },
+                {
+                    value: 'No',
+                    label: 'No',
+                },
+            ],
+        })
+
+        this.dispatcher.sendChatPrompt(
+            new ChatPrompt(
+                {
+                    message: 'Amazon Q Feedback Form',
+                    formItems: formItems,
+                },
+                'FeedbackForm',
+                tabID,
+                true
+            )
+        )
+    }
+
+    public sendFeedbackReceivedMessage(canRerunJob: string, canViewLogs: string, tabID: string) {
+        const message = `### Feedback received
+-------------
+| | |
+| :------------------- | -------: |
+| **Permission to re-run job**             |   ${canRerunJob}   |
+| **Permission to view logs** |  ${canViewLogs}   |
+    `
+        this.dispatcher.sendChatMessage(new ChatMessage({ message, messageType: 'prompt' }, tabID))
     }
 }

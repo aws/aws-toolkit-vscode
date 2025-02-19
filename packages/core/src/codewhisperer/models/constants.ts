@@ -611,11 +611,17 @@ export const failedToStartJobChatMessage =
 export const failedToStartJobNotification =
     'Amazon Q could not begin the transformation. Please try starting the transformation again.'
 
-export const failedToStartJobTooManyJobsChatMessage =
+export const tooManyJobsChatMessage =
     "Sorry, I couldn't begin the transformation. You have too many active transformations running. Please try again after your other transformations have completed."
 
-export const failedToStartJobTooManyJobsNotification =
+export const tooManyJobsNotification =
     'Amazon Q could not begin the transformation. You have too many active transformations running. Please try again after your other transformations have completed.'
+
+export const linesOfCodeLimitBreachedChatMessage =
+    "Sorry, I couldn't begin the transformation. You have exceeded the lines of code limit for your plan."
+
+export const linesOfCodeLimitBreachedNotification =
+    'Amazon Q could not begin the transformation. You have exceeded the lines of code limit for your plan.'
 
 export const failedToUploadProjectChatMessage =
     "Sorry, I couldn't upload your project. Please try starting the transformation again."
@@ -643,7 +649,7 @@ export const genericErrorMessage =
     'Sorry, I am experiencing technical issues at the moment. Please try again in a few minutes.'
 
 export const jobCancelledChatMessage =
-    'I cancelled your transformation. If you want to start another transformation, choose **Start a new transformation**.'
+    'If you want to start another transformation, choose **Start a new transformation**.'
 
 export const jobCancelledNotification = 'You cancelled the transformation.'
 
