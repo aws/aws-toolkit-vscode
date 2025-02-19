@@ -215,8 +215,7 @@ export class Ec2Connecter implements vscode.Disposable {
                 remoteUser.name
             )
         } catch (err) {
-            const message =
-                err instanceof SshError ? `Testing SSM connection to instance failed: ${err.message}` : ''
+            const message = err instanceof SshError ? `Testing SSM connection to instance failed: ${err.message}` : ''
             this.throwConnectionError(message, selection, { ...(err as Error), code: 'EC2SSMTestConnect' })
         } finally {
             await this.ssmClient.terminateSession(testSession)
