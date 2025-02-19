@@ -19,7 +19,7 @@ export abstract class BaseLspInstaller {
 
     constructor(
         protected config: LspConfig,
-        loggerName: Extract<LogTopic, 'amazonqLsp' | 'amazonqWorkplaceLsp'>
+        loggerName: Extract<LogTopic, 'amazonqLsp' | 'amazonqWorkspaceLsp'>
     ) {
         this.logger = getLogger(loggerName)
     }

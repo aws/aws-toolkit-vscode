@@ -9,7 +9,7 @@ import { getAmazonQLspConfig } from './config'
 
 export class AmazonQLspInstaller extends BaseLspInstaller {
     constructor() {
-        super(getAmazonQLspConfig())
+        super(getAmazonQLspConfig(), 'amazonqLsp')
     }
 
     protected override async postInstall(assetDirectory: string): Promise<void> {
@@ -20,7 +20,7 @@ export class AmazonQLspInstaller extends BaseLspInstaller {
     protected override resourcePaths(assetDirectory?: string): ResourcePaths {
         if (!assetDirectory) {
             return {
-                lsp: this.config.locationOverride ?? '',
+                lsp: this.config.path ?? '',
                 node: getNodeExecutableName(),
             }
         }

@@ -12,7 +12,7 @@ import { getAmazonQWorkspaceLspConfig } from './config'
 
 export class WorkspaceLSPInstaller extends BaseLspInstaller {
     constructor() {
-        super(getAmazonQWorkspaceLspConfig())
+        super(getAmazonQWorkspaceLspConfig(), 'amazonqWorkspaceLsp')
     }
 
     protected override async postInstall(assetDirectory: string): Promise<void> {
@@ -24,7 +24,7 @@ export class WorkspaceLSPInstaller extends BaseLspInstaller {
         // local version
         if (!assetDirectory) {
             return {
-                lsp: this.config.locationOverride ?? '',
+                lsp: this.config.path ?? '',
                 node: getNodeExecutableName(),
             }
         }
