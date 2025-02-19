@@ -5,7 +5,12 @@
 
 import * as vscode from 'vscode'
 import * as path from 'path'
-import { collectFiles, getWorkspaceFoldersByPrefixes } from '../../shared/utilities/workspaceUtils'
+import {
+    collectFiles,
+    CollectFilesFilter,
+    defaultExcludePatterns,
+    getWorkspaceFoldersByPrefixes,
+} from '../../shared/utilities/workspaceUtils'
 
 import { ContentLengthError, PrepareRepoFailedError } from '../../amazonqFeatureDev/errors'
 import { getLogger } from '../../shared/logger/logger'
@@ -24,10 +29,25 @@ import { isPresent } from '../../shared/utilities/collectionUtils'
 import { AuthUtil } from '../../codewhisperer/util/authUtil'
 import { TelemetryHelper } from '../util/telemetryHelper'
 
+export const SvgFileExtension = '.svg'
+
 export async function checkForDevFile(root: string) {
     const devFilePath = root + '/devfile.yaml'
     const hasDevFile = await fs.existsFile(devFilePath)
     return hasDevFile
+}
+
+function isInfraDiagramFile(relativePath: string) {
+    return (
+        relativePath.toLowerCase().endsWith(path.join('docs', 'infra.dot')) ||
+        relativePath.toLowerCase().endsWith(path.join('docs', 'infra.svg'))
+    )
+}
+
+export type PrepareRepoDataOptions = {
+    telemetry?: TelemetryHelper
+    zip?: ZipStream
+    isIncludeInfraDiagram?: boolean
 }
 
 /**
@@ -36,15 +56,42 @@ export async function checkForDevFile(root: string) {
 export async function prepareRepoData(
     repoRootPaths: string[],
     workspaceFolders: CurrentWsFolders,
-    telemetry: TelemetryHelper,
     span: Span<AmazonqCreateUpload>,
-    zip: ZipStream = new ZipStream()
+    options?: PrepareRepoDataOptions
 ) {
     try {
+        const telemetry = options?.telemetry
+        const isIncludeInfraDiagram = options?.isIncludeInfraDiagram ?? false
+        const zip = options?.zip ?? new ZipStream()
+
         const autoBuildSetting = CodeWhispererSettings.instance.getAutoBuildSetting()
         const useAutoBuildFeature = autoBuildSetting[repoRootPaths[0]] ?? false
+        const excludePatterns: string[] = []
+        let filterFn: CollectFilesFilter | undefined = undefined
+
         // We only respect gitignore file rules if useAutoBuildFeature is on, this is to avoid dropping necessary files for building the code (e.g. png files imported in js code)
-        const files = await collectFiles(repoRootPaths, workspaceFolders, true, maxRepoSizeBytes, !useAutoBuildFeature)
+        if (!useAutoBuildFeature) {
+            if (isIncludeInfraDiagram) {
+                // ensure svg is not filtered out by files search
+                excludePatterns.push(...defaultExcludePatterns.filter((p) => !p.endsWith(SvgFileExtension)))
+                // ensure only infra diagram is included from all svg files
+                filterFn = (relativePath: string) => {
+                    if (!relativePath.toLowerCase().endsWith(SvgFileExtension)) {
+                        return false
+                    }
+                    return !isInfraDiagramFile(relativePath)
+                }
+            } else {
+                excludePatterns.push(...defaultExcludePatterns)
+            }
+        }
+
+        const files = await collectFiles(repoRootPaths, workspaceFolders, {
+            maxSizeBytes: maxRepoSizeBytes,
+            excludeByGitIgnore: true,
+            excludePatterns: excludePatterns,
+            filterFn: filterFn,
+        })
 
         let totalBytes = 0
         const ignoredExtensionMap = new Map<string, number>()
@@ -68,9 +115,15 @@ export async function prepareRepoData(
             }
             const isCodeFile_ = isCodeFile(file.relativeFilePath)
             const isDevFile = file.relativeFilePath === 'devfile.yaml'
-            // When useAutoBuildFeature is on, only respect the gitignore rules filtered earlier and apply the size limit, otherwise, exclude all non code files and gitignore files
-            const isNonCodeFileAndIgnored = useAutoBuildFeature ? false : !isCodeFile_ || isDevFile
-            if (fileSize >= maxFileSizeBytes || isNonCodeFileAndIgnored) {
+            const isInfraDiagramFileExt = isInfraDiagramFile(file.relativeFilePath)
+
+            let isExcludeFile = fileSize >= maxFileSizeBytes
+            // When useAutoBuildFeature is on, only respect the gitignore rules filtered earlier and apply the size limit
+            if (!isExcludeFile && !useAutoBuildFeature) {
+                isExcludeFile = isDevFile || (!isCodeFile_ && (!isIncludeInfraDiagram || !isInfraDiagramFileExt))
+            }
+
+            if (isExcludeFile) {
                 if (!isCodeFile_) {
                     const re = /(?:\.([^.]+))?$/
                     const extensionArray = re.exec(file.relativeFilePath)
@@ -83,6 +136,7 @@ export async function prepareRepoData(
                 }
                 continue
             }
+
             totalBytes += fileSize
             // Paths in zip should be POSIX compliant regardless of OS
             // Reference: https://pkware.cachefly.net/webdocs/casestudies/APPNOTE.TXT
@@ -117,7 +171,10 @@ export async function prepareRepoData(
             }
         }
 
-        telemetry.setRepositorySize(totalBytes)
+        if (telemetry) {
+            telemetry.setRepositorySize(totalBytes)
+        }
+
         span.record({ amazonqRepositorySize: totalBytes })
         const zipResult = await zip.finalize()
 

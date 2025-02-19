@@ -212,7 +212,7 @@ function runLocalBuild(
         if (spawnResult.stderr) {
             spawnResult.stderr.on('data', async (data) => {
                 const output = data.toString().trim()
-                getLogger().warn(`${output}`)
+                getLogger().warn(`BUILD ERROR: ${output}`)
                 buildLogs += output
             })
         }
