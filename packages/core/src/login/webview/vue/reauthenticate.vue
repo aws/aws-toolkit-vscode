@@ -127,6 +127,9 @@ export default defineComponent({
 
         this.doShow = true
     },
+    async mounted() {
+        await client.setUiReady('reauth')
+    },
     methods: {
         async reauthenticate() {
             client.emitUiClick('auth_reauthenticate')
