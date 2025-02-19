@@ -13,6 +13,7 @@ import {
     sanitizeFilename,
     toSnakeCase,
     undefinedIfEmpty,
+    matchesPattern,
 } from '../../../shared/utilities/textUtilities'
 
 describe('textUtilities', async function () {
@@ -69,6 +70,21 @@ describe('textUtilities', async function () {
         assert.deepStrictEqual(indent('abc\n 123\n', 2, true), '  abc\n  123\n')
         assert.deepStrictEqual(indent('   abc\n\n  \n123\nfoo\n', 4, false), '       abc\n\n      \n    123\n    foo\n')
         assert.deepStrictEqual(indent('   abc\n\n    \n123\nfoo\n', 4, true), '    abc\n\n    \n    123\n    foo\n')
+    })
+
+    it('matchesPattern', function () {
+        assert.ok(matchesPattern('abc', { positive: 'ab', negative: 'cd' }))
+        assert.ok(matchesPattern('abc', { positive: 'ab' }))
+        assert.ok(matchesPattern('abc', { negative: 'cd' }))
+        assert.ok(matchesPattern('abc', { negative: 'abcd' }))
+        assert.ok(matchesPattern('abc', { positive: 'abc' }))
+        assert.ok(matchesPattern('abc', {}))
+
+        assert.ok(!matchesPattern('abc', { positive: 'abcd' }))
+        assert.ok(!matchesPattern('abc', { positive: 'abc', negative: 'a' }))
+        assert.ok(!matchesPattern('abcde', { negative: 'ab' }))
+        assert.ok(!matchesPattern('abc', { negative: 'ab' }))
+        assert.ok(!matchesPattern('a a a a', { negative: 'a' }))
     })
 })
 

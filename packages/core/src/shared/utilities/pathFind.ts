@@ -11,6 +11,7 @@ import { GitExtension } from '../extensions/git'
 import { Settings } from '../settings'
 import { getLogger } from '../logger/logger'
 import { mergeResolvedShellPath } from '../env/resolveEnv'
+import { AcceptPattern, matchesPattern } from './textUtilities'
 
 /** Full path to VSCode CLI. */
 let vscPath: string
@@ -26,13 +27,15 @@ const pathMap = new Map<string, string>()
  * @param p path to a program to execute
  * @param args program args
  * @param doLog log failures
- * @param expected output must contain this string
+ * @param expectedPattern pattern to match in the output
+ * @param opt additional options for the Child Process
+ * @returns true if the program was found and executed successfully
  */
 export async function tryRun(
     p: string,
     args: string[],
     logging: 'yes' | 'no' | 'noresult' = 'yes',
-    expected?: string,
+    expectedPattern?: AcceptPattern,
     opt?: ChildProcessOptions
 ): Promise<boolean> {
     const proc = new ChildProcess(p, args, { logging: 'no' })
@@ -40,7 +43,7 @@ export async function tryRun(
         ...opt,
         spawnOptions: { env: await mergeResolvedShellPath(opt?.spawnOptions?.env ?? process.env) },
     })
-    const ok = r.exitCode === 0 && (expected === undefined || r.stdout.includes(expected))
+    const ok = r.exitCode === 0 && matchesPattern(r.stdout, expectedPattern ?? {})
     if (logging === 'noresult') {
         getLogger().info('tryRun: %s: %s', ok ? 'ok' : 'failed', proc)
     } else if (logging !== 'no') {
@@ -108,7 +111,7 @@ export async function findTypescriptCompiler(): Promise<string | undefined> {
 
     for (const tsc of tscPaths) {
         // Try to run "tsc -v".
-        if (await tryRun(tsc, ['-v'], 'yes', 'Version')) {
+        if (await tryRun(tsc, ['-v'], 'yes', { positive: 'Version' })) {
             return tsc
         }
     }

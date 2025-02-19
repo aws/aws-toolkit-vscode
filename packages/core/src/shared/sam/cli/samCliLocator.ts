@@ -24,7 +24,7 @@ export class SamCliLocationProvider {
 
     /** Checks that the given `sam` actually works by invoking `sam --version`. */
     private static async isValidSamLocation(samPath: string) {
-        const isValid = await tryRun(samPath, ['--version'], 'no', 'SAM CLI')
+        const isValid = await tryRun(samPath, ['--version'], 'no', { positive: 'SAM CLI' })
         this.samLocationValid = isValid
         return isValid
     }

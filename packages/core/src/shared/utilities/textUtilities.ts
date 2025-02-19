@@ -273,3 +273,15 @@ export function extractFileAndCodeSelectionFromMessage(message: any) {
     const selection = message?.context?.focusAreaContext?.selectionInsideExtendedCodeBlock as vscode.Selection
     return { filePath, selection }
 }
+
+export type AcceptPattern = Partial<{
+    positive: string
+    negative: string
+}>
+
+export function matchesPattern(text: string, pattern: AcceptPattern): boolean {
+    const { positive, negative } = pattern
+    const matchesPositive = !positive || text.includes(positive)
+    const matchesNegative = !negative || !text.includes(negative)
+    return matchesPositive && matchesNegative
+}
