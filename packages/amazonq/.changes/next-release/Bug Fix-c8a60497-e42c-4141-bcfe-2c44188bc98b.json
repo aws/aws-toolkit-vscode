@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "/review: Auto-review should not remove issues from manual reviews"
+}
