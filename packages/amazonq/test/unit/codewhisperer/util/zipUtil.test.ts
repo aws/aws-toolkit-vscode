@@ -159,7 +159,7 @@ describe('zipUtil', function () {
         it('should generate zip for test generation successfully', async function () {
             const mkdirSpy = sinon.spy(fs, 'mkdir')
 
-            const result = await zipUtil.generateZipTestGen(appRoot, false)
+            const result = await zipUtil.generateZipTestGen(appRoot, appCodePath, false)
 
             assert.ok(mkdirSpy.calledWith(path.join(testTempDirPath, 'utgRequiredArtifactsDir')))
             assert.ok(
@@ -184,7 +184,10 @@ describe('zipUtil', function () {
             }))
             sinon.stub(fs, 'mkdir').rejects(new Error('Directory creation failed'))
 
-            await assert.rejects(() => zipUtil.generateZipTestGen(appRoot, false), /Directory creation failed/)
+            await assert.rejects(
+                () => zipUtil.generateZipTestGen(appRoot, appCodePath, false),
+                /Directory creation failed/
+            )
         })
 
         it('Should handle zip project errors', async function () {
@@ -193,7 +196,7 @@ describe('zipUtil', function () {
             }))
             sinon.stub(zipUtil, 'zipProject' as keyof ZipUtil).rejects(new Error('Zip failed'))
 
-            await assert.rejects(() => zipUtil.generateZipTestGen(appRoot, false), /Zip failed/)
+            await assert.rejects(() => zipUtil.generateZipTestGen(appRoot, appCodePath, false), /Zip failed/)
         })
     })
 })

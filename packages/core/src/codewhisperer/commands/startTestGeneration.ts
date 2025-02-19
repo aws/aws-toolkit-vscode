@@ -58,7 +58,7 @@ export async function startTestGenerationProcess(
             session.projectRootPath = projectPath
             session.listOfTestGenerationJobId = []
         }
-        const zipMetadata = await zipUtil.generateZipTestGen(session.projectRootPath, initialExecution)
+        const zipMetadata = await zipUtil.generateZipTestGen(session.projectRootPath, filePath, initialExecution)
         session.srcPayloadSize = zipMetadata.buildPayloadSizeInBytes
         session.srcZipFileSize = zipMetadata.zipFileSizeInBytes
 

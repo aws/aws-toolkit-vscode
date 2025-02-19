@@ -326,7 +326,8 @@ export async function collectFiles(
     workspaceFolders: CurrentWsFolders,
     respectGitIgnore: boolean = true,
     maxSize = 200 * 1024 * 1024, // 200 MB
-    defaultExcludePatterns: boolean = true
+    defaultExcludePatterns: boolean = true,
+    filePath?: string
 ): Promise<
     {
         workspaceFolder: vscode.WorkspaceFolder
@@ -337,6 +338,7 @@ export async function collectFiles(
     }[]
 > {
     const storage: Awaited<ReturnType<typeof collectFiles>> = []
+    let totalSizeBytes = 0
 
     const workspaceFoldersMapping = getWorkspaceFoldersByPrefixes(workspaceFolders)
     const workspaceToPrefix = new Map<vscode.WorkspaceFolder, string>(
@@ -359,7 +361,28 @@ export async function collectFiles(
         return prefix === '' ? path : `${prefix}/${path}`
     }
 
-    let totalSizeBytes = 0
+    // Add target file first to the collect files if provided
+    if (filePath) {
+        const targetUri = vscode.Uri.file(filePath)
+        const relativePath = getWorkspaceRelativePath(filePath, { workspaceFolders })
+
+        if (relativePath) {
+            const fileStat = await fs.stat(targetUri)
+
+            const fileContent = await readFile(targetUri)
+            if (fileContent !== undefined) {
+                totalSizeBytes += fileStat.size
+                storage.push({
+                    workspaceFolder: relativePath.workspaceFolder,
+                    relativeFilePath: relativePath.relativePath,
+                    fileUri: targetUri,
+                    fileContent: fileContent,
+                    zipFilePath: prefixWithFolderPrefix(relativePath.workspaceFolder, relativePath.relativePath),
+                })
+            }
+        }
+    }
+
     for (const rootPath of sourcePaths) {
         const allFiles = await vscode.workspace.findFiles(
             new vscode.RelativePattern(rootPath, '**'),
@@ -371,6 +394,11 @@ export async function collectFiles(
             : allFiles
 
         for (const file of files) {
+            // Skip if this file matches the target file that was already processed
+            if (filePath && file.fsPath === filePath) {
+                continue
+            }
+
             const relativePath = getWorkspaceRelativePath(file.fsPath, { workspaceFolders })
             if (!relativePath) {
                 continue

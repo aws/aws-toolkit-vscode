@@ -204,7 +204,7 @@ export class ZipUtil {
         await processDirectory(metadataDir)
     }
 
-    protected async zipProject(useCase: FeatureUseCase, projectPath?: string, metadataDir?: string) {
+    protected async zipProject(useCase: FeatureUseCase, projectPath?: string, filePath?: string, metadataDir?: string) {
         const zip = new admZip()
         let projectPaths = []
         if (useCase === FeatureUseCase.TEST_GENERATION && projectPath) {
@@ -217,7 +217,13 @@ export class ZipUtil {
         }
         const languageCount = new Map<CodewhispererLanguage, number>()
 
-        await this.processSourceFiles(zip, languageCount, projectPaths, useCase)
+        await this.processSourceFiles(
+            zip,
+            languageCount,
+            projectPaths,
+            useCase,
+            useCase === FeatureUseCase.TEST_GENERATION ? filePath : undefined
+        )
         if (metadataDir) {
             await this.processMetadataDir(zip, metadataDir)
         }
@@ -404,7 +410,8 @@ export class ZipUtil {
         zip: admZip,
         languageCount: Map<CodewhispererLanguage, number>,
         projectPaths: string[] | undefined,
-        useCase: FeatureUseCase
+        useCase: FeatureUseCase,
+        filePath?: string
     ) {
         if (!projectPaths || projectPaths.length === 0) {
             return
@@ -414,7 +421,9 @@ export class ZipUtil {
             projectPaths,
             vscode.workspace.workspaceFolders as CurrentWsFolders,
             true,
-            this.getProjectScanPayloadSizeLimitInBytes()
+            this.getProjectScanPayloadSizeLimitInBytes(),
+            true,
+            useCase === FeatureUseCase.TEST_GENERATION ? filePath : undefined
         )
         for (const file of sourceFiles) {
             const projectName = path.basename(file.workspaceFolder.uri.fsPath)
@@ -560,7 +569,11 @@ export class ZipUtil {
         }
     }
 
-    public async generateZipTestGen(projectPath: string, initialExecution: boolean): Promise<ZipMetadata> {
+    public async generateZipTestGen(
+        projectPath: string,
+        filePath: string,
+        initialExecution: boolean
+    ): Promise<ZipMetadata> {
         try {
             // const repoMapFile = await LspClient.instance.getRepoMapJSON()
             const zipDirPath = this.getZipDirPath(FeatureUseCase.TEST_GENERATION)
@@ -591,7 +604,12 @@ export class ZipUtil {
                 }
             }
 
-            const zipFilePath: string = await this.zipProject(FeatureUseCase.TEST_GENERATION, projectPath, metadataDir)
+            const zipFilePath: string = await this.zipProject(
+                FeatureUseCase.TEST_GENERATION,
+                projectPath,
+                filePath,
+                metadataDir
+            )
             const zipFileSize = (await fs.stat(zipFilePath)).size
             return {
                 rootDir: zipDirPath,
