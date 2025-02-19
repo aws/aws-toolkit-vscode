@@ -37,6 +37,7 @@ for (let i = 0; i < 1000; i++) {
         let getSessionStub: sinon.SinonStub
         let modifiedReadme: string
         const generatedReadme = ReadmeBuilder.createBaseReadme()
+        let sandbox: sinon.SinonSandbox
 
         const getFilePaths = (controllerSetup: ControllerSetup): NewFileInfo[] => [
             {
@@ -50,19 +51,19 @@ for (let i = 0; i < 1000; i++) {
             },
         ]
 
-        async function createCodeGenState() {
-            mockGetCodeGeneration = sinon.stub().resolves({ codeGenerationStatus: { status: 'Complete' } })
+        async function createCodeGenState(sandbox: sinon.SinonSandbox) {
+            mockGetCodeGeneration = sandbox.stub().resolves({ codeGenerationStatus: { status: 'Complete' } })
 
             const workspaceFolders = [controllerSetup.workspaceFolder] as CurrentWsFolders
             const testConfig = {
                 conversationId: conversationID,
                 proxyClient: {
-                    createConversation: () => sinon.stub(),
-                    createUploadUrl: () => sinon.stub(),
-                    generatePlan: () => sinon.stub(),
-                    startCodeGeneration: () => sinon.stub(),
+                    createConversation: () => sandbox.stub(),
+                    createUploadUrl: () => sandbox.stub(),
+                    generatePlan: () => sandbox.stub(),
+                    startCodeGeneration: () => sandbox.stub(),
                     getCodeGeneration: () => mockGetCodeGeneration(),
-                    exportResultArchive: () => sinon.stub(),
+                    exportResultArchive: () => sandbox.stub(),
                 } as unknown as FeatureDevClient,
                 workspaceRoots: [''],
                 uploadId: uploadID,
@@ -77,6 +78,7 @@ for (let i = 0; i < 1000; i++) {
                 tabID,
                 uploadID,
                 scheme: docScheme,
+                sandbox,
             })
         }
         async function fireFollowUps(followUpTypes: FollowUpTypes[]) {
@@ -118,27 +120,27 @@ for (let i = 0; i < 1000; i++) {
             await waitForStub(getSessionStub)
         }
 
-        async function setupTest() {
-            controllerSetup = await createController()
-            session = await createCodeGenState()
-            sendDocTelemetrySpy = sinon.stub(session, 'sendDocTelemetryEvent').resolves()
-            sinon.stub(session, 'preloader').resolves()
-            sinon.stub(session, 'send').resolves()
+        async function setupTest(sandbox: sinon.SinonSandbox) {
+            controllerSetup = await createController(sandbox)
+            session = await createCodeGenState(sandbox)
+            sendDocTelemetrySpy = sandbox.stub(session, 'sendDocTelemetryEvent').resolves()
+            sandbox.stub(session, 'preloader').resolves()
+            sandbox.stub(session, 'send').resolves()
             Object.defineProperty(session, '_conversationId', {
                 value: conversationID,
                 writable: true,
                 configurable: true,
             })
 
-            sinon.stub(AuthUtil.instance, 'getChatAuthState').resolves({
+            sandbox.stub(AuthUtil.instance, 'getChatAuthState').resolves({
                 codewhispererCore: 'connected',
                 codewhispererChat: 'connected',
                 amazonQ: 'connected',
             })
-            sinon.stub(FileSystem.prototype, 'exists').resolves(false)
-            getSessionStub = sinon.stub(controllerSetup.sessionStorage, 'getSession').resolves(session)
+            sandbox.stub(FileSystem.prototype, 'exists').resolves(false)
+            getSessionStub = sandbox.stub(controllerSetup.sessionStorage, 'getSession').resolves(session)
             modifiedReadme = ReadmeBuilder.createReadmeWithRepoStructure()
-            sinon
+            sandbox
                 .stub(vscode.workspace, 'openTextDocument')
                 .callsFake(async (options?: string | vscode.Uri | { language?: string; content?: string }) => {
                     let documentPath = ''
@@ -160,30 +162,34 @@ for (let i = 0; i < 1000; i++) {
             maxRetries: number = 3,
             delayMs: number = 1000
         ): Promise<void> => {
+            let lastError: Error | undefined
+
             for (let attempt = 1; attempt <= maxRetries + 1; attempt++) {
+                sandbox = sinon.createSandbox()
                 try {
+                    await setupTest(sandbox)
                     await testMethod()
+                    sandbox.restore()
                     return
                 } catch (error) {
-                    if (attempt === maxRetries) {
-                        sinon.assert.fail(`Test failed after ${maxRetries} retries`)
+                    lastError = error as Error
+                    sandbox.restore()
+
+                    if (attempt > maxRetries) {
+                        console.error(`Test failed after ${maxRetries} retries:`, lastError)
+                        throw lastError
                     }
+
                     console.log(`Test attempt ${attempt} failed, retrying...`)
                     await new Promise((resolve) => setTimeout(resolve, delayMs))
-                    await setupTest()
                 }
             }
         }
 
-        before(() => {
-            sinon.stub(performance, 'now').returns(0)
-        })
-
-        beforeEach(async () => {
-            await setupTest()
-        })
-        afterEach(() => {
-            sinon.restore()
+        after(() => {
+            if (sandbox) {
+                sandbox.restore()
+            }
         })
 
         it('should emit generation telemetry for initial README generation', async () => {
@@ -201,6 +207,7 @@ for (let i = 0; i < 1000; i++) {
                     spy: sendDocTelemetrySpy,
                     expectedEvent,
                     type: 'generation',
+                    sandbox,
                 })
             })
         })
@@ -218,6 +225,7 @@ for (let i = 0; i < 1000; i++) {
                     spy: sendDocTelemetrySpy,
                     expectedEvent: firstExpectedEvent,
                     type: 'generation',
+                    sandbox,
                 })
 
                 await updateFilePaths(session, modifiedReadme, uploadID, docScheme, controllerSetup.workspaceFolder)
@@ -235,6 +243,7 @@ for (let i = 0; i < 1000; i++) {
                     expectedEvent: secondExpectedEvent,
                     type: 'generation',
                     callIndex: 1,
+                    sandbox,
                 })
             })
         })
@@ -256,6 +265,7 @@ for (let i = 0; i < 1000; i++) {
                     expectedEvent,
                     type: 'acceptance',
                     callIndex: 1,
+                    sandbox,
                 })
             })
         })
@@ -274,6 +284,7 @@ for (let i = 0; i < 1000; i++) {
                     spy: sendDocTelemetrySpy,
                     expectedEvent,
                     type: 'generation',
+                    sandbox,
                 })
             })
         })
@@ -300,6 +311,7 @@ for (let i = 0; i < 1000; i++) {
                     expectedEvent,
                     type: 'generation',
                     callIndex: 1,
+                    sandbox,
                 })
             })
         })
@@ -322,6 +334,7 @@ for (let i = 0; i < 1000; i++) {
                     expectedEvent,
                     type: 'acceptance',
                     callIndex: 1,
+                    sandbox,
                 })
             })
         })
@@ -341,6 +354,7 @@ for (let i = 0; i < 1000; i++) {
                     spy: sendDocTelemetrySpy,
                     expectedEvent,
                     type: 'generation',
+                    sandbox,
                 })
             })
         })
@@ -362,6 +376,7 @@ for (let i = 0; i < 1000; i++) {
                     expectedEvent,
                     type: 'acceptance',
                     callIndex: 1,
+                    sandbox,
                 })
             })
         })
