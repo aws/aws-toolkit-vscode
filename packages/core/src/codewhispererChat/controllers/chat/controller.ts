@@ -63,7 +63,6 @@ import { isSsoConnection } from '../../../auth/connection'
 import { inspect } from '../../../shared/utilities/collectionUtils'
 import { DefaultAmazonQAppInitContext } from '../../../amazonq/apps/initContext'
 import globals from '../../../shared/extensionGlobals'
-import { waitUntil } from '../../../shared/utilities/timeoutUtils'
 import { MynahIconsType, MynahUIDataModel, QuickActionCommand } from '@aws/mynah-ui'
 import { LspClient } from '../../../amazonq/lsp/lspClient'
 import { ContextCommandItem } from '../../../amazonq/lsp/types'
@@ -978,24 +977,6 @@ export class ChatController {
                     this.messenger.sendOpenSettingsMessage(triggerID, tabID)
                     return
                 }
-            } else if (
-                !LspController.instance.isIndexingInProgress() &&
-                CodeWhispererSettings.instance.isLocalIndexEnabled()
-            ) {
-                const start = performance.now()
-                triggerPayload.relevantTextDocuments = await waitUntil(
-                    async function () {
-                        if (triggerPayload.message) {
-                            return await LspController.instance.query(triggerPayload.message)
-                        }
-                        return []
-                    },
-                    { timeout: 500, interval: 200, truthy: false }
-                )
-                triggerPayload.mergedRelevantDocuments = this.mergeRelevantTextDocuments(
-                    triggerPayload.relevantTextDocuments
-                )
-                triggerPayload.projectContextQueryLatencyMs = performance.now() - start
             }
         }
 
