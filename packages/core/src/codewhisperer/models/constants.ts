@@ -265,19 +265,19 @@ export const standardScanTimeoutMs = 600_000 // 10 minutes
 
 export const expressScanTimeoutMs = 60_000
 
-export const codeFixJobTimeoutMs = 60_000
+export const codeFixJobTimeoutMs = 120_000
 
 export const projectSizeCalculateTimeoutSeconds = 10
 
 export const codeScanJobPollingIntervalSeconds = 1
 
-export const codeFixJobPollingIntervalMs = 1000
+export const codeFixJobPollingIntervalMs = 5_000
 
 export const fileScanPollingDelaySeconds = 10
 
 export const projectScanPollingDelaySeconds = 30
 
-export const codeFixJobPollingDelayMs = 5_000
+export const codeFixJobPollingDelayMs = 10_000
 
 export const testGenPollingDelaySeconds = 10
 
