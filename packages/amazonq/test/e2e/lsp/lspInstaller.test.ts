@@ -5,7 +5,7 @@
 
 import assert from 'assert'
 import sinon from 'sinon'
-import { AmazonQLSPInstaller } from '../../../src/lsp/lspInstaller'
+import { AmazonQLspInstaller } from '../../../src/lsp/lspInstaller'
 import {
     DevSettings,
     fs,
@@ -44,7 +44,7 @@ function createVersion(version: string) {
 }
 
 describe('AmazonQLSPInstaller', () => {
-    let resolver: AmazonQLSPInstaller
+    let resolver: AmazonQLspInstaller
     let sandbox: sinon.SinonSandbox
     let tempDir: string
     // If globalState contains an ETag that is up to date with remote, we won't fetch it resulting in inconsistent behavior.
@@ -59,7 +59,7 @@ describe('AmazonQLSPInstaller', () => {
 
     beforeEach(async () => {
         sandbox = sinon.createSandbox()
-        resolver = new AmazonQLSPInstaller()
+        resolver = new AmazonQLspInstaller()
         tempDir = await makeTemporaryToolkitFolder()
         sandbox.stub(LanguageServerResolver.prototype, 'defaultDownloadFolder').returns(tempDir)
         // Called on extension activation and can contaminate telemetry.

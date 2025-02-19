@@ -10,14 +10,14 @@ export interface LspConfig {
     manifestUrl: string
     supportedVersions: string
     id: string
-    locationOverride?: string
+    path?: string
 }
 
 export const defaultAmazonQWorkspaceLspConfig: LspConfig = {
     manifestUrl: 'https://aws-toolkit-language-servers.amazonaws.com/q-context/manifest.json',
     supportedVersions: '0.1.35',
     id: 'AmazonQ-Workspace', // used for identification in global storage/local disk location. Do not change.
-    locationOverride: undefined,
+    path: undefined,
 }
 
 export function getAmazonQWorkspaceLspConfig(): LspConfig {

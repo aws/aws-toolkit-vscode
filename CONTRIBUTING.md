@@ -427,7 +427,7 @@ Example:
 }
 ```
 
-<a name="amazonqLsp-settings">Overrides specifically for the Amazon Q language server can be set using the `aws.dev.amazonqLsp` setting. This is a JSON object consisting of keys/values required to override language server: `manifestUrl`, `supportedVersions`, `id`, and `locationOverride`.</a>
+<a name="amazonqLsp-settings">Overrides specifically for the Amazon Q language server</a> can be set using the `aws.dev.amazonqLsp` setting. This is a JSON object consisting of keys/values required to override language server: `manifestUrl`, `supportedVersions`, `id`, and `path`.
 
 Example:
 
@@ -436,11 +436,11 @@ Example:
     "manifestUrl": "https://custom.url/manifest.json",
     "supportedVersions": "4.0.0",
     "id": "AmazonQ",
-    "locationOverride": "/custom/path/to/local/lsp/folder",
+    "path": "/custom/path/to/local/lsp/folder",
 }
 ```
 
-<a name="amazonqWorkspaceLsp-settings">Overrides specifically for the Amazon Q Workspace Context language server can be set using the `aws.dev.amazonqWorkspaceLsp` setting. This is a JSON object consisting of keys/values required to override language server: `manifestUrl`, `supportedVersions`, `id`, and `locationOverride`.</a>
+<a name="amazonqWorkspaceLsp-settings">Overrides specifically for the Amazon Q Workspace Context language server</a> can be set using the `aws.dev.amazonqWorkspaceLsp` setting. This is a JSON object consisting of keys/values required to override language server: `manifestUrl`, `supportedVersions`, `id`, and `path`.
 
 Example:
 
@@ -449,7 +449,7 @@ Example:
     "manifestUrl": "https://custom.url/manifest.json",
     "supportedVersions": "4.0.0",
     "id": "AmazonQ",
-    "locationOverride": "/custom/path/to/local/lsp/folder",
+    "path": "/custom/path/to/local/lsp/folder",
 }
 ```
 
@@ -501,11 +501,11 @@ Unlike the user setting overrides, not all of these environment variables have t
 -   `__AMAZONQLSP_MANIFEST_URL`: for aws.dev.amazonqLsp.manifestUrl
 -   `__AMAZONQLSP_SUPPORTED_VERSIONS`: for aws.dev.amazonqLsp.supportedVersions
 -   `__AMAZONQLSP_ID`: for aws.dev.amazonqLsp.id
--   `__AMAZONQLSP_LOCATION_OVERRIDE`: for aws.dev.amazonqWorkspaceLsp.locationOverride
+-   `__AMAZONQLSP_PATH`: for aws.dev.amazonqWorkspaceLsp.locationOverride
 -   `__AMAZONQWORKSPACELSP_MANIFEST_URL`: for aws.dev.amazonqWorkspaceLsp.manifestUrl
 -   `__AMAZONQWORKSPACELSP_SUPPORTED_VERSIONS`: for aws.dev.amazonqWorkspaceLsp.supportedVersions
 -   `__AMAZONQWORKSPACELSP_ID`: for aws.dev.amazonqWorkspaceLsp.id
--   `__AMAZONQWORKSPACELSP_LOCATION_OVERRIDE`: for aws.dev.amazonqWorkspaceLsp.locationOverride
+-   `__AMAZONQWORKSPACELSP_PATH`: for aws.dev.amazonqWorkspaceLsp.locationOverride
 
 #### Lambda
 

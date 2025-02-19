@@ -7,7 +7,7 @@ import path from 'path'
 import { ResourcePaths } from '../../shared/lsp/types'
 import { getNodeExecutableName } from '../../shared/lsp/utils/platform'
 import { fs } from '../../shared/fs/fs'
-import { BaseLspInstaller } from '../../shared/lsp/lspInstaller'
+import { BaseLspInstaller } from '../../shared/lsp/baseLspInstaller'
 import { getAmazonQWorkspaceLspConfig } from './config'
 
 export class WorkspaceLSPInstaller extends BaseLspInstaller {
