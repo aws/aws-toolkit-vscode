@@ -69,6 +69,7 @@ import { ContextCommandItem } from '../../../amazonq/lsp/types'
 import { createPromptCommand, workspaceCommand } from '../../../amazonq/webview/ui/tabs/constants'
 import fs from '../../../shared/fs/fs'
 import * as vscode from 'vscode'
+import { FeatureConfigProvider, Features } from '../../../shared/featureConfig'
 
 export interface ChatControllerMessagePublishers {
     readonly processPromptChatMessage: MessagePublisher<PromptMessage>
@@ -439,6 +440,17 @@ export class ChatController {
                 ],
             },
         ]
+
+        const feature = FeatureConfigProvider.getFeature(Features.highlightCommand)
+        const commandName = feature?.value.stringValue
+        if (commandName) {
+            const commandDescription = feature.variation
+            contextCommand.push({
+                groupName: 'Additional Commands',
+                commands: [{ command: commandName, description: commandDescription }],
+            })
+        }
+
         const lspClientReady = await LspClient.instance.waitUntilReady()
         if (!lspClientReady) {
             return
