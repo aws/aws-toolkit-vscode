@@ -1177,7 +1177,7 @@ export interface ShortAnswerReference {
 
 export interface ShortAnswer {
     testFilePath: string
-    buildCommand: string
+    buildCommands: string[]
     planSummary: string
     sourceFilePath?: string
     testFramework?: string
