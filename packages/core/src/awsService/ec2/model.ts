@@ -26,7 +26,7 @@ import {
     SshError,
     startSshAgent,
     startVscodeRemote,
-    testSshConnection,
+    testSsmConnection,
 } from '../../shared/extensions/ssh'
 import { getLogger } from '../../shared/logger/logger'
 import { CancellationError, Timeout } from '../../shared/utilities/timeoutUtils'
@@ -36,7 +36,7 @@ import { SshKeyPair } from './sshKeyPair'
 import { Ec2SessionTracker } from './remoteSessionManager'
 import { getEc2SsmEnv } from './utils'
 
-export type Ec2ConnectErrorCode = 'EC2SSMStatus' | 'EC2SSMPermission' | 'EC2SSMConnect' | 'EC2SSMAgentStatus'
+export type Ec2ConnectErrorCode = 'EC2SSMStatus' | 'EC2SSMPermission' | 'EC2SSMTestConnect' | 'EC2SSMAgentStatus'
 
 export interface Ec2RemoteEnv extends VscodeRemoteConnection {
     selection: Ec2Selection
@@ -200,7 +200,7 @@ export class Ec2Connecter implements vscode.Disposable {
         const remoteEnv = await this.prepareEc2RemoteEnvWithProgress(selection, remoteUser)
         const testSession = await this.ssmClient.startSession(selection.instanceId, 'AWS-StartSSHSession')
         try {
-            await testSshConnection(
+            await testSsmConnection(
                 remoteEnv.SessionProcess,
                 remoteEnv.hostname,
                 remoteEnv.sshPath,
@@ -216,7 +216,7 @@ export class Ec2Connecter implements vscode.Disposable {
             )
         } catch (err) {
             const message = err instanceof SshError ? 'Testing SSH connection to instance failed' : ''
-            this.throwConnectionError(message, selection, err as Error)
+            this.throwConnectionError(message, selection, { ...(err as Error), code: 'EC2SSMTestConnect' })
         } finally {
             await this.ssmClient.terminateSession(testSession)
         }

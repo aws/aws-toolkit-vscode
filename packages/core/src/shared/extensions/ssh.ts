@@ -130,7 +130,7 @@ export class RemoteSshSettings extends Settings.define('remote.SSH', remoteSshTy
     }
 }
 
-export async function testSshConnection(
+export async function testSsmConnection(
     ProcessClass: typeof ChildProcess,
     hostname: string,
     sshPath: string,
@@ -150,7 +150,7 @@ export async function testSshConnection(
         })
         return result
     } catch (error) {
-        throw new SshError('SSH connection test failed', { cause: error as Error })
+        throw new SshError('SSH connection test failed', { cause: error as Error, code: 'SSMTestConnectionFailed' })
     }
 }
 
