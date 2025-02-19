@@ -4,7 +4,7 @@
  */
 import * as assert from 'assert'
 import { ChildProcess } from '../../../shared/utilities/processUtils'
-import { startSshAgent, testSsmConnection } from '../../../shared/extensions/ssh'
+import { startSshAgent, testSshConnection } from '../../../shared/extensions/ssh'
 import { createBoundProcess } from '../../../shared/remoteSession'
 import { createExecutableFile, createTestWorkspaceFolder } from '../../testUtil'
 import { WorkspaceFolder } from 'vscode'
@@ -74,7 +74,7 @@ describe('testSshConnection', function () {
         } as SSM.StartSessionResponse
 
         await createExecutableFile(sshPath, echoEnvVarsCmd(['MY_VAR']))
-        const r = await testSsmConnection(process, 'localhost', sshPath, 'test-user', session)
+        const r = await testSshConnection(process, 'localhost', sshPath, 'test-user', session)
         assertOutputContains(r.stdout, 'yes')
     })
 
@@ -97,7 +97,7 @@ describe('testSshConnection', function () {
         const process = createBoundProcess(envProvider)
 
         await createExecutableFile(sshPath, echoEnvVarsCmd(['SESSION_ID', 'STREAM_URL', 'TOKEN']))
-        const r = await testSsmConnection(process, 'localhost', sshPath, 'test-user', newSession)
+        const r = await testSshConnection(process, 'localhost', sshPath, 'test-user', newSession)
         assertOutputContains(r.stdout, `${newSession.SessionId} ${newSession.StreamUrl} ${newSession.TokenValue}`)
     })
 
@@ -105,7 +105,7 @@ describe('testSshConnection', function () {
         const executableFileContent = isWin() ? `echo "%1 %2"` : `echo "$1 $2"`
         const process = createBoundProcess(async () => ({}))
         await createExecutableFile(sshPath, executableFileContent)
-        const r = await testSsmConnection(process, 'localhost', sshPath, 'test-user', {} as SSM.StartSessionResponse)
+        const r = await testSshConnection(process, 'localhost', sshPath, 'test-user', {} as SSM.StartSessionResponse)
         assertOutputContains(r.stdout, '-T')
         assertOutputContains(r.stdout, 'test-user@localhost')
     })
