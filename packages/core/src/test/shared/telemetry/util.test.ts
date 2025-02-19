@@ -10,6 +10,7 @@ import {
     convertLegacy,
     getClientId,
     getUserAgent,
+    hadClientIdOnStartup,
     platformPair,
     SessionId,
     telemetryClientIdEnvKey,
@@ -128,20 +129,29 @@ describe('getSessionId', function () {
 
 describe('getClientId', function () {
     before(function () {
-        delete process.env[telemetryClientIdEnvKey]
+        setClientIdEnvVar(undefined)
     })
 
     afterEach(function () {
-        delete process.env[telemetryClientIdEnvKey]
+        setClientIdEnvVar(undefined)
     })
 
     function testGetClientId(globalState: GlobalState) {
         return getClientId(globalState, true, false, randomUUID())
     }
 
+    function setClientIdEnvVar(val: string | undefined) {
+        if (val === undefined) {
+            delete process.env[telemetryClientIdEnvKey]
+            return
+        }
+
+        process.env[telemetryClientIdEnvKey] = val
+    }
+
     it('generates a unique id if no other id is available', function () {
         const c1 = testGetClientId(new GlobalState(new FakeMemento()))
-        delete process.env[telemetryClientIdEnvKey]
+        setClientIdEnvVar(undefined)
         const c2 = testGetClientId(new GlobalState(new FakeMemento()))
         assert.notStrictEqual(c1, c2)
     })
@@ -160,7 +170,7 @@ describe('getClientId', function () {
 
         const e = new GlobalState(new FakeMemento())
         await e.update('telemetryClientId', randomUUID())
-        process.env[telemetryClientIdEnvKey] = expectedClientId
+        setClientIdEnvVar(expectedClientId)
 
         assert.strictEqual(testGetClientId(new GlobalState(new FakeMemento())), expectedClientId)
     })
@@ -217,6 +227,25 @@ describe('getClientId', function () {
     it('should be 11111111-1111-1111-1111-111111111111 if telemetry is not enabled', async function () {
         const clientId = getClientId(new GlobalState(new FakeMemento()), false, false)
         assert.strictEqual(clientId, '11111111-1111-1111-1111-111111111111')
+    })
+
+    describe('hadClientIdOnStartup', async function () {
+        it('returns false when no existing clientId', async function () {
+            const globalState = new GlobalState(new FakeMemento())
+            assert.strictEqual(hadClientIdOnStartup(globalState, testGetClientId), false)
+        })
+
+        it('returns true when existing env var clientId', async function () {
+            const globalState = new GlobalState(new FakeMemento())
+            setClientIdEnvVar('aaa-111')
+            assert.strictEqual(hadClientIdOnStartup(globalState, testGetClientId), true)
+        })
+
+        it('returns true when existing state clientId', async function () {
+            const globalState = new GlobalState(new FakeMemento())
+            await globalState.update('telemetryClientId', 'bbb-222')
+            assert.strictEqual(hadClientIdOnStartup(globalState, testGetClientId), true)
+        })
     })
 })
 

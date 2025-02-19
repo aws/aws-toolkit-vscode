@@ -368,6 +368,8 @@ export default defineComponent({
         // Pre-select the first available login option
         await this.preselectLoginOption()
         await this.handleUrlInput() // validate the default startUrl
+
+        await client.setUiReady('login')
     },
     methods: {
         toggleItemSelection(itemId: number) {
