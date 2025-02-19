@@ -10,7 +10,7 @@ import { getTestWindow, registerAuthHook, toTextEditor, using } from 'aws-core-v
 import { loginToIdC } from './utils/setup'
 import { Messenger } from './framework/messenger'
 import { FollowUpTypes } from 'aws-core-vscode/amazonq'
-import { fs, i18n, workspaceUtils } from 'aws-core-vscode/shared'
+import { fs, i18n, sleep, workspaceUtils } from 'aws-core-vscode/shared'
 import {
     docGenerationProgressMessage,
     DocGenerationStep,
@@ -243,7 +243,47 @@ describe('Amazon Q Doc Generation', async function () {
             await tab.waitForChatFinishesLoading()
         },
     }
-
+    /**
+     * Executes a test method with automatic retry capability for retryable errors.
+     * Uses Promise.race to detect errors during test execution without hanging.
+     */
+    async function retryIfRequired(testMethod: () => Promise<void>, maxAttempts: number = 3) {
+        const errorMessages = {
+            tooManyRequests: 'Too many requests',
+            unexpectedError: 'Encountered an unexpected error when processing the request',
+        }
+        const hasRetryableError = () => {
+            const lastTwoMessages = tab
+                .getChatItems()
+                .slice(-2)
+                .map((item) => item.body)
+            return lastTwoMessages.some(
+                (body) => body?.includes(errorMessages.unexpectedError) || body?.includes(errorMessages.tooManyRequests)
+            )
+        }
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+            console.log(`Attempt ${attempt}/${maxAttempts}`)
+            const errorDetectionPromise = new Promise((_, reject) => {
+                const errorCheckInterval = setInterval(() => {
+                    if (hasRetryableError()) {
+                        clearInterval(errorCheckInterval)
+                        reject(new Error('Retryable error detected'))
+                    }
+                }, 1000)
+            })
+            try {
+                await Promise.race([testMethod(), errorDetectionPromise])
+                return
+            } catch (error) {
+                if (attempt === maxAttempts) {
+                    assert.fail(`Test failed after ${maxAttempts} attempts`)
+                }
+                console.log(`Attempt ${attempt} failed, retrying...`)
+                await sleep(1000 * attempt)
+                await docUtils.setupTest()
+            }
+        }
+    }
     before(async function () {
         /**
          * The tests are getting throttled, only run them on stable for now
@@ -332,65 +372,74 @@ describe('Amazon Q Doc Generation', async function () {
 
     describe('README Creation', () => {
         let testProject: testProjectConfig
-        this.retries(3)
         beforeEach(async function () {
             await docUtils.setupTest()
             testProject = docUtils.getRandomTestProject()
         })
 
         it('Should create and save README in root folder when accepted', async () => {
-            await docUtils.initializeDocOperation('create')
-            await docUtils.executeDocumentationFlow('create')
-            await docUtils.verifyResult(FollowUpTypes.AcceptChanges, rootReadmeFileUri, true)
+            await retryIfRequired(async () => {
+                await docUtils.initializeDocOperation('create')
+                await docUtils.executeDocumentationFlow('create')
+                await docUtils.verifyResult(FollowUpTypes.AcceptChanges, rootReadmeFileUri, true)
+            })
         })
         it('Should create and save README in subfolder when accepted', async () => {
-            await docUtils.initializeDocOperation('create')
-            const readmeFileUri = await docUtils.handleFolderSelection(testProject)
-            await docUtils.executeDocumentationFlow('create')
-            await docUtils.verifyResult(FollowUpTypes.AcceptChanges, readmeFileUri, true)
+            await retryIfRequired(async () => {
+                await docUtils.initializeDocOperation('create')
+                const readmeFileUri = await docUtils.handleFolderSelection(testProject)
+                await docUtils.executeDocumentationFlow('create')
+                await docUtils.verifyResult(FollowUpTypes.AcceptChanges, readmeFileUri, true)
+            })
         })
 
         it('Should discard README in subfolder when rejected', async () => {
-            await docUtils.initializeDocOperation('create')
-            const readmeFileUri = await docUtils.handleFolderSelection(testProject)
-            await docUtils.executeDocumentationFlow('create')
-            await docUtils.verifyResult(FollowUpTypes.RejectChanges, readmeFileUri, false)
+            await retryIfRequired(async () => {
+                await docUtils.initializeDocOperation('create')
+                const readmeFileUri = await docUtils.handleFolderSelection(testProject)
+                await docUtils.executeDocumentationFlow('create')
+                await docUtils.verifyResult(FollowUpTypes.RejectChanges, readmeFileUri, false)
+            })
         })
     })
 
     describe('README Editing', () => {
-        this.retries(3)
         beforeEach(async function () {
             await docUtils.setupTest()
         })
 
         it('Should apply specific content changes when requested', async () => {
-            await docUtils.initializeDocOperation('edit')
-            await docUtils.executeDocumentationFlow('edit', 'remove the repository structure section')
-            await docUtils.verifyResult(FollowUpTypes.AcceptChanges, rootReadmeFileUri, true)
+            await retryIfRequired(async () => {
+                await docUtils.initializeDocOperation('edit')
+                await docUtils.executeDocumentationFlow('edit', 'remove the repository structure section')
+                await docUtils.verifyResult(FollowUpTypes.AcceptChanges, rootReadmeFileUri, true)
+            })
         })
 
         it('Should handle unrelated prompts with appropriate error message', async () => {
-            await docUtils.initializeDocOperation('edit')
-            await tab.waitForButtons([FollowUpTypes.ProceedFolderSelection])
-            tab.clickButton(FollowUpTypes.ProceedFolderSelection)
-            tab.addChatMessage({ prompt: 'tell me about the weather' })
-            await tab.waitForEvent(() =>
-                tab.getChatItems().some(({ body }) => body?.startsWith(i18n('AWS.amazonq.doc.error.promptUnrelated')))
-            )
-            await tab.waitForEvent(() => {
-                const store = tab.getStore()
-                return (
-                    !store.promptInputDisabledState &&
-                    store.promptInputPlaceholder === i18n('AWS.amazonq.doc.placeholder.editReadme')
+            await retryIfRequired(async () => {
+                await docUtils.initializeDocOperation('edit')
+                await tab.waitForButtons([FollowUpTypes.ProceedFolderSelection])
+                tab.clickButton(FollowUpTypes.ProceedFolderSelection)
+                tab.addChatMessage({ prompt: 'tell me about the weather' })
+                await tab.waitForEvent(() =>
+                    tab
+                        .getChatItems()
+                        .some(({ body }) => body?.startsWith(i18n('AWS.amazonq.doc.error.promptUnrelated')))
                 )
+                await tab.waitForEvent(() => {
+                    const store = tab.getStore()
+                    return (
+                        !store.promptInputDisabledState &&
+                        store.promptInputPlaceholder === i18n('AWS.amazonq.doc.placeholder.editReadme')
+                    )
+                })
             })
         })
     })
     describe('README Updates', () => {
         let testProject: testProjectConfig
         let mockFileUri: vscode.Uri
-        this.retries(3)
 
         beforeEach(async function () {
             await docUtils.setupTest()
@@ -405,31 +454,35 @@ describe('Amazon Q Doc Generation', async function () {
 
         it('Should update README with code change in subfolder', async () => {
             mockFileUri = await docUtils.prepareMockFile(testProject)
-            await docUtils.initializeDocOperation('update')
-            const readmeFileUri = await docUtils.handleFolderSelection(testProject)
-            await docUtils.executeDocumentationFlow('update')
-            await docUtils.verifyResult(FollowUpTypes.AcceptChanges, readmeFileUri, true)
+            await retryIfRequired(async () => {
+                await docUtils.initializeDocOperation('update')
+                const readmeFileUri = await docUtils.handleFolderSelection(testProject)
+                await docUtils.executeDocumentationFlow('update')
+                await docUtils.verifyResult(FollowUpTypes.AcceptChanges, readmeFileUri, true)
+            })
         })
         it('Should update root README and incorporate additional changes', async () => {
             // Cleanup any existing README
             await fs.delete(rootReadmeFileUri, { force: true })
             mockFileUri = await docUtils.prepareMockFile(testProject)
-            await docUtils.initializeDocOperation('update')
-            await docUtils.executeDocumentationFlow('update')
-            tab.clickButton(FollowUpTypes.MakeChanges)
-            tab.addChatMessage({ prompt: 'remove the repository structure section' })
+            await retryIfRequired(async () => {
+                await docUtils.initializeDocOperation('update')
+                await docUtils.executeDocumentationFlow('update')
+                tab.clickButton(FollowUpTypes.MakeChanges)
+                tab.addChatMessage({ prompt: 'remove the repository structure section' })
 
-            await tab.waitForText(docGenerationProgressMessage(DocGenerationStep.SUMMARIZING_FILES, Mode.SYNC))
-            await tab.waitForText(
-                `${docGenerationSuccessMessage(Mode.SYNC)} ${i18n('AWS.amazonq.doc.answer.codeResult')}`
-            )
-            await tab.waitForButtons([
-                FollowUpTypes.AcceptChanges,
-                FollowUpTypes.MakeChanges,
-                FollowUpTypes.RejectChanges,
-            ])
+                await tab.waitForText(docGenerationProgressMessage(DocGenerationStep.SUMMARIZING_FILES, Mode.SYNC))
+                await tab.waitForText(
+                    `${docGenerationSuccessMessage(Mode.SYNC)} ${i18n('AWS.amazonq.doc.answer.codeResult')}`
+                )
+                await tab.waitForButtons([
+                    FollowUpTypes.AcceptChanges,
+                    FollowUpTypes.MakeChanges,
+                    FollowUpTypes.RejectChanges,
+                ])
 
-            await docUtils.verifyResult(FollowUpTypes.AcceptChanges, rootReadmeFileUri, true)
+                await docUtils.verifyResult(FollowUpTypes.AcceptChanges, rootReadmeFileUri, true)
+            })
         })
     })
 })
