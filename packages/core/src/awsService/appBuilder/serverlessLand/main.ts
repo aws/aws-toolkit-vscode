@@ -7,12 +7,11 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 import * as path from 'path'
 import { getTelemetryReason, getTelemetryResult } from '../../../shared/errors'
-import { RegionProvider } from '../../../shared/regions/regionProvider'
 import { getLogger } from '../../../shared/logger/logger'
 import globals from '../../../shared/extensionGlobals'
 import { checklogs } from '../../../shared/localizedText'
 import { Result, telemetry } from '../../../shared/telemetry/telemetry'
-import { CreateServerlessLandWizard } from './serverlessLandWizard'
+import { CreateServerlessLandWizard } from './wizard'
 import { ExtContext } from '../../../shared/extensions'
 import { addFolderToWorkspace } from '../../../shared/utilities/workspaceUtils'
 
@@ -33,21 +32,16 @@ export const readmeFile: string = 'README.md'
  */
 export async function createNewServerlessLandProject(extContext: ExtContext): Promise<void> {
     const awsContext = extContext.awsContext
-    const regionProvider: RegionProvider = extContext.regionProvider
     let createResult: Result = 'Succeeded'
     let reason: string | undefined
 
     try {
         const credentials = await awsContext.getCredentials()
-        const schemaRegions = regionProvider
-            .getRegions()
-            .filter((r) => regionProvider.isServiceInRegion('schemas', r.id))
         const defaultRegion = awsContext.getCredentialDefaultRegion()
 
         // Launch the project creation wizard
         const config = await new CreateServerlessLandWizard({
             credentials,
-            schemaRegions,
             defaultRegion,
         }).run()
         if (!config) {
@@ -72,7 +66,7 @@ export async function createNewServerlessLandProject(extContext: ExtContext): Pr
         getLogger().error(
             localize(
                 'AWS.serverlessland.initWizard.general.error',
-                'Error creating new SAM Application. {0}',
+                'Error creating new Serverless Land Application. {0}',
                 checklogs()
             )
         )

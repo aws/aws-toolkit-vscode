@@ -10,9 +10,8 @@ import { createInputBox } from '../../../shared/ui/inputPrompter'
 import { createCommonButtons } from '../../../shared/ui/buttons'
 import { createQuickPick } from '../../../shared/ui/pickerPrompter'
 import { createFolderPrompt } from '../../../shared/ui/common/location'
-import { Region } from '../../../shared/regions/endpoints'
 import { createExitPrompter } from '../../../shared/ui/common/exitPrompter'
-import { MetadataManager } from './serverlesslandMetadataManager'
+import { MetadataManager } from './metadataManager'
 import { ToolkitError } from '../../../shared/errors'
 
 export interface CreateServerlessLandWizardForm {
@@ -21,8 +20,6 @@ export interface CreateServerlessLandWizardForm {
     pattern: string
     runtime: string
     iac: string
-    region?: string
-    schemaName?: string
 }
 
 /**
@@ -32,7 +29,7 @@ export interface CreateServerlessLandWizardForm {
 export class CreateServerlessLandWizard extends Wizard<CreateServerlessLandWizardForm> {
     private metadataManager: MetadataManager
 
-    public constructor(context: { schemaRegions: Region[]; defaultRegion?: string; credentials?: AWS.Credentials }) {
+    public constructor(context: { defaultRegion?: string; credentials?: AWS.Credentials }) {
         super({
             exitPrompterProvider: createExitPrompter,
         })
@@ -49,7 +46,7 @@ export class CreateServerlessLandWizard extends Wizard<CreateServerlessLandWizar
                 'awsService',
                 'appBuilder',
                 'serverlessLand',
-                'serverlessland-metadata.json'
+                'metadata.json'
             )
             await this.metadataManager.loadMetadata(metadataPath)
 
@@ -67,11 +64,11 @@ export class CreateServerlessLandWizard extends Wizard<CreateServerlessLandWizar
                     buttons: [
                         {
                             iconPath: new vscode.ThemeIcon('github'),
-                            tooltip: 'GitHub Button',
+                            tooltip: 'Open in GitHub',
                         },
                         {
                             iconPath: new vscode.ThemeIcon('open-preview'),
-                            tooltip: 'Serverless Land Button',
+                            tooltip: 'Open in Serverless Land',
                         },
                     ],
                 })),
