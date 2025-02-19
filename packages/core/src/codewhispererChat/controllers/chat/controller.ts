@@ -609,30 +609,32 @@ export class ChatController {
 
         const absoluteFilePath = path.join(projectRoot, message.filePath)
 
-        // Open the file in VSCode
-        const document = await workspace.openTextDocument(absoluteFilePath)
-        const editor = await window.showTextDocument(document, ViewColumn.Active)
+        try {
+            // Open the file in VSCode
+            const document = await workspace.openTextDocument(absoluteFilePath)
+            const editor = await window.showTextDocument(document, ViewColumn.Active)
 
-        // Create multiple selections based on line ranges
-        const selections: Selection[] = lineRanges
-            .filter(({ first, second }) => first !== -1 && second !== -1)
-            .map(({ first, second }) => {
-                const startPosition = new Position(first - 1, 0) // Convert 1-based to 0-based
-                const endPosition = new Position(second - 1, document.lineAt(second - 1).range.end.character)
-                return new Selection(
-                    startPosition.line,
-                    startPosition.character,
-                    endPosition.line,
-                    endPosition.character
-                )
-            })
+            // Create multiple selections based on line ranges
+            const selections: Selection[] = lineRanges
+                .filter(({ first, second }) => first !== -1 && second !== -1)
+                .map(({ first, second }) => {
+                    const startPosition = new Position(first - 1, 0) // Convert 1-based to 0-based
+                    const endPosition = new Position(second - 1, document.lineAt(second - 1).range.end.character)
+                    return new Selection(
+                        startPosition.line,
+                        startPosition.character,
+                        endPosition.line,
+                        endPosition.character
+                    )
+                })
 
-        // Apply multiple selections to the editor using the new API
-        if (selections.length > 0) {
-            editor.selection = selections[0] // Set the first selection as active
-            editor.selections = selections // Apply multiple selections
-            editor.revealRange(selections[0], vscode.TextEditorRevealType.InCenter)
-        }
+            // Apply multiple selections to the editor
+            if (selections.length > 0) {
+                editor.selection = selections[0] // Set the first selection as active
+                editor.selections = selections // Apply multiple selections
+                editor.revealRange(selections[0], vscode.TextEditorRevealType.InCenter)
+            }
+        } catch (error) {}
     }
 
     private processException(e: any, tabID: string) {
@@ -889,16 +891,16 @@ export class ChatController {
         for (const context of triggerPayload.context) {
             if (typeof context !== 'string' && context.route && context.route.length === 2) {
                 contextCommands.push({
-                    workspaceFolder: context.route?.[0] || '',
+                    workspaceFolder: context.route[0] || '',
                     type: context.icon === 'folder' ? 'folder' : 'file',
-                    relativePath: context.route?.[1] || '',
+                    relativePath: context.route[1] || '',
                 })
-                relativePaths.push(context.route[1])
             }
         }
         if (contextCommands.length === 0) {
             return []
         }
+        const workspaceFolder = contextCommands[0].workspaceFolder
         const prompts = await LspClient.instance.getContextCommandPrompt(contextCommands)
         if (prompts.length > 0) {
             triggerPayload.additionalContents = []
@@ -910,6 +912,8 @@ export class ChatController {
                         description: prompt.description.substring(0, aditionalContentNameLimit),
                         innerContext: prompt.content.substring(0, additionalContentInnerContextLimit),
                     })
+                    const relativePath = path.relative(workspaceFolder, prompt.filePath)
+                    relativePaths.push(relativePath)
                 }
             }
             getLogger().info(

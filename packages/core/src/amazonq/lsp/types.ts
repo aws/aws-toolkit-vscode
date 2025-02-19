@@ -113,4 +113,6 @@ export interface AdditionalContextPrompt {
     description: string
     startLine: number
     endLine: number
+    filePath: string
+    relativePath: string
 }
