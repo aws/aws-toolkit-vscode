@@ -58,7 +58,7 @@ import { EcsCredentialsProvider } from './providers/ecsCredentialsProvider'
 import { EnvVarsCredentialsProvider } from './providers/envVarsCredentialsProvider'
 import { showMessageWithUrl } from '../shared/utilities/messages'
 import { credentialHelpUrl } from '../shared/constants'
-import { ExtStartUpSources, ExtStartUpSource } from '../shared/telemetry/util'
+import { ExtStartUpSources, ExtStartUpSource, hadClientIdOnStartup } from '../shared/telemetry/util'
 
 // iam-only excludes Builder ID and IAM Identity Center from the list of valid connections
 // TODO: Understand if "iam" should include these from the list at all
@@ -688,17 +688,43 @@ export class ExtensionUse {
             return this.isFirstUseCurrentSession
         }
 
-        this.isFirstUseCurrentSession = globals.globalState.get('isExtensionFirstUse')
-        if (this.isFirstUseCurrentSession === undefined) {
+        // This is for sure not their first use
+        const isFirstUse = globals.globalState.tryGet('isExtensionFirstUse', Boolean)
+        if (isFirstUse === false) {
+            this.isFirstUseCurrentSession = isFirstUse
+            return this.isFirstUseCurrentSession
+        }
+
+        /**
+         * SANITY CHECK: If the clientId already existed on startup, then isFirstUse MUST be false. So
+         * there is a bug in the state.
+         */
+        if (hadClientIdOnStartup(globals.globalState)) {
+            telemetry.function_call.emit({
+                result: 'Failed',
+                functionName: 'isFirstUse',
+                reason: 'ClientIdAlreadyExisted',
+            })
+        }
+
+        if (isAmazonQ()) {
+            this.isFirstUseCurrentSession = true
+            if (hasExistingConnections()) {
+                telemetry.function_call.emit({
+                    result: 'Failed',
+                    functionName: 'isFirstUse',
+                    reason: 'UnexpectedConnections',
+                })
+            }
+        } else {
             // The variable in the store is not defined yet, fallback to checking if they have existing connections.
             this.isFirstUseCurrentSession = !hasExistingConnections()
-
-            getLogger().debug(
-                `isFirstUse: State not found, marking user as '${
-                    this.isFirstUseCurrentSession ? '' : 'NOT '
-                }first use' since they 'did ${this.isFirstUseCurrentSession ? 'NOT ' : ''}have existing connections'.`
-            )
         }
+        getLogger().debug(
+            `isFirstUse: State not found, marking user as '${
+                this.isFirstUseCurrentSession ? '' : 'NOT '
+            }first use' since they 'did ${this.isFirstUseCurrentSession ? 'NOT ' : ''}have existing connections'.`
+        )
 
         // Update state, so next time it is not first use
         this.updateMemento('isExtensionFirstUse', false)
