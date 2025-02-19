@@ -5,7 +5,7 @@
 
 import assert from 'assert'
 import sinon from 'sinon'
-import { AmazonQLSPResolver } from '../../../src/lsp/lspInstaller'
+import { AmazonQLspInstaller } from '../../../src/lsp/lspInstaller'
 import {
     DevSettings,
     fs,
@@ -18,9 +18,9 @@ import {
 } from 'aws-core-vscode/shared'
 import * as semver from 'semver'
 import { assertTelemetry } from 'aws-core-vscode/test'
-import { LspController } from 'aws-core-vscode/amazonq'
+import { LspConfig, LspController } from 'aws-core-vscode/amazonq'
 import { LanguageServerSetup } from 'aws-core-vscode/telemetry'
-import { AmazonQLspConfig, getAmazonQLspConfig } from '../../../src/lsp/config'
+import { getAmazonQLspConfig } from '../../../src/lsp/config'
 
 function createVersion(version: string) {
     return {
@@ -44,13 +44,13 @@ function createVersion(version: string) {
 }
 
 describe('AmazonQLSPInstaller', () => {
-    let resolver: AmazonQLSPResolver
+    let resolver: AmazonQLspInstaller
     let sandbox: sinon.SinonSandbox
     let tempDir: string
     // If globalState contains an ETag that is up to date with remote, we won't fetch it resulting in inconsistent behavior.
     // Therefore, we clear it temporarily for these tests to ensure consistent behavior.
     let manifestStorage: { [key: string]: any }
-    let lspConfig: AmazonQLspConfig
+    let lspConfig: LspConfig
 
     before(async () => {
         manifestStorage = globals.globalState.get(manifestStorageKey) || {}
@@ -59,7 +59,7 @@ describe('AmazonQLSPInstaller', () => {
 
     beforeEach(async () => {
         sandbox = sinon.createSandbox()
-        resolver = new AmazonQLSPResolver()
+        resolver = new AmazonQLspInstaller()
         tempDir = await makeTemporaryToolkitFolder()
         sandbox.stub(LanguageServerResolver.prototype, 'defaultDownloadFolder').returns(tempDir)
         // Called on extension activation and can contaminate telemetry.

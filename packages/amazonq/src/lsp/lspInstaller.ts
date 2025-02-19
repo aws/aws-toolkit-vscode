@@ -3,64 +3,32 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as vscode from 'vscode'
-import {
-    ManifestResolver,
-    LanguageServerResolver,
-    LspResolver,
-    fs,
-    LspResolution,
-    getNodeExecutableName,
-    cleanLspDownloads,
-    getLogger,
-} from 'aws-core-vscode/shared'
+import { fs, getNodeExecutableName, BaseLspInstaller, ResourcePaths } from 'aws-core-vscode/shared'
 import path from 'path'
-import { Range } from 'semver'
 import { getAmazonQLspConfig } from './config'
 
-const logger = getLogger('amazonqLsp')
+export class AmazonQLspInstaller extends BaseLspInstaller.BaseLspInstaller {
+    constructor() {
+        super(getAmazonQLspConfig(), 'amazonqLsp')
+    }
 
-export class AmazonQLSPResolver implements LspResolver {
-    async resolve(): Promise<LspResolution> {
-        const { id, manifestUrl, supportedVersions, locationOverride } = getAmazonQLspConfig()
-        if (locationOverride) {
-            void vscode.window.showInformationMessage(`Using language server override location: ${locationOverride}`)
+    protected override async postInstall(assetDirectory: string): Promise<void> {
+        const resourcePaths = this.resourcePaths(assetDirectory)
+        await fs.chmod(resourcePaths.node, 0o755)
+    }
+
+    protected override resourcePaths(assetDirectory?: string): ResourcePaths {
+        if (!assetDirectory) {
             return {
-                assetDirectory: locationOverride,
-                location: 'override',
-                version: '0.0.0',
-                resourcePaths: {
-                    lsp: locationOverride,
-                    node: getNodeExecutableName(),
-                },
+                lsp: this.config.path ?? '',
+                node: getNodeExecutableName(),
             }
         }
 
-        // "AmazonQ" is shared across toolkits to provide a common access point, don't change it
-        const manifest = await new ManifestResolver(manifestUrl, id).resolve()
-        const installationResult = await new LanguageServerResolver(
-            manifest,
-            id,
-            new Range(supportedVersions, {
-                includePrerelease: true,
-            })
-        ).resolve()
-
-        const nodePath = path.join(installationResult.assetDirectory, `servers/${getNodeExecutableName()}`)
-        await fs.chmod(nodePath, 0o755)
-
-        const deletedVersions = await cleanLspDownloads(
-            manifest.versions,
-            path.dirname(installationResult.assetDirectory)
-        )
-        logger.debug(`Cleaned up ${deletedVersions.length} old versions`)
-
+        const nodePath = path.join(assetDirectory, `servers/${getNodeExecutableName()}`)
         return {
-            ...installationResult,
-            resourcePaths: {
-                lsp: path.join(installationResult.assetDirectory, 'servers/aws-lsp-codewhisperer.js'),
-                node: nodePath,
-            },
+            lsp: path.join(assetDirectory, 'servers/aws-lsp-codewhisperer.js'),
+            node: nodePath,
         }
     }
 }
