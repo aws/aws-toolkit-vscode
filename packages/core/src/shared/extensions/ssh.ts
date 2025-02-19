@@ -137,20 +137,16 @@ export async function testSsmConnection(
     user: string,
     session: SSM.StartSessionResponse
 ): Promise<ChildProcessResult | never> {
+    const env = { SESSION_ID: session.SessionId, STREAM_URL: session.StreamUrl, TOKEN: session.TokenValue }
+    const process = new ProcessClass(sshPath, ['-T', `${user}@${hostname}`, 'echo "test connection succeeded" && exit'])
     try {
-        const env = { SESSION_ID: session.SessionId, STREAM_URL: session.StreamUrl, TOKEN: session.TokenValue }
-        const result = await new ProcessClass(sshPath, [
-            '-T',
-            `${user}@${hostname}`,
-            'echo "test connection succeeded" && exit',
-        ]).run({
+        return await process.run({
             spawnOptions: {
                 env,
             },
         })
-        return result
     } catch (error) {
-        throw new SshError('SSH connection test failed', { cause: error as Error, code: 'SSMTestConnectionFailed' })
+        throw new SshError('SSH connection test failed', { cause: error as Error })
     }
 }
 
