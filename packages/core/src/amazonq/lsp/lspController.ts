@@ -13,7 +13,6 @@ import fetch from 'node-fetch'
 import request from '../../shared/request'
 import { LspClient } from './lspClient'
 import AdmZip from 'adm-zip'
-import { RelevantTextDocument } from '@amzn/codewhisperer-streaming'
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../shared/filesystemUtilities'
 import { activate as activateLsp } from './lspClient'
 import { telemetry } from '../../shared/telemetry/telemetry'
@@ -25,6 +24,7 @@ import { isWeb } from '../../shared/extensionGlobals'
 import { getUserAgent } from '../../shared/telemetry/util'
 import { isAmazonInternalOs } from '../../shared/vscode/env'
 import { sleep } from '../../shared/utilities/timeoutUtils'
+import { RelevantTextDocumentAddition } from '../../codewhispererChat/controllers/chat/model'
 
 export interface Chunk {
     readonly filePath: string
@@ -282,9 +282,9 @@ export class LspController {
         }
     }
 
-    async query(s: string): Promise<RelevantTextDocument[]> {
+    async query(s: string): Promise<RelevantTextDocumentAddition[]> {
         const chunks: Chunk[] | undefined = await LspClient.instance.queryVectorIndex(s)
-        const resp: RelevantTextDocument[] = []
+        const resp: RelevantTextDocumentAddition[] = []
         if (chunks) {
             for (const chunk of chunks) {
                 const text = chunk.context ? chunk.context : chunk.content

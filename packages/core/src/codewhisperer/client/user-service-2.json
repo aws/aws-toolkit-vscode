@@ -1907,12 +1907,6 @@
                 "documentSymbols": {
                     "shape": "DocumentSymbols",
                     "documentation": "<p>DocumentSymbols parsed from a text document</p>"
-                },
-                "startLine": {
-                    "shape": "Integer"
-                },
-                "endLine": {
-                    "shape": "Integer"
                 }
             },
             "documentation": "<p>Represents an IDE retrieved relevant Text Document / File</p>"

@@ -351,6 +351,7 @@ export const createMynahUI = (
                     ...(item.relatedContent !== undefined ? { relatedContent: item.relatedContent } : {}),
                     ...(item.followUp !== undefined ? { followUp: item.followUp } : {}),
                     ...(item.fileList !== undefined ? { fileList: item.fileList } : {}),
+                    ...(item.header !== undefined ? { header: item.header } : {}),
                 })
                 if (
                     item.messageId !== undefined &&
@@ -381,7 +382,11 @@ export const createMynahUI = (
                                 file.relativeFilePath,
                                 {
                                     label: file.lineRanges
-                                        .map((range) => `line ${range.first} - ${range.second}`)
+                                        .map((range) =>
+                                            range.first === -1 || range.second === -1
+                                                ? ''
+                                                : `line ${range.first} - ${range.second}`
+                                        )
                                         .join(', '),
                                     description: file.relativeFilePath,
                                     clickable: true,

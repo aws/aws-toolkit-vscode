@@ -187,12 +187,15 @@ export interface TriggerPayload {
     readonly userIntent: UserIntent | undefined
     readonly customization: Customization
     readonly context?: string[] | QuickActionCommand[]
-    relevantTextDocuments?: RelevantTextDocument[]
+    relevantTextDocuments?: RelevantTextDocumentAddition[]
     additionalContents?: AdditionalContentEntry[]
     mergedRelevantDocuments?: MergedRelevantDocument[]
     useRelevantDocuments?: boolean
     traceId?: string
 }
+
+// TODO move this to API definition (or just use this across the codebase)
+export type RelevantTextDocumentAddition = RelevantTextDocument & { startLine: number; endLine: number }
 
 export interface MergedRelevantDocument {
     readonly relativeFilePath: string
