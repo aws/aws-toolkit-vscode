@@ -410,12 +410,9 @@ export class ZipUtil {
             return
         }
 
-        const sourceFiles = await collectFiles(
-            projectPaths,
-            vscode.workspace.workspaceFolders as CurrentWsFolders,
-            true,
-            this.getProjectScanPayloadSizeLimitInBytes()
-        )
+        const sourceFiles = await collectFiles(projectPaths, vscode.workspace.workspaceFolders as CurrentWsFolders, {
+            maxSizeBytes: this.getProjectScanPayloadSizeLimitInBytes(),
+        })
         for (const file of sourceFiles) {
             const projectName = path.basename(file.workspaceFolder.uri.fsPath)
             const zipEntryPath = this.getZipEntryPath(projectName, file.relativeFilePath)

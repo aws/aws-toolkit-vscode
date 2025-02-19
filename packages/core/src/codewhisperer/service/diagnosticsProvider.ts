@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { CodeScanIssue, AggregatedCodeScanIssue, CodeScansState } from '../models/model'
+import { CodeScanIssue, AggregatedCodeScanIssue } from '../models/model'
 import { CodeAnalysisScope, codewhispererDiagnosticSourceLabel } from '../models/constants'
 import { SecurityIssueTreeViewProvider } from './securityIssueTreeViewProvider'
 import { SecurityIssueProvider } from './securityIssueProvider'
@@ -30,24 +30,30 @@ export function initSecurityScanRender(
     scope: CodeAnalysisScope
 ) {
     securityScanRender.initialized = false
-    if ((scope === CodeAnalysisScope.FILE_AUTO || scope === CodeAnalysisScope.FILE_ON_DEMAND) && editor) {
+    if (scope === CodeAnalysisScope.FILE_ON_DEMAND && editor) {
         securityScanRender.securityDiagnosticCollection?.delete(editor.document.uri)
     } else if (scope === CodeAnalysisScope.PROJECT) {
         securityScanRender.securityDiagnosticCollection?.clear()
     }
     for (const securityRecommendation of securityRecommendationList) {
         updateSecurityDiagnosticCollection(securityRecommendation)
-        updateSecurityIssuesForProviders(securityRecommendation)
+        updateSecurityIssuesForProviders(securityRecommendation, scope === CodeAnalysisScope.FILE_AUTO)
     }
     securityScanRender.initialized = true
 }
 
-function updateSecurityIssuesForProviders(securityRecommendation: AggregatedCodeScanIssue) {
-    const updatedSecurityRecommendationList = [
-        ...SecurityIssueProvider.instance.issues.filter((group) => group.filePath !== securityRecommendation.filePath),
-        securityRecommendation,
-    ]
-    SecurityIssueProvider.instance.issues = updatedSecurityRecommendationList
+function updateSecurityIssuesForProviders(securityRecommendation: AggregatedCodeScanIssue, isAutoScope?: boolean) {
+    if (isAutoScope) {
+        SecurityIssueProvider.instance.mergeIssues(securityRecommendation)
+    } else {
+        const updatedSecurityRecommendationList = [
+            ...SecurityIssueProvider.instance.issues.filter(
+                (group) => group.filePath !== securityRecommendation.filePath
+            ),
+            securityRecommendation,
+        ]
+        SecurityIssueProvider.instance.issues = updatedSecurityRecommendationList
+    }
     SecurityIssueTreeViewProvider.instance.refresh()
 }
 
@@ -58,8 +64,22 @@ export function updateSecurityDiagnosticCollection(securityRecommendation: Aggre
     const securityDiagnostics: vscode.Diagnostic[] = vscode.languages
         .getDiagnostics(uri)
         .filter((diagnostic) => diagnostic.source === codewhispererDiagnosticSourceLabel)
-    for (const securityIssue of securityRecommendation.issues.filter((securityIssue) => securityIssue.visible)) {
-        securityDiagnostics.push(createSecurityDiagnostic(securityIssue))
+    for (const securityIssue of securityRecommendation.issues) {
+        const existingDiagnosticIndex = securityDiagnostics.findIndex(
+            (diagnostic) =>
+                (diagnostic.message === securityIssue.title &&
+                    diagnostic.range.start.line === securityIssue.startLine &&
+                    diagnostic.range.end.line === securityIssue.endLine) ||
+                (diagnostic.message === 'Re-scan to validate the fix: ' + securityIssue.title &&
+                    diagnostic.range.start.line === securityIssue.startLine &&
+                    diagnostic.range.end.line === securityIssue.startLine)
+        )
+        if (existingDiagnosticIndex !== -1) {
+            securityDiagnostics.splice(existingDiagnosticIndex, 1)
+        }
+        if (securityIssue.visible) {
+            securityDiagnostics.push(createSecurityDiagnostic(securityIssue))
+        }
     }
     securityDiagnosticCollection.set(uri, securityDiagnostics)
 }
@@ -112,8 +132,7 @@ export function disposeSecurityDiagnostic(event: vscode.TextDocumentChangeEvent)
             if (
                 issue.severity === vscode.DiagnosticSeverity.Warning &&
                 intersection &&
-                (/\S/.test(changedText) || changedText === '') &&
-                !CodeScansState.instance.isScansEnabled()
+                (/\S/.test(changedText) || changedText === '')
             ) {
                 issue.severity = vscode.DiagnosticSeverity.Information
                 issue.message = 'Re-scan to validate the fix: ' + issue.message
