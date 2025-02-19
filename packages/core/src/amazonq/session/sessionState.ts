@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import { ToolkitError } from '../../shared/errors'
 import globals from '../../shared/extensionGlobals'
 import { getLogger } from '../../shared/logger/logger'
-import { telemetry } from '../../shared/telemetry/telemetry'
+import { AmazonqCreateUpload, Span, telemetry } from '../../shared/telemetry/telemetry'
 import { VirtualFileSystem } from '../../shared/virtualFilesystem'
 import { CodeReference, UploadHistory } from '../webview/ui/connector'
 import { AuthUtil } from '../../codewhisperer/util/authUtil'
@@ -25,7 +25,7 @@ import {
     SessionStateInteraction,
     SessionStatePhase,
 } from '../commons/types'
-import { prepareRepoData, getDeletedFileInfos, registerNewFiles } from '../util/files'
+import { prepareRepoData, getDeletedFileInfos, registerNewFiles, PrepareRepoDataOptions } from '../util/files'
 import { uploadCode } from '../util/upload'
 
 export const EmptyCodeGenID = 'EMPTY_CURRENT_CODE_GENERATION_ID'
@@ -227,11 +227,11 @@ export abstract class BasePrepareCodeGenState implements SessionState {
                 amazonqConversationId: this.config.conversationId,
                 credentialStartUrl: AuthUtil.instance.startUrl,
             })
-            const { zipFileBuffer, zipFileChecksum } = await prepareRepoData(
+            const { zipFileBuffer, zipFileChecksum } = await this.prepareProjectZip(
                 this.config.workspaceRoots,
                 this.config.workspaceFolders,
-                action.telemetry,
-                span
+                span,
+                { telemetry: action.telemetry }
             )
             const uploadId = randomUUID()
             const { uploadUrl, kmsKeyArn } = await this.config.proxyClient.createUploadUrl(
@@ -250,6 +250,15 @@ export abstract class BasePrepareCodeGenState implements SessionState {
         this.uploadId = uploadId
         const nextState = this.createNextState({ ...this.config, uploadId })
         return nextState.interact(action)
+    }
+
+    protected async prepareProjectZip(
+        workspaceRoots: string[],
+        workspaceFolders: CurrentWsFolders,
+        span: Span<AmazonqCreateUpload>,
+        options: PrepareRepoDataOptions
+    ) {
+        return await prepareRepoData(workspaceRoots, workspaceFolders, span, options)
     }
 }
 
