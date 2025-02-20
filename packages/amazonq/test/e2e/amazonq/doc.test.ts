@@ -10,7 +10,7 @@ import { getTestWindow, registerAuthHook, toTextEditor, using } from 'aws-core-v
 import { loginToIdC } from './utils/setup'
 import { Messenger } from './framework/messenger'
 import { FollowUpTypes } from 'aws-core-vscode/amazonq'
-import { fs, i18n, sleep, workspaceUtils } from 'aws-core-vscode/shared'
+import { fs, i18n, sleep } from 'aws-core-vscode/shared'
 import {
     docGenerationProgressMessage,
     DocGenerationStep,
@@ -310,7 +310,6 @@ describe('Amazon Q Doc Generation', async function () {
         registerAuthHook('amazonq-test-account')
         framework = new qTestingFramework('doc', true, [])
         tab = framework.createTab()
-        workspaceUtils.hasWorkspace()
         const wsFolders = vscode.workspace.workspaceFolders
         if (!wsFolders?.length) {
             assert.fail('Workspace folder not found')
