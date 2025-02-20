@@ -79,10 +79,16 @@ export class SshKeyPair {
         const overrideKeys = async (_t: string, proc: RunParameterContext) => {
             await proc.send('yes')
         }
-        return !(await tryRun('ssh-keygen', ['-t', keyType, '-N', '', '-q', '-f', keyPath], 'yes', 'unknown key type', {
-            onStdout: overrideKeys,
-            timeout: new Timeout(5000),
-        }))
+        return await tryRun(
+            'ssh-keygen',
+            ['-t', keyType, '-N', '', '-q', '-f', keyPath],
+            'yes',
+            /^(?!.*Unknown key type).*/i,
+            {
+                onStdout: overrideKeys,
+                timeout: new Timeout(5000),
+            }
+        )
     }
 
     public static async tryKeyTypes(keyPath: string, keyTypes: sshKeyType[]): Promise<boolean> {
