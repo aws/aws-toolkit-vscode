@@ -77,6 +77,12 @@ export function memoize<T, U extends any[]>(fn: (...args: U) => T): (...args: U)
     return (...args) => (cache[args.map(String).join(':')] ??= fn(...args))
 }
 
+/**
+ * Generalization of the {@link memoize} method that accepts async methods, and allows user to pass mapping from keys to args.
+ * @param fn
+ * @param key
+ * @returns
+ */
 export function memoizeWith<T, U extends any[]>(
     fn: (...args: U) => Promise<T>,
     key: (...args: U) => Promise<string> | string = (...args: U) => args.map(String).join(':')
