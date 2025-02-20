@@ -959,6 +959,7 @@ export class ChatController {
         const relativePaths = await this.resolveContextCommandPayload(triggerPayload)
         // TODO: resolve the context into real context up to 90k
         triggerPayload.useRelevantDocuments = false
+        triggerPayload.mergedRelevantDocuments = []
         if (triggerPayload.message) {
             triggerPayload.useRelevantDocuments = triggerPayload.context?.some(
                 (context) => typeof context !== 'string' && context.command === '@workspace'
