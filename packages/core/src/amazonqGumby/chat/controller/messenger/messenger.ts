@@ -542,6 +542,12 @@ export class Messenger {
             })
         }
 
+        // TO-DO: make this `isPartiallySucceeded`
+        if (transformByQState.isSucceeded() && message == CodeWhispererConstants.viewProposedChangesChatMessage) {
+            // get permission to re-run job and view logs after partially successful job is downloaded
+            this.sendFeedbackFormMessage(tabID)
+        }
+
         this.dispatcher.sendChatMessage(
             new ChatMessage(
                 {
@@ -552,12 +558,6 @@ export class Messenger {
                 tabID
             )
         )
-
-        // TO-DO: make this `isPartiallySucceeded`
-        if (transformByQState.isSucceeded() && message == CodeWhispererConstants.viewProposedChangesChatMessage) {
-            // get permission to re-run job and view logs after partially successful job is downloaded
-            this.sendFeedbackFormMessage(tabID)
-        }
     }
 
     public sendTransformationIntroduction(tabID: string) {
