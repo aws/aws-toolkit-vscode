@@ -1362,6 +1362,11 @@
                     "group": "y_toolkitWalkthrough@1"
                 },
                 {
+                    "command": "aws.toolkit.lambda.createServerlessLandProject",
+                    "when": "view =~ /^(aws.appBuilder|aws.appBuilderForFileExplorer)$/",
+                    "group": "y_toolkitWalkthrough@2"
+                },
+                {
                     "command": "aws.codecatalyst.cloneRepo",
                     "when": "view == aws.codecatalyst && !isCloud9 && aws.codecatalyst.connected",
                     "group": "1_codeCatalyst@1"
@@ -1576,24 +1581,29 @@
                     "group": "0@1"
                 },
                 {
-                    "command": "aws.lambda.createNewSamApp",
+                    "command": "aws.toolkit.lambda.createServerlessLandProject",
                     "when": "view == aws.explorer && viewItem == awsLambdaNode || viewItem == awsRegionNode",
                     "group": "1@1"
                 },
                 {
+                    "command": "aws.lambda.createNewSamApp",
+                    "when": "view == aws.explorer && viewItem == awsLambdaNode || viewItem == awsRegionNode",
+                    "group": "1@2"
+                },
+                {
                     "command": "aws.launchConfigForm",
                     "when": "view == aws.explorer && viewItem == awsLambdaNode || viewItem == awsRegionNode || viewItem == awsCloudFormationRootNode",
-                    "group": "1@1"
+                    "group": "1@2"
                 },
                 {
                     "command": "aws.deploySamApplication",
                     "when": "config.aws.samcli.legacyDeploy && view == aws.explorer && viewItem =~ /^(awsLambdaNode|awsRegionNode|awsCloudFormationRootNode)$/",
-                    "group": "1@2"
+                    "group": "1@3"
                 },
                 {
                     "command": "aws.samcli.sync",
                     "when": "!config.aws.samcli.legacyDeploy && view == aws.explorer && viewItem =~ /^(awsLambdaNode|awsRegionNode|awsCloudFormationRootNode)$/",
-                    "group": "1@2"
+                    "group": "1@3"
                 },
                 {
                     "command": "aws.ecr.copyTagUri",
@@ -3232,6 +3242,17 @@
             {
                 "command": "aws.toolkit.lambda.openWalkthrough",
                 "title": "%AWS.toolkit.lambda.walkthrough.quickpickTitle%",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.toolkit.lambda.createServerlessLandProject",
+                "title": "%AWS.toolkit.lambda.serverlessLand.quickpickTitle%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "category": "%AWS.title%",
                 "cloud9": {
