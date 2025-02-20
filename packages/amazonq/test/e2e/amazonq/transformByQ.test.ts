@@ -163,22 +163,46 @@ describe('Amazon Q Code Transformation', function () {
 
             transformByQState.setSummaryFilePath(path.join(tmpDir, 'summary.md'))
 
+            // TO-DO: make this `isPartiallySucceeded`
+            transformByQState.setToSucceeded()
+
             transformByQState
                 .getChatMessenger()
                 ?.sendJobFinishedMessage(tab.tabID, CodeWhispererConstants.viewProposedChangesChatMessage)
 
-            tab.clickCustomFormButton({
-                id: 'gumbyViewSummary',
-                text: 'View summary',
-            })
-
-            await tab.waitForEvent(() => tab.getChatItems().length > 14, {
+            // wait for download message and feedback form to be sent
+            await tab.waitForEvent(() => tab.getChatItems().length > 15, {
                 waitTimeoutInMs: 5000,
                 waitIntervalInMs: 1000,
             })
 
-            const viewSummaryChatItem = tab.getChatItems().pop()
+            const submitFeedbackForm = tab.getChatItems().pop()
+            assert.strictEqual(submitFeedbackForm?.formItems?.[0]?.id ?? undefined, 'TransformFeedbackRerunJob')
+            assert.strictEqual(submitFeedbackForm?.formItems?.[1]?.id ?? undefined, 'TransformFeedbackViewLogs')
+
+            const submitFeedbackFormItemValues = {
+                TransformFeedbackRerunJob: 'No',
+                TransformFeedbackViewLogs: 'Yes',
+            }
+            const submitFeedbackFormValues: Record<string, string> = { ...submitFeedbackFormItemValues }
+
+            const viewSummaryChatItem = tab.getChatItems()[tab.getChatItems().length - 2]
             assert.strictEqual(viewSummaryChatItem?.body?.includes('view a summary'), true)
+
+            tab.clickCustomFormButton({
+                id: 'gumbyFeedbackFormConfirm',
+                text: 'Confirm',
+                formItemValues: submitFeedbackFormValues,
+            })
+
+            // wait for feedback received message to be sent
+            await tab.waitForEvent(() => tab.getChatItems().length > 16, {
+                waitTimeoutInMs: 5000,
+                waitIntervalInMs: 1000,
+            })
+
+            const feedbackReceivedMessage = tab.getChatItems().pop()
+            assert.strictEqual(feedbackReceivedMessage?.body?.includes('Feedback received') ?? undefined, true)
         })
 
         it('CANNOT do a Java 21 to Java 17 transformation', async () => {
