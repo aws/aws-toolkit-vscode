@@ -65,7 +65,7 @@ import { DefaultAmazonQAppInitContext } from '../../../amazonq/apps/initContext'
 import globals from '../../../shared/extensionGlobals'
 import { MynahIconsType, MynahUIDataModel, QuickActionCommand } from '@aws/mynah-ui'
 import { LspClient } from '../../../amazonq/lsp/lspClient'
-import { ContextCommandItem } from '../../../amazonq/lsp/types'
+import { ContextCommandItem, ContextCommandItemType } from '../../../amazonq/lsp/types'
 import { createPromptCommand, workspaceCommand } from '../../../amazonq/webview/ui/tabs/constants'
 import fs from '../../../shared/fs/fs'
 import * as vscode from 'vscode'
@@ -121,11 +121,15 @@ export interface ChatControllerMessageListeners {
     readonly processFileClick: MessageListener<FileClick>
 }
 
-const promptFileExtension = '.prompt'
+const promptFileExtension = '.prompt.md'
 
 const additionalContentInnerContextLimit = 8192
 
 const aditionalContentNameLimit = 1024
+
+const getUserPromptsDirectory = () => {
+    return path.join(fs.getUserHomeDir(), '.aws', 'amazonq', 'prompts')
+}
 
 export class ChatController {
     private readonly sessionStorage: ChatSessionStorage
@@ -458,35 +462,19 @@ export class ChatController {
         }
         const promptsCmd: QuickActionCommand = contextCommand[0].commands?.[3]
 
-        // Check .aws/prompts for prompt files in workspace
-        const workspacePromptFiles = await vscode.workspace.findFiles(`.aws/prompts/*${promptFileExtension}`)
-
-        if (workspacePromptFiles.length > 0) {
-            promptsCmd.children?.[0].commands.push(
-                ...workspacePromptFiles.map((file) => {
-                    const workspacePath = vscode.workspace.getWorkspaceFolder(file)?.uri.path || path.dirname(file.path)
-                    const relativePath = path.relative(workspacePath, file.path)
-                    return {
-                        command: path.basename(file.path, promptFileExtension),
-                        icon: 'magic' as MynahIconsType,
-                        route: [workspacePath, relativePath],
-                    }
-                })
-            )
-        }
-        // Check ~/.aws/prompts for global prompt files
+        // Check for user prompts
         try {
-            const systemPromptsDirectory = path.join(fs.getUserHomeDir(), '.aws', 'prompts')
-            const directoryExists = await fs.exists(systemPromptsDirectory)
+            const userPromptsDirectory = getUserPromptsDirectory()
+            const directoryExists = await fs.exists(userPromptsDirectory)
             if (directoryExists) {
-                const systemPromptFiles = await fs.readdir(systemPromptsDirectory)
+                const systemPromptFiles = await fs.readdir(userPromptsDirectory)
                 promptsCmd.children?.[0].commands.push(
                     ...systemPromptFiles
                         .filter(([name]) => name.endsWith(promptFileExtension))
                         .map(([name]) => ({
                             command: path.basename(name, promptFileExtension),
                             icon: 'magic' as MynahIconsType,
-                            route: [systemPromptsDirectory, name],
+                            route: [userPromptsDirectory, name],
                         }))
                 )
             }
@@ -536,19 +524,7 @@ export class ChatController {
                     mandatory: true,
                     title: 'Prompt name',
                     placeholder: 'Enter prompt name',
-                    description: 'Use this prompt in the chat by typing `@` followed by the prompt name.',
-                },
-                {
-                    id: 'shared-scope',
-                    type: 'select',
-                    title: 'Save globally for all projects?',
-                    mandatory: true,
-                    value: 'system',
-                    description: `If yes is selected, ${promptFileExtension} file will be saved in ~/.aws/prompts.`,
-                    options: [
-                        { value: 'project', label: 'No' },
-                        { value: 'system', label: 'Yes' },
-                    ],
+                    description: `Use this prompt by typing \`@\` followed by the prompt name. Prompt will be saved in ${getUserPromptsDirectory()}.`,
                 },
             ],
             [
@@ -568,18 +544,11 @@ export class ChatController {
     private async processCustomFormAction(message: CustomFormActionMessage) {
         if (message.tabID) {
             if (message.action.id === 'submit-create-prompt') {
-                let promptsDirectory = path.join(fs.getUserHomeDir(), '.aws', 'prompts')
-                if (
-                    vscode.workspace.workspaceFolders?.[0] &&
-                    message.action.formItemValues?.['shared-scope'] === 'project'
-                ) {
-                    const workspaceUri = vscode.workspace.workspaceFolders[0].uri
-                    promptsDirectory = vscode.Uri.joinPath(workspaceUri, '.aws', 'prompts').fsPath
-                }
+                const userPromptsDirectory = getUserPromptsDirectory()
 
                 const title = message.action.formItemValues?.['prompt-name']
                 const newFilePath = path.join(
-                    promptsDirectory,
+                    userPromptsDirectory,
                     title ? `${title}${promptFileExtension}` : `default${promptFileExtension}`
                 )
                 const newFileContent = new Uint8Array(Buffer.from(''))
@@ -610,8 +579,16 @@ export class ChatController {
         if (!projectRoot) {
             return
         }
+        let absoluteFilePath = path.join(projectRoot, message.filePath)
 
-        const absoluteFilePath = path.join(projectRoot, message.filePath)
+        // Handle clicking on a user prompt outside the workspace
+        if (message.filePath.endsWith(promptFileExtension)) {
+            try {
+                await vscode.workspace.fs.stat(vscode.Uri.file(absoluteFilePath))
+            } catch {
+                absoluteFilePath = path.join(getUserPromptsDirectory(), message.filePath)
+            }
+        }
 
         try {
             // Open the file in VSCode
@@ -887,18 +864,36 @@ export class ChatController {
     }
 
     private async resolveContextCommandPayload(triggerPayload: TriggerPayload): Promise<string[]> {
-        if (triggerPayload.context === undefined || triggerPayload.context.length === 0) {
-            return []
-        }
         const contextCommands: ContextCommandItem[] = []
         const relativePaths: string[] = []
-        for (const context of triggerPayload.context) {
-            if (typeof context !== 'string' && context.route && context.route.length === 2) {
-                contextCommands.push({
-                    workspaceFolder: context.route[0] || '',
-                    type: context.icon === 'folder' ? 'folder' : 'file',
-                    relativePath: context.route[1] || '',
+
+        // Check for workspace rules to add to context
+        const workspaceRules = await vscode.workspace.findFiles(`.amazonq/rules/*${promptFileExtension}`)
+        if (workspaceRules.length > 0) {
+            contextCommands.push(
+                ...workspaceRules.map((rule) => {
+                    const workspaceFolderPath = vscode.workspace.getWorkspaceFolder(rule)?.uri?.path || ''
+                    return {
+                        workspaceFolder: workspaceFolderPath,
+                        // todo: add 'prompt' type to LSP model
+                        type: 'file' as ContextCommandItemType,
+                        relativePath: path.relative(workspaceFolderPath, rule.path),
+                    }
                 })
+            )
+        }
+
+        // Add context commands added by user to context
+        if (triggerPayload.context !== undefined && triggerPayload.context.length > 0) {
+            for (const context of triggerPayload.context) {
+                // todo: add handling of 'prompt' type (dependent on LSP changes)
+                if (typeof context !== 'string' && context.route && context.route.length === 2) {
+                    contextCommands.push({
+                        workspaceFolder: context.route[0] || '',
+                        type: context.icon === 'folder' ? 'folder' : 'file',
+                        relativePath: context.route[1] || '',
+                    })
+                }
             }
         }
         if (contextCommands.length === 0) {
@@ -916,7 +911,11 @@ export class ChatController {
                         description: prompt.description.substring(0, aditionalContentNameLimit),
                         innerContext: prompt.content.substring(0, additionalContentInnerContextLimit),
                     })
-                    const relativePath = path.relative(workspaceFolder, prompt.filePath)
+                    let relativePath = path.relative(workspaceFolder, prompt.filePath)
+                    // Handle user prompts outside the workspace
+                    if (prompt.filePath.startsWith(getUserPromptsDirectory())) {
+                        relativePath = path.basename(prompt.filePath)
+                    }
                     relativePaths.push(relativePath)
                 }
             }
