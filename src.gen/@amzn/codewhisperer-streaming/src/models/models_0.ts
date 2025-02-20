@@ -1019,6 +1019,8 @@ export interface RelevantTextDocument {
    * @public
    */
   documentSymbols?: (DocumentSymbol)[] | undefined;
+  startLine?: number;
+  endLine?: number;
 }
 
 /**

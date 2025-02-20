@@ -41,6 +41,7 @@ export const Features = {
     projectContextFeature: 'ProjectContextV2',
     workspaceContextFeature: 'WorkspaceContext',
     test: 'testFeature',
+    highlightCommand: 'highlightCommand',
 } as const
 
 export type FeatureName = (typeof Features)[keyof typeof Features]

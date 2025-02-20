@@ -46,6 +46,7 @@ export class TextMessageHandler {
             .requestGenerativeAIAnswer(tabID, eventID, {
                 chatMessage: chatPrompt.prompt ?? '',
                 chatCommand: chatPrompt.command,
+                chatContext: chatPrompt.context,
             })
             .then(() => {})
     }
