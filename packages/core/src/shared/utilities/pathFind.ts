@@ -11,6 +11,7 @@ import { GitExtension } from '../extensions/git'
 import { Settings } from '../settings'
 import { getLogger } from '../logger/logger'
 import { mergeResolvedShellPath } from '../env/resolveEnv'
+import { matchesPattern } from './textUtilities'
 
 /** Full path to VSCode CLI. */
 let vscPath: string
@@ -32,7 +33,7 @@ export async function tryRun(
     p: string,
     args: string[],
     logging: 'yes' | 'no' | 'noresult' = 'yes',
-    expected?: string,
+    expected?: string | RegExp,
     opt?: ChildProcessOptions
 ): Promise<boolean> {
     const proc = new ChildProcess(p, args, { logging: 'no' })
@@ -40,7 +41,7 @@ export async function tryRun(
         ...opt,
         spawnOptions: { env: await mergeResolvedShellPath(opt?.spawnOptions?.env ?? process.env) },
     })
-    const ok = r.exitCode === 0 && (expected === undefined || r.stdout.includes(expected))
+    const ok = r.exitCode === 0 && (expected === undefined || matchesPattern(r.stdout, expected))
     if (logging === 'noresult') {
         getLogger().info('tryRun: %s: %s', ok ? 'ok' : 'failed', proc)
     } else if (logging !== 'no') {
