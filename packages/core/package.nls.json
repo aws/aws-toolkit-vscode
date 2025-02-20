@@ -436,5 +436,6 @@
     "AWS.toolkit.lambda.walkthrough.step1.title": "Iterate locally",
     "AWS.toolkit.lambda.walkthrough.step1.description": "Locally test and debug your code.",
     "AWS.toolkit.lambda.walkthrough.step2.title": "Deploy to the cloud",
-    "AWS.toolkit.lambda.walkthrough.step2.description": "Test your application in the cloud from within VS Code. \n\nNote: The AWS CLI and the SAM CLI require AWS Credentials to interact with the cloud. For information on setting up your credentials, see [Authentication and access credentials](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html). \n\n[Configure credentials](command:aws.toolkit.lambda.walkthrough.credential)"
+    "AWS.toolkit.lambda.walkthrough.step2.description": "Test your application in the cloud from within VS Code. \n\nNote: The AWS CLI and the SAM CLI require AWS Credentials to interact with the cloud. For information on setting up your credentials, see [Authentication and access credentials](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html). \n\n[Configure credentials](command:aws.toolkit.lambda.walkthrough.credential)",
+    "AWS.toolkit.lambda.serverlessLand.quickpickTitle": "Create Lambda Application from template"
 }
