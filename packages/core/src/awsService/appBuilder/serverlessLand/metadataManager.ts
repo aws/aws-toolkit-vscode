@@ -27,7 +27,6 @@ export interface ProjectMetadata {
 
 /**
  * Manages metadata for serverless application patterns
- * Implements Singleton pattern to ensure single instance across the application
  */
 
 export class MetadataManager {

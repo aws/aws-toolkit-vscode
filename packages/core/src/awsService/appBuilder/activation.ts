@@ -201,7 +201,7 @@ async function registerAppBuilderCommands(context: ExtContext): Promise<void> {
                 }
             }
         }),
-        Commands.register({ id: 'aws.toolkit.lambda.serverlessLand', autoconnect: false }, async () => {
+        Commands.register({ id: 'aws.toolkit.lambda.createServerlessLandProject', autoconnect: false }, async () => {
             await createNewServerlessLandProject(context)
         })
     )

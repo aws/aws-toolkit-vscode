@@ -1387,7 +1387,7 @@
                     "group": "y_toolkitWalkthrough@1"
                 },
                 {
-                    "command": "aws.toolkit.lambda.serverlessLand",
+                    "command": "aws.toolkit.lambda.createServerlessLandProject",
                     "when": "view =~ /^(aws.appBuilder|aws.appBuilderForFileExplorer)$/",
                     "group": "y_toolkitWalkthrough@2"
                 },
@@ -1601,7 +1601,7 @@
                     "group": "0@1"
                 },
                 {
-                    "command": "aws.toolkit.lambda.serverlessLand",
+                    "command": "aws.toolkit.lambda.createServerlessLandProject",
                     "when": "view == aws.explorer && viewItem == awsLambdaNode || viewItem == awsRegionNode",
                     "group": "1@1"
                 },
@@ -3188,7 +3188,7 @@
                 }
             },
             {
-                "command": "aws.toolkit.lambda.serverlessLand",
+                "command": "aws.toolkit.lambda.createServerlessLandProject",
                 "title": "%AWS.toolkit.lambda.serverlessLand.quickpickTitle%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "category": "%AWS.title%",

@@ -53,7 +53,7 @@ export class CreateServerlessLandWizard extends Wizard<CreateServerlessLandWizar
             // Initialize and display pattern selection
             const patterns = this.metadataManager.getPatterns()
             if (patterns.length === 0) {
-                throw new Error('No patterns found in metadata')
+                throw new ToolkitError('No patterns found in metadata')
             }
 
             const patternPicker = createQuickPick<string>(
@@ -90,7 +90,7 @@ export class CreateServerlessLandWizard extends Wizard<CreateServerlessLandWizar
             // Show runtime options based on selected pattern
             const runtimes = this.metadataManager.getRuntimes(selectedPattern)
             if (runtimes.length === 0) {
-                throw new Error('No runtimes found for the selected pattern')
+                throw new ToolkitError('No runtimes found for the selected pattern')
             }
 
             const runtimePicker = createQuickPick<string>(
@@ -113,7 +113,7 @@ export class CreateServerlessLandWizard extends Wizard<CreateServerlessLandWizar
             // Show IAC options based on selected pattern
             const iacOptions = this.metadataManager.getIacOptions(selectedPattern)
             if (iacOptions.length === 0) {
-                throw new Error('No IAC options found for the selected pattern')
+                throw new ToolkitError('No IAC options found for the selected pattern')
             }
 
             const iacPicker = createQuickPick<string>(
