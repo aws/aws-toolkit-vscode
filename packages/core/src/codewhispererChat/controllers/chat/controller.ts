@@ -463,11 +463,15 @@ export class ChatController {
 
         if (workspacePromptFiles.length > 0) {
             promptsCmd.children?.[0].commands.push(
-                ...workspacePromptFiles.map((file) => ({
-                    command: path.basename(file.path, promptFileExtension),
-                    icon: 'magic' as MynahIconsType,
-                    route: [path.dirname(file.path), path.basename(file.path)],
-                }))
+                ...workspacePromptFiles.map((file) => {
+                    const workspacePath = vscode.workspace.getWorkspaceFolder(file)?.uri.path || path.dirname(file.path)
+                    const relativePath = path.relative(workspacePath, file.path)
+                    return {
+                        command: path.basename(file.path, promptFileExtension),
+                        icon: 'magic' as MynahIconsType,
+                        route: [workspacePath, relativePath],
+                    }
+                })
             )
         }
         // Check ~/.aws/prompts for global prompt files
