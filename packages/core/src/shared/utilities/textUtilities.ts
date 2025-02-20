@@ -273,3 +273,10 @@ export function extractFileAndCodeSelectionFromMessage(message: any) {
     const selection = message?.context?.focusAreaContext?.selectionInsideExtendedCodeBlock as vscode.Selection
     return { filePath, selection }
 }
+
+export function matchesPattern(source: string, target: string | RegExp) {
+    if (typeof target === 'string') {
+        return source.includes(target)
+    }
+    return target.test(source)
+}
