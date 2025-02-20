@@ -542,8 +542,10 @@ export class Messenger {
             })
         }
 
-        // TO-DO: make this `isPartiallySucceeded`
-        if (transformByQState.isSucceeded() && message == CodeWhispererConstants.viewProposedChangesChatMessage) {
+        if (
+            transformByQState.isPartiallySucceeded() &&
+            message === CodeWhispererConstants.viewProposedChangesChatMessage
+        ) {
             // get permission to re-run job and view logs after partially successful job is downloaded
             this.sendFeedbackFormMessage(tabID)
         }

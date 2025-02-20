@@ -469,6 +469,9 @@ export const amazonQFeedbackKey = 'Amazon Q'
 
 export const amazonQFeedbackText = 'Submit feedback'
 
+// TO-DO: update link
+export const codeTransformTroubleshootStartJobFailed = ''
+
 export const codeTransformTroubleshootProjectSize =
     'https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/troubleshooting-code-transformation.html#reduce-project-size'
 
@@ -611,17 +614,13 @@ export const failedToStartJobChatMessage =
 export const failedToStartJobNotification =
     'Amazon Q could not begin the transformation. Please try starting the transformation again.'
 
-export const tooManyJobsChatMessage =
-    "Sorry, I couldn't begin the transformation. You have too many active transformations running. Please try again after your other transformations have completed."
+export const tooManyJobsChatMessage = `Sorry, I couldn't begin the transformation. You have too many active transformations running. Please try again after your other transformations have completed. For more information, see the [Amazon Q documentation](${codeTransformTroubleshootStartJobFailed}).`
 
-export const tooManyJobsNotification =
-    'Amazon Q could not begin the transformation. You have too many active transformations running. Please try again after your other transformations have completed.'
+export const tooManyJobsNotification = `Amazon Q could not begin the transformation. You have too many active transformations running. Please try again after your other transformations have completed. For more information, see the [Amazon Q documentation](${codeTransformTroubleshootStartJobFailed}).`
 
-export const linesOfCodeLimitBreachedChatMessage =
-    "Sorry, I couldn't begin the transformation. You have exceeded the lines of code limit for your plan."
+export const linesOfCodeLimitBreachedChatMessage = `Sorry, I couldn't begin the transformation. You have exceeded the lines of code limit for your plan. For more information, see the [Amazon Q documentation](${codeTransformTroubleshootStartJobFailed}).`
 
-export const linesOfCodeLimitBreachedNotification =
-    'Amazon Q could not begin the transformation. You have exceeded the lines of code limit for your plan.'
+export const linesOfCodeLimitBreachedNotification = `Amazon Q could not begin the transformation. You have exceeded the lines of code limit for your plan. For more information, see the [Amazon Q documentation](${codeTransformTroubleshootStartJobFailed}).`
 
 export const failedToUploadProjectChatMessage =
     "Sorry, I couldn't upload your project. Please try starting the transformation again."

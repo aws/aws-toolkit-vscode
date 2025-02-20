@@ -513,11 +513,7 @@ export async function startTransformationJob(uploadId: string, transformStartTim
         getLogger().error(`CodeTransformation: ${CodeWhispererConstants.failedToStartJobNotification}`, error)
         const errorMessage = (error as Error).message.toLowerCase()
         if (errorMessage.includes('too many active running jobs')) {
-            transformByQState.setJobFailureErrorNotification(
-                CodeWhispererConstants.tooManyJobsNotification
-                // TO-DO: change this text (and the ones below) to link to the docs around limits
-                // https://issues.amazon.com/issues/V1679684569
-            )
+            transformByQState.setJobFailureErrorNotification(CodeWhispererConstants.tooManyJobsNotification)
             transformByQState.setJobFailureErrorChatMessage(CodeWhispererConstants.tooManyJobsChatMessage)
         } else if (errorMessage.includes('lines of code limit breached')) {
             transformByQState.setJobFailureErrorNotification(

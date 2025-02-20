@@ -163,8 +163,7 @@ describe('Amazon Q Code Transformation', function () {
 
             transformByQState.setSummaryFilePath(path.join(tmpDir, 'summary.md'))
 
-            // TO-DO: make this `isPartiallySucceeded`
-            transformByQState.setToSucceeded()
+            transformByQState.setToPartiallySucceeded()
 
             transformByQState
                 .getChatMessenger()
