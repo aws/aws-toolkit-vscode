@@ -11,23 +11,23 @@ import globals from '../../shared/extensionGlobals'
 
 describe('ExtensionUse.isFirstUse()', function () {
     let instance: ExtensionUse
+    const notHasExistingConnections = () => false
 
     beforeEach(async function () {
         instance = new ExtensionUse()
-        await globals.globalState.update(ExtensionUse.instance.isExtensionFirstUseKey, true)
+        await makeStateValueNotExist()
     })
 
     it('is true only on first startup', function () {
-        assert.strictEqual(instance.isFirstUse(), true, 'Failed on first call.')
-        assert.strictEqual(instance.isFirstUse(), true, 'Failed on second call.')
+        assert.strictEqual(instance.isFirstUse(notHasExistingConnections), true, 'Failed on first call.')
+        assert.strictEqual(instance.isFirstUse(notHasExistingConnections), true, 'Failed on second call.')
 
         const nextStartup = nextExtensionStartup()
-        assert.strictEqual(nextStartup.isFirstUse(), false, 'Failed on new startup.')
+        assert.strictEqual(nextStartup.isFirstUse(notHasExistingConnections), false, 'Failed on new startup.')
     })
 
     it('true when: (state value not exists + NOT has existing connections)', async function () {
         await makeStateValueNotExist()
-        const notHasExistingConnections = () => false
         assert.strictEqual(
             instance.isFirstUse(notHasExistingConnections),
             true,

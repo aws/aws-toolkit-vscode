@@ -61,6 +61,22 @@ export abstract class CommonAuthWebview extends VueWebview {
         return globals.regionProvider.getRegions().reverse()
     }
 
+    private didCall: { login: boolean; reauth: boolean } = { login: false, reauth: false }
+    public setUiReady(state: 'login' | 'reauth') {
+        // Prevent telemetry spam, since showing/hiding chat triggers this each time.
+        // So only emit once.
+        if (this.didCall[state]) {
+            return
+        }
+
+        telemetry.webview_load.emit({
+            passive: true,
+            webviewName: state,
+            result: 'Succeeded',
+        })
+        this.didCall[state] = true
+    }
+
     /**
      * This wraps the execution of the given setupFunc() and handles common errors from the SSO setup process.
      *

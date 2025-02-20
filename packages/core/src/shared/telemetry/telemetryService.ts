@@ -22,6 +22,7 @@ import { telemetry, MetricBase } from './telemetry'
 import fs from '../fs/fs'
 import fsNode from 'fs/promises'
 import * as collectionUtil from '../utilities/collectionUtils'
+import { ExtensionUse } from '../../auth/utils'
 
 export type TelemetryService = ClassToInterfaceType<DefaultTelemetryService>
 
@@ -98,7 +99,9 @@ export class DefaultTelemetryService {
         // TODO: `readEventsFromCache` should be async
         this._eventQueue.push(...(await DefaultTelemetryService.readEventsFromCache(this.persistFilePath)))
         this._endOfCache = this._eventQueue[this._eventQueue.length - 1]
-        telemetry.session_start.emit()
+        telemetry.session_start.emit({
+            source: ExtensionUse.instance.sourceForTelemetry(),
+        })
         this.startFlushInterval()
     }
 

@@ -1132,6 +1132,17 @@
             "passive": true
         },
         {
+            "name": "auth_signInPageOpened",
+            "description": "When the Amazon Q sign in page is opened and focused.",
+            "metadata": [
+                {
+                    "type": "source",
+                    "required": true
+                }
+            ],
+            "passive": true
+        },
+        {
             "name": "function_call",
             "description": "Represents a function call. In most cases this should wrap code with a run(), then you can add context.",
             "metadata": [
@@ -1206,6 +1217,17 @@
                     "type": "source"
                 }
             ]
+        },
+        {
+            "name": "session_start",
+            "description": "Called when starting the plugin",
+            "metadata": [
+                {
+                    "type": "source",
+                    "required": false
+                }
+            ],
+            "passive": true
         },
         {
             "name": "session_end",
