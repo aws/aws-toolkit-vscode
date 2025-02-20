@@ -6,16 +6,21 @@
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 import * as path from 'path'
+import * as vscode from 'vscode'
 import { getTelemetryReason, getTelemetryResult } from '../../../shared/errors'
 import { getLogger } from '../../../shared/logger/logger'
-import globals from '../../../shared/extensionGlobals'
 import { checklogs } from '../../../shared/localizedText'
 import { Result, telemetry } from '../../../shared/telemetry/telemetry'
-import { CreateServerlessLandWizard } from './wizard'
+import { CreateServerlessLandWizardForm, CreateServerlessLandWizard } from './wizard'
 import { ExtContext } from '../../../shared/extensions'
 import { addFolderToWorkspace } from '../../../shared/utilities/workspaceUtils'
+import { ToolkitError } from '../../../shared/errors'
+import { fs } from '../../../shared/fs/fs'
+import { getPattern } from '../../../shared/utilities/downloadPatterns'
 
 export const readmeFile: string = 'README.md'
+const serverlessLandOwner = 'aws-samples'
+const serverlessLandRepo = 'serverless-patterns'
 
 /**
  * Creates a new Serverless Land project using the provided extension context
@@ -31,38 +36,30 @@ export const readmeFile: string = 'README.md'
  * 6. Handles errors and emits telemetry
  */
 export async function createNewServerlessLandProject(extContext: ExtContext): Promise<void> {
-    const awsContext = extContext.awsContext
     let createResult: Result = 'Succeeded'
     let reason: string | undefined
 
     try {
-        const credentials = await awsContext.getCredentials()
-        const defaultRegion = awsContext.getCredentialDefaultRegion()
-
         // Launch the project creation wizard
-        const config = await new CreateServerlessLandWizard({
-            credentials,
-            defaultRegion,
-        }).run()
+        const config = await launchProjectCreationWizard(extContext)
         if (!config) {
             createResult = 'Cancelled'
             reason = 'userCancelled'
             return
         }
 
-        // Add the project folder to the workspace
+        await downloadPatternCode(config)
+        await openReadmeFile(config)
         await addFolderToWorkspace(
             {
-                uri: config.location,
-                name: path.basename(config.location.fsPath),
+                uri: vscode.Uri.joinPath(config.location, config.name),
+                name: path.basename(config.name),
             },
             true
         )
     } catch (err) {
         createResult = getTelemetryResult(err)
         reason = getTelemetryReason(err)
-
-        globals.outputChannel.show(true)
         getLogger().error(
             localize(
                 'AWS.serverlessland.initWizard.general.error',
@@ -79,4 +76,67 @@ export async function createNewServerlessLandProject(extContext: ExtContext): Pr
             reason: reason,
         })
     }
+}
+
+async function launchProjectCreationWizard(
+    extContext: ExtContext
+): Promise<CreateServerlessLandWizardForm | undefined> {
+    const awsContext = extContext.awsContext
+    const credentials = await awsContext.getCredentials()
+    const defaultRegion = awsContext.getCredentialDefaultRegion()
+
+    return new CreateServerlessLandWizard({
+        credentials,
+        defaultRegion,
+    }).run()
+}
+
+async function downloadPatternCode(config: CreateServerlessLandWizardForm): Promise<void> {
+    const assetName = config.assetName + '.zip'
+    const location = vscode.Uri.joinPath(config.location, config.name)
+    try {
+        await getPattern(serverlessLandOwner, serverlessLandRepo, assetName, location, true)
+    } catch (error) {
+        if (error instanceof ToolkitError) {
+            throw error
+        }
+        throw new ToolkitError(`Failed to download pattern: ${error}`)
+    }
+}
+
+async function openReadmeFile(config: CreateServerlessLandWizardForm): Promise<void> {
+    try {
+        const readmeUri = await getProjectUri(config, readmeFile)
+        if (!readmeUri) {
+            getLogger().warn('README.md file not found in the project directory')
+            return
+        }
+
+        await vscode.commands.executeCommand('workbench.action.focusFirstEditorGroup')
+        await vscode.window.showTextDocument(readmeUri)
+    } catch (err) {
+        getLogger().error(`Error in openReadmeFile: ${err}`)
+        throw new ToolkitError('Error processing README file')
+    }
+}
+
+async function getProjectUri(
+    config: Pick<CreateServerlessLandWizardForm, 'location' | 'name'>,
+    file: string
+): Promise<vscode.Uri | undefined> {
+    if (!file) {
+        throw Error('expected "file" parameter to have at least one item')
+    }
+    const cfnTemplatePath = path.resolve(config.location.fsPath, config.name, file)
+    if (await fs.exists(cfnTemplatePath)) {
+        return vscode.Uri.file(cfnTemplatePath)
+    }
+    void vscode.window.showWarningMessage(
+        localize(
+            'AWS.serverlessLand.initWizard.source.error.notFound',
+            'Project created successfully, but {0} file not found: {1}',
+            file!,
+            cfnTemplatePath!
+        )
+    )
 }
