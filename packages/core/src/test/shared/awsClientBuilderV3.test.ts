@@ -10,7 +10,10 @@ import { FakeMemento } from '../fakeExtensionContext'
 import { FakeAwsContext } from '../utilities/fakeAwsContext'
 import { GlobalState } from '../../shared/globalState'
 import {
+    AwsClient,
     AWSClientBuilderV3,
+    AwsClientOptions,
+    AwsCommand,
     emitOnRequest,
     getServiceId,
     logOnRequest,
@@ -25,8 +28,9 @@ import { HttpRequest, HttpResponse } from '@aws-sdk/protocol-http'
 import { assertLogsContain, assertLogsContainAllOf } from '../globalSetup.test'
 import { TestSettings } from '../utilities/testSettingsConfiguration'
 import { CredentialsShim } from '../../auth/deprecated/loginManager'
-import { Credentials } from '@aws-sdk/types'
+import { Credentials, MetadataBearer, MiddlewareStack } from '@aws-sdk/types'
 import { oneDay } from '../../shared/datetime'
+import { ConfiguredRetryStrategy } from '@smithy/util-retry'
 
 describe('AwsClientBuilderV3', function () {
     let builder: AWSClientBuilderV3
@@ -67,6 +71,49 @@ describe('AwsClientBuilderV3', function () {
         })
 
         assert.strictEqual(service.config.userAgent[0][0], 'CUSTOM USER AGENT')
+    })
+
+    describe('caching mechanism', function () {
+        it('avoids recreating client on duplicate calls', async function () {
+            const firstClient = await builder.getAwsService(TestClient, {})
+            const secondClient = await builder.getAwsService(TestClient, {})
+
+            assert.strictEqual(firstClient.id, secondClient.id)
+        })
+
+        it('recreates client when region changes', async function () {
+            const firstClient = await builder.getAwsService(TestClient, {}, 'test-region')
+            const secondClient = await builder.getAwsService(TestClient, {}, 'test-region2')
+
+            assert.notStrictEqual(firstClient.id, secondClient.id)
+            assert.strictEqual(firstClient.args.region, 'test-region')
+            assert.strictEqual(secondClient.args.region, 'test-region2')
+        })
+
+        it('recreates client when the underlying service changes', async function () {
+            const firstClient = await builder.getAwsService(TestClient, {})
+            const secondClient = await builder.getAwsService(TestClient2, {})
+
+            assert.notStrictEqual(firstClient.type, secondClient.type)
+        })
+
+        it('recreates client when config options change', async function () {
+            const firstClient = await builder.getAwsService(TestClient, {
+                retryStrategy: new ConfiguredRetryStrategy(10),
+            })
+
+            const secondClient = await builder.getAwsService(TestClient, {
+                retryStrategy: new ConfiguredRetryStrategy(11),
+            })
+
+            const thirdClient = await builder.getAwsService(TestClient, {
+                retryStrategy: new ConfiguredRetryStrategy(10),
+            })
+
+            assert.notStrictEqual(firstClient.id, secondClient.id)
+            console.log('%s %s %s', firstClient.id, secondClient.id, thirdClient.id)
+            assert.strictEqual(firstClient.id, thirdClient.id)
+        })
     })
 
     describe('middlewareStack', function () {
@@ -247,5 +294,32 @@ class MockCredentialsShim implements CredentialsShim {
 
     public async refresh(): Promise<Credentials> {
         return this.refreshedCredentials
+    }
+}
+
+abstract class TestClientBase implements AwsClient {
+    public constructor(
+        public readonly args: AwsClientOptions,
+        public readonly id: number,
+        public readonly type: string
+    ) {}
+    public middlewareStack: { add: MiddlewareStack<any, MetadataBearer>['add'] } = {
+        add: (_: any, __: any) => {},
+    }
+    public async send(command: AwsCommand, options?: any): Promise<any> {}
+    public destroy(): void {}
+}
+
+class TestClient extends TestClientBase {
+    private static nextId: number = 0
+    public constructor(args: AwsClientOptions) {
+        super(args, TestClient.nextId++, 'TestClient')
+    }
+}
+
+class TestClient2 extends TestClientBase {
+    private static nextId: number = 0
+    public constructor(args: AwsClientOptions) {
+        super(args, TestClient2.nextId++, 'TestClient2')
     }
 }

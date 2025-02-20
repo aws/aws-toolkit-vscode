@@ -19,7 +19,7 @@ export abstract class ClientWrapper<C extends AwsClient> implements vscode.Dispo
         if (this.client) {
             return this.client
         }
-        this.client = await globals.sdkClientBuilderV3.createAwsService(this.clientType, undefined, this.regionCode)
+        this.client = await globals.sdkClientBuilderV3.getAwsService(this.clientType, undefined, this.regionCode)
         return this.client!
     }
 
