@@ -31,6 +31,7 @@ import { CredentialsShim } from '../../auth/deprecated/loginManager'
 import { Credentials, MetadataBearer, MiddlewareStack } from '@aws-sdk/types'
 import { oneDay } from '../../shared/datetime'
 import { ConfiguredRetryStrategy } from '@smithy/util-retry'
+import { StandardRetryStrategy } from '@smithy/util-retry'
 
 describe('AwsClientBuilderV3', function () {
     let builder: AWSClientBuilderV3
@@ -98,20 +99,19 @@ describe('AwsClientBuilderV3', function () {
         })
 
         it('recreates client when config options change', async function () {
+            const retryStrategy = new ConfiguredRetryStrategy(10)
             const firstClient = await builder.getAwsService(TestClient, {
-                retryStrategy: new ConfiguredRetryStrategy(10),
+                retryStrategy: retryStrategy,
             })
 
             const secondClient = await builder.getAwsService(TestClient, {
-                retryStrategy: new ConfiguredRetryStrategy(11),
+                retryStrategy: new StandardRetryStrategy(1),
             })
 
             const thirdClient = await builder.getAwsService(TestClient, {
-                retryStrategy: new ConfiguredRetryStrategy(10),
+                retryStrategy: retryStrategy,
             })
-
             assert.notStrictEqual(firstClient.id, secondClient.id)
-            console.log('%s %s %s', firstClient.id, secondClient.id, thirdClient.id)
             assert.strictEqual(firstClient.id, thirdClient.id)
         })
     })

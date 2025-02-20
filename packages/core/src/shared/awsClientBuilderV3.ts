@@ -33,7 +33,7 @@ import { extensionVersion } from './vscode/env'
 import { getLogger } from './logger/logger'
 import { partialClone } from './utilities/collectionUtils'
 import { selectFrom } from './utilities/tsUtils'
-import { memoizeAsync } from './utilities/functionUtils'
+import { memoizeWith } from './utilities/functionUtils'
 
 export type AwsClientConstructor<C> = new (o: AwsClientOptions) => C
 
@@ -78,7 +78,23 @@ export class AWSClientBuilderV3 {
         return shim
     }
 
-    public getAwsService = memoizeAsync(this.createAwsService.bind(this))
+    private keyAwsService<C extends AwsClient>(
+        type: AwsClientConstructor<C>,
+        options?: Partial<AwsClientOptions>,
+        region?: string,
+        userAgent: boolean = true,
+        settings?: DevSettings
+    ): string {
+        return [
+            String(type),
+            JSON.stringify(options), // Serializing this allows us to detect when nested objects change (ex. new retry strategy)
+            region,
+            userAgent ? '1' : '0',
+            settings ? String(settings.get('endpoints', {})) : '',
+        ].join(':')
+    }
+
+    public getAwsService = memoizeWith(this.createAwsService.bind(this), this.keyAwsService.bind(this))
 
     public async createAwsService<C extends AwsClient>(
         type: AwsClientConstructor<C>,
