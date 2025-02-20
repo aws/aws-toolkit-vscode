@@ -5,7 +5,7 @@
 import * as nls from 'vscode-nls'
 import * as AWS from '@aws-sdk/types'
 import * as vscode from 'vscode'
-import { Wizard } from '../../../shared/wizards/wizard'
+import { Wizard, WIZARD_BACK, WizardControl } from '../../../shared/wizards/wizard'
 import * as path from 'path'
 import { createInputBox } from '../../../shared/ui/inputPrompter'
 import { createCommonButtons } from '../../../shared/ui/buttons'
@@ -22,6 +22,7 @@ export interface CreateServerlessLandWizardForm {
     pattern: string
     runtime: string
     iac: string
+    assetName: string
 }
 
 async function loadMetadata(): Promise<MetadataManager> {
