@@ -1,0 +1,30 @@
+{
+	"date": "2025-02-20",
+	"version": "1.48.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "/dev and /doc: Multi-root workspace with duplicate files causes infinite 'Uploading code...' loop"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q /doc: update workspace too large error message "
+		},
+		{
+			"type": "Bug Fix",
+			"description": "/review: Auto-review should not remove issues from manual reviews"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "/transform: allow View Summary button to work even after accepting diff"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q /test: Fixing the issue of target file does not exist."
+		},
+		{
+			"type": "Feature",
+			"description": "Amazon Q /doc: Add support for infrastructure diagrams"
+		}
+	]
+}
