@@ -140,6 +140,7 @@ export class ChatController {
     private readonly promptGenerator: PromptsGenerator
     private readonly userIntentRecognizer: UserIntentRecognizer
     private readonly telemetryHelper: CWCTelemetryHelper
+    private userPromptsWatcher: vscode.FileSystemWatcher | undefined
 
     public constructor(
         private readonly chatControllerMessageListeners: ChatControllerMessageListeners,
@@ -261,6 +262,21 @@ export class ChatController {
         this.chatControllerMessageListeners.processFileClick.onMessage((data) => {
             return this.processFileClickMessage(data)
         })
+    }
+
+    private registerUserPromptsWatcher() {
+        if (this.userPromptsWatcher) {
+            return
+        }
+        this.userPromptsWatcher = vscode.workspace.createFileSystemWatcher(
+            new vscode.RelativePattern(vscode.Uri.file(getUserPromptsDirectory()), `*${promptFileExtension}`),
+            false,
+            true,
+            false
+        )
+        this.userPromptsWatcher.onDidCreate(() => this.processContextCommandUpdateMessage())
+        this.userPromptsWatcher.onDidDelete(() => this.processContextCommandUpdateMessage())
+        globals.context.subscriptions.push(this.userPromptsWatcher)
     }
 
     private processFooterInfoLinkClick(click: FooterInfoLinkClick) {
@@ -403,6 +419,7 @@ export class ChatController {
 
     private async processContextCommandUpdateMessage() {
         // when UI is ready, refresh the context commands
+        this.registerUserPromptsWatcher()
         const contextCommand: MynahUIDataModel['contextCommands'] = [
             {
                 commands: [
@@ -555,7 +572,6 @@ export class ChatController {
                 await fs.writeFile(newFilePath, newFileContent)
                 const newFileDoc = await vscode.workspace.openTextDocument(newFilePath)
                 await vscode.window.showTextDocument(newFileDoc)
-                await this.processContextCommandUpdateMessage()
             }
         }
     }
