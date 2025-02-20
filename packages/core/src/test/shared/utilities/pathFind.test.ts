@@ -42,6 +42,24 @@ describe('pathFind', function () {
         assert.ok(regex.test(vscPath), `expected regex ${regex} to match: "${vscPath}"`)
     })
 
+    describe('tryRun', function () {
+        it('returns true if output matches expected', async function () {
+            const posResult = await tryRun('echo', ['hello'], 'no', 'hello')
+            assert.ok(posResult)
+
+            const negResult = await tryRun('echo', ['hi'], 'no', 'hello')
+            assert.ok(!negResult)
+        })
+
+        it('supports regex on output match', async function () {
+            const posResult = await tryRun('echo', ['hello'], 'no', /hel*o/)
+            assert.ok(posResult)
+
+            const negResult = await tryRun('echo', ['hi'], 'no', /^(?!(hi)).*$/)
+            assert.ok(!negResult)
+        })
+    })
+
     describe('findSshPath', function () {
         let previousPath: string | undefined
 
