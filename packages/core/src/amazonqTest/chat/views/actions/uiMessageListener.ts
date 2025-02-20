@@ -62,6 +62,12 @@ export class UIMessageListener {
             case 'response-body-link-click':
                 this.processResponseBodyLinkClick(msg)
                 break
+            case 'chat-item-voted':
+                this.chatItemVoted(msg)
+                break
+            case 'chat-item-feedback':
+                this.chatItemFeedback(msg)
+                break
         }
     }
 
@@ -139,5 +145,17 @@ export class UIMessageListener {
             tabID: msg.tabID,
             link: msg.link,
         })
+    }
+
+    private chatItemVoted(msg: any) {
+        this.testControllerEventsEmitters?.processChatItemVotedMessage.fire({
+            tabID: msg.tabID,
+            command: msg.command,
+            vote: msg.vote,
+        })
+    }
+
+    private chatItemFeedback(msg: any) {
+        this.testControllerEventsEmitters?.processChatItemFeedbackMessage.fire(msg)
     }
 }

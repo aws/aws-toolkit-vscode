@@ -19,6 +19,8 @@ import * as parser from '@gerhobbelt/gitignore-parser'
 import fs from '../fs/fs'
 import { ChildProcess } from './processUtils'
 import { isWin } from '../vscode/env'
+import { maxRepoSizeBytes } from '../../amazonqFeatureDev/constants'
+import { FeatureUseCase } from '../../codewhisperer/models/constants'
 
 type GitIgnoreRelativeAcceptor = {
     folderPath: string
@@ -222,12 +224,20 @@ export function getWorkspaceRelativePath(
         workspaceFolders?: readonly vscode.WorkspaceFolder[]
     } = {
         workspaceFolders: vscode.workspace.workspaceFolders,
-    }
+    },
+    useCase?: FeatureUseCase
 ): { relativePath: string; workspaceFolder: vscode.WorkspaceFolder } | undefined {
     if (!override.workspaceFolders) {
         return
     }
-    for (const folder of override.workspaceFolders) {
+    let folders = override.workspaceFolders
+    if (useCase && useCase === FeatureUseCase.TEST_GENERATION) {
+        // Sort workspace folders by path length (descending) to prioritize deeper paths
+        // TODO: Need to enable this for entire Q
+        folders = [...override.workspaceFolders].sort((a, b) => b.uri.fsPath.length - a.uri.fsPath.length)
+    }
+
+    for (const folder of folders) {
         if (isInDirectory(folder.uri.fsPath, childPath)) {
             return { relativePath: path.relative(folder.uri.fsPath, childPath), workspaceFolder: folder }
         }
@@ -268,75 +278,93 @@ export function checkUnsavedChanges(): boolean {
     return vscode.workspace.textDocuments.some((doc) => doc.isDirty)
 }
 
-export function getExcludePattern(defaultExcludePatterns: boolean = true) {
-    const globAlwaysExcludedDirs = getGlobDirExcludedPatterns().map((pattern) => `**/${pattern}/*`)
-    const extraPatterns = [
-        '**/package-lock.json',
-        '**/yarn.lock',
-        '**/*.zip',
-        '**/*.tar.gz',
-        '**/*.bin',
-        '**/*.png',
-        '**/*.jpg',
-        '**/*.svg',
-        '**/*.pyc',
-        '**/*.pdf',
-        '**/*.ttf',
-        '**/*.ico',
-        '**/license.txt',
-        '**/License.txt',
-        '**/LICENSE.txt',
-        '**/license.md',
-        '**/License.md',
-        '**/LICENSE.md',
-    ]
-    const allPatterns = [...globAlwaysExcludedDirs, ...(defaultExcludePatterns ? extraPatterns : [])]
-    return `{${allPatterns.join(',')}}`
+export const defaultExcludePatterns = [
+    '**/package-lock.json',
+    '**/yarn.lock',
+    '**/*.zip',
+    '**/*.tar.gz',
+    '**/*.bin',
+    '**/*.png',
+    '**/*.jpg',
+    '**/*.svg',
+    '**/*.pyc',
+    '**/*.pdf',
+    '**/*.ttf',
+    '**/*.ico',
+    '**/license.txt',
+    '**/License.txt',
+    '**/LICENSE.txt',
+    '**/license.md',
+    '**/License.md',
+    '**/LICENSE.md',
+]
+
+export function getExcludePattern(useDefaults: boolean = true) {
+    const globAlwaysExcludedDirs = getGlobalExcludePatterns()
+    const allPatterns = [...globAlwaysExcludedDirs]
+
+    if (useDefaults) {
+        allPatterns.push(...defaultExcludePatterns)
+    }
+
+    return excludePatternsAsString(allPatterns)
+}
+
+function getGlobalExcludePatterns() {
+    return getGlobDirExcludedPatterns().map((pattern) => `**/${pattern}/*`)
+}
+
+function excludePatternsAsString(patterns: string[]): string {
+    return `{${patterns.join(',')}}`
 }
 
 /**
  * @param rootPath root folder to look for .gitignore files
- * @param addExtraPatterns whether to add extra exclude patterns even if not in gitignore
- * @returns list of glob patterns extracted from .gitignore
- * These patterns are compatible with vscode exclude patterns
+ * @param files list of files to filter
+ * @param useDefaultExcludePatterns whether to add default exclude patterns even if not in gitignore
+ * @returns list of files filtered by .gitignore files
  */
 async function filterOutGitignoredFiles(
     rootPath: string,
     files: vscode.Uri[],
-    defaultExcludePatterns: boolean = true
+    useDefaultExcludePatterns: boolean = true
 ): Promise<vscode.Uri[]> {
     const gitIgnoreFiles = await vscode.workspace.findFiles(
         new vscode.RelativePattern(rootPath, '**/.gitignore'),
-        getExcludePattern(defaultExcludePatterns)
+        getExcludePattern(useDefaultExcludePatterns)
     )
     const gitIgnoreFilter = await GitIgnoreFilter.build(gitIgnoreFiles)
     return gitIgnoreFilter.filterFiles(files)
 }
 
+export type CollectFilesResultItem = {
+    workspaceFolder: vscode.WorkspaceFolder
+    relativeFilePath: string
+    fileUri: vscode.Uri
+    fileContent: string
+    zipFilePath: string
+}
+export type CollectFilesFilter = (relativePath: string) => boolean // returns true if file should be filtered out
+
 /**
- * collects all files that are marked as source
+ * search files in sourcePaths and collect them using filtering options
  * @param sourcePaths the paths where collection starts
  * @param workspaceFolders the current workspace folders opened
- * @param respectGitIgnore whether to respect gitignore file
- * @param addExtraIgnorePatterns whether to add extra exclude patterns even if not in gitignore
+ * @param options - filtering options
  * @returns all matched files
  */
 export async function collectFiles(
     sourcePaths: string[],
     workspaceFolders: CurrentWsFolders,
-    respectGitIgnore: boolean = true,
-    maxSize = 200 * 1024 * 1024, // 200 MB
-    defaultExcludePatterns: boolean = true
-): Promise<
-    {
-        workspaceFolder: vscode.WorkspaceFolder
-        relativeFilePath: string
-        fileUri: vscode.Uri
-        fileContent: string
-        zipFilePath: string
-    }[]
-> {
-    const storage: Awaited<ReturnType<typeof collectFiles>> = []
+    options?: {
+        maxSizeBytes?: number // 200 MB default
+        excludeByGitIgnore?: boolean // default true
+        excludePatterns?: string[] // default defaultExcludePatterns
+        filterFn?: CollectFilesFilter
+    },
+    useCase?: FeatureUseCase
+): Promise<CollectFilesResultItem[]> {
+    const storage: Awaited<CollectFilesResultItem[]> = []
 
     const workspaceFoldersMapping = getWorkspaceFoldersByPrefixes(workspaceFolders)
     const workspaceToPrefix = new Map<vscode.WorkspaceFolder, string>(
@@ -360,24 +388,37 @@ export async function collectFiles(
     }
 
     let totalSizeBytes = 0
+
+    const excludeByGitIgnore = options?.excludeByGitIgnore ?? true
+    const inputExcludePatterns = options?.excludePatterns ?? defaultExcludePatterns
+    const maxSizeBytes = options?.maxSizeBytes ?? maxRepoSizeBytes
+
+    const excludePatterns = [...getGlobalExcludePatterns()]
+    if (inputExcludePatterns.length) {
+        excludePatterns.push(...inputExcludePatterns)
+    }
+    const excludePatternFilter = excludePatternsAsString(excludePatterns)
+
     for (const rootPath of sourcePaths) {
         const allFiles = await vscode.workspace.findFiles(
             new vscode.RelativePattern(rootPath, '**'),
-            getExcludePattern(defaultExcludePatterns)
+            excludePatternFilter
         )
 
-        const files = respectGitIgnore
-            ? await filterOutGitignoredFiles(rootPath, allFiles, defaultExcludePatterns)
-            : allFiles
+        const files = excludeByGitIgnore ? await filterOutGitignoredFiles(rootPath, allFiles, false) : allFiles
 
         for (const file of files) {
-            const relativePath = getWorkspaceRelativePath(file.fsPath, { workspaceFolders })
+            const relativePath = getWorkspaceRelativePath(file.fsPath, { workspaceFolders }, useCase)
             if (!relativePath) {
                 continue
             }
 
+            if (options?.filterFn && options.filterFn(relativePath.relativePath)) {
+                continue
+            }
+
             const fileStat = await fs.stat(file)
-            if (totalSizeBytes + fileStat.size > maxSize) {
+            if (totalSizeBytes + fileStat.size > maxSizeBytes) {
                 throw new ToolkitError(
                     'The project you have selected for source code is too large to use as context. Please select a different folder to use',
                     { code: 'ContentLengthError' }

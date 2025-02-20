@@ -45,7 +45,7 @@ export async function startTestGenerationProcess(
             return
         }
         /**
-         * Zip the project
+         * Step 1: Zip the project
          */
 
         const zipUtil = new ZipUtil()

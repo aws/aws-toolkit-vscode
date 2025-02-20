@@ -104,8 +104,9 @@ export async function processSQLConversionTransformFormInput(pathToProject: stri
     transformByQState.setProjectName(path.basename(pathToProject))
     transformByQState.setProjectPath(pathToProject)
     transformByQState.setSchema(schema)
-    transformByQState.setSourceJDKVersion(JDKVersion.JDK8) // use dummy value of JDK8 so that startJob API can be called
-    // targetJDKVersion defaults to JDK17, the only supported version, which is fine
+    // use dummy values of JDK8 & JDK17 so that startJob API can be called
+    transformByQState.setSourceJDKVersion(JDKVersion.JDK8)
+    transformByQState.setTargetJDKVersion(JDKVersion.JDK17)
 }
 
 async function validateJavaHome(): Promise<boolean> {

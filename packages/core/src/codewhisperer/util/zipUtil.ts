@@ -413,8 +413,10 @@ export class ZipUtil {
         const sourceFiles = await collectFiles(
             projectPaths,
             vscode.workspace.workspaceFolders as CurrentWsFolders,
-            true,
-            this.getProjectScanPayloadSizeLimitInBytes()
+            {
+                maxSizeBytes: this.getProjectScanPayloadSizeLimitInBytes(),
+            },
+            useCase
         )
         for (const file of sourceFiles) {
             const projectName = path.basename(file.workspaceFolder.uri.fsPath)

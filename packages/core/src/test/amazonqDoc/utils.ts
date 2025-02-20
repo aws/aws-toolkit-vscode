@@ -22,9 +22,9 @@ import { DocGenerationTask } from '../../amazonqDoc/controllers/docGenerationTas
 import { DocV2GenerationEvent, DocV2AcceptanceEvent } from '../../amazonqFeatureDev/client/featuredevproxyclient'
 import { FollowUpTypes } from '../../amazonq/commons/types'
 
-export function createMessenger(): DocMessenger {
+export function createMessenger(sandbox: sinon.SinonSandbox): DocMessenger {
     return new DocMessenger(
-        new AppToWebViewMessageDispatcher(new MessagePublisher(sinon.createStubInstance(vscode.EventEmitter))),
+        new AppToWebViewMessageDispatcher(new MessagePublisher(sandbox.createStubInstance(vscode.EventEmitter))),
         docChat
     )
 }
@@ -61,6 +61,7 @@ export async function createSession({
     conversationID = '0',
     tabID = '0',
     uploadID = '0',
+    sandbox,
 }: {
     messenger: DocMessenger
     scheme: string
@@ -68,19 +69,19 @@ export async function createSession({
     conversationID?: string
     tabID?: string
     uploadID?: string
+    sandbox: sinon.SinonSandbox
 }) {
     const sessionConfig = await createSessionConfig(scheme)
 
-    const client = sinon.createStubInstance(FeatureDevClient)
+    const client = sandbox.createStubInstance(FeatureDevClient)
     client.createConversation.resolves(conversationID)
     const session = new Session(sessionConfig, messenger, tabID, sessionState, client)
 
-    sinon.stub(session, 'conversationId').get(() => conversationID)
-    sinon.stub(session, 'uploadId').get(() => uploadID)
+    sandbox.stub(session, 'conversationId').get(() => conversationID)
+    sandbox.stub(session, 'uploadId').get(() => uploadID)
 
     return session
 }
-
 export async function sessionRegisterProvider(session: Session, uri: vscode.Uri, fileContents: Uint8Array) {
     session.config.fs.registerProvider(uri, new VirtualMemoryFile(fileContents))
 }
@@ -98,12 +99,12 @@ export async function sessionWriteFile(session: Session, uri: vscode.Uri, encode
     })
 }
 
-export async function createController(): Promise<ControllerSetup> {
-    const messenger = createMessenger()
+export async function createController(sandbox: sinon.SinonSandbox): Promise<ControllerSetup> {
+    const messenger = createMessenger(sandbox)
 
     // Create a new workspace root
     const testWorkspaceFolder = await createTestWorkspaceFolder()
-    sinon.stub(vscode.workspace, 'workspaceFolders').value([testWorkspaceFolder])
+    sandbox.stub(vscode.workspace, 'workspaceFolders').value([testWorkspaceFolder])
 
     const sessionStorage = new DocChatSessionStorage(messenger)
 
@@ -113,7 +114,7 @@ export async function createController(): Promise<ControllerSetup> {
         mockChatControllerEventEmitters,
         messenger,
         sessionStorage,
-        sinon.createStubInstance(vscode.EventEmitter).event
+        sandbox.createStubInstance(vscode.EventEmitter).event
     )
 
     new DocGenerationTask()
@@ -199,10 +200,11 @@ export async function assertTelemetry(params: {
     expectedEvent: DocV2GenerationEvent | DocV2AcceptanceEvent
     type: 'generation' | 'acceptance'
     callIndex?: number
+    sandbox: sinon.SinonSandbox
 }) {
     await new Promise((resolve) => setTimeout(resolve, 100))
     const spyCall = params.callIndex !== undefined ? params.spy.getCall(params.callIndex) : params.spy
-    sinon.assert.calledWith(spyCall, sinon.match(params.expectedEvent), params.type)
+    params.sandbox.assert.calledWith(spyCall, params.sandbox.match(params.expectedEvent), params.type)
 }
 
 export async function updateFilePaths(
