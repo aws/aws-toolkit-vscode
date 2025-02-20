@@ -33,6 +33,7 @@ import { extensionVersion } from './vscode/env'
 import { getLogger } from './logger/logger'
 import { partialClone } from './utilities/collectionUtils'
 import { selectFrom } from './utilities/tsUtils'
+import { memoize } from './utilities/functionUtils'
 
 export type AwsClientConstructor<C> = new (o: AwsClientOptions) => C
 
@@ -76,6 +77,8 @@ export class AWSClientBuilderV3 {
         }
         return shim
     }
+
+    public getAwsService = memoize(this.createAwsService.bind(this))
 
     public async createAwsService<C extends AwsClient>(
         type: AwsClientConstructor<C>,

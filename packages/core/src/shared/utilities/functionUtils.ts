@@ -77,6 +77,18 @@ export function memoize<T, U extends any[]>(fn: (...args: U) => T): (...args: U)
     return (...args) => (cache[args.map(String).join(':')] ??= fn(...args))
 }
 
+export function memoizeAsync<T, U extends any[]>(fn: (...args: U) => Promise<T>): (...args: U) => Promise<T> {
+    const cache: Map<string, T> = new Map()
+
+    return async (...args) => {
+        const key = args.map(String).join(':')
+        if (!cache.has(key)) {
+            cache.set(key, await fn(...args))
+        }
+        return cache.get(key)!
+    }
+}
+
 /**
  * Prevents a function from executing until {@link delay} milliseconds have passed
  * since the last invocation. Omitting {@link delay} will not execute the function for
