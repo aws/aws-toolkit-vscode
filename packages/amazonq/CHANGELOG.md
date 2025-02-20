@@ -1,3 +1,12 @@
+## 1.48.0 2025-02-20
+
+- **Bug Fix** /dev and /doc: Multi-root workspace with duplicate files causes infinite 'Uploading code...' loop
+- **Bug Fix** Amazon Q /doc: update workspace too large error message 
+- **Bug Fix** /review: Auto-review should not remove issues from manual reviews
+- **Bug Fix** /transform: allow View Summary button to work even after accepting diff
+- **Bug Fix** Amazon Q /test: Fixing the issue of target file does not exist.
+- **Feature** Amazon Q /doc: Add support for infrastructure diagrams
+
 ## 1.47.0 2025-02-13
 
 - **Bug Fix** `Send to prompt` and other context menu options not sent if chat was closed
