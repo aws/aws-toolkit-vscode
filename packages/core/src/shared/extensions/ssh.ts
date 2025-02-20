@@ -130,6 +130,15 @@ export class RemoteSshSettings extends Settings.define('remote.SSH', remoteSshTy
     }
 }
 
+/**
+ * Test a SSH connection over SSM.
+ * @param ProcessClass given process to test the connection within.
+ * @param hostname
+ * @param sshPath
+ * @param user
+ * @param session SSM session credentials. These cannot be reused, so it may be required to create a seperate session for the test connection.
+ * @returns
+ */
 export async function testSshConnection(
     ProcessClass: typeof ChildProcess,
     hostname: string,
@@ -137,20 +146,18 @@ export async function testSshConnection(
     user: string,
     session: SSM.StartSessionResponse
 ): Promise<ChildProcessResult | never> {
+    const env = { SESSION_ID: session.SessionId, STREAM_URL: session.StreamUrl, TOKEN: session.TokenValue }
+    const process = new ProcessClass(sshPath, ['-T', `${user}@${hostname}`, 'echo "test connection succeeded" && exit'])
     try {
-        const env = { SESSION_ID: session.SessionId, STREAM_URL: session.StreamUrl, TOKEN: session.TokenValue }
-        const result = await new ProcessClass(sshPath, [
-            '-T',
-            `${user}@${hostname}`,
-            'echo "test connection succeeded" && exit',
-        ]).run({
+        return await process.run({
             spawnOptions: {
                 env,
             },
         })
-        return result
     } catch (error) {
-        throw new SshError('SSH connection test failed', { cause: error as Error })
+        throw new SshError(process.result()?.stderr ?? 'An unknown error occurred when testing the connection', {
+            cause: error as Error,
+        })
     }
 }
 
