@@ -850,7 +850,7 @@ ${codeSnippet}
                 },
                 'FeedbackForm',
                 tabID,
-                true
+                false
             )
         )
     }
