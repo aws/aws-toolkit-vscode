@@ -182,7 +182,12 @@ describe('Amazon Q Doc Generation', async function () {
         },
 
         async executeDocumentationFlow(operation: 'create' | 'update' | 'edit', msg?: string) {
-            const mode = operation === 'create' ? Mode.CREATE : operation === 'update' ? Mode.SYNC : Mode.EDIT
+            const mode = {
+                create: Mode.CREATE,
+                update: Mode.SYNC,
+                edit: Mode.EDIT,
+            }[operation]
+
             console.log(`Executing documentation ${operation} flow`)
 
             await tab.waitForButtons([FollowUpTypes.ProceedFolderSelection])
@@ -320,7 +325,7 @@ describe('Amazon Q Doc Generation', async function () {
     })
 
     describe('Quick action availability', () => {
-        it('Should show /doc command when doc generation is enabled', async () => {
+        it('Shows /doc command when doc generation is enabled', async () => {
             const command = tab.findCommand('/doc')
             if (!command.length) {
                 assert.fail('Could not find command')
@@ -331,7 +336,7 @@ describe('Amazon Q Doc Generation', async function () {
             }
         })
 
-        it('Should hide /doc command when doc generation is NOT enabled', () => {
+        it('Hide /doc command when doc generation is NOT enabled', () => {
             // The beforeEach registers a framework which accepts requests. If we don't dispose before building a new one we have duplicate messages
             framework.dispose()
             framework = new qTestingFramework('doc', false, [])
@@ -348,10 +353,10 @@ describe('Amazon Q Doc Generation', async function () {
             await docUtils.setupTest()
         })
 
-        it('Should display create and update options on initial load', async () => {
+        it('Display create and update options on initial load', async () => {
             await tab.waitForButtons([FollowUpTypes.CreateDocumentation, FollowUpTypes.UpdateDocumentation])
         })
-        it('Should return to the select create or update documentation state when cancel button clicked', async () => {
+        it('Return to the select create or update documentation state when cancel button clicked', async () => {
             await tab.waitForButtons([FollowUpTypes.CreateDocumentation, FollowUpTypes.UpdateDocumentation])
             tab.clickButton(FollowUpTypes.UpdateDocumentation)
             await tab.waitForButtons([FollowUpTypes.SynchronizeDocumentation, FollowUpTypes.EditDocumentation])
@@ -377,14 +382,14 @@ describe('Amazon Q Doc Generation', async function () {
             testProject = docUtils.getRandomTestProject()
         })
 
-        it('Should create and save README in root folder when accepted', async () => {
+        it('Create and save README in root folder when accepted', async () => {
             await retryIfRequired(async () => {
                 await docUtils.initializeDocOperation('create')
                 await docUtils.executeDocumentationFlow('create')
                 await docUtils.verifyResult(FollowUpTypes.AcceptChanges, rootReadmeFileUri, true)
             })
         })
-        it('Should create and save README in subfolder when accepted', async () => {
+        it('Create and save README in subfolder when accepted', async () => {
             await retryIfRequired(async () => {
                 await docUtils.initializeDocOperation('create')
                 const readmeFileUri = await docUtils.handleFolderSelection(testProject)
@@ -393,7 +398,7 @@ describe('Amazon Q Doc Generation', async function () {
             })
         })
 
-        it('Should discard README in subfolder when rejected', async () => {
+        it('Discard README in subfolder when rejected', async () => {
             await retryIfRequired(async () => {
                 await docUtils.initializeDocOperation('create')
                 const readmeFileUri = await docUtils.handleFolderSelection(testProject)
@@ -408,7 +413,7 @@ describe('Amazon Q Doc Generation', async function () {
             await docUtils.setupTest()
         })
 
-        it('Should apply specific content changes when requested', async () => {
+        it('Apply specific content changes when requested', async () => {
             await retryIfRequired(async () => {
                 await docUtils.initializeDocOperation('edit')
                 await docUtils.executeDocumentationFlow('edit', 'remove the repository structure section')
@@ -416,7 +421,7 @@ describe('Amazon Q Doc Generation', async function () {
             })
         })
 
-        it('Should handle unrelated prompts with appropriate error message', async () => {
+        it('Handle unrelated prompts with appropriate error message', async () => {
             await retryIfRequired(async () => {
                 await docUtils.initializeDocOperation('edit')
                 await tab.waitForButtons([FollowUpTypes.ProceedFolderSelection])
@@ -452,7 +457,7 @@ describe('Amazon Q Doc Generation', async function () {
             }
         })
 
-        it('Should update README with code change in subfolder', async () => {
+        it('Update README with code change in subfolder', async () => {
             mockFileUri = await docUtils.prepareMockFile(testProject)
             await retryIfRequired(async () => {
                 await docUtils.initializeDocOperation('update')
@@ -461,7 +466,7 @@ describe('Amazon Q Doc Generation', async function () {
                 await docUtils.verifyResult(FollowUpTypes.AcceptChanges, readmeFileUri, true)
             })
         })
-        it('Should update root README and incorporate additional changes', async () => {
+        it('Update root README and incorporate additional changes', async () => {
             // Cleanup any existing README
             await fs.delete(rootReadmeFileUri, { force: true })
             mockFileUri = await docUtils.prepareMockFile(testProject)
