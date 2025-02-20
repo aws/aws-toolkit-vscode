@@ -6,7 +6,6 @@
 import * as vscode from 'vscode'
 import assert from 'assert'
 import {
-    assertTelemetry,
     closeAllEditors,
     getTestWindow,
     registerAuthHook,
@@ -50,8 +49,8 @@ describe('Amazon Q Inline', async function () {
         const textContents =
             contents ??
             `function fib() {
-
-
+    
+    
 }`
         await toTextEditor(textContents, fileName, tempFolder, {
             selection: new vscode.Range(new vscode.Position(1, 4), new vscode.Position(1, 4)),
@@ -135,10 +134,7 @@ describe('Amazon Q Inline', async function () {
 
                     assert.ok(suggestionAccepted, 'Editor contents should have changed')
 
-                    await waitForTelemetry()
-                    assertTelemetry('codewhisperer_userTriggerDecision', {
-                        codewhispererSuggestionState: 'Accept',
-                    })
+                    await waitForTelemetry('codewhisperer_userTriggerDecision', 'Accept')
                 })
 
                 it(`${name} invoke reject`, async function () {
@@ -147,11 +143,7 @@ describe('Amazon Q Inline', async function () {
 
                     // Contents haven't changed
                     assert.deepStrictEqual(vscode.window.activeTextEditor?.document.getText(), originalEditorContents)
-
-                    await waitForTelemetry()
-                    assertTelemetry('codewhisperer_userTriggerDecision', {
-                        codewhispererSuggestionState: 'Reject',
-                    })
+                    await waitForTelemetry('codewhisperer_userTriggerDecision', 'Reject')
                 })
 
                 it(`${name} invoke discard`, async function () {
