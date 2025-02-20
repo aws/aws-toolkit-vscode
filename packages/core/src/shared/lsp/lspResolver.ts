@@ -10,7 +10,6 @@ import * as path from 'path'
 import { FileType } from 'vscode'
 import AdmZip from 'adm-zip'
 import { TargetContent, logger, LspResult, LspVersion, Manifest } from './types'
-import { getApplicationSupportFolder } from '../vscode/env'
 import { createHash } from '../crypto'
 import { lspSetupStage, StageResolver, tryStageResolvers } from './utils/setupStage'
 import { HttpResourceFetcher } from '../resourcefetcher/httpResourceFetcher'
@@ -394,7 +393,7 @@ export class LanguageServerResolver {
 
     // lazy calls to `getApplicationSupportFolder()` to avoid failure on windows.
     public static get defaultDir() {
-        return path.join(getApplicationSupportFolder(), `aws/toolkits/language-servers`)
+        return path.join(fs.getCacheDir(), `aws/toolkits/language-servers`)
     }
 
     defaultDownloadFolder() {
