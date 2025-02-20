@@ -506,6 +506,11 @@ export function addTableMarkdown(plan: string, stepId: string, tableMapping: { [
         return plan
     }
     const table = JSON.parse(tableObj)
+    if (table.rows.length === 0) {
+        // empty table
+        plan += `\n\nThere are no ${table.name.toLowerCase()} to display.\n\n`
+        return plan
+    }
     plan += `\n\n\n${table.name}\n|`
     const columns = table.columnNames
     // eslint-disable-next-line unicorn/no-array-for-each
