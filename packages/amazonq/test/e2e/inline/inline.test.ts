@@ -6,7 +6,6 @@
 import * as vscode from 'vscode'
 import assert from 'assert'
 import {
-    assertTelemetry,
     closeAllEditors,
     getTestWindow,
     registerAuthHook,
@@ -15,7 +14,7 @@ import {
     toTextEditor,
     using,
 } from 'aws-core-vscode/test'
-import { RecommendationHandler, RecommendationService } from 'aws-core-vscode/codewhisperer'
+import { RecommendationHandler, RecommendationService, session } from 'aws-core-vscode/codewhisperer'
 import { Commands, globals, sleep, waitUntil } from 'aws-core-vscode/shared'
 import { loginToIdC } from '../amazonq/utils/setup'
 
@@ -50,8 +49,8 @@ describe('Amazon Q Inline', async function () {
         const textContents =
             contents ??
             `function fib() {
-
-
+    
+    
 }`
         await toTextEditor(textContents, fileName, tempFolder, {
             selection: new vscode.Range(new vscode.Position(1, 4), new vscode.Position(1, 4)),
@@ -59,22 +58,38 @@ describe('Amazon Q Inline', async function () {
     }
 
     async function waitForRecommendations() {
-        const ok = await waitUntil(async () => RecommendationHandler.instance.isSuggestionVisible(), waitOptions)
-        if (!ok) {
-            assert.fail('Suggestions failed to become visible')
-        }
-    }
-
-    async function waitForTelemetry() {
         const ok = await waitUntil(
             async () =>
-                globals.telemetry.logger.query({
-                    metricName: 'codewhisperer_userTriggerDecision',
-                }).length > 0,
+                RecommendationHandler.instance.isSuggestionVisible() || session.getSuggestionState(0) === 'Showed',
             waitOptions
         )
         if (!ok) {
-            assert.fail('Telemetry failed to be emitted')
+            assert.fail(
+                `Suggestions failed to become visible. Suggestion States: ${JSON.stringify(session.suggestionStates)}`
+            )
+        }
+    }
+
+    /**
+     * Waits for a specific telemetry event to be emitted with the expected suggestion state.
+     * It looks like there might be a potential race condition in codewhisperer causing telemetry
+     * events to be emitted in different orders
+     */
+    async function waitForTelemetry(metricName: string, suggestionState: string) {
+        const ok = await waitUntil(async () => {
+            const events = globals.telemetry.logger.query({
+                metricName,
+            })
+            return events.some((event) => event.codewhispererSuggestionState === suggestionState)
+        }, waitOptions)
+        const events = globals.telemetry.logger.query({
+            metricName,
+        })
+        if (!ok) {
+            assert.fail(`Telemetry failed to be emitted. Current events: ${JSON.stringify(events)}`)
+        }
+        if (events.length > 1 && events[events.length - 1].codewhispererSuggestionState !== suggestionState) {
+            assert.fail(`Telemetry events were emitted in the wrong order. Current events: ${JSON.stringify(events)}`)
         }
     }
 
@@ -119,10 +134,7 @@ describe('Amazon Q Inline', async function () {
 
                     assert.ok(suggestionAccepted, 'Editor contents should have changed')
 
-                    await waitForTelemetry()
-                    assertTelemetry('codewhisperer_userTriggerDecision', {
-                        codewhispererSuggestionState: 'Accept',
-                    })
+                    await waitForTelemetry('codewhisperer_userTriggerDecision', 'Accept')
                 })
 
                 it(`${name} invoke reject`, async function () {
@@ -131,11 +143,7 @@ describe('Amazon Q Inline', async function () {
 
                     // Contents haven't changed
                     assert.deepStrictEqual(vscode.window.activeTextEditor?.document.getText(), originalEditorContents)
-
-                    await waitForTelemetry()
-                    assertTelemetry('codewhisperer_userTriggerDecision', {
-                        codewhispererSuggestionState: 'Reject',
-                    })
+                    await waitForTelemetry('codewhisperer_userTriggerDecision', 'Reject')
                 })
 
                 it(`${name} invoke discard`, async function () {
