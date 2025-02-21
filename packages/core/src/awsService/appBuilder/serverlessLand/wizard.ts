@@ -11,6 +11,7 @@ import { createInputBox } from '../../../shared/ui/inputPrompter'
 import { createCommonButtons } from '../../../shared/ui/buttons'
 import { createQuickPick } from '../../../shared/ui/pickerPrompter'
 import { createFolderPrompt } from '../../../shared/ui/common/location'
+import { createExitPrompter } from '../../../shared/ui/common/exitPrompter'
 import { MetadataManager } from './metadataManager'
 import { ToolkitError } from '../../../shared/errors'
 
