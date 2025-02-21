@@ -112,12 +112,12 @@ export class AWSClientBuilderV3 {
     public async createAwsService<C extends AwsClient>(serviceOptions: AwsServiceOptions<C>): Promise<C> {
         const shim = this.getShim()
         const opt = (serviceOptions.clientOptions ?? {}) as AwsClientOptions
-
+        const userAgent = serviceOptions.userAgent ?? true
         if (!opt.region && serviceOptions.region) {
             opt.region = serviceOptions.region
         }
 
-        if (!opt.userAgent && serviceOptions.userAgent) {
+        if (!opt.userAgent && userAgent) {
             opt.userAgent = [[getUserAgent({ includePlatform: true, includeClientId: true }), extensionVersion]]
         }
 
