@@ -23,7 +23,6 @@ import { ToolkitError } from '../../shared/errors'
 import { isWeb } from '../../shared/extensionGlobals'
 import { getUserAgent } from '../../shared/telemetry/util'
 import { isAmazonInternalOs } from '../../shared/vscode/env'
-import { sleep } from '../../shared/utilities/timeoutUtils'
 import { RelevantTextDocumentAddition } from '../../codewhispererChat/controllers/chat/model'
 
 export interface Chunk {
@@ -401,7 +400,7 @@ export class LspController {
                 await activateLsp(context)
                 getLogger().info('LspController: LSP activated')
                 await vscode.commands.executeCommand(`aws.amazonq.updateContextCommandItems`)
-                await sleep(5_000).then(void LspController.instance.buildIndex(buildIndexConfig))
+                void LspController.instance.buildIndex(buildIndexConfig)
                 // log the LSP server CPU and Memory usage per 30 minutes.
                 globals.clock.setInterval(
                     async () => {
