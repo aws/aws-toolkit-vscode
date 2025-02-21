@@ -63,7 +63,7 @@ export function onceChanged<T, U extends any[]>(fn: (...args: U) => T): (...args
 }
 
 /**
- * Creates a new function that stores the result of a call.
+ * Creates a new function that stores the result of a call for non-async functions.
  *
  * @note This uses an extremely simple mechanism for creating keys from parameters.
  * Objects are effectively treated as a single key, while primitive values will behave as
@@ -84,18 +84,11 @@ export function memoize<T, U extends any[]>(fn: (...args: U) => T): (...args: U)
  * @returns
  */
 export function memoizeWith<T, U extends any[]>(
-    fn: (...args: U) => Promise<T>,
-    key: (...args: U) => Promise<string> | string = (...args: U) => args.map(String).join(':')
+    fn: (...args: U) => T | Promise<T>,
+    key: (...args: U) => string | Promise<string> = (...args: U) => args.map(String).join(':')
 ): (...args: U) => Promise<T> {
-    const cache: Map<string, T> = new Map()
-
-    return async (...args) => {
-        const cacheKey = await key(...args)
-        if (!cache.has(cacheKey)) {
-            cache.set(cacheKey, await fn(...args))
-        }
-        return cache.get(cacheKey)!
-    }
+    const cache: { [key: string]: T } = {}
+    return async (...args) => (cache[await key(...args)] ??= await fn(...args))
 }
 
 /**
