@@ -36,7 +36,7 @@ import { SshKeyPair } from './sshKeyPair'
 import { Ec2SessionTracker } from './remoteSessionManager'
 import { getEc2SsmEnv } from './utils'
 
-export type Ec2ConnectErrorCode = 'EC2SSMStatus' | 'EC2SSMPermission' | 'EC2SSMConnect' | 'EC2SSMAgentStatus'
+export type Ec2ConnectErrorCode = 'EC2SSMStatus' | 'EC2SSMPermission' | 'EC2SSMTestConnect' | 'EC2SSMAgentStatus'
 
 export interface Ec2RemoteEnv extends VscodeRemoteConnection {
     selection: Ec2Selection
@@ -221,8 +221,8 @@ export class Ec2Connecter implements vscode.Disposable {
                 remoteUser.name
             )
         } catch (err) {
-            const message = err instanceof SshError ? 'Testing SSH connection to instance failed' : ''
-            this.throwConnectionError(message, selection, err as Error)
+            const message = err instanceof SshError ? `Testing SSM connection to instance failed: ${err.message}` : ''
+            this.throwConnectionError(message, selection, { ...(err as Error), code: 'EC2SSMTestConnect' })
         } finally {
             await this.ssmClient.terminateSession(testSession)
         }
