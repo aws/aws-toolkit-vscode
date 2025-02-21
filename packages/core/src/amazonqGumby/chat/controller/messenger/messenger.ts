@@ -858,7 +858,7 @@ ${codeSnippet}
     }
 
     public sendFeedbackReceivedMessage(canRerunJob: string, canViewLogs: string, tabID: string) {
-        const message = `### Feedback received
+        const message = `### Response received
 -------------
 | | |
 | :------------------- | -------: |
