@@ -52,7 +52,7 @@ export interface AwsCommand {
     resolveMiddleware: (stack: any, configuration: any, options: any) => Handler<any, any>
 }
 
-interface AwsClientOptions {
+export interface AwsClientOptions {
     credentials: AwsCredentialIdentityProvider
     region: string | Provider<string>
     userAgent: UserAgent
@@ -66,7 +66,16 @@ interface AwsClientOptions {
     retryStrategy: RetryStrategy | RetryStrategyV2
 }
 
+interface AwsServiceOptions<C extends AwsClient> {
+    serviceClient: AwsClientConstructor<C>
+    clientOptions?: Partial<AwsClientOptions>
+    region?: string
+    userAgent?: boolean
+    settings?: DevSettings
+}
+
 export class AWSClientBuilderV3 {
+    private serviceCache: Map<string, AwsClient> = new Map()
     public constructor(private readonly context: AwsContext) {}
 
     private getShim(): CredentialsShim {
@@ -77,18 +86,35 @@ export class AWSClientBuilderV3 {
         return shim
     }
 
-    public async createAwsService<C extends AwsClient>(
-        type: AwsClientConstructor<C>,
-        options?: Partial<AwsClientOptions>,
-        region?: string,
-        userAgent: boolean = true,
-        settings?: DevSettings
-    ): Promise<C> {
-        const shim = this.getShim()
-        const opt = (options ?? {}) as AwsClientOptions
+    private keyAwsService<C extends AwsClient>(serviceOptions: AwsServiceOptions<C>): string {
+        // Serializing certain objects in the args allows us to detect when nested objects change (ex. new retry strategy, endpoints)
+        return [
+            String(serviceOptions.serviceClient),
+            JSON.stringify(serviceOptions.clientOptions),
+            serviceOptions.region,
+            serviceOptions.userAgent ? '1' : '0',
+            serviceOptions.settings ? JSON.stringify(serviceOptions.settings.get('endpoints', {})) : '',
+        ].join(':')
+    }
 
-        if (!opt.region && region) {
-            opt.region = region
+    public async getAwsService<C extends AwsClient>(serviceOptions: AwsServiceOptions<C>): Promise<C> {
+        const key = this.keyAwsService(serviceOptions)
+        const cached = this.serviceCache.get(key)
+        if (cached) {
+            return cached as C
+        }
+
+        const service = await this.createAwsService(serviceOptions)
+        this.serviceCache.set(key, service)
+        return service as C
+    }
+
+    public async createAwsService<C extends AwsClient>(serviceOptions: AwsServiceOptions<C>): Promise<C> {
+        const shim = this.getShim()
+        const opt = (serviceOptions.clientOptions ?? {}) as AwsClientOptions
+        const userAgent = serviceOptions.userAgent ?? true
+        if (!opt.region && serviceOptions.region) {
+            opt.region = serviceOptions.region
         }
 
         if (!opt.userAgent && userAgent) {
@@ -108,10 +134,10 @@ export class AWSClientBuilderV3 {
             return creds
         }
 
-        const service = new type(opt)
+        const service = new serviceOptions.serviceClient(opt)
         service.middlewareStack.add(telemetryMiddleware, { step: 'deserialize' })
         service.middlewareStack.add(loggingMiddleware, { step: 'finalizeRequest' })
-        service.middlewareStack.add(getEndpointMiddleware(settings), { step: 'build' })
+        service.middlewareStack.add(getEndpointMiddleware(serviceOptions.settings), { step: 'build' })
         return service
     }
 }
