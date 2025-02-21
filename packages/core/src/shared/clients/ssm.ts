@@ -10,14 +10,14 @@ import {
     TerminateSessionCommand,
     TerminateSessionResponse,
     StartSessionCommandOutput,
-    DescribeInstanceInformationCommand,
     DescribeInstanceInformationCommandInput,
     InstanceInformation,
     SendCommandCommand,
     SendCommandCommandOutput,
     waitUntilCommandExecuted,
     SessionState,
-    DescribeSessionsCommand,
+    paginateDescribeInstanceInformation,
+    paginateDescribeSessions,
 } from '@aws-sdk/client-ssm'
 import { WaiterState } from '@smithy/util-waiter'
 import { ToolkitError } from '../errors'
@@ -52,20 +52,15 @@ export class SsmClient extends ClientWrapper<SSMClient> {
     }
 
     public async describeInstance(target: string): Promise<InstanceInformation> {
-        const response = this.makePaginatedRequest(
-            DescribeInstanceInformationCommand,
-            {
-                InstanceInformationFilterList: [
-                    {
-                        key: 'InstanceIds',
-                        valueSet: [target],
-                    },
-                ],
-            } as DescribeInstanceInformationCommandInput,
-            'InstanceIds'
-        )
-        const resolvedResponse = await response.flatten().flatten().promise()
-        return resolvedResponse[0]!
+        return (
+            await this.makePaginatedRequest(
+                paginateDescribeInstanceInformation,
+                {
+                    InstanceInformationFilterList: [{ key: 'InstanceIds', valueSet: [target] }],
+                } satisfies DescribeInstanceInformationCommandInput,
+                (page) => page.InstanceInformationList
+            )
+        )[0]!
     }
 
     public async getTargetPlatformName(target: string): Promise<string> {
@@ -115,6 +110,6 @@ export class SsmClient extends ClientWrapper<SSMClient> {
     }
 
     public async describeSessions(state: SessionState) {
-        return await this.makePaginatedRequest(DescribeSessionsCommand, { State: state }, 'Sessions').promise()
+        return await this.makePaginatedRequest(paginateDescribeSessions, { State: state }, (page) => page.Sessions)
     }
 }
