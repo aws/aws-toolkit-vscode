@@ -75,7 +75,7 @@ export const previewStateMachineCommand = Commands.declare(
                 throw new ToolkitError('No active text editor or document found')
             }
 
-            await vscode.commands.executeCommand('vscode.openWith', input, WorkflowStudioEditorProvider.viewType, {
+            await WorkflowStudioEditorProvider.openWithWorkflowStudio(input, {
                 preserveFocus: true,
                 viewColumn: vscode.ViewColumn.Beside,
             })

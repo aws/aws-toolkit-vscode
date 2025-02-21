@@ -31,6 +31,13 @@ let clientId = ''
 export class WorkflowStudioEditorProvider implements vscode.CustomTextEditorProvider {
     public static readonly viewType = 'workflowStudio.asl'
 
+    public static async openWithWorkflowStudio(
+        uri: vscode.Uri,
+        params?: Parameters<typeof vscode.window.createWebviewPanel>[2]
+    ) {
+        await vscode.commands.executeCommand('vscode.openWith', uri, WorkflowStudioEditorProvider.viewType, params)
+    }
+
     /**
      * Registers a new custom editor provider for asl files.
      * @remarks This should only be called once per extension.

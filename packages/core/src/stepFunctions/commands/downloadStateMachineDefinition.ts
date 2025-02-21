@@ -40,15 +40,10 @@ export async function downloadStateMachineDefinition(params: {
             })
 
             const textEditor = await vscode.window.showTextDocument(doc)
-            await vscode.commands.executeCommand(
-                'vscode.openWith',
-                textEditor.document.uri,
-                WorkflowStudioEditorProvider.viewType,
-                {
-                    preserveFocus: true,
-                    viewColumn: vscode.ViewColumn.Beside,
-                }
-            )
+            await WorkflowStudioEditorProvider.openWithWorkflowStudio(textEditor.document.uri, {
+                preserveFocus: true,
+                viewColumn: vscode.ViewColumn.Beside,
+            })
         } else {
             const wsPath = vscode.workspace.workspaceFolders
                 ? vscode.workspace.workspaceFolders[0].uri.fsPath
