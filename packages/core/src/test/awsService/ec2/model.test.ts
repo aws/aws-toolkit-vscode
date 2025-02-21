@@ -125,6 +125,17 @@ describe('Ec2ConnectClient', function () {
             }
         })
 
+        it('retries if agent status is not online', async function () {
+            const instanceAgentStatus = sinon.stub(SsmClient.prototype, 'getInstanceAgentPingStatus')
+            instanceAgentStatus.onFirstCall().resolves('Offline')
+            instanceAgentStatus.onSecondCall().resolves('Online')
+            try {
+                await client.checkForInstanceSsmError(instanceSelection, { interval: 10, timeout: 100 })
+            } catch (err) {
+                assert.ok(false, `checkForInstanceSsmError failed with error '${err}'`)
+            }
+        })
+
         it('does not throw an error if all checks pass', async function () {
             sinon.stub(Ec2Connecter.prototype, 'isInstanceRunning').resolves(true)
             sinon.stub(Ec2Connecter.prototype, 'getAttachedIamRole').resolves({ Arn: 'testRole' } as IAM.Role)
