@@ -13,6 +13,7 @@ import {
     CodewhispererPreviousSuggestionState,
     CodewhispererUserDecision,
     CodewhispererUserTriggerDecision,
+    Result,
     telemetry,
 } from '../../shared/telemetry/telemetry'
 import { CodewhispererCompletionType, CodewhispererSuggestionState } from '../../shared/telemetry/telemetry'
@@ -27,7 +28,7 @@ import { CodeWhispererSupplementalContext } from '../models/model'
 import { FeatureConfigProvider } from '../../shared/featureConfig'
 import { CodeScanRemediationsEventType } from '../client/codewhispereruserclient'
 import { CodeAnalysisScope as CodeAnalysisScopeClientSide } from '../models/constants'
-import { Session } from '../../amazonqTest/chat/session/session'
+import { BuildStatus, Session } from '../../amazonqTest/chat/session/session'
 
 export class TelemetryHelper {
     // Some variables for client component latency
@@ -90,7 +91,7 @@ export class TelemetryHelper {
         telemetry.amazonq_utgGenerateTests.emit({
             cwsprChatProgrammingLanguage: session.fileLanguage ?? 'plaintext',
             hasUserPromptSupplied: session.hasUserPromptSupplied,
-            isSupportedLanguage: isSupportedLanguage,
+            isSupportedLanguage: session.isSupportedLanguage,
             isFileInWorkspace: isFileInWorkspace,
             result: result,
             artifactsUploadDuration: artifactsUploadDuration,
@@ -110,6 +111,61 @@ export class TelemetryHelper {
             requestId: requestId,
             reasonDesc: reasonDesc,
             reason: reason,
+        })
+    }
+
+    /**
+     * amazonq_unitTestGeneration event is emitted in 6 cases for Unit Test Generation
+     * 1) If user close chat window
+     * 2) If build succeeds in build and execute
+     * 3) If user reject generated code
+     * 4) If user click on skip and finish button
+     * 5) If user completes 3 iterations in build and execute
+     * 6) If there is any error/exception
+     */
+    public sendUnitTestGenerationEvent(
+        session: Session,
+        reasonDesc?: string,
+        artifactsUploadDuration?: number,
+        buildZipFileBytes?: number,
+        acceptedCharactersCount?: number,
+        acceptedCount?: number,
+        acceptedLinesCount?: number,
+        generatedCharactersCount?: number,
+        generatedCount?: number,
+        generatedLinesCount?: number,
+        reason?: string
+    ) {
+        telemetry.amazonq_unitTestGeneration.emit({
+            cwsprChatProgrammingLanguage: session.fileLanguage ?? 'plaintext',
+            hasUserPromptSupplied: session.hasUserPromptSupplied,
+            isSupportedLanguage: session.isSupportedLanguage,
+            isFileInWorkspace: true, // Always true TODO: Confirm
+            result:
+                session.buildStatus === BuildStatus.SUCCESS
+                    ? 'Succeeded'
+                    : session.buildStatus === BuildStatus.FAILURE
+                      ? 'Failed'
+                      : ('Cancelled' as Result),
+
+            artifactsUploadDuration: artifactsUploadDuration,
+            buildZipFileBytes: buildZipFileBytes,
+            credentialStartUrl: AuthUtil.instance.startUrl,
+            acceptedCharactersCount: acceptedCharactersCount,
+            acceptedCount: acceptedCount,
+            acceptedLinesCount: acceptedLinesCount,
+            generatedCharactersCount: generatedCharactersCount,
+            generatedCount: generatedCount,
+            generatedLinesCount: generatedLinesCount,
+            isCodeBlockSelected: session.isCodeBlockSelected,
+            jobGroup: session.testGenerationJobGroupName,
+            jobId: session.listOfTestGenerationJobId.at(-1) ?? undefined,
+            perfClientLatency: 0, // TODO for V2 version: Calculate the client side latency between iterations
+            requestId: session.startTestGenerationRequestId,
+            reasonDesc: reasonDesc,
+            reason: reason,
+            update: (session.updatedBuildCommands?.length ?? 0) > 0, // If user modifies command return true else false
+            count: session.listOfTestGenerationJobId.length - 1, // Number of build and execute iterations if count = -1 then user did not even start the build and cycle loop and failed/terminated at the vanilla UTG.
         })
     }
 
