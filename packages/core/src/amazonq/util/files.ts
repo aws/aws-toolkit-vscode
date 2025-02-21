@@ -13,6 +13,7 @@ import {
 } from '../../shared/utilities/workspaceUtils'
 
 import { ContentLengthError, PrepareRepoFailedError } from '../../amazonqFeatureDev/errors'
+import { ContentLengthError as DocContentLengthError } from '../../amazonqDoc/errors'
 import { getLogger } from '../../shared/logger/logger'
 import { maxFileSizeBytes } from '../../amazonqFeatureDev/limits'
 import { CurrentWsFolders, DeletedFileInfo, NewFileInfo, NewFileZipContents } from '../../amazonqDoc/types'
@@ -48,6 +49,7 @@ export type PrepareRepoDataOptions = {
     telemetry?: TelemetryHelper
     zip?: ZipStream
     isIncludeInfraDiagram?: boolean
+    featureName?: 'featureDev' | 'docGeneration'
 }
 
 /**
@@ -186,6 +188,9 @@ export async function prepareRepoData(
     } catch (error) {
         getLogger().debug(`featureDev: Failed to prepare repo: ${error}`)
         if (error instanceof ToolkitError && error.code === 'ContentLengthError') {
+            if (options?.featureName === 'docGeneration') {
+                throw new DocContentLengthError()
+            }
             throw new ContentLengthError()
         }
         throw new PrepareRepoFailedError()
