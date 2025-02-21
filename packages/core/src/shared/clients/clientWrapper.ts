@@ -50,7 +50,8 @@ export abstract class ClientWrapper<C extends AwsClient> implements vscode.Dispo
         for await (const page of p) {
             results.push(extractPage(page))
         }
-        return results.flat().filter((result) => result !== undefined)
+        const filteredResult = results.flat().filter((result) => result !== undefined) as Output[]
+        return filteredResult
     }
 
     public dispose() {
