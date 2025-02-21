@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "appBuilder: pass '--no-use-container' when '--use-container' is not selected in quickpick"
-}
