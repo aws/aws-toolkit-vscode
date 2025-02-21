@@ -7,13 +7,15 @@ import { Timestamp } from 'aws-sdk/clients/apigateway'
 import { MessagePublisher } from '../../../amazonq/messages/messagePublisher'
 import { EditorContextCommandType } from '../../commands/registerCommands'
 import { AuthFollowUpType } from '../../../amazonq/auth/model'
+import { ChatItemButton, ChatItemFormItem, MynahUIDataModel, QuickActionCommand } from '@aws/mynah-ui'
+import { MergedRelevantDocument } from '../../controllers/chat/model'
 
 class UiMessage {
     readonly time: number = Date.now()
     readonly sender: string = 'CWChat'
     readonly type: string = ''
 
-    public constructor(protected tabID: string | undefined) {}
+    public constructor(public tabID: string | undefined) {}
 }
 
 export class ErrorMessage extends UiMessage {
@@ -132,6 +134,68 @@ export class OpenSettingsMessage extends UiMessage {
     override type = 'openSettingsMessage'
 }
 
+export class ContextCommandData extends UiMessage {
+    readonly data: MynahUIDataModel['contextCommands']
+    override type = 'contextCommandData'
+    constructor(data: MynahUIDataModel['contextCommands']) {
+        super('tab-1')
+        this.data = data
+    }
+}
+
+export class CustomFormActionMessage extends UiMessage {
+    override type = 'customFormActionMessage'
+    readonly action: {
+        id: string
+        text?: string | undefined
+        formItemValues?: Record<string, string> | undefined
+    }
+
+    constructor(
+        tabID: string,
+        action: {
+            id: string
+            text?: string | undefined
+            formItemValues?: Record<string, string> | undefined
+        }
+    ) {
+        super(tabID)
+        this.action = action
+    }
+}
+
+export class ShowCustomFormMessage extends UiMessage {
+    override type = 'showCustomFormMessage'
+    readonly formItems?: ChatItemFormItem[]
+    readonly buttons?: ChatItemButton[]
+    readonly title?: string
+    readonly description?: string
+
+    constructor(
+        tabID: string,
+        formItems?: ChatItemFormItem[],
+        buttons?: ChatItemButton[],
+        title?: string,
+        description?: string
+    ) {
+        super(tabID)
+        this.formItems = formItems
+        this.buttons = buttons
+        this.title = title
+        this.description = description
+    }
+}
+
+export class ContextSelectedMessage extends UiMessage {
+    override type = 'contextSelectedMessage'
+    readonly contextItem: QuickActionCommand
+
+    constructor(tabID: string, contextItem: QuickActionCommand) {
+        super(tabID)
+        this.contextItem = contextItem
+    }
+}
+
 export interface ChatMessageProps {
     readonly message: string | undefined
     readonly messageType: ChatMessageType
@@ -143,6 +207,7 @@ export interface ChatMessageProps {
     readonly messageID: string
     readonly userIntent: string | undefined
     readonly codeBlockLanguage: string | undefined
+    readonly contextList: MergedRelevantDocument[] | undefined
 }
 
 export class ChatMessage extends UiMessage {
@@ -157,6 +222,7 @@ export class ChatMessage extends UiMessage {
     readonly messageID: string | undefined
     readonly userIntent: string | undefined
     readonly codeBlockLanguage: string | undefined
+    readonly contextList: MergedRelevantDocument[] | undefined
     override type = 'chatMessage'
 
     constructor(props: ChatMessageProps, tabID: string) {
@@ -171,6 +237,7 @@ export class ChatMessage extends UiMessage {
         this.messageID = props.messageID
         this.userIntent = props.userIntent
         this.codeBlockLanguage = props.codeBlockLanguage
+        this.contextList = props.contextList
     }
 }
 
@@ -241,6 +308,14 @@ export class AppToWebViewMessageDispatcher {
     }
 
     public sendOpenSettingsMessage(message: OpenSettingsMessage) {
+        this.appsToWebViewMessagePublisher.publish(message)
+    }
+
+    public sendContextCommandData(message: ContextCommandData) {
+        this.appsToWebViewMessagePublisher.publish(message)
+    }
+
+    public sendShowCustomFormMessage(message: ShowCustomFormMessage) {
         this.appsToWebViewMessagePublisher.publish(message)
     }
 }

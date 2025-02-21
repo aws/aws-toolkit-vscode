@@ -4,12 +4,13 @@
  */
 
 import * as vscode from 'vscode'
-import { RelevantTextDocument, UserIntent } from '@amzn/codewhisperer-streaming'
+import { AdditionalContentEntry, RelevantTextDocument, UserIntent } from '@amzn/codewhisperer-streaming'
 import { MatchPolicy, CodeQuery } from '../../clients/chat/v0/model'
 import { Selection } from 'vscode'
 import { TabOpenType } from '../../../amazonq/webview/ui/storages/tabsStorage'
 import { CodeReference } from '../../view/connector/connector'
 import { Customization } from '../../../codewhisperer/client/codewhispereruserclient'
+import { QuickActionCommand } from '@aws/mynah-ui'
 
 export interface TriggerTabIDReceived {
     tabID: string
@@ -102,6 +103,7 @@ export interface PromptMessage {
     command: ChatPromptCommandType | undefined
     userIntent: UserIntent | undefined
     tabID: string
+    context?: string[] | QuickActionCommand[]
 }
 
 export interface PromptAnswer {
@@ -139,6 +141,19 @@ export interface FooterInfoLinkClick {
     link: string
 }
 
+export interface QuickCommandGroupActionClick {
+    command: string
+    actionId: string
+    tabID: string
+}
+
+export interface FileClick {
+    command: string
+    tabID: string
+    messageId: string
+    filePath: string
+}
+
 export interface ChatItemVotedMessage {
     tabID: string
     command: string
@@ -171,9 +186,20 @@ export interface TriggerPayload {
     readonly codeQuery: CodeQuery | undefined
     readonly userIntent: UserIntent | undefined
     readonly customization: Customization
-    relevantTextDocuments?: RelevantTextDocument[]
+    readonly context?: string[] | QuickActionCommand[]
+    relevantTextDocuments?: RelevantTextDocumentAddition[]
+    additionalContents?: AdditionalContentEntry[]
+    mergedRelevantDocuments?: MergedRelevantDocument[]
     useRelevantDocuments?: boolean
     traceId?: string
+}
+
+// TODO move this to API definition (or just use this across the codebase)
+export type RelevantTextDocumentAddition = RelevantTextDocument & { startLine: number; endLine: number }
+
+export interface MergedRelevantDocument {
+    readonly relativeFilePath: string
+    readonly lineRanges: Array<{ first: number; second: number }>
 }
 
 export interface InsertedCode {

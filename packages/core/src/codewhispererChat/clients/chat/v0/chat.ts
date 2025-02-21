@@ -14,6 +14,8 @@ import { UserWrittenCodeTracker } from '../../../../codewhisperer/tracker/userWr
 export class ChatSession {
     private sessionId?: string
 
+    contexts: Map<number, Map<string, { first: number; second: number }[]>> = new Map()
+    currentContextId: number = 0
     public get sessionIdentifier(): string | undefined {
         return this.sessionId
     }
