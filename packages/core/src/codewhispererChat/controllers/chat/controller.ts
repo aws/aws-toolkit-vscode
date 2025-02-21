@@ -559,20 +559,18 @@ export class ChatController {
     }
 
     private async processCustomFormAction(message: CustomFormActionMessage) {
-        if (message.tabID) {
-            if (message.action.id === 'submit-create-prompt') {
-                const userPromptsDirectory = getUserPromptsDirectory()
+        if (message.action.id === 'submit-create-prompt') {
+            const userPromptsDirectory = getUserPromptsDirectory()
 
-                const title = message.action.formItemValues?.['prompt-name']
-                const newFilePath = path.join(
-                    userPromptsDirectory,
-                    title ? `${title}${promptFileExtension}` : `default${promptFileExtension}`
-                )
-                const newFileContent = new Uint8Array(Buffer.from(''))
-                await fs.writeFile(newFilePath, newFileContent)
-                const newFileDoc = await vscode.workspace.openTextDocument(newFilePath)
-                await vscode.window.showTextDocument(newFileDoc)
-            }
+            const title = message.action.formItemValues?.['prompt-name']
+            const newFilePath = path.join(
+                userPromptsDirectory,
+                title ? `${title}${promptFileExtension}` : `default${promptFileExtension}`
+            )
+            const newFileContent = new Uint8Array(Buffer.from(''))
+            await fs.writeFile(newFilePath, newFileContent)
+            const newFileDoc = await vscode.workspace.openTextDocument(newFilePath)
+            await vscode.window.showTextDocument(newFileDoc)
         }
     }
 
