@@ -63,7 +63,7 @@ export function onceChanged<T, U extends any[]>(fn: (...args: U) => T): (...args
 }
 
 /**
- * Creates a new function that stores the result of a call for non-async functions.
+ * Creates a new function that stores the result of a call.
  *
  * @note This uses an extremely simple mechanism for creating keys from parameters.
  * Objects are effectively treated as a single key, while primitive values will behave as
@@ -75,20 +75,6 @@ export function memoize<T, U extends any[]>(fn: (...args: U) => T): (...args: U)
     const cache: { [key: string]: T | undefined } = {}
 
     return (...args) => (cache[args.map(String).join(':')] ??= fn(...args))
-}
-
-/**
- * Generalization of the {@link memoize} method that accepts async methods, and allows user to pass mapping from keys to args.
- * @param fn
- * @param key
- * @returns
- */
-export function memoizeWith<T, U extends any[]>(
-    fn: (...args: U) => T | Promise<T>,
-    key: (...args: U) => string | Promise<string> = (...args: U) => args.map(String).join(':')
-): (...args: U) => Promise<T> {
-    const cache: { [key: string]: T } = {}
-    return async (...args) => (cache[await key(...args)] ??= await fn(...args))
 }
 
 /**

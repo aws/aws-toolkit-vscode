@@ -33,7 +33,6 @@ import { extensionVersion } from './vscode/env'
 import { getLogger } from './logger/logger'
 import { partialClone } from './utilities/collectionUtils'
 import { selectFrom } from './utilities/tsUtils'
-import { memoizeWith } from './utilities/functionUtils'
 
 export type AwsClientConstructor<C> = new (o: AwsClientOptions) => C
 
@@ -67,7 +66,16 @@ export interface AwsClientOptions {
     retryStrategy: RetryStrategy | RetryStrategyV2
 }
 
+interface AwsServiceOptions<C extends AwsClient> {
+    serviceClient: AwsClientConstructor<C>
+    clientOptions?: Partial<AwsClientOptions>
+    region?: string
+    userAgent?: boolean
+    settings?: DevSettings
+}
+
 export class AWSClientBuilderV3 {
+    private serviceCache: Map<string, AwsClient> = new Map()
     public constructor(private readonly context: AwsContext) {}
 
     private getShim(): CredentialsShim {
@@ -78,40 +86,38 @@ export class AWSClientBuilderV3 {
         return shim
     }
 
-    private keyAwsService<C extends AwsClient>(
-        type: AwsClientConstructor<C>,
-        options?: Partial<AwsClientOptions>,
-        region?: string,
-        userAgent: boolean = true,
-        settings?: DevSettings
-    ): string {
+    private keyAwsService<C extends AwsClient>(serviceOptions: AwsServiceOptions<C>): string {
         // Serializing certain objects in the args allows us to detect when nested objects change (ex. new retry strategy, endpoints)
         return [
-            String(type),
-            JSON.stringify(options),
-            region,
-            userAgent ? '1' : '0',
-            settings ? JSON.stringify(settings.get('endpoints', {})) : '',
+            String(serviceOptions.serviceClient),
+            JSON.stringify(serviceOptions.clientOptions),
+            serviceOptions.region,
+            serviceOptions.userAgent ? '1' : '0',
+            serviceOptions.settings ? JSON.stringify(serviceOptions.settings.get('endpoints', {})) : '',
         ].join(':')
     }
 
-    public getAwsService = memoizeWith(this.createAwsService.bind(this), this.keyAwsService.bind(this))
-
-    public async createAwsService<C extends AwsClient>(
-        type: AwsClientConstructor<C>,
-        options?: Partial<AwsClientOptions>,
-        region?: string,
-        userAgent: boolean = true,
-        settings?: DevSettings
-    ): Promise<C> {
-        const shim = this.getShim()
-        const opt = (options ?? {}) as AwsClientOptions
-
-        if (!opt.region && region) {
-            opt.region = region
+    public async getAwsService<C extends AwsClient>(serviceOptions: AwsServiceOptions<C>): Promise<C> {
+        const key = this.keyAwsService(serviceOptions)
+        const cached = this.serviceCache.get(key)
+        if (cached) {
+            return cached as C
         }
 
-        if (!opt.userAgent && userAgent) {
+        const service = await this.createAwsService(serviceOptions)
+        this.serviceCache.set(key, service)
+        return service as C
+    }
+
+    public async createAwsService<C extends AwsClient>(serviceOptions: AwsServiceOptions<C>): Promise<C> {
+        const shim = this.getShim()
+        const opt = (serviceOptions.clientOptions ?? {}) as AwsClientOptions
+
+        if (!opt.region && serviceOptions.region) {
+            opt.region = serviceOptions.region
+        }
+
+        if (!opt.userAgent && serviceOptions.userAgent) {
             opt.userAgent = [[getUserAgent({ includePlatform: true, includeClientId: true }), extensionVersion]]
         }
 
@@ -128,10 +134,10 @@ export class AWSClientBuilderV3 {
             return creds
         }
 
-        const service = new type(opt)
+        const service = new serviceOptions.serviceClient(opt)
         service.middlewareStack.add(telemetryMiddleware, { step: 'deserialize' })
         service.middlewareStack.add(loggingMiddleware, { step: 'finalizeRequest' })
-        service.middlewareStack.add(getEndpointMiddleware(settings), { step: 'build' })
+        service.middlewareStack.add(getEndpointMiddleware(serviceOptions.settings), { step: 'build' })
         return service
     }
 }
