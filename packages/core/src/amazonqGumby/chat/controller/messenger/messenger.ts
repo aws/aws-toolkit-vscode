@@ -125,12 +125,12 @@ export class Messenger {
             mandatory: true,
             options: [
                 {
-                    value: CodeWhispererConstants.skipUnitTestsMessage,
-                    label: CodeWhispererConstants.skipUnitTestsMessage,
-                },
-                {
                     value: CodeWhispererConstants.runUnitTestsMessage,
                     label: CodeWhispererConstants.runUnitTestsMessage,
+                },
+                {
+                    value: CodeWhispererConstants.skipUnitTestsMessage,
+                    label: CodeWhispererConstants.skipUnitTestsMessage,
                 },
             ],
         })
@@ -847,7 +847,7 @@ ${codeSnippet}
         this.dispatcher.sendChatPrompt(
             new ChatPrompt(
                 {
-                    message: 'Amazon Q Feedback Form',
+                    message: 'Amazon Q Permissions Form',
                     formItems: formItems,
                 },
                 'FeedbackForm',
