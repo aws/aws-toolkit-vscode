@@ -17,6 +17,7 @@ import { addFolderToWorkspace } from '../../../shared/utilities/workspaceUtils'
 import { ToolkitError } from '../../../shared/errors'
 import { fs } from '../../../shared/fs/fs'
 import { getPattern } from '../../../shared/utilities/downloadPatterns'
+import { MetadataManager } from './metadataManager'
 
 export const readmeFile: string = 'README.md'
 const serverlessLandOwner = 'aws-samples'
@@ -38,8 +39,10 @@ const serverlessLandRepo = 'serverless-patterns'
 export async function createNewServerlessLandProject(extContext: ExtContext): Promise<void> {
     let createResult: Result = 'Succeeded'
     let reason: string | undefined
+    let metadataManager: MetadataManager
 
     try {
+        metadataManager = MetadataManager.getInstance()
         // Launch the project creation wizard
         const config = await launchProjectCreationWizard(extContext)
         if (!config) {
@@ -47,8 +50,9 @@ export async function createNewServerlessLandProject(extContext: ExtContext): Pr
             reason = 'userCancelled'
             return
         }
+        const assetName = metadataManager.getAssetName(config.pattern, config.runtime, config.iac)
 
-        await downloadPatternCode(config)
+        await downloadPatternCode(config, assetName)
         await openReadmeFile(config)
         await addFolderToWorkspace(
             {
@@ -91,11 +95,11 @@ async function launchProjectCreationWizard(
     }).run()
 }
 
-async function downloadPatternCode(config: CreateServerlessLandWizardForm): Promise<void> {
-    const assetName = config.assetName + '.zip'
+async function downloadPatternCode(config: CreateServerlessLandWizardForm, assetName: string): Promise<void> {
+    const fullAssetName = assetName + '.zip'
     const location = vscode.Uri.joinPath(config.location, config.name)
     try {
-        await getPattern(serverlessLandOwner, serverlessLandRepo, assetName, location, true)
+        await getPattern(serverlessLandOwner, serverlessLandRepo, fullAssetName, location, true)
     } catch (error) {
         if (error instanceof ToolkitError) {
             throw error
