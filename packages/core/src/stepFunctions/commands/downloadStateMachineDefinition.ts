@@ -15,9 +15,9 @@ import { DefaultStepFunctionsClient, StepFunctionsClient } from '../../shared/cl
 import { getLogger, Logger } from '../../shared/logger/logger'
 import { Result } from '../../shared/telemetry/telemetry'
 import { StateMachineNode } from '../explorer/stepFunctionsNodes'
-import { previewStateMachineCommand } from '../activation'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { fs } from '../../shared/fs/fs'
+import { WorkflowStudioEditorProvider } from '../workflowStudio/workflowStudioEditorProvider'
 
 export async function downloadStateMachineDefinition(params: {
     outputChannel: vscode.OutputChannel
@@ -40,7 +40,15 @@ export async function downloadStateMachineDefinition(params: {
             })
 
             const textEditor = await vscode.window.showTextDocument(doc)
-            await previewStateMachineCommand.execute(textEditor)
+            await vscode.commands.executeCommand(
+                'vscode.openWith',
+                textEditor.document.uri,
+                WorkflowStudioEditorProvider.viewType,
+                {
+                    preserveFocus: true,
+                    viewColumn: vscode.ViewColumn.Beside,
+                }
+            )
         } else {
             const wsPath = vscode.workspace.workspaceFolders
                 ? vscode.workspace.workspaceFolders[0].uri.fsPath

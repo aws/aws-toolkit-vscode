@@ -1187,7 +1187,7 @@
                     "when": "false"
                 },
                 {
-                    "command": "aws.renderStateMachineGraph",
+                    "command": "aws.stepfunctions.openWithWorkflowStudio",
                     "when": "false"
                 },
                 {
@@ -1686,7 +1686,7 @@
                     "group": "0@1"
                 },
                 {
-                    "command": "aws.renderStateMachineGraph",
+                    "command": "aws.previewStateMachine",
                     "when": "view == aws.explorer && viewItem == awsStateMachineNode",
                     "group": "0@2"
                 },
@@ -3104,17 +3104,6 @@
                 }
             },
             {
-                "command": "aws.renderStateMachineGraph",
-                "title": "%AWS.command.renderStateMachineGraph%",
-                "enablement": "isCloud9 || !aws.isWebExtHost",
-                "category": "%AWS.title%",
-                "cloud9": {
-                    "cn": {
-                        "category": "%AWS.title.cn%"
-                    }
-                }
-            },
-            {
                 "command": "aws.copyArn",
                 "title": "%AWS.command.copyArn%",
                 "category": "%AWS.title%",
@@ -3343,7 +3332,7 @@
             },
             {
                 "command": "aws.previewStateMachine",
-                "title": "%AWS.command.stepFunctions.previewStateMachine%",
+                "title": "%AWS.command.stepFunctions.openWithWorkflowStudio%",
                 "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "icon": "$(aws-stepfunctions-preview)",
