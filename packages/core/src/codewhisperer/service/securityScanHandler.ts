@@ -82,18 +82,20 @@ export async function listScanResults(
             // Do not use .. in between because there could be multiple project paths in the same parent dir.
             const filePath = path.join(projectPath, key.split('/').slice(1).join('/'))
             if (existsSync(filePath) && statSync(filePath).isFile()) {
+                const document = await vscode.workspace.openTextDocument(filePath)
                 const aggregatedCodeScanIssue: AggregatedCodeScanIssue = {
                     filePath: filePath,
-                    issues: issues.map((issue) => mapRawToCodeScanIssue(issue, editor, jobId, scope)),
+                    issues: issues.map((issue) => mapRawToCodeScanIssue(issue, jobId, scope, document)),
                 }
                 aggregatedCodeScanIssueList.push(aggregatedCodeScanIssue)
             }
         }
         const maybeAbsolutePath = `/${key}`
         if (existsSync(maybeAbsolutePath) && statSync(maybeAbsolutePath).isFile()) {
+            const document = await vscode.workspace.openTextDocument(maybeAbsolutePath)
             const aggregatedCodeScanIssue: AggregatedCodeScanIssue = {
                 filePath: maybeAbsolutePath,
-                issues: issues.map((issue) => mapRawToCodeScanIssue(issue, editor, jobId, scope)),
+                issues: issues.map((issue) => mapRawToCodeScanIssue(issue, jobId, scope, document)),
             }
             aggregatedCodeScanIssueList.push(aggregatedCodeScanIssue)
         }
@@ -103,18 +105,20 @@ export async function listScanResults(
 
 function mapRawToCodeScanIssue(
     issue: RawCodeScanIssue,
-    editor: vscode.TextEditor | undefined,
     jobId: string,
-    scope: CodeWhispererConstants.CodeAnalysisScope
+    scope: CodeWhispererConstants.CodeAnalysisScope,
+    document: vscode.TextDocument
 ): CodeScanIssue {
     const isIssueTitleIgnored = CodeWhispererSettings.instance.getIgnoredSecurityIssues().includes(issue.title)
-    const isSingleIssueIgnored =
-        editor &&
-        detectCommentAboveLine(editor.document, issue.startLine - 1, CodeWhispererConstants.amazonqIgnoreNextLine)
-    const language = editor
-        ? runtimeLanguageContext.getLanguageContext(editor.document.languageId, path.extname(editor.document.fileName))
-              .language
-        : 'plaintext'
+    const isSingleIssueIgnored = detectCommentAboveLine(
+        document,
+        issue.startLine - 1,
+        CodeWhispererConstants.amazonqIgnoreNextLine
+    )
+    const language = runtimeLanguageContext.getLanguageContext(
+        document.languageId,
+        path.extname(document.fileName)
+    ).language
     return {
         startLine: issue.startLine - 1 >= 0 ? issue.startLine - 1 : 0,
         endLine: issue.endLine,
