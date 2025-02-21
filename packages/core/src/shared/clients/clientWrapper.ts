@@ -5,8 +5,13 @@
 import * as vscode from 'vscode'
 import globals from '../extensionGlobals'
 import { AwsClient, AwsClientConstructor, AwsCommand } from '../awsClientBuilderV3'
-import { pageableToCollection } from '../utilities/collectionUtils'
+import { PaginationConfiguration, Paginator } from '@aws-sdk/types'
 
+type SDKPaginator<C, CommandInput extends object, CommandOutput extends object> = (
+    config: Omit<PaginationConfiguration, 'client'> & { client: C },
+    input: CommandInput,
+    ...rest: any[]
+) => Paginator<CommandOutput>
 export abstract class ClientWrapper<C extends AwsClient> implements vscode.Disposable {
     protected client?: C
 
@@ -31,24 +36,21 @@ export abstract class ClientWrapper<C extends AwsClient> implements vscode.Dispo
         return await client.send(new command(commandOptions))
     }
 
-    protected makePaginatedRequest<
+    protected async makePaginatedRequest<
         CommandInput extends object,
         CommandOutput extends object,
-        Command extends AwsCommand,
+        Output extends object,
     >(
-        command: new (o: CommandInput) => Command,
-        commandOptions: CommandInput,
-        collectKey: keyof CommandOutput & string,
-        nextTokenKey?: keyof CommandOutput & keyof CommandInput & string
-    ) {
-        const requester = async (req: CommandInput) => await this.makeRequest(command, req)
-        const response = pageableToCollection(
-            requester,
-            commandOptions,
-            nextTokenKey ?? ('NextToken' as never),
-            collectKey
-        )
-        return response
+        paginator: SDKPaginator<C, CommandInput, CommandOutput>,
+        input: CommandInput,
+        extractPage: (page: CommandOutput) => Output[] | undefined
+    ): Promise<Output[]> {
+        const p = paginator({ client: await this.getClient() }, input)
+        const results = []
+        for await (const page of p) {
+            results.push(extractPage(page))
+        }
+        return results.flat().filter((result) => result !== undefined)
     }
 
     public dispose() {
