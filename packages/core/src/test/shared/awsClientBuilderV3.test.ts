@@ -85,17 +85,22 @@ describe('AwsClientBuilderV3', function () {
         it('recreates client when region changes', async function () {
             const firstClient = await builder.getAwsService(TestClient, {}, 'test-region')
             const secondClient = await builder.getAwsService(TestClient, {}, 'test-region2')
+            const thirdClient = await builder.getAwsService(TestClient, {}, 'test-region')
 
             assert.notStrictEqual(firstClient.id, secondClient.id)
             assert.strictEqual(firstClient.args.region, 'test-region')
             assert.strictEqual(secondClient.args.region, 'test-region2')
+
+            assert.strictEqual(firstClient.id, thirdClient.id)
         })
 
         it('recreates client when the underlying service changes', async function () {
             const firstClient = await builder.getAwsService(TestClient, {})
             const secondClient = await builder.getAwsService(TestClient2, {})
+            const thirdClient = await builder.getAwsService(TestClient, {})
 
             assert.notStrictEqual(firstClient.type, secondClient.type)
+            assert.strictEqual(firstClient.id, thirdClient.id)
         })
 
         it('recreates client when config options change', async function () {
@@ -111,6 +116,29 @@ describe('AwsClientBuilderV3', function () {
             const thirdClient = await builder.getAwsService(TestClient, {
                 retryStrategy: retryStrategy,
             })
+            assert.notStrictEqual(firstClient.id, secondClient.id)
+            assert.strictEqual(firstClient.id, thirdClient.id)
+        })
+
+        it('recreates client when endpoints change', async function () {
+            const settings = new TestSettings()
+            await settings.update('aws.dev.endpoints', { foo: 'http://example.com:3000/path' })
+            const devSettings = new DevSettings(settings)
+
+            const otherSettings = new TestSettings()
+            await otherSettings.update('aws.dev.endpoints', { foo: 'http://example.com:3000/path2' })
+            const otherDevSettings = new DevSettings(otherSettings)
+
+            const firstClient = await builder.getAwsService(TestClient, undefined, 'test-region', false, devSettings)
+            const secondClient = await builder.getAwsService(
+                TestClient,
+                undefined,
+                'test-region',
+                false,
+                otherDevSettings
+            )
+            const thirdClient = await builder.getAwsService(TestClient, undefined, 'test-region', false, devSettings)
+
             assert.notStrictEqual(firstClient.id, secondClient.id)
             assert.strictEqual(firstClient.id, thirdClient.id)
         })

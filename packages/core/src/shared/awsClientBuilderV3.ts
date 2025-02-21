@@ -85,12 +85,13 @@ export class AWSClientBuilderV3 {
         userAgent: boolean = true,
         settings?: DevSettings
     ): string {
+        // Serializing certain objects in the args allows us to detect when nested objects change (ex. new retry strategy, endpoints)
         return [
             String(type),
-            JSON.stringify(options), // Serializing this allows us to detect when nested objects change (ex. new retry strategy)
+            JSON.stringify(options),
             region,
             userAgent ? '1' : '0',
-            settings ? String(settings.get('endpoints', {})) : '',
+            settings ? JSON.stringify(settings.get('endpoints', {})) : '',
         ].join(':')
     }
 
