@@ -42,6 +42,16 @@ describe('Amazon Q Inline', async function () {
 
     afterEach(async function () {
         await closeAllEditors()
+        if (this.currentTest?.state === undefined || this.currentTest?.isFailed() || this.currentTest?.isPending()) {
+            const events = getEvents('codewhisperer_userTriggerDecision')
+            console.table({
+                'telemetry events': JSON.stringify(events),
+                'suggestions states': JSON.stringify(session.suggestionStates),
+                'valid recommendation': RecommendationHandler.instance.isValidResponse(),
+                'recommendation service status': RecommendationService.instance.isRunning,
+                recommendations: session.recommendations,
+            })
+        }
     })
 
     async function setupEditor({ name, contents }: { name?: string; contents?: string } = {}) {
@@ -82,17 +92,21 @@ describe('Amazon Q Inline', async function () {
             })
             return events.some((event) => event.codewhispererSuggestionState === suggestionState)
         }, waitOptions)
-        const events = globals.telemetry.logger
+        if (!ok) {
+            assert.fail(`Telemetry for ${metricName} with suggestionState ${suggestionState} was not emitted`)
+        }
+        const events = getEvents(metricName)
+        if (events.length > 1 && events[events.length - 1].codewhispererSuggestionState !== suggestionState) {
+            assert.fail(`Telemetry events were emitted in the wrong order`)
+        }
+    }
+
+    function getEvents(metricName: string) {
+        return globals.telemetry.logger
             .query({
                 metricName,
             })
             .map((e) => collectionUtil.partialClone(e, 3, ['credentialStartUrl'], '[omitted]'))
-        if (!ok) {
-            assert.fail(`Telemetry failed to be emitted. Current events: ${JSON.stringify(events)}`)
-        }
-        if (events.length > 1 && events[events.length - 1].codewhispererSuggestionState !== suggestionState) {
-            assert.fail(`Telemetry events were emitted in the wrong order. Current events: ${JSON.stringify(events)}`)
-        }
     }
 
     for (const [name, invokeCompletion] of [
@@ -121,10 +135,11 @@ describe('Amazon Q Inline', async function () {
                      * the file. Wait for that initial request to settle before doing anything
                      */
                     await waitUntil(async () => {
-                        console.log(
-                            `Waiting for recommenation to service to settle. Current status: ${RecommendationService.instance.isRunning}`
-                        )
-                        return !RecommendationService.instance.isRunning
+                        console.table({
+                            'recommendation status': RecommendationService.instance.isRunning,
+                            'session id': session.sessionId,
+                        })
+                        return !RecommendationService.instance.isRunning && session.sessionId === ''
                     }, waitOptions)
 
                     await invokeCompletion()
