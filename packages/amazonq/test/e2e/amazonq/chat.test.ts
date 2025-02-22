@@ -45,6 +45,7 @@ describe('Amazon Q Chat', function () {
          */
         const ok = await waitUntil(
             async () => {
+                console.log(JSON.stringify(tab.getStore()))
                 return tab.getStore().tabTitle === 'Chat'
             },
             {
