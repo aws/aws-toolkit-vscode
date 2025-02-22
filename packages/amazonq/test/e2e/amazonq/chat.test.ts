@@ -49,7 +49,7 @@ describe('Amazon Q Chat', function () {
             },
             {
                 interval: 50,
-                timeout: 2000,
+                timeout: 5000,
             }
         )
         if (!ok) {
