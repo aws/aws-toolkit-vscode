@@ -172,7 +172,6 @@
     "AWS.command.viewSchemaItem": "View Schema",
     "AWS.command.searchSchema": "Search Schemas",
     "AWS.command.executeStateMachine": "Start Execution...",
-    "AWS.command.renderStateMachineGraph": "Render graph",
     "AWS.command.copyArn": "Copy ARN",
     "AWS.command.copyName": "Copy Name",
     "AWS.command.openAwsConsole": "Go to AWS management console",

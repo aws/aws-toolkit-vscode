@@ -190,15 +190,6 @@ async function registerAwsExplorerCommands(
             'aws.executeStateMachine',
             async (node: StateMachineNode) => await executeStateMachine(context, node)
         ),
-        Commands.register(
-            'aws.renderStateMachineGraph',
-            async (node: StateMachineNode) =>
-                await downloadStateMachineDefinition({
-                    stateMachineNode: node,
-                    outputChannel: toolkitOutputChannel,
-                    isPreviewAndRender: true,
-                })
-        ),
         Commands.register('aws.copyArn', async (node: AWSResourceNode | TreeNode) => {
             const sourceNode = getSourceNode<AWSResourceNode>(node)
             await copyTextCommand(sourceNode, 'ARN')
