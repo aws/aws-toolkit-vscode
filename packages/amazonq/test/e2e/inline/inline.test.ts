@@ -116,6 +116,17 @@ describe('Amazon Q Inline', async function () {
                      **/
                     await sleep(1000)
 
+                    /**
+                     * It seems like there are instances (race condition?) where amazon q starts generating when you open up
+                     * the file. Wait for that initial request to settle before doing anything
+                     */
+                    await waitUntil(async () => {
+                        console.log(
+                            `Waiting for recommenation to service to settle. Current status: ${RecommendationService.instance.isRunning}`
+                        )
+                        return !RecommendationService.instance.isRunning
+                    }, waitOptions)
+
                     await invokeCompletion()
                     originalEditorContents = vscode.window.activeTextEditor?.document.getText()
 
