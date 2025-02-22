@@ -37,7 +37,7 @@ describe('Amazon Q Chat', function () {
         registerAuthHook('amazonq-test-account')
         framework = new qTestingFramework('cwc', true, [])
         console.log(document.body)
-        tab = framework.getSelectedTab()
+        tab = framework.getTabs()[0] // use the default tab that gets created
 
         /**
          * Since sending messages to the UI is asynchronous, race conditions can occur
