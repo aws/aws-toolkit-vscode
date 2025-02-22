@@ -39,7 +39,17 @@ describe('Amazon Q Chat', function () {
         store = tab.getStore()
     })
 
-    afterEach(() => {
+    afterEach(function () {
+        if (this.currentTest?.state === undefined || this.currentTest?.isFailed() || this.currentTest?.isPending()) {
+            console.table({
+                'chat items': JSON.stringify(store.chatItems),
+                'is chat loading': store.loadingChat,
+                'tab title': store.tabTitle,
+                'prompt input placeholder': store.promptInputPlaceholder,
+                'quick actions': JSON.stringify(store.quickActionCommands),
+                'context commands': JSON.stringify(store.contextCommands),
+            })
+        }
         framework.removeTab(tab.tabID)
         framework.dispose()
         sinon.restore()
