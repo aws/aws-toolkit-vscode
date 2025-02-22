@@ -94,6 +94,38 @@ export function createFactoryFunction<T extends new (...args: any[]) => any>(cto
     return (...args) => new ctor(...args)
 }
 
+/**
+ * Try functions in the order presented and return the first returned result. If none return, throw the final error.
+ * @param functions non-empty list of functions to try.
+ * @returns
+ */
+export async function tryFunctions<Result>(functions: (() => Promise<Result>)[]): Promise<Result> {
+    let currentError: Error = new Error('No functions provided')
+    for (const func of functions) {
+        try {
+            return await func()
+        } catch (e) {
+            currentError = e as Error
+        }
+    }
+    throw currentError
+}
+
+/**
+ * Split a list into two sublists based on the result of a predicate.
+ * @param lst list to split
+ * @param pred predicate to apply to each element
+ * @returns two nested lists, where for all items x in the left sublist, pred(x) returns true. The remaining elements are in the right sublist.
+ */
+export function partition<T>(lst: T[], pred: (arg: T) => boolean): [T[], T[]] {
+    return lst.reduce(
+        ([leftAcc, rightAcc], item) => {
+            return pred(item) ? [[...leftAcc, item], rightAcc] : [leftAcc, [...rightAcc, item]]
+        },
+        [[], []] as [T[], T[]]
+    )
+}
+
 type NoSymbols<T> = { [Property in keyof T]: Property extends symbol ? never : Property }[keyof T]
 export type InterfaceNoSymbol<T> = Pick<T, NoSymbols<T>>
 /**

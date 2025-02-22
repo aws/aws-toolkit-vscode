@@ -12,6 +12,7 @@ import { onceChanged } from '../utilities/functionUtils'
 import { ChildProcess } from '../utilities/processUtils'
 import globals, { isWeb } from '../extensionGlobals'
 import * as devConfig from '../../dev/config'
+import path from 'path'
 
 /**
  * Returns true if the current build is running on CI (build server).
@@ -269,4 +270,15 @@ export async function getMachineId(): Promise<string> {
     const proc = new ChildProcess('hostname', [], { collect: true, logging: 'no' })
     // TODO: check exit code.
     return (await proc.run()).stdout.trim() ?? 'unknown-host'
+}
+
+export function getApplicationSupportFolder() {
+    switch (process.platform) {
+        case 'darwin': {
+            return path.join(os.homedir(), 'Library/Application Support')
+        }
+        default: {
+            throw new Error('Only mac is supported right now')
+        }
+    }
 }
