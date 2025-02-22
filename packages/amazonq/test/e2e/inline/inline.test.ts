@@ -15,7 +15,7 @@ import {
     using,
 } from 'aws-core-vscode/test'
 import { RecommendationHandler, RecommendationService, session } from 'aws-core-vscode/codewhisperer'
-import { Commands, globals, sleep, waitUntil } from 'aws-core-vscode/shared'
+import { Commands, globals, sleep, waitUntil, collectionUtil } from 'aws-core-vscode/shared'
 import { loginToIdC } from '../amazonq/utils/setup'
 
 describe('Amazon Q Inline', async function () {
@@ -82,9 +82,11 @@ describe('Amazon Q Inline', async function () {
             })
             return events.some((event) => event.codewhispererSuggestionState === suggestionState)
         }, waitOptions)
-        const events = globals.telemetry.logger.query({
-            metricName,
-        })
+        const events = globals.telemetry.logger
+            .query({
+                metricName,
+            })
+            .map((e) => collectionUtil.partialClone(e, 3, ['credentialStartUrl'], '[omitted]'))
         if (!ok) {
             assert.fail(`Telemetry failed to be emitted. Current events: ${JSON.stringify(events)}`)
         }
