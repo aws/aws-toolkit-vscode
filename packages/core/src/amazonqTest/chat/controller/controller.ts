@@ -285,35 +285,33 @@ export class TestController {
         if (session.stopIteration) {
             telemetryErrorMessage = getTelemetryReasonDesc(data.error.uiMessage.replaceAll('```', ''))
         }
-        if (session.listOfTestGenerationJobId.length > 1) {
-            TelemetryHelper.instance.sendUnitTestGenerationEvent(
-                session,
-                isCancel ? 'Cancelled' : 'Failed',
-                session.artifactsUploadDuration,
-                session.srcZipFileSize,
-                session.charsOfCodeAccepted,
-                session.numberOfTestsGenerated,
-                session.linesOfCodeGenerated,
-                session.charsOfCodeGenerated,
-                session.numberOfTestsGenerated,
-                session.linesOfCodeGenerated,
-                undefined
-            )
-        } else {
-            TelemetryHelper.instance.sendTestGenerationToolkitEvent(
-                session,
-                session.isSupportedLanguage,
-                true,
-                isCancel ? 'Cancelled' : 'Failed',
-                session.startTestGenerationRequestId,
-                performance.now() - session.testGenerationStartTime,
-                telemetryErrorMessage,
-                session.isCodeBlockSelected,
-                session.artifactsUploadDuration,
-                session.srcPayloadSize,
-                session.srcZipFileSize
-            )
-        }
+        session.listOfTestGenerationJobId.length > 1
+            ? TelemetryHelper.instance.sendUnitTestGenerationEvent(
+                  session,
+                  isCancel ? 'Cancelled' : 'Failed',
+                  session.artifactsUploadDuration,
+                  session.srcZipFileSize,
+                  session.charsOfCodeAccepted,
+                  session.numberOfTestsGenerated,
+                  session.linesOfCodeGenerated,
+                  session.charsOfCodeGenerated,
+                  session.numberOfTestsGenerated,
+                  session.linesOfCodeGenerated,
+                  undefined
+              )
+            : TelemetryHelper.instance.sendTestGenerationToolkitEvent(
+                  session,
+                  session.isSupportedLanguage,
+                  true,
+                  isCancel ? 'Cancelled' : 'Failed',
+                  session.startTestGenerationRequestId,
+                  performance.now() - session.testGenerationStartTime,
+                  telemetryErrorMessage,
+                  session.isCodeBlockSelected,
+                  session.artifactsUploadDuration,
+                  session.srcPayloadSize,
+                  session.srcZipFileSize
+              )
         if (session.stopIteration) {
             // Error from Science
             this.messenger.sendMessage(data.error.uiMessage.replaceAll('```', ''), data.tabID, 'answer')
@@ -949,8 +947,6 @@ export class TestController {
         const session = this.sessionStorage.getSession()
         if (step === FollowUpTypes.RejectCode) {
             if (session.listOfTestGenerationJobId.length > 1) {
-                // TODO
-                // telemetry.amazonq_unitTestGeneration.emit()
                 TelemetryHelper.instance.sendUnitTestGenerationEvent(
                     session,
                     undefined,

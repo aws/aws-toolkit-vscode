@@ -140,7 +140,6 @@ export class TelemetryHelper {
             cwsprChatProgrammingLanguage: session.fileLanguage ?? 'plaintext',
             hasUserPromptSupplied: session.hasUserPromptSupplied,
             isSupportedLanguage: session.isSupportedLanguage,
-            isFileInWorkspace: true, // Always true TODO: Confirm
             result:
                 session.buildStatus === BuildStatus.SUCCESS
                     ? 'Succeeded'
