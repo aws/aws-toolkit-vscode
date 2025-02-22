@@ -36,6 +36,7 @@ describe('Amazon Q Chat', function () {
         // Make sure you're logged in before every test
         registerAuthHook('amazonq-test-account')
         framework = new qTestingFramework('cwc', true, [])
+        console.log(document.body)
         tab = framework.getSelectedTab()
 
         /**

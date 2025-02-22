@@ -52,10 +52,10 @@ describe('Amazon Q Inline', async function () {
         const events = getEvents('codewhisperer_userTriggerDecision')
         console.table({
             'telemetry events': JSON.stringify(events),
-            'suggestions states': JSON.stringify(session.suggestionStates),
-            'valid recommendation': RecommendationHandler.instance.isValidResponse(),
+            // 'suggestions states': JSON.stringify(session.suggestionStates),
+            // 'valid recommendation': RecommendationHandler.instance.isValidResponse(),
             'recommendation service status': RecommendationService.instance.isRunning,
-            recommendations: session.recommendations,
+            // recommendations: session.recommendations,
         })
     }
 
@@ -83,8 +83,14 @@ describe('Amazon Q Inline', async function () {
                 `Suggestions failed to become visible. Suggestion States: ${JSON.stringify(session.suggestionStates)}`
             )
         }
-        if (session.recommendations.length === 0) {
-            throw new Error('No recommendations were generated')
+        console.table({
+            'suggestions states': JSON.stringify(session.suggestionStates),
+            'valid recommendation': RecommendationHandler.instance.isValidResponse(),
+            'recommendation service status': RecommendationService.instance.isRunning,
+            recommendations: session.recommendations,
+        })
+        if (!RecommendationHandler.instance.isValidResponse()) {
+            throw new Error('Did not find a valid response')
         }
     }
 
