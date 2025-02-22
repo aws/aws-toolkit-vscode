@@ -43,7 +43,7 @@ describe('Amazon Q Chat', function () {
          * where the event is set but not fully loaded. Instead of checking the store directly,
          * we now use the tab title as a proxy to determine when the tab is fully ready
          */
-        await waitUntil(
+        const ok = await waitUntil(
             async () => {
                 return tab.getStore().tabTitle === 'Chat'
             },
@@ -52,6 +52,9 @@ describe('Amazon Q Chat', function () {
                 timeout: 2000,
             }
         )
+        if (!ok) {
+            assert.fail('Chat tab failed to load')
+        }
         store = tab.getStore()
     })
 
