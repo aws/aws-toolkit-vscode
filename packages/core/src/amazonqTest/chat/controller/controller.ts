@@ -63,6 +63,7 @@ import {
 } from '../../../codewhisperer/models/constants'
 import { UserWrittenCodeTracker } from '../../../codewhisperer/tracker/userWrittenCodeTracker'
 import { ReferenceLogViewProvider } from '../../../codewhisperer/service/referenceLogViewProvider'
+import { Auth } from '../../../auth/auth'
 
 export interface TestChatControllerEventEmitters {
     readonly tabOpened: vscode.EventEmitter<any>
@@ -284,19 +285,33 @@ export class TestController {
         if (session.stopIteration) {
             telemetryErrorMessage = getTelemetryReasonDesc(data.error.uiMessage.replaceAll('```', ''))
         }
-        TelemetryHelper.instance.sendTestGenerationToolkitEvent(
-            session,
-            true,
-            true,
-            isCancel ? 'Cancelled' : 'Failed',
-            session.startTestGenerationRequestId,
-            performance.now() - session.testGenerationStartTime,
-            telemetryErrorMessage,
-            session.isCodeBlockSelected,
-            session.artifactsUploadDuration,
-            session.srcPayloadSize,
-            session.srcZipFileSize
-        )
+        session.listOfTestGenerationJobId.length > 1
+            ? TelemetryHelper.instance.sendUnitTestGenerationEvent(
+                  session,
+                  isCancel ? 'Cancelled' : 'Failed',
+                  session.artifactsUploadDuration,
+                  session.srcZipFileSize,
+                  session.charsOfCodeAccepted,
+                  session.numberOfTestsGenerated,
+                  session.linesOfCodeGenerated,
+                  session.charsOfCodeGenerated,
+                  session.numberOfTestsGenerated,
+                  session.linesOfCodeGenerated,
+                  undefined
+              )
+            : TelemetryHelper.instance.sendTestGenerationToolkitEvent(
+                  session,
+                  session.isSupportedLanguage,
+                  true,
+                  isCancel ? 'Cancelled' : 'Failed',
+                  session.startTestGenerationRequestId,
+                  performance.now() - session.testGenerationStartTime,
+                  telemetryErrorMessage,
+                  session.isCodeBlockSelected,
+                  session.artifactsUploadDuration,
+                  session.srcPayloadSize,
+                  session.srcZipFileSize
+              )
         if (session.stopIteration) {
             // Error from Science
             this.messenger.sendMessage(data.error.uiMessage.replaceAll('```', ''), data.tabID, 'answer')
@@ -502,6 +517,7 @@ export class TestController {
                     unsupportedMessage = `<span style="color: #EE9D28;">&#9888;<b>I'm sorry, but /test only supports Python and Java</b><br></span> I will still generate a suggestion below.`
                 }
                 this.messenger.sendMessage(unsupportedMessage, tabID, 'answer')
+                session.isSupportedLanguage = false
                 await this.onCodeGeneration(
                     session,
                     userPrompt,
@@ -529,6 +545,7 @@ export class TestController {
                     )
                 }
                 session.isCodeBlockSelected = selectionRange !== undefined
+                session.isSupportedLanguage = true
 
                 /**
                  * Zip the project
@@ -612,7 +629,7 @@ export class TestController {
         // return early if references are disabled and there are references
         if (!CodeWhispererSettings.instance.isSuggestionsWithCodeReferencesEnabled() && session.references.length > 0) {
             void vscode.window.showInformationMessage('Your settings do not allow code generation with references.')
-            await this.endSession(data, FollowUpTypes.SkipBuildAndFinish)
+            await this.endSession(data)
             await this.sessionCleanUp()
             return
         }
@@ -689,7 +706,12 @@ export class TestController {
         const rightUri = vscode.Uri.file(path.join(this.tempResultDirPath, 'resultArtifacts', filePath))
         const fileName = path.basename(absolutePath)
         await vscode.commands.executeCommand('vscode.diff', leftUri, rightUri, `${fileName} ${amazonQTabSuffix}`)
-        telemetry.ui_click.emit({ elementId: 'unitTestGeneration_viewDiff' })
+        const elementId =
+            session.listOfTestGenerationJobId.length > 1
+                ? 'unitTestGeneration_viewDiff_Iteration'
+                : 'unitTestGeneration_viewDiff'
+
+        telemetry.ui_click.emit({ elementId })
         session.latencyOfTestGeneration = performance.now() - session.testGenerationStartTime
         this.messenger.sendUpdatePlaceholder(message.tabID, `Please select an action to proceed (Accept or Reject)`)
     }
@@ -773,9 +795,12 @@ export class TestController {
         }
         const document = await vscode.workspace.openTextDocument(absolutePath)
         await vscode.window.showTextDocument(document)
-        // TODO: send the message once again once build is enabled
-        // this.messenger.sendMessage('Accepted', message.tabID, 'prompt')
-        telemetry.ui_click.emit({ elementId: 'unitTestGeneration_acceptDiff' })
+        const elementId =
+            session.listOfTestGenerationJobId.length > 1
+                ? 'unitTestGeneration_acceptDiff_Iteration'
+                : 'unitTestGeneration_acceptDiff'
+
+        telemetry.ui_click.emit({ elementId })
 
         getLogger().info(
             `Generated unit tests are accepted for ${session.fileLanguage ?? 'plaintext'} language with jobId: ${session.listOfTestGenerationJobId[0]}, jobGroupName: ${session.testGenerationJobGroupName}, result: Succeeded`
@@ -800,8 +825,10 @@ export class TestController {
             session.linesOfCodeGenerated
         )
 
-        await this.endSession(message, FollowUpTypes.SkipBuildAndFinish)
-        return
+        if (!Auth.instance.isInternalAmazonUser()) {
+            await this.endSession(message)
+            return
+        }
 
         if (session.listOfTestGenerationJobId.length === 1) {
             this.startInitialBuild(message)
@@ -841,6 +868,19 @@ export class TestController {
             })
             this.messenger.sendChatInputEnabled(message.tabID, false)
         } else {
+            TelemetryHelper.instance.sendUnitTestGenerationEvent(
+                session,
+                undefined,
+                session.artifactsUploadDuration,
+                session.srcZipFileSize,
+                session.charsOfCodeAccepted,
+                session.numberOfTestsGenerated,
+                session.linesOfCodeGenerated,
+                session.charsOfCodeGenerated,
+                session.numberOfTestsGenerated,
+                session.linesOfCodeGenerated,
+                undefined
+            )
             this.sessionStorage.getSession().listOfTestGenerationJobId = []
             this.messenger.sendMessage(
                 'You have gone through both iterations and this unit test generation workflow is complete.',
@@ -901,31 +941,63 @@ export class TestController {
     }
 
     // TODO: Check if there are more cases to endSession if yes create a enum or type for step
-    private async endSession(data: any, step: FollowUpTypes) {
+    private async endSession(data: any, step?: FollowUpTypes) {
         this.messenger.sendMessage('Unit test generation completed.', data.tabID, 'answer')
 
         const session = this.sessionStorage.getSession()
         if (step === FollowUpTypes.RejectCode) {
-            TelemetryHelper.instance.sendTestGenerationToolkitEvent(
+            if (session.listOfTestGenerationJobId.length > 1) {
+                TelemetryHelper.instance.sendUnitTestGenerationEvent(
+                    session,
+                    undefined,
+                    session.artifactsUploadDuration,
+                    session.srcZipFileSize,
+                    0,
+                    0,
+                    0,
+                    session.charsOfCodeGenerated,
+                    session.numberOfTestsGenerated,
+                    session.linesOfCodeGenerated,
+                    undefined
+                )
+                telemetry.ui_click.emit({ elementId: 'unitTestGeneration_rejectDiff_Iteration' })
+            } else {
+                TelemetryHelper.instance.sendTestGenerationToolkitEvent(
+                    session,
+                    true,
+                    true,
+                    'Succeeded',
+                    session.startTestGenerationRequestId,
+                    session.latencyOfTestGeneration,
+                    undefined,
+                    session.isCodeBlockSelected,
+                    session.artifactsUploadDuration,
+                    session.srcPayloadSize,
+                    session.srcZipFileSize,
+                    0,
+                    0,
+                    0,
+                    session.charsOfCodeGenerated,
+                    session.numberOfTestsGenerated,
+                    session.linesOfCodeGenerated
+                )
+                telemetry.ui_click.emit({ elementId: 'unitTestGeneration_rejectDiff' })
+            }
+        } else if (step === FollowUpTypes.SkipBuildAndFinish) {
+            TelemetryHelper.instance.sendUnitTestGenerationEvent(
                 session,
-                true,
-                true,
-                'Succeeded',
-                session.startTestGenerationRequestId,
-                session.latencyOfTestGeneration,
                 undefined,
-                session.isCodeBlockSelected,
                 session.artifactsUploadDuration,
-                session.srcPayloadSize,
                 session.srcZipFileSize,
-                0,
-                0,
-                0,
                 session.charsOfCodeGenerated,
                 session.numberOfTestsGenerated,
-                session.linesOfCodeGenerated
+                session.linesOfCodeGenerated,
+                session.charsOfCodeGenerated,
+                session.numberOfTestsGenerated,
+                session.linesOfCodeGenerated,
+                undefined
             )
-            telemetry.ui_click.emit({ elementId: 'unitTestGeneration_rejectDiff' })
+            telemetry.ui_click.emit({ elementId: 'unitTestGeneration_SkipAndFinish' })
         }
 
         await this.sessionCleanUp()
@@ -941,12 +1013,17 @@ export class TestController {
 
     private startInitialBuild(data: any) {
         // TODO: Remove the fallback build command after stable version of backend build command.
-        const userMessage = `Would you like me to help build and execute the test? I will need you to let me know what build command to run if you do.`
+        const userMessage = `Would you like me to help build and execute the test? I’ll run following commands.\n\`\`\`sh\n${this.getBuildCommands()}\n`
         const followUps: FollowUps = {
             text: '',
             options: [
                 {
-                    pillText: `Specify command then build and execute`,
+                    pillText: `Build and execute`,
+                    type: FollowUpTypes.BuildAndExecute,
+                    status: 'primary',
+                },
+                {
+                    pillText: `Modify command`,
                     type: FollowUpTypes.ModifyCommands,
                     status: 'primary',
                 },
@@ -976,7 +1053,6 @@ export class TestController {
         const listOfInstallationDependencies = ['']
         const installationDependencies = listOfInstallationDependencies.join('\n')
 
-        this.messenger.sendMessage('Build and execute', data.tabID, 'prompt')
         telemetry.ui_click.emit({ elementId: 'unitTestGeneration_buildAndExecute' })
 
         if (installationDependencies.length > 0) {
@@ -1025,11 +1101,6 @@ export class TestController {
         // const installationDependencies = session.shortAnswer?.installationDependencies ?? []
         // MOCK: ignoring the installation case until backend send response
         const installationDependencies: string[] = []
-        const buildCommands = session.updatedBuildCommands
-        if (!buildCommands) {
-            throw new Error('Build command not found')
-            return
-        }
 
         this.messenger.sendBuildProgressMessage({
             tabID: data.tabID,
@@ -1101,7 +1172,7 @@ export class TestController {
             messageId: TestNamedMessages.TEST_GENERATION_BUILD_STATUS_MESSAGE,
         })
 
-        const buildStatus = await runBuildCommand(buildCommands)
+        const buildStatus = await runBuildCommand(this.getBuildCommands())
         session.buildStatus = buildStatus
 
         if (buildStatus === BuildStatus.FAILURE) {
@@ -1229,10 +1300,17 @@ export class TestController {
             fileList: this.checkCodeDiffLengthAndBuildStatus({ codeDiffLength, buildStatus: session.buildStatus })
                 ? {
                       fileTreeTitle: 'READY FOR REVIEW',
-                      rootFolderTitle: 'tests',
+                      rootFolderTitle: path.basename(session.projectRootPath),
                       filePaths: [session.generatedFilePath],
                   }
                 : undefined,
+            codeReference: session.references.map(
+                (ref: ShortAnswerReference) =>
+                    ({
+                        ...ref,
+                        information: `${ref.licenseName} - <a href="${ref.url}">${ref.repository}</a>`,
+                    }) as CodeReference
+            ),
         })
         this.messenger.sendBuildProgressMessage({
             tabID: data.tabID,
@@ -1255,13 +1333,26 @@ export class TestController {
 
         if (codeDiffLength === 0 || session.buildStatus === BuildStatus.SUCCESS) {
             this.messenger.sendMessage('Unit test generation workflow is complete.', data.tabID, 'answer')
+            TelemetryHelper.instance.sendUnitTestGenerationEvent(
+                session,
+                undefined,
+                session.artifactsUploadDuration,
+                session.srcZipFileSize,
+                session.charsOfCodeGenerated,
+                session.numberOfTestsGenerated,
+                session.linesOfCodeGenerated,
+                session.charsOfCodeGenerated,
+                session.numberOfTestsGenerated,
+                session.linesOfCodeGenerated,
+                undefined
+            )
             await this.sessionCleanUp()
         }
     }
 
     private modifyBuildCommand(data: any) {
         this.sessionStorage.getSession().conversationState = ConversationState.WAITING_FOR_BUILD_COMMMAND_INPUT
-        this.messenger.sendMessage('Specify commands then build', data.tabID, 'prompt')
+        this.messenger.sendMessage('Modify Command', data.tabID, 'prompt')
         telemetry.ui_click.emit({ elementId: 'unitTestGeneration_modifyCommand' })
         this.messenger.sendMessage(
             'Sure, provide all command lines you’d like me to run to build.',
@@ -1374,21 +1465,16 @@ export class TestController {
     }
 
     // TODO: return build command when product approves
-    // private getBuildCommands = (): string[] => {
-    //     const session = this.sessionStorage.getSession()
-    //     if (session.updatedBuildCommands?.length) {
-    //         return [...session.updatedBuildCommands]
-    //     }
+    private getBuildCommands = (): string[] => {
+        const session = this.sessionStorage.getSession()
+        if (session.updatedBuildCommands?.length) {
+            return [...session.updatedBuildCommands]
+        }
 
-    //     // For Internal amazon users only
-    //     if (Auth.instance.isInternalAmazonUser()) {
-    //         return ['brazil-build release']
-    //     }
-
-    //     if (session.shortAnswer && Array.isArray(session.shortAnswer?.buildCommands)) {
-    //         return [...session.shortAnswer.buildCommands]
-    //     }
-
-    //     return ['source qdev-wbr/.venv/bin/activate && pytest --continue-on-collection-errors']
-    // }
+        if (session.shortAnswer && session.shortAnswer?.buildCommand) {
+            return [session.shortAnswer.buildCommand]
+        }
+        // TODO: Add a generic command here for external launch according to the build system.
+        return ['brazil-build release']
+    }
 }
