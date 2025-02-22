@@ -44,16 +44,20 @@ describe('Amazon Q Inline', async function () {
     afterEach(async function () {
         await closeAllEditors()
         if (this.currentTest?.state === undefined || this.currentTest?.isFailed() || this.currentTest?.isPending()) {
-            const events = getEvents('codewhisperer_userTriggerDecision')
-            console.table({
-                'telemetry events': JSON.stringify(events),
-                'suggestions states': JSON.stringify(session.suggestionStates),
-                'valid recommendation': RecommendationHandler.instance.isValidResponse(),
-                'recommendation service status': RecommendationService.instance.isRunning,
-                recommendations: session.recommendations,
-            })
+            log()
         }
     })
+
+    function log() {
+        const events = getEvents('codewhisperer_userTriggerDecision')
+        console.table({
+            'telemetry events': JSON.stringify(events),
+            'suggestions states': JSON.stringify(session.suggestionStates),
+            'valid recommendation': RecommendationHandler.instance.isValidResponse(),
+            'recommendation service status': RecommendationService.instance.isRunning,
+            recommendations: session.recommendations,
+        })
+    }
 
     async function setupEditor({ name, contents }: { name?: string; contents?: string } = {}) {
         const fileName = name ?? 'test.ts'
@@ -78,6 +82,9 @@ describe('Amazon Q Inline', async function () {
             throw new Error(
                 `Suggestions failed to become visible. Suggestion States: ${JSON.stringify(session.suggestionStates)}`
             )
+        }
+        if (session.recommendations.length === 0) {
+            throw new Error('No recommendations were generated')
         }
     }
 
@@ -162,9 +169,13 @@ describe('Amazon Q Inline', async function () {
                     while (attempt < retries) {
                         try {
                             await setup()
+                            console.log('succeeded')
+                            log()
                             break
                         } catch (e) {
-                            console.error(e)
+                            console.log('failed')
+                            console.log(e)
+                            log()
                             attempt++
                         }
                     }
