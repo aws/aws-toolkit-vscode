@@ -12,6 +12,7 @@ import { assertContextCommands, assertQuickActions } from './assert'
 import { registerAuthHook, using } from 'aws-core-vscode/test'
 import { loginToIdC } from './utils/setup'
 import { webviewConstants } from 'aws-core-vscode/amazonq'
+import { waitUntil } from 'aws-core-vscode/shared'
 
 describe('Amazon Q Chat', function () {
     let framework: qTestingFramework
@@ -31,11 +32,26 @@ describe('Amazon Q Chat', function () {
     })
 
     // jscpd:ignore-start
-    beforeEach(() => {
+    beforeEach(async () => {
         // Make sure you're logged in before every test
         registerAuthHook('amazonq-test-account')
         framework = new qTestingFramework('cwc', true, [])
         tab = framework.createTab()
+
+        /**
+         * Since sending messages to the UI is asynchronous, race conditions can occur
+         * where the event is set but not fully loaded. Instead of checking the store directly,
+         * we now use the tab title as a proxy to determine when the tab is fully ready
+         */
+        await waitUntil(
+            async () => {
+                return tab.getStore().tabTitle === 'Chat'
+            },
+            {
+                interval: 50,
+                timeout: 2000,
+            }
+        )
         store = tab.getStore()
     })
 
@@ -48,6 +64,7 @@ describe('Amazon Q Chat', function () {
                 'prompt input placeholder': store.promptInputPlaceholder,
                 'quick actions': JSON.stringify(store.quickActionCommands),
                 'context commands': JSON.stringify(store.contextCommands),
+                'tab count': framework.getTabs().length,
             })
         }
         framework.removeTab(tab.tabID)
