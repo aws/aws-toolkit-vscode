@@ -36,7 +36,7 @@ describe('Amazon Q Chat', function () {
         // Make sure you're logged in before every test
         registerAuthHook('amazonq-test-account')
         framework = new qTestingFramework('cwc', true, [])
-        tab = framework.createTab()
+        tab = framework.getSelectedTab()
 
         /**
          * Since sending messages to the UI is asynchronous, race conditions can occur
@@ -45,7 +45,6 @@ describe('Amazon Q Chat', function () {
          */
         const ok = await waitUntil(
             async () => {
-                console.log(JSON.stringify(tab.getStore()))
                 return tab.getStore().tabTitle === 'Chat'
             },
             {
