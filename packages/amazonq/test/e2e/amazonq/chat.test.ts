@@ -103,13 +103,11 @@ describe('Amazon Q Chat', function () {
         assert.deepStrictEqual(chatItems[4].type, 'answer')
     })
 
-    describe('Clicks examples', () => {
-        it('Click help', async () => {
-            tab.clickButton('help')
-            await tab.waitForText(webviewConstants.helpMessage)
-            const chatItems = tab.getChatItems()
-            assert.deepStrictEqual(chatItems[4].type, 'answer')
-            assert.deepStrictEqual(chatItems[4].body, webviewConstants.helpMessage)
-        })
+    it('Clicks help', async () => {
+        tab.clickButton('help')
+        await tab.waitForText(webviewConstants.helpMessage)
+        const chatItems = tab.getChatItems()
+        assert.deepStrictEqual(chatItems[4].type, 'answer')
+        assert.deepStrictEqual(chatItems[4].body, webviewConstants.helpMessage)
     })
 })
