@@ -37,7 +37,7 @@ describe('Amazon Q Inline', async function () {
         const folder = await TestFolder.create()
         tempFolder = folder.path
         await closeAllEditors()
-        await resetCodeWhispererGlobalVariables(false)
+        await resetCodeWhispererGlobalVariables()
     })
 
     afterEach(async function () {
