@@ -20,6 +20,7 @@ import { loginToIdC } from '../amazonq/utils/setup'
 
 describe('Amazon Q Inline', async function () {
     let tempFolder: string
+    const retries = 3
     const waitOptions = {
         interval: 500,
         timeout: 10000,
@@ -74,7 +75,7 @@ describe('Amazon Q Inline', async function () {
             waitOptions
         )
         if (!ok) {
-            assert.fail(
+            throw new Error(
                 `Suggestions failed to become visible. Suggestion States: ${JSON.stringify(session.suggestionStates)}`
             )
         }
@@ -117,7 +118,7 @@ describe('Amazon Q Inline', async function () {
             let originalEditorContents: string | undefined
 
             describe('supported filetypes', () => {
-                beforeEach(async () => {
+                async function setup() {
                     await setupEditor()
 
                     /**
@@ -134,19 +135,42 @@ describe('Amazon Q Inline', async function () {
                      * It seems like there are instances (race condition?) where amazon q starts generating when you open up
                      * the file. Wait for that initial request to settle before doing anything
                      */
-                    await waitUntil(async () => {
+                    const ok = await waitUntil(async () => {
                         console.table({
                             'recommendation status': RecommendationService.instance.isRunning,
                             'session id': session.sessionId,
                         })
                         return !RecommendationService.instance.isRunning && session.sessionId === ''
                     }, waitOptions)
+                    if (!ok) {
+                        throw new Error('Recommendation service did not settle')
+                    }
 
                     await invokeCompletion()
                     originalEditorContents = vscode.window.activeTextEditor?.document.getText()
 
                     // wait until the ghost text appears
                     await waitForRecommendations()
+                }
+
+                beforeEach(async () => {
+                    /**
+                     * Every once and a while the backend won't respond with any recommendations.
+                     * In those cases, re-try the setup up-to ${retries} times
+                     */
+                    let attempt = 0
+                    while (attempt < retries) {
+                        try {
+                            await setup()
+                            break
+                        } catch (e) {
+                            console.error(e)
+                            attempt++
+                        }
+                    }
+                    if (attempt === retries) {
+                        assert.fail(`Failed to invoke ${name} tests after ${attempt} attempts`)
+                    }
                 })
 
                 it(`${name} invoke accept`, async function () {
