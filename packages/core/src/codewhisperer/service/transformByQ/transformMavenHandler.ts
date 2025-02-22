@@ -27,6 +27,11 @@ function installProjectDependencies(dependenciesFolder: FolderInfo, modulePath: 
 
         // Note: IntelliJ runs 'clean' separately from 'install'. Evaluate benefits (if any) of this.
         const args = [`-Dmaven.repo.local=${dependenciesFolder.path}`, 'clean', 'install', '-q']
+
+        if (transformByQState.getCustomBuildCommand() === CodeWhispererConstants.skipUnitTestsBuildCommand) {
+            args.push('-DskipTests')
+        }
+
         let environment = process.env
 
         if (transformByQState.getJavaHome() !== undefined) {

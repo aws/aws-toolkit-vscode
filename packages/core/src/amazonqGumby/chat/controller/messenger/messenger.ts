@@ -125,12 +125,12 @@ export class Messenger {
             mandatory: true,
             options: [
                 {
-                    value: CodeWhispererConstants.runUnitTestsMessage,
-                    label: CodeWhispererConstants.runUnitTestsMessage,
-                },
-                {
                     value: CodeWhispererConstants.skipUnitTestsMessage,
                     label: CodeWhispererConstants.skipUnitTestsMessage,
+                },
+                {
+                    value: CodeWhispererConstants.runUnitTestsMessage,
+                    label: CodeWhispererConstants.runUnitTestsMessage,
                 },
             ],
         })
@@ -533,7 +533,7 @@ export class Messenger {
             })
         }
 
-        if (transformByQState.getSummaryFilePath()) {
+        if (transformByQState.isPartiallySucceeded() || transformByQState.isSucceeded()) {
             buttons.push({
                 keepCardAfterClick: true,
                 text: CodeWhispererConstants.viewSummaryButtonText,

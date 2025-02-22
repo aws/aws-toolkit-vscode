@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "/transform: skip running tests locally when user chooses to do so"
+}
