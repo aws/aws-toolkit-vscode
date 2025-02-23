@@ -73,11 +73,11 @@ describe('Amazon Q Inline', async function () {
     }
 
     async function waitForRecommendations() {
-        const ok = await waitUntil(
-            async () =>
-                RecommendationHandler.instance.isSuggestionVisible() || session.getSuggestionState(0) === 'Showed',
-            waitOptions
-        )
+        const ok1 = await waitUntil(async () => session.getSuggestionState(0) === 'Showed', waitOptions)
+        if (!ok1) {
+            throw new Error(`Suggestion did not show: ${JSON.stringify(session.suggestionStates)}`)
+        }
+        const ok = await waitUntil(async () => RecommendationHandler.instance.isSuggestionVisible(), waitOptions)
         if (!ok) {
             throw new Error(
                 `Suggestions failed to become visible. Suggestion States: ${JSON.stringify(session.suggestionStates)}`
