@@ -326,7 +326,7 @@ describe('Amazon Q Doc Generation', async function () {
 
     describe('Quick action availability', () => {
         it('Shows /doc command when doc generation is enabled', async () => {
-            const command = tab.findCommand('/doc')
+            const command = initialTab.findCommand('/doc')
             if (!command.length) {
                 assert.fail('Could not find command')
             }
