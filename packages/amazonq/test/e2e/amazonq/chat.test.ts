@@ -12,7 +12,6 @@ import { assertContextCommands, assertQuickActions } from './assert'
 import { registerAuthHook, using } from 'aws-core-vscode/test'
 import { loginToIdC } from './utils/setup'
 import { webviewConstants } from 'aws-core-vscode/amazonq'
-import { waitUntil } from 'aws-core-vscode/shared'
 
 describe('Amazon Q Chat', function () {
     let framework: qTestingFramework
