@@ -5,7 +5,7 @@
 import * as nls from 'vscode-nls'
 import * as AWS from '@aws-sdk/types'
 import * as vscode from 'vscode'
-import { Wizard, WIZARD_BACK, WizardControl } from '../../../shared/wizards/wizard'
+import { Wizard } from '../../../shared/wizards/wizard'
 import * as path from 'path'
 import { createInputBox } from '../../../shared/ui/inputPrompter'
 import { createCommonButtons } from '../../../shared/ui/buttons'
@@ -13,6 +13,7 @@ import { createQuickPick } from '../../../shared/ui/pickerPrompter'
 import { createFolderPrompt } from '../../../shared/ui/common/location'
 import { createExitPrompter } from '../../../shared/ui/common/exitPrompter'
 import { MetadataManager } from './metadataManager'
+import type { ExtensionContext } from 'vscode'
 import { ToolkitError } from '../../../shared/errors'
 
 const localize = nls.loadMessageBundle()
@@ -25,10 +26,11 @@ export interface CreateServerlessLandWizardForm {
     assetName: string
 }
 
-async function loadMetadata(): Promise<MetadataManager> {
+async function loadMetadata(ctx: vscode.ExtensionContext): Promise<MetadataManager> {
     const metadataManager = MetadataManager.getInstance()
-    const projectRoot = path.resolve(__dirname, '../../../../../')
-    const metadataPath = path.join(projectRoot, 'src', 'awsService', 'appBuilder', 'serverlessLand', 'metadata.json')
+    // const projectRoot = path.resolve(__dirname, '../../../../../')
+    // const metadataPath = path.join(projectRoot, 'src', 'awsService', 'appBuilder', 'serverlessLand', 'metadata.json')
+    const metadataPath = ctx.asAbsolutePath(path.join('dist', 'src', 'serverlessLand', 'metadata.json'))
     await metadataManager.loadMetadata(metadataPath)
     return metadataManager
 }
@@ -143,11 +145,11 @@ function promptName() {
 export class CreateServerlessLandWizard extends Wizard<CreateServerlessLandWizardForm> {
     private metadataManager: MetadataManager
 
-    public constructor(context: { defaultRegion?: string; credentials?: AWS.Credentials }) {
+    public constructor(context: { ctx: ExtensionContext; defaultRegion?: string; credentials?: AWS.Credentials }) {
         super({
             exitPrompterProvider: createExitPrompter,
         })
-        loadMetadata().catch((err: any) => {
+        loadMetadata(context.ctx).catch((err: any) => {
             throw new ToolkitError(`Failed to load metadata: ${err}`)
         })
         this.metadataManager = MetadataManager.getInstance()
