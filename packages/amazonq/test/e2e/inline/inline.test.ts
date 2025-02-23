@@ -160,10 +160,6 @@ describe('Amazon Q Inline', async function () {
                     while (attempt < retries) {
                         try {
                             await setup()
-                            if (attempt === 0) {
-                                attempt = 1
-                                throw new Error('testing if this works')
-                            }
                             console.log('succeeded')
                             log()
                             break
