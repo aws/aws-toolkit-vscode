@@ -168,6 +168,7 @@ describe('Amazon Q Inline', async function () {
                             console.log(e)
                             log()
                             attempt++
+                            await resetCodeWhispererGlobalVariables()
                         }
                     }
                     if (attempt === retries) {
