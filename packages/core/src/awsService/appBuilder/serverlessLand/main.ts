@@ -18,6 +18,7 @@ import { ToolkitError } from '../../../shared/errors'
 import { fs } from '../../../shared/fs/fs'
 import { getPattern } from '../../../shared/utilities/downloadPatterns'
 import { MetadataManager } from './metadataManager'
+import type { ExtensionContext } from 'vscode'
 
 export const readmeFile: string = 'README.md'
 const serverlessLandOwner = 'aws-samples'
@@ -36,7 +37,7 @@ const serverlessLandRepo = 'serverless-patterns'
  * 5. Opens the README.md file if available
  * 6. Handles errors and emits telemetry
  */
-export async function createNewServerlessLandProject(extContext: ExtContext): Promise<void> {
+export async function createNewServerlessLandProject(extContext: ExtContext, ctx: ExtensionContext): Promise<void> {
     let createResult: Result = 'Succeeded'
     let reason: string | undefined
     let metadataManager: MetadataManager
@@ -44,7 +45,7 @@ export async function createNewServerlessLandProject(extContext: ExtContext): Pr
     try {
         metadataManager = MetadataManager.getInstance()
         // Launch the project creation wizard
-        const config = await launchProjectCreationWizard(extContext)
+        const config = await launchProjectCreationWizard(extContext, ctx)
         if (!config) {
             createResult = 'Cancelled'
             reason = 'userCancelled'
@@ -83,13 +84,15 @@ export async function createNewServerlessLandProject(extContext: ExtContext): Pr
 }
 
 async function launchProjectCreationWizard(
-    extContext: ExtContext
+    extContext: ExtContext,
+    ctx: ExtensionContext
 ): Promise<CreateServerlessLandWizardForm | undefined> {
     const awsContext = extContext.awsContext
     const credentials = await awsContext.getCredentials()
     const defaultRegion = awsContext.getCredentialDefaultRegion()
 
     return new CreateServerlessLandWizard({
+        ctx,
         credentials,
         defaultRegion,
     }).run()
