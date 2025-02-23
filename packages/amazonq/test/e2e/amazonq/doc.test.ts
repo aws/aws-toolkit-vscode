@@ -320,7 +320,9 @@ describe('Amazon Q Doc Generation', async function () {
 
     afterEach(() => {
         framework.removeTab(initialTab.tabID)
-        framework.removeTab(tab.tabID)
+        if (tab) {
+            framework.removeTab(tab.tabID)
+        }
         framework.dispose()
     })
 
