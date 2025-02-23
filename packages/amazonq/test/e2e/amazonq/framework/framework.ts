@@ -43,6 +43,7 @@ export class qTestingFramework {
                     const appMessagePublisher = DefaultAmazonQAppInitContext.instance
                         .getWebViewToAppsMessagePublishers()
                         .get(featureName)
+                    console.log('Sending message to app', message)
                     if (appMessagePublisher === undefined) {
                         return
                     }
@@ -76,6 +77,7 @@ export class qTestingFramework {
                 const event = {
                     data: JSON.stringify(message),
                 } as any
+                console.log('Received message from app', event.data)
                 await ui.messageReceiver(event)
             })
         )

@@ -51,6 +51,8 @@ export class Messenger {
         }
 
         const lastChatItem = this.getChatItems().pop()
+        console.log('trying to click: ' + type)
+        console.log(JSON.stringify(lastChatItem))
         const followupOption = lastChatItem?.followUp?.options?.filter((option) => option.type === type)
         if (followupOption && followupOption.length > 0) {
             this.mynahUIProps.onFollowUpClicked(this.tabID, lastChatItem?.messageId ?? '', followupOption[0])

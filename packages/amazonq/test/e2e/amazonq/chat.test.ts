@@ -31,15 +31,28 @@ describe('Amazon Q Chat', function () {
     })
 
     // jscpd:ignore-start
-    beforeEach(() => {
+    beforeEach(async () => {
         // Make sure you're logged in before every test
         registerAuthHook('amazonq-test-account')
+        // await sleep(5000)
         framework = new qTestingFramework('cwc', true, [])
         tab = framework.createTab()
+        console.log('number of tabs: ' + framework.getTabs().length)
         store = tab.getStore()
     })
 
-    afterEach(() => {
+    afterEach(function () {
+        if (this.currentTest?.state === undefined || this.currentTest?.isFailed() || this.currentTest?.isPending()) {
+            console.table({
+                'chat items': JSON.stringify(store.chatItems),
+                'is chat loading': store.loadingChat,
+                'tab title': store.tabTitle,
+                'prompt input placeholder': store.promptInputPlaceholder,
+                'quick actions': JSON.stringify(store.quickActionCommands),
+                'context commands': JSON.stringify(store.contextCommands),
+                'tab count': framework.getTabs().length,
+            })
+        }
         framework.removeTab(tab.tabID)
         framework.dispose()
         sinon.restore()
@@ -63,6 +76,14 @@ describe('Amazon Q Chat', function () {
         assert.deepStrictEqual(store.promptInputPlaceholder, 'Ask a question or enter "/" for quick actions')
     })
 
+    it('Clicks help', async () => {
+        tab.clickButton('help')
+        await tab.waitForText(webviewConstants.helpMessage)
+        const chatItems = tab.getChatItems()
+        assert.deepStrictEqual(chatItems[4].type, 'answer')
+        assert.deepStrictEqual(chatItems[4].body, webviewConstants.helpMessage)
+    })
+
     it('Sends message', async () => {
         tab.addChatMessage({
             prompt: 'What is a lambda',
@@ -71,15 +92,5 @@ describe('Amazon Q Chat', function () {
         const chatItems = tab.getChatItems()
         // the last item should be an answer
         assert.deepStrictEqual(chatItems[4].type, 'answer')
-    })
-
-    describe('Clicks examples', () => {
-        it('Click help', async () => {
-            tab.clickButton('help')
-            await tab.waitForText(webviewConstants.helpMessage)
-            const chatItems = tab.getChatItems()
-            assert.deepStrictEqual(chatItems[4].type, 'answer')
-            assert.deepStrictEqual(chatItems[4].body, webviewConstants.helpMessage)
-        })
     })
 })
