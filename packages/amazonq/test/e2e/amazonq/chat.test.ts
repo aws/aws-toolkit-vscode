@@ -12,6 +12,7 @@ import { assertContextCommands, assertQuickActions } from './assert'
 import { registerAuthHook, using } from 'aws-core-vscode/test'
 import { loginToIdC } from './utils/setup'
 import { webviewConstants } from 'aws-core-vscode/amazonq'
+import { sleep } from 'aws-core-vscode/shared'
 
 describe('Amazon Q Chat', function () {
     let framework: qTestingFramework
@@ -34,6 +35,7 @@ describe('Amazon Q Chat', function () {
     beforeEach(async () => {
         // Make sure you're logged in before every test
         registerAuthHook('amazonq-test-account')
+        await sleep(5000)
         framework = new qTestingFramework('cwc', true, [])
         tab = framework.getTabs()[0] // use the default tab that gets created
         store = tab.getStore()
