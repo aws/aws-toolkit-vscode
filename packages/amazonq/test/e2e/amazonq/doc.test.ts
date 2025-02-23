@@ -22,6 +22,7 @@ import {
 describe('Amazon Q Doc Generation', async function () {
     let framework: qTestingFramework
     let tab: Messenger
+    let initialTab: Messenger
     let workspaceUri: vscode.Uri
     let rootReadmeFileUri: vscode.Uri
 
@@ -242,8 +243,7 @@ describe('Amazon Q Doc Generation', async function () {
             return testProjects[randomIndex]
         },
         async setupTest() {
-            tab = framework.createTab()
-            tab.addChatMessage({ command: '/doc' })
+            initialTab.addChatMessage({ command: '/doc' })
             tab = framework.getSelectedTab()
             await tab.waitForChatFinishesLoading()
         },
@@ -309,7 +309,7 @@ describe('Amazon Q Doc Generation', async function () {
     beforeEach(() => {
         registerAuthHook('amazonq-test-account')
         framework = new qTestingFramework('doc', true, [])
-        tab = framework.createTab()
+        initialTab = framework.createTab()
         const wsFolders = vscode.workspace.workspaceFolders
         if (!wsFolders?.length) {
             assert.fail('Workspace folder not found')
@@ -319,6 +319,7 @@ describe('Amazon Q Doc Generation', async function () {
     })
 
     afterEach(() => {
+        framework.removeTab(initialTab.tabID)
         framework.removeTab(tab.tabID)
         framework.dispose()
     })
