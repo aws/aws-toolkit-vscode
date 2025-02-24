@@ -544,6 +544,34 @@ export class FileSystem {
     }
 
     /**
+     * Gets the application cache folder for the current platform
+     *
+     * Follows the cache_dir convention outlined in https://crates.io/crates/dirs
+     */
+    getCacheDir(): string {
+        switch (process.platform) {
+            case 'darwin': {
+                return _path.join(this.getUserHomeDir(), 'Library/Caches')
+            }
+            case 'win32': {
+                const localAppData = process.env.LOCALAPPDATA
+                if (!localAppData) {
+                    throw new ToolkitError('LOCALAPPDATA environment variable not set', {
+                        code: 'LocalAppDataNotFound',
+                    })
+                }
+                return localAppData
+            }
+            case 'linux': {
+                return _path.join(this.getUserHomeDir(), '.cache')
+            }
+            default: {
+                throw new Error(`Unsupported platform: ${process.platform}. Expected 'darwin', 'win32', or 'linux'.`)
+            }
+        }
+    }
+
+    /**
      * Gets the (cached) username for this session, or "webuser" in web-mode, or "unknown-user" if
      * a username could not be resolved.
      *
