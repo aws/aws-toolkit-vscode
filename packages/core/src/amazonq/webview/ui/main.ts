@@ -13,6 +13,8 @@ import {
     NotificationType,
     ReferenceTrackerInformation,
     ProgressField,
+    ChatItemButton,
+    ChatItemFormItem,
 } from '@aws/mynah-ui'
 import { ChatPrompt } from '@aws/mynah-ui/dist/static'
 import { TabsStorage, TabType } from './storages/tabsStorage'
@@ -54,6 +56,8 @@ export const createMynahUI = (
     let connector: Connector
     // Store the mapping between messageId and messageUserIntent for amazonq_interactWithMessage telemetry
     const responseMetadata = new Map<string, string[]>()
+
+    let savedContextCommands: MynahUIDataModel['contextCommands'] = []
 
     window.addEventListener('error', (e) => {
         const { error, message } = e
@@ -347,6 +351,7 @@ export const createMynahUI = (
                     ...(item.relatedContent !== undefined ? { relatedContent: item.relatedContent } : {}),
                     ...(item.followUp !== undefined ? { followUp: item.followUp } : {}),
                     ...(item.fileList !== undefined ? { fileList: item.fileList } : {}),
+                    ...(item.header !== undefined ? { header: item.header } : {}),
                 })
                 if (
                     item.messageId !== undefined &&
@@ -362,6 +367,34 @@ export const createMynahUI = (
                     time: Date.now(),
                 })
                 return
+            }
+
+            if (item.contextList !== undefined && item.contextList.length > 0) {
+                item.header = {
+                    fileList: {
+                        fileTreeTitle: '',
+                        filePaths: item.contextList.map((file) => file.relativeFilePath),
+                        rootFolderTitle: 'Context',
+                        collapsedByDefault: true,
+                        hideFileCount: true,
+                        details: Object.fromEntries(
+                            item.contextList.map((file) => [
+                                file.relativeFilePath,
+                                {
+                                    label: file.lineRanges
+                                        .map((range) =>
+                                            range.first === -1 || range.second === -1
+                                                ? ''
+                                                : `line ${range.first} - ${range.second}`
+                                        )
+                                        .join(', '),
+                                    description: file.relativeFilePath,
+                                    clickable: true,
+                                },
+                            ])
+                        ),
+                    },
+                }
             }
 
             if (
@@ -557,6 +590,26 @@ export const createMynahUI = (
                 mynahUI.addChatItem(tabID, message)
             }
         },
+        onContextCommandDataReceived(data: MynahUIDataModel['contextCommands']) {
+            savedContextCommands = data
+            for (const tabID in mynahUI.getAllTabs()) {
+                const tabType = tabsStorage.getTab(tabID)?.type || ''
+                if (['cwc', 'unknown', 'welcome'].includes(tabType)) {
+                    mynahUI.updateStore(tabID, {
+                        contextCommands: savedContextCommands,
+                    })
+                }
+            }
+        },
+        onShowCustomForm(
+            tabId: string,
+            formItems?: ChatItemFormItem[],
+            buttons?: ChatItemButton[],
+            title?: string,
+            description?: string
+        ) {
+            mynahUI.showCustomForm(tabId, formItems, buttons, title, description)
+        },
     })
 
     mynahUI = new MynahUI({
@@ -587,6 +640,12 @@ export const createMynahUI = (
                 quickActionCommands: tabDataGenerator.quickActionsGenerator.generateForTab('unknown'),
                 ...(disclaimerCardActive ? { promptInputStickyCard: disclaimerCard } : {}),
             })
+            // add the cached context commands for file, folder, etc selection
+            if (savedContextCommands && savedContextCommands.length > 0) {
+                mynahUI.updateStore(tabID, {
+                    contextCommands: savedContextCommands,
+                })
+            }
             connector.onTabAdd(tabID)
         },
         onTabRemove: connector.onTabRemove,
@@ -651,6 +710,8 @@ export const createMynahUI = (
             // handler for the cwc panel
             textMessageHandler.handle(prompt, tabID, eventId as string)
         },
+        onQuickCommandGroupActionClick: connector.onQuickCommandGroupActionClick,
+        onContextSelected: connector.onContextSelected,
         onVote: connector.onChatItemVoted,
         onInBodyButtonClicked: (tabId, messageId, action, eventId) => {
             switch (action.id) {
