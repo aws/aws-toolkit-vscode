@@ -30,6 +30,8 @@ import fs from '../../shared/fs/fs'
 import globals from '../../shared/extensionGlobals'
 import { extensionVersion } from '../../shared/vscode/env'
 import { getLogger } from '../../shared/logger/logger'
+import { ContentLengthError } from '../errors'
+import { CommonAmazonQContentLengthError } from '../../amazonq/errors'
 
 export class Session {
     private _state?: SessionState | Omit<SessionState, 'uploadId'>
@@ -126,28 +128,35 @@ export class Session {
         return this.nextInteraction(msg, mode, folderPath)
     }
     private async nextInteraction(msg: string, mode: Mode, folderPath?: string) {
-        const resp = await this.state.interact({
-            task: this.task,
-            msg,
-            fs: this.config.fs,
-            mode: mode,
-            folderPath: folderPath,
-            messenger: this.messenger,
-            telemetry: this.telemetry,
-            tokenSource: this.state.tokenSource,
-            uploadHistory: this.state.uploadHistory,
-        })
+        try {
+            const resp = await this.state.interact({
+                task: this.task,
+                msg,
+                fs: this.config.fs,
+                mode: mode,
+                folderPath: folderPath,
+                messenger: this.messenger,
+                telemetry: this.telemetry,
+                tokenSource: this.state.tokenSource,
+                uploadHistory: this.state.uploadHistory,
+            })
 
-        if (resp.nextState) {
-            if (!this.state?.tokenSource?.token.isCancellationRequested) {
-                this.state?.tokenSource?.cancel()
+            if (resp.nextState) {
+                if (!this.state?.tokenSource?.token.isCancellationRequested) {
+                    this.state?.tokenSource?.cancel()
+                }
+
+                // Move to the next state
+                this._state = resp.nextState
             }
 
-            // Move to the next state
-            this._state = resp.nextState
+            return resp.interaction
+        } catch (e) {
+            if (e instanceof CommonAmazonQContentLengthError) {
+                throw new ContentLengthError()
+            }
+            throw e
         }
-
-        return resp.interaction
     }
 
     public async updateFilesPaths(

@@ -12,7 +12,7 @@ import {
     getWorkspaceFoldersByPrefixes,
 } from '../../shared/utilities/workspaceUtils'
 
-import { ContentLengthError, PrepareRepoFailedError } from '../../amazonqFeatureDev/errors'
+import { PrepareRepoFailedError } from '../../amazonqFeatureDev/errors'
 import { getLogger } from '../../shared/logger/logger'
 import { maxFileSizeBytes } from '../../amazonqFeatureDev/limits'
 import { CurrentWsFolders, DeletedFileInfo, NewFileInfo, NewFileZipContents } from '../../amazonqDoc/types'
@@ -28,6 +28,7 @@ import { ZipStream } from '../../shared/utilities/zipStream'
 import { isPresent } from '../../shared/utilities/collectionUtils'
 import { AuthUtil } from '../../codewhisperer/util/authUtil'
 import { TelemetryHelper } from '../util/telemetryHelper'
+import { CommonAmazonQContentLengthError } from '../errors'
 
 export const SvgFileExtension = '.svg'
 
@@ -186,7 +187,7 @@ export async function prepareRepoData(
     } catch (error) {
         getLogger().debug(`featureDev: Failed to prepare repo: ${error}`)
         if (error instanceof ToolkitError && error.code === 'ContentLengthError') {
-            throw new ContentLengthError()
+            throw new CommonAmazonQContentLengthError(error.message)
         }
         throw new PrepareRepoFailedError()
     }

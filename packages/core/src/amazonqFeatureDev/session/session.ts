@@ -14,7 +14,7 @@ import {
     type SessionStateConfig,
     UpdateFilesPathsParams,
 } from '../../amazonq/commons/types'
-import { ConversationIdNotFoundError } from '../errors'
+import { ContentLengthError, ConversationIdNotFoundError } from '../errors'
 import { featureDevChat, referenceLogText, featureDevScheme } from '../constants'
 import fs from '../../shared/fs/fs'
 import { FeatureDevClient } from '../client/featureDev'
@@ -33,6 +33,7 @@ import { UpdateAnswerMessage } from '../../amazonq/commons/connector/connectorMe
 import { FollowUpTypes } from '../../amazonq/commons/types'
 import { SessionConfig } from '../../amazonq/commons/session/sessionConfigFactory'
 import { Messenger } from '../../amazonq/commons/connector/baseMessenger'
+import { CommonAmazonQContentLengthError } from '../../amazonq/errors'
 export class Session {
     private _state?: SessionState | Omit<SessionState, 'uploadId'>
     private task: string = ''
@@ -137,25 +138,32 @@ export class Session {
     }
 
     private async nextInteraction(msg: string) {
-        const resp = await this.state.interact({
-            task: this.task,
-            msg,
-            fs: this.config.fs,
-            messenger: this.messenger,
-            telemetry: this.telemetry,
-            tokenSource: this.state.tokenSource,
-            uploadHistory: this.state.uploadHistory,
-        })
+        try {
+            const resp = await this.state.interact({
+                task: this.task,
+                msg,
+                fs: this.config.fs,
+                messenger: this.messenger,
+                telemetry: this.telemetry,
+                tokenSource: this.state.tokenSource,
+                uploadHistory: this.state.uploadHistory,
+            })
 
-        if (resp.nextState) {
-            if (!this.state?.tokenSource?.token.isCancellationRequested) {
-                this.state?.tokenSource?.cancel()
+            if (resp.nextState) {
+                if (!this.state?.tokenSource?.token.isCancellationRequested) {
+                    this.state?.tokenSource?.cancel()
+                }
+                // Move to the next state
+                this._state = resp.nextState
             }
-            // Move to the next state
-            this._state = resp.nextState
-        }
 
-        return resp.interaction
+            return resp.interaction
+        } catch (e) {
+            if (e instanceof CommonAmazonQContentLengthError) {
+                throw new ContentLengthError()
+            }
+            throw e
+        }
     }
 
     public async updateFilesPaths(params: UpdateFilesPathsParams) {
