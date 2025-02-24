@@ -60,7 +60,7 @@ export interface Manifest {
         targets: Target[]
     }[]
 }
-const manifestUrl = ' https://aws-toolkit-language-servers.amazonaws.com/q-context/manifest.json'
+const manifestUrl = 'https://aws-toolkit-language-servers.amazonaws.com/q-context/manifest.json'
 // this LSP client in Q extension is only going to work with these LSP server versions
 const supportedLspServerVersions = ['0.1.40']
 
