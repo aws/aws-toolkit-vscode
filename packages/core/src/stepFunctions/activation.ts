@@ -23,6 +23,8 @@ import { telemetry } from '../shared/telemetry/telemetry'
 import { PerfLog } from '../shared/logger/perfLogger'
 import { ASLLanguageClient } from './asl/client'
 import { WorkflowStudioEditorProvider } from './workflowStudio/workflowStudioEditorProvider'
+import { StateMachineNode } from './explorer/stepFunctionsNodes'
+import { downloadStateMachineDefinition } from './commands/downloadStateMachineDefinition'
 
 /**
  * Activate Step Functions related functionality for the extension.
@@ -56,16 +58,24 @@ export async function activate(
 
 export const previewStateMachineCommand = Commands.declare(
     'aws.previewStateMachine',
-    () => async (arg?: vscode.TextEditor | vscode.Uri) => {
+    () => async (arg?: vscode.TextEditor | vscode.Uri | StateMachineNode) => {
         await telemetry.run('stepfunctions_previewstatemachine', async () => {
+            if (arg instanceof StateMachineNode) {
+                return downloadStateMachineDefinition({
+                    stateMachineNode: arg,
+                    outputChannel: globals.outputChannel,
+                    isPreviewAndRender: true,
+                })
+            }
+
             arg ??= vscode.window.activeTextEditor
-            const input = arg instanceof vscode.Uri ? arg : arg?.document
+            const input = arg instanceof vscode.Uri ? arg : arg?.document.uri
 
             if (!input) {
                 throw new ToolkitError('No active text editor or document found')
             }
 
-            await vscode.commands.executeCommand('vscode.openWith', input, WorkflowStudioEditorProvider.viewType, {
+            await WorkflowStudioEditorProvider.openWithWorkflowStudio(input, {
                 preserveFocus: true,
                 viewColumn: vscode.ViewColumn.Beside,
             })
