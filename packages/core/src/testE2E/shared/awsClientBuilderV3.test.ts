@@ -46,14 +46,11 @@ describe('SDKv3 Client Behavior', function () {
         const httpHandler = new NodeHttpHandler({
             httpAgent: new http.Agent({ keepAlive: true }),
         })
-        const client = await globals.sdkClientBuilderV3.createAwsService({
-            serviceClient: SSMClient,
-            clientOptions: {
-                region: 'us-east-1',
-                endpoint: `http://localhost:${port}`,
-                requestHandler: httpHandler,
-                logger: testLogger,
-            },
+        const client = await globals.sdkClientBuilderV3.createAwsService(SSMClient, {
+            region: 'us-east-1',
+            endpoint: `http://localhost:${port}`,
+            requestHandler: httpHandler,
+            logger: testLogger,
         })
         await client.send(new DescribeSessionsCommand({ State: 'Active' }))
         await client.send(new DescribeSessionsCommand({ State: 'Active' }))

@@ -5,7 +5,7 @@
 
 import { CredentialsShim } from '../auth/deprecated/loginManager'
 import { AwsContext } from './awsContext'
-import { AwsCredentialIdentityProvider, RetryStrategyV2 } from '@smithy/types'
+import { AwsCredentialIdentityProvider, Logger, RetryStrategyV2 } from '@smithy/types'
 import { getUserAgent } from './telemetry/util'
 import { DevSettings } from './settings'
 import {
@@ -64,6 +64,7 @@ interface AwsClientOptions {
     apiVersion: string
     endpoint: string
     retryStrategy: RetryStrategy | RetryStrategyV2
+    logger: Logger
 }
 
 export class AWSClientBuilderV3 {
