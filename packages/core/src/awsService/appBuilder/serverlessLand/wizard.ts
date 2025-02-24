@@ -28,8 +28,6 @@ export interface CreateServerlessLandWizardForm {
 
 async function loadMetadata(ctx: vscode.ExtensionContext): Promise<MetadataManager> {
     const metadataManager = MetadataManager.getInstance()
-    // const projectRoot = path.resolve(__dirname, '../../../../../')
-    // const metadataPath = path.join(projectRoot, 'src', 'awsService', 'appBuilder', 'serverlessLand', 'metadata.json')
     const metadataPath = ctx.asAbsolutePath(path.join('dist', 'src', 'serverlessLand', 'metadata.json'))
     await metadataManager.loadMetadata(metadataPath)
     return metadataManager
@@ -41,7 +39,7 @@ function promptPattern(metadataManager: MetadataManager) {
         throw new ToolkitError('No patterns found in metadata')
     }
 
-    return createQuickPick<string>(
+    const quickPick = createQuickPick<string>(
         patterns.map((p) => ({
             label: p.label,
             detail: p.description,
@@ -65,6 +63,8 @@ function promptPattern(metadataManager: MetadataManager) {
             matchOnDetail: true,
         }
     )
+
+    return quickPick
 }
 
 function promptRuntime(metadataManager: MetadataManager, pattern: string | undefined) {
@@ -153,7 +153,11 @@ export class CreateServerlessLandWizard extends Wizard<CreateServerlessLandWizar
             throw new ToolkitError(`Failed to load metadata: ${err}`)
         })
         this.metadataManager = MetadataManager.getInstance()
-        this.form.pattern.bindPrompter(() => promptPattern(this.metadataManager))
+        this.form.pattern.bindPrompter(() => {
+            const quickPick = promptPattern(this.metadataManager)
+
+            return quickPick
+        })
         this.form.runtime.bindPrompter((state) => promptRuntime(this.metadataManager, state.pattern))
         this.form.iac.bindPrompter((state) => promptIac(this.metadataManager, state.pattern))
         this.form.location.bindPrompter(() => promptLocation())

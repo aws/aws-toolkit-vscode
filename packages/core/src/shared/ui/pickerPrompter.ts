@@ -12,6 +12,8 @@ import { Prompter, PromptResult, Transform } from './prompter'
 import { assign, isAsyncIterable } from '../utilities/collectionUtils'
 import { recentlyUsed } from '../localizedText'
 import { getLogger } from '../logger/logger'
+import { MetadataManager } from '../../awsService/appBuilder/serverlessLand/metadataManager'
+import { WebviewService } from '../../awsService/appBuilder/serverlessLand/webViewManager'
 
 const localize = nls.loadMessageBundle()
 
@@ -142,6 +144,45 @@ export function createQuickPick<T>(
     const mergedOptions = { ...defaultQuickpickOptions, ...options }
     assign(mergedOptions, picker)
     picker.buttons = mergedOptions.buttons ?? []
+
+    picker.onDidTriggerItemButton(async (event) => {
+        const metadataManager = MetadataManager.getInstance()
+        if (event.button.tooltip === 'Open in GitHub' || event.button.tooltip === 'Open in Serverless Land') {
+            const selectedPattern = event.item
+            if (selectedPattern) {
+                const patternUrl = metadataManager.getUrl(selectedPattern.label)
+                if (patternUrl) {
+                    if (event.button.tooltip === 'Open in GitHub') {
+                        const panel = vscode.window.createWebviewPanel(
+                            'githubPreview',
+                            `GitHub Repository ${selectedPattern.label}`,
+                            vscode.ViewColumn.One,
+                            {
+                                enableScripts: true,
+                                retainContextWhenHidden: true,
+                                enableCommandUris: true,
+                                enableFindWidget: true,
+                            }
+                        )
+                        panel.webview.html = WebviewService.getGitWebviewContent(patternUrl.githubUrl)
+                    } else if (event.button.tooltip === 'Open in Serverless Land') {
+                        const panel = vscode.window.createWebviewPanel(
+                            'serverlessLandPreview',
+                            'Serverless Land Preview',
+                            vscode.ViewColumn.One,
+                            {
+                                enableScripts: true,
+                                retainContextWhenHidden: true,
+                                enableCommandUris: true,
+                                enableFindWidget: true,
+                            }
+                        )
+                        panel.webview.html = WebviewService.getWebviewContent(patternUrl.previewUrl)
+                    }
+                }
+            }
+        }
+    })
 
     const prompter =
         mergedOptions.filterBoxInputSettings !== undefined
