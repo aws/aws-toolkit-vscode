@@ -113,6 +113,7 @@ export class AWSClientBuilderV3 {
         service.middlewareStack.add(telemetryMiddleware, { step: 'deserialize' })
         service.middlewareStack.add(loggingMiddleware, { step: 'finalizeRequest' })
         service.middlewareStack.add(getEndpointMiddleware(settings), { step: 'build' })
+        service.middlewareStack.add(keepAliveMiddleware, { step: 'build' })
         return service
     }
 }
@@ -155,6 +156,9 @@ function getEndpointMiddleware(settings: DevSettings = DevSettings.instance): Bu
         overwriteEndpoint(next, context, settings, args)
 }
 
+const keepAliveMiddleware: BuildMiddleware<any, any> = (next: BuildHandler<any, any>) => async (args: any) =>
+    addKeepAliveHeader(next, args)
+
 export async function emitOnRequest(next: DeserializeHandler<any, any>, context: HandlerExecutionContext, args: any) {
     if (!HttpResponse.isInstance(args.request)) {
         return next(args)
@@ -176,8 +180,9 @@ export async function emitOnRequest(next: DeserializeHandler<any, any>, context:
 }
 
 export async function logOnRequest(next: FinalizeHandler<any, any>, args: any) {
+    const request = args.request
     if (HttpRequest.isInstance(args.request)) {
-        const { hostname, path } = args.request
+        const { hostname, path } = request
         // TODO: omit credentials / sensitive info from the logs.
         const input = partialClone(args.input, 3)
         getLogger().debug(`API Request (%s %s): %O`, hostname, path, input)
@@ -191,14 +196,23 @@ export function overwriteEndpoint(
     settings: DevSettings,
     args: any
 ) {
-    if (HttpRequest.isInstance(args.request)) {
-        const serviceId = getServiceId(context as object)
+    const request = args.request
+    if (HttpRequest.isInstance(request)) {
+        const serviceId = getServiceId(context satisfies { clientName?: string; commandName?: string })
         const endpoint = serviceId ? settings.get('endpoints', {})[serviceId] : undefined
         if (endpoint) {
             const url = new URL(endpoint)
-            Object.assign(args.request, selectFrom(url, 'hostname', 'port', 'protocol', 'pathname'))
-            args.request.path = args.request.pathname
+            Object.assign(request, selectFrom(url, 'hostname', 'port', 'protocol', 'pathname'))
+            request.path = (request as HttpRequest & { pathname: string }).pathname
         }
+    }
+    return next(args)
+}
+
+export function addKeepAliveHeader(next: BuildHandler<any, any>, args: any) {
+    const request = args.request
+    if (HttpRequest.isInstance(request)) {
+        request.headers['Connection'] = 'keep-alive'
     }
     return next(args)
 }

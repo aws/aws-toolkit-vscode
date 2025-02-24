@@ -7,13 +7,11 @@ import http from 'http'
 import assert from 'assert'
 import { SSMClient, DescribeSessionsCommand } from '@aws-sdk/client-ssm'
 import { NodeHttpHandler } from '@smithy/node-http-handler'
-import { Logger } from '@aws-sdk/types'
 import { globals } from '../../shared'
 
-describe('SDKv3 Client Behavior', function () {
-    const port = 4576
+describe('AWSClientBuilderV3', function () {
+    const port = 3000
     let server: http.Server
-    let testLogger: Logger
     let requests: http.IncomingMessage[]
 
     before(function () {
@@ -21,13 +19,6 @@ describe('SDKv3 Client Behavior', function () {
             rsp.writeHead(200, { 'Content-Type': 'application/json' })
             rsp.end(JSON.stringify({ message: 'success' }))
         })
-        const defaultLog = (m: object) => console.log(JSON.stringify(m, undefined, 3))
-        testLogger = {
-            debug: defaultLog,
-            warn: defaultLog,
-            error: defaultLog,
-            info: defaultLog,
-        }
         server.listen(port, () => {})
         server.on('request', (req) => {
             requests.push(req)
@@ -42,7 +33,7 @@ describe('SDKv3 Client Behavior', function () {
         server.close()
     })
 
-    it('reuses connections', async function () {
+    it('reuses existing HTTP connections', async function () {
         const httpHandler = new NodeHttpHandler({
             httpAgent: new http.Agent({ keepAlive: true }),
         })
@@ -50,12 +41,12 @@ describe('SDKv3 Client Behavior', function () {
             region: 'us-east-1',
             endpoint: `http://localhost:${port}`,
             requestHandler: httpHandler,
-            logger: testLogger,
         })
         await client.send(new DescribeSessionsCommand({ State: 'Active' }))
         await client.send(new DescribeSessionsCommand({ State: 'Active' }))
 
         assert.strictEqual(requests[0].headers.connection, 'keep-alive')
         assert.strictEqual(requests[1].headers.connection, 'keep-alive')
+        assert.strictEqual(server.connections, 1)
     })
 })
