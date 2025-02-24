@@ -29,7 +29,7 @@ import {
     ViewDiff,
     AcceptDiff,
     QuickCommandGroupActionClick,
-    MergedRelevantDocument,
+    DocumentReference,
     FileClick,
     RelevantTextDocumentAddition,
 } from './model'
@@ -974,53 +974,53 @@ export class ChatController {
         }
 
         const relativePaths = await this.resolveContextCommandPayload(triggerPayload)
-        // TODO: resolve the context into real context up to 90k
         triggerPayload.useRelevantDocuments = false
-        triggerPayload.mergedRelevantDocuments = []
-        if (triggerPayload.message) {
-            triggerPayload.useRelevantDocuments = triggerPayload.context?.some(
-                (context) => typeof context !== 'string' && context.command === '@workspace'
-            )
-            if (triggerPayload.useRelevantDocuments) {
-                triggerPayload.message = triggerPayload.message.replace(/workspace/, '')
-                if (CodeWhispererSettings.instance.isLocalIndexEnabled()) {
-                    const start = performance.now()
-                    triggerPayload.relevantTextDocuments = await LspController.instance.query(triggerPayload.message)
-                    triggerPayload.mergedRelevantDocuments = this.mergeRelevantTextDocuments(
-                        triggerPayload.relevantTextDocuments
+        triggerPayload.documentReferences = []
+        triggerPayload.useRelevantDocuments = triggerPayload.context?.some(
+            (context) => typeof context !== 'string' && context.command === '@workspace'
+        )
+        if (triggerPayload.useRelevantDocuments && triggerPayload.message) {
+            triggerPayload.message = triggerPayload.message.replace(/workspace/, '')
+            if (CodeWhispererSettings.instance.isLocalIndexEnabled()) {
+                const start = performance.now()
+                triggerPayload.relevantTextDocuments = await LspController.instance.query(triggerPayload.message)
+
+                for (const doc of triggerPayload.relevantTextDocuments) {
+                    getLogger().info(
+                        `amazonq: Using workspace files ${doc.relativeFilePath}, content(partial): ${doc.text?.substring(0, 200)}, start line: ${doc.startLine}, end line: ${doc.endLine}`
                     )
-                    for (const doc of triggerPayload.relevantTextDocuments) {
-                        getLogger().info(
-                            `amazonq: Using workspace files ${doc.relativeFilePath}, content(partial): ${doc.text?.substring(0, 200)}, start line: ${doc.startLine}, end line: ${doc.endLine}`
-                        )
-                    }
-                    triggerPayload.projectContextQueryLatencyMs = performance.now() - start
-                } else {
-                    this.messenger.sendOpenSettingsMessage(triggerID, tabID)
-                    return
                 }
+                triggerPayload.projectContextQueryLatencyMs = performance.now() - start
+            } else {
+                this.messenger.sendOpenSettingsMessage(triggerID, tabID)
+                return
             }
         }
+        triggerPayload.documentReferences = this.mergeRelevantTextDocuments(triggerPayload.relevantTextDocuments || [])
+
+        // TODO: make sure the user input + current focused document + relevantDocument + additionalContext
+        // combined does not exceed 100k characters before generating the request payload.
+        // Do truncation and make sure triggerPayload.documentReferences is up-to-date after truncation
 
         const request = triggerPayloadToChatRequest(triggerPayload)
         const session = this.sessionStorage.getSession(tabID)
 
         session.currentContextId++
         session.contexts.set(session.currentContextId, new Map())
-        if (triggerPayload.mergedRelevantDocuments !== undefined) {
-            const relativePathsOfMergedRelevantDocuments = triggerPayload.mergedRelevantDocuments.map(
+        if (triggerPayload.documentReferences !== undefined) {
+            const relativePathsOfMergedRelevantDocuments = triggerPayload.documentReferences.map(
                 (doc) => doc.relativeFilePath
             )
             for (const relativePath of relativePaths) {
                 if (!relativePathsOfMergedRelevantDocuments.includes(relativePath)) {
-                    triggerPayload.mergedRelevantDocuments.push({
+                    triggerPayload.documentReferences.push({
                         relativeFilePath: relativePath,
                         lineRanges: [{ first: -1, second: -1 }],
                     })
                 }
             }
-            if (triggerPayload.mergedRelevantDocuments) {
-                for (const doc of triggerPayload.mergedRelevantDocuments) {
+            if (triggerPayload.documentReferences) {
+                for (const doc of triggerPayload.documentReferences) {
                     const currentContext = session.contexts.get(session.currentContextId)
                     if (currentContext) {
                         currentContext.set(doc.relativeFilePath, doc.lineRanges)
@@ -1037,7 +1037,7 @@ export class ChatController {
         let response: MessengerResponseType | undefined = undefined
         session.createNewTokenSource()
         try {
-            this.messenger.sendInitalStream(tabID, triggerID, triggerPayload.mergedRelevantDocuments)
+            this.messenger.sendInitalStream(tabID, triggerID, triggerPayload.documentReferences)
             this.telemetryHelper.setConversationStreamStartTime(tabID)
             if (isSsoConnection(AuthUtil.instance.conn)) {
                 const { $metadata, generateAssistantResponseResponse } = await session.chatSso(request)
@@ -1068,11 +1068,9 @@ export class ChatController {
         }
     }
 
-    private mergeRelevantTextDocuments(
-        documents: RelevantTextDocumentAddition[] | undefined
-    ): MergedRelevantDocument[] | undefined {
-        if (documents === undefined) {
-            return undefined
+    private mergeRelevantTextDocuments(documents: RelevantTextDocumentAddition[]): DocumentReference[] {
+        if (documents.length === 0) {
+            return []
         }
         return Object.entries(
             documents.reduce<Record<string, { first: number; second: number }[]>>((acc, doc) => {

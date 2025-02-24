@@ -189,7 +189,9 @@ export interface TriggerPayload {
     readonly context?: string[] | QuickActionCommand[]
     relevantTextDocuments?: RelevantTextDocumentAddition[]
     additionalContents?: AdditionalContentEntry[]
-    mergedRelevantDocuments?: MergedRelevantDocument[]
+    // a reference to all documents used in chat payload
+    // for providing better context transparency
+    documentReferences?: DocumentReference[]
     useRelevantDocuments?: boolean
     traceId?: string
 }
@@ -197,7 +199,7 @@ export interface TriggerPayload {
 // TODO move this to API definition (or just use this across the codebase)
 export type RelevantTextDocumentAddition = RelevantTextDocument & { startLine: number; endLine: number }
 
-export interface MergedRelevantDocument {
+export interface DocumentReference {
     readonly relativeFilePath: string
     readonly lineRanges: Array<{ first: number; second: number }>
 }
