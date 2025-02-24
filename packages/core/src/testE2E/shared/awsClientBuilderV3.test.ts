@@ -13,6 +13,7 @@ describe('AWSClientBuilderV3', function () {
     const port = 3000
     let server: http.Server
     let requests: http.IncomingMessage[]
+    let activeConnections: number
 
     before(function () {
         server = http.createServer({ keepAlive: true }, (req, rsp) => {
@@ -23,10 +24,14 @@ describe('AWSClientBuilderV3', function () {
         server.on('request', (req) => {
             requests.push(req)
         })
+        server.on('connection', (_req) => {
+            activeConnections++
+        })
     })
 
     beforeEach(function () {
         requests = []
+        activeConnections = 0
     })
 
     after(function () {
@@ -42,11 +47,13 @@ describe('AWSClientBuilderV3', function () {
             endpoint: `http://localhost:${port}`,
             requestHandler: httpHandler,
         })
+        assert.strictEqual(activeConnections, 0)
         await client.send(new DescribeSessionsCommand({ State: 'Active' }))
+        assert.strictEqual(activeConnections, 1)
         await client.send(new DescribeSessionsCommand({ State: 'Active' }))
+        assert.strictEqual(activeConnections, 1)
 
         assert.strictEqual(requests[0].headers.connection, 'keep-alive')
         assert.strictEqual(requests[1].headers.connection, 'keep-alive')
-        assert.strictEqual(server.connections, 1)
     })
 })
