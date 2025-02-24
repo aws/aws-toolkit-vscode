@@ -32,7 +32,7 @@ function promptPattern(metadataManager: MetadataManager) {
         throw new ToolkitError('No patterns found in metadata')
     }
 
-    return createQuickPick<string>(
+    const quickPick = createQuickPick<string>(
         patterns.map((p) => ({
             label: p.label,
             detail: p.description,
@@ -52,6 +52,8 @@ function promptPattern(metadataManager: MetadataManager) {
             matchOnDetail: true,
         }
     )
+
+    return quickPick
 }
 
 function promptRuntime(metadataManager: MetadataManager, pattern: string | undefined) {
