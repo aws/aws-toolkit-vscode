@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as path from 'path'
+import * as vscode from 'vscode'
 import { Event as VSCodeEvent, Uri, workspace, window, ViewColumn, Position, Selection } from 'vscode'
 import { EditorContextExtractor } from '../../editor/context/extractor'
 import { ChatSessionStorage } from '../../storages/chatSession'
@@ -68,7 +69,6 @@ import { LspClient } from '../../../amazonq/lsp/lspClient'
 import { ContextCommandItem, ContextCommandItemType } from '../../../amazonq/lsp/types'
 import { createPromptCommand, workspaceCommand } from '../../../amazonq/webview/ui/tabs/constants'
 import fs from '../../../shared/fs/fs'
-import * as vscode from 'vscode'
 import { FeatureConfigProvider, Features } from '../../../shared/featureConfig'
 
 export interface ChatControllerMessagePublishers {
