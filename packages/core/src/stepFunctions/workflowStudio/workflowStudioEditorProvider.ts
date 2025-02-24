@@ -6,11 +6,10 @@
 import * as vscode from 'vscode'
 import { getLogger } from '../../shared/logger/logger'
 import request from '../../shared/request'
-import fs from '../../shared/fs/fs'
 import { getClientId } from '../../shared/telemetry/util'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import globals from '../../shared/extensionGlobals'
-import { getRandomString, getStringHash } from '../../shared/utilities/textUtilities'
+import { getStringHash } from '../../shared/utilities/textUtilities'
 import { ToolkitError } from '../../shared/errors'
 import { getTabSizeSetting } from '../../shared/utilities/editorUtilities'
 import { WorkflowStudioEditor } from './workflowStudioEditor'
@@ -80,7 +79,7 @@ export class WorkflowStudioEditorProvider implements vscode.CustomTextEditorProv
      * @private
      */
     private getWebviewContent = async () => {
-        let htmlFileSplit = this.webviewHtml.split('<head>')
+        const htmlFileSplit = this.webviewHtml.split('<head>')
 
         // Set asset source to CDN
         const source = isLocalDev ? localhost : cdn
@@ -93,20 +92,8 @@ export class WorkflowStudioEditorProvider implements vscode.CustomTextEditorProv
         const isDarkMode = theme === vscode.ColorThemeKind.Dark || theme === vscode.ColorThemeKind.HighContrast
         const tabSizeTag = `<meta name='tab-size' content='${getTabSizeSetting()}'>`
         const darkModeTag = `<meta name='dark-mode' content='${isDarkMode}'>`
-        let html = `${htmlFileSplit[0]} <head> ${baseTag} ${localeTag} ${darkModeTag} ${tabSizeTag} ${htmlFileSplit[1]}`
 
-        const nonce = getRandomString()
-        const localDevURL = isLocalDev ? localhost : ''
-        htmlFileSplit = html.split("script-src 'self'")
-
-        html = `${htmlFileSplit[0]} script-src 'self' 'nonce-${nonce}' ${localDevURL} ${htmlFileSplit[1]}`
-        htmlFileSplit = html.split('<body>')
-
-        const script = await fs.readFileText(
-            vscode.Uri.joinPath(globals.context.extensionUri, 'resources', 'js', 'vsCodeExtensionInterface.js')
-        )
-
-        return `${htmlFileSplit[0]} <body> <script nonce='${nonce}'>${script}</script> ${htmlFileSplit[1]}`
+        return `${htmlFileSplit[0]} <head> ${baseTag} ${localeTag} ${darkModeTag} ${tabSizeTag} ${htmlFileSplit[1]}`
     }
 
     /**
