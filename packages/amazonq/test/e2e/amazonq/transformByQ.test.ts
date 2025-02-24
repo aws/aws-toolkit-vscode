@@ -162,6 +162,7 @@ describe('Amazon Q Code Transformation', function () {
             const tmpDir = (await TestFolder.create()).path
 
             transformByQState.setSummaryFilePath(path.join(tmpDir, 'summary.md'))
+            transformByQState.setToPartiallySucceeded()
 
             transformByQState
                 .getChatMessenger()
