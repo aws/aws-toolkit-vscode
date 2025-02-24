@@ -83,6 +83,7 @@ export class AWSClientBuilderV3 {
         options?: Partial<AwsClientOptions>,
         region?: string,
         userAgent: boolean = true,
+        keepAlive: boolean = true,
         settings?: DevSettings
     ): Promise<C> {
         const shim = this.getShim()
@@ -113,7 +114,10 @@ export class AWSClientBuilderV3 {
         service.middlewareStack.add(telemetryMiddleware, { step: 'deserialize' })
         service.middlewareStack.add(loggingMiddleware, { step: 'finalizeRequest' })
         service.middlewareStack.add(getEndpointMiddleware(settings), { step: 'build' })
-        service.middlewareStack.add(keepAliveMiddleware, { step: 'build' })
+
+        if (keepAlive) {
+            service.middlewareStack.add(keepAliveMiddleware, { step: 'build' })
+        }
         return service
     }
 }
@@ -198,12 +202,12 @@ export function overwriteEndpoint(
 ) {
     const request = args.request
     if (HttpRequest.isInstance(request)) {
-        const serviceId = getServiceId(context satisfies { clientName?: string; commandName?: string })
+        const serviceId = getServiceId(context)
         const endpoint = serviceId ? settings.get('endpoints', {})[serviceId] : undefined
         if (endpoint) {
             const url = new URL(endpoint)
             Object.assign(request, selectFrom(url, 'hostname', 'port', 'protocol', 'pathname'))
-            request.path = (request as HttpRequest & { pathname: string }).pathname
+            request.path = (request as typeof request & { pathname: string }).pathname
         }
     }
     return next(args)

@@ -6,14 +6,22 @@
 import http from 'http'
 import assert from 'assert'
 import { SSMClient, DescribeSessionsCommand } from '@aws-sdk/client-ssm'
-import { NodeHttpHandler } from '@smithy/node-http-handler'
 import { globals } from '../../shared'
+import { Socket } from 'net'
+
+async function closeSocket(socket: Socket) {
+    return new Promise((resolve, reject) => {
+        socket.end(() => {
+            resolve(true)
+        })
+    })
+}
 
 describe('AWSClientBuilderV3', function () {
     const port = 3000
     let server: http.Server
     let requests: http.IncomingMessage[]
-    let activeConnections: number
+    let connections: Socket[]
 
     before(function () {
         server = http.createServer({ keepAlive: true }, (req, rsp) => {
@@ -24,36 +32,55 @@ describe('AWSClientBuilderV3', function () {
         server.on('request', (req) => {
             requests.push(req)
         })
-        server.on('connection', (_req) => {
-            activeConnections++
+        server.on('connection', (connection) => {
+            connections.push(connection)
         })
+        connections = []
     })
 
-    beforeEach(function () {
+    beforeEach(async function () {
         requests = []
-        activeConnections = 0
+        await Promise.all(connections.map((c) => closeSocket(c)))
+        connections = []
     })
 
     after(function () {
         server.close()
     })
 
-    it('reuses existing HTTP connections', async function () {
-        const httpHandler = new NodeHttpHandler({
-            httpAgent: new http.Agent({ keepAlive: true }),
-        })
+    it('reuses existing HTTP connections by default', async function () {
         const client = await globals.sdkClientBuilderV3.createAwsService(SSMClient, {
             region: 'us-east-1',
             endpoint: `http://localhost:${port}`,
-            requestHandler: httpHandler,
         })
-        assert.strictEqual(activeConnections, 0)
+        assert.strictEqual(connections.length, 0)
         await client.send(new DescribeSessionsCommand({ State: 'Active' }))
-        assert.strictEqual(activeConnections, 1)
+        assert.strictEqual(connections.length, 1)
         await client.send(new DescribeSessionsCommand({ State: 'Active' }))
-        assert.strictEqual(activeConnections, 1)
+        assert.strictEqual(connections.length, 1)
 
         assert.strictEqual(requests[0].headers.connection, 'keep-alive')
         assert.strictEqual(requests[1].headers.connection, 'keep-alive')
+    })
+
+    it('does not reuse HTTP connections if told not to', async function () {
+        const client = await globals.sdkClientBuilderV3.createAwsService(
+            SSMClient,
+            {
+                region: 'us-east-1',
+                endpoint: `http://localhost:${port}`,
+            },
+            'us-east-1',
+            true,
+            false
+        )
+        assert.strictEqual(connections.length, 0, 'no connections before requesting')
+        await client.send(new DescribeSessionsCommand({ State: 'Active' }))
+        assert.strictEqual(connections.length, 1, 'one connection after first request')
+        await client.send(new DescribeSessionsCommand({ State: 'Active' }))
+        assert.strictEqual(connections.length, 2, 'two connections after both requests')
+
+        assert.strictEqual(requests[0].headers.connection, 'close')
+        assert.strictEqual(requests[1].headers.connection, 'close')
     })
 })
