@@ -213,6 +213,13 @@ export function overwriteEndpoint(
     return next(args)
 }
 
+/**
+ * Overwrite agents behavior and add the keepAliveHeader. This is needed due to
+ * https://github.com/microsoft/vscode/issues/173861.
+ * @param next
+ * @param args
+ * @returns
+ */
 export function addKeepAliveHeader(next: BuildHandler<any, any>, args: any) {
     const request = args.request
     if (HttpRequest.isInstance(request)) {
