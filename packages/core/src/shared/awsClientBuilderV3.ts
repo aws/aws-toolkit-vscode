@@ -140,6 +140,13 @@ export class AWSClientBuilderV3 {
         service.middlewareStack.add(getEndpointMiddleware(serviceOptions.settings), { step: 'build' })
         return service
     }
+
+    public clearServiceCache() {
+        for (const client of this.serviceCache.values()) {
+            client.destroy()
+        }
+        this.serviceCache.clear()
+    }
 }
 
 export function getServiceId(context: { clientName?: string; commandName?: string }): string {
