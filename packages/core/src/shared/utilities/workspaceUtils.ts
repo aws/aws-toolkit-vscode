@@ -20,7 +20,7 @@ import fs from '../fs/fs'
 import { ChildProcess } from './processUtils'
 import { isWin } from '../vscode/env'
 import { maxRepoSizeBytes } from '../../amazonqFeatureDev/constants'
-import { FeatureUseCase } from '../../codewhisperer/models/constants'
+import { FeatureUseCase, testGenExcludePatterns } from '../../codewhisperer/models/constants'
 
 type GitIgnoreRelativeAcceptor = {
     folderPath: string
@@ -299,12 +299,16 @@ export const defaultExcludePatterns = [
     '**/LICENSE.md',
 ]
 
-export function getExcludePattern(useDefaults: boolean = true) {
+export function getExcludePattern(useDefaults: boolean = true, useCase?: FeatureUseCase) {
     const globAlwaysExcludedDirs = getGlobalExcludePatterns()
     const allPatterns = [...globAlwaysExcludedDirs]
 
     if (useDefaults) {
         allPatterns.push(...defaultExcludePatterns)
+    }
+
+    if (useCase == FeatureUseCase.TEST_GENERATION) {
+        allPatterns.push(...testGenExcludePatterns)
     }
 
     return excludePatternsAsString(allPatterns)
@@ -327,11 +331,12 @@ function excludePatternsAsString(patterns: string[]): string {
 async function filterOutGitignoredFiles(
     rootPath: string,
     files: vscode.Uri[],
-    useDefaultExcludePatterns: boolean = true
+    useDefaultExcludePatterns: boolean = true,
+    useCase?: FeatureUseCase
 ): Promise<vscode.Uri[]> {
     const gitIgnoreFiles = await vscode.workspace.findFiles(
         new vscode.RelativePattern(rootPath, '**/.gitignore'),
-        getExcludePattern(useDefaultExcludePatterns)
+        getExcludePattern(useCase === FeatureUseCase.TEST_GENERATION ? true : useDefaultExcludePatterns, useCase)
     )
     const gitIgnoreFilter = await GitIgnoreFilter.build(gitIgnoreFiles)
     return gitIgnoreFilter.filterFiles(files)
