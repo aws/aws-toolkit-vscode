@@ -23,7 +23,7 @@ export const workspaceCommand: QuickActionCommandGroup = {
     ],
 }
 
-const commonTabData: TabTypeData = {
+export const commonTabData: TabTypeData = {
     title: 'Chat',
     placeholder: 'Ask a question. Use @ to add context, / for quick actions',
     welcome: `Hi, I'm Amazon Q. I can answer your software development questions.

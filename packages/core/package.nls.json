@@ -309,7 +309,6 @@
     "AWS.codewhisperer.customization.notification.new_customizations.learn_more": "Learn More",
     "AWS.amazonq.title": "Amazon Q",
     "AWS.amazonq.chat": "Chat",
-    "AWS.amazonq.chat.placeholder": "Ask a question. Use @ to add context, / for quick actions",
     "AWS.amazonq.savedPrompts.title": "Prompt name",
     "AWS.amazonq.savedPrompts.create": "Create",
     "AWS.amazonq.savedPrompts.action": "Create a new prompt",

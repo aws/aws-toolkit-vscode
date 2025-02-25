@@ -11,8 +11,7 @@ import { MynahUIDataModel } from '@aws/mynah-ui'
 import { assertContextCommands, assertQuickActions } from './assert'
 import { registerAuthHook, using } from 'aws-core-vscode/test'
 import { loginToIdC } from './utils/setup'
-import { webviewConstants } from 'aws-core-vscode/amazonq'
-import { i18n } from 'aws-core-vscode/shared'
+import { webviewConstants, webviewTabConstants } from 'aws-core-vscode/amazonq'
 
 describe('Amazon Q Chat', function () {
     let framework: qTestingFramework
@@ -61,7 +60,7 @@ describe('Amazon Q Chat', function () {
     })
 
     it('Shows placeholder', () => {
-        assert.deepStrictEqual(store.promptInputPlaceholder, i18n('AWS.amazonq.chat.placeholder'))
+        assert.deepStrictEqual(store.promptInputPlaceholder, webviewTabConstants.commonTabData.placeholder)
     })
 
     it('Sends message', async () => {
