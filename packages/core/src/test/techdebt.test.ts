@@ -17,6 +17,16 @@ describe('tech debt', function () {
         assert.ok(now <= cutoffDate, msg)
     }
 
+    it('vscode minimum version', async function () {
+        const minVscode = env.getMinVscodeVersion()
+        assert.ok(semver.lt(minVscode, '1.84.0'))
+
+        assert.ok(
+            semver.lt(minVscode, '1.110.0'),
+            'Check to see if https://github.com/microsoft/vscode/issues/173861 is resolved. Allows us to remove work done by https://github.com/aws/aws-toolkit-vscode-staging/pull/1214 and part of https://github.com/aws/aws-toolkit-vscode/pull/6664'
+        )
+    })
+
     it('nodejs minimum version', async function () {
         const minNodejs = env.getMinNodejsVersion()
 
