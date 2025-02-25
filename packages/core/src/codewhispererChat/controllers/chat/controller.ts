@@ -127,6 +127,9 @@ const additionalContentInnerContextLimit = 8192
 
 const aditionalContentNameLimit = 1024
 
+// temporary limit for @workspace and @file combined context length
+const contextMaxLength = 40_000
+
 const getUserPromptsDirectory = () => {
     return path.join(fs.getUserHomeDir(), '.aws', 'amazonq', 'prompts')
 }
@@ -915,28 +918,38 @@ export class ChatController {
         }
         const workspaceFolder = contextCommands[0].workspaceFolder
         const prompts = await LspClient.instance.getContextCommandPrompt(contextCommands)
-        if (prompts.length > 0) {
-            triggerPayload.additionalContents = []
-            for (const prompt of prompts) {
-                // Todo: add mechanism for sorting/prioritization of additional context
-                if (triggerPayload.additionalContents.length < 20) {
-                    triggerPayload.additionalContents.push({
-                        name: prompt.name.substring(0, aditionalContentNameLimit),
-                        description: prompt.description.substring(0, aditionalContentNameLimit),
-                        innerContext: prompt.content.substring(0, additionalContentInnerContextLimit),
-                    })
-                    let relativePath = path.relative(workspaceFolder, prompt.filePath)
-                    // Handle user prompts outside the workspace
-                    if (prompt.filePath.startsWith(getUserPromptsDirectory())) {
-                        relativePath = path.basename(prompt.filePath)
-                    }
-                    relativePaths.push(relativePath)
-                }
-            }
-            getLogger().info(
-                `Retrieved chunks of additional context count: ${triggerPayload.additionalContents.length} `
-            )
+        if (prompts.length === 0) {
+            return []
         }
+
+        let currentContextLength = 0
+        triggerPayload.additionalContents = []
+        for (const prompt of prompts.slice(0, 20)) {
+            // Todo: add mechanism for sorting/prioritization of additional context
+            const entry = {
+                name: prompt.name.substring(0, aditionalContentNameLimit),
+                description: prompt.description.substring(0, aditionalContentNameLimit),
+                innerContext: prompt.content.substring(0, additionalContentInnerContextLimit),
+            }
+            // make sure the relevantDocument + additionalContext
+            // combined does not exceed 40k characters before generating the request payload.
+            // Do truncation and make sure triggerPayload.documentReferences is up-to-date after truncation
+            // TODO: Use a context length indicator
+            if (currentContextLength + entry.innerContext.length > contextMaxLength) {
+                getLogger().warn(`Selected context exceeds context size limit: ${entry.description} `)
+                break
+            }
+            triggerPayload.additionalContents.push(entry)
+            currentContextLength += entry.innerContext.length
+            let relativePath = path.relative(workspaceFolder, prompt.filePath)
+            // Handle user prompts outside the workspace
+            if (prompt.filePath.startsWith(getUserPromptsDirectory())) {
+                relativePath = path.basename(prompt.filePath)
+            }
+            relativePaths.push(relativePath)
+        }
+        getLogger().info(`Retrieved chunks of additional context count: ${triggerPayload.additionalContents.length} `)
+
         return relativePaths
     }
 
@@ -973,17 +986,37 @@ export class ChatController {
             return
         }
 
-        const relativePaths = await this.resolveContextCommandPayload(triggerPayload)
-        triggerPayload.useRelevantDocuments = false
+        const relativePathsOfContextCommandFiles = await this.resolveContextCommandPayload(triggerPayload)
+        triggerPayload.useRelevantDocuments =
+            triggerPayload.context?.some(
+                (context) => typeof context !== 'string' && context.command === '@workspace'
+            ) || false
         triggerPayload.documentReferences = []
-        triggerPayload.useRelevantDocuments = triggerPayload.context?.some(
-            (context) => typeof context !== 'string' && context.command === '@workspace'
-        )
         if (triggerPayload.useRelevantDocuments && triggerPayload.message) {
             triggerPayload.message = triggerPayload.message.replace(/workspace/, '')
             if (CodeWhispererSettings.instance.isLocalIndexEnabled()) {
                 const start = performance.now()
-                triggerPayload.relevantTextDocuments = await LspController.instance.query(triggerPayload.message)
+                let remainingContextLength = contextMaxLength
+                triggerPayload.additionalContents?.forEach((i) => {
+                    if (i.innerContext) {
+                        remainingContextLength -= i.innerContext.length
+                    }
+                })
+                triggerPayload.relevantTextDocuments = []
+                const relevantTextDocuments = await LspController.instance.query(triggerPayload.message)
+                for (const relevantDocument of relevantTextDocuments) {
+                    if (relevantDocument.text !== undefined && relevantDocument.text.length > 0) {
+                        if (remainingContextLength > relevantDocument.text.length) {
+                            triggerPayload.relevantTextDocuments.push(relevantDocument)
+                            remainingContextLength -= relevantDocument.text.length
+                        } else {
+                            getLogger().warn(
+                                `Retrieved context exceeds context size limit: ${relevantDocument.relativeFilePath} `
+                            )
+                            break
+                        }
+                    }
+                }
 
                 for (const doc of triggerPayload.relevantTextDocuments) {
                     getLogger().info(
@@ -996,11 +1029,8 @@ export class ChatController {
                 return
             }
         }
-        triggerPayload.documentReferences = this.mergeRelevantTextDocuments(triggerPayload.relevantTextDocuments || [])
 
-        // TODO: make sure the user input + current focused document + relevantDocument + additionalContext
-        // combined does not exceed 100k characters before generating the request payload.
-        // Do truncation and make sure triggerPayload.documentReferences is up-to-date after truncation
+        triggerPayload.documentReferences = this.mergeRelevantTextDocuments(triggerPayload.relevantTextDocuments || [])
 
         const request = triggerPayloadToChatRequest(triggerPayload)
         const session = this.sessionStorage.getSession(tabID)
@@ -1011,7 +1041,7 @@ export class ChatController {
             const relativePathsOfMergedRelevantDocuments = triggerPayload.documentReferences.map(
                 (doc) => doc.relativeFilePath
             )
-            for (const relativePath of relativePaths) {
+            for (const relativePath of relativePathsOfContextCommandFiles) {
                 if (!relativePathsOfMergedRelevantDocuments.includes(relativePath)) {
                     triggerPayload.documentReferences.push({
                         relativeFilePath: relativePath,
