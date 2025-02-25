@@ -85,7 +85,7 @@ export async function listScanResults(
                 const document = await vscode.workspace.openTextDocument(filePath)
                 const aggregatedCodeScanIssue: AggregatedCodeScanIssue = {
                     filePath: filePath,
-                    issues: issues.map((issue) => mapRawToCodeScanIssue(issue, jobId, scope, document)),
+                    issues: issues.map((issue) => mapRawToCodeScanIssue(issue, document, jobId, scope)),
                 }
                 aggregatedCodeScanIssueList.push(aggregatedCodeScanIssue)
             }
@@ -95,7 +95,7 @@ export async function listScanResults(
             const document = await vscode.workspace.openTextDocument(maybeAbsolutePath)
             const aggregatedCodeScanIssue: AggregatedCodeScanIssue = {
                 filePath: maybeAbsolutePath,
-                issues: issues.map((issue) => mapRawToCodeScanIssue(issue, jobId, scope, document)),
+                issues: issues.map((issue) => mapRawToCodeScanIssue(issue, document, jobId, scope)),
             }
             aggregatedCodeScanIssueList.push(aggregatedCodeScanIssue)
         }
@@ -105,9 +105,9 @@ export async function listScanResults(
 
 function mapRawToCodeScanIssue(
     issue: RawCodeScanIssue,
+    document: vscode.TextDocument,
     jobId: string,
-    scope: CodeWhispererConstants.CodeAnalysisScope,
-    document: vscode.TextDocument
+    scope: CodeWhispererConstants.CodeAnalysisScope
 ): CodeScanIssue {
     const isIssueTitleIgnored = CodeWhispererSettings.instance.getIgnoredSecurityIssues().includes(issue.title)
     const isSingleIssueIgnored = detectCommentAboveLine(

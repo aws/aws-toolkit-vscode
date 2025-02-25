@@ -3,8 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { PromiseResult } from 'aws-sdk/lib/request'
-import { Stub, stub } from 'aws-core-vscode/test'
+import { PromiseResult, Request } from 'aws-sdk/lib/request'
+import { createMockDocument } from './testUtil'
+import { Stub, stub } from '../utilities/stubber'
 import { AWSError, HttpResponse } from 'aws-sdk'
 import {
     CodeAnalysisScope,
@@ -15,12 +16,13 @@ import {
     ListCodeScanFindingsResponse,
     pollScanJobStatus,
     SecurityScanTimedOutError,
-} from 'aws-core-vscode/codewhisperer'
-import { timeoutUtils } from 'aws-core-vscode/shared'
+} from '../../codewhisperer'
+import { timeoutUtils } from '../../shared'
 import assert from 'assert'
-import sinon from 'sinon'
+import * as sinon from 'sinon'
 import * as vscode from 'vscode'
 import fs from 'fs' // eslint-disable-line no-restricted-imports
+import { GetCodeScanResponse } from '../../codewhisperer/client/codewhispererclient'
 
 const buildRawCodeScanIssue = (params?: Partial<RawCodeScanIssue>): RawCodeScanIssue => ({
     filePath: 'workspaceFolder/python3.7-plain-sam-app/hello_world/app.py',
@@ -72,6 +74,8 @@ describe('securityScanHandler', function () {
             mockClient = stub(DefaultCodeWhispererClient)
             sinon.stub(fs, 'existsSync').returns(true)
             sinon.stub(fs, 'statSync').returns({ isFile: () => true } as fs.Stats)
+            const textDocumentMock = createMockDocument('first line\n second line\n fourth line')
+            sinon.stub(vscode.workspace, 'openTextDocument').resolves(textDocumentMock)
         })
 
         afterEach(function () {
@@ -290,16 +294,64 @@ describe('securityScanHandler', function () {
         it('should return status when scan completes successfully', async function () {
             mockClient.getCodeScan
                 .onFirstCall()
-                .resolves({ status: 'Pending', $response: { requestId: 'req1' } })
+                .resolves({
+                    status: 'Pending',
+                    $response: {
+                        requestId: 'req1',
+                        hasNextPage: function (): boolean {
+                            throw new Error('Function not implemented.')
+                        },
+                        nextPage: function (): Request<GetCodeScanResponse, AWSError> | null {
+                            throw new Error('Function not implemented.')
+                        },
+                        data: undefined,
+                        error: undefined,
+                        redirectCount: 0,
+                        retryCount: 0,
+                        httpResponse: new HttpResponse(),
+                    },
+                })
                 .onSecondCall()
-                .resolves({ status: 'Completed', $response: { requestId: 'req2' } })
+                .resolves({
+                    status: 'Completed',
+                    $response: {
+                        requestId: 'req2',
+                        hasNextPage: function (): boolean {
+                            throw new Error('Function not implemented.')
+                        },
+                        nextPage: function (): Request<GetCodeScanResponse, AWSError> | null {
+                            throw new Error('Function not implemented.')
+                        },
+                        data: undefined,
+                        error: undefined,
+                        redirectCount: 0,
+                        retryCount: 0,
+                        httpResponse: new HttpResponse(),
+                    },
+                })
 
             const result = await pollScanJobStatus(mockClient, mockJobId, CodeAnalysisScope.FILE_AUTO, mockStartTime)
             assert.strictEqual(result, 'Completed')
         })
 
         it('should throw SecurityScanTimedOutError when polling exceeds timeout for express scans', async function () {
-            mockClient.getCodeScan.resolves({ status: 'Pending', $response: { requestId: 'req1' } })
+            mockClient.getCodeScan.resolves({
+                status: 'Pending',
+                $response: {
+                    requestId: 'req1',
+                    hasNextPage: function (): boolean {
+                        throw new Error('Function not implemented.')
+                    },
+                    nextPage: function (): Request<GetCodeScanResponse, AWSError> | null {
+                        throw new Error('Function not implemented.')
+                    },
+                    data: undefined,
+                    error: undefined,
+                    redirectCount: 0,
+                    retryCount: 0,
+                    httpResponse: new HttpResponse(),
+                },
+            })
 
             const pollPromise = pollScanJobStatus(mockClient, mockJobId, CodeAnalysisScope.FILE_AUTO, mockStartTime)
 
@@ -310,7 +362,23 @@ describe('securityScanHandler', function () {
         })
 
         it('should throw SecurityScanTimedOutError when polling exceeds timeout for standard scans', async function () {
-            mockClient.getCodeScan.resolves({ status: 'Pending', $response: { requestId: 'req1' } })
+            mockClient.getCodeScan.resolves({
+                status: 'Pending',
+                $response: {
+                    requestId: 'req1',
+                    hasNextPage: function (): boolean {
+                        throw new Error('Function not implemented.')
+                    },
+                    nextPage: function (): Request<GetCodeScanResponse, AWSError> | null {
+                        throw new Error('Function not implemented.')
+                    },
+                    data: undefined,
+                    error: undefined,
+                    redirectCount: 0,
+                    retryCount: 0,
+                    httpResponse: new HttpResponse(),
+                },
+            })
 
             const pollPromise = pollScanJobStatus(mockClient, mockJobId, CodeAnalysisScope.PROJECT, mockStartTime)
 
