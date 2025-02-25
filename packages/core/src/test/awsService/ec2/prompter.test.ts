@@ -47,40 +47,32 @@ describe('Ec2Prompter', async function () {
     describe('asQuickPickItem', async function () {
         let prompter: MockEc2Prompter
 
+        const testQuickPick = (instance: SafeEc2Instance) => {
+            const result = prompter.testAsQuickPickItem(testInstance)
+            assert.deepStrictEqual(result, {
+                label: Ec2Prompter.getLabel(testInstance),
+                detail: testInstance.InstanceId,
+                data: testInstance.InstanceId,
+            })
+        }
+
         before(function () {
             prompter = new MockEc2Prompter()
         })
 
         it('returns QuickPickItem for named instances', function () {
-            const testInstance = {
+            testQuickPick({
                 Name: 'testName',
                 InstanceId: 'testInstanceId',
                 LastSeenStatus: 'running',
-            } as SafeEc2Instance
-
-            const result = prompter.testAsQuickPickItem(testInstance)
-            const expected = {
-                label: Ec2Prompter.getLabel(testInstance),
-                detail: testInstance.InstanceId,
-                data: testInstance.InstanceId,
-            }
-            assert.deepStrictEqual(result, expected)
+            })
         })
 
         it('returns QuickPickItem for non-named instances', function () {
-            const testInstance = {
+            testQuickPick({
                 InstanceId: 'testInstanceId',
                 LastSeenStatus: 'running',
-            } as SafeEc2Instance
-
-            const result = prompter.testAsQuickPickItem(testInstance)
-            const expected = {
-                label: Ec2Prompter.getLabel(testInstance),
-                detail: testInstance.InstanceId,
-                data: testInstance.InstanceId,
-            }
-
-            assert.deepStrictEqual(result, expected)
+            })
         })
     })
 
