@@ -4,10 +4,15 @@
  *
  */
 
+/**
+ * Shared error type for content length validation.
+ * When thrown from common components, individual agents can catch and transform this error
+ * to provide their own customized error messages.
+ */
 import { ToolkitError } from '../shared/errors'
 
-export class CommonAmazonQContentLengthError extends ToolkitError {
+export class ContentLengthError extends ToolkitError {
     constructor(message: string) {
-        super(message, { code: 'CommonAmazonQContentLengthError' })
+        super(message, { code: 'ContentLengthError' })
     }
 }

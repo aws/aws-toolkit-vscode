@@ -31,7 +31,7 @@ import globals from '../../shared/extensionGlobals'
 import { extensionVersion } from '../../shared/vscode/env'
 import { getLogger } from '../../shared/logger/logger'
 import { ContentLengthError } from '../errors'
-import { CommonAmazonQContentLengthError } from '../../amazonq/errors'
+import { ContentLengthError as CommonAmazonQContentLengthError } from '../../amazonq/errors'
 
 export class Session {
     private _state?: SessionState | Omit<SessionState, 'uploadId'>
@@ -153,6 +153,7 @@ export class Session {
             return resp.interaction
         } catch (e) {
             if (e instanceof CommonAmazonQContentLengthError) {
+                getLogger().debug(`Content length validation failed: ${e.message}`)
                 throw new ContentLengthError()
             }
             throw e

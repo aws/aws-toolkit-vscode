@@ -28,7 +28,7 @@ import { ZipStream } from '../../shared/utilities/zipStream'
 import { isPresent } from '../../shared/utilities/collectionUtils'
 import { AuthUtil } from '../../codewhisperer/util/authUtil'
 import { TelemetryHelper } from '../util/telemetryHelper'
-import { CommonAmazonQContentLengthError } from '../errors'
+import { ContentLengthError } from '../errors'
 
 export const SvgFileExtension = '.svg'
 
@@ -185,9 +185,9 @@ export async function prepareRepoData(
             zipFileChecksum: zipResult.hash,
         }
     } catch (error) {
-        getLogger().debug(`featureDev: Failed to prepare repo: ${error}`)
+        getLogger().debug(`Failed to prepare repo: ${error}`)
         if (error instanceof ToolkitError && error.code === 'ContentLengthError') {
-            throw new CommonAmazonQContentLengthError(error.message)
+            throw new ContentLengthError(error.message)
         }
         throw new PrepareRepoFailedError()
     }
