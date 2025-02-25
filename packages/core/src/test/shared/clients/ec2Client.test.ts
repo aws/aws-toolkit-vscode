@@ -86,12 +86,16 @@ describe('extractInstancesFromReservations', function () {
     })
 
     it('flattens the reservationList', async function () {
-        const actualResult = client.getInstancesFromReservations(intoCollection(completeReservationsList))
+        const actualResult = await client
+            .getInstancesFromReservations(intoCollection(completeReservationsList))
+            .promise()
         assert.deepStrictEqual(actualResult, completeInstanceList)
     })
 
     it('handles undefined and missing pieces in the ReservationList.', async function () {
-        const actualResult = client.getInstancesFromReservations(intoCollection(incompleteReservationsList))
+        const actualResult = await client
+            .getInstancesFromReservations(intoCollection(incompleteReservationsList))
+            .promise()
         assert.deepStrictEqual(actualResult, incomepleteInstanceList)
     })
 })
@@ -102,8 +106,10 @@ describe('updateInstancesDetail', async function () {
         client = new Ec2Client('test-region')
     })
 
-    it('adds appropriate status and name field to the instance', function () {
-        const actualResult = client.updateInstancesDetail(intoCollection(completeInstanceList), getStatus)
+    it('adds appropriate status and name field to the instance', async function () {
+        const actualResult = await client
+            .updateInstancesDetail(intoCollection(completeInstanceList), getStatus)
+            .promise()
         const expectedResult = [
             {
                 InstanceId: 'running-1',
@@ -134,8 +140,10 @@ describe('updateInstancesDetail', async function () {
         assert.deepStrictEqual(actualResult, expectedResult)
     })
 
-    it('handles incomplete and missing tag fields', function () {
-        const actualResult = client.updateInstancesDetail(intoCollection(incomepleteInstanceList), getStatus)
+    it('handles incomplete and missing tag fields', async function () {
+        const actualResult = await client
+            .updateInstancesDetail(intoCollection(incomepleteInstanceList), getStatus)
+            .promise()
 
         const expectedResult = [
             { InstanceId: 'running-1', LastSeenStatus: 'running' },
