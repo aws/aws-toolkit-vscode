@@ -20,7 +20,6 @@ import { timeoutUtils } from 'aws-core-vscode/shared'
 import assert from 'assert'
 import sinon from 'sinon'
 import * as vscode from 'vscode'
-// import fs from 'fs' // eslint-disable-line no-restricted-imports
 import path from 'path'
 
 const buildRawCodeScanIssue = (fromProject: boolean = true, params?: Partial<RawCodeScanIssue>): RawCodeScanIssue => ({
