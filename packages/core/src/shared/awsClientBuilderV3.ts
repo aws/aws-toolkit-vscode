@@ -5,7 +5,7 @@
 
 import { CredentialsShim } from '../auth/deprecated/loginManager'
 import { AwsContext } from './awsContext'
-import { AwsCredentialIdentityProvider, RetryStrategyV2 } from '@smithy/types'
+import { AwsCredentialIdentityProvider, Logger, RetryStrategyV2 } from '@smithy/types'
 import { getUserAgent } from './telemetry/util'
 import { DevSettings } from './settings'
 import {
@@ -64,6 +64,7 @@ export interface AwsClientOptions {
     apiVersion: string
     endpoint: string
     retryStrategy: RetryStrategy | RetryStrategyV2
+    logger: Logger
 }
 
 interface AwsServiceOptions<C extends AwsClient> {
@@ -71,6 +72,7 @@ interface AwsServiceOptions<C extends AwsClient> {
     clientOptions?: Partial<AwsClientOptions>
     region?: string
     userAgent?: boolean
+    keepAlive?: boolean
     settings?: DevSettings
 }
 
@@ -113,6 +115,8 @@ export class AWSClientBuilderV3 {
         const shim = this.getShim()
         const opt = (serviceOptions.clientOptions ?? {}) as AwsClientOptions
         const userAgent = serviceOptions.userAgent ?? true
+        const keepAlive = serviceOptions.keepAlive ?? true
+
         if (!opt.region && serviceOptions.region) {
             opt.region = serviceOptions.region
         }
@@ -138,6 +142,10 @@ export class AWSClientBuilderV3 {
         service.middlewareStack.add(telemetryMiddleware, { step: 'deserialize' })
         service.middlewareStack.add(loggingMiddleware, { step: 'finalizeRequest' })
         service.middlewareStack.add(getEndpointMiddleware(serviceOptions.settings), { step: 'build' })
+
+        if (keepAlive) {
+            service.middlewareStack.add(keepAliveMiddleware, { step: 'build' })
+        }
         return service
     }
 
@@ -187,6 +195,9 @@ function getEndpointMiddleware(settings: DevSettings = DevSettings.instance): Bu
         overwriteEndpoint(next, context, settings, args)
 }
 
+const keepAliveMiddleware: BuildMiddleware<any, any> = (next: BuildHandler<any, any>) => async (args: any) =>
+    addKeepAliveHeader(next, args)
+
 export async function emitOnRequest(next: DeserializeHandler<any, any>, context: HandlerExecutionContext, args: any) {
     if (!HttpResponse.isInstance(args.request)) {
         return next(args)
@@ -208,8 +219,9 @@ export async function emitOnRequest(next: DeserializeHandler<any, any>, context:
 }
 
 export async function logOnRequest(next: FinalizeHandler<any, any>, args: any) {
+    const request = args.request
     if (HttpRequest.isInstance(args.request)) {
-        const { hostname, path } = args.request
+        const { hostname, path } = request
         // TODO: omit credentials / sensitive info from the logs.
         const input = partialClone(args.input, 3)
         getLogger().debug(`API Request (%s %s): %O`, hostname, path, input)
@@ -223,14 +235,30 @@ export function overwriteEndpoint(
     settings: DevSettings,
     args: any
 ) {
-    if (HttpRequest.isInstance(args.request)) {
-        const serviceId = getServiceId(context as object)
+    const request = args.request
+    if (HttpRequest.isInstance(request)) {
+        const serviceId = getServiceId(context)
         const endpoint = serviceId ? settings.get('endpoints', {})[serviceId] : undefined
         if (endpoint) {
             const url = new URL(endpoint)
-            Object.assign(args.request, selectFrom(url, 'hostname', 'port', 'protocol', 'pathname'))
-            args.request.path = args.request.pathname
+            Object.assign(request, selectFrom(url, 'hostname', 'port', 'protocol', 'pathname'))
+            request.path = (request as typeof request & { pathname: string }).pathname
         }
+    }
+    return next(args)
+}
+
+/**
+ * Overwrite agents behavior and add the keepAliveHeader. This is needed due to
+ * https://github.com/microsoft/vscode/issues/173861.
+ * @param next
+ * @param args
+ * @returns
+ */
+export function addKeepAliveHeader(next: BuildHandler<any, any>, args: any) {
+    const request = args.request
+    if (HttpRequest.isInstance(request)) {
+        request.headers['Connection'] = 'keep-alive'
     }
     return next(args)
 }
