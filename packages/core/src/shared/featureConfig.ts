@@ -145,7 +145,7 @@ export class FeatureConfigProvider {
             const customizationArnOverride = this.featureConfigs.get(Features.customizationArnOverride)?.value
                 ?.stringValue
             const previousOverride = globals.globalState.tryGet<string>('aws.amazonq.customization.overrideV2', String)
-            if (customizationArnOverride !== undefined && customizationArnOverride != previousOverride) {
+            if (customizationArnOverride !== undefined && customizationArnOverride !== previousOverride) {
                 // Double check if server-side wrongly returns a customizationArn to BID users
                 if (isBuilderIdConnection(AuthUtil.instance.conn)) {
                     this.featureConfigs.delete(Features.customizationArnOverride)
