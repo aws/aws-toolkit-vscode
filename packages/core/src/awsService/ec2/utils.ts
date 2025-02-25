@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { SafeEc2Instance } from '../../shared/clients/ec2Client'
+import { SafeEc2Instance } from '../../shared/clients/ec2'
 import { copyToClipboard } from '../../shared/utilities/messages'
 import { Ec2Selection } from './prompter'
 import { sshLogFileLocation } from '../../shared/sshConfig'

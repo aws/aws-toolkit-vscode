@@ -5,11 +5,9 @@
 import assert from 'assert'
 import * as sinon from 'sinon'
 import { Ec2Prompter, getSelection, instanceFilter } from '../../../awsService/ec2/prompter'
-import { SafeEc2Instance } from '../../../shared/clients/ec2Client'
+import { SafeEc2Instance } from '../../../shared/clients/ec2'
 import { RegionSubmenuResponse } from '../../../shared/ui/common/regionSubmenu'
 import { Ec2Selection } from '../../../awsService/ec2/prompter'
-import { AsyncCollection } from '../../../shared/utilities/asyncCollection'
-import { intoCollection } from '../../../shared/utilities/collectionUtils'
 import { DataQuickPickItem } from '../../../shared/ui/pickerPrompter'
 import { Ec2InstanceNode } from '../../../awsService/ec2/explorer/ec2InstanceNode'
 import { testClient, testInstance, testParentNode } from './explorer/ec2ParentNode.test'
@@ -29,8 +27,8 @@ describe('Ec2Prompter', async function () {
             return this.getInstancesAsQuickPickItems(region)
         }
 
-        protected override async getInstancesFromRegion(regionCode: string): Promise<AsyncCollection<SafeEc2Instance>> {
-            return intoCollection(this.instances)
+        protected override async getInstancesFromRegion(_: string): Promise<SafeEc2Instance[]> {
+            return this.instances
         }
 
         public setFilter(filter: instanceFilter) {
@@ -58,7 +56,7 @@ describe('Ec2Prompter', async function () {
                 Name: 'testName',
                 InstanceId: 'testInstanceId',
                 LastSeenStatus: 'running',
-            }
+            } as SafeEc2Instance
 
             const result = prompter.testAsQuickPickItem(testInstance)
             const expected = {
@@ -73,7 +71,7 @@ describe('Ec2Prompter', async function () {
             const testInstance = {
                 InstanceId: 'testInstanceId',
                 LastSeenStatus: 'running',
-            }
+            } as SafeEc2Instance
 
             const result = prompter.testAsQuickPickItem(testInstance)
             const expected = {

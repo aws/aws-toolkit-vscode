@@ -9,7 +9,7 @@ import { getOrInstallCli } from '../../shared/utilities/cliUtils'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { ToolkitError } from '../../shared/errors'
 import { SsmClient } from '../../shared/clients/ssm'
-import { Ec2Client } from '../../shared/clients/ec2Client'
+import { Ec2Client } from '../../shared/clients/ec2'
 import {
     VscodeRemoteConnection,
     createBoundProcess,

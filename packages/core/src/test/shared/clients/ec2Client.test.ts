@@ -4,23 +4,10 @@
  */
 
 import assert from 'assert'
-import { AsyncCollection } from '../../../shared/utilities/asyncCollection'
-import { toCollection } from '../../../shared/utilities/asyncCollection'
-import { intoCollection } from '../../../shared/utilities/collectionUtils'
-import { Ec2Client, instanceHasName } from '../../../shared/clients/ec2Client'
-import { EC2 } from 'aws-sdk'
+import { Ec2Client, instanceHasName } from '../../../shared/clients/ec2'
+import { Filter, Instance, InstanceStateName, Reservation } from '@aws-sdk/client-ec2'
 
-class MockEc2Client extends Ec2Client {
-    public override async getInstanceStatus(instanceId: string): Promise<string> {
-        return instanceId.split('-')[0]
-    }
-
-    public async testUpdateInstancesDetail(instances: EC2.Instance[]) {
-        return await (await this.updateInstancesDetail(intoCollection(instances))).promise()
-    }
-}
-
-const completeReservationsList: EC2.ReservationList = [
+const completeReservationsList: Reservation[] = [
     {
         Instances: [
             {
@@ -47,14 +34,14 @@ const completeReservationsList: EC2.ReservationList = [
     },
 ]
 
-const completeInstanceList: EC2.InstanceList = [
+const completeInstanceList: Instance[] = [
     { InstanceId: 'running-1', Tags: [{ Key: 'Name', Value: 'name1' }] },
     { InstanceId: 'stopped-2', Tags: [{ Key: 'Name', Value: 'name2' }] },
     { InstanceId: 'pending-3', Tags: [{ Key: 'Name', Value: 'name3' }] },
     { InstanceId: 'running-4', Tags: [{ Key: 'Name', Value: 'name4' }] },
 ]
 
-const incompleteReservationsList: EC2.ReservationList = [
+const incompleteReservationsList: Reservation[] = [
     {
         Instances: [
             {
@@ -77,51 +64,45 @@ const incompleteReservationsList: EC2.ReservationList = [
     },
 ]
 
-const incomepleteInstanceList: EC2.InstanceList = [
+const incomepleteInstanceList: Instance[] = [
     { InstanceId: 'running-1' },
     { InstanceId: 'stopped-2', Tags: [] },
     { InstanceId: 'pending-3', Tags: [{ Key: 'Name', Value: 'name3' }] },
 ]
 
+const getStatus: (i: string) => Promise<InstanceStateName> = (i) =>
+    new Promise((resolve) => {
+        resolve(i.split('-')[0] as InstanceStateName)
+    })
+
 describe('extractInstancesFromReservations', function () {
     const client = new Ec2Client('')
 
-    it('returns empty when given empty collection', async function () {
-        const actualResult = await client
-            .getInstancesFromReservations(
-                toCollection(async function* () {
-                    yield []
-                }) as AsyncCollection<EC2.ReservationList>
-            )
-            .promise()
+    it('returns empty when given empty collection', function () {
+        const actualResult = client.getInstancesFromReservations([])
 
         assert.strictEqual(0, actualResult.length)
     })
 
-    it('flattens the reservationList', async function () {
-        const actualResult = await client
-            .getInstancesFromReservations(intoCollection([completeReservationsList]))
-            .promise()
+    it('flattens the reservationList', function () {
+        const actualResult = client.getInstancesFromReservations(completeReservationsList)
         assert.deepStrictEqual(actualResult, completeInstanceList)
     })
 
     it('handles undefined and missing pieces in the ReservationList.', async function () {
-        const actualResult = await client
-            .getInstancesFromReservations(intoCollection([incompleteReservationsList]))
-            .promise()
+        const actualResult = client.getInstancesFromReservations(incompleteReservationsList)
         assert.deepStrictEqual(actualResult, incomepleteInstanceList)
     })
 })
 
 describe('updateInstancesDetail', async function () {
-    let client: MockEc2Client
-
+    let client: Ec2Client
     before(function () {
-        client = new MockEc2Client('test-region')
+        client = new Ec2Client('test-region')
     })
 
     it('adds appropriate status and name field to the instance', async function () {
-        const actualResult = await client.testUpdateInstancesDetail(completeInstanceList)
+        const actualResult = await client.updateInstancesDetail(completeInstanceList, getStatus)
         const expectedResult = [
             {
                 InstanceId: 'running-1',
@@ -153,7 +134,7 @@ describe('updateInstancesDetail', async function () {
     })
 
     it('handles incomplete and missing tag fields', async function () {
-        const actualResult = await client.testUpdateInstancesDetail(incomepleteInstanceList)
+        const actualResult = await client.updateInstancesDetail(incomepleteInstanceList, getStatus)
 
         const expectedResult = [
             { InstanceId: 'running-1', LastSeenStatus: 'running' },
@@ -176,7 +157,7 @@ describe('getInstancesFilter', function () {
     it('returns proper filter when given instanceId', function () {
         const testInstanceId1 = 'test'
         const actualFilters1 = client.getInstancesFilter([testInstanceId1])
-        const expectedFilters1: EC2.Filter[] = [
+        const expectedFilters1: Filter[] = [
             {
                 Name: 'instance-id',
                 Values: [testInstanceId1],
@@ -187,7 +168,7 @@ describe('getInstancesFilter', function () {
 
         const testInstanceId2 = 'test2'
         const actualFilters2 = client.getInstancesFilter([testInstanceId1, testInstanceId2])
-        const expectedFilters2: EC2.Filter[] = [
+        const expectedFilters2: Filter[] = [
             {
                 Name: 'instance-id',
                 Values: [testInstanceId1, testInstanceId2],
@@ -223,12 +204,12 @@ describe('instanceHasName', function () {
 
 describe('ensureInstanceNotInStatus', async function () {
     it('only throws error if instance is in status', async function () {
-        const client = new MockEc2Client('test-region')
+        const client = new Ec2Client('test-region')
 
-        await client.ensureInstanceNotInStatus('stopped-instance', 'running')
+        await client.assertNotInStatus('stopped-instance', 'running', getStatus)
 
         try {
-            await client.ensureInstanceNotInStatus('running-instance', 'running')
+            await client.assertNotInStatus('running-instance', 'running', getStatus)
             assert.ok(false)
         } catch {}
     })

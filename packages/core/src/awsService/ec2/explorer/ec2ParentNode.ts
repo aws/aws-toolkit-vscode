@@ -7,8 +7,8 @@ import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { makeChildrenNodes } from '../../../shared/treeview/utils'
 import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
 import { Ec2InstanceNode } from './ec2InstanceNode'
-import { Ec2Client } from '../../../shared/clients/ec2Client'
-import { updateInPlace } from '../../../shared/utilities/collectionUtils'
+import { Ec2Client } from '../../../shared/clients/ec2'
+import { toMap, updateInPlace } from '../../../shared/utilities/collectionUtils'
 import { PollingSet } from '../../../shared/utilities/pollingSet'
 
 export const parentContextValue = 'awsEc2ParentNode'
@@ -30,7 +30,7 @@ export class Ec2ParentNode extends AWSTreeNodeBase {
     }
 
     public override async getChildren(): Promise<AWSTreeNodeBase[]> {
-        return await makeChildrenNodes({
+        const result = await makeChildrenNodes({
             getChildNodes: async () => {
                 await this.updateChildren()
 
@@ -39,6 +39,7 @@ export class Ec2ParentNode extends AWSTreeNodeBase {
             getNoChildrenPlaceholderNode: async () => new PlaceholderNode(this, this.placeHolderMessage),
             sort: (nodeA, nodeB) => nodeA.name.localeCompare(nodeB.name),
         })
+        return result
     }
 
     public trackPendingNode(instanceId: string) {
@@ -49,7 +50,7 @@ export class Ec2ParentNode extends AWSTreeNodeBase {
     }
 
     public async updateChildren(): Promise<void> {
-        const ec2Instances = await (await this.ec2Client.getInstances()).toMap((instance) => instance.InstanceId)
+        const ec2Instances = toMap(await this.ec2Client.getInstances(), (instance) => instance.InstanceId)
         updateInPlace(
             this.ec2InstanceNodes,
             ec2Instances.keys(),
