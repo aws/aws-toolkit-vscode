@@ -132,6 +132,8 @@ const getUserPromptsDirectory = () => {
     return path.join(fs.getUserHomeDir(), '.aws', 'amazonq', 'prompts')
 }
 
+const createSavedPromptCommandId = 'create-saved-prompt'
+
 export class ChatController {
     private readonly sessionStorage: ChatSessionStorage
     private readonly triggerEventsStorage: TriggerEventsStorage
@@ -454,7 +456,7 @@ export class ChatController {
                                 groupName: 'Prompts',
                                 actions: [
                                     {
-                                        id: 'create-prompt',
+                                        id: createSavedPromptCommandId,
                                         icon: 'plus',
                                         description: i18n('AWS.amazonq.savedPrompts.action'),
                                     },
@@ -503,7 +505,7 @@ export class ChatController {
         // Add create prompt button to the bottom of the prompts list
         promptsCmd.children?.[0].commands.push({
             command: i18n('AWS.amazonq.savedPrompts.action'),
-            id: 'create-saved-prompt',
+            id: createSavedPromptCommandId,
             icon: 'list-add' as MynahIconsType,
         })
 
@@ -558,7 +560,7 @@ export class ChatController {
     }
 
     private processQuickCommandGroupActionClicked(message: QuickCommandGroupActionClick) {
-        if (message.actionId === 'create-prompt') {
+        if (message.actionId === createSavedPromptCommandId) {
             this.handlePromptCreate(message.tabID)
         }
     }
@@ -580,7 +582,7 @@ export class ChatController {
     }
 
     private async processContextSelected(message: ContextSelectedMessage) {
-        if (message.tabID && message.contextItem.command === i18n('AWS.amazonq.savedPrompts.action')) {
+        if (message.tabID && message.contextItem.id === createSavedPromptCommandId) {
             this.handlePromptCreate(message.tabID)
         }
     }
