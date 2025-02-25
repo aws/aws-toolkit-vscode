@@ -6,6 +6,7 @@ import * as vscode from 'vscode'
 import globals from '../extensionGlobals'
 import { AwsClient, AwsClientConstructor, AwsCommand } from '../awsClientBuilderV3'
 import { PaginationConfiguration, Paginator } from '@aws-sdk/types'
+import { AsyncCollection, toCollection } from '../utilities/asyncCollection'
 
 type SDKPaginator<C, CommandInput extends object, CommandOutput extends object> = (
     config: Omit<PaginationConfiguration, 'client'> & { client: C },
@@ -44,14 +45,18 @@ export abstract class ClientWrapper<C extends AwsClient> implements vscode.Dispo
         paginator: SDKPaginator<C, CommandInput, CommandOutput>,
         input: CommandInput,
         extractPage: (page: CommandOutput) => Output[] | undefined
-    ): Promise<Output[]> {
+    ): Promise<AsyncCollection<Output>> {
         const p = paginator({ client: await this.getClient() }, input)
-        const results = []
-        for await (const page of p) {
-            results.push(extractPage(page))
+        const collection = toCollection(() => p)
+            .map(extractPage)
+            .flatten()
+            .filter(isDefined)
+
+        return collection
+
+        function isDefined(i: Output | undefined): i is Output {
+            return i !== undefined
         }
-        const filteredResult = results.flat().filter((result) => result !== undefined) as Output[]
-        return filteredResult
     }
 
     public dispose() {

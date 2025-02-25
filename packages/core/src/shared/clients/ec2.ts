@@ -28,6 +28,7 @@ import { showMessageWithCancel } from '../utilities/messages'
 import { ToolkitError, isAwsError } from '../errors'
 import { decodeBase64 } from '../utilities/textUtilities'
 import { ClientWrapper } from './clientWrapper'
+import { AsyncCollection } from '../utilities/asyncCollection'
 
 /**
  * A wrapper around EC2.Instance where we can safely assume InstanceId field exists.
@@ -36,6 +37,10 @@ export interface SafeEc2Instance extends Instance {
     InstanceId: string
     Name?: string
     LastSeenStatus: InstanceStateName
+}
+
+interface InstanceWithId extends Instance {
+    InstanceId: string
 }
 
 interface SafeEc2GetConsoleOutputResult extends GetConsoleOutputRequest {
@@ -48,38 +53,38 @@ export class Ec2Client extends ClientWrapper<EC2Client> {
         super(regionCode, EC2Client)
     }
 
-    public async getInstances(filters?: Filter[]): Promise<SafeEc2Instance[]> {
+    public async getInstances(filters?: Filter[]): Promise<AsyncCollection<SafeEc2Instance>> {
         const reservations = await this.makePaginatedRequest(
             paginateDescribeInstances,
             filters ? { Filters: filters } : ({} satisfies DescribeInstancesRequest),
             (page) => page.Reservations
         )
 
-        return await this.updateInstancesDetail(this.getInstancesFromReservations(reservations))
+        return this.updateInstancesDetail(this.getInstancesFromReservations(reservations))
     }
 
     /** Updates status and name in-place for displaying to humans. */
-    public async updateInstancesDetail(
-        instances: Instance[],
+    public updateInstancesDetail(
+        instances: AsyncCollection<Instance>,
         getStatus: (i: string) => Promise<InstanceStateName> = this.getInstanceStatus.bind(this)
-    ): Promise<SafeEc2Instance[]> {
+    ): AsyncCollection<SafeEc2Instance> {
         const instanceWithId = instances.filter(hasId)
-        const instanceWithStatus = await Promise.all(instanceWithId.map(addStatus))
+        const instanceWithStatus = instanceWithId.map(addStatus)
         return instanceWithStatus.map((i) => (instanceHasName(i) ? { ...i, Name: lookupTagKey(i.Tags, 'Name') } : i))
 
-        function hasId(i: Instance): i is Instance & { InstanceId: string } {
+        function hasId(i: Instance): i is InstanceWithId {
             return i.InstanceId !== undefined
         }
 
-        async function addStatus(instance: Instance & { InstanceId: string }) {
+        async function addStatus(instance: InstanceWithId) {
             return { ...instance, LastSeenStatus: await getStatus(instance.InstanceId) }
         }
     }
 
-    public getInstancesFromReservations(reservations: Reservation[]): (Instance & { InstanceId: string })[] {
+    public getInstancesFromReservations(reservations: AsyncCollection<Reservation>): AsyncCollection<InstanceWithId> {
         return reservations
             .map((r) => r.Instances)
-            .flat()
+            .flatten()
             .filter(isNotEmpty)
 
         function isNotEmpty(i: Instance | undefined): i is Instance & { InstanceId: string } {
@@ -88,11 +93,13 @@ export class Ec2Client extends ClientWrapper<EC2Client> {
     }
 
     public async getInstanceStatus(instanceId: string): Promise<InstanceStateName> {
-        const instanceStatuses = await this.makePaginatedRequest(
-            paginateDescribeInstanceStatus,
-            { InstanceIds: [instanceId], IncludeAllInstances: true },
-            (page) => page.InstanceStatuses
-        )
+        const instanceStatuses = await (
+            await this.makePaginatedRequest(
+                paginateDescribeInstanceStatus,
+                { InstanceIds: [instanceId], IncludeAllInstances: true },
+                (page) => page.InstanceStatuses
+            )
+        ).promise()
 
         return instanceStatuses[0].InstanceState!.Name!
     }
@@ -198,11 +205,13 @@ export class Ec2Client extends ClientWrapper<EC2Client> {
     private async getIamInstanceProfileAssociation(instanceId: string): Promise<IamInstanceProfileAssociation> {
         const instanceFilter = this.getInstancesFilter([instanceId])
 
-        const associations = await this.makePaginatedRequest(
-            paginateDescribeIamInstanceProfileAssociations,
-            { Filters: instanceFilter },
-            (page) => page.IamInstanceProfileAssociations
-        )
+        const associations = await (
+            await this.makePaginatedRequest(
+                paginateDescribeIamInstanceProfileAssociations,
+                { Filters: instanceFilter },
+                (page) => page.IamInstanceProfileAssociations
+            )
+        ).promise()
 
         return associations[0]!
     }

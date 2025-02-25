@@ -11,6 +11,7 @@ import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { getIconCode } from './utils'
 import { Ec2Node } from './explorer/ec2ParentNode'
 import { Ec2InstanceNode } from './explorer/ec2InstanceNode'
+import { AsyncCollection } from '../../shared/utilities/asyncCollection'
 
 export type instanceFilter = (instance: SafeEc2Instance) => boolean
 export interface Ec2Selection {
@@ -52,20 +53,24 @@ export class Ec2Prompter {
         }
     }
 
-    protected async getInstancesFromRegion(regionCode: string): Promise<SafeEc2Instance[]> {
+    protected async getInstancesFromRegion(regionCode: string): Promise<AsyncCollection<SafeEc2Instance>> {
         const client = new Ec2Client(regionCode)
         return await client.getInstances()
     }
 
+    // TODO: implement a batched generator to avoid loading all instances into UI.
     protected async getInstancesAsQuickPickItems(region: string): Promise<DataQuickPickItem<string>[]> {
-        return (await this.getInstancesFromRegion(region))
-            .filter(this.filter ? (instance) => this.filter!(instance) : (_) => true)
+        return await (
+            await this.getInstancesFromRegion(region)
+        )
+            .filter(this.filter ? (instance) => this.filter!(instance) : (instance) => true)
             .map((instance) => Ec2Prompter.asQuickPickItem(instance))
+            .promise()
     }
 
     private createEc2ConnectPrompter(): RegionSubmenu<string> {
         return new RegionSubmenu(
-            async (region) => this.getInstancesAsQuickPickItems(region),
+            async (region) => await this.getInstancesAsQuickPickItems(region),
             { title: 'Select EC2 Instance', matchOnDetail: true },
             { title: 'Select Region for EC2 Instance' },
             'Instances'

@@ -11,6 +11,8 @@ import { Ec2Selection } from '../../../awsService/ec2/prompter'
 import { DataQuickPickItem } from '../../../shared/ui/pickerPrompter'
 import { Ec2InstanceNode } from '../../../awsService/ec2/explorer/ec2InstanceNode'
 import { testClient, testInstance, testParentNode } from './explorer/ec2ParentNode.test'
+import { AsyncCollection } from '../../../shared/utilities/asyncCollection'
+import { intoCollection } from '../../../shared/utilities/collectionUtils'
 
 describe('Ec2Prompter', async function () {
     class MockEc2Prompter extends Ec2Prompter {
@@ -27,8 +29,8 @@ describe('Ec2Prompter', async function () {
             return this.getInstancesAsQuickPickItems(region)
         }
 
-        protected override async getInstancesFromRegion(_: string): Promise<SafeEc2Instance[]> {
-            return this.instances
+        protected override async getInstancesFromRegion(_: string): Promise<AsyncCollection<SafeEc2Instance>> {
+            return intoCollection(this.instances)
         }
 
         public setFilter(filter: instanceFilter) {

@@ -6,6 +6,7 @@
 import assert from 'assert'
 import { Ec2Client, instanceHasName } from '../../../shared/clients/ec2'
 import { Filter, Instance, InstanceStateName, Reservation } from '@aws-sdk/client-ec2'
+import { intoCollection } from '../../../shared/utilities/collectionUtils'
 
 const completeReservationsList: Reservation[] = [
     {
@@ -78,19 +79,19 @@ const getStatus: (i: string) => Promise<InstanceStateName> = (i) =>
 describe('extractInstancesFromReservations', function () {
     const client = new Ec2Client('')
 
-    it('returns empty when given empty collection', function () {
-        const actualResult = client.getInstancesFromReservations([])
+    it('returns empty when given empty collection', async function () {
+        const actualResult = await client.getInstancesFromReservations(intoCollection([])).promise()
 
         assert.strictEqual(0, actualResult.length)
     })
 
-    it('flattens the reservationList', function () {
-        const actualResult = client.getInstancesFromReservations(completeReservationsList)
+    it('flattens the reservationList', async function () {
+        const actualResult = client.getInstancesFromReservations(intoCollection(completeReservationsList))
         assert.deepStrictEqual(actualResult, completeInstanceList)
     })
 
     it('handles undefined and missing pieces in the ReservationList.', async function () {
-        const actualResult = client.getInstancesFromReservations(incompleteReservationsList)
+        const actualResult = client.getInstancesFromReservations(intoCollection(incompleteReservationsList))
         assert.deepStrictEqual(actualResult, incomepleteInstanceList)
     })
 })
@@ -101,8 +102,8 @@ describe('updateInstancesDetail', async function () {
         client = new Ec2Client('test-region')
     })
 
-    it('adds appropriate status and name field to the instance', async function () {
-        const actualResult = await client.updateInstancesDetail(completeInstanceList, getStatus)
+    it('adds appropriate status and name field to the instance', function () {
+        const actualResult = client.updateInstancesDetail(intoCollection(completeInstanceList), getStatus)
         const expectedResult = [
             {
                 InstanceId: 'running-1',
@@ -133,8 +134,8 @@ describe('updateInstancesDetail', async function () {
         assert.deepStrictEqual(actualResult, expectedResult)
     })
 
-    it('handles incomplete and missing tag fields', async function () {
-        const actualResult = await client.updateInstancesDetail(incomepleteInstanceList, getStatus)
+    it('handles incomplete and missing tag fields', function () {
+        const actualResult = client.updateInstancesDetail(intoCollection(incomepleteInstanceList), getStatus)
 
         const expectedResult = [
             { InstanceId: 'running-1', LastSeenStatus: 'running' },
