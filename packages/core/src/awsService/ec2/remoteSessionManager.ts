@@ -3,11 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { EC2 } from 'aws-sdk'
 import { SsmClient } from '../../shared/clients/ssm'
 import { Disposable } from 'vscode'
 
-export class Ec2SessionTracker extends Map<EC2.InstanceId, string> implements Disposable {
+export class Ec2SessionTracker extends Map<string, string> implements Disposable {
     public constructor(
         readonly regionCode: string,
         protected ssm: SsmClient
@@ -15,7 +14,7 @@ export class Ec2SessionTracker extends Map<EC2.InstanceId, string> implements Di
         super()
     }
 
-    public async addSession(instanceId: EC2.InstanceId, sessionId: string): Promise<void> {
+    public async addSession(instanceId: string, sessionId: string): Promise<void> {
         if (this.isConnectedTo(instanceId)) {
             const existingSessionId = this.get(instanceId)!
             await this.ssm.terminateSessionFromId(existingSessionId)
@@ -25,7 +24,7 @@ export class Ec2SessionTracker extends Map<EC2.InstanceId, string> implements Di
         }
     }
 
-    private async disconnectEnv(instanceId: EC2.InstanceId): Promise<void> {
+    private async disconnectEnv(instanceId: string): Promise<void> {
         await this.ssm.terminateSessionFromId(this.get(instanceId)!)
         this.delete(instanceId)
     }
@@ -35,7 +34,7 @@ export class Ec2SessionTracker extends Map<EC2.InstanceId, string> implements Di
         this.forEach(async (_sessionId, instanceId) => await this.disconnectEnv(instanceId))
     }
 
-    public isConnectedTo(instanceId: EC2.InstanceId): boolean {
+    public isConnectedTo(instanceId: string): boolean {
         return this.has(instanceId)
     }
 }

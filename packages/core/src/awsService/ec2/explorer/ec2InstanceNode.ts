@@ -11,7 +11,6 @@ import globals from '../../../shared/extensionGlobals'
 import { getIconCode } from '../utils'
 import { Ec2Selection } from '../prompter'
 import { Ec2Node, Ec2ParentNode } from './ec2ParentNode'
-import { EC2 } from 'aws-sdk'
 import { getLogger } from '../../../shared/logger/logger'
 import { InstanceStateName } from '@aws-sdk/client-ec2'
 
@@ -80,7 +79,7 @@ export class Ec2InstanceNode extends AWSTreeNodeBase implements AWSResourceNode 
         }
     }
 
-    public getStatus(): EC2.InstanceStateName {
+    public getStatus(): InstanceStateName {
         return this.instance.LastSeenStatus
     }
 

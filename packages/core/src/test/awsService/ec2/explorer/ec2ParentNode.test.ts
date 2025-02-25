@@ -12,9 +12,9 @@ import {
     assertNodeListOnlyHasPlaceholderNode,
 } from '../../../utilities/explorerNodeAssertions'
 import { Ec2InstanceNode } from '../../../../awsService/ec2/explorer/ec2InstanceNode'
-import { EC2 } from 'aws-sdk'
 import * as FakeTimers from '@sinonjs/fake-timers'
 import { installFakeClock } from '../../../testUtil'
+import { Filter } from '@aws-sdk/client-ec2'
 
 export const testInstance = {
     InstanceId: 'testId',
@@ -32,7 +32,7 @@ export const testParentNode = new Ec2ParentNode('fake-region', 'testPartition', 
 describe('ec2ParentNode', function () {
     let testNode: Ec2ParentNode
     let client: Ec2Client
-    let getInstanceStub: sinon.SinonStub<[filters?: EC2.Filter[] | undefined], Promise<SafeEc2Instance[]>>
+    let getInstanceStub: sinon.SinonStub<[filters?: Filter[] | undefined], Promise<SafeEc2Instance[]>>
     let clock: FakeTimers.InstalledClock
     let refreshStub: sinon.SinonStub<[], Promise<void>>
     let statusUpdateStub: sinon.SinonStub<[status: string], Promise<string>>
