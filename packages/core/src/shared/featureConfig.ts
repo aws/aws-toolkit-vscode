@@ -33,7 +33,7 @@ export class FeatureContext {
     ) {}
 }
 
-const featureConfigPollIntervalInMs = 30 * 60 * 1000 // 30 mins
+const featureConfigPollIntervalInMs = 180 * 60 * 1000 // 180 mins
 
 export const Features = {
     customizationArnOverride: 'customizationArnOverride',
@@ -144,7 +144,8 @@ export class FeatureConfigProvider {
 
             const customizationArnOverride = this.featureConfigs.get(Features.customizationArnOverride)?.value
                 ?.stringValue
-            if (customizationArnOverride !== undefined) {
+            const previousOverride = globals.globalState.tryGet<string>('aws.amazonq.customization.overrideV2', String)
+            if (customizationArnOverride !== undefined && customizationArnOverride != previousOverride) {
                 // Double check if server-side wrongly returns a customizationArn to BID users
                 if (isBuilderIdConnection(AuthUtil.instance.conn)) {
                     this.featureConfigs.delete(Features.customizationArnOverride)
