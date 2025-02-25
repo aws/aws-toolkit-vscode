@@ -81,7 +81,7 @@ import { convertDateToTimestamp } from '../../shared/datetime'
 import { findStringInDirectory } from '../../shared/utilities/workspaceUtils'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 
-function getFeedbackCommentData() {
+export function getFeedbackCommentData() {
     const jobId = transformByQState.getJobId()
     const s = `Q CodeTransform jobId: ${jobId ? jobId : 'none'}`
     return s
@@ -511,14 +511,15 @@ export async function startTransformationJob(uploadId: string, transformStartTim
         })
     } catch (error) {
         getLogger().error(`CodeTransformation: ${CodeWhispererConstants.failedToStartJobNotification}`, error)
-        const errorMessage = (error as Error).message
+        const errorMessage = (error as Error).message.toLowerCase()
         if (errorMessage.includes('too many active running jobs')) {
+            transformByQState.setJobFailureErrorNotification(CodeWhispererConstants.tooManyJobsNotification)
+            transformByQState.setJobFailureErrorChatMessage(CodeWhispererConstants.tooManyJobsChatMessage)
+        } else if (errorMessage.includes('lines of code limit breached')) {
             transformByQState.setJobFailureErrorNotification(
-                CodeWhispererConstants.failedToStartJobTooManyJobsNotification
+                CodeWhispererConstants.linesOfCodeLimitBreachedNotification
             )
-            transformByQState.setJobFailureErrorChatMessage(
-                CodeWhispererConstants.failedToStartJobTooManyJobsChatMessage
-            )
+            transformByQState.setJobFailureErrorChatMessage(CodeWhispererConstants.linesOfCodeLimitBreachedChatMessage)
         } else {
             transformByQState.setJobFailureErrorNotification(
                 `${CodeWhispererConstants.failedToStartJobNotification} ${errorMessage}`
@@ -585,8 +586,12 @@ export async function pollTransformationStatusUntilPlanReady(jobId: string) {
     } catch (error) {
         // means API call failed
         getLogger().error(`CodeTransformation: ${CodeWhispererConstants.failedToCompleteJobNotification}`, error)
-        transformByQState.setJobFailureErrorNotification(CodeWhispererConstants.failedToGetPlanNotification)
-        transformByQState.setJobFailureErrorChatMessage(CodeWhispererConstants.failedToGetPlanChatMessage)
+        transformByQState.setJobFailureErrorNotification(
+            `${CodeWhispererConstants.failedToGetPlanNotification} ${(error as Error).message}`
+        )
+        transformByQState.setJobFailureErrorChatMessage(
+            `${CodeWhispererConstants.failedToGetPlanChatMessage} ${(error as Error).message}`
+        )
         throw new Error('Get plan failed')
     }
 
