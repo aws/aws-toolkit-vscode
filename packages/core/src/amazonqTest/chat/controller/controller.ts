@@ -1098,8 +1098,9 @@ export class TestController {
 
     private async startLocalBuildExecution(data: any) {
         const session: Session = this.sessionStorage.getSession()
-        // const installationDependencies = session.shortAnswer?.installationDependencies ?? []
-        // MOCK: ignoring the installation case until backend send response
+        if (session.listOfTestGenerationJobId.length < 2) {
+            globals.logOutputChannel.show(true)
+        }
         const installationDependencies: string[] = []
 
         this.messenger.sendBuildProgressMessage({
@@ -1387,6 +1388,7 @@ export class TestController {
                 }
             })
         )
+        globals.logOutputChannel.hide()
 
         getLogger().debug(
             'listOfTestGenerationJobId length: %d, groupName: %s',
