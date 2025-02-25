@@ -67,9 +67,10 @@ import globals from '../../../shared/extensionGlobals'
 import { MynahIconsType, MynahUIDataModel, QuickActionCommand } from '@aws/mynah-ui'
 import { LspClient } from '../../../amazonq/lsp/lspClient'
 import { ContextCommandItem, ContextCommandItemType } from '../../../amazonq/lsp/types'
-import { createPromptCommand, workspaceCommand } from '../../../amazonq/webview/ui/tabs/constants'
+import { workspaceCommand } from '../../../amazonq/webview/ui/tabs/constants'
 import fs from '../../../shared/fs/fs'
 import { FeatureConfigProvider, Features } from '../../../shared/featureConfig'
+import { i18n } from '../../../shared/i18n-helper'
 
 export interface ChatControllerMessagePublishers {
     readonly processPromptChatMessage: MessagePublisher<PromptMessage>
@@ -121,7 +122,7 @@ export interface ChatControllerMessageListeners {
     readonly processFileClick: MessageListener<FileClick>
 }
 
-const promptFileExtension = '.prompt.md'
+const promptFileExtension = '.md'
 
 const additionalContentInnerContextLimit = 8192
 
@@ -455,7 +456,7 @@ export class ChatController {
                                     {
                                         id: 'create-prompt',
                                         icon: 'plus',
-                                        description: 'Create new prompt',
+                                        description: i18n('AWS.amazonq.savedPrompts.action'),
                                     },
                                 ],
                                 commands: [],
@@ -500,7 +501,11 @@ export class ChatController {
         }
 
         // Add create prompt button to the bottom of the prompts list
-        promptsCmd.children?.[0].commands.push({ command: createPromptCommand, icon: 'list-add' as MynahIconsType })
+        promptsCmd.children?.[0].commands.push({
+            command: i18n('AWS.amazonq.savedPrompts.action'),
+            id: 'create-saved-prompt',
+            icon: 'list-add' as MynahIconsType,
+        })
 
         const lspClientReady = await LspClient.instance.waitUntilReady()
         if (lspClientReady) {
@@ -539,14 +544,14 @@ export class ChatController {
                     id: 'prompt-name',
                     type: 'textinput',
                     mandatory: true,
-                    title: 'Prompt name',
-                    placeholder: 'Enter prompt name',
-                    description: `Use this prompt by typing \`@\` followed by the prompt name. Prompt will be saved in ${getUserPromptsDirectory()}.`,
+                    title: i18n('AWS.amazonq.savedPrompts.title'),
+                    placeholder: i18n('AWS.amazonq.savedPrompts.placeholder'),
+                    description: i18n('AWS.amazonq.savedPrompts.description'),
                 },
             ],
             [
-                { id: 'cancel-create-prompt', text: 'Cancel', status: 'clear' },
-                { id: 'submit-create-prompt', text: 'Create', status: 'main' },
+                { id: 'cancel-create-prompt', text: i18n('AWS.generic.cancel'), status: 'clear' },
+                { id: 'submit-create-prompt', text: i18n('AWS.amazonq.savedPrompts.create'), status: 'main' },
             ],
             `Create a saved prompt`
         )
@@ -575,7 +580,7 @@ export class ChatController {
     }
 
     private async processContextSelected(message: ContextSelectedMessage) {
-        if (message.tabID && message.contextItem.command === createPromptCommand) {
+        if (message.tabID && message.contextItem.command === i18n('AWS.amazonq.savedPrompts.action')) {
             this.handlePromptCreate(message.tabID)
         }
     }
