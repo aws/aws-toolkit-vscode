@@ -224,18 +224,12 @@ export function getWorkspaceRelativePath(
         workspaceFolders?: readonly vscode.WorkspaceFolder[]
     } = {
         workspaceFolders: vscode.workspace.workspaceFolders,
-    },
-    useCase?: FeatureUseCase
+    }
 ): { relativePath: string; workspaceFolder: vscode.WorkspaceFolder } | undefined {
     if (!override.workspaceFolders) {
         return
     }
     let folders = override.workspaceFolders
-    if (useCase && useCase === FeatureUseCase.TEST_GENERATION) {
-        // Sort workspace folders by path length (descending) to prioritize deeper paths
-        // TODO: Need to enable this for entire Q
-        folders = [...override.workspaceFolders].sort((a, b) => b.uri.fsPath.length - a.uri.fsPath.length)
-    }
 
     for (const folder of folders) {
         if (isInDirectory(folder.uri.fsPath, childPath)) {
@@ -410,10 +404,10 @@ export async function collectFiles(
             excludePatternFilter
         )
 
-        const files = excludeByGitIgnore ? await filterOutGitignoredFiles(rootPath, allFiles, false) : allFiles
+        const files = excludeByGitIgnore ? await filterOutGitignoredFiles(rootPath, allFiles, false, useCase) : allFiles
 
         for (const file of files) {
-            const relativePath = getWorkspaceRelativePath(file.fsPath, { workspaceFolders }, useCase)
+            const relativePath = getWorkspaceRelativePath(file.fsPath, { workspaceFolders })
             if (!relativePath) {
                 continue
             }
