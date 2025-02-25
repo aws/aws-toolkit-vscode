@@ -997,11 +997,11 @@ export class ChatController {
             if (CodeWhispererSettings.instance.isLocalIndexEnabled()) {
                 const start = performance.now()
                 let remainingContextLength = contextMaxLength
-                triggerPayload.additionalContents?.forEach((i) => {
-                    if (i.innerContext) {
-                        remainingContextLength -= i.innerContext.length
+                for (const additionalContent of triggerPayload.additionalContents || []) {
+                    if (additionalContent.innerContext) {
+                        remainingContextLength -= additionalContent.innerContext.length
                     }
-                })
+                }
                 triggerPayload.relevantTextDocuments = []
                 const relevantTextDocuments = await LspController.instance.query(triggerPayload.message)
                 for (const relevantDocument of relevantTextDocuments) {
