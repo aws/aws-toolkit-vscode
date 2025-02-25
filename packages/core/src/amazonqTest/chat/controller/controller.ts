@@ -695,12 +695,7 @@ export class TestController {
     private async openDiff(message: OpenDiffMessage) {
         const session = this.sessionStorage.getSession()
         const filePath = session.generatedFilePath
-        const workspaceFolder = vscode.workspace.workspaceFolders?.[0]
-        if (!workspaceFolder) {
-            throw new Error('No workspace folder found')
-        }
-        const projectPath = workspaceFolder.uri.fsPath
-        const absolutePath = path.join(projectPath, filePath)
+        const absolutePath = path.join(session.projectRootPath, filePath)
         const fileExists = await fs.existsFile(absolutePath)
         const leftUri = fileExists ? vscode.Uri.file(absolutePath) : vscode.Uri.from({ scheme: 'untitled' })
         const rightUri = vscode.Uri.file(path.join(this.tempResultDirPath, 'resultArtifacts', filePath))
