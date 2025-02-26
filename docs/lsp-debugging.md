@@ -24,4 +24,4 @@
 
 ## Amazon Q Inline Activation
 
--   In order to get inline completion working you must open a supported file type defined in CodewhispererInlineCompletionLanguages in `packages/amazonq/src/app/inline/completion.ts` before breakpoints can be hit in the language server
+-   In order to get inline completion working you must open a supported file type defined in CodewhispererInlineCompletionLanguages in `packages/amazonq/src/app/inline/completion.ts`
