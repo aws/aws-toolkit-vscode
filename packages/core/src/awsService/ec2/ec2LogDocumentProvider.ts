@@ -4,7 +4,7 @@
  */
 import * as vscode from 'vscode'
 import { Ec2Selection } from './prompter'
-import { Ec2Client } from '../../shared/clients/ec2Client'
+import { Ec2Client } from '../../shared/clients/ec2'
 import { ec2LogsScheme } from '../../shared/constants'
 import { UriSchema } from '../../shared/utilities/uriUtils'
 

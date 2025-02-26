@@ -3,13 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as vscode from 'vscode'
-import { EC2, IAM } from 'aws-sdk'
+import { IAM } from 'aws-sdk'
 import { Ec2Selection } from './prompter'
 import { getOrInstallCli } from '../../shared/utilities/cliUtils'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { ToolkitError } from '../../shared/errors'
 import { SsmClient } from '../../shared/clients/ssm'
-import { Ec2Client } from '../../shared/clients/ec2Client'
+import { Ec2Client } from '../../shared/clients/ec2'
 import {
     VscodeRemoteConnection,
     createBoundProcess,
@@ -83,7 +83,7 @@ export class Ec2Connecter implements vscode.Disposable {
         return new DefaultIamClient(this.regionCode)
     }
 
-    public async addActiveSession(sessionId: string, instanceId: EC2.InstanceId): Promise<void> {
+    public async addActiveSession(sessionId: string, instanceId: string): Promise<void> {
         await this.sessionManager.addSession(instanceId, sessionId)
     }
 

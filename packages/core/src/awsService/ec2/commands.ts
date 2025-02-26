@@ -4,7 +4,7 @@
  */
 import { Ec2InstanceNode } from './explorer/ec2InstanceNode'
 import { Ec2Node } from './explorer/ec2ParentNode'
-import { SafeEc2Instance, Ec2Client } from '../../shared/clients/ec2Client'
+import { SafeEc2Instance, Ec2Client } from '../../shared/clients/ec2'
 import { copyToClipboard } from '../../shared/utilities/messages'
 import { ec2LogSchema } from './ec2LogDocumentProvider'
 import { getAwsConsoleUrl } from '../../shared/awsConsole'
