@@ -420,7 +420,7 @@ export class ZipUtil {
             {
                 maxSizeBytes: this.getProjectScanPayloadSizeLimitInBytes(),
                 excludePatterns:
-                    useCase === 'TEST_GENERATION'
+                    useCase === FeatureUseCase.TEST_GENERATION
                         ? [...CodeWhispererConstants.testGenExcludePatterns, ...defaultExcludePatterns]
                         : defaultExcludePatterns,
             }
