@@ -20,7 +20,6 @@ import fs from '../fs/fs'
 import { ChildProcess } from './processUtils'
 import { isWin } from '../vscode/env'
 import { maxRepoSizeBytes } from '../../amazonqFeatureDev/constants'
-import { FeatureUseCase, testGenExcludePatterns } from '../../codewhisperer/models/constants'
 
 type GitIgnoreRelativeAcceptor = {
     folderPath: string
