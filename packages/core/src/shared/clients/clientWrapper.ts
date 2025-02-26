@@ -21,12 +21,11 @@ export abstract class ClientWrapper<C extends AwsClient> implements vscode.Dispo
         private readonly clientType: AwsClientConstructor<C>
     ) {}
 
-    protected async getClient() {
-        if (this.client) {
-            return this.client
-        }
-        this.client = await globals.sdkClientBuilderV3.createAwsService(this.clientType, undefined, this.regionCode)
-        return this.client!
+    protected async getClient(ignoreCache: boolean = false) {
+        const args = { serviceClient: this.clientType, region: this.regionCode }
+        return ignoreCache
+            ? await globals.sdkClientBuilderV3.createAwsService(args)
+            : await globals.sdkClientBuilderV3.getAwsService(args)
     }
 
     protected async makeRequest<CommandInput extends object, Command extends AwsCommand>(

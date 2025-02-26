@@ -10,7 +10,10 @@ import { FakeMemento } from '../fakeExtensionContext'
 import { FakeAwsContext } from '../utilities/fakeAwsContext'
 import { GlobalState } from '../../shared/globalState'
 import {
+    AwsClient,
     AWSClientBuilderV3,
+    AwsClientOptions,
+    AwsCommand,
     emitOnRequest,
     getServiceId,
     logOnRequest,
@@ -25,8 +28,10 @@ import { HttpRequest, HttpResponse } from '@aws-sdk/protocol-http'
 import { assertLogsContain, assertLogsContainAllOf } from '../globalSetup.test'
 import { TestSettings } from '../utilities/testSettingsConfiguration'
 import { CredentialsShim } from '../../auth/deprecated/loginManager'
-import { Credentials } from '@aws-sdk/types'
+import { Credentials, MetadataBearer, MiddlewareStack } from '@aws-sdk/types'
 import { oneDay } from '../../shared/datetime'
+import { ConfiguredRetryStrategy } from '@smithy/util-retry'
+import { StandardRetryStrategy } from '@smithy/util-retry'
 
 describe('AwsClientBuilderV3', function () {
     let builder: AWSClientBuilderV3
@@ -36,7 +41,7 @@ describe('AwsClientBuilderV3', function () {
     })
 
     it('includes Toolkit user-agent if no options are specified', async function () {
-        const service = await builder.createAwsService(Client)
+        const service = await builder.createAwsService({ serviceClient: Client })
         const clientId = getClientId(new GlobalState(new FakeMemento()))
 
         assert.ok(service.config.userAgent)
@@ -48,25 +53,114 @@ describe('AwsClientBuilderV3', function () {
     })
 
     it('adds region to client', async function () {
-        const service = await builder.createAwsService(Client, { region: 'us-west-2' })
+        const service = await builder.createAwsService({ serviceClient: Client, region: 'us-west-2' })
 
         assert.ok(service.config.region)
         assert.strictEqual(service.config.region, 'us-west-2')
     })
 
     it('adds Client-Id to user agent', async function () {
-        const service = await builder.createAwsService(Client)
+        const service = await builder.createAwsService({ serviceClient: Client })
         const clientId = getClientId(new GlobalState(new FakeMemento()))
         const regex = new RegExp(`ClientId/${clientId}`)
         assert.ok(service.config.userAgent![0][0].match(regex))
     })
 
     it('does not override custom user-agent if specified in options', async function () {
-        const service = await builder.createAwsService(Client, {
-            userAgent: [['CUSTOM USER AGENT']],
+        const service = await builder.createAwsService({
+            serviceClient: Client,
+            clientOptions: {
+                userAgent: [['CUSTOM USER AGENT']],
+            },
         })
 
         assert.strictEqual(service.config.userAgent[0][0], 'CUSTOM USER AGENT')
+    })
+
+    describe('caching mechanism', function () {
+        it('avoids recreating client on duplicate calls', async function () {
+            const firstClient = await builder.getAwsService({ serviceClient: TestClient })
+            const secondClient = await builder.getAwsService({ serviceClient: TestClient })
+
+            assert.strictEqual(firstClient.id, secondClient.id)
+        })
+
+        it('recreates client when region changes', async function () {
+            const firstClient = await builder.getAwsService({ serviceClient: TestClient, region: 'test-region' })
+            const secondClient = await builder.getAwsService({ serviceClient: TestClient, region: 'test-region2' })
+            const thirdClient = await builder.getAwsService({ serviceClient: TestClient, region: 'test-region' })
+
+            assert.notStrictEqual(firstClient.id, secondClient.id)
+            assert.strictEqual(firstClient.args.region, 'test-region')
+            assert.strictEqual(secondClient.args.region, 'test-region2')
+
+            assert.strictEqual(firstClient.id, thirdClient.id)
+        })
+
+        it('recreates client when the underlying service changes', async function () {
+            const firstClient = await builder.getAwsService({ serviceClient: TestClient })
+            const secondClient = await builder.getAwsService({ serviceClient: TestClient2 })
+            const thirdClient = await builder.getAwsService({ serviceClient: TestClient })
+
+            assert.notStrictEqual(firstClient.type, secondClient.type)
+            assert.strictEqual(firstClient.id, thirdClient.id)
+        })
+
+        it('recreates client when config options change', async function () {
+            const retryStrategy = new ConfiguredRetryStrategy(10)
+            const firstClient = await builder.getAwsService({
+                serviceClient: TestClient,
+                clientOptions: {
+                    retryStrategy: retryStrategy,
+                },
+            })
+
+            const secondClient = await builder.getAwsService({
+                serviceClient: TestClient,
+                clientOptions: {
+                    retryStrategy: new StandardRetryStrategy(1),
+                },
+            })
+
+            const thirdClient = await builder.getAwsService({
+                serviceClient: TestClient,
+                clientOptions: {
+                    retryStrategy: retryStrategy,
+                },
+            })
+
+            assert.notStrictEqual(firstClient.id, secondClient.id)
+            assert.strictEqual(firstClient.id, thirdClient.id)
+        })
+
+        it('recreates client when endpoints change', async function () {
+            const settings = new TestSettings()
+            await settings.update('aws.dev.endpoints', { foo: 'http://example.com:3000/path' })
+            const devSettings = new DevSettings(settings)
+
+            const otherSettings = new TestSettings()
+            await otherSettings.update('aws.dev.endpoints', { foo: 'http://example.com:3000/path2' })
+            const otherDevSettings = new DevSettings(otherSettings)
+
+            const firstClient = await builder.getAwsService({
+                serviceClient: TestClient,
+                region: 'test-region',
+                settings: devSettings,
+            })
+            const secondClient = await builder.getAwsService({
+                serviceClient: TestClient,
+                region: 'test-region',
+                settings: otherDevSettings,
+            })
+            const thirdClient = await builder.getAwsService({
+                serviceClient: TestClient,
+                region: 'test-region',
+                settings: devSettings,
+            })
+
+            assert.notStrictEqual(firstClient.id, secondClient.id)
+            assert.strictEqual(firstClient.id, thirdClient.id)
+        })
     })
 
     describe('middlewareStack', function () {
@@ -184,14 +278,14 @@ describe('AwsClientBuilderV3', function () {
         })
 
         it('refreshes credentials when they expire', async function () {
-            const service = await builder.createAwsService(Client)
+            const service = await builder.createAwsService({ serviceClient: Client })
             assert.strictEqual(await service.config.credentials(), oldCreds)
             mockCredsShim.expire()
             assert.strictEqual(await service.config.credentials(), newCreds)
         })
 
         it('does not cache stale credentials', async function () {
-            const service = await builder.createAwsService(Client)
+            const service = await builder.createAwsService({ serviceClient: Client })
             assert.strictEqual(await service.config.credentials(), oldCreds)
             const newerCreds = {
                 accessKeyId: 'old2',
@@ -247,5 +341,32 @@ class MockCredentialsShim implements CredentialsShim {
 
     public async refresh(): Promise<Credentials> {
         return this.refreshedCredentials
+    }
+}
+
+abstract class TestClientBase implements AwsClient {
+    public constructor(
+        public readonly args: AwsClientOptions,
+        public readonly id: number,
+        public readonly type: string
+    ) {}
+    public middlewareStack: { add: MiddlewareStack<any, MetadataBearer>['add'] } = {
+        add: (_: any, __: any) => {},
+    }
+    public async send(command: AwsCommand, options?: any): Promise<any> {}
+    public destroy(): void {}
+}
+
+class TestClient extends TestClientBase {
+    private static nextId: number = 0
+    public constructor(args: AwsClientOptions) {
+        super(args, TestClient.nextId++, 'TestClient')
+    }
+}
+
+class TestClient2 extends TestClientBase {
+    private static nextId: number = 0
+    public constructor(args: AwsClientOptions) {
+        super(args, TestClient2.nextId++, 'TestClient2')
     }
 }
