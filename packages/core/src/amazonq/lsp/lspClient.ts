@@ -360,15 +360,16 @@ export async function activate(extensionContext: ExtensionContext) {
             // user created a new empty file using File -> New File
             // these events will not be captured by vscode.workspace.onDidCreateFiles
             // because it was created by File Explorer(Win) or Finder(MacOS)
+            // TODO: consider using a high performance fs watcher
             if (editor?.document.getText().length === 0) {
-                onAdd([editor.document.uri.fsPath])
+                void onAdd([editor.document.uri.fsPath])
             }
         }),
         vscode.workspace.onDidCreateFiles(async (e) => {
-            onAdd(e.files.map((f) => f.fsPath))
+            await onAdd(e.files.map((f) => f.fsPath))
         }),
         vscode.workspace.onDidDeleteFiles(async (e) => {
-            onRemove(e.files.map((f) => f.fsPath))
+            await onRemove(e.files.map((f) => f.fsPath))
         }),
         vscode.workspace.onDidRenameFiles(async (e) => {
             await onRemove(e.files.map((f) => f.oldUri.fsPath))
