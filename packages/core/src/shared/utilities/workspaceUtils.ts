@@ -355,8 +355,7 @@ export async function collectFiles(
         excludeByGitIgnore?: boolean // default true
         excludePatterns?: string[] // default defaultExcludePatterns
         filterFn?: CollectFilesFilter
-    },
-    useCase?: FeatureUseCase
+    }
 ): Promise<CollectFilesResultItem[]> {
     const storage: Awaited<CollectFilesResultItem[]> = []
 
@@ -387,10 +386,7 @@ export async function collectFiles(
     const inputExcludePatterns = options?.excludePatterns ?? defaultExcludePatterns
     const maxSizeBytes = options?.maxSizeBytes ?? maxRepoSizeBytes
 
-    const excludePatterns = [
-        ...getGlobalExcludePatterns(),
-        ...(useCase === FeatureUseCase.TEST_GENERATION ? [...testGenExcludePatterns, ...defaultExcludePatterns] : []),
-    ]
+    const excludePatterns = [...getGlobalExcludePatterns()]
     if (inputExcludePatterns.length) {
         excludePatterns.push(...inputExcludePatterns)
     }

@@ -13,7 +13,7 @@ import { fs } from '../../shared/fs/fs'
 import { getLoggerForScope } from '../service/securityScanHandler'
 import { runtimeLanguageContext } from './runtimeLanguageContext'
 import { CodewhispererLanguage } from '../../shared/telemetry/telemetry.gen'
-import { CurrentWsFolders, collectFiles } from '../../shared/utilities/workspaceUtils'
+import { CurrentWsFolders, collectFiles, defaultExcludePatterns } from '../../shared/utilities/workspaceUtils'
 import {
     FileSizeExceededError,
     NoActiveFileError,
@@ -419,8 +419,11 @@ export class ZipUtil {
                 : vscode.workspace.workspaceFolders) as CurrentWsFolders,
             {
                 maxSizeBytes: this.getProjectScanPayloadSizeLimitInBytes(),
-            },
-            useCase
+                excludePatterns:
+                    useCase === 'TEST_GENERATION'
+                        ? [...CodeWhispererConstants.testGenExcludePatterns, ...defaultExcludePatterns]
+                        : defaultExcludePatterns,
+            }
         )
         for (const file of sourceFiles) {
             const projectName = path.basename(file.workspaceFolder.uri.fsPath)
