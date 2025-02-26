@@ -4152,6 +4152,12 @@
                 "when": "editorTextFocus && editorLangId == asl || editorTextFocus && editorLangId == asl-yaml"
             },
             {
+                "command": "noop",
+                "key": "ctrl+z",
+                "mac": "cmd+z",
+                "when": "aws.stepFunctions.isWorkflowStudioFocused"
+            },
+            {
                 "command": "aws.samcli.sync",
                 "key": "ctrl+shift+s",
                 "mac": "cmd+shift+s",

@@ -14,6 +14,7 @@ import {
     FileChangeEventTrigger,
     SyncFileRequestMessage,
     ApiCallRequestMessage,
+    UnsupportedMessage,
 } from './types'
 import { submitFeedback } from '../../feedback/vue/submitFeedback'
 import { placeholder } from '../../shared/vscode/commands2'
@@ -56,13 +57,21 @@ export async function handleMessage(message: Message, context: WebviewContext) {
             case Command.API_CALL:
                 apiCallMessageHandler(message as ApiCallRequestMessage, context)
                 break
+            default:
+                void handleUnsupportedMessage(context, message)
+                break
         }
     } else if (messageType === MessageType.BROADCAST) {
         switch (command) {
             case Command.LOAD_STAGE:
                 void loadStageMessageHandler(context)
                 break
+            default:
+                void handleUnsupportedMessage(context, message)
+                break
         }
+    } else {
+        void handleUnsupportedMessage(context, message)
     }
 }
 
@@ -205,4 +214,19 @@ function apiCallMessageHandler(request: ApiCallRequestMessage, context: WebviewC
     const logger = getLogger('stepfunctions')
     const apiHandler = new WorkflowStudioApiHandler(globals.awsContext.getCredentialDefaultRegion(), context)
     apiHandler.performApiCall(request).catch((error) => logger.error('%s API call failed: %O', request.apiName, error))
+}
+
+/**
+ * Handles unsupported or unrecognized messages by sending a response to the webview. Ensures compatibility with future
+ * commands and message types, preventing issues if the user has an outdated extension version.
+ * @param context The context object containing information about the webview environment
+ * @param command The command received from the webview
+ * @param messageType The type of the message received
+ */
+async function handleUnsupportedMessage(context: WebviewContext, originalMessage: Message) {
+    await context.panel.webview.postMessage({
+        messageType: MessageType.RESPONSE,
+        command: Command.UNSUPPORTED_COMMAND,
+        originalMessage,
+    } as UnsupportedMessage)
 }

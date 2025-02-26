@@ -41,6 +41,7 @@ export enum Command {
     OPEN_FEEDBACK = 'OPEN_FEEDBACK',
     CLOSE_WFS = 'CLOSE_WFS',
     API_CALL = 'API_CALL',
+    UNSUPPORTED_COMMAND = 'UNSUPPORTED_COMMAND',
 }
 
 export type FileWatchInfo = {
@@ -59,6 +60,10 @@ export interface FileChangedMessage extends Message {
     fileContents: string
     filePath: string
     trigger: FileChangeEventTrigger
+}
+
+export interface UnsupportedMessage extends Message {
+    originalMessage: Message
 }
 
 export interface InitResponseMessage extends Omit<FileChangedMessage, 'trigger'> {
