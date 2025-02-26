@@ -66,7 +66,7 @@ const buildMockListCodeScanFindingsResponse = (
 })
 
 function getWorkspaceFolder(): string {
-    return path.join(__dirname, '../../../../../../core/dist/src/testFixtures/workspaceFolder')
+    return path.join(__dirname, '../../../../../../core/src/testFixtures/workspaceFolder')
 }
 
 describe('securityScanHandler', function () {
