@@ -4,21 +4,17 @@
  */
 import * as nodefs from 'fs' // eslint-disable-line no-restricted-imports
 import { ToolkitError } from '../../../shared/errors'
+import path from 'path'
 
-interface IaC {
-    id: string
-    name: string
-}
-interface Runtime {
-    id: string
-    name: string
-    version: string
+interface Implementation {
+    iac: string
+    runtime: string
+    assetName: string
 }
 interface PatternData {
     name: string
     description: string
-    runtimes: Runtime[]
-    iac: IaC[]
+    implementation: Implementation[]
 }
 
 export interface ProjectMetadata {
@@ -32,6 +28,14 @@ export interface ProjectMetadata {
 export class MetadataManager {
     private static instance: MetadataManager
     private metadata: ProjectMetadata | undefined
+    private static readonly metadataPath = path.join(
+        path.resolve(__dirname, '../../../../../'),
+        'src',
+        'awsService',
+        'appBuilder',
+        'serverlessLand',
+        'metadata.json'
+    )
 
     private constructor() {}
 
@@ -40,6 +44,14 @@ export class MetadataManager {
             MetadataManager.instance = new MetadataManager()
         }
         return MetadataManager.instance
+    }
+
+    public static initialize(): MetadataManager {
+        const instance = MetadataManager.getInstance()
+        instance.loadMetadata(MetadataManager.metadataPath).catch((err) => {
+            throw new ToolkitError(`Failed to load metadata: ${err}`)
+        })
+        return instance
     }
 
     /**
@@ -96,11 +108,12 @@ export class MetadataManager {
      */
     public getRuntimes(pattern: string): { label: string }[] {
         const patternData = this.metadata?.patterns?.[pattern]
-        if (!patternData || !patternData.runtimes) {
+        if (!patternData || !patternData.implementation) {
             return []
         }
-        return patternData.runtimes.map((runtime) => ({
-            label: runtime.name,
+        const uniqueRuntimes = new Set(patternData.implementation.map((item) => item.runtime))
+        return Array.from(uniqueRuntimes).map((runtime) => ({
+            label: runtime,
         }))
     }
 
@@ -111,11 +124,22 @@ export class MetadataManager {
      */
     public getIacOptions(pattern: string): { label: string }[] {
         const patternData = this.metadata?.patterns?.[pattern]
-        if (!patternData || !patternData.iac) {
+        if (!patternData || !patternData.implementation) {
             return []
         }
-        return patternData.iac.map((iac) => ({
-            label: iac.name,
+        const uniqueIaCs = new Set(patternData.implementation.map((item) => item.iac))
+        return Array.from(uniqueIaCs).map((iac) => ({
+            label: iac,
         }))
+    }
+    public getAssetName(selectedPattern: string, selectedRuntime: string, selectedIaC: string): string {
+        const patternData = this.metadata?.patterns?.[selectedPattern]
+        if (!patternData || !patternData.implementation) {
+            return ''
+        }
+        const matchingImplementation = patternData.implementation.find(
+            (impl) => impl.runtime === selectedRuntime && impl.iac === selectedIaC
+        )
+        return matchingImplementation?.assetName ?? ''
     }
 }
