@@ -6,7 +6,7 @@
 import assert from 'assert'
 import * as sinon from 'sinon'
 import { Ec2ParentNode } from '../../../../awsService/ec2/explorer/ec2ParentNode'
-import { Ec2Client, PatchedEc2Instance, PatchedReservation } from '../../../../shared/clients/ec2'
+import { Ec2Client, PatchedEc2Instance } from '../../../../shared/clients/ec2'
 import {
     assertNodeListOnlyHasErrorNode,
     assertNodeListOnlyHasPlaceholderNode,

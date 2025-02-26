@@ -137,21 +137,23 @@ describe('Ec2Prompter', async function () {
 
         it('returns items mapped to QuickPick items without filter', async function () {
             const expected = [
-                {
-                    label: Ec2Prompter.getLabel(prompter.instances[0]),
-                    detail: prompter.instances[0].InstanceId!,
-                    data: prompter.instances[0].InstanceId!,
-                },
-                {
-                    label: Ec2Prompter.getLabel(prompter.instances[1]),
-                    detail: prompter.instances[1].InstanceId!,
-                    data: prompter.instances[1].InstanceId!,
-                },
-                {
-                    label: Ec2Prompter.getLabel(prompter.instances[2]),
-                    detail: prompter.instances[2].InstanceId!,
-                    data: prompter.instances[2].InstanceId!,
-                },
+                [
+                    {
+                        label: Ec2Prompter.getLabel(prompter.instances[0]),
+                        detail: prompter.instances[0].InstanceId!,
+                        data: prompter.instances[0].InstanceId!,
+                    },
+                    {
+                        label: Ec2Prompter.getLabel(prompter.instances[1]),
+                        detail: prompter.instances[1].InstanceId!,
+                        data: prompter.instances[1].InstanceId!,
+                    },
+                    {
+                        label: Ec2Prompter.getLabel(prompter.instances[2]),
+                        detail: prompter.instances[2].InstanceId!,
+                        data: prompter.instances[2].InstanceId!,
+                    },
+                ],
             ]
 
             const itemsIterator = prompter.testGetInstancesAsQuickPickItems('test-region')
@@ -163,16 +165,18 @@ describe('Ec2Prompter', async function () {
             prompter.setFilter((i) => parseInt(i.InstanceId!) % 2 === 1)
 
             const expected = [
-                {
-                    label: Ec2Prompter.getLabel(prompter.instances[0]),
-                    detail: prompter.instances[0].InstanceId!,
-                    data: prompter.instances[0].InstanceId!,
-                },
-                {
-                    label: Ec2Prompter.getLabel(prompter.instances[2]),
-                    detail: prompter.instances[2].InstanceId!,
-                    data: prompter.instances[2].InstanceId!,
-                },
+                [
+                    {
+                        label: Ec2Prompter.getLabel(prompter.instances[0]),
+                        detail: prompter.instances[0].InstanceId!,
+                        data: prompter.instances[0].InstanceId!,
+                    },
+                    {
+                        label: Ec2Prompter.getLabel(prompter.instances[2]),
+                        detail: prompter.instances[2].InstanceId!,
+                        data: prompter.instances[2].InstanceId!,
+                    },
+                ],
             ]
 
             const itemsIterator = prompter.testGetInstancesAsQuickPickItems('test-region')
