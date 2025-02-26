@@ -469,8 +469,8 @@ export const amazonQFeedbackKey = 'Amazon Q'
 
 export const amazonQFeedbackText = 'Submit feedback'
 
-// TO-DO: update link
-export const codeTransformTroubleshootStartJobFailed = ''
+export const codeTransformTroubleshootStartJobFailed =
+    'https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/transform-java.html#quotas-java-transformation-ide'
 
 export const codeTransformTroubleshootProjectSize =
     'https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/troubleshooting-code-transformation.html#reduce-project-size'
