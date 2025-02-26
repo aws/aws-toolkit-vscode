@@ -229,7 +229,7 @@ export function getWorkspaceRelativePath(
     if (!override.workspaceFolders) {
         return
     }
-    let folders = override.workspaceFolders
+    const folders = override.workspaceFolders
 
     for (const folder of folders) {
         if (isInDirectory(folder.uri.fsPath, childPath)) {
@@ -301,7 +301,7 @@ export function getExcludePattern(useDefaults: boolean = true, useCase?: Feature
         allPatterns.push(...defaultExcludePatterns)
     }
 
-    if (useCase == FeatureUseCase.TEST_GENERATION) {
+    if (useCase === FeatureUseCase.TEST_GENERATION) {
         allPatterns.push(...testGenExcludePatterns)
     }
 

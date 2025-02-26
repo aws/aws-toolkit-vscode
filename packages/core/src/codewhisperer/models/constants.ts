@@ -913,4 +913,11 @@ export const testGenExcludePatterns = [
     '**/*.dylib',
     '**/*.parquet',
     '**/*.xlsx',
+    '**/*.tar.gz',
+    '**/*.tar',
+    '**/*.pack',
+    '**/*.pkg',
+    '**/*.pkl',
+    '**/*.deb',
+    '**/*.model',
 ]
