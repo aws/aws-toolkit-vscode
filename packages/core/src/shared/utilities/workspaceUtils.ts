@@ -20,7 +20,7 @@ import fs from '../fs/fs'
 import { ChildProcess } from './processUtils'
 import { isWin } from '../vscode/env'
 import { maxRepoSizeBytes } from '../../amazonqFeatureDev/constants'
-import { FeatureUseCase } from '../../codewhisperer/models/constants'
+import { FeatureUseCase, testGenExcludePatterns } from '../../codewhisperer/models/constants'
 
 type GitIgnoreRelativeAcceptor = {
     folderPath: string
@@ -224,18 +224,12 @@ export function getWorkspaceRelativePath(
         workspaceFolders?: readonly vscode.WorkspaceFolder[]
     } = {
         workspaceFolders: vscode.workspace.workspaceFolders,
-    },
-    useCase?: FeatureUseCase
+    }
 ): { relativePath: string; workspaceFolder: vscode.WorkspaceFolder } | undefined {
     if (!override.workspaceFolders) {
         return
     }
-    let folders = override.workspaceFolders
-    if (useCase && useCase === FeatureUseCase.TEST_GENERATION) {
-        // Sort workspace folders by path length (descending) to prioritize deeper paths
-        // TODO: Need to enable this for entire Q
-        folders = [...override.workspaceFolders].sort((a, b) => b.uri.fsPath.length - a.uri.fsPath.length)
-    }
+    const folders = override.workspaceFolders
 
     for (const folder of folders) {
         if (isInDirectory(folder.uri.fsPath, childPath)) {
@@ -393,7 +387,10 @@ export async function collectFiles(
     const inputExcludePatterns = options?.excludePatterns ?? defaultExcludePatterns
     const maxSizeBytes = options?.maxSizeBytes ?? maxRepoSizeBytes
 
-    const excludePatterns = [...getGlobalExcludePatterns()]
+    const excludePatterns = [
+        ...getGlobalExcludePatterns(),
+        ...(useCase === FeatureUseCase.TEST_GENERATION ? [...testGenExcludePatterns, ...defaultExcludePatterns] : []),
+    ]
     if (inputExcludePatterns.length) {
         excludePatterns.push(...inputExcludePatterns)
     }
@@ -408,7 +405,7 @@ export async function collectFiles(
         const files = excludeByGitIgnore ? await filterOutGitignoredFiles(rootPath, allFiles, false) : allFiles
 
         for (const file of files) {
-            const relativePath = getWorkspaceRelativePath(file.fsPath, { workspaceFolders }, useCase)
+            const relativePath = getWorkspaceRelativePath(file.fsPath, { workspaceFolders })
             if (!relativePath) {
                 continue
             }
