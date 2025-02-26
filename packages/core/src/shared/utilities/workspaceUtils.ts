@@ -293,16 +293,12 @@ export const defaultExcludePatterns = [
     '**/LICENSE.md',
 ]
 
-export function getExcludePattern(useDefaults: boolean = true, useCase?: FeatureUseCase) {
+export function getExcludePattern(useDefaults: boolean = true) {
     const globAlwaysExcludedDirs = getGlobalExcludePatterns()
     const allPatterns = [...globAlwaysExcludedDirs]
 
     if (useDefaults) {
         allPatterns.push(...defaultExcludePatterns)
-    }
-
-    if (useCase === FeatureUseCase.TEST_GENERATION) {
-        allPatterns.push(...testGenExcludePatterns)
     }
 
     return excludePatternsAsString(allPatterns)
@@ -325,12 +321,11 @@ function excludePatternsAsString(patterns: string[]): string {
 async function filterOutGitignoredFiles(
     rootPath: string,
     files: vscode.Uri[],
-    useDefaultExcludePatterns: boolean = true,
-    useCase?: FeatureUseCase
+    useDefaultExcludePatterns: boolean = true
 ): Promise<vscode.Uri[]> {
     const gitIgnoreFiles = await vscode.workspace.findFiles(
         new vscode.RelativePattern(rootPath, '**/.gitignore'),
-        getExcludePattern(useCase === FeatureUseCase.TEST_GENERATION ? true : useDefaultExcludePatterns, useCase)
+        getExcludePattern(useDefaultExcludePatterns)
     )
     const gitIgnoreFilter = await GitIgnoreFilter.build(gitIgnoreFiles)
     return gitIgnoreFilter.filterFiles(files)
@@ -392,7 +387,10 @@ export async function collectFiles(
     const inputExcludePatterns = options?.excludePatterns ?? defaultExcludePatterns
     const maxSizeBytes = options?.maxSizeBytes ?? maxRepoSizeBytes
 
-    const excludePatterns = [...getGlobalExcludePatterns()]
+    const excludePatterns = [
+        ...getGlobalExcludePatterns(),
+        ...(useCase === FeatureUseCase.TEST_GENERATION ? [...testGenExcludePatterns, ...defaultExcludePatterns] : []),
+    ]
     if (inputExcludePatterns.length) {
         excludePatterns.push(...inputExcludePatterns)
     }
@@ -404,7 +402,7 @@ export async function collectFiles(
             excludePatternFilter
         )
 
-        const files = excludeByGitIgnore ? await filterOutGitignoredFiles(rootPath, allFiles, false, useCase) : allFiles
+        const files = excludeByGitIgnore ? await filterOutGitignoredFiles(rootPath, allFiles, false) : allFiles
 
         for (const file of files) {
             const relativePath = getWorkspaceRelativePath(file.fsPath, { workspaceFolders })
