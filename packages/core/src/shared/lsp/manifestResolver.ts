@@ -18,7 +18,7 @@ const logger = getLogger('lsp')
 interface StorageManifest {
     etag: string
     content: string
-    muteDeprecation: boolean
+    dontShow: boolean
 }
 
 type ManifestStorage = Record<string, StorageManifest>
@@ -68,7 +68,7 @@ export class ManifestResolver {
 
         if (!resp.content) {
             throw new ToolkitError(
-                `New content was not downloaded; fallback to the locally stored ${this.lsName} manifest`
+                `New content was not downloaded; fallback to the locally stored "${this.lsName}" manifest`
             )
         }
 
@@ -80,12 +80,12 @@ export class ManifestResolver {
     }
 
     private async getLocalManifest(): Promise<Manifest> {
-        logger.info(`Failed to download latest ${this.lsName} manifest. Falling back to local manifest.`)
+        logger.info(`Failed to download latest "${this.lsName}" manifest. Falling back to local manifest.`)
         const storage = this.getStorage()
         const manifestData = storage[this.lsName]
 
         if (!manifestData?.content) {
-            throw new ToolkitError(`Failed to download ${this.lsName} manifest and no local manifest found.`)
+            throw new ToolkitError(`Failed to download "${this.lsName}" manifest and no local manifest found.`)
         }
 
         const manifest = this.parseManifest(manifestData.content)
@@ -99,7 +99,7 @@ export class ManifestResolver {
             return JSON.parse(content) as Manifest
         } catch (error) {
             throw new ToolkitError(
-                `Failed to parse ${this.lsName} manifest: ${error instanceof Error ? error.message : 'Unknown error'}`
+                `Failed to parse "${this.lsName}" manifest: ${error instanceof Error ? error.message : 'Unknown error'}`
             )
         }
     }
@@ -108,7 +108,7 @@ export class ManifestResolver {
      * Check if the current manifest is deprecated.
      * If yes and user hasn't muted this notification, shows a toast message with two buttons:
      * - OK: close and do nothing
-     * - Don't Show Again: Update global state (muteDeprecation) so the deprecation message is never shown for this manifest.
+     * - Don't Show Again: Update global state (dontShow) so the deprecation message is never shown for this manifest.
      * @param manifest
      */
     private checkDeprecation(manifest: Manifest): void {
@@ -116,14 +116,14 @@ export class ManifestResolver {
             return
         }
 
-        const deprecationMessage = `${this.lsName} manifest is deprecated. No future updates will be available.`
+        const deprecationMessage = `"${this.lsName}" manifest is deprecated. No future updates will be available.`
         logger.info(deprecationMessage)
-        if (!this.getStorage()[this.lsName].muteDeprecation) {
+        if (!this.getStorage()[this.lsName].dontShow) {
             void vscode.window
                 .showInformationMessage(deprecationMessage, localizedText.ok, localizedText.dontShow)
                 .then((button) => {
                     if (button === localizedText.dontShow) {
-                        this.getStorage()[this.lsName].muteDeprecation = true
+                        this.getStorage()[this.lsName].dontShow = true
                     }
                 })
         }
@@ -132,14 +132,14 @@ export class ManifestResolver {
     private async saveManifest(etag: string, content: string): Promise<void> {
         const storage = this.getStorage()
 
-        const muteDeprecation = storage[this.lsName]?.muteDeprecation ?? false
+        const dontShow = storage[this.lsName]?.dontShow ?? false
 
         globals.globalState.tryUpdate(manifestStorageKey, {
             ...storage,
             [this.lsName]: {
                 etag,
                 content,
-                muteDeprecation,
+                dontShow,
             },
         })
     }
