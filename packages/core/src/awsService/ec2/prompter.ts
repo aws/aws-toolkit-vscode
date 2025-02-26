@@ -5,7 +5,7 @@
 
 import { RegionSubmenu, RegionSubmenuResponse } from '../../shared/ui/common/regionSubmenu'
 import { DataQuickPickItem } from '../../shared/ui/pickerPrompter'
-import { Ec2Client, SafeEc2Instance } from '../../shared/clients/ec2'
+import { Ec2Client, PatchedEc2Instance, PatchedReservation } from '../../shared/clients/ec2'
 import { isValidResponse } from '../../shared/wizards/wizard'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { getIconCode } from './utils'
@@ -13,7 +13,7 @@ import { Ec2Node } from './explorer/ec2ParentNode'
 import { Ec2InstanceNode } from './explorer/ec2InstanceNode'
 import { AsyncCollection } from '../../shared/utilities/asyncCollection'
 
-export type instanceFilter = (instance: SafeEc2Instance) => boolean
+export type instanceFilter = (instance: PatchedEc2Instance) => boolean
 export interface Ec2Selection {
     instanceId: string
     region: string
@@ -22,12 +22,12 @@ export interface Ec2Selection {
 export class Ec2Prompter {
     public constructor(protected filter?: instanceFilter) {}
 
-    public static getLabel(instance: SafeEc2Instance) {
+    public static getLabel(instance: PatchedEc2Instance) {
         const icon = `$(${getIconCode(instance)})`
         return `${instance.Name ?? '(no name)'} \t ${icon} ${instance.LastSeenStatus.toUpperCase()}`
     }
 
-    protected static asQuickPickItem(instance: SafeEc2Instance): DataQuickPickItem<string> {
+    protected static asQuickPickItem(instance: PatchedEc2Instance): DataQuickPickItem<string> {
         return {
             label: Ec2Prompter.getLabel(instance),
             detail: instance.InstanceId,
@@ -53,24 +53,24 @@ export class Ec2Prompter {
         }
     }
 
-    protected async getInstancesFromRegion(regionCode: string): Promise<AsyncCollection<SafeEc2Instance>> {
+    protected getInstancesFromRegion(regionCode: string): AsyncCollection<PatchedReservation> {
         const client = new Ec2Client(regionCode)
-        return await client.getInstances()
+        return client.getInstances()
     }
 
-    // TODO: implement a batched generator to avoid loading all instances into UI.
-    protected async getInstancesAsQuickPickItems(region: string): Promise<DataQuickPickItem<string>[]> {
-        return await (
-            await this.getInstancesFromRegion(region)
+    protected getInstancesAsQuickPickItems(region: string): AsyncIterable<DataQuickPickItem<string>[]> {
+        const reservations = this.getInstancesFromRegion(region)
+        const result = reservations.map((r) =>
+            r.Instances.filter(this.filter ? (instance) => this.filter!(instance) : (_) => true).map((i) =>
+                Ec2Prompter.asQuickPickItem(i)
+            )
         )
-            .filter(this.filter ? (instance) => this.filter!(instance) : (instance) => true)
-            .map((instance) => Ec2Prompter.asQuickPickItem(instance))
-            .promise()
+        return result
     }
 
     private createEc2ConnectPrompter(): RegionSubmenu<string> {
         return new RegionSubmenu(
-            async (region) => await this.getInstancesAsQuickPickItems(region),
+            (region) => this.getInstancesAsQuickPickItems(region),
             { title: 'Select EC2 Instance', matchOnDetail: true },
             { title: 'Select Region for EC2 Instance' },
             'Instances'

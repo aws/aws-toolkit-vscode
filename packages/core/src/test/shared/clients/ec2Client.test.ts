@@ -108,7 +108,7 @@ describe('updateInstancesDetail', async function () {
 
     it('adds appropriate status and name field to the instance', async function () {
         const actualResult = await client
-            .updateInstancesDetail(intoCollection(completeInstanceList), getStatus)
+            .extractInstancesFromReservations(intoCollection(completeInstanceList), getStatus)
             .promise()
         const expectedResult = [
             {
@@ -142,7 +142,7 @@ describe('updateInstancesDetail', async function () {
 
     it('handles incomplete and missing tag fields', async function () {
         const actualResult = await client
-            .updateInstancesDetail(intoCollection(incomepleteInstanceList), getStatus)
+            .extractInstancesFromReservations(intoCollection(incomepleteInstanceList), getStatus)
             .promise()
 
         const expectedResult = [

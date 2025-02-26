@@ -49,7 +49,7 @@ describe('AWSClientBuilderV3', function () {
     })
 
     it('reuses existing HTTP connections by default', async function () {
-        const client = await globals.sdkClientBuilderV3.createAwsService({
+        const client = globals.sdkClientBuilderV3.createAwsService({
             serviceClient: SSMClient,
             clientOptions: {
                 region: 'us-east-1',
@@ -67,7 +67,7 @@ describe('AWSClientBuilderV3', function () {
     })
 
     it('does not reuse HTTP connections if told not to', async function () {
-        const client = await globals.sdkClientBuilderV3.createAwsService({
+        const client = globals.sdkClientBuilderV3.createAwsService({
             serviceClient: SSMClient,
             clientOptions: {
                 region: 'us-east-1',
