@@ -7,7 +7,7 @@ import assert from 'assert'
 import * as sinon from 'sinon'
 import { Ec2Connecter, getRemoveLinesCommand } from '../../../awsService/ec2/model'
 import { SsmClient } from '../../../shared/clients/ssm'
-import { Ec2Client } from '../../../shared/clients/ec2Client'
+import { Ec2Client } from '../../../shared/clients/ec2'
 import { Ec2Selection } from '../../../awsService/ec2/prompter'
 import { ToolkitError } from '../../../shared/errors'
 import { IAM } from 'aws-sdk'
@@ -20,6 +20,7 @@ import { ChildProcess } from '../../../shared/utilities/processUtils'
 import { isMac, isWin } from '../../../shared/vscode/env'
 import { inspect } from '../../../shared/utilities/collectionUtils'
 import { assertLogsContain } from '../../globalSetup.test'
+import { InstanceStateName } from '@aws-sdk/client-ec2'
 
 describe('Ec2ConnectClient', function () {
     let client: Ec2Connecter
@@ -66,7 +67,9 @@ describe('Ec2ConnectClient', function () {
 
     describe('isInstanceRunning', async function () {
         it('only returns true with the instance is running', async function () {
-            sinon.stub(Ec2Client.prototype, 'getInstanceStatus').callsFake(async (input: string) => input.split(':')[0])
+            sinon
+                .stub(Ec2Client.prototype, 'getInstanceStatus')
+                .callsFake(async (input: string) => input.split(':')[0] as InstanceStateName)
 
             const actualFirstResult = await client.isInstanceRunning('running:instance')
             const actualSecondResult = await client.isInstanceRunning('stopped:instance')

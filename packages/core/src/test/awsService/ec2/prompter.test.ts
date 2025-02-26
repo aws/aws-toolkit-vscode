@@ -5,14 +5,14 @@
 import assert from 'assert'
 import * as sinon from 'sinon'
 import { Ec2Prompter, getSelection, instanceFilter } from '../../../awsService/ec2/prompter'
-import { SafeEc2Instance } from '../../../shared/clients/ec2Client'
+import { SafeEc2Instance } from '../../../shared/clients/ec2'
 import { RegionSubmenuResponse } from '../../../shared/ui/common/regionSubmenu'
 import { Ec2Selection } from '../../../awsService/ec2/prompter'
-import { AsyncCollection } from '../../../shared/utilities/asyncCollection'
-import { intoCollection } from '../../../shared/utilities/collectionUtils'
 import { DataQuickPickItem } from '../../../shared/ui/pickerPrompter'
 import { Ec2InstanceNode } from '../../../awsService/ec2/explorer/ec2InstanceNode'
 import { testClient, testInstance, testParentNode } from './explorer/ec2ParentNode.test'
+import { AsyncCollection } from '../../../shared/utilities/asyncCollection'
+import { intoCollection } from '../../../shared/utilities/collectionUtils'
 
 describe('Ec2Prompter', async function () {
     class MockEc2Prompter extends Ec2Prompter {
@@ -29,7 +29,7 @@ describe('Ec2Prompter', async function () {
             return this.getInstancesAsQuickPickItems(region)
         }
 
-        protected override async getInstancesFromRegion(regionCode: string): Promise<AsyncCollection<SafeEc2Instance>> {
+        protected override async getInstancesFromRegion(_: string): Promise<AsyncCollection<SafeEc2Instance>> {
             return intoCollection(this.instances)
         }
 
@@ -49,40 +49,32 @@ describe('Ec2Prompter', async function () {
     describe('asQuickPickItem', async function () {
         let prompter: MockEc2Prompter
 
+        const testQuickPick = (instance: SafeEc2Instance) => {
+            const result = prompter.testAsQuickPickItem(testInstance)
+            assert.deepStrictEqual(result, {
+                label: Ec2Prompter.getLabel(testInstance),
+                detail: testInstance.InstanceId,
+                data: testInstance.InstanceId,
+            })
+        }
+
         before(function () {
             prompter = new MockEc2Prompter()
         })
 
         it('returns QuickPickItem for named instances', function () {
-            const testInstance = {
+            testQuickPick({
                 Name: 'testName',
                 InstanceId: 'testInstanceId',
                 LastSeenStatus: 'running',
-            }
-
-            const result = prompter.testAsQuickPickItem(testInstance)
-            const expected = {
-                label: Ec2Prompter.getLabel(testInstance),
-                detail: testInstance.InstanceId,
-                data: testInstance.InstanceId,
-            }
-            assert.deepStrictEqual(result, expected)
+            })
         })
 
         it('returns QuickPickItem for non-named instances', function () {
-            const testInstance = {
+            testQuickPick({
                 InstanceId: 'testInstanceId',
                 LastSeenStatus: 'running',
-            }
-
-            const result = prompter.testAsQuickPickItem(testInstance)
-            const expected = {
-                label: Ec2Prompter.getLabel(testInstance),
-                detail: testInstance.InstanceId,
-                data: testInstance.InstanceId,
-            }
-
-            assert.deepStrictEqual(result, expected)
+            })
         })
     })
 
