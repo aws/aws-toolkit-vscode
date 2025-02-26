@@ -13,8 +13,6 @@ export type TabTypeData = {
     contextCommands?: QuickActionCommandGroup[]
 }
 
-export const createPromptCommand = 'Create a new prompt'
-
 export const workspaceCommand: QuickActionCommandGroup = {
     groupName: 'Mention code',
     commands: [
@@ -25,9 +23,9 @@ export const workspaceCommand: QuickActionCommandGroup = {
     ],
 }
 
-const commonTabData: TabTypeData = {
+export const commonTabData: TabTypeData = {
     title: 'Chat',
-    placeholder: 'Ask a question or enter "/" for quick actions',
+    placeholder: 'Ask a question. Use @ to add context, / for quick actions',
     welcome: `Hi, I'm Amazon Q. I can answer your software development questions.
   Ask me to explain, debug, or optimize your code.
   You can enter \`/\` to see a list of quick actions. Add @workspace to the beginning of your message to include your entire workspace as context.`,

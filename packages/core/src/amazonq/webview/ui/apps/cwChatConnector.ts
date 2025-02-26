@@ -7,7 +7,6 @@ import { ChatItemButton, ChatItemFormItem, ChatItemType, MynahUIDataModel, Quick
 import { TabType } from '../storages/tabsStorage'
 import { CWCChatItem } from '../connector'
 import { BaseConnector, BaseConnectorProps } from './baseConnector'
-import { createPromptCommand } from '../tabs/constants'
 
 export interface ConnectorProps extends BaseConnectorProps {
     onCWCContextCommandMessage: (message: CWCChatItem, command?: string) => string | undefined
@@ -205,8 +204,7 @@ export class Connector extends BaseConnector {
             tabID,
             tabType: this.getTabType(),
         })
-
-        if (contextItem.command === createPromptCommand) {
+        if (contextItem.id === 'create-saved-prompt') {
             return false
         }
         return true
