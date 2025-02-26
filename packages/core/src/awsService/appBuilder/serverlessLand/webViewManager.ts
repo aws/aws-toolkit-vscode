@@ -34,40 +34,4 @@ export class WebviewService {
             </html>
         `
     }
-
-    public static getGitWebviewContent(url: string): string {
-        const htmlContent = `
-            <html>
-            <head>
-                <meta http-equiv="refresh" content="0; url=${url}">
-                <style>
-                    body {
-                        display: flex;
-                        justify-content: center;
-                        align-items: center;
-                        height: 100vh;
-                        margin: 0;
-                        font-family: var(--vscode-font-family);
-                    }                 
-                    p {
-                        text-align: center;
-                        padding: 20px;
-                    }
-                    a {
-                        color: var(--vscode-textLink-foreground);
-                        text-decoration: none;
-                    }
-                    a:hover {
-                        text-decoration: underline;
-                        color: var(--vscode-textLink-activeForeground);
-                    }
-                </style>
-            </head>
-            <body>
-                <p>To preview GitHub page, <a href="${url}">click here</a>.</p>
-            </body>
-            </html>
-        `
-        return htmlContent
-    }
 }

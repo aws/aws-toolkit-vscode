@@ -144,6 +144,7 @@ export function createQuickPick<T>(
     const mergedOptions = { ...defaultQuickpickOptions, ...options }
     assign(mergedOptions, picker)
     picker.buttons = mergedOptions.buttons ?? []
+    let serverlessPanel: vscode.WebviewPanel | undefined
 
     picker.onDidTriggerItemButton(async (event) => {
         const metadataManager = MetadataManager.getInstance()

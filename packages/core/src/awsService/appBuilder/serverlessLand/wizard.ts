@@ -13,7 +13,6 @@ import { createQuickPick } from '../../../shared/ui/pickerPrompter'
 import { createFolderPrompt } from '../../../shared/ui/common/location'
 import { createExitPrompter } from '../../../shared/ui/common/exitPrompter'
 import { MetadataManager } from './metadataManager'
-import type { ExtensionContext } from 'vscode'
 import { ToolkitError } from '../../../shared/errors'
 
 const localize = nls.loadMessageBundle()
@@ -32,7 +31,7 @@ function promptPattern(metadataManager: MetadataManager) {
         throw new ToolkitError('No patterns found in metadata')
     }
 
-    const quickPick = createQuickPick<string>(
+    return createQuickPick<string>(
         patterns.map((p) => ({
             label: p.label,
             detail: p.description,
@@ -52,8 +51,6 @@ function promptPattern(metadataManager: MetadataManager) {
             matchOnDetail: true,
         }
     )
-
-    return quickPick
 }
 
 function promptRuntime(metadataManager: MetadataManager, pattern: string | undefined) {
@@ -135,7 +132,7 @@ function promptName(location: vscode.Uri | undefined) {
 export class CreateServerlessLandWizard extends Wizard<CreateServerlessLandWizardForm> {
     private metadataManager: MetadataManager
 
-    public constructor(context: { ctx: ExtensionContext; defaultRegion?: string; credentials?: AWS.Credentials }) {
+    public constructor(context: { defaultRegion?: string; credentials?: AWS.Credentials }) {
         super({
             exitPrompterProvider: createExitPrompter,
         })
