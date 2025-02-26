@@ -327,7 +327,7 @@ export async function activate(extensionContext: ExtensionContext) {
                 }
                 return false
             },
-            { interval: 500, timeout: 10_000, truthy: true }
+            { interval: 500, timeout: 5_000, truthy: true }
         )
     }
     const onRemove = async (filePaths: string[]) => {
@@ -342,7 +342,7 @@ export async function activate(extensionContext: ExtensionContext) {
                 }
                 return false
             },
-            { interval: 500, timeout: 10_000, truthy: true }
+            { interval: 500, timeout: 5_000, truthy: true }
         )
     }
 
