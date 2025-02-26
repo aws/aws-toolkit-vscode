@@ -49,9 +49,12 @@ describe('AWSClientBuilderV3', function () {
     })
 
     it('reuses existing HTTP connections by default', async function () {
-        const client = await globals.sdkClientBuilderV3.createAwsService(SSMClient, {
-            region: 'us-east-1',
-            endpoint: `http://localhost:${port}`,
+        const client = await globals.sdkClientBuilderV3.createAwsService({
+            serviceClient: SSMClient,
+            clientOptions: {
+                region: 'us-east-1',
+                endpoint: `http://localhost:${port}`,
+            },
         })
         assert.strictEqual(connections.length, 0)
         await client.send(new DescribeSessionsCommand({ State: 'Active' }))
@@ -64,16 +67,14 @@ describe('AWSClientBuilderV3', function () {
     })
 
     it('does not reuse HTTP connections if told not to', async function () {
-        const client = await globals.sdkClientBuilderV3.createAwsService(
-            SSMClient,
-            {
+        const client = await globals.sdkClientBuilderV3.createAwsService({
+            serviceClient: SSMClient,
+            clientOptions: {
                 region: 'us-east-1',
                 endpoint: `http://localhost:${port}`,
             },
-            'us-east-1',
-            true,
-            false
-        )
+            keepAlive: false,
+        })
         assert.strictEqual(connections.length, 0, 'no connections before requesting')
         await client.send(new DescribeSessionsCommand({ State: 'Active' }))
         assert.strictEqual(connections.length, 1, 'one connection after first request')
