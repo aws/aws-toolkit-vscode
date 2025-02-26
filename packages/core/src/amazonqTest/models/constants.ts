@@ -49,7 +49,7 @@ export const cancelBuildProgressButton: ChatItemButton = {
 export const buildProgressField: ProgressField = {
     status: 'default',
     value: -1,
-    text: 'Executing...',
+    text: 'Compiling project...',
     actions: [cancelBuildProgressButton],
 }
 
@@ -87,7 +87,7 @@ export const testGenBuildProgressMessage = (currentStep: TestGenerationBuildStep
     const session = ChatSessionManager.Instance.getSession()
     const statusText = BuildStatus[session.buildStatus].toLowerCase()
     const icon = session.buildStatus === BuildStatus.SUCCESS ? checkIcons['done'] : checkIcons['error']
-    let message = `Sure. This may take a few minutes and I'll share updates on my progress here.
+    let message = `Sure. This may take a few minutes and I'll update the progress here.\n
 **Progress summary**\n\n`
 
     if (currentStep === TestGenerationBuildStep.START_STEP) {
@@ -96,16 +96,25 @@ export const testGenBuildProgressMessage = (currentStep: TestGenerationBuildStep
 
     updateStepStatuses(currentStep, status)
 
-    if (currentStep >= TestGenerationBuildStep.RUN_BUILD) {
-        message += `${getIconForStep(TestGenerationBuildStep.RUN_BUILD)} Started build execution\n`
+    if (currentStep === TestGenerationBuildStep.RUN_BUILD) {
+        message += `${getIconForStep(TestGenerationBuildStep.RUN_BUILD)} Project compiling\n`
+    } else if (currentStep >= TestGenerationBuildStep.RUN_BUILD) {
+        message += `${getIconForStep(TestGenerationBuildStep.RUN_BUILD)} Project compiled\n`
     }
 
-    if (currentStep >= TestGenerationBuildStep.RUN_EXECUTION_TESTS) {
-        message += `${getIconForStep(TestGenerationBuildStep.RUN_EXECUTION_TESTS)} Executing tests\n`
+    if (currentStep === TestGenerationBuildStep.RUN_EXECUTION_TESTS) {
+        message += `${getIconForStep(TestGenerationBuildStep.RUN_EXECUTION_TESTS)} Running tests\n`
+    } else if (currentStep >= TestGenerationBuildStep.RUN_EXECUTION_TESTS) {
+        message += `${getIconForStep(TestGenerationBuildStep.RUN_EXECUTION_TESTS)} Ran tests\n`
     }
 
-    if (currentStep >= TestGenerationBuildStep.FIXING_TEST_CASES && session.buildStatus === BuildStatus.FAILURE) {
-        message += `${getIconForStep(TestGenerationBuildStep.FIXING_TEST_CASES)} Fixing errors in tests\n\n`
+    if (currentStep === TestGenerationBuildStep.FIXING_TEST_CASES && session.buildStatus === BuildStatus.FAILURE) {
+        message += `${getIconForStep(TestGenerationBuildStep.FIXING_TEST_CASES)} Fixing test failures\n\n`
+    } else if (
+        currentStep >= TestGenerationBuildStep.FIXING_TEST_CASES &&
+        session.buildStatus === BuildStatus.FAILURE
+    ) {
+        message += `${getIconForStep(TestGenerationBuildStep.FIXING_TEST_CASES)} Fixed test failures\n\n`
     }
 
     if (currentStep > TestGenerationBuildStep.PROCESS_TEST_RESULTS) {

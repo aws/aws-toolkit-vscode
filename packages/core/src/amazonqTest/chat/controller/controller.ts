@@ -832,17 +832,17 @@ export class TestController {
         } else if (session.listOfTestGenerationJobId.length < 4) {
             const remainingIterations = 4 - session.listOfTestGenerationJobId.length
 
-            let userMessage = 'Would you like Amazon Q to build and execute again, and fix errors?'
+            let userMessage = 'Would you like me to compile and run again, with the accepted fixes?'
             if (buildCommand) {
                 userMessage += ` I will be running this build command: \`${buildCommand}\``
             }
-            userMessage += `\nYou have ${remainingIterations} iteration${remainingIterations > 1 ? 's' : ''} left.`
+            userMessage += `\n\nI can compile and run ${remainingIterations} more time${remainingIterations > 1 ? 's' : ''}.`
 
             const followUps: FollowUps = {
                 text: '',
                 options: [
                     {
-                        pillText: `Rebuild`,
+                        pillText: `Proceed`,
                         type: FollowUpTypes.ContinueBuildAndExecute,
                         status: 'primary',
                     },
