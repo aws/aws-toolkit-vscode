@@ -66,7 +66,10 @@ const buildMockListCodeScanFindingsResponse = (
 })
 
 function getWorkspaceFolder(): string {
-    return vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? path.join(__dirname, '../../../../../../core/src/testFixtures/workspaceFolder')
+    return (
+        vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ??
+        path.join(__dirname, '../../../../../../core/src/testFixtures/workspaceFolder')
+    )
 }
 
 describe('securityScanHandler', function () {
