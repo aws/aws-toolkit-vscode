@@ -57,7 +57,7 @@ export class Ec2Client extends ClientWrapper<EC2Client> {
         super(regionCode, EC2Client)
     }
 
-    public getInstances(filters?: Filter[]): AsyncCollection<PatchedReservation> {
+    public getReservations(filters?: Filter[]): AsyncCollection<PatchedReservation> {
         const reservations = this.makePaginatedRequest(
             paginateDescribeInstances,
             filters ? { Filters: filters } : ({} satisfies DescribeInstancesRequest),
@@ -65,6 +65,12 @@ export class Ec2Client extends ClientWrapper<EC2Client> {
         )
 
         return this.extractInstancesFromReservations(reservations)
+    }
+
+    public getInstances(filters?: Filter[]): AsyncCollection<PatchedEc2Instance> {
+        return this.getReservations(filters)
+            .map((r) => r.Instances)
+            .flatten()
     }
 
     /** Updates status and name in-place for displaying to humans. */

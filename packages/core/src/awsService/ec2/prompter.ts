@@ -55,7 +55,7 @@ export class Ec2Prompter {
 
     protected getInstancesFromRegion(regionCode: string): AsyncCollection<PatchedReservation> {
         const client = new Ec2Client(regionCode)
-        return client.getInstances()
+        return client.getReservations()
     }
 
     protected getInstancesAsQuickPickItems(region: string): AsyncIterable<DataQuickPickItem<string>[]> {
