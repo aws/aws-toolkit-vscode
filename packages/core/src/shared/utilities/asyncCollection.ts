@@ -61,6 +61,11 @@ export interface AsyncCollection<T> extends AsyncIterable<T> {
      * Returns an iterator directly from the underlying generator, preserving values returned.
      */
     iterator(): AsyncIterator<T, T | void>
+
+    /**
+     * Returns a batched iterator of any size directly from the underlying generator, preserving values returned.
+     */
+    batchedIterator(batchSize: number): AsyncIterator<T[], void | T[]>
 }
 
 const asyncCollection = Symbol('asyncCollection')
@@ -103,7 +108,36 @@ export function toCollection<T>(generator: () => AsyncGenerator<T, T | undefined
         toMap: <U extends string = never, K extends StringProperty<T> = never>(selector: KeySelector<T, U> | K) =>
             asyncIterableToMap(iterable, selector),
         iterator: generator,
+        batchedIterator: (batchSize: number) => batchIterator(batchSize, filterGenerator(generator(), Boolean)),
     })
+}
+
+/**
+ * Transform an iterator to return batches of size 'batchSize'.
+ * @param batchSize
+ * @param iterator
+ */
+export async function* batchIterator<T>(
+    batchSize: number,
+    iterator: AsyncIterator<T, void | T>
+): AsyncIterator<T[], void | T[]> {
+    let batch: T[] = []
+    let nextResult = await iterator.next()
+
+    while (!nextResult.done) {
+        batch.push(nextResult.value)
+
+        if (batch.length === batchSize) {
+            yield batch
+            batch = []
+        }
+
+        nextResult = await iterator.next()
+    }
+
+    if (batch.length > 0) {
+        yield batch
+    }
 }
 
 export function isAsyncCollection<T>(iterable: AsyncIterable<T>): iterable is AsyncCollection<T> {
