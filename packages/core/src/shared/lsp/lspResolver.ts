@@ -15,7 +15,8 @@ import { createHash } from '../crypto'
 import { lspSetupStage, StageResolver, tryStageResolvers } from './utils/setupStage'
 import { HttpResourceFetcher } from '../resourcefetcher/httpResourceFetcher'
 import { showMessageWithCancel } from '../../shared/utilities/messages'
-import { Timeout } from '../utilities/timeoutUtils'
+import { CancellationError, Timeout } from '../utilities/timeoutUtils'
+import { RequestCancelledError } from '../request'
 
 // max timeout for downloading remote LSP assets progress, the lowest possible is 3000, bounded by httpResourceFetcher's waitUntil
 const remoteDownloadTimeout = 5000
@@ -113,6 +114,11 @@ export class LanguageServerResolver {
             } else {
                 throw new ToolkitError('Failed to download server from remote', { code: 'RemoteDownloadFailed' })
             }
+        } catch (err) {
+            if (err instanceof RequestCancelledError) {
+                throw new CancellationError('user')
+            }
+            throw err
         } finally {
             timeout.dispose()
         }
@@ -217,7 +223,11 @@ export class LanguageServerResolver {
 
         const fetchTasks = contents.map(async (content) => {
             return {
-                res: await new HttpResourceFetcher(content.url, { showUrl: true, timeout: timeout }).get(),
+                res: await new HttpResourceFetcher(content.url, {
+                    showUrl: true,
+                    timeout: timeout,
+                    swallowError: false,
+                }).get(),
                 hash: content.hashes[0],
                 filename: content.filename,
             }

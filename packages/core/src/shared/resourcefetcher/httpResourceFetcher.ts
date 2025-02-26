@@ -7,7 +7,7 @@ import { VSCODE_EXTENSION_ID } from '../extensions'
 import { getLogger, Logger } from '../logger/logger'
 import { ResourceFetcher } from './resourcefetcher'
 import { Timeout, CancelEvent, waitUntil } from '../utilities/timeoutUtils'
-import request, { RequestError } from '../request'
+import request, { RequestCancelledError, RequestError } from '../request'
 
 type RequestHeaders = { eTag?: string; gZip?: boolean }
 
@@ -22,6 +22,7 @@ export class HttpResourceFetcher implements ResourceFetcher<Response> {
      * @param {string} params.friendlyName If URL is not shown, replaces the URL with this text.
      * @param {Timeout} params.timeout Timeout token to abort/cancel the request. Similar to `AbortSignal`.
      * @param {number} params.retries The number of retries a get request should make if one fails
+     * @param {boolean} params.swallowError True if we want to swallow the request error, false if we want the error to keep bubbling up
      */
     public constructor(
         private readonly url: string,
@@ -29,8 +30,11 @@ export class HttpResourceFetcher implements ResourceFetcher<Response> {
             showUrl: boolean
             friendlyName?: string
             timeout?: Timeout
+            swallowError?: boolean
         }
-    ) {}
+    ) {
+        this.params.swallowError = this.params.swallowError ?? true
+    }
 
     /**
      * Returns the response of the resource, or undefined if the response failed could not be retrieved.
@@ -82,7 +86,10 @@ export class HttpResourceFetcher implements ResourceFetcher<Response> {
                 `Error downloading ${this.logText()}: %s`,
                 error.message ?? error.code ?? error.response.statusText ?? error.response.status
             )
-            return undefined
+            if (this.params.swallowError) {
+                return undefined
+            }
+            throw error
         }
     }
 
@@ -112,7 +119,10 @@ export class HttpResourceFetcher implements ResourceFetcher<Response> {
                 timeout: 3000,
                 interval: 100,
                 backoff: 2,
-                retryOnFail: true,
+                retryOnFail: (error: Error) => {
+                    // retry unless we got an user cancellation error
+                    return !(error instanceof RequestCancelledError)
+                },
             }
         )
     }
