@@ -5,7 +5,7 @@
 
 import assert from 'assert'
 import * as sinon from 'sinon'
-import { SafeEc2Instance } from '../../../shared/clients/ec2'
+import { PatchedEc2Instance } from '../../../shared/clients/ec2'
 import { getIconCode } from '../../../awsService/ec2/utils'
 import { DefaultAwsContext } from '../../../shared'
 
@@ -20,15 +20,15 @@ describe('utils', async function () {
 
     describe('getIconCode', function () {
         it('gives code based on status', function () {
-            const runningInstance: SafeEc2Instance = {
+            const runningInstance: PatchedEc2Instance = {
                 InstanceId: 'X',
                 LastSeenStatus: 'running',
             }
-            const stoppedInstance: SafeEc2Instance = {
+            const stoppedInstance: PatchedEc2Instance = {
                 InstanceId: 'XX',
                 LastSeenStatus: 'stopped',
             }
-            const terminatedInstance: SafeEc2Instance = {
+            const terminatedInstance: PatchedEc2Instance = {
                 InstanceId: 'XXX',
                 LastSeenStatus: 'terminated',
             }
@@ -39,11 +39,11 @@ describe('utils', async function () {
         })
 
         it('defaults to loading~spin', function () {
-            const pendingInstance: SafeEc2Instance = {
+            const pendingInstance: PatchedEc2Instance = {
                 InstanceId: 'X',
                 LastSeenStatus: 'pending',
             }
-            const stoppingInstance: SafeEc2Instance = {
+            const stoppingInstance: PatchedEc2Instance = {
                 InstanceId: 'XX',
                 LastSeenStatus: 'shutting-down',
             }

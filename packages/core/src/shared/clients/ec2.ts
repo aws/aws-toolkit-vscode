@@ -62,21 +62,17 @@ export class Ec2Client extends ClientWrapper<EC2Client> {
             paginateDescribeInstances,
             filters ? { Filters: filters } : ({} satisfies DescribeInstancesRequest),
             (page) => page.Reservations
-        ).filter(isNotEmpty)
+        )
 
         return this.extractInstancesFromReservations(reservations)
-
-        function isNotEmpty(r: Reservation): r is Reservation & { Instances: Instance[] } {
-            return r.Instances !== undefined && r.Instances.length > 0
-        }
     }
 
     /** Updates status and name in-place for displaying to humans. */
     public extractInstancesFromReservations(
-        reservations: AsyncCollection<Reservation & { Instances: Instance[] }>,
+        reservations: AsyncCollection<Reservation>,
         getStatus: (i: string) => Promise<InstanceStateName> = this.getInstanceStatus.bind(this)
     ): AsyncCollection<PatchedReservation> {
-        return reservations.map(patchReservation)
+        return reservations.filter(isNotEmpty).map(patchReservation)
 
         async function patchReservation(r: Reservation & { Instances: Instance[] }): Promise<PatchedReservation> {
             const namedInstances = r.Instances.filter(hasId).map(addName)
@@ -95,6 +91,10 @@ export class Ec2Client extends ClientWrapper<EC2Client> {
             instance: I
         ): Promise<I & { LastSeenStatus: InstanceStateName }> {
             return { ...instance, LastSeenStatus: await getStatus(instance.InstanceId) }
+        }
+
+        function isNotEmpty(r: Reservation): r is Reservation & { Instances: Instance[] } {
+            return r.Instances !== undefined && r.Instances.length > 0
         }
     }
 

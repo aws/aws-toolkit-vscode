@@ -5,10 +5,9 @@
 import assert from 'assert'
 import * as sinon from 'sinon'
 import { Ec2Prompter, getSelection, instanceFilter } from '../../../awsService/ec2/prompter'
-import { SafeEc2Instance } from '../../../shared/clients/ec2'
+import { PatchedEc2Instance, PatchedReservation } from '../../../shared/clients/ec2'
 import { RegionSubmenuResponse } from '../../../shared/ui/common/regionSubmenu'
 import { Ec2Selection } from '../../../awsService/ec2/prompter'
-import { DataQuickPickItem } from '../../../shared/ui/pickerPrompter'
 import { Ec2InstanceNode } from '../../../awsService/ec2/explorer/ec2InstanceNode'
 import { testClient, testInstance, testParentNode } from './explorer/ec2ParentNode.test'
 import { AsyncCollection } from '../../../shared/utilities/asyncCollection'
@@ -16,21 +15,21 @@ import { intoCollection } from '../../../shared/utilities/collectionUtils'
 
 describe('Ec2Prompter', async function () {
     class MockEc2Prompter extends Ec2Prompter {
-        public instances: SafeEc2Instance[] = []
+        public instances: PatchedEc2Instance[] = []
 
-        public testAsQuickPickItem(testInstance: SafeEc2Instance) {
+        public testAsQuickPickItem(testInstance: PatchedEc2Instance) {
             return Ec2Prompter.asQuickPickItem(testInstance)
         }
 
         public testGetSelectionFromResponse(response: RegionSubmenuResponse<string>): Ec2Selection {
             return Ec2Prompter.getSelectionFromResponse(response)
         }
-        public async testGetInstancesAsQuickPickItems(region: string): Promise<DataQuickPickItem<string>[]> {
+        public testGetInstancesAsQuickPickItems(region: string) {
             return this.getInstancesAsQuickPickItems(region)
         }
 
-        protected override async getInstancesFromRegion(_: string): Promise<AsyncCollection<SafeEc2Instance>> {
-            return intoCollection(this.instances)
+        protected override getInstancesFromRegion(_: string): AsyncCollection<PatchedReservation> {
+            return intoCollection([{ Instances: this.instances }])
         }
 
         public setFilter(filter: instanceFilter) {
@@ -49,7 +48,7 @@ describe('Ec2Prompter', async function () {
     describe('asQuickPickItem', async function () {
         let prompter: MockEc2Prompter
 
-        const testQuickPick = (instance: SafeEc2Instance) => {
+        const testQuickPick = (instance: PatchedEc2Instance) => {
             const result = prompter.testAsQuickPickItem(testInstance)
             assert.deepStrictEqual(result, {
                 label: Ec2Prompter.getLabel(testInstance),
@@ -131,8 +130,9 @@ describe('Ec2Prompter', async function () {
 
         it('returns empty when no instances present', async function () {
             prompter.instances = []
-            const items = await prompter.testGetInstancesAsQuickPickItems('test-region')
-            assert.ok(items.length === 0)
+            const itemsIterator = prompter.testGetInstancesAsQuickPickItems('test-region')
+            const items = await extractItems(itemsIterator)
+            assert.strictEqual(items.length, 0)
         })
 
         it('returns items mapped to QuickPick items without filter', async function () {
@@ -154,7 +154,8 @@ describe('Ec2Prompter', async function () {
                 },
             ]
 
-            const items = await prompter.testGetInstancesAsQuickPickItems('test-region')
+            const itemsIterator = prompter.testGetInstancesAsQuickPickItems('test-region')
+            const items = await extractItems(itemsIterator)
             assert.deepStrictEqual(items, expected)
         })
 
@@ -174,7 +175,8 @@ describe('Ec2Prompter', async function () {
                 },
             ]
 
-            const items = await prompter.testGetInstancesAsQuickPickItems('test-region')
+            const itemsIterator = prompter.testGetInstancesAsQuickPickItems('test-region')
+            const items = await extractItems(itemsIterator)
             assert.deepStrictEqual(items, expected)
         })
     })
@@ -205,3 +207,11 @@ describe('Ec2Prompter', async function () {
         })
     })
 })
+
+async function extractItems<T>(iterable: AsyncIterable<T>): Promise<T[]> {
+    const result = []
+    for await (const item of iterable) {
+        result.push(item)
+    }
+    return result
+}
