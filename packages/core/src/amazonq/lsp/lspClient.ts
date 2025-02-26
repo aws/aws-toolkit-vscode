@@ -315,6 +315,37 @@ export async function activate(extensionContext: ExtensionContext) {
 
     let savedDocument: vscode.Uri | undefined = undefined
 
+    const onAdd = async (filePaths: string[]) => {
+        const indexSeqNum = await LspClient.instance.getIndexSequenceNumber()
+        await LspClient.instance.updateIndex(filePaths, 'add')
+        await waitUntil(
+            async () => {
+                const newIndexSeqNum = await LspClient.instance.getIndexSequenceNumber()
+                if (newIndexSeqNum > indexSeqNum) {
+                    await vscode.commands.executeCommand(`aws.amazonq.updateContextCommandItems`)
+                    return true
+                }
+                return false
+            },
+            { interval: 500, timeout: 10_000, truthy: true }
+        )
+    }
+    const onRemove = async (filePaths: string[]) => {
+        const indexSeqNum = await LspClient.instance.getIndexSequenceNumber()
+        await LspClient.instance.updateIndex(filePaths, 'remove')
+        await waitUntil(
+            async () => {
+                const newIndexSeqNum = await LspClient.instance.getIndexSequenceNumber()
+                if (newIndexSeqNum > indexSeqNum) {
+                    await vscode.commands.executeCommand(`aws.amazonq.updateContextCommandItems`)
+                    return true
+                }
+                return false
+            },
+            { interval: 500, timeout: 10_000, truthy: true }
+        )
+    }
+
     toDispose.push(
         vscode.workspace.onDidSaveTextDocument((document) => {
             if (document.uri.scheme !== 'file') {
@@ -326,42 +357,22 @@ export async function activate(extensionContext: ExtensionContext) {
             if (savedDocument && editor && editor.document.uri.fsPath !== savedDocument.fsPath) {
                 void LspClient.instance.updateIndex([savedDocument.fsPath], 'update')
             }
+            // user created a new empty file using File -> New File
+            // these events will not be captured by vscode.workspace.onDidCreateFiles
+            // because it was created by File Explorer(Win) or Finder(MacOS)
+            if (editor?.document.getText().length === 0) {
+                onAdd([editor.document.uri.fsPath])
+            }
         }),
         vscode.workspace.onDidCreateFiles(async (e) => {
-            const indexSeqNum = await LspClient.instance.getIndexSequenceNumber()
-            await LspClient.instance.updateIndex(
-                e.files.map((f) => f.fsPath),
-                'add'
-            )
-            await waitUntil(
-                async () => {
-                    const newIndexSeqNum = await LspClient.instance.getIndexSequenceNumber()
-                    if (newIndexSeqNum > indexSeqNum) {
-                        await vscode.commands.executeCommand(`aws.amazonq.updateContextCommandItems`)
-                        return true
-                    }
-                    return false
-                },
-                { interval: 500, timeout: 10_000, truthy: true }
-            )
+            onAdd(e.files.map((f) => f.fsPath))
         }),
         vscode.workspace.onDidDeleteFiles(async (e) => {
-            const indexSeqNum = await LspClient.instance.getIndexSequenceNumber()
-            await LspClient.instance.updateIndex(
-                e.files.map((f) => f.fsPath),
-                'remove'
-            )
-            await waitUntil(
-                async () => {
-                    const newIndexSeqNum = await LspClient.instance.getIndexSequenceNumber()
-                    if (newIndexSeqNum > indexSeqNum) {
-                        await vscode.commands.executeCommand(`aws.amazonq.updateContextCommandItems`)
-                        return true
-                    }
-                    return false
-                },
-                { interval: 500, timeout: 10_000, truthy: true }
-            )
+            onRemove(e.files.map((f) => f.fsPath))
+        }),
+        vscode.workspace.onDidRenameFiles(async (e) => {
+            await onRemove(e.files.map((f) => f.oldUri.fsPath))
+            await onAdd(e.files.map((f) => f.newUri.fsPath))
         })
     )
 
