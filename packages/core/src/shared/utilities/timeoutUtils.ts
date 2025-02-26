@@ -223,7 +223,7 @@ interface WaitUntilOptions {
     readonly backoff?: number
     /**
      * Only retries when an error is thrown, otherwise returning the immediate result.
-     * Can also be a callback for furthur error processing
+     * Can also be a callback for conditional retry based on errors
      * - 'truthy' arg is ignored
      * - If the timeout is reached it throws the last error
      * - default: false
