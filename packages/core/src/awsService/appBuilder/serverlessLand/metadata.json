@@ -3,7 +3,6 @@
         "s3-lambda-resizing-sam": {
             "name": "Resizing image",
             "description": "Lambda, S3 • Python, Javascript, Java, .NET • SAM",
-            "gitUrl": "https://github.com/aws-samples/serverless-patterns/tree/main/s3-lambda-resizing-python",
             "implementation": [
                 {
                     "iac": "sam",

@@ -32,14 +32,14 @@ export const templateToOpenAppComposer = 'aws.toolkit.appComposer.templateToOpen
  * IMPORTANT: Views that should work in all vscode environments (node or web)
  * should be setup in {@link activateViewsShared}.
  */
-export async function activate(context: ExtContext, ctx: vscode.ExtensionContext): Promise<void> {
+export async function activate(context: ExtContext): Promise<void> {
     // recover context variables from global state when activate
     const walkthroughSelected = globals.globalState.get<string>(walkthroughContextString)
     if (walkthroughSelected !== undefined) {
         await setContext(walkthroughContextString, walkthroughSelected)
     }
 
-    await registerAppBuilderCommands(context, ctx)
+    await registerAppBuilderCommands(context)
 
     const appBuilderNode: ToolView[] = [
         {
@@ -123,7 +123,7 @@ async function setWalkthrough(walkthroughSelected: string = 'S3'): Promise<void>
  *
  * @param context VScode Context
  */
-async function registerAppBuilderCommands(context: ExtContext, ctx: vscode.ExtensionContext): Promise<void> {
+async function registerAppBuilderCommands(context: ExtContext): Promise<void> {
     const source = 'AppBuilderWalkthrough'
     context.extensionContext.subscriptions.push(
         Commands.register('aws.toolkit.installSAMCLI', async () => {
@@ -202,7 +202,7 @@ async function registerAppBuilderCommands(context: ExtContext, ctx: vscode.Exten
             }
         }),
         Commands.register({ id: 'aws.toolkit.lambda.createServerlessLandProject', autoconnect: false }, async () => {
-            await createNewServerlessLandProject(context, ctx)
+            await createNewServerlessLandProject(context)
         })
     )
 }

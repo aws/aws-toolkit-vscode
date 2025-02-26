@@ -5,6 +5,7 @@
 import * as nodefs from 'fs' // eslint-disable-line no-restricted-imports
 import { ToolkitError } from '../../../shared/errors'
 import path from 'path'
+import globals from '../../../shared/extensionGlobals'
 
 interface Implementation {
     iac: string
@@ -32,14 +33,6 @@ export interface ProjectMetadata {
 export class MetadataManager {
     private static instance: MetadataManager
     private metadata: ProjectMetadata | undefined
-    private static readonly metadataPath = path.join(
-        path.resolve(__dirname, '../../../../../'),
-        'src',
-        'awsService',
-        'appBuilder',
-        'serverlessLand',
-        'metadata.json'
-    )
 
     private constructor() {}
 
@@ -52,10 +45,15 @@ export class MetadataManager {
 
     public static initialize(): MetadataManager {
         const instance = MetadataManager.getInstance()
-        instance.loadMetadata(MetadataManager.metadataPath).catch((err) => {
+        const metadataPath = instance.getMetadataPath()
+        instance.loadMetadata(metadataPath).catch((err) => {
             throw new ToolkitError(`Failed to load metadata: ${err}`)
         })
         return instance
+    }
+
+    public getMetadataPath(): string {
+        return globals.context.asAbsolutePath(path.join('dist', 'src', 'serverlessLand', 'metadata.json'))
     }
 
     /**

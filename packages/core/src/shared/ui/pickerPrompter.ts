@@ -144,6 +144,7 @@ export function createQuickPick<T>(
     const mergedOptions = { ...defaultQuickpickOptions, ...options }
     assign(mergedOptions, picker)
     picker.buttons = mergedOptions.buttons ?? []
+    let serverlessPanel: vscode.WebviewPanel | undefined
 
     picker.onDidTriggerItemButton(async (event) => {
         const metadataManager = MetadataManager.getInstance()
@@ -153,31 +154,28 @@ export function createQuickPick<T>(
                 const patternUrl = metadataManager.getUrl(selectedPattern.label)
                 if (patternUrl) {
                     if (event.button.tooltip === 'Open in GitHub') {
-                        const panel = vscode.window.createWebviewPanel(
-                            'githubPreview',
-                            `GitHub Repository ${selectedPattern.label}`,
-                            vscode.ViewColumn.One,
-                            {
-                                enableScripts: true,
-                                retainContextWhenHidden: true,
-                                enableCommandUris: true,
-                                enableFindWidget: true,
-                            }
-                        )
-                        panel.webview.html = WebviewService.getGitWebviewContent(patternUrl.githubUrl)
+                        await vscode.env.openExternal(vscode.Uri.parse(patternUrl.githubUrl))
                     } else if (event.button.tooltip === 'Open in Serverless Land') {
-                        const panel = vscode.window.createWebviewPanel(
-                            'serverlessLandPreview',
-                            'Serverless Land Preview',
-                            vscode.ViewColumn.One,
-                            {
-                                enableScripts: true,
-                                retainContextWhenHidden: true,
-                                enableCommandUris: true,
-                                enableFindWidget: true,
-                            }
-                        )
-                        panel.webview.html = WebviewService.getWebviewContent(patternUrl.previewUrl)
+                        if (!serverlessPanel) {
+                            serverlessPanel = vscode.window.createWebviewPanel(
+                                'serverlessLandPreview',
+                                `${selectedPattern.label}`,
+                                vscode.ViewColumn.One,
+                                {
+                                    enableScripts: true,
+                                    retainContextWhenHidden: true,
+                                    enableCommandUris: false,
+                                    enableFindWidget: true,
+                                }
+                            )
+                            serverlessPanel.onDidDispose(() => {
+                                serverlessPanel = undefined
+                            })
+                        } else {
+                            serverlessPanel.title = `${selectedPattern.label}`
+                        }
+                        serverlessPanel.webview.html = WebviewService.getWebviewContent(patternUrl.previewUrl)
+                        serverlessPanel.reveal()
                     }
                 }
             }

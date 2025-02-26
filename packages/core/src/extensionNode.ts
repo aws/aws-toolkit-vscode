@@ -200,7 +200,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await activateRedshift(extContext)
 
-        await activateAppBuilder(extContext, context)
+        await activateAppBuilder(extContext)
 
         await activateDocumentDb(extContext)
 

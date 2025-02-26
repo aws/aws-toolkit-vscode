@@ -18,7 +18,6 @@ import { ToolkitError } from '../../../shared/errors'
 import { fs } from '../../../shared/fs/fs'
 import { getPattern } from '../../../shared/utilities/downloadPatterns'
 import { MetadataManager } from './metadataManager'
-import type { ExtensionContext } from 'vscode'
 
 export const readmeFile: string = 'README.md'
 const serverlessLandOwner = 'aws-samples'
@@ -37,7 +36,7 @@ const serverlessLandRepo = 'serverless-patterns'
  * 5. Opens the README.md file if available
  * 6. Handles errors and emits telemetry
  */
-export async function createNewServerlessLandProject(extContext: ExtContext, ctx: ExtensionContext): Promise<void> {
+export async function createNewServerlessLandProject(extContext: ExtContext): Promise<void> {
     let createResult: Result = 'Succeeded'
     let reason: string | undefined
     let metadataManager: MetadataManager
@@ -45,7 +44,7 @@ export async function createNewServerlessLandProject(extContext: ExtContext, ctx
     try {
         metadataManager = MetadataManager.getInstance()
         // Launch the project creation wizard
-        const config = await launchProjectCreationWizard(extContext, ctx)
+        const config = await launchProjectCreationWizard(extContext)
         if (!config) {
             createResult = 'Cancelled'
             reason = 'userCancelled'
@@ -84,15 +83,13 @@ export async function createNewServerlessLandProject(extContext: ExtContext, ctx
 }
 
 async function launchProjectCreationWizard(
-    extContext: ExtContext,
-    ctx: ExtensionContext
+    extContext: ExtContext
 ): Promise<CreateServerlessLandWizardForm | undefined> {
     const awsContext = extContext.awsContext
     const credentials = await awsContext.getCredentials()
     const defaultRegion = awsContext.getCredentialDefaultRegion()
 
     return new CreateServerlessLandWizard({
-        ctx,
         credentials,
         defaultRegion,
     }).run()
@@ -118,9 +115,10 @@ async function openReadmeFile(config: CreateServerlessLandWizardForm): Promise<v
             getLogger().warn('README.md file not found in the project directory')
             return
         }
+        await new Promise((resolve) => setTimeout(resolve, 1000))
 
         await vscode.commands.executeCommand('workbench.action.focusFirstEditorGroup')
-        await vscode.window.showTextDocument(readmeUri)
+        await vscode.commands.executeCommand('markdown.showPreview', readmeUri)
     } catch (err) {
         getLogger().error(`Error in openReadmeFile: ${err}`)
         throw new ToolkitError('Error processing README file')
