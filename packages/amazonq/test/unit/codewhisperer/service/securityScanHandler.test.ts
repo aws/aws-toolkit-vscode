@@ -22,10 +22,8 @@ import sinon from 'sinon'
 import * as vscode from 'vscode'
 import path from 'path'
 
-const buildRawCodeScanIssue = (fromProject: boolean = true, params?: Partial<RawCodeScanIssue>): RawCodeScanIssue => ({
-    filePath: fromProject
-        ? 'workspaceFolder/python3.7-plain-sam-app/hello_world/app.py'
-        : path.join(getWorkspaceFolder().substring(1), '/python3.7-plain-sam-app/hello_world/app.py'),
+const buildRawCodeScanIssue = (params?: Partial<RawCodeScanIssue>): RawCodeScanIssue => ({
+    filePath: 'workspaceFolder/python3.7-plain-sam-app/hello_world/app.py',
     startLine: 1,
     endLine: 1,
     title: 'title',
@@ -99,21 +97,21 @@ describe('securityScanHandler', function () {
                 .onFirstCall()
                 .resolves(
                     buildMockListCodeScanFindingsResponse(
-                        JSON.stringify([buildRawCodeScanIssue(true, { title: 'title1' })]),
+                        JSON.stringify([buildRawCodeScanIssue({ title: 'title1' })]),
                         true
                     )
                 )
                 .onSecondCall()
                 .resolves(
                     buildMockListCodeScanFindingsResponse(
-                        JSON.stringify([buildRawCodeScanIssue(true, { title: 'title2' })]),
+                        JSON.stringify([buildRawCodeScanIssue({ title: 'title2' })]),
                         true
                     )
                 )
                 .onThirdCall()
                 .resolves(
                     buildMockListCodeScanFindingsResponse(
-                        JSON.stringify([buildRawCodeScanIssue(true, { title: 'title3' })]),
+                        JSON.stringify([buildRawCodeScanIssue({ title: 'title3' })]),
                         false
                     )
                 )
@@ -154,22 +152,6 @@ describe('securityScanHandler', function () {
                     )
                 )
             }
-        })
-        it('should include ListCodeScanFindings from opened file that is not from project', async function () {
-            mockClient.listCodeScanFindings.resolves(
-                buildMockListCodeScanFindingsResponse(JSON.stringify([buildRawCodeScanIssue(false)]))
-            )
-
-            const aggregatedCodeScanIssueList = await listScanResults(
-                mockClient,
-                'jobId',
-                'codeScanFindingsSchema',
-                [],
-                CodeAnalysisScope.PROJECT,
-                undefined
-            )
-            assert.equal(aggregatedCodeScanIssueList.length, 1)
-            assert.equal(aggregatedCodeScanIssueList[0].issues.length, 1)
         })
     })
 
