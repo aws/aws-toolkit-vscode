@@ -134,16 +134,17 @@ export class TelemetryHelper {
         generatedCharactersCount?: number,
         generatedCount?: number,
         generatedLinesCount?: number,
-        reason?: string
+        reason?: string,
+        result?: BuildStatus
     ) {
         telemetry.amazonq_unitTestGeneration.emit({
             cwsprChatProgrammingLanguage: session.fileLanguage ?? 'plaintext',
             hasUserPromptSupplied: session.hasUserPromptSupplied,
             isSupportedLanguage: session.isSupportedLanguage,
             result:
-                session.buildStatus === BuildStatus.SUCCESS
+                result === BuildStatus.SUCCESS
                     ? 'Succeeded'
-                    : session.buildStatus === BuildStatus.FAILURE
+                    : result === BuildStatus.FAILURE
                       ? 'Failed'
                       : ('Cancelled' as Result),
 

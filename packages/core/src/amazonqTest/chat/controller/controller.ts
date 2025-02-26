@@ -288,7 +288,7 @@ export class TestController {
         session.listOfTestGenerationJobId.length > 1
             ? TelemetryHelper.instance.sendUnitTestGenerationEvent(
                   session,
-                  isCancel ? 'Cancelled' : 'Failed',
+                  telemetryErrorMessage,
                   session.artifactsUploadDuration,
                   session.srcZipFileSize,
                   session.charsOfCodeAccepted,
@@ -297,7 +297,8 @@ export class TestController {
                   session.charsOfCodeGenerated,
                   session.numberOfTestsGenerated,
                   session.linesOfCodeGenerated,
-                  undefined
+                  undefined,
+                  isCancel ? BuildStatus.CANCELLED : BuildStatus.FAILURE
               )
             : TelemetryHelper.instance.sendTestGenerationToolkitEvent(
                   session,
@@ -874,7 +875,8 @@ export class TestController {
                 session.charsOfCodeGenerated,
                 session.numberOfTestsGenerated,
                 session.linesOfCodeGenerated,
-                undefined
+                undefined,
+                session.buildStatus
             )
             this.sessionStorage.getSession().listOfTestGenerationJobId = []
             this.messenger.sendMessage(
@@ -953,7 +955,8 @@ export class TestController {
                     session.charsOfCodeGenerated,
                     session.numberOfTestsGenerated,
                     session.linesOfCodeGenerated,
-                    undefined
+                    undefined,
+                    session.buildStatus
                 )
                 telemetry.ui_click.emit({ elementId: 'unitTestGeneration_rejectDiff_Iteration' })
             } else {
@@ -990,7 +993,8 @@ export class TestController {
                 session.charsOfCodeGenerated,
                 session.numberOfTestsGenerated,
                 session.linesOfCodeGenerated,
-                undefined
+                undefined,
+                session.buildStatus
             )
             telemetry.ui_click.emit({ elementId: 'unitTestGeneration_SkipAndFinish' })
         }
@@ -1340,7 +1344,8 @@ export class TestController {
                 session.charsOfCodeGenerated,
                 session.numberOfTestsGenerated,
                 session.linesOfCodeGenerated,
-                undefined
+                undefined,
+                session.buildStatus
             )
             await this.sessionCleanUp()
         }
