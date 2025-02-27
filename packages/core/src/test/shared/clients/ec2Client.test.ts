@@ -71,7 +71,7 @@ describe('updateInstancesDetail', async function () {
 
     it('adds appropriate status and name field to the instance', async function () {
         const actualResult = await client
-            .extractInstancesFromReservations(intoCollection([completeReservationsList]), getStatus)
+            .patchReservations(intoCollection([completeReservationsList]), getStatus)
             .promise()
         const expectedResult: PatchedReservation[][] = [
             [
@@ -115,7 +115,7 @@ describe('updateInstancesDetail', async function () {
 
     it('handles incomplete and missing tag fields', async function () {
         const actualResult = await client
-            .extractInstancesFromReservations(intoCollection([incompleteReservationsList]), getStatus)
+            .patchReservations(intoCollection([incompleteReservationsList]), getStatus)
             .promise()
 
         const expectedResult: PatchedReservation[][] = [

@@ -64,7 +64,7 @@ export class Ec2Client extends ClientWrapper<EC2Client> {
             (page) => page.Reservations
         )
 
-        return this.extractInstancesFromReservations(reservations)
+        return this.patchReservations(reservations)
     }
 
     public getInstances(filters?: Filter[]): AsyncCollection<PatchedEc2Instance[]> {
@@ -74,7 +74,7 @@ export class Ec2Client extends ClientWrapper<EC2Client> {
     }
 
     /** Updates status and name in-place for displaying to humans. */
-    public extractInstancesFromReservations(
+    public patchReservations(
         reservationPages: AsyncCollection<Reservation[]>,
         getStatus: (i: string) => Promise<InstanceStateName> = this.getInstanceStatus.bind(this)
     ): AsyncCollection<PatchedReservation[]> {
