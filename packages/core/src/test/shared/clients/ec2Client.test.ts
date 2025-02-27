@@ -71,41 +71,43 @@ describe('updateInstancesDetail', async function () {
 
     it('adds appropriate status and name field to the instance', async function () {
         const actualResult = await client
-            .extractInstancesFromReservations(intoCollection(completeReservationsList), getStatus)
+            .extractInstancesFromReservations(intoCollection([completeReservationsList]), getStatus)
             .promise()
-        const expectedResult: PatchedReservation[] = [
-            {
-                Instances: [
-                    {
-                        InstanceId: 'running-1',
-                        Name: 'name1',
-                        Tags: [{ Key: 'Name', Value: 'name1' }],
-                        LastSeenStatus: 'running',
-                    },
-                    {
-                        InstanceId: 'stopped-2',
-                        Name: 'name2',
-                        Tags: [{ Key: 'Name', Value: 'name2' }],
-                        LastSeenStatus: 'stopped',
-                    },
-                ],
-            },
-            {
-                Instances: [
-                    {
-                        InstanceId: 'pending-3',
-                        Tags: [{ Key: 'Name', Value: 'name3' }],
-                        LastSeenStatus: 'pending',
-                        Name: 'name3',
-                    },
-                    {
-                        InstanceId: 'running-4',
-                        Tags: [{ Key: 'Name', Value: 'name4' }],
-                        Name: 'name4',
-                        LastSeenStatus: 'running',
-                    },
-                ],
-            },
+        const expectedResult: PatchedReservation[][] = [
+            [
+                {
+                    Instances: [
+                        {
+                            InstanceId: 'running-1',
+                            Name: 'name1',
+                            Tags: [{ Key: 'Name', Value: 'name1' }],
+                            LastSeenStatus: 'running',
+                        },
+                        {
+                            InstanceId: 'stopped-2',
+                            Name: 'name2',
+                            Tags: [{ Key: 'Name', Value: 'name2' }],
+                            LastSeenStatus: 'stopped',
+                        },
+                    ],
+                },
+                {
+                    Instances: [
+                        {
+                            InstanceId: 'pending-3',
+                            Tags: [{ Key: 'Name', Value: 'name3' }],
+                            LastSeenStatus: 'pending',
+                            Name: 'name3',
+                        },
+                        {
+                            InstanceId: 'running-4',
+                            Tags: [{ Key: 'Name', Value: 'name4' }],
+                            Name: 'name4',
+                            LastSeenStatus: 'running',
+                        },
+                    ],
+                },
+            ],
         ]
 
         assert.deepStrictEqual(actualResult, expectedResult)
@@ -113,33 +115,35 @@ describe('updateInstancesDetail', async function () {
 
     it('handles incomplete and missing tag fields', async function () {
         const actualResult = await client
-            .extractInstancesFromReservations(intoCollection(incompleteReservationsList), getStatus)
+            .extractInstancesFromReservations(intoCollection([incompleteReservationsList]), getStatus)
             .promise()
 
-        const expectedResult: PatchedReservation[] = [
-            {
-                Instances: [
-                    {
-                        InstanceId: 'running-1',
-                        LastSeenStatus: 'running',
-                    },
-                    {
-                        InstanceId: 'stopped-2',
-                        LastSeenStatus: 'stopped',
-                        Tags: [],
-                    },
-                ],
-            },
-            {
-                Instances: [
-                    {
-                        InstanceId: 'pending-3',
-                        Tags: [{ Key: 'Name', Value: 'name3' }],
-                        LastSeenStatus: 'pending',
-                        Name: 'name3',
-                    },
-                ],
-            },
+        const expectedResult: PatchedReservation[][] = [
+            [
+                {
+                    Instances: [
+                        {
+                            InstanceId: 'running-1',
+                            LastSeenStatus: 'running',
+                        },
+                        {
+                            InstanceId: 'stopped-2',
+                            LastSeenStatus: 'stopped',
+                            Tags: [],
+                        },
+                    ],
+                },
+                {
+                    Instances: [
+                        {
+                            InstanceId: 'pending-3',
+                            Tags: [{ Key: 'Name', Value: 'name3' }],
+                            LastSeenStatus: 'pending',
+                            Name: 'name3',
+                        },
+                    ],
+                },
+            ],
         ]
 
         assert.deepStrictEqual(actualResult, expectedResult)
