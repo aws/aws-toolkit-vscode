@@ -562,7 +562,8 @@
         "winston": "^3.11.0",
         "winston-transport": "^4.6.0",
         "xml2js": "^0.6.1",
-        "yaml-cfn": "^0.3.2"
+        "yaml-cfn": "^0.3.2",
+        "http2": "^3.3.6"
     },
     "overrides": {
         "webfont": {
