@@ -84,6 +84,61 @@
             "description": "Query latency in ms for local project context"
         },
         {
+            "name": "cwsprChatFolderContextCount",
+            "type": "int",
+            "description": "# of folders manually added to context"
+        },
+        {
+            "name": "cwsprChatFileContextCount",
+            "type": "int",
+            "description": "# of files manually added to context"
+        },
+        {
+            "name": "cwsprChatFileContextLength",
+            "type": "int",
+            "description": "Total length of files added to context"
+        },
+        {
+            "name": "cwsprChatFileContextTruncatedLength",
+            "type": "int",
+            "description": "Truncated length of files added to context"
+        },
+        {
+            "name": "cwsprChatPromptContextCount",
+            "type": "int",
+            "description": "# of saved prompts manually added to context"
+        },
+        {
+            "name": "cwsprChatPromptContextLength",
+            "type": "int",
+            "description": "Total length of saved prompts added to context"
+        },
+        {
+            "name": "cwsprChatPromptContextTruncatedLength",
+            "type": "int",
+            "description": "Truncated length of saved prompts added to context"
+        },
+        {
+            "name": "cwsprChatRuleContextCount",
+            "type": "int",
+            "description": "# of workspace rules automatically added to context"
+        },
+        {
+            "name": "cwsprChatRuleContextLength",
+            "type": "int",
+            "description": "Total length of workspace rules added to context"
+        },
+        {
+            "name": "cwsprChatRuleContextTruncatedLength",
+            "type": "int",
+            "description": "Truncated length of workspace rules added to context"
+        },
+        {
+            "name": "cwsprChatHasContextList",
+            "type": "boolean",
+            "description": "true if context list is displayed to user"
+        },
+        {
             "name": "amazonqIndexFileSizeInMB",
             "type": "int",
             "description": "The sum of file sizes that were indexed in MB"
@@ -639,6 +694,10 @@
             "description": "When chat panel is closed"
         },
         {
+            "name": "amazonq_createSavedPrompt",
+            "description": "When a saved user prompt is created"
+        },
+        {
             "name": "amazonq_startConversation",
             "description": "When user starts a new conversation",
             "metadata": [
@@ -803,6 +862,50 @@
                 },
                 {
                     "type": "codewhispererCustomizationArn",
+                    "required": false
+                },
+                {
+                    "type": "cwsprChatHasContextList",
+                    "required": false
+                },
+                {
+                    "type": "cwsprChatFolderContextCount",
+                    "required": false
+                },
+                {
+                    "type": "cwsprChatFileContextCount",
+                    "required": false
+                },
+                {
+                    "type": "cwsprChatFileContextLength",
+                    "required": false
+                },
+                {
+                    "type": "cwsprChatFileContextTruncatedLength",
+                    "required": false
+                },
+                {
+                    "type": "cwsprChatPromptContextCount",
+                    "required": false
+                },
+                {
+                    "type": "cwsprChatPromptContextLength",
+                    "required": false
+                },
+                {
+                    "type": "cwsprChatRuleContextTruncatedLength",
+                    "required": false
+                },
+                {
+                    "type": "cwsprChatRuleContextCount",
+                    "required": false
+                },
+                {
+                    "type": "cwsprChatRuleContextLength",
+                    "required": false
+                },
+                {
+                    "type": "cwsprChatPromptContextTruncatedLength",
                     "required": false
                 }
             ]

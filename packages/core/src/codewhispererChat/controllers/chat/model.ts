@@ -194,6 +194,15 @@ export interface TriggerPayload {
     documentReferences?: DocumentReference[]
     useRelevantDocuments?: boolean
     traceId?: string
+    additionalContextLengths?: AdditionalContextLengths
+    truncatedAdditionalContextLengths?: AdditionalContextLengths
+    workspaceRulesCount?: number
+}
+
+export type AdditionalContextLengths = {
+    fileContextLength: number
+    promptContextLength: number
+    ruleContextLength: number
 }
 
 // TODO move this to API definition (or just use this across the codebase)
