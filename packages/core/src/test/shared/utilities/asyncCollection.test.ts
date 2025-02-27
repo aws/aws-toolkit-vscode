@@ -5,7 +5,6 @@
 
 import assert from 'assert'
 import { toCollection } from '../../../shared/utilities/asyncCollection'
-import { intoCollection } from '../../../shared/utilities/collectionUtils'
 
 describe('AsyncCollection', function () {
     const items = [
@@ -204,35 +203,6 @@ describe('AsyncCollection', function () {
 
         assert.deepStrictEqual(x, [6, 36])
         assert.strictEqual(counter.callCount, 7)
-    })
-
-    describe('batchedIterator', function () {
-        const items = [1, 2, 3, 4, 5, 6, 7, 8, 9]
-        const mixedItems = [1, '2', 3, '4', 5, '6']
-
-        it('can iterator batches at a time', async function () {
-            const batchedIterator = intoCollection(items).batchedIterator(3)
-            assert.deepStrictEqual((await batchedIterator.next()).value, [1, 2, 3], 'first batch')
-            assert.deepStrictEqual((await batchedIterator.next()).value, [4, 5, 6], 'second batch')
-            assert.deepStrictEqual((await batchedIterator.next()).value, [7, 8, 9], 'third batch')
-            assert.ok((await batchedIterator.next()).done)
-        })
-
-        it('can handle partial batches', async function () {
-            const batchedIterator = intoCollection(items).batchedIterator(4)
-            assert.deepStrictEqual((await batchedIterator.next()).value, [1, 2, 3, 4], 'first batch')
-            assert.deepStrictEqual((await batchedIterator.next()).value, [5, 6, 7, 8], 'second batch')
-            assert.deepStrictEqual((await batchedIterator.next()).value, [9], 'third batch')
-            assert.ok((await batchedIterator.next()).done)
-        })
-
-        it('can handle mixed valued batches', async function () {
-            const batchedIterator = intoCollection(mixedItems).batchedIterator(2)
-            assert.deepStrictEqual((await batchedIterator.next()).value, [1, '2'], 'first batch')
-            assert.deepStrictEqual((await batchedIterator.next()).value, [3, '4'], 'second batch')
-            assert.deepStrictEqual((await batchedIterator.next()).value, [5, '6'], 'third batch')
-            assert.ok((await batchedIterator.next()).done)
-        })
     })
 
     describe('errors', function () {
