@@ -48,10 +48,12 @@ export class Ec2ParentNode extends AWSTreeNodeBase {
         }
         this.pollingSet.add(instanceId)
     }
-
+    // TODO: make use of childNodeLoader to avoid loading all of this at once.
     public async updateChildren(): Promise<void> {
-        const instances = this.ec2Client.getInstances().flatten()
-        const instanceMap = await instances.toMap((instance) => instance.InstanceId)
+        const instanceMap = await this.ec2Client
+            .getInstances()
+            .flatten()
+            .toMap((instance) => instance.InstanceId)
 
         updateInPlace(
             this.ec2InstanceNodes,
