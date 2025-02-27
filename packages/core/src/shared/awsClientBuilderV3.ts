@@ -26,6 +26,7 @@ import {
     UserAgent,
 } from '@aws-sdk/types'
 import { NodeHttpHandler } from '@smithy/node-http-handler'
+import { FetchHttpHandler } from '@smithy/fetch-http-handler'
 import { HttpResponse, HttpRequest } from '@aws-sdk/protocol-http'
 import { ConfiguredRetryStrategy } from '@smithy/util-retry'
 import { telemetry } from './telemetry/telemetry'
@@ -36,6 +37,7 @@ import { partialClone } from './utilities/collectionUtils'
 import { selectFrom } from './utilities/tsUtils'
 import { Agent } from 'http'
 import { once } from './utilities/functionUtils'
+import { isWeb } from './extensionGlobals'
 
 export type AwsClientConstructor<C> = new (o: AwsClientOptions) => C
 
@@ -92,11 +94,14 @@ export class AWSClientBuilderV3 {
     }
 
     private buildHttpClient() {
-        return new NodeHttpHandler({
-            httpAgent: new Agent({ keepAlive: true, timeout: 30000 }),
-            httpsAgent: new Agent({ keepAlive: true, timeout: 30000 }),
-            logger: getLogger(),
-        })
+        return isWeb()
+            ? new FetchHttpHandler({
+                  keepAlive: true,
+              })
+            : new NodeHttpHandler({
+                  httpAgent: new Agent({ keepAlive: true, timeout: 30000 }),
+                  httpsAgent: new Agent({ keepAlive: true, timeout: 30000 }),
+              })
     }
 
     private getHttpClient = once(this.buildHttpClient.bind(this))
