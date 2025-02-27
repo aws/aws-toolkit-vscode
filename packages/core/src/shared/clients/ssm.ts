@@ -52,17 +52,13 @@ export class SsmClient extends ClientWrapper<SSMClient> {
     }
 
     public async describeInstance(target: string): Promise<InstanceInformation> {
-        return (
-            await (
-                await this.makePaginatedRequest(
-                    paginateDescribeInstanceInformation,
-                    {
-                        InstanceInformationFilterList: [{ key: 'InstanceIds', valueSet: [target] }],
-                    } satisfies DescribeInstanceInformationCommandInput,
-                    (page) => page.InstanceInformationList
-                )
-            ).promise()
-        )[0]!
+        return await this.getFirst(
+            paginateDescribeInstanceInformation,
+            {
+                InstanceInformationFilterList: [{ key: 'InstanceIds', valueSet: [target] }],
+            } satisfies DescribeInstanceInformationCommandInput,
+            (page) => page.InstanceInformationList
+        )
     }
 
     public async getTargetPlatformName(target: string): Promise<string> {
@@ -84,7 +80,7 @@ export class SsmClient extends ClientWrapper<SSMClient> {
 
     private async waitForCommand(commandId: string, target: string) {
         const result = await waitUntilCommandExecuted(
-            { client: await this.getClient(), maxWaitTime: 30 },
+            { client: this.getClient(), maxWaitTime: 30 },
             { CommandId: commandId, InstanceId: target }
         )
         if (result.state !== WaiterState.SUCCESS) {
@@ -112,6 +108,6 @@ export class SsmClient extends ClientWrapper<SSMClient> {
     }
 
     public async describeSessions(state: SessionState) {
-        return await this.makePaginatedRequest(paginateDescribeSessions, { State: state }, (page) => page.Sessions)
+        return this.makePaginatedRequest(paginateDescribeSessions, { State: state }, (page) => page.Sessions)
     }
 }

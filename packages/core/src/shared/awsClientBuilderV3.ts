@@ -99,19 +99,19 @@ export class AWSClientBuilderV3 {
         ].join(':')
     }
 
-    public async getAwsService<C extends AwsClient>(serviceOptions: AwsServiceOptions<C>): Promise<C> {
+    public getAwsService<C extends AwsClient>(serviceOptions: AwsServiceOptions<C>): C {
         const key = this.keyAwsService(serviceOptions)
         const cached = this.serviceCache.get(key)
         if (cached) {
             return cached as C
         }
 
-        const service = await this.createAwsService(serviceOptions)
+        const service = this.createAwsService(serviceOptions)
         this.serviceCache.set(key, service)
         return service as C
     }
 
-    public async createAwsService<C extends AwsClient>(serviceOptions: AwsServiceOptions<C>): Promise<C> {
+    public createAwsService<C extends AwsClient>(serviceOptions: AwsServiceOptions<C>): C {
         const shim = this.getShim()
         const opt = (serviceOptions.clientOptions ?? {}) as AwsClientOptions
         const userAgent = serviceOptions.userAgent ?? true
