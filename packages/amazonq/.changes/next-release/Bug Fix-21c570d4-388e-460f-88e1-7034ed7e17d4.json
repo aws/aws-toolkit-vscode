@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Amazon Q /test: Unit test generation displays an inaccurate diff view for non-primary packages in the workspace."
-}
