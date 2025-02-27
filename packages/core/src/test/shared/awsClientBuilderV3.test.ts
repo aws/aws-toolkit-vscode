@@ -78,11 +78,11 @@ describe('AwsClientBuilderV3', function () {
         assert.strictEqual(service.config.userAgent[0][0], 'CUSTOM USER AGENT')
     })
 
-    it('injects http client into client', async function () {
+    it('injects http client into client', function () {
         const requestHandler = new NodeHttpHandler({
             requestTimeout: 1234,
         })
-        const service = await builder.createAwsService({
+        const service = builder.createAwsService({
             serviceClient: Client,
             clientOptions: {
                 requestHandler: requestHandler,
@@ -91,11 +91,11 @@ describe('AwsClientBuilderV3', function () {
         assert.strictEqual(service.config.requestHandler, requestHandler)
     })
 
-    it('defaults to same http client', async function () {
-        const service = await builder.createAwsService({
+    it('defaults to same http client', function () {
+        const service = builder.createAwsService({
             serviceClient: Client,
         })
-        const service2 = await builder.createAwsService({
+        const service2 = builder.createAwsService({
             serviceClient: Client,
         })
         // Check if request handlers are reference-equal.
