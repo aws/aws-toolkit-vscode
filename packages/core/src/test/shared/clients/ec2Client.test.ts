@@ -4,7 +4,7 @@
  */
 
 import assert from 'assert'
-import { Ec2Client, instanceHasName, PatchedReservation } from '../../../shared/clients/ec2'
+import { Ec2Client, instanceHasName, Ec2Reservation } from '../../../shared/clients/ec2'
 import { Filter, InstanceStateName, Reservation } from '@aws-sdk/client-ec2'
 import { intoCollection } from '../../../shared/utilities/collectionUtils'
 
@@ -73,7 +73,7 @@ describe('updateInstancesDetail', async function () {
         const actualResult = await client
             .patchReservations(intoCollection([completeReservationsList]), getStatus)
             .promise()
-        const expectedResult: PatchedReservation[][] = [
+        const expectedResult: Ec2Reservation[][] = [
             [
                 {
                     Instances: [
@@ -118,7 +118,7 @@ describe('updateInstancesDetail', async function () {
             .patchReservations(intoCollection([incompleteReservationsList]), getStatus)
             .promise()
 
-        const expectedResult: PatchedReservation[][] = [
+        const expectedResult: Ec2Reservation[][] = [
             [
                 {
                     Instances: [

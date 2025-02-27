@@ -5,7 +5,7 @@
 
 import { RegionSubmenu, RegionSubmenuResponse } from '../../shared/ui/common/regionSubmenu'
 import { DataQuickPickItem } from '../../shared/ui/pickerPrompter'
-import { Ec2Client, PatchedEc2Instance } from '../../shared/clients/ec2'
+import { Ec2Client, Ec2Instance } from '../../shared/clients/ec2'
 import { isValidResponse } from '../../shared/wizards/wizard'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { getIconCode } from './utils'
@@ -13,7 +13,7 @@ import { Ec2Node } from './explorer/ec2ParentNode'
 import { Ec2InstanceNode } from './explorer/ec2InstanceNode'
 import { AsyncCollection } from '../../shared/utilities/asyncCollection'
 
-export type InstanceFilter = (instance: PatchedEc2Instance) => boolean
+export type InstanceFilter = (instance: Ec2Instance) => boolean
 export interface Ec2Selection {
     instanceId: string
     region: string
@@ -21,12 +21,12 @@ export interface Ec2Selection {
 
 interface Ec2PrompterOptions {
     instanceFilter: InstanceFilter
-    getInstancesFromRegion: (regionCode: string) => AsyncCollection<PatchedEc2Instance[]>
+    getInstancesFromRegion: (regionCode: string) => AsyncCollection<Ec2Instance[]>
 }
 
 export class Ec2Prompter {
     protected instanceFilter: InstanceFilter
-    protected getInstancesFromRegion: (regionCode: string) => AsyncCollection<PatchedEc2Instance[]>
+    protected getInstancesFromRegion: (regionCode: string) => AsyncCollection<Ec2Instance[]>
 
     public constructor(options?: Partial<Ec2PrompterOptions>) {
         this.instanceFilter = options?.instanceFilter ?? ((_) => true)
@@ -34,12 +34,12 @@ export class Ec2Prompter {
             options?.getInstancesFromRegion ?? ((regionCode: string) => new Ec2Client(regionCode).getInstances())
     }
 
-    public static getLabel(instance: PatchedEc2Instance) {
+    public static getLabel(instance: Ec2Instance) {
         const icon = `$(${getIconCode(instance)})`
         return `${instance.Name ?? '(no name)'} \t ${icon} ${instance.LastSeenStatus.toUpperCase()}`
     }
 
-    public static asQuickPickItem(instance: PatchedEc2Instance): DataQuickPickItem<string> {
+    public static asQuickPickItem(instance: Ec2Instance): DataQuickPickItem<string> {
         return {
             label: Ec2Prompter.getLabel(instance),
             detail: instance.InstanceId,
@@ -66,7 +66,7 @@ export class Ec2Prompter {
     }
 
     public getInstancesAsQuickPickItems(region: string): AsyncIterable<DataQuickPickItem<string>[]> {
-        return this.getInstancesFromRegion(region).map((instancePage: PatchedEc2Instance[]) =>
+        return this.getInstancesFromRegion(region).map((instancePage: Ec2Instance[]) =>
             instancePage.filter(this.instanceFilter).map((i) => Ec2Prompter.asQuickPickItem(i))
         )
     }

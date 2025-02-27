@@ -54,7 +54,7 @@ export abstract class ClientWrapper<C extends AwsClient> implements vscode.Dispo
         }
     }
 
-    protected async getFirstResult<CommandInput extends object, CommandOutput extends object, Output extends object>(
+    protected async getFirst<CommandInput extends object, CommandOutput extends object, Output extends object>(
         paginator: SDKPaginator<C, CommandInput, CommandOutput>,
         input: CommandInput,
         extractPage: (page: CommandOutput) => Output[] | undefined

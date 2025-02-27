@@ -6,7 +6,7 @@
 import assert from 'assert'
 import * as sinon from 'sinon'
 import { Ec2ParentNode } from '../../../../awsService/ec2/explorer/ec2ParentNode'
-import { Ec2Client, PatchedEc2Instance } from '../../../../shared/clients/ec2'
+import { Ec2Client, Ec2Instance } from '../../../../shared/clients/ec2'
 import {
     assertNodeListOnlyHasErrorNode,
     assertNodeListOnlyHasPlaceholderNode,
@@ -27,14 +27,14 @@ export const testInstance = {
         },
     ],
     LastSeenStatus: 'running',
-} satisfies PatchedEc2Instance
+} satisfies Ec2Instance
 export const testClient = new Ec2Client('')
 export const testParentNode = new Ec2ParentNode('fake-region', 'testPartition', testClient)
 
 describe('ec2ParentNode', function () {
     let testNode: Ec2ParentNode
     let client: Ec2Client
-    let getInstancesStub: sinon.SinonStub<[filters?: Filter[] | undefined], AsyncCollection<PatchedEc2Instance[]>>
+    let getInstancesStub: sinon.SinonStub<[filters?: Filter[] | undefined], AsyncCollection<Ec2Instance[]>>
     let clock: FakeTimers.InstalledClock
     let refreshStub: sinon.SinonStub<[], Promise<void>>
     let statusUpdateStub: sinon.SinonStub<[status: string], Promise<string>>
@@ -77,7 +77,7 @@ describe('ec2ParentNode', function () {
         const instances = [
             { Name: 'firstOne', InstanceId: '0', LastSeenStatus: 'running' },
             { Name: 'secondOne', InstanceId: '1', LastSeenStatus: 'stopped' },
-        ] satisfies PatchedEc2Instance[]
+        ] satisfies Ec2Instance[]
         getInstancesStub.returns(intoCollection([instances]))
         const childNodes = await testNode.getChildren()
 
@@ -99,7 +99,7 @@ describe('ec2ParentNode', function () {
             { Name: 'aa', InstanceId: '3', LastSeenStatus: 'running' },
             { Name: 'cc', InstanceId: '4', LastSeenStatus: 'running' },
             { Name: 'cd', InstanceId: '5', LastSeenStatus: 'running' },
-        ] satisfies PatchedEc2Instance[]
+        ] satisfies Ec2Instance[]
 
         getInstancesStub.returns(intoCollection([instances]))
 
@@ -122,7 +122,7 @@ describe('ec2ParentNode', function () {
             { Name: 'firstOne', InstanceId: '0', LastSeenStatus: 'running' },
             { Name: 'secondOne', InstanceId: '1', LastSeenStatus: 'running' },
             { Name: 'firstOne', InstanceId: '2', LastSeenStatus: 'running' },
-        ] satisfies PatchedEc2Instance[]
+        ] satisfies Ec2Instance[]
 
         getInstancesStub.returns(intoCollection([instances]))
 
@@ -136,7 +136,7 @@ describe('ec2ParentNode', function () {
             { Name: 'firstOne', InstanceId: '0', LastSeenStatus: 'pending' },
             { Name: 'secondOne', InstanceId: '1', LastSeenStatus: 'stopped' },
             { Name: 'thirdOne', InstanceId: '2', LastSeenStatus: 'running' },
-        ] satisfies PatchedEc2Instance[]
+        ] satisfies Ec2Instance[]
 
         getInstancesStub.returns(intoCollection([instances]))
         await testNode.updateChildren()
@@ -150,7 +150,7 @@ describe('ec2ParentNode', function () {
             { Name: 'firstOne', InstanceId: '0', LastSeenStatus: 'pending' },
             { Name: 'secondOne', InstanceId: '1', LastSeenStatus: 'stopped' },
             { Name: 'thirdOne', InstanceId: '2', LastSeenStatus: 'running' },
-        ] satisfies PatchedEc2Instance[]
+        ] satisfies Ec2Instance[]
 
         getInstancesStub.returns(intoCollection([instances]))
 
@@ -162,9 +162,7 @@ describe('ec2ParentNode', function () {
 
     it('does refresh explorer when timer goes and status changed', async function () {
         statusUpdateStub = statusUpdateStub.resolves('running')
-        const instances = [
-            { Name: 'firstOne', InstanceId: '0', LastSeenStatus: 'pending' },
-        ] satisfies PatchedEc2Instance[]
+        const instances = [{ Name: 'firstOne', InstanceId: '0', LastSeenStatus: 'pending' }] satisfies Ec2Instance[]
 
         getInstancesStub.returns(intoCollection([instances]))
         await testNode.updateChildren()
@@ -175,9 +173,7 @@ describe('ec2ParentNode', function () {
     })
 
     it('returns the node when in the map', async function () {
-        const instances = [
-            { Name: 'firstOne', InstanceId: 'node1', LastSeenStatus: 'pending' },
-        ] satisfies PatchedEc2Instance[]
+        const instances = [{ Name: 'firstOne', InstanceId: 'node1', LastSeenStatus: 'pending' }] satisfies Ec2Instance[]
 
         getInstancesStub.returns(intoCollection([instances]))
         await testNode.updateChildren()
@@ -187,9 +183,7 @@ describe('ec2ParentNode', function () {
     })
 
     it('throws error when node not in map', async function () {
-        const instances = [
-            { Name: 'firstOne', InstanceId: 'node1', LastSeenStatus: 'pending' },
-        ] satisfies PatchedEc2Instance[]
+        const instances = [{ Name: 'firstOne', InstanceId: 'node1', LastSeenStatus: 'pending' }] satisfies Ec2Instance[]
 
         getInstancesStub.returns(intoCollection([instances]))
         await testNode.updateChildren()
@@ -198,9 +192,7 @@ describe('ec2ParentNode', function () {
     })
 
     it('adds node to polling set when asked to track it', async function () {
-        const instances = [
-            { Name: 'firstOne', InstanceId: 'node1', LastSeenStatus: 'pending' },
-        ] satisfies PatchedEc2Instance[]
+        const instances = [{ Name: 'firstOne', InstanceId: 'node1', LastSeenStatus: 'pending' }] satisfies Ec2Instance[]
 
         getInstancesStub.returns(intoCollection([instances]))
         await testNode.updateChildren()
@@ -210,9 +202,7 @@ describe('ec2ParentNode', function () {
     })
 
     it('throws error when asked to track non-child node', async function () {
-        const instances = [
-            { Name: 'firstOne', InstanceId: 'node1', LastSeenStatus: 'pending' },
-        ] satisfies PatchedEc2Instance[]
+        const instances = [{ Name: 'firstOne', InstanceId: 'node1', LastSeenStatus: 'pending' }] satisfies Ec2Instance[]
 
         getInstancesStub.returns(intoCollection([instances]))
         await testNode.updateChildren()

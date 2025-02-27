@@ -52,7 +52,7 @@ export class SsmClient extends ClientWrapper<SSMClient> {
     }
 
     public async describeInstance(target: string): Promise<InstanceInformation> {
-        return await this.getFirstResult(
+        return await this.getFirst(
             paginateDescribeInstanceInformation,
             {
                 InstanceInformationFilterList: [{ key: 'InstanceIds', valueSet: [target] }],

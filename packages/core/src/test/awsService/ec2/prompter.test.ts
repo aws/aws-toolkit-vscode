@@ -5,7 +5,7 @@
 import assert from 'assert'
 import * as sinon from 'sinon'
 import { Ec2Prompter, getSelection } from '../../../awsService/ec2/prompter'
-import { PatchedEc2Instance } from '../../../shared/clients/ec2'
+import { Ec2Instance } from '../../../shared/clients/ec2'
 import { RegionSubmenuResponse } from '../../../shared/ui/common/regionSubmenu'
 import { Ec2Selection } from '../../../awsService/ec2/prompter'
 import { Ec2InstanceNode } from '../../../awsService/ec2/explorer/ec2InstanceNode'
@@ -17,7 +17,7 @@ import { getTestWindow } from '../../shared/vscode/window'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 
 describe('Ec2Prompter', async function () {
-    const defaultInstances: PatchedEc2Instance[][] = [
+    const defaultInstances: Ec2Instance[][] = [
         [
             {
                 InstanceId: '1',
@@ -56,7 +56,7 @@ describe('Ec2Prompter', async function () {
             data: defaultInstances[1][0].InstanceId,
         },
     ]
-    const defaultGetInstances: (regionCode: string) => AsyncCollection<PatchedEc2Instance[]> = (_) =>
+    const defaultGetInstances: (regionCode: string) => AsyncCollection<Ec2Instance[]> = (_) =>
         intoCollection(defaultInstances)
 
     it('initializes properly', function () {
@@ -99,7 +99,7 @@ describe('Ec2Prompter', async function () {
     })
 
     describe('asQuickPickItem', async function () {
-        const testQuickPick = (instance: PatchedEc2Instance) => {
+        const testQuickPick = (instance: Ec2Instance) => {
             assert.deepStrictEqual(Ec2Prompter.asQuickPickItem(instance), {
                 label: Ec2Prompter.getLabel(instance),
                 detail: instance.InstanceId,

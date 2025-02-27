@@ -6,7 +6,7 @@ import * as vscode from 'vscode'
 import { Ec2Client, getNameOfInstance } from '../../../shared/clients/ec2'
 import { AWSResourceNode } from '../../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
-import { PatchedEc2Instance } from '../../../shared/clients/ec2'
+import { Ec2Instance } from '../../../shared/clients/ec2'
 import globals from '../../../shared/extensionGlobals'
 import { getIconCode } from '../utils'
 import { Ec2Selection } from '../prompter'
@@ -27,7 +27,7 @@ export class Ec2InstanceNode extends AWSTreeNodeBase implements AWSResourceNode 
         public override readonly regionCode: string,
         private readonly partitionId: string,
         // XXX: this variable is marked as readonly, but the 'status' attribute is updated when polling the nodes.
-        public readonly instance: PatchedEc2Instance
+        public readonly instance: Ec2Instance
     ) {
         super('')
         this.parent.addChild(this)
@@ -35,7 +35,7 @@ export class Ec2InstanceNode extends AWSTreeNodeBase implements AWSResourceNode 
         this.id = this.InstanceId
     }
 
-    public updateInstance(newInstance: PatchedEc2Instance) {
+    public updateInstance(newInstance: Ec2Instance) {
         this.setInstanceStatus(newInstance.LastSeenStatus)
         this.label = `${this.name} (${this.InstanceId}) ${this.instance.LastSeenStatus.toUpperCase()}`
         this.contextValue = this.getContext()

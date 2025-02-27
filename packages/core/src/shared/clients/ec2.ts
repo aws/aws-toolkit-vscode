@@ -33,14 +33,16 @@ import { AsyncCollection } from '../utilities/asyncCollection'
 /**
  * A wrapper around Instance where we can safely assume InstanceId field exists.
  */
-export interface PatchedEc2Instance extends Instance {
+export interface Ec2Instance extends Instance {
     InstanceId: string
     Name?: string
     LastSeenStatus: InstanceStateName
 }
-
-export interface PatchedReservation extends Reservation {
-    Instances: PatchedEc2Instance[]
+/**
+ * A wrapper around Reservation where we can safely it is non empty
+ */
+export interface Ec2Reservation extends Reservation {
+    Instances: Ec2Instance[]
 }
 
 interface InstanceWithId extends Instance {
@@ -57,7 +59,7 @@ export class Ec2Client extends ClientWrapper<EC2Client> {
         super(regionCode, EC2Client)
     }
 
-    public getReservations(filters?: Filter[]): AsyncCollection<PatchedReservation[]> {
+    public getReservations(filters?: Filter[]): AsyncCollection<Ec2Reservation[]> {
         const reservations = this.makePaginatedRequest(
             paginateDescribeInstances,
             filters ? { Filters: filters } : ({} satisfies DescribeInstancesRequest),
@@ -67,7 +69,7 @@ export class Ec2Client extends ClientWrapper<EC2Client> {
         return this.patchReservations(reservations)
     }
 
-    public getInstances(filters?: Filter[]): AsyncCollection<PatchedEc2Instance[]> {
+    public getInstances(filters?: Filter[]): AsyncCollection<Ec2Instance[]> {
         return this.getReservations(filters)
             .flatten()
             .map((r) => r.Instances)
@@ -77,10 +79,10 @@ export class Ec2Client extends ClientWrapper<EC2Client> {
     public patchReservations(
         reservationPages: AsyncCollection<Reservation[]>,
         getStatus: (i: string) => Promise<InstanceStateName> = this.getInstanceStatus.bind(this)
-    ): AsyncCollection<PatchedReservation[]> {
+    ): AsyncCollection<Ec2Reservation[]> {
         return reservationPages.map(async (r) => await Promise.all(r.filter(isNotEmpty).map(patchReservation)))
 
-        async function patchReservation(r: Reservation & { Instances: Instance[] }): Promise<PatchedReservation> {
+        async function patchReservation(r: Reservation & { Instances: Instance[] }): Promise<Ec2Reservation> {
             const namedInstances = r.Instances.filter(hasId).map(addName)
             return { ...r, Instances: await Promise.all(namedInstances.map(addStatus)) } satisfies Reservation
         }
@@ -105,7 +107,7 @@ export class Ec2Client extends ClientWrapper<EC2Client> {
     }
 
     public async getInstanceStatus(instanceId: string): Promise<InstanceStateName> {
-        const instance = await this.getFirstResult(
+        const instance = await this.getFirst(
             paginateDescribeInstanceStatus,
             { InstanceIds: [instanceId], IncludeAllInstances: true },
             (page) => page.InstanceStatuses
@@ -213,7 +215,7 @@ export class Ec2Client extends ClientWrapper<EC2Client> {
      * @returns IAM Association for instance
      */
     private async getIamInstanceProfileAssociation(instanceId: string): Promise<IamInstanceProfileAssociation> {
-        return await this.getFirstResult(
+        return await this.getFirst(
             paginateDescribeIamInstanceProfileAssociations,
             { Filters: this.getInstancesFilter([instanceId]) },
             (page) => page.IamInstanceProfileAssociations

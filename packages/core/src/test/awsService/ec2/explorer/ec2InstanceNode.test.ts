@@ -10,7 +10,7 @@ import {
     Ec2InstanceRunningContext,
     Ec2InstanceStoppedContext,
 } from '../../../../awsService/ec2/explorer/ec2InstanceNode'
-import { Ec2Client, PatchedEc2Instance, getNameOfInstance } from '../../../../shared/clients/ec2'
+import { Ec2Client, Ec2Instance, getNameOfInstance } from '../../../../shared/clients/ec2'
 import { Ec2ParentNode } from '../../../../awsService/ec2/explorer/ec2ParentNode'
 import * as sinon from 'sinon'
 import { PollingSet } from '../../../../shared/utilities/pollingSet'
@@ -18,7 +18,7 @@ import { InstanceStateName } from '@aws-sdk/client-ec2'
 
 describe('ec2InstanceNode', function () {
     let testNode: Ec2InstanceNode
-    let testInstance: PatchedEc2Instance
+    let testInstance: Ec2Instance
     const testRegion = 'testRegion'
     const testPartition = 'testPartition'
 
