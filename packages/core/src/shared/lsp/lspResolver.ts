@@ -226,7 +226,7 @@ export class LanguageServerResolver {
                 res: await new HttpResourceFetcher(content.url, {
                     showUrl: true,
                     timeout: timeout,
-                    swallowError: false,
+                    throwOnError: true,
                 }).get(),
                 hash: content.hashes[0],
                 filename: content.filename,

@@ -22,7 +22,7 @@ export class HttpResourceFetcher implements ResourceFetcher<Response> {
      * @param {string} params.friendlyName If URL is not shown, replaces the URL with this text.
      * @param {Timeout} params.timeout Timeout token to abort/cancel the request. Similar to `AbortSignal`.
      * @param {number} params.retries The number of retries a get request should make if one fails
-     * @param {boolean} params.swallowError True if we want to swallow the request error, false if we want the error to keep bubbling up
+     * @param {boolean} params.throwOnError True if we want to throw if there's request error, defaul to false
      */
     public constructor(
         private readonly url: string,
@@ -30,10 +30,10 @@ export class HttpResourceFetcher implements ResourceFetcher<Response> {
             showUrl: boolean
             friendlyName?: string
             timeout?: Timeout
-            swallowError?: boolean
+            throwOnError?: boolean
         }
     ) {
-        this.params.swallowError = this.params.swallowError ?? true
+        this.params.throwOnError = this.params.throwOnError ?? false
     }
 
     /**
@@ -86,10 +86,10 @@ export class HttpResourceFetcher implements ResourceFetcher<Response> {
                 `Error downloading ${this.logText()}: %s`,
                 error.message ?? error.code ?? error.response.statusText ?? error.response.status
             )
-            if (this.params.swallowError) {
-                return undefined
+            if (this.params.throwOnError) {
+                throw error
             }
-            throw error
+            return undefined
         }
     }
 
