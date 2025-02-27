@@ -13,11 +13,89 @@ import { testClient, testInstance, testParentNode } from './explorer/ec2ParentNo
 import { intoCollection } from '../../../shared/utilities/collectionUtils'
 import { AsyncCollection } from '../../../shared/utilities/asyncCollection'
 import { DataQuickPickItem } from '../../../shared/ui/pickerPrompter'
+import { getTestWindow } from '../../shared/vscode/window'
+import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 
 describe('Ec2Prompter', async function () {
+    const defaultInstances: PatchedEc2Instance[][] = [
+        [
+            {
+                InstanceId: '1',
+                Name: 'first',
+                LastSeenStatus: 'running',
+            },
+            {
+                InstanceId: '2',
+                Name: 'second',
+                LastSeenStatus: 'running',
+            },
+        ],
+        [
+            {
+                InstanceId: '3',
+                Name: 'third',
+                LastSeenStatus: 'running',
+            },
+        ],
+    ]
+
+    const defaultQuickPickItems: DataQuickPickItem<string>[] = [
+        {
+            label: Ec2Prompter.getLabel(defaultInstances[0][0]),
+            detail: defaultInstances[0][0].InstanceId,
+            data: defaultInstances[0][0].InstanceId,
+        },
+        {
+            label: Ec2Prompter.getLabel(defaultInstances[0][1]),
+            detail: defaultInstances[0][1].InstanceId,
+            data: defaultInstances[0][1].InstanceId,
+        },
+        {
+            label: Ec2Prompter.getLabel(defaultInstances[1][0]),
+            detail: defaultInstances[1][0].InstanceId,
+            data: defaultInstances[1][0].InstanceId,
+        },
+    ]
+    const defaultGetInstances: (regionCode: string) => AsyncCollection<PatchedEc2Instance[]> = (_) =>
+        intoCollection(defaultInstances)
+
     it('initializes properly', function () {
         const prompter = new Ec2Prompter()
         assert.ok(prompter)
+    })
+
+    it('does not show items, when no instances returned', async function () {
+        const prompter = new Ec2Prompter({ getInstancesFromRegion: (_) => intoCollection([]) })
+        getTestWindow().onDidShowQuickPick(async (qp) => {
+            await qp.untilReady()
+            assert.deepStrictEqual(qp.items.slice(3), [])
+            qp.hide()
+        })
+        await assert.rejects(async () => await prompter.promptUser(), CancellationError)
+    })
+
+    it('shows all items when no filter', async function () {
+        const prompter = new Ec2Prompter({ getInstancesFromRegion: defaultGetInstances })
+        getTestWindow().onDidShowQuickPick(async (qp) => {
+            await qp.untilReady()
+            qp.assertContainsItems(...defaultQuickPickItems)
+            qp.acceptItem(defaultQuickPickItems[0].label)
+        })
+        await prompter.promptUser()
+    })
+
+    it('shows filtered items when filter present', async function () {
+        const prompter = new Ec2Prompter({
+            getInstancesFromRegion: defaultGetInstances,
+            instanceFilter: (i) => parseInt(i.InstanceId) % 2 === 1,
+        })
+
+        getTestWindow().onDidShowQuickPick(async (qp) => {
+            await qp.untilReady()
+            qp.assertContainsItems(defaultQuickPickItems[0], defaultQuickPickItems[2])
+            qp.acceptItem(defaultQuickPickItems[0].label)
+        })
+        await prompter.promptUser()
     })
 
     describe('asQuickPickItem', async function () {
@@ -62,77 +140,6 @@ describe('Ec2Prompter', async function () {
         })
     })
 
-    describe('getInstancesAsQuickPickItem', async function () {
-        const defaultInstances: PatchedEc2Instance[][] = [
-            [
-                {
-                    InstanceId: '1',
-                    Name: 'first',
-                    LastSeenStatus: 'running',
-                },
-                {
-                    InstanceId: '2',
-                    Name: 'second',
-                    LastSeenStatus: 'running',
-                },
-            ],
-            [
-                {
-                    InstanceId: '3',
-                    Name: 'third',
-                    LastSeenStatus: 'running',
-                },
-            ],
-        ]
-
-        const defaultQuickPickItems: DataQuickPickItem<string>[] = [
-            {
-                label: Ec2Prompter.getLabel(defaultInstances[0][0]),
-                detail: defaultInstances[0][0].InstanceId,
-                data: defaultInstances[0][0].InstanceId,
-            },
-            {
-                label: Ec2Prompter.getLabel(defaultInstances[0][1]),
-                detail: defaultInstances[0][1].InstanceId,
-                data: defaultInstances[0][1].InstanceId,
-            },
-            {
-                label: Ec2Prompter.getLabel(defaultInstances[1][0]),
-                detail: defaultInstances[1][0].InstanceId,
-                data: defaultInstances[1][0].InstanceId,
-            },
-        ]
-        const defaultGetInstances: (regionCode: string) => AsyncCollection<PatchedEc2Instance[]> = (_) =>
-            intoCollection(defaultInstances)
-
-        it('returns empty when no instances present', async function () {
-            const prompter = new Ec2Prompter({ getInstancesFromRegion: (_) => intoCollection([]) })
-            const itemsIterator = prompter.getInstancesAsQuickPickItems('test-region')
-            const items = await extractItems(itemsIterator)
-            assert.strictEqual(items.length, 0)
-        })
-
-        it('returns items mapped to QuickPick items without filter', async function () {
-            const prompter = new Ec2Prompter({ getInstancesFromRegion: defaultGetInstances })
-
-            const itemsIterator = prompter.getInstancesAsQuickPickItems('test-region')
-            const items = await extractItems(itemsIterator)
-            assert.deepStrictEqual(items, defaultQuickPickItems)
-        })
-
-        it('applies filter when given', async function () {
-            const prompter = new Ec2Prompter({
-                getInstancesFromRegion: defaultGetInstances,
-                instanceFilter: (i) => parseInt(i.InstanceId) % 2 === 1,
-            })
-
-            const itemsIterator = prompter.getInstancesAsQuickPickItems('test-region')
-            const items = await extractItems(itemsIterator)
-
-            assert.deepStrictEqual(items, [defaultQuickPickItems[0], defaultQuickPickItems[2]])
-        })
-    })
-
     describe('getSelection', async function () {
         it('uses node when passed', async function () {
             const prompterStub = sinon.stub(Ec2Prompter.prototype, 'promptUser')
@@ -159,11 +166,3 @@ describe('Ec2Prompter', async function () {
         })
     })
 })
-
-async function extractItems<T>(iterable: AsyncIterable<T[]>): Promise<T[]> {
-    const result = []
-    for await (const item of iterable) {
-        result.push(item)
-    }
-    return result.flat()
-}
