@@ -4,62 +4,29 @@
  */
 import assert from 'assert'
 import * as sinon from 'sinon'
-import { Ec2Prompter, getSelection, instanceFilter } from '../../../awsService/ec2/prompter'
+import { Ec2Prompter, getSelection } from '../../../awsService/ec2/prompter'
 import { PatchedEc2Instance, PatchedReservation } from '../../../shared/clients/ec2'
 import { RegionSubmenuResponse } from '../../../shared/ui/common/regionSubmenu'
 import { Ec2Selection } from '../../../awsService/ec2/prompter'
 import { Ec2InstanceNode } from '../../../awsService/ec2/explorer/ec2InstanceNode'
 import { testClient, testInstance, testParentNode } from './explorer/ec2ParentNode.test'
-import { AsyncCollection } from '../../../shared/utilities/asyncCollection'
 import { intoCollection } from '../../../shared/utilities/collectionUtils'
+import { AsyncCollection } from '../../../shared/utilities/asyncCollection'
 
 describe('Ec2Prompter', async function () {
-    class MockEc2Prompter extends Ec2Prompter {
-        public instances: PatchedEc2Instance[] = []
-
-        public testAsQuickPickItem(testInstance: PatchedEc2Instance) {
-            return Ec2Prompter.asQuickPickItem(testInstance)
-        }
-
-        public testGetSelectionFromResponse(response: RegionSubmenuResponse<string>): Ec2Selection {
-            return Ec2Prompter.getSelectionFromResponse(response)
-        }
-        public testGetInstancesAsQuickPickItems(region: string) {
-            return this.getInstancesAsQuickPickItems(region)
-        }
-
-        protected override getInstancesFromRegion(_: string): AsyncCollection<PatchedReservation> {
-            return intoCollection([{ Instances: this.instances }])
-        }
-
-        public setFilter(filter: instanceFilter) {
-            this.filter = filter
-        }
-
-        public unsetFilter() {
-            this.filter = undefined
-        }
-    }
     it('initializes properly', function () {
         const prompter = new Ec2Prompter()
         assert.ok(prompter)
     })
 
     describe('asQuickPickItem', async function () {
-        let prompter: MockEc2Prompter
-
         const testQuickPick = (instance: PatchedEc2Instance) => {
-            const result = prompter.testAsQuickPickItem(testInstance)
-            assert.deepStrictEqual(result, {
-                label: Ec2Prompter.getLabel(testInstance),
-                detail: testInstance.InstanceId,
-                data: testInstance.InstanceId,
+            assert.deepStrictEqual(Ec2Prompter.asQuickPickItem(instance), {
+                label: Ec2Prompter.getLabel(instance),
+                detail: instance.InstanceId,
+                data: instance.InstanceId,
             })
         }
-
-        before(function () {
-            prompter = new MockEc2Prompter()
-        })
 
         it('returns QuickPickItem for named instances', function () {
             testQuickPick({
@@ -78,19 +45,13 @@ describe('Ec2Prompter', async function () {
     })
 
     describe('handleEc2ConnectPrompterResponse', function () {
-        let prompter: MockEc2Prompter
-
-        before(function () {
-            prompter = new MockEc2Prompter()
-        })
-
         it('returns correctly formatted Ec2Selection', function () {
             const testResponse: RegionSubmenuResponse<string> = {
                 region: 'test-region',
                 data: 'testInstance',
             }
 
-            const result = prompter.testGetSelectionFromResponse(testResponse)
+            const result = Ec2Prompter.getSelectionFromResponse(testResponse)
             const expected: Ec2Selection = {
                 instanceId: testResponse.data,
                 region: testResponse.region,
@@ -101,83 +62,86 @@ describe('Ec2Prompter', async function () {
     })
 
     describe('getInstancesAsQuickPickItem', async function () {
-        let prompter: MockEc2Prompter
-
-        before(function () {
-            prompter = new MockEc2Prompter()
-        })
-
-        beforeEach(function () {
-            prompter.instances = [
-                {
-                    InstanceId: '1',
-                    Name: 'first',
-                    LastSeenStatus: 'running',
-                },
-                {
-                    InstanceId: '2',
-                    Name: 'second',
-                    LastSeenStatus: 'running',
-                },
-                {
-                    InstanceId: '3',
-                    Name: 'third',
-                    LastSeenStatus: 'running',
-                },
-            ]
-            prompter.unsetFilter()
-        })
+        const defaultReservations: PatchedReservation[] = [
+            {
+                Instances: [
+                    {
+                        InstanceId: '1',
+                        Name: 'first',
+                        LastSeenStatus: 'running',
+                    },
+                    {
+                        InstanceId: '2',
+                        Name: 'second',
+                        LastSeenStatus: 'running',
+                    },
+                ],
+            },
+            {
+                Instances: [
+                    {
+                        InstanceId: '3',
+                        Name: 'third',
+                        LastSeenStatus: 'running',
+                    },
+                ],
+            },
+        ]
+        const defaultGetReservations: (regionCode: string) => AsyncCollection<PatchedReservation> = (_) =>
+            intoCollection(defaultReservations)
 
         it('returns empty when no instances present', async function () {
-            prompter.instances = []
-            const itemsIterator = prompter.testGetInstancesAsQuickPickItems('test-region')
-            const items = (await extractItems(itemsIterator)).flat()
+            const prompter = new Ec2Prompter({ getReservationsFromRegion: (_) => intoCollection([]) })
+            const itemsIterator = prompter.getInstancesAsQuickPickItems('test-region')
+            const items = await extractItems(itemsIterator)
             assert.strictEqual(items.length, 0)
         })
 
         it('returns items mapped to QuickPick items without filter', async function () {
-            const expected = [
-                {
-                    label: Ec2Prompter.getLabel(prompter.instances[0]),
-                    detail: prompter.instances[0].InstanceId!,
-                    data: prompter.instances[0].InstanceId!,
-                },
-                {
-                    label: Ec2Prompter.getLabel(prompter.instances[1]),
-                    detail: prompter.instances[1].InstanceId!,
-                    data: prompter.instances[1].InstanceId!,
-                },
-                {
-                    label: Ec2Prompter.getLabel(prompter.instances[2]),
-                    detail: prompter.instances[2].InstanceId!,
-                    data: prompter.instances[2].InstanceId!,
-                },
-            ]
+            const prompter = new Ec2Prompter({ getReservationsFromRegion: defaultGetReservations })
 
-            const itemsIterator = prompter.testGetInstancesAsQuickPickItems('test-region')
-            const items = (await extractItems(itemsIterator)).flat()
-            assert.deepStrictEqual(items, expected)
+            const itemsIterator = prompter.getInstancesAsQuickPickItems('test-region')
+            const items = await extractItems(itemsIterator)
+            assert.deepStrictEqual(items, [
+                {
+                    label: Ec2Prompter.getLabel(defaultReservations[0].Instances[0]),
+                    detail: defaultReservations[0].Instances[0].InstanceId,
+                    data: defaultReservations[0].Instances[0].InstanceId,
+                },
+                {
+                    label: Ec2Prompter.getLabel(defaultReservations[0].Instances[1]),
+                    detail: defaultReservations[0].Instances[1].InstanceId,
+                    data: defaultReservations[0].Instances[1].InstanceId,
+                },
+                {
+                    label: Ec2Prompter.getLabel(defaultReservations[1].Instances[0]),
+                    detail: defaultReservations[1].Instances[0].InstanceId,
+                    data: defaultReservations[1].Instances[0].InstanceId,
+                },
+            ])
         })
 
         it('applies filter when given', async function () {
-            prompter.setFilter((i) => parseInt(i.InstanceId!) % 2 === 1)
+            const prompter = new Ec2Prompter({
+                getReservationsFromRegion: defaultGetReservations,
+                instanceFilter: (i) => parseInt(i.InstanceId) % 2 === 1,
+            })
 
-            const expected = [
+            const itemsIterator = prompter.getInstancesAsQuickPickItems('test-region')
+            const items = await extractItems(itemsIterator)
+
+            assert.deepStrictEqual(items, [
                 {
-                    label: Ec2Prompter.getLabel(prompter.instances[0]),
-                    detail: prompter.instances[0].InstanceId!,
-                    data: prompter.instances[0].InstanceId!,
+                    label: Ec2Prompter.getLabel(defaultReservations[0].Instances[0]),
+                    detail: defaultReservations[0].Instances[0].InstanceId,
+                    data: defaultReservations[0].Instances[0].InstanceId,
                 },
                 {
-                    label: Ec2Prompter.getLabel(prompter.instances[2]),
-                    detail: prompter.instances[2].InstanceId!,
-                    data: prompter.instances[2].InstanceId!,
+                    label: Ec2Prompter.getLabel(defaultReservations[1].Instances[0]),
+                    detail: defaultReservations[1].Instances[0].InstanceId,
+                    data: defaultReservations[1].Instances[0].InstanceId,
                 },
-            ]
-
-            const itemsIterator = prompter.testGetInstancesAsQuickPickItems('test-region')
-            const items = (await extractItems(itemsIterator)).flat()
-            assert.deepStrictEqual(items, expected)
+            ])
         })
     })
 
@@ -208,10 +172,10 @@ describe('Ec2Prompter', async function () {
     })
 })
 
-async function extractItems<T>(iterable: AsyncIterable<T>): Promise<T[]> {
+async function extractItems<T>(iterable: AsyncIterable<T[]>): Promise<T[]> {
     const result = []
     for await (const item of iterable) {
         result.push(item)
     }
-    return result
+    return result.flat()
 }

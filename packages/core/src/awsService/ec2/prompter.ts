@@ -13,21 +13,33 @@ import { Ec2Node } from './explorer/ec2ParentNode'
 import { Ec2InstanceNode } from './explorer/ec2InstanceNode'
 import { AsyncCollection } from '../../shared/utilities/asyncCollection'
 
-export type instanceFilter = (instance: PatchedEc2Instance) => boolean
+export type InstanceFilter = (instance: PatchedEc2Instance) => boolean
 export interface Ec2Selection {
     instanceId: string
     region: string
 }
 
+interface Ec2PrompterOptions {
+    instanceFilter: InstanceFilter
+    getReservationsFromRegion: (regionCode: string) => AsyncCollection<PatchedReservation>
+}
+
 export class Ec2Prompter {
-    public constructor(protected filter?: instanceFilter) {}
+    protected instanceFilter: InstanceFilter
+    protected getReservationsFromRegion: (regionCode: string) => AsyncCollection<PatchedReservation>
+
+    public constructor(options?: Partial<Ec2PrompterOptions>) {
+        this.instanceFilter = options?.instanceFilter ?? ((_) => true)
+        this.getReservationsFromRegion =
+            options?.getReservationsFromRegion ?? ((regionCode: string) => new Ec2Client(regionCode).getReservations())
+    }
 
     public static getLabel(instance: PatchedEc2Instance) {
         const icon = `$(${getIconCode(instance)})`
         return `${instance.Name ?? '(no name)'} \t ${icon} ${instance.LastSeenStatus.toUpperCase()}`
     }
 
-    protected static asQuickPickItem(instance: PatchedEc2Instance): DataQuickPickItem<string> {
+    public static asQuickPickItem(instance: PatchedEc2Instance): DataQuickPickItem<string> {
         return {
             label: Ec2Prompter.getLabel(instance),
             detail: instance.InstanceId,
@@ -35,7 +47,7 @@ export class Ec2Prompter {
         }
     }
 
-    protected static getSelectionFromResponse(response: RegionSubmenuResponse<string>): Ec2Selection {
+    public static getSelectionFromResponse(response: RegionSubmenuResponse<string>): Ec2Selection {
         return {
             instanceId: response.data,
             region: response.region,
@@ -53,17 +65,10 @@ export class Ec2Prompter {
         }
     }
 
-    protected getInstancesFromRegion(regionCode: string): AsyncCollection<PatchedReservation> {
-        const client = new Ec2Client(regionCode)
-        return client.getReservations()
-    }
-
-    protected getInstancesAsQuickPickItems(region: string): AsyncIterable<DataQuickPickItem<string>[]> {
-        const reservations = this.getInstancesFromRegion(region)
+    public getInstancesAsQuickPickItems(region: string): AsyncIterable<DataQuickPickItem<string>[]> {
+        const reservations = this.getReservationsFromRegion(region)
         const result = reservations.map((r) =>
-            r.Instances.filter(this.filter ? (instance) => this.filter!(instance) : (_) => true).map((i) =>
-                Ec2Prompter.asQuickPickItem(i)
-            )
+            r.Instances.filter(this.instanceFilter).map((i) => Ec2Prompter.asQuickPickItem(i))
         )
         return result
     }
@@ -78,8 +83,8 @@ export class Ec2Prompter {
     }
 }
 
-export async function getSelection(node?: Ec2Node, filter?: instanceFilter): Promise<Ec2Selection> {
-    const prompter = new Ec2Prompter(filter)
+export async function getSelection(node?: Ec2Node, instanceFilter?: InstanceFilter): Promise<Ec2Selection> {
+    const prompter = new Ec2Prompter({ instanceFilter })
     const selection = node && node instanceof Ec2InstanceNode ? node.toSelection() : await prompter.promptUser()
     return selection
 }

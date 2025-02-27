@@ -12,7 +12,7 @@ import { showRegionPrompter } from '../../auth/utils'
 import { openUrl } from '../../shared/utilities/vsCodeUtils'
 import { showFile } from '../../shared/utilities/textDocumentUtilities'
 import { Ec2ConnecterMap } from './connectionManagerMap'
-import { Ec2Prompter, Ec2Selection, instanceFilter } from './prompter'
+import { getSelection } from './prompter'
 
 export async function openTerminal(connectionManagers: Ec2ConnecterMap, node?: Ec2Node) {
     const selection = await getSelection(node)
@@ -50,12 +50,6 @@ export async function linkToLaunchInstance(node?: Ec2Node) {
     const region = node ? node.regionCode : (await showRegionPrompter('Select Region', '')).id
     const url = getAwsConsoleUrl('ec2-launch', region)
     await openUrl(url)
-}
-
-async function getSelection(node?: Ec2Node, filter?: instanceFilter): Promise<Ec2Selection> {
-    const prompter = new Ec2Prompter(filter)
-    const selection = node && node instanceof Ec2InstanceNode ? node.toSelection() : await prompter.promptUser()
-    return selection
 }
 
 export async function copyInstanceId(instanceId: string): Promise<void> {
