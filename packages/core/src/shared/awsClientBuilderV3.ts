@@ -35,6 +35,7 @@ import { getLogger } from './logger/logger'
 import { partialClone } from './utilities/collectionUtils'
 import { selectFrom } from './utilities/tsUtils'
 import { once } from './utilities/functionUtils'
+import { isWeb } from './extensionGlobals'
 
 export type AwsClientConstructor<C> = new (o: AwsClientOptions) => C
 
@@ -91,9 +92,12 @@ export class AWSClientBuilderV3 {
     }
 
     private buildHttpClient() {
-        return new FetchHttpHandler({
-            keepAlive: true,
-        })
+        // Workaround for web mode to avoid importing @smithy/node-http-handler unless in node.
+        if (!isWeb()) {
+            const { NodeHttpHandler } = require('@smithy/node-http-handler')
+            return new NodeHttpHandler({ keepAlive: true })
+        }
+        return new FetchHttpHandler({ keepAlive: true })
     }
 
     private getHttpClient = once(this.buildHttpClient.bind(this))
