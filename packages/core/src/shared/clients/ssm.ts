@@ -59,7 +59,9 @@ export class SsmClient extends ClientWrapper<SSMClient> {
                     InstanceInformationFilterList: [{ key: 'InstanceIds', valueSet: [target] }],
                 } satisfies DescribeInstanceInformationCommandInput,
                 (page) => page.InstanceInformationList
-            ).promise()
+            )
+                .flatten()
+                .promise()
         )[0]!
     }
 

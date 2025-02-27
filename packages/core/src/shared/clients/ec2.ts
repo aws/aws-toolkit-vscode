@@ -57,7 +57,7 @@ export class Ec2Client extends ClientWrapper<EC2Client> {
         super(regionCode, EC2Client)
     }
 
-    public getReservations(filters?: Filter[]): AsyncCollection<PatchedReservation> {
+    public getReservations(filters?: Filter[]): AsyncCollection<PatchedReservation[]> {
         const reservations = this.makePaginatedRequest(
             paginateDescribeInstances,
             filters ? { Filters: filters } : ({} satisfies DescribeInstancesRequest),
@@ -68,15 +68,17 @@ export class Ec2Client extends ClientWrapper<EC2Client> {
     }
 
     public getInstances(filters?: Filter[]): AsyncCollection<PatchedEc2Instance[]> {
-        return this.getReservations(filters).map((r) => r.Instances)
+        return this.getReservations(filters)
+            .flatten()
+            .map((r) => r.Instances)
     }
 
     /** Updates status and name in-place for displaying to humans. */
     public extractInstancesFromReservations(
-        reservations: AsyncCollection<Reservation>,
+        reservationPages: AsyncCollection<Reservation[]>,
         getStatus: (i: string) => Promise<InstanceStateName> = this.getInstanceStatus.bind(this)
-    ): AsyncCollection<PatchedReservation> {
-        return reservations.filter(isNotEmpty).map(patchReservation)
+    ): AsyncCollection<PatchedReservation[]> {
+        return reservationPages.map(async (r) => await Promise.all(r.filter(isNotEmpty).map(patchReservation)))
 
         async function patchReservation(r: Reservation & { Instances: Instance[] }): Promise<PatchedReservation> {
             const namedInstances = r.Instances.filter(hasId).map(addName)
@@ -107,7 +109,9 @@ export class Ec2Client extends ClientWrapper<EC2Client> {
             paginateDescribeInstanceStatus,
             { InstanceIds: [instanceId], IncludeAllInstances: true },
             (page) => page.InstanceStatuses
-        ).promise()
+        )
+            .flatten()
+            .promise()
 
         return instanceStatuses[0].InstanceState!.Name!
     }
@@ -217,9 +221,11 @@ export class Ec2Client extends ClientWrapper<EC2Client> {
             paginateDescribeIamInstanceProfileAssociations,
             { Filters: instanceFilter },
             (page) => page.IamInstanceProfileAssociations
-        ).promise()
+        )
+            .flatten()
+            .promise()
 
-        return associations[0]!
+        return associations[0]
     }
 
     /**

@@ -40,16 +40,16 @@ export abstract class ClientWrapper<C extends AwsClient> implements vscode.Dispo
         paginator: SDKPaginator<C, CommandInput, CommandOutput>,
         input: CommandInput,
         extractPage: (page: CommandOutput) => Output[] | undefined
-    ): AsyncCollection<Output> {
+    ): AsyncCollection<Output[]> {
         const p = paginator({ client: this.getClient() }, input)
         const collection = toCollection(() => p)
             .map(extractPage)
-            .flatten()
             .filter(isDefined)
+            .map((o) => o.filter(isDefined))
 
         return collection
 
-        function isDefined(i: Output | undefined): i is Output {
+        function isDefined<T>(i: T | undefined): i is T {
             return i !== undefined
         }
     }
