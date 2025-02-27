@@ -41,8 +41,8 @@ describe('AwsClientBuilderV3', function () {
         builder = new AWSClientBuilderV3(new FakeAwsContext())
     })
 
-    it('includes Toolkit user-agent if no options are specified', async function () {
-        const service = await builder.createAwsService({ serviceClient: Client })
+    it('includes Toolkit user-agent if no options are specified', function () {
+        const service = builder.createAwsService({ serviceClient: Client })
         const clientId = getClientId(new GlobalState(new FakeMemento()))
 
         assert.ok(service.config.userAgent)
@@ -53,22 +53,22 @@ describe('AwsClientBuilderV3', function () {
         assert.strictEqual(service.config.userAgent![0][1], extensionVersion)
     })
 
-    it('adds region to client', async function () {
-        const service = await builder.createAwsService({ serviceClient: Client, region: 'us-west-2' })
+    it('adds region to client', function () {
+        const service = builder.createAwsService({ serviceClient: Client, region: 'us-west-2' })
 
         assert.ok(service.config.region)
         assert.strictEqual(service.config.region, 'us-west-2')
     })
 
-    it('adds Client-Id to user agent', async function () {
-        const service = await builder.createAwsService({ serviceClient: Client })
+    it('adds Client-Id to user agent', function () {
+        const service = builder.createAwsService({ serviceClient: Client })
         const clientId = getClientId(new GlobalState(new FakeMemento()))
         const regex = new RegExp(`ClientId/${clientId}`)
         assert.ok(service.config.userAgent![0][0].match(regex))
     })
 
-    it('does not override custom user-agent if specified in options', async function () {
-        const service = await builder.createAwsService({
+    it('does not override custom user-agent if specified in options', function () {
+        const service = builder.createAwsService({
             serviceClient: Client,
             clientOptions: {
                 userAgent: [['CUSTOM USER AGENT']],
@@ -111,16 +111,16 @@ describe('AwsClientBuilderV3', function () {
 
     describe('caching mechanism', function () {
         it('avoids recreating client on duplicate calls', async function () {
-            const firstClient = await builder.getAwsService({ serviceClient: TestClient })
-            const secondClient = await builder.getAwsService({ serviceClient: TestClient })
+            const firstClient = builder.getAwsService({ serviceClient: TestClient })
+            const secondClient = builder.getAwsService({ serviceClient: TestClient })
 
             assert.strictEqual(firstClient.id, secondClient.id)
         })
 
         it('recreates client when region changes', async function () {
-            const firstClient = await builder.getAwsService({ serviceClient: TestClient, region: 'test-region' })
-            const secondClient = await builder.getAwsService({ serviceClient: TestClient, region: 'test-region2' })
-            const thirdClient = await builder.getAwsService({ serviceClient: TestClient, region: 'test-region' })
+            const firstClient = builder.getAwsService({ serviceClient: TestClient, region: 'test-region' })
+            const secondClient = builder.getAwsService({ serviceClient: TestClient, region: 'test-region2' })
+            const thirdClient = builder.getAwsService({ serviceClient: TestClient, region: 'test-region' })
 
             assert.notStrictEqual(firstClient.id, secondClient.id)
             assert.strictEqual(firstClient.args.region, 'test-region')
@@ -130,9 +130,9 @@ describe('AwsClientBuilderV3', function () {
         })
 
         it('recreates client when the underlying service changes', async function () {
-            const firstClient = await builder.getAwsService({ serviceClient: TestClient })
-            const secondClient = await builder.getAwsService({ serviceClient: TestClient2 })
-            const thirdClient = await builder.getAwsService({ serviceClient: TestClient })
+            const firstClient = builder.getAwsService({ serviceClient: TestClient })
+            const secondClient = builder.getAwsService({ serviceClient: TestClient2 })
+            const thirdClient = builder.getAwsService({ serviceClient: TestClient })
 
             assert.notStrictEqual(firstClient.type, secondClient.type)
             assert.strictEqual(firstClient.id, thirdClient.id)
@@ -140,21 +140,21 @@ describe('AwsClientBuilderV3', function () {
 
         it('recreates client when config options change', async function () {
             const retryStrategy = new ConfiguredRetryStrategy(10)
-            const firstClient = await builder.getAwsService({
+            const firstClient = builder.getAwsService({
                 serviceClient: TestClient,
                 clientOptions: {
                     retryStrategy: retryStrategy,
                 },
             })
 
-            const secondClient = await builder.getAwsService({
+            const secondClient = builder.getAwsService({
                 serviceClient: TestClient,
                 clientOptions: {
                     retryStrategy: new StandardRetryStrategy(1),
                 },
             })
 
-            const thirdClient = await builder.getAwsService({
+            const thirdClient = builder.getAwsService({
                 serviceClient: TestClient,
                 clientOptions: {
                     retryStrategy: retryStrategy,
@@ -174,17 +174,17 @@ describe('AwsClientBuilderV3', function () {
             await otherSettings.update('aws.dev.endpoints', { foo: 'http://example.com:3000/path2' })
             const otherDevSettings = new DevSettings(otherSettings)
 
-            const firstClient = await builder.getAwsService({
+            const firstClient = builder.getAwsService({
                 serviceClient: TestClient,
                 region: 'test-region',
                 settings: devSettings,
             })
-            const secondClient = await builder.getAwsService({
+            const secondClient = builder.getAwsService({
                 serviceClient: TestClient,
                 region: 'test-region',
                 settings: otherDevSettings,
             })
-            const thirdClient = await builder.getAwsService({
+            const thirdClient = builder.getAwsService({
                 serviceClient: TestClient,
                 region: 'test-region',
                 settings: devSettings,
@@ -310,14 +310,14 @@ describe('AwsClientBuilderV3', function () {
         })
 
         it('refreshes credentials when they expire', async function () {
-            const service = await builder.createAwsService({ serviceClient: Client })
+            const service = builder.createAwsService({ serviceClient: Client })
             assert.strictEqual(await service.config.credentials(), oldCreds)
             mockCredsShim.expire()
             assert.strictEqual(await service.config.credentials(), newCreds)
         })
 
         it('does not cache stale credentials', async function () {
-            const service = await builder.createAwsService({ serviceClient: Client })
+            const service = builder.createAwsService({ serviceClient: Client })
             assert.strictEqual(await service.config.credentials(), oldCreds)
             const newerCreds = {
                 accessKeyId: 'old2',

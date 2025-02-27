@@ -21,41 +21,46 @@ export abstract class ClientWrapper<C extends AwsClient> implements vscode.Dispo
         private readonly clientType: AwsClientConstructor<C>
     ) {}
 
-    protected async getClient(ignoreCache: boolean = false) {
+    protected getClient(ignoreCache: boolean = false) {
         const args = { serviceClient: this.clientType, region: this.regionCode }
         return ignoreCache
-            ? await globals.sdkClientBuilderV3.createAwsService(args)
-            : await globals.sdkClientBuilderV3.getAwsService(args)
+            ? globals.sdkClientBuilderV3.createAwsService(args)
+            : globals.sdkClientBuilderV3.getAwsService(args)
     }
 
     protected async makeRequest<CommandInput extends object, Command extends AwsCommand>(
         command: new (o: CommandInput) => Command,
         commandOptions: CommandInput
     ) {
-        const client = await this.getClient()
+        const client = this.getClient()
         return await client.send(new command(commandOptions))
     }
 
-    protected async makePaginatedRequest<
-        CommandInput extends object,
-        CommandOutput extends object,
-        Output extends object,
-    >(
+    protected makePaginatedRequest<CommandInput extends object, CommandOutput extends object, Output extends object>(
         paginator: SDKPaginator<C, CommandInput, CommandOutput>,
         input: CommandInput,
         extractPage: (page: CommandOutput) => Output[] | undefined
-    ): Promise<AsyncCollection<Output>> {
-        const p = paginator({ client: await this.getClient() }, input)
+    ): AsyncCollection<Output[]> {
+        const p = paginator({ client: this.getClient() }, input)
         const collection = toCollection(() => p)
             .map(extractPage)
-            .flatten()
             .filter(isDefined)
+            .map((o) => o.filter(isDefined))
 
         return collection
 
-        function isDefined(i: Output | undefined): i is Output {
+        function isDefined<T>(i: T | undefined): i is T {
             return i !== undefined
         }
+    }
+
+    protected async getFirst<CommandInput extends object, CommandOutput extends object, Output extends object>(
+        paginator: SDKPaginator<C, CommandInput, CommandOutput>,
+        input: CommandInput,
+        extractPage: (page: CommandOutput) => Output[] | undefined
+    ): Promise<Output> {
+        const results = await this.makePaginatedRequest(paginator, input, extractPage).flatten().promise()
+        return results[0]
     }
 
     public dispose() {

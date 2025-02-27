@@ -4,8 +4,8 @@
  */
 
 import assert from 'assert'
-import { Ec2Client, instanceHasName } from '../../../shared/clients/ec2'
-import { Filter, Instance, InstanceStateName, Reservation } from '@aws-sdk/client-ec2'
+import { Ec2Client, instanceHasName, Ec2Reservation } from '../../../shared/clients/ec2'
+import { Filter, InstanceStateName, Reservation } from '@aws-sdk/client-ec2'
 import { intoCollection } from '../../../shared/utilities/collectionUtils'
 
 const completeReservationsList: Reservation[] = [
@@ -35,13 +35,6 @@ const completeReservationsList: Reservation[] = [
     },
 ]
 
-const completeInstanceList: Instance[] = [
-    { InstanceId: 'running-1', Tags: [{ Key: 'Name', Value: 'name1' }] },
-    { InstanceId: 'stopped-2', Tags: [{ Key: 'Name', Value: 'name2' }] },
-    { InstanceId: 'pending-3', Tags: [{ Key: 'Name', Value: 'name3' }] },
-    { InstanceId: 'running-4', Tags: [{ Key: 'Name', Value: 'name4' }] },
-]
-
 const incompleteReservationsList: Reservation[] = [
     {
         Instances: [
@@ -65,40 +58,10 @@ const incompleteReservationsList: Reservation[] = [
     },
 ]
 
-const incomepleteInstanceList: Instance[] = [
-    { InstanceId: 'running-1' },
-    { InstanceId: 'stopped-2', Tags: [] },
-    { InstanceId: 'pending-3', Tags: [{ Key: 'Name', Value: 'name3' }] },
-]
-
 const getStatus: (i: string) => Promise<InstanceStateName> = (i) =>
     new Promise((resolve) => {
         resolve(i.split('-')[0] as InstanceStateName)
     })
-
-describe('extractInstancesFromReservations', function () {
-    const client = new Ec2Client('')
-
-    it('returns empty when given empty collection', async function () {
-        const actualResult = await client.getInstancesFromReservations(intoCollection([])).promise()
-
-        assert.strictEqual(0, actualResult.length)
-    })
-
-    it('flattens the reservationList', async function () {
-        const actualResult = await client
-            .getInstancesFromReservations(intoCollection(completeReservationsList))
-            .promise()
-        assert.deepStrictEqual(actualResult, completeInstanceList)
-    })
-
-    it('handles undefined and missing pieces in the ReservationList.', async function () {
-        const actualResult = await client
-            .getInstancesFromReservations(intoCollection(incompleteReservationsList))
-            .promise()
-        assert.deepStrictEqual(actualResult, incomepleteInstanceList)
-    })
-})
 
 describe('updateInstancesDetail', async function () {
     let client: Ec2Client
@@ -108,33 +71,43 @@ describe('updateInstancesDetail', async function () {
 
     it('adds appropriate status and name field to the instance', async function () {
         const actualResult = await client
-            .updateInstancesDetail(intoCollection(completeInstanceList), getStatus)
+            .patchReservations(intoCollection([completeReservationsList]), getStatus)
             .promise()
-        const expectedResult = [
-            {
-                InstanceId: 'running-1',
-                Name: 'name1',
-                LastSeenStatus: 'running',
-                Tags: [{ Key: 'Name', Value: 'name1' }],
-            },
-            {
-                InstanceId: 'stopped-2',
-                Name: 'name2',
-                LastSeenStatus: 'stopped',
-                Tags: [{ Key: 'Name', Value: 'name2' }],
-            },
-            {
-                InstanceId: 'pending-3',
-                Name: 'name3',
-                LastSeenStatus: 'pending',
-                Tags: [{ Key: 'Name', Value: 'name3' }],
-            },
-            {
-                InstanceId: 'running-4',
-                Name: 'name4',
-                LastSeenStatus: 'running',
-                Tags: [{ Key: 'Name', Value: 'name4' }],
-            },
+        const expectedResult: Ec2Reservation[][] = [
+            [
+                {
+                    Instances: [
+                        {
+                            InstanceId: 'running-1',
+                            Name: 'name1',
+                            Tags: [{ Key: 'Name', Value: 'name1' }],
+                            LastSeenStatus: 'running',
+                        },
+                        {
+                            InstanceId: 'stopped-2',
+                            Name: 'name2',
+                            Tags: [{ Key: 'Name', Value: 'name2' }],
+                            LastSeenStatus: 'stopped',
+                        },
+                    ],
+                },
+                {
+                    Instances: [
+                        {
+                            InstanceId: 'pending-3',
+                            Tags: [{ Key: 'Name', Value: 'name3' }],
+                            LastSeenStatus: 'pending',
+                            Name: 'name3',
+                        },
+                        {
+                            InstanceId: 'running-4',
+                            Tags: [{ Key: 'Name', Value: 'name4' }],
+                            Name: 'name4',
+                            LastSeenStatus: 'running',
+                        },
+                    ],
+                },
+            ],
         ]
 
         assert.deepStrictEqual(actualResult, expectedResult)
@@ -142,18 +115,35 @@ describe('updateInstancesDetail', async function () {
 
     it('handles incomplete and missing tag fields', async function () {
         const actualResult = await client
-            .updateInstancesDetail(intoCollection(incomepleteInstanceList), getStatus)
+            .patchReservations(intoCollection([incompleteReservationsList]), getStatus)
             .promise()
 
-        const expectedResult = [
-            { InstanceId: 'running-1', LastSeenStatus: 'running' },
-            { InstanceId: 'stopped-2', LastSeenStatus: 'stopped', Tags: [] },
-            {
-                InstanceId: 'pending-3',
-                LastSeenStatus: 'pending',
-                Name: 'name3',
-                Tags: [{ Key: 'Name', Value: 'name3' }],
-            },
+        const expectedResult: Ec2Reservation[][] = [
+            [
+                {
+                    Instances: [
+                        {
+                            InstanceId: 'running-1',
+                            LastSeenStatus: 'running',
+                        },
+                        {
+                            InstanceId: 'stopped-2',
+                            LastSeenStatus: 'stopped',
+                            Tags: [],
+                        },
+                    ],
+                },
+                {
+                    Instances: [
+                        {
+                            InstanceId: 'pending-3',
+                            Tags: [{ Key: 'Name', Value: 'name3' }],
+                            LastSeenStatus: 'pending',
+                            Name: 'name3',
+                        },
+                    ],
+                },
+            ],
         ]
 
         assert.deepStrictEqual(actualResult, expectedResult)
