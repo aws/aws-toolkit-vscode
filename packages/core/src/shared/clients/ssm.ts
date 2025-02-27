@@ -52,17 +52,13 @@ export class SsmClient extends ClientWrapper<SSMClient> {
     }
 
     public async describeInstance(target: string): Promise<InstanceInformation> {
-        return (
-            await this.makePaginatedRequest(
-                paginateDescribeInstanceInformation,
-                {
-                    InstanceInformationFilterList: [{ key: 'InstanceIds', valueSet: [target] }],
-                } satisfies DescribeInstanceInformationCommandInput,
-                (page) => page.InstanceInformationList
-            )
-                .flatten()
-                .promise()
-        )[0]!
+        return await this.getFirstResult(
+            paginateDescribeInstanceInformation,
+            {
+                InstanceInformationFilterList: [{ key: 'InstanceIds', valueSet: [target] }],
+            } satisfies DescribeInstanceInformationCommandInput,
+            (page) => page.InstanceInformationList
+        )
     }
 
     public async getTargetPlatformName(target: string): Promise<string> {

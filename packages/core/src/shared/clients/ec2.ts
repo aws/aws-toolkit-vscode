@@ -105,15 +105,13 @@ export class Ec2Client extends ClientWrapper<EC2Client> {
     }
 
     public async getInstanceStatus(instanceId: string): Promise<InstanceStateName> {
-        const instanceStatuses = await this.makePaginatedRequest(
+        const instance = await this.getFirstResult(
             paginateDescribeInstanceStatus,
             { InstanceIds: [instanceId], IncludeAllInstances: true },
             (page) => page.InstanceStatuses
         )
-            .flatten()
-            .promise()
 
-        return instanceStatuses[0].InstanceState!.Name!
+        return instance.InstanceState!.Name!
     }
 
     public async isInstanceRunning(instanceId: string): Promise<boolean> {
@@ -215,17 +213,11 @@ export class Ec2Client extends ClientWrapper<EC2Client> {
      * @returns IAM Association for instance
      */
     private async getIamInstanceProfileAssociation(instanceId: string): Promise<IamInstanceProfileAssociation> {
-        const instanceFilter = this.getInstancesFilter([instanceId])
-
-        const associations = await this.makePaginatedRequest(
+        return await this.getFirstResult(
             paginateDescribeIamInstanceProfileAssociations,
-            { Filters: instanceFilter },
+            { Filters: this.getInstancesFilter([instanceId]) },
             (page) => page.IamInstanceProfileAssociations
         )
-            .flatten()
-            .promise()
-
-        return associations[0]
     }
 
     /**
