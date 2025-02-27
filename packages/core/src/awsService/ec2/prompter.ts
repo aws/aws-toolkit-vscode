@@ -5,7 +5,7 @@
 
 import { RegionSubmenu, RegionSubmenuResponse } from '../../shared/ui/common/regionSubmenu'
 import { DataQuickPickItem } from '../../shared/ui/pickerPrompter'
-import { Ec2Client, PatchedEc2Instance, PatchedReservation } from '../../shared/clients/ec2'
+import { Ec2Client, PatchedEc2Instance } from '../../shared/clients/ec2'
 import { isValidResponse } from '../../shared/wizards/wizard'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { getIconCode } from './utils'
@@ -21,17 +21,17 @@ export interface Ec2Selection {
 
 interface Ec2PrompterOptions {
     instanceFilter: InstanceFilter
-    getReservationsFromRegion: (regionCode: string) => AsyncCollection<PatchedReservation>
+    getInstancesFromRegion: (regionCode: string) => AsyncCollection<PatchedEc2Instance[]>
 }
 
 export class Ec2Prompter {
     protected instanceFilter: InstanceFilter
-    protected getReservationsFromRegion: (regionCode: string) => AsyncCollection<PatchedReservation>
+    protected getInstancesFromRegion: (regionCode: string) => AsyncCollection<PatchedEc2Instance[]>
 
     public constructor(options?: Partial<Ec2PrompterOptions>) {
         this.instanceFilter = options?.instanceFilter ?? ((_) => true)
-        this.getReservationsFromRegion =
-            options?.getReservationsFromRegion ?? ((regionCode: string) => new Ec2Client(regionCode).getReservations())
+        this.getInstancesFromRegion =
+            options?.getInstancesFromRegion ?? ((regionCode: string) => new Ec2Client(regionCode).getInstances())
     }
 
     public static getLabel(instance: PatchedEc2Instance) {
@@ -66,11 +66,9 @@ export class Ec2Prompter {
     }
 
     public getInstancesAsQuickPickItems(region: string): AsyncIterable<DataQuickPickItem<string>[]> {
-        const reservations = this.getReservationsFromRegion(region)
-        const result = reservations.map((r) =>
-            r.Instances.filter(this.instanceFilter).map((i) => Ec2Prompter.asQuickPickItem(i))
+        return this.getInstancesFromRegion(region).map((instancePage: PatchedEc2Instance[]) =>
+            instancePage.filter(this.instanceFilter).map((i) => Ec2Prompter.asQuickPickItem(i))
         )
-        return result
     }
 
     private createEc2ConnectPrompter(): RegionSubmenu<string> {

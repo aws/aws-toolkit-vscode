@@ -67,10 +67,8 @@ export class Ec2Client extends ClientWrapper<EC2Client> {
         return this.extractInstancesFromReservations(reservations)
     }
 
-    public getInstances(filters?: Filter[]): AsyncCollection<PatchedEc2Instance> {
-        return this.getReservations(filters)
-            .map((r) => r.Instances)
-            .flatten()
+    public getInstances(filters?: Filter[]): AsyncCollection<PatchedEc2Instance[]> {
+        return this.getReservations(filters).map((r) => r.Instances)
     }
 
     /** Updates status and name in-place for displaying to humans. */

@@ -5,7 +5,7 @@
 import assert from 'assert'
 import * as sinon from 'sinon'
 import { Ec2Prompter, getSelection } from '../../../awsService/ec2/prompter'
-import { PatchedEc2Instance, PatchedReservation } from '../../../shared/clients/ec2'
+import { PatchedEc2Instance } from '../../../shared/clients/ec2'
 import { RegionSubmenuResponse } from '../../../shared/ui/common/regionSubmenu'
 import { Ec2Selection } from '../../../awsService/ec2/prompter'
 import { Ec2InstanceNode } from '../../../awsService/ec2/explorer/ec2InstanceNode'
@@ -62,68 +62,64 @@ describe('Ec2Prompter', async function () {
     })
 
     describe('getInstancesAsQuickPickItem', async function () {
-        const defaultReservations: PatchedReservation[] = [
-            {
-                Instances: [
-                    {
-                        InstanceId: '1',
-                        Name: 'first',
-                        LastSeenStatus: 'running',
-                    },
-                    {
-                        InstanceId: '2',
-                        Name: 'second',
-                        LastSeenStatus: 'running',
-                    },
-                ],
-            },
-            {
-                Instances: [
-                    {
-                        InstanceId: '3',
-                        Name: 'third',
-                        LastSeenStatus: 'running',
-                    },
-                ],
-            },
+        const defaultInstances: PatchedEc2Instance[][] = [
+            [
+                {
+                    InstanceId: '1',
+                    Name: 'first',
+                    LastSeenStatus: 'running',
+                },
+                {
+                    InstanceId: '2',
+                    Name: 'second',
+                    LastSeenStatus: 'running',
+                },
+            ],
+            [
+                {
+                    InstanceId: '3',
+                    Name: 'third',
+                    LastSeenStatus: 'running',
+                },
+            ],
         ]
-        const defaultGetReservations: (regionCode: string) => AsyncCollection<PatchedReservation> = (_) =>
-            intoCollection(defaultReservations)
+        const defaultGetInstances: (regionCode: string) => AsyncCollection<PatchedEc2Instance[]> = (_) =>
+            intoCollection(defaultInstances)
 
         it('returns empty when no instances present', async function () {
-            const prompter = new Ec2Prompter({ getReservationsFromRegion: (_) => intoCollection([]) })
+            const prompter = new Ec2Prompter({ getInstancesFromRegion: (_) => intoCollection([]) })
             const itemsIterator = prompter.getInstancesAsQuickPickItems('test-region')
             const items = await extractItems(itemsIterator)
             assert.strictEqual(items.length, 0)
         })
 
         it('returns items mapped to QuickPick items without filter', async function () {
-            const prompter = new Ec2Prompter({ getReservationsFromRegion: defaultGetReservations })
+            const prompter = new Ec2Prompter({ getInstancesFromRegion: defaultGetInstances })
 
             const itemsIterator = prompter.getInstancesAsQuickPickItems('test-region')
             const items = await extractItems(itemsIterator)
             assert.deepStrictEqual(items, [
                 {
-                    label: Ec2Prompter.getLabel(defaultReservations[0].Instances[0]),
-                    detail: defaultReservations[0].Instances[0].InstanceId,
-                    data: defaultReservations[0].Instances[0].InstanceId,
+                    label: Ec2Prompter.getLabel(defaultInstances[0][0]),
+                    detail: defaultInstances[0][0].InstanceId,
+                    data: defaultInstances[0][0].InstanceId,
                 },
                 {
-                    label: Ec2Prompter.getLabel(defaultReservations[0].Instances[1]),
-                    detail: defaultReservations[0].Instances[1].InstanceId,
-                    data: defaultReservations[0].Instances[1].InstanceId,
+                    label: Ec2Prompter.getLabel(defaultInstances[0][1]),
+                    detail: defaultInstances[0][1].InstanceId,
+                    data: defaultInstances[0][1].InstanceId,
                 },
                 {
-                    label: Ec2Prompter.getLabel(defaultReservations[1].Instances[0]),
-                    detail: defaultReservations[1].Instances[0].InstanceId,
-                    data: defaultReservations[1].Instances[0].InstanceId,
+                    label: Ec2Prompter.getLabel(defaultInstances[1][0]),
+                    detail: defaultInstances[1][0].InstanceId,
+                    data: defaultInstances[1][0].InstanceId,
                 },
             ])
         })
 
         it('applies filter when given', async function () {
             const prompter = new Ec2Prompter({
-                getReservationsFromRegion: defaultGetReservations,
+                getInstancesFromRegion: defaultGetInstances,
                 instanceFilter: (i) => parseInt(i.InstanceId) % 2 === 1,
             })
 
@@ -132,14 +128,14 @@ describe('Ec2Prompter', async function () {
 
             assert.deepStrictEqual(items, [
                 {
-                    label: Ec2Prompter.getLabel(defaultReservations[0].Instances[0]),
-                    detail: defaultReservations[0].Instances[0].InstanceId,
-                    data: defaultReservations[0].Instances[0].InstanceId,
+                    label: Ec2Prompter.getLabel(defaultInstances[0][0]),
+                    detail: defaultInstances[0][0].InstanceId,
+                    data: defaultInstances[0][0].InstanceId,
                 },
                 {
-                    label: Ec2Prompter.getLabel(defaultReservations[1].Instances[0]),
-                    detail: defaultReservations[1].Instances[0].InstanceId,
-                    data: defaultReservations[1].Instances[0].InstanceId,
+                    label: Ec2Prompter.getLabel(defaultInstances[1][0]),
+                    detail: defaultInstances[1][0].InstanceId,
+                    data: defaultInstances[1][0].InstanceId,
                 },
             ])
         })
