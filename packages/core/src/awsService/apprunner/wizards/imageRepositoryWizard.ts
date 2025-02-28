@@ -257,15 +257,13 @@ export class AppRunnerImageRepositoryWizard extends Wizard<AppRunner.SourceConfi
     constructor(ecrClient: EcrClient, iamClient: IamClient, autoDeployButton = makeDeploymentButton()) {
         super()
         const form = this.form
-        const createAccessRolePrompter: () => picker.QuickPickPrompter<string> = () => {
-            const prompter = createRolePrompter(iamClient, {
+        const createAccessRolePrompter = () =>
+            createRolePrompter(iamClient, {
                 title: localize('AWS.apprunner.createService.selectRole.title', 'Select a role to pull from ECR'),
                 helpUrl: getAppRunnerCreateServiceDocUrl(),
                 roleFilter: (role) => (role.AssumeRolePolicyDocument ?? '').includes(appRunnerEcrEntity),
                 createRole: createEcrRole.bind(undefined, iamClient),
-            })
-            return prompter.transform((resp) => resp.Arn)
-        }
+            }).transform((resp) => resp.Arn)
 
         form.ImageRepository.applyBoundForm(createImageRepositorySubForm(ecrClient, autoDeployButton))
         form.AuthenticationConfiguration.AccessRoleArn.bindPrompter(createAccessRolePrompter, {

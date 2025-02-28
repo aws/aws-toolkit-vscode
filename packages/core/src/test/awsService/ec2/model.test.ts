@@ -34,7 +34,9 @@ describe('Ec2ConnectClient', function () {
             const getInstanceProfileStub = sinon.stub(Ec2Client.prototype, 'getAttachedIamInstanceProfile')
 
             getInstanceProfileStub.resolves({ Arn: 'thisIsAnArn' })
-            sinon.stub(IamClient.prototype, 'getIAMRoleFromInstanceProfile').resolves(getFakeRole('ThisIsARoleArn'))
+            sinon
+                .stub(IamClient.prototype, 'getIAMRoleFromInstanceProfile')
+                .resolves(createRoleWithArn('ThisIsARoleArn'))
 
             role = await client.getAttachedIamRole('test-instance')
             assert.ok(role)
@@ -113,7 +115,7 @@ describe('Ec2ConnectClient', function () {
 
         it('throws EC2SSMAgent error if instance is running and has IAM Role, but agent is not running', async function () {
             sinon.stub(Ec2Connecter.prototype, 'isInstanceRunning').resolves(true)
-            sinon.stub(Ec2Connecter.prototype, 'getAttachedIamRole').resolves(getFakeRole('testRole'))
+            sinon.stub(Ec2Connecter.prototype, 'getAttachedIamRole').resolves(createRoleWithArn('testRole'))
             sinon.stub(Ec2Connecter.prototype, 'hasProperPermissions').resolves(true)
             sinon.stub(SsmClient.prototype, 'getInstanceAgentPingStatus').resolves('offline')
 
@@ -138,7 +140,7 @@ describe('Ec2ConnectClient', function () {
 
         it('does not throw an error if all checks pass', async function () {
             sinon.stub(Ec2Connecter.prototype, 'isInstanceRunning').resolves(true)
-            sinon.stub(Ec2Connecter.prototype, 'getAttachedIamRole').resolves(getFakeRole('testRole'))
+            sinon.stub(Ec2Connecter.prototype, 'getAttachedIamRole').resolves(createRoleWithArn('testRole'))
             sinon.stub(Ec2Connecter.prototype, 'hasProperPermissions').resolves(true)
             sinon.stub(SsmClient.prototype, 'getInstanceAgentPingStatus').resolves('Online')
 
@@ -305,7 +307,7 @@ describe('getRemoveLinesCommand', async function () {
     })
 })
 
-function getFakeRole(Arn: string) {
+function createRoleWithArn(Arn: string) {
     return {
         RoleName: 'hasArn',
         Arn,
