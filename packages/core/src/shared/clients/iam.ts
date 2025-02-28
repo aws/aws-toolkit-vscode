@@ -12,6 +12,7 @@ import {
     CreateRoleResponse,
     EvaluationResult,
     GetInstanceProfileCommand,
+    GetInstanceProfileCommandOutput,
     IAMClient,
     ListRolesRequest,
     paginateListAttachedRolePolicies,
@@ -26,17 +27,24 @@ import { AsyncCollection } from '../utilities/asyncCollection'
 import { ToolkitError } from '../errors'
 import { ClientWrapper } from './clientWrapper'
 
+export interface IamRole extends Role {
+    RoleName: string
+    Arn: string
+}
+
 export class IamClient extends ClientWrapper<IAMClient> {
     public constructor(public override readonly regionCode: string) {
         super(regionCode, IAMClient)
     }
 
-    public getRoles(request: ListRolesRequest = {}, maxPages: number = 500): AsyncCollection<Role[]> {
-        return this.makePaginatedRequest(paginateListRoles, request, (p) => p.Roles).limit(maxPages)
+    public getRoles(request: ListRolesRequest = {}, maxPages: number = 500): AsyncCollection<IamRole[]> {
+        return this.makePaginatedRequest(paginateListRoles, request, (p) => p.Roles)
+            .limit(maxPages)
+            .map((roles) => roles.filter(hasRequiredFields))
     }
 
     /** Gets all roles. */
-    public async resolveRoles(request: ListRolesRequest = {}): Promise<Role[]> {
+    public async resolveRoles(request: ListRolesRequest = {}): Promise<IamRole[]> {
         return this.getRoles(request).flatten().promise()
     }
 
@@ -86,11 +94,15 @@ export class IamClient extends ClientWrapper<IAMClient> {
         )
     }
 
-    public async getIAMRoleFromInstanceProfile(instanceProfileArn: string): Promise<Role> {
-        const response = await this.makeRequest(GetInstanceProfileCommand, {
+    public async getIAMRoleFromInstanceProfile(instanceProfileArn: string): Promise<IamRole> {
+        const response: GetInstanceProfileCommandOutput = await this.makeRequest(GetInstanceProfileCommand, {
             InstanceProfileName: this.getFriendlyName(instanceProfileArn),
         })
-        if (response.InstanceProfile.Roles.length === 0) {
+        if (
+            !response.InstanceProfile?.Roles ||
+            response.InstanceProfile.Roles.length === 0 ||
+            !hasRequiredFields(response.InstanceProfile.Roles[0])
+        ) {
             throw new ToolkitError(`Failed to find IAM role associated with Instance profile ${instanceProfileArn}`)
         }
         return response.InstanceProfile.Roles[0]
@@ -103,4 +115,8 @@ export class IamClient extends ClientWrapper<IAMClient> {
             PolicyDocument: policyDocument,
         })
     }
+}
+
+function hasRequiredFields(role: Role): role is IamRole {
+    return role.RoleName !== undefined && role.Arn !== undefined
 }

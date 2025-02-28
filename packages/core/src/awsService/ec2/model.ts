@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as vscode from 'vscode'
-import { IAM } from 'aws-sdk'
 import { Ec2Selection } from './prompter'
 import { getOrInstallCli } from '../../shared/utilities/cliUtils'
 import { isCloud9 } from '../../shared/extensionUtilities'
@@ -18,7 +17,7 @@ import {
     openRemoteTerminal,
     promptToAddInlinePolicy,
 } from '../../shared/remoteSession'
-import { IamClient } from '../../shared/clients/iam'
+import { IamClient, IamRole } from '../../shared/clients/iam'
 import { ErrorInformation } from '../../shared/errors'
 import {
     sshAgentSocketVariable,
@@ -95,7 +94,7 @@ export class Ec2Connecter implements vscode.Disposable {
         return this.sessionManager.isConnectedTo(instanceId)
     }
 
-    public async getAttachedIamRole(instanceId: string): Promise<IAM.Role | undefined> {
+    public async getAttachedIamRole(instanceId: string): Promise<IamRole | undefined> {
         const IamInstanceProfile = await this.ec2Client.getAttachedIamInstanceProfile(instanceId)
         if (IamInstanceProfile && IamInstanceProfile.Arn) {
             const IamRole = await this.iamClient.getIAMRoleFromInstanceProfile(IamInstanceProfile.Arn)

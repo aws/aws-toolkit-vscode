@@ -5,7 +5,7 @@
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
-import { IAM, StepFunctions } from 'aws-sdk'
+import { StepFunctions } from 'aws-sdk'
 import * as vscode from 'vscode'
 import { StepFunctionsClient } from '../shared/clients/stepFunctionsClient'
 import { fileExists } from '../shared/filesystemUtilities'
@@ -20,6 +20,7 @@ import { HttpResourceFetcher } from '../shared/resourcefetcher/httpResourceFetch
 import globals from '../shared/extensionGlobals'
 import { fromExtensionManifest } from '../shared/settings'
 import { fs } from '../shared/fs/fs'
+import { IamRole } from '../shared/clients/iam'
 
 const documentSettings: DocumentLanguageSettings = { comments: 'error', trailingCommas: 'error' }
 const languageService = getLanguageService({})
@@ -211,7 +212,7 @@ export async function* listStateMachines(
  * Checks if the given IAM Role is assumable by AWS Step Functions.
  * @param role The IAM role to check
  */
-export function isStepFunctionsRole(role: IAM.Role): boolean {
+export function isStepFunctionsRole(role: IamRole): boolean {
     const stepFunctionsSevicePrincipal: string = 'states.amazonaws.com'
     const assumeRolePolicyDocument: string | undefined = role.AssumeRolePolicyDocument
 

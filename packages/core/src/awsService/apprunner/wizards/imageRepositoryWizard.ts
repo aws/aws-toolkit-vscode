@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { AppRunner, IAM } from 'aws-sdk'
+import { AppRunner } from 'aws-sdk'
 import { createCommonButtons, QuickInputButton, QuickInputToggleButton } from '../../../shared/ui/buttons'
 import { toArrayAsync } from '../../../shared/utilities/collectionUtils'
 import { EcrClient, EcrRepository } from '../../../shared/clients/ecrClient'
@@ -17,7 +17,7 @@ import * as nls from 'vscode-nls'
 import { WizardForm } from '../../../shared/wizards/wizardForm'
 import { createVariablesPrompter } from '../../../shared/ui/common/variablesPrompter'
 import { makeDeploymentButton } from './deploymentButton'
-import { IamClient } from '../../../shared/clients/iam'
+import { IamClient, IamRole } from '../../../shared/clients/iam'
 import { createRolePrompter } from '../../../shared/ui/common/roles'
 import { getLogger } from '../../../shared/logger/logger'
 import { getAppRunnerCreateServiceDocUrl, isCloud9 } from '../../../shared/extensionUtilities'
@@ -35,7 +35,7 @@ interface ImagePrompterOptions {
     extraButtons?: QuickInputButton<void | WizardControl>
 }
 
-function createEcrRole(client: IamClient): Promise<IAM.Role> {
+function createEcrRole(client: IamClient): Promise<IamRole> {
     const policy = {
         Version: '2008-10-17',
         Statement: [
@@ -59,7 +59,7 @@ function createEcrRole(client: IamClient): Promise<IAM.Role> {
             AssumeRolePolicyDocument: JSON.stringify(policy),
         })
         .then((resp) => {
-            const role = resp.Role
+            const role = resp.Role! as IamRole
             return client.attachRolePolicy({ RoleName: role.RoleName, PolicyArn: ecrPolicy }).then(() => role)
         })
 }
@@ -257,13 +257,14 @@ export class AppRunnerImageRepositoryWizard extends Wizard<AppRunner.SourceConfi
     constructor(ecrClient: EcrClient, iamClient: IamClient, autoDeployButton = makeDeploymentButton()) {
         super()
         const form = this.form
-        const createAccessRolePrompter = () => {
-            return createRolePrompter(iamClient, {
+        const createAccessRolePrompter: () => picker.QuickPickPrompter<string> = () => {
+            const prompter = createRolePrompter(iamClient, {
                 title: localize('AWS.apprunner.createService.selectRole.title', 'Select a role to pull from ECR'),
                 helpUrl: getAppRunnerCreateServiceDocUrl(),
                 roleFilter: (role) => (role.AssumeRolePolicyDocument ?? '').includes(appRunnerEcrEntity),
                 createRole: createEcrRole.bind(undefined, iamClient),
-            }).transform((resp) => resp.Arn)
+            })
+            return prompter.transform((resp) => resp.Arn)
         }
 
         form.ImageRepository.applyBoundForm(createImageRepositorySubForm(ecrClient, autoDeployButton))

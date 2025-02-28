@@ -3,25 +3,25 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { IAM } from 'aws-sdk'
 import assert from 'assert'
 import * as sinon from 'sinon'
 import { IamClient } from '../../../shared/clients/iam'
+import { SimulatePolicyResponse, SimulatePrincipalPolicyRequest } from '@aws-sdk/client-iam'
 
 describe('iamClient', function () {
     describe('getDeniedActions', async function () {
         const iamClient: IamClient = new IamClient('us-west-2')
-        const request: IAM.SimulatePrincipalPolicyRequest = {
+        const request: SimulatePrincipalPolicyRequest = {
             PolicySourceArn: 'taskRoleArn1234',
             ActionNames: ['example:permission'],
         }
-        const correctPermissionsResponse = {
+        const correctPermissionsResponse: SimulatePolicyResponse = {
             EvaluationResults: [{ EvalActionName: 'example:permission', EvalDecision: 'allowed' }],
         }
-        const incorrectPermissionsResponse = {
-            EvaluationResults: [{ EvalActionName: 'example:permission', EvalDecision: 'denied' }],
+        const incorrectPermissionsResponse: SimulatePolicyResponse = {
+            EvaluationResults: [{ EvalActionName: 'example:permission', EvalDecision: 'explicitDeny' }],
         }
-        const organizationsDenyPermissionsResponse = {
+        const organizationsDenyPermissionsResponse: SimulatePolicyResponse = {
             EvaluationResults: [
                 {
                     EvalActionName: 'example:permission',
