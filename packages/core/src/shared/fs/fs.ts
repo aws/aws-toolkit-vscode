@@ -16,7 +16,7 @@ import {
     isPermissionsError,
     scrubNames,
 } from '../errors'
-import globals from '../extensionGlobals'
+import globals, { isWeb } from '../extensionGlobals'
 import { isWin } from '../vscode/env'
 import { resolvePath } from '../utilities/pathUtils'
 import crypto from 'crypto'
@@ -549,6 +549,15 @@ export class FileSystem {
      * Follows the cache_dir convention outlined in https://crates.io/crates/dirs
      */
     getCacheDir(): string {
+        if (isWeb()) {
+            const homeDir = this.#homeDir
+            if (!homeDir) {
+                throw new ToolkitError('Web home directory not found', {
+                    code: 'WebHomeDirectoryNotFound',
+                })
+            }
+            return homeDir
+        }
         switch (process.platform) {
             case 'darwin': {
                 return _path.join(this.getUserHomeDir(), 'Library/Caches')
@@ -566,7 +575,7 @@ export class FileSystem {
                 return _path.join(this.getUserHomeDir(), '.cache')
             }
             default: {
-                throw new Error(`Unsupported platform: ${process.platform}. Expected 'darwin', 'win32', or 'linux'.`)
+                throw new Error(`Unsupported platform: ${process.platform}. Expected 'darwin', 'win32', 'linux'.`)
             }
         }
     }
