@@ -3,54 +3,59 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { IAM } from 'aws-sdk'
-import globals from '../extensionGlobals'
+import {
+    AttachedPolicy,
+    AttachRolePolicyCommand,
+    AttachRolePolicyRequest,
+    CreateRoleCommand,
+    CreateRoleRequest,
+    CreateRoleResponse,
+    EvaluationResult,
+    GetInstanceProfileCommand,
+    IAMClient,
+    ListRolesRequest,
+    paginateListAttachedRolePolicies,
+    paginateListRoles,
+    PutRolePolicyCommand,
+    Role,
+    SimulatePolicyResponse,
+    SimulatePrincipalPolicyCommand,
+    SimulatePrincipalPolicyRequest,
+} from '@aws-sdk/client-iam'
 import { AsyncCollection } from '../utilities/asyncCollection'
-import { pageableToCollection } from '../utilities/collectionUtils'
 import { ToolkitError } from '../errors'
+import { ClientWrapper } from './clientWrapper'
 
-/** Do not pull more than this many pages. */
-const maxPages = 500
+export class IamClient extends ClientWrapper<IAMClient> {
+    public constructor(public override readonly regionCode: string) {
+        super(regionCode, IAMClient)
+    }
 
-export class IamClient {
-    public constructor(public readonly regionCode: string) {}
-
-    public getRoles(request: IAM.ListRolesRequest = {}): AsyncCollection<IAM.Role[]> {
-        const requester = async (request: IAM.ListRolesRequest) =>
-            (await this.createSdkClient()).listRoles(request).promise()
-        const collection = pageableToCollection(requester, request, 'Marker', 'Roles')
-
-        return collection.limit(maxPages)
+    public getRoles(request: ListRolesRequest = {}, maxPages: number = 500): AsyncCollection<Role[]> {
+        return this.makePaginatedRequest(paginateListRoles, request, (p) => p.Roles).limit(maxPages)
     }
 
     /** Gets all roles. */
-    public async listRoles(request: IAM.ListRolesRequest = {}): Promise<IAM.Role[]> {
+    public async resolveRoles(request: ListRolesRequest = {}): Promise<Role[]> {
         return this.getRoles(request).flatten().promise()
     }
 
-    public async createRole(request: IAM.CreateRoleRequest): Promise<IAM.CreateRoleResponse> {
-        const sdkClient = await this.createSdkClient()
-        const response = await sdkClient.createRole(request).promise()
-
-        return response
+    public async createRole(request: CreateRoleRequest): Promise<CreateRoleResponse> {
+        return await this.makeRequest(CreateRoleCommand, request)
     }
 
-    public async attachRolePolicy(request: IAM.AttachRolePolicyRequest): Promise<void> {
-        const sdkClient = await this.createSdkClient()
-        await sdkClient.attachRolePolicy(request).promise()
+    public async attachRolePolicy(request: AttachRolePolicyRequest): Promise<AttachRolePolicyCommand> {
+        return await this.makeRequest(AttachRolePolicyCommand, request)
     }
 
-    public async simulatePrincipalPolicy(
-        request: IAM.SimulatePrincipalPolicyRequest
-    ): Promise<IAM.SimulatePolicyResponse> {
-        const sdkClient = await this.createSdkClient()
-        return await sdkClient.simulatePrincipalPolicy(request).promise()
+    public async simulatePrincipalPolicy(request: SimulatePrincipalPolicyRequest): Promise<SimulatePolicyResponse> {
+        return await this.makeRequest(SimulatePrincipalPolicyCommand, request)
     }
 
     /**
      * Attempts to verify if a role has the provided permissions.
      */
-    public async getDeniedActions(request: IAM.SimulatePrincipalPolicyRequest): Promise<IAM.EvaluationResult[]> {
+    public async getDeniedActions(request: SimulatePrincipalPolicyRequest): Promise<EvaluationResult[]> {
         const permissionResponse = await this.simulatePrincipalPolicy(request)
         if (!permissionResponse.EvaluationResults) {
             throw new Error('No evaluation results found')
@@ -63,10 +68,6 @@ export class IamClient {
         )
     }
 
-    private async createSdkClient(): Promise<IAM> {
-        return await globals.sdkClientBuilder.createAwsService(IAM, undefined, this.regionCode)
-    }
-
     public getFriendlyName(arn: string): string {
         const tokens = arn.split('/')
         if (tokens.length < 2) {
@@ -75,27 +76,20 @@ export class IamClient {
         return tokens[tokens.length - 1]
     }
 
-    public async listAttachedRolePolicies(arn: string): Promise<IAM.AttachedPolicy[]> {
-        const client = await this.createSdkClient()
-        const roleName = this.getFriendlyName(arn)
-
-        const requester = async (request: IAM.ListAttachedRolePoliciesRequest) =>
-            client.listAttachedRolePolicies(request).promise()
-
-        const collection = pageableToCollection(requester, { RoleName: roleName }, 'Marker', 'AttachedPolicies')
-            .flatten()
-            .filter((p) => p !== undefined)
-            .map((p) => p!)
-
-        const policies = await collection.promise()
-
-        return policies
+    public listAttachedRolePolicies(arn: string): AsyncCollection<AttachedPolicy[]> {
+        return this.makePaginatedRequest(
+            paginateListAttachedRolePolicies,
+            {
+                RoleName: this.getFriendlyName(arn),
+            },
+            (p) => p.AttachedPolicies
+        )
     }
 
-    public async getIAMRoleFromInstanceProfile(instanceProfileArn: string): Promise<IAM.Role> {
-        const client = await this.createSdkClient()
-        const instanceProfileName = this.getFriendlyName(instanceProfileArn)
-        const response = await client.getInstanceProfile({ InstanceProfileName: instanceProfileName }).promise()
+    public async getIAMRoleFromInstanceProfile(instanceProfileArn: string): Promise<Role> {
+        const response = await this.makeRequest(GetInstanceProfileCommand, {
+            InstanceProfileName: this.getFriendlyName(instanceProfileArn),
+        })
         if (response.InstanceProfile.Roles.length === 0) {
             throw new ToolkitError(`Failed to find IAM role associated with Instance profile ${instanceProfileArn}`)
         }
@@ -103,10 +97,10 @@ export class IamClient {
     }
 
     public async putRolePolicy(roleArn: string, policyName: string, policyDocument: string): Promise<void> {
-        const client = await this.createSdkClient()
-        const roleName = this.getFriendlyName(roleArn)
-        await client
-            .putRolePolicy({ RoleName: roleName, PolicyName: policyName, PolicyDocument: policyDocument })
-            .promise()
+        return await this.makeRequest(PutRolePolicyCommand, {
+            RoleName: this.getFriendlyName(roleArn),
+            PolicyName: policyName,
+            PolicyDocument: policyDocument,
+        })
     }
 }
