@@ -86,12 +86,12 @@
         {
             "name": "cwsprChatFolderContextCount",
             "type": "int",
-            "description": "# of folders manually added to context"
+            "description": "Number of folders manually added to context"
         },
         {
             "name": "cwsprChatFileContextCount",
             "type": "int",
-            "description": "# of files manually added to context"
+            "description": "Number of files manually added to context"
         },
         {
             "name": "cwsprChatFileContextLength",
@@ -106,7 +106,7 @@
         {
             "name": "cwsprChatPromptContextCount",
             "type": "int",
-            "description": "# of saved prompts manually added to context"
+            "description": "Number of saved prompts manually added to context"
         },
         {
             "name": "cwsprChatPromptContextLength",
@@ -121,7 +121,7 @@
         {
             "name": "cwsprChatRuleContextCount",
             "type": "int",
-            "description": "# of workspace rules automatically added to context"
+            "description": "Number of workspace rules automatically added to context"
         },
         {
             "name": "cwsprChatRuleContextLength",
