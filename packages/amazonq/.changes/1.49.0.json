@@ -1,0 +1,26 @@
+{
+	"date": "2025-02-27",
+	"version": "1.49.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q /test: Unit test generation displays an inaccurate diff view for non-primary packages in the workspace."
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q /doc: Fix uploading file method throwing incorrect workspace too large error message"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "/transform: skip running tests locally when user chooses to do so"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "/review: ignored lines should not show up in scan issues"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "/test: update capability card text"
+		}
+	]
+}
