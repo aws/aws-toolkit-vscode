@@ -18,10 +18,6 @@ interface PatternData {
     implementation: Implementation[]
 }
 
-interface PatternUrls {
-    githubUrl: string
-    previewUrl: string
-}
 export interface ProjectMetadata {
     patterns: Record<string, PatternData>
 }
@@ -119,22 +115,14 @@ export class MetadataManager {
         }))
     }
 
-    public getUrl(pattern: string): PatternUrls {
+    public getUrl(pattern: string): string {
         const patternData = this.metadata?.patterns?.[pattern]
         if (!patternData || !patternData.implementation) {
-            return {
-                githubUrl: '',
-                previewUrl: '',
-            }
+            return ''
         }
         const asset = patternData.implementation[0].assetName
 
-        return {
-            // GitHub URL for the pattern
-            githubUrl: `https://github.com/aws-samples/serverless-patterns/tree/main/${asset}`,
-            // Serverless Land preview URL
-            previewUrl: `https://serverlessland.com/patterns/${asset}`,
-        }
+        return `https://serverlessland.com/patterns/${asset}`
     }
 
     /**

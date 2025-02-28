@@ -13,7 +13,6 @@ import { assign, isAsyncIterable } from '../utilities/collectionUtils'
 import { recentlyUsed } from '../localizedText'
 import { getLogger } from '../logger/logger'
 import { MetadataManager } from '../../awsService/appBuilder/serverlessLand/metadataManager'
-import { WebviewService } from '../../awsService/appBuilder/serverlessLand/webViewManager'
 
 const localize = nls.loadMessageBundle()
 
@@ -144,42 +143,21 @@ export function createQuickPick<T>(
     const mergedOptions = { ...defaultQuickpickOptions, ...options }
     assign(mergedOptions, picker)
     picker.buttons = mergedOptions.buttons ?? []
-    let serverlessPanel: vscode.WebviewPanel | undefined
 
     picker.onDidTriggerItemButton(async (event) => {
         const metadataManager = MetadataManager.getInstance()
-        if (event.button.tooltip === 'Open in GitHub' || event.button.tooltip === 'Open in Serverless Land') {
-            const selectedPattern = event.item
-            if (selectedPattern) {
-                const patternUrl = metadataManager.getUrl(selectedPattern.label)
-                if (patternUrl) {
-                    if (event.button.tooltip === 'Open in GitHub') {
-                        await vscode.env.openExternal(vscode.Uri.parse(patternUrl.githubUrl))
-                    } else if (event.button.tooltip === 'Open in Serverless Land') {
-                        if (!serverlessPanel) {
-                            serverlessPanel = vscode.window.createWebviewPanel(
-                                'serverlessLandPreview',
-                                `${selectedPattern.label}`,
-                                vscode.ViewColumn.One,
-                                {
-                                    enableScripts: true,
-                                    retainContextWhenHidden: true,
-                                    enableCommandUris: false,
-                                    enableFindWidget: true,
-                                }
-                            )
-                            serverlessPanel.onDidDispose(() => {
-                                serverlessPanel = undefined
-                            })
-                        } else {
-                            serverlessPanel.title = `${selectedPattern.label}`
-                        }
-                        serverlessPanel.webview.html = WebviewService.getWebviewContent(patternUrl.previewUrl)
-                        serverlessPanel.reveal()
-                    }
-                }
-            }
+        if (event.button.tooltip !== 'Open in Serverless Land') {
+            return
         }
+        const selectedPattern = event.item
+        if (!selectedPattern) {
+            return
+        }
+        const patternUrl = metadataManager.getUrl(selectedPattern.label)
+        if (!patternUrl) {
+            return
+        }
+        await vscode.env.openExternal(vscode.Uri.parse(patternUrl))
     })
 
     const prompter =

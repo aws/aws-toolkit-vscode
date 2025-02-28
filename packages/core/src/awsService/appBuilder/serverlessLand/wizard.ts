@@ -38,11 +38,7 @@ function promptPattern(metadataManager: MetadataManager) {
             data: p.label,
             buttons: [
                 {
-                    iconPath: new vscode.ThemeIcon('github'),
-                    tooltip: 'Open in GitHub',
-                },
-                {
-                    iconPath: new vscode.ThemeIcon('open-preview'),
+                    iconPath: new vscode.ThemeIcon('link-external'),
                     tooltip: 'Open in Serverless Land',
                 },
             ],
