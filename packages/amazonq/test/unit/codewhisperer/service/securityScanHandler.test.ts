@@ -20,7 +20,7 @@ import { timeoutUtils } from 'aws-core-vscode/shared'
 import assert from 'assert'
 import sinon from 'sinon'
 import * as vscode from 'vscode'
-import fs from 'fs' // eslint-disable-line no-restricted-imports
+import path from 'path'
 
 const buildRawCodeScanIssue = (params?: Partial<RawCodeScanIssue>): RawCodeScanIssue => ({
     filePath: 'workspaceFolder/python3.7-plain-sam-app/hello_world/app.py',
@@ -65,17 +65,18 @@ const buildMockListCodeScanFindingsResponse = (
     nextToken: nextToken ? 'nextToken' : undefined,
 })
 
+function getWorkspaceFolder(): string {
+    return (
+        vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ??
+        path.join(__dirname, '../../../../../../core/src/testFixtures/workspaceFolder')
+    )
+}
+
 describe('securityScanHandler', function () {
     describe('listScanResults', function () {
         let mockClient: Stub<DefaultCodeWhispererClient>
         beforeEach(function () {
             mockClient = stub(DefaultCodeWhispererClient)
-            sinon.stub(fs, 'existsSync').returns(true)
-            sinon.stub(fs, 'statSync').returns({ isFile: () => true } as fs.Stats)
-        })
-
-        afterEach(function () {
-            sinon.restore()
         })
 
         it('should make ListCodeScanFindings request and aggregate findings by file path', async function () {
@@ -85,14 +86,13 @@ describe('securityScanHandler', function () {
                 mockClient,
                 'jobId',
                 'codeScanFindingsSchema',
-                ['projectPath'],
+                [getWorkspaceFolder()],
                 CodeAnalysisScope.PROJECT,
                 undefined
             )
 
-            assert.equal(aggregatedCodeScanIssueList.length, 2)
+            assert.equal(aggregatedCodeScanIssueList.length, 1)
             assert.equal(aggregatedCodeScanIssueList[0].issues.length, 1)
-            assert.equal(aggregatedCodeScanIssueList[1].issues.length, 1)
         })
 
         it('should handle ListCodeScanFindings request with paginated response', async function () {
@@ -123,12 +123,12 @@ describe('securityScanHandler', function () {
                 mockClient,
                 'jobId',
                 'codeScanFindingsSchema',
-                ['projectPath'],
+                [getWorkspaceFolder()],
                 CodeAnalysisScope.PROJECT,
                 undefined
             )
 
-            assert.equal(aggregatedCodeScanIssueList.length, 2)
+            assert.equal(aggregatedCodeScanIssueList.length, 1)
             assert.equal(aggregatedCodeScanIssueList[0].issues.length, 3)
         })
 
@@ -145,7 +145,7 @@ describe('securityScanHandler', function () {
                     mockClient,
                     'jobId',
                     'codeScanFindingsSchema',
-                    ['projectPath'],
+                    [getWorkspaceFolder()],
                     scope,
                     undefined
                 )
