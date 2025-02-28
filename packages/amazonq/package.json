@@ -143,6 +143,11 @@
                     "default": true,
                     "scope": "application"
                 },
+                "amazonQ.workspaceContext": {
+                    "type": "boolean",
+                    "markdownDescription": "%AWS.configuration.description.amazonq.workspaceContext%",
+                    "default": true
+                },
                 "amazonQ.workspaceIndex": {
                     "type": "boolean",
                     "markdownDescription": "%AWS.configuration.description.amazonq.workspaceIndex%",
