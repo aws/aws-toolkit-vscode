@@ -1,3 +1,11 @@
+## 1.49.0 2025-02-27
+
+- **Bug Fix** Amazon Q /test: Unit test generation displays an inaccurate diff view for non-primary packages in the workspace.
+- **Bug Fix** Amazon Q /doc: Fix uploading file method throwing incorrect workspace too large error message
+- **Bug Fix** /transform: skip running tests locally when user chooses to do so
+- **Bug Fix** /review: ignored lines should not show up in scan issues
+- **Bug Fix** /test: update capability card text
+
 ## 1.48.0 2025-02-20
 
 - **Bug Fix** /dev and /doc: Multi-root workspace with duplicate files causes infinite 'Uploading code...' loop
