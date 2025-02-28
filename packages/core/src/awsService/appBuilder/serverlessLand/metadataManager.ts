@@ -17,10 +17,6 @@ interface PatternData {
     implementation: Implementation[]
 }
 
-interface PatternUrls {
-    githubUrl: string
-    previewUrl: string
-}
 export interface ProjectMetadata {
     patterns: Record<string, PatternData>
 }
