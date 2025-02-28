@@ -1,3 +1,7 @@
+## 3.48.0 2025-02-27
+
+- **Feature** Step Functions: Expand data source and output options for Distributed Map in ASL language schema
+
 ## 3.47.0 2025-02-20
 
 - **Bug Fix** appBuilder: pass '--no-use-container' when '--use-container' is not selected in quickpick
