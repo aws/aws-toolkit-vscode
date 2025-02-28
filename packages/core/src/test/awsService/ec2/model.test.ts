@@ -12,7 +12,7 @@ import { Ec2Selection } from '../../../awsService/ec2/prompter'
 import { ToolkitError } from '../../../shared/errors'
 import { IAM } from 'aws-sdk'
 import { SshKeyPair } from '../../../awsService/ec2/sshKeyPair'
-import { DefaultIamClient } from '../../../shared/clients/iam'
+import { IamClient } from '../../../shared/clients/iam'
 import { assertNoTelemetryMatch, createTestWorkspaceFolder } from '../../testUtil'
 import { fs } from '../../../shared'
 import path from 'path'
@@ -36,7 +36,7 @@ describe('Ec2ConnectClient', function () {
 
             getInstanceProfileStub.resolves({ Arn: 'thisIsAnArn' })
             sinon
-                .stub(DefaultIamClient.prototype, 'getIAMRoleFromInstanceProfile')
+                .stub(IamClient.prototype, 'getIAMRoleFromInstanceProfile')
                 .resolves({ Arn: 'ThisIsARoleArn' } as IAM.Role)
 
             role = await client.getAttachedIamRole('test-instance')
@@ -52,7 +52,7 @@ describe('Ec2ConnectClient', function () {
 
     describe('hasProperPermissions', async function () {
         it('throws error when sdk throws error', async function () {
-            sinon.stub(DefaultIamClient.prototype, 'simulatePrincipalPolicy').throws(new ToolkitError('error'))
+            sinon.stub(IamClient.prototype, 'simulatePrincipalPolicy').throws(new ToolkitError('error'))
 
             try {
                 await client.hasProperPermissions('')

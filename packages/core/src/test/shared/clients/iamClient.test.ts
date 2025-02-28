@@ -6,11 +6,11 @@
 import { IAM } from 'aws-sdk'
 import assert from 'assert'
 import * as sinon from 'sinon'
-import { DefaultIamClient, IamClient } from '../../../shared/clients/iam'
+import { IamClient } from '../../../shared/clients/iam'
 
 describe('iamClient', function () {
     describe('getDeniedActions', async function () {
-        const iamClient: IamClient = new DefaultIamClient('us-west-2')
+        const iamClient: IamClient = new IamClient('us-west-2')
         const request: IAM.SimulatePrincipalPolicyRequest = {
             PolicySourceArn: 'taskRoleArn1234',
             ActionNames: ['example:permission'],

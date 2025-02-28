@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import * as sinon from 'sinon'
 import assert from 'assert'
 import { IAM } from 'aws-sdk'
-import { DefaultIamClient } from '../../../../shared/clients/iam'
+import { IamClient } from '../../../../shared/clients/iam'
 import { createQuickPickPrompterTester, QuickPickPrompterTester } from '../testUtils'
 import { createRolePrompter } from '../../../../shared/ui/common/roles'
 import { toCollection } from '../../../../shared/utilities/asyncCollection'
@@ -34,7 +34,7 @@ describe('createRolePrompter', function () {
             Arn: 'new-arn',
         } as any
 
-        const client = stub(DefaultIamClient, { regionCode: 'region-1' })
+        const client = stub(IamClient, { regionCode: 'region-1' })
         client.getRoles.returns(
             toCollection(async function* () {
                 yield roles

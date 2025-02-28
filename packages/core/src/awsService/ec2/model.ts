@@ -18,7 +18,7 @@ import {
     openRemoteTerminal,
     promptToAddInlinePolicy,
 } from '../../shared/remoteSession'
-import { DefaultIamClient } from '../../shared/clients/iam'
+import { IamClient } from '../../shared/clients/iam'
 import { ErrorInformation } from '../../shared/errors'
 import {
     sshAgentSocketVariable,
@@ -53,7 +53,7 @@ interface RemoteUser {
 export class Ec2Connecter implements vscode.Disposable {
     protected ssm: SsmClient
     protected ec2Client: Ec2Client
-    protected iamClient: DefaultIamClient
+    protected iamClient: IamClient
     protected sessionManager: Ec2SessionTracker
 
     private policyDocumentationUri = vscode.Uri.parse(
@@ -79,8 +79,8 @@ export class Ec2Connecter implements vscode.Disposable {
         return new Ec2Client(this.regionCode)
     }
 
-    protected createIamSdkClient(): DefaultIamClient {
-        return new DefaultIamClient(this.regionCode)
+    protected createIamSdkClient(): IamClient {
+        return new IamClient(this.regionCode)
     }
 
     public async addActiveSession(sessionId: string, instanceId: string): Promise<void> {
