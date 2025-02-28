@@ -9,7 +9,7 @@
 
 const path = require('path')
 const webpack = require('webpack')
-const { EsbuildPlugin } = require('esbuild-loader')
+const { ESBuildMinifyPlugin } = require('esbuild-loader')
 const fs = require('fs')
 const { NLSBundlePlugin } = require('vscode-nls-dev/lib/webpack-bundler')
 const CircularDependencyPlugin = require('circular-dependency-plugin')
@@ -113,7 +113,7 @@ module.exports = (env = {}, argv = {}) => {
         optimization: {
             minimize: !isDevelopment,
             minimizer: [
-                new EsbuildPlugin({
+                new ESBuildMinifyPlugin({
                     target: 'es2021',
                     // Are these enabled by default?
                     // minify: true,
