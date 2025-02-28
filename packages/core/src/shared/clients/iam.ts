@@ -8,6 +8,7 @@ import {
     AttachRolePolicyCommand,
     AttachRolePolicyRequest,
     CreateRoleCommand,
+    CreateRoleCommandOutput,
     CreateRoleRequest,
     CreateRoleResponse,
     EvaluationResult,
@@ -18,6 +19,7 @@ import {
     paginateListAttachedRolePolicies,
     paginateListRoles,
     PutRolePolicyCommand,
+    PutRolePolicyCommandOutput,
     Role,
     SimulatePolicyResponse,
     SimulatePrincipalPolicyCommand,
@@ -30,6 +32,10 @@ import { ClientWrapper } from './clientWrapper'
 export interface IamRole extends Role {
     RoleName: string
     Arn: string
+}
+
+export interface IamCreateRoleResponse extends CreateRoleResponse {
+    Role: IamRole
 }
 
 export class IamClient extends ClientWrapper<IAMClient> {
@@ -48,8 +54,12 @@ export class IamClient extends ClientWrapper<IAMClient> {
         return this.getRoles(request).flatten().promise()
     }
 
-    public async createRole(request: CreateRoleRequest): Promise<CreateRoleResponse> {
-        return await this.makeRequest(CreateRoleCommand, request)
+    public async createRole(request: CreateRoleRequest): Promise<IamCreateRoleResponse> {
+        const response: CreateRoleCommandOutput = await this.makeRequest(CreateRoleCommand, request)
+        if (!response.Role || !hasRequiredFields(response.Role)) {
+            throw new ToolkitError('Failed to create IAM role')
+        }
+        return response as IamCreateRoleResponse // Safe to assume by check above.
     }
 
     public async attachRolePolicy(request: AttachRolePolicyRequest): Promise<AttachRolePolicyCommand> {
@@ -108,7 +118,11 @@ export class IamClient extends ClientWrapper<IAMClient> {
         return response.InstanceProfile.Roles[0]
     }
 
-    public async putRolePolicy(roleArn: string, policyName: string, policyDocument: string): Promise<void> {
+    public async putRolePolicy(
+        roleArn: string,
+        policyName: string,
+        policyDocument: string
+    ): Promise<PutRolePolicyCommandOutput> {
         return await this.makeRequest(PutRolePolicyCommand, {
             RoleName: this.getFriendlyName(roleArn),
             PolicyName: policyName,

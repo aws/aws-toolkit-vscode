@@ -59,7 +59,7 @@ function createEcrRole(client: IamClient): Promise<IamRole> {
             AssumeRolePolicyDocument: JSON.stringify(policy),
         })
         .then((resp) => {
-            const role = resp.Role! as IamRole
+            const role = resp.Role
             return client.attachRolePolicy({ RoleName: role.RoleName, PolicyArn: ecrPolicy }).then(() => role)
         })
 }
