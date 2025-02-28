@@ -91,7 +91,7 @@ describe('AwsClientBuilderV3', function () {
         assert.strictEqual(service.config.requestHandler, requestHandler)
     })
 
-    it('defaults to same http client', function () {
+    it('defaults to reusing singular http client', function () {
         const service = builder.createAwsService({
             serviceClient: Client,
         })
