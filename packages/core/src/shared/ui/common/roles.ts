@@ -4,7 +4,7 @@
  */
 
 import { IAM } from 'aws-sdk'
-import { IamClient } from '../../clients/iamClient'
+import { IamClient } from '../../clients/iam'
 import { createCommonButtons, createPlusButton, createRefreshButton } from '../buttons'
 import { createQuickPick, DataQuickPickItem, QuickPickPrompter } from '../pickerPrompter'
 import * as nls from 'vscode-nls'

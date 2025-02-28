@@ -21,7 +21,7 @@ import { createQuickPick, DataQuickPickItem, QuickPickPrompter } from '../../sha
 import { Wizard, WIZARD_BACK } from '../../shared/wizards/wizard'
 import { isStepFunctionsRole } from '../utils'
 import { createRolePrompter } from '../../shared/ui/common/roles'
-import { DefaultIamClient } from '../../shared/clients/iamClient'
+import { DefaultIamClient } from '../../shared/clients/iam'
 import { DefaultStepFunctionsClient } from '../../shared/clients/stepFunctionsClient'
 
 export enum PublishStateMachineAction {

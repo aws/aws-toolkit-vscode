@@ -19,7 +19,7 @@ import { getOrInstallCli } from './utilities/cliUtils'
 import { pushIf } from './utilities/collectionUtils'
 import { ChildProcess } from './utilities/processUtils'
 import { findSshPath, getVscodeCliPath } from './utilities/pathFind'
-import { IamClient } from './clients/iamClient'
+import { IamClient } from './clients/iam'
 import { IAM } from 'aws-sdk'
 import { getIdeProperties } from './extensionUtilities'
 

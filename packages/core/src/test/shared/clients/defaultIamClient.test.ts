@@ -4,7 +4,7 @@
  */
 
 import assert from 'assert'
-import { DefaultIamClient } from '../../../shared/clients/iamClient'
+import { DefaultIamClient } from '../../../shared/clients/iam'
 
 describe('getFriendlyName', function () {
     const client = new DefaultIamClient('')

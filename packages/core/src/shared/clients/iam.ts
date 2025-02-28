@@ -7,15 +7,12 @@ import { IAM } from 'aws-sdk'
 import globals from '../extensionGlobals'
 import { AsyncCollection } from '../utilities/asyncCollection'
 import { pageableToCollection } from '../utilities/collectionUtils'
-import { ClassToInterfaceType } from '../utilities/tsUtils'
 import { ToolkitError } from '../errors'
-
-export type IamClient = ClassToInterfaceType<DefaultIamClient>
 
 /** Do not pull more than this many pages. */
 const maxPages = 500
 
-export class DefaultIamClient {
+export class IamClient {
     public constructor(public readonly regionCode: string) {}
 
     public getRoles(request: IAM.ListRolesRequest = {}): AsyncCollection<IAM.Role[]> {

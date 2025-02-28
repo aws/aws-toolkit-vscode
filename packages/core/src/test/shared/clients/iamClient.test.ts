@@ -6,7 +6,7 @@
 import { IAM } from 'aws-sdk'
 import assert from 'assert'
 import * as sinon from 'sinon'
-import { DefaultIamClient, IamClient } from '../../../shared/clients/iamClient'
+import { DefaultIamClient, IamClient } from '../../../shared/clients/iam'
 
 describe('iamClient', function () {
     describe('getDeniedActions', async function () {

@@ -18,7 +18,7 @@ import {
     openRemoteTerminal,
     promptToAddInlinePolicy,
 } from '../../shared/remoteSession'
-import { DefaultIamClient } from '../../shared/clients/iamClient'
+import { DefaultIamClient } from '../../shared/clients/iam'
 import { ErrorInformation } from '../../shared/errors'
 import {
     sshAgentSocketVariable,
