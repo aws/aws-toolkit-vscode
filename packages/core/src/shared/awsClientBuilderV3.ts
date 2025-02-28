@@ -36,6 +36,7 @@ import { partialClone } from './utilities/collectionUtils'
 import { selectFrom } from './utilities/tsUtils'
 import { once } from './utilities/functionUtils'
 import { isWeb } from './extensionGlobals'
+import { NodeHttpHandler } from '@smithy/node-http-handler'
 
 export type AwsClientConstructor<C> = new (o: AwsClientOptions) => C
 
@@ -92,12 +93,10 @@ export class AWSClientBuilderV3 {
     }
 
     private buildHttpClient() {
-        // Workaround for web mode to avoid importing @smithy/node-http-handler unless in node.
-        if (!isWeb()) {
-            const { NodeHttpHandler } = require('@smithy/node-http-handler')
-            return new NodeHttpHandler({ keepAlive: true })
-        }
-        return new FetchHttpHandler({ keepAlive: true })
+        const requestTimeout = 30000
+        return isWeb()
+            ? new FetchHttpHandler({ keepAlive: true, requestTimeout })
+            : new NodeHttpHandler({ httpAgent: { keepAlive: true }, httpsAgent: { keepAlive: true }, requestTimeout })
     }
 
     private getHttpClient = once(this.buildHttpClient.bind(this))
