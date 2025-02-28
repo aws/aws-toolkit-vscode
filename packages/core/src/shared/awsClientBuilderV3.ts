@@ -91,7 +91,7 @@ export class AWSClientBuilderV3 {
         return shim
     }
 
-    private buildHttpClient() {
+    private buildHttpHandler() {
         const requestTimeout = 30000
         // HACK: avoid importing node-http-handler on web.
         return isWeb()
@@ -103,7 +103,7 @@ export class AWSClientBuilderV3 {
               })
     }
 
-    private getHttpClient = once(this.buildHttpClient.bind(this))
+    private getHttpHandler = once(this.buildHttpHandler.bind(this))
 
     private keyAwsService<C extends AwsClient>(serviceOptions: AwsServiceOptions<C>): string {
         // Serializing certain objects in the args allows us to detect when nested objects change (ex. new retry strategy, endpoints)
@@ -148,7 +148,7 @@ export class AWSClientBuilderV3 {
         }
 
         if (!opt.requestHandler) {
-            opt.requestHandler = this.getHttpClient()
+            opt.requestHandler = this.getHttpHandler()
         }
         // TODO: add tests for refresh logic.
         opt.credentials = async () => {

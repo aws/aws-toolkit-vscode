@@ -78,7 +78,7 @@ describe('AwsClientBuilderV3', function () {
         assert.strictEqual(service.config.userAgent[0][0], 'CUSTOM USER AGENT')
     })
 
-    it('injects http client into client', function () {
+    it('injects http client into handler', function () {
         const requestHandler = new NodeHttpHandler({
             requestTimeout: 1234,
         })
@@ -91,17 +91,18 @@ describe('AwsClientBuilderV3', function () {
         assert.strictEqual(service.config.requestHandler, requestHandler)
     })
 
-    it('defaults to reusing singular http client', function () {
+    it('defaults to reusing singular http handler', function () {
         const service = builder.createAwsService({
             serviceClient: Client,
         })
         const service2 = builder.createAwsService({
             serviceClient: Client,
         })
-        // Check if request handlers are reference-equal.
+
         const firstHandler = service.config.requestHandler
         const secondHandler = service2.config.requestHandler
 
+        // If not injected, the http handler can be undefined before making request.
         if (firstHandler instanceof NodeHttpHandler && secondHandler instanceof NodeHttpHandler) {
             assert.ok(firstHandler === secondHandler)
         } else {
