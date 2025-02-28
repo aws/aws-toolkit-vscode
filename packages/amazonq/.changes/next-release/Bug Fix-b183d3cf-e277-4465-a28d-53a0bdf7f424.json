@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "/review: ignored lines should not show up in scan issues"
-}
