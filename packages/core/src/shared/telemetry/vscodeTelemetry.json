@@ -694,10 +694,6 @@
             "description": "When chat panel is closed"
         },
         {
-            "name": "amazonq_createSavedPrompt",
-            "description": "When a saved user prompt is created"
-        },
-        {
             "name": "amazonq_startConversation",
             "description": "When user starts a new conversation",
             "metadata": [

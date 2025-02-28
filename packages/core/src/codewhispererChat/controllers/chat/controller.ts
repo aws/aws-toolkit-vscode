@@ -577,7 +577,7 @@ export class ChatController {
             await fs.writeFile(newFilePath, newFileContent)
             const newFileDoc = await vscode.workspace.openTextDocument(newFilePath)
             await vscode.window.showTextDocument(newFileDoc)
-            telemetry.amazonq_createSavedPrompt.emit()
+            telemetry.ui_click.emit({ elementId: 'amazonq_createSavedPrompt' })
         }
     }
 
