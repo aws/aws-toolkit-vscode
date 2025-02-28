@@ -1,3 +1,20 @@
+## 1.49.0 2025-02-27
+
+- **Bug Fix** Amazon Q /test: Unit test generation displays an inaccurate diff view for non-primary packages in the workspace.
+- **Bug Fix** Amazon Q /doc: Fix uploading file method throwing incorrect workspace too large error message
+- **Bug Fix** /transform: skip running tests locally when user chooses to do so
+- **Bug Fix** /review: ignored lines should not show up in scan issues
+- **Bug Fix** /test: update capability card text
+
+## 1.48.0 2025-02-20
+
+- **Bug Fix** /dev and /doc: Multi-root workspace with duplicate files causes infinite 'Uploading code...' loop
+- **Bug Fix** Amazon Q /doc: update workspace too large error message 
+- **Bug Fix** /review: Auto-review should not remove issues from manual reviews
+- **Bug Fix** /transform: allow View Summary button to work even after accepting diff
+- **Bug Fix** Amazon Q /test: Fixing the issue of target file does not exist.
+- **Feature** Amazon Q /doc: Add support for infrastructure diagrams
+
 ## 1.47.0 2025-02-13
 
 - **Bug Fix** `Send to prompt` and other context menu options not sent if chat was closed

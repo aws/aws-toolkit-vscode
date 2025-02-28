@@ -141,16 +141,16 @@ export class CapabilityCardMessage extends ChatMessage {
                 message: '',
                 messageType: 'answer',
                 informationCard: {
-                    title: '/test',
-                    description: 'Included in your Q Developer Agent subscription',
+                    title: '/test -  Unit test generation',
+                    description: 'Generate unit tests for selected code',
                     content: {
-                        body: `I can generate unit tests for your active file.
+                        body: `I can generate unit tests for the active file or open project in your IDE.
 
-After you select the functions or methods I should focus on, I will:
-1. Generate unit tests
-2. Place them into relevant test file
+I can do things like:
+- Add unit tests for highlighted functions
+- Generate tests for null and empty inputs 
 
-To learn more, check out our [User Guide](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/q-in-IDE.html).`,
+To learn more, visit the [Amazon Q Developer User Guide](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/test-generation.html).`,
                     },
                     icon: 'check-list' as MynahIcons,
                 },
