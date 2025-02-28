@@ -35,6 +35,7 @@ export enum MessageType {
 export enum Command {
     INIT = 'INIT',
     SAVE_FILE = 'SAVE_FILE',
+    SAVE_FILE_AND_DEPLOY = 'SAVE_FILE_AND_DEPLOY',
     AUTO_SYNC_FILE = 'AUTO_SYNC_FILE',
     FILE_CHANGED = 'FILE_CHANGED',
     LOAD_STAGE = 'LOAD_STAGE',

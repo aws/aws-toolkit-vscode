@@ -25,6 +25,7 @@ import { ToolkitError } from '../../shared/errors'
 import { WorkflowStudioApiHandler } from './workflowStudioApiHandler'
 import globals from '../../shared/extensionGlobals'
 import { getLogger } from '../../shared/logger/logger'
+import { publishStateMachine } from '../commands/publishStateMachine'
 
 const localize = nls.loadMessageBundle()
 
@@ -44,6 +45,9 @@ export async function handleMessage(message: Message, context: WebviewContext) {
                 break
             case Command.SAVE_FILE:
                 void saveFileMessageHandler(message as SaveFileRequestMessage, context)
+                break
+            case Command.SAVE_FILE_AND_DEPLOY:
+                void saveFileAndDeployMessageHandler(message as SaveFileRequestMessage, context)
                 break
             case Command.AUTO_SYNC_FILE:
                 void autoSyncFileMessageHandler(message as SyncFileRequestMessage, context)
@@ -132,13 +136,13 @@ async function loadStageMessageHandler(context: WebviewContext) {
  * Handler for closing WFS custom editor. When called, disposes webview panel and opens default VSCode editor
  * @param context The context object containing the necessary information for the webview.
  */
-export function closeCustomEditorMessageHandler(context: WebviewContext) {
-    telemetry.stepfunctions_closeWorkflowStudio.run((span) => {
+export async function closeCustomEditorMessageHandler(context: WebviewContext) {
+    await telemetry.stepfunctions_closeWorkflowStudio.run(async (span) => {
         span.record({
             id: context.fileId,
         })
         context.panel.dispose()
-        void vscode.commands.executeCommand('vscode.openWith', context.textDocument.uri, 'default')
+        await vscode.commands.executeCommand('vscode.openWith', context.textDocument.uri, 'default')
     })
 }
 
@@ -172,6 +176,18 @@ async function saveFileMessageHandler(request: SaveFileRequestMessage, context: 
             })
         }
     })
+}
+
+/**
+ * Handler for saving a file and starting the state machine deployment flow, while also switching to default editor.
+ * Triggered when the user triggers 'Save and Deploy' action in WFS
+ * @param request The request message containing the file contents.
+ * @param context The webview context containing the necessary information for saving the file.
+ */
+async function saveFileAndDeployMessageHandler(request: SaveFileRequestMessage, context: WebviewContext) {
+    await saveFileMessageHandler(request, context)
+    await closeCustomEditorMessageHandler(context)
+    await publishStateMachine(globals.awsContext, globals.outputChannel)
 }
 
 /**

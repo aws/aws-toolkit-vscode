@@ -30,11 +30,49 @@ let clientId = ''
 export class WorkflowStudioEditorProvider implements vscode.CustomTextEditorProvider {
     public static readonly viewType = 'workflowStudio.asl'
 
+    /**
+     * Opens a file in the Workflow Studio editor, after validating the document.
+     * @param uri The URI of the document to open in the Workflow Studio editor.
+     * @param params Optional parameters to customize the WebView panel.
+     */
     public static async openWithWorkflowStudio(
         uri: vscode.Uri,
         params?: Parameters<typeof vscode.window.createWebviewPanel>[2]
     ) {
-        await vscode.commands.executeCommand('vscode.openWith', uri, WorkflowStudioEditorProvider.viewType, params)
+        const document = await vscode.workspace.openTextDocument(uri)
+        await telemetry.stepfunctions_openWorkflowStudio.run(async () => {
+            await this.validateAndThrowIfInvalid(document)
+            await vscode.commands.executeCommand('vscode.openWith', uri, WorkflowStudioEditorProvider.viewType, params)
+        })
+    }
+
+    /**
+     * Validates the document to ensure it is either valid JSON or YAML.
+     * If the document is invalid, a warning is shown (if specified) and an error is thrown to stop further execution.
+     * @param document The document to validate.
+     * @param alertOnError If true, shows a warning message when the document is invalid. Defaults to `false`.
+     */
+    private static async validateAndThrowIfInvalid(
+        document: vscode.TextDocument,
+        alertOnError?: boolean
+    ): Promise<void> {
+        const isInvalidJson = isInvalidJsonFile(document)
+        const isInvalidYaml = isInvalidYamlFile(document)
+
+        if (isInvalidJson || isInvalidYaml) {
+            const language = isInvalidJson ? 'JSON' : 'YAML'
+            const errorKey = isInvalidJson ? 'InvalidJSONContent' : 'InvalidYAMLContent'
+
+            if (alertOnError) {
+                void vscode.window.showErrorMessage(i18n(`AWS.stepFunctions.workflowStudio.actions.${errorKey}`))
+            }
+
+            throw ToolkitError.chain(
+                `Invalid ${language} file`,
+                `The Workflow Studio editor was not opened because the ${language} in the file is invalid`,
+                { code: errorKey }
+            )
+        }
     }
 
     /**
@@ -114,20 +152,12 @@ export class WorkflowStudioEditorProvider implements vscode.CustomTextEditorProv
                 webviewPanel.dispose()
             }
 
-            const isInvalidJson = isInvalidJsonFile(document)
-            const isInvalidYaml = isInvalidYamlFile(document)
-
-            if (isInvalidJson || isInvalidYaml) {
-                const language = isInvalidJson ? 'JSON' : 'YAML'
-                const errorKey = isInvalidJson ? 'InvalidJSONContent' : 'InvalidYAMLContent'
-
+            try {
+                await WorkflowStudioEditorProvider.validateAndThrowIfInvalid(document, true)
+            } catch (e) {
+                // If the document is invalid, reopen it with the default editor and re-throw the error
                 await reopenWithDefaultEditor()
-                void vscode.window.showWarningMessage(i18n(`AWS.stepFunctions.workflowStudio.actions.${errorKey}`))
-                throw ToolkitError.chain(
-                    `Invalid ${language} file`,
-                    `The Workflow Studio editor was not opened because the ${language} in the file is invalid`,
-                    { code: errorKey }
-                )
+                throw e
             }
 
             if (!this.webviewHtml) {
