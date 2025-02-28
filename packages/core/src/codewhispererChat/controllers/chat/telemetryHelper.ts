@@ -40,7 +40,7 @@ import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import { getSelectedCustomization } from '../../../codewhisperer/util/customizationUtil'
 import { undefinedIfEmpty } from '../../../shared/utilities/textUtilities'
 import { AdditionalContextPrompt } from '../../../amazonq/lsp/types'
-import { getUserPromptsDirectory } from './controller'
+import { getUserPromptsDirectory } from '../../constants'
 
 export function logSendTelemetryEventFailure(error: any) {
     let requestId: string | undefined

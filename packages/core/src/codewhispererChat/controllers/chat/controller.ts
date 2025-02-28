@@ -71,6 +71,14 @@ import { workspaceCommand } from '../../../amazonq/webview/ui/tabs/constants'
 import fs from '../../../shared/fs/fs'
 import { FeatureConfigProvider, Features } from '../../../shared/featureConfig'
 import { i18n } from '../../../shared/i18n-helper'
+import {
+    getUserPromptsDirectory,
+    promptFileExtension,
+    createSavedPromptCommandId,
+    aditionalContentNameLimit,
+    additionalContentInnerContextLimit,
+    contextMaxLength,
+} from '../../constants'
 
 export interface ChatControllerMessagePublishers {
     readonly processPromptChatMessage: MessagePublisher<PromptMessage>
@@ -121,21 +129,6 @@ export interface ChatControllerMessageListeners {
     readonly processContextSelected: MessageListener<ContextSelectedMessage>
     readonly processFileClick: MessageListener<FileClick>
 }
-
-const promptFileExtension = '.md'
-
-const additionalContentInnerContextLimit = 8192
-
-const aditionalContentNameLimit = 1024
-
-// temporary limit for @workspace and @file combined context length
-const contextMaxLength = 40_000
-
-export const getUserPromptsDirectory = () => {
-    return path.join(fs.getUserHomeDir(), '.aws', 'amazonq', 'prompts')
-}
-
-const createSavedPromptCommandId = 'create-saved-prompt'
 
 export class ChatController {
     private readonly sessionStorage: ChatSessionStorage
