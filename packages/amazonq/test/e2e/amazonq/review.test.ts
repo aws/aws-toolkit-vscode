@@ -11,7 +11,6 @@ import sinon from 'sinon'
 import { Messenger } from './framework/messenger'
 import { registerAuthHook, using, closeAllEditors } from 'aws-core-vscode/test'
 import { loginToIdC } from './utils/setup'
-<<<<<<< HEAD
 import {
     codewhispererDiagnosticSourceLabel,
     invalidFileTypeChatMessage,
@@ -23,16 +22,6 @@ import { ScanAction, scanProgressMessage } from '../../../src/app/amazonqScan/mo
 
 function getWorkspaceFolder(): string {
     return vscode.workspace.workspaceFolders![0].uri.fsPath
-=======
-import { codewhispererDiagnosticSourceLabel } from 'aws-core-vscode/codewhisperer'
-import path from 'path'
-
-function getWorkspaceFolder(): string {
-    return (
-        vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ??
-        path.join(__dirname, '../../../../core/src/testFixtures/workspaceFolder')
-    )
->>>>>>> 182323e6d (test(amazonq): Add E2E tests for Q Chat's /review command)
 }
 
 describe('Amazon Q Code Review', function () {
