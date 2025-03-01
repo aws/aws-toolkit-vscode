@@ -289,8 +289,8 @@ describe('Amazon Q Code Review', function () {
                     securityDiagnostics,
                     'java-crypto-compliance',
                     'CWE-327,328,326,208,1240 - Insecure cryptography',
-                    55,
                     56,
+                    57,
                     0
                 )
 
