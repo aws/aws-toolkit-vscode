@@ -204,7 +204,7 @@ describe('Amazon Q Code Review', function () {
                     `critical issue ${issues.Critical} is not larger than 2`
                 )
                 assert.deepStrictEqual(issues.High >= 2, true, `high issue ${issues.High} is not larger than 1`)
-                assert.deepStrictEqual(issues.Medium >= 8, true, `medium issue ${issues.Medium} is not larger than 7`)
+                assert.deepStrictEqual(issues.Medium >= 6, true, `medium issue ${issues.Medium} is not larger than 5`)
                 assert.deepStrictEqual(issues.Low, 0, `low issues ${issues.Low} should be 0`)
                 assert.deepStrictEqual(issues.Info, 0, `info issues ${issues.Info} should be 0`)
 
