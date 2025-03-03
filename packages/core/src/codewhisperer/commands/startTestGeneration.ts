@@ -44,6 +44,7 @@ export async function startTestGenerationProcess(
             logger.verbose(`Tab ID mismatch: ${tabID} !== ${session.tabID}`)
             return
         }
+        testGenState.setToNotStarted()
         /**
          * Step 1: Zip the project
          */

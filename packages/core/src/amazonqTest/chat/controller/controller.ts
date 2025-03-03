@@ -22,6 +22,7 @@ import {
     testGenProgressField,
     testGenSummaryMessage,
     maxUserPromptLength,
+    fixingTestProgressField,
 } from '../../models/constants'
 import MessengerUtils, { ButtonActions } from './messenger/messengerUtils'
 import { getTelemetryReasonDesc, isAwsError } from '../../../shared/errors'
@@ -377,6 +378,7 @@ export class TestController {
                 break
             case ButtonActions.STOP_BUILD:
                 cancelBuild()
+                testGenState.setToCancelling()
                 void this.handleUpdatePromptProgress({ status: 'cancel', tabID: data.tabID })
                 telemetry.ui_click.emit({ elementId: 'unitTestGeneration_cancelBuildProgress' })
                 this.messenger.sendChatInputEnabled(data.tabID, true)
@@ -430,12 +432,6 @@ export class TestController {
             if (ChatSessionManager.Instance.getIsInProgress()) {
                 void vscode.window.showInformationMessage(
                     "There is already a test generation job in progress. Cancel current job or wait until it's finished to try again."
-                )
-                return
-            }
-            if (testGenState.isCancelling()) {
-                void vscode.window.showInformationMessage(
-                    'There is a test generation job being cancelled. Please wait for cancellation to finish.'
                 )
                 return
             }
@@ -1235,6 +1231,7 @@ export class TestController {
                 canBeVoted: false,
                 messageId: TestNamedMessages.TEST_GENERATION_BUILD_STATUS_MESSAGE,
             })
+            this.messenger.sendUpdatePromptProgress(data.tabID, fixingTestProgressField)
             await startTestGenerationProcess(session.sourceFilePath, '', data.tabID, false)
         }
         // TODO: Skip this if startTestGenerationProcess timeouts
@@ -1260,24 +1257,6 @@ export class TestController {
                 messageId: TestNamedMessages.TEST_GENERATION_BUILD_STATUS_MESSAGE,
             })
         }
-
-        this.messenger.sendBuildProgressMessage({
-            tabID: data.tabID,
-            messageType: 'answer-part',
-            codeGenerationId: TestNamedMessages.TEST_GENERATION_BUILD_STATUS_MESSAGE,
-            message: testGenBuildProgressMessage(TestGenerationBuildStep.PROCESS_TEST_RESULTS, 'current'),
-            canBeVoted: false,
-            messageId: TestNamedMessages.TEST_GENERATION_BUILD_STATUS_MESSAGE,
-        })
-
-        this.messenger.sendBuildProgressMessage({
-            tabID: data.tabID,
-            messageType: 'answer-part',
-            codeGenerationId: TestNamedMessages.TEST_GENERATION_BUILD_STATUS_MESSAGE,
-            message: testGenBuildProgressMessage(TestGenerationBuildStep.PROCESS_TEST_RESULTS, 'done'),
-            canBeVoted: false,
-            messageId: TestNamedMessages.TEST_GENERATION_BUILD_STATUS_MESSAGE,
-        })
 
         const followUps: FollowUps = {
             text: '',

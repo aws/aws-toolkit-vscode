@@ -53,6 +53,13 @@ export const buildProgressField: ProgressField = {
     actions: [cancelBuildProgressButton],
 }
 
+export const fixingTestProgressField: ProgressField = {
+    status: 'default',
+    value: -1,
+    text: 'Fixing test failures...',
+    actions: [cancelBuildProgressButton],
+}
+
 export const errorProgressField: ProgressField = {
     status: 'error',
     text: 'Error...Input needed',
@@ -70,8 +77,8 @@ ${planSummary ? `\n\n${planSummary}` : ''}
 `
 
 const checkIcons = {
-    wait: '&#9744;',
-    current: '&#9744;',
+    wait: '&#9203;',
+    current: '&#9203;',
     done: '<span style="color: green;">&#10004;</span>',
     error: '&#10060;',
 }
@@ -85,8 +92,6 @@ const stepStatuses: StepStatus[] = []
 
 export const testGenBuildProgressMessage = (currentStep: TestGenerationBuildStep, status?: string) => {
     const session = ChatSessionManager.Instance.getSession()
-    const statusText = BuildStatus[session.buildStatus].toLowerCase()
-    const icon = session.buildStatus === BuildStatus.SUCCESS ? checkIcons['done'] : checkIcons['error']
     let message = `Sure. This may take a few minutes and I'll update the progress here.\n
 **Progress summary**\n\n`
 
@@ -114,32 +119,35 @@ export const testGenBuildProgressMessage = (currentStep: TestGenerationBuildStep
         currentStep >= TestGenerationBuildStep.FIXING_TEST_CASES &&
         session.buildStatus === BuildStatus.FAILURE
     ) {
-        message += `${getIconForStep(TestGenerationBuildStep.FIXING_TEST_CASES)} Fixed test failures\n\n`
+        message += `${checkIcons['done']} Fixed test failures\n\n`
     }
 
-    if (currentStep > TestGenerationBuildStep.PROCESS_TEST_RESULTS) {
-        message += `**Test case summary**
-${session.shortAnswer?.testCoverage ? `- Unit test coverage ${session.shortAnswer?.testCoverage}%` : ``}
-${icon} Build ${statusText}
-${icon} Assertion ${statusText}`
-        // TODO: Update Assertion %
+    if (currentStep > TestGenerationBuildStep.PROCESS_TEST_RESULTS && session.buildStatus === BuildStatus.FAILURE) {
+        message += `**Results**\n
+Amazon Q executed the tests and identified at least one failure. Below are the suggested fixes.\n\n`
     }
 
     return message.trim()
 }
-// TODO: Work on UX to show the build error in the progress message
+
 const updateStepStatuses = (currentStep: TestGenerationBuildStep, status?: string) => {
+    const session = ChatSessionManager.Instance.getSession()
     for (let step = TestGenerationBuildStep.INSTALL_DEPENDENCIES; step <= currentStep; step++) {
         const stepStatus: StepStatus = {
             step: step,
             status: 'wait',
         }
 
-        if (step === currentStep) {
-            stepStatus.status = status === 'failed' ? 'error' : 'current'
-        } else if (step < currentStep) {
-            stepStatus.status = 'done'
-        }
+        stepStatus.status =
+            step === currentStep
+                ? status === 'error' || status === 'done'
+                    ? status
+                    : 'current'
+                : step < currentStep
+                  ? session.buildStatus === BuildStatus.FAILURE
+                      ? 'error'
+                      : 'done'
+                  : stepStatus.status
 
         const existingIndex = stepStatuses.findIndex((s) => s.step === step)
         if (existingIndex !== -1) {
