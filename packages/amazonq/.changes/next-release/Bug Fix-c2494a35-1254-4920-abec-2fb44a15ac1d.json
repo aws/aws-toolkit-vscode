@@ -1,4 +1,4 @@
 {
 	"type": "Bug Fix",
-	"description": "Fix a bug where subsequent /review did not work after reviewing once"
+	"description": "/review: subsequent reviews weren't possible"
 }
