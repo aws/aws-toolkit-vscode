@@ -80,12 +80,13 @@ describe(`Controller - Doc Generation`, () => {
             sandbox,
         })
     }
-    async function fireFollowUps(followUpTypes: FollowUpTypes[]) {
+    async function fireFollowUps(followUpTypes: FollowUpTypes[], stub: sinon.SinonStub) {
         for (const type of followUpTypes) {
             controllerSetup.emitters.followUpClicked.fire({
                 tabID,
                 followUp: { type },
             })
+            await waitForStub(stub)
         }
     }
 
@@ -106,7 +107,7 @@ describe(`Controller - Doc Generation`, () => {
             accept: FollowUpSequences.acceptContent,
         }
 
-        await fireFollowUps(sequences[action])
+        await fireFollowUps(sequences[action], getSessionStub)
 
         if ((action === 'makeChanges' || action === 'edit') && message) {
             controllerSetup.emitters.processHumanChatMessage.fire({
@@ -114,9 +115,8 @@ describe(`Controller - Doc Generation`, () => {
                 conversationID,
                 message,
             })
+            await waitForStub(getSessionStub)
         }
-
-        await waitForStub(getSessionStub)
     }
 
     async function setupTest(sandbox: sinon.SinonSandbox) {

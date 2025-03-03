@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Amazon Q: Fix data isolation between tabs to prevent interference when using /doc in multiple tabs"
+}
