@@ -28,7 +28,7 @@ export const commonTabData: TabTypeData = {
     placeholder: 'Ask a question. Use @ to add context, / for quick actions',
     welcome: `Hi, I'm Amazon Q. I can answer your software development questions.
   Ask me to explain, debug, or optimize your code.
-  You can enter \`/\` to see a list of quick actions. Add @workspace to the beginning of your message to include your entire workspace as context.`,
+  You can enter \`/\` to see a list of quick actions. Use \`@\` to add saved prompts, files, folders, or your entire workspace as context.`,
     contextCommands: [workspaceCommand],
 }
 
