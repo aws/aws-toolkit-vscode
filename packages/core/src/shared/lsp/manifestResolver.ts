@@ -12,23 +12,19 @@ import { Manifest } from './types'
 import { StageResolver, tryStageResolvers } from './utils/setupStage'
 import { HttpResourceFetcher } from '../resourcefetcher/httpResourceFetcher'
 import * as localizedText from '../localizedText'
+import { AmazonQPromptSettings, amazonQPrompts } from '../settings'
 
 const logger = getLogger('lsp')
 
 interface StorageManifest {
     etag: string
     content: string
-    dontShow: boolean
 }
 
 type ManifestStorage = Record<string, StorageManifest>
 
 export const manifestStorageKey = 'aws.toolkit.lsp.manifest'
 const manifestTimeoutMs = 15000
-
-export async function resetManifestState() {
-    await globals.globalState.update(manifestStorageKey, {})
-}
 
 export class ManifestResolver {
     constructor(
@@ -74,7 +70,7 @@ export class ManifestResolver {
 
         const manifest = this.parseManifest(resp.content)
         await this.saveManifest(resp.eTag, resp.content)
-        this.checkDeprecation(manifest)
+        await this.checkDeprecation(manifest)
         manifest.location = 'remote'
         return manifest
     }
@@ -89,7 +85,7 @@ export class ManifestResolver {
         }
 
         const manifest = this.parseManifest(manifestData.content)
-        this.checkDeprecation(manifest)
+        await this.checkDeprecation(manifest)
         manifest.location = 'cache'
         return manifest
     }
@@ -108,22 +104,34 @@ export class ManifestResolver {
      * Check if the current manifest is deprecated.
      * If yes and user hasn't muted this notification, shows a toast message with two buttons:
      * - OK: close and do nothing
-     * - Don't Show Again: Update global state (dontShow) so the deprecation message is never shown for this manifest.
+     * - Don't Show Again: Update suppressed prompt setting so the deprecation message is never shown for this manifest.
      * @param manifest
      */
-    private checkDeprecation(manifest: Manifest): void {
+    private async checkDeprecation(manifest: Manifest): Promise<void> {
+        const prompts = AmazonQPromptSettings.instance
+        const lspId = `${this.lsName}LspManifestMessage`
+
+        // sanity check, if the lsName is changed then we also need to update the prompt keys in settings-amazonq.gen
+        if (!(lspId in amazonQPrompts)) {
+            logger.error(`LSP ID "${lspId}" not found in amazonQPrompts.`)
+            return
+        }
+
         if (!manifest.isManifestDeprecated) {
+            // in case we got an new url, make sure the prompt is re-enabled for active manifests
+            await prompts.enablePrompt(lspId as keyof typeof amazonQPrompts)
             return
         }
 
         const deprecationMessage = `"${this.lsName}" manifest is deprecated. No future updates will be available.`
         logger.info(deprecationMessage)
-        if (!this.getStorage()[this.lsName].dontShow) {
+
+        if (prompts.isPromptEnabled(lspId as keyof typeof amazonQPrompts)) {
             void vscode.window
                 .showInformationMessage(deprecationMessage, localizedText.ok, localizedText.dontShow)
-                .then((button) => {
+                .then(async (button) => {
                     if (button === localizedText.dontShow) {
-                        this.getStorage()[this.lsName].dontShow = true
+                        await prompts.disablePrompt(lspId as keyof typeof amazonQPrompts)
                     }
                 })
         }
@@ -132,14 +140,11 @@ export class ManifestResolver {
     private async saveManifest(etag: string, content: string): Promise<void> {
         const storage = this.getStorage()
 
-        const dontShow = storage[this.lsName]?.dontShow ?? false
-
         globals.globalState.tryUpdate(manifestStorageKey, {
             ...storage,
             [this.lsName]: {
                 etag,
                 content,
-                dontShow,
             },
         })
     }

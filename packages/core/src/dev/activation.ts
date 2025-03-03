@@ -458,12 +458,6 @@ const resettableFeatures: readonly ResettableFeature[] = [
         detail: 'Resets workspace LSP',
         executor: resetWorkspaceLspDownload,
     },
-    {
-        name: 'lsp global state',
-        label: 'Lsp State',
-        detail: 'Resets LSP manifest global state',
-        executor: resetLSPGlobalState,
-    },
 ] as const
 
 // TODO this is *somewhat* similar to `openStorageFromInput`. If we need another
@@ -554,10 +548,6 @@ async function resetNotificationsState() {
 
 async function resetWorkspaceLspDownload() {
     await new WorkspaceLSPResolver().resolve()
-}
-
-async function resetLSPGlobalState() {
-    await ManifestResolver.resetManifestState()
 }
 
 async function editNotifications() {
