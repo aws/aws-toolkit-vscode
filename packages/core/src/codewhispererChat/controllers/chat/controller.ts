@@ -71,6 +71,14 @@ import { workspaceCommand } from '../../../amazonq/webview/ui/tabs/constants'
 import fs from '../../../shared/fs/fs'
 import { FeatureConfigProvider, Features } from '../../../shared/featureConfig'
 import { i18n } from '../../../shared/i18n-helper'
+import {
+    getUserPromptsDirectory,
+    promptFileExtension,
+    createSavedPromptCommandId,
+    aditionalContentNameLimit,
+    additionalContentInnerContextLimit,
+    contextMaxLength,
+} from '../../constants'
 
 export interface ChatControllerMessagePublishers {
     readonly processPromptChatMessage: MessagePublisher<PromptMessage>
@@ -121,21 +129,6 @@ export interface ChatControllerMessageListeners {
     readonly processContextSelected: MessageListener<ContextSelectedMessage>
     readonly processFileClick: MessageListener<FileClick>
 }
-
-const promptFileExtension = '.md'
-
-const additionalContentInnerContextLimit = 8192
-
-const aditionalContentNameLimit = 1024
-
-// temporary limit for @workspace and @file combined context length
-const contextMaxLength = 40_000
-
-const getUserPromptsDirectory = () => {
-    return path.join(fs.getUserHomeDir(), '.aws', 'amazonq', 'prompts')
-}
-
-const createSavedPromptCommandId = 'create-saved-prompt'
 
 export class ChatController {
     private readonly sessionStorage: ChatSessionStorage
@@ -497,6 +490,7 @@ export class ChatController {
                         .map(([name]) => ({
                             command: path.basename(name, promptFileExtension),
                             icon: 'magic' as MynahIconsType,
+                            id: 'prompt',
                             route: [userPromptsDirectory, name],
                         }))
                 )
@@ -525,6 +519,7 @@ export class ChatController {
                         command: path.basename(contextCommandItem.relativePath),
                         description: path.join(wsFolderName, contextCommandItem.relativePath),
                         route: [contextCommandItem.workspaceFolder, contextCommandItem.relativePath],
+                        id: 'file',
                         icon: 'file' as MynahIconsType,
                     })
                 } else {
@@ -532,6 +527,7 @@ export class ChatController {
                         command: path.basename(contextCommandItem.relativePath),
                         description: path.join(wsFolderName, contextCommandItem.relativePath),
                         route: [contextCommandItem.workspaceFolder, contextCommandItem.relativePath],
+                        id: 'folder',
                         icon: 'folder' as MynahIconsType,
                     })
                 }
@@ -581,6 +577,7 @@ export class ChatController {
             await fs.writeFile(newFilePath, newFileContent)
             const newFileDoc = await vscode.workspace.openTextDocument(newFilePath)
             await vscode.window.showTextDocument(newFileDoc)
+            telemetry.ui_click.emit({ elementId: 'amazonq_createSavedPrompt' })
         }
     }
 
@@ -906,6 +903,7 @@ export class ChatController {
                 })
             )
         }
+        triggerPayload.workspaceRulesCount = workspaceRules.length
 
         // Add context commands added by user to context
         if (triggerPayload.context !== undefined && triggerPayload.context.length > 0) {
@@ -931,6 +929,12 @@ export class ChatController {
 
         let currentContextLength = 0
         triggerPayload.additionalContents = []
+        triggerPayload.additionalContextLengths = this.telemetryHelper.getContextLengths(prompts)
+        triggerPayload.truncatedAdditionalContextLengths = {
+            fileContextLength: 0,
+            promptContextLength: 0,
+            ruleContextLength: 0,
+        }
         for (const prompt of prompts.slice(0, 20)) {
             // Todo: add mechanism for sorting/prioritization of additional context
             const entry = {
@@ -946,6 +950,16 @@ export class ChatController {
                 getLogger().warn(`Selected context exceeds context size limit: ${entry.description} `)
                 break
             }
+
+            const contextType = this.telemetryHelper.getContextType(prompt)
+            if (contextType === 'rule') {
+                triggerPayload.truncatedAdditionalContextLengths.ruleContextLength += entry.innerContext.length
+            } else if (contextType === 'prompt') {
+                triggerPayload.truncatedAdditionalContextLengths.promptContextLength += entry.innerContext.length
+            } else if (contextType === 'file') {
+                triggerPayload.truncatedAdditionalContextLengths.fileContextLength += entry.innerContext.length
+            }
+
             triggerPayload.additionalContents.push(entry)
             currentContextLength += entry.innerContext.length
             let relativePath = path.relative(workspaceFolder, prompt.filePath)
