@@ -7,7 +7,8 @@ import { VSCODE_EXTENSION_ID } from '../extensions'
 import { getLogger, Logger } from '../logger/logger'
 import { ResourceFetcher } from './resourcefetcher'
 import { Timeout, CancelEvent, waitUntil } from '../utilities/timeoutUtils'
-import request, { RequestCancelledError, RequestError } from '../request'
+import request, { RequestError } from '../request'
+import { isUserCancelledError } from '../errors'
 
 type RequestHeaders = { eTag?: string; gZip?: boolean }
 
@@ -120,8 +121,8 @@ export class HttpResourceFetcher implements ResourceFetcher<Response> {
                 interval: 100,
                 backoff: 2,
                 retryOnFail: (error: Error) => {
-                    // retry unless we got an user cancellation error
-                    return !(error instanceof RequestCancelledError)
+                    // Retry unless the user intentionally canceled the operation.
+                    return !isUserCancelledError(error)
                 },
             }
         )
