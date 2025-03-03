@@ -18,7 +18,7 @@ const localize = nls.loadMessageBundle()
 export async function publishStateMachine(
     awsContext: AwsContext,
     outputChannel: vscode.OutputChannel,
-    region: string | undefined
+    region?: string
 ) {
     const logger: Logger = getLogger()
 
