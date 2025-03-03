@@ -25,6 +25,7 @@ import {
     RetryStrategy,
     UserAgent,
 } from '@aws-sdk/types'
+import { FetchHttpHandler } from '@smithy/fetch-http-handler'
 import { HttpResponse, HttpRequest } from '@aws-sdk/protocol-http'
 import { ConfiguredRetryStrategy } from '@smithy/util-retry'
 import { telemetry } from './telemetry/telemetry'
@@ -33,6 +34,8 @@ import { extensionVersion } from './vscode/env'
 import { getLogger } from './logger/logger'
 import { partialClone } from './utilities/collectionUtils'
 import { selectFrom } from './utilities/tsUtils'
+import { once } from './utilities/functionUtils'
+import { isWeb } from './extensionGlobals'
 
 export type AwsClientConstructor<C> = new (o: AwsClientOptions) => C
 
@@ -88,6 +91,20 @@ export class AWSClientBuilderV3 {
         return shim
     }
 
+    private buildHttpHandler() {
+        const requestTimeout = 30000
+        // HACK: avoid importing node-http-handler on web.
+        return isWeb()
+            ? new FetchHttpHandler({ keepAlive: true, requestTimeout })
+            : new (require('@smithy/node-http-handler').NodeHttpHandler)({
+                  httpAgent: { keepAlive: true },
+                  httpsAgent: { keepAlive: true },
+                  requestTimeout,
+              })
+    }
+
+    private getHttpHandler = once(this.buildHttpHandler.bind(this))
+
     private keyAwsService<C extends AwsClient>(serviceOptions: AwsServiceOptions<C>): string {
         // Serializing certain objects in the args allows us to detect when nested objects change (ex. new retry strategy, endpoints)
         return [
@@ -128,6 +145,10 @@ export class AWSClientBuilderV3 {
         if (!opt.retryStrategy) {
             // Simple exponential backoff strategy as default.
             opt.retryStrategy = new ConfiguredRetryStrategy(5, (attempt: number) => 1000 * 2 ** attempt)
+        }
+
+        if (!opt.requestHandler) {
+            opt.requestHandler = this.getHttpHandler()
         }
         // TODO: add tests for refresh logic.
         opt.credentials = async () => {
