@@ -79,6 +79,7 @@ import {
     additionalContentInnerContextLimit,
     contextMaxLength,
 } from '../../constants'
+import { ChatSession } from '../../clients/chat/v0/chat'
 
 export interface ChatControllerMessagePublishers {
     readonly processPromptChatMessage: MessagePublisher<PromptMessage>
@@ -582,14 +583,14 @@ export class ChatController {
     private async processFileClickMessage(message: FileClick) {
         const session = this.sessionStorage.getSession(message.tabID)
         // TODO remove currentContextId but use messageID to track context for each answer message
-        const lineRanges = session.contexts.get(session.currentContextId)?.get(message.filePath)
+        const lineRanges = session.contexts.get(message.filePath)
 
         if (!lineRanges) {
             return
         }
 
         // TODO: Fix for multiple workspace setup
-        const projectRoot = workspace.workspaceFolders?.[0]?.uri.fsPath
+        const projectRoot = session.relativePathToWorkspaceRoot.get(message.filePath)
         if (!projectRoot) {
             return
         }
@@ -877,7 +878,10 @@ export class ChatController {
         this.messenger.sendStaticTextResponse(responseType, triggerID, tabID)
     }
 
-    private async resolveContextCommandPayload(triggerPayload: TriggerPayload): Promise<string[]> {
+    private async resolveContextCommandPayload(
+        triggerPayload: TriggerPayload,
+        session: ChatSession
+    ): Promise<string[]> {
         const contextCommands: ContextCommandItem[] = []
         const relativePaths: string[] = []
 
@@ -914,7 +918,17 @@ export class ChatController {
         if (contextCommands.length === 0) {
             return []
         }
-        const workspaceFolder = contextCommands[0].workspaceFolder
+        const workspaceFolder = vscode.workspace.workspaceFolders?.[0].uri?.fsPath
+        if (!workspaceFolder) {
+            return []
+        }
+        for (const contextCommand of contextCommands) {
+            let relativePath = path.relative(
+                workspaceFolder,
+                path.join(contextCommand.workspaceFolder, contextCommand.relativePath)
+            )
+            session.relativePathToWorkspaceRoot.set(relativePath, contextCommand.workspaceFolder)
+        }
         const prompts = await LspClient.instance.getContextCommandPrompt(contextCommands)
         if (prompts.length === 0) {
             return []
@@ -1000,7 +1014,8 @@ export class ChatController {
             return
         }
 
-        const relativePathsOfContextCommandFiles = await this.resolveContextCommandPayload(triggerPayload)
+        const session = this.sessionStorage.getSession(tabID)
+        const relativePathsOfContextCommandFiles = await this.resolveContextCommandPayload(triggerPayload, session)
         triggerPayload.useRelevantDocuments =
             triggerPayload.context?.some(
                 (context) => typeof context !== 'string' && context.command === '@workspace'
@@ -1047,10 +1062,7 @@ export class ChatController {
         triggerPayload.documentReferences = this.mergeRelevantTextDocuments(triggerPayload.relevantTextDocuments || [])
 
         const request = triggerPayloadToChatRequest(triggerPayload)
-        const session = this.sessionStorage.getSession(tabID)
 
-        session.currentContextId++
-        session.contexts.set(session.currentContextId, new Map())
         if (triggerPayload.documentReferences !== undefined) {
             const relativePathsOfMergedRelevantDocuments = triggerPayload.documentReferences.map(
                 (doc) => doc.relativeFilePath
@@ -1065,10 +1077,7 @@ export class ChatController {
             }
             if (triggerPayload.documentReferences) {
                 for (const doc of triggerPayload.documentReferences) {
-                    const currentContext = session.contexts.get(session.currentContextId)
-                    if (currentContext) {
-                        currentContext.set(doc.relativeFilePath, doc.lineRanges)
-                    }
+                    session.contexts.set(doc.relativeFilePath, doc.lineRanges)
                 }
             }
         }
