@@ -7,7 +7,7 @@ import assert from 'assert'
 import * as vscode from 'vscode'
 import * as sinon from 'sinon'
 import { resetCodeWhispererGlobalVariables, createMockTextEditor } from 'aws-core-vscode/test'
-import { onInlineAcceptance, RecommendationHandler, AuthUtil, session } from 'aws-core-vscode/codewhisperer'
+import { onInlineAcceptance, RecommendationHandler, session } from 'aws-core-vscode/codewhisperer'
 
 describe('onInlineAcceptance', function () {
     describe('onInlineAcceptance', function () {
