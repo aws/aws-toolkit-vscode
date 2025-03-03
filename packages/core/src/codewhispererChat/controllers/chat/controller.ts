@@ -582,7 +582,7 @@ export class ChatController {
     }
     private async processFileClickMessage(message: FileClick) {
         const session = this.sessionStorage.getSession(message.tabID)
-        const lineRanges = session.contexts.get(message.filePath)
+        const lineRanges = session.contexts.get(session.currentContextId)?.get(message.filePath)
 
         if (!lineRanges) {
             return
@@ -892,7 +892,6 @@ export class ChatController {
                     const workspaceFolderPath = vscode.workspace.getWorkspaceFolder(rule)?.uri?.path || ''
                     return {
                         workspaceFolder: workspaceFolderPath,
-                        // todo: add 'prompt' type to LSP model
                         type: 'file' as ContextCommandItemType,
                         relativePath: path.relative(workspaceFolderPath, rule.path),
                     }
@@ -904,7 +903,6 @@ export class ChatController {
         // Add context commands added by user to context
         if (triggerPayload.context !== undefined && triggerPayload.context.length > 0) {
             for (const context of triggerPayload.context) {
-                // todo: add handling of 'prompt' type (dependent on LSP changes)
                 if (typeof context !== 'string' && context.route && context.route.length === 2) {
                     contextCommands.push({
                         workspaceFolder: context.route[0] || '',
@@ -930,8 +928,13 @@ export class ChatController {
             )
             session.relativePathToWorkspaceRoot.set(relativePath, contextCommand.workspaceFolder)
         }
-        const prompts = await LspClient.instance.getContextCommandPrompt(contextCommands)
-        if (prompts.length === 0) {
+        let prompts = []
+        try {
+            prompts = await LspClient.instance.getContextCommandPrompt(contextCommands)
+        } catch {
+            return []
+        }
+        if (!Array.isArray(prompts) || prompts.length === 0) {
             return []
         }
 
@@ -944,7 +947,6 @@ export class ChatController {
             ruleContextLength: 0,
         }
         for (const prompt of prompts.slice(0, 20)) {
-            // Todo: add mechanism for sorting/prioritization of additional context
             const entry = {
                 name: prompt.name.substring(0, aditionalContentNameLimit),
                 description: prompt.description.substring(0, aditionalContentNameLimit),
