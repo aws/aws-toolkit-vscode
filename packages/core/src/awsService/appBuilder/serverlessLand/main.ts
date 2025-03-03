@@ -16,7 +16,6 @@ import { ExtContext } from '../../../shared/extensions'
 import { addFolderToWorkspace } from '../../../shared/utilities/workspaceUtils'
 import { ToolkitError } from '../../../shared/errors'
 import { fs } from '../../../shared/fs/fs'
-import { sleep } from '../../../shared/utilities/timeoutUtils'
 import { getPattern } from '../../../shared/utilities/downloadPatterns'
 import { MetadataManager } from './metadataManager'
 
@@ -74,16 +73,14 @@ export async function createNewServerlessLandProject(extContext: ExtContext): Pr
         )
         getLogger().error('Error creating new Serverless Land Application: %O', err as Error)
     } finally {
-        // add telemetry
-        // TODO: Will add telemetry once the implementation gets completed
-        telemetry.sam_init.emit({
+        telemetry.serverlessland_createProject.emit({
             result: createResult,
             reason: reason,
         })
     }
 }
 
-async function launchProjectCreationWizard(
+export async function launchProjectCreationWizard(
     extContext: ExtContext
 ): Promise<CreateServerlessLandWizardForm | undefined> {
     const awsContext = extContext.awsContext
@@ -96,12 +93,20 @@ async function launchProjectCreationWizard(
     }).run()
 }
 
-async function downloadPatternCode(config: CreateServerlessLandWizardForm, assetName: string): Promise<void> {
+export async function downloadPatternCode(config: CreateServerlessLandWizardForm, assetName: string): Promise<void> {
     const fullAssetName = assetName + '.zip'
     const location = vscode.Uri.joinPath(config.location, config.name)
     try {
         await getPattern(serverlessLandOwner, serverlessLandRepo, fullAssetName, location, true)
+        telemetry.record({
+            action: fullAssetName + config.iac + config.runtime,
+            result: 'Succeeded',
+        })
     } catch (error) {
+        telemetry.serverlessland_downloadPattern.emit({
+            result: 'Failed',
+            reason: getTelemetryReason(error),
+        })
         if (error instanceof ToolkitError) {
             throw error
         }
@@ -109,27 +114,38 @@ async function downloadPatternCode(config: CreateServerlessLandWizardForm, asset
     }
 }
 
-async function openReadmeFile(config: CreateServerlessLandWizardForm): Promise<void> {
+export async function openReadmeFile(config: CreateServerlessLandWizardForm): Promise<void> {
     try {
         const readmeUri = await getProjectUri(config, readmeFile)
         if (!readmeUri) {
             getLogger().warn('README.md file not found in the project directory')
+            telemetry.serverlessland_readme.emit({
+                result: 'Failed',
+                reason: 'FileNotFound',
+            })
             return
         }
         await vscode.commands.executeCommand('workbench.action.focusFirstEditorGroup')
         await vscode.commands.executeCommand('markdown.showPreview', readmeUri)
+        telemetry.serverlessland_readme.emit({
+            result: 'Succeeded',
+        })
     } catch (err) {
+        telemetry.serverlessland_readme.emit({
+            result: 'Failed',
+            reason: getTelemetryReason(err),
+        })
         getLogger().error(`Error in openReadmeFile: ${err}`)
         throw new ToolkitError('Error processing README file')
     }
 }
 
-async function getProjectUri(
+export async function getProjectUri(
     config: Pick<CreateServerlessLandWizardForm, 'location' | 'name'>,
     file: string
 ): Promise<vscode.Uri | undefined> {
     if (!file) {
-        throw Error('expected "file" parameter to have at least one item')
+        throw new ToolkitError('expected "file" parameter to have at least one item')
     }
     const cfnTemplatePath = path.resolve(config.location.fsPath, config.name, file)
     if (await fs.exists(cfnTemplatePath)) {

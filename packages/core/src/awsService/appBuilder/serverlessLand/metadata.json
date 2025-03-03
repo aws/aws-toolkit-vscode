@@ -1,6 +1,6 @@
 {
     "patterns": {
-        "s3-lambda-resizing-sam": {
+        "Image Resizing": {
             "name": "Resizing image",
             "description": "Lambda, S3 • Python, Javascript, Java, .NET • SAM",
             "implementation": [
@@ -26,7 +26,7 @@
                 }
             ]
         },
-        "apigw-rest-api-lambda-sam": {
+        "Hello World Lambda with API": {
             "name": "Rest API",
             "description": "Lambda, API Gateway • Python, Javascript, Java, .NET • SAM",
             "implementation": [
