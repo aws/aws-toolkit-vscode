@@ -111,14 +111,14 @@ export class ManifestResolver {
         const prompts = AmazonQPromptSettings.instance
         const lspId = `${this.lsName}LspManifestMessage`
 
-        // sanity check, if the lsName is changed then we also need to update the prompt keys in settings-amazonq.gen
+        // Sanity check, if the lsName is changed then we also need to update the prompt keys in settings-amazonq.gen
         if (!(lspId in amazonQPrompts)) {
             logger.error(`LSP ID "${lspId}" not found in amazonQPrompts.`)
             return
         }
 
         if (!manifest.isManifestDeprecated) {
-            // in case we got an new url, make sure the prompt is re-enabled for active manifests
+            // In case we got an new url, make sure the prompt is re-enabled for active manifests
             await prompts.enablePrompt(lspId as keyof typeof amazonQPrompts)
             return
         }
