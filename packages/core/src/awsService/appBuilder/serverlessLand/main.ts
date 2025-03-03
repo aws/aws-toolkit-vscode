@@ -16,6 +16,7 @@ import { ExtContext } from '../../../shared/extensions'
 import { addFolderToWorkspace } from '../../../shared/utilities/workspaceUtils'
 import { ToolkitError } from '../../../shared/errors'
 import { fs } from '../../../shared/fs/fs'
+import { sleep } from '../../../shared/utilities/timeoutUtils'
 import { getPattern } from '../../../shared/utilities/downloadPatterns'
 import { MetadataManager } from './metadataManager'
 
