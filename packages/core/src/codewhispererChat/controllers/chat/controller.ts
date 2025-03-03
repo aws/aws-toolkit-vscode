@@ -424,43 +424,36 @@ export class ChatController {
                 commands: [
                     ...workspaceCommand.commands,
                     {
-                        command: 'folder',
+                        command: i18n('AWS.amazonq.context.folders.title'),
                         children: [
                             {
-                                groupName: 'Folders',
+                                groupName: i18n('AWS.amazonq.context.folders.title'),
                                 commands: [],
                             },
                         ],
-                        description: 'All files within a specific folder',
+                        description: i18n('AWS.amazonq.context.folders.description'),
                         icon: 'folder' as MynahIconsType,
                     },
                     {
-                        command: 'file',
+                        command: i18n('AWS.amazonq.context.files.title'),
                         children: [
                             {
-                                groupName: 'Files',
+                                groupName: i18n('AWS.amazonq.context.files.title'),
                                 commands: [],
                             },
                         ],
-                        description: 'File',
+                        description: i18n('AWS.amazonq.context.files.description'),
                         icon: 'file' as MynahIconsType,
                     },
                     {
-                        command: 'prompts',
+                        command: i18n('AWS.amazonq.context.prompts.title'),
                         children: [
                             {
-                                groupName: 'Prompts',
-                                actions: [
-                                    {
-                                        id: createSavedPromptCommandId,
-                                        icon: 'plus',
-                                        description: i18n('AWS.amazonq.savedPrompts.action'),
-                                    },
-                                ],
+                                groupName: i18n('AWS.amazonq.context.prompts.title'),
                                 commands: [],
                             },
                         ],
-                        description: 'Prompts',
+                        description: i18n('AWS.amazonq.context.prompts.description'),
                         icon: 'magic' as MynahIconsType,
                     },
                 ],
