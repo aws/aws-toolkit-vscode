@@ -46,6 +46,9 @@ import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { FeatureUseCase } from '../models/constants'
 import { UploadTestArtifactToS3Error } from '../../amazonqTest/error'
 import { ChatSessionManager } from '../../amazonqTest/chat/storages/chatSession'
+import { getStringHash } from '../../shared/utilities/textUtilities'
+import { getClientId } from '../../shared/telemetry/util'
+import globals from '../../shared/extensionGlobals'
 
 export async function listScanResults(
     client: DefaultCodeWhispererClient,
@@ -416,4 +419,22 @@ function getPollingTimeoutMsForScope(scope: CodeWhispererConstants.CodeAnalysisS
     return scope === CodeWhispererConstants.CodeAnalysisScope.FILE_AUTO
         ? CodeWhispererConstants.expressScanTimeoutMs
         : CodeWhispererConstants.standardScanTimeoutMs
+}
+
+/**
+ * Generates a scanName that unique identifies a user's workspace configuration for a Q code review.
+ *
+ * @param projectPaths List of project root paths
+ * @param scope {@link CodeWhispererConstants.CodeAnalysisScope} Scope of files included in the code review
+ * @param fileName File name of the file being reviewed, or pass undefined for workspace review
+ * @returns A string hash that uniquely identifies the workspace configuration
+ */
+export function generateScanName(
+    projectPaths: string[],
+    scope: CodeWhispererConstants.CodeAnalysisScope,
+    fileName?: string
+) {
+    const clientId = getClientId(globals.globalState)
+    const projectId = fileName ?? projectPaths.sort((a, b) => a.localeCompare(b)).join(',')
+    return getStringHash(`${clientId}::${projectId}::${scope}`)
 }
