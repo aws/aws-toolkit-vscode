@@ -4,7 +4,6 @@
  */
 import * as nodefs from 'fs' // eslint-disable-line no-restricted-imports
 import { ToolkitError } from '../../../shared/errors'
-import path from 'path'
 import globals from '../../../shared/extensionGlobals'
 
 interface Implementation {
@@ -49,7 +48,7 @@ export class MetadataManager {
     }
 
     public getMetadataPath(): string {
-        return globals.context.asAbsolutePath(path.join('dist', 'src', 'serverlessLand', 'metadata.json'))
+        return globals.context.asAbsolutePath('dist/src/serverlessLand/metadata.json')
     }
 
     /**

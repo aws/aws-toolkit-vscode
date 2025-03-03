@@ -12,6 +12,7 @@ import { Prompter, PromptResult, Transform } from './prompter'
 import { assign, isAsyncIterable } from '../utilities/collectionUtils'
 import { recentlyUsed } from '../localizedText'
 import { getLogger } from '../logger/logger'
+import { openUrl } from '../utilities/vsCodeUtils'
 import { MetadataManager } from '../../awsService/appBuilder/serverlessLand/metadataManager'
 
 const localize = nls.loadMessageBundle()
@@ -157,7 +158,7 @@ export function createQuickPick<T>(
         if (!patternUrl) {
             return
         }
-        await vscode.env.openExternal(vscode.Uri.parse(patternUrl))
+        await openUrl(vscode.Uri.parse(patternUrl))
     })
 
     const prompter =

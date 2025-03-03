@@ -71,7 +71,7 @@ function promptRuntime(metadataManager: MetadataManager, pattern: string | undef
         {
             title: localize('AWS.serverlessLand.initWizard.runtime.prompt', 'Select Runtime'),
             placeholder: 'Choose a runtime for your project',
-            buttons: [vscode.QuickInputButtons.Back],
+            buttons: createCommonButtons(),
         }
     )
 }
@@ -94,7 +94,7 @@ function promptIac(metadataManager: MetadataManager, pattern: string | undefined
         {
             title: localize('AWS.serverlessLand.initWizard.iac.prompt', 'Select IaC'),
             placeholder: 'Choose an IaC option for your project',
-            buttons: [vscode.QuickInputButtons.Back],
+            buttons: createCommonButtons(),
         }
     )
 }
@@ -102,16 +102,17 @@ function promptIac(metadataManager: MetadataManager, pattern: string | undefined
 function promptLocation() {
     return createFolderPrompt(vscode.workspace.workspaceFolders ?? [], {
         title: localize('AWS.serverlessLand.initWizard.location.prompt', 'Select Project Location'),
-        buttons: [vscode.QuickInputButtons.Back],
-        browseFolderDetail: 'Select a folder for your project',
+        buttons: createCommonButtons(),
+        browseFolderDetail: 'Select a parent folder for your project',
     })
 }
 
-function promptName() {
+function promptName(location: vscode.Uri | undefined) {
+    const folderName = location ? path.basename(location.fsPath) : ''
     return createInputBox({
         title: localize('AWS.serverlessLand.initWizard.name.prompt', 'Enter Project Name'),
-        placeholder: 'Enter a name for your new application',
-        buttons: [vscode.QuickInputButtons.Back],
+        placeholder: ` ${folderName}/: Enter a name for your new application`,
+        buttons: createCommonButtons(),
         validateInput: (value: string): string | undefined => {
             if (!value) {
                 return 'Application name cannot be empty'
@@ -140,6 +141,6 @@ export class CreateServerlessLandWizard extends Wizard<CreateServerlessLandWizar
         this.form.runtime.bindPrompter((state) => promptRuntime(this.metadataManager, state.pattern))
         this.form.iac.bindPrompter((state) => promptIac(this.metadataManager, state.pattern))
         this.form.location.bindPrompter(() => promptLocation())
-        this.form.name.bindPrompter(() => promptName())
+        this.form.name.bindPrompter((state) => promptName(state.location))
     }
 }
