@@ -145,6 +145,13 @@ export function createQuickPick<T>(
     assign(mergedOptions, picker)
     picker.buttons = mergedOptions.buttons ?? []
 
+    picker.onDidAccept(() => {
+        if (picker.selectedItems[0].data === 'visit') {
+            void vscode.env.openExternal(vscode.Uri.parse('https://serverlessland.com/patterns'))
+            return
+        }
+    })
+
     picker.onDidTriggerItemButton(async (event) => {
         const metadataManager = MetadataManager.getInstance()
         if (event.button.tooltip !== 'Open in Serverless Land') {

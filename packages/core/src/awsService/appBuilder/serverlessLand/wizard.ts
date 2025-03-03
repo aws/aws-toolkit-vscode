@@ -31,8 +31,8 @@ function promptPattern(metadataManager: MetadataManager) {
         throw new ToolkitError('No patterns found in metadata')
     }
 
-    return createQuickPick<string>(
-        patterns.map((p) => ({
+    const items = [
+        ...patterns.map((p) => ({
             label: p.label,
             detail: p.description,
             data: p.label,
@@ -44,13 +44,22 @@ function promptPattern(metadataManager: MetadataManager) {
             ],
         })),
         {
-            title: localize('AWS.serverlessLand.initWizard.pattern.prompt', 'Select a Pattern for your application'),
-            placeholder: 'Choose a pattern for your project',
-            buttons: createCommonButtons(),
-            matchOnDescription: true,
-            matchOnDetail: true,
-        }
-    )
+            label: '',
+            detail: 'Browse more on serverlessland.com',
+            data: 'visit',
+            alwaysShow: true,
+        },
+    ]
+
+    const quickPick = createQuickPick<string>(items, {
+        title: localize('AWS.serverlessLand.initWizard.pattern.prompt', 'Select a Pattern for your application'),
+        placeholder: 'Choose a pattern for your project',
+        buttons: createCommonButtons(),
+        matchOnDescription: true,
+        matchOnDetail: true,
+    })
+
+    return quickPick
 }
 
 function promptRuntime(metadataManager: MetadataManager, pattern: string | undefined) {
