@@ -26,7 +26,6 @@ import { DevNotificationsState } from '../notifications/types'
 import { QuickPickItem } from 'vscode'
 import { ChildProcess } from '../shared/utilities/processUtils'
 import { WorkspaceLSPResolver } from '../amazonq/lsp/workspaceInstaller'
-import * as ManifestResolver from '../shared/lsp/manifestResolver'
 
 interface MenuOption {
     readonly label: string
