@@ -22,6 +22,8 @@ import {
     paginateDescribeIamInstanceProfileAssociations,
     IamInstanceProfile,
     GetConsoleOutputCommand,
+    RebootInstancesCommandOutput,
+    GetConsoleOutputCommandOutput,
 } from '@aws-sdk/client-ec2'
 import { Timeout } from '../utilities/timeoutUtils'
 import { showMessageWithCancel } from '../utilities/messages'
@@ -191,7 +193,7 @@ export class Ec2Client extends ClientWrapper<EC2Client> {
         }
     }
 
-    public async rebootInstance(instanceId: string): Promise<void> {
+    public async rebootInstance(instanceId: string): Promise<RebootInstancesCommandOutput> {
         return await this.makeRequest(RebootInstancesCommand, { InstanceIds: [instanceId] })
     }
 
@@ -233,7 +235,10 @@ export class Ec2Client extends ClientWrapper<EC2Client> {
     }
 
     public async getConsoleOutput(instanceId: string, latest: boolean): Promise<SafeEc2GetConsoleOutputResult> {
-        const response = await this.makeRequest(GetConsoleOutputCommand, { InstanceId: instanceId, Latest: latest })
+        const response: GetConsoleOutputCommandOutput = await this.makeRequest(GetConsoleOutputCommand, {
+            InstanceId: instanceId,
+            Latest: latest,
+        })
 
         return {
             ...response,

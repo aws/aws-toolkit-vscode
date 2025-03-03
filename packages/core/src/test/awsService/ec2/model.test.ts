@@ -10,9 +10,8 @@ import { SsmClient } from '../../../shared/clients/ssm'
 import { Ec2Client } from '../../../shared/clients/ec2'
 import { Ec2Selection } from '../../../awsService/ec2/prompter'
 import { ToolkitError } from '../../../shared/errors'
-import { IAM } from 'aws-sdk'
 import { SshKeyPair } from '../../../awsService/ec2/sshKeyPair'
-import { DefaultIamClient } from '../../../shared/clients/iamClient'
+import { IamClient, IamRole } from '../../../shared/clients/iam'
 import { assertNoTelemetryMatch, createTestWorkspaceFolder } from '../../testUtil'
 import { fs } from '../../../shared'
 import path from 'path'
@@ -31,13 +30,13 @@ describe('Ec2ConnectClient', function () {
 
     describe('getAttachedIamRole', async function () {
         it('only returns role if receives ARN from instance profile', async function () {
-            let role: IAM.Role | undefined
+            let role: IamRole | undefined
             const getInstanceProfileStub = sinon.stub(Ec2Client.prototype, 'getAttachedIamInstanceProfile')
 
             getInstanceProfileStub.resolves({ Arn: 'thisIsAnArn' })
             sinon
-                .stub(DefaultIamClient.prototype, 'getIAMRoleFromInstanceProfile')
-                .resolves({ Arn: 'ThisIsARoleArn' } as IAM.Role)
+                .stub(IamClient.prototype, 'getIAMRoleFromInstanceProfile')
+                .resolves(createRoleWithArn('ThisIsARoleArn'))
 
             role = await client.getAttachedIamRole('test-instance')
             assert.ok(role)
@@ -52,7 +51,7 @@ describe('Ec2ConnectClient', function () {
 
     describe('hasProperPermissions', async function () {
         it('throws error when sdk throws error', async function () {
-            sinon.stub(DefaultIamClient.prototype, 'simulatePrincipalPolicy').throws(new ToolkitError('error'))
+            sinon.stub(IamClient.prototype, 'simulatePrincipalPolicy').throws(new ToolkitError('error'))
 
             try {
                 await client.hasProperPermissions('')
@@ -116,7 +115,7 @@ describe('Ec2ConnectClient', function () {
 
         it('throws EC2SSMAgent error if instance is running and has IAM Role, but agent is not running', async function () {
             sinon.stub(Ec2Connecter.prototype, 'isInstanceRunning').resolves(true)
-            sinon.stub(Ec2Connecter.prototype, 'getAttachedIamRole').resolves({ Arn: 'testRole' } as IAM.Role)
+            sinon.stub(Ec2Connecter.prototype, 'getAttachedIamRole').resolves(createRoleWithArn('testRole'))
             sinon.stub(Ec2Connecter.prototype, 'hasProperPermissions').resolves(true)
             sinon.stub(SsmClient.prototype, 'getInstanceAgentPingStatus').resolves('offline')
 
@@ -141,7 +140,7 @@ describe('Ec2ConnectClient', function () {
 
         it('does not throw an error if all checks pass', async function () {
             sinon.stub(Ec2Connecter.prototype, 'isInstanceRunning').resolves(true)
-            sinon.stub(Ec2Connecter.prototype, 'getAttachedIamRole').resolves({ Arn: 'testRole' } as IAM.Role)
+            sinon.stub(Ec2Connecter.prototype, 'getAttachedIamRole').resolves(createRoleWithArn('testRole'))
             sinon.stub(Ec2Connecter.prototype, 'hasProperPermissions').resolves(true)
             sinon.stub(SsmClient.prototype, 'getInstanceAgentPingStatus').resolves('Online')
 
@@ -307,3 +306,13 @@ describe('getRemoveLinesCommand', async function () {
         assert.throws(() => getRemoveLinesCommand('pat/tern', 'macOS', 'test.txt'))
     })
 })
+
+function createRoleWithArn(Arn: string) {
+    return {
+        RoleName: 'hasArn',
+        Arn,
+        Path: 'thisIsAPath',
+        RoleId: '1',
+        CreateDate: new Date(),
+    }
+}

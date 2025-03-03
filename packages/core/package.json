@@ -506,6 +506,7 @@
         "@aws-sdk/client-sso-oidc": "<3.696.0",
         "@aws-sdk/client-ssm": "<3.696.0",
         "@aws-sdk/client-ec2": "<3.696.0",
+        "@aws-sdk/client-iam": "<3.696.0",
         "@aws-sdk/credential-provider-env": "<3.696.0",
         "@aws-sdk/credential-provider-process": "<3.696.0",
         "@aws-sdk/credential-provider-sso": "<3.696.0",

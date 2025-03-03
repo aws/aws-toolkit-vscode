@@ -28,12 +28,11 @@ export abstract class ClientWrapper<C extends AwsClient> implements vscode.Dispo
             : globals.sdkClientBuilderV3.getAwsService(args)
     }
 
-    protected async makeRequest<CommandInput extends object, Command extends AwsCommand>(
+    protected async makeRequest<CommandInput extends object, CommandOutput extends object, Command extends AwsCommand>(
         command: new (o: CommandInput) => Command,
         commandOptions: CommandInput
-    ) {
-        const client = this.getClient()
-        return await client.send(new command(commandOptions))
+    ): Promise<CommandOutput> {
+        return await this.getClient().send(new command(commandOptions))
     }
 
     protected makePaginatedRequest<CommandInput extends object, CommandOutput extends object, Output extends object>(
