@@ -9,7 +9,6 @@ import path from 'path'
 import { PrompterTester } from '../../../test/shared/wizards/prompterTester'
 import { describe } from 'mocha'
 import { ProjectMetadata } from '../../../awsService/appBuilder/serverlessLand/metadataManager'
-import * as nodefs from 'fs' // eslint-disable-line no-restricted-imports
 import fs from '../../../shared/fs/fs'
 import { AppBuilderRootNode } from '../../../awsService/appBuilder/explorer/nodes/rootNode'
 import * as sinon from 'sinon'
@@ -22,7 +21,7 @@ describe('Serverless Land Integration', async () => {
         __dirname,
         '../../../../../src/awsService/appBuilder/serverlessLand/metadata.json'
     )
-    const metadataContent = nodefs.readFileSync(metadataPath, { encoding: 'utf-8' })
+    const metadataContent = await fs.readFileText(metadataPath)
     const parseMetadata = JSON.parse(metadataContent) as ProjectMetadata
     const workspaceFolder = vscode.workspace.workspaceFolders![0]
     const projectFolder = 'my-project-from-Serverless-Land'
@@ -109,7 +108,7 @@ describe('Serverless Land Integration', async () => {
                         ) as AppNode | undefined
                 )
 
-            assert.ok(projectNode)
+            assert.ok(projectNode, 'Expect Serverless Landa project as a project node in Application Builder')
 
             // Check App Builder resources
             const resourceNodes = await projectNode.getChildren()
