@@ -102,6 +102,9 @@ export function registerCommands(controllerPublishers: ChatControllerMessagePubl
             })
         })
     })
+    Commands.register('aws.amazonq.updateContextCommandItems', () => {
+        controllerPublishers.processContextCommandUpdateMessage.publish()
+    })
 }
 
 export type EditorContextBaseCommandType =
