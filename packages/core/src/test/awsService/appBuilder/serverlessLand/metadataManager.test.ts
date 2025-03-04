@@ -20,9 +20,9 @@ describe('MetadataManager', () => {
             patterns: {
                 testPattern: {
                     implementation: [
-                        { iac: 'SAM', runtime: 'nodejs18.x', assetName: 'asset1' },
-                        { iac: 'CDK', runtime: 'nodejs18.x', assetName: 'asset2' },
-                        { iac: 'SAM', runtime: 'python3.9', assetName: 'asset3' },
+                        { iac: 'SAM', runtime: 'nodejs', assetName: 'asset1' },
+                        { iac: 'CDK', runtime: 'nodejs', assetName: 'asset2' },
+                        { iac: 'SAM', runtime: 'python', assetName: 'asset3' },
                     ],
                 },
             },
@@ -57,8 +57,8 @@ describe('MetadataManager', () => {
             const instance = MetadataManager.initialize()
 
             assert(instance instanceof MetadataManager)
-            sinon.assert.calledOnce(getMetadataPathStub)
-            sinon.assert.calledWith(loadMetadataStub, mockPath)
+            sandbox.assert.calledOnce(getMetadataPathStub)
+            sandbox.assert.calledWith(loadMetadataStub, mockPath)
         })
     })
 
@@ -73,8 +73,9 @@ describe('MetadataManager', () => {
 
             const instance = MetadataManager.getInstance()
             const result = instance.getMetadataPath()
+            const expectedPath = path.join('dist', 'src', 'serverlessLand', 'metadata.json')
 
-            sinon.assert.calledWith(asAbsolutePathStub, path.join('dist', 'src', 'serverlessLand', 'metadata.json'))
+            sandbox.assert.calledWith(asAbsolutePathStub, expectedPath)
             assert.strictEqual(result, mockAbsolutePath)
         })
     })
@@ -100,10 +101,7 @@ describe('MetadataManager', () => {
         })
 
         it('returns unique runtimes for valid pattern', () => {
-            assert.deepStrictEqual(manager.getRuntimes('testPattern'), [
-                { label: 'nodejs18.x' },
-                { label: 'python3.9' },
-            ])
+            assert.deepStrictEqual(manager.getRuntimes('testPattern'), [{ label: 'nodejs' }, { label: 'python' }])
         })
     })
 
@@ -129,15 +127,15 @@ describe('MetadataManager', () => {
 
     describe('getAssetName', () => {
         it('returns empty string when pattern not found', () => {
-            assert.strictEqual(manager.getAssetName('nonexistent', 'nodejs18.x', 'SAM'), '')
+            assert.strictEqual(manager.getAssetName('nonexistent', 'nodejs', 'SAM'), '')
         })
 
         it('returns correct asset name for matching implementation', () => {
-            assert.strictEqual(manager.getAssetName('testPattern', 'nodejs18.x', 'SAM'), 'asset1')
+            assert.strictEqual(manager.getAssetName('testPattern', 'nodejs', 'SAM'), 'asset1')
         })
 
         it('returns empty string when no matching implementation found', () => {
-            assert.strictEqual(manager.getAssetName('testPattern', 'java11', 'SAM'), '')
+            assert.strictEqual(manager.getAssetName('testPattern', 'java', 'SAM'), '')
         })
     })
 })

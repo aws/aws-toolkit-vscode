@@ -656,20 +656,8 @@
             "description": "Records a call to remove a region from the explorer"
         },
         {
-            "name": "serverlessland_createProject",
+            "name": "lambda_createServerlessLandProject",
             "description": "Called when creating a new Serverless Project"
-        },
-        {
-            "name": "serverlessland_downloadPattern",
-            "description": "Called when downloading a Serverless Pattern"
-        },
-        {
-            "name": "serverlessland_readme",
-            "description": "Called when opening the Serverless Pattern Readme"
-        },
-        {
-            "name": "serverlessland_wizard",
-            "description": "Called when opening the Serverless Pattern Wizard"
         },
         {
             "name": "sam_detect",

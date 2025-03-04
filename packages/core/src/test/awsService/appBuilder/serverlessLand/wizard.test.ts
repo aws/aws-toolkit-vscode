@@ -34,9 +34,10 @@ describe('CreateWizard', async () => {
 
     afterEach(async () => {
         await fs.delete(path.join(workspaceFolder.uri.fsPath, projectFolder), { recursive: true })
+        sandbox.restore()
     })
 
-    describe(':) Path', async () => {
+    describe(':) ServerlessLand Path', async () => {
         it('creates project with Python runtime and CDK', async () => {
             rootNode = sandbox.spy(AppBuilderRootNode.instance)
             const testWindow = getTestWindow()
@@ -47,7 +48,7 @@ describe('CreateWizard', async () => {
                     Object.entries(parseMetadata.patterns).map(([key, pattern]) => {
                         options.find((option) => option.label === key && option.detail === pattern.description)
                     })
-                    assert.strictEqual(options[0].label, 'Image resizing')
+                    assert.strictEqual(options[0].label, 'Image Resizing')
                     quickPick.acceptItem(quickPick.items[0])
                 })
                 .handleQuickPick('Select Runtime', async (quickPick) => {
@@ -64,7 +65,7 @@ describe('CreateWizard', async () => {
                     quickPick.acceptItem(quickPick.items[0])
                 })
                 .handleInputBox('Enter Project Name', (inputBox) => {
-                    inputBox.acceptValue('python-cdk-project')
+                    inputBox.acceptValue('python-sam-project')
                 })
                 .build()
 
@@ -75,18 +76,18 @@ describe('CreateWizard', async () => {
                 .then(
                     (children) =>
                         children.find(
-                            (node) => node instanceof AppNode && node.label === 'workspaceFolder/python-cdk-project'
+                            (node) =>
+                                node instanceof AppNode &&
+                                node.label === path.normalize('workspaceFolder/python-sam-project')
                         ) as AppNode | undefined
                 )
 
             assert.ok(projectNode)
             const resourceNodes = await projectNode.getChildren()
-            console.log('resourceNodes', resourceNodes)
             assert.strictEqual(resourceNodes.length, 3)
             assert.ok(resourceNodes[0] instanceof ResourceNode)
 
             const lambdaResource = resourceNodes[2] as ResourceNode
-            console.log('retgbgbhtt', lambdaResource.resource.resource.Runtime)
             assert.strictEqual(lambdaResource.resource.resource.Runtime, 'python3.12')
 
             prompterTester.assertCallAll()

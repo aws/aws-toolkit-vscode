@@ -7,10 +7,9 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { getTelemetryReason, getTelemetryResult } from '../../../shared/errors'
 import { getLogger } from '../../../shared/logger/logger'
 import { checklogs } from '../../../shared/localizedText'
-import { Result, telemetry } from '../../../shared/telemetry/telemetry'
+import { telemetry } from '../../../shared/telemetry/telemetry'
 import { CreateServerlessLandWizardForm, CreateServerlessLandWizard } from './wizard'
 import { ExtContext } from '../../../shared/extensions'
 import { addFolderToWorkspace } from '../../../shared/utilities/workspaceUtils'
@@ -37,8 +36,6 @@ const serverlessLandRepo = 'serverless-patterns'
  * 6. Handles errors and emits telemetry
  */
 export async function createNewServerlessLandProject(extContext: ExtContext): Promise<void> {
-    let createResult: Result = 'Succeeded'
-    let reason: string | undefined
     let metadataManager: MetadataManager
 
     try {
@@ -46,8 +43,6 @@ export async function createNewServerlessLandProject(extContext: ExtContext): Pr
         // Launch the project creation wizard
         const config = await launchProjectCreationWizard(extContext)
         if (!config) {
-            createResult = 'Cancelled'
-            reason = 'userCancelled'
             return
         }
         const assetName = metadataManager.getAssetName(config.pattern, config.runtime, config.iac)
@@ -61,9 +56,11 @@ export async function createNewServerlessLandProject(extContext: ExtContext): Pr
             },
             true
         )
+        telemetry.record({
+            runtimeString: config.runtime,
+            templateName: assetName,
+        })
     } catch (err) {
-        createResult = getTelemetryResult(err)
-        reason = getTelemetryReason(err)
         getLogger().error(
             localize(
                 'AWS.serverlessland.initWizard.general.error',
@@ -72,11 +69,6 @@ export async function createNewServerlessLandProject(extContext: ExtContext): Pr
             )
         )
         getLogger().error('Error creating new Serverless Land Application: %O', err as Error)
-    } finally {
-        telemetry.serverlessland_createProject.emit({
-            result: createResult,
-            reason: reason,
-        })
     }
 }
 
@@ -98,15 +90,7 @@ export async function downloadPatternCode(config: CreateServerlessLandWizardForm
     const location = vscode.Uri.joinPath(config.location, config.name)
     try {
         await getPattern(serverlessLandOwner, serverlessLandRepo, fullAssetName, location, true)
-        telemetry.record({
-            action: fullAssetName + config.iac + config.runtime,
-            result: 'Succeeded',
-        })
     } catch (error) {
-        telemetry.serverlessland_downloadPattern.emit({
-            result: 'Failed',
-            reason: getTelemetryReason(error),
-        })
         if (error instanceof ToolkitError) {
             throw error
         }
@@ -119,22 +103,11 @@ export async function openReadmeFile(config: CreateServerlessLandWizardForm): Pr
         const readmeUri = await getProjectUri(config, readmeFile)
         if (!readmeUri) {
             getLogger().warn('README.md file not found in the project directory')
-            telemetry.serverlessland_readme.emit({
-                result: 'Failed',
-                reason: 'FileNotFound',
-            })
             return
         }
         await vscode.commands.executeCommand('workbench.action.focusFirstEditorGroup')
         await vscode.commands.executeCommand('markdown.showPreview', readmeUri)
-        telemetry.serverlessland_readme.emit({
-            result: 'Succeeded',
-        })
     } catch (err) {
-        telemetry.serverlessland_readme.emit({
-            result: 'Failed',
-            reason: getTelemetryReason(err),
-        })
         getLogger().error(`Error in openReadmeFile: ${err}`)
         throw new ToolkitError('Error processing README file')
     }

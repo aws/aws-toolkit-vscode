@@ -11,146 +11,89 @@ import * as vscode from 'vscode'
 import assert from 'assert'
 import * as sinon from 'sinon'
 import * as path from 'path'
+import { MetadataManager } from '../../../../awsService/appBuilder/serverlessLand/metadataManager'
 import * as main from '../../../../awsService/appBuilder/serverlessLand/main'
 import {
     createNewServerlessLandProject,
-    launchProjectCreationWizard,
     openReadmeFile,
     getProjectUri,
     downloadPatternCode,
 } from '../../../../awsService/appBuilder/serverlessLand/main'
-import * as workspaceUtils from '../../../../shared/utilities/workspaceUtils'
 import { fs } from '../../../../shared/fs/fs'
 import * as downloadPatterns from '../../../../shared/utilities/downloadPatterns'
-import { assertTelemetryCurried } from '../../../testUtil'
-import { CreateServerlessLandWizard } from '../../../../awsService/appBuilder/serverlessLand/wizard'
-import { MetadataManager } from '../../../../awsService/appBuilder/serverlessLand/metadataManager'
 import { ExtContext } from '../../../../shared/extensions'
+import { workspaceUtils } from '../../../../shared'
+import * as downloadPattern from '../../../../shared/utilities/downloadPatterns'
+import * as wizardModule from '../../../../awsService/appBuilder/serverlessLand/wizard'
 
 describe('createNewServerlessLandProject', () => {
     let sandbox: sinon.SinonSandbox
-    const mockExtContext = {
-        awsContext: {
-            getCredentials: () => Promise.resolve({}),
-            getCredentialDefaultRegion: () => 'us-west-2',
-        },
-    } as unknown as ExtContext
-    const assertTelemetry = assertTelemetryCurried('serverlessland_createProject')
-    const mockWizardResponse = {
-        name: 'test-project',
-        location: vscode.Uri.file('/test'),
-        pattern: 'test-pattern',
-        runtime: 'nodejs',
-        iac: 'sam',
-        assetName: 'test-asset',
-    }
+    let mockExtContext: ExtContext
+    let mockMetadataManager: sinon.SinonStubbedInstance<MetadataManager>
+    let mockWizard: { run: sinon.SinonStub }
 
     beforeEach(() => {
         sandbox = sinon.createSandbox()
-    })
+        mockExtContext = {
+            awsContext: {
+                getCredentials: sandbox.stub().resolves({}),
+                getCredentialDefaultRegion: () => 'us-west-2',
+            },
+        } as unknown as ExtContext
 
-    afterEach(() => {
-        sandbox.restore()
-    })
+        mockMetadataManager = sandbox.createStubInstance(MetadataManager)
+        mockMetadataManager.getAssetName.returns('test-asset-name')
+        sandbox.stub(MetadataManager, 'getInstance').returns(mockMetadataManager as unknown as MetadataManager)
 
-    it('successfully creates a new serverless land project', async () => {
-        const wizardStub = sandbox.stub(main, 'launchProjectCreationWizard').resolves(mockWizardResponse)
-        const metadataStub = sandbox
-            .stub(MetadataManager.prototype, 'getAssetName')
-            .withArgs('test-pattern', 'node.js', 'sam')
-            .returns('test-asset')
-        const downloadStub = sandbox.stub(main, 'downloadPatternCode').resolves()
-        const readmeStub = sandbox.stub(main, 'openReadmeFile').resolves()
-        const addFolderStub = sandbox.stub(workspaceUtils, 'addFolderToWorkspace').resolves()
+        mockWizard = { run: sandbox.stub() }
+        sandbox.stub(wizardModule, 'CreateServerlessLandWizard').returns(mockWizard)
 
-        await main.createNewServerlessLandProject(mockExtContext)
+        sandbox.stub(vscode.Uri, 'joinPath').returns(vscode.Uri.file('/test'))
+        sandbox.stub(vscode.commands, 'executeCommand').resolves()
 
-        sandbox.assert.calledOnce(wizardStub)
-        sandbox.assert.calledOnce(metadataStub)
-        sandbox.assert.calledWith(downloadStub, mockWizardResponse, 'test-asset')
-        sandbox.assert.calledOnce(readmeStub)
-        sandbox.assert.calledWith(readmeStub, mockWizardResponse)
-        sandbox.assert.calledOnce(addFolderStub)
-        assertTelemetry({
-            result: 'Succeeded',
-        })
-    })
-
-    it('handles wizard cancellation', async () => {
-        sandbox.stub(main, 'launchProjectCreationWizard').resolves(undefined)
-        await createNewServerlessLandProject(mockExtContext)
-        assertTelemetry({
-            result: 'Failed',
-            reason: 'Error',
-        })
-    })
-
-    it('handles errors during project creation', async () => {
-        sandbox.stub(main, 'launchProjectCreationWizard').resolves(mockWizardResponse)
-        sandbox.stub(main, 'downloadPatternCode').rejects(new Error('Download failed'))
-        await createNewServerlessLandProject(mockExtContext)
-        assertTelemetry({
-            result: 'Failed',
-            reason: 'Error',
-        })
-    })
-})
-
-describe('launchProjectCreationWizard', () => {
-    let sandbox: sinon.SinonSandbox
-    const mockWizardResponse = {
-        name: 'test-project',
-        location: 'test-location',
-        pattern: 'test-pattern',
-        runtime: 'nodejs',
-        iac: 'sam',
-    }
-    const mockExtContext = {
-        awsContext: {
-            getCredentials: () => Promise.resolve({}),
-            getCredentialDefaultRegion: () => 'us-west-2',
-        },
-    } as unknown as ExtContext
-
-    beforeEach(() => {
-        sandbox = sinon.createSandbox()
+        sandbox.stub(workspaceUtils, 'addFolderToWorkspace').resolves()
+        sandbox.stub(downloadPattern, 'getPattern').resolves()
     })
     afterEach(() => {
         sandbox.restore()
     })
-    it('should launch wizard and return form data', async () => {
-        const wizardRunStub = sandbox.stub().resolves(mockWizardResponse)
-        sandbox.stub(CreateServerlessLandWizard.prototype, 'run').get(() => wizardRunStub)
-
-        const result = await launchProjectCreationWizard(mockExtContext)
-
-        sinon.assert.calledOnce(wizardRunStub)
-        assert.deepStrictEqual(result, mockWizardResponse)
+    it('should complete project creation successfully', async () => {
+        const mockConfig = {
+            pattern: 'testPattern',
+            runtime: 'nodejs',
+            iac: 'sam',
+            location: vscode.Uri.file('/test'),
+            name: 'testProject',
+        }
+        mockWizard.run.resolves(mockConfig)
+        await createNewServerlessLandProject(mockExtContext)
+        assert.strictEqual(mockWizard.run.calledOnce, true)
+        assert.strictEqual(mockMetadataManager.getAssetName.calledOnce, true)
+        assert.strictEqual((downloadPattern.getPattern as sinon.SinonStub).calledOnce, true)
     })
-    it('should return undefined when wizard is cancelled', async () => {
-        const wizardRunStub = sandbox.stub().resolves(undefined)
-        sandbox.stub(CreateServerlessLandWizard.prototype, 'run').get(() => wizardRunStub)
-
-        const result = await launchProjectCreationWizard(mockExtContext)
-
-        sinon.assert.calledOnce(wizardRunStub)
-        assert.strictEqual(result, undefined)
+    it('should handle wizard cancellation', async () => {
+        mockWizard.run.resolves(undefined)
+        await createNewServerlessLandProject(mockExtContext)
+        assert.strictEqual(mockWizard.run.calledOnce, true)
+        assert.strictEqual(mockMetadataManager.getAssetName.called, false)
+        assert.strictEqual((downloadPattern.getPattern as sinon.SinonStub).called, false)
     })
 })
 
 describe('downloadPatternCode', () => {
+    let sandbox: sinon.SinonSandbox
     let getPatternStub: sinon.SinonStub
-    const assertTelemetry = assertTelemetryCurried('serverlessland_downloadPattern')
 
     beforeEach(function () {
-        getPatternStub = sinon.stub(downloadPatterns, 'getPattern')
+        sandbox = sinon.createSandbox()
+        getPatternStub = sandbox.stub(downloadPatterns, 'getPattern')
     })
     afterEach(function () {
-        sinon.restore()
+        sandbox.restore()
     })
     const mockConfig = {
         name: 'test-project',
-        location: vscode.Uri.file('./test'),
+        location: vscode.Uri.file('/test'),
         pattern: 'test-project-sam-python',
         runtime: 'python',
         iac: 'sam',
@@ -178,10 +121,6 @@ describe('downloadPatternCode', () => {
             await downloadPatternCode(mockConfig, mockAssetName)
             assert.fail('Expected an error to be thrown')
         } catch (err: any) {
-            assertTelemetry({
-                result: 'Failed',
-                reason: 'Error',
-            })
             assert.strictEqual(err.message, 'Failed to download pattern: Error: Download failed')
         }
     })
@@ -273,7 +212,7 @@ describe('getProjectUri', () => {
         } as vscode.Uri)
 
         const result = await getProjectUri(mockConfig, testFile)
-        sinon.assert.calledWith(uriFileStub, expectedPath)
+        sandbox.assert.calledWith(uriFileStub, expectedPath)
         assert.strictEqual(result?.fsPath, expectedPath)
     })
     it('handles missing project directory', async () => {

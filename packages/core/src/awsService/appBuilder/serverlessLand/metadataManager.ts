@@ -3,9 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as nodefs from 'fs' // eslint-disable-line no-restricted-imports
+import * as path from 'path'
 import { ToolkitError } from '../../../shared/errors'
 import globals from '../../../shared/extensionGlobals'
-import { telemetry } from '../../../shared/telemetry/telemetry'
 
 interface Implementation {
     iac: string
@@ -49,7 +49,7 @@ export class MetadataManager {
     }
 
     public getMetadataPath(): string {
-        return globals.context.asAbsolutePath('dist/src/serverlessLand/metadata.json')
+        return globals.context.asAbsolutePath(path.join('dist', 'src', 'serverlessLand', 'metadata.json'))
     }
 
     /**
@@ -63,18 +63,9 @@ export class MetadataManager {
                 const metadataContent = nodefs.readFileSync(metadataPath, { encoding: 'utf-8' })
                 const parseMetadata = JSON.parse(metadataContent) as ProjectMetadata
                 this.metadata = parseMetadata
-                telemetry.record({
-                    action: 'serverlessland_metadataLoaded',
-                    result: 'Succeeded',
-                })
             }
             return this.metadata
         } catch (err) {
-            telemetry.record({
-                action: 'serverlessland_metadataLoaded',
-                result: 'Failed',
-                reason: err instanceof Error ? err.message : String(err),
-            })
             throw new ToolkitError(`Failed to load metadata: ${err instanceof Error ? err.message : String(err)}`)
         }
     }
