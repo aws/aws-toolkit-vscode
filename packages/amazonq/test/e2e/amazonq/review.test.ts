@@ -21,10 +21,7 @@ import path from 'path'
 import { ScanAction, scanProgressMessage } from '../../../src/app/amazonqScan/models/constants'
 
 function getWorkspaceFolder(): string {
-    return (
-        vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ??
-        path.join(__dirname, '../../../../core/src/testFixtures/workspaceFolder')
-    )
+    return vscode.workspace.workspaceFolders![0].uri.fsPath
 }
 
 describe('Amazon Q Code Review', function () {
