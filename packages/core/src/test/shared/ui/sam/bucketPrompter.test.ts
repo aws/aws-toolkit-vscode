@@ -6,7 +6,7 @@
 import assert from 'assert'
 import { S3 } from 'aws-sdk'
 import sinon from 'sinon'
-import { DefaultS3Client } from '../../../../shared/clients/s3Client'
+import { DefaultS3Client } from '../../../../shared/clients/s3'
 import * as SamUtilsModule from '../../../../shared/sam/utils'
 import { createBucketNamePrompter } from '../../../../shared/ui/sam/bucketPrompter'
 import { AsyncCollection } from '../../../../shared/utilities/asyncCollection'

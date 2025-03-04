@@ -39,7 +39,7 @@ import { recentlyUsed } from '../../shared/localizedText'
 import globals from '../../shared/extensionGlobals'
 import { SamCliSettings } from '../../shared/sam/cli/samCliSettings'
 import { getIcon } from '../../shared/icons'
-import { DefaultS3Client } from '../../shared/clients/s3Client'
+import { DefaultS3Client } from '../../shared/clients/s3'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { openUrl } from '../../shared/utilities/vsCodeUtils'
 

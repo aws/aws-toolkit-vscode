@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { DEFAULT_DELIMITER } from '../../../shared/clients/s3Client'
+import { DEFAULT_DELIMITER } from '../../../shared/clients/s3'
 import { getLogger } from '../../../shared/logger/logger'
 import { S3BucketNode } from '../explorer/s3BucketNode'
 import { S3FolderNode } from '../explorer/s3FolderNode'

@@ -10,7 +10,7 @@ import { deleteFileCommand } from '../../../../awsService/s3/commands/deleteFile
 import { S3BucketNode } from '../../../../awsService/s3/explorer/s3BucketNode'
 import { S3FileNode } from '../../../../awsService/s3/explorer/s3FileNode'
 import { S3Node } from '../../../../awsService/s3/explorer/s3Nodes'
-import { Bucket, S3Client } from '../../../../shared/clients/s3Client'
+import { Bucket, S3Client } from '../../../../shared/clients/s3'
 import { assertNoErrorMessages, getTestWindow } from '../../../shared/vscode/window'
 
 describe('deleteFileCommand', function () {

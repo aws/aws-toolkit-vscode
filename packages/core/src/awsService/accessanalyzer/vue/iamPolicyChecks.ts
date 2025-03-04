@@ -25,7 +25,7 @@ import {
     PolicyChecksUiClick,
     ValidatePolicyFindingType,
 } from './constants'
-import { DefaultS3Client, parseS3Uri } from '../../../shared/clients/s3Client'
+import { DefaultS3Client, parseS3Uri } from '../../../shared/clients/s3'
 import { ExpiredTokenException } from '@aws-sdk/client-sso-oidc'
 import { ChildProcess } from '../../../shared/utilities/processUtils'
 

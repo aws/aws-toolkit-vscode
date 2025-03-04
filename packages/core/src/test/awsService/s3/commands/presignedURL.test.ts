@@ -12,7 +12,7 @@ import { presignedURLCommand } from '../../../../awsService/s3/commands/presigne
 import { S3BucketNode } from '../../../../awsService/s3/explorer/s3BucketNode'
 import { S3FileNode } from '../../../../awsService/s3/explorer/s3FileNode'
 import { S3Node } from '../../../../awsService/s3/explorer/s3Nodes'
-import { Bucket, S3Client } from '../../../../shared/clients/s3Client'
+import { Bucket, S3Client } from '../../../../shared/clients/s3'
 import { getTestWindow } from '../../../shared/vscode/window'
 import { FakeClipboard } from '../../../shared/vscode/fakeEnv'
 

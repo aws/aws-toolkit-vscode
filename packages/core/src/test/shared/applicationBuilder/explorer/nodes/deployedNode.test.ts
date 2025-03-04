@@ -12,7 +12,7 @@ import {
 } from '../../../../../awsService/appBuilder/explorer/nodes/deployedNode'
 import * as sinon from 'sinon'
 import * as LambdaClientModule from '../../../../../../src/shared/clients/lambdaClient'
-import * as DefaultS3ClientModule from '../../../../../../src/shared/clients/s3Client'
+import * as DefaultS3ClientModule from '../../../../../shared/clients/s3'
 import * as ApiGatewayNodeModule from '../../../../../awsService/apigateway/explorer/apiGatewayNodes'
 import { beforeEach } from 'mocha'
 import { LambdaFunctionNode } from '../../../../../lambda/explorer/lambdaFunctionNode'

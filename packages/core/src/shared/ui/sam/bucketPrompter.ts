@@ -2,7 +2,7 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import { DefaultS3Client } from '../../clients/s3Client'
+import { DefaultS3Client } from '../../clients/s3'
 import { createCommonButtons } from '../buttons'
 import { createQuickPick, DataQuickPickItem } from '../pickerPrompter'
 import type { SyncParams } from '../../sam/sync'

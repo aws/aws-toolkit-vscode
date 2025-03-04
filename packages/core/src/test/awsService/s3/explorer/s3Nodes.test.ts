@@ -6,7 +6,7 @@
 import assert from 'assert'
 import { S3BucketNode } from '../../../../awsService/s3/explorer/s3BucketNode'
 import { S3Node } from '../../../../awsService/s3/explorer/s3Nodes'
-import { S3Client, Bucket } from '../../../../shared/clients/s3Client'
+import { S3Client, Bucket } from '../../../../shared/clients/s3'
 import { AWSTreeNodeBase } from '../../../../shared/treeview/nodes/awsTreeNodeBase'
 import sinon from 'sinon'
 

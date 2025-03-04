@@ -10,7 +10,7 @@ import { downloadFileAsCommand } from '../../../../awsService/s3/commands/downlo
 import { S3BucketNode } from '../../../../awsService/s3/explorer/s3BucketNode'
 import { S3FileNode } from '../../../../awsService/s3/explorer/s3FileNode'
 import { S3Node } from '../../../../awsService/s3/explorer/s3Nodes'
-import { Bucket, S3Client } from '../../../../shared/clients/s3Client'
+import { Bucket, S3Client } from '../../../../shared/clients/s3'
 import { bufferToStream } from '../../../../shared/utilities/streamUtilities'
 import { MockOutputChannel } from '../../../mockOutputChannel'
 import { makeTemporaryToolkitFolder } from '../../../../shared/filesystemUtilities'

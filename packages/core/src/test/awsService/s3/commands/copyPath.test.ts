@@ -8,7 +8,7 @@ import * as sinon from 'sinon'
 import * as vscode from 'vscode'
 import { copyPathCommand } from '../../../../awsService/s3/commands/copyPath'
 import { S3FolderNode } from '../../../../awsService/s3/explorer/s3FolderNode'
-import { S3Client } from '../../../../shared/clients/s3Client'
+import { S3Client } from '../../../../shared/clients/s3'
 import { FakeClipboard } from '../../../shared/vscode/fakeEnv'
 
 describe('copyPathCommand', function () {

@@ -24,7 +24,7 @@ import { VirtualFileSystem } from '../../shared/virtualFilesystem'
 import { Commands } from '../../shared/vscode/commands2'
 
 import * as nls from 'vscode-nls'
-import { DefaultS3Client } from '../../shared/clients/s3Client'
+import { DefaultS3Client } from '../../shared/clients/s3'
 import { TreeNode } from '../../shared/treeview/resourceTreeDataProvider'
 import { getSourceNode } from '../../shared/utilities/treeNodeUtils'
 const localize = nls.loadMessageBundle()

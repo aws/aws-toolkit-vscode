@@ -9,7 +9,7 @@ import * as vscode from 'vscode'
 import { createFolderCommand } from '../../../../awsService/s3/commands/createFolder'
 import { S3BucketNode } from '../../../../awsService/s3/explorer/s3BucketNode'
 import { S3Node } from '../../../../awsService/s3/explorer/s3Nodes'
-import { S3Client } from '../../../../shared/clients/s3Client'
+import { S3Client } from '../../../../shared/clients/s3'
 import { getTestWindow } from '../../../shared/vscode/window'
 
 describe('createFolderCommand', function () {

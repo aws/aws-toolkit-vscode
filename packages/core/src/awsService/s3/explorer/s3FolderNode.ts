@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { Bucket, CreateFolderRequest, CreateFolderResponse, Folder, S3Client } from '../../../shared/clients/s3Client'
+import { Bucket, CreateFolderRequest, CreateFolderResponse, Folder, S3Client } from '../../../shared/clients/s3'
 import { AWSResourceNode } from '../../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { LoadMoreNode } from '../../../shared/treeview/nodes/loadMoreNode'

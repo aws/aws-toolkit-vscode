@@ -7,7 +7,7 @@ import assert from 'assert'
 import { stringOrProp } from '../../../../shared/utilities/tsUtils'
 import { S3BucketNode } from '../../../../awsService/s3/explorer/s3BucketNode'
 import { S3FileNode } from '../../../../awsService/s3/explorer/s3FileNode'
-import { S3Client } from '../../../../shared/clients/s3Client'
+import { S3Client } from '../../../../shared/clients/s3'
 import { formatLocalized } from '../../../../shared/datetime'
 
 describe('S3FileNode', function () {

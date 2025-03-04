@@ -15,7 +15,7 @@ import {
 } from '../../../../awsService/s3/commands/uploadFile'
 import { S3Node } from '../../../../awsService/s3/explorer/s3Nodes'
 import { S3BucketNode } from '../../../../awsService/s3/explorer/s3BucketNode'
-import { S3Client } from '../../../../shared/clients/s3Client'
+import { S3Client } from '../../../../shared/clients/s3'
 import { MockOutputChannel } from '../../../mockOutputChannel'
 import { getTestWindow } from '../../../shared/vscode/window'
 import sinon from 'sinon'

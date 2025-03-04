@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { SignedUrlRequest } from '../../../shared/clients/s3Client'
+import { SignedUrlRequest } from '../../../shared/clients/s3'
 import { copyToClipboard } from '../../../shared/utilities/messages'
 import { S3FileNode } from '../explorer/s3FileNode'
 import * as vscode from 'vscode'

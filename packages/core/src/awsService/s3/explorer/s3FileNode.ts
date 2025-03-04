@@ -4,7 +4,7 @@
  */
 
 import bytes from 'bytes'
-import { Bucket, DownloadFileRequest, File, S3Client } from '../../../shared/clients/s3Client'
+import { Bucket, DownloadFileRequest, File, S3Client } from '../../../shared/clients/s3'
 import { AWSResourceNode } from '../../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { localize } from '../../../shared/utilities/vsCodeUtils'

@@ -6,7 +6,7 @@
 import * as path from 'path'
 import * as vscode from 'vscode'
 import * as mime from 'mime-types'
-import * as S3 from '../../shared/clients/s3Client'
+import * as S3 from '../../shared/clients/s3'
 import { getLogger } from '../../shared/logger/logger'
 import { showConfirmationMessage } from '../../shared/utilities/messages'
 import { localize, openUrl } from '../../shared/utilities/vsCodeUtils'
