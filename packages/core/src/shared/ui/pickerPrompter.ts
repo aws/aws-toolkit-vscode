@@ -12,6 +12,8 @@ import { Prompter, PromptResult, Transform } from './prompter'
 import { assign, isAsyncIterable } from '../utilities/collectionUtils'
 import { recentlyUsed } from '../localizedText'
 import { getLogger } from '../logger/logger'
+import { openUrl } from '../utilities/vsCodeUtils'
+import { MetadataManager } from '../../awsService/appBuilder/serverlessLand/metadataManager'
 
 const localize = nls.loadMessageBundle()
 
@@ -142,6 +144,22 @@ export function createQuickPick<T>(
     const mergedOptions = { ...defaultQuickpickOptions, ...options }
     assign(mergedOptions, picker)
     picker.buttons = mergedOptions.buttons ?? []
+
+    picker.onDidTriggerItemButton(async (event) => {
+        const metadataManager = MetadataManager.getInstance()
+        if (event.button.tooltip !== 'Open in Serverless Land') {
+            return
+        }
+        const selectedPattern = event.item
+        if (!selectedPattern) {
+            return
+        }
+        const patternUrl = metadataManager.getUrl(selectedPattern.label)
+        if (!patternUrl) {
+            return
+        }
+        await openUrl(vscode.Uri.parse(patternUrl))
+    })
 
     const prompter =
         mergedOptions.filterBoxInputSettings !== undefined
