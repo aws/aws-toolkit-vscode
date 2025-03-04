@@ -8,7 +8,7 @@ import { AWSError, Request, S3 } from 'aws-sdk'
 import { DeleteObjectsRequest, ListObjectVersionsOutput, ListObjectVersionsRequest } from 'aws-sdk/clients/s3'
 import { FileStreams } from '../../../shared/utilities/streamUtilities'
 import * as vscode from 'vscode'
-import { DefaultBucket, DefaultFolder, DefaultS3Client, toFile } from '../../../shared/clients/s3'
+import { DefaultBucket, DefaultFolder, S3Client, toFile } from '../../../shared/clients/s3'
 import { DEFAULT_DELIMITER, DEFAULT_MAX_KEYS } from '../../../shared/clients/s3'
 import { FakeFileStreams } from './fakeFileStreams'
 import globals from '../../../shared/extensionGlobals'
@@ -138,8 +138,8 @@ describe('DefaultS3Client', function () {
         regionCode = region,
         partitionId = partition,
         fileStreams = new FakeFileStreams(),
-    }: { regionCode?: string; partitionId?: string; fileStreams?: FileStreams } = {}): DefaultS3Client {
-        return new DefaultS3Client(regionCode, partitionId, () => Promise.resolve(mockS3), fileStreams)
+    }: { regionCode?: string; partitionId?: string; fileStreams?: FileStreams } = {}): S3Client {
+        return new S3Client(regionCode, partitionId, () => Promise.resolve(mockS3), fileStreams)
     }
 
     describe('createBucket', function () {

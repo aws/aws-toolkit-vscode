@@ -228,7 +228,7 @@ describe('generateDeployedNode', () => {
     })
 
     describe('S3BucketNode', () => {
-        let mockDefaultS3ClientInstance: sinon.SinonStubbedInstance<DefaultS3ClientModule.DefaultS3Client>
+        let mockDefaultS3ClientInstance: sinon.SinonStubbedInstance<DefaultS3ClientModule.S3Client>
         const s3DeployedNodeInput = {
             deployedResource: {
                 LogicalResourceId: 'MyS3SourceBucket',
@@ -243,8 +243,8 @@ describe('generateDeployedNode', () => {
 
         it('should return a DeployedResourceNode for valid S3 bucket happy path', async () => {
             // Stub the constructor of DefaultLambdaClient to return the stub instance
-            mockDefaultS3ClientInstance = sandbox.createStubInstance(DefaultS3ClientModule.DefaultS3Client)
-            sandbox.stub(DefaultS3ClientModule, 'DefaultS3Client').returns(mockDefaultS3ClientInstance)
+            mockDefaultS3ClientInstance = sandbox.createStubInstance(DefaultS3ClientModule.S3Client)
+            sandbox.stub(DefaultS3ClientModule, 'S3Client').returns(mockDefaultS3ClientInstance)
             const deployedResourceNodes = await generateDeployedNode(
                 s3DeployedNodeInput.deployedResource,
                 s3DeployedNodeInput.regionCode,

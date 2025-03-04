@@ -25,7 +25,7 @@ import {
     PolicyChecksUiClick,
     ValidatePolicyFindingType,
 } from './constants'
-import { DefaultS3Client, parseS3Uri } from '../../../shared/clients/s3'
+import { S3Client, parseS3Uri } from '../../../shared/clients/s3'
 import { ExpiredTokenException } from '@aws-sdk/client-sso-oidc'
 import { ChildProcess } from '../../../shared/utilities/processUtils'
 
@@ -842,7 +842,7 @@ export async function _readCustomChecksFile(input: string): Promise<string> {
     } else {
         try {
             const [region, bucket, key] = parseS3Uri(input)
-            const s3Client = new DefaultS3Client(region)
+            const s3Client = new S3Client(region)
             const resp = await s3Client.getObject({ bucketName: bucket, key })
             // Lint warning: this may evaluate to '[object Object]'. @typescript-eslint/no-base-to-string
             // eslint-disable-next-line @typescript-eslint/no-base-to-string

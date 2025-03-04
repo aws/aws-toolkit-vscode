@@ -23,7 +23,6 @@ export const defaultPrefix = ''
 
 export type Bucket = InterfaceNoSymbol<DefaultBucket>
 export type Folder = InterfaceNoSymbol<DefaultFolder>
-export type S3Client = InterfaceNoSymbol<DefaultS3Client>
 
 interface S3Object {
     readonly key: string
@@ -140,7 +139,7 @@ export interface GetObjectResponse {
     readonly objectBody: S3.Body
 }
 
-export class DefaultS3Client {
+export class S3Client {
     public constructor(
         public readonly regionCode: string,
         private readonly partitionId = globals.regionProvider.getPartitionId(regionCode) ?? defaultPartition,
@@ -357,7 +356,7 @@ export class DefaultS3Client {
     }
 
     public listAllBucketsIterable(): AsyncCollection<RequiredProps<S3.Bucket, 'Name'> & { readonly region: string }> {
-        async function* fn(this: DefaultS3Client) {
+        async function* fn(this: S3Client) {
             const s3 = await this.createS3()
             const buckets = await this.listAllBuckets()
 

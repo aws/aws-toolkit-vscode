@@ -6,7 +6,7 @@
 import assert from 'assert'
 import { S3 } from 'aws-sdk'
 import sinon from 'sinon'
-import { DefaultS3Client } from '../../../../shared/clients/s3'
+import { S3Client } from '../../../../shared/clients/s3'
 import * as SamUtilsModule from '../../../../shared/sam/utils'
 import { createBucketNamePrompter } from '../../../../shared/ui/sam/bucketPrompter'
 import { AsyncCollection } from '../../../../shared/utilities/asyncCollection'
@@ -15,7 +15,7 @@ import { samDeployUrl } from '../../../../shared/constants'
 
 describe('createBucketNamePrompter', () => {
     let sandbox: sinon.SinonSandbox
-    const s3Client = new DefaultS3Client('us-east-1', 'aws')
+    const s3Client = new S3Client('us-east-1', 'aws')
     const mementoRootKey = 'samcli.deploy.params'
 
     beforeEach(() => {

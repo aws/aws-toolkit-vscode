@@ -7,7 +7,7 @@ import assert from 'assert'
 import { ManagedUpload } from 'aws-sdk/clients/s3'
 import * as vscode from 'vscode'
 import { S3FileProvider, S3FileViewerManager } from '../../../../awsService/s3/fileViewerManager'
-import { DefaultBucket, DefaultS3Client, File, toFile } from '../../../../shared/clients/s3'
+import { DefaultBucket, S3Client, File, toFile } from '../../../../shared/clients/s3'
 import globals from '../../../../shared/extensionGlobals'
 import { VirtualFileSystem } from '../../../../shared/virtualFilesystem'
 import { bufferToStream } from '../../../../shared/utilities/streamUtilities'
@@ -48,7 +48,7 @@ const makeFile = (key: string, content: Buffer) => {
 type DataFile = File & { readonly content: Buffer }
 function createS3() {
     const files = new Map<string, DataFile>()
-    const client = stub(DefaultS3Client, { regionCode: bucket.region })
+    const client = stub(S3Client, { regionCode: bucket.region })
     client.downloadFileStream.callsFake(async (_, key) => bufferToStream(getFile(key).content))
     client.headObject.callsFake(async (req) => getFile(req.key))
     client.uploadFile.callsFake(async (req) => {

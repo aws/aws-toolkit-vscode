@@ -26,7 +26,7 @@ import { DefaultAppRunnerClient } from '../shared/clients/apprunnerClient'
 import { DefaultEcrClient } from '../shared/clients/ecrClient'
 import { DefaultRedshiftClient } from '../shared/clients/redshiftClient'
 import { DefaultIotClient } from '../shared/clients/iotClient'
-import { DefaultS3Client } from '../shared/clients/s3'
+import { S3Client } from '../shared/clients/s3'
 import { DefaultSchemaClient } from '../shared/clients/schemaClient'
 import { getEcsRootNode } from '../awsService/ecs/model'
 import { compareTreeItems, TreeShim } from '../shared/treeview/utils'
@@ -94,7 +94,7 @@ const serviceCandidates: ServiceNode[] = [
     },
     {
         serviceId: 's3',
-        createFn: (regionCode: string) => new S3Node(new DefaultS3Client(regionCode)),
+        createFn: (regionCode: string) => new S3Node(new S3Client(regionCode)),
     },
     {
         serviceId: 'schemas',

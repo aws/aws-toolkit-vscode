@@ -18,7 +18,7 @@ import { intoCollection } from '../../../shared/utilities/collectionUtils'
 import { clickBackButton, createPromptHandler, PrompterTester } from '../wizards/prompterTester'
 import { RegionNode } from '../../../awsexplorer/regionNode'
 import { createTestRegionProvider } from '../regions/testUtil'
-import { DefaultS3Client } from '../../../shared/clients/s3'
+import { S3Client } from '../../../shared/clients/s3'
 import * as CloudFormationClientModule from '../../../shared/clients/cloudFormationClient'
 import * as S3ClientModule from '../../../shared/clients/s3'
 import * as ProcessUtilsModule from '../../../shared/utilities/processUtils'
@@ -43,7 +43,7 @@ describe('SAM DeployWizard', async function () {
     let templateFile: vscode.Uri
 
     let mockDefaultCFNClient: sinon.SinonStubbedInstance<DefaultCloudFormationClient>
-    let mockDefaultS3Client: sinon.SinonStubbedInstance<DefaultS3Client>
+    let mockDefaultS3Client: sinon.SinonStubbedInstance<S3Client>
 
     beforeEach(async () => {
         testFolder = await TestFolder.create()
@@ -57,8 +57,8 @@ describe('SAM DeployWizard', async function () {
         mockDefaultCFNClient.listAllStacks.returns(intoCollection(stackSummaries))
 
         // Simulate return of list bucket
-        mockDefaultS3Client = sandbox.createStubInstance(S3ClientModule.DefaultS3Client)
-        sandbox.stub(S3ClientModule, 'DefaultS3Client').returns(mockDefaultS3Client)
+        mockDefaultS3Client = sandbox.createStubInstance(S3ClientModule.S3Client)
+        sandbox.stub(S3ClientModule, 'S3Client').returns(mockDefaultS3Client)
         mockDefaultS3Client.listBucketsIterable.returns(intoCollection(s3BucketListSummary))
 
         // generate template.yaml in temporary test folder and add to registery

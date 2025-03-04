@@ -39,7 +39,7 @@ import { recentlyUsed } from '../../shared/localizedText'
 import globals from '../../shared/extensionGlobals'
 import { SamCliSettings } from '../../shared/sam/cli/samCliSettings'
 import { getIcon } from '../../shared/icons'
-import { DefaultS3Client } from '../../shared/clients/s3'
+import { S3Client } from '../../shared/clients/s3'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { openUrl } from '../../shared/utilities/vsCodeUtils'
 
@@ -802,7 +802,7 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
             }
 
             try {
-                const s3Client = new DefaultS3Client(this.response.region!)
+                const s3Client = new S3Client(this.response.region!)
                 const newBucketName = (await s3Client.createBucket({ bucketName: newBucketRequest })).bucket.name
                 this.response.s3Bucket = newBucketName
                 getLogger().info('Created bucket: %O', newBucketName)
@@ -1007,7 +1007,7 @@ async function populateS3QuickPick(
         }
 
         try {
-            const s3Client = new DefaultS3Client(selectedRegion)
+            const s3Client = new S3Client(selectedRegion)
 
             quickPick.items = [...baseItems]
 

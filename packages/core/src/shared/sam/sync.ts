@@ -8,7 +8,7 @@ import globals from '../extensionGlobals'
 import * as vscode from 'vscode'
 import * as path from 'path'
 import * as localizedText from '../localizedText'
-import { DefaultS3Client } from '../clients/s3'
+import { S3Client } from '../clients/s3'
 import { DataQuickPickItem, createMultiPick, createQuickPick } from '../ui/pickerPrompter'
 import { DefaultCloudFormationClient } from '../clients/cloudFormationClient'
 import * as CloudFormation from '../cloudformation/cloudformation'
@@ -230,7 +230,7 @@ export class SyncWizard extends CompositeWizard<SyncParams> {
         })
 
         this.form.bucketName.bindPrompter(
-            ({ region }) => createBucketNamePrompter(new DefaultS3Client(region!), syncMementoRootKey, samSyncUrl),
+            ({ region }) => createBucketNamePrompter(new S3Client(region!), syncMementoRootKey, samSyncUrl),
             {
                 showWhen: ({ bucketSource }) => bucketSource === BucketSource.UserProvided,
             }
@@ -285,7 +285,7 @@ export async function ensureBucket(resp: Pick<SyncParams, 'region' | 'bucketName
     }
 
     try {
-        await new DefaultS3Client(resp.region).createBucket({ bucketName: newBucketName })
+        await new S3Client(resp.region).createBucket({ bucketName: newBucketName })
 
         return newBucketName
     } catch (err) {
