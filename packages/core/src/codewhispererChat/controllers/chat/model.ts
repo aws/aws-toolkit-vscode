@@ -205,6 +205,14 @@ export type AdditionalContextLengths = {
     ruleContextLength: number
 }
 
+export type AdditionalContextInfo = {
+    cwsprChatFileContextCount?: number
+    cwsprChatFolderContextCount?: number
+    cwsprChatPromptContextCount?: number
+    cwsprChatRuleContextCount?: number
+    cwsprChatHasProjectContext?: boolean
+}
+
 // TODO move this to API definition (or just use this across the codebase)
 export type RelevantTextDocumentAddition = RelevantTextDocument & { startLine: number; endLine: number }
 
