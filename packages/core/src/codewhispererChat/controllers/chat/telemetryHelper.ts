@@ -27,6 +27,7 @@ import {
     ResponseBodyLinkClickMessage,
     SourceLinkClickMessage,
     TriggerPayload,
+    AdditionalContextLengths,
 } from './model'
 import { TriggerEvent, TriggerEventsStorage } from '../../storages/triggerEvents'
 import globals from '../../../shared/extensionGlobals'
@@ -38,6 +39,8 @@ import { supportedLanguagesList } from '../chat/chatRequest/converter'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import { getSelectedCustomization } from '../../../codewhisperer/util/customizationUtil'
 import { undefinedIfEmpty } from '../../../shared/utilities/textUtilities'
+import { AdditionalContextPrompt } from '../../../amazonq/lsp/types'
+import { getUserPromptsDirectory } from '../../constants'
 
 export function logSendTelemetryEventFailure(error: any) {
     let requestId: string | undefined
@@ -140,6 +143,39 @@ export class CWCTelemetryHelper {
 
     public recordExitFocusChat() {
         telemetry.amazonq_exitFocusChat.emit({ result: 'Succeeded', passive: true })
+    }
+
+    public getContextType(prompt: AdditionalContextPrompt): string {
+        if (prompt.relativePath.startsWith('.amazonq/rules')) {
+            return 'rule'
+        } else if (prompt.filePath.startsWith(getUserPromptsDirectory())) {
+            return 'prompt'
+        } else {
+            return 'file'
+        }
+    }
+
+    public getContextLengths(prompts: AdditionalContextPrompt[]): AdditionalContextLengths {
+        let fileContextLength = 0
+        let promptContextLength = 0
+        let ruleContextLength = 0
+
+        for (const prompt of prompts) {
+            const type = this.getContextType(prompt)
+            switch (type) {
+                case 'rule':
+                    ruleContextLength += prompt.content.length
+                    break
+                case 'file':
+                    fileContextLength += prompt.content.length
+                    break
+                case 'prompt':
+                    promptContextLength += prompt.content.length
+                    break
+            }
+        }
+
+        return { fileContextLength, promptContextLength, ruleContextLength }
     }
 
     public async recordFeedback(message: ChatItemFeedbackMessage) {
@@ -420,6 +456,30 @@ export class CWCTelemetryHelper {
         })
     }
 
+    private getAdditionalContextCounts(triggerPayload: TriggerPayload) {
+        const counts = {
+            fileContextCount: 0,
+            folderContextCount: 0,
+            promptContextCount: 0,
+        }
+
+        if (triggerPayload.context) {
+            for (const context of triggerPayload.context) {
+                if (typeof context !== 'string') {
+                    if (context.id === 'file') {
+                        counts.fileContextCount++
+                    } else if (context.id === 'folder') {
+                        counts.folderContextCount++
+                    } else if (context.id === 'prompt') {
+                        counts.promptContextCount++
+                    }
+                }
+            }
+        }
+
+        return counts
+    }
+
     public emitAddMessage(tabID: string, fullDisplayLatency: number, traceId: string, startTime?: number) {
         const payload = this.messageStorage.get(tabID)
         if (!payload) {
@@ -433,6 +493,9 @@ export class CWCTelemetryHelper {
             triggerPayload.relevantTextDocuments &&
             triggerPayload.relevantTextDocuments.length > 0 &&
             triggerPayload.useRelevantDocuments === true
+
+        const contextCounts = this.getAdditionalContextCounts(triggerPayload)
+
         const event: AmazonqAddMessage = {
             result: 'Succeeded',
             cwsprChatConversationId: this.getConversationId(message.tabID) ?? '',
@@ -464,6 +527,20 @@ export class CWCTelemetryHelper {
             credentialStartUrl: AuthUtil.instance.startUrl,
             codewhispererCustomizationArn: triggerPayload.customization.arn,
             cwsprChatHasProjectContext: hasProjectLevelContext,
+            cwsprChatHasContextList: triggerPayload.documentReferences && triggerPayload.documentReferences?.length > 0,
+            cwsprChatFolderContextCount: contextCounts.folderContextCount,
+            cwsprChatFileContextCount: contextCounts.fileContextCount,
+            cwsprChatFileContextLength: triggerPayload.additionalContextLengths?.fileContextLength ?? 0,
+            cwsprChatFileContextTruncatedLength:
+                triggerPayload.truncatedAdditionalContextLengths?.fileContextLength ?? 0,
+            cwsprChatRuleContextCount: triggerPayload.workspaceRulesCount,
+            cwsprChatRuleContextLength: triggerPayload.additionalContextLengths?.ruleContextLength ?? 0,
+            cwsprChatRuleContextTruncatedLength:
+                triggerPayload.truncatedAdditionalContextLengths?.ruleContextLength ?? 0,
+            cwsprChatPromptContextCount: contextCounts.promptContextCount,
+            cwsprChatPromptContextLength: triggerPayload.additionalContextLengths?.promptContextLength ?? 0,
+            cwsprChatPromptContextTruncatedLength:
+                triggerPayload.truncatedAdditionalContextLengths?.promptContextLength ?? 0,
             traceId,
         }
 
