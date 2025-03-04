@@ -66,7 +66,7 @@ import { DefaultAmazonQAppInitContext } from '../../../amazonq/apps/initContext'
 import globals from '../../../shared/extensionGlobals'
 import { MynahIconsType, MynahUIDataModel, QuickActionCommand } from '@aws/mynah-ui'
 import { LspClient } from '../../../amazonq/lsp/lspClient'
-import { ContextCommandItem, ContextCommandItemType } from '../../../amazonq/lsp/types'
+import { AdditionalContextPrompt, ContextCommandItem, ContextCommandItemType } from '../../../amazonq/lsp/types'
 import { workspaceCommand } from '../../../amazonq/webview/ui/tabs/constants'
 import fs from '../../../shared/fs/fs'
 import { FeatureConfigProvider, Features } from '../../../shared/featureConfig'
@@ -931,53 +931,55 @@ export class ChatController {
         let prompts = []
         try {
             prompts = await LspClient.instance.getContextCommandPrompt(contextCommands)
-        } catch {
-            return []
-        }
-        if (!Array.isArray(prompts) || prompts.length === 0) {
-            return []
+        } catch (e) {
+            getLogger().verbose(`Could not get context command prompts: ${e}`)
         }
 
         let currentContextLength = 0
         triggerPayload.additionalContents = []
-        triggerPayload.additionalContextLengths = this.telemetryHelper.getContextLengths(prompts)
-        triggerPayload.truncatedAdditionalContextLengths = {
+        const emptyLengths = {
             fileContextLength: 0,
             promptContextLength: 0,
             ruleContextLength: 0,
         }
-        for (const prompt of prompts.slice(0, 20)) {
-            const entry = {
-                name: prompt.name.substring(0, aditionalContentNameLimit),
-                description: prompt.description.substring(0, aditionalContentNameLimit),
-                innerContext: prompt.content.substring(0, additionalContentInnerContextLimit),
-            }
-            // make sure the relevantDocument + additionalContext
-            // combined does not exceed 40k characters before generating the request payload.
-            // Do truncation and make sure triggerPayload.documentReferences is up-to-date after truncation
-            // TODO: Use a context length indicator
-            if (currentContextLength + entry.innerContext.length > contextMaxLength) {
-                getLogger().warn(`Selected context exceeds context size limit: ${entry.description} `)
-                break
-            }
+        triggerPayload.additionalContextLengths = emptyLengths
+        triggerPayload.truncatedAdditionalContextLengths = emptyLengths
 
-            const contextType = this.telemetryHelper.getContextType(prompt)
-            if (contextType === 'rule') {
-                triggerPayload.truncatedAdditionalContextLengths.ruleContextLength += entry.innerContext.length
-            } else if (contextType === 'prompt') {
-                triggerPayload.truncatedAdditionalContextLengths.promptContextLength += entry.innerContext.length
-            } else if (contextType === 'file') {
-                triggerPayload.truncatedAdditionalContextLengths.fileContextLength += entry.innerContext.length
-            }
+        if (Array.isArray(prompts) && prompts.length > 0) {
+            triggerPayload.additionalContextLengths = this.telemetryHelper.getContextLengths(prompts)
+            for (const prompt of prompts.slice(0, 20)) {
+                const entry = {
+                    name: prompt.name.substring(0, aditionalContentNameLimit),
+                    description: prompt.description.substring(0, aditionalContentNameLimit),
+                    innerContext: prompt.content.substring(0, additionalContentInnerContextLimit),
+                }
+                // make sure the relevantDocument + additionalContext
+                // combined does not exceed 40k characters before generating the request payload.
+                // Do truncation and make sure triggerPayload.documentReferences is up-to-date after truncation
+                // TODO: Use a context length indicator
+                if (currentContextLength + entry.innerContext.length > contextMaxLength) {
+                    getLogger().warn(`Selected context exceeds context size limit: ${entry.description} `)
+                    break
+                }
 
-            triggerPayload.additionalContents.push(entry)
-            currentContextLength += entry.innerContext.length
-            let relativePath = path.relative(workspaceFolder, prompt.filePath)
-            // Handle user prompts outside the workspace
-            if (prompt.filePath.startsWith(getUserPromptsDirectory())) {
-                relativePath = path.basename(prompt.filePath)
+                const contextType = this.telemetryHelper.getContextType(prompt)
+                if (contextType === 'rule') {
+                    triggerPayload.truncatedAdditionalContextLengths.ruleContextLength += entry.innerContext.length
+                } else if (contextType === 'prompt') {
+                    triggerPayload.truncatedAdditionalContextLengths.promptContextLength += entry.innerContext.length
+                } else if (contextType === 'file') {
+                    triggerPayload.truncatedAdditionalContextLengths.fileContextLength += entry.innerContext.length
+                }
+
+                triggerPayload.additionalContents.push(entry)
+                currentContextLength += entry.innerContext.length
+                let relativePath = path.relative(workspaceFolder, prompt.filePath)
+                // Handle user prompts outside the workspace
+                if (prompt.filePath.startsWith(getUserPromptsDirectory())) {
+                    relativePath = path.basename(prompt.filePath)
+                }
+                relativePaths.push(relativePath)
             }
-            relativePaths.push(relativePath)
         }
         getLogger().info(`Retrieved chunks of additional context count: ${triggerPayload.additionalContents.length} `)
 
