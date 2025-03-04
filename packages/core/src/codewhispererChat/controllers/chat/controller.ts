@@ -582,7 +582,7 @@ export class ChatController {
     }
     private async processFileClickMessage(message: FileClick) {
         const session = this.sessionStorage.getSession(message.tabID)
-        const lineRanges = session.contexts.get(session.currentContextId)?.get(message.filePath)
+        const lineRanges = session.contexts.get(message.filePath)
 
         if (!lineRanges) {
             return
