@@ -137,7 +137,7 @@ export class Messenger {
         }
         this.telemetryHelper.setResponseStreamStartTime(tabID)
 
-        let cwsprChatHasProjectContext
+        let cwsprChatHasProjectContext = false
         if (
             triggerPayload.relevantTextDocuments &&
             triggerPayload.relevantTextDocuments.length > 0 &&
