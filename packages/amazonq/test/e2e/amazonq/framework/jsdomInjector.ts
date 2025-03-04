@@ -40,6 +40,9 @@ export function injectJSDOM() {
         get() {
             return this.textContent
         },
+        set(value) {
+            this.textContent = value
+        },
     })
 
     // jsdom doesn't have support for structuredClone. See https://github.com/jsdom/jsdom/issues/3363

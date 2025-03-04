@@ -116,6 +116,7 @@ export function triggerPayloadToChatRequest(triggerPayload: TriggerPayload): { c
                             relevantDocuments,
                             useRelevantDocuments,
                         },
+                        additionalContext: triggerPayload.additionalContents,
                     },
                     userIntent: triggerPayload.userIntent,
                 },

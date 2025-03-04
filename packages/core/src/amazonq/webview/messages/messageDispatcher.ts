@@ -36,6 +36,8 @@ export function dispatchWebViewMessagesToApps(
                 })
                 performance.clearMarks(amazonqMark.uiReady)
                 performance.clearMarks(amazonqMark.open)
+                // let cwcController know the ui is ready
+                webViewToAppsMessagePublishers.get('cwc')?.publish(msg)
                 return
             }
             case 'start-chat-message-telemetry': {
