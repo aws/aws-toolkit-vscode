@@ -582,7 +582,6 @@ export class ChatController {
     }
     private async processFileClickMessage(message: FileClick) {
         const session = this.sessionStorage.getSession(message.tabID)
-        // TODO remove currentContextId but use messageID to track context for each answer message
         const lineRanges = session.contexts.get(message.filePath)
 
         if (!lineRanges) {
