@@ -588,8 +588,9 @@ export class ChatController {
             return
         }
 
-        // TODO: Fix for multiple workspace setup
-        const projectRoot = session.relativePathToWorkspaceRoot.get(message.filePath)
+        // Check if clicked file is in a different workspace root
+        const projectRoot =
+            session.relativePathToWorkspaceRoot.get(message.filePath) || workspace.workspaceFolders?.[0]?.uri.fsPath
         if (!projectRoot) {
             return
         }
