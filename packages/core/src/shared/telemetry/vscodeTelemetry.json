@@ -410,6 +410,17 @@
             "name": "executedCount",
             "type": "int",
             "description": "The number of executed operations"
+        },
+        {
+            "name": "amazonqUploadIntent",
+            "type": "string",
+            "description": "The intent of the upload",
+            "allowedValues": [
+                "TRANSFORMATION",
+                "TASK_ASSIST_PLANNING",
+                "AUTOMATIC_FILE_SECURITY_SCAN",
+                "FULL_PROJECT_SECURITY_SCAN"
+            ]
         }
     ],
     "metrics": [
@@ -1167,7 +1178,31 @@
                     "required": false
                 },
                 {
+                    "type": "amazonqUploadIntent",
+                    "required": false
+                },
+                {
                     "type": "credentialStartUrl",
+                    "required": false
+                },
+                {
+                    "type": "duration",
+                    "required": false
+                },
+                {
+                    "type": "reason",
+                    "required": false
+                },
+                {
+                    "type": "requestId",
+                    "required": false
+                },
+                {
+                    "type": "requestServiceType",
+                    "required": false
+                },
+                {
+                    "type": "result",
                     "required": false
                 }
             ]
