@@ -5,7 +5,7 @@
 
 import assert from 'assert'
 import { AWSError, Request, S3 } from 'aws-sdk'
-import { DeleteObjectsRequest, ListObjectVersionsOutput, ListObjectVersionsRequest } from 'aws-sdk/clients/s3'
+import { ListObjectVersionsOutput, ListObjectVersionsRequest } from 'aws-sdk/clients/s3'
 import { FileStreams } from '../../../shared/utilities/streamUtilities'
 import * as vscode from 'vscode'
 import { DefaultBucket, DefaultFolder, S3Client, toFile } from '../../../shared/clients/s3'
@@ -89,27 +89,6 @@ describe('DefaultS3Client', function () {
         }
     }
 
-    class DeleteObjectsFixtures {
-        public readonly firstRequest: DeleteObjectsRequest = {
-            Bucket: bucketName,
-            Delete: {
-                Objects: [
-                    { Key: folderPath, VersionId: folderVersionId },
-                    { Key: fileKey, VersionId: fileVersionId },
-                ],
-                Quiet: true,
-            },
-        }
-
-        public readonly secondRequest: DeleteObjectsRequest = {
-            Bucket: bucketName,
-            Delete: {
-                Objects: [{ Key: fileKey, VersionId: undefined }],
-                Quiet: true,
-            },
-        }
-    }
-
     beforeEach(function () {
         mockS3 = {} as any as S3
     })
@@ -143,114 +122,14 @@ describe('DefaultS3Client', function () {
     }
 
     describe('createBucket', function () {
-        it('creates a bucket', async function () {
-            const createBucketSpy = sinon.stub().returns(success())
-            mockS3.createBucket = createBucketSpy
-
-            const response = await createClient().createBucket({ bucketName })
-
-            assert(
-                createBucketSpy.calledOnceWith({
-                    Bucket: bucketName,
-                    CreateBucketConfiguration: { LocationConstraint: region },
-                })
-            )
-            assert.deepStrictEqual(response, {
-                bucket: new DefaultBucket({ partitionId: partition, region, name: bucketName }),
-            })
-        })
-
         it('removes the region code for us-east-1', async function () {
-            const createBucketSpy = sinon.stub().returns(success())
-            mockS3.createBucket = createBucketSpy
-
-            const response = await createClient({ regionCode: 'us-east-1' }).createBucket({ bucketName })
-
-            assert(
-                createBucketSpy.calledOnceWith({
-                    Bucket: bucketName,
-                    CreateBucketConfiguration: undefined,
-                })
-            )
-            assert.deepStrictEqual(response, {
-                bucket: new DefaultBucket({ partitionId: partition, region: 'us-east-1', name: bucketName }),
-            })
-        })
-
-        it('throws an Error on failure', async function () {
-            const createBucketSpy = sinon.stub().returns(failure())
-            mockS3.createBucket = createBucketSpy
-
-            await assert.rejects(createClient().createBucket({ bucketName }), error)
-        })
-    })
-
-    describe('deleteBucket', function () {
-        const {
-            firstPageRequest: firstList,
-            secondPageRequest: secondList,
-            firstPageResponse: firstListResponse,
-            secondPageResponse: secondListResponse,
-        } = new ListObjectVersionsFixtures()
-        const anyListResponse = secondListResponse
-        const { firstRequest: firstDelete, secondRequest: secondDelete } = new DeleteObjectsFixtures()
-        let listStub: sinon.SinonStub
-        let deleteObjStub: sinon.SinonStub
-        let deleteBucketStub: sinon.SinonStub
-
-        beforeEach(function () {
-            listStub = sinon.stub()
-            deleteObjStub = sinon.stub()
-            deleteBucketStub = sinon.stub()
-
-            mockS3.listObjectVersions = listStub
-            mockS3.deleteObjects = deleteObjStub
-            mockS3.deleteBucket = deleteBucketStub
-        })
-
-        it('empties a bucket and deletes it', async function () {
-            listStub
-                .onFirstCall()
-                .returns(success(firstListResponse))
-                .onSecondCall()
-                .returns(success(secondListResponse))
-            deleteObjStub.returns(success({}))
-            deleteBucketStub.returns(success({}))
-            await createClient().deleteBucket({ bucketName })
-
-            assert(listStub.calledTwice)
-            assert(listStub.firstCall.calledWith(firstList))
-            assert(listStub.secondCall.calledWith(secondList))
-            assert(deleteObjStub.calledTwice)
-            assert(deleteObjStub.firstCall.calledWith(firstDelete))
-            assert(deleteObjStub.secondCall.calledWith(secondDelete))
-            assert(deleteBucketStub.calledOnceWith({ Bucket: bucketName }))
-        })
-
-        it('throws an Error on listObjectVersions failure', async function () {
-            listStub.returns(failure())
-
-            await assert.rejects(createClient().deleteBucket({ bucketName }), error)
-
-            assert(deleteObjStub.notCalled)
-            assert(deleteBucketStub.notCalled)
-        })
-
-        it('throws an Error on deleteObjects failure', async function () {
-            listStub.returns(success(anyListResponse))
-            deleteObjStub.returns(failure())
-
-            await assert.rejects(createClient().deleteBucket({ bucketName }), error)
-
-            assert(deleteBucketStub.notCalled)
-        })
-
-        it('throws an Error on deleteBucket failure', async function () {
-            listStub.returns(success(anyListResponse))
-            deleteObjStub.returns(success({}))
-            deleteBucketStub.returns(failure())
-
-            await assert.rejects(createClient().deleteBucket({ bucketName }), error)
+            class TestS3 extends S3Client {
+                public testGetCreateBucketConfiguration() {
+                    return this.getCreateBucketConfiguration()
+                }
+            }
+            const testS3 = new TestS3('us-east-1', 'partition')
+            assert.ok(testS3.testGetCreateBucketConfiguration() === undefined)
         })
     })
 

@@ -16,6 +16,13 @@ import globals from '../extensionGlobals'
 import { defaultPartition } from '../regions/regionProvider'
 import { AsyncCollection, toCollection } from '../utilities/asyncCollection'
 import { toStream } from '../utilities/collectionUtils'
+import {
+    BucketLocationConstraint,
+    CreateBucketCommand,
+    DeleteBucketCommand,
+    S3Client as S3ClientSDK,
+} from '@aws-sdk/client-s3'
+import { ClientWrapper } from './clientWrapper'
 
 export const DEFAULT_MAX_KEYS = 300 // eslint-disable-line @typescript-eslint/naming-convention
 export const DEFAULT_DELIMITER = '/' // eslint-disable-line @typescript-eslint/naming-convention
@@ -139,16 +146,24 @@ export interface GetObjectResponse {
     readonly objectBody: S3.Body
 }
 
-export class S3Client {
+export class S3Client extends ClientWrapper<S3ClientSDK> {
     public constructor(
-        public readonly regionCode: string,
+        public override readonly regionCode: string,
         private readonly partitionId = globals.regionProvider.getPartitionId(regionCode) ?? defaultPartition,
         private readonly s3Provider: (regionCode: string) => Promise<S3> = createSdkClient,
         private readonly fileStreams: FileStreams = new DefaultFileStreams()
-    ) {}
+    ) {
+        super(regionCode, S3ClientSDK)
+    }
 
     private async createS3(): Promise<S3> {
         return this.s3Provider(this.regionCode)
+    }
+
+    protected getCreateBucketConfiguration() {
+        return this.regionCode === 'us-east-1'
+            ? undefined
+            : { LocationConstraint: this.regionCode as BucketLocationConstraint }
     }
 
     /**
@@ -158,17 +173,10 @@ export class S3Client {
      */
     public async createBucket(request: CreateBucketRequest): Promise<CreateBucketResponse> {
         getLogger().debug('CreateBucket called with request: %O', request)
-        const s3 = await this.createS3()
-
-        await s3
-            .createBucket({
-                Bucket: request.bucketName,
-                // Passing us-east-1 for LocationConstraint breaks creating bucket. To make a bucket in us-east-1, you need to
-                // not pass a region, so check for this case.
-                CreateBucketConfiguration:
-                    this.regionCode === 'us-east-1' ? undefined : { LocationConstraint: this.regionCode },
-            })
-            .promise()
+        await this.makeRequest(CreateBucketCommand, {
+            Bucket: request.bucketName,
+            CreateBucketConfiguration: this.getCreateBucketConfiguration(),
+        })
 
         const response: CreateBucketResponse = {
             bucket: new DefaultBucket({
@@ -193,10 +201,9 @@ export class S3Client {
     public async deleteBucket(request: DeleteBucketRequest): Promise<void> {
         getLogger().debug('DeleteBucket called with request: %O', request)
         const { bucketName } = request
-        const s3 = await this.createS3()
 
         await this.emptyBucket(bucketName)
-        await s3.deleteBucket({ Bucket: bucketName }).promise()
+        await this.makeRequest(DeleteBucketCommand, { Bucket: bucketName })
 
         getLogger().debug('DeleteBucket succeeded')
     }
