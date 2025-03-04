@@ -917,14 +917,14 @@ export class ChatController {
         if (contextCommands.length === 0) {
             return []
         }
-        let workspaceFolders = (vscode.workspace.workspaceFolders ?? []).map((folder) => folder.uri.fsPath)
+        const workspaceFolders = (vscode.workspace.workspaceFolders ?? []).map((folder) => folder.uri.fsPath)
         if (!workspaceFolders) {
             return []
         }
         workspaceFolders.sort()
-        let workspaceFolder = workspaceFolders[0]
+        const workspaceFolder = workspaceFolders[0]
         for (const contextCommand of contextCommands) {
-            let relativePath = path.relative(
+            const relativePath = path.relative(
                 workspaceFolder,
                 path.join(contextCommand.workspaceFolder, contextCommand.relativePath)
             )
