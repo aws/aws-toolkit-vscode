@@ -42,7 +42,7 @@ export async function publishStateMachine(
             text = JSON.stringify(load(text), undefined, '  ')
         } catch (error) {
             const localizedMsg = localize(
-                'AWS.message.error.stepFunctions.publishStateMachine.invalidYAML',
+                'AWS.stepFunctions.publishStateMachine.error.invalidYAML',
                 'Cannot publish invalid YAML file'
             )
 
@@ -80,9 +80,10 @@ async function createStateMachine(
     const logger: Logger = getLogger()
     logger.info(`Creating state machine '${wizardResponse.name}'`)
     outputChannel.show()
+    outputChannel.appendLine('')
     outputChannel.appendLine(
         localize(
-            'AWS.message.info.stepFunctions.publishStateMachine.creating',
+            'AWS.stepFunctions.publishStateMachine.info.creating',
             "Creating state machine '{0}' in {1}...",
             wizardResponse.name,
             region
@@ -96,23 +97,21 @@ async function createStateMachine(
         })
         outputChannel.appendLine(
             localize(
-                'AWS.message.info.stepFunctions.publishStateMachine.createSuccess',
-                'Created state machine "{0}"',
+                'AWS.stepFunctions.publishStateMachine.info.createSuccess',
+                "Created state machine '{0}'",
                 wizardResponse.name
             )
         )
         outputChannel.appendLine(result.stateMachineArn)
         logger.info(`Created "${result.stateMachineArn}"`)
-        outputChannel.appendLine('')
     } catch (err) {
         const msg = localize(
-            'AWS.message.error.stepFunctions.publishStateMachine.createFailure',
+            'AWS.stepFunctions.publishStateMachine.error.createFailure',
             'Failed to create state machine: {0}',
             wizardResponse.name
         )
         void showViewLogsMessage(msg)
         outputChannel.appendLine(msg)
-        outputChannel.appendLine('')
         logger.error(`Failed to create state machine '${wizardResponse.name}': %O`, err as Error)
     }
 }
@@ -127,9 +126,10 @@ async function updateStateMachine(
     const logger: Logger = getLogger()
     logger.info(`Updating state machine ${wizardResponse.stateMachineArn}`)
     outputChannel.show()
+    outputChannel.appendLine('')
     outputChannel.appendLine(
         localize(
-            'AWS.message.info.stepFunctions.publishStateMachine.updating',
+            'AWS.stepFunctions.publishStateMachine.info.updating',
             "Updating state machine '{0}' in {1}...",
             wizardResponse.stateMachineArn,
             region
@@ -142,22 +142,20 @@ async function updateStateMachine(
         })
         outputChannel.appendLine(
             localize(
-                'AWS.message.info.stepFunctions.publishStateMachine.updateSuccess',
+                'AWS.stepFunctions.publishStateMachine.info.updateSuccess',
                 'Updated state machine: {0}',
                 wizardResponse.stateMachineArn
             )
         )
         logger.info(`Updated ${wizardResponse.stateMachineArn}`)
-        outputChannel.appendLine('')
     } catch (err) {
         const msg = localize(
-            'AWS.message.error.stepFunctions.publishStateMachine.updateFailure',
+            'AWS.stepFunctions.publishStateMachine.error.updateFailure',
             'Failed to update state machine: {0}',
             wizardResponse.stateMachineArn
         )
         void showViewLogsMessage(msg)
         outputChannel.appendLine(msg)
-        outputChannel.appendLine('')
         logger.error(`Failed to update state machine '${wizardResponse.stateMachineArn}': %O`, err as Error)
     }
 }
