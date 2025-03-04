@@ -36,10 +36,11 @@ describe('Serverless Land Integration', async () => {
 
     afterEach(async () => {
         await fs.delete(path.join(workspaceFolder.uri.fsPath, projectFolder), { recursive: true })
+        sandbox.restore()
     })
 
     describe('Happy Path', async () => {
-        it('creates an AppBuilderRootNode with correct label', async () => {
+        it('creates project from Serverless Land integration', async () => {
             /**
              * Selection:
              *  - pattern               : [Select]  2   apigw-rest-api-lambda-sam
@@ -116,11 +117,11 @@ describe('Serverless Land Integration', async () => {
             assert.ok(resourceNodes[0] instanceof ResourceNode)
 
             // Validate Lambda resource configuration
-            const lamdaResource = resourceNodes[0] as ResourceNode
-            assert.strictEqual(lamdaResource.resource.resource.Type, 'AWS::Serverless::Function')
-            assert.strictEqual(lamdaResource.resource.resource.Runtime, 'dotnet8')
-            assert.strictEqual(lamdaResource.resource.resource.Id, 'HelloWorldFunction')
-            assert.deepStrictEqual(lamdaResource.resource.resource.Events, [
+            const lambdaResource = resourceNodes[0] as ResourceNode
+            assert.strictEqual(lambdaResource.resource.resource.Type, 'AWS::Serverless::Function')
+            assert.strictEqual(lambdaResource.resource.resource.Runtime, 'dotnet8')
+            assert.strictEqual(lambdaResource.resource.resource.Id, 'HelloWorldFunction')
+            assert.deepStrictEqual(lambdaResource.resource.resource.Events, [
                 {
                     Id: 'HelloWorld',
                     Type: 'Api',
@@ -128,7 +129,7 @@ describe('Serverless Land Integration', async () => {
                     Method: 'get',
                 },
             ])
-            assert.deepStrictEqual(lamdaResource.resource.resource.Environment, {
+            assert.deepStrictEqual(lambdaResource.resource.resource.Environment, {
                 Variables: {
                     PARAM1: 'VALUE',
                 },
