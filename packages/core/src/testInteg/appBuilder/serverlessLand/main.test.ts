@@ -38,7 +38,7 @@ describe('Serverless Land Integration', async () => {
         await fs.delete(path.join(workspaceFolder.uri.fsPath, projectFolder), { recursive: true })
     })
 
-    describe(':) Path', async () => {
+    describe('Happy Path', async () => {
         it('creates an AppBuilderRootNode with correct label', async () => {
             /**
              * Selection:
