@@ -893,7 +893,7 @@ export class ChatController {
             const folderExists = await fs.exists(rulesPath)
 
             if (folderExists) {
-                const entries = await vscode.workspace.fs.readDirectory(rulesPath)
+                const entries = await fs.readdir(rulesPath)
 
                 for (const [name, type] of entries) {
                     if (type === vscode.FileType.File && name.endsWith(promptFileExtension)) {
@@ -961,6 +961,7 @@ export class ChatController {
         try {
             prompts = await LspClient.instance.getContextCommandPrompt(contextCommands)
         } catch (e) {
+            // todo: handle @workspace used before indexing is ready
             getLogger().verbose(`Could not get context command prompts: ${e}`)
         }
 
