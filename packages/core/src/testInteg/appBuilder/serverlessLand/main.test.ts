@@ -108,7 +108,7 @@ describe('Serverless Land Integration', async () => {
                         ) as AppNode | undefined
                 )
 
-            assert.ok(projectNode, 'Expect Serverless Landa project as a project node in Application Builder')
+            assert.ok(projectNode, 'Expect Serverless Land project node in Application Builder')
 
             // Check App Builder resources
             const resourceNodes = await projectNode.getChildren()
