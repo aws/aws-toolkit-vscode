@@ -878,6 +878,34 @@ export class ChatController {
         this.messenger.sendStaticTextResponse(responseType, triggerID, tabID)
     }
 
+    /**
+     * @returns A Uri array of prompt files in each workspace root's .amazonq/rules directory
+     */
+    private async collectWorkspaceRules(): Promise<vscode.Uri[]> {
+        const rulesFiles: vscode.Uri[] = []
+
+        if (!vscode.workspace.workspaceFolders) {
+            return rulesFiles
+        }
+
+        for (const folder of vscode.workspace.workspaceFolders) {
+            const rulesPath = vscode.Uri.joinPath(folder.uri, '.amazonq', 'rules')
+            const folderExists = await fs.exists(rulesPath)
+
+            if (folderExists) {
+                const entries = await vscode.workspace.fs.readDirectory(rulesPath)
+
+                for (const [name, type] of entries) {
+                    if (type === vscode.FileType.File && name.endsWith(promptFileExtension)) {
+                        rulesFiles.push(vscode.Uri.joinPath(rulesPath, name))
+                    }
+                }
+            }
+        }
+
+        return rulesFiles
+    }
+
     private async resolveContextCommandPayload(
         triggerPayload: TriggerPayload,
         session: ChatSession
@@ -886,7 +914,7 @@ export class ChatController {
         const relativePaths: string[] = []
 
         // Check for workspace rules to add to context
-        const workspaceRules = await vscode.workspace.findFiles(`.amazonq/rules/*${promptFileExtension}`)
+        const workspaceRules = await this.collectWorkspaceRules()
         if (workspaceRules.length > 0) {
             contextCommands.push(
                 ...workspaceRules.map((rule) => {
