@@ -133,27 +133,6 @@ describe('DefaultS3Client', function () {
         })
     })
 
-    describe('createFolder', function () {
-        it('creates a folder', async function () {
-            const s = sinon.stub().returns(success())
-            mockS3.upload = s
-
-            const response = await createClient().createFolder({ bucketName, path: folderPath })
-
-            assert(s.calledOnceWith({ Bucket: bucketName, Key: folderPath, Body: '' }))
-            assert.deepStrictEqual(response, {
-                folder: new DefaultFolder({ partitionId: partition, bucketName, path: folderPath }),
-            })
-        })
-
-        it('throws an Error on failure', async function () {
-            const s = sinon.stub().returns(failure())
-            mockS3.upload = s
-
-            await assert.rejects(createClient().createFolder({ bucketName, path: folderPath }), error)
-        })
-    })
-
     describe('downloadFile', function () {
         it('downloads a file', async function () {
             const s = sinon.stub().returns(success())

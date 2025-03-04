@@ -20,6 +20,7 @@ import {
     BucketLocationConstraint,
     CreateBucketCommand,
     DeleteBucketCommand,
+    PutObjectCommand,
     S3Client as S3ClientSDK,
 } from '@aws-sdk/client-s3'
 import { ClientWrapper } from './clientWrapper'
@@ -226,21 +227,13 @@ export class S3Client extends ClientWrapper<S3ClientSDK> {
      */
     public async createFolder(request: CreateFolderRequest): Promise<CreateFolderResponse> {
         getLogger().debug('CreateFolder called with request: %O', request)
-        const s3 = await this.createS3()
+        await this.makeRequest(PutObjectCommand, { Bucket: request.bucketName, Key: request.path, Body: '' })
 
         const folder = new DefaultFolder({
             path: request.path,
             partitionId: this.partitionId,
             bucketName: request.bucketName,
         })
-
-        await s3
-            .upload({
-                Bucket: request.bucketName,
-                Key: request.path,
-                Body: '',
-            })
-            .promise()
 
         const response: CreateFolderResponse = { folder }
         getLogger().debug('CreateFolder returned response: %O', response)
