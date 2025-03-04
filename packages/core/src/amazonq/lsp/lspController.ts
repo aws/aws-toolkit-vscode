@@ -329,6 +329,7 @@ export class LspController {
             getLogger().info(`LspController: Skipping building index. No projects found in workspace`)
             return
         }
+        projPaths.sort()
         try {
             this._isIndexingInProgress = true
             const projRoot = projPaths[0]
