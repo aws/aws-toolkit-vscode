@@ -797,25 +797,27 @@ export class TestController {
         getLogger().info(
             `Generated unit tests are accepted for ${session.fileLanguage ?? 'plaintext'} language with jobId: ${session.listOfTestGenerationJobId[0]}, jobGroupName: ${session.testGenerationJobGroupName}, result: Succeeded`
         )
-        TelemetryHelper.instance.sendTestGenerationToolkitEvent(
-            session,
-            true,
-            true,
-            'Succeeded',
-            session.startTestGenerationRequestId,
-            session.latencyOfTestGeneration,
-            undefined,
-            session.isCodeBlockSelected,
-            session.artifactsUploadDuration,
-            session.srcPayloadSize,
-            session.srcZipFileSize,
-            session.charsOfCodeAccepted,
-            session.numberOfTestsGenerated,
-            session.linesOfCodeAccepted,
-            session.charsOfCodeGenerated,
-            session.numberOfTestsGenerated,
-            session.linesOfCodeGenerated
-        )
+        if (session.listOfTestGenerationJobId.length > 1) {
+            TelemetryHelper.instance.sendTestGenerationToolkitEvent(
+                session,
+                true,
+                true,
+                'Succeeded',
+                session.startTestGenerationRequestId,
+                session.latencyOfTestGeneration,
+                undefined,
+                session.isCodeBlockSelected,
+                session.artifactsUploadDuration,
+                session.srcPayloadSize,
+                session.srcZipFileSize,
+                session.charsOfCodeAccepted,
+                session.numberOfTestsGenerated,
+                session.linesOfCodeAccepted,
+                session.charsOfCodeGenerated,
+                session.numberOfTestsGenerated,
+                session.linesOfCodeGenerated
+            )
+        }
 
         if (!Auth.instance.isInternalAmazonUser()) {
             await this.endSession(message)
@@ -1335,11 +1337,11 @@ export class TestController {
         this.messenger.sendMessage('Modify Command', data.tabID, 'prompt')
         telemetry.ui_click.emit({ elementId: 'unitTestGeneration_modifyCommand' })
         this.messenger.sendMessage(
-            'Sure, provide all command lines you’d like me to run to build.',
+            'Sure. Let me know which command you’d like to modify or you could also provide all command lines you’d like me to run.',
             data.tabID,
             'answer'
         )
-        this.messenger.sendUpdatePlaceholder(data.tabID, 'Waiting on your Inputs')
+        this.messenger.sendUpdatePlaceholder(data.tabID, 'Type command lines or provide instructions...')
         this.messenger.sendChatInputEnabled(data.tabID, true)
     }
 
