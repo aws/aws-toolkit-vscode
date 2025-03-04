@@ -25,6 +25,7 @@ export function init(appContext: AmazonQAppInitContext) {
         authClicked: new vscode.EventEmitter<any>(),
         tabOpened: new vscode.EventEmitter<any>(),
         tabClosed: new vscode.EventEmitter<any>(),
+        runScan: new vscode.EventEmitter<any>(),
         formActionClicked: new vscode.EventEmitter<any>(),
         errorThrown: new vscode.EventEmitter<any>(),
         showSecurityScan: new vscode.EventEmitter<any>(),
