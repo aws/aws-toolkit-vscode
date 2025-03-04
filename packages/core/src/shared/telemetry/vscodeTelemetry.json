@@ -23,6 +23,11 @@
             "description": "SSM Publish Document operation type"
         },
         {
+            "name": "isInvalidJson",
+            "type": "boolean",
+            "description": "Indicates whether the message contains an invalid JSON definition."
+        },
+        {
             "name": "starterTemplate",
             "type": "string",
             "description": "Starter template chosen during create document"
@@ -574,6 +579,47 @@
         {
             "name": "stepfunctions_previewstatemachine",
             "description": ""
+        },
+        {
+            "name": "stepfunctions_openWorkflowStudio",
+            "description": "Called after opening asl file in Step Functions Workflow Studio",
+            "metadata": [
+                {
+                    "type": "id",
+                    "required": true
+                }
+            ]
+        },
+        {
+            "name": "stepfunctions_closeWorkflowStudio",
+            "description": "Called after closing Step Functions Workflow Studio custom editor",
+            "metadata": [
+                {
+                    "type": "id",
+                    "required": true
+                }
+            ]
+        },
+        {
+            "name": "stepfunctions_saveFile",
+            "description": "Triggered when Workflow Studio auto-syncs to the local file or when unsaved local changes are saved from Workflow Studio or VSCode.",
+            "metadata": [
+                {
+                    "type": "id",
+                    "required": true
+                },
+                {
+                    "type": "saveType",
+                    "required": true
+                },
+                {
+                    "type": "source",
+                    "required": true
+                },
+                {
+                    "type": "isInvalidJson"
+                }
+            ]
         },
         {
             "name": "vscode_activeRegions",

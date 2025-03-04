@@ -1187,7 +1187,7 @@
                     "when": "false"
                 },
                 {
-                    "command": "aws.renderStateMachineGraph",
+                    "command": "aws.stepfunctions.openWithWorkflowStudio",
                     "when": "false"
                 },
                 {
@@ -1421,6 +1421,11 @@
                 {
                     "command": "aws.openInApplicationComposer",
                     "when": "isFileSystemResource && !(resourceFilename =~ /^.*\\.tc\\.json$/) && resourceFilename =~ /^.*\\.(json|yml|yaml|template)$/",
+                    "group": "z_aws@1"
+                },
+                {
+                    "command": "aws.stepfunctions.openWithWorkflowStudio",
+                    "when": "isFileSystemResource && resourceFilename =~ /^.*\\.asl\\.(json|yml|yaml)$/",
                     "group": "z_aws@1"
                 }
             ],
@@ -1696,7 +1701,7 @@
                     "group": "0@1"
                 },
                 {
-                    "command": "aws.renderStateMachineGraph",
+                    "command": "aws.previewStateMachine",
                     "when": "view == aws.explorer && viewItem == awsStateMachineNode",
                     "group": "0@2"
                 },
@@ -3114,17 +3119,6 @@
                 }
             },
             {
-                "command": "aws.renderStateMachineGraph",
-                "title": "%AWS.command.renderStateMachineGraph%",
-                "enablement": "isCloud9 || !aws.isWebExtHost",
-                "category": "%AWS.title%",
-                "cloud9": {
-                    "cn": {
-                        "category": "%AWS.title.cn%"
-                    }
-                }
-            },
-            {
                 "command": "aws.copyArn",
                 "title": "%AWS.command.copyArn%",
                 "category": "%AWS.title%",
@@ -3364,7 +3358,7 @@
             },
             {
                 "command": "aws.previewStateMachine",
-                "title": "%AWS.command.stepFunctions.previewStateMachine%",
+                "title": "%AWS.command.stepFunctions.openWithWorkflowStudio%",
                 "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "icon": "$(aws-stepfunctions-preview)",
@@ -3944,6 +3938,16 @@
                 }
             },
             {
+                "command": "aws.stepfunctions.openWithWorkflowStudio",
+                "title": "%AWS.command.stepFunctions.openWithWorkflowStudio%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
                 "command": "aws.createNewThreatComposer",
                 "title": "%AWS.command.threatComposer.createNew%",
                 "category": "%AWS.title%",
@@ -4172,6 +4176,12 @@
                 "key": "ctrl+shift+v",
                 "mac": "cmd+shift+v",
                 "when": "editorTextFocus && editorLangId == asl || editorTextFocus && editorLangId == asl-yaml"
+            },
+            {
+                "command": "noop",
+                "key": "ctrl+z",
+                "mac": "cmd+z",
+                "when": "aws.stepFunctions.isWorkflowStudioFocused"
             },
             {
                 "command": "aws.samcli.sync",
@@ -4661,11 +4671,27 @@
                         "filenamePattern": "*.tc.json"
                     }
                 ]
+            },
+            {
+                "viewType": "workflowStudio.asl",
+                "displayName": "Workflow Studio",
+                "selector": [
+                    {
+                        "filenamePattern": "*.asl.json"
+                    },
+                    {
+                        "filenamePattern": "*.asl.yaml"
+                    },
+                    {
+                        "filenamePattern": "*.asl.yml"
+                    }
+                ]
             }
         ],
         "configurationDefaults": {
             "workbench.editorAssociations": {
-                "{git,gitlens,conflictResolution,vscode-local-history}:/**/*.tc.json": "default"
+                "{git,gitlens,conflictResolution,vscode-local-history}:/**/*.tc.json": "default",
+                "{git,gitlens,conflictResolution,vscode-local-history}:/**/*.{asl.json,asl.yaml,asl.yml}": "default"
             }
         }
     },

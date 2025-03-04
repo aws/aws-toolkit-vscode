@@ -6,6 +6,7 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import { IAM, StepFunctions } from 'aws-sdk'
+import * as yaml from 'js-yaml'
 import * as vscode from 'vscode'
 import { StepFunctionsClient } from '../shared/clients/stepFunctionsClient'
 import { fileExists } from '../shared/filesystemUtilities'
@@ -229,6 +230,46 @@ export async function isDocumentValid(text: string, textDocument?: vscode.TextDo
     const isValid = !diagnostics.some((diagnostic) => diagnostic.severity === DiagnosticSeverity.Error)
 
     return isValid
+}
+
+/**
+ * Checks if the JSON content in an ASL text document is invalid.
+ * Returns `true` for invalid JSON; `false` for valid JSON, empty content, or non-JSON files.
+ *
+ * @param textDocument - The text document to check.
+ * @returns `true` if invalid; `false` otherwise.
+ */
+export const isInvalidJsonFile = (textDocument: vscode.TextDocument): boolean => {
+    const documentContent = textDocument.getText().trim()
+    // An empty file or whitespace-only text is considered valid JSON for our use case
+    return textDocument.languageId === 'asl' && documentContent ? isInvalidJson(documentContent) : false
+}
+
+/**
+ * Checks if the YAML content in an ASL text document is invalid.
+ * Returns `true` for invalid YAML; `false` for valid YAML, empty content, or non-YAML files.
+ *
+ * @param textDocument - The text document to check.
+ * @returns `true` if invalid; `false` otherwise.
+ */
+export const isInvalidYamlFile = (textDocument: vscode.TextDocument): boolean => {
+    try {
+        if (textDocument.languageId === 'asl-yaml') {
+            yaml.load(textDocument.getText())
+        }
+        return false
+    } catch {
+        return true
+    }
+}
+
+const isInvalidJson = (content: string): boolean => {
+    try {
+        JSON.parse(content)
+        return false
+    } catch {
+        return true
+    }
 }
 
 const descriptor = {
