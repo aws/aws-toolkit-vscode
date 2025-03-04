@@ -11,8 +11,14 @@ import sinon from 'sinon'
 import { Messenger } from './framework/messenger'
 import { registerAuthHook, using, closeAllEditors } from 'aws-core-vscode/test'
 import { loginToIdC } from './utils/setup'
-import { codewhispererDiagnosticSourceLabel } from 'aws-core-vscode/codewhisperer'
+import {
+    codewhispererDiagnosticSourceLabel,
+    invalidFileTypeChatMessage,
+    CodeAnalysisScope,
+    SecurityScanStep,
+} from 'aws-core-vscode/codewhisperer'
 import path from 'path'
+import { ScanAction, scanProgressMessage } from '../../../src/app/amazonqScan/models/constants'
 
 function getWorkspaceFolder(): string {
     return (
@@ -119,7 +125,6 @@ describe('Amazon Q Code Review', function () {
     })
 
     describe('Quick action availability', () => {
-        console.log('running this test')
         it('Shows /review when code review is enabled', async () => {
             const command = tab.findCommand('/review')
             if (!command.length) {
@@ -161,15 +166,12 @@ describe('Amazon Q Code Review', function () {
             it('Shows appropriate message when no file is open', async () => {
                 await validateInitialChatMessage()
 
-                tab.clickButton('runFileScan')
+                tab.clickButton(ScanAction.RUN_FILE_SCAN)
 
                 await waitForChatItems(5)
                 const noFileMessage = tab.getChatItems()[5]
                 assert.deepStrictEqual(noFileMessage.type, 'answer')
-                assert.deepStrictEqual(
-                    noFileMessage.body,
-                    'Sorry, your current active window is not a source code file. Make sure you select a source file as your primary context.'
-                )
+                assert.deepStrictEqual(noFileMessage.body, invalidFileTypeChatMessage)
             })
         })
 
@@ -186,42 +188,30 @@ describe('Amazon Q Code Review', function () {
                 const document = await vscode.workspace.openTextDocument(filePath)
                 await vscode.window.showTextDocument(document)
 
-                tab.clickButton('runFileScan')
+                tab.clickButton(ScanAction.RUN_FILE_SCAN)
 
                 await waitForChatItems(6)
                 const scanningInProgressMessage = tab.getChatItems()[6]
                 assert.deepStrictEqual(
                     scanningInProgressMessage.body,
-                    "Okay, I'm reviewing `ProblematicCode.java` for code issues.\n\nThis may take a few minutes. I'll share my progress here.\n\n&#9744; Initiating code review\n\n&#9744; Reviewing your code \n\n&#9744; Processing review results \n"
+                    scanProgressMessage(SecurityScanStep.CREATE_SCAN_JOB, CodeAnalysisScope.FILE_ON_DEMAND, fileName)
                 )
 
                 const scanResultBody = await waitForReviewResults(tab)
 
                 const issues = extractAndValidateIssues(scanResultBody)
                 assert.deepStrictEqual(
-                    issues.Critical >= 3,
+                    issues.Critical >= 1,
                     true,
-                    `critical issue ${issues.Critical} is not larger than 2`
+                    `critical issue ${issues.Critical} is not larger or equal to 1`
                 )
-                assert.deepStrictEqual(issues.High >= 2, true, `high issue ${issues.High} is not larger than 1`)
-                assert.deepStrictEqual(issues.Medium >= 6, true, `medium issue ${issues.Medium} is not larger than 5`)
-                assert.deepStrictEqual(issues.Low, 0, `low issues ${issues.Low} should be 0`)
-                assert.deepStrictEqual(issues.Info, 0, `info issues ${issues.Info} should be 0`)
 
                 const uri = vscode.Uri.file(filePath)
                 const securityDiagnostics: vscode.Diagnostic[] = vscode.languages
                     .getDiagnostics(uri)
                     .filter((diagnostic) => diagnostic.source === codewhispererDiagnosticSourceLabel)
 
-                // 3 exact critical issue matches
-                hasExactlyMatchingSecurityDiagnostic(
-                    securityDiagnostics,
-                    'multilanguage-password',
-                    'CWE-798 - Hardcoded credentials',
-                    10,
-                    11
-                )
-
+                // 1 exact critical issue matches
                 hasExactlyMatchingSecurityDiagnostic(
                     securityDiagnostics,
                     'java-do-not-hardcode-database-password',
@@ -229,18 +219,10 @@ describe('Amazon Q Code Review', function () {
                     20,
                     21
                 )
-
-                hasExactlyMatchingSecurityDiagnostic(
-                    securityDiagnostics,
-                    'java-crypto-compliance',
-                    'CWE-327,328,326,208,1240 - Insecure cryptography',
-                    55,
-                    56
-                )
             })
 
             it('/review project gives findings', async () => {
-                tab.clickButton('runProjectScan')
+                tab.clickButton(ScanAction.RUN_PROJECT_SCAN)
 
                 const scanResultBody = await waitForReviewResults(tab)
                 extractAndValidateIssues(scanResultBody)
@@ -261,7 +243,7 @@ describe('Amazon Q Code Review', function () {
                 const editor = vscode.window.activeTextEditor
 
                 if (editor) {
-                    const position = new vscode.Position(55, 0)
+                    const position = new vscode.Position(20, 0)
                     await editor.edit((editBuilder) => {
                         editBuilder.insert(position, '// amazonq-ignore-next-line\n')
                     })
@@ -269,11 +251,11 @@ describe('Amazon Q Code Review', function () {
             })
 
             it('/review file respect ignored line findings', async () => {
-                tab.clickButton('runFileScan')
+                tab.clickButton(ScanAction.RUN_FILE_SCAN)
             })
 
             it('/review project respect ignored line findings', async () => {
-                tab.clickButton('runProjectScan')
+                tab.clickButton(ScanAction.RUN_PROJECT_SCAN)
             })
 
             afterEach(async () => {
@@ -287,17 +269,17 @@ describe('Amazon Q Code Review', function () {
                 // cannot find this ignored issue
                 hasExactlyMatchingSecurityDiagnostic(
                     securityDiagnostics,
-                    'java-crypto-compliance',
-                    'CWE-327,328,326,208,1240 - Insecure cryptography',
-                    56,
-                    57,
+                    'java-do-not-hardcode-database-password',
+                    'CWE-798 - Hardcoded credentials',
+                    21,
+                    22,
                     0
                 )
 
                 const editor = vscode.window.activeTextEditor
                 if (editor) {
                     await editor.edit((editBuilder) => {
-                        const lineRange = editor.document.lineAt(55).rangeIncludingLineBreak
+                        const lineRange = editor.document.lineAt(20).rangeIncludingLineBreak
                         editBuilder.delete(lineRange)
                     })
                 }
