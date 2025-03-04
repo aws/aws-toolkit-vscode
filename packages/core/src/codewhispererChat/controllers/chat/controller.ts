@@ -928,7 +928,7 @@ export class ChatController {
             )
             session.relativePathToWorkspaceRoot.set(relativePath, contextCommand.workspaceFolder)
         }
-        let prompts = []
+        let prompts: AdditionalContextPrompt[] = []
         try {
             prompts = await LspClient.instance.getContextCommandPrompt(contextCommands)
         } catch (e) {
