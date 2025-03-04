@@ -115,9 +115,8 @@ async function openReadmeFile(config: CreateServerlessLandWizardForm): Promise<v
             getLogger().warn('README.md file not found in the project directory')
             return
         }
-
         await vscode.commands.executeCommand('workbench.action.focusFirstEditorGroup')
-        await vscode.window.showTextDocument(readmeUri)
+        await vscode.commands.executeCommand('markdown.showPreview', readmeUri)
     } catch (err) {
         getLogger().error(`Error in openReadmeFile: ${err}`)
         throw new ToolkitError('Error processing README file')
