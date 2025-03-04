@@ -25,20 +25,25 @@ import { FileSystem } from '../../shared/fs/fs'
 import { ReadmeBuilder } from './mockContent'
 import * as path from 'path'
 describe(`Controller - Doc Generation`, () => {
-    const tabID = '123'
-    const conversationID = '456'
-    const uploadID = '789'
+    const firstTabID = '123'
+    const firstConversationID = '123'
+    const firstUploadID = '123'
+
+    const secondTabID = '456'
+    const secondConversationID = '456'
+    const secondUploadID = '456'
 
     let controllerSetup: ControllerSetup
     let session: Session
     let sendDocTelemetrySpy: sinon.SinonStub
+    let sendDocTelemetrySpyForSecondTab: sinon.SinonStub
     let mockGetCodeGeneration: sinon.SinonStub
     let getSessionStub: sinon.SinonStub
     let modifiedReadme: string
     const generatedReadme = ReadmeBuilder.createBaseReadme()
     let sandbox: sinon.SinonSandbox
 
-    const getFilePaths = (controllerSetup: ControllerSetup): NewFileInfo[] => [
+    const getFilePaths = (controllerSetup: ControllerSetup, uploadID: string): NewFileInfo[] => [
         {
             zipFilePath: path.normalize('README.md'),
             relativePath: path.normalize('README.md'),
@@ -50,7 +55,12 @@ describe(`Controller - Doc Generation`, () => {
         },
     ]
 
-    async function createCodeGenState(sandbox: sinon.SinonSandbox) {
+    async function createCodeGenState(
+        sandbox: sinon.SinonSandbox,
+        tabID: string,
+        conversationID: string,
+        uploadID: string
+    ) {
         mockGetCodeGeneration = sandbox.stub().resolves({ codeGenerationStatus: { status: 'Complete' } })
 
         const workspaceFolders = [controllerSetup.workspaceFolder] as CurrentWsFolders
@@ -69,7 +79,15 @@ describe(`Controller - Doc Generation`, () => {
             workspaceFolders,
         }
 
-        const codeGenState = new DocCodeGenState(testConfig, getFilePaths(controllerSetup), [], [], tabID, 0, {})
+        const codeGenState = new DocCodeGenState(
+            testConfig,
+            getFilePaths(controllerSetup, uploadID),
+            [],
+            [],
+            tabID,
+            0,
+            {}
+        )
         return createSession({
             messenger: controllerSetup.messenger,
             sessionState: codeGenState,
@@ -80,7 +98,7 @@ describe(`Controller - Doc Generation`, () => {
             sandbox,
         })
     }
-    async function fireFollowUps(followUpTypes: FollowUpTypes[], stub: sinon.SinonStub) {
+    async function fireFollowUps(followUpTypes: FollowUpTypes[], stub: sinon.SinonStub, tabID: string) {
         for (const type of followUpTypes) {
             controllerSetup.emitters.followUpClicked.fire({
                 tabID,
@@ -97,7 +115,9 @@ describe(`Controller - Doc Generation`, () => {
     async function performAction(
         action: 'generate' | 'update' | 'makeChanges' | 'accept' | 'edit',
         getSessionStub: sinon.SinonStub,
-        message?: string
+        message?: string,
+        tabID = firstTabID,
+        conversationID = firstConversationID
     ) {
         const sequences = {
             generate: FollowUpSequences.generateReadme,
@@ -107,7 +127,7 @@ describe(`Controller - Doc Generation`, () => {
             accept: FollowUpSequences.acceptContent,
         }
 
-        await fireFollowUps(sequences[action], getSessionStub)
+        await fireFollowUps(sequences[action], getSessionStub, tabID)
 
         if ((action === 'makeChanges' || action === 'edit') && message) {
             controllerSetup.emitters.processHumanChatMessage.fire({
@@ -119,14 +139,14 @@ describe(`Controller - Doc Generation`, () => {
         }
     }
 
-    async function setupTest(sandbox: sinon.SinonSandbox) {
+    async function setupTest(sandbox: sinon.SinonSandbox, isMultiTabs?: boolean) {
         controllerSetup = await createController(sandbox)
-        session = await createCodeGenState(sandbox)
+        session = await createCodeGenState(sandbox, firstTabID, firstConversationID, firstUploadID)
         sendDocTelemetrySpy = sandbox.stub(session, 'sendDocTelemetryEvent').resolves()
         sandbox.stub(session, 'preloader').resolves()
         sandbox.stub(session, 'send').resolves()
         Object.defineProperty(session, '_conversationId', {
-            value: conversationID,
+            value: firstConversationID,
             writable: true,
             configurable: true,
         })
@@ -137,7 +157,30 @@ describe(`Controller - Doc Generation`, () => {
             amazonQ: 'connected',
         })
         sandbox.stub(FileSystem.prototype, 'exists').resolves(false)
-        getSessionStub = sandbox.stub(controllerSetup.sessionStorage, 'getSession').resolves(session)
+        if (isMultiTabs) {
+            const secondSession = await createCodeGenState(sandbox, secondTabID, secondConversationID, secondUploadID)
+            sendDocTelemetrySpyForSecondTab = sandbox.stub(secondSession, 'sendDocTelemetryEvent').resolves()
+            sandbox.stub(secondSession, 'preloader').resolves()
+            sandbox.stub(secondSession, 'send').resolves()
+            Object.defineProperty(secondSession, '_conversationId', {
+                value: secondConversationID,
+                writable: true,
+                configurable: true,
+            })
+            getSessionStub = sandbox
+                .stub(controllerSetup.sessionStorage, 'getSession')
+                .callsFake(async (tabId: string): Promise<Session> => {
+                    if (tabId === firstTabID) {
+                        return session
+                    }
+                    if (tabId === secondTabID) {
+                        return secondSession
+                    }
+                    throw new Error(`Unknown tab ID: ${tabId}`)
+                })
+        } else {
+            getSessionStub = sandbox.stub(controllerSetup.sessionStorage, 'getSession').resolves(session)
+        }
         modifiedReadme = ReadmeBuilder.createReadmeWithRepoStructure()
         sandbox
             .stub(vscode.workspace, 'openTextDocument')
@@ -158,6 +201,7 @@ describe(`Controller - Doc Generation`, () => {
 
     const retryTest = async (
         testMethod: () => Promise<void>,
+        isMultiTabs?: boolean,
         maxRetries: number = 3,
         delayMs: number = 1000
     ): Promise<void> => {
@@ -166,7 +210,7 @@ describe(`Controller - Doc Generation`, () => {
         for (let attempt = 1; attempt <= maxRetries + 1; attempt++) {
             sandbox = sinon.createSandbox()
             try {
-                await setupTest(sandbox)
+                await setupTest(sandbox, isMultiTabs)
                 await testMethod()
                 sandbox.restore()
                 return
@@ -199,7 +243,7 @@ describe(`Controller - Doc Generation`, () => {
                 type: 'generation',
                 ...EventMetrics.INITIAL_README,
                 interactionType: 'GENERATE_README',
-                conversationId: conversationID,
+                conversationId: firstConversationID,
             })
 
             await assertTelemetry({
@@ -217,7 +261,7 @@ describe(`Controller - Doc Generation`, () => {
                 type: 'generation',
                 ...EventMetrics.INITIAL_README,
                 interactionType: 'GENERATE_README',
-                conversationId: conversationID,
+                conversationId: firstConversationID,
             })
 
             await assertTelemetry({
@@ -227,14 +271,14 @@ describe(`Controller - Doc Generation`, () => {
                 sandbox,
             })
 
-            await updateFilePaths(session, modifiedReadme, uploadID, docScheme, controllerSetup.workspaceFolder)
+            await updateFilePaths(session, modifiedReadme, firstUploadID, docScheme, controllerSetup.workspaceFolder)
             await performAction('makeChanges', getSessionStub, 'add repository structure section')
 
             const secondExpectedEvent = createExpectedEvent({
                 type: 'generation',
                 ...EventMetrics.REPO_STRUCTURE,
                 interactionType: 'GENERATE_README',
-                conversationId: conversationID,
+                conversationId: firstConversationID,
             })
 
             await assertTelemetry({
@@ -255,7 +299,7 @@ describe(`Controller - Doc Generation`, () => {
                 type: 'acceptance',
                 ...EventMetrics.INITIAL_README,
                 interactionType: 'GENERATE_README',
-                conversationId: conversationID,
+                conversationId: firstConversationID,
             })
 
             await performAction('accept', getSessionStub)
@@ -276,7 +320,7 @@ describe(`Controller - Doc Generation`, () => {
                 type: 'generation',
                 ...EventMetrics.REPO_STRUCTURE,
                 interactionType: 'UPDATE_README',
-                conversationId: conversationID,
+                conversationId: firstConversationID,
             })
 
             await assertTelemetry({
@@ -293,7 +337,7 @@ describe(`Controller - Doc Generation`, () => {
             await new Promise((resolve) => setTimeout(resolve, 100))
 
             modifiedReadme = ReadmeBuilder.createReadmeWithDataFlow()
-            await updateFilePaths(session, modifiedReadme, uploadID, docScheme, controllerSetup.workspaceFolder)
+            await updateFilePaths(session, modifiedReadme, firstUploadID, docScheme, controllerSetup.workspaceFolder)
 
             await performAction('makeChanges', getSessionStub, 'add data flow section')
 
@@ -301,7 +345,7 @@ describe(`Controller - Doc Generation`, () => {
                 type: 'generation',
                 ...EventMetrics.DATA_FLOW,
                 interactionType: 'UPDATE_README',
-                conversationId: conversationID,
+                conversationId: firstConversationID,
                 callIndex: 1,
             })
 
@@ -324,7 +368,7 @@ describe(`Controller - Doc Generation`, () => {
                 type: 'acceptance',
                 ...EventMetrics.REPO_STRUCTURE,
                 interactionType: 'UPDATE_README',
-                conversationId: conversationID,
+                conversationId: firstConversationID,
             })
 
             await performAction('accept', getSessionStub)
@@ -346,7 +390,7 @@ describe(`Controller - Doc Generation`, () => {
                 type: 'generation',
                 ...EventMetrics.REPO_STRUCTURE,
                 interactionType: 'EDIT_README',
-                conversationId: conversationID,
+                conversationId: firstConversationID,
             })
 
             await assertTelemetry({
@@ -366,7 +410,7 @@ describe(`Controller - Doc Generation`, () => {
                 type: 'acceptance',
                 ...EventMetrics.REPO_STRUCTURE,
                 interactionType: 'EDIT_README',
-                conversationId: conversationID,
+                conversationId: firstConversationID,
             })
 
             await performAction('accept', getSessionStub)
@@ -378,5 +422,41 @@ describe(`Controller - Doc Generation`, () => {
                 sandbox,
             })
         })
+    })
+    it('should emit separate telemetry events when executing /doc in different tabs', async () => {
+        await retryTest(async () => {
+            const firstSession = await getSessionStub(firstTabID)
+            const secondSession = await getSessionStub(secondTabID)
+            await performAction('generate', firstSession)
+            await performAction('update', secondSession, undefined, secondTabID, secondConversationID)
+
+            const expectedEvent = createExpectedEvent({
+                type: 'generation',
+                ...EventMetrics.INITIAL_README,
+                interactionType: 'GENERATE_README',
+                conversationId: firstConversationID,
+            })
+
+            await assertTelemetry({
+                spy: sendDocTelemetrySpy,
+                expectedEvent,
+                type: 'generation',
+                sandbox,
+            })
+
+            const expectedEventForSecondTab = createExpectedEvent({
+                type: 'generation',
+                ...EventMetrics.REPO_STRUCTURE,
+                interactionType: 'UPDATE_README',
+                conversationId: secondConversationID,
+            })
+
+            await assertTelemetry({
+                spy: sendDocTelemetrySpyForSecondTab,
+                expectedEvent: expectedEventForSecondTab,
+                type: 'generation',
+                sandbox,
+            })
+        }, true)
     })
 })
