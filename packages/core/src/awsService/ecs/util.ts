@@ -9,7 +9,7 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import { EcsClient } from '../../shared/clients/ecsClient'
-import { DefaultIamClient, IamClient } from '../../shared/clients/iamClient'
+import { IamClient } from '../../shared/clients/iam'
 import { ToolkitError } from '../../shared/errors'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { getOrInstallCli } from '../../shared/utilities/cliUtils'
@@ -80,7 +80,7 @@ export async function prepareCommand(
     try {
         session = (await client.executeCommand({ ...task, command })).session!
     } catch (execErr) {
-        await checkPermissionsForSsm(new DefaultIamClient(globals.regionProvider.defaultRegionId), {
+        await checkPermissionsForSsm(new IamClient(globals.regionProvider.defaultRegionId), {
             taskRoleArn: taskRoleArn,
         }).catch((permErr) => {
             throw ToolkitError.chain(permErr, `${execErr}`)

@@ -6,10 +6,10 @@
 import assert from 'assert'
 import { stub } from '../../utilities/stubber'
 import { checkPermissionsForSsm } from '../../../awsService/ecs/util'
-import { DefaultIamClient } from '../../../shared/clients/iamClient'
+import { IamClient } from '../../../shared/clients/iam'
 
 describe('checkPermissionsForSsm', function () {
-    const getClient = () => stub(DefaultIamClient, { regionCode: '' })
+    const getClient = () => stub(IamClient, { regionCode: '' })
 
     it('rejects task definitions without a role', async function () {
         await assert.rejects(() => checkPermissionsForSsm(getClient(), {}), /must have a task role/i)

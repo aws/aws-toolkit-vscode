@@ -3,11 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { IAM, StepFunctions } from 'aws-sdk'
-import { DefaultIamClient } from '../../shared/clients/iamClient'
+import { StepFunctions } from 'aws-sdk'
+import { IamClient, IamRole } from '../../shared/clients/iam'
 import { DefaultStepFunctionsClient } from '../../shared/clients/stepFunctionsClient'
 import { ApiAction, ApiCallRequestMessage, Command, MessageType, WebviewContext } from './types'
 import { telemetry } from '../../shared/telemetry/telemetry'
+import { ListRolesRequest } from '@aws-sdk/client-iam'
 
 export class WorkflowStudioApiHandler {
     public constructor(
@@ -15,7 +16,7 @@ export class WorkflowStudioApiHandler {
         private readonly context: WebviewContext,
         private readonly clients = {
             sfn: new DefaultStepFunctionsClient(region),
-            iam: new DefaultIamClient(region),
+            iam: new IamClient(region),
         }
     ) {}
 
@@ -72,7 +73,7 @@ export class WorkflowStudioApiHandler {
         return this.clients.sfn.testState(params)
     }
 
-    public async listRoles(params: IAM.ListRolesRequest): Promise<IAM.Role[]> {
-        return this.clients.iam.listRoles(params)
+    public async listRoles(params: ListRolesRequest): Promise<IamRole[]> {
+        return this.clients.iam.resolveRoles(params)
     }
 }

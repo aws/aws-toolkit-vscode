@@ -50,6 +50,7 @@ import { registerCommands } from './commands'
 // The following imports the endpoints file, which causes webpack to bundle it in the final output file
 import endpoints from '../resources/endpoints.json'
 import { showViewLogsMessage } from './shared/utilities/messages'
+import { AWSClientBuilderV3 } from './shared/awsClientBuilderV3'
 import { setupUninstallHandler } from './shared/handleUninstall'
 import { maybeShowMinVscodeWarning } from './shared/extensionStartup'
 import { getLogger } from './shared/logger/logger'
@@ -104,6 +105,7 @@ export async function activateCommon(
     globals.machineId = await getMachineId()
     globals.awsContext = new DefaultAwsContext()
     globals.sdkClientBuilder = new DefaultAWSClientBuilder(globals.awsContext)
+    globals.sdkClientBuilderV3 = new AWSClientBuilderV3(globals.awsContext)
     globals.loginManager = new LoginManager(globals.awsContext, new CredentialsStore())
 
     // order matters here
