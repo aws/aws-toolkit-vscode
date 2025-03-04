@@ -21,7 +21,7 @@ import { createQuickPick, DataQuickPickItem, QuickPickPrompter } from '../../sha
 import { Wizard, WIZARD_BACK } from '../../shared/wizards/wizard'
 import { isStepFunctionsRole } from '../utils'
 import { createRolePrompter } from '../../shared/ui/common/roles'
-import { DefaultIamClient } from '../../shared/clients/iamClient'
+import { IamClient } from '../../shared/clients/iam'
 import { DefaultStepFunctionsClient } from '../../shared/clients/stepFunctionsClient'
 
 export enum PublishStateMachineAction {
@@ -95,7 +95,7 @@ export interface PublishStateMachineWizardState {
 }
 
 function createStepFunctionsRolePrompter(region: string) {
-    const client = new DefaultIamClient(region)
+    const client = new IamClient(region)
 
     return createRolePrompter(client, {
         helpUrl: vscode.Uri.parse(sfnCreateIamRoleUrl),

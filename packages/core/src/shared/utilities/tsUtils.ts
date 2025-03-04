@@ -151,3 +151,13 @@ export type FactoryFunction<T extends abstract new (...args: any[]) => any> = (
 
 /** Can be used to isolate all number fields of a record `T` */
 export type NumericKeys<T> = { [P in keyof T]-?: T[P] extends number | undefined ? P : never }[keyof T]
+
+export function omitIfPresent<T extends Record<string, unknown>>(obj: T, keys: string[]): T {
+    const objCopy = { ...obj }
+    for (const key of keys) {
+        if (key in objCopy) {
+            ;(objCopy as any)[key] = '[omitted]'
+        }
+    }
+    return objCopy
+}
