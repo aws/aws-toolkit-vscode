@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "Step Functions: Added support for calling the TestState API in Workflow Studio"
+}
