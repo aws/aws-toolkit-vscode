@@ -44,10 +44,11 @@ export class ExecuteStateMachineWebview extends VueWebview {
         this.logger.info('Starting Step Functions State Machine execution')
 
         this.channel.show()
+        this.channel.appendLine('')
         this.channel.appendLine(
             localize(
-                'AWS.message.info.stepFunctions.executeStateMachine.executing',
-                'Executing {0} in {1}...',
+                'AWS.stepFunctions.executeStateMachine.info.executing',
+                'Starting execution of {0} in {1}...',
                 this.stateMachine.name,
                 this.stateMachine.region
             )
@@ -58,9 +59,7 @@ export class ExecuteStateMachineWebview extends VueWebview {
             const client = new DefaultStepFunctionsClient(this.stateMachine.region)
             const startExecResponse = await client.executeStateMachine(this.stateMachine.arn, input)
             this.logger.info('started execution for Step Functions State Machine')
-            this.channel.appendLine(
-                localize('AWS.message.info.stepFunctions.executeStateMachine.started', 'Execution started')
-            )
+            this.channel.appendLine(localize('AWS.stepFunctions.executeStateMachine.info.started', 'Execution started'))
             this.channel.appendLine(startExecResponse.executionArn)
         } catch (e) {
             executeResult = 'Failed'
@@ -68,12 +67,11 @@ export class ExecuteStateMachineWebview extends VueWebview {
             this.logger.error('Error starting execution for Step Functions State Machine: %s', error)
             this.channel.appendLine(
                 localize(
-                    'AWS.message.error.stepFunctions.executeStateMachine.failed_to_start',
-                    'There was an error starting execution for {0}, check logs for more information.',
+                    'AWS.stepFunctions.executeStateMachine.error.failedToStart',
+                    'There was an error starting execution for {0}, check AWS Toolkit logs for more information.',
                     this.stateMachine.arn
                 )
             )
-            this.channel.appendLine('')
         } finally {
             telemetry.stepfunctions_executeStateMachine.emit({ result: executeResult })
         }
