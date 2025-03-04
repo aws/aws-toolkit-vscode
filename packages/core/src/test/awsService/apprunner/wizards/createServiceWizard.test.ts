@@ -7,7 +7,7 @@ import { createWizardTester, WizardTester } from '../../../shared/wizards/wizard
 import { AppRunner } from 'aws-sdk'
 import { CreateAppRunnerServiceWizard } from '../../../../awsService/apprunner/wizards/apprunnerCreateServiceWizard'
 import { stub } from '../../../utilities/stubber'
-import { DefaultIamClient } from '../../../../shared/clients/iamClient'
+import { IamClient } from '../../../../shared/clients/iam'
 import { DefaultEcrClient } from '../../../../shared/clients/ecrClient'
 import { DefaultAppRunnerClient } from '../../../../shared/clients/apprunnerClient'
 
@@ -21,7 +21,7 @@ describe('CreateServiceWizard', function () {
             {},
             {},
             {
-                iam: stub(DefaultIamClient, { regionCode }),
+                iam: stub(IamClient, { regionCode }),
                 ecr: stub(DefaultEcrClient, { regionCode }),
                 apprunner: stub(DefaultAppRunnerClient, { regionCode }),
             }
