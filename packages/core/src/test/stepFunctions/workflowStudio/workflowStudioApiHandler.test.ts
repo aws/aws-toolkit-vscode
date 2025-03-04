@@ -11,7 +11,7 @@ import { ApiAction, Command, MessageType, WebviewContext } from '../../../stepFu
 import * as vscode from 'vscode'
 import { assertTelemetry } from '../../testUtil'
 import { DefaultStepFunctionsClient } from '../../../shared/clients/stepFunctionsClient'
-import { DefaultIamClient } from '../../../shared/clients/iamClient'
+import { IamClient } from '../../../shared/clients/iam'
 
 describe('WorkflowStudioApiHandler', function () {
     let postMessageStub: sinon.SinonStub
@@ -59,7 +59,7 @@ describe('WorkflowStudioApiHandler', function () {
         const sfnClient = new DefaultStepFunctionsClient('us-east-1')
         apiHandler = new WorkflowStudioApiHandler('us-east-1', context, {
             sfn: sfnClient,
-            iam: new DefaultIamClient('us-east-1'),
+            iam: new IamClient('us-east-1'),
         })
 
         testState = sinon.stub(sfnClient, 'testState')

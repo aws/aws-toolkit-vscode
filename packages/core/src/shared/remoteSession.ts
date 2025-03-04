@@ -19,9 +19,9 @@ import { getOrInstallCli } from './utilities/cliUtils'
 import { pushIf } from './utilities/collectionUtils'
 import { ChildProcess } from './utilities/processUtils'
 import { findSshPath, getVscodeCliPath } from './utilities/pathFind'
-import { IamClient } from './clients/iamClient'
-import { IAM } from 'aws-sdk'
+import { IamClient } from './clients/iam'
 import { getIdeProperties } from './extensionUtilities'
+import { EvaluationResult } from '@aws-sdk/client-iam'
 
 const policyAttachDelay = 5000
 
@@ -243,7 +243,7 @@ function getSsmPolicyDocument() {
             }`
 }
 
-export async function getDeniedSsmActions(client: IamClient, roleArn: string): Promise<IAM.EvaluationResult[]> {
+export async function getDeniedSsmActions(client: IamClient, roleArn: string): Promise<EvaluationResult[]> {
     const deniedActions = await client.getDeniedActions({
         PolicySourceArn: roleArn,
         ActionNames: minimumSsmActions,
