@@ -66,7 +66,7 @@ import { DefaultAmazonQAppInitContext } from '../../../amazonq/apps/initContext'
 import globals from '../../../shared/extensionGlobals'
 import { MynahIconsType, MynahUIDataModel, QuickActionCommand } from '@aws/mynah-ui'
 import { LspClient } from '../../../amazonq/lsp/lspClient'
-import { ContextCommandItem, ContextCommandItemType } from '../../../amazonq/lsp/types'
+import { AdditionalContextPrompt, ContextCommandItem, ContextCommandItemType } from '../../../amazonq/lsp/types'
 import { workspaceCommand } from '../../../amazonq/webview/ui/tabs/constants'
 import fs from '../../../shared/fs/fs'
 import { FeatureConfigProvider, Features } from '../../../shared/featureConfig'
@@ -588,8 +588,9 @@ export class ChatController {
             return
         }
 
-        // TODO: Fix for multiple workspace setup
-        const projectRoot = session.relativePathToWorkspaceRoot.get(message.filePath)
+        // Check if clicked file is in a different workspace root
+        const projectRoot =
+            session.relativePathToWorkspaceRoot.get(message.filePath) || workspace.workspaceFolders?.[0]?.uri.fsPath
         if (!projectRoot) {
             return
         }
@@ -877,6 +878,34 @@ export class ChatController {
         this.messenger.sendStaticTextResponse(responseType, triggerID, tabID)
     }
 
+    /**
+     * @returns A Uri array of prompt files in each workspace root's .amazonq/rules directory
+     */
+    private async collectWorkspaceRules(): Promise<vscode.Uri[]> {
+        const rulesFiles: vscode.Uri[] = []
+
+        if (!vscode.workspace.workspaceFolders) {
+            return rulesFiles
+        }
+
+        for (const folder of vscode.workspace.workspaceFolders) {
+            const rulesPath = vscode.Uri.joinPath(folder.uri, '.amazonq', 'rules')
+            const folderExists = await fs.exists(rulesPath)
+
+            if (folderExists) {
+                const entries = await fs.readdir(rulesPath)
+
+                for (const [name, type] of entries) {
+                    if (type === vscode.FileType.File && name.endsWith(promptFileExtension)) {
+                        rulesFiles.push(vscode.Uri.joinPath(rulesPath, name))
+                    }
+                }
+            }
+        }
+
+        return rulesFiles
+    }
+
     private async resolveContextCommandPayload(
         triggerPayload: TriggerPayload,
         session: ChatSession
@@ -885,14 +914,13 @@ export class ChatController {
         const relativePaths: string[] = []
 
         // Check for workspace rules to add to context
-        const workspaceRules = await vscode.workspace.findFiles(`.amazonq/rules/*${promptFileExtension}`)
+        const workspaceRules = await this.collectWorkspaceRules()
         if (workspaceRules.length > 0) {
             contextCommands.push(
                 ...workspaceRules.map((rule) => {
                     const workspaceFolderPath = vscode.workspace.getWorkspaceFolder(rule)?.uri?.path || ''
                     return {
                         workspaceFolder: workspaceFolderPath,
-                        // todo: add 'prompt' type to LSP model
                         type: 'file' as ContextCommandItemType,
                         relativePath: path.relative(workspaceFolderPath, rule.path),
                     }
@@ -904,7 +932,6 @@ export class ChatController {
         // Add context commands added by user to context
         if (triggerPayload.context !== undefined && triggerPayload.context.length > 0) {
             for (const context of triggerPayload.context) {
-                // todo: add handling of 'prompt' type (dependent on LSP changes)
                 if (typeof context !== 'string' && context.route && context.route.length === 2) {
                     contextCommands.push({
                         workspaceFolder: context.route[0] || '',
@@ -930,52 +957,59 @@ export class ChatController {
             )
             session.relativePathToWorkspaceRoot.set(relativePath, contextCommand.workspaceFolder)
         }
-        const prompts = await LspClient.instance.getContextCommandPrompt(contextCommands)
-        if (prompts.length === 0) {
-            return []
+        let prompts: AdditionalContextPrompt[] = []
+        try {
+            prompts = await LspClient.instance.getContextCommandPrompt(contextCommands)
+        } catch (e) {
+            // todo: handle @workspace used before indexing is ready
+            getLogger().verbose(`Could not get context command prompts: ${e}`)
         }
 
         let currentContextLength = 0
         triggerPayload.additionalContents = []
-        triggerPayload.additionalContextLengths = this.telemetryHelper.getContextLengths(prompts)
-        triggerPayload.truncatedAdditionalContextLengths = {
+        const emptyLengths = {
             fileContextLength: 0,
             promptContextLength: 0,
             ruleContextLength: 0,
         }
-        for (const prompt of prompts.slice(0, 20)) {
-            // Todo: add mechanism for sorting/prioritization of additional context
-            const entry = {
-                name: prompt.name.substring(0, aditionalContentNameLimit),
-                description: prompt.description.substring(0, aditionalContentNameLimit),
-                innerContext: prompt.content.substring(0, additionalContentInnerContextLimit),
-            }
-            // make sure the relevantDocument + additionalContext
-            // combined does not exceed 40k characters before generating the request payload.
-            // Do truncation and make sure triggerPayload.documentReferences is up-to-date after truncation
-            // TODO: Use a context length indicator
-            if (currentContextLength + entry.innerContext.length > contextMaxLength) {
-                getLogger().warn(`Selected context exceeds context size limit: ${entry.description} `)
-                break
-            }
+        triggerPayload.additionalContextLengths = emptyLengths
+        triggerPayload.truncatedAdditionalContextLengths = emptyLengths
 
-            const contextType = this.telemetryHelper.getContextType(prompt)
-            if (contextType === 'rule') {
-                triggerPayload.truncatedAdditionalContextLengths.ruleContextLength += entry.innerContext.length
-            } else if (contextType === 'prompt') {
-                triggerPayload.truncatedAdditionalContextLengths.promptContextLength += entry.innerContext.length
-            } else if (contextType === 'file') {
-                triggerPayload.truncatedAdditionalContextLengths.fileContextLength += entry.innerContext.length
-            }
+        if (Array.isArray(prompts) && prompts.length > 0) {
+            triggerPayload.additionalContextLengths = this.telemetryHelper.getContextLengths(prompts)
+            for (const prompt of prompts.slice(0, 20)) {
+                const entry = {
+                    name: prompt.name.substring(0, aditionalContentNameLimit),
+                    description: prompt.description.substring(0, aditionalContentNameLimit),
+                    innerContext: prompt.content.substring(0, additionalContentInnerContextLimit),
+                }
+                // make sure the relevantDocument + additionalContext
+                // combined does not exceed 40k characters before generating the request payload.
+                // Do truncation and make sure triggerPayload.documentReferences is up-to-date after truncation
+                // TODO: Use a context length indicator
+                if (currentContextLength + entry.innerContext.length > contextMaxLength) {
+                    getLogger().warn(`Selected context exceeds context size limit: ${entry.description} `)
+                    break
+                }
 
-            triggerPayload.additionalContents.push(entry)
-            currentContextLength += entry.innerContext.length
-            let relativePath = path.relative(workspaceFolder, prompt.filePath)
-            // Handle user prompts outside the workspace
-            if (prompt.filePath.startsWith(getUserPromptsDirectory())) {
-                relativePath = path.basename(prompt.filePath)
+                const contextType = this.telemetryHelper.getContextType(prompt)
+                if (contextType === 'rule') {
+                    triggerPayload.truncatedAdditionalContextLengths.ruleContextLength += entry.innerContext.length
+                } else if (contextType === 'prompt') {
+                    triggerPayload.truncatedAdditionalContextLengths.promptContextLength += entry.innerContext.length
+                } else if (contextType === 'file') {
+                    triggerPayload.truncatedAdditionalContextLengths.fileContextLength += entry.innerContext.length
+                }
+
+                triggerPayload.additionalContents.push(entry)
+                currentContextLength += entry.innerContext.length
+                let relativePath = path.relative(workspaceFolder, prompt.filePath)
+                // Handle user prompts outside the workspace
+                if (prompt.filePath.startsWith(getUserPromptsDirectory())) {
+                    relativePath = path.basename(prompt.filePath)
+                }
+                relativePaths.push(relativePath)
             }
-            relativePaths.push(relativePath)
         }
         getLogger().info(`Retrieved chunks of additional context count: ${triggerPayload.additionalContents.length} `)
 

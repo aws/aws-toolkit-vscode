@@ -136,13 +136,24 @@ export class Messenger {
             )
         }
         this.telemetryHelper.setResponseStreamStartTime(tabID)
+
+        let cwsprChatHasProjectContext = false
         if (
             triggerPayload.relevantTextDocuments &&
             triggerPayload.relevantTextDocuments.length > 0 &&
             triggerPayload.useRelevantDocuments === true
         ) {
-            this.telemetryHelper.setResponseFromProjectContext(messageID)
+            cwsprChatHasProjectContext = true
         }
+        const additionalCounts = this.telemetryHelper.getAdditionalContextCounts(triggerPayload)
+
+        this.telemetryHelper.setResponseFromAdditionalContext(messageID, {
+            cwsprChatHasProjectContext,
+            cwsprChatRuleContextCount: triggerPayload.workspaceRulesCount,
+            cwsprChatFileContextCount: additionalCounts.fileContextCount,
+            cwsprChatFolderContextCount: additionalCounts.folderContextCount,
+            cwsprChatPromptContextCount: additionalCounts.promptContextCount,
+        })
 
         const eventCounts = new Map<string, number>()
         waitUntil(
