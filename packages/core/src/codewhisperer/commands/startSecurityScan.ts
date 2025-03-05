@@ -18,6 +18,7 @@ import {
     listScanResults,
     throwIfCancelled,
     getLoggerForScope,
+    generateScanName,
 } from '../service/securityScanHandler'
 import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import {
@@ -38,7 +39,6 @@ import path from 'path'
 import { ZipMetadata, ZipUtil } from '../util/zipUtil'
 import { debounce } from 'lodash'
 import { once } from '../../shared/utilities/functionUtils'
-import { randomUUID } from '../../shared/crypto'
 import { CodeAnalysisScope, ProjectSizeExceededErrorMessage, SecurityScanStep } from '../models/constants'
 import {
     CodeScanJobFailedError,
@@ -185,7 +185,7 @@ export async function startSecurityScan(
         }
         let artifactMap: ArtifactMap = {}
         const uploadStartTime = performance.now()
-        const scanName = randomUUID()
+        const scanName = generateScanName(projectPaths, scope, fileName)
         try {
             artifactMap = await getPresignedUrlAndUpload(client, zipMetadata, scope, scanName)
         } finally {
@@ -263,6 +263,19 @@ export async function startSecurityScan(
             scope,
             editor
         )
+        for (const issue of securityRecommendationCollection
+            .flatMap(({ issues }) => issues)
+            .filter(({ visible, autoDetected }) => visible && !autoDetected)) {
+            telemetry.codewhisperer_codeScanIssueDetected.emit({
+                autoDetected: issue.autoDetected,
+                codewhispererCodeScanJobId: issue.scanJobId,
+                detectorId: issue.detectorId,
+                findingId: issue.findingId,
+                includesFix: issue.suggestedFixes.length > 0,
+                ruleId: issue.ruleId,
+                result: 'Succeeded',
+            })
+        }
         const { total, withFixes } = securityRecommendationCollection.reduce(
             (accumulator, current) => ({
                 total: accumulator.total + current.issues.length,

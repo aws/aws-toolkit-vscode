@@ -25,6 +25,7 @@ export type contextKey =
     | 'aws.explorer.showAuthView'
     | 'aws.toolkit.amazonq.dismissed'
     | 'aws.toolkit.amazonqInstall.dismissed'
+    | 'aws.stepFunctions.isWorkflowStudioFocused'
     | 'aws.toolkit.notifications.show'
     // Deprecated/legacy names. New keys should start with "aws.".
     | 'codewhisperer.activeLine'

@@ -1187,7 +1187,7 @@
                     "when": "false"
                 },
                 {
-                    "command": "aws.renderStateMachineGraph",
+                    "command": "aws.stepfunctions.openWithWorkflowStudio",
                     "when": "false"
                 },
                 {
@@ -1327,24 +1327,29 @@
                     "group": "1_account@3"
                 },
                 {
-                    "command": "aws.lambda.createNewSamApp",
+                    "command": "aws.toolkit.lambda.createServerlessLandProject",
                     "when": "view == aws.explorer",
                     "group": "3_lambda@1"
                 },
                 {
-                    "command": "aws.launchConfigForm",
+                    "command": "aws.lambda.createNewSamApp",
                     "when": "view == aws.explorer",
                     "group": "3_lambda@2"
                 },
                 {
+                    "command": "aws.launchConfigForm",
+                    "when": "view == aws.explorer",
+                    "group": "3_lambda@3"
+                },
+                {
                     "command": "aws.deploySamApplication",
                     "when": "config.aws.samcli.legacyDeploy && view == aws.explorer",
-                    "group": "3_lambda@3"
+                    "group": "3_lambda@4"
                 },
                 {
                     "command": "aws.samcli.sync",
                     "when": "!config.aws.samcli.legacyDeploy && view == aws.explorer",
-                    "group": "3_lambda@3"
+                    "group": "3_lambda@4"
                 },
                 {
                     "submenu": "aws.toolkit.submenu.feedback",
@@ -1360,6 +1365,11 @@
                     "command": "aws.toolkit.lambda.openWalkthrough",
                     "when": "view =~ /^(aws.appBuilder|aws.appBuilderForFileExplorer)$/",
                     "group": "y_toolkitWalkthrough@1"
+                },
+                {
+                    "command": "aws.toolkit.lambda.createServerlessLandProject",
+                    "when": "view =~ /^(aws.appBuilder|aws.appBuilderForFileExplorer)$/",
+                    "group": "y_toolkitWalkthrough@2"
                 },
                 {
                     "command": "aws.codecatalyst.cloneRepo",
@@ -1411,6 +1421,11 @@
                 {
                     "command": "aws.openInApplicationComposer",
                     "when": "isFileSystemResource && !(resourceFilename =~ /^.*\\.tc\\.json$/) && resourceFilename =~ /^.*\\.(json|yml|yaml|template)$/",
+                    "group": "z_aws@1"
+                },
+                {
+                    "command": "aws.stepfunctions.openWithWorkflowStudio",
+                    "when": "isFileSystemResource && resourceFilename =~ /^.*\\.asl\\.(json|yml|yaml)$/",
                     "group": "z_aws@1"
                 }
             ],
@@ -1571,24 +1586,29 @@
                     "group": "0@1"
                 },
                 {
-                    "command": "aws.lambda.createNewSamApp",
+                    "command": "aws.toolkit.lambda.createServerlessLandProject",
                     "when": "view == aws.explorer && viewItem == awsLambdaNode || viewItem == awsRegionNode",
                     "group": "1@1"
                 },
                 {
+                    "command": "aws.lambda.createNewSamApp",
+                    "when": "view == aws.explorer && viewItem == awsLambdaNode || viewItem == awsRegionNode",
+                    "group": "1@2"
+                },
+                {
                     "command": "aws.launchConfigForm",
                     "when": "view == aws.explorer && viewItem == awsLambdaNode || viewItem == awsRegionNode || viewItem == awsCloudFormationRootNode",
-                    "group": "1@1"
+                    "group": "1@2"
                 },
                 {
                     "command": "aws.deploySamApplication",
                     "when": "config.aws.samcli.legacyDeploy && view == aws.explorer && viewItem =~ /^(awsLambdaNode|awsRegionNode|awsCloudFormationRootNode)$/",
-                    "group": "1@2"
+                    "group": "1@3"
                 },
                 {
                     "command": "aws.samcli.sync",
                     "when": "!config.aws.samcli.legacyDeploy && view == aws.explorer && viewItem =~ /^(awsLambdaNode|awsRegionNode|awsCloudFormationRootNode)$/",
-                    "group": "1@2"
+                    "group": "1@3"
                 },
                 {
                     "command": "aws.ecr.copyTagUri",
@@ -1681,7 +1701,7 @@
                     "group": "0@1"
                 },
                 {
-                    "command": "aws.renderStateMachineGraph",
+                    "command": "aws.previewStateMachine",
                     "when": "view == aws.explorer && viewItem == awsStateMachineNode",
                     "group": "0@2"
                 },
@@ -3099,17 +3119,6 @@
                 }
             },
             {
-                "command": "aws.renderStateMachineGraph",
-                "title": "%AWS.command.renderStateMachineGraph%",
-                "enablement": "isCloud9 || !aws.isWebExtHost",
-                "category": "%AWS.title%",
-                "cloud9": {
-                    "cn": {
-                        "category": "%AWS.title.cn%"
-                    }
-                }
-            },
-            {
                 "command": "aws.copyArn",
                 "title": "%AWS.command.copyArn%",
                 "category": "%AWS.title%",
@@ -3247,6 +3256,17 @@
                 }
             },
             {
+                "command": "aws.toolkit.lambda.createServerlessLandProject",
+                "title": "%AWS.toolkit.lambda.serverlessLand.quickpickTitle%",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
                 "command": "aws.quickStart",
                 "title": "%AWS.command.quickStart%",
                 "category": "%AWS.title%",
@@ -3338,7 +3358,7 @@
             },
             {
                 "command": "aws.previewStateMachine",
-                "title": "%AWS.command.stepFunctions.previewStateMachine%",
+                "title": "%AWS.command.stepFunctions.openWithWorkflowStudio%",
                 "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "icon": "$(aws-stepfunctions-preview)",
@@ -3918,6 +3938,16 @@
                 }
             },
             {
+                "command": "aws.stepfunctions.openWithWorkflowStudio",
+                "title": "%AWS.command.stepFunctions.openWithWorkflowStudio%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
                 "command": "aws.createNewThreatComposer",
                 "title": "%AWS.command.threatComposer.createNew%",
                 "category": "%AWS.title%",
@@ -4146,6 +4176,12 @@
                 "key": "ctrl+shift+v",
                 "mac": "cmd+shift+v",
                 "when": "editorTextFocus && editorLangId == asl || editorTextFocus && editorLangId == asl-yaml"
+            },
+            {
+                "command": "noop",
+                "key": "ctrl+z",
+                "mac": "cmd+z",
+                "when": "aws.stepFunctions.isWorkflowStudioFocused"
             },
             {
                 "command": "aws.samcli.sync",
@@ -4635,11 +4671,27 @@
                         "filenamePattern": "*.tc.json"
                     }
                 ]
+            },
+            {
+                "viewType": "workflowStudio.asl",
+                "displayName": "Workflow Studio",
+                "selector": [
+                    {
+                        "filenamePattern": "*.asl.json"
+                    },
+                    {
+                        "filenamePattern": "*.asl.yaml"
+                    },
+                    {
+                        "filenamePattern": "*.asl.yml"
+                    }
+                ]
             }
         ],
         "configurationDefaults": {
             "workbench.editorAssociations": {
-                "{git,gitlens,conflictResolution,vscode-local-history}:/**/*.tc.json": "default"
+                "{git,gitlens,conflictResolution,vscode-local-history}:/**/*.tc.json": "default",
+                "{git,gitlens,conflictResolution,vscode-local-history}:/**/*.{asl.json,asl.yaml,asl.yml}": "default"
             }
         }
     },

@@ -22,14 +22,9 @@ import { RawCodeScanIssue } from '../models/model'
 import * as crypto from 'crypto'
 import path = require('path')
 import { pageableToCollection } from '../../shared/utilities/collectionUtils'
-import {
-    ArtifactMap,
-    CreateUploadUrlRequest,
-    CreateUploadUrlResponse,
-    UploadIntent,
-} from '../client/codewhispereruserclient'
+import { ArtifactMap, CreateUploadUrlRequest, CreateUploadUrlResponse } from '../client/codewhispereruserclient'
 import { TelemetryHelper } from '../util/telemetryHelper'
-import request from '../../shared/request'
+import request, { RequestError } from '../../shared/request'
 import { ZipMetadata } from '../util/zipUtil'
 import { getNullLogger } from '../../shared/logger/logger'
 import {
@@ -46,6 +41,11 @@ import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { FeatureUseCase } from '../models/constants'
 import { UploadTestArtifactToS3Error } from '../../amazonqTest/error'
 import { ChatSessionManager } from '../../amazonqTest/chat/storages/chatSession'
+import { getStringHash } from '../../shared/utilities/textUtilities'
+import { getClientId } from '../../shared/telemetry/util'
+import globals from '../../shared/extensionGlobals'
+import { AmazonqCreateUpload, Span, telemetry } from '../../shared/telemetry/telemetry'
+import { AuthUtil } from '../util/authUtil'
 
 export async function listScanResults(
     client: DefaultCodeWhispererClient,
@@ -273,45 +273,55 @@ export async function getPresignedUrlAndUpload(
     scope: CodeWhispererConstants.CodeAnalysisScope,
     scanName: string
 ) {
-    const logger = getLoggerForScope(scope)
-    if (zipMetadata.zipFilePath === '') {
-        getLogger().error('Failed to create valid source zip')
-        throw new InvalidSourceZipError()
-    }
-    const srcReq: CreateUploadUrlRequest = {
-        contentMd5: getMd5(zipMetadata.zipFilePath),
-        artifactType: 'SourceCode',
-        uploadIntent: getUploadIntent(scope),
-        uploadContext: {
-            codeAnalysisUploadContext: {
-                codeScanName: scanName,
+    const artifactMap = await telemetry.amazonq_createUpload.run(async (span) => {
+        const logger = getLoggerForScope(scope)
+        if (zipMetadata.zipFilePath === '') {
+            getLogger().error('Failed to create valid source zip')
+            throw new InvalidSourceZipError()
+        }
+        const uploadIntent = getUploadIntent(scope)
+        span.record({
+            amazonqUploadIntent: uploadIntent,
+            amazonqRepositorySize: zipMetadata.srcPayloadSizeInBytes,
+            credentialStartUrl: AuthUtil.instance.startUrl,
+        })
+        const srcReq: CreateUploadUrlRequest = {
+            contentMd5: getMd5(zipMetadata.zipFilePath),
+            artifactType: 'SourceCode',
+            uploadIntent: uploadIntent,
+            uploadContext: {
+                codeAnalysisUploadContext: {
+                    codeScanName: scanName,
+                },
             },
-        },
-    }
-    logger.verbose(`Prepare for uploading src context...`)
-    const srcResp = await client.createUploadUrl(srcReq).catch((err) => {
-        getLogger().error(`Failed getting presigned url for uploading src context. Request id: ${err.requestId}`)
-        throw new CreateUploadUrlError(err)
+        }
+        logger.verbose(`Prepare for uploading src context...`)
+        const srcResp = await client.createUploadUrl(srcReq).catch((err) => {
+            getLogger().error(`Failed getting presigned url for uploading src context. Request id: ${err.requestId}`)
+            span.record({ requestId: err.requestId })
+            throw new CreateUploadUrlError(err.message)
+        })
+        logger.verbose(`CreateUploadUrlRequest request id: ${srcResp.$response.requestId}`)
+        logger.verbose(`Complete Getting presigned Url for uploading src context.`)
+        logger.verbose(`Uploading src context...`)
+        await uploadArtifactToS3(zipMetadata.zipFilePath, srcResp, FeatureUseCase.CODE_SCAN, scope, span)
+        logger.verbose(`Complete uploading src context.`)
+        const artifactMap: ArtifactMap = {
+            SourceCode: srcResp.uploadId,
+        }
+        return artifactMap
     })
-    logger.verbose(`CreateUploadUrlRequest request id: ${srcResp.$response.requestId}`)
-    logger.verbose(`Complete Getting presigned Url for uploading src context.`)
-    logger.verbose(`Uploading src context...`)
-    await uploadArtifactToS3(zipMetadata.zipFilePath, srcResp, FeatureUseCase.CODE_SCAN, scope)
-    logger.verbose(`Complete uploading src context.`)
-    const artifactMap: ArtifactMap = {
-        SourceCode: srcResp.uploadId,
-    }
     return artifactMap
 }
 
-function getUploadIntent(scope: CodeWhispererConstants.CodeAnalysisScope): UploadIntent {
+function getUploadIntent(scope: CodeWhispererConstants.CodeAnalysisScope) {
     if (
-        scope === CodeWhispererConstants.CodeAnalysisScope.FILE_AUTO ||
+        scope === CodeWhispererConstants.CodeAnalysisScope.PROJECT ||
         scope === CodeWhispererConstants.CodeAnalysisScope.FILE_ON_DEMAND
     ) {
-        return CodeWhispererConstants.fileScanUploadIntent
-    } else {
         return CodeWhispererConstants.projectScanUploadIntent
+    } else {
+        return CodeWhispererConstants.fileScanUploadIntent
     }
 }
 
@@ -353,7 +363,8 @@ export async function uploadArtifactToS3(
     fileName: string,
     resp: CreateUploadUrlResponse,
     featureUseCase: FeatureUseCase,
-    scope?: CodeWhispererConstants.CodeAnalysisScope
+    scope?: CodeWhispererConstants.CodeAnalysisScope,
+    span?: Span<AmazonqCreateUpload>
 ) {
     const logger = getLoggerForScope(scope)
     const encryptionContext = `{"uploadId":"${resp.uploadId}"}`
@@ -375,6 +386,14 @@ export async function uploadArtifactToS3(
         }).response
         logger.debug(`StatusCode: ${response.status}, Text: ${response.statusText}`)
     } catch (error) {
+        if (span && error instanceof RequestError) {
+            const requestId = error.response.headers.get('x-amz-request-id') ?? undefined
+            span.record({
+                requestId: requestId,
+                requestServiceType: 's3',
+                httpStatusCode: error.code.toString(),
+            })
+        }
         let errorMessage = ''
         const isCodeScan = featureUseCase === FeatureUseCase.CODE_SCAN
         const featureType = isCodeScan ? 'security scans' : 'unit test generation'
@@ -416,4 +435,22 @@ function getPollingTimeoutMsForScope(scope: CodeWhispererConstants.CodeAnalysisS
     return scope === CodeWhispererConstants.CodeAnalysisScope.FILE_AUTO
         ? CodeWhispererConstants.expressScanTimeoutMs
         : CodeWhispererConstants.standardScanTimeoutMs
+}
+
+/**
+ * Generates a scanName that unique identifies a user's workspace configuration for a Q code review.
+ *
+ * @param projectPaths List of project root paths
+ * @param scope {@link CodeWhispererConstants.CodeAnalysisScope} Scope of files included in the code review
+ * @param fileName File name of the file being reviewed, or pass undefined for workspace review
+ * @returns A string hash that uniquely identifies the workspace configuration
+ */
+export function generateScanName(
+    projectPaths: string[],
+    scope: CodeWhispererConstants.CodeAnalysisScope,
+    fileName?: string
+) {
+    const clientId = getClientId(globals.globalState)
+    const projectId = fileName ?? projectPaths.sort((a, b) => a.localeCompare(b)).join(',')
+    return getStringHash(`${clientId}::${projectId}::${scope}`)
 }
