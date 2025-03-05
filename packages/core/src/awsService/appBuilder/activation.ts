@@ -202,7 +202,9 @@ async function registerAppBuilderCommands(context: ExtContext): Promise<void> {
             }
         }),
         Commands.register({ id: 'aws.toolkit.lambda.createServerlessLandProject', autoconnect: false }, async () => {
-            await createNewServerlessLandProject(context)
+            await telemetry.lambda_createServerlessLandProject.run(async () => {
+                await createNewServerlessLandProject(context)
+            })
         })
     )
 }

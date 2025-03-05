@@ -1,6 +1,6 @@
 {
     "patterns": {
-        "s3-lambda-resizing-sam": {
+        "Image Resizing": {
             "name": "Resizing image",
             "description": "Lambda, S3 • Python, Javascript, Java, .NET • SAM",
             "implementation": [
@@ -26,7 +26,7 @@
                 }
             ]
         },
-        "apigw-rest-api-lambda-sam": {
+        "Hello World Lambda with API": {
             "name": "Rest API",
             "description": "Lambda, API Gateway • Python, Javascript, Java, .NET • SAM",
             "implementation": [
@@ -49,6 +49,32 @@
                     "iac": "sam",
                     "runtime": "dotnet",
                     "assetName": "apigw-rest-api-lambda-dotnet"
+                }
+            ]
+        },
+        "Process SQS Records with Lambda": {
+            "name": "Rest API",
+            "description": "Lambda, SQS • Python, Javascript, Java, .NET • SAM",
+            "implementation": [
+                {
+                    "iac": "sam",
+                    "runtime": "python",
+                    "assetName": "sqs-lambda-python-sam"
+                },
+                {
+                    "iac": "sam",
+                    "runtime": "javascript",
+                    "assetName": "sqs-lambda-nodejs-sam"
+                },
+                {
+                    "iac": "sam",
+                    "runtime": "java",
+                    "assetName": "sqs-lambda-java-sam"
+                },
+                {
+                    "iac": "sam",
+                    "runtime": "dotnet",
+                    "assetName": "sqs-lambda-dotnet-sam"
                 }
             ]
         }

@@ -22,7 +22,6 @@ export interface CreateServerlessLandWizardForm {
     pattern: string
     runtime: string
     iac: string
-    assetName: string
 }
 
 function promptPattern(metadataManager: MetadataManager) {

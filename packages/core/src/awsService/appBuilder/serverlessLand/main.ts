@@ -7,10 +7,9 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { getTelemetryReason, getTelemetryResult } from '../../../shared/errors'
 import { getLogger } from '../../../shared/logger/logger'
 import { checklogs } from '../../../shared/localizedText'
-import { Result, telemetry } from '../../../shared/telemetry/telemetry'
+import { telemetry } from '../../../shared/telemetry/telemetry'
 import { CreateServerlessLandWizardForm, CreateServerlessLandWizard } from './wizard'
 import { ExtContext } from '../../../shared/extensions'
 import { addFolderToWorkspace } from '../../../shared/utilities/workspaceUtils'
@@ -37,8 +36,6 @@ const serverlessLandRepo = 'serverless-patterns'
  * 6. Handles errors and emits telemetry
  */
 export async function createNewServerlessLandProject(extContext: ExtContext): Promise<void> {
-    let createResult: Result = 'Succeeded'
-    let reason: string | undefined
     let metadataManager: MetadataManager
 
     try {
@@ -46,8 +43,6 @@ export async function createNewServerlessLandProject(extContext: ExtContext): Pr
         // Launch the project creation wizard
         const config = await launchProjectCreationWizard(extContext)
         if (!config) {
-            createResult = 'Cancelled'
-            reason = 'userCancelled'
             return
         }
         const assetName = metadataManager.getAssetName(config.pattern, config.runtime, config.iac)
@@ -61,9 +56,12 @@ export async function createNewServerlessLandProject(extContext: ExtContext): Pr
             },
             true
         )
+        telemetry.record({
+            templateName: assetName,
+            runtimeString: config.runtime,
+            iac: config.iac,
+        })
     } catch (err) {
-        createResult = getTelemetryResult(err)
-        reason = getTelemetryReason(err)
         getLogger().error(
             localize(
                 'AWS.serverlessland.initWizard.general.error',
@@ -72,17 +70,10 @@ export async function createNewServerlessLandProject(extContext: ExtContext): Pr
             )
         )
         getLogger().error('Error creating new Serverless Land Application: %O', err as Error)
-    } finally {
-        // add telemetry
-        // TODO: Will add telemetry once the implementation gets completed
-        telemetry.sam_init.emit({
-            result: createResult,
-            reason: reason,
-        })
     }
 }
 
-async function launchProjectCreationWizard(
+export async function launchProjectCreationWizard(
     extContext: ExtContext
 ): Promise<CreateServerlessLandWizardForm | undefined> {
     const awsContext = extContext.awsContext
@@ -95,7 +86,7 @@ async function launchProjectCreationWizard(
     }).run()
 }
 
-async function downloadPatternCode(config: CreateServerlessLandWizardForm, assetName: string): Promise<void> {
+export async function downloadPatternCode(config: CreateServerlessLandWizardForm, assetName: string): Promise<void> {
     const fullAssetName = assetName + '.zip'
     const location = vscode.Uri.joinPath(config.location, config.name)
     try {
@@ -108,7 +99,7 @@ async function downloadPatternCode(config: CreateServerlessLandWizardForm, asset
     }
 }
 
-async function openReadmeFile(config: CreateServerlessLandWizardForm): Promise<void> {
+export async function openReadmeFile(config: CreateServerlessLandWizardForm): Promise<void> {
     try {
         const readmeUri = await getProjectUri(config, readmeFile)
         if (!readmeUri) {
@@ -123,12 +114,12 @@ async function openReadmeFile(config: CreateServerlessLandWizardForm): Promise<v
     }
 }
 
-async function getProjectUri(
+export async function getProjectUri(
     config: Pick<CreateServerlessLandWizardForm, 'location' | 'name'>,
     file: string
 ): Promise<vscode.Uri | undefined> {
     if (!file) {
-        throw Error('expected "file" parameter to have at least one item')
+        throw new ToolkitError('expected "file" parameter to have at least one item')
     }
     const cfnTemplatePath = path.resolve(config.location.fsPath, config.name, file)
     if (await fs.exists(cfnTemplatePath)) {

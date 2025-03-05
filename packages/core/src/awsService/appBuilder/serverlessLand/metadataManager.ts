@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as nodefs from 'fs' // eslint-disable-line no-restricted-imports
+import * as path from 'path'
 import { ToolkitError } from '../../../shared/errors'
 import globals from '../../../shared/extensionGlobals'
 
@@ -48,7 +49,7 @@ export class MetadataManager {
     }
 
     public getMetadataPath(): string {
-        return globals.context.asAbsolutePath('dist/src/serverlessLand/metadata.json')
+        return globals.context.asAbsolutePath(path.join('dist', 'src', 'serverlessLand', 'metadata.json'))
     }
 
     /**
