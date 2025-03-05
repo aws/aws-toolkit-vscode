@@ -36,7 +36,7 @@ describe('presignedURLCommand', function () {
 
     it('calls S3 to get the URL', async function () {
         getTestWindow().onDidShowInputBox((input) => input.acceptValue('20'))
-        s3.getSignedUrl = sinon.stub().resolves(testUrl)
+        s3.getSignedUrlForObject = sinon.stub().resolves(testUrl)
 
         await presignedURLCommand(node)
 

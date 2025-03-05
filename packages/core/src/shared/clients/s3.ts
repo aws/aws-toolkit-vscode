@@ -31,6 +31,7 @@ import {
     PutObjectCommand,
     S3Client as S3ClientSDK,
 } from '@aws-sdk/client-s3'
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { ClientWrapper } from './clientWrapper'
 import { ToolkitError } from '../errors'
 
@@ -96,8 +97,6 @@ export interface SignedUrlRequest {
     readonly bucketName: string
     readonly key: string
     readonly time: number
-    readonly operation?: string
-    readonly body?: string
 }
 
 export interface UploadFileRequest {
@@ -306,18 +305,14 @@ export class S3Client extends ClientWrapper<S3ClientSDK> {
      *
      * @returns the string of the link to the presigned URL
      */
-    public async getSignedUrl(request: SignedUrlRequest): Promise<string> {
-        const time = request.time
-        const operation = request.operation ? request.operation : 'getObject'
-        const s3 = await this.createS3()
-
-        const url = await s3.getSignedUrlPromise(operation, {
-            Bucket: request.bucketName,
-            Key: request.key,
-            Body: request.body,
-            Expires: time,
-        })
-        return url
+    public async getSignedUrlForObject(request: SignedUrlRequest): Promise<string> {
+        return await getSignedUrl(
+            this.getClient(),
+            new GetObjectCommand({ Bucket: request.bucketName, Key: request.key }),
+            {
+                expiresIn: request.time,
+            }
+        )
     }
 
     /**

@@ -22,10 +22,9 @@ export async function presignedURLCommand(node: S3FileNode): Promise<void> {
             bucketName: node.bucket.name,
             key: node.file.key,
             time: validTime * 60,
-            operation: 'getObject',
         }
 
-        const url = await s3Client.getSignedUrl(request).catch((e) => {
+        const url = await s3Client.getSignedUrlForObject(request).catch((e) => {
             throw ToolkitError.chain(
                 e,
                 'Error creating the presigned URL. Make sure you have access to the requested file.'
