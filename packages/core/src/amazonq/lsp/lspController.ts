@@ -357,6 +357,7 @@ export class LspController {
                     amazonqIndexMemoryUsageInMB: usage ? usage.memoryUsage / (1024 * 1024) : undefined,
                     amazonqIndexCpuUsagePercentage: usage ? usage.cpuUsage : undefined,
                     amazonqIndexFileSizeInMB: totalSizeBytes / (1024 * 1024),
+                    amazonqVectorIndexEnabled: buildIndexConfig.isVectorIndexEnabled,
                     credentialStartUrl: buildIndexConfig.startUrl,
                 })
             } else {
@@ -366,6 +367,7 @@ export class LspController {
                     result: 'Failed',
                     amazonqIndexFileCount: 0,
                     amazonqIndexFileSizeInMB: 0,
+                    amazonqVectorIndexEnabled: buildIndexConfig.isVectorIndexEnabled,
                     reason: `Unknown`,
                 })
             }
@@ -377,6 +379,7 @@ export class LspController {
                 result: 'Failed',
                 amazonqIndexFileCount: 0,
                 amazonqIndexFileSizeInMB: 0,
+                amazonqVectorIndexEnabled: buildIndexConfig.isVectorIndexEnabled,
                 reason: `${error instanceof Error ? error.name : 'Unknown'}`,
                 reasonDesc: `Error when building index. ${error instanceof Error ? error.message : error}`,
             })
