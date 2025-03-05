@@ -57,8 +57,9 @@ export async function createNewServerlessLandProject(extContext: ExtContext): Pr
             true
         )
         telemetry.record({
-            runtimeString: config.runtime,
             templateName: assetName,
+            runtimeString: config.runtime,
+            iac: config.iac,
         })
     } catch (err) {
         getLogger().error(
