@@ -59,7 +59,7 @@ export function dispatchWebViewMessagesToApps(
             }
             case 'send-telemetry': {
                 if (isOpenAgentTelemetry(msg)) {
-                    telemetry.toolkit_openModule.emit({
+                    telemetry.toolkit_didLoadModule.emit({
                         module: msg.module,
                         source: msg.trigger,
                         result: 'Succeeded',
