@@ -6,7 +6,6 @@
 import * as vscode from 'vscode'
 import * as url from 'url'
 import _ from 'lodash'
-import { S3 } from 'aws-sdk'
 import { inspect } from 'util'
 import { getLogger } from '../logger/logger'
 import { bufferToStream, DefaultFileStreams, FileStreams, pipe } from '../utilities/streamUtilities'
@@ -15,6 +14,7 @@ import { Readable } from 'stream'
 import globals, { isWeb } from '../extensionGlobals'
 import { defaultPartition } from '../regions/regionProvider'
 import { AsyncCollection } from '../utilities/asyncCollection'
+import { StreamingBlobTypes } from '@smithy/types'
 import {
     _Object,
     BucketLocationConstraint,
@@ -37,6 +37,7 @@ import {
     DeleteObjectsCommand,
     DeleteObjectsOutput,
     GetObjectOutput,
+    _Error,
 } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { Progress, Upload } from '@aws-sdk/lib-storage'
@@ -147,7 +148,7 @@ export interface DeleteObjectsRequest {
 }
 
 export interface DeleteObjectsResponse {
-    readonly errors: S3.Error[]
+    readonly errors: _Error[]
 }
 
 export interface DeleteBucketRequest {
@@ -160,7 +161,7 @@ export interface GetObjectRequest {
 }
 
 export interface GetObjectResponse {
-    readonly objectBody: S3.Body
+    readonly objectBody: StreamingBlobTypes
 }
 
 export class S3Client extends ClientWrapper<S3ClientSDK> {
