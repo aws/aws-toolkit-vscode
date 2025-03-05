@@ -1485,6 +1485,34 @@
         {
             "name": "docdb_addRegion",
             "description": "User clicked on add region command"
+        },
+        {
+            "name": "codewhisperer_codeScanIssueDetected",
+            "description": "Called when a code scan issue is returned from the service",
+            "metadata": [
+                {
+                    "type": "autoDetected",
+                    "required": false
+                },
+                {
+                    "type": "codewhispererCodeScanJobId",
+                    "required": false
+                },
+                {
+                    "type": "detectorId"
+                },
+                {
+                    "type": "findingId"
+                },
+                {
+                    "type": "includesFix",
+                    "required": false
+                },
+                {
+                    "type": "ruleId",
+                    "required": false
+                }
+            ]
         }
     ]
 }
