@@ -4,7 +4,6 @@
  */
 
 import assert from 'assert'
-import { S3 } from 'aws-sdk'
 import { FileStreams } from '../../../shared/utilities/streamUtilities'
 import {
     DefaultBucket,
@@ -70,8 +69,6 @@ describe('DefaultS3Client', function () {
     const nextVersionIdMarker = 'nextVersionIdMarker'
     const bucket = new DefaultBucket({ partitionId: partition, name: bucketName, region })
 
-    let mockS3: S3
-
     class ListObjectVersionsFixtures {
         public readonly firstPageRequest: ListObjectVersionsCommandInput = {
             Bucket: bucketName,
@@ -103,16 +100,12 @@ describe('DefaultS3Client', function () {
         }
     }
 
-    beforeEach(function () {
-        mockS3 = {} as any as S3
-    })
-
     function createClient({
         regionCode = region,
         partitionId = partition,
         fileStreams = new FakeFileStreams(),
     }: { regionCode?: string; partitionId?: string; fileStreams?: FileStreams } = {}): S3Client {
-        return new S3Client(regionCode, partitionId, () => Promise.resolve(mockS3), fileStreams)
+        return new S3Client(regionCode, partitionId, fileStreams)
     }
 
     describe('createBucket', function () {

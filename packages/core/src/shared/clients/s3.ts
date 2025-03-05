@@ -36,6 +36,7 @@ import {
     DeleteObjectCommand,
     DeleteObjectsCommand,
     DeleteObjectsOutput,
+    GetObjectOutput,
 } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { Progress, Upload } from '@aws-sdk/lib-storage'
@@ -166,14 +167,9 @@ export class S3Client extends ClientWrapper<S3ClientSDK> {
     public constructor(
         public override readonly regionCode: string,
         private readonly partitionId = globals.regionProvider.getPartitionId(regionCode) ?? defaultPartition,
-        private readonly s3Provider: (regionCode: string) => Promise<S3> = createSdkClient,
         private readonly fileStreams: FileStreams = new DefaultFileStreams()
     ) {
         super(regionCode, S3ClientSDK)
-    }
-
-    private async createS3(): Promise<S3> {
-        return this.s3Provider(this.regionCode)
     }
 
     protected getCreateBucketConfiguration() {
@@ -657,16 +653,13 @@ export class S3Client extends ClientWrapper<S3ClientSDK> {
      */
     public async getObject(request: GetObjectRequest): Promise<GetObjectResponse> {
         getLogger().debug('GetObject called with request: %O', request)
-        const s3 = await this.createS3()
+        const output: GetObjectOutput = await this.makeRequest(GetObjectCommand, {
+            Bucket: request.bucketName,
+            Key: request.key,
+        })
 
-        const output = await s3
-            .getObject({
-                Bucket: request.bucketName,
-                Key: request.key,
-            })
-            .promise()
         const response: GetObjectResponse = { objectBody: output.Body! }
-        getLogger().debug('GetObject returned response: %O', output.$response)
+        getLogger().debug('GetObject returned response: %O', response)
         return response
     }
 }
@@ -736,21 +729,6 @@ function buildArn({ partitionId, bucketName, key }: { partitionId: string; bucke
     }
 
     return `arn:${partitionId}:s3:::${bucketName}/${key}`
-}
-
-async function createSdkClient(regionCode: string): Promise<S3> {
-    clearInternalBucketCache()
-
-    return await globals.sdkClientBuilder.createAwsService(S3, { computeChecksums: true }, regionCode)
-}
-
-/**
- * Bucket region is cached across invocations without regard to partition
- * If partition changes with same bucket name in both partitions, cache is incorrect
- * @see https://github.com/aws/aws-sdk-js/blob/16a799c0681c01dcafa7b30be5f16894861b3a32/lib/services/s3.js#L919-L924
- */
-function clearInternalBucketCache(): void {
-    ;(S3.prototype as any).bucketRegionCache = {}
 }
 
 /**
