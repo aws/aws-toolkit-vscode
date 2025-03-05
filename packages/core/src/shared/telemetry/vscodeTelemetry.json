@@ -415,6 +415,17 @@
             "name": "executedCount",
             "type": "int",
             "description": "The number of executed operations"
+        },
+        {
+            "name": "amazonqUploadIntent",
+            "type": "string",
+            "description": "The intent of the upload",
+            "allowedValues": [
+                "TRANSFORMATION",
+                "TASK_ASSIST_PLANNING",
+                "AUTOMATIC_FILE_SECURITY_SCAN",
+                "FULL_PROJECT_SECURITY_SCAN"
+            ]
         }
     ],
     "metrics": [
@@ -1210,6 +1221,10 @@
                 },
                 {
                     "type": "amazonqRepositorySize",
+                    "required": false
+                },
+                {
+                    "type": "amazonqUploadIntent",
                     "required": false
                 },
                 {
