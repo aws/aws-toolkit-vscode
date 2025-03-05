@@ -10,7 +10,7 @@ import { detectSamProjects } from '../../../awsService/appBuilder/explorer/detec
 import { SamAppLocation } from '../../../awsService/appBuilder/explorer/samProject'
 import { AppNode } from '../../../awsService/appBuilder/explorer/nodes/appNode'
 import { ResourceNode } from '../../../awsService/appBuilder/explorer/nodes/resourceNode'
-import sinon from 'sinon'
+import * as sinon from 'sinon'
 import { writeSamconfigGlobal, SamConfig } from '../../../shared/sam/config'
 import { globals, sleep } from '../../../shared'
 import path from 'path'
@@ -18,21 +18,20 @@ import path from 'path'
 describe('Application Builder', async () => {
     let rootNode: sinon.SinonSpiedInstance<AppBuilderRootNode>
     let projects: SamAppLocation[]
-    let sandbox: sinon.SinonSandbox
     let originalWalkThroughState: boolean
     let projectNodes: any[]
 
     before(async () => {
-        sandbox = sinon.createSandbox()
         // Set the workspace to the testFixtures folder to avoid side effects from other tests.
-        sandbox.stub(vscode.workspace, 'workspaceFolders').value([
+        sinon.stub(vscode.workspace, 'workspaceFolders').value([
             {
                 index: 0,
                 name: 'workspaceFolder',
                 uri: vscode.Uri.file(path.join(__dirname, '../../../../src/testFixtures/workspaceFolder')),
             },
         ])
-        rootNode = sandbox.spy(AppBuilderRootNode.instance)
+        rootNode = sinon.spy(AppBuilderRootNode.instance)
+
         projects = await detectSamProjects()
 
         // Set the walkthrough status to true to ensure the root node has a walkthrough node
@@ -41,9 +40,9 @@ describe('Application Builder', async () => {
     })
 
     after(async () => {
-        sandbox.restore()
         // Restore original status of walkthroughCompleted status
         await globals.globalState.update('aws.toolkit.lambda.walkthroughCompleted', originalWalkThroughState)
+        sinon.restore()
     })
 
     describe('root node', async () => {

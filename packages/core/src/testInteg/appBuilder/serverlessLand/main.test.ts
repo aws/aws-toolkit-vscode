@@ -26,20 +26,27 @@ describe('Serverless Land Integration', async () => {
     const workspaceFolder = vscode.workspace.workspaceFolders![0]
     const projectFolder = 'my-project-from-Serverless-Land'
     let rootNode: sinon.SinonSpiedInstance<AppBuilderRootNode>
-    let sandbox: sinon.SinonSandbox
 
-    beforeEach(async () => {
-        sandbox = sinon.createSandbox()
+    before(async () => {
+        sinon.createSandbox()
         await fs.delete(path.join(workspaceFolder.uri.fsPath, projectFolder), { recursive: true })
-        rootNode = sandbox.spy(AppBuilderRootNode.instance)
+        // rootNode = sinon.spy(AppBuilderRootNode.instance)
     })
 
-    afterEach(async () => {
+    after(async () => {
         await fs.delete(path.join(workspaceFolder.uri.fsPath, projectFolder), { recursive: true })
-        sandbox.restore()
+        // sinon.restore()
     })
 
     describe('Happy Path', async () => {
+        beforeEach(async () => {
+            rootNode = sinon.spy(AppBuilderRootNode.instance)
+        })
+
+        afterEach(() => {
+            sinon.restore()
+        })
+
         it('creates project from Serverless Land integration', async () => {
             /**
              * Selection:
