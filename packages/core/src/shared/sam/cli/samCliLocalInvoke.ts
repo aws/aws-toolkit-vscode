@@ -217,6 +217,8 @@ export interface SamCliLocalInvokeInvocationArguments {
     name?: string
     /** AWS region */
     region?: string
+    /** Runtime to use for testing. Can be different from the one specified in the template. */
+    runtime?: string
 }
 
 /**
@@ -265,6 +267,7 @@ export class SamCliLocalInvokeInvocation {
             ...(this.args.parameterOverrides ?? [])
         )
         invokeArgs.push(...(this.args.extraArgs ?? []))
+        pushIf(invokeArgs, !!this.args.runtime, '--runtime', this.args.runtime)
 
         return await this.args.invoker.invoke({
             options: {

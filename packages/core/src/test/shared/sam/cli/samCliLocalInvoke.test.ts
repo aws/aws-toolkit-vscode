@@ -68,6 +68,10 @@ describe('SamCliLocalInvokeInvocation', async function () {
                 // `extraArgs` are appended to the end.
                 assert.strictEqual(invokeArgs.args[10], '--build-dir')
                 assert.strictEqual(invokeArgs.args[11], 'my/build/dir/')
+
+                // 'runtime' is the last argument.
+                assert.strictEqual(invokeArgs.args[invokeArgs.args.length - 2], '--runtime')
+                assert.strictEqual(invokeArgs.args[invokeArgs.args.length - 1], 'python3.10')
             }
         )
 
@@ -78,6 +82,7 @@ describe('SamCliLocalInvokeInvocation', async function () {
             environmentVariablePath: nonRelevantArg,
             invoker: taskInvoker,
             extraArgs: ['--build-dir', 'my/build/dir/'],
+            runtime: 'python3.10',
         }).execute()
     })
 
@@ -291,6 +296,41 @@ describe('SamCliLocalInvokeInvocation', async function () {
         const taskInvoker: SamLocalInvokeCommand = new TestSamLocalInvokeCommand(
             (invokeArgs: SamLocalInvokeCommandArgs) => {
                 assertArgNotPresent(invokeArgs.args, '--debugger-path')
+            }
+        )
+
+        await new SamCliLocalInvokeInvocation({
+            templateResourceName: nonRelevantArg,
+            templatePath: placeholderTemplateFile,
+            eventPath: placeholderEventFile,
+            environmentVariablePath: nonRelevantArg,
+            invoker: taskInvoker,
+        }).execute()
+    })
+
+    it('Passes runtime to sam cli', async function () {
+        const runtime = 'python3.10'
+
+        const taskInvoker: SamLocalInvokeCommand = new TestSamLocalInvokeCommand(
+            (invokeArgs: SamLocalInvokeCommandArgs) => {
+                assertArgsContainArgument(invokeArgs.args, '--runtime', runtime)
+            }
+        )
+
+        await new SamCliLocalInvokeInvocation({
+            templateResourceName: nonRelevantArg,
+            templatePath: placeholderTemplateFile,
+            eventPath: placeholderEventFile,
+            environmentVariablePath: nonRelevantArg,
+            invoker: taskInvoker,
+            runtime: runtime,
+        }).execute()
+    })
+
+    it('Does not pass runtime to sam cli when undefined', async function () {
+        const taskInvoker: SamLocalInvokeCommand = new TestSamLocalInvokeCommand(
+            (invokeArgs: SamLocalInvokeCommandArgs) => {
+                assertArgNotPresent(invokeArgs.args, '--runtime')
             }
         )
 
