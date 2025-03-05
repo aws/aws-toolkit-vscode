@@ -219,8 +219,8 @@ export class TelemetrySpan<T extends MetricBase = MetricBase> implements Span<T>
                 result: getTelemetryResult(err),
                 reason: getTelemetryReason(err),
                 reasonDesc: getTelemetryReasonDesc(err),
-                requestId: getRequestId(err),
-                httpStatusCode: getHttpStatusCode(err),
+                ...(!this.state.requestId ? { requestId: getRequestId(err) } : {}),
+                ...(!this.state.httpStatusCode ? { httpStatusCode: getHttpStatusCode(err) } : {}),
             } as Partial<T>)
         }
 
