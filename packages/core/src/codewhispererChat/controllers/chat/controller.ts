@@ -1058,7 +1058,7 @@ export class ChatController {
             ) || false
         triggerPayload.documentReferences = []
         if (triggerPayload.useRelevantDocuments && triggerPayload.message) {
-            triggerPayload.message = triggerPayload.message.replace(/workspace/, '')
+            triggerPayload.message = triggerPayload.message.replace(/@workspace/, '')
             if (CodeWhispererSettings.instance.isLocalIndexEnabled()) {
                 const start = performance.now()
                 let remainingContextLength = contextMaxLength
