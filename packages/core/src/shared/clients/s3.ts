@@ -33,6 +33,9 @@ import {
     paginateListBuckets,
     ListObjectVersionsCommand,
     ListObjectVersionsOutput,
+    DeleteObjectCommand,
+    DeleteObjectsCommand,
+    DeleteObjectsOutput,
 } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { Progress, Upload } from '@aws-sdk/lib-storage'
@@ -595,15 +598,7 @@ export class S3Client extends ClientWrapper<S3ClientSDK> {
      */
     public async deleteObject(request: DeleteObjectRequest): Promise<void> {
         getLogger().debug('DeleteObject called with request: %O', request)
-        const s3 = await this.createS3()
-
-        await s3
-            .deleteObject({
-                Bucket: request.bucketName,
-                Key: request.key,
-            })
-            .promise()
-
+        await this.makeRequest(DeleteObjectCommand, { Bucket: request.bucketName, Key: request.key })
         getLogger().debug('DeleteObject succeeded')
     }
 
@@ -618,17 +613,14 @@ export class S3Client extends ClientWrapper<S3ClientSDK> {
      */
     public async deleteObjects(request: DeleteObjectsRequest): Promise<DeleteObjectsResponse> {
         getLogger().debug('DeleteObjects called with request: %O', request)
-        const s3 = await this.createS3()
 
-        const output = await s3
-            .deleteObjects({
-                Bucket: request.bucketName,
-                Delete: {
-                    Objects: request.objects.map(({ key: Key, versionId: VersionId }) => ({ Key, VersionId })),
-                    Quiet: true,
-                },
-            })
-            .promise()
+        const output: DeleteObjectsOutput = await this.makeRequest(DeleteObjectsCommand, {
+            Bucket: request.bucketName,
+            Delete: {
+                Objects: request.objects.map(({ key: Key, versionId: VersionId }) => ({ Key, VersionId })),
+                Quiet: true,
+            },
+        })
 
         const response: DeleteObjectsResponse = { errors: output.Errors ?? [] }
         getLogger().debug('DeleteObjects returned response: %O', response)

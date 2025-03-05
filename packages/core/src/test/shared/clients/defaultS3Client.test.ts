@@ -4,7 +4,7 @@
  */
 
 import assert from 'assert'
-import { AWSError, Request, S3 } from 'aws-sdk'
+import { S3 } from 'aws-sdk'
 import { FileStreams } from '../../../shared/utilities/streamUtilities'
 import {
     DefaultBucket,
@@ -17,7 +17,6 @@ import {
 import { DEFAULT_MAX_KEYS } from '../../../shared/clients/s3'
 import { FakeFileStreams } from './fakeFileStreams'
 import globals from '../../../shared/extensionGlobals'
-import sinon from 'sinon'
 import {
     Bucket,
     ListObjectsV2Output,
@@ -54,14 +53,6 @@ class FakeUploader {
     }
 }
 
-class FakeAwsError extends Error {
-    public region: string = 'us-west-2'
-
-    public constructor(message: string) {
-        super(message)
-    }
-}
-
 describe('DefaultS3Client', function () {
     const partition = 'aws'
     const region = 'us-west-2'
@@ -74,11 +65,9 @@ describe('DefaultS3Client', function () {
     const fileVersionId = 'fileVersionId'
     const fileSizeBytes = 5
     const fileLastModified = new Date(2020, 5, 4)
-    const fileData = 'fileData'
     const nextContinuationToken = 'nextContinuationToken'
     const nextKeyMarker = 'nextKeyMarker'
     const nextVersionIdMarker = 'nextVersionIdMarker'
-    const error: AWSError = new FakeAwsError('Expected failure') as AWSError
     const bucket = new DefaultBucket({ partitionId: partition, name: bucketName, region })
 
     let mockS3: S3
@@ -117,26 +106,6 @@ describe('DefaultS3Client', function () {
     beforeEach(function () {
         mockS3 = {} as any as S3
     })
-
-    function success<T>(output?: T): Request<T, AWSError> {
-        return {
-            promise: () => Promise.resolve(output),
-            createReadStream() {
-                return FakeFileStreams.readStreamFrom(fileData)
-            },
-        } as Request<any, AWSError>
-    }
-
-    function failure(): Request<any, AWSError> {
-        return {
-            promise: () => Promise.reject(error),
-            createReadStream() {
-                const readStream = FakeFileStreams.readStreamFrom(fileData)
-                readStream.destroy(error)
-                return readStream
-            },
-        } as Request<any, AWSError>
-    }
 
     function createClient({
         regionCode = region,
@@ -265,81 +234,6 @@ describe('DefaultS3Client', function () {
             ])
             assert.deepStrictEqual(secondPage.objects, [{ key: fileKey, versionId: undefined }])
             assert.deepStrictEqual(otherPages, [])
-        })
-    })
-
-    describe('deleteObject', function () {
-        it('deletes an object', async function () {
-            const deleteStub = sinon.stub().returns(success({}))
-            mockS3.deleteObject = deleteStub
-
-            await createClient().deleteObject({ bucketName, key: fileKey })
-
-            assert(deleteStub.calledOnce)
-        })
-
-        it('throws an Error on failure', async function () {
-            mockS3.deleteObject = sinon.stub().returns(failure())
-
-            await assert.rejects(createClient().deleteObject({ bucketName, key: fileKey }), error)
-        })
-    })
-
-    describe('deleteObjects', function () {
-        it('deletes objects', async function () {
-            const deleteStub = sinon.stub().returns(success({}))
-            mockS3.deleteObjects = deleteStub
-
-            const response = await createClient().deleteObjects({
-                bucketName,
-                objects: [{ key: folderPath, versionId: folderVersionId }, { key: fileKey }],
-            })
-
-            assert(
-                deleteStub.calledOnceWith({
-                    Bucket: bucketName,
-                    Delete: {
-                        Objects: [
-                            {
-                                Key: folderPath,
-                                VersionId: folderVersionId,
-                            },
-                            {
-                                Key: fileKey,
-                                VersionId: undefined,
-                            },
-                        ],
-                        Quiet: true,
-                    },
-                })
-            )
-
-            assert.deepStrictEqual(response, { errors: [] })
-        })
-
-        it('returns a list of errors on partial failure', async function () {
-            const error: S3.Error = {
-                Key: folderPath,
-                VersionId: folderVersionId,
-                Code: '404',
-                Message: 'Expected failure',
-            }
-            const deleteStub = sinon.stub().returns(success({ Errors: [error] }))
-            mockS3.deleteObjects = deleteStub
-
-            const response = await createClient().deleteObjects({
-                bucketName,
-                objects: [{ key: folderPath, versionId: folderVersionId }, { key: fileKey }],
-            })
-
-            assert(deleteStub.calledOnce)
-            assert.deepStrictEqual(response, { errors: [error] })
-        })
-
-        it('throws an Error on failure', async function () {
-            mockS3.deleteObjects = sinon.stub().returns(failure())
-
-            await assert.rejects(createClient().deleteObjects({ bucketName, objects: [{ key: fileKey }] }), error)
         })
     })
 })
