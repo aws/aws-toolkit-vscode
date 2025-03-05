@@ -3,16 +3,16 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as vscode from 'vscode'
-import { Ec2Client, getNameOfInstance } from '../../../shared/clients/ec2Client'
+import { Ec2Client, getNameOfInstance } from '../../../shared/clients/ec2'
 import { AWSResourceNode } from '../../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
-import { SafeEc2Instance } from '../../../shared/clients/ec2Client'
+import { Ec2Instance } from '../../../shared/clients/ec2'
 import globals from '../../../shared/extensionGlobals'
 import { getIconCode } from '../utils'
 import { Ec2Selection } from '../prompter'
 import { Ec2Node, Ec2ParentNode } from './ec2ParentNode'
-import { EC2 } from 'aws-sdk'
 import { getLogger } from '../../../shared/logger/logger'
+import { InstanceStateName } from '@aws-sdk/client-ec2'
 
 export const Ec2InstanceRunningContext = 'awsEc2RunningNode'
 export const Ec2InstanceStoppedContext = 'awsEc2StoppedNode'
@@ -27,7 +27,7 @@ export class Ec2InstanceNode extends AWSTreeNodeBase implements AWSResourceNode 
         public override readonly regionCode: string,
         private readonly partitionId: string,
         // XXX: this variable is marked as readonly, but the 'status' attribute is updated when polling the nodes.
-        public readonly instance: SafeEc2Instance
+        public readonly instance: Ec2Instance
     ) {
         super('')
         this.parent.addChild(this)
@@ -35,7 +35,7 @@ export class Ec2InstanceNode extends AWSTreeNodeBase implements AWSResourceNode 
         this.id = this.InstanceId
     }
 
-    public updateInstance(newInstance: SafeEc2Instance) {
+    public updateInstance(newInstance: Ec2Instance) {
         this.setInstanceStatus(newInstance.LastSeenStatus)
         this.label = `${this.name} (${this.InstanceId}) ${this.instance.LastSeenStatus.toUpperCase()}`
         this.contextValue = this.getContext()
@@ -68,7 +68,7 @@ export class Ec2InstanceNode extends AWSTreeNodeBase implements AWSResourceNode 
         return Ec2InstancePendingContext
     }
 
-    public setInstanceStatus(instanceStatus: string) {
+    public setInstanceStatus(instanceStatus: InstanceStateName) {
         this.instance.LastSeenStatus = instanceStatus
     }
 
@@ -79,12 +79,12 @@ export class Ec2InstanceNode extends AWSTreeNodeBase implements AWSResourceNode 
         }
     }
 
-    public getStatus(): EC2.InstanceStateName {
+    public getStatus(): InstanceStateName {
         return this.instance.LastSeenStatus
     }
 
     public get name(): string {
-        return getNameOfInstance(this.instance) ?? `(no name)`
+        return this.instance.Name ?? getNameOfInstance(this.instance) ?? `(no name)`
     }
 
     public get InstanceId(): string {

@@ -18,11 +18,11 @@ import {
     createScanJob,
     pollScanJobStatus,
     listScanResults,
+    generateScanName,
 } from '../../codewhisperer/service/securityScanHandler'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import fs from '../../shared/fs/fs'
 import { ZipUtil } from '../../codewhisperer/util/zipUtil'
-import { randomUUID } from '../../shared/crypto'
 
 const filePromptWithSecurityIssues = `from flask import app
 
@@ -95,7 +95,7 @@ describe('CodeWhisperer security scan', async function () {
         const projectPaths = zipUtil.getProjectPaths()
         const scope = CodeWhispererConstants.CodeAnalysisScope.PROJECT
         const zipMetadata = await zipUtil.generateZip(uri, scope)
-        const codeScanName = randomUUID()
+        const codeScanName = generateScanName(projectPaths, scope)
 
         let artifactMap
         try {

@@ -23,6 +23,11 @@
             "description": "SSM Publish Document operation type"
         },
         {
+            "name": "isInvalidJson",
+            "type": "boolean",
+            "description": "Indicates whether the message contains an invalid JSON definition."
+        },
+        {
             "name": "starterTemplate",
             "type": "string",
             "description": "Starter template chosen during create document"
@@ -82,6 +87,61 @@
             "name": "cwsprChatProjectContextQueryMs",
             "type": "int",
             "description": "Query latency in ms for local project context"
+        },
+        {
+            "name": "cwsprChatFolderContextCount",
+            "type": "int",
+            "description": "Number of folders manually added to context"
+        },
+        {
+            "name": "cwsprChatFileContextCount",
+            "type": "int",
+            "description": "Number of files manually added to context"
+        },
+        {
+            "name": "cwsprChatFileContextLength",
+            "type": "int",
+            "description": "Total length of files added to context"
+        },
+        {
+            "name": "cwsprChatFileContextTruncatedLength",
+            "type": "int",
+            "description": "Truncated length of files added to context"
+        },
+        {
+            "name": "cwsprChatPromptContextCount",
+            "type": "int",
+            "description": "Number of saved prompts manually added to context"
+        },
+        {
+            "name": "cwsprChatPromptContextLength",
+            "type": "int",
+            "description": "Total length of saved prompts added to context"
+        },
+        {
+            "name": "cwsprChatPromptContextTruncatedLength",
+            "type": "int",
+            "description": "Truncated length of saved prompts added to context"
+        },
+        {
+            "name": "cwsprChatRuleContextCount",
+            "type": "int",
+            "description": "Number of workspace rules automatically added to context"
+        },
+        {
+            "name": "cwsprChatRuleContextLength",
+            "type": "int",
+            "description": "Total length of workspace rules added to context"
+        },
+        {
+            "name": "cwsprChatRuleContextTruncatedLength",
+            "type": "int",
+            "description": "Truncated length of workspace rules added to context"
+        },
+        {
+            "name": "cwsprChatHasContextList",
+            "type": "boolean",
+            "description": "true if context list is displayed to user"
         },
         {
             "name": "amazonqIndexFileSizeInMB",
@@ -521,6 +581,47 @@
             "description": ""
         },
         {
+            "name": "stepfunctions_openWorkflowStudio",
+            "description": "Called after opening asl file in Step Functions Workflow Studio",
+            "metadata": [
+                {
+                    "type": "id",
+                    "required": true
+                }
+            ]
+        },
+        {
+            "name": "stepfunctions_closeWorkflowStudio",
+            "description": "Called after closing Step Functions Workflow Studio custom editor",
+            "metadata": [
+                {
+                    "type": "id",
+                    "required": true
+                }
+            ]
+        },
+        {
+            "name": "stepfunctions_saveFile",
+            "description": "Triggered when Workflow Studio auto-syncs to the local file or when unsaved local changes are saved from Workflow Studio or VSCode.",
+            "metadata": [
+                {
+                    "type": "id",
+                    "required": true
+                },
+                {
+                    "type": "saveType",
+                    "required": true
+                },
+                {
+                    "type": "source",
+                    "required": true
+                },
+                {
+                    "type": "isInvalidJson"
+                }
+            ]
+        },
+        {
             "name": "vscode_activeRegions",
             "description": "Record the number of active regions at startup and when regions are added/removed",
             "unit": "Count",
@@ -803,6 +904,50 @@
                 },
                 {
                     "type": "codewhispererCustomizationArn",
+                    "required": false
+                },
+                {
+                    "type": "cwsprChatHasContextList",
+                    "required": false
+                },
+                {
+                    "type": "cwsprChatFolderContextCount",
+                    "required": false
+                },
+                {
+                    "type": "cwsprChatFileContextCount",
+                    "required": false
+                },
+                {
+                    "type": "cwsprChatFileContextLength",
+                    "required": false
+                },
+                {
+                    "type": "cwsprChatFileContextTruncatedLength",
+                    "required": false
+                },
+                {
+                    "type": "cwsprChatPromptContextCount",
+                    "required": false
+                },
+                {
+                    "type": "cwsprChatPromptContextLength",
+                    "required": false
+                },
+                {
+                    "type": "cwsprChatRuleContextTruncatedLength",
+                    "required": false
+                },
+                {
+                    "type": "cwsprChatRuleContextCount",
+                    "required": false
+                },
+                {
+                    "type": "cwsprChatRuleContextLength",
+                    "required": false
+                },
+                {
+                    "type": "cwsprChatPromptContextTruncatedLength",
                     "required": false
                 }
             ]
