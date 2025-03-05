@@ -101,16 +101,22 @@ export const testGenBuildProgressMessage = (currentStep: TestGenerationBuildStep
 
     updateStepStatuses(currentStep, status)
 
-    if (currentStep === TestGenerationBuildStep.RUN_BUILD) {
-        message += `${getIconForStep(TestGenerationBuildStep.RUN_BUILD)} Project compiling\n`
-    } else if (currentStep >= TestGenerationBuildStep.RUN_BUILD) {
-        message += `${getIconForStep(TestGenerationBuildStep.RUN_BUILD)} Project compiled\n`
+    if (currentStep >= TestGenerationBuildStep.RUN_BUILD) {
+        message += `${getIconForStep(TestGenerationBuildStep.RUN_BUILD)} ${
+            currentStep === TestGenerationBuildStep.RUN_BUILD
+                ? 'Project compiling\n'
+                : session.buildStatus === BuildStatus.FAILURE
+                  ? 'Unable to compile project\n'
+                  : 'Project compiled\n'
+        }`
     }
 
     if (currentStep === TestGenerationBuildStep.RUN_EXECUTION_TESTS) {
         message += `${getIconForStep(TestGenerationBuildStep.RUN_EXECUTION_TESTS)} Running tests\n`
     } else if (currentStep >= TestGenerationBuildStep.RUN_EXECUTION_TESTS) {
-        message += `${getIconForStep(TestGenerationBuildStep.RUN_EXECUTION_TESTS)} Ran tests\n`
+        message += `${getIconForStep(TestGenerationBuildStep.RUN_EXECUTION_TESTS)} ${
+            session.buildStatus === BuildStatus.FAILURE ? 'Tests failed\n' : 'Tests passed\n'
+        }`
     }
 
     if (currentStep === TestGenerationBuildStep.FIXING_TEST_CASES && session.buildStatus === BuildStatus.FAILURE) {
