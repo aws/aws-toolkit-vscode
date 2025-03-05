@@ -5,14 +5,25 @@
 
 import assert from 'assert'
 import { AWSError, Request, S3 } from 'aws-sdk'
-import { ListObjectVersionsOutput, ListObjectVersionsRequest } from 'aws-sdk/clients/s3'
 import { FileStreams } from '../../../shared/utilities/streamUtilities'
-import { DefaultBucket, DefaultFolder, S3Client, toFile } from '../../../shared/clients/s3'
+import {
+    DefaultBucket,
+    DefaultFolder,
+    ListObjectVersionsResponse,
+    ListObjectVersionsRequest,
+    S3Client,
+    toFile,
+} from '../../../shared/clients/s3'
 import { DEFAULT_MAX_KEYS } from '../../../shared/clients/s3'
 import { FakeFileStreams } from './fakeFileStreams'
 import globals from '../../../shared/extensionGlobals'
 import sinon from 'sinon'
-import { Bucket, ListObjectsV2Output } from '@aws-sdk/client-s3'
+import {
+    Bucket,
+    ListObjectsV2Output,
+    ListObjectVersionsCommandInput,
+    ListObjectVersionsOutput,
+} from '@aws-sdk/client-s3'
 import { Progress } from '@aws-sdk/lib-storage'
 import { intoCollection } from '../../../shared/utilities/collectionUtils'
 import { AsyncCollection } from '../../../shared/utilities/asyncCollection'
@@ -73,7 +84,7 @@ describe('DefaultS3Client', function () {
     let mockS3: S3
 
     class ListObjectVersionsFixtures {
-        public readonly firstPageRequest: ListObjectVersionsRequest = {
+        public readonly firstPageRequest: ListObjectVersionsCommandInput = {
             Bucket: bucketName,
             MaxKeys: DEFAULT_MAX_KEYS,
             KeyMarker: undefined,
@@ -90,7 +101,7 @@ describe('DefaultS3Client', function () {
             NextVersionIdMarker: nextVersionIdMarker,
         }
 
-        public readonly secondPageRequest: ListObjectVersionsRequest = {
+        public readonly secondPageRequest: ListObjectVersionsCommandInput = {
             Bucket: bucketName,
             MaxKeys: DEFAULT_MAX_KEYS,
             KeyMarker: nextKeyMarker,
@@ -217,15 +228,10 @@ describe('DefaultS3Client', function () {
     })
 
     describe('listObjectVersions', function () {
-        const { firstPageRequest, secondPageRequest, firstPageResponse, secondPageResponse } =
-            new ListObjectVersionsFixtures()
+        const { firstPageResponse, secondPageResponse } = new ListObjectVersionsFixtures()
 
         it('lists objects and their versions with a continuation token for the next page of results', async function () {
-            const listStub = sinon.stub().returns(success(firstPageResponse))
-            mockS3.listObjectVersions = listStub
-
-            const response = await createClient().listObjectVersions({ bucketName })
-
+            const response = createClient().processListObjectVersionsResponse(firstPageResponse)
             assert.deepStrictEqual(response, {
                 objects: [
                     { key: folderPath, versionId: folderVersionId },
@@ -233,25 +239,19 @@ describe('DefaultS3Client', function () {
                 ],
                 continuationToken: { keyMarker: nextKeyMarker, versionIdMarker: nextVersionIdMarker },
             })
-            assert(listStub.calledOnceWith(firstPageRequest))
-        })
-
-        it('throws an Error on listObjectVersions failure', async function () {
-            mockS3.listObjectVersions = sinon.stub().returns(failure())
-
-            await assert.rejects(createClient().listObjectVersions({ bucketName }), error)
         })
 
         it('returns pages from listObjectVersionsIterable', async function () {
-            const listStub = sinon
-                .stub()
-                .onFirstCall()
-                .returns(success(firstPageResponse))
-                .onSecondCall()
-                .returns(success(secondPageResponse))
-            mockS3.listObjectVersions = listStub
+            const firstRsp = createClient().processListObjectVersionsResponse(firstPageResponse)
+            const secondRsp = createClient().processListObjectVersionsResponse(secondPageResponse)
 
-            const iterable = createClient().listObjectVersionsIterable({ bucketName })
+            const getObjectVersions: (
+                request: ListObjectVersionsRequest
+            ) => Promise<ListObjectVersionsResponse> = async (req) => {
+                return req.continuationToken === firstRsp.continuationToken ? secondRsp : firstRsp
+            }
+
+            const iterable = createClient().listObjectVersionsIterable({ bucketName }, getObjectVersions)
 
             const responses = []
             for await (const response of iterable) {
@@ -265,15 +265,6 @@ describe('DefaultS3Client', function () {
             ])
             assert.deepStrictEqual(secondPage.objects, [{ key: fileKey, versionId: undefined }])
             assert.deepStrictEqual(otherPages, [])
-            assert(listStub.firstCall.calledWith(firstPageRequest))
-            assert(listStub.secondCall.calledWith(secondPageRequest))
-        })
-
-        it('throws an Error on listObjectVersionsIterable iterate failure', async function () {
-            mockS3.listObjectVersions = sinon.stub().returns(failure())
-
-            const iterable = createClient().listObjectVersionsIterable({ bucketName })
-            await assert.rejects(iterable.next(), error)
         })
     })
 

@@ -31,6 +31,8 @@ import {
     S3Client as S3ClientSDK,
     Bucket as S3Bucket,
     paginateListBuckets,
+    ListObjectVersionsCommand,
+    ListObjectVersionsOutput,
 } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { Progress, Upload } from '@aws-sdk/lib-storage'
@@ -381,18 +383,6 @@ export class S3Client extends ClientWrapper<S3ClientSDK> {
         )
     }
 
-    public listBucketsIterable(): AsyncCollection<RequiredProps<S3Bucket, 'Name'> & { readonly region: string }> {
-        return this.listDefaultBuckets()
-            .flatten()
-            .map((b) => {
-                return {
-                    Name: b.name,
-                    BucketRegion: b.region,
-                    region: b.region,
-                }
-            })
-    }
-
     private listDefaultBuckets(paginateBuckets: () => AsyncCollection<S3Bucket[]> = this.paginateBuckets.bind(this)) {
         const bucketsCollection = paginateBuckets().map(async (page) =>
             page
@@ -418,6 +408,18 @@ export class S3Client extends ClientWrapper<S3ClientSDK> {
                 name: b.Name,
             })
         }
+    }
+
+    public listBucketsIterable(): AsyncCollection<RequiredProps<S3Bucket, 'Name'> & { readonly region: string }> {
+        return this.listDefaultBuckets()
+            .flatten()
+            .map((b) => {
+                return {
+                    Name: b.name,
+                    BucketRegion: b.region,
+                    region: b.region,
+                }
+            })
     }
 
     /**
@@ -536,18 +538,20 @@ export class S3Client extends ClientWrapper<S3ClientSDK> {
      */
     public async listObjectVersions(request: ListObjectVersionsRequest): Promise<ListObjectVersionsResponse> {
         getLogger().debug('ListObjectVersions called with request: %O', request)
-        const s3 = await this.createS3()
 
-        const output = await s3
-            .listObjectVersions({
-                Bucket: request.bucketName,
-                MaxKeys: request.maxResults ?? DEFAULT_MAX_KEYS,
-                KeyMarker: request.continuationToken?.keyMarker,
-                VersionIdMarker: request.continuationToken?.versionIdMarker,
-            })
-            .promise()
+        const output: ListObjectVersionsOutput = await this.makeRequest(ListObjectVersionsCommand, {
+            Bucket: request.bucketName,
+            MaxKeys: request.maxResults ?? DEFAULT_MAX_KEYS,
+            KeyMarker: request.continuationToken?.keyMarker,
+            VersionIdMarker: request.continuationToken?.versionIdMarker,
+        })
+        const response = this.processListObjectVersionsResponse(output)
+        getLogger().debug('ListObjectVersions returned response: %O', response)
+        return response
+    }
 
-        const response: ListObjectVersionsResponse = {
+    public processListObjectVersionsResponse(output: ListObjectVersionsOutput) {
+        return {
             objects: (output.Versions ?? []).map((version) => ({
                 key: version.Key!,
                 versionId: version.VersionId,
@@ -556,8 +560,6 @@ export class S3Client extends ClientWrapper<S3ClientSDK> {
                 ? { keyMarker: output.NextKeyMarker!, versionIdMarker: output.NextVersionIdMarker }
                 : undefined,
         }
-        getLogger().debug('ListObjectVersions returned response: %O', response)
-        return response
     }
 
     /**
@@ -566,11 +568,14 @@ export class S3Client extends ClientWrapper<S3ClientSDK> {
      * @throws Error from the iterable if there is an error calling S3.
      */
     public async *listObjectVersionsIterable(
-        request: ListObjectVersionsRequest
+        request: ListObjectVersionsRequest,
+        listObjectVersions: (
+            request: ListObjectVersionsRequest
+        ) => Promise<ListObjectVersionsResponse> = this.listObjectVersions.bind(this)
     ): AsyncIterableIterator<ListObjectVersionsResponse> {
         let continuationToken: ContinuationToken | undefined = request.continuationToken
         do {
-            const listObjectVersionsResponse: ListObjectVersionsResponse = await this.listObjectVersions({
+            const listObjectVersionsResponse: ListObjectVersionsResponse = await listObjectVersions({
                 bucketName: request.bucketName,
                 maxResults: request.maxResults,
                 continuationToken,
