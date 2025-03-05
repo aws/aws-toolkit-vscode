@@ -1184,26 +1184,6 @@
                 {
                     "type": "credentialStartUrl",
                     "required": false
-                },
-                {
-                    "type": "duration",
-                    "required": false
-                },
-                {
-                    "type": "reason",
-                    "required": false
-                },
-                {
-                    "type": "requestId",
-                    "required": false
-                },
-                {
-                    "type": "requestServiceType",
-                    "required": false
-                },
-                {
-                    "type": "result",
-                    "required": false
                 }
             ]
         },
