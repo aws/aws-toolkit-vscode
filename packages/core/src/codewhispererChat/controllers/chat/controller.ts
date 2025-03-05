@@ -1069,7 +1069,7 @@ export class ChatController {
         if (
             commandName &&
             triggerPayload.message &&
-            triggerPayload.context?.find((context) => typeof context !== 'string' && context.command === commandName)
+            triggerPayload.context?.some((context) => typeof context !== 'string' && context.command === commandName)
         ) {
             const truncatedCommand = commandName.startsWith('@') ? commandName.slice(1) : commandName
             triggerPayload.message = triggerPayload.message.replace(truncatedCommand, commandName)
