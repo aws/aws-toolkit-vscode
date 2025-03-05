@@ -68,11 +68,6 @@ ${getIconForStep(DocGenerationStep.GENERATING_ARTIFACTS, currentStep)} ${i18n('A
 
 `
 
-export const docGenerationSuccessMessage = (mode: Mode) =>
-    mode === Mode.CREATE ? i18n('AWS.amazonq.doc.answer.readmeCreated') : i18n('AWS.amazonq.doc.answer.readmeUpdated')
-
-export const docRejectConfirmation = 'Your changes have been discarded.'
-
 export const FolderSelectorFollowUps = [
     {
         icon: 'ok' as MynahIcons,
