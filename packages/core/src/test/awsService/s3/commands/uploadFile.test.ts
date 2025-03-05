@@ -45,6 +45,20 @@ describe('uploadFileCommand', function () {
     let getFile: (document?: vscode.Uri) => Promise<vscode.Uri[] | undefined>
     let mockedUpload: Upload
 
+    const setDefaultsForFileAndBucket = () => {
+        getFile = (document) => {
+            return new Promise((resolve, reject) => {
+                resolve([fileLocation])
+            })
+        }
+
+        getBucket = (s3Client) => {
+            return new Promise((resolve, reject) => {
+                resolve(bucketResponse)
+            })
+        }
+    }
+
     beforeEach(function () {
         mockedUpload = {} as any as Upload
         s3 = {} as any as S3Client
@@ -97,20 +111,10 @@ describe('uploadFileCommand', function () {
     })
 
     describe('without node parameter', async function () {
-        this.beforeEach(function () {
+        beforeEach(function () {
             s3 = {} as any as S3Client
             outputChannel = new MockOutputChannel()
-            getFile = (document) => {
-                return new Promise((resolve, reject) => {
-                    resolve([fileLocation])
-                })
-            }
-
-            getBucket = (s3Client) => {
-                return new Promise((resolve, reject) => {
-                    resolve(bucketResponse)
-                })
-            }
+            setDefaultsForFileAndBucket()
         })
 
         it('uploads if user provides file and bucket', async function () {
@@ -149,17 +153,7 @@ describe('uploadFileCommand', function () {
         })
     })
 
-    getFile = (document) => {
-        return new Promise((resolve, reject) => {
-            resolve([fileLocation])
-        })
-    }
-
-    getBucket = (s3Client) => {
-        return new Promise((resolve, reject) => {
-            resolve(bucketResponse)
-        })
-    }
+    setDefaultsForFileAndBucket()
 
     it('successfully upload file or folder', async function () {
         const uploadStub = sinon.stub().resolves(mockedUpload)
