@@ -69,6 +69,19 @@ const tasks: CopyTask[] = [
         destination: path.join('src', 'stepFunctions', 'asl', 'aslServer.js'),
     },
 
+    // Serverless Land
+    {
+        target: path.join(
+            '../../node_modules/aws-core-vscode',
+            'src',
+            'awsService',
+            'appBuilder',
+            'serverlessLand',
+            'metadata.json'
+        ),
+        destination: path.join('src', 'serverlessLand', 'metadata.json'),
+    },
+
     // Vue
     {
         target: path.join('../core', 'resources', 'js', 'vscode.js'),
