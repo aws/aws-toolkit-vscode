@@ -17,12 +17,17 @@ import { defaultPartition } from '../regions/regionProvider'
 import { AsyncCollection, toCollection } from '../utilities/asyncCollection'
 import { toStream } from '../utilities/collectionUtils'
 import {
+    _Object,
     BucketLocationConstraint,
     CreateBucketCommand,
     DeleteBucketCommand,
     GetObjectCommand,
     GetObjectCommandInput,
     GetObjectCommandOutput,
+    HeadObjectCommand,
+    HeadObjectOutput,
+    ListObjectsV2Command,
+    ListObjectsV2Output,
     PutObjectCommand,
     S3Client as S3ClientSDK,
 } from '@aws-sdk/client-s3'
@@ -274,7 +279,7 @@ export class S3Client extends ClientWrapper<S3ClientSDK> {
      */
     public async downloadFileStream(bucketName: string, key: string): Promise<Readable> {
         // GetObject response body is now a `StreamingBlobPayloadOutputTypes` from @smithy/types.
-        // this is a general type for web/node streams, therefore we must cast the nodes streaming type.
+        // this is a general type for web/node streams, therefore we must cast to nodes streaming type.
         const response = await this.makeRequest<GetObjectCommandInput, GetObjectCommandOutput, GetObjectCommand>(
             GetObjectCommand,
             {
@@ -290,10 +295,9 @@ export class S3Client extends ClientWrapper<S3ClientSDK> {
         return (response.Body as Readable) ?? new Readable()
     }
 
-    public async headObject(request: HeadObjectRequest): Promise<S3.HeadObjectOutput> {
-        const s3 = await this.createS3()
+    public async headObject(request: HeadObjectRequest): Promise<HeadObjectOutput> {
         getLogger().debug('HeadObject called with request: %O', request)
-        return s3.headObject({ Bucket: request.bucketName, Key: request.key }).promise()
+        return this.makeRequest(HeadObjectCommand, { Bucket: request.bucketName, Key: request.key })
     }
 
     /**
@@ -441,6 +445,63 @@ export class S3Client extends ClientWrapper<S3ClientSDK> {
         return { buckets: bucketsInRegion }
     }
 
+    private async listObjectsV2(request: ListFilesRequest): Promise<ListObjectsV2Output> {
+        return await this.makeRequest(ListObjectsV2Command, {
+            Bucket: request.bucketName,
+            Delimiter: DEFAULT_DELIMITER,
+            MaxKeys: request.maxResults ?? DEFAULT_MAX_KEYS,
+            /**
+             * Set '' as the default prefix to ensure that the bucket's content will be displayed
+             * when the user has at least list access to the root of the bucket
+             * https://github.com/aws/aws-toolkit-vscode/issues/4643
+             * @default ''
+             */
+            Prefix: request.folderPath ?? defaultPrefix,
+            ContinuationToken: request.continuationToken,
+        })
+    }
+
+    private extractFilesFromResponse(
+        listObjectsRsp: ListObjectsV2Output,
+        bucketName: string,
+        folderPath: string | undefined
+    ): File[] {
+        const bucket = new DefaultBucket({
+            partitionId: this.partitionId,
+            region: this.regionCode,
+            name: bucketName,
+        })
+        return _(listObjectsRsp.Contents)
+            .reject((file) => file.Key === folderPath)
+            .map((file) => {
+                assertHasProps(file, 'Key')
+                return toFile(bucket, file)
+            })
+            .value()
+    }
+
+    private extractFoldersFromResponse(listObjectsRsp: ListObjectsV2Output, bucketName: string): Folder[] {
+        return _(listObjectsRsp.CommonPrefixes)
+            .map((prefix) => prefix.Prefix)
+            .compact()
+            .map((path) => new DefaultFolder({ path, partitionId: this.partitionId, bucketName }))
+            .value()
+    }
+
+    public listFilesFromResponse(
+        listObjectsRsp: ListObjectsV2Output,
+        bucketName: string,
+        folderPath: string | undefined
+    ) {
+        const files = this.extractFilesFromResponse(listObjectsRsp, bucketName, folderPath)
+        const folders = this.extractFoldersFromResponse(listObjectsRsp, bucketName)
+        return {
+            files,
+            folders,
+            continuationToken: listObjectsRsp.NextContinuationToken,
+        }
+    }
+
     /**
      * Lists files and folders in a folder or inside the bucket root.
      *
@@ -463,48 +524,9 @@ export class S3Client extends ClientWrapper<S3ClientSDK> {
      */
     public async listFiles(request: ListFilesRequest): Promise<ListFilesResponse> {
         getLogger().debug('ListFiles called with request: %O', request)
+        const output = await this.listObjectsV2(request)
+        const response = this.listFilesFromResponse(output, request.bucketName, request.folderPath)
 
-        const s3 = await this.createS3()
-        const bucket = new DefaultBucket({
-            partitionId: this.partitionId,
-            region: this.regionCode,
-            name: request.bucketName,
-        })
-        const output = await s3
-            .listObjectsV2({
-                Bucket: bucket.name,
-                Delimiter: DEFAULT_DELIMITER,
-                MaxKeys: request.maxResults ?? DEFAULT_MAX_KEYS,
-                /**
-                 * Set '' as the default prefix to ensure that the bucket's content will be displayed
-                 * when the user has at least list access to the root of the bucket
-                 * https://github.com/aws/aws-toolkit-vscode/issues/4643
-                 * @default ''
-                 */
-                Prefix: request.folderPath ?? defaultPrefix,
-                ContinuationToken: request.continuationToken,
-            })
-            .promise()
-
-        const files: File[] = _(output.Contents)
-            .reject((file) => file.Key === request.folderPath)
-            .map((file) => {
-                assertHasProps(file, 'Key')
-                return toFile(bucket, file)
-            })
-            .value()
-
-        const folders: Folder[] = _(output.CommonPrefixes)
-            .map((prefix) => prefix.Prefix)
-            .compact()
-            .map((path) => new DefaultFolder({ path, partitionId: this.partitionId, bucketName: request.bucketName }))
-            .value()
-
-        const response: ListFilesResponse = {
-            files,
-            folders,
-            continuationToken: output.NextContinuationToken,
-        }
         getLogger().debug('ListFiles returned response: %O', response)
         return response
     }
@@ -717,7 +739,7 @@ export class DefaultFolder {
     }
 }
 
-export interface File extends S3.Object, S3.HeadObjectOutput {
+export interface File extends _Object, HeadObjectOutput {
     readonly name: string
     readonly key: string
     readonly arn: string
@@ -726,7 +748,7 @@ export interface File extends S3.Object, S3.HeadObjectOutput {
     readonly eTag?: string
 }
 
-export function toFile(bucket: Bucket, resp: RequiredProps<S3.Object, 'Key'>, delimiter = DEFAULT_DELIMITER): File {
+export function toFile(bucket: Bucket, resp: RequiredProps<_Object, 'Key'>, delimiter = DEFAULT_DELIMITER): File {
     return {
         key: resp.Key,
         arn: `${bucket.arn}/${resp.Key}`,

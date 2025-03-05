@@ -9,11 +9,12 @@ import { ListObjectVersionsOutput, ListObjectVersionsRequest } from 'aws-sdk/cli
 import { FileStreams } from '../../../shared/utilities/streamUtilities'
 import * as vscode from 'vscode'
 import { DefaultBucket, DefaultFolder, S3Client, toFile } from '../../../shared/clients/s3'
-import { DEFAULT_DELIMITER, DEFAULT_MAX_KEYS } from '../../../shared/clients/s3'
+import { DEFAULT_MAX_KEYS } from '../../../shared/clients/s3'
 import { FakeFileStreams } from './fakeFileStreams'
 import globals from '../../../shared/extensionGlobals'
 import sinon from 'sinon'
 import { Stub, stub } from '../../utilities/stubber'
+import { ListObjectsV2Output } from '@aws-sdk/client-s3'
 
 class FakeProgressCaptor {
     public progress = 0
@@ -48,9 +49,7 @@ describe('DefaultS3Client', function () {
     const fileLastModified = new Date(2020, 5, 4)
     const fileData = 'fileData'
     const fileLocation = vscode.Uri.file('/file.jpg')
-    const continuationToken = 'continuationToken'
     const nextContinuationToken = 'nextContinuationToken'
-    const maxResults = 20
     const nextKeyMarker = 'nextKeyMarker'
     const nextVersionIdMarker = 'nextVersionIdMarker'
     const error: AWSError = new FakeAwsError('Expected failure') as AWSError
@@ -307,21 +306,19 @@ describe('DefaultS3Client', function () {
         })
     })
 
-    describe('listFiles', function () {
-        it('lists files and folders', async function () {
+    describe('listFilesFromResponse', function () {
+        it('parses response for list of files and folders', async function () {
             const folder = { Key: folderPath, Size: fileSizeBytes, LastModified: fileLastModified }
             const file = { Key: fileKey, Size: fileSizeBytes, LastModified: fileLastModified }
-            const listStub = sinon.stub().returns(
-                success({
-                    Contents: [folder, file],
-                    CommonPrefixes: [{ Prefix: subFolderPath }, { Prefix: emptySubFolderPath }],
-                    NextContinuationToken: nextContinuationToken,
-                })
-            )
-            mockS3.listObjectsV2 = listStub
+            const sdkResponse: ListObjectsV2Output = {
+                Contents: [folder, file],
+                CommonPrefixes: [{ Prefix: subFolderPath }, { Prefix: emptySubFolderPath }],
+                NextContinuationToken: nextContinuationToken,
+            }
 
-            const response = await createClient().listFiles({ bucketName, folderPath, continuationToken, maxResults })
-            assert.deepStrictEqual(response, {
+            const processedResponse = createClient().listFilesFromResponse(sdkResponse, bucketName, folderPath)
+
+            assert.deepStrictEqual(processedResponse, {
                 files: [toFile(bucket, file)],
                 folders: [
                     new DefaultFolder({ partitionId: partition, bucketName, path: subFolderPath }),
@@ -329,21 +326,6 @@ describe('DefaultS3Client', function () {
                 ],
                 continuationToken: nextContinuationToken,
             })
-            assert(
-                listStub.calledOnceWith({
-                    Bucket: bucketName,
-                    Delimiter: DEFAULT_DELIMITER,
-                    MaxKeys: maxResults,
-                    Prefix: folderPath,
-                    ContinuationToken: continuationToken,
-                })
-            )
-        })
-
-        it('throws an Error on listFiles failure', async function () {
-            mockS3.listObjectsV2 = sinon.stub().returns(failure())
-
-            await assert.rejects(createClient().listFiles({ bucketName, folderPath, continuationToken }), error)
         })
     })
 
