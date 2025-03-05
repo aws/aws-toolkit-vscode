@@ -45,6 +45,7 @@ export class SecurityIssueHoverProvider implements vscode.HoverProvider {
                         ruleId: issue.ruleId,
                         includesFix: !!issue.suggestedFixes.length,
                         credentialStartUrl: AuthUtil.instance.startUrl,
+                        autoDetected: issue.autoDetected,
                     })
                     TelemetryHelper.instance.sendCodeScanRemediationsEvent(
                         document.languageId,
