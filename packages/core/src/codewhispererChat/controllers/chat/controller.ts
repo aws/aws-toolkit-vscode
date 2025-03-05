@@ -417,6 +417,13 @@ export class ChatController {
         }
     }
 
+    private getHighlightCommand() {
+        const highlightCommand = FeatureConfigProvider.getFeature(Features.highlightCommand)
+        const commandName = highlightCommand?.value.stringValue
+        const commandDescription = highlightCommand?.variation
+        return commandName ? { commandName, commandDescription } : undefined
+    }
+
     private async processContextCommandUpdateMessage() {
         // when UI is ready, refresh the context commands
         this.registerUserPromptsWatcher()
@@ -461,10 +468,9 @@ export class ChatController {
             },
         ]
 
-        const feature = FeatureConfigProvider.getFeature(Features.highlightCommand)
-        const commandName = feature?.value.stringValue
-        if (commandName) {
-            const commandDescription = feature.variation
+        const highlightCommand = this.getHighlightCommand()
+        if (highlightCommand) {
+            const { commandName, commandDescription } = highlightCommand
             contextCommand.push({
                 groupName: 'Additional Commands',
                 commands: [{ command: commandName, description: commandDescription }],
@@ -1056,6 +1062,19 @@ export class ChatController {
             triggerPayload.context?.some(
                 (context) => typeof context !== 'string' && context.command === '@workspace'
             ) || false
+
+        // Fix for mynah-ui removing @ from commandName
+        const feature = this.getHighlightCommand()
+        const commandName = feature?.commandName
+        if (
+            commandName &&
+            triggerPayload.message &&
+            triggerPayload.context?.find((context) => typeof context !== 'string' && context.command === commandName)
+        ) {
+            const truncatedCommand = commandName.startsWith('@') ? commandName.slice(1) : commandName
+            triggerPayload.message = triggerPayload.message.replace(truncatedCommand, commandName)
+        }
+
         triggerPayload.documentReferences = []
         if (triggerPayload.useRelevantDocuments && triggerPayload.message) {
             triggerPayload.message = triggerPayload.message.replace(/workspace/, '')
