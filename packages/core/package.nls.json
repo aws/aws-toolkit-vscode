@@ -329,6 +329,8 @@
     "AWS.amazonq.context.files.description": "Add a file to context",
     "AWS.amazonq.context.prompts.title": "Prompts",
     "AWS.amazonq.context.prompts.description": "Add a saved prompt to context",
+    "AWS.amazonq.context.symbols.title": "Symbols",
+    "AWS.amazonq.context.symbols.description": "Add symbols to context",
     "AWS.amazonq.savedPrompts.title": "Prompt name",
     "AWS.amazonq.savedPrompts.create": "Create",
     "AWS.amazonq.savedPrompts.action": "Create a new prompt",

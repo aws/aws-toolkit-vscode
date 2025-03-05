@@ -447,6 +447,17 @@ export class ChatController {
                         icon: 'file' as MynahIconsType,
                     },
                     {
+                        command: i18n('AWS.amazonq.context.symbols.title'),
+                        children: [
+                            {
+                                groupName: i18n('AWS.amazonq.context.symbols.title'),
+                                commands: [],
+                            },
+                        ],
+                        description: i18n('AWS.amazonq.context.symbols.description'),
+                        icon: 'paper-clip' as MynahIconsType,
+                    },
+                    {
                         command: i18n('AWS.amazonq.context.prompts.title'),
                         children: [
                             {
@@ -470,7 +481,8 @@ export class ChatController {
                 commands: [{ command: commandName, description: commandDescription }],
             })
         }
-        const promptsCmd: QuickActionCommand = contextCommand[0].commands?.[3]
+        const symbolsCmd: QuickActionCommand = contextCommand[0].commands?.[3]
+        const promptsCmd: QuickActionCommand = contextCommand[0].commands?.[4]
 
         // Check for user prompts
         try {
@@ -516,7 +528,7 @@ export class ChatController {
                         id: 'file',
                         icon: 'file' as MynahIconsType,
                     })
-                } else {
+                } else if (contextCommandItem.type === 'folder') {
                     folderCmd.children?.[0].commands.push({
                         command: path.basename(contextCommandItem.relativePath),
                         description: path.join(wsFolderName, contextCommandItem.relativePath),
@@ -524,11 +536,20 @@ export class ChatController {
                         id: 'folder',
                         icon: 'folder' as MynahIconsType,
                     })
+                } else if (contextCommandItem.symbol) {
+                    symbolsCmd.children?.[0].commands.push({
+                        command: contextCommandItem.symbol.name,
+                        description: `${contextCommandItem.symbol.kind} defined in ${path.join(wsFolderName, contextCommandItem.relativePath)}`,
+                        route: [contextCommandItem.workspaceFolder, contextCommandItem.relativePath],
+                        id: 'symbol',
+                        icon: 'paper-clip' as MynahIconsType,
+                    })
                 }
             }
         }
 
         this.messenger.sendContextCommandData(contextCommand)
+        LspController.instance.updateContextCommandSymbols()
     }
 
     private handlePromptCreate(tabID: string) {

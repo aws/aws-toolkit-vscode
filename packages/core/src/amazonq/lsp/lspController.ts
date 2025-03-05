@@ -24,6 +24,7 @@ import { isWeb } from '../../shared/extensionGlobals'
 import { getUserAgent } from '../../shared/telemetry/util'
 import { isAmazonInternalOs } from '../../shared/vscode/env'
 import { RelevantTextDocumentAddition } from '../../codewhispererChat/controllers/chat/model'
+import { waitUntil } from '../../shared/utilities/timeoutUtils'
 
 export interface Chunk {
     readonly filePath: string
@@ -86,6 +87,7 @@ export interface BuildIndexConfig {
 export class LspController {
     static #instance: LspController
     private _isIndexingInProgress = false
+    private _contextCommandSymbolsUpdated = false
 
     public static get instance() {
         return (this.#instance ??= new this())
@@ -422,5 +424,28 @@ export class LspController {
                 getLogger().error(`LspController: LSP failed to activate ${e}`)
             }
         })
+    }
+
+    async updateContextCommandSymbols() {
+        if (this._contextCommandSymbolsUpdated) {
+            return
+        }
+        this._contextCommandSymbolsUpdated = true
+        getLogger().debug(`Adding symbols to context commands`)
+        const indexSeqNum = await LspClient.instance.getIndexSequenceNumber()
+        await LspClient.instance.updateIndex([], 'context_command_symbol_update')
+        await waitUntil(
+            async () => {
+                const newIndexSeqNum = await LspClient.instance.getIndexSequenceNumber()
+                if (newIndexSeqNum > indexSeqNum) {
+                    await vscode.commands.executeCommand(`aws.amazonq.updateContextCommandItems`)
+                    this._contextCommandSymbolsUpdated = true
+                    return true
+                }
+                this._contextCommandSymbolsUpdated = false
+                return false
+            },
+            { interval: 500, timeout: 5_000, truthy: true }
+        )
     }
 }
