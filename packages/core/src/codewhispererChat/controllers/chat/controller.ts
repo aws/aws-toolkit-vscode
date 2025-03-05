@@ -525,7 +525,8 @@ export class ChatController {
                         command: path.basename(contextCommandItem.relativePath),
                         description: path.join(wsFolderName, contextCommandItem.relativePath),
                         route: [contextCommandItem.workspaceFolder, contextCommandItem.relativePath],
-                        id: 'file',
+                        label: 'file',
+                        id: contextCommandItem.id,
                         icon: 'file' as MynahIconsType,
                     })
                 } else if (contextCommandItem.type === 'folder') {
@@ -533,7 +534,8 @@ export class ChatController {
                         command: path.basename(contextCommandItem.relativePath),
                         description: path.join(wsFolderName, contextCommandItem.relativePath),
                         route: [contextCommandItem.workspaceFolder, contextCommandItem.relativePath],
-                        id: 'folder',
+                        label: 'folder',
+                        id: contextCommandItem.id,
                         icon: 'folder' as MynahIconsType,
                     })
                 } else if (contextCommandItem.symbol) {
@@ -541,7 +543,8 @@ export class ChatController {
                         command: contextCommandItem.symbol.name,
                         description: `${contextCommandItem.symbol.kind} defined in ${path.join(wsFolderName, contextCommandItem.relativePath)}`,
                         route: [contextCommandItem.workspaceFolder, contextCommandItem.relativePath],
-                        id: 'symbol',
+                        label: 'symbol',
+                        id: contextCommandItem.id,
                         icon: 'paper-clip' as MynahIconsType,
                     })
                 }
@@ -956,10 +959,12 @@ export class ChatController {
         if (triggerPayload.context !== undefined && triggerPayload.context.length > 0) {
             for (const context of triggerPayload.context) {
                 if (typeof context !== 'string' && context.route && context.route.length === 2) {
+                    const itemType = (context.label || '') as ContextCommandItemType
                     contextCommands.push({
                         workspaceFolder: context.route[0] || '',
-                        type: context.icon === 'folder' ? 'folder' : 'file',
+                        type: itemType,
                         relativePath: context.route[1] || '',
+                        id: context.id,
                     })
                 }
             }

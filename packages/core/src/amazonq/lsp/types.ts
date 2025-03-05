@@ -115,10 +115,10 @@ export interface Span {
 }
 
 // LSP definition of DocumentSymbol
+
 export interface DocumentSymbol {
     name: string
     kind: SymbolType
-    filepath: string
     range: Span
 }
 
@@ -127,6 +127,7 @@ export interface ContextCommandItem {
     type: ContextCommandItemType
     relativePath: string
     symbol?: DocumentSymbol
+    id?: string
 }
 
 export type GetContextCommandPromptRequestPayload = {
