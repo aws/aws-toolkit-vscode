@@ -20,17 +20,19 @@ describe('Application Builder', async () => {
     let projects: SamAppLocation[]
     let originalWalkThroughState: boolean
     let projectNodes: any[]
+    let sandbox: sinon.SinonSandbox
 
     before(async () => {
+        sandbox = sinon.createSandbox()
         // Set the workspace to the testFixtures folder to avoid side effects from other tests.
-        sinon.stub(vscode.workspace, 'workspaceFolders').value([
+        sandbox.stub(vscode.workspace, 'workspaceFolders').value([
             {
                 index: 0,
                 name: 'workspaceFolder',
                 uri: vscode.Uri.file(path.join(__dirname, '../../../../src/testFixtures/workspaceFolder')),
             },
         ])
-        rootNode = sinon.spy(AppBuilderRootNode.instance)
+        rootNode = sandbox.spy(AppBuilderRootNode.instance)
 
         projects = await detectSamProjects()
 
@@ -42,7 +44,7 @@ describe('Application Builder', async () => {
     after(async () => {
         // Restore original status of walkthroughCompleted status
         await globals.globalState.update('aws.toolkit.lambda.walkthroughCompleted', originalWalkThroughState)
-        sinon.restore()
+        sandbox.restore()
     })
 
     describe('root node', async () => {
