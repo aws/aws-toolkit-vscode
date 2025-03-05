@@ -881,15 +881,15 @@ export class ChatController {
     /**
      * @returns A Uri array of prompt files in each workspace root's .amazonq/rules directory
      */
-    private async collectWorkspaceRules(): Promise<vscode.Uri[]> {
-        const rulesFiles: vscode.Uri[] = []
+    private async collectWorkspaceRules(): Promise<string[]> {
+        const rulesFiles: string[] = []
 
         if (!vscode.workspace.workspaceFolders) {
             return rulesFiles
         }
 
         for (const folder of vscode.workspace.workspaceFolders) {
-            const rulesPath = vscode.Uri.joinPath(folder.uri, '.amazonq', 'rules')
+            const rulesPath = path.join(folder.uri.fsPath, '.amazonq', 'rules')
             const folderExists = await fs.exists(rulesPath)
 
             if (folderExists) {
@@ -897,7 +897,7 @@ export class ChatController {
 
                 for (const [name, type] of entries) {
                     if (type === vscode.FileType.File && name.endsWith(promptFileExtension)) {
-                        rulesFiles.push(vscode.Uri.joinPath(rulesPath, name))
+                        rulesFiles.push(path.join(rulesPath, name))
                     }
                 }
             }
@@ -918,11 +918,12 @@ export class ChatController {
         if (workspaceRules.length > 0) {
             contextCommands.push(
                 ...workspaceRules.map((rule) => {
-                    const workspaceFolderPath = vscode.workspace.getWorkspaceFolder(rule)?.uri?.path || ''
+                    const workspaceFolderPath =
+                        vscode.workspace.getWorkspaceFolder(vscode.Uri.parse(rule))?.uri?.path || ''
                     return {
                         workspaceFolder: workspaceFolderPath,
                         type: 'file' as ContextCommandItemType,
-                        relativePath: path.relative(workspaceFolderPath, rule.path),
+                        relativePath: path.relative(workspaceFolderPath, rule),
                     }
                 })
             )
