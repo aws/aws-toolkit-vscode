@@ -7,7 +7,6 @@ import * as path from 'path'
 import * as mime from 'mime-types'
 import * as vscode from 'vscode'
 import { statSync } from 'fs' // eslint-disable-line no-restricted-imports
-import { S3 } from 'aws-sdk'
 import { getLogger } from '../../../shared/logger/logger'
 import { S3Node } from '../explorer/s3Nodes'
 import { readablePath } from '../util'
@@ -150,7 +149,7 @@ export async function uploadFileCommand(
                 return
             }
 
-            const bucketName = bucketResponse.bucket!.Name
+            const bucketName = bucketResponse.bucket!.name
             if (!bucketName) {
                 throw Error(`bucketResponse is not a S3.Bucket`)
             }
@@ -389,7 +388,7 @@ async function uploadWithProgress(
 }
 
 export interface BucketQuickPickItem extends vscode.QuickPickItem {
-    bucket: S3.Bucket | undefined
+    bucket: (Partial<Bucket> & { name: string }) | undefined
     folder?: Folder | undefined
 }
 
@@ -412,9 +411,9 @@ export async function promptUserForBucket(
     promptUserFunction = promptUser,
     createBucket = createBucketCommand
 ): Promise<BucketQuickPickItem | 'cancel' | 'back'> {
-    let allBuckets: S3.Bucket[]
+    let allBuckets: Bucket[]
     try {
-        allBuckets = await s3client.listAllBuckets()
+        allBuckets = (await s3client.listBuckets()).buckets
     } catch (e) {
         getLogger().error('Failed to list buckets from client %O', e)
         void vscode.window.showErrorMessage(
@@ -424,8 +423,8 @@ export async function promptUserForBucket(
     }
 
     const s3Buckets = allBuckets.filter((bucket) => {
-        return bucket && bucket.Name
-    }) as S3.Bucket[]
+        return bucket && bucket.name
+    })
 
     const createNewBucket: BucketQuickPickItem = {
         label: localize('AWS.command.s3.createBucket', 'Create new bucket'),
@@ -433,7 +432,7 @@ export async function promptUserForBucket(
     }
     const bucketItems: BucketQuickPickItem[] = s3Buckets.map((bucket) => {
         return {
-            label: bucket.Name!,
+            label: bucket.name!,
             bucket,
         }
     })
@@ -444,7 +443,7 @@ export async function promptUserForBucket(
         lastFolderItem = {
             label: lastTouchedFolder.folder.name,
             description: '(last opened S3 folder)',
-            bucket: { Name: lastTouchedFolder.bucket.name },
+            bucket: { name: lastTouchedFolder.bucket.name },
             folder: lastTouchedFolder.folder,
         }
     }
@@ -455,7 +454,7 @@ export async function promptUserForBucket(
         lastUploadedFolderItem = {
             label: lastUploadedToFolder.folder.name,
             description: '(last uploaded-to S3 folder)',
-            bucket: { Name: lastUploadedToFolder.bucket.name },
+            bucket: { name: lastUploadedToFolder.bucket.name },
             folder: lastUploadedToFolder.folder,
         }
     }

@@ -27,10 +27,10 @@ describe('uploadFileCommand', function () {
     const sizeBytes = 16
     const fileLocation = vscode.Uri.file('/file.jpg')
     const statFile: FileSizeBytes = (_file) => sizeBytes
-    const bucketResponse = { label: 'label', bucket: { Name: bucketName } }
+    const bucketResponse = { label: 'label', bucket: { name: bucketName } }
     const folderResponse = {
         label: 'label',
-        bucket: { Name: bucketName },
+        bucket: { name: bucketName },
         folder: { name: 'folderA', path: 'folderA/', arn: 'arn' },
     }
     const getFolder: (s3client: S3Client) => Promise<BucketQuickPickItem | 'cancel' | 'back'> = (s3Client) => {
@@ -291,16 +291,16 @@ describe('promptUserForBucket', async function () {
     })
 
     it('Returns selected bucket', async function () {
-        const stub = sinon.stub().resolves(buckets)
-        s3.listAllBuckets = stub
+        const stub = sinon.stub().resolves({ buckets })
+        s3.listBuckets = stub
 
         const response = await promptUserForBucket(s3, promptSelect)
         assert.deepStrictEqual(response, selection)
     })
 
     it('Returns "back" when selected', async function () {
-        const stub = sinon.stub().resolves(buckets)
-        s3.listAllBuckets = stub
+        const stub = sinon.stub().resolves({ buckets })
+        s3.listBuckets = stub
 
         selection.label = 'back'
         selection.bucket = undefined
@@ -310,8 +310,8 @@ describe('promptUserForBucket', async function () {
     })
 
     it('Lets the user create a new bucket', async function () {
-        const stub = sinon.stub().resolves(buckets)
-        s3.listAllBuckets = stub
+        const stub = sinon.stub().resolves({ buckets })
+        s3.listBuckets = stub
 
         selection.label = 'Create new bucket'
         selection.bucket = undefined
@@ -323,8 +323,8 @@ describe('promptUserForBucket', async function () {
     })
 
     it('Returns "cancel" when user doesn\'t select a bucket', async function () {
-        const stub = sinon.stub().resolves(buckets)
-        s3.listAllBuckets = stub
+        const stub = sinon.stub().resolves({ buckets })
+        s3.listBuckets = stub
 
         const response = await promptUserForBucket(s3, promptUndef)
         assert.strictEqual(response, 'cancel')
@@ -332,7 +332,7 @@ describe('promptUserForBucket', async function () {
 
     it('Throws error when it is not possible to list buckets from client', async function () {
         const stub = sinon.stub().rejects(new Error('Expected failure'))
-        s3.listAllBuckets = stub
+        s3.listBuckets = stub
         await assert.rejects(() => promptUserForBucket(s3))
         getTestWindow()
             .getFirstMessage()

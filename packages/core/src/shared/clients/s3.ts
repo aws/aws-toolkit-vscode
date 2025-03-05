@@ -6,16 +6,15 @@
 import * as vscode from 'vscode'
 import * as url from 'url'
 import _ from 'lodash'
-import { AWSError, S3 } from 'aws-sdk'
+import { S3 } from 'aws-sdk'
 import { inspect } from 'util'
 import { getLogger } from '../logger/logger'
 import { bufferToStream, DefaultFileStreams, FileStreams, pipe } from '../utilities/streamUtilities'
-import { assertHasProps, InterfaceNoSymbol, isNonNullable, RequiredProps } from '../utilities/tsUtils'
+import { assertHasProps, InterfaceNoSymbol, RequiredProps } from '../utilities/tsUtils'
 import { Readable } from 'stream'
 import globals, { isWeb } from '../extensionGlobals'
 import { defaultPartition } from '../regions/regionProvider'
-import { AsyncCollection, toCollection } from '../utilities/asyncCollection'
-import { toStream } from '../utilities/collectionUtils'
+import { AsyncCollection } from '../utilities/asyncCollection'
 import {
     _Object,
     BucketLocationConstraint,
@@ -30,6 +29,8 @@ import {
     ListObjectsV2Output,
     PutObjectCommand,
     S3Client as S3ClientSDK,
+    Bucket as S3Bucket,
+    paginateListBuckets,
 } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { Progress, Upload } from '@aws-sdk/lib-storage'
@@ -372,82 +373,68 @@ export class S3Client extends ClientWrapper<S3ClientSDK> {
      *
      * @throws Error if there is an error calling S3.
      */
-    public async listAllBuckets(): Promise<S3.Bucket[]> {
-        const s3 = await this.createS3()
-        const output = await s3.listBuckets().promise()
-
-        return output.Buckets ?? []
+    private paginateBuckets(filterRegion: boolean = true): AsyncCollection<S3Bucket[]> {
+        return this.makePaginatedRequest(
+            paginateListBuckets,
+            filterRegion ? { BucketRegion: this.regionCode } : {},
+            (page) => page.Buckets
+        )
     }
 
-    public listAllBucketsIterable(): AsyncCollection<RequiredProps<S3.Bucket, 'Name'> & { readonly region: string }> {
-        async function* fn(this: S3Client) {
-            const s3 = await this.createS3()
-            const buckets = await this.listAllBuckets()
+    public listBucketsIterable(): AsyncCollection<RequiredProps<S3Bucket, 'Name'> & { readonly region: string }> {
+        return this.listDefaultBuckets()
+            .flatten()
+            .map((b) => {
+                return {
+                    Name: b.name,
+                    BucketRegion: b.region,
+                    region: b.region,
+                }
+            })
+    }
 
-            yield* toStream(
-                buckets.map(async (bucket) => {
-                    assertHasProps(bucket, 'Name')
-                    const region = await this.lookupRegion(bucket.Name, s3)
-                    if (region) {
-                        return { ...bucket, region }
-                    }
-                })
-            )
+    private listDefaultBuckets(paginateBuckets: () => AsyncCollection<S3Bucket[]> = this.paginateBuckets.bind(this)) {
+        const bucketsCollection = paginateBuckets().map(async (page) =>
+            page
+                .filter(hasName)
+                .filter(hasRegion)
+                .map((b) => toDefaultBucket(b, this.partitionId))
+        )
+
+        return bucketsCollection
+
+        function hasName<B extends S3Bucket>(b: B): b is B & { Name: string } {
+            return b.Name !== undefined
         }
 
-        return toCollection(fn.bind(this)).filter(isNonNullable)
-    }
+        function hasRegion<B extends S3Bucket>(b: B): b is B & { BucketRegion: string } {
+            return b.BucketRegion !== undefined
+        }
 
-    /**
-     * Filters the results of {@link listAllBucketsIterable} to the region of the client
-     */
-    public listBucketsIterable(): AsyncCollection<RequiredProps<S3.Bucket, 'Name'> & { readonly region: string }> {
-        return this.listAllBucketsIterable().filter((b) => b.region === this.regionCode)
+        function toDefaultBucket(b: S3Bucket & { Name: string; BucketRegion: string }, partitionId: string) {
+            return new DefaultBucket({
+                partitionId: partitionId,
+                region: b.BucketRegion,
+                name: b.Name,
+            })
+        }
     }
 
     /**
      * Lists buckets in the region of the client.
      *
-     * Note that S3 returns all buckets in all regions,
-     * so this incurs the cost of additional S3#getBucketLocation requests for each bucket
-     * to filter out buckets residing outside of the client's region.
-     *
      * @throws Error if there is an error calling S3.
      */
-    public async listBuckets(): Promise<ListBucketsResponse> {
+    // TODO: prefer iterable version above.
+    public async listBuckets(
+        paginateBuckets: () => AsyncCollection<S3Bucket[]> = this.paginateBuckets.bind(this)
+    ): Promise<ListBucketsResponse> {
         getLogger().debug('ListBuckets called')
-        const s3 = await this.createS3()
 
-        const s3Buckets: S3.Bucket[] = await this.listAllBuckets()
-
-        // S3#ListBuckets returns buckets across all regions
-        const allBucketPromises: Promise<Bucket | undefined>[] = s3Buckets.map(async (s3Bucket) => {
-            const bucketName = s3Bucket.Name
-            if (!bucketName) {
-                return undefined
-            }
-            const region = await this.lookupRegion(bucketName, s3)
-            if (!region) {
-                return undefined
-            }
-            return new DefaultBucket({
-                partitionId: this.partitionId,
-                region: region,
-                name: bucketName,
-            })
-        })
-
-        const allBuckets = await Promise.all(allBucketPromises)
-        const bucketsInRegion = _(allBuckets)
-            .reject((bucket) => bucket === undefined)
-            // we don't have a filerNotNull so we can filter then cast
-            .map((bucket) => bucket as Bucket)
-            .reject((bucket) => bucket.region !== this.regionCode)
-            .value()
-
-        const response: ListBucketsResponse = { buckets: bucketsInRegion }
+        const buckets = await this.listDefaultBuckets(paginateBuckets).flatten().promise()
+        const response = { buckets }
         getLogger().debug('ListBuckets returned response: %O', response)
-        return { buckets: bucketsInRegion }
+        return response
     }
 
     private async listObjectsV2(request: ListFilesRequest): Promise<ListObjectsV2Output> {
@@ -641,25 +628,6 @@ export class S3Client extends ClientWrapper<S3ClientSDK> {
         const response: DeleteObjectsResponse = { errors: output.Errors ?? [] }
         getLogger().debug('DeleteObjects returned response: %O', response)
         return response
-    }
-
-    /**
-     * Looks up the region for the given bucket
-     *
-     * Use the getBucketLocation API to avoid cross region lookups. #1806
-     */
-    private async lookupRegion(bucketName: string, s3: S3): Promise<string | undefined> {
-        try {
-            const response = await s3.getBucketLocation({ Bucket: bucketName }).promise()
-            // getBucketLocation returns an explicit empty string location contraint for us-east-1
-            const region = response.LocationConstraint === '' ? 'us-east-1' : response.LocationConstraint
-            getLogger().debug('LookupRegion(%s) returned: %s', bucketName, region)
-            return region
-        } catch (e) {
-            getLogger().error('LookupRegion(%s) failed: %s', bucketName, (e as Error).message ?? '?')
-            // Try to recover region from the error
-            return (e as AWSError).region
-        }
     }
 
     /**

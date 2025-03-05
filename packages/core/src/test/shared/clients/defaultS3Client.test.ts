@@ -12,9 +12,10 @@ import { DEFAULT_MAX_KEYS } from '../../../shared/clients/s3'
 import { FakeFileStreams } from './fakeFileStreams'
 import globals from '../../../shared/extensionGlobals'
 import sinon from 'sinon'
-import { Stub, stub } from '../../utilities/stubber'
-import { ListObjectsV2Output } from '@aws-sdk/client-s3'
+import { Bucket, ListObjectsV2Output } from '@aws-sdk/client-s3'
 import { Progress } from '@aws-sdk/lib-storage'
+import { intoCollection } from '../../../shared/utilities/collectionUtils'
+import { AsyncCollection } from '../../../shared/utilities/asyncCollection'
 
 class FakeProgressCaptor {
     public progress = 0
@@ -54,7 +55,6 @@ describe('DefaultS3Client', function () {
     const partition = 'aws'
     const region = 'us-west-2'
     const bucketName = 'bucketName'
-    const outOfRegionBucketName = 'outOfRegionBucketName'
     const folderPath = 'foo/bar/'
     const folderVersionId = 'folderVersionId'
     const subFolderPath = 'foo/bar/subFolder/'
@@ -166,116 +166,30 @@ describe('DefaultS3Client', function () {
     })
 
     describe('listBuckets', function () {
-        it('lists a bucket', async function () {
-            const listStub = sinon
-                .stub()
-                .returns(success({ Buckets: [{ Name: bucketName }, { Name: outOfRegionBucketName }] }))
-            const locationStub = sinon
-                .stub()
-                .onFirstCall()
-                .returns(success({ LocationConstraint: region }))
-                .onSecondCall()
-                .returns(success({ LocationConstraint: 'outOfRegion' }))
-            mockS3.listBuckets = listStub
-            mockS3.getBucketLocation = locationStub
-            const response = await createClient().listBuckets()
-            assert.deepStrictEqual(response, {
-                buckets: [
-                    new DefaultBucket({
-                        partitionId: partition,
-                        region,
-                        name: bucketName,
-                    }),
-                ],
-            })
-            assert(listStub.calledOnce)
-            assert(locationStub.calledTwice)
-            assert(locationStub.firstCall.calledWith({ Bucket: bucketName }))
-            assert(locationStub.secondCall.calledWith({ Bucket: outOfRegionBucketName }))
-        })
-
         it('Filters buckets with no name', async function () {
-            const listStub = sinon.stub().returns(success({ Buckets: [{ Name: undefined }] }))
-            const locationStub = sinon
-                .stub()
-                .onFirstCall()
-                .returns(success({ LocationConstraint: region }))
-            mockS3.listBuckets = listStub
-            mockS3.getBucketLocation = locationStub
+            const getBucketCollection = () =>
+                intoCollection([
+                    [{ Name: 'bucket1', BucketRegion: 'test-region' }],
+                    [{ BucketRegion: 'test-region' }],
+                ]) satisfies AsyncCollection<Bucket[]>
+            const output = await createClient().listBuckets(getBucketCollection)
 
-            const response = await createClient().listBuckets()
-            assert.deepStrictEqual(response, {
-                buckets: [],
-            })
-            assert(listStub.calledOnce)
-            assert(locationStub.notCalled)
+            assert.deepStrictEqual(output.buckets, [
+                new DefaultBucket({ region: 'test-region', name: 'bucket1', partitionId: 'aws' }),
+            ])
         })
 
-        it(`Filters buckets when it can't get region`, async () => {
-            const mockResponse = stub(Request<any, AWSError>) as any as Stub<Request<any, AWSError>>
-            mockResponse.promise.rejects(undefined)
-            const listStub = sinon.stub().returns(success({ Buckets: [{ Name: bucketName }] }))
-            mockS3.listBuckets = listStub
-            const locationStub = sinon.stub().returns(mockResponse)
-            mockS3.getBucketLocation = locationStub
+        it('Filters buckets with no region', async function () {
+            const getBucketCollection = () =>
+                intoCollection([
+                    [{ Name: 'bucket1' }],
+                    [{ Name: 'bucket2', BucketRegion: 'test-region' }],
+                ]) satisfies AsyncCollection<Bucket[]>
+            const output = await createClient().listBuckets(getBucketCollection)
 
-            const response = await createClient().listBuckets()
-            assert.deepStrictEqual(response, {
-                buckets: [],
-            })
-        })
-
-        it('throws an Error on listBuckets failure', async function () {
-            const listStub = sinon.stub().returns(failure())
-            mockS3.listBuckets = listStub
-            const locationStub = sinon.stub()
-            mockS3.getBucketLocation = locationStub
-
-            await assert.rejects(createClient().listBuckets(), error)
-
-            assert(locationStub.notCalled)
-        })
-
-        it('returns region from exception on getBucketLocation failure', async function () {
-            const listStub = sinon.stub().returns(success({ Buckets: [{ Name: bucketName }] }))
-            mockS3.listBuckets = listStub
-            const locationStub = sinon.stub().returns(failure())
-            mockS3.getBucketLocation = locationStub
-
-            const response = await createClient().listBuckets()
-            assert.deepStrictEqual(response, {
-                buckets: [
-                    new DefaultBucket({
-                        partitionId: partition,
-                        region,
-                        name: bucketName,
-                    }),
-                ],
-            })
-        })
-
-        it('maps empty string getBucketLocation response to us-east-1', async function () {
-            const listStub = sinon
-                .stub()
-                .returns(success({ Buckets: [{ Name: bucketName }, { Name: outOfRegionBucketName }] }))
-            mockS3.listBuckets = listStub
-            const locationStub = sinon.stub().callsFake((param: { Bucket: string }) => {
-                if (param.Bucket && param.Bucket === bucketName) {
-                    return success({ LocationConstraint: '' })
-                }
-            })
-            mockS3.getBucketLocation = locationStub
-
-            const response = await createClient({ regionCode: 'us-east-1' }).listBuckets()
-            assert.deepStrictEqual(response, {
-                buckets: [
-                    new DefaultBucket({
-                        partitionId: partition,
-                        region: 'us-east-1',
-                        name: bucketName,
-                    }),
-                ],
-            })
+            assert.deepStrictEqual(output.buckets, [
+                new DefaultBucket({ region: 'test-region', name: 'bucket2', partitionId: 'aws' }),
+            ])
         })
     })
 
