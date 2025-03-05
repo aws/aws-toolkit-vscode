@@ -12,7 +12,7 @@ import { getLogger } from '../logger/logger'
 import { bufferToStream, DefaultFileStreams, FileStreams, pipe } from '../utilities/streamUtilities'
 import { assertHasProps, InterfaceNoSymbol, isNonNullable, RequiredProps } from '../utilities/tsUtils'
 import { Readable } from 'stream'
-import globals from '../extensionGlobals'
+import globals, { isWeb } from '../extensionGlobals'
 import { defaultPartition } from '../regions/regionProvider'
 import { AsyncCollection, toCollection } from '../utilities/asyncCollection'
 import { toStream } from '../utilities/collectionUtils'
@@ -20,10 +20,14 @@ import {
     BucketLocationConstraint,
     CreateBucketCommand,
     DeleteBucketCommand,
+    GetObjectCommand,
+    GetObjectCommandInput,
+    GetObjectCommandOutput,
     PutObjectCommand,
     S3Client as S3ClientSDK,
 } from '@aws-sdk/client-s3'
 import { ClientWrapper } from './clientWrapper'
+import { ToolkitError } from '../errors'
 
 export const DEFAULT_MAX_KEYS = 300 // eslint-disable-line @typescript-eslint/naming-convention
 export const DEFAULT_DELIMITER = '/' // eslint-disable-line @typescript-eslint/naming-convention
@@ -256,12 +260,10 @@ export class S3Client extends ClientWrapper<S3ClientSDK> {
             request.key,
             request.saveLocation
         )
-        const s3 = await this.createS3()
 
-        // https://docs.aws.amazon.com/sdk-for-javascript/v2/developer-guide/requests-using-stream-objects.html
-        const readStream = s3.getObject({ Bucket: request.bucketName, Key: request.key }).createReadStream()
-
+        const readStream = await this.downloadFileStream(request.bucketName, request.key)
         const writeStream = this.fileStreams.createWriteStream(request.saveLocation)
+
         await pipe(readStream, writeStream, request.progressListener)
 
         getLogger().debug('DownloadFile succeeded')
@@ -271,8 +273,21 @@ export class S3Client extends ClientWrapper<S3ClientSDK> {
      * Lighter version of {@link downloadFile} that just returns the stream.
      */
     public async downloadFileStream(bucketName: string, key: string): Promise<Readable> {
-        const s3 = await this.createS3()
-        return s3.getObject({ Bucket: bucketName, Key: key }).createReadStream()
+        // GetObject response body is now a `StreamingBlobPayloadOutputTypes` from @smithy/types.
+        // this is a general type for web/node streams, therefore we must cast the nodes streaming type.
+        const response = await this.makeRequest<GetObjectCommandInput, GetObjectCommandOutput, GetObjectCommand>(
+            GetObjectCommand,
+            {
+                Bucket: bucketName,
+                Key: key,
+            }
+        )
+
+        if (isWeb()) {
+            throw new ToolkitError('S3: downloading files is not supported in web.')
+        }
+
+        return (response.Body as Readable) ?? new Readable()
     }
 
     public async headObject(request: HeadObjectRequest): Promise<S3.HeadObjectOutput> {

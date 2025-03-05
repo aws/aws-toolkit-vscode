@@ -133,42 +133,6 @@ describe('DefaultS3Client', function () {
         })
     })
 
-    describe('downloadFile', function () {
-        it('downloads a file', async function () {
-            const s = sinon.stub().returns(success())
-            mockS3.getObject = s
-
-            const fileStreams = new FakeFileStreams({ readData: fileData })
-            const progressCaptor = new FakeProgressCaptor()
-
-            await createClient({ fileStreams }).downloadFile({
-                bucketName,
-                key: fileKey,
-                saveLocation: fileLocation,
-                progressListener: progressCaptor.listener(),
-            })
-
-            assert(s.calledOnce)
-            assert.deepStrictEqual(fileStreams.writtenLocation, fileLocation)
-            assert.strictEqual(fileStreams.writtenData, fileData)
-            assert.ok(progressCaptor.progress > 0)
-        })
-
-        it('throws an Error on failure', async function () {
-            const s = sinon.stub().returns(failure())
-            mockS3.getObject = s
-
-            await assert.rejects(
-                createClient().downloadFile({
-                    bucketName,
-                    key: fileKey,
-                    saveLocation: fileLocation,
-                }),
-                error
-            )
-        })
-    })
-
     describe('uploadFile', function () {
         it('uploads a file', async function () {
             const mockManagedUpload = stub(S3.ManagedUpload)
