@@ -2,6 +2,7 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
+import * as path from 'path'
 import { UserIntent } from '@amzn/codewhisperer-streaming'
 import {
     AmazonqAddMessage,
@@ -147,7 +148,7 @@ export class CWCTelemetryHelper {
     }
 
     public getContextType(prompt: AdditionalContextPrompt): string {
-        if (prompt.relativePath.startsWith('.amazonq/rules')) {
+        if (prompt.relativePath.startsWith(path.join('.amazonq', 'rules'))) {
             return 'rule'
         } else if (prompt.filePath.startsWith(getUserPromptsDirectory())) {
             return 'prompt'
