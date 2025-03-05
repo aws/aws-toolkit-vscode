@@ -19,6 +19,7 @@ import { S3Client } from '../../../../shared/clients/s3'
 import { MockOutputChannel } from '../../../mockOutputChannel'
 import { getTestWindow } from '../../../shared/vscode/window'
 import sinon from 'sinon'
+import { Upload } from '@aws-sdk/lib-storage'
 
 describe('uploadFileCommand', function () {
     const bucketName = 'bucket-name'
@@ -42,10 +43,10 @@ describe('uploadFileCommand', function () {
     let bucketNode: S3BucketNode
     let getBucket: (s3client: S3Client) => Promise<BucketQuickPickItem | 'cancel' | 'back'>
     let getFile: (document?: vscode.Uri) => Promise<vscode.Uri[] | undefined>
-    let mockedUpload: S3.ManagedUpload
+    let mockedUpload: Upload
 
     beforeEach(function () {
-        mockedUpload = {} as any as S3.ManagedUpload
+        mockedUpload = {} as any as Upload
         s3 = {} as any as S3Client
         bucketNode = new S3BucketNode({ name: bucketName, region: 'region', arn: 'arn' }, new S3Node(s3), s3)
         outputChannel = new MockOutputChannel()
@@ -61,8 +62,7 @@ describe('uploadFileCommand', function () {
         it('uploads successfully', async function () {
             const uploadStub = sinon.stub().resolves(mockedUpload)
             s3.uploadFile = uploadStub
-            const promiseStub = sinon.stub().resolves()
-            mockedUpload.promise = promiseStub
+            mockedUpload.done = sinon.stub().resolves()
 
             getFile = (document) => {
                 return new Promise((resolve, reject) => {
@@ -116,8 +116,7 @@ describe('uploadFileCommand', function () {
         it('uploads if user provides file and bucket', async function () {
             const uploadStub = sinon.stub().resolves(mockedUpload)
             s3.uploadFile = uploadStub
-            const promiseStub = sinon.stub().resolves()
-            mockedUpload.promise = promiseStub
+            mockedUpload.done = sinon.stub().resolves()
 
             await uploadFileCommand(s3, undefined, statFile, getBucket, getFile, outputChannel)
 
@@ -165,8 +164,8 @@ describe('uploadFileCommand', function () {
     it('successfully upload file or folder', async function () {
         const uploadStub = sinon.stub().resolves(mockedUpload)
         s3.uploadFile = uploadStub
-        const promiseStub = sinon.stub().resolves()
-        mockedUpload.promise = promiseStub
+
+        mockedUpload.done = sinon.stub().resolves()
         getTestWindow().onDidShowDialog((d) => d.selectItem(fileLocation))
 
         // Upload to bucket.

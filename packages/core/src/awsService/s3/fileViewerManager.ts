@@ -101,7 +101,7 @@ export class S3FileProvider implements FileProvider {
                     bucketName: this._file.bucket.name,
                     contentType: this._file.ContentType ?? mimeType,
                 })
-                .then((u) => u.promise())
+                .then((u) => u.done())
 
             this.updateETag(result.ETag)
             this._file.lastModified = new Date()

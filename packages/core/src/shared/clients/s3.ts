@@ -32,6 +32,7 @@ import {
     S3Client as S3ClientSDK,
 } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
+import { Progress, Upload } from '@aws-sdk/lib-storage'
 import { ClientWrapper } from './clientWrapper'
 import { ToolkitError } from '../errors'
 
@@ -315,6 +316,19 @@ export class S3Client extends ClientWrapper<S3ClientSDK> {
         )
     }
 
+    public linkProgressListenerToUpload(
+        upload: { on: (event: 'httpUploadProgress', listener: (progress: Progress) => void) => void },
+        progressListener: (loadedBytes: number) => void
+    ) {
+        let lastLoaded = 0
+        upload.on('httpUploadProgress', (progress) => {
+            if (progress.loaded) {
+                progressListener(progress.loaded - lastLoaded)
+                lastLoaded = progress.loaded
+            }
+        })
+    }
+
     /**
      * Uploads a file from disk.
      *
@@ -322,38 +336,34 @@ export class S3Client extends ClientWrapper<S3ClientSDK> {
      *
      * Pipes the file (read) stream into the request (write) stream.
      * Assigns the target content type based on the mime type of the file.
-     * If content type cannot be determined, defaults to {@link DEFAULT_CONTENT_TYPE}.
      *
-     * @returns The S3.ManagedUpload stream
+     * @returns The Upload stream
      * @throws Error if there is an error calling S3 or piping between streams.
      */
-    public async uploadFile(request: UploadFileRequest): Promise<S3.ManagedUpload> {
+    public async uploadFile(request: UploadFileRequest): Promise<Upload> {
         getLogger().debug('UploadFile called for bucketName: %s, key: %s', request.bucketName, request.key)
-        const s3 = await this.createS3()
-
-        // https://docs.aws.amazon.com/sdk-for-javascript/v2/developer-guide/s3-example-creating-buckets.html#s3-example-creating-buckets-upload-file
+        // Upload example from: https://docs.aws.amazon.com/code-library/latest/ug/s3_example_s3_Scenario_UsingLargeFiles_section.html
         const readStream =
             request.content instanceof vscode.Uri
                 ? this.fileStreams.createReadStream(request.content)
                 : bufferToStream(request.content)
 
-        const managedUploaded = s3.upload({
-            Bucket: request.bucketName,
-            Key: request.key,
-            Body: readStream,
-            ContentType: request.contentType,
+        const managedUpload = new Upload({
+            client: this.getClient(),
+            params: {
+                Bucket: request.bucketName,
+                Key: request.key,
+                Body: readStream,
+                ContentType: request.contentType,
+            },
         })
 
         const progressListener = request.progressListener
         if (progressListener) {
-            let lastLoaded = 0
-            managedUploaded.on('httpUploadProgress', (progress) => {
-                progressListener(progress.loaded - lastLoaded)
-                lastLoaded = progress.loaded
-            })
+            this.linkProgressListenerToUpload(managedUpload, progressListener)
         }
 
-        return managedUploaded
+        return managedUpload
     }
 
     /**

@@ -7,7 +7,6 @@ import assert from 'assert'
 import { AWSError, Request, S3 } from 'aws-sdk'
 import { ListObjectVersionsOutput, ListObjectVersionsRequest } from 'aws-sdk/clients/s3'
 import { FileStreams } from '../../../shared/utilities/streamUtilities'
-import * as vscode from 'vscode'
 import { DefaultBucket, DefaultFolder, S3Client, toFile } from '../../../shared/clients/s3'
 import { DEFAULT_MAX_KEYS } from '../../../shared/clients/s3'
 import { FakeFileStreams } from './fakeFileStreams'
@@ -15,14 +14,31 @@ import globals from '../../../shared/extensionGlobals'
 import sinon from 'sinon'
 import { Stub, stub } from '../../utilities/stubber'
 import { ListObjectsV2Output } from '@aws-sdk/client-s3'
+import { Progress } from '@aws-sdk/lib-storage'
 
 class FakeProgressCaptor {
     public progress = 0
+    public lastUpdateAmount = 0
 
     public listener(): (loadedBytes: number) => void {
         return (loadedBytes) => {
             this.progress += loadedBytes
+            this.lastUpdateAmount = loadedBytes
         }
+    }
+}
+
+class FakeUploader {
+    private progressListeners: ((progress: Progress) => void)[] = []
+
+    emitProgress(p: Progress) {
+        for (const listener of this.progressListeners) {
+            listener(p)
+        }
+    }
+
+    on(_event: 'httpUploadProgress', listener: (progress: Progress) => void) {
+        this.progressListeners.push(listener)
     }
 }
 
@@ -48,7 +64,6 @@ describe('DefaultS3Client', function () {
     const fileSizeBytes = 5
     const fileLastModified = new Date(2020, 5, 4)
     const fileData = 'fileData'
-    const fileLocation = vscode.Uri.file('/file.jpg')
     const nextContinuationToken = 'nextContinuationToken'
     const nextKeyMarker = 'nextKeyMarker'
     const nextVersionIdMarker = 'nextVersionIdMarker'
@@ -133,62 +148,20 @@ describe('DefaultS3Client', function () {
     })
 
     describe('uploadFile', function () {
-        it('uploads a file', async function () {
-            const mockManagedUpload = stub(S3.ManagedUpload)
-            mockManagedUpload.promise.resolves({ Location: '', ETag: '', Bucket: '', Key: '' })
-            mockManagedUpload.on.returns(undefined)
-
-            const uploadStub = sinon.stub().returns(mockManagedUpload)
-            mockS3.upload = uploadStub
-
-            const fileStreams = new FakeFileStreams({ readData: fileData, readAutomatically: true })
+        it('links the progress listener to the upload', async function () {
             const progressCaptor = new FakeProgressCaptor()
 
-            await createClient({ fileStreams }).uploadFile({
-                bucketName,
-                key: fileKey,
-                content: fileLocation,
-                progressListener: progressCaptor.listener(),
-                contentType: 'image/jpeg',
-            })
+            const upload = new FakeUploader()
+            createClient().linkProgressListenerToUpload(upload, progressCaptor.listener())
 
-            assert(uploadStub.calledOnce)
-            assert(mockManagedUpload.on.calledOnceWith('httpUploadProgress', sinon.match.any))
-            // eslint-disable-next-line @typescript-eslint/unbound-method
-            const uploadArgs: S3.PutObjectRequest = uploadStub.firstCall.args[0]
-            assert.strictEqual(uploadArgs.Bucket, bucketName)
-            assert.strictEqual(uploadArgs.Key, fileKey)
-            assert.strictEqual(uploadArgs.ContentType, 'image/jpeg')
-            assert.strictEqual(uploadArgs.Body, fileStreams.readStream)
-
-            // eslint-disable-next-line @typescript-eslint/unbound-method
-            const listener = mockManagedUpload.on.firstCall.args[1]
-            listener({ loaded: 1, total: 100 })
-            listener({ loaded: 2, total: 100 })
-            assert.strictEqual(progressCaptor.progress, 2)
-        })
-
-        it('throws an Error on failure', async function () {
-            // TODO: rejected promise here since the impl. does not await the upload anymore
-
-            const expectedError = new Error('Expected an error')
-            const mockManagedUpload = stub(S3.ManagedUpload)
-            mockManagedUpload.promise.rejects(expectedError)
-            mockManagedUpload.on.returns(undefined)
-
-            const uploadStub = sinon.stub().returns(mockManagedUpload)
-            mockS3.upload = uploadStub
-
-            const managedUpload = await createClient().uploadFile({
-                bucketName,
-                key: fileKey,
-                content: fileLocation,
-            })
-            try {
-                await managedUpload.promise()
-            } catch (e) {
-                assert.strictEqual(e, expectedError)
-            }
+            upload.emitProgress({ loaded: 10 })
+            assert.strictEqual(progressCaptor.progress, 10)
+            upload.emitProgress({ loaded: 20 })
+            assert.strictEqual(progressCaptor.progress, 20)
+            assert.strictEqual(progressCaptor.lastUpdateAmount, 10)
+            upload.emitProgress({ loaded: 40 })
+            assert.strictEqual(progressCaptor.progress, 40)
+            assert.strictEqual(progressCaptor.lastUpdateAmount, 20)
         })
     })
 

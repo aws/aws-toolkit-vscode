@@ -24,6 +24,7 @@ import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { progressReporter } from '../progressReporter'
 import globals from '../../../shared/extensionGlobals'
 import { telemetry } from '../../../shared/telemetry/telemetry'
+import { Upload } from '@aws-sdk/lib-storage'
 
 export interface FileSizeBytes {
     /**
@@ -38,7 +39,7 @@ interface UploadRequest {
     fileLocation: vscode.Uri
     fileSizeBytes: number
     s3Client: S3Client
-    ongoingUpload?: S3.ManagedUpload
+    ongoingUpload?: Upload
 }
 
 /**
@@ -281,7 +282,7 @@ async function uploadBatchOfFiles(
 
             token.onCancellationRequested((e) => {
                 if (uploadRequests[requestIdx].ongoingUpload) {
-                    uploadRequests[requestIdx].ongoingUpload?.abort()
+                    void uploadRequests[requestIdx].ongoingUpload?.abort()
                 }
                 return failedRequests
             })
@@ -377,12 +378,12 @@ async function uploadWithProgress(
 
     const cancelled = new Promise<void>((_, reject) => {
         token.onCancellationRequested((e) => {
-            currentStream.abort()
+            void currentStream.abort()
             reject(new CancellationError('user'))
         })
     })
 
-    await Promise.race([currentStream.promise(), cancelled])
+    await Promise.race([currentStream.done(), cancelled])
 
     return (request.ongoingUpload = undefined)
 }
