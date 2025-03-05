@@ -11,11 +11,14 @@ import {
     SamLocalInvokeCommand,
     SamLocalInvokeCommandArgs,
 } from '../../../../shared/sam/cli/samCliLocalInvoke'
+import * as SamUtilsModule from '../../../../shared/sam/utils'
 import { ChildProcess } from '../../../../shared/utilities/processUtils'
 import { assertArgIsPresent, assertArgNotPresent, assertArgsContainArgument } from './samCliTestUtils'
 import { fs } from '../../../../shared'
 import { SamCliSettings } from '../../../../shared/sam/cli/samCliSettings'
 import { isWin } from '../../../../shared/vscode/env'
+import sinon from 'sinon'
+import { SemVer } from 'semver'
 
 describe('SamCliLocalInvokeInvocation', async function () {
     class TestSamLocalInvokeCommand implements SamLocalInvokeCommand {
@@ -31,6 +34,8 @@ describe('SamCliLocalInvokeInvocation', async function () {
     let placeholderTemplateFile: string
     let placeholderEventFile: string
     const nonRelevantArg = 'arg is not of interest to this test'
+    let mockGetSamCliVersion: sinon.SinonStub
+    let sandbox: sinon.SinonSandbox
 
     before(async function () {
         // File system search on windows can take a while.
@@ -47,15 +52,22 @@ describe('SamCliLocalInvokeInvocation', async function () {
         placeholderEventFile = path.join(tempFolder, 'event.json')
         await fs.writeFile(placeholderTemplateFile, '')
         await fs.writeFile(placeholderEventFile, '')
+        sandbox = sinon.createSandbox()
     })
 
     afterEach(async function () {
+        sandbox.restore()
         await fs.delete(tempFolder, { recursive: true })
     })
 
     it('invokes `sam local` with args', async function () {
+        mockGetSamCliVersion = sandbox
+            .stub(SamUtilsModule, 'getSamCliPathAndVersion')
+            .callsFake(sandbox.stub().resolves({ parsedVersion: new SemVer('1.135.0') }))
+
         const taskInvoker: SamLocalInvokeCommand = new TestSamLocalInvokeCommand(
             (invokeArgs: SamLocalInvokeCommandArgs) => {
+                assert(mockGetSamCliVersion.calledOnce)
                 assert.ok(invokeArgs.args.length >= 2, 'Expected args to be present')
                 assert.strictEqual(invokeArgs.args[0], 'local')
                 assert.strictEqual(invokeArgs.args[1], 'invoke')
@@ -309,10 +321,15 @@ describe('SamCliLocalInvokeInvocation', async function () {
     })
 
     it('Passes runtime to sam cli', async function () {
+        mockGetSamCliVersion = sandbox
+            .stub(SamUtilsModule, 'getSamCliPathAndVersion')
+            .callsFake(sandbox.stub().resolves({ parsedVersion: new SemVer('1.135.0') }))
+
         const runtime = 'python3.10'
 
         const taskInvoker: SamLocalInvokeCommand = new TestSamLocalInvokeCommand(
             (invokeArgs: SamLocalInvokeCommandArgs) => {
+                assert(mockGetSamCliVersion.calledOnce)
                 assertArgsContainArgument(invokeArgs.args, '--runtime', runtime)
             }
         )
@@ -327,9 +344,14 @@ describe('SamCliLocalInvokeInvocation', async function () {
         }).execute()
     })
 
-    it('Does not pass runtime to sam cli when undefined', async function () {
+    it('Does not pass runtime to sam cli when version < 1.135.0', async function () {
+        mockGetSamCliVersion = sandbox
+            .stub(SamUtilsModule, 'getSamCliPathAndVersion')
+            .callsFake(sandbox.stub().resolves({ parsedVersion: new SemVer('1.134.0') }))
+
         const taskInvoker: SamLocalInvokeCommand = new TestSamLocalInvokeCommand(
             (invokeArgs: SamLocalInvokeCommandArgs) => {
+                assert(mockGetSamCliVersion.calledOnce)
                 assertArgNotPresent(invokeArgs.args, '--runtime')
             }
         )
@@ -340,6 +362,29 @@ describe('SamCliLocalInvokeInvocation', async function () {
             eventPath: placeholderEventFile,
             environmentVariablePath: nonRelevantArg,
             invoker: taskInvoker,
+            runtime: 'python3.10',
+        }).execute()
+    })
+
+    it('Does not pass runtime to sam cli when runtime is deprecated', async function () {
+        mockGetSamCliVersion = sandbox
+            .stub(SamUtilsModule, 'getSamCliPathAndVersion')
+            .callsFake(sandbox.stub().resolves({ parsedVersion: new SemVer('1.135.0') }))
+
+        const taskInvoker: SamLocalInvokeCommand = new TestSamLocalInvokeCommand(
+            (invokeArgs: SamLocalInvokeCommandArgs) => {
+                assert(mockGetSamCliVersion.calledOnce)
+                assertArgNotPresent(invokeArgs.args, '--runtime')
+            }
+        )
+
+        await new SamCliLocalInvokeInvocation({
+            templateResourceName: nonRelevantArg,
+            templatePath: placeholderTemplateFile,
+            eventPath: placeholderEventFile,
+            environmentVariablePath: nonRelevantArg,
+            invoker: taskInvoker,
+            runtime: 'python2.7',
         }).execute()
     })
 })
