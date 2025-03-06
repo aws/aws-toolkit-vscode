@@ -40,6 +40,7 @@ import { DevSettings } from '../settings'
 import { getServiceEnvVarConfig } from '../vscode/env'
 import { AwsCommand } from '../awsClientBuilderV3'
 import { ClientWrapper } from './clientWrapper'
+import { StandardRetryStrategy } from '@smithy/util-retry'
 
 export interface CodeCatalystConfig {
     readonly region: string
@@ -137,13 +138,15 @@ function toBranch(
 async function createCodeCatalystClient(
     connection: SsoConnection,
     regionCode: string,
-    endpoint: string
+    endpoint: string,
+    maxRetries: number
 ): Promise<CodeCatalyst> {
     const c = await globals.sdkClientBuilder.createAwsService(CodeCatalyst, {
         region: regionCode,
         correctClockSkew: true,
         endpoint: endpoint,
         token: new TokenProvider(connection),
+        maxRetries,
     } as ServiceConfigurationOptions)
 
     return c
@@ -152,7 +155,8 @@ async function createCodeCatalystClient(
 function createCodeCatalystClientV3(
     connection: SsoConnection,
     regionCode: string,
-    endpoint: string
+    endpoint: string,
+    maxRetries: number
 ): CodeCatalystSDKClient {
     return globals.sdkClientBuilderV3.createAwsService({
         serviceClient: CodeCatalystSDKClient,
@@ -160,6 +164,7 @@ function createCodeCatalystClientV3(
             region: regionCode,
             endpoint: endpoint,
             token: new TokenProvider(connection),
+            retryStrategy: new StandardRetryStrategy(maxRetries),
         },
     })
 }
@@ -192,10 +197,11 @@ export async function createClient(
     connection: SsoConnection,
     regionCode = getCodeCatalystConfig().region,
     endpoint = getCodeCatalystConfig().endpoint,
+    maxRetries: number = 1,
     authOptions: AuthOptions = {}
 ): Promise<CodeCatalystClient> {
-    const sdkClient = await createCodeCatalystClient(connection, regionCode, endpoint)
-    const sdkv3Client = createCodeCatalystClientV3(connection, regionCode, endpoint)
+    const sdkClient = await createCodeCatalystClient(connection, regionCode, endpoint, maxRetries)
+    const sdkv3Client = createCodeCatalystClientV3(connection, regionCode, endpoint, maxRetries)
     const c = new CodeCatalystClientInternal(connection, sdkClient, sdkv3Client)
     try {
         await c.verifySession()

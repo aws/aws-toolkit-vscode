@@ -386,7 +386,7 @@ abstract class TestClientBase implements AwsClient {
     public middlewareStack: { add: MiddlewareStack<any, MetadataBearer>['add'] } = {
         add: (_: any, __: any) => {},
     }
-    public async send(command: AwsCommand, options?: any): Promise<any> {}
+    public async send(command: AwsCommand<object, object>, options?: any): Promise<any> {}
     public destroy(): void {}
 }
 

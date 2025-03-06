@@ -425,15 +425,9 @@ describe('Test how this codebase uses the CodeCatalyst API', function () {
      */
     async function createTestCodeCatalystClient(auth: Auth): Promise<CodeCatalystClient> {
         const conn = await useCodeCatalystSsoConnection(auth)
-        return await createCodeCatalystClient(conn, undefined, undefined, {
-            // Add retries for tests since many may be running in parallel in github CI.
-            // AWS SDK adds jitter automatically.
-            // https://github.com/aws/aws-sdk-js/blob/3e616251947c73d5239178c167a9d73d985ca581/lib/util.js#L884
-            retryDelayOptions: {
-                base: 1200, // ms
-            },
-            maxRetries: 5,
-        })
+        // Add retries for tests since many may be running in parallel in github CI.
+        // AWS SDK adds jitter automatically.
+        return await createCodeCatalystClient(conn, undefined, undefined, 5)
     }
 
     /**
