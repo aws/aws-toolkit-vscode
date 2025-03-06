@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import { ChildNodePage } from '../../../awsexplorer/childNodeLoader'
-import { Bucket, CreateFolderRequest, CreateFolderResponse, S3Client } from '../../../shared/clients/s3Client'
+import { S3Bucket, CreateFolderRequest, CreateFolderResponse, S3Client } from '../../../shared/clients/s3'
 
 import { AWSResourceNode } from '../../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
@@ -30,13 +30,13 @@ export class S3BucketNode extends AWSTreeNodeBase implements AWSResourceNode, Lo
     private readonly childLoader = new ChildNodeLoader(this, (token) => this.loadPage(token))
 
     public constructor(
-        public readonly bucket: Bucket,
+        public readonly bucket: S3Bucket,
         public readonly parent: S3Node,
         public readonly s3: S3Client,
         protected readonly settings: ClassToInterfaceType<Settings> = Settings.instance
     ) {
-        super(bucket.name, vscode.TreeItemCollapsibleState.Collapsed)
-        this.tooltip = bucket.name
+        super(bucket.Name, vscode.TreeItemCollapsibleState.Collapsed)
+        this.tooltip = bucket.Name
         this.iconPath = getIcon('aws-s3-bucket')
         this.contextValue = 'awsS3BucketNode'
     }
@@ -64,7 +64,7 @@ export class S3BucketNode extends AWSTreeNodeBase implements AWSResourceNode, Lo
     private async loadPage(continuationToken: string | undefined): Promise<ChildNodePage<S3FolderNode | S3FileNode>> {
         getLogger().debug(`Loading page for %O using continuationToken %s`, this, continuationToken)
         const response = await this.s3.listFiles({
-            bucketName: this.bucket.name,
+            bucketName: this.bucket.Name,
             continuationToken,
             maxResults: this.getMaxItemsPerPage(),
         })
@@ -90,15 +90,15 @@ export class S3BucketNode extends AWSTreeNodeBase implements AWSResourceNode, Lo
      * See {@link S3Client.deleteBucket}.
      */
     public async deleteBucket(): Promise<void> {
-        await this.s3.deleteBucket({ bucketName: this.bucket.name })
+        await this.s3.deleteBucket({ bucketName: this.bucket.Name })
     }
 
     public get arn(): string {
-        return this.bucket.arn
+        return this.bucket.Arn
     }
 
     public get name(): string {
-        return this.bucket.name
+        return this.bucket.Name
     }
 
     public get path(): string {
@@ -107,7 +107,7 @@ export class S3BucketNode extends AWSTreeNodeBase implements AWSResourceNode, Lo
     }
 
     public [inspect.custom](): string {
-        return `S3BucketNode (bucket=${this.bucket.name})`
+        return `S3BucketNode (bucket=${this.bucket.Name})`
     }
 
     private getMaxItemsPerPage(): number | undefined {
