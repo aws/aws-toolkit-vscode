@@ -166,7 +166,7 @@ export interface GetObjectResponse {
 
 export class S3Client extends ClientWrapper<S3ClientSDK> {
     public constructor(
-        public override readonly regionCode: string,
+        regionCode: string,
         private readonly partitionId = globals.regionProvider.getPartitionId(regionCode) ?? defaultPartition,
         private readonly fileStreams: FileStreams = new DefaultFileStreams()
     ) {
