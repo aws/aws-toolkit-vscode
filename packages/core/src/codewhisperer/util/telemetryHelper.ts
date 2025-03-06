@@ -14,6 +14,7 @@ import {
     CodewhispererUserDecision,
     CodewhispererUserTriggerDecision,
     Result,
+    Status,
     telemetry,
 } from '../../shared/telemetry/telemetry'
 import { CodewhispererCompletionType, CodewhispererSuggestionState } from '../../shared/telemetry/telemetry'
@@ -86,7 +87,8 @@ export class TelemetryHelper {
         generatedCharactersCount?: number,
         generatedCount?: number,
         generatedLinesCount?: number,
-        reason?: string
+        reason?: string,
+        status?: Status
     ) {
         telemetry.amazonq_utgGenerateTests.emit({
             cwsprChatProgrammingLanguage: session.fileLanguage ?? 'plaintext',
@@ -111,6 +113,7 @@ export class TelemetryHelper {
             requestId: requestId,
             reasonDesc: reasonDesc,
             reason: reason,
+            status: status,
         })
     }
 
@@ -135,7 +138,8 @@ export class TelemetryHelper {
         generatedCount?: number,
         generatedLinesCount?: number,
         reason?: string,
-        result?: BuildStatus
+        result?: BuildStatus,
+        status?: Status
     ) {
         telemetry.amazonq_unitTestGeneration.emit({
             cwsprChatProgrammingLanguage: session.fileLanguage ?? 'plaintext',
@@ -166,6 +170,7 @@ export class TelemetryHelper {
             reason: reason,
             update: (session.updatedBuildCommands?.length ?? 0) > 0, // If user modifies command return true else false
             count: session.listOfTestGenerationJobId.length - 1, // Number of build and execute iterations if count = -1 then user did not even start the build and cycle loop and failed/terminated at the vanilla UTG.
+            status: status,
         })
     }
 

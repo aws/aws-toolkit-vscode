@@ -299,7 +299,8 @@ export class TestController {
                   session.numberOfTestsGenerated,
                   session.linesOfCodeGenerated,
                   undefined,
-                  isCancel ? BuildStatus.CANCELLED : BuildStatus.FAILURE
+                  isCancel ? BuildStatus.CANCELLED : BuildStatus.FAILURE,
+                  isCancel ? 'CANCELLED' : 'FAILED'
               )
             : TelemetryHelper.instance.sendTestGenerationToolkitEvent(
                   session,
@@ -312,7 +313,15 @@ export class TestController {
                   session.isCodeBlockSelected,
                   session.artifactsUploadDuration,
                   session.srcPayloadSize,
-                  session.srcZipFileSize
+                  session.srcZipFileSize,
+                  session.charsOfCodeAccepted,
+                  session.numberOfTestsGenerated,
+                  session.linesOfCodeGenerated,
+                  session.charsOfCodeGenerated,
+                  session.numberOfTestsGenerated,
+                  session.linesOfCodeGenerated,
+                  undefined,
+                  isCancel ? 'CANCELLED' : 'FAILED'
               )
         if (session.stopIteration) {
             // Error from Science
@@ -804,7 +813,7 @@ export class TestController {
         getLogger().info(
             `Generated unit tests are accepted for ${session.fileLanguage ?? 'plaintext'} language with jobId: ${session.listOfTestGenerationJobId[0]}, jobGroupName: ${session.testGenerationJobGroupName}, result: Succeeded`
         )
-        if (session.listOfTestGenerationJobId.length > 1) {
+        if (session.listOfTestGenerationJobId.length === 1) {
             TelemetryHelper.instance.sendTestGenerationToolkitEvent(
                 session,
                 true,
@@ -822,7 +831,9 @@ export class TestController {
                 session.linesOfCodeAccepted,
                 session.charsOfCodeGenerated,
                 session.numberOfTestsGenerated,
-                session.linesOfCodeGenerated
+                session.linesOfCodeGenerated,
+                undefined,
+                'ACCEPTED'
             )
         }
 
@@ -882,7 +893,8 @@ export class TestController {
                 session.numberOfTestsGenerated,
                 session.linesOfCodeGenerated,
                 undefined,
-                session.buildStatus
+                session.buildStatus,
+                'ACCEPTED'
             )
             this.sessionStorage.getSession().listOfTestGenerationJobId = []
             this.messenger.sendMessage(
@@ -962,7 +974,8 @@ export class TestController {
                     session.numberOfTestsGenerated,
                     session.linesOfCodeGenerated,
                     undefined,
-                    session.buildStatus
+                    session.buildStatus,
+                    'REJECTED'
                 )
                 telemetry.ui_click.emit({ elementId: 'unitTestGeneration_rejectDiff_Iteration' })
             } else {
@@ -983,7 +996,9 @@ export class TestController {
                     0,
                     session.charsOfCodeGenerated,
                     session.numberOfTestsGenerated,
-                    session.linesOfCodeGenerated
+                    session.linesOfCodeGenerated,
+                    undefined,
+                    'REJECTED'
                 )
                 telemetry.ui_click.emit({ elementId: 'unitTestGeneration_rejectDiff' })
             }
@@ -1000,7 +1015,8 @@ export class TestController {
                 session.numberOfTestsGenerated,
                 session.linesOfCodeGenerated,
                 undefined,
-                session.buildStatus
+                session.buildStatus,
+                'ACCEPTED'
             )
             telemetry.ui_click.emit({ elementId: 'unitTestGeneration_SkipAndFinish' })
         }
@@ -1335,7 +1351,8 @@ export class TestController {
                 session.numberOfTestsGenerated,
                 session.linesOfCodeGenerated,
                 undefined,
-                session.buildStatus
+                session.buildStatus,
+                'ACCEPTED'
             )
             await this.sessionCleanUp()
         }
