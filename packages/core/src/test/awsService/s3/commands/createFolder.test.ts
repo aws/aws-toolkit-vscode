@@ -32,7 +32,7 @@ describe('createFolderCommand', function () {
         spyExecuteCommand = sandbox.spy(vscode.commands, 'executeCommand')
 
         s3 = {} as any as S3Client
-        node = new S3BucketNode({ name: bucketName, region: 'region', arn: 'arn' }, new S3Node(s3), s3)
+        node = new S3BucketNode({ Name: bucketName, BucketRegion: 'region', Arn: 'arn' }, new S3Node(s3), s3)
     })
 
     afterEach(function () {

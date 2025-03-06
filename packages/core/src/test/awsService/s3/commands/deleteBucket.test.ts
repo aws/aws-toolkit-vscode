@@ -27,7 +27,7 @@ describe('deleteBucketCommand', function () {
 
         s3 = {} as any as S3Client
         parentNode = new S3Node(s3)
-        node = new S3BucketNode({ name: bucketName, region: 'region', arn: 'arn' }, parentNode, s3)
+        node = new S3BucketNode({ Name: bucketName, BucketRegion: 'region', Arn: 'arn' }, parentNode, s3)
     })
 
     afterEach(function () {

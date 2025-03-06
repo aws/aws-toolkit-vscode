@@ -803,7 +803,7 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
 
             try {
                 const s3Client = new S3Client(this.response.region!)
-                const newBucketName = (await s3Client.createBucket({ bucketName: newBucketRequest })).bucket.name
+                const newBucketName = (await s3Client.createBucket({ bucketName: newBucketRequest })).bucket.Name
                 this.response.s3Bucket = newBucketName
                 getLogger().info('Created bucket: %O', newBucketName)
                 void vscode.window.showInformationMessage(
@@ -1025,10 +1025,10 @@ async function populateS3QuickPick(
                 ]
             } else {
                 const bucketItems = buckets
-                    .filter((bucket) => bucket.name !== recent && !(isCloud9() && bucket.name === cloud9Bucket))
+                    .filter((bucket) => bucket.Name !== recent && !(isCloud9() && bucket.Name === cloud9Bucket))
                     .map((bucket) => {
                         return {
-                            label: bucket.name,
+                            label: bucket.Name,
                         }
                     })
 

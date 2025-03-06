@@ -10,14 +10,14 @@ import { deleteFileCommand } from '../../../../awsService/s3/commands/deleteFile
 import { S3BucketNode } from '../../../../awsService/s3/explorer/s3BucketNode'
 import { S3FileNode } from '../../../../awsService/s3/explorer/s3FileNode'
 import { S3Node } from '../../../../awsService/s3/explorer/s3Nodes'
-import { Bucket, S3Client } from '../../../../shared/clients/s3'
+import { S3Bucket, S3Client } from '../../../../shared/clients/s3'
 import { assertNoErrorMessages, getTestWindow } from '../../../shared/vscode/window'
 
 describe('deleteFileCommand', function () {
     const key = 'foo/bar.jpg'
     const name = 'bar.jpg'
     const bucketName = 'bucket-name'
-    const bucket: Bucket = { name: bucketName, region: 'region', arn: 'arn' }
+    const bucket: S3Bucket = { Name: bucketName, BucketRegion: 'region', Arn: 'arn' }
 
     let s3: S3Client
     let parentNode: S3BucketNode

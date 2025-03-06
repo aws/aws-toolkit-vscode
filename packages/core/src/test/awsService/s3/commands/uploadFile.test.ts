@@ -27,10 +27,10 @@ describe('uploadFileCommand', function () {
     const sizeBytes = 16
     const fileLocation = vscode.Uri.file('/file.jpg')
     const statFile: FileSizeBytes = (_file) => sizeBytes
-    const bucketResponse = { label: 'label', bucket: { name: bucketName } }
+    const bucketResponse = { label: 'label', bucket: { Name: bucketName } }
     const folderResponse = {
         label: 'label',
-        bucket: { name: bucketName },
+        bucket: { Name: bucketName },
         folder: { name: 'folderA', path: 'folderA/', arn: 'arn' },
     }
     const getFolder: (s3client: S3Client) => Promise<BucketQuickPickItem | 'cancel' | 'back'> = (s3Client) => {
@@ -62,14 +62,14 @@ describe('uploadFileCommand', function () {
     beforeEach(function () {
         mockedUpload = {} as any as Upload
         s3 = {} as any as S3Client
-        bucketNode = new S3BucketNode({ name: bucketName, region: 'region', arn: 'arn' }, new S3Node(s3), s3)
+        bucketNode = new S3BucketNode({ Name: bucketName, BucketRegion: 'region', Arn: 'arn' }, new S3Node(s3), s3)
         outputChannel = new MockOutputChannel()
     })
 
     describe('with node parameter', async function () {
         this.beforeEach(function () {
             s3 = {} as any as S3Client
-            bucketNode = new S3BucketNode({ name: bucketName, region: 'region', arn: 'arn' }, new S3Node(s3), s3)
+            bucketNode = new S3BucketNode({ Name: bucketName, BucketRegion: 'region', Arn: 'arn' }, new S3Node(s3), s3)
             outputChannel = new MockOutputChannel()
         })
 

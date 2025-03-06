@@ -19,7 +19,7 @@ export async function presignedURLCommand(node: S3FileNode): Promise<void> {
         const validTime = await promptTime(node.file.key)
         const s3Client = node.s3
         const request: SignedUrlRequest = {
-            bucketName: node.bucket.name,
+            bucketName: node.bucket.Name,
             key: node.file.key,
             time: validTime * 60,
         }

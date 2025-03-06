@@ -14,7 +14,7 @@ import { localize } from '../../../shared/utilities/vsCodeUtils'
 import { showOutputMessage } from '../../../shared/utilities/messages'
 import { createQuickPick, promptUser, verifySinglePickerOutput } from '../../../shared/ui/picker'
 import { addCodiconToString } from '../../../shared/utilities/textUtilities'
-import { Bucket, Folder, S3Client } from '../../../shared/clients/s3'
+import { S3Bucket, Folder, S3Client } from '../../../shared/clients/s3'
 import { createBucketCommand } from './createBucket'
 import { S3BucketNode } from '../explorer/s3BucketNode'
 import { S3FolderNode } from '../explorer/s3FolderNode'
@@ -97,7 +97,7 @@ export async function uploadFileCommand(
         uploadRequests.push(
             ...filesToUpload.map((file) => {
                 const key = node!.path + path.basename(file.fsPath)
-                return fileToUploadRequest(node!.bucket.name, key, file)
+                return fileToUploadRequest(node!.bucket.Name, key, file)
             })
         )
         if (node instanceof S3FolderNode) {
@@ -149,7 +149,7 @@ export async function uploadFileCommand(
                 return
             }
 
-            const bucketName = bucketResponse.bucket!.name
+            const bucketName = bucketResponse.bucket!.Name
             if (!bucketName) {
                 throw Error(`bucketResponse is not a S3.Bucket`)
             }
@@ -289,7 +289,7 @@ async function uploadBatchOfFiles(
             while (!token.isCancellationRequested && requestIdx < uploadRequests.length) {
                 const request = uploadRequests[requestIdx]
                 const fileName = path.basename(request.key)
-                const destinationPath = readablePath({ bucket: { name: request.bucketName }, path: request.key })
+                const destinationPath = readablePath({ bucket: { Name: request.bucketName }, path: request.key })
                 showOutputMessage(
                     localize('AWS.s3.uploadFile.startUpload', 'Uploading file {0} to {1}', fileName, destinationPath),
                     outputChannel
@@ -388,12 +388,12 @@ async function uploadWithProgress(
 }
 
 export interface BucketQuickPickItem extends vscode.QuickPickItem {
-    bucket: (Partial<Bucket> & { name: string }) | undefined
+    bucket: (Partial<S3Bucket> & { Name: string }) | undefined
     folder?: Folder | undefined
 }
 
 interface SavedFolder {
-    bucket: Bucket
+    bucket: S3Bucket
     folder: Folder
 }
 
@@ -411,7 +411,7 @@ export async function promptUserForBucket(
     promptUserFunction = promptUser,
     createBucket = createBucketCommand
 ): Promise<BucketQuickPickItem | 'cancel' | 'back'> {
-    let allBuckets: Bucket[]
+    let allBuckets: S3Bucket[]
     try {
         allBuckets = (await s3client.listBuckets()).buckets
     } catch (e) {
@@ -423,7 +423,7 @@ export async function promptUserForBucket(
     }
 
     const s3Buckets = allBuckets.filter((bucket) => {
-        return bucket && bucket.name
+        return bucket && bucket.Name
     })
 
     const createNewBucket: BucketQuickPickItem = {
@@ -432,7 +432,7 @@ export async function promptUserForBucket(
     }
     const bucketItems: BucketQuickPickItem[] = s3Buckets.map((bucket) => {
         return {
-            label: bucket.name!,
+            label: bucket.Name!,
             bucket,
         }
     })
@@ -443,7 +443,7 @@ export async function promptUserForBucket(
         lastFolderItem = {
             label: lastTouchedFolder.folder.name,
             description: '(last opened S3 folder)',
-            bucket: { name: lastTouchedFolder.bucket.name },
+            bucket: { Name: lastTouchedFolder.bucket.Name },
             folder: lastTouchedFolder.folder,
         }
     }
@@ -454,7 +454,7 @@ export async function promptUserForBucket(
         lastUploadedFolderItem = {
             label: lastUploadedToFolder.folder.name,
             description: '(last uploaded-to S3 folder)',
-            bucket: { name: lastUploadedToFolder.bucket.name },
+            bucket: { Name: lastUploadedToFolder.bucket.Name },
             folder: lastUploadedToFolder.folder,
         }
     }

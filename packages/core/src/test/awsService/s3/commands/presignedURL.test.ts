@@ -12,7 +12,7 @@ import { presignedURLCommand } from '../../../../awsService/s3/commands/presigne
 import { S3BucketNode } from '../../../../awsService/s3/explorer/s3BucketNode'
 import { S3FileNode } from '../../../../awsService/s3/explorer/s3FileNode'
 import { S3Node } from '../../../../awsService/s3/explorer/s3Nodes'
-import { Bucket, S3Client } from '../../../../shared/clients/s3'
+import { S3Bucket, S3Client } from '../../../../shared/clients/s3'
 import { getTestWindow } from '../../../shared/vscode/window'
 import { FakeClipboard } from '../../../shared/vscode/fakeEnv'
 
@@ -29,7 +29,7 @@ describe('presignedURLCommand', function () {
         const fakeClipboard = new FakeClipboard()
         sinon.stub(vscode.env, 'clipboard').value(fakeClipboard)
         s3 = {} as any as S3Client
-        const bucket: Bucket = { name: bucketName, region: 'region', arn: 'arn' }
+        const bucket: S3Bucket = { Name: bucketName, BucketRegion: 'region', Arn: 'arn' }
         bucketNode = new S3BucketNode(bucket, {} as S3Node, s3)
         node = new S3FileNode(bucket, { name: key, key: key, arn: 'arn' }, bucketNode, s3)
     })

@@ -29,7 +29,7 @@ import {
     ListObjectsV2Output,
     PutObjectCommand,
     S3Client as S3ClientSDK,
-    Bucket as S3Bucket,
+    Bucket,
     paginateListBuckets,
     ListObjectVersionsCommand,
     ListObjectVersionsOutput,
@@ -48,8 +48,8 @@ export const DEFAULT_MAX_KEYS = 300 // eslint-disable-line @typescript-eslint/na
 export const DEFAULT_DELIMITER = '/' // eslint-disable-line @typescript-eslint/naming-convention
 export const defaultPrefix = ''
 
-export type Bucket = InterfaceNoSymbol<DefaultBucket>
 export type Folder = InterfaceNoSymbol<DefaultFolder>
+export type S3Bucket = Bucket & { Name: string; BucketRegion: string; Arn: string }
 
 interface S3Object {
     readonly key: string
@@ -66,11 +66,11 @@ export interface CreateBucketRequest {
 }
 
 export interface CreateBucketResponse {
-    readonly bucket: Bucket
+    readonly bucket: S3Bucket
 }
 
 export interface ListBucketsResponse {
-    readonly buckets: Bucket[]
+    readonly buckets: S3Bucket[]
 }
 
 export interface ListFilesRequest {
@@ -192,11 +192,7 @@ export class S3Client extends ClientWrapper<S3ClientSDK> {
         })
 
         const response: CreateBucketResponse = {
-            bucket: new DefaultBucket({
-                partitionId: this.partitionId,
-                region: this.regionCode,
-                name: request.bucketName,
-            }),
+            bucket: toBucket(request.bucketName, this.regionCode, this.partitionId),
         }
         getLogger().debug('CreateBucket returned response: %O', response)
         return response
@@ -375,7 +371,7 @@ export class S3Client extends ClientWrapper<S3ClientSDK> {
      *
      * @throws Error if there is an error calling S3.
      */
-    private paginateBuckets(filterRegion: boolean = true): AsyncCollection<S3Bucket[]> {
+    private paginateBuckets(filterRegion: boolean = true): AsyncCollection<Bucket[]> {
         return this.makePaginatedRequest(
             paginateListBuckets,
             filterRegion ? { BucketRegion: this.regionCode } : {},
@@ -385,20 +381,25 @@ export class S3Client extends ClientWrapper<S3ClientSDK> {
 
     // TODO: replace calls to listBucketsIterable and listBuckets with calls to this function once "Bucket" type is unified.
     private listValidBuckets(
-        paginateBuckets: () => AsyncCollection<S3Bucket[]> = this.paginateBuckets.bind(this)
-    ): AsyncCollection<(S3Bucket & { Name: string; BucketRegion: string })[]> {
-        return paginateBuckets().map(async (page) => page.filter(hasName).filter(hasRegion))
+        paginateBuckets: () => AsyncCollection<Bucket[]> = this.paginateBuckets.bind(this)
+    ): AsyncCollection<S3Bucket[]> {
+        const partitionId = this.partitionId
+        return paginateBuckets().map(async (page) => page.filter(hasName).filter(hasRegion).map(addArn))
 
-        function hasName<B extends S3Bucket>(b: B): b is B & { Name: string } {
+        function hasName<B extends Bucket>(b: B): b is B & { Name: string } {
             return b.Name !== undefined
         }
 
-        function hasRegion<B extends S3Bucket>(b: B): b is B & { BucketRegion: string } {
+        function hasRegion<B extends Bucket>(b: B): b is B & { BucketRegion: string } {
             return b.BucketRegion !== undefined
+        }
+
+        function addArn<B extends Bucket & { Name: string; BucketRegion: string }>(b: B): S3Bucket {
+            return toBucket(b.Name, b.BucketRegion, partitionId)
         }
     }
 
-    public listBucketsIterable(): AsyncCollection<RequiredProps<S3Bucket, 'Name'> & { readonly region: string }> {
+    public listBucketsIterable(): AsyncCollection<RequiredProps<Bucket, 'Name'> & { readonly region: string }> {
         return this.listValidBuckets()
             .flatten()
             .map((b) => {
@@ -410,17 +411,12 @@ export class S3Client extends ClientWrapper<S3ClientSDK> {
     }
 
     public async listBuckets(
-        paginateBuckets: () => AsyncCollection<S3Bucket[]> = this.paginateBuckets.bind(this)
+        paginateBuckets: () => AsyncCollection<Bucket[]> = this.paginateBuckets.bind(this)
     ): Promise<ListBucketsResponse> {
         getLogger().debug('ListBuckets called')
 
-        const toDefaultBucket = (b: S3Bucket & { Name: string; BucketRegion: string }) => {
-            return new DefaultBucket({
-                partitionId: this.partitionId,
-                region: b.BucketRegion,
-                name: b.Name,
-            })
-        }
+        const toDefaultBucket = (b: Bucket & { Name: string; BucketRegion: string }) =>
+            toBucket(b.Name, this.regionCode, this.partitionId)
         const buckets = await this.listValidBuckets(paginateBuckets).flatten().map(toDefaultBucket).promise()
         const response = { buckets }
         getLogger().debug('ListBuckets returned response: %O', response)
@@ -448,11 +444,7 @@ export class S3Client extends ClientWrapper<S3ClientSDK> {
         bucketName: string,
         folderPath: string | undefined
     ): File[] {
-        const bucket = new DefaultBucket({
-            partitionId: this.partitionId,
-            region: this.regionCode,
-            name: bucketName,
-        })
+        const bucket = toBucket(bucketName, this.regionCode, this.partitionId)
         return _(listObjectsRsp.Contents)
             .reject((file) => file.Key === folderPath)
             .map((file) => {
@@ -656,21 +648,21 @@ export class S3Client extends ClientWrapper<S3ClientSDK> {
 /**
  * @deprecated This should be refactored the same way as {@link toFile}
  */
-export class DefaultBucket {
-    public readonly name: string
-    public readonly region: string
-    public readonly arn: string
+// export class DefaultBucket {
+//     public readonly name: string
+//     public readonly region: string
+//     public readonly arn: string
 
-    public constructor({ partitionId, region, name }: { partitionId: string; region: string; name: string }) {
-        this.name = name
-        this.region = region
-        this.arn = buildArn({ partitionId, bucketName: name })
-    }
+//     public constructor({ partitionId, region, name }: { partitionId: string; region: string; name: string }) {
+//         this.name = name
+//         this.region = region
+//         this.arn = buildArn({ partitionId, bucketName: name })
+//     }
 
-    public [inspect.custom](): string {
-        return `Bucket (name=${this.name}, region=${this.region}, arn=${this.arn})`
-    }
-}
+//     public [inspect.custom](): string {
+//         return `Bucket (name=${this.name}, region=${this.region}, arn=${this.arn})`
+//     }
+// }
 
 /**
  * @deprecated This should be refactored the same way as {@link toFile}
@@ -700,15 +692,23 @@ export interface File extends _Object, HeadObjectOutput {
     readonly eTag?: string
 }
 
-export function toFile(bucket: Bucket, resp: RequiredProps<_Object, 'Key'>, delimiter = DEFAULT_DELIMITER): File {
+export function toFile(bucket: S3Bucket, resp: RequiredProps<_Object, 'Key'>, delimiter = DEFAULT_DELIMITER): File {
     return {
         key: resp.Key,
-        arn: `${bucket.arn}/${resp.Key}`,
+        arn: `${bucket.Arn}/${resp.Key}`,
         name: resp.Key.split(delimiter).pop()!,
         eTag: resp.ETag,
         lastModified: resp.LastModified,
         sizeBytes: resp.Size,
         ...resp,
+    }
+}
+
+export function toBucket(bucketName: string, region: string, partitionId: string): S3Bucket {
+    return {
+        Name: bucketName,
+        BucketRegion: region,
+        Arn: buildArn({ partitionId, bucketName }),
     }
 }
 

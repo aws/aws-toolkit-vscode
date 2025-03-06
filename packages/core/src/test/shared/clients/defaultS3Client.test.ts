@@ -6,12 +6,12 @@
 import assert from 'assert'
 import { FileStreams } from '../../../shared/utilities/streamUtilities'
 import {
-    DefaultBucket,
     DefaultFolder,
     ListObjectVersionsResponse,
     ListObjectVersionsRequest,
     S3Client,
     toFile,
+    toBucket,
 } from '../../../shared/clients/s3'
 import { DEFAULT_MAX_KEYS } from '../../../shared/clients/s3'
 import { FakeFileStreams } from './fakeFileStreams'
@@ -67,8 +67,7 @@ describe('DefaultS3Client', function () {
     const nextContinuationToken = 'nextContinuationToken'
     const nextKeyMarker = 'nextKeyMarker'
     const nextVersionIdMarker = 'nextVersionIdMarker'
-    const bucket = new DefaultBucket({ partitionId: partition, name: bucketName, region })
-
+    const bucket = toBucket(bucketName, region, partition)
     class ListObjectVersionsFixtures {
         public readonly firstPageRequest: ListObjectVersionsCommandInput = {
             Bucket: bucketName,
@@ -147,9 +146,7 @@ describe('DefaultS3Client', function () {
                 ]) satisfies AsyncCollection<Bucket[]>
             const output = await createClient().listBuckets(getBucketCollection)
 
-            assert.deepStrictEqual(output.buckets, [
-                new DefaultBucket({ region: 'test-region', name: 'bucket1', partitionId: 'aws' }),
-            ])
+            assert.deepStrictEqual(output.buckets, [toBucket('bucket1', 'test-region', 'aws')])
         })
 
         it('Filters buckets with no region', async function () {
@@ -160,9 +157,7 @@ describe('DefaultS3Client', function () {
                 ]) satisfies AsyncCollection<Bucket[]>
             const output = await createClient().listBuckets(getBucketCollection)
 
-            assert.deepStrictEqual(output.buckets, [
-                new DefaultBucket({ region: 'test-region', name: 'bucket2', partitionId: 'aws' }),
-            ])
+            assert.deepStrictEqual(output.buckets, [toBucket('bucket2', 'test-region', 'aws')])
         })
     })
 
@@ -233,10 +228,10 @@ describe('DefaultS3Client', function () {
 
 describe('DefaultBucket', function () {
     it('properly constructs an instance', function () {
-        const bucket = new DefaultBucket({ partitionId: 'partitionId', region: 'region', name: 'name' })
-        assert.strictEqual(bucket.name, 'name')
-        assert.strictEqual(bucket.region, 'region')
-        assert.strictEqual(bucket.arn, 'arn:partitionId:s3:::name')
+        const bucket = toBucket('name', 'region', 'partitionId')
+        assert.strictEqual(bucket.Name, 'name')
+        assert.strictEqual(bucket.BucketRegion, 'region')
+        assert.strictEqual(bucket.Arn, 'arn:partitionId:s3:::name')
     })
 })
 
@@ -255,11 +250,7 @@ describe('DefaultFolder', function () {
 
 describe('toFile', function () {
     it('properly constructs an instance', function () {
-        const bucket = new DefaultBucket({
-            name: 'bucketName',
-            region: 'us-west-2',
-            partitionId: 'partitionId',
-        })
+        const bucket = toBucket('bucketName', 'us-west-2', 'partitionId')
         const file = toFile(bucket, {
             Size: 1337,
             Key: 'key/for/file.jpg',

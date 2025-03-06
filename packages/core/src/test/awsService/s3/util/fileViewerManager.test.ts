@@ -6,7 +6,7 @@
 import assert from 'assert'
 import * as vscode from 'vscode'
 import { S3FileProvider, S3FileViewerManager } from '../../../../awsService/s3/fileViewerManager'
-import { DefaultBucket, S3Client, File, toFile } from '../../../../shared/clients/s3'
+import { S3Client, File, toFile, toBucket } from '../../../../shared/clients/s3'
 import globals from '../../../../shared/extensionGlobals'
 import { VirtualFileSystem } from '../../../../shared/virtualFilesystem'
 import { bufferToStream } from '../../../../shared/utilities/streamUtilities'
@@ -20,11 +20,7 @@ import { ToolkitError } from '../../../../shared/errors'
 import { getTestWindow } from '../../../shared/vscode/window'
 import { Upload } from '@aws-sdk/lib-storage'
 
-const bucket = new DefaultBucket({
-    name: 'bucket-name',
-    region: 'us-west-2',
-    partitionId: 'aws',
-})
+const bucket = toBucket('bucket-name', 'us-west-2', 'aws')
 
 const bigImage = toFile(bucket, {
     ETag: '12345',
@@ -48,7 +44,7 @@ const makeFile = (key: string, content: Buffer) => {
 type DataFile = File & { readonly content: Buffer }
 function createS3() {
     const files = new Map<string, DataFile>()
-    const client = stub(S3Client, { regionCode: bucket.region })
+    const client = stub(S3Client, { regionCode: bucket.BucketRegion })
     client.downloadFileStream.callsFake(async (_, key) => bufferToStream(getFile(key).content))
     client.headObject.callsFake(async (req) => getFile(req.key))
     client.uploadFile.callsFake(async (req) => {
@@ -65,7 +61,7 @@ function createS3() {
         const upload = stub(Upload)
         upload.done.resolves({
             ...newFile,
-            Bucket: bucket.name,
+            Bucket: bucket.Name,
             Location: newFile.key,
             $metadata: {},
         })

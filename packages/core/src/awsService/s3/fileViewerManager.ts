@@ -38,7 +38,7 @@ export interface S3Tab {
 // TODO: just use this everywhere? A bucket-less S3 file doesn't make sense.
 // Combines the File and Bucket interface as they mostly belong together
 export interface S3File extends S3.File {
-    readonly bucket: S3.Bucket
+    readonly bucket: S3.S3Bucket
 }
 
 export class S3FileProvider implements FileProvider {
@@ -55,7 +55,7 @@ export class S3FileProvider implements FileProvider {
 
     public async refresh(): Promise<void> {
         const { bucket, key } = this._file
-        const stats = await this.client.headObject({ bucketName: bucket.name, key })
+        const stats = await this.client.headObject({ bucketName: bucket.Name, key })
 
         this.updateETag(stats.ETag)
         this._file.sizeBytes = stats.ContentLength ?? this._file.sizeBytes
@@ -98,7 +98,7 @@ export class S3FileProvider implements FileProvider {
                 .uploadFile({
                     content,
                     key: this._file.key,
-                    bucketName: this._file.bucket.name,
+                    bucketName: this._file.bucket.Name,
                     contentType: this._file.ContentType ?? mimeType,
                 })
                 .then((u) => u.done())
@@ -262,7 +262,7 @@ export class S3FileViewerManager {
     }
 
     private registerProvider(file: S3File, uri: vscode.Uri): vscode.Disposable {
-        const provider = new S3FileProvider(this.clientFactory(file.bucket.region), file)
+        const provider = new S3FileProvider(this.clientFactory(file.bucket.BucketRegion), file)
 
         return vscode.Disposable.from(
             this.fs.registerProvider(uri, provider),
@@ -373,7 +373,7 @@ export class S3FileViewerManager {
         const scheme = mode === TabMode.Read ? this.schemes.read : this.schemes.edit
 
         return vscode.Uri.parse(`${scheme}:`, true).with({
-            path: ['', file.bucket.region, file.bucket.name, file.key].join('/'),
+            path: ['', file.bucket.BucketRegion, file.bucket.Name, file.key].join('/'),
         })
     }
 }

@@ -115,7 +115,7 @@ export class ResourceTypeNode extends AWSTreeNodeBase implements LoadMoreNode {
         if (this.typeName === 'AWS::S3::Bucket') {
             const s3 = new S3Client(this.parent.region)
             const buckets = await s3.listBuckets()
-            newResources = buckets.buckets.map((bucket) => new ResourceNode(this, bucket.name, this.childContextValue))
+            newResources = buckets.buckets.map((bucket) => new ResourceNode(this, bucket.Name, this.childContextValue))
         } else {
             const response = await this.cloudControl.listResources({
                 TypeName: this.typeName,

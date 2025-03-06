@@ -263,9 +263,9 @@ describe('generateDeployedNode', () => {
                 expectedStackName,
                 S3BucketNode
             )
-            assert.strictEqual(deployedResourceNodeExplorerNode.bucket.name, expectedS3BucketName)
-            assert.strictEqual(deployedResourceNodeExplorerNode.bucket.arn, expectedS3BucketArn)
-            assert.strictEqual(deployedResourceNodeExplorerNode.bucket.region, expectedRegionCode)
+            assert.strictEqual(deployedResourceNodeExplorerNode.bucket.Name, expectedS3BucketName)
+            assert.strictEqual(deployedResourceNodeExplorerNode.bucket.Arn, expectedS3BucketArn)
+            assert.strictEqual(deployedResourceNodeExplorerNode.bucket.BucketRegion, expectedRegionCode)
             assert.strictEqual(deployedResourceNodeExplorerNode.contextValue, 'awsS3BucketNode')
             assert.strictEqual(deployedResourceNodeExplorerNode.label, expectedS3BucketName)
             assert.strictEqual(deployedResourceNodeExplorerNode.tooltip, expectedS3BucketName)
