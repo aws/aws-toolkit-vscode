@@ -58,7 +58,7 @@ export const cancelFixingTestButton: ChatItemButton = {
 
 export const buildProgressField: ProgressField = {
     ...baseProgressField,
-    text: 'Compiling project...',
+    text: 'Project compiling...',
     actions: [cancelBuildProgressButton],
 }
 
