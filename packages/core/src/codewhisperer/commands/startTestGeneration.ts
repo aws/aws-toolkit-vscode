@@ -44,6 +44,7 @@ export async function startTestGenerationProcess(
             logger.verbose(`Tab ID mismatch: ${tabID} !== ${session.tabID}`)
             return
         }
+        testGenState.setToNotStarted()
         /**
          * Step 1: Zip the project
          */
@@ -212,7 +213,7 @@ function runLocalBuild(
         if (spawnResult.stderr) {
             spawnResult.stderr.on('data', async (data) => {
                 const output = data.toString().trim()
-                getLogger().warn(`BUILD ERROR: ${output}`)
+                getLogger().warn(`${output}`)
                 buildLogs += output
             })
         }
