@@ -282,41 +282,4 @@ describe('telemetryHelper', function () {
             assert.strictEqual(actual, 'Empty')
         })
     })
-
-    describe('recordUserDecisionTelemetry', function () {
-        beforeEach(async function () {
-            await resetCodeWhispererGlobalVariables()
-        })
-
-        it('Should call telemetry record for each recommendations with proper arguments', async function () {
-            const telemetryHelper = new TelemetryHelper()
-            const response = [{ content: "print('Hello')" }]
-            const requestIdList = ['test_x', 'test_x', 'test_y']
-            const sessionId = 'test_x'
-            session.triggerType = 'AutoTrigger'
-            const assertTelemetry = assertTelemetryCurried('codewhisperer_userDecision')
-            const suggestionState = new Map<number, string>([[0, 'Showed']])
-            const completionTypes = new Map<number, CodewhispererCompletionType>([[0, 'Line']])
-            telemetryHelper.recordUserDecisionTelemetry(
-                requestIdList,
-                sessionId,
-                response,
-                0,
-                0,
-                completionTypes,
-                suggestionState
-            )
-            assertTelemetry({
-                codewhispererRequestId: 'test_x',
-                codewhispererSessionId: 'test_x',
-                codewhispererPaginationProgress: 0,
-                codewhispererTriggerType: 'AutoTrigger',
-                codewhispererSuggestionIndex: 0,
-                codewhispererSuggestionState: 'Accept',
-                codewhispererSuggestionReferenceCount: 0,
-                codewhispererCompletionType: 'Line',
-                codewhispererLanguage: 'python',
-            })
-        })
-    })
 })

@@ -158,25 +158,6 @@ export class TelemetryHelper {
     ) {
         const selectedCustomization = getSelectedCustomization()
 
-        telemetry.codewhisperer_userDecision.emit({
-            codewhispererCompletionType: 'Line',
-            codewhispererGettingStartedTask: session.taskType,
-            codewhispererLanguage: language,
-            codewhispererPaginationProgress: paginationIndex,
-            codewhispererRequestId: requestIdList[0],
-            codewhispererSessionId: sessionId ? sessionId : undefined,
-            codewhispererSuggestionIndex: -1,
-            codewhispererSuggestionState: 'Empty',
-            codewhispererSuggestionReferenceCount: 0,
-            codewhispererSuggestionReferences: undefined,
-            codewhispererSupplementalContextIsUtg: supplementalContextMetadata?.isUtg,
-            codewhispererSupplementalContextLength: supplementalContextMetadata?.contentsLength,
-            codewhispererSupplementalContextTimeout: supplementalContextMetadata?.isProcessTimeout,
-            codewhispererTriggerType: session.triggerType,
-            credentialStartUrl: AuthUtil.instance.startUrl,
-            traceId: this.traceId,
-        })
-
         telemetry.codewhisperer_userTriggerDecision.emit({
             codewhispererAutomatedTriggerType: session.autoTriggerType,
             codewhispererClassifierResult: this.classifierResult,
@@ -297,7 +278,6 @@ export class TelemetryHelper {
                 credentialStartUrl: AuthUtil.instance.startUrl,
                 traceId: this.traceId,
             }
-            telemetry.codewhisperer_userDecision.emit(event)
             events.push(event)
         }
 
