@@ -1,4 +1,0 @@
-{
-	"type": "Feature",
-	"description": "Step Functions: Allow starting state machine execution with no input provided"
-}

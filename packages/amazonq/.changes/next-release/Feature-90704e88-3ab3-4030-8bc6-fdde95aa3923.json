@@ -1,4 +1,0 @@
-{
-	"type": "Feature",
-	"description": "/review: Code reviews are now created with additional workspace context to enable grouping of related scans in the backend"
-}
