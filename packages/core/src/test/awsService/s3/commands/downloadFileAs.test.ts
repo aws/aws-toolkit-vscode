@@ -10,7 +10,7 @@ import { downloadFileAsCommand } from '../../../../awsService/s3/commands/downlo
 import { S3BucketNode } from '../../../../awsService/s3/explorer/s3BucketNode'
 import { S3FileNode } from '../../../../awsService/s3/explorer/s3FileNode'
 import { S3Node } from '../../../../awsService/s3/explorer/s3Nodes'
-import { Bucket, S3Client } from '../../../../shared/clients/s3Client'
+import { S3Bucket, S3Client } from '../../../../shared/clients/s3'
 import { bufferToStream } from '../../../../shared/utilities/streamUtilities'
 import { MockOutputChannel } from '../../../mockOutputChannel'
 import { makeTemporaryToolkitFolder } from '../../../../shared/filesystemUtilities'
@@ -40,7 +40,7 @@ describe('downloadFileAsCommand', function () {
     beforeEach(function () {
         s3 = {} as any as S3Client
 
-        const bucket: Bucket = { name: bucketName, region: 'region', arn: 'arn' }
+        const bucket: S3Bucket = { Name: bucketName, BucketRegion: 'region', Arn: 'arn' }
         bucketNode = new S3BucketNode(bucket, {} as S3Node, s3)
         node = new S3FileNode(bucket, { name: fileName, key: key, arn: 'arn', lastModified, sizeBytes }, bucketNode, s3)
     })
