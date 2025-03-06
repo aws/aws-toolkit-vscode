@@ -4,7 +4,6 @@
  */
 
 import assert from 'assert'
-import { S3 } from 'aws-sdk'
 import sinon from 'sinon'
 import { S3Client } from '../../../../shared/clients/s3'
 import * as SamUtilsModule from '../../../../shared/sam/utils'
@@ -12,6 +11,7 @@ import { createBucketNamePrompter } from '../../../../shared/ui/sam/bucketPrompt
 import { AsyncCollection } from '../../../../shared/utilities/asyncCollection'
 import { RequiredProps } from '../../../../shared/utilities/tsUtils'
 import { samDeployUrl } from '../../../../shared/constants'
+import { Bucket } from '@aws-sdk/client-s3'
 
 describe('createBucketNamePrompter', () => {
     let sandbox: sinon.SinonSandbox
@@ -32,7 +32,7 @@ describe('createBucketNamePrompter', () => {
             { Name: 'bucket1', region: 'us-east-1' },
             { Name: 'bucket2', region: 'us-east-1' },
             { Name: 'bucket3', region: 'us-east-1' },
-        ] as unknown as AsyncCollection<RequiredProps<S3.Bucket, 'Name'> & { readonly region: string }>
+        ] as unknown as AsyncCollection<RequiredProps<Bucket, 'Name'> & { readonly region: string }>
 
         const stub = sandbox.stub(s3Client, 'listBucketsIterable').callsFake(() => {
             return buckets
@@ -59,7 +59,7 @@ describe('createBucketNamePrompter', () => {
 
     it('should include no items found message if no stacks exist', () => {
         const stub = sandbox.stub(s3Client, 'listBucketsIterable').callsFake(() => {
-            return [] as unknown as AsyncCollection<RequiredProps<S3.Bucket, 'Name'> & { readonly region: string }>
+            return [] as unknown as AsyncCollection<RequiredProps<Bucket, 'Name'> & { readonly region: string }>
         })
         sandbox.stub(SamUtilsModule, 'getRecentResponse').returns(undefined) // Mock recent bucket
 

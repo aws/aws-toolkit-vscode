@@ -5,7 +5,6 @@
 
 import assert from 'assert'
 import * as vscode from 'vscode'
-import { S3 } from 'aws-sdk'
 import {
     FileSizeBytes,
     getFilesToUpload,
@@ -20,6 +19,7 @@ import { MockOutputChannel } from '../../../mockOutputChannel'
 import { getTestWindow } from '../../../shared/vscode/window'
 import sinon from 'sinon'
 import { Upload } from '@aws-sdk/lib-storage'
+import { Bucket } from '@aws-sdk/client-s3'
 
 describe('uploadFileCommand', function () {
     const bucketName = 'bucket-name'
@@ -253,7 +253,7 @@ describe('promptUserForBucket', async function () {
     const fileLocation = vscode.Uri.file('/file.jpg')
 
     let s3: S3Client
-    let buckets: S3.Bucket[]
+    let buckets: Bucket[]
 
     const promptUndef: <T extends vscode.QuickPickItem>(opts: {
         picker: vscode.QuickPick<T>
