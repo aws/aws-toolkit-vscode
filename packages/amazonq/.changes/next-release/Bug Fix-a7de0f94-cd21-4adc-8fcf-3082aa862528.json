@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "/review: show code diff for fix preview"
+}
