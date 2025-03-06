@@ -860,6 +860,7 @@ export class TestController {
                 messageId: '',
                 followUps: followUps,
             })
+            this.messenger.sendUpdatePlaceholder(message.tabID, `Please select an action to proceed`)
             this.messenger.sendChatInputEnabled(message.tabID, false)
         } else {
             TelemetryHelper.instance.sendUnitTestGenerationEvent(
@@ -1040,6 +1041,7 @@ export class TestController {
             messageId: '',
             followUps: followUps,
         })
+        this.messenger.sendUpdatePlaceholder(data.tabID, `Please select an action to proceed`)
         this.messenger.sendChatInputEnabled(data.tabID, false)
     }
 
