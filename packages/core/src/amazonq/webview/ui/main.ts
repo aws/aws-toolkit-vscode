@@ -777,6 +777,15 @@ export const createMynahUI = (
         onCustomFormAction: (tabId, action, eventId) => {
             connector.onCustomFormAction(tabId, undefined, action, eventId)
         },
+        onFormTextualItemKeyPress: (
+            event: KeyboardEvent,
+            formData: Record<string, string>,
+            itemId: string,
+            tabId: string,
+            eventId?: string
+        ) => {
+            return connector.onFormTextualItemKeyPress(event, formData, itemId, tabId, eventId)
+        },
         onChatPromptProgressActionButtonClicked: (tabID, action) => {
             connector.onCustomFormAction(tabID, undefined, action)
         },

@@ -160,6 +160,29 @@ export class Connector extends BaseConnector {
         )
     }
 
+    onFormTextualItemKeyPress = (
+        tabId: string,
+        event: KeyboardEvent,
+        formData: Record<string, string>,
+        itemId: string,
+        eventId?: string
+    ) => {
+        if (itemId === 'prompt-name' && event.key === 'Enter') {
+            event.preventDefault()
+            this.sendMessageToExtension({
+                command: 'form-action-click',
+                action: {
+                    id: 'submit-create-prompt',
+                    formItemValues: formData,
+                },
+                tabType: this.getTabType(),
+                tabID: tabId,
+            })
+            return true
+        }
+        return false
+    }
+
     handleMessageReceive = async (messageData: any): Promise<void> => {
         if (messageData.type === 'chatMessage') {
             await this.processChatMessage(messageData)
