@@ -127,24 +127,16 @@ function toBranch(
     }
 }
 
-interface RetryOptions {
-    retryDelayOptions?: RetryDelayOptions
-    maxRetries?: number
-}
-
 async function createCodeCatalystClient(
     connection: SsoConnection,
     regionCode: string,
-    endpoint: string | AWS.Endpoint,
-    retryOptions: RetryOptions
+    endpoint: string
 ): Promise<CodeCatalyst> {
     const c = await globals.sdkClientBuilder.createAwsService(CodeCatalyst, {
         region: regionCode,
         correctClockSkew: true,
         endpoint: endpoint,
         token: new TokenProvider(connection),
-        retryDelayOptions: retryOptions.retryDelayOptions,
-        maxRetries: retryOptions.maxRetries,
     } as ServiceConfigurationOptions)
 
     return c
@@ -178,10 +170,9 @@ export async function createClient(
     connection: SsoConnection,
     regionCode = getCodeCatalystConfig().region,
     endpoint = getCodeCatalystConfig().endpoint,
-    retryOptions: RetryOptions = {},
     authOptions: AuthOptions = {}
 ): Promise<CodeCatalystClient> {
-    const sdkClient = await createCodeCatalystClient(connection, regionCode, endpoint, retryOptions)
+    const sdkClient = await createCodeCatalystClient(connection, regionCode, endpoint)
     const c = new CodeCatalystClientInternal(connection, sdkClient)
     try {
         await c.verifySession()
