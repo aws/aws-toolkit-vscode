@@ -13,8 +13,8 @@ import {
 } from '../../../awsService/accessanalyzer/vue/iamPolicyChecks'
 import { globals } from '../../../shared'
 import { AccessAnalyzer, Config } from 'aws-sdk'
-import * as s3Client from '../../../shared/clients/s3Client'
-import { DefaultS3Client } from '../../../shared/clients/s3Client'
+import * as s3Client from '../../../shared/clients/s3'
+import { S3Client } from '../../../shared/clients/s3'
 import * as iamPolicyChecks from '../../../awsService/accessanalyzer/vue/iamPolicyChecks'
 import * as vscode from 'vscode'
 import { IamPolicyChecksConstants } from '../../../awsService/accessanalyzer/vue/constants'
@@ -45,12 +45,12 @@ describe('iamPolicyChecks', function () {
 
 describe('_readCustomChecksFile', () => {
     let parseS3UriStub: sinon.SinonStub
-    let s3ClientStub: sinon.SinonStubbedInstance<DefaultS3Client>
+    let s3ClientStub: sinon.SinonStubbedInstance<S3Client>
     sandbox = sinon.createSandbox()
 
     beforeEach(() => {
         parseS3UriStub = sandbox.stub(s3Client, 'parseS3Uri')
-        s3ClientStub = sandbox.createStubInstance(DefaultS3Client)
+        s3ClientStub = sandbox.createStubInstance(S3Client)
     })
 
     afterEach(function () {
