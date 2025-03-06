@@ -51,14 +51,18 @@ export interface AwsClient {
     middlewareStack: {
         add: MiddlewareStack<any, MetadataBearer>['add']
     }
-    send: (command: AwsCommand, options?: any) => Promise<any>
+    send: (command: AwsCommand<object, object>, options?: any) => Promise<any>
     destroy: () => void
 }
 
-export interface AwsCommand {
-    input: object
+export interface AwsCommand<InputType extends object, OutputType extends object> {
+    input: InputType
     middlewareStack: any
     resolveMiddleware: (stack: any, configuration: any, options: any) => Handler<any, any>
+}
+
+export interface AwsCommandOutput {
+    $metadata: object
 }
 
 export interface AwsClientOptions {
