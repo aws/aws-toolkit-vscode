@@ -384,6 +384,13 @@ export class TestController {
                 this.messenger.sendChatInputEnabled(data.tabID, true)
                 await this.sessionCleanUp()
                 break
+            case ButtonActions.STOP_FIXING_TEST:
+                testGenState.setToCancelling()
+                void this.handleUpdatePromptProgress({ status: 'cancel', tabID: data.tabID })
+                telemetry.ui_click.emit({ elementId: 'unitTestGeneration_cancelFixingTest' })
+                this.messenger.sendChatInputEnabled(data.tabID, true)
+                await this.sessionCleanUp()
+                break
         }
     }
     // This function handles actions if user gives any input from the chatInput box

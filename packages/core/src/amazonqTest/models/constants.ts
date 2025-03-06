@@ -13,6 +13,11 @@ export const testChat = 'testChat'
 
 export const maxUserPromptLength = 4096 // user prompt character limit from MPS and API model.
 
+const baseProgressField: Partial<ProgressField> = {
+    status: 'default',
+    value: -1,
+}
+
 export const cancelTestGenButton: ChatItemButton = {
     id: ButtonActions.STOP_TEST_GEN,
     text: 'Cancel',
@@ -20,8 +25,7 @@ export const cancelTestGenButton: ChatItemButton = {
 }
 
 export const testGenProgressField: ProgressField = {
-    status: 'default',
-    value: -1,
+    ...baseProgressField,
     text: 'Generating unit tests...',
     actions: [cancelTestGenButton],
 }
@@ -46,25 +50,29 @@ export const cancelBuildProgressButton: ChatItemButton = {
     icon: 'cancel' as MynahIcons,
 }
 
+export const cancelFixingTestButton: ChatItemButton = {
+    id: ButtonActions.STOP_FIXING_TEST,
+    text: 'Cancel',
+    icon: 'cancel' as MynahIcons,
+}
+
 export const buildProgressField: ProgressField = {
-    status: 'default',
-    value: -1,
+    ...baseProgressField,
     text: 'Compiling project...',
     actions: [cancelBuildProgressButton],
 }
 
 export const fixingTestProgressField: ProgressField = {
-    status: 'default',
-    value: -1,
+    ...baseProgressField,
     text: 'Fixing test failures...',
-    actions: [cancelBuildProgressButton],
+    actions: [cancelFixingTestButton],
 }
 
 export const errorProgressField: ProgressField = {
     status: 'error',
     text: 'Error...Input needed',
     value: -1,
-    actions: [cancelBuildProgressButton],
+    actions: [cancelTestGenButton],
 }
 
 export const testGenSummaryMessage = (
