@@ -416,7 +416,7 @@ export class S3Client extends ClientWrapper<S3ClientSDK> {
         getLogger().debug('ListBuckets called')
 
         const toDefaultBucket = (b: Bucket & { Name: string; BucketRegion: string }) =>
-            toBucket(b.Name, this.regionCode, this.partitionId)
+            toBucket(b.Name, b.BucketRegion, this.partitionId)
         const buckets = await this.listValidBuckets(paginateBuckets).flatten().map(toDefaultBucket).promise()
         const response = { buckets }
         getLogger().debug('ListBuckets returned response: %O', response)
@@ -644,25 +644,6 @@ export class S3Client extends ClientWrapper<S3ClientSDK> {
         return response
     }
 }
-
-/**
- * @deprecated This should be refactored the same way as {@link toFile}
- */
-// export class DefaultBucket {
-//     public readonly name: string
-//     public readonly region: string
-//     public readonly arn: string
-
-//     public constructor({ partitionId, region, name }: { partitionId: string; region: string; name: string }) {
-//         this.name = name
-//         this.region = region
-//         this.arn = buildArn({ partitionId, bucketName: name })
-//     }
-
-//     public [inspect.custom](): string {
-//         return `Bucket (name=${this.name}, region=${this.region}, arn=${this.arn})`
-//     }
-// }
 
 /**
  * @deprecated This should be refactored the same way as {@link toFile}
