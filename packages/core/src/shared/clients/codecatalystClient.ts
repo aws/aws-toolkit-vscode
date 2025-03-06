@@ -28,11 +28,12 @@ import {
     ListSourceRepositoriesItem,
     ListSourceRepositoriesItems,
 } from 'aws-sdk/clients/codecatalyst'
+import { CodeCatalystClient as CodeCatalystSDKClient } from '@aws-sdk/client-codecatalyst'
 import { truncateProps } from '../utilities/textUtilities'
 import { SsoConnection } from '../../auth/connection'
 import { DevSettings } from '../settings'
-import { RetryDelayOptions } from 'aws-sdk/lib/config-base'
 import { getServiceEnvVarConfig } from '../vscode/env'
+import { AwsCommand, AwsCommandOutput } from '../awsClientBuilderV3'
 
 export interface CodeCatalystConfig {
     readonly region: string
@@ -142,6 +143,21 @@ async function createCodeCatalystClient(
     return c
 }
 
+function createCodeCatalystClientV3(
+    connection: SsoConnection,
+    regionCode: string,
+    endpoint: string
+): CodeCatalystSDKClient {
+    return globals.sdkClientBuilderV3.createAwsService({
+        serviceClient: CodeCatalystSDKClient,
+        clientOptions: {
+            region: regionCode,
+            endpoint: endpoint,
+            token: new TokenProvider(connection),
+        },
+    })
+}
+
 export type UserDetails = RequiredProps<
     CodeCatalyst.GetUserDetailsResponse,
     'userId' | 'userName' | 'displayName' | 'primaryEmail'
@@ -173,7 +189,8 @@ export async function createClient(
     authOptions: AuthOptions = {}
 ): Promise<CodeCatalystClient> {
     const sdkClient = await createCodeCatalystClient(connection, regionCode, endpoint)
-    const c = new CodeCatalystClientInternal(connection, sdkClient)
+    const sdkv3Client = await createCodeCatalystClientV3(connection, regionCode, endpoint)
+    const c = new CodeCatalystClientInternal(connection, sdkClient, sdkv3Client)
     try {
         await c.verifySession()
     } catch (e) {
@@ -221,7 +238,8 @@ class CodeCatalystClientInternal {
 
     public constructor(
         private readonly connection: SsoConnection,
-        private readonly sdkClient: CodeCatalyst
+        private readonly sdkClient: CodeCatalyst,
+        private readonly sdkClientV3: CodeCatalystSDKClient
     ) {
         this.log = logger.getLogger()
     }
@@ -238,16 +256,58 @@ class CodeCatalystClientInternal {
         return { id: this.userDetails.userId, name: this.userDetails.userName }
     }
 
+    private async callV3<
+        Command extends AwsCommand<CommandInput, CommandOutput>,
+        CommandInput extends object,
+        CommandOutput extends AwsCommandOutput,
+    >(cmd: Command, silent: true, defaultVal: CommandOutput): Promise<CommandOutput>
+    private async callV3<
+        Command extends AwsCommand<CommandInput, CommandOutput>,
+        CommandInput extends object,
+        CommandOutput extends AwsCommandOutput,
+    >(cmd: Command, silent: false): Promise<CommandOutput>
+    private async callV3<
+        Command extends AwsCommand<CommandInput, CommandOutput>,
+        CommandInput extends object,
+        CommandOutput extends AwsCommandOutput,
+    >(cmd: Command, silent: boolean, defaultVal?: CommandOutput): Promise<CommandOutput> {
+        const bearerToken = (await this.connection.getToken()).accessToken
+
+        return new Promise<CommandOutput>(async (resolve, reject) => {
+            try {
+                const data = await this.sdkClientV3.send<CommandInput, CommandOutput>(cmd)
+                resolve(data)
+            } catch (e) {
+                const error = e as Error
+                if (isAccessDeniedError(e)) {
+                    CodeCatalystClientInternal.identityCache.delete(bearerToken)
+                }
+                if (silent) {
+                    if (defaultVal === undefined) {
+                        throw Error()
+                    }
+                    return defaultVal
+                } else {
+                    throw new ToolkitError(`CodeCatalyst: request failed with error`, { cause: error })
+                }
+            }
+        })
+
+        function isAccessDeniedError(e: any): boolean {
+            return e.code === 'AccessDeniedException' || e.statusCode === 401
+        }
+    }
+
     private async call<T>(req: AWS.Request<T, AWS.AWSError>, silent: true, defaultVal: T): Promise<T>
     private async call<T>(req: AWS.Request<T, AWS.AWSError>, silent: false): Promise<T>
     private async call<T>(req: AWS.Request<T, AWS.AWSError>, silent: boolean, defaultVal?: T): Promise<T> {
         const log = this.log
         const bearerToken = (await this.connection.getToken()).accessToken
         const perflog = new PerfLog('API request')
+        const r = req as any
 
         return new Promise<T>((resolve, reject) => {
             req.send(function (e, data) {
-                const r = req as any
                 const timecost = perflog.elapsed().toFixed(1)
                 if (e) {
                     if (e.code === 'AccessDeniedException' || e.statusCode === 401) {
