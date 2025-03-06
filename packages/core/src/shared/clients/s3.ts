@@ -383,15 +383,11 @@ export class S3Client extends ClientWrapper<S3ClientSDK> {
         )
     }
 
-    private listDefaultBuckets(paginateBuckets: () => AsyncCollection<S3Bucket[]> = this.paginateBuckets.bind(this)) {
-        const bucketsCollection = paginateBuckets().map(async (page) =>
-            page
-                .filter(hasName)
-                .filter(hasRegion)
-                .map((b) => toDefaultBucket(b, this.partitionId))
-        )
-
-        return bucketsCollection
+    // TODO: replace calls to listBucketsIterable and listBuckets with calls to this function once "Bucket" type is unified.
+    private listValidBuckets(
+        paginateBuckets: () => AsyncCollection<S3Bucket[]> = this.paginateBuckets.bind(this)
+    ): AsyncCollection<(S3Bucket & { Name: string; BucketRegion: string })[]> {
+        return paginateBuckets().map(async (page) => page.filter(hasName).filter(hasRegion))
 
         function hasName<B extends S3Bucket>(b: B): b is B & { Name: string } {
             return b.Name !== undefined
@@ -400,40 +396,32 @@ export class S3Client extends ClientWrapper<S3ClientSDK> {
         function hasRegion<B extends S3Bucket>(b: B): b is B & { BucketRegion: string } {
             return b.BucketRegion !== undefined
         }
-
-        function toDefaultBucket(b: S3Bucket & { Name: string; BucketRegion: string }, partitionId: string) {
-            return new DefaultBucket({
-                partitionId: partitionId,
-                region: b.BucketRegion,
-                name: b.Name,
-            })
-        }
     }
 
     public listBucketsIterable(): AsyncCollection<RequiredProps<S3Bucket, 'Name'> & { readonly region: string }> {
-        return this.listDefaultBuckets()
+        return this.listValidBuckets()
             .flatten()
             .map((b) => {
                 return {
-                    Name: b.name,
-                    BucketRegion: b.region,
-                    region: b.region,
+                    region: b.BucketRegion,
+                    ...b,
                 }
             })
     }
 
-    /**
-     * Lists buckets in the region of the client.
-     *
-     * @throws Error if there is an error calling S3.
-     */
-    // TODO: prefer iterable version above.
     public async listBuckets(
         paginateBuckets: () => AsyncCollection<S3Bucket[]> = this.paginateBuckets.bind(this)
     ): Promise<ListBucketsResponse> {
         getLogger().debug('ListBuckets called')
 
-        const buckets = await this.listDefaultBuckets(paginateBuckets).flatten().promise()
+        const toDefaultBucket = (b: S3Bucket & { Name: string; BucketRegion: string }) => {
+            return new DefaultBucket({
+                partitionId: this.partitionId,
+                region: b.BucketRegion,
+                name: b.Name,
+            })
+        }
+        const buckets = await this.listValidBuckets(paginateBuckets).flatten().map(toDefaultBucket).promise()
         const response = { buckets }
         getLogger().debug('ListBuckets returned response: %O', response)
         return response
