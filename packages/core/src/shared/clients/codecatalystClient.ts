@@ -33,6 +33,17 @@ import {
     CreateAccessTokenCommand,
     CreateAccessTokenRequest,
     CreateAccessTokenResponse,
+    GetProjectCommand,
+    GetProjectCommandOutput,
+    GetProjectRequest,
+    GetSpaceCommand,
+    GetSpaceCommandOutput,
+    GetSpaceRequest,
+    GetSubscriptionCommand,
+    GetSubscriptionRequest,
+    GetUserDetailsCommand,
+    GetUserDetailsCommandOutput,
+    GetUserDetailsRequest,
 } from '@aws-sdk/client-codecatalyst'
 import { truncateProps } from '../utilities/textUtilities'
 import { SsoConnection } from '../../auth/connection'
@@ -431,10 +442,8 @@ class CodeCatalystClientInternal extends ClientWrapper<CodeCatalystSDKClient> {
         }
     }
 
-    public async getSubscription(
-        request: CodeCatalyst.GetSubscriptionRequest
-    ): Promise<CodeCatalyst.GetSubscriptionResponse> {
-        return this.call(this.sdkClient.getSubscription(request), false)
+    public async getSubscription(request: GetSubscriptionRequest): Promise<CodeCatalyst.GetSubscriptionResponse> {
+        return this.callV3(GetSubscriptionCommand, request, false)
     }
 
     /**
@@ -471,22 +480,22 @@ class CodeCatalystClientInternal extends ClientWrapper<CodeCatalystSDKClient> {
         return (await this.connection.getToken()).accessToken
     }
 
-    private async getUserDetails(args: CodeCatalyst.GetUserDetailsRequest) {
-        const resp = await this.call(this.sdkClient.getUserDetails(args), false)
+    private async getUserDetails(args: GetUserDetailsRequest) {
+        const resp: GetUserDetailsCommandOutput = await this.callV3(GetUserDetailsCommand, args, false)
         assertHasProps(resp, 'userId', 'userName', 'displayName', 'primaryEmail')
 
         return { ...resp, version: resp.version } as const
     }
 
-    public async getSpace(request: CodeCatalyst.GetSpaceRequest): Promise<CodeCatalystOrg> {
-        const resp = await this.call(this.sdkClient.getSpace(request), false)
-
+    public async getSpace(request: GetSpaceRequest): Promise<CodeCatalystOrg> {
+        const resp: GetSpaceCommandOutput = await this.callV3(GetSpaceCommand, request, false)
+        assertHasProps(resp, 'name', 'regionName')
         return { ...resp, type: 'org' }
     }
 
-    public async getProject(request: CodeCatalyst.GetProjectRequest): Promise<CodeCatalystProject> {
-        const resp = await this.call(this.sdkClient.getProject(request), false)
-
+    public async getProject(request: RequiredProps<GetProjectRequest, 'spaceName'>): Promise<CodeCatalystProject> {
+        const resp: GetProjectCommandOutput = await this.callV3(GetProjectCommand, request, false)
+        assertHasProps(resp, 'name')
         return { ...resp, type: 'project', org: { name: request.spaceName } }
     }
 
