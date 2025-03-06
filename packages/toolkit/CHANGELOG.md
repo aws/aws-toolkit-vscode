@@ -1,3 +1,12 @@
+## 3.49.0 2025-03-06
+
+- **Feature** Step Functions: Updated previewStateMachine command to open with Workflow Studio instead
+- **Feature** Lambda: Users can explore Serverless Land patterns
+- **Feature** Step Functions: Added support for calling the TestState API in Workflow Studio
+- **Feature** Step Functions: Added support for using Workflow Studio for editing ASL files in JSON and YAML
+- **Feature** AppBuilder: selecting a runtime in the local invoke view can override the runtime specified in template.yaml
+- **Feature** Step Functions: Allow starting state machine execution with no input provided
+
 ## 3.48.0 2025-02-27
 
 - **Feature** Step Functions: Expand data source and output options for Distributed Map in ASL language schema

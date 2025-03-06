@@ -1,4 +1,0 @@
-{
-	"type": "Feature",
-	"description": "AppBuilder: selecting a runtime in the local invoke view can override the runtime specified in template.yaml"
-}
