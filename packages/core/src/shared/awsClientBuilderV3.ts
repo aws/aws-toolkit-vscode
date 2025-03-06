@@ -61,10 +61,6 @@ export interface AwsCommand<InputType extends object, OutputType extends object>
     resolveMiddleware: (stack: any, configuration: any, options: any) => Handler<any, any>
 }
 
-export interface AwsCommandOutput {
-    $metadata: object
-}
-
 export interface AwsClientOptions {
     credentials: AwsCredentialIdentityProvider
     region: string | Provider<string>

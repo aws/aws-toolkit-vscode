@@ -28,12 +28,18 @@ import {
     ListSourceRepositoriesItem,
     ListSourceRepositoriesItems,
 } from 'aws-sdk/clients/codecatalyst'
-import { CodeCatalystClient as CodeCatalystSDKClient } from '@aws-sdk/client-codecatalyst'
+import {
+    CodeCatalystClient as CodeCatalystSDKClient,
+    CreateAccessTokenCommand,
+    CreateAccessTokenRequest,
+    CreateAccessTokenResponse,
+} from '@aws-sdk/client-codecatalyst'
 import { truncateProps } from '../utilities/textUtilities'
 import { SsoConnection } from '../../auth/connection'
 import { DevSettings } from '../settings'
 import { getServiceEnvVarConfig } from '../vscode/env'
-import { AwsCommand, AwsCommandOutput } from '../awsClientBuilderV3'
+import { AwsCommand } from '../awsClientBuilderV3'
+import { ClientWrapper } from './clientWrapper'
 
 export interface CodeCatalystConfig {
     readonly region: string
@@ -189,7 +195,7 @@ export async function createClient(
     authOptions: AuthOptions = {}
 ): Promise<CodeCatalystClient> {
     const sdkClient = await createCodeCatalystClient(connection, regionCode, endpoint)
-    const sdkv3Client = await createCodeCatalystClientV3(connection, regionCode, endpoint)
+    const sdkv3Client = createCodeCatalystClientV3(connection, regionCode, endpoint)
     const c = new CodeCatalystClientInternal(connection, sdkClient, sdkv3Client)
     try {
         await c.verifySession()
@@ -217,7 +223,7 @@ function fixAliasInRequest<
     return request
 }
 
-class CodeCatalystClientInternal {
+class CodeCatalystClientInternal extends ClientWrapper<CodeCatalystSDKClient> {
     private userDetails?: UserDetails
     private readonly log: logger.Logger
 
@@ -241,11 +247,12 @@ class CodeCatalystClientInternal {
         private readonly sdkClient: CodeCatalyst,
         private readonly sdkClientV3: CodeCatalystSDKClient
     ) {
+        super(sdkClient.config.region!, CodeCatalystSDKClient)
         this.log = logger.getLogger()
     }
 
-    public get regionCode() {
-        return this.sdkClient.config.region!
+    protected override getClient(ignoreCache?: boolean): CodeCatalystSDKClient {
+        return this.sdkClientV3
     }
 
     public get identity(): CodeCatalystClient['identity'] {
@@ -257,25 +264,41 @@ class CodeCatalystClientInternal {
     }
 
     private async callV3<
-        Command extends AwsCommand<CommandInput, CommandOutput>,
         CommandInput extends object,
-        CommandOutput extends AwsCommandOutput,
-    >(cmd: Command, silent: true, defaultVal: CommandOutput): Promise<CommandOutput>
+        CommandOutput extends object,
+        CommandOptions extends CommandInput,
+        Command extends AwsCommand<CommandInput, CommandOutput>,
+    >(
+        cmd: new (o: CommandInput) => Command,
+        commandOptions: CommandOptions,
+        silent: true,
+        defaultVal: CommandOutput
+    ): Promise<CommandOutput>
     private async callV3<
-        Command extends AwsCommand<CommandInput, CommandOutput>,
         CommandInput extends object,
-        CommandOutput extends AwsCommandOutput,
-    >(cmd: Command, silent: false): Promise<CommandOutput>
+        CommandOutput extends object,
+        CommandOptions extends CommandInput,
+        Command extends AwsCommand<CommandInput, CommandOutput>,
+    >(cmd: new (o: CommandInput) => Command, commandOptions: CommandOptions, silent: false): Promise<CommandOutput>
     private async callV3<
-        Command extends AwsCommand<CommandInput, CommandOutput>,
         CommandInput extends object,
-        CommandOutput extends AwsCommandOutput,
-    >(cmd: Command, silent: boolean, defaultVal?: CommandOutput): Promise<CommandOutput> {
+        CommandOutput extends object,
+        CommandOptions extends CommandInput,
+        Command extends AwsCommand<CommandInput, CommandOutput>,
+    >(
+        cmd: new (o: CommandInput) => Command,
+        commandOptions: CommandOptions,
+        silent: boolean,
+        defaultVal?: CommandOutput
+    ): Promise<CommandOutput> {
         const bearerToken = (await this.connection.getToken()).accessToken
 
         return new Promise<CommandOutput>(async (resolve, reject) => {
             try {
-                const data = await this.sdkClientV3.send<CommandInput, CommandOutput>(cmd)
+                const data = await this.makeRequest<CommandInput, CommandOutput, CommandOptions, Command>(
+                    cmd,
+                    commandOptions
+                )
                 resolve(data)
             } catch (e) {
                 const error = e as Error
@@ -286,9 +309,9 @@ class CodeCatalystClientInternal {
                     if (defaultVal === undefined) {
                         throw Error()
                     }
-                    return defaultVal
+                    resolve(defaultVal)
                 } else {
-                    throw new ToolkitError(`CodeCatalyst: request failed with error`, { cause: error })
+                    reject(new ToolkitError(`CodeCatalyst: request failed with error`, { cause: error }))
                 }
             }
         })
@@ -390,10 +413,10 @@ class CodeCatalystClientInternal {
      * @returns PAT secret
      */
     public async createAccessToken(
-        args: CodeCatalyst.CreateAccessTokenRequest
-    ): Promise<CodeCatalyst.CreateAccessTokenResponse> {
+        args: CreateAccessTokenRequest
+    ): Promise<RequiredProps<CreateAccessTokenResponse, 'secret'>> {
         try {
-            return this.call(this.sdkClient.createAccessToken(args), false)
+            return await this.callV3(CreateAccessTokenCommand, args, false)
         } catch (e) {
             if ((e as Error).name === 'ServiceQuotaExceededException') {
                 throw new ToolkitError('Access token limit exceeded', { cause: e as Error })
