@@ -4,7 +4,7 @@
  */
 import * as vscode from 'vscode'
 import globals from '../extensionGlobals'
-import { AwsClient, AwsClientConstructor, AwsCommand } from '../awsClientBuilderV3'
+import { AwsClient, AwsClientConstructor, AwsCommand, AwsCommandConstructor } from '../awsClientBuilderV3'
 import { PaginationConfiguration, Paginator } from '@aws-sdk/types'
 import { AsyncCollection, toCollection } from '../utilities/asyncCollection'
 
@@ -29,7 +29,7 @@ export abstract class ClientWrapper<C extends AwsClient> implements vscode.Dispo
     }
 
     protected async makeRequest<CommandInput extends object, CommandOutput extends object, Command extends AwsCommand>(
-        command: new (o: CommandInput) => Command,
+        command: AwsCommandConstructor<CommandInput, Command>,
         commandOptions: CommandInput
     ): Promise<CommandOutput> {
         return await this.getClient().send(new command(commandOptions))
