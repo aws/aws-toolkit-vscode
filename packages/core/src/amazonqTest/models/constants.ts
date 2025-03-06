@@ -90,14 +90,15 @@ const checkIcons = {
     done: '<span style="color: green;">&#10004;</span>',
     error: '&#10060;',
 }
-
+// TODO: Commenting out this code to do a better UX in the V2 version after science support
+/*
 interface StepStatus {
     step: TestGenerationBuildStep
     status: 'wait' | 'current' | 'done' | 'error'
 }
 
 const stepStatuses: StepStatus[] = []
-
+*/
 export const testGenBuildProgressMessage = (currentStep: TestGenerationBuildStep, status?: string) => {
     const session = ChatSessionManager.Instance.getSession()
     let message = `Sure. This may take a few minutes and I'll update the progress here.\n
@@ -107,6 +108,21 @@ export const testGenBuildProgressMessage = (currentStep: TestGenerationBuildStep
         return message.trim()
     }
 
+    if (currentStep === TestGenerationBuildStep.RUN_BUILD) {
+        message += `${checkIcons['wait']} Project compiling\n\n`
+    }
+    if (currentStep === TestGenerationBuildStep.FIXING_TEST_CASES && session.buildStatus === BuildStatus.FAILURE) {
+        message += `${checkIcons['wait']} Fixing test failures\n\n`
+    } else if (
+        currentStep >= TestGenerationBuildStep.FIXING_TEST_CASES &&
+        session.buildStatus === BuildStatus.FAILURE
+    ) {
+        message += `${checkIcons['done']} Fixed test failures\n\n`
+    }
+    if (currentStep > TestGenerationBuildStep.RUN_BUILD && session.buildStatus === BuildStatus.SUCCESS) {
+        message += `${checkIcons['done']} Project compiled\n${checkIcons['done']} All tests passed\n\n`
+    }
+    /*
     updateStepStatuses(currentStep, status)
 
     if (currentStep >= TestGenerationBuildStep.RUN_BUILD) {
@@ -135,7 +151,7 @@ export const testGenBuildProgressMessage = (currentStep: TestGenerationBuildStep
     ) {
         message += `${checkIcons['done']} Fixed test failures\n\n`
     }
-
+*/
     if (currentStep > TestGenerationBuildStep.PROCESS_TEST_RESULTS && session.buildStatus === BuildStatus.FAILURE) {
         message += `**Results**\n
 Amazon Q executed the tests and identified at least one failure. Below are the suggested fixes.\n\n`
@@ -143,7 +159,7 @@ Amazon Q executed the tests and identified at least one failure. Below are the s
 
     return message.trim()
 }
-
+/*
 const updateStepStatuses = (currentStep: TestGenerationBuildStep, status?: string) => {
     const session = ChatSessionManager.Instance.getSession()
     for (let step = TestGenerationBuildStep.INSTALL_DEPENDENCIES; step <= currentStep; step++) {
@@ -176,3 +192,4 @@ const getIconForStep = (step: TestGenerationBuildStep) => {
     const stepStatus = stepStatuses.find((s) => s.step === step)
     return stepStatus ? checkIcons[stepStatus.status] : checkIcons.wait
 }
+*/
