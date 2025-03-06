@@ -220,7 +220,7 @@ export interface SamCliLocalInvokeInvocationArguments {
     name?: string
     /** AWS region */
     region?: string
-    /** Runtime to use for testing. Can be different from the one specified in the template. */
+    /** Overrides the template-specified runtime. */
     runtime?: Runtime
 }
 
