@@ -160,13 +160,15 @@ export class AWSClientBuilderV3 {
         if (!opt.requestHandler) {
             opt.requestHandler = this.getHttpHandler()
         }
-        // TODO: add tests for refresh logic.
-        opt.credentials = async () => {
-            const creds = await shim.get()
-            if (creds.expiration && creds.expiration.getTime() < Date.now()) {
-                return shim.refresh()
+
+        if (!opt.credentials && !opt.token) {
+            opt.credentials = async () => {
+                const creds = await shim.get()
+                if (creds.expiration && creds.expiration.getTime() < Date.now()) {
+                    return shim.refresh()
+                }
+                return creds
             }
-            return creds
         }
 
         const service = new serviceOptions.serviceClient(opt)
