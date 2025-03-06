@@ -44,6 +44,9 @@ import { once } from './utilities/functionUtils'
 import { isWeb } from './extensionGlobals'
 
 export type AwsClientConstructor<C> = new (o: AwsClientOptions) => C
+export type AwsCommandConstructor<CommandInput extends object, Command extends AwsCommand<CommandInput, object>> = new (
+    o: CommandInput
+) => Command
 
 // AWS-SDKv3 does not export generic types for clients so we need to build them as needed
 // https://github.com/aws/aws-sdk-js-v3/issues/5856#issuecomment-2096950979

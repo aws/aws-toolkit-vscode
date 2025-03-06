@@ -24,7 +24,7 @@ import { VirtualFileSystem } from '../../shared/virtualFilesystem'
 import { Commands } from '../../shared/vscode/commands2'
 
 import * as nls from 'vscode-nls'
-import { DefaultS3Client } from '../../shared/clients/s3Client'
+import { S3Client } from '../../shared/clients/s3'
 import { TreeNode } from '../../shared/treeview/resourceTreeDataProvider'
 import { getSourceNode } from '../../shared/utilities/treeNodeUtils'
 const localize = nls.loadMessageBundle()
@@ -37,7 +37,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
     const fs = new VirtualFileSystem(
         localize('AWS.s3.fileViewer.genericError', 'Unable to open S3 file, try reopening from the explorer')
     )
-    const manager = new S3FileViewerManager((region) => new DefaultS3Client(region), fs)
+    const manager = new S3FileViewerManager((region) => new S3Client(region), fs)
 
     ctx.extensionContext.subscriptions.push(manager)
     ctx.extensionContext.subscriptions.push(
@@ -64,7 +64,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
                 if (!node) {
                     const awsContext = ctx.awsContext
                     const regionCode = awsContext.getCredentialDefaultRegion()
-                    const s3Client = new DefaultS3Client(regionCode)
+                    const s3Client = new S3Client(regionCode)
                     const document = vscode.window.activeTextEditor?.document.uri
                     await uploadFileCommand(s3Client, document)
                 } else {

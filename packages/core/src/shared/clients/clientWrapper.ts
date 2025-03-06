@@ -4,7 +4,7 @@
  */
 import * as vscode from 'vscode'
 import globals from '../extensionGlobals'
-import { AwsClient, AwsClientConstructor, AwsCommand } from '../awsClientBuilderV3'
+import { AwsClient, AwsClientConstructor, AwsCommand, AwsCommandConstructor } from '../awsClientBuilderV3'
 import { PaginationConfiguration, Paginator } from '@aws-sdk/types'
 import { AsyncCollection, toCollection } from '../utilities/asyncCollection'
 
@@ -33,7 +33,7 @@ export abstract class ClientWrapper<C extends AwsClient> implements vscode.Dispo
         CommandOutput extends object,
         CommandOptions extends CommandInput,
         Command extends AwsCommand<CommandInput, CommandOutput>,
-    >(command: new (o: CommandInput) => Command, commandOptions: CommandOptions): Promise<CommandOutput> {
+    >(command: AwsCommandConstructor<CommandInput, Command>, commandOptions: CommandOptions): Promise<CommandOutput> {
         return await this.getClient().send(new command(commandOptions))
     }
 
