@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "/review: Invalid file path characters caused some detections to be skipped on Windows"
+}
