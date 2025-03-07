@@ -24,7 +24,7 @@ import {
     UpdatePromptProgressMessage,
 } from '../../views/connector/connector'
 import { ChatItemType } from '../../../../amazonq/commons/model'
-import { ChatItemAction, ProgressField } from '@aws/mynah-ui'
+import { ChatItemAction, ChatItemButton, ProgressField } from '@aws/mynah-ui'
 import * as CodeWhispererConstants from '../../../../codewhisperer/models/constants'
 import { TriggerPayload } from '../../../../codewhispererChat/controllers/chat/model'
 import {
@@ -76,8 +76,16 @@ export class Messenger {
         this.dispatcher.sendChatMessage(new CapabilityCardMessage(params.tabID))
     }
 
-    public sendMessage(message: string, tabID: string, messageType: ChatItemType) {
-        this.dispatcher.sendChatMessage(new ChatMessage({ message, messageType }, tabID))
+    public sendMessage(
+        message: string,
+        tabID: string,
+        messageType: ChatItemType,
+        messageId?: string,
+        buttons?: ChatItemButton[]
+    ) {
+        this.dispatcher.sendChatMessage(
+            new ChatMessage({ message, messageType, messageId: messageId, buttons: buttons }, tabID)
+        )
     }
 
     public sendShortSummary(params: {
@@ -159,16 +167,7 @@ export class Messenger {
                 message = CodeWhispererConstants.invalidFileTypeChatMessage
                 break
         }
-
-        this.dispatcher.sendChatMessage(
-            new ChatMessage(
-                {
-                    message,
-                    messageType: 'answer-stream',
-                },
-                tabID
-            )
-        )
+        this.sendMessage(message, tabID, 'answer-stream')
     }
 
     public sendErrorMessage(errorMessage: string, tabID: string) {

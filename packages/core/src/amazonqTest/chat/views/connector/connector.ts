@@ -80,6 +80,7 @@ export class ChatMessage extends UiMessage {
     readonly messageId?: string | undefined
     readonly messageType: ChatItemType
     readonly canBeVoted?: boolean
+    readonly buttons?: ChatItemButton[]
     readonly informationCard: ChatItemContent['informationCard']
     override type: TestMessageType = 'chatMessage'
 
@@ -90,6 +91,7 @@ export class ChatMessage extends UiMessage {
         this.messageId = props.messageId || undefined
         this.canBeVoted = props.canBeVoted || undefined
         this.informationCard = props.informationCard || undefined
+        this.buttons = props.buttons || undefined
     }
 }
 
