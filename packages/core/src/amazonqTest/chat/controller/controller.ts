@@ -302,10 +302,22 @@ export class TestController {
         )
         if (session.stopIteration) {
             // Error from Science
-            this.messenger.sendMessage(data.error.uiMessage.replaceAll('```', ''), data.tabID, 'answer')
+            this.messenger.sendMessage(
+                data.error.uiMessage.replaceAll('```', ''),
+                data.tabID,
+                'answer',
+                'testGenErrorMessage',
+                this.getFeedbackButtons()
+            )
         } else {
             isCancel
-                ? this.messenger.sendMessage(data.error.uiMessage, data.tabID, 'answer')
+                ? this.messenger.sendMessage(
+                      data.error.uiMessage,
+                      data.tabID,
+                      'answer',
+                      'testGenErrorMessage',
+                      this.getFeedbackButtons()
+                  )
                 : this.sendErrorMessage(data)
         }
         await this.sessionCleanUp()
@@ -325,7 +337,9 @@ export class TestController {
                 return this.messenger.sendMessage(
                     i18n('AWS.amazonq.featureDev.error.monthlyLimitReached'),
                     tabID,
-                    'answer'
+                    'answer',
+                    'testGenErrorMessage',
+                    this.getFeedbackButtons()
                 )
             }
             if (error.message.includes('Too many requests')) {
@@ -407,6 +421,21 @@ export class TestController {
         } catch (error) {
             return 'plaintext'
         }
+    }
+
+    private getFeedbackButtons(): ChatItemButton[] {
+        const buttons: ChatItemButton[] = []
+        if (Auth.instance.isInternalAmazonUser()) {
+            buttons.push({
+                keepCardAfterClick: false,
+                text: 'How can we make /test better?',
+                id: ButtonActions.PROVIDE_FEEDBACK,
+                disabled: false, // allow button to be re-clicked
+                position: 'outside',
+                icon: 'comment' as MynahIcons,
+            })
+        }
+        return buttons
     }
 
     /**
@@ -911,24 +940,12 @@ export class TestController {
 
     // TODO: Check if there are more cases to endSession if yes create a enum or type for step
     private async endSession(data: any, step: FollowUpTypes) {
-        const buttons: ChatItemButton[] = []
-        if (Auth.instance.isInternalAmazonUser()) {
-            buttons.push({
-                keepCardAfterClick: false,
-                text: 'How can we make /test better?',
-                id: ButtonActions.PROVIDE_FEEDBACK,
-                disabled: false, // allow button to be re-clicked
-                position: 'outside',
-                icon: 'comment' as MynahIcons,
-            })
-        }
-
         this.messenger.sendMessage(
             'Unit test generation completed.',
             data.tabID,
             'answer',
             'testGenEndSessionMessage',
-            buttons
+            this.getFeedbackButtons()
         )
 
         const session = this.sessionStorage.getSession()
