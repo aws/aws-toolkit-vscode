@@ -103,7 +103,6 @@ import highSeverity from '../../../../../resources/images/severity-high.svg'
 import criticalSeverity from '../../../../../resources/images/severity-critical.svg'
 import markdownIt from 'markdown-it'
 import hljs from 'highlight.js'
-import { parsePatch } from 'diff'
 import { CodeScanIssue } from '../../../models/model'
 
 const client = WebviewClientFactory.create<SecurityIssueWebview>()
@@ -344,7 +343,6 @@ export default defineComponent({
             if (!this.isFixAvailable) {
                 return
             }
-            const [parsedDiff] = parsePatch(this.suggestedFix)
             return md.render(`
 \`\`\`${this.languageId} 
 ${this.suggestedFix.replaceAll('--- buggyCode\n', '').replaceAll('+++ fixCode\n', '')}
