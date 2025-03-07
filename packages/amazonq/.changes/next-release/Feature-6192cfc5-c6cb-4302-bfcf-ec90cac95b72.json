@@ -1,4 +1,4 @@
 {
-	"type": "Bug Fix",
+	"type": "Feature",
 	"description": "/review: show code diff for fix preview"
 }
