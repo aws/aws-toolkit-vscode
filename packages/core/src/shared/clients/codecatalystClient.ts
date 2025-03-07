@@ -147,7 +147,7 @@ function toBranch(
 }
 
 async function createCodeCatalystClient(
-    connection: SsoConnection,
+    tokenProvider: TokenProvider,
     regionCode: string,
     endpoint: string,
     maxRetries: number
@@ -156,7 +156,7 @@ async function createCodeCatalystClient(
         region: regionCode,
         correctClockSkew: true,
         endpoint: endpoint,
-        token: new TokenProvider(connection),
+        token: tokenProvider,
         maxRetries,
     } as ServiceConfigurationOptions)
 
@@ -164,7 +164,7 @@ async function createCodeCatalystClient(
 }
 
 function createCodeCatalystClientV3(
-    connection: SsoConnection,
+    tokenProvider: TokenProvider,
     regionCode: string,
     endpoint: string,
     maxRetries: number
@@ -174,7 +174,7 @@ function createCodeCatalystClientV3(
         clientOptions: {
             region: regionCode,
             endpoint: endpoint,
-            token: new TokenProvider(connection),
+            token: tokenProvider,
             retryStrategy: new StandardRetryStrategy(maxRetries),
         },
     })
@@ -211,8 +211,9 @@ export async function createClient(
     maxRetries: number = 5,
     authOptions: AuthOptions = {}
 ): Promise<CodeCatalystClient> {
-    const sdkClient = await createCodeCatalystClient(connection, regionCode, endpoint, maxRetries)
-    const sdkv3Client = createCodeCatalystClientV3(connection, regionCode, endpoint, maxRetries)
+    const tokenProvider = new TokenProvider(connection)
+    const sdkClient = await createCodeCatalystClient(tokenProvider, regionCode, endpoint, maxRetries)
+    const sdkv3Client = createCodeCatalystClientV3(tokenProvider, regionCode, endpoint, maxRetries)
     const c = new CodeCatalystClientInternal(connection, sdkClient, sdkv3Client)
     try {
         await c.verifySession()
