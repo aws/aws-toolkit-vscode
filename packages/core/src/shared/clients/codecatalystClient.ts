@@ -16,7 +16,14 @@ import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
 import { CancellationError, Timeout, waitTimeout, waitUntil } from '../utilities/timeoutUtils'
 import { isUserCancelledError } from '../../shared/errors'
 import { showMessageWithCancel } from '../utilities/messages'
-import { assertHasProps, ClassToInterfaceType, hasProps, isNonNullable, RequiredProps } from '../utilities/tsUtils'
+import {
+    assertHasProps,
+    ClassToInterfaceType,
+    hasProps,
+    isDefined,
+    isNonNullable,
+    RequiredProps,
+} from '../utilities/tsUtils'
 import { AsyncCollection, toCollection } from '../utilities/asyncCollection'
 import { joinAll, pageableToCollection } from '../utilities/collectionUtils'
 import { CodeCatalyst } from 'aws-sdk'
@@ -33,6 +40,7 @@ import {
     CreateAccessTokenCommand,
     CreateAccessTokenRequest,
     CreateAccessTokenResponse,
+    DevEnvironmentRepositorySummary,
     DevEnvironmentSummary,
     GetDevEnvironmentCommand,
     GetDevEnvironmentRequest,
@@ -49,7 +57,6 @@ import {
     GetUserDetailsCommandOutput,
     GetUserDetailsRequest,
     ListDevEnvironmentsCommand,
-    ListDevEnvironmentSessionsResponse,
     ListDevEnvironmentsRequest,
     ListDevEnvironmentsResponse,
     ListProjectsCommand,
@@ -58,6 +65,8 @@ import {
     ListSpacesCommand,
     ListSpacesRequest,
     ListSpacesResponse,
+    PersistentStorage,
+    ProjectSummary,
     SpaceSummary,
 } from '@aws-sdk/client-codecatalyst'
 import { truncateProps } from '../utilities/textUtilities'
@@ -67,6 +76,16 @@ import { getServiceEnvVarConfig } from '../vscode/env'
 import { AwsCommand } from '../awsClientBuilderV3'
 import { ClientWrapper } from './clientWrapper'
 import { StandardRetryStrategy } from '@smithy/util-retry'
+
+const requiredDevEnvProps = [
+    'id',
+    'status',
+    'inactivityTimeoutMinutes',
+    'repositories',
+    'instanceType',
+    'lastUpdatedTime',
+] as const
+type RequiredDevEnvProps = (typeof requiredDevEnvProps)[number]
 
 export interface CodeCatalystConfig {
     readonly region: string
@@ -91,11 +110,17 @@ export function getCodeCatalystConfig(): CodeCatalystConfig {
     }
 }
 
-export interface DevEnvironment extends DevEnvironmentSummary {
+interface CodeCatalystDevEnvironmentSummary extends RequiredProps<DevEnvironmentSummary, RequiredDevEnvProps> {
+    readonly persistentStorage: RequiredProps<PersistentStorage, 'sizeInGiB'>
+    readonly repositories: RequiredProps<DevEnvironmentRepositorySummary, 'repositoryName'>[]
+}
+
+export interface DevEnvironment extends CodeCatalystDevEnvironmentSummary {
     readonly type: 'devEnvironment'
     readonly id: string
     readonly org: Pick<CodeCatalystOrg, 'name'>
     readonly project: Pick<CodeCatalystProject, 'name'>
+    readonly repositories: RequiredProps<DevEnvironmentRepositorySummary, 'repositoryName'>[]
 }
 
 /** CodeCatalyst developer environment session. */
@@ -138,8 +163,8 @@ export type CodeCatalystResource =
 function toDevEnv(
     spaceName: string,
     projectName: string,
-    summary: RequiredProps<DevEnvironmentSummary, 'id' | 'status'>
-): RequiredProps<DevEnvironment, 'status'> {
+    summary: CodeCatalystDevEnvironmentSummary
+): RequiredProps<DevEnvironment, RequiredDevEnvProps> {
     return {
         type: 'devEnvironment',
         org: { name: spaceName },
@@ -525,11 +550,15 @@ class CodeCatalystClientInternal extends ClientWrapper<CodeCatalystSDKClient> {
     public listSpaces(request: ListSpacesRequest = {}): AsyncCollection<CodeCatalystOrg[]> {
         const requester: (request: ListSpacesRequest) => Promise<ListSpacesResponse> = async (request) =>
             this.callV3(ListSpacesCommand, request, true, { items: [] })
-        const collection = pageableToCollection(requester, request, 'nextToken', 'items').filter(
-            (summaries) => summaries !== undefined
-        )
+        const collection = pageableToCollection(requester, request, 'nextToken', 'items').filter(isDefined)
+        // ts doesn't recognize nested assertion, so we add cast.This is safe because we assert it in the same line.
         return collection.map((summaries) =>
-            summaries.filter((s) => hasProps(s, 'name')).map((s) => ({ type: 'org', ...s }))
+            (summaries.filter((s) => hasProps(s, 'name')) as Readonly<RequiredProps<SpaceSummary, 'name'>>[]).map(
+                (s) => ({
+                    type: 'org',
+                    ...s,
+                })
+            )
         )
     }
 
@@ -551,34 +580,36 @@ class CodeCatalystClientInternal extends ClientWrapper<CodeCatalystSDKClient> {
         const requester: (request: ListProjectsRequest) => Promise<ListProjectsResponse> = (request) =>
             this.callV3(ListProjectsCommand, request, true, { items: [] })
 
-        const collection = pageableToCollection(requester, request, 'nextToken', 'items').filter(
-            (summaries) => summaries !== undefined
-        )
-
+        const collection = pageableToCollection(requester, request, 'nextToken', 'items').filter(isDefined)
+        // ts doesn't recognize nested assertion, so we add cast. This is safe because we assert it in the same line.
         return collection.map((summaries) =>
-            summaries
-                .filter((s) => hasProps(s, 'name'))
-                .map((s) => ({
+            (summaries.filter((s) => hasProps(s, 'name')) as Readonly<RequiredProps<ProjectSummary, 'name'>>[]).map(
+                (s) => ({
                     type: 'project',
                     org: { name: request.spaceName },
                     ...s,
-                }))
+                })
+            )
         )
     }
 
     /**
      * Gets a flat list of all devenvs for the given CodeCatalyst project.
      */
-    public listDevEnvironments(proj: CodeCatalystProject): AsyncCollection<DevEnvironment[]> {
+    public listDevEnvironments(
+        proj: CodeCatalystProject
+    ): AsyncCollection<RequiredProps<DevEnvironment, RequiredDevEnvProps>[]> {
         const initRequest = { spaceName: proj.org.name, projectName: proj.name }
         const requester: (request: ListDevEnvironmentsRequest) => Promise<ListDevEnvironmentsResponse> = (request) =>
             this.callV3(ListDevEnvironmentsCommand, request, true, { items: [] })
-        const collection = pageableToCollection(requester, initRequest, 'nextToken', 'items').filter(
-            (c) => c !== undefined
-        )
-
+        const collection = pageableToCollection(requester, initRequest, 'nextToken' as never, 'items').filter(isDefined)
+        // ts unable to recognize nested assertion here, so we need to cast. This is safe because we assert it in the same line.
         return collection.map((envs) =>
-            envs.filter((s) => hasProps(s, 'id', 'status')).map((s) => toDevEnv(proj.org.name, proj.name, s))
+            (
+                envs.filter(
+                    (s) => hasProps(s, ...requiredDevEnvProps) && hasPersistentStorage(s) && hasRepositories(s)
+                ) as CodeCatalystDevEnvironmentSummary[]
+            ).map((s) => toDevEnv(proj.org.name, proj.name, s))
         )
     }
 
@@ -730,14 +761,16 @@ class CodeCatalystClientInternal extends ClientWrapper<CodeCatalystSDKClient> {
 
     public async getDevEnvironment(
         args: RequiredProps<GetDevEnvironmentRequest, 'spaceName' | 'projectName'>
-    ): Promise<RequiredProps<DevEnvironment, 'status'>> {
+    ): Promise<RequiredProps<DevEnvironment, RequiredDevEnvProps>> {
         const a = { ...args }
         delete (a as any).ides
         delete (a as any).repositories
 
         const r: GetDevEnvironmentResponse = await this.callV3(GetDevEnvironmentCommand, a, false)
         const summary = { ...args, ...r }
-        assertHasProps(summary, 'id', 'status')
+        if (!hasProps(summary, ...requiredDevEnvProps) || !hasPersistentStorage(summary) || !hasRepositories(summary)) {
+            throw new ToolkitError(`GetDevEnvironment failed due to response missing required properties`)
+        }
 
         return toDevEnv(args.spaceName, args.projectName, summary)
     }
@@ -973,4 +1006,16 @@ export async function isThirdPartyRepo(
         !Uri.parse(url).authority.endsWith('codecatalyst.aws') &&
         !Uri.parse(url).authority.endsWith('caws.dev-tools.aws.dev')
     )
+}
+
+function hasPersistentStorage<T extends DevEnvironmentSummary>(
+    s: T
+): s is T & { persistentStorage: { sizeInGiB: number } } {
+    return hasProps(s, 'persistentStorage') && hasProps(s.persistentStorage, 'sizeInGiB')
+}
+
+function hasRepositories<T extends DevEnvironmentSummary>(
+    s: T
+): s is T & { repositories: RequiredProps<DevEnvironmentRepositorySummary, 'repositoryName'>[] } {
+    return hasProps(s, 'repositories') && s.repositories.every((r) => hasProps(r, 'repositoryName'))
 }
