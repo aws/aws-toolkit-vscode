@@ -139,7 +139,6 @@ export class AWSClientBuilderV3 {
     }
 
     public createAwsService<C extends AwsClient>(serviceOptions: AwsServiceOptions<C>): C {
-        const shim = this.getShim()
         const opt = (serviceOptions.clientOptions ?? {}) as AwsClientOptions
         const userAgent = serviceOptions.userAgent ?? true
         const keepAlive = serviceOptions.keepAlive ?? true
@@ -162,6 +161,7 @@ export class AWSClientBuilderV3 {
         }
 
         if (!opt.credentials && !opt.token) {
+            const shim = this.getShim()
             opt.credentials = async () => {
                 const creds = await shim.get()
                 if (creds.expiration && creds.expiration.getTime() < Date.now()) {

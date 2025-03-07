@@ -208,7 +208,7 @@ export async function createClient(
     connection: SsoConnection,
     regionCode = getCodeCatalystConfig().region,
     endpoint = getCodeCatalystConfig().endpoint,
-    maxRetries: number = 1,
+    maxRetries: number = 5,
     authOptions: AuthOptions = {}
 ): Promise<CodeCatalystClient> {
     const sdkClient = await createCodeCatalystClient(connection, regionCode, endpoint, maxRetries)
