@@ -26,7 +26,7 @@ import {
 import MessengerUtils, { ButtonActions } from './messenger/messengerUtils'
 import { getTelemetryReasonDesc, isAwsError } from '../../../shared/errors'
 import { ChatItemType } from '../../../amazonq/commons/model'
-import { ProgressField } from '@aws/mynah-ui'
+import { ChatItemButton, MynahIcons, ProgressField } from '@aws/mynah-ui'
 import { FollowUpTypes } from '../../../amazonq/commons/types'
 import {
     cancelBuild,
@@ -63,6 +63,9 @@ import {
 } from '../../../codewhisperer/models/constants'
 import { UserWrittenCodeTracker } from '../../../codewhisperer/tracker/userWrittenCodeTracker'
 import { ReferenceLogViewProvider } from '../../../codewhisperer/service/referenceLogViewProvider'
+import { submitFeedback } from '../../../feedback/vue/submitFeedback'
+import { placeholder } from '../../../shared/vscode/commands2'
+import { Auth } from '../../../auth/auth'
 
 export interface TestChatControllerEventEmitters {
     readonly tabOpened: vscode.EventEmitter<any>
@@ -354,6 +357,7 @@ export class TestController {
     // This function handles actions if user clicked on any Button one of these cases will be executed
     private async handleFormActionClicked(data: any) {
         const typedAction = MessengerUtils.stringToEnumValue(ButtonActions, data.action as any)
+        let getFeedbackCommentData = ''
         switch (typedAction) {
             case ButtonActions.STOP_TEST_GEN:
                 testGenState.setToCancelling()
@@ -365,6 +369,16 @@ export class TestController {
                 telemetry.ui_click.emit({ elementId: 'unitTestGeneration_cancelBuildProgress' })
                 this.messenger.sendChatInputEnabled(data.tabID, true)
                 await this.sessionCleanUp()
+                break
+            case ButtonActions.PROVIDE_FEEDBACK:
+                getFeedbackCommentData = `Q Test Generation: RequestId: ${this.sessionStorage.getSession().startTestGenerationRequestId}`
+                void submitFeedback(placeholder, 'Amazon Q', getFeedbackCommentData)
+                telemetry.ui_click.emit({ elementId: 'unitTestGeneration_provideFeedback' })
+                this.messenger.sendMessage(
+                    'Unit test generation completed. Thanks for providing feedback.',
+                    data.tabID,
+                    'answer'
+                )
                 break
         }
     }
@@ -897,7 +911,25 @@ export class TestController {
 
     // TODO: Check if there are more cases to endSession if yes create a enum or type for step
     private async endSession(data: any, step: FollowUpTypes) {
-        this.messenger.sendMessage('Unit test generation completed.', data.tabID, 'answer')
+        const buttons: ChatItemButton[] = []
+        if (Auth.instance.isInternalAmazonUser()) {
+            buttons.push({
+                keepCardAfterClick: false,
+                text: 'How can we make /test better?',
+                id: ButtonActions.PROVIDE_FEEDBACK,
+                disabled: false, // allow button to be re-clicked
+                position: 'outside',
+                icon: 'comment' as MynahIcons,
+            })
+        }
+
+        this.messenger.sendMessage(
+            'Unit test generation completed.',
+            data.tabID,
+            'answer',
+            'testGenEndSessionMessage',
+            buttons
+        )
 
         const session = this.sessionStorage.getSession()
         if (step === FollowUpTypes.RejectCode) {
