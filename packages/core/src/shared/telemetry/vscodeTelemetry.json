@@ -415,17 +415,6 @@
             "name": "executedCount",
             "type": "int",
             "description": "The number of executed operations"
-        },
-        {
-            "name": "amazonqUploadIntent",
-            "type": "string",
-            "description": "The intent of the upload",
-            "allowedValues": [
-                "TRANSFORMATION",
-                "TASK_ASSIST_PLANNING",
-                "AUTOMATIC_FILE_SECURITY_SCAN",
-                "FULL_PROJECT_SECURITY_SCAN"
-            ]
         }
     ],
     "metrics": [
@@ -1213,27 +1202,6 @@
             ]
         },
         {
-            "name": "amazonq_createUpload",
-            "description": "Captures createUploadUrl invocation process",
-            "metadata": [
-                {
-                    "type": "amazonqConversationId"
-                },
-                {
-                    "type": "amazonqRepositorySize",
-                    "required": false
-                },
-                {
-                    "type": "amazonqUploadIntent",
-                    "required": false
-                },
-                {
-                    "type": "credentialStartUrl",
-                    "required": false
-                }
-            ]
-        },
-        {
             "name": "ide_editCodeFile",
             "description": "User opened a code file with the given file extension. Client should DEDUPLICATE this metric (ideally hourly/daily). AWS-specific files should (also) emit `file_editAwsFile`.",
             "passive": true,
@@ -1485,34 +1453,6 @@
         {
             "name": "docdb_addRegion",
             "description": "User clicked on add region command"
-        },
-        {
-            "name": "codewhisperer_codeScanIssueDetected",
-            "description": "Called when a code scan issue is returned from the service",
-            "metadata": [
-                {
-                    "type": "autoDetected",
-                    "required": false
-                },
-                {
-                    "type": "codewhispererCodeScanJobId",
-                    "required": false
-                },
-                {
-                    "type": "detectorId"
-                },
-                {
-                    "type": "findingId"
-                },
-                {
-                    "type": "includesFix",
-                    "required": false
-                },
-                {
-                    "type": "ruleId",
-                    "required": false
-                }
-            ]
         }
     ]
 }
