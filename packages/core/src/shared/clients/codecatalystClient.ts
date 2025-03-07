@@ -16,7 +16,7 @@ import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
 import { CancellationError, Timeout, waitTimeout, waitUntil } from '../utilities/timeoutUtils'
 import { isUserCancelledError } from '../../shared/errors'
 import { showMessageWithCancel } from '../utilities/messages'
-import { assertHasProps, ClassToInterfaceType, isNonNullable, RequiredProps } from '../utilities/tsUtils'
+import { assertHasProps, ClassToInterfaceType, hasProps, isNonNullable, RequiredProps } from '../utilities/tsUtils'
 import { AsyncCollection, toCollection } from '../utilities/asyncCollection'
 import { joinAll, pageableToCollection } from '../utilities/collectionUtils'
 import { CodeCatalyst } from 'aws-sdk'
@@ -33,6 +33,10 @@ import {
     CreateAccessTokenCommand,
     CreateAccessTokenRequest,
     CreateAccessTokenResponse,
+    DevEnvironmentSummary,
+    GetDevEnvironmentCommand,
+    GetDevEnvironmentRequest,
+    GetDevEnvironmentResponse,
     GetProjectCommand,
     GetProjectCommandOutput,
     GetProjectRequest,
@@ -44,6 +48,17 @@ import {
     GetUserDetailsCommand,
     GetUserDetailsCommandOutput,
     GetUserDetailsRequest,
+    ListDevEnvironmentsCommand,
+    ListDevEnvironmentSessionsResponse,
+    ListDevEnvironmentsRequest,
+    ListDevEnvironmentsResponse,
+    ListProjectsCommand,
+    ListProjectsRequest,
+    ListProjectsResponse,
+    ListSpacesCommand,
+    ListSpacesRequest,
+    ListSpacesResponse,
+    SpaceSummary,
 } from '@aws-sdk/client-codecatalyst'
 import { truncateProps } from '../utilities/textUtilities'
 import { SsoConnection } from '../../auth/connection'
@@ -76,7 +91,7 @@ export function getCodeCatalystConfig(): CodeCatalystConfig {
     }
 }
 
-export interface DevEnvironment extends CodeCatalyst.DevEnvironmentSummary {
+export interface DevEnvironment extends DevEnvironmentSummary {
     readonly type: 'devEnvironment'
     readonly id: string
     readonly org: Pick<CodeCatalystOrg, 'name'>
@@ -87,7 +102,7 @@ export interface DevEnvironment extends CodeCatalyst.DevEnvironmentSummary {
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface CodeCatalystDevEnvSession extends CodeCatalyst.StartDevEnvironmentResponse {}
 
-export interface CodeCatalystOrg extends CodeCatalyst.SpaceSummary {
+export interface CodeCatalystOrg extends SpaceSummary {
     readonly type: 'org'
     readonly name: string
 }
@@ -120,7 +135,11 @@ export type CodeCatalystResource =
     | CodeCatalystBranch
     | DevEnvironment
 
-function toDevEnv(spaceName: string, projectName: string, summary: CodeCatalyst.DevEnvironmentSummary): DevEnvironment {
+function toDevEnv(
+    spaceName: string,
+    projectName: string,
+    summary: RequiredProps<DevEnvironmentSummary, 'id' | 'status'>
+): RequiredProps<DevEnvironment, 'status'> {
     return {
         type: 'devEnvironment',
         org: { name: spaceName },
@@ -503,18 +522,23 @@ class CodeCatalystClientInternal extends ClientWrapper<CodeCatalystSDKClient> {
     /**
      * Gets a list of all spaces (orgs) for the current CodeCatalyst user.
      */
-    public listSpaces(request: CodeCatalyst.ListSpacesRequest = {}): AsyncCollection<CodeCatalystOrg[]> {
-        const requester = async (request: CodeCatalyst.ListSpacesRequest) =>
-            this.call(this.sdkClient.listSpaces(request), true, { items: [] })
-        const collection = pageableToCollection(requester, request, 'nextToken', 'items')
-
-        return collection.map((summaries) => summaries?.map((s) => ({ type: 'org', ...s })) ?? [])
+    public listSpaces(request: ListSpacesRequest = {}): AsyncCollection<CodeCatalystOrg[]> {
+        const requester: (request: ListSpacesRequest) => Promise<ListSpacesResponse> = async (request) =>
+            this.callV3(ListSpacesCommand, request, true, { items: [] })
+        const collection = pageableToCollection(requester, request, 'nextToken', 'items').filter(
+            (summaries) => summaries !== undefined
+        )
+        return collection.map((summaries) =>
+            summaries.filter((s) => hasProps(s, 'name')).map((s) => ({ type: 'org', ...s }))
+        )
     }
 
     /**
      * Gets a list of all projects for the given CodeCatalyst user.
      */
-    public listProjects(request: CodeCatalyst.ListProjectsRequest): AsyncCollection<CodeCatalystProject[]> {
+    public listProjects(
+        request: RequiredProps<ListProjectsRequest, 'spaceName'>
+    ): AsyncCollection<CodeCatalystProject[]> {
         // Only get projects the user is a member of.
         request.filters = [
             ...(request.filters ?? []),
@@ -524,17 +548,21 @@ class CodeCatalystClientInternal extends ClientWrapper<CodeCatalystSDKClient> {
             },
         ]
 
-        const requester = async (request: CodeCatalyst.ListProjectsRequest) =>
-            this.call(this.sdkClient.listProjects(request), true, { items: [] })
-        const collection = pageableToCollection(requester, request, 'nextToken', 'items')
+        const requester: (request: ListProjectsRequest) => Promise<ListProjectsResponse> = (request) =>
+            this.callV3(ListProjectsCommand, request, true, { items: [] })
 
-        return collection.map(
-            (summaries) =>
-                summaries?.map((s) => ({
+        const collection = pageableToCollection(requester, request, 'nextToken', 'items').filter(
+            (summaries) => summaries !== undefined
+        )
+
+        return collection.map((summaries) =>
+            summaries
+                .filter((s) => hasProps(s, 'name'))
+                .map((s) => ({
                     type: 'project',
                     org: { name: request.spaceName },
                     ...s,
-                })) ?? []
+                }))
         )
     }
 
@@ -543,15 +571,15 @@ class CodeCatalystClientInternal extends ClientWrapper<CodeCatalystSDKClient> {
      */
     public listDevEnvironments(proj: CodeCatalystProject): AsyncCollection<DevEnvironment[]> {
         const initRequest = { spaceName: proj.org.name, projectName: proj.name }
-        const requester = async (request: CodeCatalyst.ListDevEnvironmentsRequest) =>
-            this.call(this.sdkClient.listDevEnvironments(request), true, {
-                // spaceName: proj.org.name,
-                // projectName: proj.name,
-                items: [],
-            })
-        const collection = pageableToCollection(requester, initRequest, 'nextToken', 'items')
+        const requester: (request: ListDevEnvironmentsRequest) => Promise<ListDevEnvironmentsResponse> = (request) =>
+            this.callV3(ListDevEnvironmentsCommand, request, true, { items: [] })
+        const collection = pageableToCollection(requester, initRequest, 'nextToken', 'items').filter(
+            (c) => c !== undefined
+        )
 
-        return collection.map((envs) => envs.map((s) => toDevEnv(proj.org.name, proj.name, s)))
+        return collection.map((envs) =>
+            envs.filter((s) => hasProps(s, 'id', 'status')).map((s) => toDevEnv(proj.org.name, proj.name, s))
+        )
     }
 
     /**
@@ -700,13 +728,18 @@ class CodeCatalystClientInternal extends ClientWrapper<CodeCatalystSDKClient> {
         return this.call(this.sdkClient.stopDevEnvironment(args), false)
     }
 
-    public async getDevEnvironment(args: CodeCatalyst.GetDevEnvironmentRequest): Promise<DevEnvironment> {
+    public async getDevEnvironment(
+        args: RequiredProps<GetDevEnvironmentRequest, 'spaceName' | 'projectName'>
+    ): Promise<RequiredProps<DevEnvironment, 'status'>> {
         const a = { ...args }
         delete (a as any).ides
         delete (a as any).repositories
-        const r = await this.call(this.sdkClient.getDevEnvironment(a), false)
 
-        return toDevEnv(args.spaceName, args.projectName, { ...args, ...r })
+        const r: GetDevEnvironmentResponse = await this.callV3(GetDevEnvironmentCommand, a, false)
+        const summary = { ...args, ...r }
+        assertHasProps(summary, 'id', 'status')
+
+        return toDevEnv(args.spaceName, args.projectName, summary)
     }
 
     public async deleteDevEnvironment(
