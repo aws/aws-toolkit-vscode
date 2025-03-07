@@ -160,7 +160,7 @@ export async function pollTestJobStatus(
         const targetFileInfo = packageInfo?.targetFileInfoList?.[0]
 
         if (packageInfo) {
-            // TODO: will need some fields from packageInfo
+            // TODO: will need some fields from packageInfo such as buildCommand, packagePlan, packageSummary
         }
         if (targetFileInfo) {
             if (targetFileInfo.numberOfTestMethods) {
