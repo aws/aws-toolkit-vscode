@@ -47,6 +47,7 @@ const languageCommentConfig: Record<SecurityScanLanguageId, CommentConfig | unde
     sh: { lineComment: '#', blockComment: [": '", "'"] },
     shell: { lineComment: '#', blockComment: [": '", "'"] },
     shellscript: { lineComment: '#', blockComment: [": '", "'"] },
+    brazilPackageConfig: { lineComment: '#' },
 }
 
 export function getLanguageCommentConfig(languageId: string): CommentConfig {

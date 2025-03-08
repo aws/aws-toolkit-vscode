@@ -15,6 +15,7 @@ import {
 import globals from '../../shared/extensionGlobals'
 import { getLogger } from '../../shared/logger/logger'
 import { SecurityIssueProvider } from './securityIssueProvider'
+import { sasRuleId } from '../models/constants'
 
 export type SecurityViewTreeItem = FileItem | IssueItem | SeverityItem
 type CodeScanIssueWithFilePath = CodeScanIssue & { filePath: string }
@@ -118,6 +119,7 @@ enum ContextValue {
     FILE = 'file',
     ISSUE_WITH_FIX = 'issueWithFix',
     ISSUE_WITHOUT_FIX = 'issueWithoutFix',
+    ISSUE_WITH_FIX_DISABLED = 'issueWithFixDisabled',
     SEVERITY = 'severity',
 }
 
@@ -195,9 +197,11 @@ export class IssueItem extends vscode.TreeItem {
     }
 
     private getContextValue() {
-        return this.issue.suggestedFixes.length === 0 || !this.issue.suggestedFixes[0].code
-            ? ContextValue.ISSUE_WITHOUT_FIX
-            : ContextValue.ISSUE_WITH_FIX
+        return this.issue.ruleId === sasRuleId
+            ? ContextValue.ISSUE_WITH_FIX_DISABLED
+            : this.issue.suggestedFixes.length === 0 || !this.issue.suggestedFixes[0].code
+              ? ContextValue.ISSUE_WITHOUT_FIX
+              : ContextValue.ISSUE_WITH_FIX
     }
 
     private getTooltipMarkdown() {

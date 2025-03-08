@@ -8,7 +8,7 @@ import assert from 'assert'
 import * as sinon from 'sinon'
 import * as CodeWhispererConstants from '../../../codewhisperer/models/constants'
 import { createCodeScanIssue, createMockDocument, resetCodeWhispererGlobalVariables } from '../testUtil'
-import { assertTelemetry, assertTelemetryCurried, tryRegister } from '../../testUtil'
+import { assertNoTelemetryMatch, assertTelemetry, assertTelemetryCurried, tryRegister } from '../../testUtil'
 import {
     toggleCodeSuggestions,
     showSecurityScan,
@@ -901,6 +901,20 @@ def execute_input_compliant():
                 reason: 'Error',
                 reasonDesc: 'Unexpected error',
             })
+        })
+
+        it('exits early for SAS findings', async function () {
+            targetCommand = testCommand(generateFix, mockClient, mockExtContext)
+            codeScanIssue = createCodeScanIssue({
+                ruleId: CodeWhispererConstants.sasRuleId,
+            })
+            issueItem = new IssueItem(filePath, codeScanIssue)
+            await targetCommand.execute(codeScanIssue, filePath, 'webview')
+            assert.ok(updateSecurityIssueWebviewMock.notCalled)
+            assert.ok(startCodeFixGenerationStub.notCalled)
+            assert.ok(updateIssueMock.notCalled)
+            assert.ok(refreshTreeViewMock.notCalled)
+            assertNoTelemetryMatch('codewhisperer_codeScanIssueGenerateFix')
         })
     })
 
