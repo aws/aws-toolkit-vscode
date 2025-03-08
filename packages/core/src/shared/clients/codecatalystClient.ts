@@ -30,11 +30,7 @@ import { CodeCatalyst } from 'aws-sdk'
 import { ToolkitError } from '../errors'
 import { TokenProvider } from '../../auth/sso/sdkV2Compat'
 import { Uri } from 'vscode'
-import {
-    GetSourceRepositoryCloneUrlsRequest,
-    ListSourceRepositoriesItem,
-    ListSourceRepositoriesItems,
-} from 'aws-sdk/clients/codecatalyst'
+import { GetSourceRepositoryCloneUrlsRequest } from 'aws-sdk/clients/codecatalyst'
 import {
     CodeCatalystClient as CodeCatalystSDKClient,
     CreateAccessTokenCommand,
@@ -62,6 +58,9 @@ import {
     ListProjectsCommand,
     ListProjectsRequest,
     ListProjectsResponse,
+    ListSourceRepositoriesCommand,
+    ListSourceRepositoriesItem,
+    ListSourceRepositoriesResponse,
     ListSpacesCommand,
     ListSpacesRequest,
     ListSpacesResponse,
@@ -138,7 +137,7 @@ export interface CodeCatalystProject extends CodeCatalyst.ProjectSummary {
     readonly org: Pick<CodeCatalystOrg, 'name'>
 }
 
-export interface CodeCatalystRepo extends CodeCatalyst.ListSourceRepositoriesItem {
+export interface CodeCatalystRepo extends ListSourceRepositoriesItem {
     readonly type: 'repo'
     readonly name: string
     readonly org: Pick<CodeCatalystOrg, 'name'>
@@ -552,14 +551,14 @@ class CodeCatalystClientInternal extends ClientWrapper<CodeCatalystSDKClient> {
             this.callV3(ListSpacesCommand, request, true, { items: [] })
         const collection = pageableToCollection(requester, request, 'nextToken', 'items').filter(isDefined)
         // ts doesn't recognize nested assertion, so we add cast.This is safe because we assert it in the same line.
-        return collection.map((summaries) =>
-            (summaries.filter((s) => hasProps(s, 'name')) as Readonly<RequiredProps<SpaceSummary, 'name'>>[]).map(
-                (s) => ({
-                    type: 'org',
-                    ...s,
-                })
-            )
-        )
+        return collection.map((summaries) => summaries.filter(hasName).map(toOrg))
+
+        function toOrg<T extends RequiredProps<SpaceSummary, 'name'>>(s: T): CodeCatalystOrg {
+            return {
+                type: 'org',
+                ...s,
+            }
+        }
     }
 
     /**
@@ -580,17 +579,16 @@ class CodeCatalystClientInternal extends ClientWrapper<CodeCatalystSDKClient> {
         const requester: (request: ListProjectsRequest) => Promise<ListProjectsResponse> = (request) =>
             this.callV3(ListProjectsCommand, request, true, { items: [] })
 
-        const collection = pageableToCollection(requester, request, 'nextToken', 'items').filter(isDefined)
-        // ts doesn't recognize nested assertion, so we add cast. This is safe because we assert it in the same line.
-        return collection.map((summaries) =>
-            (summaries.filter((s) => hasProps(s, 'name')) as Readonly<RequiredProps<ProjectSummary, 'name'>>[]).map(
-                (s) => ({
-                    type: 'project',
-                    org: { name: request.spaceName },
-                    ...s,
-                })
-            )
-        )
+        const collection = pageableToCollection(requester, request, 'nextToken', 'items')
+        return collection.filter(isDefined).map((summaries) => summaries.filter(hasName).map(toProject))
+
+        function toProject<T extends RequiredProps<ProjectSummary, 'name'>>(s: T): CodeCatalystProject {
+            return {
+                type: 'project',
+                org: { name: request.spaceName },
+                ...s,
+            }
+        }
     }
 
     /**
@@ -604,13 +602,11 @@ class CodeCatalystClientInternal extends ClientWrapper<CodeCatalystSDKClient> {
             this.callV3(ListDevEnvironmentsCommand, request, true, { items: [] })
         const collection = pageableToCollection(requester, initRequest, 'nextToken' as never, 'items').filter(isDefined)
         // ts unable to recognize nested assertion here, so we need to cast. This is safe because we assert it in the same line.
-        return collection.map((envs) =>
-            (
-                envs.filter(
-                    (s) => hasProps(s, ...requiredDevEnvProps) && hasPersistentStorage(s) && hasRepositories(s)
-                ) as CodeCatalystDevEnvironmentSummary[]
-            ).map((s) => toDevEnv(proj.org.name, proj.name, s))
-        )
+        return collection.map((envs) => {
+            const filteredEnvs = envs.filter(isValidEnvSummary)
+            const mappedEnvs = filteredEnvs.map((s) => toDevEnv(proj.org.name, proj.name, s))
+            return mappedEnvs
+        })
     }
 
     /**
@@ -623,7 +619,12 @@ class CodeCatalystClientInternal extends ClientWrapper<CodeCatalystSDKClient> {
         thirdParty: boolean = true
     ): AsyncCollection<CodeCatalystRepo[]> {
         const requester = async (request: CodeCatalyst.ListSourceRepositoriesRequest) => {
-            const allRepositories = this.call(this.sdkClient.listSourceRepositories(request), true, { items: [] })
+            const allRepositories: Promise<ListSourceRepositoriesResponse> = this.callV3(
+                ListSourceRepositoriesCommand,
+                request,
+                true,
+                { items: [] }
+            )
             let finalRepositories = allRepositories
 
             // Filter out 3P repos
@@ -633,7 +634,7 @@ class CodeCatalystClientInternal extends ClientWrapper<CodeCatalystSDKClient> {
                         this,
                         request.spaceName,
                         request.projectName,
-                        repos.items
+                        repos.items?.filter(hasName)
                     )
                     return repos
                 })
@@ -643,15 +644,16 @@ class CodeCatalystClientInternal extends ClientWrapper<CodeCatalystSDKClient> {
         }
 
         const collection = pageableToCollection(requester, request, 'nextToken', 'items')
-        return collection.map(
-            (summaries) =>
-                summaries?.map((s) => ({
-                    type: 'repo',
-                    org: { name: request.spaceName },
-                    project: { name: request.projectName },
-                    ...s,
-                })) ?? []
-        )
+        return collection.filter(isDefined).map((summaries) => summaries.filter(hasName).map(toCodeCatalystRepo))
+
+        function toCodeCatalystRepo(s: RequiredProps<ListSourceRepositoriesItem, 'name'>): CodeCatalystRepo {
+            return {
+                type: 'repo',
+                org: { name: request.spaceName },
+                project: { name: request.projectName },
+                ...s,
+            }
+        }
     }
 
     public listBranches(
@@ -768,7 +770,7 @@ class CodeCatalystClientInternal extends ClientWrapper<CodeCatalystSDKClient> {
 
         const r: GetDevEnvironmentResponse = await this.callV3(GetDevEnvironmentCommand, a, false)
         const summary = { ...args, ...r }
-        if (!hasProps(summary, ...requiredDevEnvProps) || !hasPersistentStorage(summary) || !hasRepositories(summary)) {
+        if (!isValidEnvSummary(summary)) {
             throw new ToolkitError(`GetDevEnvironment failed due to response missing required properties`)
         }
 
@@ -969,8 +971,8 @@ export async function excludeThirdPartyRepos(
     client: CodeCatalystClient,
     spaceName: CodeCatalystOrg['name'],
     projectName: CodeCatalystProject['name'],
-    items?: Pick<ListSourceRepositoriesItem, 'name'>[]
-): Promise<ListSourceRepositoriesItems | undefined> {
+    items?: RequiredProps<ListSourceRepositoriesItem, 'name'>[]
+): Promise<ListSourceRepositoriesItem[] | undefined> {
     if (items === undefined) {
         return items
     }
@@ -988,7 +990,7 @@ export async function excludeThirdPartyRepos(
                     : item
             })
         )
-    ).filter((item) => item !== undefined) as CodeCatalyst.ListSourceRepositoriesItem[]
+    ).filter(isDefined)
 }
 
 /**
@@ -1008,6 +1010,9 @@ export async function isThirdPartyRepo(
     )
 }
 
+// These type guard wrappers are needed because type assertions fail
+// to travel up function scope (see: https://github.com/microsoft/TypeScript/issues/9998)
+
 function hasPersistentStorage<T extends DevEnvironmentSummary>(
     s: T
 ): s is T & { persistentStorage: { sizeInGiB: number } } {
@@ -1018,4 +1023,12 @@ function hasRepositories<T extends DevEnvironmentSummary>(
     s: T
 ): s is T & { repositories: RequiredProps<DevEnvironmentRepositorySummary, 'repositoryName'>[] } {
     return hasProps(s, 'repositories') && s.repositories.every((r) => hasProps(r, 'repositoryName'))
+}
+
+function hasName<T extends { name: string | undefined }>(s: T): s is RequiredProps<T, 'name'> {
+    return hasProps(s, 'name')
+}
+
+function isValidEnvSummary(s: DevEnvironmentSummary): s is CodeCatalystDevEnvironmentSummary {
+    return hasProps(s, ...requiredDevEnvProps) && hasPersistentStorage(s) && hasRepositories(s)
 }
