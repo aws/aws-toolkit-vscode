@@ -87,7 +87,7 @@ let projectName: CodeCatalystProject['name']
  *     integ tests, but using the ssh hostname that we get from
  *     {@link prepareDevEnvConnection}.
  */
-describe('Test how this codebase uses the CodeCatalyst API', function () {
+describe.only('Test how this codebase uses the CodeCatalyst API', function () {
     let client: CodeCatalystClient
     let commands: CodeCatalystCommands
     let webviewClient: CodeCatalystCreateWebview
@@ -191,7 +191,7 @@ describe('Test how this codebase uses the CodeCatalyst API', function () {
             assert.strictEqual(actualDevEnv.org.name, spaceName)
             assert.strictEqual(actualDevEnv.alias, differentDevEnvSettings.alias)
             assert.strictEqual(actualDevEnv.instanceType, 'dev.standard1.medium')
-            assert.strictEqual(actualDevEnv.persistentStorage.sizeInGiB, 32)
+            assert.strictEqual(actualDevEnv.persistentStorage && actualDevEnv.persistentStorage.sizeInGiB, 32)
         })
 
         it.skip('creates a Dev Environment using an existing branch', async function () {
@@ -425,15 +425,9 @@ describe('Test how this codebase uses the CodeCatalyst API', function () {
      */
     async function createTestCodeCatalystClient(auth: Auth): Promise<CodeCatalystClient> {
         const conn = await useCodeCatalystSsoConnection(auth)
-        return await createCodeCatalystClient(conn, undefined, undefined, {
-            // Add retries for tests since many may be running in parallel in github CI.
-            // AWS SDK adds jitter automatically.
-            // https://github.com/aws/aws-sdk-js/blob/3e616251947c73d5239178c167a9d73d985ca581/lib/util.js#L884
-            retryDelayOptions: {
-                base: 1200, // ms
-            },
-            maxRetries: 5,
-        })
+        // Add retries for tests since many may be running in parallel in github CI.
+        // AWS SDK adds jitter automatically.
+        return await createCodeCatalystClient(conn, undefined, undefined, 5)
     }
 
     /**
@@ -539,7 +533,7 @@ describe('Test how this codebase uses the CodeCatalyst API', function () {
         )
     }
 
-    async function getAllDevEnvs(projectName: CodeCatalystProject['name']): Promise<DevEnvironment[]> {
+    async function getAllDevEnvs(projectName: CodeCatalystProject['name']) {
         const currentDevEnvs = await client
             .listDevEnvironments({ name: projectName, org: { name: spaceName }, type: 'project' })
             .flatten()

@@ -16,23 +16,75 @@ import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
 import { CancellationError, Timeout, waitTimeout, waitUntil } from '../utilities/timeoutUtils'
 import { isUserCancelledError } from '../../shared/errors'
 import { showMessageWithCancel } from '../utilities/messages'
-import { assertHasProps, ClassToInterfaceType, isNonNullable, RequiredProps } from '../utilities/tsUtils'
+import {
+    assertHasProps,
+    ClassToInterfaceType,
+    hasProps,
+    isDefined,
+    isNonNullable,
+    RequiredProps,
+} from '../utilities/tsUtils'
 import { AsyncCollection, toCollection } from '../utilities/asyncCollection'
 import { joinAll, pageableToCollection } from '../utilities/collectionUtils'
 import { CodeCatalyst } from 'aws-sdk'
 import { ToolkitError } from '../errors'
 import { TokenProvider } from '../../auth/sso/sdkV2Compat'
 import { Uri } from 'vscode'
+import { GetSourceRepositoryCloneUrlsRequest } from 'aws-sdk/clients/codecatalyst'
 import {
-    GetSourceRepositoryCloneUrlsRequest,
+    CodeCatalystClient as CodeCatalystSDKClient,
+    CreateAccessTokenCommand,
+    CreateAccessTokenRequest,
+    CreateAccessTokenResponse,
+    DevEnvironmentRepositorySummary,
+    DevEnvironmentSummary,
+    GetDevEnvironmentCommand,
+    GetDevEnvironmentRequest,
+    GetDevEnvironmentResponse,
+    GetProjectCommand,
+    GetProjectCommandOutput,
+    GetProjectRequest,
+    GetSpaceCommand,
+    GetSpaceCommandOutput,
+    GetSpaceRequest,
+    GetSubscriptionCommand,
+    GetSubscriptionRequest,
+    GetUserDetailsCommand,
+    GetUserDetailsCommandOutput,
+    GetUserDetailsRequest,
+    ListDevEnvironmentsCommand,
+    ListDevEnvironmentsRequest,
+    ListDevEnvironmentsResponse,
+    ListProjectsCommand,
+    ListProjectsRequest,
+    ListProjectsResponse,
+    ListSourceRepositoriesCommand,
     ListSourceRepositoriesItem,
-    ListSourceRepositoriesItems,
-} from 'aws-sdk/clients/codecatalyst'
+    ListSourceRepositoriesResponse,
+    ListSpacesCommand,
+    ListSpacesRequest,
+    ListSpacesResponse,
+    PersistentStorage,
+    ProjectSummary,
+    SpaceSummary,
+} from '@aws-sdk/client-codecatalyst'
 import { truncateProps } from '../utilities/textUtilities'
 import { SsoConnection } from '../../auth/connection'
 import { DevSettings } from '../settings'
-import { RetryDelayOptions } from 'aws-sdk/lib/config-base'
 import { getServiceEnvVarConfig } from '../vscode/env'
+import { AwsCommand } from '../awsClientBuilderV3'
+import { ClientWrapper } from './clientWrapper'
+import { StandardRetryStrategy } from '@smithy/util-retry'
+
+const requiredDevEnvProps = [
+    'id',
+    'status',
+    'inactivityTimeoutMinutes',
+    'repositories',
+    'instanceType',
+    'lastUpdatedTime',
+] as const
+type RequiredDevEnvProps = (typeof requiredDevEnvProps)[number]
 
 export interface CodeCatalystConfig {
     readonly region: string
@@ -57,18 +109,24 @@ export function getCodeCatalystConfig(): CodeCatalystConfig {
     }
 }
 
-export interface DevEnvironment extends CodeCatalyst.DevEnvironmentSummary {
+interface CodeCatalystDevEnvironmentSummary extends RequiredProps<DevEnvironmentSummary, RequiredDevEnvProps> {
+    readonly persistentStorage: RequiredProps<PersistentStorage, 'sizeInGiB'>
+    readonly repositories: RequiredProps<DevEnvironmentRepositorySummary, 'repositoryName'>[]
+}
+
+export interface DevEnvironment extends CodeCatalystDevEnvironmentSummary {
     readonly type: 'devEnvironment'
     readonly id: string
     readonly org: Pick<CodeCatalystOrg, 'name'>
     readonly project: Pick<CodeCatalystProject, 'name'>
+    readonly repositories: RequiredProps<DevEnvironmentRepositorySummary, 'repositoryName'>[]
 }
 
 /** CodeCatalyst developer environment session. */
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface CodeCatalystDevEnvSession extends CodeCatalyst.StartDevEnvironmentResponse {}
 
-export interface CodeCatalystOrg extends CodeCatalyst.SpaceSummary {
+export interface CodeCatalystOrg extends SpaceSummary {
     readonly type: 'org'
     readonly name: string
 }
@@ -79,7 +137,7 @@ export interface CodeCatalystProject extends CodeCatalyst.ProjectSummary {
     readonly org: Pick<CodeCatalystOrg, 'name'>
 }
 
-export interface CodeCatalystRepo extends CodeCatalyst.ListSourceRepositoriesItem {
+export interface CodeCatalystRepo extends ListSourceRepositoriesItem {
     readonly type: 'repo'
     readonly name: string
     readonly org: Pick<CodeCatalystOrg, 'name'>
@@ -101,7 +159,11 @@ export type CodeCatalystResource =
     | CodeCatalystBranch
     | DevEnvironment
 
-function toDevEnv(spaceName: string, projectName: string, summary: CodeCatalyst.DevEnvironmentSummary): DevEnvironment {
+function toDevEnv(
+    spaceName: string,
+    projectName: string,
+    summary: CodeCatalystDevEnvironmentSummary
+): RequiredProps<DevEnvironment, RequiredDevEnvProps> {
     return {
         type: 'devEnvironment',
         org: { name: spaceName },
@@ -127,27 +189,38 @@ function toBranch(
     }
 }
 
-interface RetryOptions {
-    retryDelayOptions?: RetryDelayOptions
-    maxRetries?: number
-}
-
 async function createCodeCatalystClient(
-    connection: SsoConnection,
+    tokenProvider: TokenProvider,
     regionCode: string,
-    endpoint: string | AWS.Endpoint,
-    retryOptions: RetryOptions
+    endpoint: string,
+    maxRetries: number
 ): Promise<CodeCatalyst> {
     const c = await globals.sdkClientBuilder.createAwsService(CodeCatalyst, {
         region: regionCode,
         correctClockSkew: true,
         endpoint: endpoint,
-        token: new TokenProvider(connection),
-        retryDelayOptions: retryOptions.retryDelayOptions,
-        maxRetries: retryOptions.maxRetries,
+        token: tokenProvider,
+        maxRetries,
     } as ServiceConfigurationOptions)
 
     return c
+}
+
+function createCodeCatalystClientV3(
+    tokenProvider: TokenProvider,
+    regionCode: string,
+    endpoint: string,
+    maxRetries: number
+): CodeCatalystSDKClient {
+    return globals.sdkClientBuilderV3.createAwsService({
+        serviceClient: CodeCatalystSDKClient,
+        clientOptions: {
+            region: regionCode,
+            endpoint: endpoint,
+            token: tokenProvider,
+            retryStrategy: new StandardRetryStrategy(maxRetries),
+        },
+    })
 }
 
 export type UserDetails = RequiredProps<
@@ -178,11 +251,13 @@ export async function createClient(
     connection: SsoConnection,
     regionCode = getCodeCatalystConfig().region,
     endpoint = getCodeCatalystConfig().endpoint,
-    retryOptions: RetryOptions = {},
+    maxRetries: number = 5,
     authOptions: AuthOptions = {}
 ): Promise<CodeCatalystClient> {
-    const sdkClient = await createCodeCatalystClient(connection, regionCode, endpoint, retryOptions)
-    const c = new CodeCatalystClientInternal(connection, sdkClient)
+    const tokenProvider = new TokenProvider(connection)
+    const sdkClient = await createCodeCatalystClient(tokenProvider, regionCode, endpoint, maxRetries)
+    const sdkv3Client = createCodeCatalystClientV3(tokenProvider, regionCode, endpoint, maxRetries)
+    const c = new CodeCatalystClientInternal(connection, sdkClient, sdkv3Client)
     try {
         await c.verifySession()
     } catch (e) {
@@ -209,7 +284,7 @@ function fixAliasInRequest<
     return request
 }
 
-class CodeCatalystClientInternal {
+class CodeCatalystClientInternal extends ClientWrapper<CodeCatalystSDKClient> {
     private userDetails?: UserDetails
     private readonly log: logger.Logger
 
@@ -230,13 +305,15 @@ class CodeCatalystClientInternal {
 
     public constructor(
         private readonly connection: SsoConnection,
-        private readonly sdkClient: CodeCatalyst
+        private readonly sdkClient: CodeCatalyst,
+        private readonly sdkClientV3: CodeCatalystSDKClient
     ) {
+        super(sdkClient.config.region!, CodeCatalystSDKClient)
         this.log = logger.getLogger()
     }
 
-    public get regionCode() {
-        return this.sdkClient.config.region!
+    protected override getClient(ignoreCache?: boolean): CodeCatalystSDKClient {
+        return this.sdkClientV3
     }
 
     public get identity(): CodeCatalystClient['identity'] {
@@ -247,16 +324,74 @@ class CodeCatalystClientInternal {
         return { id: this.userDetails.userId, name: this.userDetails.userName }
     }
 
+    private async callV3<
+        CommandInput extends object,
+        CommandOutput extends object,
+        CommandOptions extends CommandInput,
+        Command extends AwsCommand<CommandInput, CommandOutput>,
+    >(
+        cmd: new (o: CommandInput) => Command,
+        commandOptions: CommandOptions,
+        silent: true,
+        defaultVal: CommandOutput
+    ): Promise<CommandOutput>
+    private async callV3<
+        CommandInput extends object,
+        CommandOutput extends object,
+        CommandOptions extends CommandInput,
+        Command extends AwsCommand<CommandInput, CommandOutput>,
+    >(cmd: new (o: CommandInput) => Command, commandOptions: CommandOptions, silent: false): Promise<CommandOutput>
+    private async callV3<
+        CommandInput extends object,
+        CommandOutput extends object,
+        CommandOptions extends CommandInput,
+        Command extends AwsCommand<CommandInput, CommandOutput>,
+    >(
+        cmd: new (o: CommandInput) => Command,
+        commandOptions: CommandOptions,
+        silent: boolean,
+        defaultVal?: CommandOutput
+    ): Promise<CommandOutput> {
+        const bearerToken = (await this.connection.getToken()).accessToken
+
+        return new Promise<CommandOutput>(async (resolve, reject) => {
+            try {
+                const data = await this.makeRequest<CommandInput, CommandOutput, CommandOptions, Command>(
+                    cmd,
+                    commandOptions
+                )
+                resolve(data)
+            } catch (e) {
+                const error = e as Error
+                if (isAccessDeniedError(e)) {
+                    CodeCatalystClientInternal.identityCache.delete(bearerToken)
+                }
+                if (silent) {
+                    if (defaultVal === undefined) {
+                        throw Error()
+                    }
+                    resolve(defaultVal)
+                } else {
+                    reject(new ToolkitError(`CodeCatalyst: request failed with error`, { cause: error }))
+                }
+            }
+        })
+
+        function isAccessDeniedError(e: any): boolean {
+            return e.code === 'AccessDeniedException' || e.statusCode === 401
+        }
+    }
+
     private async call<T>(req: AWS.Request<T, AWS.AWSError>, silent: true, defaultVal: T): Promise<T>
     private async call<T>(req: AWS.Request<T, AWS.AWSError>, silent: false): Promise<T>
     private async call<T>(req: AWS.Request<T, AWS.AWSError>, silent: boolean, defaultVal?: T): Promise<T> {
         const log = this.log
         const bearerToken = (await this.connection.getToken()).accessToken
         const perflog = new PerfLog('API request')
+        const r = req as any
 
         return new Promise<T>((resolve, reject) => {
             req.send(function (e, data) {
-                const r = req as any
                 const timecost = perflog.elapsed().toFixed(1)
                 if (e) {
                     if (e.code === 'AccessDeniedException' || e.statusCode === 401) {
@@ -339,10 +474,10 @@ class CodeCatalystClientInternal {
      * @returns PAT secret
      */
     public async createAccessToken(
-        args: CodeCatalyst.CreateAccessTokenRequest
-    ): Promise<CodeCatalyst.CreateAccessTokenResponse> {
+        args: CreateAccessTokenRequest
+    ): Promise<RequiredProps<CreateAccessTokenResponse, 'secret'>> {
         try {
-            return this.call(this.sdkClient.createAccessToken(args), false)
+            return await this.callV3(CreateAccessTokenCommand, args, false)
         } catch (e) {
             if ((e as Error).name === 'ServiceQuotaExceededException') {
                 throw new ToolkitError('Access token limit exceeded', { cause: e as Error })
@@ -351,10 +486,8 @@ class CodeCatalystClientInternal {
         }
     }
 
-    public async getSubscription(
-        request: CodeCatalyst.GetSubscriptionRequest
-    ): Promise<CodeCatalyst.GetSubscriptionResponse> {
-        return this.call(this.sdkClient.getSubscription(request), false)
+    public async getSubscription(request: GetSubscriptionRequest): Promise<CodeCatalyst.GetSubscriptionResponse> {
+        return this.callV3(GetSubscriptionCommand, request, false)
     }
 
     /**
@@ -391,40 +524,49 @@ class CodeCatalystClientInternal {
         return (await this.connection.getToken()).accessToken
     }
 
-    private async getUserDetails(args: CodeCatalyst.GetUserDetailsRequest) {
-        const resp = await this.call(this.sdkClient.getUserDetails(args), false)
+    private async getUserDetails(args: GetUserDetailsRequest) {
+        const resp: GetUserDetailsCommandOutput = await this.callV3(GetUserDetailsCommand, args, false)
         assertHasProps(resp, 'userId', 'userName', 'displayName', 'primaryEmail')
 
         return { ...resp, version: resp.version } as const
     }
 
-    public async getSpace(request: CodeCatalyst.GetSpaceRequest): Promise<CodeCatalystOrg> {
-        const resp = await this.call(this.sdkClient.getSpace(request), false)
-
+    public async getSpace(request: GetSpaceRequest): Promise<CodeCatalystOrg> {
+        const resp: GetSpaceCommandOutput = await this.callV3(GetSpaceCommand, request, false)
+        assertHasProps(resp, 'name', 'regionName')
         return { ...resp, type: 'org' }
     }
 
-    public async getProject(request: CodeCatalyst.GetProjectRequest): Promise<CodeCatalystProject> {
-        const resp = await this.call(this.sdkClient.getProject(request), false)
-
+    public async getProject(request: RequiredProps<GetProjectRequest, 'spaceName'>): Promise<CodeCatalystProject> {
+        const resp: GetProjectCommandOutput = await this.callV3(GetProjectCommand, request, false)
+        assertHasProps(resp, 'name')
         return { ...resp, type: 'project', org: { name: request.spaceName } }
     }
 
     /**
      * Gets a list of all spaces (orgs) for the current CodeCatalyst user.
      */
-    public listSpaces(request: CodeCatalyst.ListSpacesRequest = {}): AsyncCollection<CodeCatalystOrg[]> {
-        const requester = async (request: CodeCatalyst.ListSpacesRequest) =>
-            this.call(this.sdkClient.listSpaces(request), true, { items: [] })
-        const collection = pageableToCollection(requester, request, 'nextToken', 'items')
+    public listSpaces(request: ListSpacesRequest = {}): AsyncCollection<CodeCatalystOrg[]> {
+        const requester: (request: ListSpacesRequest) => Promise<ListSpacesResponse> = async (request) =>
+            this.callV3(ListSpacesCommand, request, true, { items: [] })
+        const collection = pageableToCollection(requester, request, 'nextToken', 'items').filter(isDefined)
+        // ts doesn't recognize nested assertion, so we add cast.This is safe because we assert it in the same line.
+        return collection.map((summaries) => summaries.filter(hasName).map(toOrg))
 
-        return collection.map((summaries) => summaries?.map((s) => ({ type: 'org', ...s })) ?? [])
+        function toOrg<T extends RequiredProps<SpaceSummary, 'name'>>(s: T): CodeCatalystOrg {
+            return {
+                type: 'org',
+                ...s,
+            }
+        }
     }
 
     /**
      * Gets a list of all projects for the given CodeCatalyst user.
      */
-    public listProjects(request: CodeCatalyst.ListProjectsRequest): AsyncCollection<CodeCatalystProject[]> {
+    public listProjects(
+        request: RequiredProps<ListProjectsRequest, 'spaceName'>
+    ): AsyncCollection<CodeCatalystProject[]> {
         // Only get projects the user is a member of.
         request.filters = [
             ...(request.filters ?? []),
@@ -434,34 +576,37 @@ class CodeCatalystClientInternal {
             },
         ]
 
-        const requester = async (request: CodeCatalyst.ListProjectsRequest) =>
-            this.call(this.sdkClient.listProjects(request), true, { items: [] })
-        const collection = pageableToCollection(requester, request, 'nextToken', 'items')
+        const requester: (request: ListProjectsRequest) => Promise<ListProjectsResponse> = (request) =>
+            this.callV3(ListProjectsCommand, request, true, { items: [] })
 
-        return collection.map(
-            (summaries) =>
-                summaries?.map((s) => ({
-                    type: 'project',
-                    org: { name: request.spaceName },
-                    ...s,
-                })) ?? []
-        )
+        const collection = pageableToCollection(requester, request, 'nextToken', 'items')
+        return collection.filter(isDefined).map((summaries) => summaries.filter(hasName).map(toProject))
+
+        function toProject<T extends RequiredProps<ProjectSummary, 'name'>>(s: T): CodeCatalystProject {
+            return {
+                type: 'project',
+                org: { name: request.spaceName },
+                ...s,
+            }
+        }
     }
 
     /**
      * Gets a flat list of all devenvs for the given CodeCatalyst project.
      */
-    public listDevEnvironments(proj: CodeCatalystProject): AsyncCollection<DevEnvironment[]> {
+    public listDevEnvironments(
+        proj: CodeCatalystProject
+    ): AsyncCollection<RequiredProps<DevEnvironment, RequiredDevEnvProps>[]> {
         const initRequest = { spaceName: proj.org.name, projectName: proj.name }
-        const requester = async (request: CodeCatalyst.ListDevEnvironmentsRequest) =>
-            this.call(this.sdkClient.listDevEnvironments(request), true, {
-                // spaceName: proj.org.name,
-                // projectName: proj.name,
-                items: [],
-            })
-        const collection = pageableToCollection(requester, initRequest, 'nextToken', 'items')
-
-        return collection.map((envs) => envs.map((s) => toDevEnv(proj.org.name, proj.name, s)))
+        const requester: (request: ListDevEnvironmentsRequest) => Promise<ListDevEnvironmentsResponse> = (request) =>
+            this.callV3(ListDevEnvironmentsCommand, request, true, { items: [] })
+        const collection = pageableToCollection(requester, initRequest, 'nextToken' as never, 'items').filter(isDefined)
+        // ts unable to recognize nested assertion here, so we need to cast. This is safe because we assert it in the same line.
+        return collection.map((envs) => {
+            const filteredEnvs = envs.filter(isValidEnvSummary)
+            const mappedEnvs = filteredEnvs.map((s) => toDevEnv(proj.org.name, proj.name, s))
+            return mappedEnvs
+        })
     }
 
     /**
@@ -474,7 +619,12 @@ class CodeCatalystClientInternal {
         thirdParty: boolean = true
     ): AsyncCollection<CodeCatalystRepo[]> {
         const requester = async (request: CodeCatalyst.ListSourceRepositoriesRequest) => {
-            const allRepositories = this.call(this.sdkClient.listSourceRepositories(request), true, { items: [] })
+            const allRepositories: Promise<ListSourceRepositoriesResponse> = this.callV3(
+                ListSourceRepositoriesCommand,
+                request,
+                true,
+                { items: [] }
+            )
             let finalRepositories = allRepositories
 
             // Filter out 3P repos
@@ -484,7 +634,7 @@ class CodeCatalystClientInternal {
                         this,
                         request.spaceName,
                         request.projectName,
-                        repos.items
+                        repos.items?.filter(hasName)
                     )
                     return repos
                 })
@@ -494,15 +644,16 @@ class CodeCatalystClientInternal {
         }
 
         const collection = pageableToCollection(requester, request, 'nextToken', 'items')
-        return collection.map(
-            (summaries) =>
-                summaries?.map((s) => ({
-                    type: 'repo',
-                    org: { name: request.spaceName },
-                    project: { name: request.projectName },
-                    ...s,
-                })) ?? []
-        )
+        return collection.filter(isDefined).map((summaries) => summaries.filter(hasName).map(toCodeCatalystRepo))
+
+        function toCodeCatalystRepo(s: RequiredProps<ListSourceRepositoriesItem, 'name'>): CodeCatalystRepo {
+            return {
+                type: 'repo',
+                org: { name: request.spaceName },
+                project: { name: request.projectName },
+                ...s,
+            }
+        }
     }
 
     public listBranches(
@@ -610,13 +761,20 @@ class CodeCatalystClientInternal {
         return this.call(this.sdkClient.stopDevEnvironment(args), false)
     }
 
-    public async getDevEnvironment(args: CodeCatalyst.GetDevEnvironmentRequest): Promise<DevEnvironment> {
+    public async getDevEnvironment(
+        args: RequiredProps<GetDevEnvironmentRequest, 'spaceName' | 'projectName'>
+    ): Promise<RequiredProps<DevEnvironment, RequiredDevEnvProps>> {
         const a = { ...args }
         delete (a as any).ides
         delete (a as any).repositories
-        const r = await this.call(this.sdkClient.getDevEnvironment(a), false)
 
-        return toDevEnv(args.spaceName, args.projectName, { ...args, ...r })
+        const r: GetDevEnvironmentResponse = await this.callV3(GetDevEnvironmentCommand, a, false)
+        const summary = { ...args, ...r }
+        if (!isValidEnvSummary(summary)) {
+            throw new ToolkitError(`GetDevEnvironment failed due to response missing required properties`)
+        }
+
+        return toDevEnv(args.spaceName, args.projectName, summary)
     }
 
     public async deleteDevEnvironment(
@@ -813,8 +971,8 @@ export async function excludeThirdPartyRepos(
     client: CodeCatalystClient,
     spaceName: CodeCatalystOrg['name'],
     projectName: CodeCatalystProject['name'],
-    items?: Pick<ListSourceRepositoriesItem, 'name'>[]
-): Promise<ListSourceRepositoriesItems | undefined> {
+    items?: RequiredProps<ListSourceRepositoriesItem, 'name'>[]
+): Promise<ListSourceRepositoriesItem[] | undefined> {
     if (items === undefined) {
         return items
     }
@@ -832,7 +990,7 @@ export async function excludeThirdPartyRepos(
                     : item
             })
         )
-    ).filter((item) => item !== undefined) as CodeCatalyst.ListSourceRepositoriesItem[]
+    ).filter(isDefined)
 }
 
 /**
@@ -850,4 +1008,27 @@ export async function isThirdPartyRepo(
         !Uri.parse(url).authority.endsWith('codecatalyst.aws') &&
         !Uri.parse(url).authority.endsWith('caws.dev-tools.aws.dev')
     )
+}
+
+// These type guard wrappers are needed because type assertions fail
+// to travel up function scope (see: https://github.com/microsoft/TypeScript/issues/9998)
+
+function hasPersistentStorage<T extends DevEnvironmentSummary>(
+    s: T
+): s is T & { persistentStorage: { sizeInGiB: number } } {
+    return hasProps(s, 'persistentStorage') && hasProps(s.persistentStorage, 'sizeInGiB')
+}
+
+function hasRepositories<T extends DevEnvironmentSummary>(
+    s: T
+): s is T & { repositories: RequiredProps<DevEnvironmentRepositorySummary, 'repositoryName'>[] } {
+    return hasProps(s, 'repositories') && s.repositories.every((r) => hasProps(r, 'repositoryName'))
+}
+
+function hasName<T extends { name: string | undefined }>(s: T): s is RequiredProps<T, 'name'> {
+    return hasProps(s, 'name')
+}
+
+function isValidEnvSummary(s: DevEnvironmentSummary): s is CodeCatalystDevEnvironmentSummary {
+    return hasProps(s, ...requiredDevEnvProps) && hasPersistentStorage(s) && hasRepositories(s)
 }
