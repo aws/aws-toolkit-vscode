@@ -1760,6 +1760,39 @@
             "type": "string",
             "enum": ["OPTIN", "OPTOUT"]
         },
+        "PackageInfo": {
+            "type": "structure",
+            "members": {
+                "executionCommand": { "shape": "SensitiveString" },
+                "buildCommand": { "shape": "SensitiveString" },
+                "buildOrder": { "shape": "PackageInfoBuildOrderInteger" },
+                "testFramework": { "shape": "String" },
+                "packageSummary": { "shape": "PackageInfoPackageSummaryString" },
+                "packagePlan": { "shape": "PackageInfoPackagePlanString" },
+                "targetFileInfoList": { "shape": "TargetFileInfoList" }
+            }
+        },
+        "PackageInfoBuildOrderInteger": {
+            "type": "integer",
+            "box": true,
+            "min": 0
+        },
+        "PackageInfoList": {
+            "type": "list",
+            "member": { "shape": "PackageInfo" }
+        },
+        "PackageInfoPackagePlanString": {
+            "type": "string",
+            "max": 30720,
+            "min": 0,
+            "sensitive": true
+        },
+        "PackageInfoPackageSummaryString": {
+            "type": "string",
+            "max": 30720,
+            "min": 0,
+            "sensitive": true
+        },
         "PaginationToken": {
             "type": "string",
             "max": 2048,
@@ -2418,6 +2451,45 @@
             "min": 1,
             "sensitive": true
         },
+        "TargetFileInfo": {
+            "type": "structure",
+            "members": {
+                "filePath": { "shape": "SensitiveString" },
+                "testFilePath": { "shape": "SensitiveString" },
+                "testCoverage": { "shape": "TargetFileInfoTestCoverageInteger" },
+                "fileSummary": { "shape": "TargetFileInfoFileSummaryString" },
+                "filePlan": { "shape": "TargetFileInfoFilePlanString" },
+                "codeReferences": { "shape": "References" },
+                "numberOfTestMethods": { "shape": "TargetFileInfoNumberOfTestMethodsInteger" }
+            }
+        },
+        "TargetFileInfoFilePlanString": {
+            "type": "string",
+            "max": 30720,
+            "min": 0,
+            "sensitive": true
+        },
+        "TargetFileInfoFileSummaryString": {
+            "type": "string",
+            "max": 30720,
+            "min": 0,
+            "sensitive": true
+        },
+        "TargetFileInfoList": {
+            "type": "list",
+            "member": { "shape": "TargetFileInfo" }
+        },
+        "TargetFileInfoNumberOfTestMethodsInteger": {
+            "type": "integer",
+            "box": true,
+            "min": 0
+        },
+        "TargetFileInfoTestCoverageInteger": {
+            "type": "integer",
+            "box": true,
+            "max": 100,
+            "min": 0
+        },
         "TaskAssistPlan": {
             "type": "list",
             "member": { "shape": "TaskAssistPlanStep" },
@@ -2556,7 +2628,11 @@
                 "status": { "shape": "TestGenerationJobStatus" },
                 "shortAnswer": { "shape": "SensitiveString" },
                 "creationTime": { "shape": "Timestamp" },
-                "progressRate": { "shape": "TestGenerationJobProgressRateInteger" }
+                "progressRate": { "shape": "TestGenerationJobProgressRateInteger" },
+                "jobStatusReason": { "shape": "String" },
+                "jobSummary": { "shape": "TestGenerationJobJobSummaryString" },
+                "jobPlan": { "shape": "TestGenerationJobJobPlanString" },
+                "packageInfoList": { "shape": "PackageInfoList" }
             },
             "documentation": "<p>Represents a test generation job</p>"
         },
@@ -2566,6 +2642,18 @@
             "max": 128,
             "min": 1,
             "pattern": "[a-zA-Z0-9-_]+"
+        },
+        "TestGenerationJobJobPlanString": {
+            "type": "string",
+            "max": 30720,
+            "min": 0,
+            "sensitive": true
+        },
+        "TestGenerationJobJobSummaryString": {
+            "type": "string",
+            "max": 30720,
+            "min": 0,
+            "sensitive": true
         },
         "TestGenerationJobProgressRateInteger": {
             "type": "integer",
