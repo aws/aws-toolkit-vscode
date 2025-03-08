@@ -157,7 +157,11 @@ export class SecurityIssueHoverProvider implements vscode.HoverProvider {
      * @returns The markdown string
      */
     private _makeCodeBlock(code: string, language?: string) {
-        const lines = code.replaceAll('\n\\ No newline at end of file', '').split('\n')
+        const lines = code
+            .replaceAll('\n\\ No newline at end of file', '')
+            .replaceAll('--- buggyCode\n', '')
+            .replaceAll('+++ fixCode\n', '')
+            .split('\n')
         const maxLineChars = lines.reduce((acc, curr) => Math.max(acc, curr.length), 0)
         const paddedLines = lines.map((line) => line.padEnd(maxLineChars + 2))
 
