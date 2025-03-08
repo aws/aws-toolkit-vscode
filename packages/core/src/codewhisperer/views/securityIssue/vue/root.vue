@@ -80,12 +80,19 @@
             v-if="!isFixAvailable"
             @click="generateFix"
             class="mr-8 button-theme-primary"
-            :disabled="isGenerateFixLoading"
+            :disabled="isGenerateFixLoading || isGenerateFixDisabled"
         >
             Generate Fix
         </button>
         <button v-if="isFixAvailable" @click="applyFix" class="mr-8 button-theme-primary">Accept Fix</button>
-        <button v-if="isFixAvailable" @click="regenerateFix" class="mr-8 button-theme-secondary">Regenerate Fix</button>
+        <button
+            v-if="isFixAvailable"
+            @click="regenerateFix"
+            class="mr-8 button-theme-secondary"
+            :disabled="isGenerateFixDisabled"
+        >
+            Regenerate Fix
+        </button>
         <button @click="explainWithQ" class="mr-8 button-theme-secondary">Explain</button>
         <button @click="ignoreIssue" class="mr-8 button-theme-secondary">Ignore</button>
         <button @click="ignoreAllIssues" class="mr-8 button-theme-secondary">Ignore All</button>
@@ -105,6 +112,7 @@ import markdownIt from 'markdown-it'
 import hljs from 'highlight.js'
 import { parsePatch } from 'diff'
 import { CodeScanIssue } from '../../../models/model'
+import { sasRuleId } from '../../../models/constants'
 
 const client = WebviewClientFactory.create<SecurityIssueWebview>()
 const severityImages: Record<string, string> = {
@@ -198,6 +206,7 @@ export default defineComponent({
             fixedCode: '',
             referenceText: '',
             referenceSpan: [0, 0],
+            isGenerateFixDisabled: false,
         }
     },
     created() {
@@ -278,6 +287,7 @@ export default defineComponent({
             this.endLine = issue.endLine
             this.isFixAvailable = false
             this.isFixDescriptionAvailable = false
+            this.isGenerateFixDisabled = issue.ruleId === sasRuleId
             if (suggestedFix) {
                 this.isFixAvailable = !!suggestedFix.code && suggestedFix.code?.trim() !== ''
                 this.suggestedFix = suggestedFix.code ?? ''
