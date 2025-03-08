@@ -42,6 +42,7 @@ export class Session {
     public projectRootPath: string = ''
     public fileLanguage: string | undefined = 'plaintext'
     public stopIteration: boolean = false
+    public jobSummary: string = ''
     public targetFileInfo: TargetFileInfo | undefined
 
     // Telemetry
