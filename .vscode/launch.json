@@ -2,21 +2,23 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Attach to Kubernetes Pod (Python)",
+            "name": "Attach to Kubernetes Pod (Python) - Namespace: default",
             "type": "cloudcode.kubernetes",
             "request": "attach",
             "language": "Python",
             "debugPort": 3000,
+            // The podSelector is used to specify the criteria for selecting the Kubernetes pod to attach to.
             "podSelector": {
                 "app": "deployment-name"
             },
             "localRoot": "${workspaceFolder}",
-            "remoteRoot": "${workspaceFolder}/remote"
+            "remoteRoot": "/path/to/actual/remote/directory"
         },
         {
-            "name": "Node.js: Current File",
+            "name": "Node.js: Current File (Development Environment)",
             "type": "node",
             "request": "launch",
+            // The program property refers to the currently active file in the editor.
             "program": "${file}",
             "runtimeArgs": [
                 "-r",
@@ -24,11 +26,6 @@
             ],
             "cwd": "${workspaceFolder}",
             "console": "integratedTerminal",
-            "internalConsoleOptions": "neverOpen"
         }
-    ],
-    "extensions": [
-        "ms-vscode.node-debug2",
-        "ms-vscode.node-debug"
     ]
 }
