@@ -7,7 +7,7 @@ import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { makeChildrenNodes } from '../../../shared/treeview/utils'
 import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
 import { Ec2InstanceNode } from './ec2InstanceNode'
-import { Ec2Client } from '../../../shared/clients/ec2Client'
+import { Ec2Client } from '../../../shared/clients/ec2'
 import { updateInPlace } from '../../../shared/utilities/collectionUtils'
 import { PollingSet } from '../../../shared/utilities/pollingSet'
 
@@ -30,7 +30,7 @@ export class Ec2ParentNode extends AWSTreeNodeBase {
     }
 
     public override async getChildren(): Promise<AWSTreeNodeBase[]> {
-        return await makeChildrenNodes({
+        const result = await makeChildrenNodes({
             getChildNodes: async () => {
                 await this.updateChildren()
 
@@ -39,6 +39,7 @@ export class Ec2ParentNode extends AWSTreeNodeBase {
             getNoChildrenPlaceholderNode: async () => new PlaceholderNode(this, this.placeHolderMessage),
             sort: (nodeA, nodeB) => nodeA.name.localeCompare(nodeB.name),
         })
+        return result
     }
 
     public trackPendingNode(instanceId: string) {
@@ -47,15 +48,18 @@ export class Ec2ParentNode extends AWSTreeNodeBase {
         }
         this.pollingSet.add(instanceId)
     }
-
+    // TODO: make use of childNodeLoader to avoid loading all of this at once.
     public async updateChildren(): Promise<void> {
-        const ec2Instances = await (await this.ec2Client.getInstances()).toMap((instance) => instance.InstanceId)
+        const instanceMap = await this.ec2Client
+            .getInstances()
+            .flatten()
+            .toMap((instance) => instance.InstanceId)
+
         updateInPlace(
             this.ec2InstanceNodes,
-            ec2Instances.keys(),
-            (key) => this.ec2InstanceNodes.get(key)!.updateInstance(ec2Instances.get(key)!),
-            (key) =>
-                new Ec2InstanceNode(this, this.ec2Client, this.regionCode, this.partitionId, ec2Instances.get(key)!)
+            instanceMap.keys(),
+            (key) => this.ec2InstanceNodes.get(key)!.updateInstance(instanceMap.get(key)!),
+            (key) => new Ec2InstanceNode(this, this.ec2Client, this.regionCode, this.partitionId, instanceMap.get(key)!)
         )
     }
 

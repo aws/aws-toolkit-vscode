@@ -1,3 +1,21 @@
+## 1.50.0 2025-03-06
+
+- **Bug Fix** /doc: Usage in multiple chat tabs may cause unexpected behavior.
+- **Bug Fix** /review: subsequent reviews weren't possible
+- **Feature** Amazon Q chat: Use `@` to add folders, files, and saved prompts as context
+- **Feature** Amazon Q chat: increase chat input height to 3 lines
+- **Feature** Amazon Q chat: Show list of files sent as context in chat response
+- **Feature** Amazon Q chat: Add support for `.md` file rules in workspace-level `.amazonq/rules` directory
+- **Test** add Q Chat /review command test coverage
+
+## 1.49.0 2025-02-27
+
+- **Bug Fix** Amazon Q /test: Unit test generation displays an inaccurate diff view for non-primary packages in the workspace.
+- **Bug Fix** Amazon Q /doc: Fix uploading file method throwing incorrect workspace too large error message
+- **Bug Fix** /transform: skip running tests locally when user chooses to do so
+- **Bug Fix** /review: ignored lines should not show up in scan issues
+- **Bug Fix** /test: update capability card text
+
 ## 1.48.0 2025-02-20
 
 - **Bug Fix** /dev and /doc: Multi-root workspace with duplicate files causes infinite 'Uploading code...' loop

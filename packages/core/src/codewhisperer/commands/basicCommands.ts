@@ -359,6 +359,7 @@ export const openSecurityIssuePanel = Commands.declare(
             detectorId: targetIssue.detectorId,
             ruleId: targetIssue.ruleId,
             credentialStartUrl: AuthUtil.instance.startUrl,
+            autoDetected: targetIssue.autoDetected,
         })
         TelemetryHelper.instance.sendCodeScanRemediationsEvent(
             undefined,
@@ -834,6 +835,7 @@ export const ignoreAllIssues = Commands.declare(
                     findingId: targetIssue.findingId,
                     ruleId: targetIssue.ruleId,
                     variant: 'all',
+                    autoDetected: targetIssue.autoDetected,
                 })
             })
         }
@@ -867,6 +869,7 @@ export const ignoreIssue = Commands.declare(
                 detectorId: targetIssue.detectorId,
                 findingId: targetIssue.findingId,
                 ruleId: targetIssue.ruleId,
+                autoDetected: targetIssue.autoDetected,
             })
         })
     }

@@ -263,6 +263,19 @@ export async function startSecurityScan(
             scope,
             editor
         )
+        for (const issue of securityRecommendationCollection
+            .flatMap(({ issues }) => issues)
+            .filter(({ visible, autoDetected }) => visible && !autoDetected)) {
+            telemetry.codewhisperer_codeScanIssueDetected.emit({
+                autoDetected: issue.autoDetected,
+                codewhispererCodeScanJobId: issue.scanJobId,
+                detectorId: issue.detectorId,
+                findingId: issue.findingId,
+                includesFix: issue.suggestedFixes.length > 0,
+                ruleId: issue.ruleId,
+                result: 'Succeeded',
+            })
+        }
         const { total, withFixes } = securityRecommendationCollection.reduce(
             (accumulator, current) => ({
                 total: accumulator.total + current.issues.length,

@@ -76,7 +76,6 @@ import { CodeWhispererCommandBackend, CodeWhispererCommandDeclarations } from '.
 import { SecurityIssueHoverProvider } from './service/securityIssueHoverProvider'
 import { SecurityIssueCodeActionProvider } from './service/securityIssueCodeActionProvider'
 import { listCodeWhispererCommands } from './ui/statusBarMenu'
-import { updateUserProxyUrl } from './client/agent'
 import { Container } from './service/serviceContainer'
 import { debounceStartSecurityScan } from './commands/startSecurityScan'
 import { securityScanLanguageContext } from './util/securityScanLanguageContext'
@@ -190,10 +189,6 @@ export async function activate(context: ExtContext): Promise<void> {
                             void vscode.commands.executeCommand('workbench.action.reloadWindow')
                         }
                     })
-            }
-
-            if (configurationChangeEvent.affectsConfiguration('http.proxy')) {
-                updateUserProxyUrl()
             }
 
             if (configurationChangeEvent.affectsConfiguration('amazonQ.ignoredSecurityIssues')) {
