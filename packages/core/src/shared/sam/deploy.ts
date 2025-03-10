@@ -9,7 +9,7 @@ import { TreeNode, isTreeNode } from '../treeview/resourceTreeDataProvider'
 import globals from '../../shared/extensionGlobals'
 import { ToolkitError } from '../../shared/errors'
 import { DefaultCloudFormationClient } from '../clients/cloudFormationClient'
-import { DefaultS3Client } from '../clients/s3Client'
+import { S3Client } from '../clients/s3'
 import { samDeployUrl } from '../constants'
 import { getSpawnEnv } from '../env/resolveEnv'
 import { CloudFormationTemplateRegistry } from '../fs/templateRegistry'
@@ -127,7 +127,7 @@ export class DeployWizard extends CompositeWizard<DeployParams> {
                 paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
         })
         this.form.bucketName.bindPrompter(
-            ({ region }) => createBucketNamePrompter(new DefaultS3Client(region!), deployMementoRootKey, samDeployUrl),
+            ({ region }) => createBucketNamePrompter(new S3Client(region!), deployMementoRootKey, samDeployUrl),
             {
                 showWhen: ({ bucketSource }) => bucketSource === BucketSource.UserProvided,
             }

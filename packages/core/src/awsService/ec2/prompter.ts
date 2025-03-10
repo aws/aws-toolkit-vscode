@@ -5,29 +5,41 @@
 
 import { RegionSubmenu, RegionSubmenuResponse } from '../../shared/ui/common/regionSubmenu'
 import { DataQuickPickItem } from '../../shared/ui/pickerPrompter'
-import { Ec2Client, SafeEc2Instance } from '../../shared/clients/ec2Client'
+import { Ec2Client, Ec2Instance } from '../../shared/clients/ec2'
 import { isValidResponse } from '../../shared/wizards/wizard'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
-import { AsyncCollection } from '../../shared/utilities/asyncCollection'
 import { getIconCode } from './utils'
 import { Ec2Node } from './explorer/ec2ParentNode'
 import { Ec2InstanceNode } from './explorer/ec2InstanceNode'
+import { AsyncCollection } from '../../shared/utilities/asyncCollection'
 
-export type instanceFilter = (instance: SafeEc2Instance) => boolean
+export type InstanceFilter = (instance: Ec2Instance) => boolean
 export interface Ec2Selection {
     instanceId: string
     region: string
 }
 
-export class Ec2Prompter {
-    public constructor(protected filter?: instanceFilter) {}
+interface Ec2PrompterOptions {
+    instanceFilter: InstanceFilter
+    getInstancesFromRegion: (regionCode: string) => AsyncCollection<Ec2Instance[]>
+}
 
-    public static getLabel(instance: SafeEc2Instance) {
+export class Ec2Prompter {
+    protected instanceFilter: InstanceFilter
+    protected getInstancesFromRegion: (regionCode: string) => AsyncCollection<Ec2Instance[]>
+
+    public constructor(options?: Partial<Ec2PrompterOptions>) {
+        this.instanceFilter = options?.instanceFilter ?? ((_) => true)
+        this.getInstancesFromRegion =
+            options?.getInstancesFromRegion ?? ((regionCode: string) => new Ec2Client(regionCode).getInstances())
+    }
+
+    public static getLabel(instance: Ec2Instance) {
         const icon = `$(${getIconCode(instance)})`
         return `${instance.Name ?? '(no name)'} \t ${icon} ${instance.LastSeenStatus.toUpperCase()}`
     }
 
-    protected static asQuickPickItem(instance: SafeEc2Instance): DataQuickPickItem<string> {
+    public static asQuickPickItem(instance: Ec2Instance): DataQuickPickItem<string> {
         return {
             label: Ec2Prompter.getLabel(instance),
             detail: instance.InstanceId,
@@ -35,7 +47,7 @@ export class Ec2Prompter {
         }
     }
 
-    protected static getSelectionFromResponse(response: RegionSubmenuResponse<string>): Ec2Selection {
+    public static getSelectionFromResponse(response: RegionSubmenuResponse<string>): Ec2Selection {
         return {
             instanceId: response.data,
             region: response.region,
@@ -53,21 +65,15 @@ export class Ec2Prompter {
         }
     }
 
-    protected async getInstancesFromRegion(regionCode: string): Promise<AsyncCollection<SafeEc2Instance>> {
-        const client = new Ec2Client(regionCode)
-        return await client.getInstances()
-    }
-
-    protected async getInstancesAsQuickPickItems(region: string): Promise<DataQuickPickItem<string>[]> {
-        return (await this.getInstancesFromRegion(region))
-            .filter(this.filter ? (instance) => this.filter!(instance) : (instance) => true)
-            .map((instance) => Ec2Prompter.asQuickPickItem(instance))
-            .promise()
+    public getInstancesAsQuickPickItems(region: string): AsyncIterable<DataQuickPickItem<string>[]> {
+        return this.getInstancesFromRegion(region).map((instancePage: Ec2Instance[]) =>
+            instancePage.filter(this.instanceFilter).map((i) => Ec2Prompter.asQuickPickItem(i))
+        )
     }
 
     private createEc2ConnectPrompter(): RegionSubmenu<string> {
         return new RegionSubmenu(
-            async (region) => this.getInstancesAsQuickPickItems(region),
+            (region) => this.getInstancesAsQuickPickItems(region),
             { title: 'Select EC2 Instance', matchOnDetail: true },
             { title: 'Select Region for EC2 Instance' },
             'Instances'
@@ -75,8 +81,8 @@ export class Ec2Prompter {
     }
 }
 
-export async function getSelection(node?: Ec2Node, filter?: instanceFilter): Promise<Ec2Selection> {
-    const prompter = new Ec2Prompter(filter)
+export async function getSelection(node?: Ec2Node, instanceFilter?: InstanceFilter): Promise<Ec2Selection> {
+    const prompter = new Ec2Prompter({ instanceFilter })
     const selection = node && node instanceof Ec2InstanceNode ? node.toSelection() : await prompter.promptUser()
     return selection
 }

@@ -4,7 +4,7 @@
  */
 
 import bytes from 'bytes'
-import { Bucket, DownloadFileRequest, File, S3Client } from '../../../shared/clients/s3Client'
+import { S3Bucket, DownloadFileRequest, File, S3Client } from '../../../shared/clients/s3'
 import { AWSResourceNode } from '../../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { localize } from '../../../shared/utilities/vsCodeUtils'
@@ -20,7 +20,7 @@ import { formatLocalized, getRelativeDate } from '../../../shared/datetime'
  */
 export class S3FileNode extends AWSTreeNodeBase implements AWSResourceNode {
     public constructor(
-        public readonly bucket: Bucket,
+        public readonly bucket: S3Bucket,
         public readonly file: File,
         public readonly parent: S3BucketNode | S3FolderNode,
         public readonly s3: S3Client,
@@ -59,7 +59,7 @@ export class S3FileNode extends AWSTreeNodeBase implements AWSResourceNode {
      * See {@link S3Client.deleteFile}.
      */
     public async deleteFile(): Promise<void> {
-        await this.s3.deleteObject({ bucketName: this.bucket.name, key: this.file.key })
+        await this.s3.deleteObject({ bucketName: this.bucket.Name, key: this.file.key })
     }
 
     public get arn(): string {
@@ -75,7 +75,7 @@ export class S3FileNode extends AWSTreeNodeBase implements AWSResourceNode {
     }
 
     public [inspect.custom](): string {
-        return `S3FileNode (bucket=${this.bucket.name}, file=${this.file.key}}`
+        return `S3FileNode (bucket=${this.bucket.Name}, file=${this.file.key}}`
     }
 }
 

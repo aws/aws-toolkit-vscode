@@ -4,13 +4,13 @@
  */
 
 import assert from 'assert'
-import { IAM } from 'aws-sdk'
 import * as sinon from 'sinon'
 import * as vscode from 'vscode'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import { isDocumentValid, isStepFunctionsRole, StateMachineGraphCache } from '../../stepFunctions/utils'
 import globals from '../../shared/extensionGlobals'
 import { fs } from '../../shared'
+import { IamRole } from '../../shared/clients/iam'
 
 const requestBody = 'request body string'
 const assetUrl = 'https://something'
@@ -174,7 +174,7 @@ describe('StateMachineGraphCache', function () {
 })
 
 describe('isStepFunctionsRole', function () {
-    const baseIamRole: IAM.Role = {
+    const baseIamRole: IamRole = {
         Path: '',
         RoleName: '',
         RoleId: 'myRole',
@@ -183,7 +183,7 @@ describe('isStepFunctionsRole', function () {
     }
 
     it('return true if the Step Functions service principal is in the AssumeRolePolicyDocument', function () {
-        const role: IAM.Role = {
+        const role: IamRole = {
             ...baseIamRole,
             AssumeRolePolicyDocument: JSON.stringify({
                 Version: '2012-10-17',
@@ -206,7 +206,7 @@ describe('isStepFunctionsRole', function () {
     })
 
     it("returns false if the AssumeRolePolicyDocument does not contain Step Functions' service principal", () => {
-        const role: IAM.Role = {
+        const role: IamRole = {
             ...baseIamRole,
             AssumeRolePolicyDocument: JSON.stringify({
                 Version: '2012-10-17',

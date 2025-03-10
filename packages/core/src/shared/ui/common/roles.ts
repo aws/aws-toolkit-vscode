@@ -3,8 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { IAM } from 'aws-sdk'
-import { IamClient } from '../../clients/iamClient'
+import { IamClient, IamRole } from '../../clients/iam'
 import { createCommonButtons, createPlusButton, createRefreshButton } from '../buttons'
 import { createQuickPick, DataQuickPickItem, QuickPickPrompter } from '../pickerPrompter'
 import * as nls from 'vscode-nls'
@@ -21,19 +20,19 @@ interface RolePrompterOptions {
     readonly title?: string
     readonly helpUrl?: string | vscode.Uri
     readonly noRoleDetail?: string
-    readonly roleFilter?: (role: IAM.Role) => boolean
-    readonly createRole?: () => Promise<IAM.Role>
+    readonly roleFilter?: (role: IamRole) => boolean
+    readonly createRole?: () => Promise<IamRole>
 }
 
-export function createRolePrompter(client: IamClient, options: RolePrompterOptions = {}): QuickPickPrompter<IAM.Role> {
-    const placeholderItem: DataQuickPickItem<IAM.Role> = {
+export function createRolePrompter(client: IamClient, options: RolePrompterOptions = {}): QuickPickPrompter<IamRole> {
+    const placeholderItem: DataQuickPickItem<IamRole> = {
         label: localize('AWS.rolePrompter.noRoles.title', 'No valid roles found'),
         data: WIZARD_BACK,
         detail: options.noRoleDetail,
     }
 
     const loadItems = () => {
-        const filterRoles = (roles: IAM.Role[]) => (options.roleFilter ? roles.filter(options.roleFilter) : roles)
+        const filterRoles = (roles: IamRole[]) => (options.roleFilter ? roles.filter(options.roleFilter) : roles)
 
         return client
             .getRoles()
@@ -62,7 +61,7 @@ export function createRolePrompter(client: IamClient, options: RolePrompterOptio
 }
 
 function addCreateRoleButton(
-    prompter: QuickPickPrompter<IAM.Role>,
+    prompter: QuickPickPrompter<IamRole>,
     createRole: RolePrompterOptions['createRole']
 ): typeof prompter {
     if (!createRole) {

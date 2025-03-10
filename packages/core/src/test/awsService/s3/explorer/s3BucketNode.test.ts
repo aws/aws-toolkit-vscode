@@ -9,7 +9,7 @@ import { S3BucketNode } from '../../../../awsService/s3/explorer/s3BucketNode'
 import { S3FileNode } from '../../../../awsService/s3/explorer/s3FileNode'
 import { S3FolderNode } from '../../../../awsService/s3/explorer/s3FolderNode'
 import { S3Node } from '../../../../awsService/s3/explorer/s3Nodes'
-import { S3Client, File, Folder, Bucket } from '../../../../shared/clients/s3Client'
+import { S3Client, File, Folder, S3Bucket } from '../../../../shared/clients/s3'
 import { AWSTreeNodeBase } from '../../../../shared/treeview/nodes/awsTreeNodeBase'
 import { LoadMoreNode } from '../../../../shared/treeview/nodes/loadMoreNode'
 import { TestSettings } from '../../../utilities/testSettingsConfiguration'
@@ -18,7 +18,7 @@ import sinon from 'sinon'
 describe('S3BucketNode', function () {
     const name = 'bucket-name'
     const continuationToken = 'continuationToken'
-    const bucket: Bucket = { name, region: 'region', arn: 'arn' }
+    const bucket: S3Bucket = { Name: name, BucketRegion: 'region', Arn: 'arn' }
     const file: File = { name: 'name', key: 'key', arn: 'arn' }
     const folder: Folder = { name: 'folder', path: 'path', arn: 'arn' }
     const maxResults = 200

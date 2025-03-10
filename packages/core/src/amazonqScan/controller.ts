@@ -20,6 +20,7 @@ export interface ScanChatControllerEventEmitters {
     readonly tabOpened: vscode.EventEmitter<any>
     readonly tabClosed: vscode.EventEmitter<any>
     readonly authClicked: vscode.EventEmitter<any>
+    readonly runScan: vscode.EventEmitter<any>
     readonly formActionClicked: vscode.EventEmitter<any>
     readonly errorThrown: vscode.EventEmitter<any>
     readonly showSecurityScan: vscode.EventEmitter<any>

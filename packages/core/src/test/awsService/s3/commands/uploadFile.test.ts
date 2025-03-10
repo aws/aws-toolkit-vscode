@@ -5,7 +5,6 @@
 
 import assert from 'assert'
 import * as vscode from 'vscode'
-import { S3 } from 'aws-sdk'
 import {
     FileSizeBytes,
     getFilesToUpload,
@@ -15,10 +14,12 @@ import {
 } from '../../../../awsService/s3/commands/uploadFile'
 import { S3Node } from '../../../../awsService/s3/explorer/s3Nodes'
 import { S3BucketNode } from '../../../../awsService/s3/explorer/s3BucketNode'
-import { S3Client } from '../../../../shared/clients/s3Client'
+import { S3Client } from '../../../../shared/clients/s3'
 import { MockOutputChannel } from '../../../mockOutputChannel'
 import { getTestWindow } from '../../../shared/vscode/window'
 import sinon from 'sinon'
+import { Upload } from '@aws-sdk/lib-storage'
+import { Bucket } from '@aws-sdk/client-s3'
 
 describe('uploadFileCommand', function () {
     const bucketName = 'bucket-name'
@@ -42,27 +43,40 @@ describe('uploadFileCommand', function () {
     let bucketNode: S3BucketNode
     let getBucket: (s3client: S3Client) => Promise<BucketQuickPickItem | 'cancel' | 'back'>
     let getFile: (document?: vscode.Uri) => Promise<vscode.Uri[] | undefined>
-    let mockedUpload: S3.ManagedUpload
+    let mockedUpload: Upload
+
+    const setDefaultsForFileAndBucket = () => {
+        getFile = (document) => {
+            return new Promise((resolve, reject) => {
+                resolve([fileLocation])
+            })
+        }
+
+        getBucket = (s3Client) => {
+            return new Promise((resolve, reject) => {
+                resolve(bucketResponse)
+            })
+        }
+    }
 
     beforeEach(function () {
-        mockedUpload = {} as any as S3.ManagedUpload
+        mockedUpload = {} as any as Upload
         s3 = {} as any as S3Client
-        bucketNode = new S3BucketNode({ name: bucketName, region: 'region', arn: 'arn' }, new S3Node(s3), s3)
+        bucketNode = new S3BucketNode({ Name: bucketName, BucketRegion: 'region', Arn: 'arn' }, new S3Node(s3), s3)
         outputChannel = new MockOutputChannel()
     })
 
     describe('with node parameter', async function () {
         this.beforeEach(function () {
             s3 = {} as any as S3Client
-            bucketNode = new S3BucketNode({ name: bucketName, region: 'region', arn: 'arn' }, new S3Node(s3), s3)
+            bucketNode = new S3BucketNode({ Name: bucketName, BucketRegion: 'region', Arn: 'arn' }, new S3Node(s3), s3)
             outputChannel = new MockOutputChannel()
         })
 
         it('uploads successfully', async function () {
             const uploadStub = sinon.stub().resolves(mockedUpload)
             s3.uploadFile = uploadStub
-            const promiseStub = sinon.stub().resolves()
-            mockedUpload.promise = promiseStub
+            mockedUpload.done = sinon.stub().resolves()
 
             getFile = (document) => {
                 return new Promise((resolve, reject) => {
@@ -97,27 +111,16 @@ describe('uploadFileCommand', function () {
     })
 
     describe('without node parameter', async function () {
-        this.beforeEach(function () {
+        beforeEach(function () {
             s3 = {} as any as S3Client
             outputChannel = new MockOutputChannel()
-            getFile = (document) => {
-                return new Promise((resolve, reject) => {
-                    resolve([fileLocation])
-                })
-            }
-
-            getBucket = (s3Client) => {
-                return new Promise((resolve, reject) => {
-                    resolve(bucketResponse)
-                })
-            }
+            setDefaultsForFileAndBucket()
         })
 
         it('uploads if user provides file and bucket', async function () {
             const uploadStub = sinon.stub().resolves(mockedUpload)
             s3.uploadFile = uploadStub
-            const promiseStub = sinon.stub().resolves()
-            mockedUpload.promise = promiseStub
+            mockedUpload.done = sinon.stub().resolves()
 
             await uploadFileCommand(s3, undefined, statFile, getBucket, getFile, outputChannel)
 
@@ -150,23 +153,13 @@ describe('uploadFileCommand', function () {
         })
     })
 
-    getFile = (document) => {
-        return new Promise((resolve, reject) => {
-            resolve([fileLocation])
-        })
-    }
-
-    getBucket = (s3Client) => {
-        return new Promise((resolve, reject) => {
-            resolve(bucketResponse)
-        })
-    }
+    setDefaultsForFileAndBucket()
 
     it('successfully upload file or folder', async function () {
         const uploadStub = sinon.stub().resolves(mockedUpload)
         s3.uploadFile = uploadStub
-        const promiseStub = sinon.stub().resolves()
-        mockedUpload.promise = promiseStub
+
+        mockedUpload.done = sinon.stub().resolves()
         getTestWindow().onDidShowDialog((d) => d.selectItem(fileLocation))
 
         // Upload to bucket.
@@ -260,7 +253,7 @@ describe('promptUserForBucket', async function () {
     const fileLocation = vscode.Uri.file('/file.jpg')
 
     let s3: S3Client
-    let buckets: S3.Bucket[]
+    let buckets: Bucket[]
 
     const promptUndef: <T extends vscode.QuickPickItem>(opts: {
         picker: vscode.QuickPick<T>
@@ -298,16 +291,16 @@ describe('promptUserForBucket', async function () {
     })
 
     it('Returns selected bucket', async function () {
-        const stub = sinon.stub().resolves(buckets)
-        s3.listAllBuckets = stub
+        const stub = sinon.stub().resolves({ buckets })
+        s3.listBuckets = stub
 
         const response = await promptUserForBucket(s3, promptSelect)
         assert.deepStrictEqual(response, selection)
     })
 
     it('Returns "back" when selected', async function () {
-        const stub = sinon.stub().resolves(buckets)
-        s3.listAllBuckets = stub
+        const stub = sinon.stub().resolves({ buckets })
+        s3.listBuckets = stub
 
         selection.label = 'back'
         selection.bucket = undefined
@@ -317,8 +310,8 @@ describe('promptUserForBucket', async function () {
     })
 
     it('Lets the user create a new bucket', async function () {
-        const stub = sinon.stub().resolves(buckets)
-        s3.listAllBuckets = stub
+        const stub = sinon.stub().resolves({ buckets })
+        s3.listBuckets = stub
 
         selection.label = 'Create new bucket'
         selection.bucket = undefined
@@ -330,8 +323,8 @@ describe('promptUserForBucket', async function () {
     })
 
     it('Returns "cancel" when user doesn\'t select a bucket', async function () {
-        const stub = sinon.stub().resolves(buckets)
-        s3.listAllBuckets = stub
+        const stub = sinon.stub().resolves({ buckets })
+        s3.listBuckets = stub
 
         const response = await promptUserForBucket(s3, promptUndef)
         assert.strictEqual(response, 'cancel')
@@ -339,7 +332,7 @@ describe('promptUserForBucket', async function () {
 
     it('Throws error when it is not possible to list buckets from client', async function () {
         const stub = sinon.stub().rejects(new Error('Expected failure'))
-        s3.listAllBuckets = stub
+        s3.listBuckets = stub
         await assert.rejects(() => promptUserForBucket(s3))
         getTestWindow()
             .getFirstMessage()

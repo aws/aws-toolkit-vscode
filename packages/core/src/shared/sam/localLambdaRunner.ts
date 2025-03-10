@@ -247,6 +247,7 @@ async function invokeLambdaHandler(
             parameterOverrides: config.parameterOverrides,
             name: config.name,
             region: config.region,
+            runtime: config.lambda?.runtime,
         }
 
         // sam local invoke ...

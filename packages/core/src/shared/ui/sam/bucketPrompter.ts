@@ -2,7 +2,7 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import { DefaultS3Client } from '../../clients/s3Client'
+import { S3Client } from '../../clients/s3'
 import { createCommonButtons } from '../buttons'
 import { createQuickPick, DataQuickPickItem } from '../pickerPrompter'
 import type { SyncParams } from '../../sam/sync'
@@ -53,7 +53,7 @@ export function createBucketSourcePrompter(samCommandUrl: vscode.Uri) {
  * @param samCommandUrl URL to the SAM CLI command documentation
  * @returns A quick pick prompter configured with bucket name options
  */
-export function createBucketNamePrompter(client: DefaultS3Client, mementoRootKey: string, samCommandUrl: vscode.Uri) {
+export function createBucketNamePrompter(client: S3Client, mementoRootKey: string, samCommandUrl: vscode.Uri) {
     const recentBucket = getRecentResponse(mementoRootKey, client.regionCode, 'bucketName')
     const items = client.listBucketsIterable().map((b) => [
         {

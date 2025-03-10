@@ -1,0 +1,34 @@
+{
+	"date": "2025-03-06",
+	"version": "1.50.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "/doc: Usage in multiple chat tabs may cause unexpected behavior."
+		},
+		{
+			"type": "Bug Fix",
+			"description": "/review: subsequent reviews weren't possible"
+		},
+		{
+			"type": "Feature",
+			"description": "Amazon Q chat: Use `@` to add folders, files, and saved prompts as context"
+		},
+		{
+			"type": "Feature",
+			"description": "Amazon Q chat: increase chat input height to 3 lines"
+		},
+		{
+			"type": "Feature",
+			"description": "Amazon Q chat: Show list of files sent as context in chat response"
+		},
+		{
+			"type": "Feature",
+			"description": "Amazon Q chat: Add support for `.md` file rules in workspace-level `.amazonq/rules` directory"
+		},
+		{
+			"type": "Test",
+			"description": "add Q Chat /review command test coverage"
+		}
+	]
+}

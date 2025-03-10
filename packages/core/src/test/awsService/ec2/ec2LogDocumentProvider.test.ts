@@ -8,7 +8,7 @@ import * as vscode from 'vscode'
 import * as sinon from 'sinon'
 import { Ec2LogDocumentProvider } from '../../../awsService/ec2/ec2LogDocumentProvider'
 import { ec2LogsScheme } from '../../../shared/constants'
-import { Ec2Client } from '../../../shared/clients/ec2Client'
+import { Ec2Client } from '../../../shared/clients/ec2'
 
 describe('LogDataDocumentProvider', async function () {
     let provider: Ec2LogDocumentProvider

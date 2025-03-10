@@ -7,7 +7,6 @@ import * as path from 'path'
 import * as mime from 'mime-types'
 import * as vscode from 'vscode'
 import { statSync } from 'fs' // eslint-disable-line no-restricted-imports
-import { S3 } from 'aws-sdk'
 import { getLogger } from '../../../shared/logger/logger'
 import { S3Node } from '../explorer/s3Nodes'
 import { readablePath } from '../util'
@@ -15,7 +14,7 @@ import { localize } from '../../../shared/utilities/vsCodeUtils'
 import { showOutputMessage } from '../../../shared/utilities/messages'
 import { createQuickPick, promptUser, verifySinglePickerOutput } from '../../../shared/ui/picker'
 import { addCodiconToString } from '../../../shared/utilities/textUtilities'
-import { Bucket, Folder, S3Client } from '../../../shared/clients/s3Client'
+import { S3Bucket, Folder, S3Client } from '../../../shared/clients/s3'
 import { createBucketCommand } from './createBucket'
 import { S3BucketNode } from '../explorer/s3BucketNode'
 import { S3FolderNode } from '../explorer/s3FolderNode'
@@ -24,6 +23,7 @@ import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { progressReporter } from '../progressReporter'
 import globals from '../../../shared/extensionGlobals'
 import { telemetry } from '../../../shared/telemetry/telemetry'
+import { Upload } from '@aws-sdk/lib-storage'
 
 export interface FileSizeBytes {
     /**
@@ -38,7 +38,7 @@ interface UploadRequest {
     fileLocation: vscode.Uri
     fileSizeBytes: number
     s3Client: S3Client
-    ongoingUpload?: S3.ManagedUpload
+    ongoingUpload?: Upload
 }
 
 /**
@@ -97,7 +97,7 @@ export async function uploadFileCommand(
         uploadRequests.push(
             ...filesToUpload.map((file) => {
                 const key = node!.path + path.basename(file.fsPath)
-                return fileToUploadRequest(node!.bucket.name, key, file)
+                return fileToUploadRequest(node!.bucket.Name, key, file)
             })
         )
         if (node instanceof S3FolderNode) {
@@ -281,7 +281,7 @@ async function uploadBatchOfFiles(
 
             token.onCancellationRequested((e) => {
                 if (uploadRequests[requestIdx].ongoingUpload) {
-                    uploadRequests[requestIdx].ongoingUpload?.abort()
+                    void uploadRequests[requestIdx].ongoingUpload?.abort()
                 }
                 return failedRequests
             })
@@ -289,7 +289,7 @@ async function uploadBatchOfFiles(
             while (!token.isCancellationRequested && requestIdx < uploadRequests.length) {
                 const request = uploadRequests[requestIdx]
                 const fileName = path.basename(request.key)
-                const destinationPath = readablePath({ bucket: { name: request.bucketName }, path: request.key })
+                const destinationPath = readablePath({ bucket: { Name: request.bucketName }, path: request.key })
                 showOutputMessage(
                     localize('AWS.s3.uploadFile.startUpload', 'Uploading file {0} to {1}', fileName, destinationPath),
                     outputChannel
@@ -377,23 +377,23 @@ async function uploadWithProgress(
 
     const cancelled = new Promise<void>((_, reject) => {
         token.onCancellationRequested((e) => {
-            currentStream.abort()
+            void currentStream.abort()
             reject(new CancellationError('user'))
         })
     })
 
-    await Promise.race([currentStream.promise(), cancelled])
+    await Promise.race([currentStream.done(), cancelled])
 
     return (request.ongoingUpload = undefined)
 }
 
 export interface BucketQuickPickItem extends vscode.QuickPickItem {
-    bucket: S3.Bucket | undefined
+    bucket: (Partial<S3Bucket> & { Name: string }) | undefined
     folder?: Folder | undefined
 }
 
 interface SavedFolder {
-    bucket: Bucket
+    bucket: S3Bucket
     folder: Folder
 }
 
@@ -411,9 +411,9 @@ export async function promptUserForBucket(
     promptUserFunction = promptUser,
     createBucket = createBucketCommand
 ): Promise<BucketQuickPickItem | 'cancel' | 'back'> {
-    let allBuckets: S3.Bucket[]
+    let allBuckets: S3Bucket[]
     try {
-        allBuckets = await s3client.listAllBuckets()
+        allBuckets = (await s3client.listBuckets()).buckets
     } catch (e) {
         getLogger().error('Failed to list buckets from client %O', e)
         void vscode.window.showErrorMessage(
@@ -424,7 +424,7 @@ export async function promptUserForBucket(
 
     const s3Buckets = allBuckets.filter((bucket) => {
         return bucket && bucket.Name
-    }) as S3.Bucket[]
+    })
 
     const createNewBucket: BucketQuickPickItem = {
         label: localize('AWS.command.s3.createBucket', 'Create new bucket'),
@@ -443,7 +443,7 @@ export async function promptUserForBucket(
         lastFolderItem = {
             label: lastTouchedFolder.folder.name,
             description: '(last opened S3 folder)',
-            bucket: { Name: lastTouchedFolder.bucket.name },
+            bucket: { Name: lastTouchedFolder.bucket.Name },
             folder: lastTouchedFolder.folder,
         }
     }
@@ -454,7 +454,7 @@ export async function promptUserForBucket(
         lastUploadedFolderItem = {
             label: lastUploadedToFolder.folder.name,
             description: '(last uploaded-to S3 folder)',
-            bucket: { Name: lastUploadedToFolder.bucket.name },
+            bucket: { Name: lastUploadedToFolder.bucket.Name },
             folder: lastUploadedToFolder.folder,
         }
     }

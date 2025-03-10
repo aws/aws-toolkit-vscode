@@ -4,7 +4,7 @@
  */
 import assert from 'assert'
 import { minimumSsmActions, promptToAddInlinePolicy } from '../../shared/remoteSession'
-import { IamClient } from '../../shared/clients/iamClient'
+import { IamClient } from '../../shared/clients/iam'
 import { getTestWindow } from './vscode/window'
 import { cancel } from '../../shared'
 

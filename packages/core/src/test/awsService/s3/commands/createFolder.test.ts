@@ -9,7 +9,7 @@ import * as vscode from 'vscode'
 import { createFolderCommand } from '../../../../awsService/s3/commands/createFolder'
 import { S3BucketNode } from '../../../../awsService/s3/explorer/s3BucketNode'
 import { S3Node } from '../../../../awsService/s3/explorer/s3Nodes'
-import { S3Client } from '../../../../shared/clients/s3Client'
+import { S3Client } from '../../../../shared/clients/s3'
 import { getTestWindow } from '../../../shared/vscode/window'
 
 describe('createFolderCommand', function () {
@@ -32,7 +32,7 @@ describe('createFolderCommand', function () {
         spyExecuteCommand = sandbox.spy(vscode.commands, 'executeCommand')
 
         s3 = {} as any as S3Client
-        node = new S3BucketNode({ name: bucketName, region: 'region', arn: 'arn' }, new S3Node(s3), s3)
+        node = new S3BucketNode({ Name: bucketName, BucketRegion: 'region', Arn: 'arn' }, new S3Node(s3), s3)
     })
 
     afterEach(function () {

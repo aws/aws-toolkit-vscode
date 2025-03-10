@@ -43,7 +43,7 @@ import {
 } from '../../../shared/utilities/workspaceUtils'
 import { getPathsFromZipFilePath, SvgFileExtension } from '../../../amazonq/util/files'
 import { FollowUpTypes } from '../../../amazonq/commons/types'
-import { DocGenerationTask } from '../docGenerationTask'
+import { DocGenerationTask, DocGenerationTasks } from '../docGenerationTask'
 import { DevPhase } from '../../types'
 
 export interface ChatControllerEventEmitters {
@@ -67,9 +67,7 @@ export class DocController {
     private readonly messenger: DocMessenger
     private readonly sessionStorage: BaseChatSessionStorage<Session>
     private authController: AuthController
-    private folderPath = ''
-    private mode: Mode = Mode.NONE
-    public docGenerationTask: DocGenerationTask
+    private docGenerationTasks: DocGenerationTasks
 
     public constructor(
         private readonly chatControllerMessageListeners: ChatControllerEventEmitters,
@@ -80,7 +78,7 @@ export class DocController {
         this.messenger = messenger
         this.sessionStorage = sessionStorage
         this.authController = new AuthController()
-        this.docGenerationTask = new DocGenerationTask()
+        this.docGenerationTasks = new DocGenerationTasks()
 
         this.chatControllerMessageListeners.processHumanChatMessage.event((data) => {
             this.processUserChatMessage(data).catch((e) => {
@@ -157,23 +155,23 @@ export class DocController {
         } else {
             let displayPath = ''
             const relativePath = getWorkspaceRelativePath(uri.fsPath)
-
+            const docGenerationTask = this.docGenerationTasks.getTask(data.tabID)
             if (relativePath) {
                 // Display path should always include workspace folder name
                 displayPath = path.join(relativePath.workspaceFolder.name, relativePath.relativePath)
                 // Only include workspace folder name in API call if multi-root workspace
-                this.folderPath = isMultiRootWorkspace() ? displayPath : relativePath.relativePath
+                docGenerationTask.folderPath = isMultiRootWorkspace() ? displayPath : relativePath.relativePath
 
                 if (!relativePath.relativePath) {
-                    this.docGenerationTask.folderLevel = 'ENTIRE_WORKSPACE'
+                    docGenerationTask.folderLevel = 'ENTIRE_WORKSPACE'
                 } else {
-                    this.docGenerationTask.folderLevel = 'SUB_FOLDER'
+                    docGenerationTask.folderLevel = 'SUB_FOLDER'
                 }
             }
 
             this.messenger.sendFolderConfirmationMessage(
                 data.tabID,
-                this.mode === Mode.CREATE
+                docGenerationTask.mode === Mode.CREATE
                     ? i18n('AWS.amazonq.doc.answer.createReadme')
                     : i18n('AWS.amazonq.doc.answer.updateReadme'),
                 displayPath,
@@ -218,6 +216,7 @@ export class DocController {
     private initializeFollowUps(): void {
         this.chatControllerMessageListeners.followUpClicked.event(async (data) => {
             const session: Session = await this.sessionStorage.getSession(data.tabID)
+            const docGenerationTask = this.docGenerationTasks.getTask(data.tabID)
 
             const workspaceFolders = vscode.workspace.workspaceFolders
             if (workspaceFolders === undefined || workspaceFolders.length === 0) {
@@ -245,7 +244,7 @@ export class DocController {
 
             switch (data.followUp.type) {
                 case FollowUpTypes.Retry:
-                    if (this.mode === Mode.EDIT) {
+                    if (docGenerationTask.mode === Mode.EDIT) {
                         this.enableUserInput(data?.tabID)
                     } else {
                         await this.tabOpened(data)
@@ -262,19 +261,19 @@ export class DocController {
                 case FollowUpTypes.CloseSession:
                     return this.closeSession(data)
                 case FollowUpTypes.CreateDocumentation:
-                    this.docGenerationTask.interactionType = 'GENERATE_README'
-                    this.mode = Mode.CREATE
+                    docGenerationTask.interactionType = 'GENERATE_README'
+                    docGenerationTask.mode = Mode.CREATE
                     sendFolderConfirmationMessage(i18n('AWS.amazonq.doc.answer.createReadme'))
                     break
                 case FollowUpTypes.ChooseFolder:
                     await this.folderSelector(data)
                     break
                 case FollowUpTypes.SynchronizeDocumentation:
-                    this.mode = Mode.SYNC
+                    docGenerationTask.mode = Mode.SYNC
                     sendFolderConfirmationMessage(i18n('AWS.amazonq.doc.answer.updateReadme'))
                     break
                 case FollowUpTypes.UpdateDocumentation:
-                    this.docGenerationTask.interactionType = 'UPDATE_README'
+                    docGenerationTask.interactionType = 'UPDATE_README'
                     this.messenger.sendAnswer({
                         type: 'answer',
                         tabID: data?.tabID,
@@ -283,21 +282,21 @@ export class DocController {
                     })
                     break
                 case FollowUpTypes.EditDocumentation:
-                    this.docGenerationTask.interactionType = 'EDIT_README'
-                    this.mode = Mode.EDIT
+                    docGenerationTask.interactionType = 'EDIT_README'
+                    docGenerationTask.mode = Mode.EDIT
                     sendFolderConfirmationMessage(i18n('AWS.amazonq.doc.answer.updateReadme'))
                     break
                 case FollowUpTypes.MakeChanges:
-                    this.mode = Mode.EDIT
+                    docGenerationTask.mode = Mode.EDIT
                     this.enableUserInput(data.tabID)
                     break
                 case FollowUpTypes.AcceptChanges:
-                    this.docGenerationTask.userDecision = 'ACCEPT'
+                    docGenerationTask.userDecision = 'ACCEPT'
                     await this.sendDocAcceptanceEvent(data)
                     await this.insertCode(data)
                     return
                 case FollowUpTypes.RejectChanges:
-                    this.docGenerationTask.userDecision = 'REJECT'
+                    docGenerationTask.userDecision = 'REJECT'
                     await this.sendDocAcceptanceEvent(data)
                     this.messenger.sendAnswer({
                         type: 'answer',
@@ -309,26 +308,27 @@ export class DocController {
                     break
                 case FollowUpTypes.ProceedFolderSelection:
                     // If a user did not change the folder in a multi-root workspace, default to the first workspace folder
-                    if (this.folderPath === '' && isMultiRootWorkspace()) {
-                        this.folderPath = workspaceFolderName
+                    if (docGenerationTask.folderPath === '' && isMultiRootWorkspace()) {
+                        docGenerationTask.folderPath = workspaceFolderName
                     }
-                    if (this.mode === Mode.EDIT) {
+                    if (docGenerationTask.mode === Mode.EDIT) {
                         this.enableUserInput(data.tabID)
                     } else {
-                        await this.generateDocumentation({
-                            message: {
+                        await this.generateDocumentation(
+                            {
                                 ...data,
                                 message:
-                                    this.mode === Mode.CREATE
+                                    docGenerationTask.mode === Mode.CREATE
                                         ? 'Create documentation for a specific folder'
                                         : 'Sync documentation',
                             },
                             session,
-                        })
+                            docGenerationTask
+                        )
                     }
                     break
                 case FollowUpTypes.CancelFolderSelection:
-                    this.docGenerationTask.folderLevel = 'ENTIRE_WORKSPACE'
+                    docGenerationTask.reset()
                     return this.tabOpened(data)
             }
         })
@@ -383,7 +383,8 @@ export class DocController {
 
     private async newTask(message: any) {
         // Old session for the tab is ending, delete it so we can create a new one for the message id
-        this.docGenerationTask = new DocGenerationTask()
+
+        this.docGenerationTasks.deleteTask(message.tabID)
         this.sessionStorage.deleteSession(message.tabID)
 
         // Re-run the opening flow, where we check auth + create a session
@@ -399,18 +400,22 @@ export class DocController {
         })
         this.messenger.sendUpdatePlaceholder(message.tabID, i18n('AWS.amazonq.featureDev.placeholder.sessionClosed'))
         this.messenger.sendChatInputEnabled(message.tabID, false)
-
-        this.docGenerationTask.reset()
+        this.docGenerationTasks.deleteTask(message.tabID)
     }
 
-    private processErrorChatMessage = (err: any, message: any, session: Session | undefined) => {
+    private processErrorChatMessage = (
+        err: any,
+        message: any,
+        session: Session | undefined,
+        docGenerationTask: DocGenerationTask
+    ) => {
         const errorMessage = createUserFacingErrorMessage(`${err.cause?.message ?? err.message}`)
         // eslint-disable-next-line unicorn/no-null
         this.messenger.sendUpdatePromptProgress(message.tabID, null)
         if (err.constructor.name === MonthlyConversationLimitError.name) {
             this.messenger.sendMonthlyLimitError(message.tabID)
         } else {
-            const enableUserInput = this.mode === Mode.EDIT && err.remainingIterations > 0
+            const enableUserInput = docGenerationTask.mode === Mode.EDIT && err.remainingIterations > 0
 
             this.messenger.sendErrorMessage(
                 errorMessage,
@@ -423,11 +428,11 @@ export class DocController {
         }
     }
 
-    private async generateDocumentation({ message, session }: { message: any; session: any }) {
+    private async generateDocumentation(message: any, session: any, docGenerationTask: DocGenerationTask) {
         try {
-            await this.onDocsGeneration(session, message.message, message.tabID)
+            await this.onDocsGeneration(session, message.message, message.tabID, docGenerationTask)
         } catch (err: any) {
-            this.processErrorChatMessage(err, message, session)
+            this.processErrorChatMessage(err, message, session, docGenerationTask)
         }
     }
 
@@ -448,6 +453,7 @@ export class DocController {
         }
 
         const session: Session = await this.sessionStorage.getSession(message.tabID)
+        const docGenerationTask = this.docGenerationTasks.getTask(message.tabID)
 
         try {
             getLogger().debug(`${featureName}: Processing message: ${message.message}`)
@@ -459,9 +465,9 @@ export class DocController {
                 return
             }
 
-            await this.generateDocumentation({ message, session })
+            await this.generateDocumentation(message, session, docGenerationTask)
         } catch (err: any) {
-            this.processErrorChatMessage(err, message, session)
+            this.processErrorChatMessage(err, message, session, docGenerationTask)
         }
     }
 
@@ -483,9 +489,10 @@ export class DocController {
         let session: Session | undefined
         try {
             session = await this.sessionStorage.getSession(message.tabID)
+            const docGenerationTask = this.docGenerationTasks.getTask(message.tabID)
             getLogger().debug(`${featureName}: Session created with id: ${session.tabID}`)
-            this.folderPath = ''
-            this.mode = Mode.NONE
+            docGenerationTask.folderPath = ''
+            docGenerationTask.mode = Mode.NONE
 
             const authState = await AuthUtil.instance.getChatAuthState()
             if (authState.amazonQ !== 'connected') {
@@ -493,7 +500,7 @@ export class DocController {
                 session.isAuthenticating = true
                 return
             }
-            this.docGenerationTask.numberOfNavigations += 1
+            docGenerationTask.numberOfNavigations += 1
             this.messenger.sendAnswer({
                 type: 'answer',
                 tabID: message.tabID,
@@ -536,13 +543,18 @@ export class DocController {
         await vscode.commands.executeCommand('markdown.showPreview')
     }
 
-    private async onDocsGeneration(session: Session, message: string, tabID: string) {
-        this.messenger.sendDocProgress(tabID, DocGenerationStep.UPLOAD_TO_S3, 0, this.mode)
+    private async onDocsGeneration(
+        session: Session,
+        message: string,
+        tabID: string,
+        docGenerationTask: DocGenerationTask
+    ) {
+        this.messenger.sendDocProgress(tabID, DocGenerationStep.UPLOAD_TO_S3, 0, docGenerationTask.mode)
 
         await session.preloader(message)
 
         try {
-            await session.send(message, this.mode, this.folderPath)
+            await session.send(message, docGenerationTask.mode, docGenerationTask.folderPath)
             const filePaths = session.state.filePaths ?? []
             const deletedFiles = session.state.deletedFiles ?? []
 
@@ -585,7 +597,7 @@ export class DocController {
                 this.messenger.sendAnswer({
                     type: 'answer',
                     tabID: tabID,
-                    message: `${this.mode === Mode.CREATE ? i18n('AWS.amazonq.doc.answer.readmeCreated') : i18n('AWS.amazonq.doc.answer.readmeUpdated')} ${remainingIterations > 0 ? i18n('AWS.amazonq.doc.answer.codeResult') : i18n('AWS.amazonq.doc.answer.acceptOrReject')}`,
+                    message: `${docGenerationTask.mode === Mode.CREATE ? i18n('AWS.amazonq.doc.answer.readmeCreated') : i18n('AWS.amazonq.doc.answer.readmeUpdated')} ${remainingIterations > 0 ? i18n('AWS.amazonq.doc.answer.codeResult') : i18n('AWS.amazonq.doc.answer.acceptOrReject')}`,
                     disableChatInput: true,
                 })
 
@@ -601,13 +613,14 @@ export class DocController {
                 })
             }
             if (session?.state.phase === DevPhase.CODEGEN) {
+                const docGenerationTask = this.docGenerationTasks.getTask(tabID)
                 const { totalGeneratedChars, totalGeneratedLines, totalGeneratedFiles } =
-                    await session.countGeneratedContent(this.docGenerationTask.interactionType)
-                this.docGenerationTask.conversationId = session.conversationId
-                this.docGenerationTask.numberOfGeneratedChars = totalGeneratedChars
-                this.docGenerationTask.numberOfGeneratedLines = totalGeneratedLines
-                this.docGenerationTask.numberOfGeneratedFiles = totalGeneratedFiles
-                const docGenerationEvent = this.docGenerationTask.docGenerationEventBase()
+                    await session.countGeneratedContent(docGenerationTask.interactionType)
+                docGenerationTask.conversationId = session.conversationId
+                docGenerationTask.numberOfGeneratedChars = totalGeneratedChars
+                docGenerationTask.numberOfGeneratedLines = totalGeneratedLines
+                docGenerationTask.numberOfGeneratedFiles = totalGeneratedFiles
+                const docGenerationEvent = docGenerationTask.docGenerationEventBase()
 
                 await session.sendDocTelemetryEvent(docGenerationEvent, 'generation')
             }
@@ -635,6 +648,7 @@ export class DocController {
 
     private tabClosed(message: any) {
         this.sessionStorage.deleteSession(message.tabID)
+        this.docGenerationTasks.deleteTask(message.tabID)
     }
 
     private async insertCode(message: any) {
@@ -670,14 +684,15 @@ export class DocController {
     }
     private async sendDocAcceptanceEvent(message: any) {
         const session = await this.sessionStorage.getSession(message.tabID)
-        this.docGenerationTask.conversationId = session.conversationId
+        const docGenerationTask = this.docGenerationTasks.getTask(message.tabID)
+        docGenerationTask.conversationId = session.conversationId
         const { totalAddedChars, totalAddedLines, totalAddedFiles } = await session.countAddedContent(
-            this.docGenerationTask.interactionType
+            docGenerationTask.interactionType
         )
-        this.docGenerationTask.numberOfAddedChars = totalAddedChars
-        this.docGenerationTask.numberOfAddedLines = totalAddedLines
-        this.docGenerationTask.numberOfAddedFiles = totalAddedFiles
-        const docAcceptanceEvent = this.docGenerationTask.docAcceptanceEventBase()
+        docGenerationTask.numberOfAddedChars = totalAddedChars
+        docGenerationTask.numberOfAddedLines = totalAddedLines
+        docGenerationTask.numberOfAddedFiles = totalAddedFiles
+        const docAcceptanceEvent = docGenerationTask.docAcceptanceEventBase()
 
         await session.sendDocTelemetryEvent(docAcceptanceEvent, 'acceptance')
     }

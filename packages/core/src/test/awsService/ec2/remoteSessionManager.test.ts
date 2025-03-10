@@ -6,7 +6,7 @@
 import assert from 'assert'
 import * as sinon from 'sinon'
 import { Ec2SessionTracker } from '../../../awsService/ec2/remoteSessionManager'
-import { SsmClient } from '../../../shared/clients/ssmClient'
+import { SsmClient } from '../../../shared/clients/ssm'
 
 describe('Ec2RemoteSessionManager', async function () {
     it('maintains connections to instances', async function () {

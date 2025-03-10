@@ -8,7 +8,7 @@ import * as sinon from 'sinon'
 import * as vscode from 'vscode'
 import { copyPathCommand } from '../../../../awsService/s3/commands/copyPath'
 import { S3FolderNode } from '../../../../awsService/s3/explorer/s3FolderNode'
-import { S3Client } from '../../../../shared/clients/s3Client'
+import { S3Client } from '../../../../shared/clients/s3'
 import { FakeClipboard } from '../../../shared/vscode/fakeEnv'
 
 describe('copyPathCommand', function () {
@@ -28,7 +28,7 @@ describe('copyPathCommand', function () {
 
 function createS3FolderNode(): S3FolderNode {
     return new S3FolderNode(
-        { name: 'name', region: 'region', arn: 'arn' },
+        { Name: 'name', BucketRegion: 'region', Arn: 'arn' },
         { name: 'name', path: 'path', arn: 'arn ' },
         {} as S3Client
     )

@@ -26,8 +26,11 @@ import {
     TriggerTabIDReceived,
     UIFocusMessage,
     AcceptDiff,
+    QuickCommandGroupActionClick,
+    FileClick,
 } from './controllers/chat/model'
 import { EditorContextCommand, registerCommands } from './commands/registerCommands'
+import { ContextSelectedMessage, CustomFormActionMessage } from './view/connector/connector'
 
 export function init(appContext: AmazonQAppInitContext) {
     const cwChatControllerEventEmitters = {
@@ -48,6 +51,11 @@ export function init(appContext: AmazonQAppInitContext) {
         processSourceLinkClick: new EventEmitter<SourceLinkClickMessage>(),
         processResponseBodyLinkClick: new EventEmitter<ResponseBodyLinkClickMessage>(),
         processFooterInfoLinkClick: new EventEmitter<FooterInfoLinkClick>(),
+        processContextCommandUpdateMessage: new EventEmitter<any>(),
+        processQuickCommandGroupActionClicked: new EventEmitter<QuickCommandGroupActionClick>(),
+        processCustomFormAction: new EventEmitter<CustomFormActionMessage>(),
+        processContextSelected: new EventEmitter<ContextSelectedMessage>(),
+        processFileClick: new EventEmitter<FileClick>(),
     }
 
     const cwChatControllerMessageListeners = {
@@ -96,6 +104,19 @@ export function init(appContext: AmazonQAppInitContext) {
         processFooterInfoLinkClick: new MessageListener<FooterInfoLinkClick>(
             cwChatControllerEventEmitters.processFooterInfoLinkClick
         ),
+        processContextCommandUpdateMessage: new MessageListener<void>(
+            cwChatControllerEventEmitters.processContextCommandUpdateMessage
+        ),
+        processQuickCommandGroupActionClicked: new MessageListener<QuickCommandGroupActionClick>(
+            cwChatControllerEventEmitters.processQuickCommandGroupActionClicked
+        ),
+        processCustomFormAction: new MessageListener<CustomFormActionMessage>(
+            cwChatControllerEventEmitters.processCustomFormAction
+        ),
+        processContextSelected: new MessageListener<ContextSelectedMessage>(
+            cwChatControllerEventEmitters.processContextSelected
+        ),
+        processFileClick: new MessageListener<FileClick>(cwChatControllerEventEmitters.processFileClick),
     }
 
     const cwChatControllerMessagePublishers = {
@@ -146,6 +167,19 @@ export function init(appContext: AmazonQAppInitContext) {
         processFooterInfoLinkClick: new MessagePublisher<FooterInfoLinkClick>(
             cwChatControllerEventEmitters.processFooterInfoLinkClick
         ),
+        processContextCommandUpdateMessage: new MessagePublisher<void>(
+            cwChatControllerEventEmitters.processContextCommandUpdateMessage
+        ),
+        processQuickCommandGroupActionClicked: new MessagePublisher<QuickCommandGroupActionClick>(
+            cwChatControllerEventEmitters.processQuickCommandGroupActionClicked
+        ),
+        processCustomFormAction: new MessagePublisher<CustomFormActionMessage>(
+            cwChatControllerEventEmitters.processCustomFormAction
+        ),
+        processContextSelected: new MessagePublisher<ContextSelectedMessage>(
+            cwChatControllerEventEmitters.processContextSelected
+        ),
+        processFileClick: new MessagePublisher<FileClick>(cwChatControllerEventEmitters.processFileClick),
     }
 
     new CwChatController(

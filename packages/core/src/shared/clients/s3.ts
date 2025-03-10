@@ -6,24 +6,50 @@
 import * as vscode from 'vscode'
 import * as url from 'url'
 import _ from 'lodash'
-import { AWSError, S3 } from 'aws-sdk'
 import { inspect } from 'util'
 import { getLogger } from '../logger/logger'
 import { bufferToStream, DefaultFileStreams, FileStreams, pipe } from '../utilities/streamUtilities'
-import { assertHasProps, InterfaceNoSymbol, isNonNullable, RequiredProps } from '../utilities/tsUtils'
+import { assertHasProps, InterfaceNoSymbol, RequiredProps } from '../utilities/tsUtils'
 import { Readable } from 'stream'
-import globals from '../extensionGlobals'
+import globals, { isWeb } from '../extensionGlobals'
 import { defaultPartition } from '../regions/regionProvider'
-import { AsyncCollection, toCollection } from '../utilities/asyncCollection'
-import { toStream } from '../utilities/collectionUtils'
+import { AsyncCollection } from '../utilities/asyncCollection'
+import { StreamingBlobTypes } from '@smithy/types'
+import {
+    _Object,
+    BucketLocationConstraint,
+    CreateBucketCommand,
+    DeleteBucketCommand,
+    GetObjectCommand,
+    GetObjectCommandInput,
+    GetObjectCommandOutput,
+    HeadObjectCommand,
+    HeadObjectOutput,
+    ListObjectsV2Command,
+    ListObjectsV2Output,
+    PutObjectCommand,
+    S3Client as S3ClientSDK,
+    Bucket,
+    paginateListBuckets,
+    ListObjectVersionsCommand,
+    ListObjectVersionsOutput,
+    DeleteObjectCommand,
+    DeleteObjectsCommand,
+    DeleteObjectsOutput,
+    GetObjectOutput,
+    _Error,
+} from '@aws-sdk/client-s3'
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
+import { Progress, Upload } from '@aws-sdk/lib-storage'
+import { ClientWrapper } from './clientWrapper'
+import { ToolkitError } from '../errors'
 
 export const DEFAULT_MAX_KEYS = 300 // eslint-disable-line @typescript-eslint/naming-convention
 export const DEFAULT_DELIMITER = '/' // eslint-disable-line @typescript-eslint/naming-convention
 export const defaultPrefix = ''
 
-export type Bucket = InterfaceNoSymbol<DefaultBucket>
 export type Folder = InterfaceNoSymbol<DefaultFolder>
-export type S3Client = InterfaceNoSymbol<DefaultS3Client>
+export type S3Bucket = Bucket & { Name: string; BucketRegion: string; Arn: string }
 
 interface S3Object {
     readonly key: string
@@ -40,11 +66,11 @@ export interface CreateBucketRequest {
 }
 
 export interface CreateBucketResponse {
-    readonly bucket: Bucket
+    readonly bucket: S3Bucket
 }
 
 export interface ListBucketsResponse {
-    readonly buckets: Bucket[]
+    readonly buckets: S3Bucket[]
 }
 
 export interface ListFilesRequest {
@@ -80,8 +106,6 @@ export interface SignedUrlRequest {
     readonly bucketName: string
     readonly key: string
     readonly time: number
-    readonly operation?: string
-    readonly body?: string
 }
 
 export interface UploadFileRequest {
@@ -124,7 +148,7 @@ export interface DeleteObjectsRequest {
 }
 
 export interface DeleteObjectsResponse {
-    readonly errors: S3.Error[]
+    readonly errors: _Error[]
 }
 
 export interface DeleteBucketRequest {
@@ -137,19 +161,22 @@ export interface GetObjectRequest {
 }
 
 export interface GetObjectResponse {
-    readonly objectBody: S3.Body
+    readonly objectBody: StreamingBlobTypes
 }
 
-export class DefaultS3Client {
+export class S3Client extends ClientWrapper<S3ClientSDK> {
     public constructor(
-        public readonly regionCode: string,
+        regionCode: string,
         private readonly partitionId = globals.regionProvider.getPartitionId(regionCode) ?? defaultPartition,
-        private readonly s3Provider: (regionCode: string) => Promise<S3> = createSdkClient,
         private readonly fileStreams: FileStreams = new DefaultFileStreams()
-    ) {}
+    ) {
+        super(regionCode, S3ClientSDK)
+    }
 
-    private async createS3(): Promise<S3> {
-        return this.s3Provider(this.regionCode)
+    protected getCreateBucketConfiguration() {
+        return this.regionCode === 'us-east-1'
+            ? undefined
+            : { LocationConstraint: this.regionCode as BucketLocationConstraint }
     }
 
     /**
@@ -159,24 +186,13 @@ export class DefaultS3Client {
      */
     public async createBucket(request: CreateBucketRequest): Promise<CreateBucketResponse> {
         getLogger().debug('CreateBucket called with request: %O', request)
-        const s3 = await this.createS3()
-
-        await s3
-            .createBucket({
-                Bucket: request.bucketName,
-                // Passing us-east-1 for LocationConstraint breaks creating bucket. To make a bucket in us-east-1, you need to
-                // not pass a region, so check for this case.
-                CreateBucketConfiguration:
-                    this.regionCode === 'us-east-1' ? undefined : { LocationConstraint: this.regionCode },
-            })
-            .promise()
+        await this.makeRequest(CreateBucketCommand, {
+            Bucket: request.bucketName,
+            CreateBucketConfiguration: this.getCreateBucketConfiguration(),
+        })
 
         const response: CreateBucketResponse = {
-            bucket: new DefaultBucket({
-                partitionId: this.partitionId,
-                region: this.regionCode,
-                name: request.bucketName,
-            }),
+            bucket: toBucket(request.bucketName, this.regionCode, this.partitionId),
         }
         getLogger().debug('CreateBucket returned response: %O', response)
         return response
@@ -194,10 +210,9 @@ export class DefaultS3Client {
     public async deleteBucket(request: DeleteBucketRequest): Promise<void> {
         getLogger().debug('DeleteBucket called with request: %O', request)
         const { bucketName } = request
-        const s3 = await this.createS3()
 
         await this.emptyBucket(bucketName)
-        await s3.deleteBucket({ Bucket: bucketName }).promise()
+        await this.makeRequest(DeleteBucketCommand, { Bucket: bucketName })
 
         getLogger().debug('DeleteBucket succeeded')
     }
@@ -220,21 +235,13 @@ export class DefaultS3Client {
      */
     public async createFolder(request: CreateFolderRequest): Promise<CreateFolderResponse> {
         getLogger().debug('CreateFolder called with request: %O', request)
-        const s3 = await this.createS3()
+        await this.makeRequest(PutObjectCommand, { Bucket: request.bucketName, Key: request.path, Body: '' })
 
         const folder = new DefaultFolder({
             path: request.path,
             partitionId: this.partitionId,
             bucketName: request.bucketName,
         })
-
-        await s3
-            .upload({
-                Bucket: request.bucketName,
-                Key: request.path,
-                Body: '',
-            })
-            .promise()
 
         const response: CreateFolderResponse = { folder }
         getLogger().debug('CreateFolder returned response: %O', response)
@@ -257,12 +264,10 @@ export class DefaultS3Client {
             request.key,
             request.saveLocation
         )
-        const s3 = await this.createS3()
 
-        // https://docs.aws.amazon.com/sdk-for-javascript/v2/developer-guide/requests-using-stream-objects.html
-        const readStream = s3.getObject({ Bucket: request.bucketName, Key: request.key }).createReadStream()
-
+        const readStream = await this.downloadFileStream(request.bucketName, request.key)
         const writeStream = this.fileStreams.createWriteStream(request.saveLocation)
+
         await pipe(readStream, writeStream, request.progressListener)
 
         getLogger().debug('DownloadFile succeeded')
@@ -272,14 +277,26 @@ export class DefaultS3Client {
      * Lighter version of {@link downloadFile} that just returns the stream.
      */
     public async downloadFileStream(bucketName: string, key: string): Promise<Readable> {
-        const s3 = await this.createS3()
-        return s3.getObject({ Bucket: bucketName, Key: key }).createReadStream()
+        // GetObject response body is now a `StreamingBlobPayloadOutputTypes` from @smithy/types.
+        // this is a general type for web/node streams, therefore we must cast to nodes streaming type.
+        const response = await this.makeRequest<GetObjectCommandInput, GetObjectCommandOutput, GetObjectCommand>(
+            GetObjectCommand,
+            {
+                Bucket: bucketName,
+                Key: key,
+            }
+        )
+
+        if (isWeb()) {
+            throw new ToolkitError('S3: downloading files is not supported in web.')
+        }
+
+        return (response.Body as Readable) ?? new Readable()
     }
 
-    public async headObject(request: HeadObjectRequest): Promise<S3.HeadObjectOutput> {
-        const s3 = await this.createS3()
+    public async headObject(request: HeadObjectRequest): Promise<HeadObjectOutput> {
         getLogger().debug('HeadObject called with request: %O', request)
-        return s3.headObject({ Bucket: request.bucketName, Key: request.key }).promise()
+        return this.makeRequest(HeadObjectCommand, { Bucket: request.bucketName, Key: request.key })
     }
 
     /**
@@ -288,18 +305,27 @@ export class DefaultS3Client {
      *
      * @returns the string of the link to the presigned URL
      */
-    public async getSignedUrl(request: SignedUrlRequest): Promise<string> {
-        const time = request.time
-        const operation = request.operation ? request.operation : 'getObject'
-        const s3 = await this.createS3()
+    public async getSignedUrlForObject(request: SignedUrlRequest): Promise<string> {
+        return await getSignedUrl(
+            this.getClient(),
+            new GetObjectCommand({ Bucket: request.bucketName, Key: request.key }),
+            {
+                expiresIn: request.time,
+            }
+        )
+    }
 
-        const url = await s3.getSignedUrlPromise(operation, {
-            Bucket: request.bucketName,
-            Key: request.key,
-            Body: request.body,
-            Expires: time,
+    public linkProgressListenerToUpload(
+        upload: { on: (event: 'httpUploadProgress', listener: (progress: Progress) => void) => void },
+        progressListener: (loadedBytes: number) => void
+    ) {
+        let lastLoaded = 0
+        upload.on('httpUploadProgress', (progress) => {
+            if (progress.loaded) {
+                progressListener(progress.loaded - lastLoaded)
+                lastLoaded = progress.loaded
+            }
         })
-        return url
     }
 
     /**
@@ -309,38 +335,34 @@ export class DefaultS3Client {
      *
      * Pipes the file (read) stream into the request (write) stream.
      * Assigns the target content type based on the mime type of the file.
-     * If content type cannot be determined, defaults to {@link DEFAULT_CONTENT_TYPE}.
      *
-     * @returns The S3.ManagedUpload stream
+     * @returns The Upload stream
      * @throws Error if there is an error calling S3 or piping between streams.
      */
-    public async uploadFile(request: UploadFileRequest): Promise<S3.ManagedUpload> {
+    public async uploadFile(request: UploadFileRequest): Promise<Upload> {
         getLogger().debug('UploadFile called for bucketName: %s, key: %s', request.bucketName, request.key)
-        const s3 = await this.createS3()
-
-        // https://docs.aws.amazon.com/sdk-for-javascript/v2/developer-guide/s3-example-creating-buckets.html#s3-example-creating-buckets-upload-file
+        // Upload example from: https://docs.aws.amazon.com/code-library/latest/ug/s3_example_s3_Scenario_UsingLargeFiles_section.html
         const readStream =
             request.content instanceof vscode.Uri
                 ? this.fileStreams.createReadStream(request.content)
                 : bufferToStream(request.content)
 
-        const managedUploaded = s3.upload({
-            Bucket: request.bucketName,
-            Key: request.key,
-            Body: readStream,
-            ContentType: request.contentType,
+        const managedUpload = new Upload({
+            client: this.getClient(),
+            params: {
+                Bucket: request.bucketName,
+                Key: request.key,
+                Body: readStream,
+                ContentType: request.contentType,
+            },
         })
 
         const progressListener = request.progressListener
         if (progressListener) {
-            let lastLoaded = 0
-            managedUploaded.on('httpUploadProgress', (progress) => {
-                progressListener(progress.loaded - lastLoaded)
-                lastLoaded = progress.loaded
-            })
+            this.linkProgressListenerToUpload(managedUpload, progressListener)
         }
 
-        return managedUploaded
+        return managedUpload
     }
 
     /**
@@ -349,82 +371,109 @@ export class DefaultS3Client {
      *
      * @throws Error if there is an error calling S3.
      */
-    public async listAllBuckets(): Promise<S3.Bucket[]> {
-        const s3 = await this.createS3()
-        const output = await s3.listBuckets().promise()
-
-        return output.Buckets ?? []
+    private paginateBuckets(filterRegion: boolean = true): AsyncCollection<Bucket[]> {
+        return this.makePaginatedRequest(
+            paginateListBuckets,
+            filterRegion ? { BucketRegion: this.regionCode } : {},
+            (page) => page.Buckets
+        )
     }
 
-    public listAllBucketsIterable(): AsyncCollection<RequiredProps<S3.Bucket, 'Name'> & { readonly region: string }> {
-        async function* fn(this: DefaultS3Client) {
-            const s3 = await this.createS3()
-            const buckets = await this.listAllBuckets()
+    // TODO: replace calls to listBucketsIterable and listBuckets with calls to this function once "Bucket" type is unified.
+    private listValidBuckets(
+        paginateBuckets: () => AsyncCollection<Bucket[]> = this.paginateBuckets.bind(this)
+    ): AsyncCollection<S3Bucket[]> {
+        const partitionId = this.partitionId
+        return paginateBuckets().map(async (page) => page.filter(hasName).filter(hasRegion).map(addArn))
 
-            yield* toStream(
-                buckets.map(async (bucket) => {
-                    assertHasProps(bucket, 'Name')
-                    const region = await this.lookupRegion(bucket.Name, s3)
-                    if (region) {
-                        return { ...bucket, region }
-                    }
-                })
-            )
+        function hasName<B extends Bucket>(b: B): b is B & { Name: string } {
+            return b.Name !== undefined
         }
 
-        return toCollection(fn.bind(this)).filter(isNonNullable)
+        function hasRegion<B extends Bucket>(b: B): b is B & { BucketRegion: string } {
+            return b.BucketRegion !== undefined
+        }
+
+        function addArn<B extends Bucket & { Name: string; BucketRegion: string }>(b: B): S3Bucket {
+            return toBucket(b.Name, b.BucketRegion, partitionId)
+        }
     }
 
-    /**
-     * Filters the results of {@link listAllBucketsIterable} to the region of the client
-     */
-    public listBucketsIterable(): AsyncCollection<RequiredProps<S3.Bucket, 'Name'> & { readonly region: string }> {
-        return this.listAllBucketsIterable().filter((b) => b.region === this.regionCode)
-    }
-
-    /**
-     * Lists buckets in the region of the client.
-     *
-     * Note that S3 returns all buckets in all regions,
-     * so this incurs the cost of additional S3#getBucketLocation requests for each bucket
-     * to filter out buckets residing outside of the client's region.
-     *
-     * @throws Error if there is an error calling S3.
-     */
-    public async listBuckets(): Promise<ListBucketsResponse> {
-        getLogger().debug('ListBuckets called')
-        const s3 = await this.createS3()
-
-        const s3Buckets: S3.Bucket[] = await this.listAllBuckets()
-
-        // S3#ListBuckets returns buckets across all regions
-        const allBucketPromises: Promise<Bucket | undefined>[] = s3Buckets.map(async (s3Bucket) => {
-            const bucketName = s3Bucket.Name
-            if (!bucketName) {
-                return undefined
-            }
-            const region = await this.lookupRegion(bucketName, s3)
-            if (!region) {
-                return undefined
-            }
-            return new DefaultBucket({
-                partitionId: this.partitionId,
-                region: region,
-                name: bucketName,
+    public listBucketsIterable(): AsyncCollection<RequiredProps<Bucket, 'Name'> & { readonly region: string }> {
+        return this.listValidBuckets()
+            .flatten()
+            .map((b) => {
+                return {
+                    region: b.BucketRegion,
+                    ...b,
+                }
             })
-        })
+    }
 
-        const allBuckets = await Promise.all(allBucketPromises)
-        const bucketsInRegion = _(allBuckets)
-            .reject((bucket) => bucket === undefined)
-            // we don't have a filerNotNull so we can filter then cast
-            .map((bucket) => bucket as Bucket)
-            .reject((bucket) => bucket.region !== this.regionCode)
-            .value()
+    public async listBuckets(
+        paginateBuckets: () => AsyncCollection<Bucket[]> = this.paginateBuckets.bind(this)
+    ): Promise<ListBucketsResponse> {
+        getLogger().debug('ListBuckets called')
 
-        const response: ListBucketsResponse = { buckets: bucketsInRegion }
+        const toDefaultBucket = (b: Bucket & { Name: string; BucketRegion: string }) =>
+            toBucket(b.Name, b.BucketRegion, this.partitionId)
+        const buckets = await this.listValidBuckets(paginateBuckets).flatten().map(toDefaultBucket).promise()
+        const response = { buckets }
         getLogger().debug('ListBuckets returned response: %O', response)
-        return { buckets: bucketsInRegion }
+        return response
+    }
+
+    private async listObjectsV2(request: ListFilesRequest): Promise<ListObjectsV2Output> {
+        return await this.makeRequest(ListObjectsV2Command, {
+            Bucket: request.bucketName,
+            Delimiter: DEFAULT_DELIMITER,
+            MaxKeys: request.maxResults ?? DEFAULT_MAX_KEYS,
+            /**
+             * Set '' as the default prefix to ensure that the bucket's content will be displayed
+             * when the user has at least list access to the root of the bucket
+             * https://github.com/aws/aws-toolkit-vscode/issues/4643
+             * @default ''
+             */
+            Prefix: request.folderPath ?? defaultPrefix,
+            ContinuationToken: request.continuationToken,
+        })
+    }
+
+    private extractFilesFromResponse(
+        listObjectsRsp: ListObjectsV2Output,
+        bucketName: string,
+        folderPath: string | undefined
+    ): File[] {
+        const bucket = toBucket(bucketName, this.regionCode, this.partitionId)
+        return _(listObjectsRsp.Contents)
+            .reject((file) => file.Key === folderPath)
+            .map((file) => {
+                assertHasProps(file, 'Key')
+                return toFile(bucket, file)
+            })
+            .value()
+    }
+
+    private extractFoldersFromResponse(listObjectsRsp: ListObjectsV2Output, bucketName: string): Folder[] {
+        return _(listObjectsRsp.CommonPrefixes)
+            .map((prefix) => prefix.Prefix)
+            .compact()
+            .map((path) => new DefaultFolder({ path, partitionId: this.partitionId, bucketName }))
+            .value()
+    }
+
+    public listFilesFromResponse(
+        listObjectsRsp: ListObjectsV2Output,
+        bucketName: string,
+        folderPath: string | undefined
+    ) {
+        const files = this.extractFilesFromResponse(listObjectsRsp, bucketName, folderPath)
+        const folders = this.extractFoldersFromResponse(listObjectsRsp, bucketName)
+        return {
+            files,
+            folders,
+            continuationToken: listObjectsRsp.NextContinuationToken,
+        }
     }
 
     /**
@@ -449,48 +498,9 @@ export class DefaultS3Client {
      */
     public async listFiles(request: ListFilesRequest): Promise<ListFilesResponse> {
         getLogger().debug('ListFiles called with request: %O', request)
+        const output = await this.listObjectsV2(request)
+        const response = this.listFilesFromResponse(output, request.bucketName, request.folderPath)
 
-        const s3 = await this.createS3()
-        const bucket = new DefaultBucket({
-            partitionId: this.partitionId,
-            region: this.regionCode,
-            name: request.bucketName,
-        })
-        const output = await s3
-            .listObjectsV2({
-                Bucket: bucket.name,
-                Delimiter: DEFAULT_DELIMITER,
-                MaxKeys: request.maxResults ?? DEFAULT_MAX_KEYS,
-                /**
-                 * Set '' as the default prefix to ensure that the bucket's content will be displayed
-                 * when the user has at least list access to the root of the bucket
-                 * https://github.com/aws/aws-toolkit-vscode/issues/4643
-                 * @default ''
-                 */
-                Prefix: request.folderPath ?? defaultPrefix,
-                ContinuationToken: request.continuationToken,
-            })
-            .promise()
-
-        const files: File[] = _(output.Contents)
-            .reject((file) => file.Key === request.folderPath)
-            .map((file) => {
-                assertHasProps(file, 'Key')
-                return toFile(bucket, file)
-            })
-            .value()
-
-        const folders: Folder[] = _(output.CommonPrefixes)
-            .map((prefix) => prefix.Prefix)
-            .compact()
-            .map((path) => new DefaultFolder({ path, partitionId: this.partitionId, bucketName: request.bucketName }))
-            .value()
-
-        const response: ListFilesResponse = {
-            files,
-            folders,
-            continuationToken: output.NextContinuationToken,
-        }
         getLogger().debug('ListFiles returned response: %O', response)
         return response
     }
@@ -508,18 +518,20 @@ export class DefaultS3Client {
      */
     public async listObjectVersions(request: ListObjectVersionsRequest): Promise<ListObjectVersionsResponse> {
         getLogger().debug('ListObjectVersions called with request: %O', request)
-        const s3 = await this.createS3()
 
-        const output = await s3
-            .listObjectVersions({
-                Bucket: request.bucketName,
-                MaxKeys: request.maxResults ?? DEFAULT_MAX_KEYS,
-                KeyMarker: request.continuationToken?.keyMarker,
-                VersionIdMarker: request.continuationToken?.versionIdMarker,
-            })
-            .promise()
+        const output: ListObjectVersionsOutput = await this.makeRequest(ListObjectVersionsCommand, {
+            Bucket: request.bucketName,
+            MaxKeys: request.maxResults ?? DEFAULT_MAX_KEYS,
+            KeyMarker: request.continuationToken?.keyMarker,
+            VersionIdMarker: request.continuationToken?.versionIdMarker,
+        })
+        const response = this.processListObjectVersionsResponse(output)
+        getLogger().debug('ListObjectVersions returned response: %O', response)
+        return response
+    }
 
-        const response: ListObjectVersionsResponse = {
+    public processListObjectVersionsResponse(output: ListObjectVersionsOutput) {
+        return {
             objects: (output.Versions ?? []).map((version) => ({
                 key: version.Key!,
                 versionId: version.VersionId,
@@ -528,8 +540,6 @@ export class DefaultS3Client {
                 ? { keyMarker: output.NextKeyMarker!, versionIdMarker: output.NextVersionIdMarker }
                 : undefined,
         }
-        getLogger().debug('ListObjectVersions returned response: %O', response)
-        return response
     }
 
     /**
@@ -538,11 +548,14 @@ export class DefaultS3Client {
      * @throws Error from the iterable if there is an error calling S3.
      */
     public async *listObjectVersionsIterable(
-        request: ListObjectVersionsRequest
+        request: ListObjectVersionsRequest,
+        listObjectVersions: (
+            request: ListObjectVersionsRequest
+        ) => Promise<ListObjectVersionsResponse> = this.listObjectVersions.bind(this)
     ): AsyncIterableIterator<ListObjectVersionsResponse> {
         let continuationToken: ContinuationToken | undefined = request.continuationToken
         do {
-            const listObjectVersionsResponse: ListObjectVersionsResponse = await this.listObjectVersions({
+            const listObjectVersionsResponse: ListObjectVersionsResponse = await listObjectVersions({
                 bucketName: request.bucketName,
                 maxResults: request.maxResults,
                 continuationToken,
@@ -562,15 +575,7 @@ export class DefaultS3Client {
      */
     public async deleteObject(request: DeleteObjectRequest): Promise<void> {
         getLogger().debug('DeleteObject called with request: %O', request)
-        const s3 = await this.createS3()
-
-        await s3
-            .deleteObject({
-                Bucket: request.bucketName,
-                Key: request.key,
-            })
-            .promise()
-
+        await this.makeRequest(DeleteObjectCommand, { Bucket: request.bucketName, Key: request.key })
         getLogger().debug('DeleteObject succeeded')
     }
 
@@ -585,40 +590,18 @@ export class DefaultS3Client {
      */
     public async deleteObjects(request: DeleteObjectsRequest): Promise<DeleteObjectsResponse> {
         getLogger().debug('DeleteObjects called with request: %O', request)
-        const s3 = await this.createS3()
 
-        const output = await s3
-            .deleteObjects({
-                Bucket: request.bucketName,
-                Delete: {
-                    Objects: request.objects.map(({ key: Key, versionId: VersionId }) => ({ Key, VersionId })),
-                    Quiet: true,
-                },
-            })
-            .promise()
+        const output: DeleteObjectsOutput = await this.makeRequest(DeleteObjectsCommand, {
+            Bucket: request.bucketName,
+            Delete: {
+                Objects: request.objects.map(({ key: Key, versionId: VersionId }) => ({ Key, VersionId })),
+                Quiet: true,
+            },
+        })
 
         const response: DeleteObjectsResponse = { errors: output.Errors ?? [] }
         getLogger().debug('DeleteObjects returned response: %O', response)
         return response
-    }
-
-    /**
-     * Looks up the region for the given bucket
-     *
-     * Use the getBucketLocation API to avoid cross region lookups. #1806
-     */
-    private async lookupRegion(bucketName: string, s3: S3): Promise<string | undefined> {
-        try {
-            const response = await s3.getBucketLocation({ Bucket: bucketName }).promise()
-            // getBucketLocation returns an explicit empty string location contraint for us-east-1
-            const region = response.LocationConstraint === '' ? 'us-east-1' : response.LocationConstraint
-            getLogger().debug('LookupRegion(%s) returned: %s', bucketName, region)
-            return region
-        } catch (e) {
-            getLogger().error('LookupRegion(%s) failed: %s', bucketName, (e as Error).message ?? '?')
-            // Try to recover region from the error
-            return (e as AWSError).region
-        }
     }
 
     /**
@@ -651,36 +634,14 @@ export class DefaultS3Client {
      */
     public async getObject(request: GetObjectRequest): Promise<GetObjectResponse> {
         getLogger().debug('GetObject called with request: %O', request)
-        const s3 = await this.createS3()
+        const output: GetObjectOutput = await this.makeRequest(GetObjectCommand, {
+            Bucket: request.bucketName,
+            Key: request.key,
+        })
 
-        const output = await s3
-            .getObject({
-                Bucket: request.bucketName,
-                Key: request.key,
-            })
-            .promise()
         const response: GetObjectResponse = { objectBody: output.Body! }
-        getLogger().debug('GetObject returned response: %O', output.$response)
+        getLogger().debug('GetObject returned response: %O', response)
         return response
-    }
-}
-
-/**
- * @deprecated This should be refactored the same way as {@link toFile}
- */
-export class DefaultBucket {
-    public readonly name: string
-    public readonly region: string
-    public readonly arn: string
-
-    public constructor({ partitionId, region, name }: { partitionId: string; region: string; name: string }) {
-        this.name = name
-        this.region = region
-        this.arn = buildArn({ partitionId, bucketName: name })
-    }
-
-    public [inspect.custom](): string {
-        return `Bucket (name=${this.name}, region=${this.region}, arn=${this.arn})`
     }
 }
 
@@ -703,7 +664,7 @@ export class DefaultFolder {
     }
 }
 
-export interface File extends S3.Object, S3.HeadObjectOutput {
+export interface File extends _Object, HeadObjectOutput {
     readonly name: string
     readonly key: string
     readonly arn: string
@@ -712,15 +673,23 @@ export interface File extends S3.Object, S3.HeadObjectOutput {
     readonly eTag?: string
 }
 
-export function toFile(bucket: Bucket, resp: RequiredProps<S3.Object, 'Key'>, delimiter = DEFAULT_DELIMITER): File {
+export function toFile(bucket: S3Bucket, resp: RequiredProps<_Object, 'Key'>, delimiter = DEFAULT_DELIMITER): File {
     return {
         key: resp.Key,
-        arn: `${bucket.arn}/${resp.Key}`,
+        arn: `${bucket.Arn}/${resp.Key}`,
         name: resp.Key.split(delimiter).pop()!,
         eTag: resp.ETag,
         lastModified: resp.LastModified,
         sizeBytes: resp.Size,
         ...resp,
+    }
+}
+
+export function toBucket(bucketName: string, region: string, partitionId: string): S3Bucket {
+    return {
+        Name: bucketName,
+        BucketRegion: region,
+        Arn: buildArn({ partitionId, bucketName }),
     }
 }
 
@@ -730,21 +699,6 @@ function buildArn({ partitionId, bucketName, key }: { partitionId: string; bucke
     }
 
     return `arn:${partitionId}:s3:::${bucketName}/${key}`
-}
-
-async function createSdkClient(regionCode: string): Promise<S3> {
-    clearInternalBucketCache()
-
-    return await globals.sdkClientBuilder.createAwsService(S3, { computeChecksums: true }, regionCode)
-}
-
-/**
- * Bucket region is cached across invocations without regard to partition
- * If partition changes with same bucket name in both partitions, cache is incorrect
- * @see https://github.com/aws/aws-sdk-js/blob/16a799c0681c01dcafa7b30be5f16894861b3a32/lib/services/s3.js#L919-L924
- */
-function clearInternalBucketCache(): void {
-    ;(S3.prototype as any).bucketRegionCache = {}
 }
 
 /**

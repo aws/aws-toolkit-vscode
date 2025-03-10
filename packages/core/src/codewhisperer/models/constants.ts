@@ -896,3 +896,28 @@ export enum SecurityScanStep {
 }
 
 export const amazonqCodeIssueDetailsTabTitle = 'Code Issue Details'
+
+export const testGenExcludePatterns = [
+    '**/annotation-generated-src/*',
+    '**/annotation-generated-tst/*',
+    '**/build/*',
+    '**/env/*',
+    '**/release-info/*',
+    '**/*.jar',
+    '**/*.exe',
+    '**/*.a',
+    '**/*.map',
+    '**/*.graph',
+    '**/*.so',
+    '**/*.csv',
+    '**/*.dylib',
+    '**/*.parquet',
+    '**/*.xlsx',
+    '**/*.tar.gz',
+    '**/*.tar',
+    '**/*.pack',
+    '**/*.pkg',
+    '**/*.pkl',
+    '**/*.deb',
+    '**/*.model',
+]

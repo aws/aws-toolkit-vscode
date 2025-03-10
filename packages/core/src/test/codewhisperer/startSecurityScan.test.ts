@@ -232,6 +232,11 @@ describe('startSecurityScan', function () {
             codewhispererCodeScanScope: 'PROJECT',
             passive: false,
         })
+        assertTelemetry('codewhisperer_codeScanIssueDetected', {
+            autoDetected: false,
+            detectorId: 'detectorId',
+            findingId: 'findingId',
+        })
     })
 
     it('Should cancel a scan if a newer one has started', async function () {

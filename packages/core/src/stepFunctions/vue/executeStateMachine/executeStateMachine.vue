@@ -101,13 +101,13 @@ export default defineComponent({
             // const self = this
             if (inputFile.files && inputFile.files.length > 0) {
                 const reader = new FileReader()
-                reader.onload = event => {
+                reader.onload = (event) => {
                     if (event.target) {
                         const result = event.target.result
                         this.executionInput = result as string
                     }
                 } // desired file content
-                reader.onerror = error => {
+                reader.onerror = (error) => {
                     throw error
                 }
                 reader.readAsText(inputFile.files[0])
@@ -116,7 +116,7 @@ export default defineComponent({
             }
         },
         sendInput: function () {
-            client.executeStateMachine(this.executionInput)
+            client.executeStateMachine(this.executionInput || '{}')
         },
     },
     mixins: [saveData],

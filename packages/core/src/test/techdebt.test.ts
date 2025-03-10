@@ -21,10 +21,9 @@ describe('tech debt', function () {
         const minVscode = env.getMinVscodeVersion()
         assert.ok(semver.lt(minVscode, '1.84.0'))
 
-        // see https://github.com/microsoft/vscode/issues/173861
         assert.ok(
-            semver.lt(minVscode, '1.93.0'),
-            'keepAlive works properly in vscode 1.93+. Remove src/codewhisperer/client/agent.ts and other code related to https://github.com/aws/aws-toolkit-vscode-staging/pull/1214'
+            semver.lt(minVscode, '1.110.0'),
+            'Check to see if https://github.com/microsoft/vscode/issues/173861 is resolved. Allows us to remove work done by https://github.com/aws/aws-toolkit-vscode-staging/pull/1214 and part of https://github.com/aws/aws-toolkit-vscode/pull/6664'
         )
     })
 

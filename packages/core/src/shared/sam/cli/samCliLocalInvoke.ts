@@ -15,6 +15,9 @@ import globals from '../../extensionGlobals'
 import { SamCliSettings } from './samCliSettings'
 import { addTelemetryEnvVar, collectSamErrors, SamCliError } from './samCliInvokerUtils'
 import { fs } from '../../fs/fs'
+import { Runtime } from 'aws-sdk/clients/lambda'
+import { getSamCliPathAndVersion } from '../utils'
+import { deprecatedRuntimes } from '../../../lambda/models/samLambdaRuntime'
 
 const localize = nls.loadMessageBundle()
 
@@ -217,6 +220,8 @@ export interface SamCliLocalInvokeInvocationArguments {
     name?: string
     /** AWS region */
     region?: string
+    /** Overrides the template-specified runtime. */
+    runtime?: Runtime
 }
 
 /**
@@ -265,6 +270,17 @@ export class SamCliLocalInvokeInvocation {
             ...(this.args.parameterOverrides ?? [])
         )
         invokeArgs.push(...(this.args.extraArgs ?? []))
+
+        // Get samcli version
+        const { parsedVersion } = await getSamCliPathAndVersion()
+
+        // '--runtime' option for sam local invoke is only available in SAM CLI 1.135.0 and later
+        if ((parsedVersion?.compare('1.135.0') ?? -1) >= 0) {
+            // check if the runtime is valid (not deprecated)
+            if (this.args.runtime && !deprecatedRuntimes.has(this.args.runtime)) {
+                pushIf(invokeArgs, true, '--runtime', this.args.runtime)
+            }
+        }
 
         return await this.args.invoker.invoke({
             options: {

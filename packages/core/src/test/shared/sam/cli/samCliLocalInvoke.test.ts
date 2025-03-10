@@ -8,14 +8,18 @@ import * as path from 'path'
 import { makeTemporaryToolkitFolder } from '../../../../shared/filesystemUtilities'
 import {
     SamCliLocalInvokeInvocation,
+    SamCliLocalInvokeInvocationArguments,
     SamLocalInvokeCommand,
     SamLocalInvokeCommandArgs,
 } from '../../../../shared/sam/cli/samCliLocalInvoke'
+import * as SamUtilsModule from '../../../../shared/sam/utils'
 import { ChildProcess } from '../../../../shared/utilities/processUtils'
 import { assertArgIsPresent, assertArgNotPresent, assertArgsContainArgument } from './samCliTestUtils'
 import { fs } from '../../../../shared'
 import { SamCliSettings } from '../../../../shared/sam/cli/samCliSettings'
 import { isWin } from '../../../../shared/vscode/env'
+import sinon from 'sinon'
+import { SemVer } from 'semver'
 
 describe('SamCliLocalInvokeInvocation', async function () {
     class TestSamLocalInvokeCommand implements SamLocalInvokeCommand {
@@ -31,6 +35,12 @@ describe('SamCliLocalInvokeInvocation', async function () {
     let placeholderTemplateFile: string
     let placeholderEventFile: string
     const nonRelevantArg = 'arg is not of interest to this test'
+    let mockGetSamCliVersion: sinon.SinonStub
+    const validRuntime = 'python3.10'
+    const invalidRuntime = 'python2.7'
+    const validCliVersion = new SemVer('1.135.0')
+    const invalidCliVersion = new SemVer('1.134.0')
+    let sandbox: sinon.SinonSandbox
 
     before(async function () {
         // File system search on windows can take a while.
@@ -47,15 +57,44 @@ describe('SamCliLocalInvokeInvocation', async function () {
         placeholderEventFile = path.join(tempFolder, 'event.json')
         await fs.writeFile(placeholderTemplateFile, '')
         await fs.writeFile(placeholderEventFile, '')
+        sandbox = sinon.createSandbox()
     })
 
     afterEach(async function () {
+        sandbox.restore()
         await fs.delete(tempFolder, { recursive: true })
     })
 
+    function createTaskInvoker(onInvoke: (invokeArgs: SamLocalInvokeCommandArgs) => void): SamLocalInvokeCommand {
+        return new TestSamLocalInvokeCommand(onInvoke)
+    }
+
+    async function executeInvocation(
+        options: Partial<SamCliLocalInvokeInvocationArguments>
+    ): Promise<SamLocalInvokeCommandArgs> {
+        let invokeArgs: SamLocalInvokeCommandArgs = {} as SamLocalInvokeCommandArgs
+        const invocation = new SamCliLocalInvokeInvocation({
+            templateResourceName: nonRelevantArg,
+            templatePath: placeholderTemplateFile,
+            eventPath: placeholderEventFile,
+            environmentVariablePath: nonRelevantArg,
+            invoker: createTaskInvoker((args: SamLocalInvokeCommandArgs) => {
+                invokeArgs = args
+            }),
+            ...options,
+        })
+        await invocation.execute()
+        return invokeArgs
+    }
+
     it('invokes `sam local` with args', async function () {
+        mockGetSamCliVersion = sandbox
+            .stub(SamUtilsModule, 'getSamCliPathAndVersion')
+            .callsFake(sandbox.stub().resolves({ parsedVersion: validCliVersion }))
+
         const taskInvoker: SamLocalInvokeCommand = new TestSamLocalInvokeCommand(
             (invokeArgs: SamLocalInvokeCommandArgs) => {
+                assert(mockGetSamCliVersion.calledOnce)
                 assert.ok(invokeArgs.args.length >= 2, 'Expected args to be present')
                 assert.strictEqual(invokeArgs.args[0], 'local')
                 assert.strictEqual(invokeArgs.args[1], 'invoke')
@@ -64,10 +103,13 @@ describe('SamCliLocalInvokeInvocation', async function () {
                 assert.strictEqual(invokeArgs.args[4], '--template')
                 assert.strictEqual(invokeArgs.args[6], '--event')
                 assert.strictEqual(invokeArgs.args[8], '--env-vars')
-
                 // `extraArgs` are appended to the end.
                 assert.strictEqual(invokeArgs.args[10], '--build-dir')
                 assert.strictEqual(invokeArgs.args[11], 'my/build/dir/')
+
+                // 'runtime' is the last argument.
+                assert.strictEqual(invokeArgs.args[invokeArgs.args.length - 2], '--runtime')
+                assert.strictEqual(invokeArgs.args[invokeArgs.args.length - 1], 'python3.10')
             }
         )
 
@@ -78,228 +120,104 @@ describe('SamCliLocalInvokeInvocation', async function () {
             environmentVariablePath: nonRelevantArg,
             invoker: taskInvoker,
             extraArgs: ['--build-dir', 'my/build/dir/'],
+            runtime: validRuntime,
         }).execute()
     })
 
     it('Passes template resource name to sam cli', async function () {
         const expectedResourceName = 'HelloWorldResource'
-        const taskInvoker: SamLocalInvokeCommand = new TestSamLocalInvokeCommand(
-            (invokeArgs: SamLocalInvokeCommandArgs) => {
-                assertArgIsPresent(invokeArgs.args, expectedResourceName)
-            }
-        )
-
-        await new SamCliLocalInvokeInvocation({
-            templateResourceName: expectedResourceName,
-            templatePath: placeholderTemplateFile,
-            eventPath: placeholderEventFile,
-            environmentVariablePath: nonRelevantArg,
-            invoker: taskInvoker,
-        }).execute()
+        const invokeArgs = await executeInvocation({ templateResourceName: expectedResourceName })
+        assertArgIsPresent(invokeArgs.args, expectedResourceName)
     })
 
     it('Passes template path to sam cli', async function () {
-        const taskInvoker: SamLocalInvokeCommand = new TestSamLocalInvokeCommand(
-            (invokeArgs: SamLocalInvokeCommandArgs) => {
-                assertArgsContainArgument(invokeArgs.args, '--template', placeholderTemplateFile)
-            }
-        )
-
-        await new SamCliLocalInvokeInvocation({
-            templateResourceName: nonRelevantArg,
-            templatePath: placeholderTemplateFile,
-            eventPath: placeholderEventFile,
-            environmentVariablePath: nonRelevantArg,
-            invoker: taskInvoker,
-        }).execute()
+        const invokeArgs = await executeInvocation({})
+        assertArgsContainArgument(invokeArgs.args, '--template', placeholderTemplateFile)
     })
 
     it('Passes event path to sam cli', async function () {
-        const taskInvoker: SamLocalInvokeCommand = new TestSamLocalInvokeCommand(
-            (invokeArgs: SamLocalInvokeCommandArgs) => {
-                assertArgsContainArgument(invokeArgs.args, '--event', placeholderEventFile)
-            }
-        )
-
-        await new SamCliLocalInvokeInvocation({
-            templateResourceName: nonRelevantArg,
-            templatePath: placeholderTemplateFile,
-            eventPath: placeholderEventFile,
-            environmentVariablePath: nonRelevantArg,
-            invoker: taskInvoker,
-        }).execute()
+        const invokeArgs = await executeInvocation({})
+        assertArgsContainArgument(invokeArgs.args, '--event', placeholderEventFile)
     })
 
     it('Passes env-vars path to sam cli', async function () {
         const expectedEnvVarsPath = 'envvars.json'
-        const taskInvoker: SamLocalInvokeCommand = new TestSamLocalInvokeCommand(
-            (invokeArgs: SamLocalInvokeCommandArgs) => {
-                assertArgsContainArgument(invokeArgs.args, '--env-vars', expectedEnvVarsPath)
-            }
-        )
-
-        await new SamCliLocalInvokeInvocation({
-            templateResourceName: nonRelevantArg,
-            templatePath: placeholderTemplateFile,
-            eventPath: placeholderEventFile,
-            environmentVariablePath: expectedEnvVarsPath,
-            invoker: taskInvoker,
-        }).execute()
+        const invokeArgs = await executeInvocation({ environmentVariablePath: expectedEnvVarsPath })
+        assertArgsContainArgument(invokeArgs.args, '--env-vars', expectedEnvVarsPath)
     })
 
     it('Passes debug port to sam cli', async function () {
         const expectedDebugPort = '1234'
-        const taskInvoker: SamLocalInvokeCommand = new TestSamLocalInvokeCommand(
-            (invokeArgs: SamLocalInvokeCommandArgs) => {
-                assertArgsContainArgument(invokeArgs.args, '-d', expectedDebugPort)
-            }
-        )
-
-        await new SamCliLocalInvokeInvocation({
-            templateResourceName: nonRelevantArg,
-            templatePath: placeholderTemplateFile,
-            eventPath: placeholderEventFile,
-            environmentVariablePath: nonRelevantArg,
-            debugPort: expectedDebugPort,
-            invoker: taskInvoker,
-        }).execute()
+        const invokeArgs = await executeInvocation({ debugPort: expectedDebugPort })
+        assertArgsContainArgument(invokeArgs.args, '-d', expectedDebugPort)
     })
 
     it('undefined debug port does not pass to sam cli', async function () {
-        const taskInvoker: SamLocalInvokeCommand = new TestSamLocalInvokeCommand(
-            (invokeArgs: SamLocalInvokeCommandArgs) => {
-                assertArgNotPresent(invokeArgs.args, '-d')
-            }
-        )
-
-        await new SamCliLocalInvokeInvocation({
-            templateResourceName: nonRelevantArg,
-            templatePath: placeholderTemplateFile,
-            eventPath: placeholderEventFile,
-            environmentVariablePath: nonRelevantArg,
-            debugPort: undefined,
-            invoker: taskInvoker,
-        }).execute()
+        const invokeArgs = await executeInvocation({ debugPort: undefined })
+        assertArgNotPresent(invokeArgs.args, '-d')
     })
 
     it('Passes docker network to sam cli', async function () {
         const expectedDockerNetwork = 'hello-world'
-        const taskInvoker: SamLocalInvokeCommand = new TestSamLocalInvokeCommand(
-            (invokeArgs: SamLocalInvokeCommandArgs) => {
-                assertArgsContainArgument(invokeArgs.args, '--docker-network', expectedDockerNetwork)
-            }
-        )
-
-        await new SamCliLocalInvokeInvocation({
-            templateResourceName: nonRelevantArg,
-            templatePath: placeholderTemplateFile,
-            eventPath: placeholderEventFile,
-            environmentVariablePath: nonRelevantArg,
-            invoker: taskInvoker,
-            dockerNetwork: expectedDockerNetwork,
-        }).execute()
+        const invokeArgs = await executeInvocation({ dockerNetwork: expectedDockerNetwork })
+        assertArgsContainArgument(invokeArgs.args, '--docker-network', expectedDockerNetwork)
     })
 
     it('Does not pass docker network to sam cli when undefined', async function () {
-        const taskInvoker: SamLocalInvokeCommand = new TestSamLocalInvokeCommand(
-            (invokeArgs: SamLocalInvokeCommandArgs) => {
-                assertArgNotPresent(invokeArgs.args, '--docker-network')
-            }
-        )
-
-        await new SamCliLocalInvokeInvocation({
-            templateResourceName: nonRelevantArg,
-            templatePath: placeholderTemplateFile,
-            eventPath: placeholderEventFile,
-            environmentVariablePath: nonRelevantArg,
-            invoker: taskInvoker,
-            dockerNetwork: undefined,
-        }).execute()
+        const invokeArgs = await executeInvocation({ dockerNetwork: undefined })
+        assertArgNotPresent(invokeArgs.args, '--docker-network')
     })
 
     it('passes --skip-pull-image to sam cli if skipPullImage is true', async function () {
-        const taskInvoker: SamLocalInvokeCommand = new TestSamLocalInvokeCommand(
-            (invokeArgs: SamLocalInvokeCommandArgs) => {
-                assertArgIsPresent(invokeArgs.args, '--skip-pull-image')
-            }
-        )
-
-        await new SamCliLocalInvokeInvocation({
-            templateResourceName: nonRelevantArg,
-            templatePath: placeholderTemplateFile,
-            eventPath: placeholderEventFile,
-            environmentVariablePath: nonRelevantArg,
-            invoker: taskInvoker,
-            skipPullImage: true,
-        }).execute()
+        const invokeArgs = await executeInvocation({ skipPullImage: true })
+        assertArgIsPresent(invokeArgs.args, '--skip-pull-image')
     })
 
     it('does not pass --skip-pull-image to sam cli if skipPullImage is false', async function () {
-        const taskInvoker: SamLocalInvokeCommand = new TestSamLocalInvokeCommand(
-            (invokeArgs: SamLocalInvokeCommandArgs) => {
-                assertArgNotPresent(invokeArgs.args, '--skip-pull-image')
-            }
-        )
-
-        await new SamCliLocalInvokeInvocation({
-            templateResourceName: nonRelevantArg,
-            templatePath: placeholderTemplateFile,
-            eventPath: placeholderEventFile,
-            environmentVariablePath: nonRelevantArg,
-            invoker: taskInvoker,
-            skipPullImage: false,
-        }).execute()
+        const invokeArgs = await executeInvocation({ skipPullImage: false })
+        assertArgNotPresent(invokeArgs.args, '--skip-pull-image')
     })
 
     it('does not pass --skip-pull-image to sam cli if skipPullImage is undefined', async function () {
-        const taskInvoker: SamLocalInvokeCommand = new TestSamLocalInvokeCommand(
-            (invokeArgs: SamLocalInvokeCommandArgs) => {
-                assertArgNotPresent(invokeArgs.args, '--skip-pull-image')
-            }
-        )
-
-        await new SamCliLocalInvokeInvocation({
-            templateResourceName: nonRelevantArg,
-            templatePath: placeholderTemplateFile,
-            eventPath: placeholderEventFile,
-            environmentVariablePath: nonRelevantArg,
-            invoker: taskInvoker,
-            skipPullImage: undefined,
-        }).execute()
+        const invokeArgs = await executeInvocation({ skipPullImage: undefined })
+        assertArgNotPresent(invokeArgs.args, '--skip-pull-image')
     })
 
     it('Passes debuggerPath to sam cli', async function () {
         const expectedDebuggerPath = path.join('foo', 'bar')
-
-        const taskInvoker: SamLocalInvokeCommand = new TestSamLocalInvokeCommand(
-            (invokeArgs: SamLocalInvokeCommandArgs) => {
-                assertArgsContainArgument(invokeArgs.args, '--debugger-path', expectedDebuggerPath)
-            }
-        )
-
-        await new SamCliLocalInvokeInvocation({
-            templateResourceName: nonRelevantArg,
-            templatePath: placeholderTemplateFile,
-            eventPath: placeholderEventFile,
-            environmentVariablePath: nonRelevantArg,
-            invoker: taskInvoker,
-            debuggerPath: expectedDebuggerPath,
-        }).execute()
+        const invokeArgs = await executeInvocation({ debuggerPath: expectedDebuggerPath })
+        assertArgsContainArgument(invokeArgs.args, '--debugger-path', expectedDebuggerPath)
     })
 
     it('Does not pass debuggerPath to sam cli when undefined', async function () {
-        const taskInvoker: SamLocalInvokeCommand = new TestSamLocalInvokeCommand(
-            (invokeArgs: SamLocalInvokeCommandArgs) => {
-                assertArgNotPresent(invokeArgs.args, '--debugger-path')
-            }
-        )
+        const invokeArgs = await executeInvocation({})
+        assertArgNotPresent(invokeArgs.args, '--debugger-path')
+    })
 
-        await new SamCliLocalInvokeInvocation({
-            templateResourceName: nonRelevantArg,
-            templatePath: placeholderTemplateFile,
-            eventPath: placeholderEventFile,
-            environmentVariablePath: nonRelevantArg,
-            invoker: taskInvoker,
-        }).execute()
+    it('Passes runtime to sam cli', async function () {
+        mockGetSamCliVersion = sandbox
+            .stub(SamUtilsModule, 'getSamCliPathAndVersion')
+            .callsFake(sandbox.stub().resolves({ parsedVersion: new SemVer('1.135.0') }))
+
+        const invokeArgs = await executeInvocation({ runtime: validRuntime })
+        assertArgsContainArgument(invokeArgs.args, '--runtime', validRuntime)
+    })
+
+    it('Does not pass runtime to sam cli when version < 1.135.0', async function () {
+        mockGetSamCliVersion = sandbox
+            .stub(SamUtilsModule, 'getSamCliPathAndVersion')
+            .callsFake(sandbox.stub().resolves({ parsedVersion: invalidCliVersion }))
+
+        const invokeArgs = await executeInvocation({ runtime: validRuntime })
+        assertArgNotPresent(invokeArgs.args, '--runtime')
+    })
+
+    it('Does not pass runtime to sam cli when runtime is deprecated', async function () {
+        mockGetSamCliVersion = sandbox
+            .stub(SamUtilsModule, 'getSamCliPathAndVersion')
+            .callsFake(sandbox.stub().resolves({ parsedVersion: validCliVersion }))
+
+        const invokeArgs = await executeInvocation({ runtime: invalidRuntime })
+        assertArgNotPresent(invokeArgs.args, '--runtime')
     })
 })

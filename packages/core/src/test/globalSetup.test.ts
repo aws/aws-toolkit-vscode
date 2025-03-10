@@ -167,6 +167,10 @@ async function writeLogsToFile(testName: string) {
     await fs.appendFile(testLogOutput, entries?.join('\n') ?? '')
 }
 
+export function assertLogsContainAllOf(keywords: string[], exactMatch: boolean, severity: LogLevel) {
+    return keywords.map((k) => assertLogsContain(k, exactMatch, severity))
+}
+
 // TODO: merge this with `toolkitLogger.test.ts:checkFile`
 export function assertLogsContain(text: string, exactMatch: boolean, severity: LogLevel) {
     const logs = getTestLogger().getLoggedEntries(severity)

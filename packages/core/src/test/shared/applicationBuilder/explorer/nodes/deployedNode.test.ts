@@ -12,7 +12,7 @@ import {
 } from '../../../../../awsService/appBuilder/explorer/nodes/deployedNode'
 import * as sinon from 'sinon'
 import * as LambdaClientModule from '../../../../../../src/shared/clients/lambdaClient'
-import * as DefaultS3ClientModule from '../../../../../../src/shared/clients/s3Client'
+import * as DefaultS3ClientModule from '../../../../../shared/clients/s3'
 import * as ApiGatewayNodeModule from '../../../../../awsService/apigateway/explorer/apiGatewayNodes'
 import { beforeEach } from 'mocha'
 import { LambdaFunctionNode } from '../../../../../lambda/explorer/lambdaFunctionNode'
@@ -228,7 +228,7 @@ describe('generateDeployedNode', () => {
     })
 
     describe('S3BucketNode', () => {
-        let mockDefaultS3ClientInstance: sinon.SinonStubbedInstance<DefaultS3ClientModule.DefaultS3Client>
+        let mockDefaultS3ClientInstance: sinon.SinonStubbedInstance<DefaultS3ClientModule.S3Client>
         const s3DeployedNodeInput = {
             deployedResource: {
                 LogicalResourceId: 'MyS3SourceBucket',
@@ -243,8 +243,8 @@ describe('generateDeployedNode', () => {
 
         it('should return a DeployedResourceNode for valid S3 bucket happy path', async () => {
             // Stub the constructor of DefaultLambdaClient to return the stub instance
-            mockDefaultS3ClientInstance = sandbox.createStubInstance(DefaultS3ClientModule.DefaultS3Client)
-            sandbox.stub(DefaultS3ClientModule, 'DefaultS3Client').returns(mockDefaultS3ClientInstance)
+            mockDefaultS3ClientInstance = sandbox.createStubInstance(DefaultS3ClientModule.S3Client)
+            sandbox.stub(DefaultS3ClientModule, 'S3Client').returns(mockDefaultS3ClientInstance)
             const deployedResourceNodes = await generateDeployedNode(
                 s3DeployedNodeInput.deployedResource,
                 s3DeployedNodeInput.regionCode,
@@ -263,9 +263,9 @@ describe('generateDeployedNode', () => {
                 expectedStackName,
                 S3BucketNode
             )
-            assert.strictEqual(deployedResourceNodeExplorerNode.bucket.name, expectedS3BucketName)
-            assert.strictEqual(deployedResourceNodeExplorerNode.bucket.arn, expectedS3BucketArn)
-            assert.strictEqual(deployedResourceNodeExplorerNode.bucket.region, expectedRegionCode)
+            assert.strictEqual(deployedResourceNodeExplorerNode.bucket.Name, expectedS3BucketName)
+            assert.strictEqual(deployedResourceNodeExplorerNode.bucket.Arn, expectedS3BucketArn)
+            assert.strictEqual(deployedResourceNodeExplorerNode.bucket.BucketRegion, expectedRegionCode)
             assert.strictEqual(deployedResourceNodeExplorerNode.contextValue, 'awsS3BucketNode')
             assert.strictEqual(deployedResourceNodeExplorerNode.label, expectedS3BucketName)
             assert.strictEqual(deployedResourceNodeExplorerNode.tooltip, expectedS3BucketName)

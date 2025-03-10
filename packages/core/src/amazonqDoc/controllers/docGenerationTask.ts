@@ -10,8 +10,26 @@ import {
     DocV2GenerationEvent,
 } from '../../codewhisperer/client/codewhispereruserclient'
 import { getLogger } from '../../shared/logger/logger'
+import { Mode } from '../constants'
+
+export class DocGenerationTasks {
+    private tasks: Map<string, DocGenerationTask> = new Map()
+
+    public getTask(tabId: string): DocGenerationTask {
+        if (!this.tasks.has(tabId)) {
+            this.tasks.set(tabId, new DocGenerationTask())
+        }
+        return this.tasks.get(tabId)!
+    }
+
+    public deleteTask(tabId: string): void {
+        this.tasks.delete(tabId)
+    }
+}
 
 export class DocGenerationTask {
+    public mode: Mode = Mode.NONE
+    public folderPath = ''
     // Telemetry fields
     public conversationId?: string
     public numberOfAddedChars?: number
@@ -24,10 +42,6 @@ export class DocGenerationTask {
     public interactionType?: DocInteractionType
     public numberOfNavigations = 0
     public folderLevel: DocFolderLevel = 'ENTIRE_WORKSPACE'
-
-    constructor(conversationId?: string) {
-        this.conversationId = conversationId
-    }
 
     public docGenerationEventBase() {
         const undefinedProps = Object.entries(this)

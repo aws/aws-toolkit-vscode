@@ -36,6 +36,8 @@ export function dispatchWebViewMessagesToApps(
                 })
                 performance.clearMarks(amazonqMark.uiReady)
                 performance.clearMarks(amazonqMark.open)
+                // let cwcController know the ui is ready
+                webViewToAppsMessagePublishers.get('cwc')?.publish(msg)
                 return
             }
             case 'start-chat-message-telemetry': {
@@ -57,7 +59,7 @@ export function dispatchWebViewMessagesToApps(
             }
             case 'send-telemetry': {
                 if (isOpenAgentTelemetry(msg)) {
-                    telemetry.toolkit_openModule.emit({
+                    telemetry.toolkit_didLoadModule.emit({
                         module: msg.module,
                         source: msg.trigger,
                         result: 'Succeeded',

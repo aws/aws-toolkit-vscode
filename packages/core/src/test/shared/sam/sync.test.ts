@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import * as SamUtilsModule from '../../../shared/sam/utils'
 import * as ProcessTerminalUtils from '../../../shared/sam/processTerminal'
-import * as S3ClientModule from '../../../shared/clients/s3Client'
+import * as S3ClientModule from '../../../shared/clients/s3'
 import * as SamConfigModule from '../../../shared/sam/config'
 import * as ResolveEnvModule from '../../../shared/env/resolveEnv'
 import * as ProcessUtilsModule from '../../../shared/utilities/processUtils'
@@ -41,7 +41,7 @@ import fs from '../../../shared/fs/fs'
 import { createMultiPick, DataQuickPickItem } from '../../../shared/ui/pickerPrompter'
 import sinon from 'sinon'
 import { getTestWindow } from '../vscode/window'
-import { DefaultS3Client } from '../../../shared/clients/s3Client'
+import { S3Client } from '../../../shared/clients/s3'
 import { RequiredProps } from '../../../shared/utilities/tsUtils'
 import S3 from 'aws-sdk/clients/s3'
 import { DefaultCloudFormationClient } from '../../../shared/clients/cloudFormationClient'
@@ -133,7 +133,7 @@ describe('SAM SyncWizard', async () => {
     let templateFile: vscode.Uri
 
     let mockDefaultCFNClient: sinon.SinonStubbedInstance<DefaultCloudFormationClient>
-    let mockDefaultS3Client: sinon.SinonStubbedInstance<DefaultS3Client>
+    let mockDefaultS3Client: sinon.SinonStubbedInstance<S3Client>
     let registry: CloudFormationTemplateRegistry
 
     beforeEach(async () => {
@@ -148,8 +148,8 @@ describe('SAM SyncWizard', async () => {
         mockDefaultCFNClient.listAllStacks.returns(intoCollection(stackSummaries))
 
         // Simulate return of list bucket
-        mockDefaultS3Client = sandbox.createStubInstance(S3ClientModule.DefaultS3Client)
-        sandbox.stub(S3ClientModule, 'DefaultS3Client').returns(mockDefaultS3Client)
+        mockDefaultS3Client = sandbox.createStubInstance(S3ClientModule.S3Client)
+        sandbox.stub(S3ClientModule, 'S3Client').returns(mockDefaultS3Client)
         mockDefaultS3Client.listBucketsIterable.returns(intoCollection(s3BucketListSummary))
 
         // generate template.yaml in temporary test folder and add to registery
@@ -1076,7 +1076,7 @@ describe('SAM runSync', () => {
     let spyRunInterminal: sinon.SinonSpy
 
     let mockDefaultCFNClient: sinon.SinonStubbedInstance<DefaultCloudFormationClient>
-    let mockDefaultS3Client: sinon.SinonStubbedInstance<DefaultS3Client>
+    let mockDefaultS3Client: sinon.SinonStubbedInstance<S3Client>
     let registry: CloudFormationTemplateRegistry
 
     // Dependency clients
@@ -1098,8 +1098,8 @@ describe('SAM runSync', () => {
         mockDefaultCFNClient.listAllStacks.returns(intoCollection(stackSummaries))
 
         // Simulate return of list bucket
-        mockDefaultS3Client = sandbox.createStubInstance(S3ClientModule.DefaultS3Client)
-        sandbox.stub(S3ClientModule, 'DefaultS3Client').returns(mockDefaultS3Client)
+        mockDefaultS3Client = sandbox.createStubInstance(S3ClientModule.S3Client)
+        sandbox.stub(S3ClientModule, 'S3Client').returns(mockDefaultS3Client)
         mockDefaultS3Client.listBucketsIterable.returns(intoCollection(s3BucketListSummary))
 
         // Create Spy for validation
@@ -2057,7 +2057,7 @@ describe('SAM sync helper functions', () => {
             const resp = { region: 'us-east-1', bucketName: 'newbucket:my-new-bucket' }
 
             // Stub the S3 client's createBucket method
-            createBucketStub = sandbox.stub(DefaultS3Client.prototype, 'createBucket').resolves()
+            createBucketStub = sandbox.stub(S3Client.prototype, 'createBucket').resolves()
 
             const result = await ensureBucket(resp)
             assert.ok(createBucketStub.calledOnce)
@@ -2070,7 +2070,7 @@ describe('SAM sync helper functions', () => {
 
             // Stub the S3 client's createBucket method to throw an error
             createBucketStub = sandbox
-                .stub(DefaultS3Client.prototype, 'createBucket')
+                .stub(S3Client.prototype, 'createBucket')
                 .rejects(new Error('Failed to create S3 bucket'))
 
             await assert.rejects(ensureBucket(resp)).catch((err) => {

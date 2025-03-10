@@ -3,14 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { SafeEc2Instance } from '../../shared/clients/ec2Client'
+import { Ec2Instance } from '../../shared/clients/ec2'
 import { copyToClipboard } from '../../shared/utilities/messages'
 import { Ec2Selection } from './prompter'
 import { sshLogFileLocation } from '../../shared/sshConfig'
 import { SSM } from 'aws-sdk'
 import { getLogger } from '../../shared/logger/logger'
 
-export function getIconCode(instance: SafeEc2Instance) {
+export function getIconCode(instance: Ec2Instance) {
     if (instance.LastSeenStatus === 'running') {
         return 'pass'
     }

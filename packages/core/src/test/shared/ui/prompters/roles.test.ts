@@ -6,8 +6,7 @@
 import * as vscode from 'vscode'
 import * as sinon from 'sinon'
 import assert from 'assert'
-import { IAM } from 'aws-sdk'
-import { DefaultIamClient } from '../../../../shared/clients/iamClient'
+import { IamClient, IamRole } from '../../../../shared/clients/iam'
 import { createQuickPickPrompterTester, QuickPickPrompterTester } from '../testUtils'
 import { createRolePrompter } from '../../../../shared/ui/common/roles'
 import { toCollection } from '../../../../shared/utilities/asyncCollection'
@@ -17,9 +16,9 @@ import { getOpenExternalStub } from '../../../globalSetup.test'
 const helpUri = vscode.Uri.parse('https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles.html')
 
 describe('createRolePrompter', function () {
-    let roles: IAM.Role[]
-    let newRole: IAM.Role
-    let tester: QuickPickPrompterTester<IAM.Role>
+    let roles: IamRole[]
+    let newRole: IamRole
+    let tester: QuickPickPrompterTester<IamRole>
 
     beforeEach(function () {
         roles = [
@@ -34,7 +33,7 @@ describe('createRolePrompter', function () {
             Arn: 'new-arn',
         } as any
 
-        const client = stub(DefaultIamClient, { regionCode: 'region-1' })
+        const client = stub(IamClient, { regionCode: 'region-1' })
         client.getRoles.returns(
             toCollection(async function* () {
                 yield roles

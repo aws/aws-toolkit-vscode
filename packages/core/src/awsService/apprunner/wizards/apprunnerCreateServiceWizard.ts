@@ -15,7 +15,7 @@ import { AppRunnerCodeRepositoryWizard } from './codeRepositoryWizard'
 import { GitExtension } from '../../../shared/extensions/git'
 import { makeDeploymentButton } from './deploymentButton'
 import { createExitPrompter } from '../../../shared/ui/common/exitPrompter'
-import { DefaultIamClient } from '../../../shared/clients/iamClient'
+import { IamClient } from '../../../shared/clients/iam'
 import { DefaultEcrClient } from '../../../shared/clients/ecrClient'
 import { DefaultAppRunnerClient } from '../../../shared/clients/apprunnerClient'
 import { getAppRunnerCreateServiceDocUrl } from '../../../shared/extensionUtilities'
@@ -102,7 +102,7 @@ export class CreateAppRunnerServiceWizard extends Wizard<AppRunner.CreateService
         initState: WizardState<AppRunner.CreateServiceRequest> = {},
         implicitState: WizardState<AppRunner.CreateServiceRequest> = {},
         clients = {
-            iam: new DefaultIamClient(region),
+            iam: new IamClient(region),
             ecr: new DefaultEcrClient(region),
             apprunner: new DefaultAppRunnerClient(region),
         }

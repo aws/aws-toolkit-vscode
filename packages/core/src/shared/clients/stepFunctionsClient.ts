@@ -67,6 +67,12 @@ export class DefaultStepFunctionsClient {
         return client.updateStateMachine(params).promise()
     }
 
+    public async testState(params: StepFunctions.TestStateInput): Promise<StepFunctions.TestStateOutput> {
+        const client = await this.createSdkClient()
+
+        return await client.testState(params).promise()
+    }
+
     private async createSdkClient(): Promise<StepFunctions> {
         return await globals.sdkClientBuilder.createAwsService(StepFunctions, undefined, this.regionCode)
     }

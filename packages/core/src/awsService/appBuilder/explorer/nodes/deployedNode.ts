@@ -16,7 +16,7 @@ import { defaultPartition } from '../../../../shared/regions/regionProvider'
 import { Lambda, APIGateway } from 'aws-sdk'
 import { LambdaNode } from '../../../../lambda/explorer/lambdaNodes'
 import { LambdaFunctionNode } from '../../../../lambda/explorer/lambdaFunctionNode'
-import { DefaultS3Client, DefaultBucket } from '../../../../shared/clients/s3Client'
+import { S3Client, toBucket } from '../../../../shared/clients/s3'
 import { S3Node } from '../../../../awsService/s3/explorer/s3Nodes'
 import { S3BucketNode } from '../../../../awsService/s3/explorer/s3BucketNode'
 import { ApiGatewayNode } from '../../../../awsService/apigateway/explorer/apiGatewayNodes'
@@ -100,13 +100,9 @@ export async function generateDeployedNode(
                 break
             }
             case s3BucketType: {
-                const s3Client = new DefaultS3Client(regionCode)
+                const s3Client = new S3Client(regionCode)
                 const s3Node = new S3Node(s3Client)
-                const s3Bucket = new DefaultBucket({
-                    partitionId: partitionId,
-                    region: regionCode,
-                    name: deployedResource.PhysicalResourceId,
-                })
+                const s3Bucket = toBucket(deployedResource.PhysicalResourceId, regionCode, partitionId)
                 newDeployedResource = new S3BucketNode(s3Bucket, s3Node, s3Client)
                 break
             }

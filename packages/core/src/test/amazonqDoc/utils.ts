@@ -18,7 +18,6 @@ import { docChat } from '../../amazonqDoc/constants'
 import { DocMessenger } from '../../amazonqDoc/messenger'
 import { AppToWebViewMessageDispatcher } from '../../amazonq/commons/connector/connectorMessages'
 import { createSessionConfig } from '../../amazonq/commons/session/sessionConfigFactory'
-import { DocGenerationTask } from '../../amazonqDoc/controllers/docGenerationTask'
 import { DocV2GenerationEvent, DocV2AcceptanceEvent } from '../../amazonqFeatureDev/client/featuredevproxyclient'
 import { FollowUpTypes } from '../../amazonq/commons/types'
 
@@ -116,8 +115,6 @@ export async function createController(sandbox: sinon.SinonSandbox): Promise<Con
         sessionStorage,
         sandbox.createStubInstance(vscode.EventEmitter).event
     )
-
-    new DocGenerationTask()
 
     return {
         emitters: mockChatControllerEventEmitters,
