@@ -670,6 +670,20 @@ export class Connector {
         }
     }
 
+    onFormTextualItemKeyPress = (
+        event: KeyboardEvent,
+        formData: Record<string, string>,
+        itemId: string,
+        tabId: string,
+        eventId?: string
+    ) => {
+        switch (this.tabsStorage.getTab(tabId)?.type) {
+            case 'cwc':
+                return this.cwChatConnector.onFormTextualItemKeyPress(tabId, event, formData, itemId, eventId)
+        }
+        return false
+    }
+
     onCustomFormAction = (
         tabId: string,
         messageId: string | undefined,
