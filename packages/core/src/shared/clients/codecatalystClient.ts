@@ -75,6 +75,8 @@ import { getServiceEnvVarConfig } from '../vscode/env'
 import { AwsCommand } from '../awsClientBuilderV3'
 import { ClientWrapper } from './clientWrapper'
 import { StandardRetryStrategy } from '@smithy/util-retry'
+import { ServiceException } from '@aws-sdk/smithy-client'
+import { AccessDeniedException } from '@aws-sdk/client-sso-oidc'
 
 const requiredDevEnvProps = [
     'id',
@@ -363,22 +365,26 @@ class CodeCatalystClientInternal extends ClientWrapper<CodeCatalystSDKClient> {
                 resolve(data)
             } catch (e) {
                 const error = e as Error
-                if (isAccessDeniedError(e)) {
+                if (error instanceof ServiceException && isAccessDeniedError(error)) {
                     CodeCatalystClientInternal.identityCache.delete(bearerToken)
                 }
-                if (silent) {
-                    if (defaultVal === undefined) {
-                        throw Error()
-                    }
+                if (silent && defaultVal !== undefined) {
                     resolve(defaultVal)
                 } else {
-                    reject(new ToolkitError(`CodeCatalyst: request failed with error`, { cause: error }))
+                    // SDKv3 does not have error codes so we use the name instead (see: https://github.com/aws/aws-sdk-js-v3/issues/759)
+                    reject(
+                        new ToolkitError(`CodeCatalyst: request failed with error`, { cause: error, code: error.name })
+                    )
                 }
             }
         })
 
-        function isAccessDeniedError(e: any): boolean {
-            return e.code === 'AccessDeniedException' || e.statusCode === 401
+        function isAccessDeniedError(e: ServiceException): boolean {
+            return (
+                e.$response?.statusCode === 403 ||
+                e.$response?.statusCode === 401 ||
+                e.name === AccessDeniedException.name
+            )
         }
     }
 
