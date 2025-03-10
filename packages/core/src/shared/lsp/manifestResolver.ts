@@ -109,7 +109,7 @@ export class ManifestResolver {
      */
     private async checkDeprecation(manifest: Manifest): Promise<void> {
         const prompts = AmazonQPromptSettings.instance
-        const lspId = `${this.lsName}LspManifestMessage`
+        const lspId = `${this.lsName}LspManifestMessage` as keyof typeof amazonQPrompts
 
         // Sanity check, if the lsName is changed then we also need to update the prompt keys in settings-amazonq.gen
         if (!(lspId in amazonQPrompts)) {
@@ -119,19 +119,19 @@ export class ManifestResolver {
 
         if (!manifest.isManifestDeprecated) {
             // In case we got an new url, make sure the prompt is re-enabled for active manifests
-            await prompts.enablePrompt(lspId as keyof typeof amazonQPrompts)
+            await prompts.enablePrompt(lspId)
             return
         }
 
         const deprecationMessage = `"${this.lsName}" manifest is deprecated. No future updates will be available.`
         logger.info(deprecationMessage)
 
-        if (prompts.isPromptEnabled(lspId as keyof typeof amazonQPrompts)) {
+        if (prompts.isPromptEnabled(lspId)) {
             void vscode.window
                 .showInformationMessage(deprecationMessage, localizedText.ok, localizedText.dontShow)
                 .then(async (button) => {
                     if (button === localizedText.dontShow) {
-                        await prompts.disablePrompt(lspId as keyof typeof amazonQPrompts)
+                        await prompts.disablePrompt(lspId)
                     }
                 })
         }
