@@ -296,7 +296,8 @@ export class Messenger {
                         undefined,
                         undefined,
                         undefined,
-                        'TestGenCancelled'
+                        'TestGenCancelled',
+                        'CANCELLED'
                     )
                     this.dispatcher.sendUpdatePromptProgress(
                         new UpdatePromptProgressMessage(tabID, cancellingProgressField)
@@ -310,7 +311,19 @@ export class Messenger {
                         'Succeeded',
                         messageId,
                         performance.now() - session.testGenerationStartTime,
-                        undefined
+                        undefined,
+                        undefined,
+                        undefined,
+                        undefined,
+                        undefined,
+                        undefined,
+                        undefined,
+                        undefined,
+                        undefined,
+                        undefined,
+                        undefined,
+                        undefined,
+                        'ACCEPTED'
                     )
                     this.dispatcher.sendUpdatePromptProgress(
                         new UpdatePromptProgressMessage(tabID, testGenCompletedField)

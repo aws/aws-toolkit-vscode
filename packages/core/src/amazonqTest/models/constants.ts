@@ -13,6 +13,11 @@ export const testChat = 'testChat'
 
 export const maxUserPromptLength = 4096 // user prompt character limit from MPS and API model.
 
+const baseProgressField: Partial<ProgressField> = {
+    status: 'default',
+    value: -1,
+}
+
 export const cancelTestGenButton: ChatItemButton = {
     id: ButtonActions.STOP_TEST_GEN,
     text: 'Cancel',
@@ -20,8 +25,7 @@ export const cancelTestGenButton: ChatItemButton = {
 }
 
 export const testGenProgressField: ProgressField = {
-    status: 'default',
-    value: -1,
+    ...baseProgressField,
     text: 'Generating unit tests...',
     actions: [cancelTestGenButton],
 }
@@ -46,18 +50,29 @@ export const cancelBuildProgressButton: ChatItemButton = {
     icon: 'cancel' as MynahIcons,
 }
 
+export const cancelFixingTestButton: ChatItemButton = {
+    id: ButtonActions.STOP_FIXING_TEST,
+    text: 'Cancel',
+    icon: 'cancel' as MynahIcons,
+}
+
 export const buildProgressField: ProgressField = {
-    status: 'default',
-    value: -1,
-    text: 'Executing...',
+    ...baseProgressField,
+    text: 'Project compiling...',
     actions: [cancelBuildProgressButton],
+}
+
+export const fixingTestProgressField: ProgressField = {
+    ...baseProgressField,
+    text: 'Fixing test failures...',
+    actions: [cancelFixingTestButton],
 }
 
 export const errorProgressField: ProgressField = {
     status: 'error',
     text: 'Error...Input needed',
     value: -1,
-    actions: [cancelBuildProgressButton],
+    actions: [cancelTestGenButton],
 }
 
 export const testGenSummaryMessage = (
@@ -70,67 +85,99 @@ ${planSummary ? `\n\n${planSummary}` : ''}
 `
 
 const checkIcons = {
-    wait: '&#9744;',
-    current: '&#9744;',
+    wait: '&#9203;',
+    current: '&#9203;',
     done: '<span style="color: green;">&#10004;</span>',
     error: '&#10060;',
 }
-
+// TODO: Commenting out this code to do a better UX in the V2 version after science support
+/*
 interface StepStatus {
     step: TestGenerationBuildStep
     status: 'wait' | 'current' | 'done' | 'error'
 }
 
 const stepStatuses: StepStatus[] = []
-
+*/
 export const testGenBuildProgressMessage = (currentStep: TestGenerationBuildStep, status?: string) => {
     const session = ChatSessionManager.Instance.getSession()
-    const statusText = BuildStatus[session.buildStatus].toLowerCase()
-    const icon = session.buildStatus === BuildStatus.SUCCESS ? checkIcons['done'] : checkIcons['error']
-    let message = `Sure. This may take a few minutes and I'll share updates on my progress here.
+    let message = `Sure. This may take a few minutes and I'll update the progress here.\n
 **Progress summary**\n\n`
 
     if (currentStep === TestGenerationBuildStep.START_STEP) {
         return message.trim()
     }
 
+    if (currentStep === TestGenerationBuildStep.RUN_BUILD) {
+        message += `${checkIcons['wait']} Project compiling\n\n`
+    }
+    if (currentStep === TestGenerationBuildStep.FIXING_TEST_CASES && session.buildStatus === BuildStatus.FAILURE) {
+        message += `${checkIcons['wait']} Fixing test failures\n\n`
+    } else if (
+        currentStep >= TestGenerationBuildStep.FIXING_TEST_CASES &&
+        session.buildStatus === BuildStatus.FAILURE
+    ) {
+        message += `${checkIcons['done']} Fixed test failures\n\n`
+    }
+    if (currentStep > TestGenerationBuildStep.RUN_BUILD && session.buildStatus === BuildStatus.SUCCESS) {
+        message += `${checkIcons['done']} Project compiled\n${checkIcons['done']} All tests passed\n\n`
+    }
+    /*
     updateStepStatuses(currentStep, status)
 
     if (currentStep >= TestGenerationBuildStep.RUN_BUILD) {
-        message += `${getIconForStep(TestGenerationBuildStep.RUN_BUILD)} Started build execution\n`
+        message += `${getIconForStep(TestGenerationBuildStep.RUN_BUILD)} ${
+            currentStep === TestGenerationBuildStep.RUN_BUILD
+                ? 'Project compiling\n'
+                : session.buildStatus === BuildStatus.FAILURE
+                  ? 'Unable to compile project\n'
+                  : 'Project compiled\n'
+        }`
     }
 
-    if (currentStep >= TestGenerationBuildStep.RUN_EXECUTION_TESTS) {
-        message += `${getIconForStep(TestGenerationBuildStep.RUN_EXECUTION_TESTS)} Executing tests\n`
+    if (currentStep === TestGenerationBuildStep.RUN_EXECUTION_TESTS) {
+        message += `${getIconForStep(TestGenerationBuildStep.RUN_EXECUTION_TESTS)} Running tests\n`
+    } else if (currentStep >= TestGenerationBuildStep.RUN_EXECUTION_TESTS) {
+        message += `${getIconForStep(TestGenerationBuildStep.RUN_EXECUTION_TESTS)} ${
+            session.buildStatus === BuildStatus.FAILURE ? 'Tests failed\n' : 'Tests passed\n'
+        }`
     }
 
-    if (currentStep >= TestGenerationBuildStep.FIXING_TEST_CASES && session.buildStatus === BuildStatus.FAILURE) {
-        message += `${getIconForStep(TestGenerationBuildStep.FIXING_TEST_CASES)} Fixing errors in tests\n\n`
+    if (currentStep === TestGenerationBuildStep.FIXING_TEST_CASES && session.buildStatus === BuildStatus.FAILURE) {
+        message += `${getIconForStep(TestGenerationBuildStep.FIXING_TEST_CASES)} Fixing test failures\n\n`
+    } else if (
+        currentStep >= TestGenerationBuildStep.FIXING_TEST_CASES &&
+        session.buildStatus === BuildStatus.FAILURE
+    ) {
+        message += `${checkIcons['done']} Fixed test failures\n\n`
     }
-
-    if (currentStep > TestGenerationBuildStep.PROCESS_TEST_RESULTS) {
-        message += `**Test case summary**
-${session.shortAnswer?.testCoverage ? `- Unit test coverage ${session.shortAnswer?.testCoverage}%` : ``}
-${icon} Build ${statusText}
-${icon} Assertion ${statusText}`
-        // TODO: Update Assertion %
+*/
+    if (currentStep > TestGenerationBuildStep.PROCESS_TEST_RESULTS && session.buildStatus === BuildStatus.FAILURE) {
+        message += `**Results**\n
+Amazon Q executed the tests and identified at least one failure. Below are the suggested fixes.\n\n`
     }
 
     return message.trim()
 }
-// TODO: Work on UX to show the build error in the progress message
+/*
 const updateStepStatuses = (currentStep: TestGenerationBuildStep, status?: string) => {
+    const session = ChatSessionManager.Instance.getSession()
     for (let step = TestGenerationBuildStep.INSTALL_DEPENDENCIES; step <= currentStep; step++) {
         const stepStatus: StepStatus = {
             step: step,
             status: 'wait',
         }
 
-        if (step === currentStep) {
-            stepStatus.status = status === 'failed' ? 'error' : 'current'
-        } else if (step < currentStep) {
-            stepStatus.status = 'done'
-        }
+        stepStatus.status =
+            step === currentStep
+                ? status === 'error' || status === 'done'
+                    ? status
+                    : 'current'
+                : step < currentStep
+                  ? session.buildStatus === BuildStatus.FAILURE
+                      ? 'error'
+                      : 'done'
+                  : stepStatus.status
 
         const existingIndex = stepStatuses.findIndex((s) => s.step === step)
         if (existingIndex !== -1) {
@@ -145,3 +192,4 @@ const getIconForStep = (step: TestGenerationBuildStep) => {
     const stepStatus = stepStatuses.find((s) => s.step === step)
     return stepStatus ? checkIcons[stepStatus.status] : checkIcons.wait
 }
+*/

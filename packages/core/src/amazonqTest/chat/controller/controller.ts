@@ -22,6 +22,7 @@ import {
     testGenProgressField,
     testGenSummaryMessage,
     maxUserPromptLength,
+    fixingTestProgressField,
 } from '../../models/constants'
 import MessengerUtils, { ButtonActions } from './messenger/messengerUtils'
 import { getTelemetryReasonDesc, isAwsError } from '../../../shared/errors'
@@ -63,6 +64,7 @@ import {
 } from '../../../codewhisperer/models/constants'
 import { UserWrittenCodeTracker } from '../../../codewhisperer/tracker/userWrittenCodeTracker'
 import { ReferenceLogViewProvider } from '../../../codewhisperer/service/referenceLogViewProvider'
+import { Auth } from '../../../auth/auth'
 
 export interface TestChatControllerEventEmitters {
     readonly tabOpened: vscode.EventEmitter<any>
@@ -284,19 +286,43 @@ export class TestController {
         if (session.stopIteration) {
             telemetryErrorMessage = getTelemetryReasonDesc(data.error.uiMessage.replaceAll('```', ''))
         }
-        TelemetryHelper.instance.sendTestGenerationToolkitEvent(
-            session,
-            true,
-            true,
-            isCancel ? 'Cancelled' : 'Failed',
-            session.startTestGenerationRequestId,
-            performance.now() - session.testGenerationStartTime,
-            telemetryErrorMessage,
-            session.isCodeBlockSelected,
-            session.artifactsUploadDuration,
-            session.srcPayloadSize,
-            session.srcZipFileSize
-        )
+        session.listOfTestGenerationJobId.length > 1
+            ? TelemetryHelper.instance.sendUnitTestGenerationEvent(
+                  session,
+                  telemetryErrorMessage,
+                  session.artifactsUploadDuration,
+                  session.srcZipFileSize,
+                  session.charsOfCodeAccepted,
+                  session.numberOfTestsGenerated,
+                  session.linesOfCodeGenerated,
+                  session.charsOfCodeGenerated,
+                  session.numberOfTestsGenerated,
+                  session.linesOfCodeGenerated,
+                  undefined,
+                  isCancel ? BuildStatus.CANCELLED : BuildStatus.FAILURE,
+                  isCancel ? 'CANCELLED' : 'FAILED'
+              )
+            : TelemetryHelper.instance.sendTestGenerationToolkitEvent(
+                  session,
+                  session.isSupportedLanguage,
+                  true,
+                  isCancel ? 'Cancelled' : 'Failed',
+                  session.startTestGenerationRequestId,
+                  performance.now() - session.testGenerationStartTime,
+                  telemetryErrorMessage,
+                  session.isCodeBlockSelected,
+                  session.artifactsUploadDuration,
+                  session.srcPayloadSize,
+                  session.srcZipFileSize,
+                  session.charsOfCodeAccepted,
+                  session.numberOfTestsGenerated,
+                  session.linesOfCodeGenerated,
+                  session.charsOfCodeGenerated,
+                  session.numberOfTestsGenerated,
+                  session.linesOfCodeGenerated,
+                  undefined,
+                  isCancel ? 'CANCELLED' : 'FAILED'
+              )
         if (session.stopIteration) {
             // Error from Science
             this.messenger.sendMessage(data.error.uiMessage.replaceAll('```', ''), data.tabID, 'answer')
@@ -361,8 +387,16 @@ export class TestController {
                 break
             case ButtonActions.STOP_BUILD:
                 cancelBuild()
+                testGenState.setToCancelling()
                 void this.handleUpdatePromptProgress({ status: 'cancel', tabID: data.tabID })
                 telemetry.ui_click.emit({ elementId: 'unitTestGeneration_cancelBuildProgress' })
+                this.messenger.sendChatInputEnabled(data.tabID, true)
+                await this.sessionCleanUp()
+                break
+            case ButtonActions.STOP_FIXING_TEST:
+                testGenState.setToCancelling()
+                void this.handleUpdatePromptProgress({ status: 'cancel', tabID: data.tabID })
+                telemetry.ui_click.emit({ elementId: 'unitTestGeneration_cancelFixingTest' })
                 this.messenger.sendChatInputEnabled(data.tabID, true)
                 await this.sessionCleanUp()
                 break
@@ -414,12 +448,6 @@ export class TestController {
             if (ChatSessionManager.Instance.getIsInProgress()) {
                 void vscode.window.showInformationMessage(
                     "There is already a test generation job in progress. Cancel current job or wait until it's finished to try again."
-                )
-                return
-            }
-            if (testGenState.isCancelling()) {
-                void vscode.window.showInformationMessage(
-                    'There is a test generation job being cancelled. Please wait for cancellation to finish.'
                 )
                 return
             }
@@ -502,6 +530,7 @@ export class TestController {
                     unsupportedMessage = `<span style="color: #EE9D28;">&#9888;<b>I'm sorry, but /test only supports Python and Java</b><br></span> I will still generate a suggestion below.`
                 }
                 this.messenger.sendMessage(unsupportedMessage, tabID, 'answer')
+                session.isSupportedLanguage = false
                 await this.onCodeGeneration(
                     session,
                     userPrompt,
@@ -529,6 +558,7 @@ export class TestController {
                     )
                 }
                 session.isCodeBlockSelected = selectionRange !== undefined
+                session.isSupportedLanguage = true
 
                 /**
                  * Zip the project
@@ -612,7 +642,7 @@ export class TestController {
         // return early if references are disabled and there are references
         if (!CodeWhispererSettings.instance.isSuggestionsWithCodeReferencesEnabled() && session.references.length > 0) {
             void vscode.window.showInformationMessage('Your settings do not allow code generation with references.')
-            await this.endSession(data, FollowUpTypes.SkipBuildAndFinish)
+            await this.endSession(data)
             await this.sessionCleanUp()
             return
         }
@@ -684,7 +714,12 @@ export class TestController {
         const rightUri = vscode.Uri.file(path.join(this.tempResultDirPath, 'resultArtifacts', filePath))
         const fileName = path.basename(absolutePath)
         await vscode.commands.executeCommand('vscode.diff', leftUri, rightUri, `${fileName} ${amazonQTabSuffix}`)
-        telemetry.ui_click.emit({ elementId: 'unitTestGeneration_viewDiff' })
+        const elementId =
+            session.listOfTestGenerationJobId.length > 1
+                ? 'unitTestGeneration_viewDiff_Iteration'
+                : 'unitTestGeneration_viewDiff'
+
+        telemetry.ui_click.emit({ elementId })
         session.latencyOfTestGeneration = performance.now() - session.testGenerationStartTime
         this.messenger.sendUpdatePlaceholder(message.tabID, `Please select an action to proceed (Accept or Reject)`)
     }
@@ -768,35 +803,44 @@ export class TestController {
         }
         const document = await vscode.workspace.openTextDocument(absolutePath)
         await vscode.window.showTextDocument(document)
-        // TODO: send the message once again once build is enabled
-        // this.messenger.sendMessage('Accepted', message.tabID, 'prompt')
-        telemetry.ui_click.emit({ elementId: 'unitTestGeneration_acceptDiff' })
+        const elementId =
+            session.listOfTestGenerationJobId.length > 1
+                ? 'unitTestGeneration_acceptDiff_Iteration'
+                : 'unitTestGeneration_acceptDiff'
+
+        telemetry.ui_click.emit({ elementId })
 
         getLogger().info(
             `Generated unit tests are accepted for ${session.fileLanguage ?? 'plaintext'} language with jobId: ${session.listOfTestGenerationJobId[0]}, jobGroupName: ${session.testGenerationJobGroupName}, result: Succeeded`
         )
-        TelemetryHelper.instance.sendTestGenerationToolkitEvent(
-            session,
-            true,
-            true,
-            'Succeeded',
-            session.startTestGenerationRequestId,
-            session.latencyOfTestGeneration,
-            undefined,
-            session.isCodeBlockSelected,
-            session.artifactsUploadDuration,
-            session.srcPayloadSize,
-            session.srcZipFileSize,
-            session.charsOfCodeAccepted,
-            session.numberOfTestsGenerated,
-            session.linesOfCodeAccepted,
-            session.charsOfCodeGenerated,
-            session.numberOfTestsGenerated,
-            session.linesOfCodeGenerated
-        )
+        if (session.listOfTestGenerationJobId.length === 1) {
+            TelemetryHelper.instance.sendTestGenerationToolkitEvent(
+                session,
+                true,
+                true,
+                'Succeeded',
+                session.startTestGenerationRequestId,
+                session.latencyOfTestGeneration,
+                undefined,
+                session.isCodeBlockSelected,
+                session.artifactsUploadDuration,
+                session.srcPayloadSize,
+                session.srcZipFileSize,
+                session.charsOfCodeAccepted,
+                session.numberOfTestsGenerated,
+                session.linesOfCodeAccepted,
+                session.charsOfCodeGenerated,
+                session.numberOfTestsGenerated,
+                session.linesOfCodeGenerated,
+                undefined,
+                'ACCEPTED'
+            )
+        }
 
-        await this.endSession(message, FollowUpTypes.SkipBuildAndFinish)
-        return
+        if (!Auth.instance.isInternalAmazonUser()) {
+            await this.endSession(message)
+            return
+        }
 
         if (session.listOfTestGenerationJobId.length === 1) {
             this.startInitialBuild(message)
@@ -804,17 +848,17 @@ export class TestController {
         } else if (session.listOfTestGenerationJobId.length < 4) {
             const remainingIterations = 4 - session.listOfTestGenerationJobId.length
 
-            let userMessage = 'Would you like Amazon Q to build and execute again, and fix errors?'
+            let userMessage = 'Would you like me to compile and run again, with the accepted fixes?'
             if (buildCommand) {
                 userMessage += ` I will be running this build command: \`${buildCommand}\``
             }
-            userMessage += `\nYou have ${remainingIterations} iteration${remainingIterations > 1 ? 's' : ''} left.`
+            userMessage += `\n\nI can compile and run ${remainingIterations} more time${remainingIterations > 1 ? 's' : ''}.`
 
             const followUps: FollowUps = {
                 text: '',
                 options: [
                     {
-                        pillText: `Rebuild`,
+                        pillText: `Proceed`,
                         type: FollowUpTypes.ContinueBuildAndExecute,
                         status: 'primary',
                     },
@@ -834,8 +878,24 @@ export class TestController {
                 messageId: '',
                 followUps: followUps,
             })
+            this.messenger.sendUpdatePlaceholder(message.tabID, `Please select an action to proceed`)
             this.messenger.sendChatInputEnabled(message.tabID, false)
         } else {
+            TelemetryHelper.instance.sendUnitTestGenerationEvent(
+                session,
+                undefined,
+                session.artifactsUploadDuration,
+                session.srcZipFileSize,
+                session.charsOfCodeAccepted,
+                session.numberOfTestsGenerated,
+                session.linesOfCodeGenerated,
+                session.charsOfCodeGenerated,
+                session.numberOfTestsGenerated,
+                session.linesOfCodeGenerated,
+                undefined,
+                session.buildStatus,
+                'ACCEPTED'
+            )
             this.sessionStorage.getSession().listOfTestGenerationJobId = []
             this.messenger.sendMessage(
                 'You have gone through both iterations and this unit test generation workflow is complete.',
@@ -896,31 +956,69 @@ export class TestController {
     }
 
     // TODO: Check if there are more cases to endSession if yes create a enum or type for step
-    private async endSession(data: any, step: FollowUpTypes) {
+    private async endSession(data: any, step?: FollowUpTypes) {
         this.messenger.sendMessage('Unit test generation completed.', data.tabID, 'answer')
 
         const session = this.sessionStorage.getSession()
         if (step === FollowUpTypes.RejectCode) {
-            TelemetryHelper.instance.sendTestGenerationToolkitEvent(
+            if (session.listOfTestGenerationJobId.length > 1) {
+                TelemetryHelper.instance.sendUnitTestGenerationEvent(
+                    session,
+                    undefined,
+                    session.artifactsUploadDuration,
+                    session.srcZipFileSize,
+                    0,
+                    0,
+                    0,
+                    session.charsOfCodeGenerated,
+                    session.numberOfTestsGenerated,
+                    session.linesOfCodeGenerated,
+                    undefined,
+                    session.buildStatus,
+                    'REJECTED'
+                )
+                telemetry.ui_click.emit({ elementId: 'unitTestGeneration_rejectDiff_Iteration' })
+            } else {
+                TelemetryHelper.instance.sendTestGenerationToolkitEvent(
+                    session,
+                    true,
+                    true,
+                    'Succeeded',
+                    session.startTestGenerationRequestId,
+                    session.latencyOfTestGeneration,
+                    undefined,
+                    session.isCodeBlockSelected,
+                    session.artifactsUploadDuration,
+                    session.srcPayloadSize,
+                    session.srcZipFileSize,
+                    0,
+                    0,
+                    0,
+                    session.charsOfCodeGenerated,
+                    session.numberOfTestsGenerated,
+                    session.linesOfCodeGenerated,
+                    undefined,
+                    'REJECTED'
+                )
+                telemetry.ui_click.emit({ elementId: 'unitTestGeneration_rejectDiff' })
+            }
+        } else if (step === FollowUpTypes.SkipBuildAndFinish) {
+            TelemetryHelper.instance.sendUnitTestGenerationEvent(
                 session,
-                true,
-                true,
-                'Succeeded',
-                session.startTestGenerationRequestId,
-                session.latencyOfTestGeneration,
                 undefined,
-                session.isCodeBlockSelected,
                 session.artifactsUploadDuration,
-                session.srcPayloadSize,
                 session.srcZipFileSize,
-                0,
-                0,
-                0,
                 session.charsOfCodeGenerated,
                 session.numberOfTestsGenerated,
-                session.linesOfCodeGenerated
+                session.linesOfCodeGenerated,
+                session.charsOfCodeGenerated,
+                session.numberOfTestsGenerated,
+                session.linesOfCodeGenerated,
+                undefined,
+                session.buildStatus,
+                'ACCEPTED'
             )
-            telemetry.ui_click.emit({ elementId: 'unitTestGeneration_rejectDiff' })
+            telemetry.ui_click.emit({ elementId: 'unitTestGeneration_SkipAndFinish' })
         }
 
         await this.sessionCleanUp()
@@ -936,12 +1034,17 @@ export class TestController {
 
     private startInitialBuild(data: any) {
         // TODO: Remove the fallback build command after stable version of backend build command.
-        const userMessage = `Would you like me to help build and execute the test? I will need you to let me know what build command to run if you do.`
+        const userMessage = `Would you like me to help build and execute the test? I’ll run following commands.\n\`\`\`sh\n${this.getBuildCommands()}\n`
         const followUps: FollowUps = {
             text: '',
             options: [
                 {
-                    pillText: `Specify command then build and execute`,
+                    pillText: `Build and execute`,
+                    type: FollowUpTypes.BuildAndExecute,
+                    status: 'primary',
+                },
+                {
+                    pillText: `Modify command`,
                     type: FollowUpTypes.ModifyCommands,
                     status: 'primary',
                 },
@@ -961,6 +1064,7 @@ export class TestController {
             messageId: '',
             followUps: followUps,
         })
+        this.messenger.sendUpdatePlaceholder(data.tabID, `Please select an action to proceed`)
         this.messenger.sendChatInputEnabled(data.tabID, false)
     }
 
@@ -971,7 +1075,6 @@ export class TestController {
         const listOfInstallationDependencies = ['']
         const installationDependencies = listOfInstallationDependencies.join('\n')
 
-        this.messenger.sendMessage('Build and execute', data.tabID, 'prompt')
         telemetry.ui_click.emit({ elementId: 'unitTestGeneration_buildAndExecute' })
 
         if (installationDependencies.length > 0) {
@@ -1017,14 +1120,10 @@ export class TestController {
 
     private async startLocalBuildExecution(data: any) {
         const session: Session = this.sessionStorage.getSession()
-        // const installationDependencies = session.shortAnswer?.installationDependencies ?? []
-        // MOCK: ignoring the installation case until backend send response
-        const installationDependencies: string[] = []
-        const buildCommands = session.updatedBuildCommands
-        if (!buildCommands) {
-            throw new Error('Build command not found')
-            return
+        if (session.listOfTestGenerationJobId.length < 2) {
+            globals.logOutputChannel.show(true)
         }
+        const installationDependencies: string[] = []
 
         this.messenger.sendBuildProgressMessage({
             tabID: data.tabID,
@@ -1096,7 +1195,7 @@ export class TestController {
             messageId: TestNamedMessages.TEST_GENERATION_BUILD_STATUS_MESSAGE,
         })
 
-        const buildStatus = await runBuildCommand(buildCommands)
+        const buildStatus = await runBuildCommand(this.getBuildCommands())
         session.buildStatus = buildStatus
 
         if (buildStatus === BuildStatus.FAILURE) {
@@ -1159,6 +1258,7 @@ export class TestController {
                 canBeVoted: false,
                 messageId: TestNamedMessages.TEST_GENERATION_BUILD_STATUS_MESSAGE,
             })
+            this.messenger.sendUpdatePromptProgress(data.tabID, fixingTestProgressField)
             await startTestGenerationProcess(session.sourceFilePath, '', data.tabID, false)
         }
         // TODO: Skip this if startTestGenerationProcess timeouts
@@ -1185,24 +1285,6 @@ export class TestController {
             })
         }
 
-        this.messenger.sendBuildProgressMessage({
-            tabID: data.tabID,
-            messageType: 'answer-part',
-            codeGenerationId: TestNamedMessages.TEST_GENERATION_BUILD_STATUS_MESSAGE,
-            message: testGenBuildProgressMessage(TestGenerationBuildStep.PROCESS_TEST_RESULTS, 'current'),
-            canBeVoted: false,
-            messageId: TestNamedMessages.TEST_GENERATION_BUILD_STATUS_MESSAGE,
-        })
-
-        this.messenger.sendBuildProgressMessage({
-            tabID: data.tabID,
-            messageType: 'answer-part',
-            codeGenerationId: TestNamedMessages.TEST_GENERATION_BUILD_STATUS_MESSAGE,
-            message: testGenBuildProgressMessage(TestGenerationBuildStep.PROCESS_TEST_RESULTS, 'done'),
-            canBeVoted: false,
-            messageId: TestNamedMessages.TEST_GENERATION_BUILD_STATUS_MESSAGE,
-        })
-
         const followUps: FollowUps = {
             text: '',
             options: [
@@ -1224,10 +1306,17 @@ export class TestController {
             fileList: this.checkCodeDiffLengthAndBuildStatus({ codeDiffLength, buildStatus: session.buildStatus })
                 ? {
                       fileTreeTitle: 'READY FOR REVIEW',
-                      rootFolderTitle: 'tests',
+                      rootFolderTitle: path.basename(session.projectRootPath),
                       filePaths: [session.generatedFilePath],
                   }
                 : undefined,
+            codeReference: session.references.map(
+                (ref: ShortAnswerReference) =>
+                    ({
+                        ...ref,
+                        information: `${ref.licenseName} - <a href="${ref.url}">${ref.repository}</a>`,
+                    }) as CodeReference
+            ),
         })
         this.messenger.sendBuildProgressMessage({
             tabID: data.tabID,
@@ -1250,20 +1339,35 @@ export class TestController {
 
         if (codeDiffLength === 0 || session.buildStatus === BuildStatus.SUCCESS) {
             this.messenger.sendMessage('Unit test generation workflow is complete.', data.tabID, 'answer')
+            TelemetryHelper.instance.sendUnitTestGenerationEvent(
+                session,
+                undefined,
+                session.artifactsUploadDuration,
+                session.srcZipFileSize,
+                session.charsOfCodeGenerated,
+                session.numberOfTestsGenerated,
+                session.linesOfCodeGenerated,
+                session.charsOfCodeGenerated,
+                session.numberOfTestsGenerated,
+                session.linesOfCodeGenerated,
+                undefined,
+                session.buildStatus,
+                'ACCEPTED'
+            )
             await this.sessionCleanUp()
         }
     }
 
     private modifyBuildCommand(data: any) {
         this.sessionStorage.getSession().conversationState = ConversationState.WAITING_FOR_BUILD_COMMMAND_INPUT
-        this.messenger.sendMessage('Specify commands then build', data.tabID, 'prompt')
+        this.messenger.sendMessage('Modify Command', data.tabID, 'prompt')
         telemetry.ui_click.emit({ elementId: 'unitTestGeneration_modifyCommand' })
         this.messenger.sendMessage(
-            'Sure, provide all command lines you’d like me to run to build.',
+            'Sure. Let me know which command you’d like to modify or you could also provide all command lines you’d like me to run.',
             data.tabID,
             'answer'
         )
-        this.messenger.sendUpdatePlaceholder(data.tabID, 'Waiting on your Inputs')
+        this.messenger.sendUpdatePlaceholder(data.tabID, 'Type command lines or provide instructions...')
         this.messenger.sendChatInputEnabled(data.tabID, true)
     }
 
@@ -1291,6 +1395,7 @@ export class TestController {
                 }
             })
         )
+        globals.logOutputChannel.hide()
 
         getLogger().debug(
             'listOfTestGenerationJobId length: %d, groupName: %s',
@@ -1369,21 +1474,16 @@ export class TestController {
     }
 
     // TODO: return build command when product approves
-    // private getBuildCommands = (): string[] => {
-    //     const session = this.sessionStorage.getSession()
-    //     if (session.updatedBuildCommands?.length) {
-    //         return [...session.updatedBuildCommands]
-    //     }
+    private getBuildCommands = (): string[] => {
+        const session = this.sessionStorage.getSession()
+        if (session.updatedBuildCommands?.length) {
+            return [...session.updatedBuildCommands]
+        }
 
-    //     // For Internal amazon users only
-    //     if (Auth.instance.isInternalAmazonUser()) {
-    //         return ['brazil-build release']
-    //     }
-
-    //     if (session.shortAnswer && Array.isArray(session.shortAnswer?.buildCommands)) {
-    //         return [...session.shortAnswer.buildCommands]
-    //     }
-
-    //     return ['source qdev-wbr/.venv/bin/activate && pytest --continue-on-collection-errors']
-    // }
+        if (session.shortAnswer && session.shortAnswer?.buildCommand) {
+            return [session.shortAnswer.buildCommand]
+        }
+        // TODO: Add a generic command here for external launch according to the build system.
+        return ['brazil-build release']
+    }
 }
