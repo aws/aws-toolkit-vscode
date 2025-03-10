@@ -187,11 +187,7 @@ export type CodeCatalystResource =
     | CodeCatalystBranch
     | DevEnvironment
 
-function toDevEnv(
-    spaceName: string,
-    projectName: string,
-    summary: CodeCatalystDevEnvironmentSummary
-): RequiredProps<DevEnvironment, RequiredDevEnvProps> {
+function toDevEnv(spaceName: string, projectName: string, summary: CodeCatalystDevEnvironmentSummary): DevEnvironment {
     return {
         type: 'devEnvironment',
         org: { name: spaceName },
@@ -528,9 +524,7 @@ class CodeCatalystClientInternal extends ClientWrapper<CodeCatalystSDKClient> {
     /**
      * Gets a flat list of all devenvs for the given CodeCatalyst project.
      */
-    public listDevEnvironments(
-        proj: CodeCatalystProject
-    ): AsyncCollection<RequiredProps<DevEnvironment, RequiredDevEnvProps>[]> {
+    public listDevEnvironments(proj: CodeCatalystProject): AsyncCollection<DevEnvironment[]> {
         const initRequest = { spaceName: proj.org.name, projectName: proj.name }
         const requester: (request: ListDevEnvironmentsRequest) => Promise<ListDevEnvironmentsResponse> = (request) =>
             this.callV3(ListDevEnvironmentsCommand, request, true, { items: [] })
@@ -710,7 +704,7 @@ class CodeCatalystClientInternal extends ClientWrapper<CodeCatalystSDKClient> {
 
     public async getDevEnvironment(
         args: RequiredProps<GetDevEnvironmentRequest, 'spaceName' | 'projectName'>
-    ): Promise<RequiredProps<DevEnvironment, RequiredDevEnvProps>> {
+    ): Promise<DevEnvironment> {
         const a = { ...args }
         delete (a as any).ides
         delete (a as any).repositories
