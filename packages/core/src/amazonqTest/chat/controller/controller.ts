@@ -385,7 +385,7 @@ export class TestController {
                 await this.sessionCleanUp()
                 break
             case ButtonActions.PROVIDE_FEEDBACK:
-                getFeedbackCommentData = `Q Test Generation: RequestId: ${this.sessionStorage.getSession().startTestGenerationRequestId}`
+                getFeedbackCommentData = `Q Test Generation: RequestId: ${this.sessionStorage.getSession().startTestGenerationRequestId}, TestGenerationJobId: ${this.sessionStorage.getSession().testGenerationJob?.testGenerationJobId}`
                 void submitFeedback(placeholder, 'Amazon Q', getFeedbackCommentData)
                 telemetry.ui_click.emit({ elementId: 'unitTestGeneration_provideFeedback' })
                 this.messenger.sendMessage(
@@ -444,6 +444,10 @@ export class TestController {
 
     private async startTestGen(message: any, regenerateTests: boolean) {
         const session: Session = this.sessionStorage.getSession()
+        // Perform session cleanup before start of unit test generation workflow unless there is an existing job in progress.
+        if (!ChatSessionManager.Instance.getIsInProgress()) {
+            await this.sessionCleanUp()
+        }
         const tabID = this.sessionStorage.setActiveTab(message.tabID)
         getLogger().debug('startTestGen message: %O', message)
         getLogger().debug('startTestGen tabId: %O', message.tabID)
@@ -1377,7 +1381,7 @@ export class TestController {
         }
         session.listOfTestGenerationJobId = []
         session.testGenerationJobGroupName = undefined
-        session.testGenerationJob = undefined
+        // session.testGenerationJob = undefined
         session.updatedBuildCommands = undefined
         session.shortAnswer = undefined
         session.testCoveragePercentage = 0
