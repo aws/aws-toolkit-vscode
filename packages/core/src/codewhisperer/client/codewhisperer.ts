@@ -20,11 +20,11 @@ import userApiConfig = require('./user-service-2.json')
 import { session } from '../util/codeWhispererSession'
 import { getLogger } from '../../shared/logger/logger'
 import { indent } from '../../shared/utilities/textUtilities'
-import { keepAliveHeader } from './agent'
 import { getClientId, getOptOutPreference, getOperatingSystem } from '../../shared/telemetry/util'
 import { extensionVersion, getServiceEnvVarConfig } from '../../shared/vscode/env'
 import { DevSettings } from '../../shared/settings'
 
+const keepAliveHeader = 'keep-alive-codewhisperer'
 export interface CodeWhispererConfig {
     readonly region: string
     readonly endpoint: string
