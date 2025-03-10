@@ -17,7 +17,7 @@ import { selectFrom } from '../../shared/utilities/tsUtils'
 import { checkLeftContextKeywordsForJson } from './commonUtil'
 import { CodeWhispererSupplementalContext } from '../models/model'
 import { getOptOutPreference } from '../../shared/telemetry/util'
-import { indent } from '../../shared'
+import { indent } from '../../shared/utilities/textUtilities'
 
 let tabSize: number = getTabSizeSetting()
 
@@ -216,7 +216,7 @@ function logSupplementalContext(supplementalContext: CodeWhispererSupplementalCo
         true
     ).trimStart()
 
-    supplementalContext.supplementalContextItems.forEach((context, index) => {
+    for (const [index, context] of supplementalContext.supplementalContextItems.entries()) {
         logString += indent(`\nChunk ${index}:\n`, 4, true)
         logString += indent(
             `Path: ${context.filePath}
@@ -225,7 +225,7 @@ function logSupplementalContext(supplementalContext: CodeWhispererSupplementalCo
             8,
             true
         )
-    })
+    }
 
     getLogger().debug(logString)
 }

@@ -7,8 +7,13 @@ import assert from 'assert'
 import { qTestingFramework } from './framework/framework'
 import sinon from 'sinon'
 import { Messenger } from './framework/messenger'
-import { JDKVersion, TransformationType, transformByQState } from 'aws-core-vscode/codewhisperer'
-import { GumbyController, startTransformByQ, TabsStorage } from 'aws-core-vscode/amazonqGumby'
+import {
+    CodeWhispererConstants,
+    JDKVersion,
+    TransformationType,
+    transformByQState,
+} from 'aws-core-vscode/codewhisperer'
+import { GumbyController, setMaven, startTransformByQ, TabsStorage } from 'aws-core-vscode/amazonqGumby'
 import { using, registerAuthHook, TestFolder } from 'aws-core-vscode/test'
 import { loginToIdC } from './utils/setup'
 import { fs } from 'aws-core-vscode/shared'
@@ -153,6 +158,64 @@ describe('Amazon Q Code Transformation', function () {
             const jdkPathResponse = tab.getChatItems().pop()
             // this 'Sorry' message is OK - just making sure that the UI components are working correctly
             assert.strictEqual(jdkPathResponse?.body?.includes("Sorry, I couldn't locate your Java installation"), true)
+
+            const tmpDir = (await TestFolder.create()).path
+
+            transformByQState.setSummaryFilePath(path.join(tmpDir, 'summary.md'))
+            transformByQState.setToPartiallySucceeded()
+
+            transformByQState
+                .getChatMessenger()
+                ?.sendJobFinishedMessage(tab.tabID, CodeWhispererConstants.viewProposedChangesChatMessage)
+
+            tab.clickCustomFormButton({
+                id: 'gumbyViewSummary',
+                text: 'View summary',
+            })
+
+            await tab.waitForEvent(() => tab.getChatItems().length > 14, {
+                waitTimeoutInMs: 5000,
+                waitIntervalInMs: 1000,
+            })
+
+            const viewSummaryChatItem = tab.getChatItems().pop()
+            assert.strictEqual(viewSummaryChatItem?.body?.includes('view a summary'), true)
+        })
+
+        it('CANNOT do a Java 21 to Java 17 transformation', async () => {
+            sinon.stub(startTransformByQ, 'getValidSQLConversionCandidateProjects').resolves([])
+            sinon.stub(GumbyController.prototype, 'validateLanguageUpgradeProjects' as keyof GumbyController).resolves([
+                {
+                    name: 'qct-sample-java-8-app-main',
+                    path: '/Users/alias/Desktop/qct-sample-java-8-app-main',
+                    JDKVersion: JDKVersion.JDK21,
+                },
+            ])
+            tab.addChatMessage({ command: '/transform' })
+            await tab.waitForEvent(() => tab.getChatItems().length > 3, {
+                waitTimeoutInMs: 5000,
+                waitIntervalInMs: 1000,
+            })
+            const projectForm = tab.getChatItems().pop()
+            assert.strictEqual(projectForm?.formItems?.[0]?.id ?? undefined, 'GumbyTransformLanguageUpgradeProjectForm')
+
+            const projectFormItemValues = {
+                GumbyTransformLanguageUpgradeProjectForm: '/Users/alias/Desktop/qct-sample-java-8-app-main',
+                GumbyTransformJdkFromForm: '21',
+                GumbyTransformJdkToForm: '17',
+            }
+            const projectFormValues: Record<string, string> = { ...projectFormItemValues }
+            tab.clickCustomFormButton({
+                id: 'gumbyLanguageUpgradeTransformFormConfirm',
+                text: 'Confirm',
+                formItemValues: projectFormValues,
+            })
+            await tab.waitForEvent(() => tab.getChatItems().length > 4, {
+                waitTimeoutInMs: 5000,
+                waitIntervalInMs: 1000,
+            })
+            const errorMessage = tab.getChatItems().pop()
+            assert.strictEqual(errorMessage?.body, CodeWhispererConstants.invalidFromToJdkChatMessage)
         })
 
         it('Can provide metadata file for a SQL conversion', async () => {
@@ -338,7 +401,7 @@ describe('Amazon Q Code Transformation', function () {
 
         it('WHEN transforming a Java 8 project E2E THEN job is successful', async function () {
             transformByQState.setTransformationType(TransformationType.LANGUAGE_UPGRADE)
-            await startTransformByQ.setMaven()
+            await setMaven()
             await startTransformByQ.processLanguageUpgradeTransformFormInput(tempDir, JDKVersion.JDK8, JDKVersion.JDK17)
             await startTransformByQ.startTransformByQ()
             assert.strictEqual(transformByQState.getPolledJobStatus(), 'COMPLETED')

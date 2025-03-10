@@ -9,7 +9,6 @@ import sinon from 'sinon'
 import { registerAuthHook, using } from 'aws-core-vscode/test'
 import { loginToIdC } from './utils/setup'
 import { Messenger } from './framework/messenger'
-import { examples } from 'aws-core-vscode/amazonqFeatureDev'
 import { FollowUpTypes } from 'aws-core-vscode/amazonq'
 import { sleep } from 'aws-core-vscode/shared'
 
@@ -17,27 +16,18 @@ describe('Amazon Q Feature Dev', function () {
     let framework: qTestingFramework
     let tab: Messenger
 
-    const prompt = 'Add blank.txt file with empty content'
-    const codegenApproachPrompt = `${prompt} and add a readme that describes the changes`
-    const fileLevelAcceptPrompt = `${prompt} and add a license, and a contributing file`
+    const prompt = 'Add current timestamp into blank.txt'
+    const iteratePrompt = `Add a new section in readme to explain your change`
+    const fileLevelAcceptPrompt = `${prompt} and ${iteratePrompt}`
+    const informationCard =
+        'After you provide a task, I will:\n1. Generate code based on your description and the code in your workspace\n2. Provide a list of suggestions for you to review and add to your workspace\n3. If needed, iterate based on your feedback\nTo learn more, visit the [user guide](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/software-dev.html)'
     const tooManyRequestsWaitTime = 100000
 
-    function waitForButtons(buttons: FollowUpTypes[]) {
-        return tab.waitForEvent(() => {
-            return buttons.every((value) => tab.hasButton(value))
-        })
-    }
-
     async function waitForText(text: string) {
-        await tab.waitForEvent(
-            () => {
-                return tab.getChatItems().some((chatItem) => chatItem.body === text)
-            },
-            {
-                waitIntervalInMs: 250,
-                waitTimeoutInMs: 2000,
-            }
-        )
+        await tab.waitForText(text, {
+            waitIntervalInMs: 250,
+            waitTimeoutInMs: 2000,
+        })
     }
 
     async function iterate(prompt: string) {
@@ -155,18 +145,20 @@ describe('Amazon Q Feature Dev', function () {
     })
 
     describe('/dev entry', () => {
-        it('Clicks examples', async () => {
-            const q = framework.createTab()
-            q.addChatMessage({ command: '/dev' })
+        before(async () => {
+            tab = framework.createTab()
+            tab.addChatMessage({ command: '/dev' }) // This would create a new tab for feature dev.
+            tab = framework.getSelectedTab()
+        })
+
+        it('should display information card', async () => {
             await retryIfRequired(
                 async () => {
-                    await q.waitForChatFinishesLoading()
+                    await tab.waitForChatFinishesLoading()
                 },
                 () => {
-                    q.clickButton(FollowUpTypes.DevExamples)
-
-                    const lastChatItems = q.getChatItems().pop()
-                    assert.deepStrictEqual(lastChatItems?.body, examples)
+                    const lastChatItems = tab.getChatItems().pop()
+                    assert.deepStrictEqual(lastChatItems?.body, informationCard)
                 }
             )
         })
@@ -174,14 +166,14 @@ describe('Amazon Q Feature Dev', function () {
 
     describe('/dev {msg} entry', async () => {
         beforeEach(async function () {
+            tab = framework.createTab()
             tab.addChatMessage({ command: '/dev', prompt })
+            tab = framework.getSelectedTab()
             await retryIfRequired(
                 async () => {
                     await tab.waitForChatFinishesLoading()
                 },
-                () => {
-                    tab.addChatMessage({ prompt })
-                }
+                () => {}
             )
         })
 
@@ -201,12 +193,12 @@ describe('Amazon Q Feature Dev', function () {
         it('Clicks accept code and click new task', async () => {
             await retryIfRequired(async () => {
                 await Promise.any([
-                    waitForButtons([FollowUpTypes.InsertCode, FollowUpTypes.ProvideFeedbackAndRegenerateCode]),
-                    waitForButtons([FollowUpTypes.Retry]),
+                    tab.waitForButtons([FollowUpTypes.InsertCode, FollowUpTypes.ProvideFeedbackAndRegenerateCode]),
+                    tab.waitForButtons([FollowUpTypes.Retry]),
                 ])
             })
             tab.clickButton(FollowUpTypes.InsertCode)
-            await waitForButtons([FollowUpTypes.NewTask, FollowUpTypes.CloseSession])
+            await tab.waitForButtons([FollowUpTypes.NewTask, FollowUpTypes.CloseSession])
             tab.clickButton(FollowUpTypes.NewTask)
             await waitForText('What new task would you like to work on?')
             assert.deepStrictEqual(tab.getChatItems().pop()?.body, 'What new task would you like to work on?')
@@ -215,21 +207,23 @@ describe('Amazon Q Feature Dev', function () {
         it('Iterates on codegen', async () => {
             await retryIfRequired(async () => {
                 await Promise.any([
-                    waitForButtons([FollowUpTypes.InsertCode, FollowUpTypes.ProvideFeedbackAndRegenerateCode]),
-                    waitForButtons([FollowUpTypes.Retry]),
+                    tab.waitForButtons([FollowUpTypes.InsertCode, FollowUpTypes.ProvideFeedbackAndRegenerateCode]),
+                    tab.waitForButtons([FollowUpTypes.Retry]),
                 ])
             })
             tab.clickButton(FollowUpTypes.ProvideFeedbackAndRegenerateCode)
             await tab.waitForChatFinishesLoading()
-            await iterate(codegenApproachPrompt)
+            await iterate(iteratePrompt)
             tab.clickButton(FollowUpTypes.InsertCode)
-            await waitForButtons([FollowUpTypes.NewTask, FollowUpTypes.CloseSession])
+            await tab.waitForButtons([FollowUpTypes.NewTask, FollowUpTypes.CloseSession])
         })
     })
 
     describe('file-level accepts', async () => {
         beforeEach(async function () {
+            tab = framework.createTab()
             tab.addChatMessage({ command: '/dev', prompt: fileLevelAcceptPrompt })
+            tab = framework.getSelectedTab()
             await retryIfRequired(
                 async () => {
                     await tab.waitForChatFinishesLoading()
@@ -240,8 +234,8 @@ describe('Amazon Q Feature Dev', function () {
             )
             await retryIfRequired(async () => {
                 await Promise.any([
-                    waitForButtons([FollowUpTypes.InsertCode, FollowUpTypes.ProvideFeedbackAndRegenerateCode]),
-                    waitForButtons([FollowUpTypes.Retry]),
+                    tab.waitForButtons([FollowUpTypes.InsertCode, FollowUpTypes.ProvideFeedbackAndRegenerateCode]),
+                    tab.waitForButtons([FollowUpTypes.Retry]),
                 ])
             })
         })
@@ -271,7 +265,7 @@ describe('Amazon Q Feature Dev', function () {
 
             it('disables all action buttons when new task is clicked', async () => {
                 tab.clickButton(FollowUpTypes.InsertCode)
-                await waitForButtons([FollowUpTypes.NewTask, FollowUpTypes.CloseSession])
+                await tab.waitForButtons([FollowUpTypes.NewTask, FollowUpTypes.CloseSession])
                 tab.clickButton(FollowUpTypes.NewTask)
                 await waitForText('What new task would you like to work on?')
 
@@ -283,7 +277,7 @@ describe('Amazon Q Feature Dev', function () {
 
             it('disables all action buttons when close session is clicked', async () => {
                 tab.clickButton(FollowUpTypes.InsertCode)
-                await waitForButtons([FollowUpTypes.NewTask, FollowUpTypes.CloseSession])
+                await tab.waitForButtons([FollowUpTypes.NewTask, FollowUpTypes.CloseSession])
                 tab.clickButton(FollowUpTypes.CloseSession)
                 await waitForText(
                     "Okay, I've ended this chat session. You can open a new tab to chat or start another workflow."
@@ -335,7 +329,7 @@ describe('Amazon Q Feature Dev', function () {
                 for (const filePath of filePaths) {
                     await clickActionButton(filePath, 'accept-change')
                 }
-                await waitForButtons([FollowUpTypes.NewTask, FollowUpTypes.CloseSession])
+                await tab.waitForButtons([FollowUpTypes.NewTask, FollowUpTypes.CloseSession])
 
                 assert.ok(tab.hasButton(FollowUpTypes.InsertCode) === false)
                 assert.ok(tab.hasButton(FollowUpTypes.ProvideFeedbackAndRegenerateCode) === false)

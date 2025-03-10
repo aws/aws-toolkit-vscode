@@ -84,7 +84,11 @@ export const crashMonitoringTest = async () => {
 
     afterEach(async function () {
         // clean up all running instances
-        spawnedExtensions?.forEach((e) => e.crash())
+        if (spawnedExtensions) {
+            for (const e of spawnedExtensions) {
+                void e.crash()
+            }
+        }
         sandbox.restore()
     })
 
@@ -255,13 +259,13 @@ export const crashMonitoringTest = async () => {
         expectedExts.sort((a, b) => a.metadata.sessionId.localeCompare(b.metadata.sessionId))
         deduplicatedSessionEnds.sort((a, b) => a.proxiedSessionId!.localeCompare(b.proxiedSessionId!))
 
-        expectedExts.forEach((ext, i) => {
+        for (const [i, ext] of expectedExts.entries()) {
             partialDeepCompare(deduplicatedSessionEnds[i], {
                 result: 'Failed',
                 proxiedSessionId: ext.metadata.sessionId,
                 reason: 'ExtHostCrashed',
             })
-        })
+        }
     }
 
     function deduplicate<T>(array: T[], predicate: (a: T, b: T) => boolean): T[] {

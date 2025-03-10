@@ -20,7 +20,7 @@ import { TreeNode } from '../shared/treeview/resourceTreeDataProvider'
 import { createInputBox } from '../shared/ui/inputPrompter'
 import { CredentialSourceId, telemetry } from '../shared/telemetry/telemetry'
 import { createCommonButtons, createExitButton, createHelpButton, createRefreshButton } from '../shared/ui/buttons'
-import { getIdeProperties, isAmazonQ, isCloud9 } from '../shared/extensionUtilities'
+import { getIdeProperties, isAmazonQ } from '../shared/extensionUtilities'
 import { addScopes, getDependentAuths } from './secondaryAuth'
 import { DevSettings } from '../shared/settings'
 import { createRegionPrompter } from '../shared/ui/common/region'
@@ -44,11 +44,10 @@ import {
 import { Commands, placeholder } from '../shared/vscode/commands2'
 import { Auth } from './auth'
 import { validateIsNewSsoUrl, validateSsoUrlFormat } from './sso/validation'
-import { getLogger } from '../shared/logger'
+import { getLogger } from '../shared/logger/logger'
 import { AuthUtil, isValidAmazonQConnection, isValidCodeWhispererCoreConnection } from '../codewhisperer/util/authUtil'
 import { AuthFormId } from '../login/webview/vue/types'
 import { extensionVersion } from '../shared/vscode/env'
-import { ExtStartUpSources } from '../shared/telemetry'
 import { CommonAuthWebview } from '../login/webview/vue/backend'
 import { AuthSource } from '../login/webview/util'
 import { setContext } from '../shared/vscode/setContext'
@@ -59,7 +58,7 @@ import { EcsCredentialsProvider } from './providers/ecsCredentialsProvider'
 import { EnvVarsCredentialsProvider } from './providers/envVarsCredentialsProvider'
 import { showMessageWithUrl } from '../shared/utilities/messages'
 import { credentialHelpUrl } from '../shared/constants'
-import { ExtStartUpSource } from '../shared/telemetry/util'
+import { ExtStartUpSources, ExtStartUpSource, hadClientIdOnStartup } from '../shared/telemetry/util'
 
 // iam-only excludes Builder ID and IAM Identity Center from the list of valid connections
 // TODO: Understand if "iam" should include these from the list at all
@@ -562,9 +561,9 @@ export class AuthNode implements TreeNode<Auth> {
         if (conn !== undefined && conn.state !== 'valid') {
             item.iconPath = getIcon('vscode-error')
             if (conn.state === 'authenticating') {
-                this.setDescription(item, 'authenticating...')
+                item.description = 'authenticating...'
             } else {
-                this.setDescription(item, 'expired or invalid, click to authenticate')
+                item.description = 'expired or invalid, click to authenticate'
                 item.command = {
                     title: 'Reauthenticate',
                     command: '_aws.toolkit.auth.reauthenticate',
@@ -577,14 +576,6 @@ export class AuthNode implements TreeNode<Auth> {
         }
 
         return item
-    }
-
-    private setDescription(item: vscode.TreeItem, text: string) {
-        if (isCloud9()) {
-            item.tooltip = item.tooltip ?? text
-        } else {
-            item.description = text
-        }
     }
 }
 
@@ -697,17 +688,43 @@ export class ExtensionUse {
             return this.isFirstUseCurrentSession
         }
 
-        this.isFirstUseCurrentSession = globals.globalState.get('isExtensionFirstUse')
-        if (this.isFirstUseCurrentSession === undefined) {
+        // This is for sure not their first use
+        const isFirstUse = globals.globalState.tryGet('isExtensionFirstUse', Boolean)
+        if (isFirstUse === false) {
+            this.isFirstUseCurrentSession = isFirstUse
+            return this.isFirstUseCurrentSession
+        }
+
+        /**
+         * SANITY CHECK: If the clientId already existed on startup, then isFirstUse MUST be false. So
+         * there is a bug in the state.
+         */
+        if (hadClientIdOnStartup(globals.globalState)) {
+            telemetry.function_call.emit({
+                result: 'Failed',
+                functionName: 'isFirstUse',
+                reason: 'ClientIdAlreadyExisted',
+            })
+        }
+
+        if (isAmazonQ()) {
+            this.isFirstUseCurrentSession = true
+            if (hasExistingConnections()) {
+                telemetry.function_call.emit({
+                    result: 'Failed',
+                    functionName: 'isFirstUse',
+                    reason: 'UnexpectedConnections',
+                })
+            }
+        } else {
             // The variable in the store is not defined yet, fallback to checking if they have existing connections.
             this.isFirstUseCurrentSession = !hasExistingConnections()
-
-            getLogger().debug(
-                `isFirstUse: State not found, marking user as '${
-                    this.isFirstUseCurrentSession ? '' : 'NOT '
-                }first use' since they 'did ${this.isFirstUseCurrentSession ? 'NOT ' : ''}have existing connections'.`
-            )
         }
+        getLogger().debug(
+            `isFirstUse: State not found, marking user as '${
+                this.isFirstUseCurrentSession ? '' : 'NOT '
+            }first use' since they 'did ${this.isFirstUseCurrentSession ? 'NOT ' : ''}have existing connections'.`
+        )
 
         // Update state, so next time it is not first use
         this.updateMemento('isExtensionFirstUse', false)

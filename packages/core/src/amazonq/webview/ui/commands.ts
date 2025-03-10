@@ -39,7 +39,10 @@ type MessageCommand =
     | 'store-code-result-message-id'
     | 'start-test-gen'
     | 'review'
-    | 'open-user-guide'
+    | 'open-link'
     | 'send-telemetry'
+    | 'update-welcome-count'
+    | 'quick-command-group-action-click'
+    | 'context-selected'
 
 export type ExtensionMessage = Record<string, any> & { command: MessageCommand }

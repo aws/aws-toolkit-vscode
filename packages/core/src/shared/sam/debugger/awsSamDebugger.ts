@@ -33,7 +33,7 @@ import * as tsDebug from './typescriptSamDebug'
 import * as goDebug from './goSamDebug'
 import { ExtContext } from '../../extensions'
 import { isInDirectory, makeTemporaryToolkitFolder } from '../../filesystemUtilities'
-import { getLogger } from '../../logger'
+import { getLogger } from '../../logger/logger'
 import { getStartPort } from '../../utilities/debuggerUtils'
 import * as pathutil from '../../utilities/pathUtils'
 import { tryGetAbsolutePath } from '../../utilities/workspaceUtils'
@@ -56,7 +56,7 @@ import { Credentials } from '@aws-sdk/types'
 import * as CloudFormation from '../../cloudformation/cloudformation'
 import { getSamCliContext, getSamCliVersion } from '../cli/samCliContext'
 import { minSamCliVersionForImageSupport, minSamCliVersionForGoSupport } from '../cli/samCliValidator'
-import { getIdeProperties, isCloud9 } from '../../extensionUtilities'
+import { getIdeProperties } from '../../extensionUtilities'
 import { resolve } from 'path'
 import globals from '../../extensionGlobals'
 import { Runtime, telemetry } from '../../telemetry/telemetry'
@@ -205,11 +205,6 @@ export interface SamLaunchRequestArgs extends AwsSamDebuggerConfiguration {
      */
     parameterOverrides?: string[]
 
-    /**
-     * HACK: Forces use of `ikp3db` python debugger in Cloud9 (and in tests).
-     */
-    useIkpdb?: boolean
-
     //
     //  Invocation properties (for "execute" phase, after "config" phase).
     //  Non-serializable...
@@ -327,11 +322,6 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         token?: vscode.CancellationToken,
         source?: string
     ): Promise<AwsSamDebuggerConfiguration | undefined> {
-        if (isCloud9()) {
-            // TODO: remove when Cloud9 supports ${workspaceFolder}.
-            await this.makeAndInvokeConfig(folder, config, token, source)
-            return undefined
-        }
         return config
     }
 
@@ -562,19 +552,15 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
             } else {
                 const credentialsId = config.aws.credentials
                 const getHelp = localize('AWS.generic.message.getHelp', 'Get Help...')
-                // TODO: getHelp page for Cloud9.
-                const extraButtons = isCloud9()
-                    ? []
-                    : [
-                          {
-                              label: getHelp,
-                              onClick: () => openUrl(vscode.Uri.parse(credentialHelpUrl)),
-                          },
-                      ]
 
                 throw new SamLaunchRequestError(`Invalid credentials found in launch configuration: ${credentialsId}`, {
                     code: 'InvalidCredentials',
-                    extraButtons,
+                    extraButtons: [
+                        {
+                            label: getHelp,
+                            onClick: () => openUrl(vscode.Uri.parse(credentialHelpUrl)),
+                        },
+                    ],
                 })
             }
         }
@@ -625,7 +611,6 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
             region: region,
             awsCredentials: awsCredentials,
             parameterOverrides: parameterOverrideArr,
-            useIkpdb: isCloud9() || !!(config as any).useIkpdb,
             architecture: architecture,
         }
 

@@ -26,10 +26,9 @@ import {
     scansLimitReachedErrorMessage,
 } from '../../codewhisperer/models/constants'
 import * as model from '../../codewhisperer/models/model'
-import { CodewhispererSecurityScan } from '../../shared/telemetry/telemetry.gen'
 import * as errors from '../../shared/errors'
 import * as timeoutUtils from '../../shared/utilities/timeoutUtils'
-import { SecurityIssuesTree } from '../../codewhisperer'
+import { SecurityIssueTreeViewProvider } from '../../codewhisperer'
 import { createClient, mockGetCodeScanResponse } from './testUtil'
 
 let extensionContext: FakeExtensionContext
@@ -49,7 +48,7 @@ describe('startSecurityScan', function () {
         editor = await openTestFile(appCodePath)
         await model.CodeScansState.instance.setScansEnabled(false)
         sinon.stub(timeoutUtils, 'sleep')
-        focusStub = sinon.stub(SecurityIssuesTree.instance, 'focus')
+        focusStub = sinon.stub(SecurityIssueTreeViewProvider, 'focus')
     })
     afterEach(function () {
         sinon.restore()
@@ -75,7 +74,7 @@ describe('startSecurityScan', function () {
             createClient(),
             extensionContext,
             CodeAnalysisScope.PROJECT,
-            false
+            true
         )
         assert.ok(focusStub.calledOnce)
         assert.ok(securityScanRenderSpy.calledOnce)
@@ -232,7 +231,12 @@ describe('startSecurityScan', function () {
             codewhispererCodeScanIssuesWithFixes: 0,
             codewhispererCodeScanScope: 'PROJECT',
             passive: false,
-        } as CodewhispererSecurityScan)
+        })
+        assertTelemetry('codewhisperer_codeScanIssueDetected', {
+            autoDetected: false,
+            detectorId: 'detectorId',
+            findingId: 'findingId',
+        })
     })
 
     it('Should cancel a scan if a newer one has started', async function () {
@@ -261,7 +265,7 @@ describe('startSecurityScan', function () {
                 result: 'Cancelled',
                 reasonDesc: 'Security scan stopped by user.',
                 reason: 'DefaultError',
-            } as unknown as CodewhispererSecurityScan,
+            },
             {
                 result: 'Succeeded',
             },
@@ -323,7 +327,7 @@ describe('startSecurityScan', function () {
             reason: 'CodeScanJobFailedError',
             reasonDesc: 'CodeScanJobFailedError: Security scan failed.',
             passive: false,
-        } as unknown as CodewhispererSecurityScan)
+        })
     })
 
     it('Should show notification when throttled for project scans', async function () {
@@ -353,7 +357,7 @@ describe('startSecurityScan', function () {
             reason: 'ThrottlingException',
             reasonDesc: `ThrottlingException: Maximum com.amazon.aws.codewhisperer.StartCodeAnalysis reached for this month.`,
             passive: false,
-        } as unknown as CodewhispererSecurityScan)
+        })
     })
 
     it('Should set monthly quota exceeded when throttled for auto file scans', async function () {
@@ -385,6 +389,6 @@ describe('startSecurityScan', function () {
             reason: 'ThrottlingException',
             reasonDesc: 'ThrottlingException: Maximum file scans count reached for this month',
             passive: true,
-        } as unknown as CodewhispererSecurityScan)
+        })
     })
 })

@@ -4,10 +4,9 @@
  */
 import { Messenger } from '../amazonq/commons/connector/baseMessenger'
 import { AppToWebViewMessageDispatcher } from '../amazonq/commons/connector/connectorMessages'
-import { FollowUpTypes } from '../amazonq/commons/types'
-import { messageWithConversationId } from '../amazonqFeatureDev'
+import { messageWithConversationId } from '../amazonqFeatureDev/userFacingText'
 import { i18n } from '../shared/i18n-helper'
-import { docGenerationProgressMessage, DocGenerationStep, Mode } from './constants'
+import { docGenerationProgressMessage, DocGenerationStep, Mode, NewSessionFollowUps } from './constants'
 import { inProgress } from './types'
 
 export class DocMessenger extends Messenger {
@@ -48,25 +47,19 @@ export class DocMessenger extends Messenger {
         tabID: string,
         _retries: number,
         conversationId?: string,
-        _showDefaultMessage?: boolean
+        _showDefaultMessage?: boolean,
+        enableUserInput?: boolean
     ) {
+        if (enableUserInput) {
+            this.sendUpdatePlaceholder(tabID, i18n('AWS.amazonq.doc.placeholder.editReadme'))
+            this.sendChatInputEnabled(tabID, true)
+        }
         this.sendAnswer({
             type: 'answer',
             tabID: tabID,
             message: errorMessage + messageWithConversationId(conversationId),
-        })
-
-        this.sendAnswer({
-            message: undefined,
-            type: 'system-prompt',
-            followUps: [
-                {
-                    pillText: i18n('AWS.amazonq.featureDev.pillText.retry'),
-                    type: FollowUpTypes.Retry,
-                    status: 'warning',
-                },
-            ],
-            tabID,
+            followUps: enableUserInput ? [] : NewSessionFollowUps,
+            disableChatInput: !enableUserInput,
         })
     }
 }

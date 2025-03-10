@@ -5,11 +5,12 @@
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
-import { IAM, StepFunctions } from 'aws-sdk'
+import { StepFunctions } from 'aws-sdk'
+import * as yaml from 'js-yaml'
 import * as vscode from 'vscode'
 import { StepFunctionsClient } from '../shared/clients/stepFunctionsClient'
 import { fileExists } from '../shared/filesystemUtilities'
-import { getLogger, Logger } from '../shared/logger'
+import { getLogger, Logger } from '../shared/logger/logger'
 import {
     DiagnosticSeverity,
     DocumentLanguageSettings,
@@ -19,7 +20,8 @@ import {
 import { HttpResourceFetcher } from '../shared/resourcefetcher/httpResourceFetcher'
 import globals from '../shared/extensionGlobals'
 import { fromExtensionManifest } from '../shared/settings'
-import { fs } from '../shared'
+import { fs } from '../shared/fs/fs'
+import { IamRole } from '../shared/clients/iam'
 
 const documentSettings: DocumentLanguageSettings = { comments: 'error', trailingCommas: 'error' }
 const languageService = getLanguageService({})
@@ -132,13 +134,13 @@ export class StateMachineGraphCache {
         }
 
         if (!cssExists) {
-            // Help users setup on disconnected C9/VSCode instances.
+            // Help users setup on disconnected VSCode instances.
             this.logger.error(
                 `Failed to locate cached State Machine Graph css assets. Expected to find: "${visualizationCssUrl}" at "${this.cssFilePath}"`
             )
         }
         if (!jsExists) {
-            // Help users setup on disconnected C9/VSCode instances.
+            // Help users setup on disconnected VSCode instances.
             this.logger.error(
                 `Failed to locate cached State Machine Graph js assets. Expected to find: "${visualizationScriptUrl}" at "${this.jsFilePath}"`
             )
@@ -179,8 +181,8 @@ async function httpsGetRequestWrapper(url: string): Promise<string> {
     const logger = getLogger()
     logger.verbose('Step Functions is getting content...')
 
-    const fetcher = new HttpResourceFetcher(url, { showUrl: true })
-    const val = await fetcher.get()
+    const fetcher = await new HttpResourceFetcher(url, { showUrl: true }).get()
+    const val = await fetcher?.text()
 
     if (!val) {
         const message = 'Step Functions was unable to get content.'
@@ -211,7 +213,7 @@ export async function* listStateMachines(
  * Checks if the given IAM Role is assumable by AWS Step Functions.
  * @param role The IAM role to check
  */
-export function isStepFunctionsRole(role: IAM.Role): boolean {
+export function isStepFunctionsRole(role: IamRole): boolean {
     const stepFunctionsSevicePrincipal: string = 'states.amazonaws.com'
     const assumeRolePolicyDocument: string | undefined = role.AssumeRolePolicyDocument
 
@@ -229,6 +231,46 @@ export async function isDocumentValid(text: string, textDocument?: vscode.TextDo
     const isValid = !diagnostics.some((diagnostic) => diagnostic.severity === DiagnosticSeverity.Error)
 
     return isValid
+}
+
+/**
+ * Checks if the JSON content in an ASL text document is invalid.
+ * Returns `true` for invalid JSON; `false` for valid JSON, empty content, or non-JSON files.
+ *
+ * @param textDocument - The text document to check.
+ * @returns `true` if invalid; `false` otherwise.
+ */
+export const isInvalidJsonFile = (textDocument: vscode.TextDocument): boolean => {
+    const documentContent = textDocument.getText().trim()
+    // An empty file or whitespace-only text is considered valid JSON for our use case
+    return textDocument.languageId === 'asl' && documentContent ? isInvalidJson(documentContent) : false
+}
+
+/**
+ * Checks if the YAML content in an ASL text document is invalid.
+ * Returns `true` for invalid YAML; `false` for valid YAML, empty content, or non-YAML files.
+ *
+ * @param textDocument - The text document to check.
+ * @returns `true` if invalid; `false` otherwise.
+ */
+export const isInvalidYamlFile = (textDocument: vscode.TextDocument): boolean => {
+    try {
+        if (textDocument.languageId === 'asl-yaml') {
+            yaml.load(textDocument.getText())
+        }
+        return false
+    } catch {
+        return true
+    }
+}
+
+const isInvalidJson = (content: string): boolean => {
+    try {
+        JSON.parse(content)
+        return false
+    } catch {
+        return true
+    }
 }
 
 const descriptor = {

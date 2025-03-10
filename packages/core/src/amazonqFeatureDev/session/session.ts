@@ -5,7 +5,7 @@
 
 import * as path from 'path'
 
-import { ConversationNotStartedState, PrepareCodeGenState } from './sessionState'
+import { ConversationNotStartedState, FeatureDevPrepareCodeGenState } from './sessionState'
 import {
     type DeletedFileInfo,
     type Interaction,
@@ -13,17 +13,17 @@ import {
     type SessionState,
     type SessionStateConfig,
     UpdateFilesPathsParams,
-} from '../types'
-import { ConversationIdNotFoundError } from '../errors'
+} from '../../amazonq/commons/types'
+import { ContentLengthError, ConversationIdNotFoundError } from '../errors'
 import { featureDevChat, referenceLogText, featureDevScheme } from '../constants'
 import fs from '../../shared/fs/fs'
 import { FeatureDevClient } from '../client/featureDev'
 import { codeGenRetryLimit } from '../limits'
 import { telemetry } from '../../shared/telemetry/telemetry'
-import { TelemetryHelper } from '../util/telemetryHelper'
+import { TelemetryHelper } from '../../amazonq/util/telemetryHelper'
 import { ReferenceLogViewProvider } from '../../codewhisperer/service/referenceLogViewProvider'
 import { AuthUtil } from '../../codewhisperer/util/authUtil'
-import { getLogger } from '../../shared'
+import { getLogger } from '../../shared/logger/logger'
 import { logWithConversationId } from '../userFacingText'
 import { CodeReference } from '../../amazonq/webview/ui/connector'
 import { MynahIcons } from '@aws/mynah-ui'
@@ -33,6 +33,7 @@ import { UpdateAnswerMessage } from '../../amazonq/commons/connector/connectorMe
 import { FollowUpTypes } from '../../amazonq/commons/types'
 import { SessionConfig } from '../../amazonq/commons/session/sessionConfigFactory'
 import { Messenger } from '../../amazonq/commons/connector/baseMessenger'
+import { ContentLengthError as CommonAmazonQContentLengthError } from '../../amazonq/errors'
 export class Session {
     private _state?: SessionState | Omit<SessionState, 'uploadId'>
     private task: string = ''
@@ -70,9 +71,9 @@ export class Session {
     /**
      * Preload any events that have to run before a chat message can be sent
      */
-    async preloader(msg: string) {
+    async preloader() {
         if (!this.preloaderFinished) {
-            await this.setupConversation(msg)
+            await this.setupConversation()
             this.preloaderFinished = true
             this.messenger.sendAsyncEventProgress(this.tabID, true, undefined)
             await this.proxyClient.sendFeatureDevTelemetryEvent(this.conversationId) // send the event only once per conversation.
@@ -84,10 +85,7 @@ export class Session {
      *
      * Starts a conversation with the backend and uploads the repo for the LLMs to be able to use it.
      */
-    private async setupConversation(msg: string) {
-        // Store the initial message when setting up the conversation so that if it fails we can retry with this message
-        this._latestMessage = msg
-
+    private async setupConversation() {
         await telemetry.amazonq_startConversationInvoke.run(async (span) => {
             this._conversationId = await this.proxyClient.createConversation()
             getLogger().info(logWithConversationId(this.conversationId))
@@ -95,7 +93,7 @@ export class Session {
             span.record({ amazonqConversationId: this._conversationId, credentialStartUrl: AuthUtil.instance.startUrl })
         })
 
-        this._state = new PrepareCodeGenState(
+        this._state = new FeatureDevPrepareCodeGenState(
             {
                 ...this.getSessionStateConfig(),
                 conversationId: this.conversationId,
@@ -113,6 +111,10 @@ export class Session {
     updateWorkspaceRoot(workspaceRootFolder: string) {
         this.config.workspaceRoots = [workspaceRootFolder]
         this._state && this._state.updateWorkspaceRoot && this._state.updateWorkspaceRoot(workspaceRootFolder)
+    }
+
+    getWorkspaceRoot(): string {
+        return this.config.workspaceRoots[0]
     }
 
     private getSessionStateConfig(): Omit<SessionStateConfig, 'uploadId'> {
@@ -136,25 +138,33 @@ export class Session {
     }
 
     private async nextInteraction(msg: string) {
-        const resp = await this.state.interact({
-            task: this.task,
-            msg,
-            fs: this.config.fs,
-            messenger: this.messenger,
-            telemetry: this.telemetry,
-            tokenSource: this.state.tokenSource,
-            uploadHistory: this.state.uploadHistory,
-        })
+        try {
+            const resp = await this.state.interact({
+                task: this.task,
+                msg,
+                fs: this.config.fs,
+                messenger: this.messenger,
+                telemetry: this.telemetry,
+                tokenSource: this.state.tokenSource,
+                uploadHistory: this.state.uploadHistory,
+            })
 
-        if (resp.nextState) {
-            if (!this.state?.tokenSource?.token.isCancellationRequested) {
-                this.state?.tokenSource?.cancel()
+            if (resp.nextState) {
+                if (!this.state?.tokenSource?.token.isCancellationRequested) {
+                    this.state?.tokenSource?.cancel()
+                }
+                // Move to the next state
+                this._state = resp.nextState
             }
-            // Move to the next state
-            this._state = resp.nextState
-        }
 
-        return resp.interaction
+            return resp.interaction
+        } catch (e) {
+            if (e instanceof CommonAmazonQContentLengthError) {
+                getLogger().debug(`Content length validation failed: ${e.message}`)
+                throw new ContentLengthError()
+            }
+            throw e
+        }
     }
 
     public async updateFilesPaths(params: UpdateFilesPathsParams) {
@@ -285,6 +295,25 @@ export class Session {
         return { leftPath, rightPath, ...diff }
     }
 
+    public async sendMetricDataTelemetry(operationName: string, result: string) {
+        await this.proxyClient.sendMetricData({
+            metricName: 'Operation',
+            metricValue: 1,
+            timestamp: new Date(),
+            product: 'FeatureDev',
+            dimensions: [
+                {
+                    name: 'operationName',
+                    value: operationName,
+                },
+                {
+                    name: 'result',
+                    value: result,
+                },
+            ],
+        })
+    }
+
     public async sendLinesOfCodeGeneratedTelemetry() {
         let charactersOfCodeGenerated = 0
         let linesOfCodeGenerated = 0
@@ -361,6 +390,10 @@ export class Session {
 
     get latestMessage() {
         return this._latestMessage
+    }
+
+    set latestMessage(msg: string) {
+        this._latestMessage = msg
     }
 
     get telemetry() {

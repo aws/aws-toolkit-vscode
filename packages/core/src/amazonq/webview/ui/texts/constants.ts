@@ -8,6 +8,8 @@ export const uiComponentsTexts = {
     copy: 'Copy',
     insertAtCursorLabel: 'Insert at cursor',
     feedbackFormTitle: 'Report an issue',
+    feedbackFormDescription:
+        '_Feedback is anonymous. For issue updates, please contact us on [GitHub](https://github.com/aws/aws-toolkit-vscode/issues/new/choose)._',
     feedbackFormOptionsLabel: 'What type of issue would you like to report?',
     feedbackFormCommentLabel: 'Description of issue (optional):',
     feedbackThanks: 'Thanks for your feedback!',
@@ -42,6 +44,8 @@ export const helpMessage = `I'm Amazon Q, a generative AI assistant. Learn more 
 \n\n- Answer questions about AWS
 \n\n- Answer questions about general programming concepts
 \n\n- Answer questions about your workspace with @workspace
+\n\n- Answer questions about your code with @Files and @Folders
+\n\n- Create and use saved prompts with @Prompts
 \n\n- Explain what a line of code or code function does
 \n\n- Write unit tests and code
 \n\n- Debug and fix code

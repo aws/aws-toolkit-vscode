@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { getLogger } from '../../shared/logger'
+import { getLogger } from '../../shared/logger/logger'
 import { ZipUtil } from '../util/zipUtil'
 import { ArtifactMap } from '../client/codewhisperer'
 import { testGenerationLogsDir } from '../../shared/filesystemUtilities'
@@ -15,20 +15,19 @@ import {
     throwIfCancelled,
 } from '../service/testGenHandler'
 import path from 'path'
-import { testGenState } from '..'
+import { testGenState } from '../models/model'
 import { ChatSessionManager } from '../../amazonqTest/chat/storages/chatSession'
-import { ChildProcess, spawn } from 'child_process'
+import { ChildProcess, spawn } from 'child_process' // eslint-disable-line no-restricted-imports
 import { BuildStatus } from '../../amazonqTest/chat/session/session'
 import { fs } from '../../shared/fs/fs'
 import { TestGenerationJobStatus } from '../models/constants'
-import { TestGenFailedError } from '../models/errors'
+import { TestGenFailedError } from '../../amazonqTest/error'
 import { Range } from '../client/codewhispereruserclient'
 
 // eslint-disable-next-line unicorn/no-null
 let spawnResult: ChildProcess | null = null
 let isCancelled = false
 export async function startTestGenerationProcess(
-    fileName: string,
     filePath: string,
     userInputPrompt: string,
     tabID: string,
@@ -46,7 +45,7 @@ export async function startTestGenerationProcess(
             return
         }
         /**
-         * Zip the project
+         * Step 1: Zip the project
          */
 
         const zipUtil = new ZipUtil()
@@ -75,8 +74,9 @@ export async function startTestGenerationProcess(
         try {
             artifactMap = await getPresignedUrlAndUploadTestGen(zipMetadata)
         } finally {
-            if (await fs.existsFile(path.join(testGenerationLogsDir, 'output.log'))) {
-                await fs.delete(path.join(testGenerationLogsDir, 'output.log'))
+            const outputLogPath = path.join(testGenerationLogsDir, 'output.log')
+            if (await fs.existsFile(outputLogPath)) {
+                await fs.delete(outputLogPath)
             }
             await zipUtil.removeTmpFiles(zipMetadata)
             session.artifactsUploadDuration = performance.now() - uploadStartTime
@@ -115,11 +115,12 @@ export async function startTestGenerationProcess(
         const jobStatus = await pollTestJobStatus(
             testJob.testGenerationJob.testGenerationJobId,
             testJob.testGenerationJob.testGenerationJobGroupName,
-            fileName,
+            filePath,
             initialExecution
         )
         // TODO: Send status to test summary
         if (jobStatus === TestGenerationJobStatus.FAILED) {
+            session.numberOfTestsGenerated = 0
             logger.verbose(`Test generation failed.`)
             throw new TestGenFailedError()
         }

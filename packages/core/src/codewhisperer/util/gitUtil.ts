@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { showOutputMessage } from '../../shared/utilities/messages'
-import { getLogger, globals, removeAnsi } from '../../shared'
+import { removeAnsi } from '../../shared/utilities/textUtilities'
+import { getLogger } from '../../shared/logger/logger'
 import { ChildProcess, ChildProcessOptions } from '../../shared/utilities/processUtils'
 import { Uri } from 'vscode'
 
@@ -17,10 +17,10 @@ export async function isGitRepo(folder: Uri): Promise<boolean> {
         rejectOnErrorCode: true,
         onStdout: (text) => {
             output += text
-            showOutputMessage(removeAnsi(text), globals.outputChannel)
+            getLogger().verbose(removeAnsi(text))
         },
         onStderr: (text) => {
-            showOutputMessage(removeAnsi(text), globals.outputChannel)
+            getLogger().error(removeAnsi(text))
         },
         spawnOptions: {
             cwd: folder.fsPath,

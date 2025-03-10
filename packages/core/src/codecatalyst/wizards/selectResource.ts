@@ -4,7 +4,6 @@
  */
 
 import * as vscode from 'vscode'
-import { isCloud9 } from '../../shared/extensionUtilities'
 import * as codecatalyst from '../../shared/clients/codecatalystClient'
 import { createCommonButtons, createRefreshButton } from '../../shared/ui/buttons'
 import {
@@ -104,7 +103,7 @@ function createResourcePrompter<T extends codecatalyst.CodeCatalystResource>(
 export function createOrgPrompter(
     client: codecatalyst.CodeCatalystClient
 ): QuickPickPrompter<codecatalyst.CodeCatalystOrg> {
-    const helpUri = isCloud9() ? docs.cloud9.main : docs.vscode.main
+    const helpUri = docs.main
     return createResourcePrompter(client.listSpaces(), helpUri, {
         title: 'Select a CodeCatalyst Organization',
         placeholder: 'Search for an Organization',
@@ -115,7 +114,7 @@ export function createProjectPrompter(
     client: codecatalyst.CodeCatalystClient,
     spaceName?: codecatalyst.CodeCatalystOrg['name']
 ): QuickPickPrompter<codecatalyst.CodeCatalystProject> {
-    const helpUri = isCloud9() ? docs.cloud9.main : docs.vscode.main
+    const helpUri = docs.main
     const projects = spaceName ? client.listProjects({ spaceName }) : client.listResources('project')
 
     return createResourcePrompter(projects, helpUri, {
@@ -129,7 +128,7 @@ export function createRepoPrompter(
     proj?: codecatalyst.CodeCatalystProject,
     thirdParty?: boolean
 ): QuickPickPrompter<codecatalyst.CodeCatalystRepo> {
-    const helpUri = isCloud9() ? docs.cloud9.cloneRepo : docs.vscode.main
+    const helpUri = docs.main
     const repos = proj
         ? client.listSourceRepositories({ spaceName: proj.org.name, projectName: proj.name }, thirdParty)
         : client.listResources('repo', thirdParty)
@@ -144,7 +143,7 @@ export function createDevEnvPrompter(
     client: codecatalyst.CodeCatalystClient,
     proj?: codecatalyst.CodeCatalystProject
 ): QuickPickPrompter<codecatalyst.DevEnvironment> {
-    const helpUri = isCloud9() ? docs.cloud9.devenv : docs.vscode.devenv
+    const helpUri = docs.devenv
     const envs = proj ? client.listDevEnvironments(proj) : client.listResources('devEnvironment')
     const filtered = envs.map((arr) => arr.filter((env) => isDevenvVscode(env.ides)))
     const isData = <T>(obj: T | DataQuickPickItem<T>['data']): obj is T => {

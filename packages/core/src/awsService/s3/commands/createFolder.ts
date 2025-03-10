@@ -4,8 +4,8 @@
  */
 
 import * as vscode from 'vscode'
-import { DEFAULT_DELIMITER } from '../../../shared/clients/s3Client'
-import { getLogger } from '../../../shared/logger'
+import { DEFAULT_DELIMITER } from '../../../shared/clients/s3'
+import { getLogger } from '../../../shared/logger/logger'
 import { S3BucketNode } from '../explorer/s3BucketNode'
 import { S3FolderNode } from '../explorer/s3FolderNode'
 import { localize } from '../../../shared/utilities/vsCodeUtils'
@@ -40,10 +40,10 @@ export async function createFolderCommand(node: S3BucketNode | S3FolderNode): Pr
         }
 
         const path = node.path + folderName + DEFAULT_DELIMITER
-        getLogger().info(`Creating folder "${path}" in bucket '${node.bucket.name}'`)
+        getLogger().info(`Creating folder "${path}" in bucket '${node.bucket.Name}'`)
 
         const { folder } = await node
-            .createFolder({ path, bucketName: node.bucket.name })
+            .createFolder({ path, bucketName: node.bucket.Name })
             .catch((e) => {
                 const message = localize(
                     'AWS.s3.createFolder.error.general',

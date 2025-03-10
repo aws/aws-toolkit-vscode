@@ -2,7 +2,7 @@
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit",
     "description": "Including CodeCatalyst, Infrastructure Composer, and support for Lambda, S3, CloudWatch Logs, CloudFormation, and many other services.",
-    "version": "3.38.0-SNAPSHOT",
+    "version": "3.50.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
     ],
@@ -727,7 +727,7 @@
                 {
                     "id": "aws.toolkit.notifications",
                     "name": "%AWS.notifications.title%",
-                    "when": "!isCloud9 && !aws.isSageMaker && aws.toolkit.notifications.show"
+                    "when": "!(isCloud9 || aws.isSageMaker) && aws.toolkit.notifications.show"
                 },
                 {
                     "id": "aws.amazonq.codewhisperer",
@@ -900,6 +900,10 @@
                 },
                 {
                     "command": "aws.appBuilderForFileExplorer.refresh",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.appBuilder.tailLogs",
                     "when": "false"
                 },
                 {
@@ -1183,7 +1187,7 @@
                     "when": "false"
                 },
                 {
-                    "command": "aws.renderStateMachineGraph",
+                    "command": "aws.stepfunctions.openWithWorkflowStudio",
                     "when": "false"
                 },
                 {
@@ -1200,30 +1204,6 @@
                 },
                 {
                     "command": "aws.toolkit.auth.manageConnections"
-                },
-                {
-                    "command": "aws.ec2.openRemoteConnection",
-                    "when": "aws.isDevMode"
-                },
-                {
-                    "command": "aws.ec2.openTerminal",
-                    "when": "aws.isDevMode"
-                },
-                {
-                    "command": "aws.ec2.linkToLaunch",
-                    "when": "aws.isDevMode"
-                },
-                {
-                    "command": "aws.ec2.startInstance",
-                    "when": "aws.isDevMode"
-                },
-                {
-                    "command": "aws.ec2.stopInstance",
-                    "when": "aws.isDevMode"
-                },
-                {
-                    "command": "aws.ec2.rebootInstance",
-                    "when": "aws.isDevMode"
                 },
                 {
                     "command": "aws.dev.openMenu",
@@ -1347,24 +1327,29 @@
                     "group": "1_account@3"
                 },
                 {
-                    "command": "aws.lambda.createNewSamApp",
+                    "command": "aws.toolkit.lambda.createServerlessLandProject",
                     "when": "view == aws.explorer",
                     "group": "3_lambda@1"
                 },
                 {
-                    "command": "aws.launchConfigForm",
+                    "command": "aws.lambda.createNewSamApp",
                     "when": "view == aws.explorer",
                     "group": "3_lambda@2"
                 },
                 {
+                    "command": "aws.launchConfigForm",
+                    "when": "view == aws.explorer",
+                    "group": "3_lambda@3"
+                },
+                {
                     "command": "aws.deploySamApplication",
                     "when": "config.aws.samcli.legacyDeploy && view == aws.explorer",
-                    "group": "3_lambda@3"
+                    "group": "3_lambda@4"
                 },
                 {
                     "command": "aws.samcli.sync",
                     "when": "!config.aws.samcli.legacyDeploy && view == aws.explorer",
-                    "group": "3_lambda@3"
+                    "group": "3_lambda@4"
                 },
                 {
                     "submenu": "aws.toolkit.submenu.feedback",
@@ -1380,6 +1365,11 @@
                     "command": "aws.toolkit.lambda.openWalkthrough",
                     "when": "view =~ /^(aws.appBuilder|aws.appBuilderForFileExplorer)$/",
                     "group": "y_toolkitWalkthrough@1"
+                },
+                {
+                    "command": "aws.toolkit.lambda.createServerlessLandProject",
+                    "when": "view =~ /^(aws.appBuilder|aws.appBuilderForFileExplorer)$/",
+                    "group": "y_toolkitWalkthrough@2"
                 },
                 {
                     "command": "aws.codecatalyst.cloneRepo",
@@ -1432,6 +1422,11 @@
                     "command": "aws.openInApplicationComposer",
                     "when": "isFileSystemResource && !(resourceFilename =~ /^.*\\.tc\\.json$/) && resourceFilename =~ /^.*\\.(json|yml|yaml|template)$/",
                     "group": "z_aws@1"
+                },
+                {
+                    "command": "aws.stepfunctions.openWithWorkflowStudio",
+                    "when": "isFileSystemResource && resourceFilename =~ /^.*\\.asl\\.(json|yml|yaml)$/",
+                    "group": "z_aws@1"
                 }
             ],
             "view/item/context": [
@@ -1457,12 +1452,12 @@
                 },
                 {
                     "command": "aws.ec2.linkToLaunch",
-                    "group": "0@1",
+                    "group": "0@0",
                     "when": "viewItem =~ /^(awsEc2ParentNode)$/"
                 },
                 {
                     "command": "aws.ec2.linkToLaunch",
-                    "group": "inline@1",
+                    "group": "inline@0",
                     "when": "viewItem =~ /^(awsEc2ParentNode)$/"
                 },
                 {
@@ -1504,6 +1499,11 @@
                     "command": "aws.ec2.rebootInstance",
                     "group": "inline@1",
                     "when": "viewItem == awsEc2RunningNode"
+                },
+                {
+                    "command": "aws.ec2.copyInstanceId",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsEc2(Running|Stopped|Pending)Node)$/",
+                    "group": "2@0"
                 },
                 {
                     "command": "aws.ecr.createRepository",
@@ -1586,29 +1586,29 @@
                     "group": "0@1"
                 },
                 {
-                    "command": "aws.lambda.createNewSamApp",
+                    "command": "aws.toolkit.lambda.createServerlessLandProject",
                     "when": "view == aws.explorer && viewItem == awsLambdaNode || viewItem == awsRegionNode",
                     "group": "1@1"
                 },
                 {
+                    "command": "aws.lambda.createNewSamApp",
+                    "when": "view == aws.explorer && viewItem == awsLambdaNode || viewItem == awsRegionNode",
+                    "group": "1@2"
+                },
+                {
                     "command": "aws.launchConfigForm",
                     "when": "view == aws.explorer && viewItem == awsLambdaNode || viewItem == awsRegionNode || viewItem == awsCloudFormationRootNode",
-                    "group": "1@1"
+                    "group": "1@2"
                 },
                 {
                     "command": "aws.deploySamApplication",
                     "when": "config.aws.samcli.legacyDeploy && view == aws.explorer && viewItem =~ /^(awsLambdaNode|awsRegionNode|awsCloudFormationRootNode)$/",
-                    "group": "1@2"
+                    "group": "1@3"
                 },
                 {
                     "command": "aws.samcli.sync",
                     "when": "!config.aws.samcli.legacyDeploy && view == aws.explorer && viewItem =~ /^(awsLambdaNode|awsRegionNode|awsCloudFormationRootNode)$/",
-                    "group": "1@2"
-                },
-                {
-                    "command": "aws.ec2.copyInstanceId",
-                    "when": "view == aws.explorer && viewItem =~ /^(awsEc2(Running|Stopped|Pending)Node)$/",
-                    "group": "2@0"
+                    "group": "1@3"
                 },
                 {
                     "command": "aws.ecr.copyTagUri",
@@ -1666,6 +1666,11 @@
                     "group": "0@3"
                 },
                 {
+                    "command": "aws.appBuilder.tailLogs",
+                    "when": "view =~ /^(aws.explorer|aws.appBuilder|aws.appBuilderForFileExplorer)$/ && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsCloudFormationFunctionNode)$/",
+                    "group": "0@4"
+                },
+                {
                     "command": "aws.deleteCloudFormation",
                     "when": "view == aws.explorer && viewItem == awsCloudFormationNode",
                     "group": "3@5"
@@ -1696,7 +1701,7 @@
                     "group": "0@1"
                 },
                 {
-                    "command": "aws.renderStateMachineGraph",
+                    "command": "aws.previewStateMachine",
                     "when": "view == aws.explorer && viewItem == awsStateMachineNode",
                     "group": "0@2"
                 },
@@ -1827,6 +1832,16 @@
                 },
                 {
                     "command": "aws.cwl.searchLogGroup",
+                    "group": "inline@1",
+                    "when": "view == aws.explorer && viewItem =~ /^awsCloudWatchLogNode|awsCloudWatchLogParentNode$/"
+                },
+                {
+                    "command": "aws.cwl.tailLogGroup",
+                    "group": "0@1",
+                    "when": "view == aws.explorer && viewItem =~ /^awsCloudWatchLogNode|awsCloudWatchLogParentNode$/"
+                },
+                {
+                    "command": "aws.cwl.tailLogGroup",
                     "group": "inline@1",
                     "when": "view == aws.explorer && viewItem =~ /^awsCloudWatchLogNode|awsCloudWatchLogParentNode$/"
                 },
@@ -2154,6 +2169,95 @@
                     "command": "aws.appBuilder.searchLogs",
                     "when": "view =~ /^(aws.explorer|aws.appBuilder|aws.appBuilderForFileExplorer)$/ && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsCloudFormationFunctionNode)$/",
                     "group": "inline@2"
+                },
+                {
+                    "command": "aws.docdb.createCluster",
+                    "when": "view == aws.explorer && viewItem == awsDocDBNode",
+                    "group": "inline@1"
+                },
+                {
+                    "command": "aws.docdb.createCluster",
+                    "when": "view == aws.explorer && viewItem == awsDocDBNode",
+                    "group": "0@1"
+                },
+                {
+                    "command": "aws.docdb.startCluster",
+                    "when": "viewItem =~ /^awsDocDB-cluster-(regional|elastic)-stopped/",
+                    "group": "inline@1"
+                },
+                {
+                    "command": "aws.docdb.startCluster",
+                    "when": "viewItem =~ /^awsDocDB-cluster-(regional|elastic)-stopped/"
+                },
+                {
+                    "command": "aws.docdb.stopCluster",
+                    "when": "viewItem =~ /^awsDocDB-cluster-(regional|elastic)-running/",
+                    "group": "inline@1"
+                },
+                {
+                    "command": "aws.docdb.stopCluster",
+                    "when": "viewItem =~ /^awsDocDB-cluster-(regional|elastic)-running/"
+                },
+                {
+                    "command": "aws.docdb.renameCluster",
+                    "when": "viewItem =~ /^awsDocDB-cluster(?!.*-elastic.*)/",
+                    "group": "0@2"
+                },
+                {
+                    "command": "aws.docdb.deleteCluster",
+                    "when": "viewItem =~ /^awsDocDB-cluster-(regional|elastic)/",
+                    "group": "0@4"
+                },
+                {
+                    "command": "aws.docdb.createInstance",
+                    "when": "viewItem =~ /^awsDocDB-cluster-(?!elastic|global)(?!-stopped)/"
+                },
+                {
+                    "command": "aws.docdb.renameInstance",
+                    "when": " viewItem =~ /^awsDocDB-instance/",
+                    "group": "0@2"
+                },
+                {
+                    "command": "aws.docdb.modifyInstance",
+                    "when": " viewItem =~ /^awsDocDB-instance/",
+                    "group": "0@3"
+                },
+                {
+                    "command": "aws.docdb.rebootInstance",
+                    "when": "viewItem =~ /^awsDocDB-instance/",
+                    "group": "inline@1"
+                },
+                {
+                    "command": "aws.docdb.rebootInstance",
+                    "when": "viewItem =~ /^awsDocDB-instance/"
+                },
+                {
+                    "command": "aws.docdb.deleteInstance",
+                    "when": " viewItem =~ /^awsDocDB-instance/",
+                    "group": "0@4"
+                },
+                {
+                    "command": "aws.docdb.listTags",
+                    "when": "viewItem =~ /^awsDocDB-(?!cluster-global).*/"
+                },
+                {
+                    "command": "aws.docdb.viewConsole",
+                    "when": "viewItem =~ /^awsDocDB-/",
+                    "group": "0@1"
+                },
+                {
+                    "command": "aws.docdb.viewDocs",
+                    "when": "viewItem == awsDocDBNode"
+                },
+                {
+                    "command": "aws.docdb.copyEndpoint",
+                    "when": "viewItem =~ /^awsDocDB-/",
+                    "group": "0@1"
+                },
+                {
+                    "command": "aws.appBuilder.tailLogs",
+                    "when": "view =~ /^(aws.explorer|aws.appBuilder|aws.appBuilderForFileExplorer)$/ && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsCloudFormationFunctionNode)$/",
+                    "group": "inline@3"
                 }
             ],
             "aws.toolkit.auth": [
@@ -2216,7 +2320,7 @@
                 "command": "_aws.toolkit.notifications.dismiss",
                 "title": "%AWS.generic.dismiss%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !aws.isWebExtHost",
+                "enablement": "view == aws.toolkit.notifications",
                 "icon": "$(remove-close)"
             },
             {
@@ -3015,17 +3119,6 @@
                 }
             },
             {
-                "command": "aws.renderStateMachineGraph",
-                "title": "%AWS.command.renderStateMachineGraph%",
-                "enablement": "isCloud9 || !aws.isWebExtHost",
-                "category": "%AWS.title%",
-                "cloud9": {
-                    "cn": {
-                        "category": "%AWS.title.cn%"
-                    }
-                }
-            },
-            {
                 "command": "aws.copyArn",
                 "title": "%AWS.command.copyArn%",
                 "category": "%AWS.title%",
@@ -3163,6 +3256,17 @@
                 }
             },
             {
+                "command": "aws.toolkit.lambda.createServerlessLandProject",
+                "title": "%AWS.toolkit.lambda.serverlessLand.quickpickTitle%",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
                 "command": "aws.quickStart",
                 "title": "%AWS.command.quickStart%",
                 "category": "%AWS.title%",
@@ -3254,7 +3358,7 @@
             },
             {
                 "command": "aws.previewStateMachine",
-                "title": "%AWS.command.stepFunctions.previewStateMachine%",
+                "title": "%AWS.command.stepFunctions.openWithWorkflowStudio%",
                 "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "icon": "$(aws-stepfunctions-preview)",
@@ -3384,6 +3488,18 @@
                 "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "icon": "$(search-view-icon)",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.cwl.tailLogGroup",
+                "title": "%AWS.command.cloudWatchLogs.tailLogGroup%",
+                "category": "%AWS.title%",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
+                "icon": "$(notebook-execute)",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -3752,6 +3868,13 @@
                 "icon": "$(search-view-icon)"
             },
             {
+                "command": "aws.appBuilder.tailLogs",
+                "title": "%AWS.command.appBuilder.tailLogs%",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
+                "category": "%AWS.title%",
+                "icon": "$(search-show-context)"
+            },
+            {
                 "command": "aws.appBuilder.deploy",
                 "title": "%AWS.command.appBuilder.deploy%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
@@ -3789,11 +3912,6 @@
                 "enablement": "aws.isDevMode"
             },
             {
-                "command": "aws.dev.viewLogs",
-                "title": "Watch Logs",
-                "category": "AWS (Developer)"
-            },
-            {
                 "command": "aws.openInApplicationComposerDialog",
                 "title": "%AWS.command.applicationComposer.openDialog%",
                 "category": "%AWS.title%",
@@ -3820,6 +3938,16 @@
                 }
             },
             {
+                "command": "aws.stepfunctions.openWithWorkflowStudio",
+                "title": "%AWS.command.stepFunctions.openWithWorkflowStudio%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
                 "command": "aws.createNewThreatComposer",
                 "title": "%AWS.command.threatComposer.createNew%",
                 "category": "%AWS.title%",
@@ -3835,6 +3963,155 @@
                 "title": "%AWS.command.threatComposer.newFile%",
                 "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.docdb.createCluster",
+                "title": "%AWS.command.docdb.createCluster%",
+                "icon": "$(add)",
+                "category": "%AWS.title%",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.docdb.createInstance",
+                "title": "%AWS.command.docdb.createInstance%",
+                "icon": "$(add)",
+                "category": "%AWS.title%",
+                "enablement": "(isCloud9 || !aws.isWebExtHost)",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.docdb.deleteInstance",
+                "title": "%AWS.generic.promptDelete%",
+                "category": "%AWS.title%",
+                "enablement": "(isCloud9 || !aws.isWebExtHost) && viewItem == awsDocDB-instance-available",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.docdb.renameInstance",
+                "title": "%AWS.generic.promptRename%",
+                "category": "%AWS.title%",
+                "enablement": "(isCloud9 || !aws.isWebExtHost) && viewItem == awsDocDB-instance-available",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.docdb.modifyInstance",
+                "title": "%AWS.command.docdb.modifyInstance%",
+                "category": "%AWS.title%",
+                "enablement": "isCloud9 || !aws.isWebExtHost && viewItem == awsDocDB-instance-available",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.docdb.rebootInstance",
+                "title": "%AWS.command.docdb.rebootInstance%",
+                "icon": "$(debug-restart)",
+                "category": "%AWS.title%",
+                "enablement": "(isCloud9 || !aws.isWebExtHost) && viewItem == awsDocDB-instance-available",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.docdb.renameCluster",
+                "title": "%AWS.generic.promptRename%",
+                "category": "%AWS.title%",
+                "enablement": "(isCloud9 || !aws.isWebExtHost) && viewItem =~ /^awsDocDB-cluster.*-running/",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.docdb.startCluster",
+                "title": "%AWS.command.docdb.startCluster%",
+                "icon": "$(debug-start)",
+                "category": "%AWS.title%",
+                "enablement": "!aws.isWebExtHost && viewItem =~ /^awsDocDB-cluster.*-stopped/"
+            },
+            {
+                "command": "aws.docdb.stopCluster",
+                "title": "%AWS.command.docdb.stopCluster%",
+                "icon": "$(debug-pause)",
+                "category": "%AWS.title%",
+                "enablement": "!aws.isWebExtHost && viewItem =~ /^awsDocDB-cluster.*-running/"
+            },
+            {
+                "command": "aws.docdb.deleteCluster",
+                "title": "%AWS.generic.promptDelete%",
+                "category": "%AWS.title%",
+                "enablement": "(isCloud9 || !aws.isWebExtHost) && viewItem =~ /^awsDocDB-cluster.*-running/",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.docdb.listTags",
+                "title": "%AWS.command.docdb.tags%",
+                "category": "%AWS.title%",
+                "enablement": "(isCloud9 || !aws.isWebExtHost) && viewItem =~ /^awsDocDB/",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.docdb.viewConsole",
+                "title": "%AWS.command.docdb.open%",
+                "category": "%AWS.title%",
+                "enablement": "(isCloud9 || !aws.isWebExtHost) && viewItem =~ /^awsDocDB/",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.docdb.viewDocs",
+                "title": "%AWS.generic.viewDocs%",
+                "category": "%AWS.title%",
+                "enablement": "(isCloud9 || !aws.isWebExtHost)",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.docdb.copyEndpoint",
+                "title": "%AWS.command.docdb.copyEndpoint%",
+                "category": "%AWS.title%",
+                "enablement": "(isCloud9 || !aws.isWebExtHost) && viewItem =~ /^awsDocDB/",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -3899,6 +4176,12 @@
                 "key": "ctrl+shift+v",
                 "mac": "cmd+shift+v",
                 "when": "editorTextFocus && editorLangId == asl || editorTextFocus && editorLangId == asl-yaml"
+            },
+            {
+                "command": "noop",
+                "key": "ctrl+z",
+                "mac": "cmd+z",
+                "when": "aws.stepFunctions.isWorkflowStudioFocused"
             },
             {
                 "command": "aws.samcli.sync",
@@ -4010,326 +4293,361 @@
                     "fontCharacter": "\\f1ac"
                 }
             },
-            "aws-amazonq-transform-arrow-dark": {
+            "aws-amazonq-severity-critical": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1ad"
                 }
             },
-            "aws-amazonq-transform-arrow-light": {
+            "aws-amazonq-severity-high": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1ae"
                 }
             },
-            "aws-amazonq-transform-default-dark": {
+            "aws-amazonq-severity-info": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1af"
                 }
             },
-            "aws-amazonq-transform-default-light": {
+            "aws-amazonq-severity-low": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1b0"
                 }
             },
-            "aws-amazonq-transform-dependencies-dark": {
+            "aws-amazonq-severity-medium": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1b1"
                 }
             },
-            "aws-amazonq-transform-dependencies-light": {
+            "aws-amazonq-transform-arrow-dark": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1b2"
                 }
             },
-            "aws-amazonq-transform-file-dark": {
+            "aws-amazonq-transform-arrow-light": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1b3"
                 }
             },
-            "aws-amazonq-transform-file-light": {
+            "aws-amazonq-transform-default-dark": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1b4"
                 }
             },
-            "aws-amazonq-transform-logo": {
+            "aws-amazonq-transform-default-light": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1b5"
                 }
             },
-            "aws-amazonq-transform-step-into-dark": {
+            "aws-amazonq-transform-dependencies-dark": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1b6"
                 }
             },
-            "aws-amazonq-transform-step-into-light": {
+            "aws-amazonq-transform-dependencies-light": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1b7"
                 }
             },
-            "aws-amazonq-transform-variables-dark": {
+            "aws-amazonq-transform-file-dark": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1b8"
                 }
             },
-            "aws-amazonq-transform-variables-light": {
+            "aws-amazonq-transform-file-light": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1b9"
                 }
             },
-            "aws-applicationcomposer-icon": {
+            "aws-amazonq-transform-logo": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1ba"
                 }
             },
-            "aws-applicationcomposer-icon-dark": {
+            "aws-amazonq-transform-step-into-dark": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1bb"
                 }
             },
-            "aws-apprunner-service": {
+            "aws-amazonq-transform-step-into-light": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1bc"
                 }
             },
-            "aws-cdk-logo": {
+            "aws-amazonq-transform-variables-dark": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1bd"
                 }
             },
-            "aws-cloudformation-stack": {
+            "aws-amazonq-transform-variables-light": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1be"
                 }
             },
-            "aws-cloudwatch-log-group": {
+            "aws-applicationcomposer-icon": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1bf"
                 }
             },
-            "aws-codecatalyst-logo": {
+            "aws-applicationcomposer-icon-dark": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1c0"
                 }
             },
-            "aws-codewhisperer-icon-black": {
+            "aws-apprunner-service": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1c1"
                 }
             },
-            "aws-codewhisperer-icon-white": {
+            "aws-cdk-logo": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1c2"
                 }
             },
-            "aws-codewhisperer-learn": {
+            "aws-cloudformation-stack": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1c3"
                 }
             },
-            "aws-ecr-registry": {
+            "aws-cloudwatch-log-group": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1c4"
                 }
             },
-            "aws-ecs-cluster": {
+            "aws-codecatalyst-logo": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1c5"
                 }
             },
-            "aws-ecs-container": {
+            "aws-codewhisperer-icon-black": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1c6"
                 }
             },
-            "aws-ecs-service": {
+            "aws-codewhisperer-icon-white": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1c7"
                 }
             },
-            "aws-generic-attach-file": {
+            "aws-codewhisperer-learn": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1c8"
                 }
             },
-            "aws-iot-certificate": {
+            "aws-ecr-registry": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1c9"
                 }
             },
-            "aws-iot-policy": {
+            "aws-ecs-cluster": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1ca"
                 }
             },
-            "aws-iot-thing": {
+            "aws-ecs-container": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1cb"
                 }
             },
-            "aws-lambda-function": {
+            "aws-ecs-service": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1cc"
                 }
             },
-            "aws-mynah-MynahIconBlack": {
+            "aws-generic-attach-file": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1cd"
                 }
             },
-            "aws-mynah-MynahIconWhite": {
+            "aws-iot-certificate": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1ce"
                 }
             },
-            "aws-mynah-logo": {
+            "aws-iot-policy": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1cf"
                 }
             },
-            "aws-redshift-cluster": {
+            "aws-iot-thing": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1d0"
                 }
             },
-            "aws-redshift-cluster-connected": {
+            "aws-lambda-function": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1d1"
                 }
             },
-            "aws-redshift-database": {
+            "aws-mynah-MynahIconBlack": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1d2"
                 }
             },
-            "aws-redshift-redshift-cluster-connected": {
+            "aws-mynah-MynahIconWhite": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1d3"
                 }
             },
-            "aws-redshift-schema": {
+            "aws-mynah-logo": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1d4"
                 }
             },
-            "aws-redshift-table": {
+            "aws-redshift-cluster": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1d5"
                 }
             },
-            "aws-s3-bucket": {
+            "aws-redshift-cluster-connected": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1d6"
                 }
             },
-            "aws-s3-create-bucket": {
+            "aws-redshift-database": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1d7"
                 }
             },
-            "aws-schemas-registry": {
+            "aws-redshift-redshift-cluster-connected": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1d8"
                 }
             },
-            "aws-schemas-schema": {
+            "aws-redshift-schema": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1d9"
                 }
             },
-            "aws-stepfunctions-preview": {
+            "aws-redshift-table": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1da"
+                }
+            },
+            "aws-s3-bucket": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\f1db"
+                }
+            },
+            "aws-s3-create-bucket": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\f1dc"
+                }
+            },
+            "aws-schemas-registry": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\f1dd"
+                }
+            },
+            "aws-schemas-schema": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\f1de"
+                }
+            },
+            "aws-stepfunctions-preview": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\f1df"
                 }
             }
         },
@@ -4353,11 +4671,27 @@
                         "filenamePattern": "*.tc.json"
                     }
                 ]
+            },
+            {
+                "viewType": "workflowStudio.asl",
+                "displayName": "Workflow Studio",
+                "selector": [
+                    {
+                        "filenamePattern": "*.asl.json"
+                    },
+                    {
+                        "filenamePattern": "*.asl.yaml"
+                    },
+                    {
+                        "filenamePattern": "*.asl.yml"
+                    }
+                ]
             }
         ],
         "configurationDefaults": {
             "workbench.editorAssociations": {
-                "{git,gitlens,conflictResolution,vscode-local-history}:/**/*.tc.json": "default"
+                "{git,gitlens,conflictResolution,vscode-local-history}:/**/*.tc.json": "default",
+                "{git,gitlens,conflictResolution,vscode-local-history}:/**/*.{asl.json,asl.yaml,asl.yml}": "default"
             }
         }
     },

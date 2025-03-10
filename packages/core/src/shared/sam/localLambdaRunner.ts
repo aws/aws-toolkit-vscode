@@ -12,7 +12,7 @@ import got, { OptionsOfTextResponseBody, RequestError } from 'got'
 import { isImageLambdaConfig } from '../../lambda/local/debugConfiguration'
 import { getFamily, RuntimeFamily } from '../../lambda/models/samLambdaRuntime'
 import { ExtContext } from '../extensions'
-import { getLogger } from '../logger'
+import { getLogger } from '../logger/logger'
 import { SamTemplateGenerator } from '../templates/sam/samTemplateGenerator'
 import { Timeout } from '../utilities/timeoutUtils'
 import { tryGetAbsolutePath } from '../utilities/workspaceUtils'
@@ -247,6 +247,7 @@ async function invokeLambdaHandler(
             parameterOverrides: config.parameterOverrides,
             name: config.name,
             region: config.region,
+            runtime: config.lambda?.runtime,
         }
 
         // sam local invoke ...

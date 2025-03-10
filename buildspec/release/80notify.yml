@@ -1,0 +1,26 @@
+version: 0.2
+
+phases:
+    install:
+        runtime-versions:
+            nodejs: 20
+
+    pre_build:
+        commands:
+            # Check for implicit env vars passed from the release pipeline.
+            - test -n "${NOTIFY_URL}"
+            - test -n "${TARGET_EXTENSION}"
+
+    build:
+        commands:
+            - echo "TARGET_EXTENSION=${TARGET_EXTENSION}"
+            - export EXTENSION_NAME=$([ "$TARGET_EXTENSION" = "amazonq" ] && echo "Amazon Q" || echo "AWS Toolkit")
+            - export VERSION=$(node -e "console.log(require('./packages/${TARGET_EXTENSION}/package.json').version);")
+            - export CHANGELOG=$(cat packages/${TARGET_EXTENSION}/CHANGELOG.md | perl -ne 'BEGIN{$/="\n\n"} print if $. == 2')
+            - MESSAGE=$(envsubst < ./buildspec/release/notify.txt)
+            - |
+                if [ "$STAGE" != "prod" ]; then
+                  echo "SKIPPED (stage=${STAGE}): 'curl -v POST \"[NOTIFY_URL]\" -H \"Content-Type:application/json\" --data \"{\"Content\":\"${MESSAGE}\"}\"'"
+                  exit 0
+                fi
+                curl -v POST "${NOTIFY_URL}" -H "Content-Type:application/json" --data "{\"Content\":\"${MESSAGE}\"}"

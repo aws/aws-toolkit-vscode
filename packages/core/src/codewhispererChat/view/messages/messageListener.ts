@@ -7,7 +7,7 @@ import { ExtensionMessage } from '../../../amazonq/webview/ui/commands'
 import { AuthController } from '../../../amazonq/auth/controller'
 import { ChatControllerMessagePublishers } from '../../controllers/chat/controller'
 import { ReferenceLogController } from './referenceLogController'
-import { getLogger } from '../../../shared/logger'
+import { getLogger } from '../../../shared/logger/logger'
 import { openSettingsId } from '../../../shared/settings'
 
 export interface UIMessageListenerProps {
@@ -103,7 +103,43 @@ export class UIMessageListener {
                 break
             case 'open-settings':
                 this.processOpenSettings(msg)
+                break
+            case 'ui-is-ready':
+                this.processUIIsReady()
+                break
+            case 'quick-command-group-action-click':
+                this.quickCommandGroupActionClicked(msg)
+                break
+            case 'form-action-click':
+                this.processCustomFormAction(msg)
+                break
+            case 'context-selected':
+                this.processContextSelected(msg)
+                break
+            case 'file-click':
+                this.fileClick(msg)
+                break
         }
+    }
+
+    private processUIIsReady() {
+        this.chatControllerMessagePublishers.processContextCommandUpdateMessage.publish()
+    }
+
+    private processCustomFormAction(msg: any) {
+        this.chatControllerMessagePublishers.processCustomFormAction.publish({ tabID: msg.tabID, ...msg })
+    }
+
+    private processContextSelected(msg: any) {
+        this.chatControllerMessagePublishers.processContextSelected.publish({ tabID: msg.tabID, ...msg })
+    }
+
+    private quickCommandGroupActionClicked(msg: any) {
+        this.chatControllerMessagePublishers.processQuickCommandGroupActionClicked.publish({
+            tabID: msg.tabID,
+            actionId: msg.actionId,
+            command: 'quick-command-group-action-click',
+        })
     }
 
     private processOpenSettings(msg: any) {
@@ -228,6 +264,7 @@ export class UIMessageListener {
             tabID: msg.tabID,
             messageId: msg.messageId,
             userIntent: msg.userIntent !== '' ? msg.userIntent : undefined,
+            context: msg.chatContext,
         })
     }
 
@@ -253,6 +290,15 @@ export class UIMessageListener {
             command: msg.command,
             selectedOption: msg.selectedOption,
             comment: msg.comment,
+        })
+    }
+
+    private fileClick(msg: any) {
+        this.chatControllerMessagePublishers.processFileClick.publish({
+            messageId: msg.messageId,
+            tabID: msg.tabID,
+            command: msg.command,
+            filePath: msg.filePath,
         })
     }
 }

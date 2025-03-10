@@ -9,7 +9,7 @@ import * as vscode from 'vscode'
 import AdmZip from 'adm-zip'
 import got from 'got'
 import globals from '../shared/extensionGlobals'
-import { getLogger } from '../shared/logger'
+import { getLogger } from '../shared/logger/logger'
 import fs from '../shared/fs/fs'
 import { VSCODE_EXTENSION_ID } from '../shared/extensions'
 import { makeTemporaryToolkitFolder } from '../shared/filesystemUtilities'
@@ -18,7 +18,7 @@ import { isUserCancelledError, ToolkitError } from '../shared/errors'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { cast } from '../shared/utilities/typeConstructors'
 import { CancellationError } from '../shared/utilities/timeoutUtils'
-import { isAmazonQ, isCloud9, productName } from '../shared/extensionUtilities'
+import { isAmazonQ, productName } from '../shared/extensionUtilities'
 import * as devConfig from './config'
 import { isReleaseVersion } from '../shared/vscode/env'
 import { getRelativeDate } from '../shared/datetime'
@@ -49,7 +49,7 @@ async function updateBetaToolkitData(vsixUrl: string, data: BetaToolkit) {
  */
 export async function activate(ctx: vscode.ExtensionContext) {
     const betaUrl = isAmazonQ() ? devConfig.betaUrl.amazonq : devConfig.betaUrl.toolkit
-    if (!isCloud9() && !isReleaseVersion() && betaUrl) {
+    if (!isReleaseVersion() && betaUrl) {
         ctx.subscriptions.push(watchBetaVSIX(betaUrl))
     }
 }

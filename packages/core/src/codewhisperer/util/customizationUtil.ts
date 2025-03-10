@@ -13,12 +13,11 @@ import { DataQuickPickItem, showQuickPick } from '../../shared/ui/pickerPrompter
 import { codeWhispererClient } from '../client/codewhisperer'
 import { Customization, ResourceArn } from '../client/codewhispereruserclient'
 import { codicon, getIcon } from '../../shared/icons'
-import { getLogger } from '../../shared/logger'
+import { getLogger } from '../../shared/logger/logger'
 import { showMessageWithUrl } from '../../shared/utilities/messages'
 import { parse } from '@aws-sdk/util-arn-parser'
 import { Commands } from '../../shared/vscode/commands2'
 import { vsCodeState } from '../models/model'
-import { FeatureConfigProvider, Features } from '../../shared/featureConfig'
 
 /**
  *
@@ -91,6 +90,9 @@ export const baseCustomization = {
     ),
 }
 
+/**
+ * @returns customization selected by users, `baseCustomization` if none is selected
+ */
 export const getSelectedCustomization = (): Customization => {
     if (
         !AuthUtil.instance.isCustomizationFeatureEnabled ||
@@ -105,28 +107,31 @@ export const getSelectedCustomization = (): Customization => {
         Object,
         {}
     )
-    const result = selectedCustomizationArr[AuthUtil.instance.conn.label] || baseCustomization
+    const selectedCustomization = selectedCustomizationArr[AuthUtil.instance.conn.label]
 
-    // A/B case
-    const customizationFeature = FeatureConfigProvider.getFeature(Features.customizationArnOverride)
-    const arnOverride = customizationFeature?.value.stringValue
-    const customizationOverrideName = customizationFeature?.variation
-    if (arnOverride === undefined || arnOverride === '') {
-        return result
+    if (selectedCustomization && selectedCustomization.name !== '') {
+        return selectedCustomization
     } else {
-        // A trick to prioritize arn from A/B over user's currently selected(for request and telemetry)
-        // but still shows customization info of user's currently selected.
-        return {
-            arn: arnOverride,
-            name: customizationOverrideName,
-            description: result.description,
-        }
+        return baseCustomization
     }
 }
 
-export const setSelectedCustomization = async (customization: Customization) => {
+/**
+ * @param customization customization to select
+ * @param isOverride if the API call is made from us (Q) but not users' intent, set isOverride to TRUE
+ * Override happens when ALL following conditions are met
+ *  1. service returns non-empty override customization arn, refer to [featureConfig.ts]
+ *  2. the override customization arn is different from the previous override customization if any. The purpose is to only do override once on users' behalf.
+ */
+export const setSelectedCustomization = async (customization: Customization, isOverride: boolean = false) => {
     if (!AuthUtil.instance.isValidEnterpriseSsoInUse() || !AuthUtil.instance.conn) {
         return
+    }
+    if (isOverride) {
+        const previousOverride = globals.globalState.tryGet<string>('aws.amazonq.customization.overrideV2', String)
+        if (customization.arn === previousOverride) {
+            return
+        }
     }
     const selectedCustomizationObj = globals.globalState.tryGet<{ [label: string]: Customization }>(
         'CODEWHISPERER_SELECTED_CUSTOMIZATION',
@@ -137,6 +142,9 @@ export const setSelectedCustomization = async (customization: Customization) => 
     getLogger().debug(`Selected customization ${customization.name} for ${AuthUtil.instance.conn.label}`)
 
     await globals.globalState.update('CODEWHISPERER_SELECTED_CUSTOMIZATION', selectedCustomizationObj)
+    if (isOverride) {
+        await globals.globalState.update('aws.amazonq.customization.overrideV2', customization.arn)
+    }
     vsCodeState.isFreeTierLimitReached = false
     await Commands.tryExecute('aws.amazonq.refreshStatusBar')
 }
@@ -328,11 +336,11 @@ export const selectCustomization = async (customization: Customization) => {
 export const getAvailableCustomizationsList = async () => {
     const items: Customization[] = []
     const response = await codeWhispererClient.listAvailableCustomizations()
-    response
-        .map((listAvailableCustomizationsResponse) => listAvailableCustomizationsResponse.customizations)
-        .forEach((customizations) => {
-            items.push(...customizations)
-        })
+    for (const customizations of response.map(
+        (listAvailableCustomizationsResponse) => listAvailableCustomizationsResponse.customizations
+    )) {
+        items.push(...customizations)
+    }
 
     return items
 }

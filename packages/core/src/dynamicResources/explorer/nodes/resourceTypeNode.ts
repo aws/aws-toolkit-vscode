@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import { ChildNodeLoader, ChildNodePage } from '../../../awsexplorer/childNodeLoader'
 import { CloudControlClient } from '../../../shared/clients/cloudControlClient'
-import { getLogger } from '../../../shared/logger'
+import { getLogger } from '../../../shared/logger/logger'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { LoadMoreNode } from '../../../shared/treeview/nodes/loadMoreNode'
 import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
@@ -17,7 +17,7 @@ import { ResourceNode } from './resourceNode'
 import { Result } from '../../../shared/telemetry/telemetry'
 import { CloudControl } from 'aws-sdk'
 import { ResourceTypeMetadata } from '../../model/resources'
-import { DefaultS3Client } from '../../../shared/clients/s3Client'
+import { S3Client } from '../../../shared/clients/s3'
 import { telemetry } from '../../../shared/telemetry/telemetry'
 
 export const contextValueResourceOperations: any = {
@@ -113,9 +113,9 @@ export class ResourceTypeNode extends AWSTreeNodeBase implements LoadMoreNode {
 
         // S3::Bucket's resource handler LIST is not regionalized at this time
         if (this.typeName === 'AWS::S3::Bucket') {
-            const s3 = new DefaultS3Client(this.parent.region)
+            const s3 = new S3Client(this.parent.region)
             const buckets = await s3.listBuckets()
-            newResources = buckets.buckets.map((bucket) => new ResourceNode(this, bucket.name, this.childContextValue))
+            newResources = buckets.buckets.map((bucket) => new ResourceNode(this, bucket.Name, this.childContextValue))
         } else {
             const response = await this.cloudControl.listResources({
                 TypeName: this.typeName,

@@ -13,6 +13,7 @@ import DependencyVersions from '../../../models/dependencies'
 export enum ButtonActions {
     STOP_TRANSFORMATION_JOB = 'gumbyStopTransformationJob',
     VIEW_TRANSFORMATION_HUB = 'gumbyViewTransformationHub',
+    VIEW_SUMMARY = 'gumbyViewSummary',
     CONFIRM_LANGUAGE_UPGRADE_TRANSFORMATION_FORM = 'gumbyLanguageUpgradeTransformFormConfirm',
     CONFIRM_SQL_CONVERSION_TRANSFORMATION_FORM = 'gumbySQLConversionTransformFormConfirm',
     CANCEL_TRANSFORMATION_FORM = 'gumbyTransformFormCancel', // shared between Language Upgrade & SQL Conversion
@@ -51,6 +52,8 @@ export default class MessengerUtils {
                 javaHomePrompt += ` ${CodeWhispererConstants.macJavaVersionHomeHelpChatMessage(11)}`
             } else if (jdkVersion === JDKVersion.JDK17) {
                 javaHomePrompt += ` ${CodeWhispererConstants.macJavaVersionHomeHelpChatMessage(17)}`
+            } else if (jdkVersion === JDKVersion.JDK21) {
+                javaHomePrompt += ` ${CodeWhispererConstants.macJavaVersionHomeHelpChatMessage(21)}`
             }
         } else {
             javaHomePrompt += ` ${CodeWhispererConstants.linuxJavaHomeHelpChatMessage}`
@@ -69,30 +72,8 @@ export default class MessengerUtils {
         }
     }
 
-    static createLanguageUpgradeConfirmationPrompt = (detectedJavaVersions: Array<JDKVersion | undefined>): string => {
-        let javaVersionString = 'Java project'
-        const uniqueJavaOptions = new Set(detectedJavaVersions)
-
-        if (detectedJavaVersions.length > 1) {
-            // this  means there is a Java version whose version we weren't able to determine
-            if (uniqueJavaOptions.has(undefined)) {
-                javaVersionString = 'Java projects'
-            } else {
-                javaVersionString = `Java ${Array.from(uniqueJavaOptions).join(' & ')} projects`
-            }
-        } else if (detectedJavaVersions.length === 1) {
-            if (!uniqueJavaOptions.has(undefined)) {
-                javaVersionString = `Java ${detectedJavaVersions[0]!.toString()} project`
-            }
-        }
-
-        return CodeWhispererConstants.projectPromptChatMessage.replace('JAVA_VERSION_HERE', javaVersionString)
-    }
-
     static createAvailableDependencyVersionString = (versions: DependencyVersions): string => {
-        let message = `I found ${versions.length} other dependency versions that are more recent than the dependency in your code that's causing an error: ${versions.currentVersion}.
-
-`
+        let message = `I found ${versions.length} other dependency versions that are more recent than the dependency in your code that's causing an error: ${versions.currentVersion}.`
 
         if (versions.majorVersions !== undefined && versions.majorVersions.length > 0) {
             message = message.concat(

@@ -12,6 +12,10 @@ import {
     ProgressField,
     ReferenceTrackerInformation,
     ChatPrompt,
+    MynahUIDataModel,
+    QuickActionCommand,
+    ChatItemFormItem,
+    ChatItemButton,
 } from '@aws/mynah-ui'
 import { Connector as CWChatConnector } from './apps/cwChatConnector'
 import { Connector as FeatureDevChatConnector } from './apps/featureDevChatConnector'
@@ -50,6 +54,7 @@ export interface UploadHistory {
 export interface ChatPayload {
     chatMessage: string
     chatCommand?: string
+    chatContext?: string[] | QuickActionCommand[] | undefined
 }
 
 // Adding userIntent param by extending ChatItem to send userIntent as part of amazonq_interactWithMessage telemetry event
@@ -57,6 +62,12 @@ export interface CWCChatItem extends ChatItem {
     traceId?: string
     userIntent?: UserIntent
     codeBlockLanguage?: string
+    contextList?: Context[]
+}
+
+export interface Context {
+    relativeFilePath: string
+    lineRanges: Array<{ first: number; second: number }> // List of [startLine, endLine] tuples
 }
 
 export interface ConnectorProps {
@@ -87,6 +98,14 @@ export interface ConnectorProps {
     onFileActionClick: (tabID: string, messageId: string, filePath: string, actionName: string) => void
     handleCommand: (chatPrompt: ChatPrompt, tabId: string) => void
     sendStaticMessages: (tabID: string, messages: ChatItem[]) => void
+    onContextCommandDataReceived: (message: MynahUIDataModel['contextCommands']) => void
+    onShowCustomForm: (
+        tabId: string,
+        formItems?: ChatItemFormItem[],
+        buttons?: ChatItemButton[],
+        title?: string,
+        description?: string
+    ) => void
     tabsStorage: TabsStorage
 }
 
@@ -129,6 +148,13 @@ export class Connector {
                 this.cwChatConnector.onSourceLinkClick(tabID, messageId, link)
                 break
         }
+    }
+
+    onLinkClick = (link: string): void => {
+        this.sendMessageToExtension({
+            command: 'open-link',
+            link,
+        })
     }
 
     onResponseBodyLinkClick = (tabID: string, messageId: string, link: string): void => {
@@ -299,9 +325,6 @@ export class Connector {
                 break
             case 'doc':
                 this.docChatConnector.onTabOpen(tabID)
-                break
-            case 'review':
-                this.scanChatConnector.onTabOpen(tabID)
                 break
         }
     }
@@ -587,6 +610,9 @@ export class Connector {
             case 'doc':
                 this.docChatConnector.onOpenDiff(tabID, filePath, deleted)
                 break
+            case 'cwc':
+                this.cwChatConnector.onFileClick(tabID, filePath, messageId)
+                break
         }
     }
 
@@ -595,9 +621,35 @@ export class Connector {
             case 'featuredev':
                 this.featureDevChatConnector.sendFeedback(tabId, feedbackPayload)
                 break
+            case 'testgen':
+                this.testChatConnector.onSendFeedback(tabId, feedbackPayload)
+                break
             case 'cwc':
                 this.cwChatConnector.onSendFeedback(tabId, feedbackPayload)
                 break
+        }
+    }
+
+    onQuickCommandGroupActionClick = (tabId: string, action: { id: string }) => {
+        switch (this.tabsStorage.getTab(tabId)?.type) {
+            case 'welcome':
+            case 'unknown':
+            case 'cwc':
+                this.tabsStorage.updateTabTypeFromUnknown(tabId, 'cwc')
+                this.cwChatConnector.onQuickCommandGroupActionClick(tabId, action)
+                break
+        }
+    }
+
+    onContextSelected = (contextItem: QuickActionCommand, tabId: string) => {
+        switch (this.tabsStorage.getTab(tabId)?.type) {
+            case 'welcome':
+            case 'unknown':
+            case 'cwc':
+                this.tabsStorage.updateTabTypeFromUnknown(tabId, 'cwc')
+                return this.cwChatConnector.onContextSelected(tabId, contextItem)
+            default:
+                return true
         }
     }
 
@@ -616,6 +668,20 @@ export class Connector {
                 this.testChatConnector.onChatItemVoted(tabId, messageId, vote)
                 break
         }
+    }
+
+    onFormTextualItemKeyPress = (
+        event: KeyboardEvent,
+        formData: Record<string, string>,
+        itemId: string,
+        tabId: string,
+        eventId?: string
+    ) => {
+        switch (this.tabsStorage.getTab(tabId)?.type) {
+            case 'cwc':
+                return this.cwChatConnector.onFormTextualItemKeyPress(tabId, event, formData, itemId, eventId)
+        }
+        return false
     }
 
     onCustomFormAction = (
@@ -644,6 +710,8 @@ export class Connector {
                         type: '',
                         tabType: 'cwc',
                     })
+                } else {
+                    this.cwChatConnector.onCustomFormAction(tabId, action)
                 }
                 break
             case 'agentWalkthrough': {

@@ -9,10 +9,15 @@ import * as vscode from 'vscode'
 import { ToolkitError } from '../../../../shared/errors'
 import { createCodeWhispererChatStreamingClient } from '../../../../shared/clients/codewhispererChatClient'
 import { createQDeveloperStreamingClient } from '../../../../shared/clients/qDeveloperChatClient'
+import { UserWrittenCodeTracker } from '../../../../codewhisperer/tracker/userWrittenCodeTracker'
 
 export class ChatSession {
     private sessionId?: string
 
+    contexts: Map<string, { first: number; second: number }[]> = new Map()
+    // TODO: doesn't handle the edge case when two files share the same relativePath string but from different root
+    // e.g. root_a/file1 vs root_b/file1
+    relativePathToWorkspaceRoot: Map<string, string> = new Map()
     public get sessionIdentifier(): string | undefined {
         return this.sessionId
     }
@@ -48,6 +53,7 @@ export class ChatSession {
             }
         }
 
+        UserWrittenCodeTracker.instance.onQFeatureInvoked()
         return response
     }
 
@@ -66,6 +72,8 @@ export class ChatSession {
         }
 
         this.sessionId = response.conversationId
+
+        UserWrittenCodeTracker.instance.onQFeatureInvoked()
 
         return response
     }

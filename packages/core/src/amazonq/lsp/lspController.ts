@@ -13,15 +13,17 @@ import fetch from 'node-fetch'
 import request from '../../shared/request'
 import { LspClient } from './lspClient'
 import AdmZip from 'adm-zip'
-import { RelevantTextDocument } from '@amzn/codewhisperer-streaming'
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../shared/filesystemUtilities'
 import { activate as activateLsp } from './lspClient'
-import { telemetry } from '../../shared/telemetry'
+import { telemetry } from '../../shared/telemetry/telemetry'
 import { isCloud9 } from '../../shared/extensionUtilities'
-import { fs, globals, ToolkitError } from '../../shared'
+import { fs } from '../../shared/fs/fs'
+import globals from '../../shared/extensionGlobals'
+import { ToolkitError } from '../../shared/errors'
 import { isWeb } from '../../shared/extensionGlobals'
 import { getUserAgent } from '../../shared/telemetry/util'
 import { isAmazonInternalOs } from '../../shared/vscode/env'
+import { RelevantTextDocumentAddition } from '../../codewhispererChat/controllers/chat/model'
 
 export interface Chunk {
     readonly filePath: string
@@ -29,6 +31,8 @@ export interface Chunk {
     readonly context?: string
     readonly relativePath?: string
     readonly programmingLanguage?: string
+    readonly startLine?: number
+    readonly endLine?: number
 }
 
 export interface Content {
@@ -58,7 +62,7 @@ export interface Manifest {
 }
 const manifestUrl = 'https://aws-toolkit-language-servers.amazonaws.com/q-context/manifest.json'
 // this LSP client in Q extension is only going to work with these LSP server versions
-const supportedLspServerVersions = ['0.1.29']
+const supportedLspServerVersions = ['0.1.42']
 
 const nodeBinName = process.platform === 'win32' ? 'node.exe' : 'node'
 
@@ -277,26 +281,32 @@ export class LspController {
         }
     }
 
-    async query(s: string): Promise<RelevantTextDocument[]> {
+    async query(s: string): Promise<RelevantTextDocumentAddition[]> {
         const chunks: Chunk[] | undefined = await LspClient.instance.queryVectorIndex(s)
-        const resp: RelevantTextDocument[] = []
-        chunks?.forEach((chunk) => {
-            const text = chunk.context ? chunk.context : chunk.content
-            if (chunk.programmingLanguage && chunk.programmingLanguage !== 'unknown') {
-                resp.push({
-                    text: text,
-                    relativeFilePath: chunk.relativePath ? chunk.relativePath : path.basename(chunk.filePath),
-                    programmingLanguage: {
-                        languageName: chunk.programmingLanguage,
-                    },
-                })
-            } else {
-                resp.push({
-                    text: text,
-                    relativeFilePath: chunk.relativePath ? chunk.relativePath : path.basename(chunk.filePath),
-                })
+        const resp: RelevantTextDocumentAddition[] = []
+        if (chunks) {
+            for (const chunk of chunks) {
+                const text = chunk.context ? chunk.context : chunk.content
+                if (chunk.programmingLanguage && chunk.programmingLanguage !== 'unknown') {
+                    resp.push({
+                        text: text,
+                        relativeFilePath: chunk.relativePath ? chunk.relativePath : path.basename(chunk.filePath),
+                        programmingLanguage: {
+                            languageName: chunk.programmingLanguage,
+                        },
+                        startLine: chunk.startLine ?? -1,
+                        endLine: chunk.endLine ?? -1,
+                    })
+                } else {
+                    resp.push({
+                        text: text,
+                        relativeFilePath: chunk.relativePath ? chunk.relativePath : path.basename(chunk.filePath),
+                        startLine: chunk.startLine ?? -1,
+                        endLine: chunk.endLine ?? -1,
+                    })
+                }
             }
-        })
+        }
         return resp
     }
 
@@ -372,9 +382,6 @@ export class LspController {
             })
         } finally {
             this._isIndexingInProgress = false
-            const repomapFile = await LspClient.instance.getRepoMapJSON()
-            // console.log(repomapFile)
-            getLogger().info(`File path ${repomapFile}`)
         }
     }
 
@@ -392,6 +399,7 @@ export class LspController {
             try {
                 await activateLsp(context)
                 getLogger().info('LspController: LSP activated')
+                await vscode.commands.executeCommand(`aws.amazonq.updateContextCommandItems`)
                 void LspController.instance.buildIndex(buildIndexConfig)
                 // log the LSP server CPU and Memory usage per 30 minutes.
                 globals.clock.setInterval(

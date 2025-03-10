@@ -4,7 +4,7 @@
  */
 
 import * as path from 'path'
-import { fs } from '../../../shared'
+import { fs } from '../../../shared/fs/fs'
 import * as vscode from 'vscode'
 import {
     countSubstringMatches,
@@ -54,7 +54,7 @@ export async function fetchSupplementalContextForTest(
     const shouldProceed = shouldFetchUtgContext(editor.document.languageId)
 
     if (!shouldProceed) {
-        return shouldProceed === undefined ? undefined : { supplementalContextItems: [], strategy: 'Empty' }
+        return shouldProceed === undefined ? undefined : { supplementalContextItems: [], strategy: 'empty' }
     }
 
     const languageConfig = utgLanguageConfigs[editor.document.languageId]
@@ -69,10 +69,10 @@ export async function fetchSupplementalContextForTest(
         return {
             supplementalContextItems: await generateSupplementalContextFromFocalFile(
                 crossSourceFile,
-                'ByName',
+                'byName',
                 cancellationToken
             ),
-            strategy: 'ByName',
+            strategy: 'byName',
         }
     }
     throwIfCancelled(cancellationToken)
@@ -84,10 +84,10 @@ export async function fetchSupplementalContextForTest(
         return {
             supplementalContextItems: await generateSupplementalContextFromFocalFile(
                 crossSourceFile,
-                'ByContent',
+                'byContent',
                 cancellationToken
             ),
-            strategy: 'ByContent',
+            strategy: 'byContent',
         }
     }
 
@@ -95,7 +95,7 @@ export async function fetchSupplementalContextForTest(
     getLogger().debug(`CodeWhisperer failed to fetch utg context`)
     return {
         supplementalContextItems: [],
-        strategy: 'Empty',
+        strategy: 'empty',
     }
 }
 

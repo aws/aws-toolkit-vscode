@@ -1,21 +1,6 @@
 {
     "types": [
         {
-            "name": "acceptedCharactersCount",
-            "type": "int",
-            "description": "The number of accepted characters"
-        },
-        {
-            "name": "acceptedCount",
-            "type": "int",
-            "description": "The number of accepted cases"
-        },
-        {
-            "name": "acceptedLinesCount",
-            "type": "int",
-            "description": "The number of accepted lines of code"
-        },
-        {
             "name": "amazonGenerateApproachLatency",
             "type": "double",
             "description": "The time it takes to generate approach response"
@@ -36,6 +21,11 @@
             "type": "string",
             "allowedValues": ["Create", "Update"],
             "description": "SSM Publish Document operation type"
+        },
+        {
+            "name": "isInvalidJson",
+            "type": "boolean",
+            "description": "Indicates whether the message contains an invalid JSON definition."
         },
         {
             "name": "starterTemplate",
@@ -97,6 +87,61 @@
             "name": "cwsprChatProjectContextQueryMs",
             "type": "int",
             "description": "Query latency in ms for local project context"
+        },
+        {
+            "name": "cwsprChatFolderContextCount",
+            "type": "int",
+            "description": "Number of folders manually added to context"
+        },
+        {
+            "name": "cwsprChatFileContextCount",
+            "type": "int",
+            "description": "Number of files manually added to context"
+        },
+        {
+            "name": "cwsprChatFileContextLength",
+            "type": "int",
+            "description": "Total length of files added to context"
+        },
+        {
+            "name": "cwsprChatFileContextTruncatedLength",
+            "type": "int",
+            "description": "Truncated length of files added to context"
+        },
+        {
+            "name": "cwsprChatPromptContextCount",
+            "type": "int",
+            "description": "Number of saved prompts manually added to context"
+        },
+        {
+            "name": "cwsprChatPromptContextLength",
+            "type": "int",
+            "description": "Total length of saved prompts added to context"
+        },
+        {
+            "name": "cwsprChatPromptContextTruncatedLength",
+            "type": "int",
+            "description": "Truncated length of saved prompts added to context"
+        },
+        {
+            "name": "cwsprChatRuleContextCount",
+            "type": "int",
+            "description": "Number of workspace rules automatically added to context"
+        },
+        {
+            "name": "cwsprChatRuleContextLength",
+            "type": "int",
+            "description": "Total length of workspace rules added to context"
+        },
+        {
+            "name": "cwsprChatRuleContextTruncatedLength",
+            "type": "int",
+            "description": "Truncated length of workspace rules added to context"
+        },
+        {
+            "name": "cwsprChatHasContextList",
+            "type": "boolean",
+            "description": "true if context list is displayed to user"
         },
         {
             "name": "amazonqIndexFileSizeInMB",
@@ -297,16 +342,6 @@
             "description": "An AWS region."
         },
         {
-            "name": "buildPayloadBytes",
-            "type": "int",
-            "description": "The uncompressed payload size in bytes of the source files in customer project context"
-        },
-        {
-            "name": "buildZipFileBytes",
-            "type": "int",
-            "description": "The compressed payload size of source files in bytes of customer project context sent"
-        },
-        {
             "name": "connectionState",
             "type": "string",
             "description": "A detailed state of a specific auth connection. Use `authStatus` for a higher level view of an extension's general connection."
@@ -382,44 +417,15 @@
             "description": "The number of executed operations"
         },
         {
-            "name": "generatedCharactersCount",
-            "type": "int",
-            "description": "Number of characters of code generated"
-        },
-        {
-            "name": "generatedCount",
-            "type": "int",
-            "description": "The number of generated cases"
-        },
-        {
-            "name": "generatedLinesCount",
-            "type": "int",
-            "description": "The number of generated lines of code"
-        },
-        {
-            "name": "hasUserPromptSupplied",
-            "type": "boolean",
-            "description": "True if user supplied prompt message as input else false"
-        },
-        {
-            "name": "isCodeBlockSelected",
-            "type": "boolean",
-            "description": "True if user selected code snippet as input else false"
-        },
-        {
-            "name": "isSupportedLanguage",
-            "type": "boolean",
-            "description": "Indicate if the language is supported"
-        },
-        {
-            "name": "jobGroup",
+            "name": "amazonqUploadIntent",
             "type": "string",
-            "description": "Job group name used in the operation"
-        },
-        {
-            "name": "jobId",
-            "type": "string",
-            "description": "Job id used in the operation"
+            "description": "The intent of the upload",
+            "allowedValues": [
+                "TRANSFORMATION",
+                "TASK_ASSIST_PLANNING",
+                "AUTOMATIC_FILE_SECURITY_SCAN",
+                "FULL_PROJECT_SECURITY_SCAN"
+            ]
         }
     ],
     "metrics": [
@@ -584,6 +590,47 @@
         {
             "name": "stepfunctions_previewstatemachine",
             "description": ""
+        },
+        {
+            "name": "stepfunctions_openWorkflowStudio",
+            "description": "Called after opening asl file in Step Functions Workflow Studio",
+            "metadata": [
+                {
+                    "type": "id",
+                    "required": true
+                }
+            ]
+        },
+        {
+            "name": "stepfunctions_closeWorkflowStudio",
+            "description": "Called after closing Step Functions Workflow Studio custom editor",
+            "metadata": [
+                {
+                    "type": "id",
+                    "required": true
+                }
+            ]
+        },
+        {
+            "name": "stepfunctions_saveFile",
+            "description": "Triggered when Workflow Studio auto-syncs to the local file or when unsaved local changes are saved from Workflow Studio or VSCode.",
+            "metadata": [
+                {
+                    "type": "id",
+                    "required": true
+                },
+                {
+                    "type": "saveType",
+                    "required": true
+                },
+                {
+                    "type": "source",
+                    "required": true
+                },
+                {
+                    "type": "isInvalidJson"
+                }
+            ]
         },
         {
             "name": "vscode_activeRegions",
@@ -869,6 +916,50 @@
                 {
                     "type": "codewhispererCustomizationArn",
                     "required": false
+                },
+                {
+                    "type": "cwsprChatHasContextList",
+                    "required": false
+                },
+                {
+                    "type": "cwsprChatFolderContextCount",
+                    "required": false
+                },
+                {
+                    "type": "cwsprChatFileContextCount",
+                    "required": false
+                },
+                {
+                    "type": "cwsprChatFileContextLength",
+                    "required": false
+                },
+                {
+                    "type": "cwsprChatFileContextTruncatedLength",
+                    "required": false
+                },
+                {
+                    "type": "cwsprChatPromptContextCount",
+                    "required": false
+                },
+                {
+                    "type": "cwsprChatPromptContextLength",
+                    "required": false
+                },
+                {
+                    "type": "cwsprChatRuleContextTruncatedLength",
+                    "required": false
+                },
+                {
+                    "type": "cwsprChatRuleContextCount",
+                    "required": false
+                },
+                {
+                    "type": "cwsprChatRuleContextLength",
+                    "required": false
+                },
+                {
+                    "type": "cwsprChatPromptContextTruncatedLength",
+                    "required": false
                 }
             ]
         },
@@ -1133,78 +1224,11 @@
                     "required": false
                 },
                 {
-                    "type": "credentialStartUrl",
-                    "required": false
-                }
-            ]
-        },
-        {
-            "name": "amazonq_utgGenerateTests",
-            "description": "Client side invocation of the AmazonQ Unit Test Generation",
-            "metadata": [
-                {
-                    "type": "acceptedCharactersCount",
-                    "required": false
-                },
-                {
-                    "type": "acceptedCount",
-                    "required": false
-                },
-                {
-                    "type": "acceptedLinesCount",
-                    "required": false
-                },
-                {
-                    "type": "artifactsUploadDuration",
-                    "required": false
-                },
-                {
-                    "type": "buildPayloadBytes",
-                    "required": false
-                },
-                {
-                    "type": "buildZipFileBytes",
+                    "type": "amazonqUploadIntent",
                     "required": false
                 },
                 {
                     "type": "credentialStartUrl",
-                    "required": false
-                },
-                {
-                    "type": "cwsprChatProgrammingLanguage"
-                },
-                {
-                    "type": "generatedCharactersCount",
-                    "required": false
-                },
-                {
-                    "type": "generatedCount",
-                    "required": false
-                },
-                {
-                    "type": "generatedLinesCount",
-                    "required": false
-                },
-                {
-                    "type": "hasUserPromptSupplied"
-                },
-                {
-                    "type": "isCodeBlockSelected",
-                    "required": false
-                },
-                {
-                    "type": "isSupportedLanguage"
-                },
-                {
-                    "type": "jobGroup",
-                    "required": false
-                },
-                {
-                    "type": "jobId",
-                    "required": false
-                },
-                {
-                    "type": "perfClientLatency",
                     "required": false
                 }
             ]
@@ -1263,6 +1287,17 @@
                 {
                     "type": "id",
                     "required": false
+                }
+            ],
+            "passive": true
+        },
+        {
+            "name": "auth_signInPageOpened",
+            "description": "When the Amazon Q sign in page is opened and focused.",
+            "metadata": [
+                {
+                    "type": "source",
+                    "required": true
                 }
             ],
             "passive": true
@@ -1344,6 +1379,17 @@
             ]
         },
         {
+            "name": "session_start",
+            "description": "Called when starting the plugin",
+            "metadata": [
+                {
+                    "type": "source",
+                    "required": false
+                }
+            ],
+            "passive": true
+        },
+        {
             "name": "session_end",
             "description": "Called when stopping the IDE on a best effort basis",
             "metadata": [
@@ -1375,6 +1421,98 @@
                 }
             ],
             "passive": true
+        },
+        {
+            "name": "docdb_listClusters",
+            "description": "Called when DocumentDB node is expanded"
+        },
+        {
+            "name": "docdb_listInstances",
+            "description": "Called when a DocumentDB cluster node is expanded"
+        },
+        {
+            "name": "docdb_createCluster",
+            "description": "Captures the result of adding a new cluster in the 'Add Cluster' workflow"
+        },
+        {
+            "name": "docdb_createInstance",
+            "description": "Captures the result of adding an instance to a cluster"
+        },
+        {
+            "name": "docdb_deleteCluster",
+            "description": "Captures the result of deleting a cluster"
+        },
+        {
+            "name": "docdb_deleteInstance",
+            "description": "Captures the result of deleting an instance"
+        },
+        {
+            "name": "docdb_renameCluster",
+            "description": "Captures the result of renaming a cluster"
+        },
+        {
+            "name": "docdb_renameInstance",
+            "description": "Captures the result of renaming an instance"
+        },
+        {
+            "name": "docdb_resizeInstance",
+            "description": "Captures the result of changing an instance class"
+        },
+        {
+            "name": "docdb_rebootInstance",
+            "description": "Captures the result of rebooting an instance"
+        },
+        {
+            "name": "docdb_stopCluster",
+            "description": "Captures the result of stopping a cluster"
+        },
+        {
+            "name": "docdb_startCluster",
+            "description": "Captures the result of starting a cluster"
+        },
+        {
+            "name": "docdb_listTags",
+            "description": "User clicked on tags command"
+        },
+        {
+            "name": "docdb_addTag",
+            "description": "User clicked on add tag command"
+        },
+        {
+            "name": "docdb_removeTag",
+            "description": "User clicked on remove tag command"
+        },
+        {
+            "name": "docdb_addRegion",
+            "description": "User clicked on add region command"
+        },
+        {
+            "name": "codewhisperer_codeScanIssueDetected",
+            "description": "Called when a code scan issue is returned from the service",
+            "metadata": [
+                {
+                    "type": "autoDetected",
+                    "required": false
+                },
+                {
+                    "type": "codewhispererCodeScanJobId",
+                    "required": false
+                },
+                {
+                    "type": "detectorId"
+                },
+                {
+                    "type": "findingId"
+                },
+                {
+                    "type": "includesFix",
+                    "required": false
+                },
+                {
+                    "type": "ruleId",
+                    "required": false
+                }
+            ]
         }
     ]
 }

@@ -9,9 +9,8 @@ import { schema } from 'yaml-cfn'
 import * as yaml from 'js-yaml'
 import * as filesystemUtilities from '../filesystemUtilities'
 import fs from '../../shared/fs/fs'
-import { getLogger } from '../logger'
+import { getLogger } from '../logger/logger'
 import { lambdaPackageTypeImage } from '../constants'
-import { isCloud9 } from '../extensionUtilities'
 import { isUntitledScheme, normalizeVSCodeUri } from '../utilities/vsCodeUtils'
 
 export const SERVERLESS_API_TYPE = 'AWS::Serverless::Api' // eslint-disable-line @typescript-eslint/naming-convention
@@ -893,20 +892,18 @@ export async function createStarterTemplateFile(isSam?: boolean): Promise<void> 
 
 /**
  * Creates a boilerplate CFN or SAM template that is complete enough to be picked up for JSON schema assignment
- * TODO: Remove `isCloud9` when Cloud9 gets YAML code completion
  * @param isSam Create a SAM or CFN template
  */
 function createStarterTemplateYaml(isSam?: boolean): string {
     return `AWSTemplateFormatVersion: '2010-09-09'
 ${isSam ? 'Transform: AWS::Serverless-2016-10-31\n' : ''}
 Description: <your stack description here>
-${isCloud9() ? '' : '\n# Available top-level fields are listed in code completion\n'}
+# Available top-level fields are listed in code completion
 # Add Resources Here: uncomment the following lines
 # Resources:
 #   <resource name here>:
-#     Type: # resource type here${isCloud9() ? '' : ' - available resources are listed in code completion'}
-#     # <add resource-specific properties underneath this entry ${
-        isCloud9() ? '' : ' - available properties are listed in code completion'
+#     Type: # resource type here - available resources are listed in code completion
+#     # <add resource-specific properties underneath this entry - available properties are listed in code completion
     }>
 #     Properties:
 `

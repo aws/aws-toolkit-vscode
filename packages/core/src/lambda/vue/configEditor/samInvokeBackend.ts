@@ -7,14 +7,13 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { LaunchConfiguration } from '../../../shared/debug/launchConfiguration'
-
-import { ExtContext } from '../../../shared/extensions'
-import { getLogger } from '../../../shared/logger'
+import { getLogger } from '../../../shared/logger/logger'
 import { HttpResourceFetcher } from '../../../shared/resourcefetcher/httpResourceFetcher'
 import {
     AwsSamDebuggerConfiguration,
     isCodeTargetProperties,
     isTemplateTargetProperties,
+    TemplateTargetProperties,
 } from '../../../shared/sam/debugger/awsSamDebugConfiguration'
 import {
     DefaultAwsSamDebugConfigurationValidator,
@@ -28,15 +27,13 @@ import { tryGetAbsolutePath } from '../../../shared/utilities/workspaceUtils'
 import * as CloudFormation from '../../../shared/cloudformation/cloudformation'
 import { openLaunchJsonFile } from '../../../shared/sam/debugger/commands/addSamDebugConfiguration'
 import { getSampleLambdaPayloads } from '../../utils'
-import { isCloud9 } from '../../../shared/extensionUtilities'
-import { SamDebugConfigProvider } from '../../../shared/sam/debugger/awsSamDebugger'
 import { samLambdaCreatableRuntimes } from '../../models/samLambdaRuntime'
 import globals from '../../../shared/extensionGlobals'
 import { VueWebview } from '../../../webviews/main'
 import { Commands } from '../../../shared/vscode/commands2'
 import { telemetry } from '../../../shared/telemetry/telemetry'
-import { fs } from '../../../shared'
-import { ToolkitError } from '../../../shared'
+import { fs } from '../../../shared/fs/fs'
+import { ToolkitError } from '../../../shared/errors'
 import { ResourceNode } from '../../../awsService/appBuilder/explorer/nodes/resourceNode'
 
 const localize = nls.loadMessageBundle()
@@ -50,6 +47,9 @@ export interface ResourceData {
     runtime: string
     stackName: string
     source: string
+    environment?: {
+        Variables: Record<string, any>
+    }
 }
 
 export type AwsSamDebuggerConfigurationLoose = AwsSamDebuggerConfiguration & {
@@ -78,7 +78,6 @@ export class SamInvokeWebview extends VueWebview {
     public readonly id = 'createLambda'
 
     public constructor(
-        private readonly extContext: ExtContext, // TODO(sijaden): get rid of `ExtContext`
         private readonly config?: AwsSamDebuggerConfiguration,
         private readonly data?: ResourceData
     ) {
@@ -170,7 +169,8 @@ export class SamInvokeWebview extends VueWebview {
                 return
             }
             const sampleUrl = `${sampleRequestPath}${pickerResponse.filename}`
-            const sample = (await new HttpResourceFetcher(sampleUrl, { showUrl: true }).get()) ?? ''
+            const resp = await new HttpResourceFetcher(sampleUrl, { showUrl: true }).get()
+            const sample = (await resp?.text()) ?? ''
 
             return sample
         } catch (err) {
@@ -357,17 +357,8 @@ export class SamInvokeWebview extends VueWebview {
         const targetUri = await this.getUriFromLaunchConfig(finalConfig)
         const folder = targetUri ? vscode.workspace.getWorkspaceFolder(targetUri) : undefined
 
-        // Cloud9 currently can't resolve the `aws-sam` debug config provider.
-        // Directly invoke the config instead.
-        // NOTE: This bypasses the `${workspaceFolder}` resolution, but shouldn't naturally occur in Cloud9
-        // (Cloud9 also doesn't currently have variable resolution support anyways)
-        if (isCloud9()) {
-            const provider = new SamDebugConfigProvider(this.extContext)
-            await provider.resolveDebugConfiguration(folder, finalConfig, undefined, source)
-        } else {
-            // startDebugging on VS Code goes through the whole resolution chain
-            await vscode.debug.startDebugging(folder, finalConfig)
-        }
+        // startDebugging on VS Code goes through the whole resolution chain
+        await vscode.debug.startDebugging(folder, finalConfig)
     }
     public async getLaunchConfigQuickPickItems(
         launchConfig: LaunchConfiguration,
@@ -426,9 +417,9 @@ export class SamInvokeWebview extends VueWebview {
 
 const WebviewPanel = VueWebview.compilePanel(SamInvokeWebview)
 
-export function registerSamInvokeVueCommand(context: ExtContext): vscode.Disposable {
+export function registerSamInvokeVueCommand(context: vscode.ExtensionContext): vscode.Disposable {
     return Commands.register('aws.launchConfigForm', async (launchConfig?: AwsSamDebuggerConfiguration) => {
-        const webview = new WebviewPanel(context.extensionContext, context, launchConfig)
+        const webview = new WebviewPanel(context, launchConfig)
         await telemetry.sam_openConfigUi.run(async (span) => {
             await webview.show({
                 title: localize('AWS.command.launchConfigForm.title', 'Local Invoke and Debug Configuration'),
@@ -439,18 +430,26 @@ export function registerSamInvokeVueCommand(context: ExtContext): vscode.Disposa
     })
 }
 
-export async function registerSamDebugInvokeVueCommand(context: ExtContext, params: { resource: ResourceNode }) {
-    const launchConfig: AwsSamDebuggerConfiguration | undefined = undefined
+export async function registerSamDebugInvokeVueCommand(
+    context: vscode.ExtensionContext,
+    params: { resource: ResourceNode }
+) {
     const resource = params?.resource.resource
     const source = 'AppBuilderLocalInvoke'
-    const webview = new WebviewPanel(context.extensionContext, context, launchConfig, {
+    const launchConfigs = await new LaunchConfiguration(resource.location).getSamDebugConfigurations()
+    const launchConfig = launchConfigs.find(
+        (config) => (config.invokeTarget as TemplateTargetProperties).logicalId === resource.resource.Id
+    )
+
+    const webview = new WebviewPanel(context, launchConfig, {
         logicalId: resource.resource.Id ?? '',
         region: resource.region ?? '',
         location: resource.location.fsPath,
         handler: resource.resource.Handler!,
-        runtime: resource.resource.Runtime!,
+        runtime: launchConfig?.lambda?.runtime ?? resource.resource.Runtime!,
         arn: resource.functionArn ?? '',
         stackName: resource.stackName ?? '',
+        environment: resource.resource.Environment,
         source: source,
     })
     await telemetry.sam_openConfigUi.run(async (span) => {

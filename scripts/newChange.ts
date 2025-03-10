@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as child_process from 'child_process'
+import * as child_process from 'child_process' // eslint-disable-line no-restricted-imports
 import * as nodefs from 'fs' // eslint-disable-line no-restricted-imports
 import { join } from 'path'
 import * as readlineSync from 'readline-sync'

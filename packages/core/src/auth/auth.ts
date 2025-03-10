@@ -18,10 +18,10 @@ import { getCache, getCacheFileWatcher } from './sso/cache'
 import { isNonNullable, Mutable } from '../shared/utilities/tsUtils'
 import { SsoToken, truncateStartUrl } from './sso/model'
 import { SsoClient } from './sso/clients'
-import { getLogger } from '../shared/logger'
+import { getLogger } from '../shared/logger/logger'
 import { CredentialsProviderManager } from './providers/credentialsProviderManager'
 import { asString, CredentialsId, CredentialsProvider, fromString } from './providers/credentials'
-import { once } from '../shared/utilities/functionUtils'
+import { keyedDebounce, once } from '../shared/utilities/functionUtils'
 import { CredentialsSettings } from './credentials/utils'
 import {
     extractDataFromSection,
@@ -102,23 +102,6 @@ interface AuthService {
      * **IAM connections are not implemented**
      */
     updateConnection(connection: Pick<Connection, 'id'>, profile: Profile): Promise<Connection>
-}
-
-function keyedDebounce<T, U extends any[], K extends string = string>(
-    fn: (key: K, ...args: U) => Promise<T>
-): typeof fn {
-    const pending = new Map<K, Promise<T>>()
-
-    return (key, ...args) => {
-        if (pending.has(key)) {
-            return pending.get(key)!
-        }
-
-        const promise = fn(key, ...args).finally(() => pending.delete(key))
-        pending.set(key, promise)
-
-        return promise
-    }
 }
 
 export interface ConnectionStateChangeEvent {
@@ -282,6 +265,7 @@ export class Auth implements AuthService, ConnectionManager {
      *
      * Use {@link Auth.listConnections} to avoid API calls to the SSO service.
      */
+    @withTelemetryContext({ name: 'listAndTraverseConnections', class: authClassName })
     public listAndTraverseConnections(): AsyncCollection<Connection> {
         async function* load(this: Auth) {
             await loadIamProfilesIntoStore(this.store, this.iamProfileProvider)
@@ -338,11 +322,6 @@ export class Auth implements AuthService, ConnectionManager {
             ...profile,
             metadata: { connectionState: 'unauthenticated' },
         })
-
-        // Remove the split session logout prompt, if it exists.
-        if (!isAmazonQ()) {
-            await globals.globalState.update('aws.toolkit.separationPromptDismissed', true)
-        }
 
         try {
             ;(await tokenProvider.getToken()) ?? (await tokenProvider.createToken())
@@ -1135,72 +1114,4 @@ export function hasVendedIamCredentials(isC9?: boolean, isSM?: boolean) {
     isC9 ??= isCloud9()
     isSM ??= isSageMaker()
     return isSM || isC9
-}
-
-type LoginCommand = 'aws.toolkit.auth.manageConnections' | 'aws.codecatalyst.manageConnections'
-/**
- * Temporary class that handles notifiting users who were logged out as part of
- * splitting auth sessions between extensions.
- *
- * TODO: Remove after some time.
- */
-export class SessionSeparationPrompt {
-    // Local variable handles per session displays, e.g. we forgot a CodeCatalyst connection AND
-    // an Explorer only connection. We only want to display once in this case.
-    // However, we don't want to set this at the global state level until a user interacts with the
-    // notification in case they miss it the first time.
-    #separationPromptDisplayed = false
-
-    /**
-     * Open a prompt for that last used command name (or do nothing if no command name has ever been passed),
-     * which is useful to redisplay the prompt after reloads in case a user misses it.
-     */
-    public async showAnyPreviousPrompt() {
-        const cmd = globals.globalState.tryGet('aws.toolkit.separationPromptCommand', String)
-        return cmd ? await this.showForCommand(cmd as LoginCommand) : undefined
-    }
-
-    /**
-     * Displays a sign in prompt to the user if they have been logged out of the Toolkit as part of
-     * separating auth sessions between extensions. It will executed the passed command for sign in,
-     * (e.g. codecatalyst sign in vs explorer)
-     */
-    public async showForCommand(cmd: LoginCommand) {
-        if (
-            this.#separationPromptDisplayed ||
-            globals.globalState.get<boolean>('aws.toolkit.separationPromptDismissed')
-        ) {
-            return
-        }
-
-        await globals.globalState.update('aws.toolkit.separationPromptCommand', cmd)
-
-        await telemetry.toolkit_showNotification.run(async () => {
-            telemetry.record({ id: 'sessionSeparation' })
-            this.#separationPromptDisplayed = true
-            void vscode.window
-                .showWarningMessage(
-                    'Amazon Q and AWS Toolkit no longer share connections. Please sign in again to use AWS Toolkit.',
-                    'Sign In'
-                )
-                .then(async (resp) => {
-                    await telemetry.toolkit_invokeAction.run(async () => {
-                        telemetry.record({ source: 'sessionSeparationNotification' })
-                        if (resp === 'Sign In') {
-                            telemetry.record({ action: 'signIn' })
-                            await vscode.commands.executeCommand(cmd)
-                        } else {
-                            telemetry.record({ action: 'dismiss' })
-                        }
-
-                        await globals.globalState.update('aws.toolkit.separationPromptDismissed', true)
-                    })
-                })
-        })
-    }
-
-    static #instance: SessionSeparationPrompt
-    public static get instance() {
-        return (this.#instance ??= new SessionSeparationPrompt())
-    }
 }

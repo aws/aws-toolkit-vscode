@@ -14,7 +14,7 @@ import { setContext } from '../../shared/vscode/setContext'
 import { fs } from '../../shared/fs/fs'
 import { AppBuilderRootNode } from './explorer/nodes/rootNode'
 import { initWalkthroughProjectCommand, walkthroughContextString, getOrInstallCliWrapper } from './walkthrough'
-import { getLogger } from '../../shared/logger'
+import { getLogger } from '../../shared/logger/logger'
 import path from 'path'
 import { TreeNode } from '../../shared/treeview/resourceTreeDataProvider'
 import { runBuild } from '../../shared/sam/build'
@@ -23,7 +23,7 @@ import { ResourceNode } from './explorer/nodes/resourceNode'
 import { getSyncWizard, runSync } from '../../shared/sam/sync'
 import { getDeployWizard, runDeploy } from '../../shared/sam/deploy'
 import { DeployTypeWizard } from './wizards/deployTypeWizard'
-
+import { createNewServerlessLandProject } from './serverlessLand/main'
 export const templateToOpenAppComposer = 'aws.toolkit.appComposer.templateToOpenOnStart'
 
 /**
@@ -200,6 +200,11 @@ async function registerAppBuilderCommands(context: ExtContext): Promise<void> {
                     await runSync('infra', arg, undefined, choices.syncParam)
                 }
             }
+        }),
+        Commands.register({ id: 'aws.toolkit.lambda.createServerlessLandProject', autoconnect: false }, async () => {
+            await telemetry.lambda_createServerlessLandProject.run(async () => {
+                await createNewServerlessLandProject(context)
+            })
         })
     )
 }

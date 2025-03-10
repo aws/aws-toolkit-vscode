@@ -21,7 +21,7 @@ import {
     isClientFault,
     isNetworkError,
 } from '../../shared/errors'
-import { getLogger } from '../../shared/logger'
+import { getLogger } from '../../shared/logger/logger'
 import { AwsLoginWithBrowser, AwsRefreshCredentials, telemetry } from '../../shared/telemetry/telemetry'
 import { indent, toBase64URL } from '../../shared/utilities/textUtilities'
 import { AuthSSOServer } from './server'
@@ -808,7 +808,7 @@ class DiskCacheErrorMessage {
             : ToolkitPromptSettings.instance
 
         // We know 'ssoCacheError' is in all extension prompt settings
-        if (await promptSettings.isPromptEnabled('ssoCacheError')) {
+        if (promptSettings.isPromptEnabled('ssoCacheError')) {
             const result = await showMessage()
             if (result === dontShow) {
                 await promptSettings.disablePrompt('ssoCacheError')

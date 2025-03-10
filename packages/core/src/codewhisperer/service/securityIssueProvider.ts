@@ -12,7 +12,6 @@ export class SecurityIssueProvider {
     }
 
     private _issues: AggregatedCodeScanIssue[] = []
-    private _disableEventHandler: boolean = false
     public get issues() {
         return this._issues
     }
@@ -21,26 +20,20 @@ export class SecurityIssueProvider {
         this._issues = issues
     }
 
-    public disableEventHandler() {
-        this._disableEventHandler = true
-    }
-
     public handleDocumentChange(event: vscode.TextDocumentChangeEvent) {
         // handleDocumentChange function may be triggered while testing by our own code generation.
         if (!event.contentChanges || event.contentChanges.length === 0) {
             return
         }
-        if (this._disableEventHandler) {
-            this._disableEventHandler = false
-            return
-        }
-        const { changedRange, lineOffset } = event.contentChanges.reduce(
+        const { changedRange, changedText, lineOffset } = event.contentChanges.reduce(
             (acc, change) => ({
                 changedRange: acc.changedRange.union(change.range),
+                changedText: acc.changedText + change.text,
                 lineOffset: acc.lineOffset + this._getLineOffset(change.range, change.text),
             }),
             {
                 changedRange: event.contentChanges[0].range,
+                changedText: '',
                 lineOffset: 0,
             }
         )
@@ -52,18 +45,16 @@ export class SecurityIssueProvider {
             return {
                 ...group,
                 issues: group.issues
-                    .filter(
-                        (issue) =>
-                            // Filter out any modified issues
-                            !changedRange.intersection(
-                                new vscode.Range(
-                                    issue.startLine,
-                                    event.document.lineAt(issue.startLine)?.range.start.character ?? 0,
-                                    issue.endLine,
-                                    event.document.lineAt(issue.endLine)?.range.end.character ?? 0
-                                )
-                            )
-                    )
+                    .filter((issue) => {
+                        const range = new vscode.Range(
+                            issue.startLine,
+                            event.document.lineAt(issue.startLine)?.range.start.character ?? 0,
+                            issue.endLine,
+                            event.document.lineAt(issue.endLine - 1)?.range.end.character ?? 0
+                        )
+                        const intersection = changedRange.intersection(range)
+                        return !(intersection && (/\S/.test(changedText) || changedText === ''))
+                    })
                     .map((issue) => {
                         if (issue.startLine < changedRange.end.line) {
                             return issue
@@ -136,5 +127,33 @@ export class SecurityIssueProvider {
                 issues: group.issues.map((i) => (i.findingId === issue.findingId ? issue : i)),
             }
         })
+    }
+
+    public mergeIssues(newIssues: AggregatedCodeScanIssue) {
+        const existingGroup = this._issues.find((group) => group.filePath === newIssues.filePath)
+        if (!existingGroup) {
+            this._issues.push(newIssues)
+            return
+        }
+
+        this._issues = this._issues.map((group) =>
+            group.filePath !== newIssues.filePath
+                ? group
+                : {
+                      ...group,
+                      issues: [
+                          ...group.issues,
+                          ...newIssues.issues.filter((issue) => !this.isExistingIssue(issue, newIssues.filePath)),
+                      ],
+                  }
+        )
+    }
+
+    private isExistingIssue(issue: CodeScanIssue, filePath: string) {
+        return this._issues
+            .find((group) => group.filePath === filePath)
+            ?.issues.find(
+                (i) => i.title === issue.title && i.startLine === issue.startLine && i.endLine === issue.endLine
+            )
     }
 }

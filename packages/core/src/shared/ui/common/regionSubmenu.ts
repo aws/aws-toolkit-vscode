@@ -11,7 +11,7 @@ import { createRegionPrompter } from './region'
 import { QuickPickPrompter } from '../pickerPrompter'
 import { Region } from '../../regions/endpoints'
 import { createRefreshButton } from '../buttons'
-import { getLogger } from '../../logger'
+import { getLogger } from '../../logger/logger'
 
 const switchRegion = Symbol('switchRegion')
 

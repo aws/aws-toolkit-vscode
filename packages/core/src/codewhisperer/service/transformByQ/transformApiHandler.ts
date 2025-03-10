@@ -22,7 +22,7 @@ import {
     TransformByQStoppedError,
     ZipManifest,
 } from '../../models/model'
-import { getLogger } from '../../../shared/logger'
+import { getLogger } from '../../../shared/logger/logger'
 import {
     CreateUploadUrlResponse,
     ProgressUpdates,
@@ -49,6 +49,7 @@ import { ChatSessionManager } from '../../../amazonqGumby/chat/storages/chatSess
 import { encodeHTML } from '../../../shared/utilities/textUtilities'
 import { convertToTimeString } from '../../../shared/datetime'
 import { getAuthType } from '../../../auth/utils'
+import { UserWrittenCodeTracker } from '../../tracker/userWrittenCodeTracker'
 
 export function getSha256(buffer: Buffer) {
     const hasher = crypto.createHash('sha256')
@@ -103,18 +104,47 @@ export async function uploadArtifactToS3(
     try {
         const uploadFileByteSize = (await nodefs.promises.stat(fileName)).size
         getLogger().info(
-            `Uploading project artifact at %s with checksum %s using uploadId: %s and size %s kB`,
+            `CodeTransformation: Uploading project artifact at %s with checksum %s using uploadId: %s and size %s kB`,
             fileName,
             sha256,
             resp.uploadId,
             Math.round(uploadFileByteSize / 1000)
         )
 
-        const response = await request.fetch('PUT', resp.uploadUrl, {
-            body: buffer,
-            headers: getHeadersObj(sha256, resp.kmsKeyArn),
-        }).response
-        getLogger().info(`CodeTransformation: Status from S3 Upload = ${response.status}`)
+        let response = undefined
+        /* The existing S3 client has built-in retries but it requires the bucket name, so until
+         * CreateUploadUrl can be modified to return the S3 bucket name, manually implement retries.
+         * Alternatively, when waitUntil supports a fixed number of retries and retriableCodes, use that.
+         */
+        const retriableCodes = [408, 429, 500, 502, 503, 504]
+        for (let i = 0; i < 4; i++) {
+            try {
+                response = await request.fetch('PUT', resp.uploadUrl, {
+                    body: buffer,
+                    headers: getHeadersObj(sha256, resp.kmsKeyArn),
+                }).response
+                getLogger().info(`CodeTransformation: upload to S3 status on attempt ${i + 1}/4 = ${response.status}`)
+                if (response.status === 200) {
+                    break
+                }
+                throw new Error(
+                    `Upload failed, status = ${response.status}; full response: ${JSON.stringify(response)}`
+                )
+            } catch (e: any) {
+                if (response && !retriableCodes.includes(response.status)) {
+                    throw new Error(`Upload failed with status code = ${response.status}; did not automatically retry`)
+                }
+                if (i !== 3) {
+                    await sleep(1000 * Math.pow(2, i))
+                }
+            }
+        }
+        if (!response || response.status !== 200) {
+            const uploadFailedError = `Upload failed after up to 4 attempts with status code = ${response?.status ?? 'unavailable'}`
+            getLogger().error(`CodeTransformation: ${uploadFailedError}`)
+            throw new Error(uploadFailedError)
+        }
+        getLogger().info('CodeTransformation: Upload to S3 succeeded')
     } catch (e: any) {
         let errorMessage = `The upload failed due to: ${(e as Error).message}. For more information, see the [Amazon Q documentation](${CodeWhispererConstants.codeTransformTroubleshootUploadError})`
         if (errorMessage.includes('Request has expired')) {
@@ -141,7 +171,7 @@ export async function resumeTransformationJob(jobId: string, userActionStatus: T
         }
     } catch (e: any) {
         const errorMessage = `Resuming the job failed due to: ${(e as Error).message}`
-        getLogger().error(`CodeTransformation: ResumeTransformation error = ${errorMessage}`)
+        getLogger().error(`CodeTransformation: ResumeTransformation error = %O`, e)
         throw new Error(errorMessage)
     }
 }
@@ -152,18 +182,12 @@ export async function stopJob(jobId: string) {
     }
 
     try {
-        const response = await codeWhisperer.codeWhispererClient.codeModernizerStopCodeTransformation({
+        await codeWhisperer.codeWhispererClient.codeModernizerStopCodeTransformation({
             transformationJobId: jobId,
         })
-        if (response !== undefined) {
-            // always store request ID, but it will only show up in a notification if an error occurs
-            if (response.$response.requestId) {
-                transformByQState.setJobFailureMetadata(` (request ID: ${response.$response.requestId})`)
-            }
-        }
     } catch (e: any) {
-        const errorMessage = (e as Error).message
-        getLogger().error(`CodeTransformation: StopTransformation error = ${errorMessage}`)
+        transformByQState.setJobFailureMetadata(` (request ID: ${e.requestId ?? 'unavailable'})`)
+        getLogger().error(`CodeTransformation: StopTransformation error = %O`, e)
         throw new Error('Stop job failed')
     }
 }
@@ -181,12 +205,10 @@ export async function uploadPayload(payloadFileName: string, uploadContext?: Upl
             uploadIntent: CodeWhispererConstants.uploadIntent,
             uploadContext,
         })
-        if (response.$response.requestId) {
-            transformByQState.setJobFailureMetadata(` (request ID: ${response.$response.requestId})`)
-        }
     } catch (e: any) {
-        const errorMessage = `The upload failed due to: ${(e as Error).message}`
-        getLogger().error(`CodeTransformation: CreateUploadUrl error: = ${e}`)
+        const errorMessage = `Creating the upload URL failed due to: ${(e as Error).message}`
+        transformByQState.setJobFailureMetadata(` (request ID: ${e.requestId ?? 'unavailable'})`)
+        getLogger().error(`CodeTransformation: CreateUploadUrl error: = %O`, e)
         throw new Error(errorMessage)
     }
 
@@ -332,9 +354,9 @@ export async function zipCode(
                 },
             }
             // TO-DO: later consider making this add to path.join(zipManifest.dependenciesRoot, 'qct-sct-metadata', entry.entryName) so that it's more organized
-            metadataZip
-                .getEntries()
-                .forEach((entry) => zip.addFile(path.join(zipManifest.dependenciesRoot, entry.name), entry.getData()))
+            for (const entry of metadataZip.getEntries()) {
+                zip.addFile(path.join(zipManifest.dependenciesRoot, entry.name), entry.getData())
+            }
             const sqlMetadataSize = (await nodefs.promises.stat(transformByQState.getMetadataPathSQL())).size
             getLogger().info(`CodeTransformation: SQL metadata file size = ${sqlMetadataSize}`)
         }
@@ -417,16 +439,15 @@ export async function startJob(uploadId: string) {
             transformationSpec: {
                 transformationType: CodeWhispererConstants.transformationType, // shared b/w language upgrades & sql conversions for now
                 source: { language: sourceLanguageVersion }, // dummy value of JDK8 used for SQL conversions just so that this API can be called
-                target: { language: targetLanguageVersion }, // always JDK17
+                target: { language: targetLanguageVersion }, // JAVA_17 or JAVA_21
             },
         })
-        if (response.$response.requestId) {
-            transformByQState.setJobFailureMetadata(` (request ID: ${response.$response.requestId})`)
-        }
+        getLogger().info('CodeTransformation: called startJob API successfully')
         return response.transformationJobId
     } catch (e: any) {
         const errorMessage = `Starting the job failed due to: ${(e as Error).message}`
-        getLogger().error(`CodeTransformation: StartTransformation error = ${errorMessage}`)
+        transformByQState.setJobFailureMetadata(` (request ID: ${e.requestId ?? 'unavailable'})`)
+        getLogger().error(`CodeTransformation: StartTransformation error = %O`, e)
         throw new Error(errorMessage)
     }
 }
@@ -485,17 +506,26 @@ export function addTableMarkdown(plan: string, stepId: string, tableMapping: { [
         return plan
     }
     const table = JSON.parse(tableObj)
+    if (table.rows.length === 0) {
+        // empty table
+        plan += `\n\nThere are no ${table.name.toLowerCase()} to display.\n\n`
+        return plan
+    }
     plan += `\n\n\n${table.name}\n|`
     const columns = table.columnNames
+    // eslint-disable-next-line unicorn/no-array-for-each
     columns.forEach((columnName: string) => {
         plan += ` ${getFormattedString(columnName)} |`
     })
     plan += '\n|'
+    // eslint-disable-next-line unicorn/no-array-for-each
     columns.forEach((_: any) => {
         plan += '-----|'
     })
+    // eslint-disable-next-line unicorn/no-array-for-each
     table.rows.forEach((row: any) => {
         plan += '\n|'
+        // eslint-disable-next-line unicorn/no-array-for-each
         columns.forEach((columnName: string) => {
             if (columnName === 'relativePath') {
                 plan += ` [${row[columnName]}](${row[columnName]}) |` // add MD link only for files
@@ -510,11 +540,11 @@ export function addTableMarkdown(plan: string, stepId: string, tableMapping: { [
 
 export function getTableMapping(stepZeroProgressUpdates: ProgressUpdates) {
     const map: { [key: string]: string } = {}
-    stepZeroProgressUpdates.forEach((update) => {
+    for (const update of stepZeroProgressUpdates) {
         // description should never be undefined since even if no data we show an empty table
         // but just in case, empty string allows us to skip this table without errors when rendering
         map[update.name] = update.description ?? ''
-    })
+    }
     return map
 }
 
@@ -524,6 +554,7 @@ export function getJobStatisticsHtml(jobStatistics: any) {
         return htmlString
     }
     htmlString += `<div style="flex: 1; margin-left: 20px; border: 1px solid #424750; border-radius: 8px; padding: 10px;">`
+    // eslint-disable-next-line unicorn/no-array-for-each
     jobStatistics.forEach((stat: { name: string; value: string }) => {
         htmlString += `<p style="margin-bottom: 4px"><img src="${getTransformationIcon(
             stat.name
@@ -539,9 +570,6 @@ export async function getTransformationPlan(jobId: string) {
         response = await codeWhisperer.codeWhispererClient.codeModernizerGetCodeTransformationPlan({
             transformationJobId: jobId,
         })
-        if (response.$response.requestId) {
-            transformByQState.setJobFailureMetadata(` (request ID: ${response.$response.requestId})`)
-        }
 
         const stepZeroProgressUpdates = response.transformationPlan.transformationSteps[0].progressUpdates
 
@@ -573,24 +601,25 @@ export async function getTransformationPlan(jobId: string) {
             CodeWhispererConstants.planIntroductionMessage
         }</p></div>${getJobStatisticsHtml(jobStatistics)}</div>`
         plan += `<div style="margin-top: 32px; border: 1px solid #424750; border-radius: 8px; padding: 10px;"><p style="font-size: 18px; margin-bottom: 4px;"><b>${CodeWhispererConstants.planHeaderMessage}</b></p><i>${CodeWhispererConstants.planDisclaimerMessage} <a href="https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/code-transformation.html">Read more.</a></i><br><br>`
-        response.transformationPlan.transformationSteps.slice(1).forEach((step) => {
+        for (const step of response.transformationPlan.transformationSteps.slice(1)) {
             plan += `<div style="border: 1px solid #424750; border-radius: 8px; padding: 20px;"><div style="display:flex; justify-content:space-between; align-items:center;"><p style="font-size: 16px; margin-bottom: 4px;">${step.name}</p><a href="#top">Scroll to top <img src="${arrowIcon}" style="vertical-align: middle"></a></div><p>${step.description}</p>`
             plan = addTableMarkdown(plan, step.id, tableMapping)
             plan += `</div><br>`
-        })
+        }
         plan += `</div><br>`
         plan += `<p style="font-size: 18px; margin-bottom: 4px;"><b>Appendix</b><br><a href="#top" style="float: right; font-size: 14px;">Scroll to top <img src="${arrowIcon}" style="vertical-align: middle;"></a></p><br>`
         plan = addTableMarkdown(plan, '-1', tableMapping) // ID of '-1' reserved for appendix table
         return plan
     } catch (e: any) {
         const errorMessage = (e as Error).message
-        getLogger().error(`CodeTransformation: GetTransformationPlan error = ${errorMessage}`)
+        transformByQState.setJobFailureMetadata(` (request ID: ${e.requestId ?? 'unavailable'})`)
+        getLogger().error(`CodeTransformation: GetTransformationPlan error = %O`, e)
 
         /* Means API call failed
          * If response is defined, means a display/parsing error occurred, so continue transformation
          */
         if (response === undefined) {
-            throw new Error('Get plan API call failed')
+            throw new Error(errorMessage)
         }
     }
 }
@@ -604,13 +633,10 @@ export async function getTransformationSteps(jobId: string, handleThrottleFlag: 
         const response = await codeWhisperer.codeWhispererClient.codeModernizerGetCodeTransformationPlan({
             transformationJobId: jobId,
         })
-        if (response.$response.requestId) {
-            transformByQState.setJobFailureMetadata(` (request ID: ${response.$response.requestId})`)
-        }
         return response.transformationPlan.transformationSteps.slice(1) // skip step 0 (contains supplemental info)
     } catch (e: any) {
-        const errorMessage = (e as Error).message
-        getLogger().error(`CodeTransformation: GetTransformationPlan error = ${errorMessage}`)
+        transformByQState.setJobFailureMetadata(` (request ID: ${e.requestId ?? 'unavailable'})`)
+        getLogger().error(`CodeTransformation: GetTransformationPlan error = %O`, e)
         throw e
     }
 }
@@ -638,6 +664,7 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
                 })
             }
             transformByQState.setPolledJobStatus(status)
+            getLogger().info(`CodeTransformation: polled job status = ${status}`)
 
             const errorMessage = response.transformationJob.reason
             if (errorMessage !== undefined) {
@@ -647,7 +674,6 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
                 transformByQState.setJobFailureErrorNotification(
                     `${CodeWhispererConstants.failedToCompleteJobGenericNotification} ${errorMessage}`
                 )
-                transformByQState.setJobFailureMetadata(` (request ID: ${response.$response.requestId})`)
             }
             if (validStates.includes(status)) {
                 break
@@ -665,14 +691,12 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
              * is called, we break above on validStatesForCheckingDownloadUrl and check final status in finalizeTransformationJob
              */
             if (CodeWhispererConstants.failureStates.includes(status)) {
-                transformByQState.setJobFailureMetadata(` (request ID: ${response.$response.requestId})`)
-                throw new JobStoppedError(response.$response.requestId)
+                throw new JobStoppedError()
             }
             await sleep(CodeWhispererConstants.transformationJobPollingIntervalSeconds * 1000)
         } catch (e: any) {
-            let errorMessage = (e as Error).message
-            errorMessage += ` -- ${transformByQState.getJobFailureMetadata()}`
-            getLogger().error(`CodeTransformation: GetTransformation error = ${errorMessage}`)
+            getLogger().error(`CodeTransformation: GetTransformation error = %O`, e)
+            transformByQState.setJobFailureMetadata(` (request ID: ${e.requestId ?? 'unavailable'})`)
             throw e
         }
     }
@@ -717,7 +741,6 @@ export async function downloadResultArchive(
     pathToArchive: string,
     downloadArtifactType: TransformationDownloadArtifactType
 ) {
-    let downloadErrorMessage = undefined
     const cwStreamingClient = await createCodeWhispererChatStreamingClient()
 
     try {
@@ -730,11 +753,11 @@ export async function downloadResultArchive(
             pathToArchive
         )
     } catch (e: any) {
-        downloadErrorMessage = (e as Error).message
-        getLogger().error(`CodeTransformation: ExportResultArchive error = ${downloadErrorMessage}`)
+        getLogger().error(`CodeTransformation: ExportResultArchive error = %O`, e)
         throw e
     } finally {
         cwStreamingClient.destroy()
+        UserWrittenCodeTracker.instance.onQFeatureInvoked()
     }
 }
 
@@ -759,7 +782,7 @@ export async function downloadAndExtractResultArchive(
         zip.extractAllTo(pathToArchiveDir)
     } catch (e) {
         downloadErrorMessage = (e as Error).message
-        getLogger().error(`CodeTransformation: ExportResultArchive error = ${downloadErrorMessage}`)
+        getLogger().error(`CodeTransformation: ExportResultArchive error = %O`, e)
         throw new Error('Error downloading transformation result artifacts: ' + downloadErrorMessage)
     }
 }

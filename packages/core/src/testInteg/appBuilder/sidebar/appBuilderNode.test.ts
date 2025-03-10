@@ -10,7 +10,7 @@ import { detectSamProjects } from '../../../awsService/appBuilder/explorer/detec
 import { SamAppLocation } from '../../../awsService/appBuilder/explorer/samProject'
 import { AppNode } from '../../../awsService/appBuilder/explorer/nodes/appNode'
 import { ResourceNode } from '../../../awsService/appBuilder/explorer/nodes/resourceNode'
-import sinon from 'sinon'
+import * as sinon from 'sinon'
 import { writeSamconfigGlobal, SamConfig } from '../../../shared/sam/config'
 import { globals, sleep } from '../../../shared'
 import path from 'path'
@@ -18,9 +18,9 @@ import path from 'path'
 describe('Application Builder', async () => {
     let rootNode: sinon.SinonSpiedInstance<AppBuilderRootNode>
     let projects: SamAppLocation[]
-    let sandbox: sinon.SinonSandbox
     let originalWalkThroughState: boolean
     let projectNodes: any[]
+    let sandbox: sinon.SinonSandbox
 
     before(async () => {
         sandbox = sinon.createSandbox()
@@ -33,6 +33,7 @@ describe('Application Builder', async () => {
             },
         ])
         rootNode = sandbox.spy(AppBuilderRootNode.instance)
+
         projects = await detectSamProjects()
 
         // Set the walkthrough status to true to ensure the root node has a walkthrough node
@@ -41,9 +42,9 @@ describe('Application Builder', async () => {
     })
 
     after(async () => {
-        sandbox.restore()
         // Restore original status of walkthroughCompleted status
         await globals.globalState.update('aws.toolkit.lambda.walkthroughCompleted', originalWalkThroughState)
+        sandbox.restore()
     })
 
     describe('root node', async () => {
@@ -110,7 +111,7 @@ describe('Application Builder', async () => {
 
             const expectedStackName = await samConfig.getCommandParam('global', 'stack_name')
             const expectedRegion = await samConfig.getCommandParam('global', 'region')
-            appBuilderTestAppResourceNodes.forEach((node) => {
+            for (const node of appBuilderTestAppResourceNodes) {
                 if (node instanceof ResourceNode) {
                     assert.strictEqual(node.resource.region, expectedRegion)
                     assert.strictEqual(node.resource.stackName, expectedStackName)
@@ -119,7 +120,7 @@ describe('Application Builder', async () => {
                 } else {
                     assert.fail('Node is not an instance of ResourceNode')
                 }
-            })
+            }
 
             // Validate Lambda resource node
             const lambdaResourceNode = getResourceNodeByType(

@@ -107,7 +107,7 @@ describe('workspaceUtils', () => {
             globals.codelensRootRegistry.dispose()
         })
 
-        testScenarios.forEach((test) => {
+        for (const test of testScenarios) {
             it(test.scenario, async () => {
                 filesToDelete = test.filesToUse
                 for (const file of test.filesToUse) {
@@ -125,7 +125,7 @@ describe('workspaceUtils', () => {
                     assert.strictEqual(projectFile, test.expectedResult)
                 }
             })
-        })
+        }
     })
 
     describe('getWorkspaceRelativePath', function () {
@@ -196,7 +196,7 @@ describe('workspaceUtils', () => {
             const result = await collectFiles(
                 workspaces.map((ws) => ws.uri.fsPath),
                 workspaces,
-                false
+                { excludeByGitIgnore: false }
             )
             assert.strictEqual(
                 result.length,
@@ -256,7 +256,7 @@ describe('workspaceUtils', () => {
             await writeFile(['src', 'folder3', 'negate_test1'], fileContent)
             await writeFile(['src', 'folder3', 'negate_test6'], fileContent)
 
-            const result = (await collectFiles([workspaceFolder.uri.fsPath], [workspaceFolder], true))
+            const result = (await collectFiles([workspaceFolder.uri.fsPath], [workspaceFolder]))
                 // for some reason, uri created inline differ in subfields, so skipping them from assertion
                 .map(({ fileUri, zipFilePath, ...r }) => ({ ...r }))
 
@@ -331,7 +331,7 @@ describe('workspaceUtils', () => {
             // add a non license file too, to make sure it is returned
             await toFile(fileContent, path.join(workspace.uri.fsPath, 'non-license.md'))
 
-            const result = await collectFiles([workspace.uri.fsPath], [workspace], true)
+            const result = await collectFiles([workspace.uri.fsPath], [workspace])
 
             assert.deepStrictEqual(1, result.length)
             assert.deepStrictEqual('non-license.md', result[0].relativeFilePath)

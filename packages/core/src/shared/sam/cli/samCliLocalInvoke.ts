@@ -3,10 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as proc from 'child_process'
+import { SpawnOptions } from 'child_process' // eslint-disable-line no-restricted-imports
 import { pushIf } from '../../utilities/collectionUtils'
 import * as nls from 'vscode-nls'
-import { getLogger, getDebugConsoleLogger, Logger } from '../../logger'
+import { getLogger, getDebugConsoleLogger, Logger } from '../../logger/logger'
 import { ChildProcess } from '../../utilities/processUtils'
 import { Timeout } from '../../utilities/timeoutUtils'
 import { removeAnsi } from '../../utilities/textUtilities'
@@ -15,12 +15,14 @@ import globals from '../../extensionGlobals'
 import { SamCliSettings } from './samCliSettings'
 import { addTelemetryEnvVar, collectSamErrors, SamCliError } from './samCliInvokerUtils'
 import { fs } from '../../fs/fs'
+import { Runtime } from 'aws-sdk/clients/lambda'
+import { getSamCliPathAndVersion } from '../utils'
+import { deprecatedRuntimes } from '../../../lambda/models/samLambdaRuntime'
 
 const localize = nls.loadMessageBundle()
 
 export const waitForDebuggerMessages = {
     PYTHON: 'Debugger waiting for client...',
-    PYTHON_IKPDB: 'IKP3db listening on',
     NODEJS: 'Debugger listening on',
     DOTNET: 'Waiting for the debugger to attach...',
     GO_DELVE: 'launching process with args', // Comes from https://github.com/go-delve/delve/blob/f5d2e132bca763d222680815ace98601c2396517/service/debugger/debugger.go#L187
@@ -30,7 +32,7 @@ export const waitForDebuggerMessages = {
 export interface SamLocalInvokeCommandArgs {
     command: string
     args: string[]
-    options?: proc.SpawnOptions
+    options?: SpawnOptions
     /** Wait until strings specified in `debuggerAttachCues` appear in the process output.  */
     waitForCues: boolean
     timeout?: Timeout
@@ -218,6 +220,8 @@ export interface SamCliLocalInvokeInvocationArguments {
     name?: string
     /** AWS region */
     region?: string
+    /** Overrides the template-specified runtime. */
+    runtime?: Runtime
 }
 
 /**
@@ -266,6 +270,17 @@ export class SamCliLocalInvokeInvocation {
             ...(this.args.parameterOverrides ?? [])
         )
         invokeArgs.push(...(this.args.extraArgs ?? []))
+
+        // Get samcli version
+        const { parsedVersion } = await getSamCliPathAndVersion()
+
+        // '--runtime' option for sam local invoke is only available in SAM CLI 1.135.0 and later
+        if ((parsedVersion?.compare('1.135.0') ?? -1) >= 0) {
+            // check if the runtime is valid (not deprecated)
+            if (this.args.runtime && !deprecatedRuntimes.has(this.args.runtime)) {
+                pushIf(invokeArgs, true, '--runtime', this.args.runtime)
+            }
+        }
 
         return await this.args.invoker.invoke({
             options: {

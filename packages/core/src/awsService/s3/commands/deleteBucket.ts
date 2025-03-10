@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { getLogger } from '../../../shared/logger'
+import { getLogger } from '../../../shared/logger/logger'
 import { localize } from '../../../shared/utilities/vsCodeUtils'
 import { S3BucketNode } from '../explorer/s3BucketNode'
 import { S3Node } from '../explorer/s3Nodes'
@@ -30,23 +30,23 @@ export async function deleteBucketCommand(node: S3BucketNode): Promise<void> {
     getLogger().debug('DeleteBucket called for %O', node)
 
     await telemetry.s3_deleteBucket.run(async () => {
-        const isConfirmed = await showConfirmationDialog(node.bucket.name)
+        const isConfirmed = await showConfirmationDialog(node.bucket.Name)
         if (!isConfirmed) {
             throw new CancellationError('user')
         }
 
-        getLogger().info(`Deleting bucket: ${node.bucket.name}`)
+        getLogger().info(`Deleting bucket: ${node.bucket.Name}`)
         await deleteWithProgress(node)
             .catch((e) => {
                 const message = localize(
                     'AWS.s3.deleteBucket.error.general',
                     'Failed to delete bucket {0}',
-                    node.bucket.name
+                    node.bucket.Name
                 )
                 throw ToolkitError.chain(e, message)
             })
             .finally(() => refreshNode(node.parent))
-        getLogger().info(`deleted bucket: ${node.bucket.name}`)
+        getLogger().info(`deleted bucket: ${node.bucket.Name}`)
     })
 }
 
@@ -65,7 +65,7 @@ async function deleteWithProgress(node: S3BucketNode): Promise<void> {
     return vscode.window.withProgress(
         {
             location: vscode.ProgressLocation.Notification,
-            title: localize('AWS.s3.deleteBucket.progressTitle', 'Deleting {0}...', node.bucket.name),
+            title: localize('AWS.s3.deleteBucket.progressTitle', 'Deleting {0}...', node.bucket.Name),
         },
         () => {
             return node.deleteBucket()

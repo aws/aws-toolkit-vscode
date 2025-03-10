@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { sleep, Timeout } from './timeoutUtils'
+import { Timeout } from './timeoutUtils'
 
 /**
  * Creates a function that always returns a 'shared' Promise.
@@ -85,38 +85,28 @@ export function memoize<T, U extends any[]>(fn: (...args: U) => T): (...args: U)
  * Multiple calls made during the debounce window will receive references to the
  * same Promise similar to {@link shared}. The window will also be 'rolled', delaying
  * the execution by another {@link delay} milliseconds.
+ *
+ * This function prevents execution until {@link delay} milliseconds have passed
+ * since the last invocation regardless of arguments. If this should be
+ * argument dependent, look into {@link keyedDebounce}
  */
-export function debounce<T>(cb: () => T | Promise<T>, delay: number = 0): () => Promise<T> {
-    let timeout: Timeout | undefined
-    let promise: Promise<T> | undefined
-
-    return () => {
-        timeout?.refresh()
-
-        return (promise ??= new Promise<T>((resolve, reject) => {
-            timeout = new Timeout(delay)
-            timeout.onCompletion(async () => {
-                timeout = promise = undefined
-                try {
-                    resolve(await cb())
-                } catch (err) {
-                    reject(err)
-                }
-            })
-        }))
-    }
+export function debounce<Input extends any[], Output>(
+    cb: (...args: Input) => Output | Promise<Output>,
+    delay: number = 0
+): (...args: Input) => Promise<Output> {
+    return cancellableDebounce(cb, delay).promise
 }
 
 /**
  *
- * Similar to {@link debounce}, but allows the function to be cancelled and allow callbacks to pass function parameters.
+ * Similar to {@link debounce}, but allows the function to be cancelled.
  */
-export function cancellableDebounce<T, U extends any[]>(
-    cb: (...args: U) => T | Promise<T>,
+export function cancellableDebounce<Input extends any[], Output>(
+    cb: (...args: Input) => Output | Promise<Output>,
     delay: number = 0
-): { promise: (...args: U) => Promise<T>; cancel: () => void } {
+): { promise: (...args: Input) => Promise<Output>; cancel: () => void } {
     let timeout: Timeout | undefined
-    let promise: Promise<T> | undefined
+    let promise: Promise<Output> | undefined
 
     const cancel = (): void => {
         if (timeout) {
@@ -127,15 +117,15 @@ export function cancellableDebounce<T, U extends any[]>(
     }
 
     return {
-        promise: (...arg) => {
+        promise: (...args: Input) => {
             timeout?.refresh()
 
-            return (promise ??= new Promise<T>((resolve, reject) => {
+            return (promise ??= new Promise<Output>((resolve, reject) => {
                 timeout = new Timeout(delay)
                 timeout.onCompletion(async () => {
                     timeout = promise = undefined
                     try {
-                        resolve(await cb(...arg))
+                        resolve(await cb(...args))
                     } catch (err) {
                         reject(err)
                     }
@@ -147,32 +137,22 @@ export function cancellableDebounce<T, U extends any[]>(
 }
 
 /**
- * Executes the given function, retrying if it throws.
  *
- * @param opts - if no opts given, defaults are used
+ * Similar to {@link debounce}, but uses a key to determine if the function should be called yet rather than a timeout connected to the function itself.
  */
-export async function withRetries<T>(
-    fn: () => Promise<T>,
-    opts?: { maxRetries?: number; delay?: number; backoff?: number }
-): Promise<T> {
-    const maxRetries = opts?.maxRetries ?? 3
-    const delay = opts?.delay ?? 0
-    const backoff = opts?.backoff ?? 1
+export function keyedDebounce<T, U extends any[], K extends string = string>(
+    fn: (key: K, ...args: U) => Promise<T>
+): typeof fn {
+    const pending = new Map<K, Promise<T>>()
 
-    let retryCount = 0
-    let latestDelay = delay
-    while (true) {
-        try {
-            return await fn()
-        } catch (err) {
-            retryCount++
-            if (retryCount >= maxRetries) {
-                throw err
-            }
-            if (latestDelay > 0) {
-                await sleep(latestDelay)
-                latestDelay = latestDelay * backoff
-            }
+    return (key, ...args) => {
+        if (pending.has(key)) {
+            return pending.get(key)!
         }
+
+        const promise = fn(key, ...args).finally(() => pending.delete(key))
+        pending.set(key, promise)
+
+        return promise
     }
 }

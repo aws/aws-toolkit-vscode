@@ -12,7 +12,7 @@ import { telemetry } from '../shared/telemetry/telemetry'
 import { onFileChanged } from './handlers/onFileChangedHandler'
 import { onThemeChanged } from './handlers/onThemeChangedHandler'
 import { sendThreatComposerOpenCancelled } from './handlers/webviewTelemetryHandler'
-import { getLogger } from '../shared/logger'
+import { getLogger } from '../shared/logger/logger'
 
 const localize = nls.loadMessageBundle()
 
@@ -186,9 +186,9 @@ export class ThreatComposerEditor {
                             this.isPanelDisposed = true
                             contextObject.loaderNotification?.promiseResolve()
                             this.onVisualizationDisposeEmitter.fire()
-                            this.disposables.forEach((disposable) => {
+                            for (const disposable of this.disposables) {
                                 disposable.dispose()
-                            })
+                            }
                             this.onVisualizationDisposeEmitter.dispose()
                         })
                     }

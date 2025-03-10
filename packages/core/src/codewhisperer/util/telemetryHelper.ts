@@ -13,6 +13,7 @@ import {
     CodewhispererPreviousSuggestionState,
     CodewhispererUserDecision,
     CodewhispererUserTriggerDecision,
+    Status,
     telemetry,
 } from '../../shared/telemetry/telemetry'
 import { CodewhispererCompletionType, CodewhispererSuggestionState } from '../../shared/telemetry/telemetry'
@@ -21,18 +22,28 @@ import { CodeWhispererSettings } from './codewhispererSettings'
 import { getSelectedCustomization } from './customizationUtil'
 import { AuthUtil } from './authUtil'
 import { isAwsError } from '../../shared/errors'
-import { getLogger } from '../../shared/logger'
+import { getLogger } from '../../shared/logger/logger'
 import { session } from './codeWhispererSession'
 import { CodeWhispererSupplementalContext } from '../models/model'
 import { FeatureConfigProvider } from '../../shared/featureConfig'
 import { CodeScanRemediationsEventType } from '../client/codewhispereruserclient'
 import { CodeAnalysisScope as CodeAnalysisScopeClientSide } from '../models/constants'
+import { Session } from '../../amazonqTest/chat/session/session'
 
 export class TelemetryHelper {
     // Some variables for client component latency
-    private sdkApiCallEndTime = 0
-    private allPaginationEndTime = 0
-    private firstResponseRequestId = ''
+    private _sdkApiCallEndTime = 0
+    get sdkApiCallEndTime(): number {
+        return this._sdkApiCallEndTime
+    }
+    private _allPaginationEndTime = 0
+    get allPaginationEndTime(): number {
+        return this._allPaginationEndTime
+    }
+    private _firstResponseRequestId = ''
+    get firstResponseRequestId(): string {
+        return this._firstResponseRequestId
+    }
     // variables for user trigger decision
     // these will be cleared after a invocation session
     private sessionDecisions: CodewhispererUserTriggerDecision[] = []
@@ -55,6 +66,54 @@ export class TelemetryHelper {
 
     public static get instance() {
         return (this.#instance ??= new this())
+    }
+
+    public sendTestGenerationToolkitEvent(
+        session: Session,
+        isSupportedLanguage: boolean,
+        isFileInWorkspace: boolean,
+        result: 'Succeeded' | 'Failed' | 'Cancelled',
+        requestId?: string,
+        perfClientLatency?: number,
+        reasonDesc?: string,
+        isCodeBlockSelected?: boolean,
+        artifactsUploadDuration?: number,
+        buildPayloadBytes?: number,
+        buildZipFileBytes?: number,
+        acceptedCharactersCount?: number,
+        acceptedCount?: number,
+        acceptedLinesCount?: number,
+        generatedCharactersCount?: number,
+        generatedCount?: number,
+        generatedLinesCount?: number,
+        reason?: string,
+        status?: Status
+    ) {
+        telemetry.amazonq_utgGenerateTests.emit({
+            cwsprChatProgrammingLanguage: session.fileLanguage ?? 'plaintext',
+            hasUserPromptSupplied: session.hasUserPromptSupplied,
+            isSupportedLanguage: session.isSupportedLanguage,
+            isFileInWorkspace: isFileInWorkspace,
+            result: result,
+            artifactsUploadDuration: artifactsUploadDuration,
+            buildPayloadBytes: buildPayloadBytes,
+            buildZipFileBytes: buildZipFileBytes,
+            credentialStartUrl: AuthUtil.instance.startUrl,
+            acceptedCharactersCount: acceptedCharactersCount,
+            acceptedCount: acceptedCount,
+            acceptedLinesCount: acceptedLinesCount,
+            generatedCharactersCount: generatedCharactersCount,
+            generatedCount: generatedCount,
+            generatedLinesCount: generatedLinesCount,
+            isCodeBlockSelected: isCodeBlockSelected,
+            jobGroup: session.testGenerationJobGroupName,
+            jobId: session.listOfTestGenerationJobId[0],
+            perfClientLatency: perfClientLatency,
+            requestId: requestId,
+            reasonDesc: reasonDesc,
+            reason: reason,
+            status: status,
+        })
     }
 
     public recordServiceInvocationTelemetry(
@@ -212,7 +271,7 @@ export class TelemetryHelper {
     ) {
         const events: CodewhispererUserDecision[] = []
         // emit user decision telemetry
-        recommendations.forEach((_elem, i) => {
+        for (const [i, _elem] of recommendations.entries()) {
             let uniqueSuggestionReferences: string | undefined = undefined
             const uniqueLicenseSet = LicenseUtil.getUniqueLicenseNames(_elem.references)
             if (uniqueLicenseSet.size > 0) {
@@ -243,7 +302,7 @@ export class TelemetryHelper {
             }
             telemetry.codewhisperer_userDecision.emit(event)
             events.push(event)
-        })
+        }
 
         // aggregate suggestion references count
         const referenceCount = this.getAggregatedSuggestionReferenceCount(events)
@@ -537,12 +596,20 @@ export class TelemetryHelper {
 
     public resetClientComponentLatencyTime() {
         session.invokeSuggestionStartTime = 0
+        session.preprocessEndTime = 0
         session.sdkApiCallStartTime = 0
-        this.sdkApiCallEndTime = 0
+        this._sdkApiCallEndTime = 0
         session.fetchCredentialStartTime = 0
         session.firstSuggestionShowTime = 0
-        this.allPaginationEndTime = 0
-        this.firstResponseRequestId = ''
+        this._allPaginationEndTime = 0
+        this._firstResponseRequestId = ''
+    }
+
+    public setPreprocessEndTime() {
+        if (session.preprocessEndTime !== 0) {
+            getLogger().warn(`inline completion preprocessEndTime has been set and not reset correctly`)
+        }
+        session.preprocessEndTime = performance.now()
     }
 
     /** This method is assumed to be invoked first at the start of execution **/
@@ -552,46 +619,46 @@ export class TelemetryHelper {
     }
 
     public setSdkApiCallEndTime() {
-        if (this.sdkApiCallEndTime === 0 && session.sdkApiCallStartTime !== 0) {
-            this.sdkApiCallEndTime = performance.now()
+        if (this._sdkApiCallEndTime === 0 && session.sdkApiCallStartTime !== 0) {
+            this._sdkApiCallEndTime = performance.now()
         }
     }
 
     public setAllPaginationEndTime() {
-        if (this.allPaginationEndTime === 0 && this.sdkApiCallEndTime !== 0) {
-            this.allPaginationEndTime = performance.now()
+        if (this._allPaginationEndTime === 0 && this._sdkApiCallEndTime !== 0) {
+            this._allPaginationEndTime = performance.now()
         }
     }
 
     public setFirstSuggestionShowTime() {
-        if (session.firstSuggestionShowTime === 0 && this.sdkApiCallEndTime !== 0) {
+        if (session.firstSuggestionShowTime === 0 && this._sdkApiCallEndTime !== 0) {
             session.firstSuggestionShowTime = performance.now()
         }
     }
 
     public setFirstResponseRequestId(requestId: string) {
-        if (this.firstResponseRequestId === '') {
-            this.firstResponseRequestId = requestId
+        if (this._firstResponseRequestId === '') {
+            this._firstResponseRequestId = requestId
         }
     }
 
     // report client component latency after all pagination call finish
     // and at least one suggestion is shown to the user
     public tryRecordClientComponentLatency() {
-        if (session.firstSuggestionShowTime === 0 || this.allPaginationEndTime === 0) {
+        if (session.firstSuggestionShowTime === 0 || this._allPaginationEndTime === 0) {
             return
         }
         telemetry.codewhisperer_clientComponentLatency.emit({
-            codewhispererAllCompletionsLatency: this.allPaginationEndTime - session.sdkApiCallStartTime,
+            codewhispererAllCompletionsLatency: this._allPaginationEndTime - session.sdkApiCallStartTime,
             codewhispererCompletionType: 'Line',
             codewhispererCredentialFetchingLatency: session.sdkApiCallStartTime - session.fetchCredentialStartTime,
             codewhispererCustomizationArn: getSelectedCustomization().arn,
             codewhispererEndToEndLatency: session.firstSuggestionShowTime - session.invokeSuggestionStartTime,
-            codewhispererFirstCompletionLatency: this.sdkApiCallEndTime - session.sdkApiCallStartTime,
+            codewhispererFirstCompletionLatency: this._sdkApiCallEndTime - session.sdkApiCallStartTime,
             codewhispererLanguage: session.language,
-            codewhispererPostprocessingLatency: session.firstSuggestionShowTime - this.sdkApiCallEndTime,
-            codewhispererPreprocessingLatency: session.fetchCredentialStartTime - session.invokeSuggestionStartTime,
-            codewhispererRequestId: this.firstResponseRequestId,
+            codewhispererPostprocessingLatency: session.firstSuggestionShowTime - this._sdkApiCallEndTime,
+            codewhispererPreprocessingLatency: session.preprocessEndTime - session.invokeSuggestionStartTime,
+            codewhispererRequestId: this._firstResponseRequestId,
             codewhispererSessionId: session.sessionId,
             codewhispererTriggerType: session.triggerType,
             credentialStartUrl: AuthUtil.instance.startUrl,

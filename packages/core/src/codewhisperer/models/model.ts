@@ -20,6 +20,7 @@ import { TransformationSteps } from '../client/codewhispereruserclient'
 import { Messenger } from '../../amazonqGumby/chat/controller/messenger/messenger'
 import { TestChatControllerEventEmitters } from '../../amazonqTest/chat/controller/controller'
 import { ScanChatControllerEventEmitters } from '../../amazonqScan/controller'
+import { localize } from '../../shared/utilities/vsCodeUtils'
 
 // unavoidable global variables
 interface VsCodeState {
@@ -47,11 +48,11 @@ export const vsCodeState: VsCodeState = {
     isFreeTierLimitReached: false,
 }
 
-export type UtgStrategy = 'ByName' | 'ByContent'
+export type UtgStrategy = 'byName' | 'byContent'
 
 export type CrossFileStrategy = 'opentabs' | 'codemap' | 'bm25' | 'default'
 
-export type SupplementalContextStrategy = CrossFileStrategy | UtgStrategy | 'Empty'
+export type SupplementalContextStrategy = CrossFileStrategy | UtgStrategy | 'empty'
 
 export type PatchInfo = {
     name: string
@@ -486,6 +487,7 @@ export interface CodeScanIssue {
     scanJobId: string
     language: string
     fixJobId?: string
+    autoDetected?: boolean
 }
 
 export interface AggregatedCodeScanIssue {
@@ -564,6 +566,52 @@ export class SecurityTreeViewFilterState {
     }
 }
 
+export enum CodeIssueGroupingStrategy {
+    Severity = 'Severity',
+    FileLocation = 'FileLocation',
+}
+const defaultCodeIssueGroupingStrategy = CodeIssueGroupingStrategy.Severity
+
+export const codeIssueGroupingStrategies = Object.values(CodeIssueGroupingStrategy)
+export const codeIssueGroupingStrategyLabel: Record<CodeIssueGroupingStrategy, string> = {
+    [CodeIssueGroupingStrategy.Severity]: localize('AWS.amazonq.scans.severity', 'Severity'),
+    [CodeIssueGroupingStrategy.FileLocation]: localize('AWS.amazonq.scans.fileLocation', 'File Location'),
+}
+
+export class CodeIssueGroupingStrategyState {
+    #fallback: CodeIssueGroupingStrategy
+    #onDidChangeState = new vscode.EventEmitter<CodeIssueGroupingStrategy>()
+    onDidChangeState = this.#onDidChangeState.event
+
+    static #instance: CodeIssueGroupingStrategyState
+    static get instance() {
+        return (this.#instance ??= new this())
+    }
+
+    protected constructor(fallback: CodeIssueGroupingStrategy = defaultCodeIssueGroupingStrategy) {
+        this.#fallback = fallback
+    }
+
+    public getState(): CodeIssueGroupingStrategy {
+        const state = globals.globalState.tryGet('aws.amazonq.codescan.groupingStrategy', String)
+        return this.isValidGroupingStrategy(state) ? state : this.#fallback
+    }
+
+    public async setState(_state: unknown) {
+        const state = this.isValidGroupingStrategy(_state) ? _state : this.#fallback
+        await globals.globalState.update('aws.amazonq.codescan.groupingStrategy', state)
+        this.#onDidChangeState.fire(state)
+    }
+
+    private isValidGroupingStrategy(strategy: unknown): strategy is CodeIssueGroupingStrategy {
+        return Object.values(CodeIssueGroupingStrategy).includes(strategy as CodeIssueGroupingStrategy)
+    }
+
+    public reset() {
+        return this.setState(this.#fallback)
+    }
+}
+
 /**
  *  Q - Transform
  */
@@ -601,12 +649,13 @@ export enum JDKVersion {
     JDK8 = '8',
     JDK11 = '11',
     JDK17 = '17',
+    JDK21 = '21',
     UNSUPPORTED = 'UNSUPPORTED',
 }
 
 export enum DB {
     ORACLE = 'ORACLE',
-    RDS_POSTGRESQL = 'RDS_POSTGRESQL',
+    RDS_POSTGRESQL = 'POSTGRESQL',
     AURORA_POSTGRESQL = 'AURORA_POSTGRESQL',
     OTHER = 'OTHER',
 }
@@ -692,7 +741,7 @@ export class TransformByQState {
 
     private sourceJDKVersion: JDKVersion | undefined = undefined
 
-    private targetJDKVersion: JDKVersion = JDKVersion.JDK17
+    private targetJDKVersion: JDKVersion | undefined = undefined
 
     private produceMultipleDiffs: boolean = false
 
@@ -1084,7 +1133,7 @@ export class TransformByQState {
         this.payloadFilePath = ''
         this.metadataPathSQL = ''
         this.sourceJDKVersion = undefined
-        this.targetJDKVersion = JDKVersion.JDK17
+        this.targetJDKVersion = undefined
         this.sourceDB = undefined
         this.targetDB = undefined
         this.sourceServerName = ''
@@ -1103,12 +1152,6 @@ export class TransformByQStoppedError extends ToolkitError {
     constructor() {
         super('Transform by Q stopped by user.', { cancelled: true })
     }
-}
-
-export enum Cloud9AccessState {
-    NoAccess,
-    RequestedAccess,
-    HasAccess,
 }
 
 export interface TransformationCandidateProject {

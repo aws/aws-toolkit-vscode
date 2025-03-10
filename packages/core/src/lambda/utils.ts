@@ -12,9 +12,7 @@ import * as vscode from 'vscode'
 import { CloudFormationClient } from '../shared/clients/cloudFormationClient'
 import { LambdaClient } from '../shared/clients/lambdaClient'
 import { getFamily, getNodeMajorVersion, RuntimeFamily } from './models/samLambdaRuntime'
-import { getLogger } from '../shared/logger'
-import { ResourceFetcher } from '../shared/resourcefetcher/resourcefetcher'
-import { CompositeResourceFetcher } from '../shared/resourcefetcher/compositeResourceFetcher'
+import { getLogger } from '../shared/logger/logger'
 import { HttpResourceFetcher } from '../shared/resourcefetcher/httpResourceFetcher'
 import { FileResourceFetcher } from '../shared/resourcefetcher/fileResourceFetcher'
 import { sampleRequestManifestPath } from './constants'
@@ -99,7 +97,7 @@ interface SampleRequestManifest {
 
 export async function getSampleLambdaPayloads(): Promise<SampleRequest[]> {
     const logger = getLogger()
-    const sampleInput = await makeSampleRequestManifestResourceFetcher().get()
+    const sampleInput = await getSampleRequestManifest()
 
     if (!sampleInput) {
         throw new Error('Unable to retrieve Sample Request manifest')
@@ -120,9 +118,11 @@ export async function getSampleLambdaPayloads(): Promise<SampleRequest[]> {
     return inputs
 }
 
-function makeSampleRequestManifestResourceFetcher(): ResourceFetcher {
-    return new CompositeResourceFetcher(
-        new HttpResourceFetcher(sampleRequestManifestPath, { showUrl: true }),
-        new FileResourceFetcher(globals.manifestPaths.lambdaSampleRequests)
-    )
+async function getSampleRequestManifest(): Promise<string | undefined> {
+    const httpResp = await new HttpResourceFetcher(sampleRequestManifestPath, { showUrl: true }).get()
+    if (!httpResp) {
+        const fileResp = new FileResourceFetcher(globals.manifestPaths.lambdaSampleRequests)
+        return fileResp.get()
+    }
+    return httpResp.text()
 }

@@ -27,6 +27,7 @@ import { ToolkitError } from '../../../shared/errors'
 import * as fs from 'fs' // eslint-disable-line no-restricted-imports
 import * as path from 'path'
 import { Stub, stub } from '../../utilities/stubber'
+import { globals } from '../../../shared'
 
 const hourInMs = 3600000
 
@@ -37,14 +38,14 @@ describe('SsoAccessTokenProvider', function () {
     let oidcClient: Stub<OidcClient>
     let sut: SsoAccessTokenProvider
     let cache: ReturnType<typeof getCache>
-    let clock: FakeTimers.InstalledClock
+    let clock: FakeTimers.InstalledClock | undefined
     let tempDir: string
     let reAuthState: TestReAuthState
 
     function createToken(timeDelta: number, extras: Partial<SsoToken> = {}) {
         return {
             accessToken: 'dummyAccessToken',
-            expiresAt: new clock.Date(clock.Date.now() + timeDelta),
+            expiresAt: new globals.clock.Date(globals.clock.Date.now() + timeDelta),
             ...extras,
         }
     }
@@ -54,7 +55,7 @@ describe('SsoAccessTokenProvider', function () {
             scopes: [],
             clientId: 'dummyClientId',
             clientSecret: 'dummyClientSecret',
-            expiresAt: new clock.Date(clock.Date.now() + timeDelta),
+            expiresAt: new globals.clock.Date(globals.clock.Date.now() + timeDelta),
             startUrl,
             ...extras,
         }
@@ -66,7 +67,7 @@ describe('SsoAccessTokenProvider', function () {
             deviceCode: 'dummyCode',
             userCode: 'dummyUserCode',
             verificationUri: 'dummyLink',
-            expiresAt: new clock.Date(clock.Date.now() + timeDelta),
+            expiresAt: new globals.clock.Date(globals.clock.Date.now() + timeDelta),
         }
     }
 
@@ -76,14 +77,6 @@ describe('SsoAccessTokenProvider', function () {
         fs.mkdirSync(cacheDir, { recursive: true })
         return cacheDir
     }
-
-    before(function () {
-        clock = installFakeClock()
-    })
-
-    after(function () {
-        clock.uninstall()
-    })
 
     beforeEach(async function () {
         oidcClient = stub(OidcClient)
@@ -95,7 +88,7 @@ describe('SsoAccessTokenProvider', function () {
 
     afterEach(async function () {
         sinon.restore()
-        clock.reset()
+        clock?.uninstall()
         await tryRemoveFolder(tempDir)
     })
 
@@ -226,6 +219,7 @@ describe('SsoAccessTokenProvider', function () {
         // combinations of args for createToken()
         const args: CreateTokenArgs[] = [{ isReAuth: true }, { isReAuth: false }]
 
+        // eslint-disable-next-line unicorn/no-array-for-each
         args.forEach((args) => {
             it(`runs the full SSO flow with args: ${JSON.stringify(args)}`, async function () {
                 const { token, registration } = setupFlow()
@@ -266,6 +260,7 @@ describe('SsoAccessTokenProvider', function () {
         })
 
         it(`emits session duration between logins of the same startUrl`, async function () {
+            clock = installFakeClock()
             setupFlow()
             stubOpen()
 
@@ -310,6 +305,7 @@ describe('SsoAccessTokenProvider', function () {
         })
 
         it('respects the device authorization expiration time', async function () {
+            clock = installFakeClock()
             setupFlow()
             stubOpen()
             const exception = new AuthorizationPendingException({ message: '', $metadata: {} })
@@ -351,7 +347,7 @@ describe('SsoAccessTokenProvider', function () {
             const registration = {
                 clientId: 'myExpiredClientId',
                 clientSecret: 'myExpiredClientSecret',
-                expiresAt: new clock.Date(clock.Date.now() - 1), // expired date
+                expiresAt: new globals.clock.Date(globals.clock.Date.now() - 1), // expired date
                 startUrl: key.startUrl,
             }
             await cache.registration.save(key, registration)

@@ -13,8 +13,8 @@ import {
 } from '../../../awsService/accessanalyzer/vue/iamPolicyChecks'
 import { globals } from '../../../shared'
 import { AccessAnalyzer, Config } from 'aws-sdk'
-import * as s3Client from '../../../shared/clients/s3Client'
-import { DefaultS3Client } from '../../../shared/clients/s3Client'
+import * as s3Client from '../../../shared/clients/s3'
+import { S3Client } from '../../../shared/clients/s3'
 import * as iamPolicyChecks from '../../../awsService/accessanalyzer/vue/iamPolicyChecks'
 import * as vscode from 'vscode'
 import { IamPolicyChecksConstants } from '../../../awsService/accessanalyzer/vue/constants'
@@ -45,12 +45,12 @@ describe('iamPolicyChecks', function () {
 
 describe('_readCustomChecksFile', () => {
     let parseS3UriStub: sinon.SinonStub
-    let s3ClientStub: sinon.SinonStubbedInstance<DefaultS3Client>
+    let s3ClientStub: sinon.SinonStubbedInstance<S3Client>
     sandbox = sinon.createSandbox()
 
     beforeEach(() => {
         parseS3UriStub = sandbox.stub(s3Client, 'parseS3Uri')
-        s3ClientStub = sandbox.createStubInstance(DefaultS3Client)
+        s3ClientStub = sandbox.createStubInstance(S3Client)
     })
 
     afterEach(function () {
@@ -155,6 +155,8 @@ describe('validatePolicy', function () {
                 'us-east-1',
                 '--config',
                 `${globals.context.asAbsolutePath(defaultTerraformConfigPath)}`,
+                '--profile',
+                'undefined',
             ],
             cfnParameterPathExists: false,
             documentType,
@@ -180,6 +182,8 @@ describe('validatePolicy', function () {
                 IamPolicyChecksWebview.editedDocumentFileName,
                 '--region',
                 'us-east-1',
+                '--profile',
+                'undefined',
                 '--template-configuration-file',
                 cfnParameterPath,
             ],
@@ -449,6 +453,8 @@ describe('customChecks', function () {
                     'us-east-1',
                     '--config',
                     `${globals.context.asAbsolutePath(defaultTerraformConfigPath)}`,
+                    '--profile',
+                    'undefined',
                     '--actions',
                     'action1action2',
                     '--resources',
@@ -486,6 +492,8 @@ describe('customChecks', function () {
                     document,
                     '--region',
                     'us-east-1',
+                    '--profile',
+                    'undefined',
                     '--actions',
                     'action1action2',
                     '--resources',
@@ -548,6 +556,8 @@ describe('customChecks', function () {
                     'us-east-1',
                     '--config',
                     `${globals.context.asAbsolutePath(defaultTerraformConfigPath)}`,
+                    '--profile',
+                    'undefined',
                 ],
                 cfnParameterPathExists: !!cfnParameterPath,
                 documentType,
@@ -579,6 +589,8 @@ describe('customChecks', function () {
                     document,
                     '--region',
                     'us-east-1',
+                    '--profile',
+                    'undefined',
                     '--template-configuration-file',
                     cfnParameterPath,
                 ],
@@ -695,14 +707,14 @@ describe('customChecks', function () {
         fakePolicyChecksWebview.pushCustomCheckDiagnostic(diagnostics, finding, isBlocking)
 
         assert.strictEqual(diagnostics.length, 2) // One diagnostic per reason
-        diagnostics.forEach((diagnostic, index) => {
+        for (const [index, diagnostic] of diagnostics.entries()) {
             assert.deepStrictEqual(diagnostic.range, new vscode.Range(0, 0, 0, 0))
             assert.strictEqual(diagnostic.severity, vscode.DiagnosticSeverity.Error)
             assert.strictEqual(
                 diagnostic.message,
                 `${finding.findingType}: Test message with reference document - Resource name: ${finding.resourceName}, Policy name: ${finding.policyName} - Reason ${index + 1}`
             )
-        })
+        }
         assert(customPolicyDiagnosticSetStub.calledOnce)
     })
 
@@ -722,14 +734,14 @@ describe('customChecks', function () {
         fakePolicyChecksWebview.pushCustomCheckDiagnostic(diagnostics, finding, isBlocking)
 
         assert.strictEqual(diagnostics.length, 2) // One diagnostic per reason
-        diagnostics.forEach((diagnostic, index) => {
+        for (const [index, diagnostic] of diagnostics.entries()) {
             assert.deepStrictEqual(diagnostic.range, new vscode.Range(0, 0, 0, 0))
             assert.strictEqual(diagnostic.severity, vscode.DiagnosticSeverity.Warning)
             assert.strictEqual(
                 diagnostic.message,
                 `WARNING: Another test message - Resource name: ${finding.resourceName}, Policy name: ${finding.policyName} - Reason ${index === 0 ? 'A' : 'B'}`
             )
-        })
+        }
         assert(customPolicyDiagnosticSetStub.calledOnce)
     })
 

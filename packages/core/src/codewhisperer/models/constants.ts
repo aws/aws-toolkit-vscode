@@ -24,7 +24,9 @@ export const AWSTemplateCaseInsensitiveKeyWords = ['cloudformation', 'cfn', 'tem
 
 const patchDescriptions: { [key: string]: string } = {
     'Prepare minimal upgrade to Java 17':
-        'This diff patch covers the set of upgrades for Springboot, JUnit, and PowerMockito frameworks.',
+        'This diff patch covers the set of upgrades for Springboot, JUnit, and PowerMockito frameworks in Java 17.',
+    'Prepare minimal upgrade to Java 21':
+        'This diff patch covers the set of upgrades for Springboot, JUnit, and PowerMockito frameworks in Java 21.',
     'Popular Enterprise Specifications and Application Frameworks upgrade':
         'This diff patch covers the set of upgrades for Jakarta EE 10, Hibernate 6.2, and Micronaut 3.',
     'HTTP Client Utilities, Apache Commons Utilities, and Web Frameworks':
@@ -84,6 +86,7 @@ export const lineBreakWin = '\r\n'
 
 export const supplementalContextTimeoutInMs = 100
 
+export const supplementalContextMaxTotalLength = 20480
 /**
  * Ux of recommendations
  */
@@ -97,6 +100,7 @@ export const completionDetail = 'Amazon Q'
 export const codewhisperer = 'Amazon Q'
 
 // use vscode languageId here / Supported languages
+// TODO: Dropped Cloud9 support - do we need Cloud9-commented entries here?
 export const platformLanguageIds = [
     'java',
     'python',
@@ -257,23 +261,23 @@ export const codeScanZipExt = '.zip'
 
 export const contextTruncationTimeoutSeconds = 10
 
-export const codeScanJobTimeoutSeconds = 60 * 10 // 10 minutes
+export const standardScanTimeoutMs = 600_000 // 10 minutes
 
-export const codeFileScanJobTimeoutSeconds = 60 * 10 // 10 minutes
+export const expressScanTimeoutMs = 60_000
 
-export const codeFixJobTimeoutMs = 60_000
+export const codeFixJobTimeoutMs = 120_000
 
 export const projectSizeCalculateTimeoutSeconds = 10
 
 export const codeScanJobPollingIntervalSeconds = 1
 
-export const codeFixJobPollingIntervalMs = 1000
+export const codeFixJobPollingIntervalMs = 5_000
 
 export const fileScanPollingDelaySeconds = 10
 
 export const projectScanPollingDelaySeconds = 30
 
-export const codeFixJobPollingDelayMs = 5_000
+export const codeFixJobPollingDelayMs = 10_000
 
 export const testGenPollingDelaySeconds = 10
 
@@ -304,7 +308,9 @@ export const securityScanLanguageIds = [
     'csharp',
     'go',
     'ruby',
-    'golang', // Cloud9 reports Go files with this language-id
+    // Cloud9 reports Go files with this language-id
+    // TODO: Dropped Cloud9 support - is this still needed?
+    'golang',
     'json',
     'yaml',
     'tf',
@@ -501,14 +507,14 @@ export const codeTransformLocThreshold = 100000
 export const jobStartedChatMessage =
     'I am starting to transform your code. It can take 10 to 30 minutes to upgrade your code, depending on the size of your project. To monitor progress, go to the Transformation Hub. If I run into any issues, I might pause the transformation to get input from you on how to proceed.'
 
-export const chooseTransformationObjective = `I can help you with the following tasks:\n- Upgrade your Java 8 and Java 11 codebases to Java 17, or upgrade Java 17 code with up to date libraries and other dependencies.\n- Convert embedded SQL code for Oracle to PostgreSQL database migrations in AWS DMS.\n\nWhat would you like to do? You can enter "language upgrade" or "sql conversion".`
+export const chooseTransformationObjective = `I can help you with the following tasks:\n- Upgrade your Java 8, Java 11, and Java 17 codebases to Java 17 or Java 21.\n- Upgrade Java 17 or Java 21 code with up-to-date libraries and other dependencies.\n- Convert embedded SQL code for Oracle to PostgreSQL database migrations in AWS DMS. [Learn more](https://docs.aws.amazon.com/dms/latest/userguide/schema-conversion-embedded-sql.html).\n\nWhat would you like to do? You can enter "language upgrade" or "sql conversion".`
 
 export const chooseTransformationObjectivePlaceholder = 'Enter "language upgrade" or "sql conversion"'
 
-export const userPatchDescriptionChatMessage = `
+export const userPatchDescriptionChatMessage = (version: string) => `
 If you'd like to update and test your code with fewer changes at a time, I can divide the transformation results into separate diff patches. If applicable to your application, I can split up the diffs up into the following groups of upgrades. Here are the upgrades included in each diff:
 
-• Minimal Compatible Library Upgrade to Java 17: Dependencies to the minimum compatible versions in Java 17, including Springboot, JUnit, and PowerMockito.
+• Minimal Compatible Library Upgrade to Java ${version}: Dependencies to the minimum compatible versions in Java ${version}, including Springboot, JUnit, and PowerMockito.
 
 • Popular Enterprise Specifications Application Frameworks: Popular enterprise and application frameworks like Jakarta EE, Hibernate, and Micronaut 3.
 
@@ -554,14 +560,14 @@ export const noOngoingJobMessage = 'No ongoing job.'
 
 export const nothingToShowMessage = 'Nothing to show'
 
-export const jobStartedTitle = 'Transformation started'
-
 export const jobStartedNotification =
     'Amazon Q is transforming your code. It can take 10 to 30 minutes to upgrade your code, depending on the size of your project. To monitor progress, go to the Transformation Hub.'
 
 export const openTransformationHubButtonText = 'Open Transformation Hub'
 
 export const startTransformationButtonText = 'Start a new transformation'
+
+export const viewSummaryButtonText = 'View summary'
 
 export const stopTransformationButtonText = 'Stop transformation'
 
@@ -579,7 +585,7 @@ export const absolutePathDetectedMessage = (numPaths: number, buildFile: string,
     `I detected ${numPaths} potential absolute file path(s) in your ${buildFile} file: **${listOfPaths}**. Absolute file paths might cause issues when I build your code. Any errors will show up in the build log.`
 
 export const selectSQLMetadataFileHelpMessage =
-    'Okay, I can convert the embedded SQL code for your Oracle to PostgreSQL transformation. To get started, upload the zipped metadata file from your schema conversion in AWS Data Migration Service (DMS). To retrieve the metadata file:\n1. Open your database migration project in the AWS DMS console.\n2. Open the schema conversion and choose **Convert the embedded SQL in your application**.\n3. Choose the link to Amazon S3 console.\n\nYou can download the metadata file from the {schema-conversion-project}/ directory. For more info, refer to the [documentation](https://docs.aws.amazon.com/dms/latest/userguide/schema-conversion-save-apply.html#schema-conversion-save).'
+    'Okay, I can convert the embedded SQL code for your Oracle to PostgreSQL transformation. To get started, upload the zipped metadata file from your schema conversion in AWS Data Migration Service (DMS). To retrieve the metadata file:\n1. Open your database migration project in the AWS DMS console.\n2. Open the schema conversion and choose **Convert the embedded SQL in your application**.\n3. Once you complete the conversion, close the project and go to the S3 bucket where your project is stored.\n4. Open the folder and find the project folder ("sct-project").\n5. Download the object inside the project folder. This will be a zip file.\n\nFor more info, refer to the [documentation](https://docs.aws.amazon.com/dms/latest/userguide/schema-conversion-embedded-sql.html).'
 
 export const invalidMetadataFileUnsupportedSourceDB =
     'I can only convert SQL for migrations from an Oracle source database. The provided .sct file indicates another source database for this migration.'
@@ -592,6 +598,9 @@ export const invalidMetadataFileErrorParsing =
 
 export const invalidMetadataFileNoSctFile =
     "An .sct file is required for transformation. Make sure that you've uploaded the .zip file you retrieved from your schema conversion in AWS DMS."
+
+export const invalidFromToJdkChatMessage =
+    "I can't transform a project from Java 21 to Java 17, but I can upgrade Java 21 code with up to date libraries and other dependencies. Try again with a supported language upgrade."
 
 export const sqlMetadataFileReceived =
     'I found the following source database, target database, and host based on the schema conversion metadata you provided:'
@@ -638,8 +647,6 @@ export const jobCancelledChatMessage =
 
 export const jobCancelledNotification = 'You cancelled the transformation.'
 
-export const transformationCompletedTitle = 'Transformation complete'
-
 export const diffMessage = (multipleDiffs: boolean) => {
     return multipleDiffs
         ? 'You can review the diffs to see my proposed changes and accept or reject them. You will be able to accept changes from one diff at a time. If you reject changes in one diff, you will not be able to view or accept changes in the other diffs.'
@@ -667,7 +674,7 @@ export const noPomXmlFoundChatMessage = `I couldn\'t find a project that I can u
 export const noJavaHomeFoundChatMessage = `Sorry, I couldn\'t locate your Java installation. For more information, see the [Amazon Q documentation](${codeTransformPrereqDoc}).`
 
 export const dependencyVersionsErrorMessage =
-    'I could not find any other versions of this dependency in your local Maven repository. Try transforming the dependency to make it compatible with Java 17, and then try transforming this module again.'
+    'I could not find any other versions of this dependency in your local Maven repository. Try transforming the dependency to make it compatible with your target Java version, and then try transforming this module again.'
 
 export const errorUploadingWithExpiredUrl = `The upload error may have been caused by the expiration of the S3 pre-signed URL that was used to upload code artifacts to Q Code Transformation. The S3 pre-signed URL expires in 30 minutes. This could be caused by any delays introduced by intermediate services in your network infrastructure. Please investigate your network configuration and consider allowlisting 'amazonq-code-transformation-us-east-1-c6160f047e0.s3.amazonaws.com' to skip any reviewing that might delay the upload. For more information, see the [Amazon Q documentation](${codeTransformTroubleshootAllowS3Access}).`
 
@@ -717,7 +724,7 @@ export const changesAppliedNotificationMultipleDiffs = (currentPatchIndex: numbe
     }
 }
 
-export const noOpenProjectsFoundChatMessage = `I couldn\'t find a project that I can upgrade. Currently, I support Java 8, Java 11, and Java 17 projects built on Maven. Make sure your project is open in the IDE. For more information, see the [Amazon Q documentation](${codeTransformPrereqDoc}).`
+export const noOpenProjectsFoundChatMessage = `I couldn\'t find a project that I can upgrade. Currently, I support Java 8, Java 11, Java 17, and Java 21 projects built on Maven. Make sure your project is open in the IDE. For more information, see the [Amazon Q documentation](${codeTransformPrereqDoc}).`
 
 export const noOpenFileFoundChatMessage = `Sorry, there isn't a source file open right now that I can generate a test for. Make sure you open a source file so I can generate tests.`
 
@@ -727,16 +734,13 @@ export const noOpenProjectsFoundChatTestGenMessage = `Sorry, I couldn\'t find a 
 
 export const unitTestGenerationCancelMessage = 'Unit test generation cancelled.'
 
-export const noJavaProjectsFoundChatMessage = `I couldn\'t find a project that I can upgrade. Currently, I support Java 8, Java 11, and Java 17 projects built on Maven. Make sure your project is open in the IDE. For more information, see the [Amazon Q documentation](${codeTransformPrereqDoc}).`
+export const tooManyRequestErrorMessage = 'Too many requests. Please wait before retrying.'
+
+export const noJavaProjectsFoundChatMessage = `I couldn\'t find a project that I can upgrade. Currently, I support Java 8, Java 11, Java 17, and Java 21 projects built on Maven. Make sure your project is open in the IDE. For more information, see the [Amazon Q documentation](${codeTransformPrereqDoc}).`
 
 export const linkToDocsHome = 'https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/code-transformation.html'
 
 export const linkToBillingInfo = 'https://aws.amazon.com/q/developer/pricing/'
-
-export const linkToUploadZipTooLarge =
-    'https://docs.aws.amazon.com/amazonq/latest/aws-builder-use-ug/troubleshooting-code-transformation.html#project-size-limit'
-
-export const linkToDownloadZipTooLarge = ''
 
 export const dependencyFolderName = 'transformation_dependencies_temp_'
 
@@ -747,7 +751,7 @@ export const cleanInstallErrorNotification = `Amazon Q could not run the Maven c
 export const enterJavaHomeChatMessage = 'Enter the path to JDK '
 
 export const projectPromptChatMessage =
-    'I can upgrade your JAVA_VERSION_HERE. To start the transformation, I need some information from you. Choose the project you want to upgrade and the target code version to upgrade to. Then, choose Confirm.'
+    'I can upgrade your Java project. To start the transformation, I need some information from you. Choose the project you want to upgrade and the target code version to upgrade to. Then, choose Confirm.'
 
 export const windowsJavaHomeHelpChatMessage =
     'To find the JDK path, run the following commands in a new terminal: `cd "C:/Program Files/Java"` and then `dir`. If you see your JDK version, run `cd <version>` and then `cd` to show the path.'
@@ -867,7 +871,7 @@ export enum TestGenerationJobStatus {
     COMPLETED = 'COMPLETED',
 }
 
-export enum ZipUseCase {
+export enum FeatureUseCase {
     TEST_GENERATION = 'TEST_GENERATION',
     CODE_SCAN = 'CODE_SCAN',
 }
@@ -892,3 +896,28 @@ export enum SecurityScanStep {
 }
 
 export const amazonqCodeIssueDetailsTabTitle = 'Code Issue Details'
+
+export const testGenExcludePatterns = [
+    '**/annotation-generated-src/*',
+    '**/annotation-generated-tst/*',
+    '**/build/*',
+    '**/env/*',
+    '**/release-info/*',
+    '**/*.jar',
+    '**/*.exe',
+    '**/*.a',
+    '**/*.map',
+    '**/*.graph',
+    '**/*.so',
+    '**/*.csv',
+    '**/*.dylib',
+    '**/*.parquet',
+    '**/*.xlsx',
+    '**/*.tar.gz',
+    '**/*.tar',
+    '**/*.pack',
+    '**/*.pkg',
+    '**/*.pkl',
+    '**/*.deb',
+    '**/*.model',
+]

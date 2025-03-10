@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { fs } from '../../shared'
+import { fs } from '../../shared/fs/fs'
 import { diffLines } from 'diff'
 
 export async function openDiff(leftPath: string, rightPath: string, tabId: string, scheme: string) {
@@ -33,12 +33,18 @@ export function createAmazonQUri(path: string, tabId: string, scheme: string) {
     return vscode.Uri.from({ scheme: scheme, path, query: `tabID=${tabId}` })
 }
 
-export async function computeDiff(leftPath: string, rightPath: string, tabId: string, scheme: string) {
+export async function computeDiff(
+    leftPath: string,
+    rightPath: string,
+    tabId: string,
+    scheme: string,
+    reportedChanges?: string
+) {
     const { left, right } = await getFileDiffUris(leftPath, rightPath, tabId, scheme)
     const leftFile = await vscode.workspace.openTextDocument(left)
     const rightFile = await vscode.workspace.openTextDocument(right)
 
-    const changes = diffLines(leftFile.getText(), rightFile.getText(), {
+    const changes = diffLines(reportedChanges ?? leftFile.getText(), rightFile.getText(), {
         ignoreWhitespace: true,
     })
 
@@ -46,7 +52,7 @@ export async function computeDiff(leftPath: string, rightPath: string, tabId: st
     let charsRemoved = 0
     let linesAdded = 0
     let linesRemoved = 0
-    changes.forEach((change) => {
+    for (const change of changes) {
         const lines = change.value.split('\n')
         const charCount = lines.reduce((sum, line) => sum + line.length, 0)
         const lineCount = change.count ?? lines.length - 1 // ignoring end-of-file empty line
@@ -57,6 +63,6 @@ export async function computeDiff(leftPath: string, rightPath: string, tabId: st
             charsRemoved += charCount
             linesRemoved += lineCount
         }
-    })
+    }
     return { changes, charsAdded, linesAdded, charsRemoved, linesRemoved }
 }

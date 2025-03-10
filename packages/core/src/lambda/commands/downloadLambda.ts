@@ -13,8 +13,8 @@ import { LaunchConfiguration, getReferencedHandlerPaths } from '../../shared/deb
 
 import { makeTemporaryToolkitFolder, fileExists, tryRemoveFolder } from '../../shared/filesystemUtilities'
 import * as localizedText from '../../shared/localizedText'
-import { getLogger } from '../../shared/logger'
-import { HttpResourceFetcher } from '../../shared/resourcefetcher/httpResourceFetcher'
+import { getLogger } from '../../shared/logger/logger'
+import { HttpResourceFetcher } from '../../shared/resourcefetcher/node/httpResourceFetcher'
 import { createCodeAwsSamDebugConfig } from '../../shared/sam/debugger/awsSamDebugConfiguration'
 import * as pathutils from '../../shared/utilities/pathUtils'
 import { localize } from '../../shared/utilities/vsCodeUtils'
@@ -25,7 +25,7 @@ import { Progress } from 'got/dist/source'
 import { DefaultLambdaClient } from '../../shared/clients/lambdaClient'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { Result, Runtime } from '../../shared/telemetry/telemetry'
-import { fs } from '../../shared'
+import { fs } from '../../shared/fs/fs'
 
 export async function downloadLambdaCommand(functionNode: LambdaFunctionNode) {
     const result = await runDownloadLambda(functionNode)

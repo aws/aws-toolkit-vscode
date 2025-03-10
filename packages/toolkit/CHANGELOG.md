@@ -1,3 +1,71 @@
+## 3.49.0 2025-03-06
+
+- **Feature** Step Functions: Updated previewStateMachine command to open with Workflow Studio instead
+- **Feature** Lambda: Users can explore Serverless Land patterns
+- **Feature** Step Functions: Added support for calling the TestState API in Workflow Studio
+- **Feature** Step Functions: Added support for using Workflow Studio for editing ASL files in JSON and YAML
+- **Feature** AppBuilder: selecting a runtime in the local invoke view can override the runtime specified in template.yaml
+- **Feature** Step Functions: Allow starting state machine execution with no input provided
+
+## 3.48.0 2025-02-27
+
+- **Feature** Step Functions: Expand data source and output options for Distributed Map in ASL language schema
+
+## 3.47.0 2025-02-20
+
+- **Bug Fix** appBuilder: pass '--no-use-container' when '--use-container' is not selected in quickpick
+- **Feature** App Builder: Autoload debug configuration for local invoke webview
+
+## 3.46.0 2025-02-13
+
+- **Feature** Lambda: Support for environment variables in the editor webview.
+
+## 3.45.0 2025-02-05
+
+- **Feature** Add support for DocumentDB clusters
+- **Feature** Step Functions: Upgrade amazon-states-language-service to 1.15. This new version enhance autocomplete for variable and JSONata expression in JSON ASL files.
+
+## 3.44.0 2025-01-30
+
+- **Bug Fix** Policy Checks selected profile is always default
+- **Feature** From the Lambda treeview in AWS Explorer, you can now right-click on a function name and start a CloudWatch Logs Live Tail sessions for the selected function.
+- **Feature** EC2 is now available in AWS Explorer:
+
+1. Remote-connect VSCode to your EC2 instances.
+2. Open terminal to your EC2 instances.
+3. Start, stop, and visit the Launch page.
+
+## 3.43.0 2025-01-23
+
+- **Bug Fix** AppBuilder: Update error messaging to make more legible and actionable
+- **Bug Fix** Notifications: 'Dismiss' command visible in command palette.
+- **Removal** Cloud9: remove special-case logic.
+
+## 3.42.0 2025-01-15
+
+- **Bug Fix** Auth: Valid StartURL not accepted at login
+
+## 3.41.0 2025-01-09
+
+- **Removal** Amazon Q: No longer autoinstall Amazon Q if the user had used CodeWhisperer in old Toolkit versions.
+- **Removal** Auth: No longer inform users that Amazon Q and Toolkit extensions have separate auth sessions.
+
+## 3.40.0 2024-12-17
+
+- **Bug Fix** Auth: SSO failed to missing refreshToken
+- **Bug Fix** AppBuilder : Support template parameters override for SAM deploy and sync for all entry points
+
+## 3.39.0 2024-12-12
+
+- **Bug Fix** EC2: avoid overwriting authorized_keys file on remote
+- **Bug Fix** Auth: SSO session was bad, but no reauth prompt given
+- **Feature** Enable the EC2 experiment (setting id: `aws.experiments`) in VSCode settings to try the new EC2 features of AWS Toolkit! Remote Connect and Open Terminal to EC2 instances, list EC2 instances and view their status in AWS Explorer. 
+- **Feature** CloudWatch Logs: Added support for Live Tailing LogGroups. Start using LiveTail by: selecting 'Tail Log Group' in the command palette, or, right clicking/pressing the 'Play' icon on a Log Group in the Explorer menu. See [Troubleshoot with CloudWatch Logs Live Tail](https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/CloudWatchLogs_LiveTail.html) for more information. LiveTail is a paid feature - for more information about pricing, see the Logs tab at [Amazon CloudWatch Pricing](https://aws.amazon.com/cloudwatch/pricing/).
+
+## 3.38.0 2024-12-10
+
+- **Feature** Step Functions: Upgrade amazon-states-language-service to 1.13. This new version adds support for [JSONata and Variables](https://aws.amazon.com/blogs/compute/simplifying-developer-experience-with-variables-and-jsonata-in-aws-step-functions/).
+
 ## 3.36.0 2024-11-27
 
 - **Bug Fix** appBuilder refresh feature doesnt work during sync --watch

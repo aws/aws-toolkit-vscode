@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { getLogger } from '../../../shared/logger'
+import { getLogger } from '../../../shared/logger/logger'
 import { localize } from '../../../shared/utilities/vsCodeUtils'
 import { IotPolicyVersionNode } from '../explorer/iotPolicyVersionNode'
 import { showViewLogsMessage } from '../../../shared/utilities/messages'

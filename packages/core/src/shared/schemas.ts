@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import globals from './extensionGlobals'
 import { activateYamlExtension, YamlExtension } from './extensions/yaml'
 import * as pathutil from '../shared/utilities/pathUtils'
-import { getLogger } from './logger'
+import { getLogger } from './logger/logger'
 import { FileResourceFetcher } from './resourcefetcher/fileResourceFetcher'
 import { getPropertyFromJsonUrl, HttpResourceFetcher } from './resourcefetcher/httpResourceFetcher'
 import { Settings } from './settings'
@@ -225,7 +225,8 @@ export async function updateSchemaFromRemote(params: {
 
     try {
         const httpFetcher = new HttpResourceFetcher(params.url, { showUrl: true })
-        const content = await httpFetcher.get()
+        const resp = await httpFetcher.get()
+        const content = await resp?.text()
 
         if (!content) {
             throw new Error(`failed to resolve schema: ${params.destination}`)

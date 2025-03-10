@@ -12,7 +12,7 @@ import * as vscode from 'vscode'
 import { SchemaClient } from '../../shared/clients/schemaClient'
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../shared/filesystemUtilities'
 import * as localizedText from '../../shared/localizedText'
-import { getLogger, Logger } from '../../shared/logger'
+import { getLogger, Logger } from '../../shared/logger/logger'
 import { Result } from '../../shared/telemetry/telemetry'
 import { SchemaItemNode } from '../explorer/schemaItemNode'
 import { getLanguageDetails } from '../models/schemaCodeLangs'
@@ -328,7 +328,7 @@ export class CodeExtractor {
         const zipEntries = zip.getEntries()
         const detectedCollisions: string[] = []
 
-        zipEntries.forEach(function (zipEntry) {
+        for (const zipEntry of zipEntries) {
             if (zipEntry.isDirectory) {
                 // Ignore directories because those can/will merged
             } else {
@@ -337,7 +337,7 @@ export class CodeExtractor {
                     detectedCollisions.push(intendedDestinationPath)
                 }
             }
-        })
+        }
 
         if (detectedCollisions.length > 0) {
             this.writeToOutputChannel(detectedCollisions)

@@ -4,9 +4,16 @@
  */
 import * as vscode from 'vscode'
 import path from 'path'
-import { CodeScanIssue, SecurityTreeViewFilterState, severities, Severity } from '../models/model'
+import {
+    CodeIssueGroupingStrategy,
+    CodeIssueGroupingStrategyState,
+    CodeScanIssue,
+    SecurityTreeViewFilterState,
+    severities,
+    Severity,
+} from '../models/model'
 import globals from '../../shared/extensionGlobals'
-import { getLogger } from '../../shared/logger'
+import { getLogger } from '../../shared/logger/logger'
 import { SecurityIssueProvider } from './securityIssueProvider'
 
 export type SecurityViewTreeItem = FileItem | IssueItem | SeverityItem
@@ -34,6 +41,17 @@ export class SecurityIssueTreeViewProvider implements vscode.TreeDataProvider<Se
     }
 
     public getChildren(element?: SecurityViewTreeItem | undefined): vscode.ProviderResult<SecurityViewTreeItem[]> {
+        const groupingStrategy = CodeIssueGroupingStrategyState.instance.getState()
+        switch (groupingStrategy) {
+            case CodeIssueGroupingStrategy.FileLocation:
+                return this.getChildrenGroupedByFileLocation(element)
+            case CodeIssueGroupingStrategy.Severity:
+            default:
+                return this.getChildrenGroupedBySeverity(element)
+        }
+    }
+
+    private getChildrenGroupedBySeverity(element: SecurityViewTreeItem | undefined) {
         const filterHiddenSeverities = (severity: Severity) =>
             !SecurityTreeViewFilterState.instance.getHiddenSeverities().includes(severity)
 
@@ -64,8 +82,35 @@ export class SecurityIssueTreeViewProvider implements vscode.TreeDataProvider<Se
         return result
     }
 
+    private getChildrenGroupedByFileLocation(element: SecurityViewTreeItem | undefined) {
+        const filterHiddenSeverities = (issue: CodeScanIssue) =>
+            !SecurityTreeViewFilterState.instance.getHiddenSeverities().includes(issue.severity)
+
+        if (element instanceof FileItem) {
+            return element.issues
+                .filter(filterHiddenSeverities)
+                .filter((issue) => issue.visible)
+                .sort((a, b) => a.startLine - b.startLine)
+                .map((issue) => new IssueItem(element.filePath, issue))
+        }
+
+        const result = this.issueProvider.issues
+            .filter((group) => group.issues.some(filterHiddenSeverities))
+            .filter((group) => group.issues.some((issue) => issue.visible))
+            .sort((a, b) => a.filePath.localeCompare(b.filePath))
+            .map((group) => new FileItem(group.filePath, group.issues.filter(filterHiddenSeverities)))
+        this._onDidChangeTreeData.fire(result)
+        return result
+    }
+
     public refresh(): void {
         this._onDidChangeTreeData.fire()
+    }
+
+    public static focus() {
+        void vscode.commands.executeCommand('aws.amazonq.SecurityIssuesTree.focus').then(undefined, (e) => {
+            getLogger().error('SecurityIssuesTree focus failed: %s', e.message)
+        })
     }
 }
 
@@ -118,7 +163,8 @@ export class IssueItem extends vscode.TreeItem {
         public readonly issue: CodeScanIssue
     ) {
         super(issue.title, vscode.TreeItemCollapsibleState.None)
-        this.description = `${path.basename(this.filePath)} [Ln ${this.issue.startLine + 1}, Col 1]`
+        this.description = this.getDescription()
+        this.iconPath = this.getSeverityIcon()
         this.tooltip = this.getTooltipMarkdown()
         this.command = {
             title: 'Focus Issue',
@@ -130,6 +176,22 @@ export class IssueItem extends vscode.TreeItem {
 
     private getSeverityImage() {
         return globals.context.asAbsolutePath(`resources/images/severity-${this.issue.severity.toLowerCase()}.svg`)
+    }
+
+    private getSeverityIcon() {
+        const iconPath = globals.context.asAbsolutePath(
+            `resources/icons/aws/amazonq/severity-${this.issue.severity.toLowerCase()}.svg`
+        )
+        const groupingStrategy = CodeIssueGroupingStrategyState.instance.getState()
+        return groupingStrategy !== CodeIssueGroupingStrategy.Severity ? iconPath : undefined
+    }
+
+    private getDescription() {
+        const positionStr = `[Ln ${this.issue.startLine + 1}, Col 1]`
+        const groupingStrategy = CodeIssueGroupingStrategyState.instance.getState()
+        return groupingStrategy !== CodeIssueGroupingStrategy.FileLocation
+            ? `${path.basename(this.filePath)} ${positionStr}`
+            : positionStr
     }
 
     private getContextValue() {
@@ -147,24 +209,5 @@ export class IssueItem extends vscode.TreeItem {
         markdown.appendMarkdown(this.issue.recommendation.text)
 
         return markdown
-    }
-}
-
-export class SecurityIssuesTree {
-    static #instance: SecurityIssuesTree
-    public static get instance() {
-        return (this.#instance ??= new this())
-    }
-
-    constructor() {
-        vscode.window.createTreeView(SecurityIssueTreeViewProvider.viewType, {
-            treeDataProvider: SecurityIssueTreeViewProvider.instance,
-        })
-    }
-
-    public focus() {
-        void vscode.commands.executeCommand('aws.amazonq.SecurityIssuesTree.focus').then(undefined, (e) => {
-            getLogger().error('SecurityIssuesTree focus failed: %s', e.message)
-        })
     }
 }

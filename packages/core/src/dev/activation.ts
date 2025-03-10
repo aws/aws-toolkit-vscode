@@ -15,15 +15,16 @@ import { Wizard } from '../shared/wizards/wizard'
 import { deleteDevEnvCommand, installVsixCommand, openTerminalCommand } from './codecatalyst'
 import { isAnySsoConnection } from '../auth/connection'
 import { Auth } from '../auth/auth'
-import { getLogger } from '../shared/logger'
+import { getLogger } from '../shared/logger/logger'
 import { entries } from '../shared/utilities/tsUtils'
 import { getEnvironmentSpecificMemento } from '../shared/utilities/mementos'
-import { setContext } from '../shared'
-import { telemetry } from '../shared/telemetry'
+import { setContext } from '../shared/vscode/setContext'
+import { telemetry } from '../shared/telemetry/telemetry'
 import { getSessionId } from '../shared/telemetry/util'
 import { NotificationsController } from '../notifications/controller'
 import { DevNotificationsState } from '../notifications/types'
 import { QuickPickItem } from 'vscode'
+import { ChildProcess } from '../shared/utilities/processUtils'
 
 interface MenuOption {
     readonly label: string
@@ -44,6 +45,7 @@ export type DevFunction =
     | 'editAuthConnections'
     | 'notificationsSend'
     | 'forceIdeCrash'
+    | 'startChildProcess'
 
 export type DevOptions = {
     context: vscode.ExtensionContext
@@ -126,6 +128,11 @@ const menuOptions: () => Record<DevFunction, MenuOption> = () => {
             detail: `Will SIGKILL ExtHost, { pid: ${process.pid}, sessionId: '${getSessionId().slice(0, 8)}-...' }, but the IDE itself will not crash.`,
             executor: forceQuitIde,
         },
+        startChildProcess: {
+            label: 'ChildProcess: Start child process',
+            detail: 'Start ChildProcess from our utility wrapper for testing',
+            executor: startChildProcess,
+        },
     }
 }
 
@@ -192,20 +199,6 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
                     .filter((e) => (opts.menuOptions ?? Object.keys(options)).includes(e[0]))
                     .map((e) => e[1])
             )
-        }),
-        // "AWS (Developer): Watch Logs"
-        Commands.register('aws.dev.viewLogs', async () => {
-            // HACK: Use startDebugging() so we can use the DEBUG CONSOLE (which supports
-            // user-defined filtering, unlike the OUTPUT panel).
-            await vscode.debug.startDebugging(undefined, {
-                name: 'aws-dev-log',
-                request: 'launch',
-                type: 'node', // Nonsense, to force the debugger to start.
-            })
-            getLogger().enableDebugConsole()
-            if (!getLogger().logLevelEnabled('debug')) {
-                getLogger().setLogLevel('debug')
-            }
         })
     )
 
@@ -334,7 +327,7 @@ class ObjectEditor {
                 return this.openState(targetContext.secrets, key)
             case 'auth':
                 // Auth memento is determined in a different way
-                return this.openState(getEnvironmentSpecificMemento(), key)
+                return this.openState(getEnvironmentSpecificMemento(globalState), key)
         }
     }
 
@@ -411,7 +404,7 @@ async function openStorageFromInput() {
                         title: 'Enter a key',
                     })
                 } else if (target === 'globalsView') {
-                    return new SkipPrompter('')
+                    return new SkipPrompter()
                 } else if (target === 'globals') {
                     // List all globalState keys in the quickpick menu.
                     const items = globalState
@@ -483,7 +476,7 @@ async function resetState() {
 
             this.form.key.bindPrompter(({ target }) => {
                 if (target && resettableFeatures.some((f) => f.name === target)) {
-                    return new SkipPrompter('')
+                    return new SkipPrompter()
                 }
                 throw new Error('invalid feature target')
             })
@@ -577,4 +570,16 @@ async function editNotifications() {
         await targetNotificationsController.pollForStartUp()
         await targetNotificationsController.pollForEmergencies()
     })
+}
+
+async function startChildProcess() {
+    const result = await createInputBox({
+        title: 'Enter a command',
+    }).prompt()
+    if (result) {
+        const [command, ...args] = result?.toString().split(' ') ?? []
+        getLogger().info(`Starting child process: '${command}'`)
+        const processResult = await ChildProcess.run(command, args, { collect: true })
+        getLogger().info(`Child process exited with code ${processResult.exitCode}`)
+    }
 }

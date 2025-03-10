@@ -12,12 +12,12 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import { DefaultStepFunctionsClient, StepFunctionsClient } from '../../shared/clients/stepFunctionsClient'
 
-import { getLogger, Logger } from '../../shared/logger'
+import { getLogger, Logger } from '../../shared/logger/logger'
 import { Result } from '../../shared/telemetry/telemetry'
 import { StateMachineNode } from '../explorer/stepFunctionsNodes'
-import { previewStateMachineCommand } from '../activation'
 import { telemetry } from '../../shared/telemetry/telemetry'
-import { fs } from '../../shared'
+import { fs } from '../../shared/fs/fs'
+import { WorkflowStudioEditorProvider } from '../workflowStudio/workflowStudioEditorProvider'
 
 export async function downloadStateMachineDefinition(params: {
     outputChannel: vscode.OutputChannel
@@ -40,7 +40,10 @@ export async function downloadStateMachineDefinition(params: {
             })
 
             const textEditor = await vscode.window.showTextDocument(doc)
-            await previewStateMachineCommand.execute(textEditor)
+            await WorkflowStudioEditorProvider.openWithWorkflowStudio(textEditor.document.uri, {
+                preserveFocus: true,
+                viewColumn: vscode.ViewColumn.Beside,
+            })
         } else {
             const wsPath = vscode.workspace.workspaceFolders
                 ? vscode.workspace.workspaceFolders[0].uri.fsPath

@@ -24,7 +24,7 @@ import {
     UpdatePromptProgressMessage,
 } from '../../views/connector/connector'
 import { ChatItemType } from '../../../../amazonq/commons/model'
-import { ChatItemAction, ProgressField } from '@aws/mynah-ui'
+import { ChatItemAction, ChatItemButton, ProgressField } from '@aws/mynah-ui'
 import * as CodeWhispererConstants from '../../../../codewhisperer/models/constants'
 import { TriggerPayload } from '../../../../codewhispererChat/controllers/chat/model'
 import {
@@ -36,9 +36,9 @@ import { CodeReference } from '../../../../amazonq/webview/ui/apps/amazonqCommon
 import { getHttpStatusCode, getRequestId, getTelemetryReasonDesc, ToolkitError } from '../../../../shared/errors'
 import { sleep, waitUntil } from '../../../../shared/utilities/timeoutUtils'
 import { keys } from '../../../../shared/utilities/tsUtils'
-import { AuthUtil, testGenState } from '../../../../codewhisperer'
 import { cancellingProgressField, testGenCompletedField } from '../../../models/constants'
-import { telemetry } from '../../../../shared/telemetry/telemetry'
+import { testGenState } from '../../../../codewhisperer/models/model'
+import { TelemetryHelper } from '../../../../codewhisperer/util/telemetryHelper'
 
 export type UnrecoverableErrorType = 'no-project-found' | 'no-open-file-found' | 'invalid-file-type'
 
@@ -76,8 +76,16 @@ export class Messenger {
         this.dispatcher.sendChatMessage(new CapabilityCardMessage(params.tabID))
     }
 
-    public sendMessage(message: string, tabID: string, messageType: ChatItemType) {
-        this.dispatcher.sendChatMessage(new ChatMessage({ message, messageType }, tabID))
+    public sendMessage(
+        message: string,
+        tabID: string,
+        messageType: ChatItemType,
+        messageId?: string,
+        buttons?: ChatItemButton[]
+    ) {
+        this.dispatcher.sendChatMessage(
+            new ChatMessage({ message, messageType, messageId: messageId, buttons: buttons }, tabID)
+        )
     }
 
     public sendShortSummary(params: {
@@ -159,16 +167,7 @@ export class Messenger {
                 message = CodeWhispererConstants.invalidFileTypeChatMessage
                 break
         }
-
-        this.dispatcher.sendChatMessage(
-            new ChatMessage(
-                {
-                    message,
-                    messageType: 'answer-stream',
-                },
-                tabID
-            )
-        )
+        this.sendMessage(message, tabID, 'answer-stream')
     }
 
     public sendErrorMessage(errorMessage: string, tabID: string) {
@@ -184,7 +183,8 @@ export class Messenger {
         tabID: string,
         triggerID: string,
         triggerPayload: TriggerPayload,
-        fileName: string
+        fileName: string,
+        fileInWorkspace: boolean
     ) {
         let message = ''
         let messageId = response.$metadata.requestId ?? ''
@@ -275,31 +275,55 @@ export class Messenger {
             .finally(async () => {
                 if (testGenState.isCancelling()) {
                     this.sendMessage(CodeWhispererConstants.unitTestGenerationCancelMessage, tabID, 'answer')
-                    telemetry.amazonq_utgGenerateTests.emit({
-                        cwsprChatProgrammingLanguage: session.fileLanguage ?? 'plaintext',
-                        hasUserPromptSupplied: session.hasUserPromptSupplied,
-                        perfClientLatency: performance.now() - session.testGenerationStartTime,
-                        result: 'Cancelled',
-                        reasonDesc: getTelemetryReasonDesc(CodeWhispererConstants.unitTestGenerationCancelMessage),
-                        isSupportedLanguage: false,
-                        credentialStartUrl: AuthUtil.instance.startUrl,
-                        requestId: messageId,
-                    })
-
+                    TelemetryHelper.instance.sendTestGenerationToolkitEvent(
+                        session,
+                        false,
+                        fileInWorkspace,
+                        'Cancelled',
+                        messageId,
+                        performance.now() - session.testGenerationStartTime,
+                        getTelemetryReasonDesc(
+                            `TestGenCancelled: ${CodeWhispererConstants.unitTestGenerationCancelMessage}`
+                        ),
+                        undefined,
+                        undefined,
+                        undefined,
+                        undefined,
+                        undefined,
+                        undefined,
+                        undefined,
+                        undefined,
+                        undefined,
+                        undefined,
+                        'TestGenCancelled',
+                        'CANCELLED'
+                    )
                     this.dispatcher.sendUpdatePromptProgress(
                         new UpdatePromptProgressMessage(tabID, cancellingProgressField)
                     )
                     await sleep(500)
                 } else {
-                    telemetry.amazonq_utgGenerateTests.emit({
-                        cwsprChatProgrammingLanguage: session.fileLanguage ?? 'plaintext',
-                        hasUserPromptSupplied: session.hasUserPromptSupplied,
-                        perfClientLatency: performance.now() - session.testGenerationStartTime,
-                        result: 'Succeeded',
-                        isSupportedLanguage: false,
-                        credentialStartUrl: AuthUtil.instance.startUrl,
-                        requestId: messageId,
-                    })
+                    TelemetryHelper.instance.sendTestGenerationToolkitEvent(
+                        session,
+                        false,
+                        fileInWorkspace,
+                        'Succeeded',
+                        messageId,
+                        performance.now() - session.testGenerationStartTime,
+                        undefined,
+                        undefined,
+                        undefined,
+                        undefined,
+                        undefined,
+                        undefined,
+                        undefined,
+                        undefined,
+                        undefined,
+                        undefined,
+                        undefined,
+                        undefined,
+                        'ACCEPTED'
+                    )
                     this.dispatcher.sendUpdatePromptProgress(
                         new UpdatePromptProgressMessage(tabID, testGenCompletedField)
                     )

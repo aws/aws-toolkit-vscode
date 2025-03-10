@@ -10,7 +10,6 @@ import {
     SamInvokeWebview,
     finalizeConfig,
 } from '../../../lambda/vue/configEditor/samInvokeBackend'
-import { ExtContext } from '../../../shared/extensions'
 import { AwsSamDebuggerConfiguration } from '../../../shared/sam/debugger/awsSamDebugConfiguration'
 import assert from 'assert'
 import * as picker from '../../../shared/ui/picker'
@@ -22,12 +21,11 @@ import path from 'path'
 import { addCodiconToString, fs, makeTemporaryToolkitFolder } from '../../../shared'
 import { LaunchConfiguration } from '../../../shared/debug/launchConfiguration'
 import { getTestWindow } from '../..'
-import * as extensionUtilities from '../../../shared/extensionUtilities'
 import * as samInvokeBackend from '../../../lambda/vue/configEditor/samInvokeBackend'
-import { SamDebugConfigProvider } from '../../../shared/sam/debugger/awsSamDebugger'
 import sinon from 'sinon'
 import * as nls from 'vscode-nls'
 import { assertLogsContain } from '../../../test/globalSetup.test'
+import { createResponse } from '../../testUtil'
 
 const localize = nls.loadMessageBundle()
 
@@ -68,13 +66,11 @@ const mockConfig: AwsSamDebuggerConfigurationLoose = {
 
 describe('SamInvokeWebview', () => {
     let samInvokeWebview: SamInvokeWebview
-    let mockExtContext: ExtContext
     let sandbox: sinon.SinonSandbox
 
     beforeEach(() => {
-        mockExtContext = {} as ExtContext
         sandbox = sinon.createSandbox()
-        samInvokeWebview = new SamInvokeWebview(mockExtContext, mockConfig, mockResourceData)
+        samInvokeWebview = new SamInvokeWebview(mockConfig, mockResourceData)
     })
 
     afterEach(() => {
@@ -82,7 +78,7 @@ describe('SamInvokeWebview', () => {
     })
 
     it('should return undefined when no resource data is provided', () => {
-        const noResourceWebview = new SamInvokeWebview(mockExtContext, mockConfig, undefined)
+        const noResourceWebview = new SamInvokeWebview(mockConfig, undefined)
         const data = noResourceWebview.getResourceData()
 
         // Using assert to check if the data is undefined
@@ -94,7 +90,7 @@ describe('SamInvokeWebview', () => {
             const tempFolder = await makeTemporaryToolkitFolder()
             const testCases = [{ input: vscode.Uri.file(path.join(tempFolder, 'file.txt')), expected: 'file.txt' }]
 
-            testCases.forEach(({ input, expected }) => {
+            for (const { input, expected } of testCases) {
                 const result = samInvokeWebview.getFileName(input.fsPath)
                 assert.strictEqual(result, expected, `getFileName("${input}") should return "${expected}"`)
 
@@ -105,7 +101,7 @@ describe('SamInvokeWebview', () => {
                     nodeResult,
                     `getFileName result should match Node's path.basename for "${input}"`
                 )
-            })
+            }
             await fs.delete(tempFolder, { recursive: true })
         })
     })
@@ -166,7 +162,7 @@ describe('SamInvokeWebview', () => {
             createQuickPickStub.returns({})
             promptUserStub.resolves([{ label: 'testEvent', filename: 'testEvent.json' }])
             verifySinglePickerOutputStub.returns({ label: 'testEvent', filename: 'testEvent.json' })
-            httpFetcherStub.resolves(mockSampleContent)
+            httpFetcherStub.resolves(createResponse(mockSampleContent))
 
             const result = await samInvokeWebview.getSamplePayload()
 
@@ -396,7 +392,7 @@ describe('SamInvokeWebview', () => {
             const tempFolder = await makeTemporaryToolkitFolder()
             const testCases = [{ input: vscode.Uri.file(path.join(tempFolder, 'file.txt')), expected: 'file.txt' }]
 
-            testCases.forEach(({ input, expected }) => {
+            for (const { input, expected } of testCases) {
                 const result = samInvokeWebview.getFileName(input.fsPath)
                 assert.strictEqual(result, expected, `getFileName("${input}") should return "${expected}"`)
 
@@ -407,7 +403,7 @@ describe('SamInvokeWebview', () => {
                     nodeResult,
                     `getFileName result should match Node's path.basename for "${input}"`
                 )
-            })
+            }
             await fs.delete(tempFolder, { recursive: true })
         })
         it('prompts the user for a file and returns the selected file', async () => {
@@ -579,9 +575,8 @@ describe('SamInvokeWebview', () => {
             sandbox.restore()
         })
 
-        it('should invoke launch config for non-Cloud9 environment', async () => {
+        it('should invoke launch config', async () => {
             workspaceFoldersStub.value([mockFolder])
-            sandbox.stub(extensionUtilities, 'isCloud9').returns(false)
             sandbox.replace(samInvokeWebview as any, 'getUriFromLaunchConfig', getUriFromLaunchConfigStub)
             getUriFromLaunchConfigStub.resolves(mockUri)
 
@@ -590,27 +585,6 @@ describe('SamInvokeWebview', () => {
             await samInvokeWebview.invokeLaunchConfig(mockConfig)
 
             assert(startDebuggingStub.called)
-        })
-
-        it('should invoke launch config for Cloud9 environment', async () => {
-            workspaceFoldersStub.value([mockFolder])
-            sandbox.stub(extensionUtilities, 'isCloud9').returns(true)
-            sandbox.replace(samInvokeWebview as any, 'getUriFromLaunchConfig', getUriFromLaunchConfigStub)
-            getUriFromLaunchConfigStub.resolves(mockUri)
-
-            const startDebuggingStub = sandbox.stub(vscode.debug, 'startDebugging').resolves(true)
-
-            await samInvokeWebview.invokeLaunchConfig(mockConfig)
-
-            assert(startDebuggingStub.notCalled)
-        })
-        it('should use SamDebugConfigProvider for Cloud9 environment', async () => {
-            sandbox.stub(extensionUtilities, 'isCloud9').returns(true)
-            const SamDebugConfigProviderStub = sinon.stub(SamDebugConfigProvider.prototype, 'resolveDebugConfiguration')
-
-            await samInvokeWebview.invokeLaunchConfig(mockConfig)
-
-            assert(SamDebugConfigProviderStub.called)
         })
     })
     describe('saveLaunchConfig', function () {
@@ -700,7 +674,6 @@ describe('SamInvokeWebview', () => {
             })
             it('should not save launch config', async () => {
                 workspaceFoldersStub.value([mockFolder])
-                sandbox.stub(extensionUtilities, 'isCloud9').returns(false)
                 sandbox.replace(samInvokeWebview as any, 'getUriFromLaunchConfig', getUriFromLaunchConfigStub)
                 const launchConfigItems = launchConfigurationsStub.resolves([])
                 getUriFromLaunchConfigStub.resolves(mockUri)
@@ -755,6 +728,9 @@ describe('SamInvokeWebview', () => {
                     },
                     lambda: {
                         runtime: 'python3.9',
+                        environmentVariables: {
+                            PARAM1: 'VALUE',
+                        },
                     },
                     sam: {
                         containerBuild: false,
@@ -781,7 +757,6 @@ describe('SamInvokeWebview', () => {
 
             it('should save launch config', async () => {
                 workspaceFoldersStub.value([mockFolder])
-                sandbox.stub(extensionUtilities, 'isCloud9').returns(false)
                 getUriFromLaunchConfigStub.resolves(mockUri)
                 sandbox.replace(samInvokeWebview as any, 'getUriFromLaunchConfig', getUriFromLaunchConfigStub)
                 const launchConfigItems = launchConfigurationsStub.resolves([

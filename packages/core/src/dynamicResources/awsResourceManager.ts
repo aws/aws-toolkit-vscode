@@ -17,9 +17,8 @@ import { getLogger } from '../shared/logger/logger'
 import { getTabSizeSetting } from '../shared/utilities/editorUtilities'
 import { ResourceNode } from './explorer/nodes/resourceNode'
 import { ResourceTypeNode } from './explorer/nodes/resourceTypeNode'
-import { isCloud9 } from '../shared/extensionUtilities'
 import globals from '../shared/extensionGlobals'
-import { fs } from '../shared'
+import { fs } from '../shared/fs/fs'
 
 export const resourceFileGlobPattern = '**/*.awsResource.json'
 
@@ -72,7 +71,7 @@ export class AwsResourceManager {
             }
 
             const doc = await vscode.workspace.openTextDocument(uri)
-            if (existing && !isCloud9()) {
+            if (existing) {
                 await this.close(existing)
             }
 

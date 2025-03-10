@@ -11,7 +11,7 @@ const localize = nls.loadMessageBundle()
 import * as path from 'path'
 import * as vscode from 'vscode'
 import * as localizedText from '../../shared/localizedText'
-import { getLogger } from '../../shared/logger'
+import { getLogger } from '../../shared/logger/logger'
 import { createHelpButton } from '../../shared/ui/buttons'
 import * as input from '../../shared/ui/input'
 import * as picker from '../../shared/ui/picker'
@@ -39,7 +39,7 @@ import { recentlyUsed } from '../../shared/localizedText'
 import globals from '../../shared/extensionGlobals'
 import { SamCliSettings } from '../../shared/sam/cli/samCliSettings'
 import { getIcon } from '../../shared/icons'
-import { DefaultS3Client } from '../../shared/clients/s3Client'
+import { S3Client } from '../../shared/clients/s3'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { openUrl } from '../../shared/utilities/vsCodeUtils'
 
@@ -802,8 +802,8 @@ export class SamDeployWizard extends MultiStepWizard<SamDeployWizardResponse> {
             }
 
             try {
-                const s3Client = new DefaultS3Client(this.response.region!)
-                const newBucketName = (await s3Client.createBucket({ bucketName: newBucketRequest })).bucket.name
+                const s3Client = new S3Client(this.response.region!)
+                const newBucketName = (await s3Client.createBucket({ bucketName: newBucketRequest })).bucket.Name
                 this.response.s3Bucket = newBucketName
                 getLogger().info('Created bucket: %O', newBucketName)
                 void vscode.window.showInformationMessage(
@@ -946,11 +946,11 @@ async function getTemplateChoices(...workspaceFolders: vscode.Uri[]): Promise<Sa
     const uriToLabel: Map<vscode.Uri, string> = new Map<vscode.Uri, string>()
     const labelCounts: Map<string, number> = new Map()
 
-    templateUris.forEach((uri) => {
+    for (const uri of templateUris) {
         const label = SamTemplateQuickPickItem.getLabel(uri)
         uriToLabel.set(uri, label)
         labelCounts.set(label, 1 + (labelCounts.get(label) || 0))
-    })
+    }
 
     return Array.from(uriToLabel, ([uri, label]) => {
         const showWorkspaceFolderDetails: boolean = (labelCounts.get(label) || 0) > 1
@@ -1007,7 +1007,7 @@ async function populateS3QuickPick(
         }
 
         try {
-            const s3Client = new DefaultS3Client(selectedRegion)
+            const s3Client = new S3Client(selectedRegion)
 
             quickPick.items = [...baseItems]
 
@@ -1025,10 +1025,10 @@ async function populateS3QuickPick(
                 ]
             } else {
                 const bucketItems = buckets
-                    .filter((bucket) => bucket.name !== recent && !(isCloud9() && bucket.name === cloud9Bucket))
+                    .filter((bucket) => bucket.Name !== recent && !(isCloud9() && bucket.Name === cloud9Bucket))
                     .map((bucket) => {
                         return {
-                            label: bucket.name,
+                            label: bucket.Name,
                         }
                     })
 

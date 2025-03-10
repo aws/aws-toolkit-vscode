@@ -36,10 +36,12 @@
         "lintfix": "eslint -c .eslintrc.js --ignore-path .gitignore --ignore-pattern '**/*.json' --ignore-pattern '**/*.gen.ts' --ignore-pattern '**/types/*.d.ts' --ignore-pattern '**/src/testFixtures/**' --ignore-pattern '**/resources/js/graphStateMachine.js' --fix --ext .ts packages plugins",
         "clean": "npm run clean -w packages/ -w plugins/",
         "reset": "npm run clean && ts-node ./scripts/clean.ts node_modules && npm install",
-        "generateNonCodeFiles": "npm run generateNonCodeFiles -w packages/ --if-present"
+        "generateNonCodeFiles": "npm run generateNonCodeFiles -w packages/ --if-present",
+        "mergeReports": "ts-node ./scripts/mergeReports.ts",
+        "skippedTestReport": "ts-node ./scripts/skippedTestReport.ts ./packages/amazonq/test/e2e/"
     },
     "devDependencies": {
-        "@aws-toolkits/telemetry": "^1.0.284",
+        "@aws-toolkits/telemetry": "^1.0.307",
         "@playwright/browser-chromium": "^1.43.1",
         "@stylistic/eslint-plugin": "^2.11.0",
         "@types/he": "^1.2.3",
@@ -50,7 +52,7 @@
         "@typescript-eslint/parser": "^7.14.1",
         "@vscode/codicons": "^0.0.33",
         "@vscode/test-electron": "^2.3.8",
-        "@vscode/test-web": "^0.0.54",
+        "@vscode/test-web": "^0.0.65",
         "@vscode/vsce": "^2.19.0",
         "eslint": "^8.56.0",
         "eslint-config-prettier": "^9.1.0",

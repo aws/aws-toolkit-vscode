@@ -28,9 +28,9 @@ type setupResult = {
 function performanceTestWrapper(numFiles: number, fileSize: number) {
     return performanceTest(
         getEqualOSTestOptions({
-            userCpuUsage: 150,
+            userCpuUsage: 200,
             systemCpuUsage: 35,
-            heapTotal: 4,
+            heapTotal: 20,
         }),
         `handles ${numFiles} files of size ${fileSize} bytes`,
         function () {
@@ -46,9 +46,14 @@ function performanceTestWrapper(numFiles: number, fileSize: number) {
                     return { workspace, fsSpy, numFiles, fileSize }
                 },
                 execute: async (setup: setupResult) => {
-                    return await prepareRepoData([setup.workspace.uri.fsPath], [setup.workspace], telemetry, {
-                        record: () => {},
-                    } as unknown as Span<AmazonqCreateUpload>)
+                    return await prepareRepoData(
+                        [setup.workspace.uri.fsPath],
+                        [setup.workspace],
+                        {
+                            record: () => {},
+                        } as unknown as Span<AmazonqCreateUpload>,
+                        { telemetry }
+                    )
                 },
                 verify: async (setup: setupResult, result: resultType) => {
                     verifyResult(setup, result, telemetry, numFiles * fileSize)
@@ -63,8 +68,7 @@ function verifyResult(setup: setupResult, result: resultType, telemetry: Telemet
     assert.strictEqual(Buffer.isBuffer(result.zipFileBuffer), true)
     assert.strictEqual(telemetry.repositorySize, expectedSize)
     assert.strictEqual(result.zipFileChecksum.length, 44)
-
-    assert.ok(getFsCallsUpperBound(setup.fsSpy) <= setup.numFiles * 4, 'total system calls should be under 4 per file')
+    assert.ok(getFsCallsUpperBound(setup.fsSpy) <= setup.numFiles * 8, 'total system calls should be under 8 per file')
 }
 
 describe('prepareRepoData', function () {

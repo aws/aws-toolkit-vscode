@@ -10,13 +10,13 @@ import * as vscode from 'vscode'
 import { Credentials } from '@aws-sdk/types'
 import { authHelpUrl } from '../../shared/constants'
 import globals from '../../shared/extensionGlobals'
-import { isCloud9 } from '../../shared/extensionUtilities'
 import { messages, showMessageWithCancel, showViewLogsMessage } from '../../shared/utilities/messages'
 import { Timeout, waitTimeout } from '../../shared/utilities/timeoutUtils'
 import { fromExtensionManifest } from '../../shared/settings'
 import { Profile } from './sharedCredentials'
-import { createInputBox, promptUser } from '../../shared/ui/input'
 import { openUrl } from '../../shared/utilities/vsCodeUtils'
+import { createInputBox } from '../../shared/ui/inputPrompter'
+import { isValidResponse } from '../../shared/wizards/wizard'
 
 const credentialsTimeout = 300000 // 5 minutes
 const credentialsProgressDelay = 1000
@@ -37,8 +37,8 @@ export function asEnvironmentVariables(credentials: Credentials): NodeJS.Process
 export function showLoginFailedMessage(credentialsId: string, errMsg: string): void {
     const getHelp = localize('AWS.generic.message.getHelp', 'Get Help...')
     const editCreds = messages.editCredentials(false)
-    // TODO: getHelp page for Cloud9.
-    const buttons = isCloud9() ? [editCreds] : [editCreds, getHelp]
+    // TODO: Any work towards web/another cloud9 -esqe IDE may need different getHelp docs:
+    const buttons = [editCreds, getHelp]
 
     void showViewLogsMessage(
         localize('AWS.message.credentials.invalid', 'Credentials "{0}" failed to connect: {1}', credentialsId, errMsg),
@@ -114,18 +114,16 @@ const errorMessageUserCancelled = localize('AWS.error.mfa.userCancelled', 'User 
  */
 export async function getMfaTokenFromUser(mfaSerial: string, profileName: string): Promise<string> {
     const inputBox = createInputBox({
-        options: {
-            ignoreFocusOut: true,
-            placeHolder: localize('AWS.prompt.mfa.enterCode.placeholder', 'Enter Authentication Code Here'),
-            title: localize('AWS.prompt.mfa.enterCode.title', 'MFA Challenge for {0}', profileName),
-            prompt: localize('AWS.prompt.mfa.enterCode.prompt', 'Enter code for MFA device {0}', mfaSerial),
-        },
+        ignoreFocusOut: true,
+        placeholder: localize('AWS.prompt.mfa.enterCode.placeholder', 'Enter Authentication Code Here'),
+        title: localize('AWS.prompt.mfa.enterCode.title', 'MFA Challenge for {0}', profileName),
+        prompt: localize('AWS.prompt.mfa.enterCode.prompt', 'Enter code for MFA device {0}', mfaSerial),
     })
 
-    const token = await promptUser({ inputBox: inputBox })
+    const token = await inputBox.prompt()
 
     // Distinguish user cancel vs code entry issues with the error message
-    if (!token) {
+    if (!isValidResponse(token)) {
         throw new Error(errorMessageUserCancelled)
     }
 

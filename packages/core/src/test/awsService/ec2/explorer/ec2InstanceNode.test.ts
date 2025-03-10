@@ -10,14 +10,15 @@ import {
     Ec2InstanceRunningContext,
     Ec2InstanceStoppedContext,
 } from '../../../../awsService/ec2/explorer/ec2InstanceNode'
-import { Ec2Client, SafeEc2Instance, getNameOfInstance } from '../../../../shared/clients/ec2Client'
+import { Ec2Client, Ec2Instance, getNameOfInstance } from '../../../../shared/clients/ec2'
 import { Ec2ParentNode } from '../../../../awsService/ec2/explorer/ec2ParentNode'
 import * as sinon from 'sinon'
 import { PollingSet } from '../../../../shared/utilities/pollingSet'
+import { InstanceStateName } from '@aws-sdk/client-ec2'
 
 describe('ec2InstanceNode', function () {
     let testNode: Ec2InstanceNode
-    let testInstance: SafeEc2Instance
+    let testInstance: Ec2Instance
     const testRegion = 'testRegion'
     const testPartition = 'testPartition'
 
@@ -35,7 +36,7 @@ describe('ec2InstanceNode', function () {
         sinon.stub(Ec2InstanceNode.prototype, 'updateStatus')
         // Don't want to be polling here, that is tested in ../ec2ParentNode.test.ts
         // disabled here for convenience (avoiding race conditions with timeout)
-        sinon.stub(PollingSet.prototype, 'start')
+        sinon.stub(PollingSet.prototype, 'add')
         const testClient = new Ec2Client('')
         const testParentNode = new Ec2ParentNode(testRegion, testPartition, testClient)
         testNode = new Ec2InstanceNode(testParentNode, testClient, 'testRegion', 'testPartition', testInstance)
@@ -79,22 +80,22 @@ describe('ec2InstanceNode', function () {
     })
 
     it('sets context value based on status', async function () {
-        const stoppedInstance = { ...testInstance, LastSeenStatus: 'stopped' }
+        const stoppedInstance = { ...testInstance, LastSeenStatus: 'stopped' as InstanceStateName }
         testNode.updateInstance(stoppedInstance)
         assert.strictEqual(testNode.contextValue, Ec2InstanceStoppedContext)
 
-        const runningInstance = { ...testInstance, LastSeenStatus: 'running' }
+        const runningInstance = { ...testInstance, LastSeenStatus: 'running' as InstanceStateName }
         testNode.updateInstance(runningInstance)
         assert.strictEqual(testNode.contextValue, Ec2InstanceRunningContext)
 
-        const pendingInstance = { ...testInstance, LastSeenStatus: 'pending' }
+        const pendingInstance = { ...testInstance, LastSeenStatus: 'pending' as InstanceStateName }
         testNode.updateInstance(pendingInstance)
         assert.strictEqual(testNode.contextValue, Ec2InstancePendingContext)
     })
 
     it('updates status with new instance', async function () {
         const newStatus = 'pending'
-        const newIdInstance = { ...testInstance, InstanceId: 'testId2', LastSeenStatus: newStatus }
+        const newIdInstance = { ...testInstance, InstanceId: 'testId2', LastSeenStatus: newStatus as InstanceStateName }
         testNode.updateInstance(newIdInstance)
         assert.strictEqual(testNode.getStatus(), newStatus)
     })

@@ -5,7 +5,7 @@
 
 import * as path from 'path'
 import http from 'http'
-import { getLogger } from '../../shared/logger'
+import { getLogger } from '../../shared/logger/logger'
 import { ToolkitError } from '../../shared/errors'
 import { Socket } from 'net'
 import globals from '../../shared/extensionGlobals'
@@ -163,9 +163,9 @@ export class AuthSSOServer {
 
             getLogger().debug('AuthSSOServer: Attempting to close server.')
 
-            this.connections.forEach((connection) => {
+            for (const connection of this.connections) {
                 connection.destroy()
-            })
+            }
 
             this.server.close((err) => {
                 if (err) {

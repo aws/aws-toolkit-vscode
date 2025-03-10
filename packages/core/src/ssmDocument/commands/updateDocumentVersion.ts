@@ -9,7 +9,7 @@ const localize = nls.loadMessageBundle()
 import { SSM } from 'aws-sdk'
 import * as vscode from 'vscode'
 import { AwsContext } from '../../shared/awsContext'
-import { getLogger, Logger } from '../../shared/logger'
+import { getLogger, Logger } from '../../shared/logger/logger'
 import * as picker from '../../shared/ui/picker'
 import { DocumentItemNodeWriteable } from '../explorer/documentItemNodeWriteable'
 import { showViewLogsMessage } from '../../shared/utilities/messages'
@@ -79,14 +79,14 @@ export async function updateDocumentVersion(node: DocumentItemNodeWriteable, aws
 async function promptUserforDocumentVersion(versions: SSM.Types.DocumentVersionInfo[]): Promise<string | undefined> {
     // Prompt user to pick document version
     const quickPickItems: vscode.QuickPickItem[] = []
-    versions.forEach((version) => {
+    for (const version of versions) {
         if (version.DocumentVersion) {
             quickPickItems.push({
                 label: version.DocumentVersion,
                 description: `${version.IsDefaultVersion ? 'Default' : ''}`,
             })
         }
-    })
+    }
 
     if (quickPickItems.length > 1) {
         const versionPick = picker.createQuickPick({

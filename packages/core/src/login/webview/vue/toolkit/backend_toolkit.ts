@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import { tryAddCredentials } from '../../../../auth/utils'
-import { getLogger } from '../../../../shared/logger'
+import { getLogger } from '../../../../shared/logger/logger'
 import { CommonAuthWebview } from '../backend'
 import {
     AwsConnection,
@@ -19,7 +19,7 @@ import {
 import { Auth } from '../../../../auth/auth'
 import { CodeCatalystAuthenticationProvider } from '../../../../codecatalyst/auth'
 import { AuthError, AuthFlowState } from '../types'
-import { setContext } from '../../../../shared'
+import { setContext } from '../../../../shared/vscode/setContext'
 import { builderIdStartUrl } from '../../../../auth/sso/constants'
 
 export class ToolkitLoginWebview extends CommonAuthWebview {
@@ -134,7 +134,7 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
      */
     async fetchConnections(): Promise<AwsConnection[] | undefined> {
         const connections: AwsConnection[] = []
-        Auth.instance.declaredConnections.forEach((conn) => {
+        for (const conn of Auth.instance.declaredConnections) {
             // No need to display Builder ID as an existing connection,
             // users can just select the Builder ID login option and it would have the same effect.
             if (conn.startUrl !== builderIdStartUrl) {
@@ -143,7 +143,7 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
                     startUrl: conn.startUrl,
                 } as AwsConnection)
             }
-        })
+        }
         return connections
     }
 

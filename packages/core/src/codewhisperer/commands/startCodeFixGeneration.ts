@@ -2,7 +2,8 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import { fs, getLogger, tempDirPath } from '../../shared'
+import { fs } from '../../shared/fs/fs'
+import { getLogger } from '../../shared/logger/logger'
 import {
     createCodeFixJob,
     getCodeFixJob,
@@ -16,6 +17,7 @@ import { CreateCodeFixError } from '../models/errors'
 import AdmZip from 'adm-zip'
 import path from 'path'
 import { TelemetryHelper } from '../util/telemetryHelper'
+import { tempDirPath } from '../../shared/filesystemUtilities'
 
 export async function startCodeFixGeneration(
     client: DefaultCodeWhispererClient,

@@ -6,17 +6,17 @@
 import assert from 'assert'
 import * as sinon from 'sinon'
 import { Ec2ParentNode } from '../../../../awsService/ec2/explorer/ec2ParentNode'
-import { Ec2Client, SafeEc2Instance } from '../../../../shared/clients/ec2Client'
-import { intoCollection } from '../../../../shared/utilities/collectionUtils'
+import { Ec2Client, Ec2Instance } from '../../../../shared/clients/ec2'
 import {
     assertNodeListOnlyHasErrorNode,
     assertNodeListOnlyHasPlaceholderNode,
 } from '../../../utilities/explorerNodeAssertions'
 import { Ec2InstanceNode } from '../../../../awsService/ec2/explorer/ec2InstanceNode'
-import { EC2 } from 'aws-sdk'
-import { AsyncCollection } from '../../../../shared/utilities/asyncCollection'
 import * as FakeTimers from '@sinonjs/fake-timers'
 import { installFakeClock } from '../../../testUtil'
+import { Filter } from '@aws-sdk/client-ec2'
+import { AsyncCollection } from '../../../../shared/utilities/asyncCollection'
+import { intoCollection } from '../../../../shared/utilities/collectionUtils'
 
 export const testInstance = {
     InstanceId: 'testId',
@@ -27,29 +27,19 @@ export const testInstance = {
         },
     ],
     LastSeenStatus: 'running',
-}
+} satisfies Ec2Instance
 export const testClient = new Ec2Client('')
 export const testParentNode = new Ec2ParentNode('fake-region', 'testPartition', testClient)
 
 describe('ec2ParentNode', function () {
     let testNode: Ec2ParentNode
     let client: Ec2Client
-    let getInstanceStub: sinon.SinonStub<[filters?: EC2.Filter[] | undefined], Promise<AsyncCollection<EC2.Instance>>>
+    let getInstancesStub: sinon.SinonStub<[filters?: Filter[] | undefined], AsyncCollection<Ec2Instance[]>>
     let clock: FakeTimers.InstalledClock
     let refreshStub: sinon.SinonStub<[], Promise<void>>
     let statusUpdateStub: sinon.SinonStub<[status: string], Promise<string>>
     const testRegion = 'testRegion'
     const testPartition = 'testPartition'
-
-    function mapToInstanceCollection(instances: SafeEc2Instance[]) {
-        return intoCollection(
-            instances.map((instance) => ({
-                InstanceId: instance.InstanceId,
-                LastSeenStatus: instance.LastSeenStatus,
-                Tags: [{ Key: 'Name', Value: instance.Name }],
-            }))
-        )
-    }
 
     before(function () {
         client = new Ec2Client(testRegion)
@@ -59,13 +49,13 @@ describe('ec2ParentNode', function () {
     })
 
     beforeEach(function () {
-        getInstanceStub = sinon.stub(Ec2Client.prototype, 'getInstances')
+        getInstancesStub = sinon.stub(Ec2Client.prototype, 'getInstances')
         testNode = new Ec2ParentNode(testRegion, testPartition, client)
         refreshStub.resetHistory()
     })
 
     afterEach(function () {
-        getInstanceStub.restore()
+        getInstancesStub.restore()
         testNode.pollingSet.clear()
         testNode.pollingSet.clearTimer()
     })
@@ -76,27 +66,28 @@ describe('ec2ParentNode', function () {
     })
 
     it('returns placeholder node if no children are present', async function () {
-        getInstanceStub.resolves(mapToInstanceCollection([]))
+        getInstancesStub.returns(intoCollection([]))
 
         const childNodes = await testNode.getChildren()
         assertNodeListOnlyHasPlaceholderNode(childNodes)
-        getInstanceStub.restore()
+        getInstancesStub.restore()
     })
 
     it('has instance child nodes', async function () {
         const instances = [
             { Name: 'firstOne', InstanceId: '0', LastSeenStatus: 'running' },
             { Name: 'secondOne', InstanceId: '1', LastSeenStatus: 'stopped' },
-        ]
-        getInstanceStub.resolves(mapToInstanceCollection(instances))
+        ] satisfies Ec2Instance[]
+        getInstancesStub.returns(intoCollection([instances]))
         const childNodes = await testNode.getChildren()
 
         assert.strictEqual(childNodes.length, instances.length, 'Unexpected child count')
 
-        childNodes.forEach((node) =>
+        for (const node of childNodes) {
             assert.ok(node instanceof Ec2InstanceNode, 'Expected child node to be Ec2InstanceNode')
-        )
-        getInstanceStub.restore()
+        }
+
+        getInstancesStub.restore()
     })
 
     it('sorts child nodes', async function () {
@@ -108,22 +99,22 @@ describe('ec2ParentNode', function () {
             { Name: 'aa', InstanceId: '3', LastSeenStatus: 'running' },
             { Name: 'cc', InstanceId: '4', LastSeenStatus: 'running' },
             { Name: 'cd', InstanceId: '5', LastSeenStatus: 'running' },
-        ]
+        ] satisfies Ec2Instance[]
 
-        getInstanceStub.resolves(mapToInstanceCollection(instances))
+        getInstancesStub.returns(intoCollection([instances]))
 
         const childNodes = await testNode.getChildren()
 
         const actualChildOrder = childNodes.map((node) => (node instanceof Ec2InstanceNode ? node.name : undefined))
         assert.deepStrictEqual(actualChildOrder, sortedText, 'Unexpected child sort order')
-        getInstanceStub.restore()
+        getInstancesStub.restore()
     })
 
     it('has an error node for a child if an error happens during loading', async function () {
-        getInstanceStub.throws(new Error())
+        getInstancesStub.throws(new Error())
         const node = new Ec2ParentNode(testRegion, testPartition, client)
         assertNodeListOnlyHasErrorNode(await node.getChildren())
-        getInstanceStub.restore()
+        getInstancesStub.restore()
     })
 
     it('is able to handle children with duplicate names', async function () {
@@ -131,13 +122,13 @@ describe('ec2ParentNode', function () {
             { Name: 'firstOne', InstanceId: '0', LastSeenStatus: 'running' },
             { Name: 'secondOne', InstanceId: '1', LastSeenStatus: 'running' },
             { Name: 'firstOne', InstanceId: '2', LastSeenStatus: 'running' },
-        ]
+        ] satisfies Ec2Instance[]
 
-        getInstanceStub.resolves(mapToInstanceCollection(instances))
+        getInstancesStub.returns(intoCollection([instances]))
 
         const childNodes = await testNode.getChildren()
         assert.strictEqual(childNodes.length, instances.length, 'Unexpected child count')
-        getInstanceStub.restore()
+        getInstancesStub.restore()
     })
 
     it('adds pending nodes to the polling nodes set', async function () {
@@ -145,12 +136,12 @@ describe('ec2ParentNode', function () {
             { Name: 'firstOne', InstanceId: '0', LastSeenStatus: 'pending' },
             { Name: 'secondOne', InstanceId: '1', LastSeenStatus: 'stopped' },
             { Name: 'thirdOne', InstanceId: '2', LastSeenStatus: 'running' },
-        ]
+        ] satisfies Ec2Instance[]
 
-        getInstanceStub.resolves(mapToInstanceCollection(instances))
+        getInstancesStub.returns(intoCollection([instances]))
         await testNode.updateChildren()
         assert.strictEqual(testNode.pollingSet.size, 1)
-        getInstanceStub.restore()
+        getInstancesStub.restore()
     })
 
     it('does not refresh explorer when timer goes off if status unchanged', async function () {
@@ -159,21 +150,21 @@ describe('ec2ParentNode', function () {
             { Name: 'firstOne', InstanceId: '0', LastSeenStatus: 'pending' },
             { Name: 'secondOne', InstanceId: '1', LastSeenStatus: 'stopped' },
             { Name: 'thirdOne', InstanceId: '2', LastSeenStatus: 'running' },
-        ]
+        ] satisfies Ec2Instance[]
 
-        getInstanceStub.resolves(mapToInstanceCollection(instances))
+        getInstancesStub.returns(intoCollection([instances]))
 
         await testNode.updateChildren()
         await clock.tickAsync(6000)
         sinon.assert.notCalled(refreshStub)
-        getInstanceStub.restore()
+        getInstancesStub.restore()
     })
 
     it('does refresh explorer when timer goes and status changed', async function () {
         statusUpdateStub = statusUpdateStub.resolves('running')
-        const instances = [{ Name: 'firstOne', InstanceId: '0', LastSeenStatus: 'pending' }]
+        const instances = [{ Name: 'firstOne', InstanceId: '0', LastSeenStatus: 'pending' }] satisfies Ec2Instance[]
 
-        getInstanceStub.resolves(mapToInstanceCollection(instances))
+        getInstancesStub.returns(intoCollection([instances]))
         await testNode.updateChildren()
 
         sinon.assert.notCalled(refreshStub)
@@ -182,40 +173,40 @@ describe('ec2ParentNode', function () {
     })
 
     it('returns the node when in the map', async function () {
-        const instances = [{ Name: 'firstOne', InstanceId: 'node1', LastSeenStatus: 'pending' }]
+        const instances = [{ Name: 'firstOne', InstanceId: 'node1', LastSeenStatus: 'pending' }] satisfies Ec2Instance[]
 
-        getInstanceStub.resolves(mapToInstanceCollection(instances))
+        getInstancesStub.returns(intoCollection([instances]))
         await testNode.updateChildren()
         const node = testNode.getInstanceNode('node1')
         assert.strictEqual(node.InstanceId, instances[0].InstanceId)
-        getInstanceStub.restore()
+        getInstancesStub.restore()
     })
 
     it('throws error when node not in map', async function () {
-        const instances = [{ Name: 'firstOne', InstanceId: 'node1', LastSeenStatus: 'pending' }]
+        const instances = [{ Name: 'firstOne', InstanceId: 'node1', LastSeenStatus: 'pending' }] satisfies Ec2Instance[]
 
-        getInstanceStub.resolves(mapToInstanceCollection(instances))
+        getInstancesStub.returns(intoCollection([instances]))
         await testNode.updateChildren()
         assert.throws(() => testNode.getInstanceNode('node2'))
-        getInstanceStub.restore()
+        getInstancesStub.restore()
     })
 
     it('adds node to polling set when asked to track it', async function () {
-        const instances = [{ Name: 'firstOne', InstanceId: 'node1', LastSeenStatus: 'pending' }]
+        const instances = [{ Name: 'firstOne', InstanceId: 'node1', LastSeenStatus: 'pending' }] satisfies Ec2Instance[]
 
-        getInstanceStub.resolves(mapToInstanceCollection(instances))
+        getInstancesStub.returns(intoCollection([instances]))
         await testNode.updateChildren()
         testNode.trackPendingNode('node1')
         assert.strictEqual(testNode.pollingSet.size, 1)
-        getInstanceStub.restore()
+        getInstancesStub.restore()
     })
 
     it('throws error when asked to track non-child node', async function () {
-        const instances = [{ Name: 'firstOne', InstanceId: 'node1', LastSeenStatus: 'pending' }]
+        const instances = [{ Name: 'firstOne', InstanceId: 'node1', LastSeenStatus: 'pending' }] satisfies Ec2Instance[]
 
-        getInstanceStub.resolves(mapToInstanceCollection(instances))
+        getInstancesStub.returns(intoCollection([instances]))
         await testNode.updateChildren()
         assert.throws(() => testNode.trackPendingNode('node2'))
-        getInstanceStub.restore()
+        getInstancesStub.restore()
     })
 })

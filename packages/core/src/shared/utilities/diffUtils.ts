@@ -10,7 +10,7 @@ import fs from '../fs/fs'
 import { amazonQDiffScheme } from '../constants'
 import { ContentProvider } from '../../amazonq/commons/controllers/contentController'
 import { disposeOnEditorClose } from './editorUtilities'
-import { getLogger } from '../logger'
+import { getLogger } from '../logger/logger'
 
 /**
  * Get the patched code from a file and a patch.
@@ -136,6 +136,7 @@ export function getDiffCharsAndLines(
         ignoreNewlineAtEof: true,
     } as LinesOptions)
 
+    // eslint-disable-next-line unicorn/no-array-for-each
     diffs.forEach((part: Change) => {
         if (part.added) {
             addedChars += part.value.length
