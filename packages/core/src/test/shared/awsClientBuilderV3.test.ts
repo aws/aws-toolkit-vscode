@@ -329,6 +329,16 @@ describe('AwsClientBuilderV3', function () {
             mockCredsShim.update(newerCreds)
             assert.strictEqual(await service.config.credentials(), newerCreds)
         })
+
+        it('does not initialize credentials if token is provided', function () {
+            const service = builder.createAwsService({
+                serviceClient: Client,
+                clientOptions: {
+                    token: { token: 'my-token', expiration: new Date(Date.now() + oneDay) },
+                },
+            })
+            assert.ok(service.config.credentials === undefined)
+        })
     })
 })
 
@@ -386,7 +396,7 @@ abstract class TestClientBase implements AwsClient {
     public middlewareStack: { add: MiddlewareStack<any, MetadataBearer>['add'] } = {
         add: (_: any, __: any) => {},
     }
-    public async send(command: AwsCommand, options?: any): Promise<any> {}
+    public async send(command: AwsCommand<object, object>, options?: any): Promise<any> {}
     public destroy(): void {}
 }
 
