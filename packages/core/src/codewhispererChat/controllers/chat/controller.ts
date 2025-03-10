@@ -539,6 +539,7 @@ export class ChatController {
                     id: 'prompt-name',
                     type: 'textinput',
                     mandatory: true,
+                    autoFocus: true,
                     title: i18n('AWS.amazonq.savedPrompts.title'),
                     placeholder: i18n('AWS.amazonq.savedPrompts.placeholder'),
                     description: i18n('AWS.amazonq.savedPrompts.description'),
