@@ -35,6 +35,7 @@ export class Session {
     public testGenerationJob: TestGenerationJob | undefined
 
     // Start Test generation
+    public isSupportedLanguage: boolean = false
     public conversationState: ConversationState = ConversationState.IDLE
     public shortAnswer: ShortAnswer | undefined
     public sourceFilePath: string = ''
