@@ -192,7 +192,7 @@ describe('Test how this codebase uses the CodeCatalyst API', function () {
             assert.strictEqual(actualDevEnv.org.name, spaceName)
             assert.strictEqual(actualDevEnv.alias, differentDevEnvSettings.alias)
             assert.strictEqual(actualDevEnv.instanceType, 'dev.standard1.medium')
-            assert.strictEqual(actualDevEnv.persistentStorage && actualDevEnv.persistentStorage.sizeInGiB, 32)
+            assert.ok(actualDevEnv.persistentStorage && actualDevEnv.persistentStorage.sizeInGiB === 32)
         })
 
         it.skip('creates a Dev Environment using an existing branch', async function () {
@@ -429,9 +429,7 @@ describe('Test how this codebase uses the CodeCatalyst API', function () {
      */
     async function createTestCodeCatalystClient(auth: Auth): Promise<CodeCatalystClient> {
         const conn = await useCodeCatalystSsoConnection(auth)
-        // Add retries for tests since many may be running in parallel in github CI.
-        // AWS SDK adds jitter automatically.
-        return await createCodeCatalystClient(conn, undefined, undefined, 5)
+        return await createCodeCatalystClient(conn, undefined, undefined)
     }
 
     /**

@@ -100,7 +100,6 @@ import { DevSettings } from '../settings'
 import { getServiceEnvVarConfig } from '../vscode/env'
 import { AwsCommand } from '../awsClientBuilderV3'
 import { ClientWrapper } from './clientWrapper'
-import { StandardRetryStrategy } from '@smithy/util-retry'
 import { ServiceException } from '@aws-sdk/smithy-client'
 import { AccessDeniedException } from '@aws-sdk/client-sso-oidc'
 import { TokenIdentityProvider } from '@aws-sdk/types'
@@ -221,8 +220,7 @@ function toBranch(
 function createCodeCatalystClientV3(
     tokenProvider: TokenIdentityProvider,
     regionCode: string,
-    endpoint: string,
-    maxRetries: number
+    endpoint: string
 ): CodeCatalystSDKClient {
     return globals.sdkClientBuilderV3.createAwsService({
         serviceClient: CodeCatalystSDKClient,
@@ -230,7 +228,6 @@ function createCodeCatalystClientV3(
             region: regionCode,
             endpoint: endpoint,
             token: tokenProvider,
-            retryStrategy: new StandardRetryStrategy(maxRetries),
         },
     })
 }
@@ -262,10 +259,9 @@ export async function createClient(
     connection: SsoConnection,
     regionCode = getCodeCatalystConfig().region,
     endpoint = getCodeCatalystConfig().endpoint,
-    maxRetries: number = 5,
     authOptions: AuthOptions = {}
 ): Promise<CodeCatalystClient> {
-    const sdkv3Client = createCodeCatalystClientV3(getTokenProvider(connection), regionCode, endpoint, maxRetries)
+    const sdkv3Client = createCodeCatalystClientV3(getTokenProvider(connection), regionCode, endpoint)
     const c = new CodeCatalystClientInternal(connection, sdkv3Client, regionCode)
     try {
         await c.verifySession()
