@@ -15,10 +15,13 @@ import {
     using,
 } from 'aws-core-vscode/test'
 import { RecommendationHandler, RecommendationService, session } from 'aws-core-vscode/codewhisperer'
-import { Commands, globals, sleep, waitUntil } from 'aws-core-vscode/shared'
+import { Commands, globals, sleep, waitUntil, collectionUtil } from 'aws-core-vscode/shared'
 import { loginToIdC } from '../amazonq/utils/setup'
 
 describe('Amazon Q Inline', async function () {
+    const retries = 3
+    this.retries(retries)
+
     let tempFolder: string
     const waitOptions = {
         interval: 500,
@@ -37,12 +40,23 @@ describe('Amazon Q Inline', async function () {
         const folder = await TestFolder.create()
         tempFolder = folder.path
         await closeAllEditors()
-        await resetCodeWhispererGlobalVariables(false)
+        await resetCodeWhispererGlobalVariables()
     })
 
     afterEach(async function () {
         await closeAllEditors()
+        if (this.currentTest?.state === undefined || this.currentTest?.isFailed() || this.currentTest?.isPending()) {
+            logUserDecisionStatus()
+        }
     })
+
+    function logUserDecisionStatus() {
+        const events = getUserTriggerDecision()
+        console.table({
+            'telemetry events': JSON.stringify(events),
+            'recommendation service status': RecommendationService.instance.isRunning,
+        })
+    }
 
     async function setupEditor({ name, contents }: { name?: string; contents?: string } = {}) {
         const fileName = name ?? 'test.ts'
@@ -58,15 +72,27 @@ describe('Amazon Q Inline', async function () {
     }
 
     async function waitForRecommendations() {
-        const ok = await waitUntil(
-            async () =>
-                RecommendationHandler.instance.isSuggestionVisible() || session.getSuggestionState(0) === 'Showed',
+        const suggestionShown = await waitUntil(async () => session.getSuggestionState(0) === 'Showed', waitOptions)
+        if (!suggestionShown) {
+            throw new Error(`Suggestion did not show. Suggestion States: ${JSON.stringify(session.suggestionStates)}`)
+        }
+        const suggestionVisible = await waitUntil(
+            async () => RecommendationHandler.instance.isSuggestionVisible(),
             waitOptions
         )
-        if (!ok) {
-            assert.fail(
+        if (!suggestionVisible) {
+            throw new Error(
                 `Suggestions failed to become visible. Suggestion States: ${JSON.stringify(session.suggestionStates)}`
             )
+        }
+        console.table({
+            'suggestions states': JSON.stringify(session.suggestionStates),
+            'valid recommendation': RecommendationHandler.instance.isValidResponse(),
+            'recommendation service status': RecommendationService.instance.isRunning,
+            recommendations: session.recommendations,
+        })
+        if (!RecommendationHandler.instance.isValidResponse()) {
+            throw new Error('Did not find a valid response')
         }
     }
 
@@ -82,15 +108,21 @@ describe('Amazon Q Inline', async function () {
             })
             return events.some((event) => event.codewhispererSuggestionState === suggestionState)
         }, waitOptions)
-        const events = globals.telemetry.logger.query({
-            metricName,
-        })
         if (!ok) {
-            assert.fail(`Telemetry failed to be emitted. Current events: ${JSON.stringify(events)}`)
+            assert.fail(`Telemetry for ${metricName} with suggestionState ${suggestionState} was not emitted`)
         }
+        const events = getUserTriggerDecision()
         if (events.length > 1 && events[events.length - 1].codewhispererSuggestionState !== suggestionState) {
-            assert.fail(`Telemetry events were emitted in the wrong order. Current events: ${JSON.stringify(events)}`)
+            assert.fail(`Telemetry events were emitted in the wrong order`)
         }
+    }
+
+    function getUserTriggerDecision() {
+        return globals.telemetry.logger
+            .query({
+                metricName: 'codewhisperer_userTriggerDecision',
+            })
+            .map((e) => collectionUtil.partialClone(e, 3, ['credentialStartUrl'], '[omitted]'))
     }
 
     for (const [name, invokeCompletion] of [
@@ -101,7 +133,7 @@ describe('Amazon Q Inline', async function () {
             let originalEditorContents: string | undefined
 
             describe('supported filetypes', () => {
-                beforeEach(async () => {
+                async function setup() {
                     await setupEditor()
 
                     /**
@@ -119,6 +151,31 @@ describe('Amazon Q Inline', async function () {
 
                     // wait until the ghost text appears
                     await waitForRecommendations()
+                }
+
+                beforeEach(async () => {
+                    /**
+                     * Every once and a while the backend won't respond with any recommendations.
+                     * In those cases, re-try the setup up-to ${retries} times
+                     */
+                    let attempt = 0
+                    while (attempt < retries) {
+                        try {
+                            await setup()
+                            console.log(`test run ${attempt} succeeded`)
+                            logUserDecisionStatus()
+                            break
+                        } catch (e) {
+                            console.log(`test run ${attempt} failed`)
+                            console.log(e)
+                            logUserDecisionStatus()
+                            attempt++
+                            await resetCodeWhispererGlobalVariables()
+                        }
+                    }
+                    if (attempt === retries) {
+                        assert.fail(`Failed to invoke ${name} tests after ${attempt} attempts`)
+                    }
                 })
 
                 it(`${name} invoke accept`, async function () {
