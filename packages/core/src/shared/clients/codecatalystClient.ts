@@ -99,6 +99,7 @@ import { ClientWrapper } from './clientWrapper'
 import { StandardRetryStrategy } from '@smithy/util-retry'
 import { ServiceException } from '@aws-sdk/smithy-client'
 import { AccessDeniedException } from '@aws-sdk/client-sso-oidc'
+import { TokenIdentityProvider } from '@aws-sdk/types'
 
 const requiredDevEnvProps = [
     'id',
@@ -231,7 +232,7 @@ async function createCodeCatalystClient(
 }
 
 function createCodeCatalystClientV3(
-    tokenProvider: TokenProvider,
+    tokenProvider: TokenIdentityProvider,
     regionCode: string,
     endpoint: string,
     maxRetries: number
@@ -266,7 +267,6 @@ export const onAccessDeniedException = onAccessDeniedExceptionEmitter.event
 interface AuthOptions {
     showReauthPrompt?: boolean
 }
-
 export type CodeCatalystClientFactory = () => Promise<CodeCatalystClient>
 /**
  * Factory to create a new `CodeCatalystClient`. Call `onCredentialsChanged()` before making requests.
@@ -280,7 +280,7 @@ export async function createClient(
 ): Promise<CodeCatalystClient> {
     const tokenProvider = new TokenProvider(connection)
     const sdkClient = await createCodeCatalystClient(tokenProvider, regionCode, endpoint, maxRetries)
-    const sdkv3Client = createCodeCatalystClientV3(tokenProvider, regionCode, endpoint, maxRetries)
+    const sdkv3Client = createCodeCatalystClientV3(getTokenProvider(connection), regionCode, endpoint, maxRetries)
     const c = new CodeCatalystClientInternal(connection, sdkClient, sdkv3Client)
     try {
         await c.verifySession()
@@ -295,6 +295,17 @@ export async function createClient(
     }
 
     return c
+}
+
+// TODO: move this to sso auth folder?
+function getTokenProvider(connection: SsoConnection): TokenIdentityProvider {
+    return async (_props) => {
+        const token = await connection.getToken()
+        return {
+            token: token.accessToken,
+            expiration: token.expiresAt,
+        }
+    }
 }
 
 // XXX: the backend currently rejects empty strings for `alias` so the field must be removed if falsey
@@ -533,16 +544,17 @@ class CodeCatalystClientInternal extends ClientWrapper<CodeCatalystSDKClient> {
         if (CodeCatalystClientInternal.identityCache.has(accessToken)) {
             return CodeCatalystClientInternal.identityCache.get(accessToken)!
         }
-        const resp: VerifySessionCommandOutput = await this.callV3(VerifySessionCommand, {}, false)
-        assertHasProps(resp, 'identity')
 
-        CodeCatalystClientInternal.identityCache.set(accessToken, resp.identity)
+        const r: VerifySessionCommandOutput = await this.callV3(VerifySessionCommand, {}, false)
+        assertHasProps(r, 'identity')
+
+        CodeCatalystClientInternal.identityCache.set(accessToken, r.identity)
         setTimeout(() => {
             CodeCatalystClientInternal.identityCache.delete(accessToken)
-            CodeCatalystClientInternal.userDetailsCache.delete(resp.identity)
+            CodeCatalystClientInternal.userDetailsCache.delete(r.identity)
         }, expiresAt.getTime() - Date.now())
 
-        return resp.identity
+        return r.identity
     }
 
     public async getBearerToken(): Promise<string> {
