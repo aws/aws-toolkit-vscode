@@ -274,7 +274,6 @@ export type EnvType =
     | 'sagemaker'
     | 'sagemaker-web'
     | 'test'
-    | 'unknown'
     | 'remote' // Generic (unknown) remote env.
     | 'web' // Generic (unknown) web env.
     | 'wsl'
@@ -305,9 +304,9 @@ export async function getComputeEnvType(): Promise<EnvType> {
     } else if (web) {
         return 'web'
     } else if (env.remoteName) {
-        return 'remote'
+        return 'remote' // Generic (unknown) remote env.
     } else {
-        return 'local'
+        return 'local' // Generic (unknown) local env.
     }
 }
 
