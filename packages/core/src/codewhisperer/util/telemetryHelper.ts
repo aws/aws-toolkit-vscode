@@ -13,6 +13,7 @@ import {
     CodewhispererPreviousSuggestionState,
     CodewhispererUserDecision,
     CodewhispererUserTriggerDecision,
+    Status,
     telemetry,
 } from '../../shared/telemetry/telemetry'
 import { CodewhispererCompletionType, CodewhispererSuggestionState } from '../../shared/telemetry/telemetry'
@@ -85,12 +86,13 @@ export class TelemetryHelper {
         generatedCharactersCount?: number,
         generatedCount?: number,
         generatedLinesCount?: number,
-        reason?: string
+        reason?: string,
+        status?: Status
     ) {
         telemetry.amazonq_utgGenerateTests.emit({
             cwsprChatProgrammingLanguage: session.fileLanguage ?? 'plaintext',
             hasUserPromptSupplied: session.hasUserPromptSupplied,
-            isSupportedLanguage: isSupportedLanguage,
+            isSupportedLanguage: session.isSupportedLanguage,
             isFileInWorkspace: isFileInWorkspace,
             result: result,
             artifactsUploadDuration: artifactsUploadDuration,
@@ -110,6 +112,7 @@ export class TelemetryHelper {
             requestId: requestId,
             reasonDesc: reasonDesc,
             reason: reason,
+            status: status,
         })
     }
 
