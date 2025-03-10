@@ -257,33 +257,38 @@ export function getUserAgent(
 }
 
 /**
- * All the types of ENVs the extension can run in.
+ * Kinds of machines/environments the extension can run in.
  *
  * NOTES:
- * - append `-amzn` for any environment internal to Amazon
+ * - Append `-amzn` for any environment internal to Amazon.
+ * - Append `-web` for web browser (*without* compute).
  */
 export type EnvType =
     | 'cloud9'
+    | 'cloud9-web'
     | 'cloudDesktop-amzn'
     | 'codecatalyst'
-    | 'local'
     | 'ec2'
     | 'ec2-amzn' // ec2 but with an internal Amazon OS
+    | 'local'
     | 'sagemaker'
+    | 'sagemaker-web'
     | 'test'
+    | 'remote' // Generic (unknown) remote env.
+    | 'web' // Generic (unknown) web env.
     | 'wsl'
-    | 'unknown'
 
 /**
  * Returns the identifier for the environment that the extension is running in.
  */
 export async function getComputeEnvType(): Promise<EnvType> {
+    const web = isWeb()
     if (isCloud9()) {
-        return 'cloud9'
+        return web ? 'cloud9-web' : 'cloud9'
     } else if (isInDevEnv()) {
         return 'codecatalyst'
     } else if (isSageMaker()) {
-        return 'sagemaker'
+        return web ? 'sagemaker-web' : 'sagemaker'
     } else if (isRemoteWorkspace()) {
         if (isAmazonInternalOs()) {
             if (await isCloudDesktop()) {
@@ -292,14 +297,16 @@ export async function getComputeEnvType(): Promise<EnvType> {
             return 'ec2-amzn'
         }
         return 'ec2'
-    } else if (env.remoteName) {
+    } else if (env.remoteName === 'wsl') {
         return 'wsl'
     } else if (isAutomation()) {
         return 'test'
-    } else if (!env.remoteName) {
-        return 'local'
+    } else if (web) {
+        return 'web'
+    } else if (env.remoteName) {
+        return 'remote' // Generic (unknown) remote env.
     } else {
-        return 'unknown'
+        return 'local' // Generic (unknown) local env.
     }
 }
 
