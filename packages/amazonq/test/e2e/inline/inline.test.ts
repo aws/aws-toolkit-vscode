@@ -19,8 +19,10 @@ import { Commands, globals, sleep, waitUntil, collectionUtil } from 'aws-core-vs
 import { loginToIdC } from '../amazonq/utils/setup'
 
 describe('Amazon Q Inline', async function () {
-    let tempFolder: string
     const retries = 3
+    this.retries(retries)
+
+    let tempFolder: string
     const waitOptions = {
         interval: 500,
         timeout: 10000,
