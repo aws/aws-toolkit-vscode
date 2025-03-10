@@ -286,7 +286,7 @@ export class TestController {
         }
         TelemetryHelper.instance.sendTestGenerationToolkitEvent(
             session,
-            true,
+            session.isSupportedLanguage,
             true,
             isCancel ? 'Cancelled' : 'Failed',
             session.startTestGenerationRequestId,
@@ -295,7 +295,15 @@ export class TestController {
             session.isCodeBlockSelected,
             session.artifactsUploadDuration,
             session.srcPayloadSize,
-            session.srcZipFileSize
+            session.srcZipFileSize,
+            session.charsOfCodeAccepted,
+            session.numberOfTestsGenerated,
+            session.linesOfCodeGenerated,
+            session.charsOfCodeGenerated,
+            session.numberOfTestsGenerated,
+            session.linesOfCodeGenerated,
+            undefined,
+            isCancel ? 'CANCELLED' : 'FAILED'
         )
         if (session.stopIteration) {
             // Error from Science
@@ -502,6 +510,7 @@ export class TestController {
                     unsupportedMessage = `<span style="color: #EE9D28;">&#9888;<b>I'm sorry, but /test only supports Python and Java</b><br></span> I will still generate a suggestion below.`
                 }
                 this.messenger.sendMessage(unsupportedMessage, tabID, 'answer')
+                session.isSupportedLanguage = false
                 await this.onCodeGeneration(
                     session,
                     userPrompt,
@@ -529,6 +538,7 @@ export class TestController {
                     )
                 }
                 session.isCodeBlockSelected = selectionRange !== undefined
+                session.isSupportedLanguage = true
 
                 /**
                  * Zip the project
@@ -792,7 +802,9 @@ export class TestController {
             session.linesOfCodeAccepted,
             session.charsOfCodeGenerated,
             session.numberOfTestsGenerated,
-            session.linesOfCodeGenerated
+            session.linesOfCodeGenerated,
+            undefined,
+            'ACCEPTED'
         )
 
         await this.endSession(message, FollowUpTypes.SkipBuildAndFinish)
@@ -918,7 +930,9 @@ export class TestController {
                 0,
                 session.charsOfCodeGenerated,
                 session.numberOfTestsGenerated,
-                session.linesOfCodeGenerated
+                session.linesOfCodeGenerated,
+                undefined,
+                'REJECTED'
             )
             telemetry.ui_click.emit({ elementId: 'unitTestGeneration_rejectDiff' })
         }
