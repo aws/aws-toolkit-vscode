@@ -162,6 +162,7 @@ export class Connector extends BaseConnector {
                 body: messageData.message,
                 canBeVoted: false,
                 informationCard: messageData.informationCard,
+                buttons: messageData.buttons ?? [],
             }
             this.onChatAnswerReceived(messageData.tabID, answer, messageData)
         }
