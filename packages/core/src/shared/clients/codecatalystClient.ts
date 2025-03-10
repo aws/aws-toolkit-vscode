@@ -36,6 +36,15 @@ import {
     CreateAccessTokenCommand,
     CreateAccessTokenRequest,
     CreateAccessTokenResponse,
+    CreateDevEnvironmentCommand,
+    CreateDevEnvironmentCommandOutput,
+    CreateDevEnvironmentRequest,
+    CreateSourceRepositoryBranchCommand,
+    CreateSourceRepositoryBranchRequest,
+    CreateSourceRepositoryBranchResponse,
+    DeleteDevEnvironmentCommand,
+    DeleteDevEnvironmentRequest,
+    DeleteDevEnvironmentResponse,
     DevEnvironmentRepositorySummary,
     DevEnvironmentSummary,
     GetDevEnvironmentCommand,
@@ -44,6 +53,8 @@ import {
     GetProjectCommand,
     GetProjectCommandOutput,
     GetProjectRequest,
+    GetSourceRepositoryCloneUrlsCommand,
+    GetSourceRepositoryCloneUrlsResponse,
     GetSpaceCommand,
     GetSpaceCommandOutput,
     GetSpaceRequest,
@@ -60,13 +71,24 @@ import {
     ListProjectsResponse,
     ListSourceRepositoriesCommand,
     ListSourceRepositoriesItem,
+    ListSourceRepositoriesRequest,
     ListSourceRepositoriesResponse,
+    ListSourceRepositoryBranchesCommand,
+    ListSourceRepositoryBranchesRequest,
     ListSpacesCommand,
     ListSpacesRequest,
     ListSpacesResponse,
     PersistentStorage,
     ProjectSummary,
     SpaceSummary,
+    StartDevEnvironmentCommand,
+    StartDevEnvironmentRequest,
+    StartDevEnvironmentResponse,
+    UpdateDevEnvironmentCommand,
+    UpdateDevEnvironmentRequest,
+    UpdateDevEnvironmentResponse,
+    VerifySessionCommand,
+    VerifySessionCommandOutput,
 } from '@aws-sdk/client-codecatalyst'
 import { truncateProps } from '../utilities/textUtilities'
 import { SsoConnection } from '../../auth/connection'
@@ -276,9 +298,7 @@ export async function createClient(
 }
 
 // XXX: the backend currently rejects empty strings for `alias` so the field must be removed if falsey
-function fixAliasInRequest<
-    T extends CodeCatalyst.CreateDevEnvironmentRequest | CodeCatalyst.UpdateDevEnvironmentRequest,
->(request: T): T {
+function fixAliasInRequest<T extends CreateDevEnvironmentRequest | UpdateDevEnvironmentRequest>(request: T): T {
     if (!request.alias) {
         delete request.alias
     }
@@ -513,8 +533,7 @@ class CodeCatalystClientInternal extends ClientWrapper<CodeCatalystSDKClient> {
         if (CodeCatalystClientInternal.identityCache.has(accessToken)) {
             return CodeCatalystClientInternal.identityCache.get(accessToken)!
         }
-
-        const resp = await this.call(this.sdkClient.verifySession(), false)
+        const resp: VerifySessionCommandOutput = await this.callV3(VerifySessionCommand, {}, false)
         assertHasProps(resp, 'identity')
 
         CodeCatalystClientInternal.identityCache.set(accessToken, resp.identity)
@@ -621,13 +640,13 @@ class CodeCatalystClientInternal extends ClientWrapper<CodeCatalystSDKClient> {
      *                   your output.
      */
     public listSourceRepositories(
-        request: CodeCatalyst.ListSourceRepositoriesRequest,
+        request: RequiredProps<ListSourceRepositoriesRequest, 'spaceName' | 'projectName'>,
         thirdParty: boolean = true
     ): AsyncCollection<CodeCatalystRepo[]> {
-        const requester = async (request: CodeCatalyst.ListSourceRepositoriesRequest) => {
+        const requester = async (r: typeof request) => {
             const allRepositories: Promise<ListSourceRepositoriesResponse> = this.callV3(
                 ListSourceRepositoriesCommand,
-                request,
+                r,
                 true,
                 { items: [] }
             )
@@ -663,11 +682,14 @@ class CodeCatalystClientInternal extends ClientWrapper<CodeCatalystSDKClient> {
     }
 
     public listBranches(
-        request: CodeCatalyst.ListSourceRepositoryBranchesRequest
+        request: RequiredProps<
+            ListSourceRepositoryBranchesRequest,
+            'spaceName' | 'projectName' | 'sourceRepositoryName'
+        >
     ): AsyncCollection<CodeCatalystBranch[]> {
-        const requester = async (request: CodeCatalyst.ListSourceRepositoryBranchesRequest) =>
-            this.call(this.sdkClient.listSourceRepositoryBranches(request), true, { items: [] })
-        const collection = pageableToCollection(requester, request, 'nextToken', 'items')
+        const requester = async (r: typeof request) =>
+            this.callV3(ListSourceRepositoryBranchesCommand, r, true, { items: [] })
+        const collection = pageableToCollection(requester, request, 'nextToken' as never, 'items')
 
         return collection
             .filter(isNonNullable)
@@ -713,36 +735,46 @@ class CodeCatalystClientInternal extends ClientWrapper<CodeCatalystSDKClient> {
     }
 
     public async createSourceBranch(
-        args: CodeCatalyst.CreateSourceRepositoryBranchRequest
-    ): Promise<CodeCatalyst.CreateSourceRepositoryBranchResponse> {
-        return this.call(this.sdkClient.createSourceRepositoryBranch(args), false)
+        args: CreateSourceRepositoryBranchRequest
+    ): Promise<CreateSourceRepositoryBranchResponse> {
+        return this.callV3(CreateSourceRepositoryBranchCommand, args, false)
     }
 
     /**
      * Gets the git source host URL for the given CodeCatalyst or third-party repo.
      */
-    public async getRepoCloneUrl(args: CodeCatalyst.GetSourceRepositoryCloneUrlsRequest): Promise<string> {
-        const r = await this.call(this.sdkClient.getSourceRepositoryCloneUrls(args), false)
-
+    public async getRepoCloneUrl(args: GetSourceRepositoryCloneUrlsRequest): Promise<string> {
+        const r: GetSourceRepositoryCloneUrlsResponse = await this.callV3(
+            GetSourceRepositoryCloneUrlsCommand,
+            args,
+            false
+        )
+        assertHasProps(r, 'https')
         // The git extension skips over credential providers if the username is included in the authority
         const uri = Uri.parse(r.https)
         return uri.with({ authority: uri.authority.replace(/.*@/, '') }).toString()
     }
 
-    public async createDevEnvironment(args: CodeCatalyst.CreateDevEnvironmentRequest): Promise<DevEnvironment> {
-        const { id } = await this.call(this.sdkClient.createDevEnvironment(fixAliasInRequest(args)), false)
+    public async createDevEnvironment(
+        args: RequiredProps<CreateDevEnvironmentRequest, 'projectName' | 'spaceName'>
+    ): Promise<DevEnvironment> {
+        const request = fixAliasInRequest(args)
+        const response: CreateDevEnvironmentCommandOutput = await this.callV3(
+            CreateDevEnvironmentCommand,
+            request,
+            false
+        )
+        assertHasProps(response, 'id')
 
         return this.getDevEnvironment({
-            id,
+            id: response.id,
             projectName: args.projectName,
             spaceName: args.spaceName,
         })
     }
 
-    public async startDevEnvironment(
-        args: CodeCatalyst.StartDevEnvironmentRequest
-    ): Promise<CodeCatalyst.StartDevEnvironmentResponse> {
-        return this.call(this.sdkClient.startDevEnvironment(args), false)
+    public async startDevEnvironment(args: StartDevEnvironmentRequest): Promise<StartDevEnvironmentResponse> {
+        return this.callV3(StartDevEnvironmentCommand, args, false)
     }
 
     public async createProject(args: CodeCatalyst.CreateProjectRequest): Promise<CodeCatalystProject> {
@@ -783,16 +815,13 @@ class CodeCatalystClientInternal extends ClientWrapper<CodeCatalystSDKClient> {
         return toDevEnv(args.spaceName, args.projectName, summary)
     }
 
-    public async deleteDevEnvironment(
-        args: CodeCatalyst.DeleteDevEnvironmentRequest
-    ): Promise<CodeCatalyst.DeleteDevEnvironmentResponse> {
-        return this.call(this.sdkClient.deleteDevEnvironment(args), false)
+    public async deleteDevEnvironment(args: DeleteDevEnvironmentRequest): Promise<DeleteDevEnvironmentResponse> {
+        return this.callV3(DeleteDevEnvironmentCommand, args, false)
     }
 
-    public updateDevEnvironment(
-        args: CodeCatalyst.UpdateDevEnvironmentRequest
-    ): Promise<CodeCatalyst.UpdateDevEnvironmentResponse> {
-        return this.call(this.sdkClient.updateDevEnvironment(fixAliasInRequest(args)), false)
+    public updateDevEnvironment(args: UpdateDevEnvironmentRequest): Promise<UpdateDevEnvironmentResponse> {
+        const request = fixAliasInRequest(args)
+        return this.callV3(UpdateDevEnvironmentCommand, request, false)
     }
 
     /**
@@ -803,7 +832,7 @@ class CodeCatalystClientInternal extends ClientWrapper<CodeCatalystSDKClient> {
      * on the dev environment starting should not progress.
      */
     public async startDevEnvironmentWithProgress(
-        args: CodeCatalyst.StartDevEnvironmentRequest,
+        args: RequiredProps<StartDevEnvironmentRequest, 'id' | 'spaceName' | 'projectName'>,
         timeout: Timeout = new Timeout(1000 * 60 * 60)
     ): Promise<DevEnvironment> {
         // Track the status changes chronologically so that we can

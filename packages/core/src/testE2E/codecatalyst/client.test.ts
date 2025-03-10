@@ -15,7 +15,7 @@ import {
 import { getThisDevEnv, prepareDevEnvConnection } from '../../codecatalyst/model'
 import { Auth } from '../../auth/auth'
 import { CodeCatalystAuthenticationProvider } from '../../codecatalyst/auth'
-import { CodeCatalystCommands, DevEnvironmentSettings } from '../../codecatalyst/commands'
+import { CodeCatalystCommands, DevEnvironmentSettings, UpdateDevEnvironmentSettings } from '../../codecatalyst/commands'
 import globals from '../../shared/extensionGlobals'
 import { CodeCatalystCreateWebview, SourceResponse } from '../../codecatalyst/vue/create/backend'
 import { waitUntil } from '../../shared/utilities/timeoutUtils'
@@ -37,6 +37,7 @@ import {
     SsoConnection,
 } from '../../auth/connection'
 import { hasKey } from '../../shared/utilities/tsUtils'
+import { _InstanceType } from '@aws-sdk/client-codecatalyst'
 
 let spaceName: CodeCatalystOrg['name']
 let projectName: CodeCatalystProject['name']
@@ -87,7 +88,7 @@ let projectName: CodeCatalystProject['name']
  *     integ tests, but using the ssh hostname that we get from
  *     {@link prepareDevEnvConnection}.
  */
-describe.only('Test how this codebase uses the CodeCatalyst API', function () {
+describe('Test how this codebase uses the CodeCatalyst API', function () {
     let client: CodeCatalystClient
     let commands: CodeCatalystCommands
     let webviewClient: CodeCatalystCreateWebview
@@ -292,7 +293,10 @@ describe.only('Test how this codebase uses the CodeCatalyst API', function () {
         })
 
         it('updates the properties of an existing dev environment', async function () {
-            const newDevEnvSettings = { alias: createAlias(), instanceType: 'dev.standard1.medium' }
+            const newDevEnvSettings = {
+                alias: createAlias(),
+                instanceType: 'dev.standard1.medium',
+            } satisfies UpdateDevEnvironmentSettings
 
             // Ensure current properties do not equal the updated properties
             assert.notStrictEqual(defaultDevEnv.alias, newDevEnvSettings.alias)
