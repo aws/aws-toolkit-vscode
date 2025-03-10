@@ -302,14 +302,12 @@ export async function getComputeEnvType(): Promise<EnvType> {
         return 'wsl'
     } else if (isAutomation()) {
         return 'test'
-    } else if (!env.remoteName) {
-        return 'local'
     } else if (web) {
         return 'web'
     } else if (env.remoteName) {
         return 'remote'
     } else {
-        return 'unknown'
+        return 'local'
     }
 }
 
