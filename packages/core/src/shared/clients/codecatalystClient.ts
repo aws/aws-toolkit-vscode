@@ -11,8 +11,6 @@ const localize = nls.loadMessageBundle()
 
 import * as AWS from 'aws-sdk'
 import * as logger from '../logger/logger'
-import { PerfLog } from '../logger/perfLogger'
-import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
 import { CancellationError, Timeout, waitTimeout, waitUntil } from '../utilities/timeoutUtils'
 import { isUserCancelledError } from '../../shared/errors'
 import { showMessageWithCancel } from '../utilities/messages'
@@ -28,7 +26,6 @@ import { AsyncCollection, toCollection } from '../utilities/asyncCollection'
 import { joinAll, pageableToCollection } from '../utilities/collectionUtils'
 import { CodeCatalyst } from 'aws-sdk'
 import { ToolkitError } from '../errors'
-import { TokenProvider } from '../../auth/sso/sdkV2Compat'
 import { Uri } from 'vscode'
 import { GetSourceRepositoryCloneUrlsRequest } from 'aws-sdk/clients/codecatalyst'
 import {
@@ -39,6 +36,8 @@ import {
     CreateDevEnvironmentCommand,
     CreateDevEnvironmentCommandOutput,
     CreateDevEnvironmentRequest,
+    CreateProjectCommand,
+    CreateProjectRequest,
     CreateSourceRepositoryBranchCommand,
     CreateSourceRepositoryBranchRequest,
     CreateSourceRepositoryBranchResponse,
@@ -84,13 +83,18 @@ import {
     StartDevEnvironmentCommand,
     StartDevEnvironmentRequest,
     StartDevEnvironmentResponse,
+    StartDevEnvironmentSessionCommand,
+    StartDevEnvironmentSessionRequest,
+    StartDevEnvironmentSessionResponse,
+    StopDevEnvironmentCommand,
+    StopDevEnvironmentRequest,
+    StopDevEnvironmentResponse,
     UpdateDevEnvironmentCommand,
     UpdateDevEnvironmentRequest,
     UpdateDevEnvironmentResponse,
     VerifySessionCommand,
     VerifySessionCommandOutput,
 } from '@aws-sdk/client-codecatalyst'
-import { truncateProps } from '../utilities/textUtilities'
 import { SsoConnection } from '../../auth/connection'
 import { DevSettings } from '../settings'
 import { getServiceEnvVarConfig } from '../vscode/env'
@@ -214,23 +218,6 @@ function toBranch(
     }
 }
 
-async function createCodeCatalystClient(
-    tokenProvider: TokenProvider,
-    regionCode: string,
-    endpoint: string,
-    maxRetries: number
-): Promise<CodeCatalyst> {
-    const c = await globals.sdkClientBuilder.createAwsService(CodeCatalyst, {
-        region: regionCode,
-        correctClockSkew: true,
-        endpoint: endpoint,
-        token: tokenProvider,
-        maxRetries,
-    } as ServiceConfigurationOptions)
-
-    return c
-}
-
 function createCodeCatalystClientV3(
     tokenProvider: TokenIdentityProvider,
     regionCode: string,
@@ -278,10 +265,8 @@ export async function createClient(
     maxRetries: number = 5,
     authOptions: AuthOptions = {}
 ): Promise<CodeCatalystClient> {
-    const tokenProvider = new TokenProvider(connection)
-    const sdkClient = await createCodeCatalystClient(tokenProvider, regionCode, endpoint, maxRetries)
     const sdkv3Client = createCodeCatalystClientV3(getTokenProvider(connection), regionCode, endpoint, maxRetries)
-    const c = new CodeCatalystClientInternal(connection, sdkClient, sdkv3Client)
+    const c = new CodeCatalystClientInternal(connection, sdkv3Client, regionCode)
     try {
         await c.verifySession()
     } catch (e) {
@@ -338,10 +323,10 @@ class CodeCatalystClientInternal extends ClientWrapper<CodeCatalystSDKClient> {
 
     public constructor(
         private readonly connection: SsoConnection,
-        private readonly sdkClient: CodeCatalyst,
-        private readonly sdkClientV3: CodeCatalystSDKClient
+        private readonly sdkClientV3: CodeCatalystSDKClient,
+        regionCode: string
     ) {
-        super(sdkClient.config.region!, CodeCatalystSDKClient)
+        super(regionCode, CodeCatalystSDKClient)
         this.log = logger.getLogger()
     }
 
@@ -417,90 +402,6 @@ class CodeCatalystClientInternal extends ClientWrapper<CodeCatalystSDKClient> {
                 e.name === AccessDeniedException.name
             )
         }
-    }
-
-    private async call<T>(req: AWS.Request<T, AWS.AWSError>, silent: true, defaultVal: T): Promise<T>
-    private async call<T>(req: AWS.Request<T, AWS.AWSError>, silent: false): Promise<T>
-    private async call<T>(req: AWS.Request<T, AWS.AWSError>, silent: boolean, defaultVal?: T): Promise<T> {
-        const log = this.log
-        const bearerToken = (await this.connection.getToken()).accessToken
-        const perflog = new PerfLog('API request')
-        const r = req as any
-
-        return new Promise<T>((resolve, reject) => {
-            req.send(function (e, data) {
-                const timecost = perflog.elapsed().toFixed(1)
-                if (e) {
-                    if (e.code === 'AccessDeniedException' || e.statusCode === 401) {
-                        CodeCatalystClientInternal.identityCache.delete(bearerToken)
-                    }
-
-                    const allHeaders = r?.response?.httpResponse?.headers
-                    const logHeaders = {}
-                    // Selected headers which are useful for logging.
-                    const logHeaderNames = [
-                        'x-amzn-requestid',
-                        'x-amzn-trace-id',
-                        'x-amzn-served-from',
-                        'x-cache',
-                        'x-amz-cf-id',
-                        'x-amz-cf-pop',
-                        // 'access-control-expose-headers',
-                        // 'cache-control',
-                        // 'strict-transport-security',
-                        // 'x-amz-apigw-id',
-                    ]
-                    if (allHeaders && Object.keys(allHeaders).length > 0) {
-                        for (const k of logHeaderNames) {
-                            ;(logHeaders as any)[k] = (k in allHeaders ? allHeaders : logHeaderNames)[k]
-                        }
-                    }
-
-                    // Stack is noisy and useless in production.
-                    const errNoStack = { ...e }
-                    delete errNoStack.stack
-                    delete errNoStack.requestId // redundant (= "x-amzn-requestid" header).
-
-                    if (r.operation || r.params) {
-                        log.error(
-                            'API request failed (time: %dms): %s\nparams: %O\nerror: %O\nheaders: %O',
-                            timecost,
-                            r.operation,
-                            truncateProps(r.params, 20, ['nextToken']),
-                            errNoStack,
-                            logHeaders
-                        )
-                    } else {
-                        log.error(
-                            'API request failed (time: %dms):%O\nheaders: %O',
-                            timecost,
-                            truncateProps(req, 20, ['nextToken']),
-                            logHeaders
-                        )
-                    }
-                    if (silent) {
-                        if (defaultVal === undefined) {
-                            throw Error()
-                        }
-                        resolve(defaultVal)
-                    } else {
-                        const err = e as AWS.AWSError
-                        reject(new ToolkitError(`CodeCatalyst: ${err.code}`, { code: err.code, cause: err }))
-                    }
-                    return
-                }
-                if (log.logLevelEnabled('verbose')) {
-                    log.verbose(
-                        'API request (time: %dms): %s\nparams: %O\nresponse: %O',
-                        timecost,
-                        r.operation ?? '?',
-                        r.params ? truncateProps(r.params, 20, ['nextToken']) : '?',
-                        truncateProps(data as object, 20, ['nextToken'])
-                    )
-                }
-                resolve(data)
-            })
-        })
     }
 
     /**
@@ -789,26 +690,26 @@ class CodeCatalystClientInternal extends ClientWrapper<CodeCatalystSDKClient> {
         return this.callV3(StartDevEnvironmentCommand, args, false)
     }
 
-    public async createProject(args: CodeCatalyst.CreateProjectRequest): Promise<CodeCatalystProject> {
-        await this.call(this.sdkClient.createProject(args), false)
+    public async createProject(
+        args: RequiredProps<CreateProjectRequest, 'displayName' | 'spaceName'>
+    ): Promise<CodeCatalystProject> {
+        await this.callV3(CreateProjectCommand, args, false)
 
         return { ...args, name: args.displayName, type: 'project', org: { name: args.spaceName } }
     }
 
     public async startDevEnvironmentSession(
-        args: CodeCatalyst.StartDevEnvironmentSessionRequest
-    ): Promise<CodeCatalyst.StartDevEnvironmentSessionResponse & { sessionId: string }> {
-        const r = await this.call(this.sdkClient.startDevEnvironmentSession(args), false)
+        args: StartDevEnvironmentSessionRequest
+    ): Promise<StartDevEnvironmentSessionResponse & { sessionId: string }> {
+        const r: StartDevEnvironmentSessionResponse = await this.callV3(StartDevEnvironmentSessionCommand, args, false)
         if (!r.sessionId) {
             throw new TypeError('got falsy dev environment "sessionId"')
         }
         return { ...r, sessionId: r.sessionId }
     }
 
-    public async stopDevEnvironment(
-        args: CodeCatalyst.StopDevEnvironmentRequest
-    ): Promise<CodeCatalyst.StopDevEnvironmentResponse> {
-        return this.call(this.sdkClient.stopDevEnvironment(args), false)
+    public async stopDevEnvironment(args: StopDevEnvironmentRequest): Promise<StopDevEnvironmentResponse> {
+        return this.callV3(StopDevEnvironmentCommand, args, false)
     }
 
     public async getDevEnvironment(
