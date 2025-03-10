@@ -1103,12 +1103,14 @@ export class ChatController {
             const relativePathsOfMergedRelevantDocuments = triggerPayload.documentReferences.map(
                 (doc) => doc.relativeFilePath
             )
+            const seen: string[] = []
             for (const relativePath of relativePathsOfContextCommandFiles) {
-                if (!relativePathsOfMergedRelevantDocuments.includes(relativePath)) {
+                if (!relativePathsOfMergedRelevantDocuments.includes(relativePath) && !seen.includes(relativePath)) {
                     triggerPayload.documentReferences.push({
                         relativeFilePath: relativePath,
                         lineRanges: [{ first: -1, second: -1 }],
                     })
+                    seen.push(relativePath)
                 }
             }
             if (triggerPayload.documentReferences) {
