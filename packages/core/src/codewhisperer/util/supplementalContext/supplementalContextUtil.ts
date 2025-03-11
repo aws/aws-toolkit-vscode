@@ -37,7 +37,7 @@ export async function fetchSupplementalContext(
     return supplementalContextPromise
         .then((value) => {
             if (value) {
-                return {
+                const resBeforeTruncation = {
                     isUtg: isUtg,
                     isProcessTimeout: false,
                     supplementalContextItems: value.supplementalContextItems.filter(
@@ -47,6 +47,8 @@ export async function fetchSupplementalContext(
                     latency: performance.now() - timesBeforeFetching,
                     strategy: value.strategy,
                 }
+
+                return truncateSuppelementalContext(resBeforeTruncation)
             } else {
                 return undefined
             }
