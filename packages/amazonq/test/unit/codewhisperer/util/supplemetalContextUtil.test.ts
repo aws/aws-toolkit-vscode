@@ -85,14 +85,35 @@ describe('supplementalContextUtil', function () {
     })
 
     describe('truncation', function () {
-        function repeatString(s: string, n: number): string {
-            let output = ''
-            for (let i = 0; i < n; i++) {
-                output += s
-            }
+        it('truncateLineByLine should drop the last line if max length is greater than threshold', function () {
+            const input =
+                repeatString('a', 11) +
+                '\n' +
+                repeatString('b', 11) +
+                '\n' +
+                repeatString('c', 11) +
+                '\n' +
+                repeatString('d', 11) +
+                '\n' +
+                repeatString('e', 11)
 
-            return output
-        }
+            assert.ok(input.length > 50)
+            const actual = crossFile.truncateLineByLine(input, 50)
+            assert.strictEqual(
+                actual,
+                repeatString('a', 11) +
+                    '\n' +
+                    repeatString('b', 11) +
+                    '\n' +
+                    repeatString('c', 11) +
+                    '\n' +
+                    repeatString('d', 11)
+            )
+
+            const input2 = repeatString('b\n', 10)
+            const actual2 = crossFile.truncateLineByLine(input2, 8)
+            assert.strictEqual(actual2.length, 8)
+        })
 
         it('truncation context should make context length per item lte 10240 cap', function () {
             const chunkA: crossFile.CodeWhispererSupplementalContextItem = {
@@ -143,5 +164,36 @@ describe('supplementalContextUtil', function () {
             assert.strictEqual(actual.contentsLength, 20240)
             assert.strictEqual(actual.strategy, 'codemap')
         })
+
+        describe('truncate line by line', function () {
+            it('should return empty if empty string is provided', function () {
+                const input = ''
+                const actual = crossFile.truncateLineByLine(input, 50)
+                assert.strictEqual(actual, '')
+            })
+
+            it('should return empty if 0 max length is provided', function () {
+                const input = 'aaaaa'
+                const actual = crossFile.truncateLineByLine(input, 0)
+                assert.strictEqual(actual, '')
+            })
+
+            it('should flip the value if negative max length is provided', function () {
+                const input = 'aaaaa\nbbbbb'
+                const actual = crossFile.truncateLineByLine(input, -6)
+                const expected = crossFile.truncateLineByLine(input, 6)
+                assert.strictEqual(actual, expected)
+                assert.strictEqual(actual, 'aaaaa')
+            })
+        })
     })
 })
+
+function repeatString(s: string, n: number): string {
+    let output = ''
+    for (let i = 0; i < n; i++) {
+        output += s
+    }
+
+    return output
+}
