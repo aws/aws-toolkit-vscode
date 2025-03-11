@@ -28,6 +28,11 @@ import {
     QueryRepomapIndexRequestType,
     GetRepomapIndexJSONRequestType,
     Usage,
+    GetContextCommandItemsRequestType,
+    ContextCommandItem,
+    GetIndexSequenceNumberRequestType,
+    GetContextCommandPromptRequestType,
+    AdditionalContextPrompt,
 } from './types'
 import { CodeWhispererSettings } from '../../codewhisperer/util/codewhispererSettings'
 import { fs } from '../../shared/fs/fs'
@@ -35,6 +40,7 @@ import { getLogger } from '../../shared/logger/logger'
 import globals from '../../shared/extensionGlobals'
 import { ResourcePaths } from '../../shared/lsp/types'
 import { createServerOptions } from '../../shared/lsp/utils/platform'
+import { waitUntil } from '../../shared/utilities/timeoutUtils'
 
 const localize = nls.loadMessageBundle()
 
@@ -155,6 +161,66 @@ export class LspClient {
             throw e
         }
     }
+
+    async getContextCommandItems(): Promise<ContextCommandItem[]> {
+        try {
+            const workspaceFolders = vscode.workspace.workspaceFolders || []
+            const request = JSON.stringify({
+                workspaceFolders: workspaceFolders.map((it) => it.uri.fsPath),
+            })
+            const resp: any = await this.client?.sendRequest(
+                GetContextCommandItemsRequestType,
+                await this.encrypt(request)
+            )
+            return resp
+        } catch (e) {
+            getLogger().error(`LspClient: getContextCommandItems error: ${e}`)
+            throw e
+        }
+    }
+
+    async getContextCommandPrompt(contextCommandItems: ContextCommandItem[]): Promise<AdditionalContextPrompt[]> {
+        try {
+            const request = JSON.stringify({
+                contextCommands: contextCommandItems,
+            })
+            const resp: any = await this.client?.sendRequest(
+                GetContextCommandPromptRequestType,
+                await this.encrypt(request)
+            )
+            return resp
+        } catch (e) {
+            getLogger().error(`LspClient: getContextCommandPrompt error: ${e}`)
+            throw e
+        }
+    }
+
+    async getIndexSequenceNumber(): Promise<number> {
+        try {
+            const request = JSON.stringify({})
+            const resp: any = await this.client?.sendRequest(
+                GetIndexSequenceNumberRequestType,
+                await this.encrypt(request)
+            )
+            return resp
+        } catch (e) {
+            getLogger().error(`LspClient: getIndexSequenceNumber error: ${e}`)
+            throw e
+        }
+    }
+
+    async waitUntilReady() {
+        return waitUntil(
+            async () => {
+                if (this.client === undefined) {
+                    return false
+                }
+                await this.client.onReady()
+                return true
+            },
+            { interval: 500, timeout: 60_000 * 3, truthy: true }
+        )
+    }
 }
 /**
  * Activates the language server, this will start LSP server running over IPC protocol.
@@ -231,6 +297,37 @@ export async function activate(extensionContext: ExtensionContext, resourcePaths
 
     let savedDocument: vscode.Uri | undefined = undefined
 
+    const onAdd = async (filePaths: string[]) => {
+        const indexSeqNum = await LspClient.instance.getIndexSequenceNumber()
+        await LspClient.instance.updateIndex(filePaths, 'add')
+        await waitUntil(
+            async () => {
+                const newIndexSeqNum = await LspClient.instance.getIndexSequenceNumber()
+                if (newIndexSeqNum > indexSeqNum) {
+                    await vscode.commands.executeCommand(`aws.amazonq.updateContextCommandItems`)
+                    return true
+                }
+                return false
+            },
+            { interval: 500, timeout: 5_000, truthy: true }
+        )
+    }
+    const onRemove = async (filePaths: string[]) => {
+        const indexSeqNum = await LspClient.instance.getIndexSequenceNumber()
+        await LspClient.instance.updateIndex(filePaths, 'remove')
+        await waitUntil(
+            async () => {
+                const newIndexSeqNum = await LspClient.instance.getIndexSequenceNumber()
+                if (newIndexSeqNum > indexSeqNum) {
+                    await vscode.commands.executeCommand(`aws.amazonq.updateContextCommandItems`)
+                    return true
+                }
+                return false
+            },
+            { interval: 500, timeout: 5_000, truthy: true }
+        )
+    }
+
     toDispose.push(
         vscode.workspace.onDidSaveTextDocument((document) => {
             if (document.uri.scheme !== 'file') {
@@ -242,18 +339,23 @@ export async function activate(extensionContext: ExtensionContext, resourcePaths
             if (savedDocument && editor && editor.document.uri.fsPath !== savedDocument.fsPath) {
                 void LspClient.instance.updateIndex([savedDocument.fsPath], 'update')
             }
+            // user created a new empty file using File -> New File
+            // these events will not be captured by vscode.workspace.onDidCreateFiles
+            // because it was created by File Explorer(Win) or Finder(MacOS)
+            // TODO: consider using a high performance fs watcher
+            if (editor?.document.getText().length === 0) {
+                void onAdd([editor.document.uri.fsPath])
+            }
         }),
-        vscode.workspace.onDidCreateFiles((e) => {
-            void LspClient.instance.updateIndex(
-                e.files.map((f) => f.fsPath),
-                'add'
-            )
+        vscode.workspace.onDidCreateFiles(async (e) => {
+            await onAdd(e.files.map((f) => f.fsPath))
         }),
-        vscode.workspace.onDidDeleteFiles((e) => {
-            void LspClient.instance.updateIndex(
-                e.files.map((f) => f.fsPath),
-                'remove'
-            )
+        vscode.workspace.onDidDeleteFiles(async (e) => {
+            await onRemove(e.files.map((f) => f.fsPath))
+        }),
+        vscode.workspace.onDidRenameFiles(async (e) => {
+            await onRemove(e.files.map((f) => f.oldUri.fsPath))
+            await onAdd(e.files.map((f) => f.newUri.fsPath))
         })
     )
 

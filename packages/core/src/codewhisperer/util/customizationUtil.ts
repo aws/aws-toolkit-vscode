@@ -128,7 +128,7 @@ export const setSelectedCustomization = async (customization: Customization, isO
         return
     }
     if (isOverride) {
-        const previousOverride = globals.globalState.tryGet<string>('aws.amazonq.customization.override', String)
+        const previousOverride = globals.globalState.tryGet<string>('aws.amazonq.customization.overrideV2', String)
         if (customization.arn === previousOverride) {
             return
         }
@@ -143,7 +143,7 @@ export const setSelectedCustomization = async (customization: Customization, isO
 
     await globals.globalState.update('CODEWHISPERER_SELECTED_CUSTOMIZATION', selectedCustomizationObj)
     if (isOverride) {
-        await globals.globalState.update('aws.amazonq.customization.override', customization.arn)
+        await globals.globalState.update('aws.amazonq.customization.overrideV2', customization.arn)
     }
     vsCodeState.isFreeTierLimitReached = false
     await Commands.tryExecute('aws.amazonq.refreshStatusBar')

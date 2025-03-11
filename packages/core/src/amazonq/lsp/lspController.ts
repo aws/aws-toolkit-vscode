@@ -8,7 +8,6 @@ import * as path from 'path'
 import { getLogger } from '../../shared/logger/logger'
 import { CurrentWsFolders, collectFilesForIndex } from '../../shared/utilities/workspaceUtils'
 import { LspClient } from './lspClient'
-import { RelevantTextDocument } from '@amzn/codewhisperer-streaming'
 import { activate as activateLsp } from './lspClient'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { isCloud9 } from '../../shared/extensionUtilities'
@@ -16,6 +15,7 @@ import globals, { isWeb } from '../../shared/extensionGlobals'
 import { isAmazonInternalOs } from '../../shared/vscode/env'
 import { WorkspaceLSPInstaller } from './workspaceInstaller'
 import { lspSetupStage } from '../../shared/lsp/utils/setupStage'
+import { RelevantTextDocumentAddition } from '../../codewhispererChat/controllers/chat/model'
 
 export interface Chunk {
     readonly filePath: string
@@ -23,6 +23,8 @@ export interface Chunk {
     readonly context?: string
     readonly relativePath?: string
     readonly programmingLanguage?: string
+    readonly startLine?: number
+    readonly endLine?: number
 }
 export interface BuildIndexConfig {
     startUrl?: string
@@ -54,9 +56,9 @@ export class LspController {
         return this._isIndexingInProgress
     }
 
-    async query(s: string): Promise<RelevantTextDocument[]> {
+    async query(s: string): Promise<RelevantTextDocumentAddition[]> {
         const chunks: Chunk[] | undefined = await LspClient.instance.queryVectorIndex(s)
-        const resp: RelevantTextDocument[] = []
+        const resp: RelevantTextDocumentAddition[] = []
         if (chunks) {
             for (const chunk of chunks) {
                 const text = chunk.context ? chunk.context : chunk.content
@@ -67,11 +69,15 @@ export class LspController {
                         programmingLanguage: {
                             languageName: chunk.programmingLanguage,
                         },
+                        startLine: chunk.startLine ?? -1,
+                        endLine: chunk.endLine ?? -1,
                     })
                 } else {
                     resp.push({
                         text: text,
                         relativeFilePath: chunk.relativePath ? chunk.relativePath : path.basename(chunk.filePath),
+                        startLine: chunk.startLine ?? -1,
+                        endLine: chunk.endLine ?? -1,
                     })
                 }
             }
@@ -163,6 +169,7 @@ export class LspController {
         setImmediate(async () => {
             try {
                 await this.setupLsp(context)
+                await vscode.commands.executeCommand(`aws.amazonq.updateContextCommandItems`)
                 void LspController.instance.buildIndex(buildIndexConfig)
                 // log the LSP server CPU and Memory usage per 30 minutes.
                 globals.clock.setInterval(

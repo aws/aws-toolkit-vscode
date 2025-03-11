@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ChatItem, ChatItemAction, ChatItemType, FeedbackPayload } from '@aws/mynah-ui'
+import { ChatItem, ChatItemAction, ChatItemType, FeedbackPayload, QuickActionCommand } from '@aws/mynah-ui'
 import { ExtensionMessage } from '../commands'
 import { CodeReference } from './amazonqCommonsConnector'
 import { TabOpenType, TabsStorage, TabType } from '../storages/tabsStorage'
@@ -13,6 +13,7 @@ import { CWCChatItem } from '../connector'
 interface ChatPayload {
     chatMessage: string
     chatCommand?: string
+    chatContext?: string[] | QuickActionCommand[]
 }
 
 export interface BaseConnectorProps {
@@ -212,6 +213,7 @@ export abstract class BaseConnector {
                 command: 'chat-prompt',
                 chatMessage: payload.chatMessage,
                 chatCommand: payload.chatCommand,
+                chatContext: payload.chatContext,
                 tabType: this.getTabType(),
             })
         })

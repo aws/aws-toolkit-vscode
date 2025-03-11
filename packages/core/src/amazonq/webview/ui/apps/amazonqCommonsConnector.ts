@@ -71,7 +71,8 @@ export class Connector {
             this.onNewTab('agentWalkthrough')
             return
         } else if (messageData.command === 'review') {
-            this.onNewTab('review')
+            // tabID does not exist when calling from QuickAction Menu bar
+            this.handleCommand({ command: '/review' }, '')
             return
         }
     }
