@@ -695,7 +695,7 @@ export class Connector {
                 this.gumbyChatConnector.onCustomFormAction(tabId, action)
                 break
             case 'testgen':
-                this.testChatConnector.onCustomFormAction(tabId, action)
+                this.testChatConnector.onCustomFormAction(tabId, messageId ?? '', action)
                 break
             case 'review':
                 this.scanChatConnector.onCustomFormAction(tabId, action)
