@@ -11,7 +11,7 @@ import * as vscode from 'vscode'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
 import { compareTreeItems, makeChildrenNodes } from '../../../shared/treeview/utils'
-import { DefaultApiGatewayClient } from '../../../shared/clients/apiGatewayClient'
+import { ApiGatewayClient } from '../../../shared/clients/apiGateway'
 import { RestApi } from 'aws-sdk/clients/apigateway'
 import { toArrayAsync, toMap, updateInPlace } from '../../../shared/utilities/collectionUtils'
 import { RestApiNode } from './apiNodes'
@@ -25,7 +25,7 @@ export class ApiGatewayNode extends AWSTreeNodeBase {
     public constructor(
         private readonly partitionId: string,
         public override readonly regionCode: string,
-        private readonly client = new DefaultApiGatewayClient(regionCode)
+        private readonly client = new ApiGatewayClient(regionCode)
     ) {
         super('API Gateway', vscode.TreeItemCollapsibleState.Collapsed)
         this.apiNodes = new Map<string, RestApiNode>()
