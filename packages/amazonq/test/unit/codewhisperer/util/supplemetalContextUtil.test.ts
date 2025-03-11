@@ -85,6 +85,34 @@ describe('supplementalContextUtil', function () {
     })
 
     describe('truncation', function () {
+        it('truncate context should do nothing if everything fits in constraint', function () {
+            const chunkA: crossFile.CodeWhispererSupplementalContextItem = {
+                content: 'a',
+                filePath: 'a.java',
+                score: 0,
+            }
+            const chunkB: crossFile.CodeWhispererSupplementalContextItem = {
+                content: 'b',
+                filePath: 'b.java',
+                score: 1,
+            }
+            const chunks = [chunkA, chunkB]
+
+            const supplementalContext: CodeWhispererSupplementalContext = {
+                isUtg: false,
+                isProcessTimeout: false,
+                supplementalContextItems: chunks,
+                contentsLength: 25000,
+                latency: 0,
+                strategy: 'codemap',
+            }
+
+            const actual = crossFile.truncateSuppelementalContext(supplementalContext)
+            assert.strictEqual(actual.supplementalContextItems.length, 2)
+            assert.strictEqual(actual.supplementalContextItems[0].content, 'a')
+            assert.strictEqual(actual.supplementalContextItems[1].content, 'b')
+        })
+
         it('truncateLineByLine should drop the last line if max length is greater than threshold', function () {
             const input =
                 repeatString('a', 11) +
@@ -163,6 +191,59 @@ describe('supplementalContextUtil', function () {
 
             assert.strictEqual(actual.contentsLength, 20240)
             assert.strictEqual(actual.strategy, 'codemap')
+        })
+
+        it('truncate context should make context items lte 5', function () {
+            const chunkA: crossFile.CodeWhispererSupplementalContextItem = {
+                content: 'a',
+                filePath: 'a.java',
+                score: 0,
+            }
+            const chunkB: crossFile.CodeWhispererSupplementalContextItem = {
+                content: 'b',
+                filePath: 'b.java',
+                score: 1,
+            }
+            const chunkC: crossFile.CodeWhispererSupplementalContextItem = {
+                content: 'c',
+                filePath: 'c.java',
+                score: 2,
+            }
+            const chunkD: crossFile.CodeWhispererSupplementalContextItem = {
+                content: 'd',
+                filePath: 'd.java',
+                score: 3,
+            }
+            const chunkE: crossFile.CodeWhispererSupplementalContextItem = {
+                content: 'e',
+                filePath: 'e.java',
+                score: 4,
+            }
+            const chunkF: crossFile.CodeWhispererSupplementalContextItem = {
+                content: 'f',
+                filePath: 'f.java',
+                score: 5,
+            }
+            const chunkG: crossFile.CodeWhispererSupplementalContextItem = {
+                content: 'g',
+                filePath: 'g.java',
+                score: 6,
+            }
+            const chunks = [chunkA, chunkB, chunkC, chunkD, chunkE, chunkF, chunkG]
+
+            assert.strictEqual(chunks.length, 7)
+
+            const supplementalContext: CodeWhispererSupplementalContext = {
+                isUtg: false,
+                isProcessTimeout: false,
+                supplementalContextItems: chunks,
+                contentsLength: 25000,
+                latency: 0,
+                strategy: 'codemap',
+            }
+
+            const actual = crossFile.truncateSuppelementalContext(supplementalContext)
+            assert.strictEqual(actual.supplementalContextItems.length, 5)
         })
 
         describe('truncate line by line', function () {
