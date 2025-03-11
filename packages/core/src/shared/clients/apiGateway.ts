@@ -2,19 +2,19 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-
-import { APIGateway } from 'aws-sdk'
-import { RestApi, Stages } from 'aws-sdk/clients/apigateway'
 import { ClientWrapper } from './clientWrapper'
 import {
     APIGatewayClient as ApiGatewayClientSDK,
     GetResourcesCommand,
     GetResourcesRequest,
     GetRestApisCommand,
+    GetRestApisRequest,
     GetStagesCommand,
     Resource,
     Resources,
+    RestApi,
     RestApis,
+    Stages,
     TestInvokeMethodCommand,
     TestInvokeMethodRequest,
     TestInvokeMethodResponse,
@@ -48,7 +48,7 @@ export class ApiGatewayClient extends ClientWrapper<ApiGatewayClientSDK> {
     }
 
     public async *listApis(): AsyncIterableIterator<RestApi> {
-        const request: APIGateway.GetRestApisRequest = {}
+        const request: GetRestApisRequest = {}
 
         do {
             const response: RestApis = await this.makeRequest(GetRestApisCommand, request)
