@@ -41,7 +41,8 @@ export type AppRunnerServiceSummary = RequiredProps<
     'ServiceName' | 'ServiceArn' | 'Status' | 'ServiceId'
 >
 
-type WithService<T> = T & { Service: AppRunnerService }
+// Note: Many of the requests return a type of Service, but Service <: ServiceSummary.
+type WithServiceSummary<T> = Omit<T, 'Service'> & { Service: AppRunnerServiceSummary }
 
 export class AppRunnerClient extends ClientWrapper<AppRunnerClientSDK> {
     public constructor(regionCode: string) {
@@ -60,15 +61,15 @@ export class AppRunnerClient extends ClientWrapper<AppRunnerClientSDK> {
         return this.makePaginatedRequest(paginateListServices, request, (page) => page.ServiceSummaryList)
     }
 
-    public async pauseService(request: PauseServiceRequest): Promise<WithService<PauseServiceResponse>> {
+    public async pauseService(request: PauseServiceRequest): Promise<WithServiceSummary<PauseServiceResponse>> {
         return await this.makeRequest(PauseServiceCommand, request)
     }
 
-    public async resumeService(request: ResumeServiceRequest): Promise<WithService<ResumeServiceResponse>> {
+    public async resumeService(request: ResumeServiceRequest): Promise<WithServiceSummary<ResumeServiceResponse>> {
         return await this.makeRequest(ResumeServiceCommand, request)
     }
 
-    public async updateService(request: UpdateServiceRequest): Promise<WithService<UpdateServiceResponse>> {
+    public async updateService(request: UpdateServiceRequest): Promise<WithServiceSummary<UpdateServiceResponse>> {
         return await this.makeRequest(UpdateServiceCommand, request)
     }
 
@@ -84,7 +85,9 @@ export class AppRunnerClient extends ClientWrapper<AppRunnerClientSDK> {
         return (await this.createSdkClient()).listConnections(request).promise()
     }
 
-    public async describeService(request: DescribeServiceRequest): Promise<WithService<DescribeServiceResponse>> {
+    public async describeService(
+        request: DescribeServiceRequest
+    ): Promise<WithServiceSummary<DescribeServiceResponse>> {
         return await this.makeRequest(DescribeServiceCommand, request)
     }
 
@@ -96,7 +99,7 @@ export class AppRunnerClient extends ClientWrapper<AppRunnerClientSDK> {
         return (await this.createSdkClient()).listOperations(request).promise()
     }
 
-    public async deleteService(request: DeleteServiceRequest): Promise<WithService<DeleteServiceResponse>> {
+    public async deleteService(request: DeleteServiceRequest): Promise<WithServiceSummary<DeleteServiceResponse>> {
         return this.makeRequest(DeleteServiceCommand, request)
     }
 

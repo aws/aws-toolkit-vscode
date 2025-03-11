@@ -4,7 +4,7 @@
  */
 
 import AsyncLock from 'async-lock'
-import { AppRunnerClient, AppRunnerService, AppRunnerServiceSummary } from '../../../shared/clients/apprunner'
+import { AppRunnerClient, AppRunnerServiceSummary } from '../../../shared/clients/apprunner'
 import { AppRunner } from 'aws-sdk'
 import { AppRunnerNode } from './apprunnerNode'
 
@@ -82,8 +82,7 @@ export class AppRunnerServiceNode extends CloudWatchLogsBase implements AWSResou
         this.label = `${this._info.ServiceName} [${displayStatus}]`
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-duplicate-type-constituents
-    public update(info: AppRunnerServiceSummary | AppRunnerService): void {
+    public update(info: AppRunnerServiceSummary): void {
         // update can be called multiple times during an event loop
         // this would rarely cause the node's status to appear as 'Operation in progress'
         this.lock
@@ -174,7 +173,7 @@ export class AppRunnerServiceNode extends CloudWatchLogsBase implements AWSResou
     }
 
     // eslint-disable-next-line @typescript-eslint/no-duplicate-type-constituents
-    public setOperation(info: AppRunnerService | AppRunnerServiceSummary, id?: string, type?: ServiceOperation): void {
+    public setOperation(info: AppRunnerServiceSummary, id?: string, type?: ServiceOperation): void {
         this.currentOperation.Id = id
         this.currentOperation.Type = type
         this.update(info)

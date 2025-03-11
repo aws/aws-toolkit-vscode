@@ -7,7 +7,7 @@ import assert from 'assert'
 import * as sinon from 'sinon'
 import { AppRunnerNode } from '../../../../awsService/apprunner/explorer/apprunnerNode'
 import { AppRunnerServiceNode } from '../../../../awsService/apprunner/explorer/apprunnerServiceNode'
-import { AppRunnerClient, AppRunnerService } from '../../../../shared/clients/apprunner'
+import { AppRunnerClient, AppRunnerServiceSummary } from '../../../../shared/clients/apprunner'
 import { DefaultCloudWatchLogsClient } from '../../../../shared/clients/cloudWatchLogsClient'
 import { asyncGenerator } from '../../../../shared/utilities/collectionUtils'
 import { AWSTreeNodeBase } from '../../../../shared/treeview/nodes/awsTreeNodeBase'
@@ -19,7 +19,7 @@ describe('AppRunnerServiceNode', function () {
     let mockParentNode: AppRunnerNode
     let node: AppRunnerServiceNode
 
-    const exampleInfo: AppRunnerService = {
+    const exampleInfo: AppRunnerServiceSummary = {
         ServiceName: 'test1',
         Status: 'RUNNING',
         ServiceArn: 'test-arn1',
