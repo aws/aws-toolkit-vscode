@@ -26,6 +26,8 @@ phases:
             # - '>/dev/null apt-get -qq install -y ca-certificates'
             # - 'apt-get install --reinstall ca-certificates'
             - bash buildspec/shared/linux-install.sh
+            # increase file watcher count (ENOSPC error)
+            - sysctl fs.inotify.max_user_watches=524288
 
     pre_build:
         commands:

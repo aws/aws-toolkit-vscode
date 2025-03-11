@@ -1,4 +1,0 @@
-{
-	"type": "Feature",
-	"description": "Amazon Q chat: Add support for `.md` file rules in workspace-level `.amazonq/rules` directory"
-}

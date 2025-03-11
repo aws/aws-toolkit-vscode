@@ -7,6 +7,8 @@ import assert from 'assert'
 import sinon = require('sinon')
 import { toCodeCatalystUrl } from '../../codecatalyst/utils'
 import * as codecatalyst from '../../shared/clients/codecatalystClient'
+import { ListSourceRepositoriesItem } from '@aws-sdk/client-codecatalyst'
+import { RequiredProps } from '../../shared/utilities/tsUtils'
 
 describe('codeCatalystClient', function () {
     it('toCodeCatalystUrl()', async function () {
@@ -66,7 +68,7 @@ describe('getFirstPartyRepos()', function () {
             { name: 'code-catalyst-1' },
             { name: 'not-code-catalyst-2' },
             { name: 'code-catalyst-2' },
-        ])
+        ] as RequiredProps<ListSourceRepositoriesItem, 'name'>[])
 
         assert.deepStrictEqual(allRepos, [{ name: 'code-catalyst-1' }, { name: 'code-catalyst-2' }])
     })
@@ -78,7 +80,7 @@ describe('getFirstPartyRepos()', function () {
         const allRepos = await codecatalyst.excludeThirdPartyRepos(codeCatalystClient, '', '', [
             { name: 'aws-cdk' },
             { name: 'vscode-toolkit' },
-        ])
+        ] as RequiredProps<ListSourceRepositoriesItem, 'name'>[])
 
         assert.deepStrictEqual(allRepos, [])
     })

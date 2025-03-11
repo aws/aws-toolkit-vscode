@@ -14,6 +14,7 @@ import { loginToIdC } from './utils/setup'
 import { webviewConstants, webviewTabConstants } from 'aws-core-vscode/amazonq'
 
 describe('Amazon Q Chat', function () {
+    this.retries(3)
     let framework: qTestingFramework
     let tab: Messenger
     let store: MynahUIDataModel

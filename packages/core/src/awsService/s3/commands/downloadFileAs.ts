@@ -12,7 +12,7 @@ import { readablePath } from '../util'
 import { progressReporter } from '../progressReporter'
 import { localize } from '../../../shared/utilities/vsCodeUtils'
 import { showOutputMessage } from '../../../shared/utilities/messages'
-import { DefaultS3Client, S3Client } from '../../../shared/clients/s3Client'
+import { S3Client } from '../../../shared/clients/s3'
 import { Timeout, CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { ToolkitError } from '../../../shared/errors'
 import { streamToBuffer, streamToFile } from '../../../shared/utilities/streamUtilities'
@@ -55,7 +55,7 @@ async function downloadS3File(
     file: S3File,
     options?: FileOptions | BufferOptions
 ): Promise<Buffer | void> {
-    const downloadStream = await client.downloadFileStream(file.bucket.name, file.key)
+    const downloadStream = await client.downloadFileStream(file.bucket.Name, file.key)
     const result = options?.saveLocation
         ? streamToFile(downloadStream, options.saveLocation)
         : streamToBuffer(downloadStream, file.sizeBytes)
@@ -86,7 +86,7 @@ async function downloadS3File(
 export async function downloadFile(file: S3File, options: FileOptions): Promise<void>
 export async function downloadFile(file: S3File, options?: BufferOptions): Promise<Buffer>
 export async function downloadFile(file: S3File, options?: FileOptions | BufferOptions): Promise<Buffer | void> {
-    const client = options?.client ?? new DefaultS3Client(file.bucket.region)
+    const client = options?.client ?? new S3Client(file.bucket.BucketRegion)
 
     return downloadS3File(client, file, options).catch((err) => {
         const message = localize('AWS.s3.downloadFile.error.general', 'Failed to download file {0}', file.name)
