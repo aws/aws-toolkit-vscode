@@ -103,7 +103,6 @@ import highSeverity from '../../../../../resources/images/severity-high.svg'
 import criticalSeverity from '../../../../../resources/images/severity-critical.svg'
 import markdownIt from 'markdown-it'
 import hljs from 'highlight.js'
-import { parsePatch } from 'diff'
 import { CodeScanIssue } from '../../../models/model'
 
 const client = WebviewClientFactory.create<SecurityIssueWebview>()
@@ -344,28 +343,11 @@ export default defineComponent({
             if (!this.isFixAvailable) {
                 return
             }
-            const [parsedDiff] = parsePatch(this.suggestedFix)
-            const { oldStart } = parsedDiff.hunks[0]
-            const [referenceStart, referenceEnd] = this.referenceSpan
-            const htmlString = md.render(`
-\`\`\`${this.languageId} showLineNumbers startFrom=${oldStart} ${
-                referenceStart && referenceEnd
-                    ? `highlightStart=${referenceStart + 1} highlightEnd=${referenceEnd + 1}`
-                    : ''
-            }
-${this.fixedCode}
+            return md.render(`
+\`\`\`${this.languageId} 
+${this.suggestedFix.replaceAll('--- buggyCode\n', '').replaceAll('+++ fixCode\n', '')}
 \`\`\`
       `)
-            const parser = new DOMParser()
-            const doc = parser.parseFromString(htmlString, 'text/html')
-            const referenceTracker = doc.querySelector('.reference-tracker')
-            if (referenceTracker) {
-                const tooltip = doc.createElement('div')
-                tooltip.classList.add('tooltip')
-                tooltip.innerHTML = this.referenceText
-                referenceTracker.appendChild(tooltip)
-            }
-            return doc.body.innerHTML
         },
         scrollTo(refName: string) {
             this.$nextTick(() => this.$refs?.[refName]?.scrollIntoView({ behavior: 'smooth' }))
