@@ -417,11 +417,11 @@ export class TestController {
                 telemetry.ui_click.emit({ elementId: 'unitTestGeneration_cancelFixingTest' })
                 this.messenger.sendChatInputEnabled(data.tabID, true)
                 await this.sessionCleanUp()
+                break
             case ButtonActions.PROVIDE_FEEDBACK:
                 getFeedbackCommentData = `Q Test Generation: RequestId: ${this.sessionStorage.getSession().startTestGenerationRequestId}, TestGenerationJobId: ${this.sessionStorage.getSession().testGenerationJob?.testGenerationJobId}`
                 void submitFeedback(placeholder, 'Amazon Q', getFeedbackCommentData)
                 telemetry.ui_click.emit({ elementId: 'unitTestGeneration_provideFeedback' })
-                break
         }
     }
     // This function handles actions if user gives any input from the chatInput box
@@ -995,9 +995,8 @@ export class TestController {
         }
     }
 
-    // TODO: Check if there are more cases to 
-  if yes create a enum or type for step
-    private async endSession(data: any, step: FollowUpTypes) {
+    // TODO: Check if there are more cases to if yes create a enum or type for step
+    private async endSession(data: any, step?: FollowUpTypes) {
         this.messenger.sendMessage(
             'Unit test generation completed.',
             data.tabID,
@@ -1358,7 +1357,7 @@ export class TestController {
                   }
                 : undefined,
             codeReference: session.references.map(
-                (ref: ShortAnswerReference) =>
+                (ref: Reference) =>
                     ({
                         ...ref,
                         information: `${ref.licenseName} - <a href="${ref.url}">${ref.repository}</a>`,

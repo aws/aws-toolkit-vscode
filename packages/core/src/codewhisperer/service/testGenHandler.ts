@@ -22,7 +22,7 @@ import {
     TestGenTimedOutError,
 } from '../../amazonqTest/error'
 import { getMd5, uploadArtifactToS3 } from './securityScanHandler'
-import { testGenState, Reference } from '../models/model'
+import { ShortAnswer, testGenState, Reference } from '../models/model'
 import { ChatSessionManager } from '../../amazonqTest/chat/storages/chatSession'
 import { createCodeWhispererChatStreamingClient } from '../../shared/clients/codewhispererChatClient'
 import { downloadExportResultArchive } from '../../shared/utilities/download'
@@ -158,7 +158,7 @@ export async function pollTestJobStatus(
                 progressRate,
             })
         }
-        
+
         const shortAnswerString = resp.testGenerationJob?.shortAnswer
         if (shortAnswerString) {
             const parsedShortAnswer = JSON.parse(shortAnswerString)
