@@ -15,6 +15,7 @@ import {
     ListCodeScanFindingsResponse,
     pollScanJobStatus,
     SecurityScanTimedOutError,
+    CodeWhispererConstants,
 } from 'aws-core-vscode/codewhisperer'
 import { timeoutUtils } from 'aws-core-vscode/shared'
 import assert from 'assert'
@@ -303,7 +304,7 @@ describe('securityScanHandler', function () {
 
             const pollPromise = pollScanJobStatus(mockClient, mockJobId, CodeAnalysisScope.FILE_AUTO, mockStartTime)
 
-            const expectedTimeoutMs = 60_000
+            const expectedTimeoutMs = CodeWhispererConstants.expressScanTimeoutMs
             clock.tick(expectedTimeoutMs + 1000)
 
             await assert.rejects(() => pollPromise, SecurityScanTimedOutError)
@@ -314,7 +315,7 @@ describe('securityScanHandler', function () {
 
             const pollPromise = pollScanJobStatus(mockClient, mockJobId, CodeAnalysisScope.PROJECT, mockStartTime)
 
-            const expectedTimeoutMs = 600_000
+            const expectedTimeoutMs = CodeWhispererConstants.standardScanTimeoutMs
             clock.tick(expectedTimeoutMs + 1000)
 
             await assert.rejects(() => pollPromise, SecurityScanTimedOutError)
