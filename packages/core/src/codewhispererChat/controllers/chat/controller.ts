@@ -541,7 +541,7 @@ export class ChatController {
                 } else if (contextCommandItem.symbol) {
                     symbolsCmd.children?.[0].commands.push({
                         command: contextCommandItem.symbol.name,
-                        description: `${contextCommandItem.symbol.kind} defined in ${path.join(wsFolderName, contextCommandItem.relativePath)}`,
+                        description: `${contextCommandItem.symbol.kind} defined at L${contextCommandItem.symbol.range.start.line} of ${path.join(wsFolderName, contextCommandItem.relativePath)}`,
                         route: [contextCommandItem.workspaceFolder, contextCommandItem.relativePath],
                         label: 'symbol',
                         id: contextCommandItem.id,
