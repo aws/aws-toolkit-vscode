@@ -5,7 +5,13 @@
 
 import { CredentialsShim } from '../auth/deprecated/loginManager'
 import { AwsContext } from './awsContext'
-import { AwsCredentialIdentityProvider, Logger, RetryStrategyV2 } from '@smithy/types'
+import {
+    AwsCredentialIdentityProvider,
+    Logger,
+    RetryStrategyV2,
+    TokenIdentity,
+    TokenIdentityProvider,
+} from '@smithy/types'
 import { getUserAgent } from './telemetry/util'
 import { DevSettings } from './settings'
 import {
@@ -38,7 +44,7 @@ import { once } from './utilities/functionUtils'
 import { isWeb } from './extensionGlobals'
 
 export type AwsClientConstructor<C> = new (o: AwsClientOptions) => C
-export type AwsCommandConstructor<CommandInput extends object, Command extends AwsCommand> = new (
+export type AwsCommandConstructor<CommandInput extends object, Command extends AwsCommand<CommandInput, object>> = new (
     o: CommandInput
 ) => Command
 
@@ -48,12 +54,15 @@ export interface AwsClient {
     middlewareStack: {
         add: MiddlewareStack<any, MetadataBearer>['add']
     }
-    send: (command: AwsCommand, options?: any) => Promise<any>
+    send<InputType extends object, OutputType extends object>(
+        command: AwsCommand<InputType, OutputType>,
+        options?: any
+    ): Promise<OutputType>
     destroy: () => void
 }
 
-export interface AwsCommand {
-    input: object
+export interface AwsCommand<InputType extends object, OutputType extends object> {
+    input: InputType
     middlewareStack: any
     resolveMiddleware: (stack: any, configuration: any, options: any) => Handler<any, any>
 }
@@ -71,6 +80,7 @@ export interface AwsClientOptions {
     endpoint: string
     retryStrategy: RetryStrategy | RetryStrategyV2
     logger: Logger
+    token: TokenIdentity | TokenIdentityProvider
 }
 
 interface AwsServiceOptions<C extends AwsClient> {
@@ -132,7 +142,6 @@ export class AWSClientBuilderV3 {
     }
 
     public createAwsService<C extends AwsClient>(serviceOptions: AwsServiceOptions<C>): C {
-        const shim = this.getShim()
         const opt = (serviceOptions.clientOptions ?? {}) as AwsClientOptions
         const userAgent = serviceOptions.userAgent ?? true
         const keepAlive = serviceOptions.keepAlive ?? true
@@ -153,13 +162,16 @@ export class AWSClientBuilderV3 {
         if (!opt.requestHandler) {
             opt.requestHandler = this.getHttpHandler()
         }
-        // TODO: add tests for refresh logic.
-        opt.credentials = async () => {
-            const creds = await shim.get()
-            if (creds.expiration && creds.expiration.getTime() < Date.now()) {
-                return shim.refresh()
+
+        if (!opt.credentials && !opt.token) {
+            const shim = this.getShim()
+            opt.credentials = async () => {
+                const creds = await shim.get()
+                if (creds.expiration && creds.expiration.getTime() < Date.now()) {
+                    return shim.refresh()
+                }
+                return creds
             }
-            return creds
         }
 
         const service = new serviceOptions.serviceClient(opt)
