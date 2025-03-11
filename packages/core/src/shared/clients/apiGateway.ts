@@ -6,10 +6,8 @@
 import { APIGateway } from 'aws-sdk'
 import { RestApi, Stages } from 'aws-sdk/clients/apigateway'
 import globals from '../extensionGlobals'
-import { ClassToInterfaceType } from '../utilities/tsUtils'
 
-export type ApiGatewayClient = ClassToInterfaceType<DefaultApiGatewayClient>
-export class DefaultApiGatewayClient {
+export class ApiGatewayClient {
     public constructor(public readonly regionCode: string) {}
 
     public async *getResourcesForApi(apiId: string): AsyncIterableIterator<APIGateway.Resource> {
