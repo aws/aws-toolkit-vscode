@@ -53,7 +53,7 @@ import { randomUUID } from '../../../shared/crypto'
 import { tempDirPath, testGenerationLogsDir } from '../../../shared/filesystemUtilities'
 import { CodeReference } from '../../../codewhispererChat/view/connector/connector'
 import { TelemetryHelper } from '../../../codewhisperer/util/telemetryHelper'
-import { ShortAnswer, ShortAnswerReference, testGenState } from '../../../codewhisperer/models/model'
+import { Reference, testGenState } from '../../../codewhisperer/models/model'
 import {
     referenceLogText,
     TestGenerationBuildStep,
@@ -63,6 +63,7 @@ import {
 } from '../../../codewhisperer/models/constants'
 import { UserWrittenCodeTracker } from '../../../codewhisperer/tracker/userWrittenCodeTracker'
 import { ReferenceLogViewProvider } from '../../../codewhisperer/service/referenceLogViewProvider'
+import { TargetFileInfo } from '../../../codewhisperer/client/codewhispereruserclient'
 import { submitFeedback } from '../../../feedback/vue/submitFeedback'
 import { placeholder } from '../../../shared/vscode/commands2'
 import { Auth } from '../../../auth/auth'
@@ -73,7 +74,7 @@ export interface TestChatControllerEventEmitters {
     readonly authClicked: vscode.EventEmitter<any>
     readonly startTestGen: vscode.EventEmitter<any>
     readonly processHumanChatMessage: vscode.EventEmitter<any>
-    readonly updateShortAnswer: vscode.EventEmitter<any>
+    readonly updateTargetFileInfo: vscode.EventEmitter<any>
     readonly showCodeGenerationResults: vscode.EventEmitter<any>
     readonly openDiff: vscode.EventEmitter<any>
     readonly formActionClicked: vscode.EventEmitter<any>
@@ -134,8 +135,8 @@ export class TestController {
             return this.handleFormActionClicked(data)
         })
 
-        this.chatControllerMessageListeners.updateShortAnswer.event((data) => {
-            return this.updateShortAnswer(data)
+        this.chatControllerMessageListeners.updateTargetFileInfo.event((data) => {
+            return this.updateTargetFileInfo(data)
         })
 
         this.chatControllerMessageListeners.showCodeGenerationResults.event((data) => {
@@ -638,10 +639,9 @@ export class TestController {
         }
     }
 
-    private async updateShortAnswer(message: {
+    private async updateTargetFileInfo(message: {
         tabID: string
-        status: string
-        shortAnswer?: ShortAnswer
+        targetFileInfo?: TargetFileInfo
         testGenerationJobGroupName: string
         testGenerationJobId: string
         type: ChatItemType
@@ -651,11 +651,11 @@ export class TestController {
             type: 'answer',
             tabID: message.tabID,
             message: testGenSummaryMessage(
-                path.basename(message.shortAnswer?.sourceFilePath ?? message.filePath),
-                message.shortAnswer?.planSummary?.replaceAll('```', '')
+                path.basename(message.targetFileInfo?.filePath ?? message.filePath),
+                message.targetFileInfo?.filePlan?.replaceAll('```', '')
             ),
             canBeVoted: true,
-            filePath: message.shortAnswer?.testFilePath,
+            filePath: message.targetFileInfo?.testFilePath,
         })
     }
 
@@ -705,7 +705,7 @@ export class TestController {
             tabID: data.tabID,
             messageType: 'answer',
             codeGenerationId: '',
-            message: `Please see the unit tests generated below. Click “View diff” to review the changes in the code editor.`,
+            message: `${session.jobSummary}\n\n Please see the unit tests generated below. Click “View diff” to review the changes in the code editor.`,
             canBeVoted: true,
             messageId: '',
             followUps,
@@ -715,7 +715,7 @@ export class TestController {
                 filePaths: [data.filePath],
             },
             codeReference: session.references.map(
-                (ref: ShortAnswerReference) =>
+                (ref: Reference) =>
                     ({
                         ...ref,
                         information: `${ref.licenseName} - <a href="${ref.url}">${ref.repository}</a>`,
