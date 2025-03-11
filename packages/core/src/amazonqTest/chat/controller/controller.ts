@@ -396,11 +396,6 @@ export class TestController {
                 getFeedbackCommentData = `Q Test Generation: RequestId: ${this.sessionStorage.getSession().startTestGenerationRequestId}, TestGenerationJobId: ${this.sessionStorage.getSession().testGenerationJob?.testGenerationJobId}`
                 void submitFeedback(placeholder, 'Amazon Q', getFeedbackCommentData)
                 telemetry.ui_click.emit({ elementId: 'unitTestGeneration_provideFeedback' })
-                this.messenger.sendMessage(
-                    'Unit test generation completed. Thanks for providing feedback.',
-                    data.tabID,
-                    'answer'
-                )
                 break
         }
     }
@@ -435,7 +430,7 @@ export class TestController {
         const buttons: ChatItemButton[] = []
         if (Auth.instance.isInternalAmazonUser()) {
             buttons.push({
-                keepCardAfterClick: false,
+                keepCardAfterClick: true,
                 text: 'How can we make /test better?',
                 id: ButtonActions.PROVIDE_FEEDBACK,
                 disabled: false, // allow button to be re-clicked
