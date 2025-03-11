@@ -11,6 +11,7 @@ import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { ToolkitError } from '../../../shared/errors'
 import { getLogger } from '../../../shared/logger/logger'
 import { CodeWhispererSupplementalContext } from '../../models/model'
+import * as os from 'os'
 
 export async function fetchSupplementalContext(
     editor: vscode.TextEditor,
@@ -67,4 +68,56 @@ export async function fetchSupplementalContext(
                 return undefined
             }
         })
+}
+
+export function truncateSuppelementalContext(
+    context: CodeWhispererSupplementalContext
+): CodeWhispererSupplementalContext {
+    let c = context.supplementalContextItems.map((item) => {
+        if (item.content.length > 10240) {
+            return {
+                ...item,
+                content: truncateLineByLine(item.content, 10240),
+            }
+        } else {
+            return item
+        }
+    })
+
+    let curTotalLength = c.reduce((acc, cur) => {
+        return acc + cur.content.length
+    }, 0)
+    while (curTotalLength >= 20480) {
+        const last = c[c.length - 1]
+        c = c.slice(0, -1)
+        curTotalLength -= last.content.length
+    }
+
+    return {
+        ...context,
+        supplementalContextItems: c,
+    }
+}
+
+export function truncateLineByLine(input: string, l: number): string {
+    const maxLength = l > 0 ? l : -1 * l
+    if (input.length === 0) {
+        return ''
+    }
+
+    const shouldAddNewLineBack = input[input.length - 1] === os.EOL
+    let lines = input.trim().split(os.EOL)
+    let curLen = input.length
+    while (curLen > maxLength) {
+        const last = lines[lines.length - 1]
+        lines = lines.slice(0, -1)
+        curLen -= last.length + 1
+    }
+
+    const r = lines.join(os.EOL)
+    if (shouldAddNewLineBack) {
+        return r + os.EOL
+    } else {
+        return r
+    }
 }
