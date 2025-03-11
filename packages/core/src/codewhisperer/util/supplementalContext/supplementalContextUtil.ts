@@ -73,6 +73,12 @@ export async function fetchSupplementalContext(
         })
 }
 
+/**
+ * Requirement
+ * - Maximum 5 supplemental context.
+ * - Each chunk can't exceed 10240 characters
+ * - Sum of all chunks can't exceed 20480 characters
+ */
 export function truncateSuppelementalContext(
     context: CodeWhispererSupplementalContext
 ): CodeWhispererSupplementalContext {
