@@ -18,12 +18,11 @@ import {
     CreateUploadUrlError,
     ExportResultsArchiveError,
     InvalidSourceZipError,
-    TestGenFailedError,
     TestGenStoppedError,
     TestGenTimedOutError,
 } from '../../amazonqTest/error'
 import { getMd5, uploadArtifactToS3 } from './securityScanHandler'
-import { ShortAnswer, testGenState } from '../models/model'
+import { testGenState, Reference } from '../models/model'
 import { ChatSessionManager } from '../../amazonqTest/chat/storages/chatSession'
 import { createCodeWhispererChatStreamingClient } from '../../shared/clients/codewhispererChatClient'
 import { downloadExportResultArchive } from '../../shared/utilities/download'
@@ -156,35 +155,35 @@ export async function pollTestJobStatus(
             status: 'InProgress',
             progressRate,
         })
-        const shortAnswerString = resp.testGenerationJob?.shortAnswer
-        if (shortAnswerString) {
-            const parsedShortAnswer = JSON.parse(shortAnswerString)
-            const shortAnswer: ShortAnswer = JSON.parse(parsedShortAnswer)
-            // Stop the Unit test generation workflow if IDE receive stopIteration = true
-            if (shortAnswer.stopIteration === 'true') {
-                session.stopIteration = true
-                throw new TestGenFailedError(shortAnswer.planSummary)
+        const jobSummary = resp.testGenerationJob?.jobSummary ?? ''
+        const jobSummaryNoBackticks = jobSummary.replace(/^`+|`+$/g, '')
+        ChatSessionManager.Instance.getSession().jobSummary = jobSummaryNoBackticks
+        const packageInfoList = resp.testGenerationJob?.packageInfoList ?? []
+        const packageInfo = packageInfoList[0]
+        const targetFileInfo = packageInfo?.targetFileInfoList?.[0]
+
+        if (packageInfo) {
+            // TODO: will need some fields from packageInfo such as buildCommand, packagePlan, packageSummary
+        }
+        if (targetFileInfo) {
+            if (targetFileInfo.numberOfTestMethods) {
+                session.numberOfTestsGenerated = Number(targetFileInfo.numberOfTestMethods)
             }
-            if (shortAnswer.numberOfTestMethods) {
-                session.numberOfTestsGenerated = Number(shortAnswer.numberOfTestMethods)
-            }
-            if (shortAnswer.codeReferences) {
-                session.references = shortAnswer.codeReferences
+            if (targetFileInfo.codeReferences) {
+                session.references = targetFileInfo.codeReferences as Reference[]
             }
             if (initialExecution) {
-                session.generatedFilePath = shortAnswer?.testFilePath ?? ''
-                const currentPlanSummary = session.shortAnswer?.planSummary
-                const newPlanSummary = shortAnswer?.planSummary
-                const status = shortAnswer.stopIteration
+                session.generatedFilePath = targetFileInfo.testFilePath ?? ''
+                const currentPlanSummary = session.targetFileInfo?.filePlan
+                const newPlanSummary = targetFileInfo?.filePlan
 
                 if (currentPlanSummary !== newPlanSummary && newPlanSummary) {
                     const chatControllers = testGenState.getChatControllers()
                     if (chatControllers) {
                         const currentSession = ChatSessionManager.Instance.getSession()
-                        chatControllers.updateShortAnswer.fire({
+                        chatControllers.updateTargetFileInfo.fire({
                             tabID: currentSession.tabID,
-                            status,
-                            shortAnswer,
+                            targetFileInfo,
                             testGenerationJobGroupName: resp.testGenerationJob?.testGenerationJobGroupName,
                             testGenerationJobId: resp.testGenerationJob?.testGenerationJobId,
                             filePath,
@@ -192,8 +191,8 @@ export async function pollTestJobStatus(
                     }
                 }
             }
-            ChatSessionManager.Instance.getSession().shortAnswer = shortAnswer
         }
+        ChatSessionManager.Instance.getSession().targetFileInfo = targetFileInfo
         if (resp.testGenerationJob?.status !== CodeWhispererConstants.TestGenerationJobStatus.IN_PROGRESS) {
             // This can be FAILED or COMPLETED
             status = resp.testGenerationJob?.status as CodeWhispererConstants.TestGenerationJobStatus
@@ -243,7 +242,7 @@ export async function exportResultsArchive(
         const zip = new AdmZip(pathToArchive)
         zip.extractAllTo(pathToArchiveDir, true)
 
-        const testFilePathFromResponse = session?.shortAnswer?.testFilePath
+        const testFilePathFromResponse = session?.targetFileInfo?.testFilePath
         const testFilePath = testFilePathFromResponse
             ? testFilePathFromResponse.split('/').slice(1).join('/') // remove the project name
             : await getTestFilePathFromZip(pathToArchiveDir)
