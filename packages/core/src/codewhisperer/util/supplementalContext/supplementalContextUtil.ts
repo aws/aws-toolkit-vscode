@@ -96,6 +96,7 @@ export function truncateSuppelementalContext(
     return {
         ...context,
         supplementalContextItems: c,
+        contentsLength: curTotalLength,
     }
 }
 
