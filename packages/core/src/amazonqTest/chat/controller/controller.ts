@@ -705,7 +705,7 @@ export class TestController {
             tabID: data.tabID,
             messageType: 'answer',
             codeGenerationId: '',
-            message: `${session.jobSummary}\n\n Please see the unit tests generated below. Click "View diff" to review the changes in the code editor.`,
+            message: `${session.jobSummary}\n\n Please see the unit tests generated below. Click “View diff” to review the changes in the code editor.`,
             canBeVoted: true,
             messageId: '',
             followUps,
