@@ -400,8 +400,8 @@ export const timeoutUtilsDescribe = describe('timeoutUtils', async function () {
             fn.onCall(2).resolves('success')
 
             const res = waitUntil(fn, {
-                retryOnFail: (error: Error) => {
-                    return error.message === 'Retry error'
+                retryOnFail: (error) => {
+                    return error ? error.message === 'Retry error' : false
                 },
             })
 
@@ -420,8 +420,8 @@ export const timeoutUtilsDescribe = describe('timeoutUtils', async function () {
 
             const res = assert.rejects(
                 waitUntil(fn, {
-                    retryOnFail: (error: Error) => {
-                        return error.message === 'Retry error'
+                    retryOnFail: (error) => {
+                        return error ? error.message === 'Retry error' : true
                     },
                 }),
                 (e) => e instanceof Error && e.message === 'Last error'
@@ -434,23 +434,9 @@ export const timeoutUtilsDescribe = describe('timeoutUtils', async function () {
             await res
         })
 
-        it('retries the function until it succeeds', async function () {
-            fn.onCall(0).throws()
-            fn.onCall(1).throws()
-            fn.onCall(2).resolves('success')
-
-            const res = waitUntil(fn, { retryOnFail: true })
-
-            await clock.tickAsync(timeoutUtils.waitUntilDefaultInterval)
-            assert.strictEqual(fn.callCount, 2)
-            await clock.tickAsync(timeoutUtils.waitUntilDefaultInterval)
-            assert.strictEqual(fn.callCount, 3)
-            assert.strictEqual(await res, 'success')
-        })
-
         it('retryOnFail ignores truthiness', async function () {
             fn.resolves(false)
-            const res = waitUntil(fn, { retryOnFail: true, truthy: true })
+            const res = waitUntil(fn, { retryOnFail: () => true, truthy: true })
             assert.strictEqual(await res, false)
         })
 
@@ -466,7 +452,7 @@ export const timeoutUtilsDescribe = describe('timeoutUtils', async function () {
             // We must wrap w/ assert.rejects() here instead of at the end, otherwise Mocha raise a
             // `rejected promise not handled within 1 second: Error: last`
             const res = assert.rejects(
-                waitUntil(fn, { retryOnFail: true }),
+                waitUntil(fn, { retryOnFail: () => true }),
                 (e) => e instanceof Error && e.message === 'last'
             )
 
@@ -488,7 +474,7 @@ export const timeoutUtilsDescribe = describe('timeoutUtils', async function () {
 
             // Note 701 instead of 700 for timeout. The 1 millisecond allows the final call to execute
             // since the timeout condition is >= instead of >
-            const res = waitUntil(fn, { timeout: 701, interval: 100, backoff: 2, retryOnFail: true })
+            const res = waitUntil(fn, { timeout: 701, interval: 100, backoff: 2, retryOnFail: () => true })
 
             // Check the call count after each iteration, ensuring the function is called
             // after the correct delay between retries.

@@ -298,7 +298,7 @@ export class RemoteFetcher implements NotificationFetcher {
             {
                 interval: RemoteFetcher.retryIntervalMs,
                 timeout: RemoteFetcher.retryTimeout,
-                retryOnFail: true,
+                retryOnFail: () => true,
                 // No exponential backoff - necessary?
             }
         )

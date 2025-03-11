@@ -222,13 +222,16 @@ interface WaitUntilOptions {
     /** A backoff multiplier for how long the next interval will be (default: None, i.e 1) */
     readonly backoff?: number
     /**
-     * Only retries when an error is thrown, otherwise returning the immediate result.
-     * Can also be a callback for conditional retry based on errors
-     * - 'truthy' arg is ignored
-     * - If the timeout is reached it throws the last error
-     * - default: false
+     * Call back, true when the function should be retried on failure.
+     * Example usage:
+     * - () => boolean if the retry logic is "constant"
+     * - (error) => { error ? retryOnError(error) : boolean }
+     *   where retryOnError determines what errors to retry, and the boolean is for base case when there's no error (undefined)
+     * 'truthy' arg is ignored
+     * If the timeout is reached it throws the last error
+     * Default to false
      */
-    readonly retryOnFail?: boolean | ((error: Error) => boolean)
+    readonly retryOnFail?: (error: Error | undefined) => boolean
 }
 
 export const waitUntilDefaultTimeout = 2000
@@ -243,14 +246,9 @@ export const waitUntilDefaultInterval = 500
  *
  * @returns Result of `fn()`, or possibly `undefined` depending on the arguments.
  */
-export async function waitUntil<T>(fn: () => Promise<T>, options: WaitUntilOptions & { retryOnFail: true }): Promise<T>
 export async function waitUntil<T>(
     fn: () => Promise<T>,
-    options: WaitUntilOptions & { retryOnFail: false }
-): Promise<T | undefined>
-export async function waitUntil<T>(
-    fn: () => Promise<T>,
-    options: WaitUntilOptions & { retryOnFail: (error: Error) => boolean }
+    options: WaitUntilOptions & { retryOnFail: (error: Error | undefined) => boolean }
 ): Promise<T>
 
 export async function waitUntil<T>(
@@ -264,7 +262,7 @@ export async function waitUntil<T>(fn: () => Promise<T>, options: WaitUntilOptio
         interval: waitUntilDefaultInterval,
         truthy: true,
         backoff: 1,
-        retryOnFail: false,
+        retryOnFail: () => false,
         ...options,
     }
 
@@ -272,17 +270,6 @@ export async function waitUntil<T>(fn: () => Promise<T>, options: WaitUntilOptio
     let lastError: Error | undefined
     let elapsed: number = 0
     let remaining = opt.timeout
-
-    // Internal helper to determine if we should retry
-    function shouldRetry(error: Error | undefined): boolean {
-        if (error === undefined) {
-            return typeof opt.retryOnFail === 'boolean' ? opt.retryOnFail : true
-        }
-        if (typeof opt.retryOnFail === 'function') {
-            return opt.retryOnFail(error)
-        }
-        return opt.retryOnFail
-    }
 
     for (let i = 0; true; i++) {
         const start: number = globals.clock.Date.now()
@@ -296,7 +283,7 @@ export async function waitUntil<T>(fn: () => Promise<T>, options: WaitUntilOptio
                 result = await fn()
             }
 
-            if (shouldRetry(lastError) || (opt.truthy && result) || (!opt.truthy && result !== undefined)) {
+            if (opt.retryOnFail(lastError) || (opt.truthy && result) || (!opt.truthy && result !== undefined)) {
                 return result
             }
         } catch (e) {
@@ -305,7 +292,7 @@ export async function waitUntil<T>(fn: () => Promise<T>, options: WaitUntilOptio
                 throw e
             }
 
-            if (!shouldRetry(e)) {
+            if (!opt.retryOnFail(e)) {
                 throw e
             }
 
@@ -317,7 +304,7 @@ export async function waitUntil<T>(fn: () => Promise<T>, options: WaitUntilOptio
 
         // If the sleep will exceed the timeout, abort early
         if (elapsed + interval >= remaining) {
-            if (!shouldRetry(lastError)) {
+            if (!opt.retryOnFail(lastError)) {
                 return undefined
             }
             throw lastError
