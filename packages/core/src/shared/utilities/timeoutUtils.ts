@@ -222,14 +222,16 @@ interface WaitUntilOptions {
     /** A backoff multiplier for how long the next interval will be (default: None, i.e 1) */
     readonly backoff?: number
     /**
-     * Call back, true when the function should be retried on failure.
+     * Callback, returns `true` when the function should be retried on failure.
+     *
      * Example usage:
-     * - () => boolean if the retry logic is "constant"
-     * - (error) => { error ? retryOnError(error) : boolean }
-     *   where retryOnError determines what errors to retry, and the boolean is for base case when there's no error (undefined)
-     * 'truthy' arg is ignored
-     * If the timeout is reached it throws the last error
-     * Default to false
+     * - `() => boolean` if the retry logic is "constant".
+     * - `(error) => { error ? retryOnError(error) : boolean }`
+     *   where `retryOnError` determines what errors to retry, and the boolean is for the base case when there's no error (undefined).
+     *
+     * The `truthy` argument is ignored.
+     * If the timeout is reached, it throws the last error.
+     * Defaults to `false`.
      */
     readonly retryOnFail?: (error: Error | undefined) => boolean
 }
@@ -248,7 +250,7 @@ export const waitUntilDefaultInterval = 500
  */
 export async function waitUntil<T>(
     fn: () => Promise<T>,
-    options: WaitUntilOptions & { retryOnFail: (error: Error | undefined) => boolean }
+    options: WaitUntilOptions & { retryOnFail: (error?: Error) => boolean }
 ): Promise<T>
 
 export async function waitUntil<T>(

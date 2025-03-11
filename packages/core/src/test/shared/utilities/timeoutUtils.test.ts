@@ -401,7 +401,7 @@ export const timeoutUtilsDescribe = describe('timeoutUtils', async function () {
 
             const res = waitUntil(fn, {
                 retryOnFail: (error) => {
-                    return error ? error.message === 'Retry error' : false
+                    return error?.message === 'Retry error'
                 },
             })
 
@@ -421,7 +421,7 @@ export const timeoutUtilsDescribe = describe('timeoutUtils', async function () {
             const res = assert.rejects(
                 waitUntil(fn, {
                     retryOnFail: (error) => {
-                        return error ? error.message === 'Retry error' : true
+                        return error?.message === 'Retry error'
                     },
                 }),
                 (e) => e instanceof Error && e.message === 'Last error'

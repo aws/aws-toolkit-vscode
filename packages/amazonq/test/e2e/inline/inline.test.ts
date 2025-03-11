@@ -24,7 +24,7 @@ describe('Amazon Q Inline', async function () {
     const waitOptions = {
         interval: 500,
         timeout: 10000,
-        retryOnFail: () => true,
+        retryOnFail: () => false,
     }
 
     before(async function () {
