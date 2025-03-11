@@ -670,6 +670,20 @@ export class Connector {
         }
     }
 
+    onFormTextualItemKeyPress = (
+        event: KeyboardEvent,
+        formData: Record<string, string>,
+        itemId: string,
+        tabId: string,
+        eventId?: string
+    ) => {
+        switch (this.tabsStorage.getTab(tabId)?.type) {
+            case 'cwc':
+                return this.cwChatConnector.onFormTextualItemKeyPress(tabId, event, formData, itemId, eventId)
+        }
+        return false
+    }
+
     onCustomFormAction = (
         tabId: string,
         messageId: string | undefined,
@@ -681,7 +695,7 @@ export class Connector {
                 this.gumbyChatConnector.onCustomFormAction(tabId, action)
                 break
             case 'testgen':
-                this.testChatConnector.onCustomFormAction(tabId, action)
+                this.testChatConnector.onCustomFormAction(tabId, messageId ?? '', action)
                 break
             case 'review':
                 this.scanChatConnector.onCustomFormAction(tabId, action)
