@@ -192,7 +192,7 @@ describe('Test how this codebase uses the CodeCatalyst API', function () {
             assert.strictEqual(actualDevEnv.org.name, spaceName)
             assert.strictEqual(actualDevEnv.alias, differentDevEnvSettings.alias)
             assert.strictEqual(actualDevEnv.instanceType, 'dev.standard1.medium')
-            assert.ok(actualDevEnv.persistentStorage && actualDevEnv.persistentStorage.sizeInGiB === 32)
+            assert.strictEqual(actualDevEnv.persistentStorage.sizeInGiB, 32)
         })
 
         it.skip('creates a Dev Environment using an existing branch', async function () {
@@ -535,7 +535,7 @@ describe('Test how this codebase uses the CodeCatalyst API', function () {
         )
     }
 
-    async function getAllDevEnvs(projectName: CodeCatalystProject['name']) {
+    async function getAllDevEnvs(projectName: CodeCatalystProject['name']): Promise<DevEnvironment[]> {
         const currentDevEnvs = await client
             .listDevEnvironments({ name: projectName, org: { name: spaceName }, type: 'project' })
             .flatten()
