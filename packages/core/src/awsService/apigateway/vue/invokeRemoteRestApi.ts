@@ -13,7 +13,7 @@ import { localize } from '../../../shared/utilities/vsCodeUtils'
 import { Result } from '../../../shared/telemetry/telemetry'
 import { VueWebview } from '../../../webviews/main'
 import { ExtContext } from '../../../shared/extensions'
-import { DefaultApiGatewayClient } from '../../../shared/clients/apiGatewayClient'
+import { ApiGatewayClient } from '../../../shared/clients/apiGateway'
 import { telemetry } from '../../../shared/telemetry/telemetry'
 
 interface InvokeApiMessage {
@@ -50,7 +50,7 @@ export class RemoteRestInvokeWebview extends VueWebview {
     public constructor(
         private readonly data: InvokeRemoteRestApiInitialData,
         private readonly channel: vscode.OutputChannel,
-        private readonly client = new DefaultApiGatewayClient(data.Region)
+        private readonly client = new ApiGatewayClient(data.Region)
     ) {
         super(RemoteRestInvokeWebview.sourcePath)
     }
@@ -115,7 +115,7 @@ export async function invokeRemoteRestApi(
     const logger: Logger = getLogger()
 
     try {
-        const client = new DefaultApiGatewayClient(params.apiNode.regionCode)
+        const client = new ApiGatewayClient(params.apiNode.regionCode)
         logger.info(`Loading API Resources for API ${params.apiNode.name} (id: ${params.apiNode.id})`)
         const resources = (await toArrayAsync(client.getResourcesForApi(params.apiNode.id)))
             .sort((a, b) => a.path!.localeCompare(b.path!))
