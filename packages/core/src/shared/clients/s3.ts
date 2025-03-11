@@ -21,8 +21,6 @@ import {
     CreateBucketCommand,
     DeleteBucketCommand,
     GetObjectCommand,
-    GetObjectCommandInput,
-    GetObjectCommandOutput,
     HeadObjectCommand,
     HeadObjectOutput,
     ListObjectsV2Command,
@@ -38,6 +36,7 @@ import {
     DeleteObjectsOutput,
     GetObjectOutput,
     _Error,
+    GetObjectCommandOutput,
 } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { Progress, Upload } from '@aws-sdk/lib-storage'
@@ -279,13 +278,10 @@ export class S3Client extends ClientWrapper<S3ClientSDK> {
     public async downloadFileStream(bucketName: string, key: string): Promise<Readable> {
         // GetObject response body is now a `StreamingBlobPayloadOutputTypes` from @smithy/types.
         // this is a general type for web/node streams, therefore we must cast to nodes streaming type.
-        const response = await this.makeRequest<GetObjectCommandInput, GetObjectCommandOutput, GetObjectCommand>(
-            GetObjectCommand,
-            {
-                Bucket: bucketName,
-                Key: key,
-            }
-        )
+        const response: GetObjectCommandOutput = await this.makeRequest(GetObjectCommand, {
+            Bucket: bucketName,
+            Key: key,
+        })
 
         if (isWeb()) {
             throw new ToolkitError('S3: downloading files is not supported in web.')
