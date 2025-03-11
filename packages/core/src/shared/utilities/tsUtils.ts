@@ -193,3 +193,7 @@ export function omitIfPresent<T extends Record<string, unknown>>(obj: T, keys: s
     }
     return objCopy
 }
+
+export function isDefined<T>(i: T | undefined): i is T {
+    return i !== undefined
+}
