@@ -22,17 +22,15 @@ import { getSpawnEnv } from '../env/resolveEnv'
 import {
     getErrorCode,
     getProjectRoot,
+    getRecentResponse,
     getSamCliPathAndVersion,
     getTerminalFromError,
     isDotnetRuntime,
-    registerTemplateBuild,
-    throwIfTemplateIsBeingBuilt,
-    unregisterTemplateBuild,
     updateRecentResponse,
 } from './utils'
 import { getConfigFileUri, validateSamBuildConfig } from './config'
 import { runInTerminal } from './processTerminal'
-import { buildMementoRootKey } from './constants'
+import { buildMementoRootKey, buildProcessMementoRootKey, globalIdentifier } from './constants'
 import { SemVer } from 'semver'
 
 export interface BuildParams {
@@ -266,11 +264,12 @@ export async function runBuild(arg?: TreeNode): Promise<SamBuildResult> {
             isSuccess: true,
         }
     } catch (error) {
-        await unregisterTemplateBuild(params.template.uri.path)
         throw ToolkitError.chain(error, 'Failed to build SAM template', {
             details: { terminal: getTerminalFromError(error), ...resolveBuildArgConflict(buildFlags) },
             code: getErrorCode(error),
         })
+    } finally {
+        await unregisterTemplateBuild(params.template.uri.path)
     }
 }
 
@@ -311,4 +310,35 @@ export async function resolveBuildFlags(buildFlags: string[], samCliVersion: Sem
         buildFlags.push('--no-use-container')
     }
     return buildFlags
+}
+
+/**
+ * Returns true if there's an ongoing build process for the provided template, false otherwise
+ * @Param templatePath The path to the template.yaml file
+ */
+function isBuildInProgress(templatePath: string): boolean {
+    const expirationDate = getRecentResponse(buildProcessMementoRootKey, globalIdentifier, templatePath)
+    if (expirationDate) {
+        return Date.now() < parseInt(expirationDate)
+    }
+    return false
+}
+
+/**
+ * Throws an error if there's a build in progress for the provided template
+ * @Param templatePath The path to the template.yaml file
+ */
+export function throwIfTemplateIsBeingBuilt(templatePath: string) {
+    if (isBuildInProgress(templatePath)) {
+        throw new ToolkitError('This template is already being built', { code: 'BuildInProgress' })
+    }
+}
+
+export async function registerTemplateBuild(templatePath: string) {
+    const expirationDate = Date.now() + 5 * 60 * 1000 // five minutes
+    await updateRecentResponse(buildProcessMementoRootKey, globalIdentifier, templatePath, expirationDate.toString())
+}
+
+export async function unregisterTemplateBuild(templatePath: string) {
+    await updateRecentResponse(buildProcessMementoRootKey, globalIdentifier, templatePath, undefined)
 }
