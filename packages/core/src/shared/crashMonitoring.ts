@@ -492,7 +492,7 @@ export class FileSystemState {
                 timeout: 15_000,
                 interval: 100,
                 backoff: 2,
-                retryOnFail: true,
+                retryOnFail: () => true,
             })
 
             return funcWithRetries
@@ -550,7 +550,7 @@ export class FileSystemState {
             timeout: 15_000,
             interval: 100,
             backoff: 2,
-            retryOnFail: true,
+            retryOnFail: () => true,
         })
         await funcWithRetries
     }
@@ -618,7 +618,12 @@ export class FileSystemState {
                 }
                 const funcWithIgnoreBadFile = () => ignoreBadFileError(loadExtFromDisk)
                 const funcWithRetries = () =>
-                    waitUntil(funcWithIgnoreBadFile, { timeout: 15_000, interval: 100, backoff: 2, retryOnFail: true })
+                    waitUntil(funcWithIgnoreBadFile, {
+                        timeout: 15_000,
+                        interval: 100,
+                        backoff: 2,
+                        retryOnFail: () => true,
+                    })
                 const funcWithCtx = () => withFailCtx('parseRunningExtFile', funcWithRetries)
                 const ext: ExtInstanceHeartbeat | undefined = await funcWithCtx()
 

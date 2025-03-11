@@ -120,9 +120,9 @@ export class HttpResourceFetcher implements ResourceFetcher<Response> {
                 timeout: 3000,
                 interval: 100,
                 backoff: 2,
-                retryOnFail: (error: Error) => {
-                    // Retry unless the user intentionally canceled the operation.
-                    return !isUserCancelledError(error)
+                retryOnFail: (error: Error | undefined) => {
+                    // Only stops retry when the user intentionally canceled the operation.
+                    return error ? !isUserCancelledError(error) : true
                 },
             }
         )
