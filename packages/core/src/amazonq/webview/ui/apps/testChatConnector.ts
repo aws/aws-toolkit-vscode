@@ -115,7 +115,7 @@ export class Connector extends BaseConnector {
             messageId: messageId,
             buttons: [],
         }
-
+        // TODO: Add more cases for Accept/Reject/viewDiff.
         switch (action.id) {
             case 'Provide-Feedback':
                 answer.buttons = [
@@ -130,7 +130,6 @@ export class Connector extends BaseConnector {
                 ]
                 break
             default:
-                console.warn(`Unhandled action ID: ${action.id}`)
                 break
         }
         this.onChatAnswerUpdated(tabId, answer)
