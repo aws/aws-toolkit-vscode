@@ -9,7 +9,7 @@ import { CreateAppRunnerServiceWizard } from '../../../../awsService/apprunner/w
 import { stub } from '../../../utilities/stubber'
 import { IamClient } from '../../../../shared/clients/iam'
 import { DefaultEcrClient } from '../../../../shared/clients/ecrClient'
-import { DefaultAppRunnerClient } from '../../../../shared/clients/apprunnerClient'
+import { AppRunnerClient } from '../../../../shared/clients/apprunner'
 
 describe('CreateServiceWizard', function () {
     let tester: WizardTester<AppRunner.CreateServiceRequest>
@@ -23,7 +23,7 @@ describe('CreateServiceWizard', function () {
             {
                 iam: stub(IamClient, { regionCode }),
                 ecr: stub(DefaultEcrClient, { regionCode }),
-                apprunner: stub(DefaultAppRunnerClient, { regionCode }),
+                apprunner: stub(AppRunnerClient, { regionCode }),
             }
         )
 

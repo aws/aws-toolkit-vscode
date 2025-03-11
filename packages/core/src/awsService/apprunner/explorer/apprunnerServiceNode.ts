@@ -4,7 +4,7 @@
  */
 
 import AsyncLock from 'async-lock'
-import { AppRunnerClient } from '../../../shared/clients/apprunnerClient'
+import { AppRunnerClient } from '../../../shared/clients/apprunner'
 import { AppRunner } from 'aws-sdk'
 import { AppRunnerNode } from './apprunnerNode'
 

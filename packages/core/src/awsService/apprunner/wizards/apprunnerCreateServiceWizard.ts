@@ -17,7 +17,7 @@ import { makeDeploymentButton } from './deploymentButton'
 import { createExitPrompter } from '../../../shared/ui/common/exitPrompter'
 import { IamClient } from '../../../shared/clients/iam'
 import { DefaultEcrClient } from '../../../shared/clients/ecrClient'
-import { DefaultAppRunnerClient } from '../../../shared/clients/apprunnerClient'
+import { AppRunnerClient } from '../../../shared/clients/apprunner'
 import { getAppRunnerCreateServiceDocUrl } from '../../../shared/extensionUtilities'
 
 const localize = nls.loadMessageBundle()
@@ -104,7 +104,7 @@ export class CreateAppRunnerServiceWizard extends Wizard<AppRunner.CreateService
         clients = {
             iam: new IamClient(region),
             ecr: new DefaultEcrClient(region),
-            apprunner: new DefaultAppRunnerClient(region),
+            apprunner: new AppRunnerClient(region),
         }
     ) {
         super({

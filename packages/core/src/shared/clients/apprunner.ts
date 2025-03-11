@@ -6,11 +6,7 @@
 import { AppRunner } from 'aws-sdk'
 import globals from '../extensionGlobals'
 
-import { ClassToInterfaceType } from '../utilities/tsUtils'
-
-export type AppRunnerClient = ClassToInterfaceType<DefaultAppRunnerClient>
-
-export class DefaultAppRunnerClient {
+export class AppRunnerClient {
     public constructor(public readonly regionCode: string) {}
 
     public async createService(request: AppRunner.CreateServiceRequest): Promise<AppRunner.CreateServiceResponse> {
