@@ -87,6 +87,10 @@ export function truncateSuppelementalContext(
         }
     })
 
+    if (c.length > crossFileContextConfig.maxContextCount) {
+        c = c.slice(0, crossFileContextConfig.maxContextCount)
+    }
+
     let curTotalLength = c.reduce((acc, cur) => {
         return acc + cur.content.length
     }, 0)
