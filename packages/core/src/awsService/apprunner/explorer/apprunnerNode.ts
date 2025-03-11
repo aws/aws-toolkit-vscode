@@ -8,10 +8,11 @@ import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { AppRunnerServiceNode } from './apprunnerServiceNode'
 import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
 import * as nls from 'vscode-nls'
-import { AppRunnerClient } from '../../../shared/clients/apprunner'
-import { getPaginatedAwsCallIter } from '../../../shared/utilities/collectionUtils'
+import { AppRunnerClient, AppRunnerServiceSummary } from '../../../shared/clients/apprunner'
 import { AppRunner } from 'aws-sdk'
 import { PollingSet } from '../../../shared/utilities/pollingSet'
+import { ListServicesRequest, ServiceSummary } from '@aws-sdk/client-apprunner'
+import { hasProps } from '../../../shared/utilities/tsUtils'
 
 const localize = nls.loadMessageBundle()
 
@@ -43,30 +44,13 @@ export class AppRunnerNode extends AWSTreeNodeBase {
         })
     }
 
-    private async getServiceSummaries(request: AppRunner.ListServicesRequest = {}): Promise<AppRunner.Service[]> {
-        const iterator = getPaginatedAwsCallIter({
-            awsCall: async (request) => await this.client.listServices(request),
-            nextTokenNames: {
-                request: 'NextToken',
-                response: 'NextToken',
-            },
-            request,
-        })
+    private async getServiceSummaries(request: ListServicesRequest = {}): Promise<AppRunnerServiceSummary[]> {
+        // TODO: avoid resolving all services at once.
+        return await this.client.paginateServices(request).flatten().filter(isService).promise()
 
-        const services: AppRunner.Service[] = []
-
-        while (true) {
-            const next = await iterator.next()
-
-            // eslint-disable-next-line unicorn/no-array-for-each
-            next.value.ServiceSummaryList.forEach((summary: AppRunner.Service) => services.push(summary))
-
-            if (next.done) {
-                break
-            }
+        function isService(s: ServiceSummary): s is AppRunnerServiceSummary {
+            return hasProps(s, 'ServiceName', 'ServiceArn', 'Status', 'ServiceId')
         }
-
-        return services
     }
 
     public async updateChildren(): Promise<void> {

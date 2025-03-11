@@ -7,11 +7,41 @@ import { AppRunner } from 'aws-sdk'
 import globals from '../extensionGlobals'
 import {
     AppRunnerClient as AppRunnerClientSDK,
+    DeleteServiceCommand,
+    DeleteServiceRequest,
+    DeleteServiceResponse,
+    DescribeServiceCommand,
+    DescribeServiceRequest,
+    DescribeServiceResponse,
     ListServicesCommand,
     ListServicesRequest,
     ListServicesResponse,
+    paginateListServices,
+    PauseServiceCommand,
+    PauseServiceRequest,
+    PauseServiceResponse,
+    ResumeServiceCommand,
+    ResumeServiceRequest,
+    ResumeServiceResponse,
+    Service,
+    ServiceSummary,
+    StartDeploymentCommand,
+    StartDeploymentRequest,
+    StartDeploymentResponse,
+    UpdateServiceCommand,
+    UpdateServiceRequest,
+    UpdateServiceResponse,
 } from '@aws-sdk/client-apprunner'
 import { ClientWrapper } from './clientWrapper'
+import { RequiredProps } from '../utilities/tsUtils'
+
+export type AppRunnerService = RequiredProps<Service, 'ServiceName' | 'ServiceArn' | 'Status' | 'ServiceId'>
+export type AppRunnerServiceSummary = RequiredProps<
+    ServiceSummary,
+    'ServiceName' | 'ServiceArn' | 'Status' | 'ServiceId'
+>
+
+type WithService<T> = T & { Service: AppRunnerService }
 
 export class AppRunnerClient extends ClientWrapper<AppRunnerClientSDK> {
     public constructor(regionCode: string) {
@@ -26,16 +56,20 @@ export class AppRunnerClient extends ClientWrapper<AppRunnerClientSDK> {
         return await this.makeRequest(ListServicesCommand, request)
     }
 
-    public async pauseService(request: AppRunner.PauseServiceRequest): Promise<AppRunner.PauseServiceResponse> {
-        return (await this.createSdkClient()).pauseService(request).promise()
+    public paginateServices(request: ListServicesRequest) {
+        return this.makePaginatedRequest(paginateListServices, request, (page) => page.ServiceSummaryList)
     }
 
-    public async resumeService(request: AppRunner.ResumeServiceRequest): Promise<AppRunner.ResumeServiceResponse> {
-        return (await this.createSdkClient()).resumeService(request).promise()
+    public async pauseService(request: PauseServiceRequest): Promise<WithService<PauseServiceResponse>> {
+        return await this.makeRequest(PauseServiceCommand, request)
     }
 
-    public async updateService(request: AppRunner.UpdateServiceRequest): Promise<AppRunner.UpdateServiceResponse> {
-        return (await this.createSdkClient()).updateService(request).promise()
+    public async resumeService(request: ResumeServiceRequest): Promise<WithService<ResumeServiceResponse>> {
+        return await this.makeRequest(ResumeServiceCommand, request)
+    }
+
+    public async updateService(request: UpdateServiceRequest): Promise<WithService<UpdateServiceResponse>> {
+        return await this.makeRequest(UpdateServiceCommand, request)
     }
 
     public async createConnection(
@@ -50,24 +84,20 @@ export class AppRunnerClient extends ClientWrapper<AppRunnerClientSDK> {
         return (await this.createSdkClient()).listConnections(request).promise()
     }
 
-    public async describeService(
-        request: AppRunner.DescribeServiceRequest
-    ): Promise<AppRunner.DescribeServiceResponse> {
-        return (await this.createSdkClient()).describeService(request).promise()
+    public async describeService(request: DescribeServiceRequest): Promise<WithService<DescribeServiceResponse>> {
+        return await this.makeRequest(DescribeServiceCommand, request)
     }
 
-    public async startDeployment(
-        request: AppRunner.StartDeploymentRequest
-    ): Promise<AppRunner.StartDeploymentResponse> {
-        return (await this.createSdkClient()).startDeployment(request).promise()
+    public async startDeployment(request: StartDeploymentRequest): Promise<StartDeploymentResponse> {
+        return await this.makeRequest(StartDeploymentCommand, request)
     }
 
     public async listOperations(request: AppRunner.ListOperationsRequest): Promise<AppRunner.ListOperationsResponse> {
         return (await this.createSdkClient()).listOperations(request).promise()
     }
 
-    public async deleteService(request: AppRunner.DeleteServiceRequest): Promise<AppRunner.DeleteServiceResponse> {
-        return (await this.createSdkClient()).deleteService(request).promise()
+    public async deleteService(request: DeleteServiceRequest): Promise<WithService<DeleteServiceResponse>> {
+        return this.makeRequest(DeleteServiceCommand, request)
     }
 
     protected async createSdkClient(): Promise<AppRunner> {
