@@ -155,6 +155,9 @@ export async function pollTestJobStatus(
             status: 'InProgress',
             progressRate,
         })
+        const jobSummary = resp.testGenerationJob?.jobSummary ?? ''
+        const jobSummaryNoBackticks = jobSummary.replace(/^`+|`+$/g, '')
+        ChatSessionManager.Instance.getSession().jobSummary = jobSummaryNoBackticks
         const packageInfoList = resp.testGenerationJob?.packageInfoList ?? []
         const packageInfo = packageInfoList[0]
         const targetFileInfo = packageInfo?.targetFileInfoList?.[0]

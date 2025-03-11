@@ -43,6 +43,7 @@ export class Session {
     public fileLanguage: string | undefined = 'plaintext'
     public stopIteration: boolean = false
     public targetFileInfo: TargetFileInfo | undefined
+    public jobSummary: string = ''
 
     // Telemetry
     public testGenerationStartTime: number = 0
