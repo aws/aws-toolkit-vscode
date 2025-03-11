@@ -13,6 +13,7 @@ export enum ButtonActions {
     STOP_TEST_GEN = 'Stop-Test-Generation',
     STOP_BUILD = 'Stop-Build-Process',
     STOP_FIXING_TEST = 'Stop-Fixing-Test',
+    PROVIDE_FEEDBACK = 'Provide-Feedback',
 }
 
 // TODO: Refactor the common functionality between Transform, FeatureDev, CWSPRChat, Scan and UTG to a new Folder.
