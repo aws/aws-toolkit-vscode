@@ -5,16 +5,25 @@
 
 import { AppRunner } from 'aws-sdk'
 import globals from '../extensionGlobals'
+import {
+    AppRunnerClient as AppRunnerClientSDK,
+    ListServicesCommand,
+    ListServicesRequest,
+    ListServicesResponse,
+} from '@aws-sdk/client-apprunner'
+import { ClientWrapper } from './clientWrapper'
 
-export class AppRunnerClient {
-    public constructor(public readonly regionCode: string) {}
+export class AppRunnerClient extends ClientWrapper<AppRunnerClientSDK> {
+    public constructor(regionCode: string) {
+        super(regionCode, AppRunnerClientSDK)
+    }
 
     public async createService(request: AppRunner.CreateServiceRequest): Promise<AppRunner.CreateServiceResponse> {
         return (await this.createSdkClient()).createService(request).promise()
     }
 
-    public async listServices(request: AppRunner.ListServicesRequest): Promise<AppRunner.ListServicesResponse> {
-        return (await this.createSdkClient()).listServices(request).promise()
+    public async listServices(request: ListServicesRequest): Promise<ListServicesResponse> {
+        return await this.makeRequest(ListServicesCommand, request)
     }
 
     public async pauseService(request: AppRunner.PauseServiceRequest): Promise<AppRunner.PauseServiceResponse> {
