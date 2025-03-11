@@ -98,7 +98,7 @@ import {
 import { SsoConnection } from '../../auth/connection'
 import { DevSettings } from '../settings'
 import { getServiceEnvVarConfig } from '../vscode/env'
-import { AwsCommand } from '../awsClientBuilderV3'
+import { AwsCommand, AwsCommandConstructor } from '../awsClientBuilderV3'
 import { ClientWrapper } from './clientWrapper'
 import { ServiceException } from '@aws-sdk/smithy-client'
 import { AccessDeniedException } from '@aws-sdk/client-sso-oidc'
@@ -218,6 +218,7 @@ function createCodeCatalystClient(
     regionCode: string,
     endpoint: string
 ): CodeCatalystSDKClient {
+    // Avoid using cached client so that we can inject fresh bearer token provider.
     return globals.sdkClientBuilderV3.createAwsService({
         serviceClient: CodeCatalystSDKClient,
         clientOptions: {
@@ -276,7 +277,7 @@ export async function createClient(
 
 // TODO: move this to sso auth folder?
 function getTokenProvider(connection: SsoConnection): TokenIdentityProvider {
-    return async (_props) => {
+    return async (_) => {
         const token = await connection.getToken()
         return {
             token: token.accessToken,
@@ -322,7 +323,7 @@ class CodeCatalystClientInternal extends ClientWrapper<CodeCatalystSDKClient> {
         this.log = logger.getLogger()
     }
 
-    protected override getClient(ignoreCache?: boolean): CodeCatalystSDKClient {
+    protected override getClient(): CodeCatalystSDKClient {
         return this.sdkClientV3
     }
 
@@ -340,7 +341,7 @@ class CodeCatalystClientInternal extends ClientWrapper<CodeCatalystSDKClient> {
         CommandOptions extends CommandInput,
         Command extends AwsCommand<CommandInput, CommandOutput>,
     >(
-        cmd: new (o: CommandInput) => Command,
+        cmd: AwsCommandConstructor<CommandInput, Command>,
         commandOptions: CommandOptions,
         silent: true,
         defaultVal: CommandOutput
@@ -350,14 +351,18 @@ class CodeCatalystClientInternal extends ClientWrapper<CodeCatalystSDKClient> {
         CommandOutput extends object,
         CommandOptions extends CommandInput,
         Command extends AwsCommand<CommandInput, CommandOutput>,
-    >(cmd: new (o: CommandInput) => Command, commandOptions: CommandOptions, silent: false): Promise<CommandOutput>
+    >(
+        cmd: AwsCommandConstructor<CommandInput, Command>,
+        commandOptions: CommandOptions,
+        silent: false
+    ): Promise<CommandOutput>
     private async call<
         CommandInput extends object,
         CommandOutput extends object,
         CommandOptions extends CommandInput,
         Command extends AwsCommand<CommandInput, CommandOutput>,
     >(
-        cmd: new (o: CommandInput) => Command,
+        cmd: AwsCommandConstructor<CommandInput, Command>,
         commandOptions: CommandOptions,
         silent: boolean,
         defaultVal?: CommandOutput
