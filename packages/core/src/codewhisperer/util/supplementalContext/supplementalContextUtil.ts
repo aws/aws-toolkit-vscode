@@ -12,6 +12,7 @@ import { ToolkitError } from '../../../shared/errors'
 import { getLogger } from '../../../shared/logger/logger'
 import { CodeWhispererSupplementalContext } from '../../models/model'
 import * as os from 'os'
+import { crossFileContextConfig } from '../../models/constants'
 
 export async function fetchSupplementalContext(
     editor: vscode.TextEditor,
@@ -76,10 +77,10 @@ export function truncateSuppelementalContext(
     context: CodeWhispererSupplementalContext
 ): CodeWhispererSupplementalContext {
     let c = context.supplementalContextItems.map((item) => {
-        if (item.content.length > 10240) {
+        if (item.content.length > crossFileContextConfig.maxLengthEachChunk) {
             return {
                 ...item,
-                content: truncateLineByLine(item.content, 10240),
+                content: truncateLineByLine(item.content, crossFileContextConfig.maxLengthEachChunk),
             }
         } else {
             return item
