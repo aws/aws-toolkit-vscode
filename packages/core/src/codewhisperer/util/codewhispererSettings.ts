@@ -6,7 +6,7 @@ import { fromExtensionManifest } from '../../shared/settings'
 import { ArrayConstructor } from '../../shared/utilities/typeConstructors'
 
 const description = {
-    showInlineCodeSuggestionsWithCodeReferences: Boolean, // eslint-disable-line id-length
+    showCodeWithReferences: Boolean, // eslint-disable-line id-length
     importRecommendationForInlineCodeSuggestions: Boolean, // eslint-disable-line id-length
     shareContentWithAWS: Boolean,
     workspaceIndex: Boolean,
@@ -19,7 +19,7 @@ const description = {
 
 export class CodeWhispererSettings extends fromExtensionManifest('amazonQ', description) {
     public isSuggestionsWithCodeReferencesEnabled(): boolean {
-        return this.get(`showInlineCodeSuggestionsWithCodeReferences`, false)
+        return this.get(`showCodeWithReferences`, false)
     }
     public isImportRecommendationEnabled(): boolean {
         return this.get(`importRecommendationForInlineCodeSuggestions`, false)
