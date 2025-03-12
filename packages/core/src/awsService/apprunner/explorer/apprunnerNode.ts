@@ -13,14 +13,13 @@ import {
     AppRunnerCreateServiceRequest,
     AppRunnerServiceSummary,
 } from '../../../shared/clients/apprunner'
-import { AppRunner } from 'aws-sdk'
 import { PollingSet } from '../../../shared/utilities/pollingSet'
 import { ListServicesRequest } from '@aws-sdk/client-apprunner'
 
 const localize = nls.loadMessageBundle()
 
 export class AppRunnerNode extends AWSTreeNodeBase {
-    private readonly serviceNodes: Map<AppRunner.ServiceId, AppRunnerServiceNode> = new Map()
+    private readonly serviceNodes: Map<string, AppRunnerServiceNode> = new Map()
     private readonly pollingSet: PollingSet<string> = new PollingSet(20000, this.refresh.bind(this))
 
     public constructor(

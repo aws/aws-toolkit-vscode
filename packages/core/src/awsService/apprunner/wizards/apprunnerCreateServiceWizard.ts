@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { AppRunner } from 'aws-sdk'
 import * as nls from 'vscode-nls'
 import { createCommonButtons, QuickInputToggleButton } from '../../../shared/ui/buttons'
 import * as input from '../../../shared/ui/inputPrompter'
@@ -23,6 +22,7 @@ import {
     AppRunnerSourceConfiguration,
 } from '../../../shared/clients/apprunner'
 import { getAppRunnerCreateServiceDocUrl } from '../../../shared/extensionUtilities'
+import { InstanceConfiguration } from '@aws-sdk/client-apprunner'
 
 const localize = nls.loadMessageBundle()
 
@@ -58,14 +58,14 @@ const validateName = (name: string) => {
     return undefined
 }
 
-function createInstanceStep(): Prompter<AppRunner.InstanceConfiguration> {
+function createInstanceStep(): Prompter<InstanceConfiguration> {
     const enumerations = [
         [1, 2],
         [1, 3],
         [2, 4],
     ]
 
-    const items: picker.DataQuickPickItem<AppRunner.InstanceConfiguration>[] = enumerations.map((e) => ({
+    const items: picker.DataQuickPickItem<InstanceConfiguration>[] = enumerations.map((e) => ({
         label: `${e[0]} vCPUs, ${e[1]} GBs Memory`,
         data: { Cpu: `${e[0]} vCPU`, Memory: `${e[1]} GB` },
     }))

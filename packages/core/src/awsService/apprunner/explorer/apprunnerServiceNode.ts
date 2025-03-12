@@ -5,7 +5,6 @@
 
 import AsyncLock from 'async-lock'
 import { AppRunnerClient, AppRunnerServiceSummary } from '../../../shared/clients/apprunner'
-import { AppRunner } from 'aws-sdk'
 import { AppRunnerNode } from './apprunnerNode'
 
 import { toArrayAsync, toMap } from '../../../shared/utilities/collectionUtils'
@@ -17,7 +16,7 @@ import * as nls from 'vscode-nls'
 import { getLogger } from '../../../shared/logger/logger'
 import { getIcon } from '../../../shared/icons'
 import { DefaultCloudWatchLogsClient } from '../../../shared/clients/cloudWatchLogsClient'
-import { UpdateServiceRequest } from '@aws-sdk/client-apprunner'
+import { OperationSummary, Service, ServiceSummary, UpdateServiceRequest } from '@aws-sdk/client-apprunner'
 const localize = nls.loadMessageBundle()
 
 const contextBase = 'awsAppRunnerServiceNode'
@@ -43,7 +42,7 @@ export class AppRunnerServiceNode extends CloudWatchLogsBase implements AWSResou
         public readonly parent: AppRunnerNode,
         private readonly client: AppRunnerClient,
         private _info: AppRunnerServiceSummary,
-        private currentOperation: AppRunner.OperationSummary & { Type?: ServiceOperation } = {},
+        private currentOperation: OperationSummary & { Type?: ServiceOperation } = {},
         cloudwatchClient = new DefaultCloudWatchLogsClient(client.regionCode)
     ) {
         super('App Runner Service', parent.regionCode, cloudwatchClient)
@@ -136,7 +135,7 @@ export class AppRunnerServiceNode extends CloudWatchLogsBase implements AWSResou
             })
     }
 
-    private updateInfo(info: AppRunner.ServiceSummary | AppRunner.Service): void {
+    private updateInfo(info: ServiceSummary | Service): void {
         if (info.Status === 'OPERATION_IN_PROGRESS' && this.currentOperation.Type === undefined) {
             // Asynchronous since it is not currently possible for race-conditions to occur with updating operations
             void this.updateOperation()

@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { AppRunner } from 'aws-sdk'
-import globals from '../extensionGlobals'
 import {
     AppRunnerClient as AppRunnerClientSDK,
     CodeConfiguration,
@@ -141,9 +139,5 @@ export class AppRunnerClient extends ClientWrapper<AppRunnerClientSDK> {
 
     public async deleteService(request: DeleteServiceRequest): Promise<WithServiceSummary<DeleteServiceResponse>> {
         return this.makeRequest(DeleteServiceCommand, request)
-    }
-
-    protected async createSdkClient(): Promise<AppRunner> {
-        return await globals.sdkClientBuilder.createAwsService(AppRunner, undefined, this.regionCode)
     }
 }

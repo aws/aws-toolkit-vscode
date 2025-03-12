@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { AppRunner } from 'aws-sdk'
 import * as nls from 'vscode-nls'
 import { createCommonButtons, createRefreshButton, QuickInputToggleButton } from '../../../shared/ui/buttons'
 import { Remote } from '../../../../types/git.d'
@@ -104,7 +103,7 @@ function createRuntimePrompter(): QuickPickPrompter<Runtime> {
     })
 }
 
-function createBuildCommandPrompter(runtime: AppRunner.Runtime): InputBoxPrompter {
+function createBuildCommandPrompter(runtime: Runtime): InputBoxPrompter {
     const buildCommandMap = {
         python: 'pip install -r requirements.txt',
         node: 'npm install',
@@ -119,7 +118,7 @@ function createBuildCommandPrompter(runtime: AppRunner.Runtime): InputBoxPrompte
     })
 }
 
-function createStartCommandPrompter(runtime: AppRunner.Runtime): InputBoxPrompter {
+function createStartCommandPrompter(runtime: Runtime): InputBoxPrompter {
     const startCommandMap = {
         python: 'python runapp.py',
         node: 'node app.js',
