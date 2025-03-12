@@ -15,9 +15,9 @@ import {
     ListCodeScanFindingsResponse,
     pollScanJobStatus,
     SecurityScanTimedOutError,
-    generateScanName,
+    CodeWhispererConstants,
 } from 'aws-core-vscode/codewhisperer'
-import { getStringHash, timeoutUtils } from 'aws-core-vscode/shared'
+import { timeoutUtils } from 'aws-core-vscode/shared'
 import assert from 'assert'
 import sinon from 'sinon'
 import * as vscode from 'vscode'
@@ -304,7 +304,7 @@ describe('securityScanHandler', function () {
 
             const pollPromise = pollScanJobStatus(mockClient, mockJobId, CodeAnalysisScope.FILE_AUTO, mockStartTime)
 
-            const expectedTimeoutMs = 60_000
+            const expectedTimeoutMs = CodeWhispererConstants.expressScanTimeoutMs
             clock.tick(expectedTimeoutMs + 1000)
 
             await assert.rejects(() => pollPromise, SecurityScanTimedOutError)
@@ -315,43 +315,10 @@ describe('securityScanHandler', function () {
 
             const pollPromise = pollScanJobStatus(mockClient, mockJobId, CodeAnalysisScope.PROJECT, mockStartTime)
 
-            const expectedTimeoutMs = 600_000
+            const expectedTimeoutMs = CodeWhispererConstants.standardScanTimeoutMs
             clock.tick(expectedTimeoutMs + 1000)
 
             await assert.rejects(() => pollPromise, SecurityScanTimedOutError)
-        })
-    })
-
-    describe('generateScanName', function () {
-        const clientId = 'ffffffff-ffff-ffff-ffff-ffffffffffff'
-
-        it('generates scan name for FILE_AUTO scope', function () {
-            const result = generateScanName(['/some/root/path'], CodeAnalysisScope.FILE_AUTO, '/path/to/some/file')
-            assert.strictEqual(result, getStringHash(`${clientId}::/path/to/some/file::FILE_AUTO`))
-        })
-
-        it('generates scan name for FILE_ON_DEMAND scope', function () {
-            const result = generateScanName(['/some/root/path'], CodeAnalysisScope.FILE_ON_DEMAND, '/path/to/some/file')
-            assert.strictEqual(result, getStringHash(`${clientId}::/path/to/some/file::FILE_ON_DEMAND`))
-        })
-
-        it('generates scan name for PROJECT scope with a single project root', function () {
-            const result = generateScanName(['/some/root/path'], CodeAnalysisScope.PROJECT)
-            assert.strictEqual(result, getStringHash(`${clientId}::/some/root/path::PROJECT`))
-        })
-
-        it('generates scan name for PROJECT scope with multiple project roots', function () {
-            const result = generateScanName(['/some/root/pathB', '/some/root/pathA'], CodeAnalysisScope.PROJECT)
-            assert.strictEqual(result, getStringHash(`${clientId}::/some/root/pathA,/some/root/pathB::PROJECT`))
-        })
-
-        it('does not exceed 126 characters', function () {
-            let reallyDeepFilePath = ''
-            for (let i = 0; i < 100; i++) {
-                reallyDeepFilePath += '/some/deep/path'
-            }
-            const result = generateScanName(['/some/root/path'], CodeAnalysisScope.FILE_ON_DEMAND, reallyDeepFilePath)
-            assert.ok(result.length <= 126)
         })
     })
 })

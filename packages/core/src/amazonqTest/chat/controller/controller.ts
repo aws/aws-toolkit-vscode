@@ -26,7 +26,7 @@ import {
 import MessengerUtils, { ButtonActions } from './messenger/messengerUtils'
 import { getTelemetryReasonDesc, isAwsError } from '../../../shared/errors'
 import { ChatItemType } from '../../../amazonq/commons/model'
-import { ProgressField } from '@aws/mynah-ui'
+import { ChatItemButton, MynahIcons, ProgressField } from '@aws/mynah-ui'
 import { FollowUpTypes } from '../../../amazonq/commons/types'
 import {
     cancelBuild,
@@ -53,7 +53,7 @@ import { randomUUID } from '../../../shared/crypto'
 import { tempDirPath, testGenerationLogsDir } from '../../../shared/filesystemUtilities'
 import { CodeReference } from '../../../codewhispererChat/view/connector/connector'
 import { TelemetryHelper } from '../../../codewhisperer/util/telemetryHelper'
-import { ShortAnswer, ShortAnswerReference, testGenState } from '../../../codewhisperer/models/model'
+import { Reference, testGenState } from '../../../codewhisperer/models/model'
 import {
     referenceLogText,
     TestGenerationBuildStep,
@@ -63,6 +63,10 @@ import {
 } from '../../../codewhisperer/models/constants'
 import { UserWrittenCodeTracker } from '../../../codewhisperer/tracker/userWrittenCodeTracker'
 import { ReferenceLogViewProvider } from '../../../codewhisperer/service/referenceLogViewProvider'
+import { TargetFileInfo } from '../../../codewhisperer/client/codewhispereruserclient'
+import { submitFeedback } from '../../../feedback/vue/submitFeedback'
+import { placeholder } from '../../../shared/vscode/commands2'
+import { Auth } from '../../../auth/auth'
 
 export interface TestChatControllerEventEmitters {
     readonly tabOpened: vscode.EventEmitter<any>
@@ -70,7 +74,7 @@ export interface TestChatControllerEventEmitters {
     readonly authClicked: vscode.EventEmitter<any>
     readonly startTestGen: vscode.EventEmitter<any>
     readonly processHumanChatMessage: vscode.EventEmitter<any>
-    readonly updateShortAnswer: vscode.EventEmitter<any>
+    readonly updateTargetFileInfo: vscode.EventEmitter<any>
     readonly showCodeGenerationResults: vscode.EventEmitter<any>
     readonly openDiff: vscode.EventEmitter<any>
     readonly formActionClicked: vscode.EventEmitter<any>
@@ -131,8 +135,8 @@ export class TestController {
             return this.handleFormActionClicked(data)
         })
 
-        this.chatControllerMessageListeners.updateShortAnswer.event((data) => {
-            return this.updateShortAnswer(data)
+        this.chatControllerMessageListeners.updateTargetFileInfo.event((data) => {
+            return this.updateTargetFileInfo(data)
         })
 
         this.chatControllerMessageListeners.showCodeGenerationResults.event((data) => {
@@ -286,7 +290,7 @@ export class TestController {
         }
         TelemetryHelper.instance.sendTestGenerationToolkitEvent(
             session,
-            true,
+            session.isSupportedLanguage,
             true,
             isCancel ? 'Cancelled' : 'Failed',
             session.startTestGenerationRequestId,
@@ -295,14 +299,34 @@ export class TestController {
             session.isCodeBlockSelected,
             session.artifactsUploadDuration,
             session.srcPayloadSize,
-            session.srcZipFileSize
+            session.srcZipFileSize,
+            session.charsOfCodeAccepted,
+            session.numberOfTestsGenerated,
+            session.linesOfCodeGenerated,
+            session.charsOfCodeGenerated,
+            session.numberOfTestsGenerated,
+            session.linesOfCodeGenerated,
+            undefined,
+            isCancel ? 'CANCELLED' : 'FAILED'
         )
         if (session.stopIteration) {
             // Error from Science
-            this.messenger.sendMessage(data.error.uiMessage.replaceAll('```', ''), data.tabID, 'answer')
+            this.messenger.sendMessage(
+                data.error.uiMessage.replaceAll('```', ''),
+                data.tabID,
+                'answer',
+                'testGenErrorMessage',
+                this.getFeedbackButtons()
+            )
         } else {
             isCancel
-                ? this.messenger.sendMessage(data.error.uiMessage, data.tabID, 'answer')
+                ? this.messenger.sendMessage(
+                      data.error.uiMessage,
+                      data.tabID,
+                      'answer',
+                      'testGenErrorMessage',
+                      this.getFeedbackButtons()
+                  )
                 : this.sendErrorMessage(data)
         }
         await this.sessionCleanUp()
@@ -322,7 +346,9 @@ export class TestController {
                 return this.messenger.sendMessage(
                     i18n('AWS.amazonq.featureDev.error.monthlyLimitReached'),
                     tabID,
-                    'answer'
+                    'answer',
+                    'testGenErrorMessage',
+                    this.getFeedbackButtons()
                 )
             }
             if (error.message.includes('Too many requests')) {
@@ -354,6 +380,7 @@ export class TestController {
     // This function handles actions if user clicked on any Button one of these cases will be executed
     private async handleFormActionClicked(data: any) {
         const typedAction = MessengerUtils.stringToEnumValue(ButtonActions, data.action as any)
+        let getFeedbackCommentData = ''
         switch (typedAction) {
             case ButtonActions.STOP_TEST_GEN:
                 testGenState.setToCancelling()
@@ -365,6 +392,11 @@ export class TestController {
                 telemetry.ui_click.emit({ elementId: 'unitTestGeneration_cancelBuildProgress' })
                 this.messenger.sendChatInputEnabled(data.tabID, true)
                 await this.sessionCleanUp()
+                break
+            case ButtonActions.PROVIDE_FEEDBACK:
+                getFeedbackCommentData = `Q Test Generation: RequestId: ${this.sessionStorage.getSession().startTestGenerationRequestId}, TestGenerationJobId: ${this.sessionStorage.getSession().testGenerationJob?.testGenerationJobId}`
+                void submitFeedback(placeholder, 'Amazon Q', getFeedbackCommentData)
+                telemetry.ui_click.emit({ elementId: 'unitTestGeneration_provideFeedback' })
                 break
         }
     }
@@ -395,12 +427,31 @@ export class TestController {
         }
     }
 
+    private getFeedbackButtons(): ChatItemButton[] {
+        const buttons: ChatItemButton[] = []
+        if (Auth.instance.isInternalAmazonUser()) {
+            buttons.push({
+                keepCardAfterClick: true,
+                text: 'How can we make /test better?',
+                id: ButtonActions.PROVIDE_FEEDBACK,
+                disabled: false, // allow button to be re-clicked
+                position: 'outside',
+                icon: 'comment' as MynahIcons,
+            })
+        }
+        return buttons
+    }
+
     /**
      * Start Test Generation and show the code results
      */
 
     private async startTestGen(message: any, regenerateTests: boolean) {
         const session: Session = this.sessionStorage.getSession()
+        // Perform session cleanup before start of unit test generation workflow unless there is an existing job in progress.
+        if (!ChatSessionManager.Instance.getIsInProgress()) {
+            await this.sessionCleanUp()
+        }
         const tabID = this.sessionStorage.setActiveTab(message.tabID)
         getLogger().debug('startTestGen message: %O', message)
         getLogger().debug('startTestGen tabId: %O', message.tabID)
@@ -502,6 +553,7 @@ export class TestController {
                     unsupportedMessage = `<span style="color: #EE9D28;">&#9888;<b>I'm sorry, but /test only supports Python and Java</b><br></span> I will still generate a suggestion below.`
                 }
                 this.messenger.sendMessage(unsupportedMessage, tabID, 'answer')
+                session.isSupportedLanguage = false
                 await this.onCodeGeneration(
                     session,
                     userPrompt,
@@ -529,6 +581,7 @@ export class TestController {
                     )
                 }
                 session.isCodeBlockSelected = selectionRange !== undefined
+                session.isSupportedLanguage = true
 
                 /**
                  * Zip the project
@@ -586,10 +639,9 @@ export class TestController {
         }
     }
 
-    private async updateShortAnswer(message: {
+    private async updateTargetFileInfo(message: {
         tabID: string
-        status: string
-        shortAnswer?: ShortAnswer
+        targetFileInfo?: TargetFileInfo
         testGenerationJobGroupName: string
         testGenerationJobId: string
         type: ChatItemType
@@ -599,11 +651,11 @@ export class TestController {
             type: 'answer',
             tabID: message.tabID,
             message: testGenSummaryMessage(
-                path.basename(message.shortAnswer?.sourceFilePath ?? message.filePath),
-                message.shortAnswer?.planSummary?.replaceAll('```', '')
+                path.basename(message.targetFileInfo?.filePath ?? message.filePath),
+                message.targetFileInfo?.filePlan?.replaceAll('```', '')
             ),
             canBeVoted: true,
-            filePath: message.shortAnswer?.testFilePath,
+            filePath: message.targetFileInfo?.testFilePath,
         })
     }
 
@@ -653,7 +705,7 @@ export class TestController {
             tabID: data.tabID,
             messageType: 'answer',
             codeGenerationId: '',
-            message: `Please see the unit tests generated below. Click “View diff” to review the changes in the code editor.`,
+            message: `${session.jobSummary}\n\n Please see the unit tests generated below. Click “View diff” to review the changes in the code editor.`,
             canBeVoted: true,
             messageId: '',
             followUps,
@@ -663,7 +715,7 @@ export class TestController {
                 filePaths: [data.filePath],
             },
             codeReference: session.references.map(
-                (ref: ShortAnswerReference) =>
+                (ref: Reference) =>
                     ({
                         ...ref,
                         information: `${ref.licenseName} - <a href="${ref.url}">${ref.repository}</a>`,
@@ -792,7 +844,9 @@ export class TestController {
             session.linesOfCodeAccepted,
             session.charsOfCodeGenerated,
             session.numberOfTestsGenerated,
-            session.linesOfCodeGenerated
+            session.linesOfCodeGenerated,
+            undefined,
+            'ACCEPTED'
         )
 
         await this.endSession(message, FollowUpTypes.SkipBuildAndFinish)
@@ -897,7 +951,13 @@ export class TestController {
 
     // TODO: Check if there are more cases to endSession if yes create a enum or type for step
     private async endSession(data: any, step: FollowUpTypes) {
-        this.messenger.sendMessage('Unit test generation completed.', data.tabID, 'answer')
+        this.messenger.sendMessage(
+            'Unit test generation completed.',
+            data.tabID,
+            'answer',
+            'testGenEndSessionMessage',
+            this.getFeedbackButtons()
+        )
 
         const session = this.sessionStorage.getSession()
         if (step === FollowUpTypes.RejectCode) {
@@ -918,7 +978,9 @@ export class TestController {
                 0,
                 session.charsOfCodeGenerated,
                 session.numberOfTestsGenerated,
-                session.linesOfCodeGenerated
+                session.linesOfCodeGenerated,
+                undefined,
+                'REJECTED'
             )
             telemetry.ui_click.emit({ elementId: 'unitTestGeneration_rejectDiff' })
         }
@@ -1328,7 +1390,7 @@ export class TestController {
         }
         session.listOfTestGenerationJobId = []
         session.testGenerationJobGroupName = undefined
-        session.testGenerationJob = undefined
+        // session.testGenerationJob = undefined
         session.updatedBuildCommands = undefined
         session.shortAnswer = undefined
         session.testCoveragePercentage = 0

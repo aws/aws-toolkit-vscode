@@ -22,10 +22,10 @@ import { ToolkitError, errorCode } from '../shared/errors'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { showConfirmationMessage } from '../shared/utilities/messages'
 import { AccountStatus } from '../shared/telemetry/telemetryClient'
-import { CreateDevEnvironmentRequest, UpdateDevEnvironmentRequest } from 'aws-sdk/clients/codecatalyst'
 import { SsoConnection } from '../auth/connection'
 import { isInDevEnv, isRemoteWorkspace } from '../shared/vscode/env'
 import { commandPalette } from '../codewhisperer/commands/types'
+import { CreateDevEnvironmentRequest, UpdateDevEnvironmentRequest } from '@aws-sdk/client-codecatalyst'
 
 /** "List CodeCatalyst Commands" command. */
 export async function listCommands(): Promise<void> {
