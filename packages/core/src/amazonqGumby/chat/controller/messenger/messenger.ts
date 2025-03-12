@@ -747,7 +747,7 @@ ${codeSnippet}
         )
     }
 
-    public async sendCustomDependencyVersionSelectionMessage(tabID: string) {
+    public async sendCustomDependencyVersionMessage(tabID: string) {
         const message = 'You can optionally upload a YAML file to specify which dependency versions to upgrade to.'
         const buttons: ChatItemButton[] = []
 
