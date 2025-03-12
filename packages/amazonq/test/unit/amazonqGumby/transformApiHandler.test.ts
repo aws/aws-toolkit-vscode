@@ -6,6 +6,7 @@ import assert from 'assert'
 import {
     TransformationProgressUpdate,
     TransformationStep,
+    findDownloadArtifactProgressUpdate,
     findDownloadArtifactStep,
     getArtifactsFromProgressUpdate,
 } from 'aws-core-vscode/codewhisperer/node'
@@ -92,6 +93,68 @@ describe('Amazon Q Transform - transformApiHandler tests', function () {
             const { transformationStep, progressUpdate } = findDownloadArtifactStep(transformationStepsFixture)
 
             assert.strictEqual(transformationStep, undefined)
+            assert.strictEqual(progressUpdate, undefined)
+        })
+    })
+
+    describe('findDownloadArtifactProgressUpdate', function () {
+        it('will return correct progress update from transformationStep', function () {
+            const transformationStepsFixture: TransformationStep[] = [
+                {
+                    id: 'dummy-id',
+                    name: 'Step name',
+                    description: 'Step description',
+                    status: 'TRANSFORMING',
+                    progressUpdates: [
+                        {
+                            name: 'Progress update name',
+                            status: 'AWAITING_CLIENT_ACTION',
+                            description: 'Client-side build happening now',
+                            startTime: new Date(),
+                            endTime: new Date(),
+                            downloadArtifacts: [
+                                {
+                                    downloadArtifactId: 'some-download-artifact-id',
+                                    downloadArtifactType: 'some-download-artifact-type',
+                                },
+                            ],
+                        },
+                    ],
+                    startTime: new Date(),
+                    endTime: new Date(),
+                },
+            ]
+            const progressUpdate = findDownloadArtifactProgressUpdate(transformationStepsFixture)
+            assert.strictEqual(progressUpdate, transformationStepsFixture[0].progressUpdates?.[0])
+        })
+
+        it('will return undefined if step status is NOT AWAITING_CLIENT_ACTION', function () {
+            const transformationStepsFixture: TransformationStep[] = [
+                {
+                    id: 'dummy-id',
+                    name: 'Step name',
+                    description: 'Step description',
+                    status: 'TRANSFORMING',
+                    progressUpdates: [
+                        {
+                            name: 'Progress update name',
+                            status: 'SOMETHING-BESIDES-AWAITING_CLIENT_ACTION',
+                            description: 'Progress update description',
+                            startTime: new Date(),
+                            endTime: new Date(),
+                            downloadArtifacts: [
+                                {
+                                    downloadArtifactId: 'some-download-artifact-id',
+                                    downloadArtifactType: 'some-download-artifact-type',
+                                },
+                            ],
+                        },
+                    ],
+                    startTime: new Date(),
+                    endTime: new Date(),
+                },
+            ]
+            const progressUpdate = findDownloadArtifactProgressUpdate(transformationStepsFixture)
             assert.strictEqual(progressUpdate, undefined)
         })
     })
