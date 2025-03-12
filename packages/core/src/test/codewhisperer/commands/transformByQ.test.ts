@@ -41,6 +41,7 @@ import {
     setMaven,
     parseBuildFile,
     validateSQLMetadataFile,
+    createLocalBuildUploadZip,
 } from '../../../codewhisperer/service/transformByQ/transformFileHandler'
 import { uploadArtifactToS3 } from '../../../codewhisperer/indexNode'
 import request from '../../../shared/request'
@@ -286,6 +287,22 @@ describe('transformByQ', function () {
         transformByQState.setProjectPath(tempDir)
         await setMaven()
         assert.strictEqual(transformByQState.getMavenName(), '.\\mvnw.cmd')
+    })
+
+    it(`WHEN local build zip created THEN zip contains all expected files and no unexpected files`, async function () {
+        const zipPath = await createLocalBuildUploadZip(tempDir, 0, 'sample stdout after running local build')
+        const zip = new AdmZip(zipPath)
+        const manifestEntry = zip.getEntry('manifest.json')
+        if (!manifestEntry) {
+            fail('manifest.json not found in the zip')
+        }
+        const manifestBuffer = manifestEntry.getData()
+        const manifestText = manifestBuffer.toString('utf8')
+        const manifest = JSON.parse(manifestText)
+        assert.strictEqual(manifest.capability, 'CLIENT_SIDE_BUILD')
+        assert.strictEqual(manifest.exitCode, 0)
+        assert.strictEqual(manifest.commandLogFileName, 'clientBuildLogs.log')
+        assert.strictEqual(zip.getEntries().length, 2) // expecting only manifest.json and clientBuildLogs.log
     })
 
     it(`WHEN zip created THEN manifest.json contains test-compile custom build command`, async function () {

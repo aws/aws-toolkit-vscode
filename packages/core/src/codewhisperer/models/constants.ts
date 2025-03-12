@@ -655,6 +655,12 @@ export const jobCancelledChatMessage =
 
 export const jobCancelledNotification = 'You cancelled the transformation.'
 
+export const continueWithoutHilMessage = 'I will continue transforming your code without upgrading this dependency.'
+
+export const enterJavaHomePlaceholder = 'Enter the path to your Java installation'
+
+export const openNewTabPlaceholder = 'Open a new tab to chat with Q'
+
 export const diffMessage = (multipleDiffs: boolean) => {
     return multipleDiffs
         ? 'You can review the diffs to see my proposed changes and accept or reject them. You will be able to accept changes from one diff at a time. If you reject changes in one diff, you will not be able to view or accept changes in the other diffs.'
@@ -756,7 +762,7 @@ export const cleanInstallErrorChatMessage = `Sorry, I couldn\'t run the Maven cl
 
 export const cleanInstallErrorNotification = `Amazon Q could not run the Maven clean install command to build your project. For more information, see the [Amazon Q documentation](${codeTransformTroubleshootMvnFailure}).`
 
-export const enterJavaHomeChatMessage = 'Enter the path to JDK '
+export const enterJavaHomeChatMessage = 'Enter the path to JDK'
 
 export const projectPromptChatMessage =
     'I can upgrade your Java project. To start the transformation, I need some information from you. Choose the project you want to upgrade and the target code version to upgrade to. Then, choose Confirm.'

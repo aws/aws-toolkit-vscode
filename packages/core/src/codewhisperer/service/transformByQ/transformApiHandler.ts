@@ -41,10 +41,10 @@ import { calculateTotalLatency } from '../../../amazonqGumby/telemetry/codeTrans
 import { MetadataResult } from '../../../shared/telemetry/telemetryClient'
 import request from '../../../shared/request'
 import { JobStoppedError, ZipExceedsSizeLimitError } from '../../../amazonqGumby/errors'
-import { writeLogs } from './transformFileHandler'
+import { copyDirectory, loadManifestFile, writeAndShowBuildLogs } from './transformFileHandler'
 import { createCodeWhispererChatStreamingClient } from '../../../shared/clients/codewhispererChatClient'
 import { downloadExportResultArchive } from '../../../shared/utilities/download'
-import { ExportIntent, TransformationDownloadArtifactType } from '@amzn/codewhisperer-streaming'
+import { ExportContext, ExportIntent, TransformationDownloadArtifactType } from '@amzn/codewhisperer-streaming'
 import fs from '../../../shared/fs/fs'
 import { ChatSessionManager } from '../../../amazonqGumby/chat/storages/chatSession'
 import { encodeHTML } from '../../../shared/utilities/textUtilities'
@@ -52,6 +52,8 @@ import { convertToTimeString } from '../../../shared/datetime'
 import { getAuthType } from '../../../auth/utils'
 import { UserWrittenCodeTracker } from '../../tracker/userWrittenCodeTracker'
 import { AuthUtil } from '../../util/authUtil'
+import { DiffModel } from './transformationResultsViewProvider'
+import { runClientSideBuild } from './transformMavenHandler'
 
 export function getSha256(buffer: Buffer) {
     const hasher = crypto.createHash('sha256')
@@ -167,10 +169,10 @@ export async function resumeTransformationJob(jobId: string, userActionStatus: T
             transformationJobId: jobId,
             userActionStatus, // can be "COMPLETED" or "REJECTED"
         })
-        if (response) {
-            // always store request ID, but it will only show up in a notification if an error occurs
-            return response.transformationStatus
-        }
+        getLogger().info(
+            `CodeTransformation: resumeTransformation API status code = ${response.$response.httpResponse.statusCode}`
+        )
+        return response.transformationStatus
     } catch (e: any) {
         const errorMessage = `Resuming the job failed due to: ${(e as Error).message}`
         getLogger().error(`CodeTransformation: ResumeTransformation error = %O`, e)
@@ -219,6 +221,8 @@ export async function uploadPayload(
         throw new Error(errorMessage)
     }
 
+    getLogger().info('CodeTransformation: created upload URL successfully')
+
     try {
         await uploadArtifactToS3(payloadFileName, response, sha256, buffer)
     } catch (e: any) {
@@ -251,7 +255,8 @@ export async function uploadPayload(
  */
 const mavenExcludedExtensions = ['.repositories', '.sha1']
 
-const sourceExcludedExtensions = ['.DS_Store']
+// TO-DO: should we exclude mvnw and mvnw.cmd?
+const sourceExcludedExtensions = ['.DS_Store', 'mvnw', 'mvnw.cmd']
 
 /**
  * Determines if the specified file path corresponds to a Maven metadata file
@@ -396,7 +401,7 @@ export async function zipCode(
         throwIfCancelled()
 
         // add text file with logs from mvn clean install and mvn copy-dependencies
-        logFilePath = await writeLogs()
+        logFilePath = await writeAndShowBuildLogs()
         // We don't add build-logs.txt file to the manifest if we are
         // uploading HIL artifacts
         if (!humanInTheLoopFlag) {
@@ -635,14 +640,9 @@ export async function getTransformationPlan(jobId: string, profile: RegionProfil
 
 export async function getTransformationSteps(
     jobId: string,
-    handleThrottleFlag: boolean,
     profile: RegionProfile | undefined
 ) {
     try {
-        // prevent ThrottlingException
-        if (handleThrottleFlag) {
-            await sleep(2000)
-        }
         const response = await codeWhisperer.codeWhispererClient.codeModernizerGetCodeTransformationPlan({
             transformationJobId: jobId,
             profileArn: profile?.arn,
@@ -693,6 +693,15 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
             if (validStates.includes(status)) {
                 break
             }
+
+            if (
+                status === 'TRANSFORMING' &&
+                transformByQState.getTransformationType() === TransformationType.LANGUAGE_UPGRADE
+            ) {
+                // client-side build is N/A for SQL conversions
+                await attemptLocalBuild()
+            }
+
             /**
              * If we find a paused state, we need the user to take action. We will set the global
              * state for polling status and early exit.
@@ -718,13 +727,86 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
     return status
 }
 
-export function getArtifactsFromProgressUpdate(progressUpdate?: TransformationProgressUpdate) {
+async function attemptLocalBuild() {
+    const jobId = transformByQState.getJobId()
+    const artifactId = await getClientInstructionArtifactId(jobId)
+    getLogger().info(`CodeTransformation: found artifactId = ${artifactId}`)
+    if (artifactId) {
+        const clientInstructionsPath = await downloadClientInstructions(jobId, artifactId)
+        getLogger().info(
+            `CodeTransformation: downloaded clientInstructions with diff.patch at: ${clientInstructionsPath}`
+        )
+        await processClientInstructions(jobId, clientInstructionsPath, artifactId)
+    }
+}
+
+async function getClientInstructionArtifactId(jobId: string) {
+    const steps = await getTransformationSteps(jobId, AuthUtil.instance.regionProfileManager.activeRegionProfile)
+    const progressUpdate = findDownloadArtifactProgressUpdate(steps)
+
+    let artifactId = undefined
+    if (progressUpdate?.downloadArtifacts) {
+        artifactId = progressUpdate.downloadArtifacts[0].downloadArtifactId
+    }
+    return artifactId
+}
+
+async function downloadClientInstructions(jobId: string, artifactId: string) {
+    const exportDestination = `downloadClientInstructions_${jobId}_${artifactId}`
+    const exportZipPath = path.join(os.tmpdir(), `${exportDestination}.zip`)
+
+    const exportContext: ExportContext = {
+        transformationExportContext: {
+            downloadArtifactType: TransformationDownloadArtifactType.CLIENT_INSTRUCTIONS,
+            downloadArtifactId: artifactId,
+        },
+    }
+
+    await downloadAndExtractResultArchive(jobId, exportZipPath, exportContext)
+
+    const clientInstructionsManifest = await loadManifestFile(exportZipPath)
+    return path.join(exportZipPath, clientInstructionsManifest.diffFileName)
+}
+
+async function processClientInstructions(jobId: string, clientInstructionsPath: any, artifactId: string) {
+    const sourcePath = transformByQState.getProjectPath()
+    const destinationPath = path.join(os.tmpdir(), jobId, artifactId, 'originalCopy')
+    await copyDirectory(sourcePath, destinationPath)
+    getLogger().info(`CodeTransformation: copied project to ${destinationPath}`)
+    const diffModel = new DiffModel()
+    diffModel.parseDiff(clientInstructionsPath, destinationPath, undefined, 1, true)
+    // show user the diff.patch
+    const doc = await vscode.workspace.openTextDocument(clientInstructionsPath)
+    await vscode.window.showTextDocument(doc, { viewColumn: vscode.ViewColumn.One })
+    await runClientSideBuild(transformByQState.getProjectCopyFilePath(), artifactId)
+}
+
+export function getArtifactsFromProgressUpdate(progressUpdate: TransformationProgressUpdate) {
     const artifactType = progressUpdate?.downloadArtifacts?.[0]?.downloadArtifactType
     const artifactId = progressUpdate?.downloadArtifacts?.[0]?.downloadArtifactId
     return {
         artifactId,
         artifactType,
     }
+}
+
+export function findDownloadArtifactProgressUpdate(transformationSteps: TransformationSteps) {
+    for (let i = 0; i < transformationSteps.length; i++) {
+        const progressUpdates = transformationSteps[i].progressUpdates
+        if (progressUpdates) {
+            for (let j = 0; j < progressUpdates.length; j++) {
+                if (
+                    progressUpdates[j].status === 'AWAITING_CLIENT_ACTION' &&
+                    progressUpdates[j].downloadArtifacts?.[0]?.downloadArtifactId
+                ) {
+                    // TO-DO: make sure length is always 1
+                    console.log(`found progress update; length = ${progressUpdates[j].downloadArtifacts?.length}`)
+                    return progressUpdates[j]
+                }
+            }
+        }
+    }
+    return undefined
 }
 
 export function findDownloadArtifactStep(transformationSteps: TransformationSteps) {
@@ -750,24 +832,21 @@ export function findDownloadArtifactStep(transformationSteps: TransformationStep
     }
 }
 
-export async function downloadResultArchive(
-    jobId: string,
-    downloadArtifactId: string | undefined,
-    pathToArchive: string,
-    downloadArtifactType: TransformationDownloadArtifactType
-) {
+export async function downloadResultArchive(jobId: string, pathToArchive: string, exportContext?: ExportContext) {
     const cwStreamingClient = await createCodeWhispererChatStreamingClient()
 
     try {
-        await downloadExportResultArchive(
-            cwStreamingClient,
-            {
-                exportId: jobId,
-                exportIntent: ExportIntent.TRANSFORMATION,
-            },
-            pathToArchive,
-            AuthUtil.instance.regionProfileManager.activeRegionProfile
-        )
+        const args = exportContext
+            ? {
+                  exportId: jobId,
+                  exportIntent: ExportIntent.TRANSFORMATION,
+                  exportContext: exportContext,
+              }
+            : {
+                  exportId: jobId,
+                  exportIntent: ExportIntent.TRANSFORMATION,
+              }
+        await downloadExportResultArchive(cwStreamingClient, args, pathToArchive, AuthUtil.instance.regionProfileManager.activeRegionProfile)
     } catch (e: any) {
         getLogger().error(`CodeTransformation: ExportResultArchive error = %O`, e)
         throw e
@@ -779,9 +858,8 @@ export async function downloadResultArchive(
 
 export async function downloadAndExtractResultArchive(
     jobId: string,
-    downloadArtifactId: string | undefined,
     pathToArchiveDir: string,
-    downloadArtifactType: TransformationDownloadArtifactType
+    exportContext?: ExportContext
 ) {
     const archivePathExists = await fs.existsDir(pathToArchiveDir)
     if (!archivePathExists) {
@@ -793,9 +871,10 @@ export async function downloadAndExtractResultArchive(
     let downloadErrorMessage = undefined
     try {
         // Download and deserialize the zip
-        await downloadResultArchive(jobId, downloadArtifactId, pathToArchive, downloadArtifactType)
+        await downloadResultArchive(jobId, pathToArchive, exportContext)
         const zip = new AdmZip(pathToArchive)
         zip.extractAllTo(pathToArchiveDir)
+        getLogger().info(`CodeTransformation: downloaded result archive to: ${pathToArchiveDir}`)
     } catch (e) {
         downloadErrorMessage = (e as Error).message
         getLogger().error(`CodeTransformation: ExportResultArchive error = %O`, e)
@@ -804,12 +883,7 @@ export async function downloadAndExtractResultArchive(
 }
 
 export async function downloadHilResultArchive(jobId: string, downloadArtifactId: string, pathToArchiveDir: string) {
-    await downloadAndExtractResultArchive(
-        jobId,
-        downloadArtifactId,
-        pathToArchiveDir,
-        TransformationDownloadArtifactType.CLIENT_INSTRUCTIONS
-    )
+    await downloadAndExtractResultArchive(jobId, pathToArchiveDir)
 
     // manifest.json
     // pomFolder/pom.xml or manifest has pomFolderName path
