@@ -6,7 +6,9 @@
 import { featureName, clientErrorMessages, startTaskAssistLimitReachedMessage } from './constants'
 import { uploadCodeError } from './userFacingText'
 import { i18n } from '../shared/i18n-helper'
-import { ClientError, ServiceError, ContentLengthError as SharedContentLengthError } from '../amazonq/errors'
+import { ClientError, LlmError, ServiceError, ContentLengthError as SharedContentLengthError } from '../amazonq/errors'
+import { MetricDataResult } from '../amazonq/commons/types'
+import { ToolkitError } from '../shared/errors'
 
 export class ConversationIdNotFoundError extends ServiceError {
     constructor() {
@@ -162,9 +164,23 @@ export function createUserFacingErrorMessage(message: string) {
     return message
 }
 
-export function isAPIClientError(error: { code?: string; message: string }): boolean {
+function isAPIClientError(error: { code?: string; message: string }): boolean {
     return (
         clientErrorMessages.some((msg: string) => error.message.includes(msg)) ||
         error.message.includes(startTaskAssistLimitReachedMessage)
     )
+}
+
+export function getMetricResult(error: ToolkitError): MetricDataResult {
+    if (error instanceof ClientError || isAPIClientError(error)) {
+        return MetricDataResult.Error
+    }
+    if (error instanceof ServiceError) {
+        return MetricDataResult.Fault
+    }
+    if (error instanceof LlmError) {
+        return MetricDataResult.LlmFailure
+    }
+
+    return MetricDataResult.Fault
 }

@@ -15,7 +15,7 @@ import {
     createUserFacingErrorMessage,
     denyListedErrors,
     FeatureDevServiceError,
-    isAPIClientError,
+    getMetricResult,
     MonthlyConversationLimitError,
     NoChangeRequiredException,
     PrepareRepoFailedError,
@@ -56,7 +56,6 @@ import { randomUUID } from '../../../shared/crypto'
 import { FollowUpTypes } from '../../../amazonq/commons/types'
 import { Messenger } from '../../../amazonq/commons/connector/baseMessenger'
 import { BaseChatSessionStorage } from '../../../amazonq/commons/baseChatStorage'
-import { ClientError, LlmError, ServiceError } from '../../../amazonq/errors'
 
 export interface ChatControllerEventEmitters {
     readonly processHumanChatMessage: EventEmitter<any>
@@ -551,22 +550,7 @@ export class FeatureDevController {
             this.messenger.sendUpdatePlaceholder(tabID, i18n('AWS.amazonq.featureDev.pillText.selectOption'))
         } catch (err: any) {
             getLogger().error(`${featureName}: Error during code generation: ${err}`)
-
-            let result: string = MetricDataResult.Fault
-            if (err instanceof ClientError) {
-                result = MetricDataResult.Error
-            } else if (err instanceof ServiceError) {
-                result = MetricDataResult.Fault
-            } else if (err instanceof LlmError) {
-                result = MetricDataResult.LlmFailure
-            } else {
-                if (isAPIClientError(err)) {
-                    result = MetricDataResult.Error
-                } else {
-                    result = MetricDataResult.Fault
-                }
-            }
-            await session.sendMetricDataTelemetry(MetricDataOperationName.EndCodeGeneration, result)
+            await session.sendMetricDataTelemetry(MetricDataOperationName.EndCodeGeneration, getMetricResult(err))
             throw err
         } finally {
             // Finish processing the event

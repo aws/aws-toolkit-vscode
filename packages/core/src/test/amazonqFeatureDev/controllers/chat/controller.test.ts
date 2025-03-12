@@ -24,6 +24,7 @@ import {
     ContentLengthError,
     createUserFacingErrorMessage,
     FeatureDevServiceError,
+    getMetricResult,
     MonthlyConversationLimitError,
     NoChangeRequiredException,
     PrepareRepoFailedError,
@@ -47,7 +48,6 @@ import { i18n } from '../../../../shared/i18n-helper'
 import { FollowUpTypes } from '../../../../amazonq/commons/types'
 import { ToolkitError } from '../../../../shared'
 import { MessengerTypes } from '../../../../amazonqFeatureDev/controllers/chat/messenger/constants'
-import { ClientError, LlmError, ServiceError } from '../../../../amazonq/errors'
 
 let mockGetCodeGeneration: sinon.SinonStub
 describe('Controller', () => {
@@ -470,19 +470,6 @@ describe('Controller', () => {
         describe('onCodeGeneration', function () {
             let session: any
             let sendMetricDataTelemetrySpy: sinon.SinonStub
-
-            function getMetricResult(error: ToolkitError): MetricDataResult {
-                if (error instanceof ClientError) {
-                    return MetricDataResult.Error
-                }
-                if (error instanceof LlmError) {
-                    return MetricDataResult.LlmFailure
-                }
-                if (error instanceof ServiceError) {
-                    return MetricDataResult.Fault
-                }
-                return MetricDataResult.Fault
-            }
 
             async function verifyException(error: ToolkitError) {
                 sinon.stub(session, 'send').throws(error)
