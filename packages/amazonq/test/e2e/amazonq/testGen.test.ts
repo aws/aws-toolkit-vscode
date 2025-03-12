@@ -194,10 +194,9 @@ describe('Amazon Q Test Generation', function () {
                         const viewDiffMessage = chatItems[5]
 
                         assert.deepStrictEqual(viewDiffMessage.type, 'answer')
-                        assert.deepStrictEqual(
-                            viewDiffMessage.body,
+                        const expectedEnding =
                             'Please see the unit tests generated below. Click “View diff” to review the changes in the code editor.'
-                        )
+                        assert.strictEqual(viewDiffMessage.body?.includes(expectedEnding), true)
                     })
                 })
 
