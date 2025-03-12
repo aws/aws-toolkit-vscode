@@ -37,6 +37,7 @@ describe('AppRunnerServiceNode', function () {
 
         mockApprunnerClient = stub(AppRunnerClient, { regionCode: 'us-east-1' })
         mockApprunnerClient.listOperations.resolves({ OperationSummaryList: [] })
+        // jscpd:ignore-start
         mockParentNode = stub(AppRunnerNode, {
             regionCode: '',
             client: mockApprunnerClient,
@@ -53,6 +54,7 @@ describe('AppRunnerServiceNode', function () {
             accessibilityInformation: undefined,
             checkboxState: undefined,
         })
+        // jscpd:ignore-end
         node = new AppRunnerServiceNode(mockParentNode, mockApprunnerClient, exampleInfo, {}, cloudwatchClient)
     })
 
