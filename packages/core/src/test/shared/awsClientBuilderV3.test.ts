@@ -14,9 +14,9 @@ import {
     AWSClientBuilderV3,
     AwsClientOptions,
     AwsCommand,
-    emitOnRequest,
+    onDeserialize,
     getServiceId,
-    logOnRequest,
+    logOnFinalize,
     overwriteEndpoint,
     recordErrorTelemetry,
 } from '../../shared/awsClientBuilderV3'
@@ -237,7 +237,7 @@ describe('AwsClientBuilderV3', function () {
         })
 
         it('logs messages on request', async function () {
-            await logOnRequest((_: any) => _, args as any)
+            await logOnFinalize((_: any) => _, args as any)
             assertLogsContainAllOf(['testHost', 'testPath'], false, 'debug')
         })
 
@@ -246,7 +246,7 @@ describe('AwsClientBuilderV3', function () {
                 throw new Error('test error')
             }
             await telemetry.vscode_executeCommand.run(async (span) => {
-                await assert.rejects(emitOnRequest(next, context, args))
+                await assert.rejects(onDeserialize(next, context, args))
             })
             assertLogsContain('test error', false, 'error')
             assertTelemetry('vscode_executeCommand', { requestServiceType: 'foo' })
@@ -257,7 +257,7 @@ describe('AwsClientBuilderV3', function () {
                 return response
             }
             await telemetry.vscode_executeCommand.run(async (span) => {
-                assert.deepStrictEqual(await emitOnRequest(next, context, args), response)
+                assert.deepStrictEqual(await onDeserialize(next, context, args), response)
             })
             assertLogsContainAllOf(['testHost', 'testPath'], false, 'debug')
             assert.throws(() => assertTelemetry('vscode_executeCommand', { requestServiceType: 'foo' }))
