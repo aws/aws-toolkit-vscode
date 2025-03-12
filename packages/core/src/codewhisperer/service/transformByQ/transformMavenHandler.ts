@@ -11,13 +11,9 @@ import { spawnSync } from 'child_process' // eslint-disable-line no-restricted-i
 import { CodeTransformBuildCommand, telemetry } from '../../../shared/telemetry/telemetry'
 import { CodeTransformTelemetryState } from '../../../amazonqGumby/telemetry/codeTransformTelemetryState'
 import { ToolkitError } from '../../../shared/errors'
-import { createLocalBuildUploadZip, setMaven, writeAndShowBuildLogs } from './transformFileHandler'
-import { resumeTransformationJob, throwIfCancelled, uploadPayload } from './transformApiHandler'
+import { setMaven, writeAndShowBuildLogs } from './transformFileHandler'
+import { throwIfCancelled } from './transformApiHandler'
 import { sleep } from '../../../shared/utilities/timeoutUtils'
-import path from 'path'
-import os from 'os'
-import { fs } from '../../../shared'
-import { UploadContext } from '../../client/codewhispereruserclient'
 
 // run 'install' with either 'mvnw.cmd', './mvnw', or 'mvn' (if wrapper exists, we use that, otherwise we use regular 'mvn')
 function installProjectDependencies(dependenciesFolder: FolderInfo, modulePath: string) {
@@ -143,52 +139,6 @@ export async function prepareProjectDependencies(dependenciesFolder: FolderInfo,
 
     throwIfCancelled()
     void vscode.window.showInformationMessage(CodeWhispererConstants.buildSucceededNotification)
-}
-
-export async function runClientSideBuild(projectPath: string, clientInstructionArtifactId: string) {
-    // baseCommand will be one of: '.\mvnw.cmd', './mvnw', 'mvn'
-    const baseCommand = transformByQState.getMavenName()
-    const args = ['test']
-    // TO-DO / QUESTION: why not use the build command from the downloaded manifest?
-    transformByQState.appendToBuildLog(`Running ${baseCommand} ${args}`)
-    const environment = { ...process.env, JAVA_HOME: transformByQState.getTargetJavaHome() }
-
-    const argString = args.join(' ')
-    const spawnResult = spawnSync(baseCommand, args, {
-        cwd: projectPath,
-        shell: true,
-        encoding: 'utf-8',
-        env: environment,
-    })
-
-    const buildLogs = `Intermediate build result from running ${baseCommand} ${argString}:\n\n${spawnResult.stdout}`
-    transformByQState.clearBuildLog()
-    transformByQState.appendToBuildLog(buildLogs)
-    await writeAndShowBuildLogs()
-
-    const baseDir = path.join(
-        os.tmpdir(),
-        `clientInstructionsResult_${transformByQState.getJobId()}_${clientInstructionArtifactId}`
-    )
-    const zipPath = await createLocalBuildUploadZip(baseDir, spawnResult.status, spawnResult.stdout)
-
-    // upload build results
-    const uploadContext: UploadContext = {
-        transformationUploadContext: {
-            jobId: transformByQState.getJobId(),
-            uploadArtifactType: 'ClientBuildResult',
-        },
-    }
-    getLogger().info(`CodeTransformation: uploading client build results at ${zipPath} and resuming job now`)
-    await uploadPayload(zipPath, uploadContext)
-    await resumeTransformationJob(transformByQState.getJobId(), 'COMPLETED')
-    try {
-        await fs.delete(transformByQState.getProjectCopyFilePath(), { recursive: true })
-    } catch {
-        getLogger().error(
-            `CodeTransformation: failed to delete project copy at ${transformByQState.getProjectCopyFilePath()} after client-side build`
-        )
-    }
 }
 
 export async function getVersionData() {
