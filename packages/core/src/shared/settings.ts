@@ -671,6 +671,12 @@ export class AmazonQPromptSettings
         }
     }
 
+    public async enablePrompt(promptName: amazonQPromptName): Promise<void> {
+        if (!this.isPromptEnabled(promptName)) {
+            await this.update(promptName, false)
+        }
+    }
+
     public async disablePrompt(promptName: amazonQPromptName): Promise<void> {
         if (this.isPromptEnabled(promptName)) {
             await this.update(promptName, true)

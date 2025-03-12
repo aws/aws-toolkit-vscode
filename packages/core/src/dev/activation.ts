@@ -453,7 +453,7 @@ const resettableFeatures: readonly ResettableFeature[] = [
     },
     {
         name: 'workspace lsp',
-        label: 'Lsp',
+        label: 'Download Lsp ',
         detail: 'Resets workspace LSP',
         executor: resetWorkspaceLspDownload,
     },
