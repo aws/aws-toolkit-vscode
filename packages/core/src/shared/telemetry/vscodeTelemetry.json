@@ -53,6 +53,11 @@
             "description": "The sum of file sizes that were indexed in MB"
         },
         {
+            "name": "amazonqVectorIndexEnabled",
+            "type": "boolean",
+            "description": "True if vector index is enabled"
+        },
+        {
             "name": "amazonqIndexFileCount",
             "type": "int",
             "description": "Number of files indexed"
@@ -623,6 +628,10 @@
                 },
                 {
                     "type": "credentialStartUrl",
+                    "required": false
+                },
+                {
+                    "type": "amazonqVectorIndexEnabled",
                     "required": false
                 }
             ]
