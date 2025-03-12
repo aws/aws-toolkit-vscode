@@ -24,7 +24,7 @@ import {
     QuickPickPrompter,
 } from '../../../shared/ui/pickerPrompter'
 import { createInputBox, InputBoxPrompter } from '../../../shared/ui/inputPrompter'
-import { apprunnerConnectionHelpUrl, apprunnerRuntimeHelpUrl } from '../../../shared/constants'
+import { apprunnerConfigHelpUrl, apprunnerConnectionHelpUrl, apprunnerRuntimeHelpUrl } from '../../../shared/constants'
 import { Wizard, WIZARD_BACK } from '../../../shared/wizards/wizard'
 import { openUrl } from '../../../shared/utilities/vsCodeUtils'
 import { getAppRunnerCreateServiceDocUrl } from '../../../shared/extensionUtilities'
@@ -196,10 +196,17 @@ function createSourcePrompter(): QuickPickPrompter<ConfigurationSource> {
     )
     const apiLabel = localize('AWS.apprunner.createService.configSource.apiLabel', 'Configure all settings here')
     const repoLabel = localize('AWS.apprunner.createService.configSource.repoLabel', 'Use configuration file')
-    const apiItem = { label: apiLabel, data: ConfigurationSource.API }
-    const repoItem = { label: repoLabel, data: ConfigurationSource.REPOSITORY, detail: configDetail }
+    const apiItem: DataQuickPickItem<ConfigurationSource> = { label: apiLabel, data: ConfigurationSource.API }
+    const repoItem: DataQuickPickItem<ConfigurationSource> = {
+        label: repoLabel,
+        data: ConfigurationSource.REPOSITORY,
+        detail: configDetail,
+    }
 
-    return createQuickPick([apiItem, repoItem])
+    return createQuickPick([apiItem, repoItem], {
+        title: localize('AWS.apprunner.createService.configSource.title', 'Choose configuration source'),
+        buttons: createCommonButtons(apprunnerConfigHelpUrl),
+    })
 }
 
 function createCodeRepositorySubForm(git: GitExtension): WizardForm<AppRunnerCodeRepository> {

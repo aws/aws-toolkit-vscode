@@ -24,7 +24,7 @@ export class AppRunnerNode extends AWSTreeNodeBase {
 
     public constructor(
         public override readonly regionCode: string,
-        public client: AppRunnerClient
+        public readonly client: AppRunnerClient
     ) {
         super('App Runner', vscode.TreeItemCollapsibleState.Collapsed)
         this.contextValue = 'awsAppRunnerNode'
