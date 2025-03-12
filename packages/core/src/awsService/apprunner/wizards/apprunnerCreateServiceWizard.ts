@@ -17,7 +17,11 @@ import { makeDeploymentButton } from './deploymentButton'
 import { createExitPrompter } from '../../../shared/ui/common/exitPrompter'
 import { IamClient } from '../../../shared/clients/iam'
 import { DefaultEcrClient } from '../../../shared/clients/ecrClient'
-import { AppRunnerClient } from '../../../shared/clients/apprunner'
+import {
+    AppRunnerClient,
+    AppRunnerCreateServiceRequest,
+    AppRunnerSourceConfiguration,
+} from '../../../shared/clients/apprunner'
 import { getAppRunnerCreateServiceDocUrl } from '../../../shared/extensionUtilities'
 
 const localize = nls.loadMessageBundle()
@@ -74,10 +78,10 @@ function createInstanceStep(): Prompter<AppRunner.InstanceConfiguration> {
 
 function createSourcePrompter(
     autoDeployButton: QuickInputToggleButton
-): Prompter<AppRunner.CreateServiceRequest['SourceConfiguration']> {
+): Prompter<AppRunnerCreateServiceRequest['SourceConfiguration']> {
     const ecrPath = {
         label: 'ECR',
-        data: { ImageRepository: {} } as AppRunner.SourceConfiguration,
+        data: { ImageRepository: {} } as AppRunnerSourceConfiguration,
         detail: localize(
             'AWS.apprunner.createService.ecr.detail',
             'Create a service from a public or private Elastic Container Registry repository'
@@ -86,7 +90,7 @@ function createSourcePrompter(
 
     const repositoryPath = {
         label: 'Repository',
-        data: { CodeRepository: {} } as AppRunner.SourceConfiguration,
+        data: { CodeRepository: {} } as AppRunnerSourceConfiguration,
         detail: localize('AWS.apprunner.createService.repository.detail', 'Create a service from a GitHub repository'),
     }
 
@@ -96,11 +100,11 @@ function createSourcePrompter(
     })
 }
 
-export class CreateAppRunnerServiceWizard extends Wizard<AppRunner.CreateServiceRequest> {
+export class CreateAppRunnerServiceWizard extends Wizard<AppRunnerCreateServiceRequest> {
     public constructor(
         region: string,
-        initState: WizardState<AppRunner.CreateServiceRequest> = {},
-        implicitState: WizardState<AppRunner.CreateServiceRequest> = {},
+        initState: WizardState<AppRunnerCreateServiceRequest> = {},
+        implicitState: WizardState<AppRunnerCreateServiceRequest> = {},
         clients = {
             iam: new IamClient(region),
             ecr: new DefaultEcrClient(region),

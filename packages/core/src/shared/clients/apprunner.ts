@@ -7,16 +7,23 @@ import { AppRunner } from 'aws-sdk'
 import globals from '../extensionGlobals'
 import {
     AppRunnerClient as AppRunnerClientSDK,
+    CodeConfiguration,
+    CodeConfigurationValues,
+    CodeRepository,
     ConnectionSummary,
     CreateConnectionCommand,
     CreateConnectionRequest,
     CreateConnectionResponse,
+    CreateServiceCommand,
+    CreateServiceRequest,
+    CreateServiceResponse,
     DeleteServiceCommand,
     DeleteServiceRequest,
     DeleteServiceResponse,
     DescribeServiceCommand,
     DescribeServiceRequest,
     DescribeServiceResponse,
+    ImageRepository,
     ListConnectionsCommand,
     ListConnectionsRequest,
     ListConnectionsResponse,
@@ -33,8 +40,9 @@ import {
     ResumeServiceCommand,
     ResumeServiceRequest,
     ResumeServiceResponse,
-    Service,
     ServiceSummary,
+    SourceCodeVersion,
+    SourceConfiguration,
     StartDeploymentCommand,
     StartDeploymentRequest,
     StartDeploymentResponse,
@@ -46,11 +54,28 @@ import { ClientWrapper } from './clientWrapper'
 import { hasProps, RequiredProps } from '../utilities/tsUtils'
 import { AsyncCollection } from '../utilities/asyncCollection'
 
-export type AppRunnerService = RequiredProps<Service, 'ServiceName' | 'ServiceArn' | 'Status' | 'ServiceId'>
 export type AppRunnerServiceSummary = RequiredProps<
     ServiceSummary,
     'ServiceName' | 'ServiceArn' | 'Status' | 'ServiceId'
 >
+export interface AppRunnerImageRepository
+    extends RequiredProps<ImageRepository, 'ImageIdentifier' | 'ImageRepositoryType'> {}
+
+export type AppRunnerCodeConfigurationValues = RequiredProps<CodeConfigurationValues, 'Runtime'>
+interface AppRunnerCodeConfiguration extends RequiredProps<CodeConfiguration, 'ConfigurationSource'> {
+    CodeConfigurationValues: RequiredProps<CodeConfigurationValues, 'Runtime'>
+}
+export interface AppRunnerCodeRepository extends RequiredProps<CodeRepository, 'RepositoryUrl'> {
+    SourceCodeVersion: RequiredProps<SourceCodeVersion, 'Type' | 'Value'>
+    CodeConfiguration: AppRunnerCodeConfiguration
+}
+export interface AppRunnerSourceConfiguration extends SourceConfiguration {
+    CodeRepository?: AppRunnerCodeRepository | undefined
+    ImageRepository?: RequiredProps<ImageRepository, 'ImageIdentifier' | 'ImageRepositoryType'>
+}
+export interface AppRunnerCreateServiceRequest extends RequiredProps<CreateServiceRequest, 'ServiceName'> {
+    SourceConfiguration: AppRunnerSourceConfiguration
+}
 
 // Note: Many of the requests return a type of Service, but Service <: ServiceSummary.
 type WithServiceSummary<T> = Omit<T, 'Service'> & { Service: AppRunnerServiceSummary }
@@ -59,8 +84,10 @@ export class AppRunnerClient extends ClientWrapper<AppRunnerClientSDK> {
         super(regionCode, AppRunnerClientSDK)
     }
 
-    public async createService(request: AppRunner.CreateServiceRequest): Promise<AppRunner.CreateServiceResponse> {
-        return (await this.createSdkClient()).createService(request).promise()
+    public async createService(
+        request: AppRunnerCreateServiceRequest
+    ): Promise<WithServiceSummary<CreateServiceResponse>> {
+        return await this.makeRequest(CreateServiceCommand, request)
     }
 
     public async listServices(request: ListServicesRequest): Promise<ListServicesResponse> {

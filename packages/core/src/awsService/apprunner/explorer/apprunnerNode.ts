@@ -8,7 +8,11 @@ import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { AppRunnerServiceNode } from './apprunnerServiceNode'
 import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
 import * as nls from 'vscode-nls'
-import { AppRunnerClient, AppRunnerServiceSummary } from '../../../shared/clients/apprunner'
+import {
+    AppRunnerClient,
+    AppRunnerCreateServiceRequest,
+    AppRunnerServiceSummary,
+} from '../../../shared/clients/apprunner'
 import { AppRunner } from 'aws-sdk'
 import { PollingSet } from '../../../shared/utilities/pollingSet'
 import { ListServicesRequest } from '@aws-sdk/client-apprunner'
@@ -87,7 +91,7 @@ export class AppRunnerNode extends AWSTreeNodeBase {
         this.pollingSet.delete(id)
     }
 
-    public async createService(request: AppRunner.CreateServiceRequest): Promise<void> {
+    public async createService(request: AppRunnerCreateServiceRequest): Promise<void> {
         await this.client.createService(request)
         this.refresh()
     }
