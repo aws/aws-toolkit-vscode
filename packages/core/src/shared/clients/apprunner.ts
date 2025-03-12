@@ -20,6 +20,9 @@ import {
     ListConnectionsCommand,
     ListConnectionsRequest,
     ListConnectionsResponse,
+    ListOperationsCommand,
+    ListOperationsRequest,
+    ListOperationsResponse,
     ListServicesCommand,
     ListServicesRequest,
     ListServicesResponse,
@@ -105,8 +108,8 @@ export class AppRunnerClient extends ClientWrapper<AppRunnerClientSDK> {
         return await this.makeRequest(StartDeploymentCommand, request)
     }
 
-    public async listOperations(request: AppRunner.ListOperationsRequest): Promise<AppRunner.ListOperationsResponse> {
-        return (await this.createSdkClient()).listOperations(request).promise()
+    public async listOperations(request: ListOperationsRequest): Promise<ListOperationsResponse> {
+        return await this.makeRequest(ListOperationsCommand, request)
     }
 
     public async deleteService(request: DeleteServiceRequest): Promise<WithServiceSummary<DeleteServiceResponse>> {
