@@ -41,7 +41,12 @@ import { calculateTotalLatency } from '../../../amazonqGumby/telemetry/codeTrans
 import { MetadataResult } from '../../../shared/telemetry/telemetryClient'
 import request from '../../../shared/request'
 import { JobStoppedError, ZipExceedsSizeLimitError } from '../../../amazonqGumby/errors'
-import { copyDirectory, loadManifestFile, writeAndShowBuildLogs } from './transformFileHandler'
+import {
+    copyDirectory,
+    createLocalBuildUploadZip,
+    loadManifestFile,
+    writeAndShowBuildLogs,
+} from './transformFileHandler'
 import { createCodeWhispererChatStreamingClient } from '../../../shared/clients/codewhispererChatClient'
 import { downloadExportResultArchive } from '../../../shared/utilities/download'
 import { ExportContext, ExportIntent, TransformationDownloadArtifactType } from '@amzn/codewhisperer-streaming'
@@ -53,7 +58,7 @@ import { getAuthType } from '../../../auth/utils'
 import { UserWrittenCodeTracker } from '../../tracker/userWrittenCodeTracker'
 import { AuthUtil } from '../../util/authUtil'
 import { DiffModel } from './transformationResultsViewProvider'
-import { runClientSideBuild } from './transformMavenHandler'
+import { spawnSync } from 'child_process'
 
 export function getSha256(buffer: Buffer) {
     const hasher = crypto.createHash('sha256')
@@ -779,6 +784,52 @@ async function processClientInstructions(jobId: string, clientInstructionsPath: 
     const doc = await vscode.workspace.openTextDocument(clientInstructionsPath)
     await vscode.window.showTextDocument(doc, { viewColumn: vscode.ViewColumn.One })
     await runClientSideBuild(transformByQState.getProjectCopyFilePath(), artifactId)
+}
+
+export async function runClientSideBuild(projectPath: string, clientInstructionArtifactId: string) {
+    // baseCommand will be one of: '.\mvnw.cmd', './mvnw', 'mvn'
+    const baseCommand = transformByQState.getMavenName()
+    const args = ['test']
+    // TO-DO / QUESTION: why not use the build command from the downloaded manifest?
+    transformByQState.appendToBuildLog(`Running ${baseCommand} ${args}`)
+    const environment = { ...process.env, JAVA_HOME: transformByQState.getTargetJavaHome() }
+
+    const argString = args.join(' ')
+    const spawnResult = spawnSync(baseCommand, args, {
+        cwd: projectPath,
+        shell: true,
+        encoding: 'utf-8',
+        env: environment,
+    })
+
+    const buildLogs = `Intermediate build result from running ${baseCommand} ${argString}:\n\n${spawnResult.stdout}`
+    transformByQState.clearBuildLog()
+    transformByQState.appendToBuildLog(buildLogs)
+    await writeAndShowBuildLogs()
+
+    const baseDir = path.join(
+        os.tmpdir(),
+        `clientInstructionsResult_${transformByQState.getJobId()}_${clientInstructionArtifactId}`
+    )
+    const zipPath = await createLocalBuildUploadZip(baseDir, spawnResult.status, spawnResult.stdout)
+
+    // upload build results
+    const uploadContext: UploadContext = {
+        transformationUploadContext: {
+            jobId: transformByQState.getJobId(),
+            uploadArtifactType: 'ClientBuildResult',
+        },
+    }
+    getLogger().info(`CodeTransformation: uploading client build results at ${zipPath} and resuming job now`)
+    await uploadPayload(zipPath, uploadContext)
+    await resumeTransformationJob(transformByQState.getJobId(), 'COMPLETED')
+    try {
+        await fs.delete(transformByQState.getProjectCopyFilePath(), { recursive: true })
+    } catch {
+        getLogger().error(
+            `CodeTransformation: failed to delete project copy at ${transformByQState.getProjectCopyFilePath()} after client-side build`
+        )
+    }
 }
 
 export function getArtifactsFromProgressUpdate(progressUpdate: TransformationProgressUpdate) {
