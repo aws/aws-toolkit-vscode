@@ -17,6 +17,7 @@ import { ChatSessionManager } from '../../../amazonqGumby/chat/storages/chatSess
 import { AbsolutePathDetectedError } from '../../../amazonqGumby/errors'
 import { getLogger } from '../../../shared/logger/logger'
 import { isWin } from '../../../shared/vscode/env'
+import AdmZip from 'adm-zip'
 
 export function getDependenciesFolderInfo(): FolderInfo {
     const dependencyFolderName = `${CodeWhispererConstants.dependencyFolderName}${globals.clock.Date.now()}`
@@ -27,10 +28,70 @@ export function getDependenciesFolderInfo(): FolderInfo {
     }
 }
 
-export async function writeLogs() {
+export async function writeAndShowBuildLogs() {
     const logFilePath = path.join(os.tmpdir(), 'build-logs.txt')
-    writeFileSync(logFilePath, transformByQState.getErrorLog())
+    writeFileSync(logFilePath, transformByQState.getBuildLog())
+    const doc = await vscode.workspace.openTextDocument(logFilePath)
+    if (!transformByQState.getBuildLog().includes('clean install succeeded')) {
+        // only show the log if the build failed
+        await vscode.window.showTextDocument(doc, { viewColumn: vscode.ViewColumn.Two })
+    }
     return logFilePath
+}
+
+export async function loadManifestFile(directory: string) {
+    const manifestFile = path.join(directory, 'manifest.json')
+    const data = await fs.readFileText(manifestFile)
+    const manifest = JSON.parse(data)
+    getLogger().info(`CodeTransformation: loaded and parsed manifest file from ${manifestFile}`)
+    return manifest
+}
+
+export async function copyDirectory(sourcePath: string, destinationPath: string) {
+    fs.mkdir(destinationPath)
+    const files = await fs.readdir(sourcePath)
+
+    for (const file of files) {
+        const sourceFilePath = path.join(sourcePath, file[0])
+        const destinationFilePath = path.join(destinationPath, file[0])
+        if (file[1] === vscode.FileType.Directory) {
+            // if the item is a directory, recursively copy it
+            const destinationFilePath = path.join(destinationPath, path.relative(sourcePath, sourceFilePath))
+            await copyDirectory(sourceFilePath, destinationFilePath)
+        } else {
+            // if the item is a file, copy its contents
+            try {
+                await fs.copy(sourceFilePath, destinationFilePath)
+            } catch (err: any) {
+                getLogger().error(
+                    `CodeTransformation: error copying file ${sourceFilePath} to ${destinationFilePath}: ${err}`
+                )
+            }
+        }
+    }
+}
+
+export async function createLocalBuildUploadZip(baseDir: string, exitCode: number | null, stdout: string) {
+    const manifestFilePath = path.join(baseDir, 'manifest.json')
+    const buildResultsManifest = {
+        capability: 'CLIENT_SIDE_BUILD',
+        exitCode: exitCode,
+        commandLogFileName: 'clientBuildLogs.log',
+    }
+    const formattedManifest = JSON.stringify(buildResultsManifest, null, 2)
+    await fs.writeFile(manifestFilePath, formattedManifest, 'utf8')
+
+    const buildLogsFilePath = path.join(baseDir, 'clientBuildLogs.log')
+    await fs.writeFile(buildLogsFilePath, stdout, 'utf8')
+
+    const zip = new AdmZip()
+    zip.addLocalFile(buildLogsFilePath)
+    zip.addLocalFile(manifestFilePath)
+
+    const zipPath = `${baseDir}.zip`
+    zip.writeZip(zipPath)
+    getLogger().info(`CodeTransformation: created local build upload zip at ${zipPath}`)
+    return zipPath
 }
 
 export async function checkBuildSystem(projectPath: string) {

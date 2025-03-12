@@ -192,6 +192,8 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                 return '<p><span class="spinner status-PENDING"> ↻ </span></p>'
             case 'COMPLETED':
                 return '<p><span class="status-COMPLETED"> ✓ </span></p>'
+            case 'AWAITING_CLIENT_ACTION':
+                return '<p><span class="spinner status-PENDING"> ↻ </span></p>'
             case 'FAILED':
             default:
                 return '<p><span class="status-FAILED"> 𐔧 </span></p>'
@@ -325,7 +327,7 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
             jobPlanProgress['generatePlan'] === StepProgress.Succeeded &&
             transformByQState.isRunning()
         ) {
-            planSteps = await getTransformationSteps(transformByQState.getJobId(), false)
+            planSteps = await getTransformationSteps(transformByQState.getJobId())
             transformByQState.setPlanSteps(planSteps)
         }
         let progressHtml
