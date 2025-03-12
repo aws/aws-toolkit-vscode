@@ -388,6 +388,7 @@ export class GumbyController {
                 break
             case ButtonActions.CONTINUE_TRANSFORMATION_FORM:
                 this.messenger.sendMessage('Ok, I will continue without this information.', message.tabID, 'ai-prompt')
+                transformByQState.setCustomDependencyVersionFilePath('')
                 this.promptJavaHome('source', message.tabID)
                 break
             case ButtonActions.VIEW_TRANSFORMATION_HUB:
@@ -455,7 +456,7 @@ export class GumbyController {
             })
 
             this.messenger.sendOneOrMultipleDiffsMessage(oneOrMultipleDiffsSelection, message.tabID)
-            this.messenger.sendCustomDependencyVersionSelectionMessage(message.tabID)
+            await this.messenger.sendCustomDependencyVersionMessage(message.tabID)
         })
     }
 

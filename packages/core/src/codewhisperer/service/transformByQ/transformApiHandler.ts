@@ -56,7 +56,7 @@ import { convertToTimeString } from '../../../shared/datetime'
 import { getAuthType } from '../../../auth/utils'
 import { UserWrittenCodeTracker } from '../../tracker/userWrittenCodeTracker'
 import { DiffModel } from './transformationResultsViewProvider'
-import { spawnSync } from 'child_process'
+import { spawnSync } from 'child_process' // eslint-disable-line no-restricted-imports
 
 export function getSha256(buffer: Buffer) {
     const hasher = crypto.createHash('sha256')
@@ -392,6 +392,14 @@ export async function zipCode(
             }
             getLogger().info(`CodeTransformation: dependency files size = ${dependencyFilesSize}`)
             dependenciesCopied = true
+        }
+
+        if (transformByQState.getCustomDependencyVersionFilePath() && zipManifest instanceof ZipManifest) {
+            zip.addLocalFile(
+                transformByQState.getCustomDependencyVersionFilePath(),
+                'custom-upgrades',
+                'dependency-versions.yaml'
+            )
         }
 
         zip.addFile('manifest.json', Buffer.from(JSON.stringify(zipManifest)), 'utf-8')
