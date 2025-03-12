@@ -8,6 +8,8 @@ import { AwsClient, AwsClientConstructor, AwsCommand, AwsCommandConstructor } fr
 import { PaginationConfiguration, Paginator } from '@aws-sdk/types'
 import { AsyncCollection, toCollection } from '../utilities/asyncCollection'
 import { isDefined } from '../utilities/tsUtils'
+import { withPerfLogOnFail } from '../logger/perfLogger'
+import { truncateProps } from '../utilities/textUtilities'
 
 type SDKPaginator<C, CommandInput extends object, CommandOutput extends object> = (
     config: Omit<PaginationConfiguration, 'client'> & { client: C },
@@ -35,7 +37,14 @@ export abstract class ClientWrapper<C extends AwsClient> implements vscode.Dispo
         CommandOptions extends CommandInput,
         Command extends AwsCommand<CommandInput, CommandOutput>,
     >(command: AwsCommandConstructor<CommandInput, Command>, commandOptions: CommandOptions): Promise<CommandOutput> {
-        return await this.getClient().send(new command(commandOptions))
+        const makeRequest = withPerfLogOnFail(
+            'API Request',
+            () => this.getClient().send(new command(commandOptions)),
+            truncateProps(commandOptions, 20, ['nextToken']),
+            mapNameToCode
+        )
+
+        return makeRequest()
     }
 
     protected makePaginatedRequest<CommandInput extends object, CommandOutput extends object, Output extends object>(
@@ -64,4 +73,8 @@ export abstract class ClientWrapper<C extends AwsClient> implements vscode.Dispo
     public dispose() {
         this.client?.destroy()
     }
+}
+
+function mapNameToCode<E extends Error>(e: E): E & { code: string } {
+    return { ...e, message: e.message, name: e.name, stack: e.stack, code: e.message }
 }
