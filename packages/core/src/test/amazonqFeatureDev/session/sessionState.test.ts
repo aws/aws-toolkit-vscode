@@ -76,8 +76,8 @@ describe('sessionStateFeatureDev', () => {
             )
 
             assert.deepStrictEqual(result.nextState?.deletedFiles, nextState.deletedFiles)
-            assert.deepStrictEqual(result.nextState?.filePaths, result.nextState?.filePaths)
-            assert.deepStrictEqual(result.nextState?.references, result.nextState?.references)
+            assert.deepStrictEqual(result.nextState?.filePaths, nextState.filePaths)
+            assert.deepStrictEqual(result.nextState?.references, nextState.references)
         })
 
         it('fails when codeGenerationStatus failed ', async () => {
