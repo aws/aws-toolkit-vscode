@@ -24,6 +24,7 @@ import { FeatureUseCase } from '../models/constants'
 import { ChildProcess, ChildProcessOptions } from '../../shared/utilities/processUtils'
 import { ProjectZipError } from '../../amazonqTest/error'
 import { removeAnsi } from '../../shared/utilities/textUtilities'
+import { normalize } from '../../shared/utilities/pathUtils'
 
 export interface ZipMetadata {
     rootDir: string
@@ -122,7 +123,7 @@ export class ZipUtil {
             zip.addFile(zipEntryPath, Buffer.from(content, 'utf-8'))
 
             if (scope === CodeWhispererConstants.CodeAnalysisScope.FILE_ON_DEMAND) {
-                const gitDiffContent = `+++ b/${path.normalize(zipEntryPath).replaceAll(path.win32.sep, path.posix.sep)}` // Sending file path in payload for LLM code review
+                const gitDiffContent = `+++ b/${normalize(zipEntryPath)}` // Sending file path in payload for LLM code review
                 zip.addFile(ZipConstants.codeDiffFilePath, Buffer.from(gitDiffContent, 'utf-8'))
             }
         } else {
