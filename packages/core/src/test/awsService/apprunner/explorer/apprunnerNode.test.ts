@@ -6,13 +6,13 @@
 import assert from 'assert'
 import * as FakeTimers from '@sinonjs/fake-timers'
 import * as sinon from 'sinon'
-import { AppRunner } from 'aws-sdk'
 import { AppRunnerNode } from '../../../../awsService/apprunner/explorer/apprunnerNode'
 import { AppRunnerServiceNode } from '../../../../awsService/apprunner/explorer/apprunnerServiceNode'
-import { AppRunnerClient } from '../../../../shared/clients/apprunner'
+import { AppRunnerClient, AppRunnerServiceSummary } from '../../../../shared/clients/apprunner'
 import { PlaceholderNode } from '../../../../shared/treeview/nodes/placeholderNode'
 import { AWSTreeNodeBase } from '../../../../shared/treeview/nodes/awsTreeNodeBase'
 import { installFakeClock } from '../../../testUtil'
+import { intoCollection } from '../../../../shared/utilities/collectionUtils'
 
 describe('AppRunnerNode', function () {
     let mockApprunnerClient: AppRunnerClient
@@ -20,11 +20,12 @@ describe('AppRunnerNode', function () {
     let clock: FakeTimers.InstalledClock
     let refreshStub: sinon.SinonStub<[], void>
 
-    const exampleSummaries: AppRunner.ServiceSummaryList = [
+    const exampleSummaries: AppRunnerServiceSummary[] = [
         {
             ServiceName: 'test1',
             Status: 'RUNNING',
             ServiceArn: 'test-arn1',
+            ServiceId: 'Amazon',
         },
     ]
 
@@ -35,7 +36,7 @@ describe('AppRunnerNode', function () {
 
     beforeEach(function () {
         mockApprunnerClient = {
-            listServices: sinon.stub().resolves({ ServiceSummaryList: exampleSummaries }),
+            paginateServices: sinon.stub().returns(intoCollection([exampleSummaries])),
             listOperations: sinon.stub().resolves({ OperationSummaryList: [] }),
         } as any as AppRunnerClient
         node = new AppRunnerNode('', mockApprunnerClient)
@@ -56,8 +57,8 @@ describe('AppRunnerNode', function () {
         const childNode = (await node.getChildren())[0] as AppRunnerServiceNode
 
         const updatedSummary = { ...exampleSummaries[0], Status: 'PAUSED' }
-        const serviceStub = sinon.stub().resolves({ ServiceSummaryList: [updatedSummary] })
-        mockApprunnerClient.listServices = serviceStub
+        const serviceStub = sinon.stub().returns(intoCollection([[updatedSummary]]))
+        mockApprunnerClient.paginateServices = serviceStub
 
         await node.getChildren()
         assert.strictEqual(childNode.info.Status, 'PAUSED')
@@ -65,8 +66,8 @@ describe('AppRunnerNode', function () {
 
     it('deletes AppRunnerServiceNodes', async function () {
         await node.getChildren()
-        const serviceStub = sinon.stub().resolves({ ServiceSummaryList: [] })
-        mockApprunnerClient.listServices = serviceStub
+        const serviceStub = sinon.stub().returns(intoCollection([[]]))
+        mockApprunnerClient.paginateServices = serviceStub
 
         assert.ok((await node.getChildren())[0] instanceof PlaceholderNode)
     })
@@ -77,10 +78,10 @@ describe('AppRunnerNode', function () {
         const serviceStub = sinon
             .stub()
             .onFirstCall()
-            .resolves({ ServiceSummaryList: [transientService] })
+            .returns(intoCollection([[transientService]]))
             .onSecondCall()
-            .resolves({ ServiceSummaryList: [pausedService] })
-        mockApprunnerClient.listServices = serviceStub
+            .returns(intoCollection([[pausedService]]))
+        mockApprunnerClient.paginateServices = serviceStub
         const opStub = sinon.stub().resolves({
             OperationSummaryList: [{ Id: 'test-id', Type: 'PAUSE_SERVICE' }],
         })

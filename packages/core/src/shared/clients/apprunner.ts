@@ -33,7 +33,8 @@ import {
     UpdateServiceResponse,
 } from '@aws-sdk/client-apprunner'
 import { ClientWrapper } from './clientWrapper'
-import { RequiredProps } from '../utilities/tsUtils'
+import { hasProps, RequiredProps } from '../utilities/tsUtils'
+import { AsyncCollection } from '../utilities/asyncCollection'
 
 export type AppRunnerService = RequiredProps<Service, 'ServiceName' | 'ServiceArn' | 'Status' | 'ServiceId'>
 export type AppRunnerServiceSummary = RequiredProps<
@@ -43,7 +44,6 @@ export type AppRunnerServiceSummary = RequiredProps<
 
 // Note: Many of the requests return a type of Service, but Service <: ServiceSummary.
 type WithServiceSummary<T> = Omit<T, 'Service'> & { Service: AppRunnerServiceSummary }
-
 export class AppRunnerClient extends ClientWrapper<AppRunnerClientSDK> {
     public constructor(regionCode: string) {
         super(regionCode, AppRunnerClientSDK)
@@ -57,8 +57,14 @@ export class AppRunnerClient extends ClientWrapper<AppRunnerClientSDK> {
         return await this.makeRequest(ListServicesCommand, request)
     }
 
-    public paginateServices(request: ListServicesRequest) {
-        return this.makePaginatedRequest(paginateListServices, request, (page) => page.ServiceSummaryList)
+    public paginateServices(request: ListServicesRequest): AsyncCollection<AppRunnerServiceSummary[]> {
+        return this.makePaginatedRequest(paginateListServices, request, (page) => page.ServiceSummaryList).map(
+            (summaries) => summaries.filter(isServiceSummary)
+        )
+
+        function isServiceSummary(s: ServiceSummary): s is AppRunnerServiceSummary {
+            return hasProps(s, 'ServiceName', 'ServiceArn', 'Status', 'ServiceId')
+        }
     }
 
     public async pauseService(request: PauseServiceRequest): Promise<WithServiceSummary<PauseServiceResponse>> {

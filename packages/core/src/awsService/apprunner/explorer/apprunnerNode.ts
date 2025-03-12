@@ -11,8 +11,7 @@ import * as nls from 'vscode-nls'
 import { AppRunnerClient, AppRunnerServiceSummary } from '../../../shared/clients/apprunner'
 import { AppRunner } from 'aws-sdk'
 import { PollingSet } from '../../../shared/utilities/pollingSet'
-import { ListServicesRequest, ServiceSummary } from '@aws-sdk/client-apprunner'
-import { hasProps } from '../../../shared/utilities/tsUtils'
+import { ListServicesRequest } from '@aws-sdk/client-apprunner'
 
 const localize = nls.loadMessageBundle()
 
@@ -22,7 +21,7 @@ export class AppRunnerNode extends AWSTreeNodeBase {
 
     public constructor(
         public override readonly regionCode: string,
-        public readonly client: AppRunnerClient
+        public client: AppRunnerClient
     ) {
         super('App Runner', vscode.TreeItemCollapsibleState.Collapsed)
         this.contextValue = 'awsAppRunnerNode'
@@ -46,11 +45,8 @@ export class AppRunnerNode extends AWSTreeNodeBase {
 
     private async getServiceSummaries(request: ListServicesRequest = {}): Promise<AppRunnerServiceSummary[]> {
         // TODO: avoid resolving all services at once.
-        return await this.client.paginateServices(request).flatten().filter(isService).promise()
-
-        function isService(s: ServiceSummary): s is AppRunnerServiceSummary {
-            return hasProps(s, 'ServiceName', 'ServiceArn', 'Status', 'ServiceId')
-        }
+        const serviceCollection = this.client.paginateServices(request)
+        return await serviceCollection.flatten().promise()
     }
 
     public async updateChildren(): Promise<void> {
