@@ -25,7 +25,6 @@ const validationExemptMetrics: Set<string> = new Set([
     'codeTransform_jobStatusChanged',
     'codeTransform_logApiError',
     'codeTransform_logApiLatency',
-    'codewhisperer_userDecision',
     'codewhisperer_codeScanIssueHover',
     'codewhisperer_codePercentage',
     'codewhisperer_userModification',
