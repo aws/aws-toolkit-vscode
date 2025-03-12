@@ -678,6 +678,7 @@ export enum BuildSystem {
     Unknown = 'Unknown',
 }
 
+// TO-DO: include the custom YAML file path here somewhere?
 export class ZipManifest {
     sourcesRoot: string = 'sources/'
     dependenciesRoot: string = 'dependencies/'

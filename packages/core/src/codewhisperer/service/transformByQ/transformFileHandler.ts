@@ -48,7 +48,7 @@ export async function loadManifestFile(directory: string) {
 }
 
 export async function copyDirectory(sourcePath: string, destinationPath: string) {
-    fs.mkdir(destinationPath)
+    await fs.mkdir(destinationPath)
     const files = await fs.readdir(sourcePath)
 
     for (const file of files) {
@@ -78,7 +78,7 @@ export async function createLocalBuildUploadZip(baseDir: string, exitCode: numbe
         exitCode: exitCode,
         commandLogFileName: 'clientBuildLogs.log',
     }
-    const formattedManifest = JSON.stringify(buildResultsManifest, null, 2)
+    const formattedManifest = JSON.stringify(buildResultsManifest)
     await fs.writeFile(manifestFilePath, formattedManifest, 'utf8')
 
     const buildLogsFilePath = path.join(baseDir, 'clientBuildLogs.log')
