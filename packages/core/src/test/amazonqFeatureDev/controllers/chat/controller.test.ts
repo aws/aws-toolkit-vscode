@@ -24,7 +24,6 @@ import {
     ContentLengthError,
     createUserFacingErrorMessage,
     FeatureDevServiceError,
-    isAPIClientError,
     MonthlyConversationLimitError,
     NoChangeRequiredException,
     PrepareRepoFailedError,
@@ -48,6 +47,7 @@ import { i18n } from '../../../../shared/i18n-helper'
 import { FollowUpTypes } from '../../../../amazonq/commons/types'
 import { ToolkitError } from '../../../../shared'
 import { MessengerTypes } from '../../../../amazonqFeatureDev/controllers/chat/messenger/constants'
+import { ClientError, LlmError, ServiceError } from '../../../../amazonq/errors'
 
 let mockGetCodeGeneration: sinon.SinonStub
 describe('Controller', () => {
@@ -471,22 +471,17 @@ describe('Controller', () => {
             let session: any
             let sendMetricDataTelemetrySpy: sinon.SinonStub
 
-            const errorResultMapping = new Map([
-                ['EmptyPatchException', MetricDataResult.LlmFailure],
-                [PromptRefusalException.name, MetricDataResult.Error],
-                [NoChangeRequiredException.name, MetricDataResult.Error],
-                [MonthlyConversationLimitError.name, MetricDataResult.Error],
-                [CodeIterationLimitError.name, MetricDataResult.Error],
-            ])
-
             function getMetricResult(error: ToolkitError): MetricDataResult {
-                if (error instanceof FeatureDevServiceError && error.code) {
-                    return errorResultMapping.get(error.code) ?? MetricDataResult.Error
-                }
-                if (isAPIClientError(error)) {
+                if (error instanceof ClientError) {
                     return MetricDataResult.Error
                 }
-                return errorResultMapping.get(error.constructor.name) ?? MetricDataResult.Fault
+                if (error instanceof LlmError) {
+                    return MetricDataResult.LlmFailure
+                }
+                if (error instanceof ServiceError) {
+                    return MetricDataResult.Fault
+                }
+                return MetricDataResult.Fault
             }
 
             async function verifyException(error: ToolkitError) {

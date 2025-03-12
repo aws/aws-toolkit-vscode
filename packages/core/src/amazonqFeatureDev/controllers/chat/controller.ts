@@ -56,6 +56,7 @@ import { randomUUID } from '../../../shared/crypto'
 import { FollowUpTypes } from '../../../amazonq/commons/types'
 import { Messenger } from '../../../amazonq/commons/connector/baseMessenger'
 import { BaseChatSessionStorage } from '../../../amazonq/commons/baseChatStorage'
+import { ClientError, LlmError, ServiceError } from '../../../amazonq/errors'
 
 export interface ChatControllerEventEmitters {
     readonly processHumanChatMessage: EventEmitter<any>
@@ -551,32 +552,20 @@ export class FeatureDevController {
         } catch (err: any) {
             getLogger().error(`${featureName}: Error during code generation: ${err}`)
 
-            let result: string
-            switch (err.constructor.name) {
-                case FeatureDevServiceError.name:
-                    if (err.code === 'EmptyPatchException') {
-                        result = MetricDataResult.LlmFailure
-                    } else if (err.code === 'GuardrailsException' || err.code === 'ThrottlingException') {
-                        result = MetricDataResult.Error
-                    } else {
-                        result = MetricDataResult.Fault
-                    }
-                    break
-                case MonthlyConversationLimitError.name:
-                case CodeIterationLimitError.name:
-                case PromptRefusalException.name:
-                case NoChangeRequiredException.name:
+            let result: string = MetricDataResult.Fault
+            if (err instanceof ClientError) {
+                result = MetricDataResult.Error
+            } else if (err instanceof ServiceError) {
+                result = MetricDataResult.Fault
+            } else if (err instanceof LlmError) {
+                result = MetricDataResult.LlmFailure
+            } else {
+                if (isAPIClientError(err)) {
                     result = MetricDataResult.Error
-                    break
-                default:
-                    if (isAPIClientError(err)) {
-                        result = MetricDataResult.Error
-                    } else {
-                        result = MetricDataResult.Fault
-                    }
-                    break
+                } else {
+                    result = MetricDataResult.Fault
+                }
             }
-
             await session.sendMetricDataTelemetry(MetricDataOperationName.EndCodeGeneration, result)
             throw err
         } finally {

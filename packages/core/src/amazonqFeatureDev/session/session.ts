@@ -14,7 +14,7 @@ import {
     type SessionStateConfig,
     UpdateFilesPathsParams,
 } from '../../amazonq/commons/types'
-import { ContentLengthError, ConversationIdNotFoundError } from '../errors'
+import { ContentLengthError, ConversationIdNotFoundError, IllegalStateError } from '../errors'
 import { featureDevChat, referenceLogText, featureDevScheme } from '../constants'
 import fs from '../../shared/fs/fs'
 import { FeatureDevClient } from '../client/featureDev'
@@ -353,7 +353,7 @@ export class Session {
 
     get state() {
         if (!this._state) {
-            throw new Error("State should be initialized before it's read")
+            throw new IllegalStateError("State should be initialized before it's read")
         }
         return this._state
     }
@@ -364,7 +364,7 @@ export class Session {
 
     get uploadId() {
         if (!('uploadId' in this.state)) {
-            throw new Error("UploadId has to be initialized before it's read")
+            throw new IllegalStateError("UploadId has to be initialized before it's read")
         }
         return this.state.uploadId
     }
