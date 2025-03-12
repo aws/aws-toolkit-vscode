@@ -11,12 +11,12 @@ import {
     createConnectionPrompter,
 } from '../../../../awsService/apprunner/wizards/codeRepositoryWizard'
 import { AppRunnerClient } from '../../../../shared/clients/apprunner'
-import { ConnectionSummary } from 'aws-sdk/clients/apprunner'
 import { WIZARD_EXIT } from '../../../../shared/wizards/wizard'
 import { apprunnerConnectionHelpUrl } from '../../../../shared/constants'
 import { createQuickPickPrompterTester, QuickPickPrompterTester } from '../../../shared/ui/testUtils'
 import { stub } from '../../../utilities/stubber'
 import { getOpenExternalStub } from '../../../globalSetup.test'
+import { ConnectionSummary } from '@aws-sdk/client-apprunner'
 
 describe('AppRunnerCodeRepositoryWizard', function () {
     let tester: WizardTester<AppRunner.SourceConfiguration>
@@ -72,7 +72,7 @@ describe('createConnectionPrompter', function () {
 
     function makeTester(connections = defaultConnections): QuickPickPrompterTester<ConnectionSummary> {
         const client = stub(AppRunnerClient, { regionCode: '' })
-        client.listConnections.resolves({ ConnectionSummaryList: connections })
+        client.listConnections.resolves(connections)
 
         return createQuickPickPrompterTester(createConnectionPrompter(client))
     }

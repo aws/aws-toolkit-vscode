@@ -158,10 +158,12 @@ export function createConnectionPrompter(client: AppRunnerClient) {
     const getItems = async () => {
         const resp = await client.listConnections()
 
-        return resp.ConnectionSummaryList.filter((conn) => conn.Status === 'AVAILABLE').map((conn) => ({
-            label: conn.ConnectionName!,
-            data: conn,
-        }))
+        return resp
+            .filter((conn) => conn.Status === 'AVAILABLE')
+            .map((conn) => ({
+                label: conn.ConnectionName!,
+                data: conn,
+            }))
     }
 
     const refreshButton = createRefreshButton()

@@ -7,12 +7,19 @@ import { AppRunner } from 'aws-sdk'
 import globals from '../extensionGlobals'
 import {
     AppRunnerClient as AppRunnerClientSDK,
+    ConnectionSummary,
+    CreateConnectionCommand,
+    CreateConnectionRequest,
+    CreateConnectionResponse,
     DeleteServiceCommand,
     DeleteServiceRequest,
     DeleteServiceResponse,
     DescribeServiceCommand,
     DescribeServiceRequest,
     DescribeServiceResponse,
+    ListConnectionsCommand,
+    ListConnectionsRequest,
+    ListConnectionsResponse,
     ListServicesCommand,
     ListServicesRequest,
     ListServicesResponse,
@@ -79,16 +86,13 @@ export class AppRunnerClient extends ClientWrapper<AppRunnerClientSDK> {
         return await this.makeRequest(UpdateServiceCommand, request)
     }
 
-    public async createConnection(
-        request: AppRunner.CreateConnectionRequest
-    ): Promise<AppRunner.CreateConnectionResponse> {
-        return (await this.createSdkClient()).createConnection(request).promise()
+    public async createConnection(request: CreateConnectionRequest): Promise<CreateConnectionResponse> {
+        return await this.makeRequest(CreateConnectionCommand, request)
     }
 
-    public async listConnections(
-        request: AppRunner.ListConnectionsRequest = {}
-    ): Promise<AppRunner.ListConnectionsResponse> {
-        return (await this.createSdkClient()).listConnections(request).promise()
+    public async listConnections(request: ListConnectionsRequest = {}): Promise<ConnectionSummary[]> {
+        const result: ListConnectionsResponse = await this.makeRequest(ListConnectionsCommand, request)
+        return result.ConnectionSummaryList ?? []
     }
 
     public async describeService(
