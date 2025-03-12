@@ -56,19 +56,18 @@ export type AppRunnerServiceSummary = RequiredProps<
     ServiceSummary,
     'ServiceName' | 'ServiceArn' | 'Status' | 'ServiceId'
 >
-export interface AppRunnerImageRepository
-    extends RequiredProps<ImageRepository, 'ImageIdentifier' | 'ImageRepositoryType'> {}
+export type AppRunnerImageRepository = RequiredProps<ImageRepository, 'ImageIdentifier' | 'ImageRepositoryType'>
 
 export type AppRunnerCodeConfigurationValues = RequiredProps<CodeConfigurationValues, 'Runtime'>
 interface AppRunnerCodeConfiguration extends RequiredProps<CodeConfiguration, 'ConfigurationSource'> {
-    CodeConfigurationValues: RequiredProps<CodeConfigurationValues, 'Runtime'>
+    CodeConfigurationValues: AppRunnerCodeConfigurationValues
 }
 export interface AppRunnerCodeRepository extends RequiredProps<CodeRepository, 'RepositoryUrl'> {
     SourceCodeVersion: RequiredProps<SourceCodeVersion, 'Type' | 'Value'>
     CodeConfiguration: AppRunnerCodeConfiguration
 }
 export interface AppRunnerSourceConfiguration extends SourceConfiguration {
-    CodeRepository?: AppRunnerCodeRepository | undefined
+    CodeRepository?: AppRunnerCodeRepository
     ImageRepository?: RequiredProps<ImageRepository, 'ImageIdentifier' | 'ImageRepositoryType'>
 }
 export interface AppRunnerCreateServiceRequest extends RequiredProps<CreateServiceRequest, 'ServiceName'> {
