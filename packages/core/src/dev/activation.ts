@@ -25,7 +25,7 @@ import { NotificationsController } from '../notifications/controller'
 import { DevNotificationsState } from '../notifications/types'
 import { QuickPickItem } from 'vscode'
 import { ChildProcess } from '../shared/utilities/processUtils'
-import { WorkspaceLSPInstaller } from '../amazonq/lsp/workspaceInstaller'
+import { WorkspaceLspInstaller } from '../amazonq/lsp/workspaceInstaller'
 
 interface MenuOption {
     readonly label: string
@@ -546,7 +546,7 @@ async function resetNotificationsState() {
 }
 
 async function resetWorkspaceLspDownload() {
-    await new WorkspaceLSPInstaller().resolve()
+    await new WorkspaceLspInstaller().resolve()
 }
 
 async function editNotifications() {
