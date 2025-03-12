@@ -7,6 +7,7 @@ import globals from '../extensionGlobals'
 import { AwsClient, AwsClientConstructor, AwsCommand, AwsCommandConstructor } from '../awsClientBuilderV3'
 import { PaginationConfiguration, Paginator } from '@aws-sdk/types'
 import { AsyncCollection, toCollection } from '../utilities/asyncCollection'
+import { isDefined } from '../utilities/tsUtils'
 
 type SDKPaginator<C, CommandInput extends object, CommandOutput extends object> = (
     config: Omit<PaginationConfiguration, 'client'> & { client: C },
@@ -28,10 +29,12 @@ export abstract class ClientWrapper<C extends AwsClient> implements vscode.Dispo
             : globals.sdkClientBuilderV3.getAwsService(args)
     }
 
-    protected async makeRequest<CommandInput extends object, CommandOutput extends object, Command extends AwsCommand>(
-        command: AwsCommandConstructor<CommandInput, Command>,
-        commandOptions: CommandInput
-    ): Promise<CommandOutput> {
+    protected async makeRequest<
+        CommandInput extends object,
+        CommandOutput extends object,
+        CommandOptions extends CommandInput,
+        Command extends AwsCommand<CommandInput, CommandOutput>,
+    >(command: AwsCommandConstructor<CommandInput, Command>, commandOptions: CommandOptions): Promise<CommandOutput> {
         return await this.getClient().send(new command(commandOptions))
     }
 
@@ -47,10 +50,6 @@ export abstract class ClientWrapper<C extends AwsClient> implements vscode.Dispo
             .map((o) => o.filter(isDefined))
 
         return collection
-
-        function isDefined<T>(i: T | undefined): i is T {
-            return i !== undefined
-        }
     }
 
     protected async getFirst<CommandInput extends object, CommandOutput extends object, Output extends object>(
