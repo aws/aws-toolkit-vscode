@@ -41,7 +41,13 @@ Unified software development service to quickly build and deliver applications o
 
 ## [Step Functions](https://aws.amazon.com/step-functions/)
 
-With the AWS toolkit, you can use Workflow Studio from within VS Code to visualize, build, and even test individual states in your state machines. You provide state inputs and set variables, start the test, then you can see how your data is transformed. You can adjust the workflow and re-test. When finished, you can apply the changes to update the state machine.
+Step Functions Workflow Studio provides a dynamic, visual representation of your state machine definition. Any changes you make, such as adding new resources or adjusting service configurations, are automatically reflected in your state machine definition.
+
+With Workflow Studio integrated with VS Code, you can do the following:
+
+-   Design state machines visually from within VS Code
+-   Seamlessly use both text and visual editing
+-   Test and debug your workflow states
 
 ![Step Functions](https://raw.githubusercontent.com/aws/aws-toolkit-vscode/HEAD/docs/marketplace/vscode/stepFunctions.gif)
 
