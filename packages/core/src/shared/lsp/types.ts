@@ -18,12 +18,9 @@ export interface ResourcePaths {
     lsp: string
     node: string
 }
-export interface LspResolution extends LspResult {
-    resourcePaths: ResourcePaths
-}
 
-export interface LspResolver {
-    resolve(): Promise<LspResolution>
+export interface LspResolution<T extends ResourcePaths> extends LspResult {
+    resourcePaths: T
 }
 
 export interface TargetContent {
