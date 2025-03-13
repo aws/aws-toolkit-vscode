@@ -31,34 +31,49 @@ export class PerfLog {
 
 /**
  * Call a function f and if it fails, log the error with performance information included.
- * @param action label of action in the error log.
+ * @param action label of action to include in the error log.
  * @param f action to attempt.
- * @param params params that were passed to f.
- * @param errMap optional mapping to apply to error to potentially add information.
+ * @param params params that were passed to f. Defaults to empty.
+ * @param getCode optional mapping to extract code from error. Defaults to name of error.
  * @returns result of f
  */
-export function withPerfLogOnFail<Result, E extends Error = never>(
+export function withPerfLogOnFail<Result>(
+    action: string,
+    f: () => Result,
+    params?: object,
+    getCode?: (e: Error) => string
+): () => Result
+export function withPerfLogOnFail<Result>(
+    action: string,
+    f: () => Promise<Result>,
+    params?: object,
+    getCode?: (e: Error) => string
+): () => Promise<Result>
+export function withPerfLogOnFail<Result>(
     action: string,
     f: () => Result | Promise<Result>,
-    params: object = {},
-    errMap?: (e: Error) => E
+    params?: object,
+    getCode?: (e: Error) => string
 ) {
-    return async function () {
+    return function () {
         const perflog = new PerfLog(action)
         try {
-            return await f()
+            return f()
         } catch (e) {
             if (e instanceof Error) {
-                const errWithoutStack = errMap ? errMap(e) : { ...e }
+                const errWithoutStack = { ...e, name: e.name, message: e.message }
                 delete errWithoutStack['stack']
                 const timecost = perflog.elapsed().toFixed(1)
                 getLogger().error(
                     `${action} failed (time: %dms) \nparams: %O\nerror: %O`,
                     timecost,
-                    params,
+                    params ?? {},
                     errWithoutStack
                 )
-                throw new ToolkitError(`${action}: ${e.message}`, { code: e.message, cause: e })
+                throw new ToolkitError(`${action}: ${errWithoutStack.message}`, {
+                    code: getCode ? getCode(errWithoutStack) : errWithoutStack.name,
+                    cause: errWithoutStack,
+                })
             }
             throw e
         }

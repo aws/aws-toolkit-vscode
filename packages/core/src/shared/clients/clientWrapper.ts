@@ -40,8 +40,7 @@ export abstract class ClientWrapper<C extends AwsClient> implements vscode.Dispo
         const makeRequest = withPerfLogOnFail(
             'API Request',
             () => this.getClient().send(new command(commandOptions)),
-            truncateProps(commandOptions, 20, ['nextToken']),
-            mapNameToCode
+            truncateProps(commandOptions, 20, ['nextToken'])
         )
 
         return makeRequest()
@@ -73,8 +72,4 @@ export abstract class ClientWrapper<C extends AwsClient> implements vscode.Dispo
     public dispose() {
         this.client?.destroy()
     }
-}
-
-function mapNameToCode<E extends Error>(e: E): E & { code: string } {
-    return { ...e, message: e.message, name: e.name, stack: e.stack, code: e.message }
 }
