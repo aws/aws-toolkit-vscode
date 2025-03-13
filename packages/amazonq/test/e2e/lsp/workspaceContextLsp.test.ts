@@ -5,13 +5,13 @@
 
 import * as os from 'os'
 import { createLspInstallerTests } from './lspInstallerUtil'
-import { getAmazonQWorkspaceLspConfig, LspClient, LspConfig, WorkspaceLspInstaller } from 'aws-core-vscode/amazonq'
+import { defaultAmazonQWorkspaceLspConfig, LspClient, LspConfig, WorkspaceLspInstaller } from 'aws-core-vscode/amazonq'
 import assert from 'assert'
 
 describe('AmazonQWorkspaceLSP', () => {
     createLspInstallerTests({
         suiteName: 'AmazonQWorkspaceLSPInstaller',
-        lspConfig: getAmazonQWorkspaceLspConfig(),
+        lspConfig: defaultAmazonQWorkspaceLspConfig,
         createInstaller: (lspConfig?: LspConfig) => new WorkspaceLspInstaller.WorkspaceLspInstaller(lspConfig),
         targetContents: [
             {

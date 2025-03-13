@@ -4,14 +4,14 @@
  */
 
 import { AmazonQLspInstaller } from '../../../src/lsp/lspInstaller'
-import { getAmazonQLspConfig } from '../../../src/lsp/config'
+import { defaultAmazonQLspConfig } from '../../../src/lsp/config'
 import { createLspInstallerTests } from './lspInstallerUtil'
 import { LspConfig } from 'aws-core-vscode/amazonq'
 
 describe('AmazonQLSP', () => {
     createLspInstallerTests({
         suiteName: 'AmazonQLSPInstaller',
-        lspConfig: getAmazonQLspConfig(),
+        lspConfig: defaultAmazonQLspConfig,
         createInstaller: (lspConfig?: LspConfig) => new AmazonQLspInstaller(lspConfig),
         targetContents: [
             {
