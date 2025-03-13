@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "increase scan timeout to reduce front-end timeout errors"
-}

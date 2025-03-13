@@ -1,0 +1,34 @@
+{
+	"date": "2025-03-12",
+	"version": "1.51.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "increase scan timeout to reduce front-end timeout errors"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q chat: Create a new prompt form does not autofocus or submit with Enter press"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "/review: Zip files are created with the wrong file path for file scans in multifolder workspaces."
+		},
+		{
+			"type": "Bug Fix",
+			"description": "/review: Invalid file path characters caused some detections to be skipped on Windows"
+		},
+		{
+			"type": "Feature",
+			"description": "Amazon Q Chat: You can now keep a \"library\" of prompt files in your home directory under `~/.aws/amazonq/prompts` and then quickly add them to the context using `@` on any project you’re working on. Prompt files are in markdown (`.md`) format."
+		},
+		{
+			"type": "Feature",
+			"description": "/review: show code diff for fix preview"
+		},
+		{
+			"type": "Feature",
+			"description": "/test: display test plan summary in chat after generating tests"
+		}
+	]
+}
