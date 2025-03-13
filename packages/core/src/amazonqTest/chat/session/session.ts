@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ShortAnswer, Reference } from '../../../codewhisperer/models/model'
-import { TargetFileInfo, TestGenerationJob } from '../../../codewhisperer/client/codewhispereruserclient'
+import { Reference } from '../../../codewhisperer/models/model'
+import { PackageInfo, TargetFileInfo, TestGenerationJob } from '../../../codewhisperer/client/codewhispereruserclient'
 
 export enum ConversationState {
     IDLE,
@@ -37,13 +37,13 @@ export class Session {
     // Start Test generation
     public isSupportedLanguage: boolean = false
     public conversationState: ConversationState = ConversationState.IDLE
-    public shortAnswer: ShortAnswer | undefined
     public sourceFilePath: string = ''
     public generatedFilePath: string = ''
     public projectRootPath: string = ''
     public fileLanguage: string | undefined = 'plaintext'
     public stopIteration: boolean = false
     public targetFileInfo: TargetFileInfo | undefined
+    public packageInfo: PackageInfo | undefined
     public jobSummary: string = ''
 
     // Telemetry

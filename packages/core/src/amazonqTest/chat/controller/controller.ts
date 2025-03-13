@@ -1115,9 +1115,6 @@ export class TestController {
     }
 
     private async checkForInstallationDependencies(data: any) {
-        // const session: Session = this.sessionStorage.getSession()
-        // const listOfInstallationDependencies = session.testGenerationJob?.shortAnswer?.installationDependencies || []
-        // MOCK: As there is no installation dependencies in shortAnswer
         const listOfInstallationDependencies = ['']
         const installationDependencies = listOfInstallationDependencies.join('\n')
 
@@ -1481,7 +1478,6 @@ export class TestController {
         session.testGenerationJobGroupName = undefined
         // session.testGenerationJob = undefined
         session.updatedBuildCommands = undefined
-        session.shortAnswer = undefined
         session.testCoveragePercentage = 0
         session.conversationState = ConversationState.IDLE
         session.sourceFilePath = ''
@@ -1526,8 +1522,8 @@ export class TestController {
             return [...session.updatedBuildCommands]
         }
 
-        if (session.shortAnswer && session.shortAnswer?.buildCommand) {
-            return [session.shortAnswer.buildCommand]
+        if (session.packageInfo && session.packageInfo?.buildCommand) {
+            return [session.packageInfo.buildCommand]
         }
         // TODO: Add a generic command here for external launch according to the build system.
         return ['brazil-build release']

@@ -1174,18 +1174,3 @@ export interface Reference {
         end: number
     }
 }
-
-// TODO: remove ShortAnswer because it will be deprecated
-export interface ShortAnswer {
-    testFilePath: string
-    buildCommand: string
-    planSummary: string
-    sourceFilePath?: string
-    testFramework?: string
-    executionCommands?: string[]
-    testCoverage?: number
-    stopIteration?: string
-    errorMessage?: string
-    codeReferences?: References
-    numberOfTestMethods?: number
-}

@@ -54,7 +54,6 @@ export async function startTestGenerationProcess(
             const projectPath = zipUtil.getProjectPath(filePath) ?? ''
             const relativeTargetPath = path.relative(projectPath, filePath)
             session.listOfTestGenerationJobId = []
-            session.shortAnswer = undefined
             session.sourceFilePath = relativeTargetPath
             session.projectRootPath = projectPath
             session.listOfTestGenerationJobId = []

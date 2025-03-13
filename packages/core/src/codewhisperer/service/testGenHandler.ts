@@ -22,7 +22,7 @@ import {
     TestGenTimedOutError,
 } from '../../amazonqTest/error'
 import { getMd5, uploadArtifactToS3 } from './securityScanHandler'
-import { ShortAnswer, testGenState, Reference } from '../models/model'
+import { testGenState, Reference } from '../models/model'
 import { ChatSessionManager } from '../../amazonqTest/chat/storages/chatSession'
 import { createCodeWhispererChatStreamingClient } from '../../shared/clients/codewhispererChatClient'
 import { downloadExportResultArchive } from '../../shared/utilities/download'
@@ -159,12 +159,6 @@ export async function pollTestJobStatus(
             })
         }
 
-        const shortAnswerString = resp.testGenerationJob?.shortAnswer
-        if (shortAnswerString) {
-            const parsedShortAnswer = JSON.parse(shortAnswerString)
-            const shortAnswer: ShortAnswer = JSON.parse(parsedShortAnswer)
-        }
-
         const jobSummary = resp.testGenerationJob?.jobSummary ?? ''
         const jobSummaryNoBackticks = jobSummary.replace(/^`+|`+$/g, '')
         ChatSessionManager.Instance.getSession().jobSummary = jobSummaryNoBackticks
@@ -173,7 +167,8 @@ export async function pollTestJobStatus(
         const targetFileInfo = packageInfo?.targetFileInfoList?.[0]
 
         if (packageInfo) {
-            // TODO: will need some fields from packageInfo such as buildCommand, packagePlan, packageSummary
+            // TODO: will use some fields from packageInfo in the future
+            ChatSessionManager.Instance.getSession().packageInfo = packageInfo
         }
         if (targetFileInfo) {
             if (targetFileInfo.numberOfTestMethods) {
