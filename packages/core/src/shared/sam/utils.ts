@@ -18,7 +18,6 @@ import { telemetry } from '../telemetry/telemetry'
 import globals from '../extensionGlobals'
 import { getLogger } from '../logger/logger'
 import { ChildProcessResult } from '../utilities/processUtils'
-import { buildProcessMementoRootKey, globalIdentifier } from './constants'
 
 /**
  * @description determines the root directory of the project given Template Item
