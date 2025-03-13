@@ -333,6 +333,8 @@ function filterRequestHeaders(request: HttpRequest) {
         'x-cache',
         'x-amz-cf-id',
         'x-amz-cf-pop',
+        'Connection',
+        'host',
     ]
     return Object.fromEntries(Object.entries(request.headers).filter(([k, _]) => logHeaderNames.includes(k)))
 }
