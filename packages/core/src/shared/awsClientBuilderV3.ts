@@ -7,6 +7,10 @@ import { CredentialsShim } from '../auth/deprecated/loginManager'
 import { AwsContext } from './awsContext'
 import {
     AwsCredentialIdentityProvider,
+    BuildHandlerArguments,
+    DeserializeHandlerArguments,
+    DeserializeHandlerOutput,
+    FinalizeHandlerArguments,
     Logger,
     RetryStrategyV2,
     TokenIdentity,
@@ -213,26 +217,34 @@ export function recordErrorTelemetry(err: Error, serviceName?: string) {
 }
 
 export const defaultDeserializeMiddleware: DeserializeMiddleware<any, any> =
-    (next: DeserializeHandler<any, any>, context: HandlerExecutionContext) => async (args: any) =>
+    (next: DeserializeHandler<any, any>, context: HandlerExecutionContext) =>
+    async (args: DeserializeHandlerArguments<any>) =>
         onDeserialize(next, context, args)
 
 export const finalizeLoggingMiddleware: FinalizeRequestMiddleware<any, any> =
-    (next: FinalizeHandler<any, any>) => async (args: any) =>
+    (next: FinalizeHandler<any, any>) => async (args: FinalizeHandlerArguments<any>) =>
         logOnFinalize(next, args)
 
 function getEndpointMiddleware(settings: DevSettings = DevSettings.instance): BuildMiddleware<any, any> {
-    return (next: BuildHandler<any, any>, context: HandlerExecutionContext) => async (args: any) =>
-        overwriteEndpoint(next, context, settings, args)
+    return (next: BuildHandler<any, any>, context: HandlerExecutionContext) =>
+        async (args: BuildHandlerArguments<any>) =>
+            overwriteEndpoint(next, context, settings, args)
 }
 
-const keepAliveMiddleware: BuildMiddleware<any, any> = (next: BuildHandler<any, any>) => async (args: any) =>
-    addKeepAliveHeader(next, args)
+const keepAliveMiddleware: BuildMiddleware<any, any> =
+    (next: BuildHandler<any, any>) => async (args: BuildHandlerArguments<any>) =>
+        addKeepAliveHeader(next, args)
 
-export async function onDeserialize(next: DeserializeHandler<any, any>, context: HandlerExecutionContext, args: any) {
-    if (!HttpResponse.isInstance(args.request)) {
+export async function onDeserialize(
+    next: DeserializeHandler<any, any>,
+    context: HandlerExecutionContext,
+    args: DeserializeHandlerArguments<any>
+): Promise<DeserializeHandlerOutput<any>> {
+    const request = args.request
+    if (!HttpRequest.isInstance(request)) {
         return next(args)
     }
-    const { hostname, path } = args.request
+    const { hostname, path } = request
     const serviceId = getServiceId(context as object)
     const logTail = `(${hostname} ${path})`
     try {
@@ -247,15 +259,15 @@ export async function onDeserialize(next: DeserializeHandler<any, any>, context:
             const err = { ...e, name: e.name, mesage: e.message }
             delete err['stack']
             recordErrorTelemetry(err, serviceId)
-            getLogger().error('API Response %s: %O', logTail, err)
+            logErrorWithHeaders(request, err, logTail)
         }
         throw e
     }
 }
 
-export async function logOnFinalize(next: FinalizeHandler<any, any>, args: any) {
+export async function logOnFinalize(next: FinalizeHandler<any, any>, args: FinalizeHandlerArguments<any>) {
     const request = args.request
-    if (HttpRequest.isInstance(args.request)) {
+    if (HttpRequest.isInstance(request)) {
         const { hostname, path } = request
         const input = partialClone(args.input, 3, ['clientSecret', 'accessToken', 'refreshToken'], '[omitted]')
         getLogger().debug(`API Request (%s %s): %O`, hostname, path, input)
@@ -267,7 +279,7 @@ export function overwriteEndpoint(
     next: BuildHandler<any, any>,
     context: HandlerExecutionContext,
     settings: DevSettings,
-    args: any
+    args: BuildHandlerArguments<any>
 ) {
     const request = args.request
     if (HttpRequest.isInstance(request)) {
@@ -289,10 +301,25 @@ export function overwriteEndpoint(
  * @param args
  * @returns
  */
-export function addKeepAliveHeader(next: BuildHandler<any, any>, args: any) {
+export function addKeepAliveHeader(next: BuildHandler<any, any>, args: BuildHandlerArguments<any>) {
     const request = args.request
     if (HttpRequest.isInstance(request)) {
         request.headers['Connection'] = 'keep-alive'
     }
     return next(args)
+}
+
+export function logErrorWithHeaders(response: HttpRequest, err: Omit<Error, 'stack'>, logTail?: string) {
+    const logHeaderNames = [
+        'x-amzn-requestid',
+        'x-amzn-trace-id',
+        'x-amzn-served-from',
+        'x-cache',
+        'x-amz-cf-id',
+        'x-amz-cf-pop',
+    ]
+    const filteredHeaders = Object.fromEntries(
+        Object.entries(response.headers).filter(([k, v]) => logHeaderNames.includes(k))
+    )
+    getLogger().error('API request failed %s\n headers: %O\n %O', logTail, filteredHeaders, err)
 }
