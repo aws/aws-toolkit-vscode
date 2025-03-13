@@ -7,7 +7,11 @@ import { fs, getNodeExecutableName, BaseLspInstaller, ResourcePaths } from 'aws-
 import path from 'path'
 import { getAmazonQLspConfig } from './config'
 
-export class AmazonQLspInstaller extends BaseLspInstaller.BaseLspInstaller {
+export interface AmazonQResourcePaths extends ResourcePaths {
+    mynahUI: string
+}
+
+export class AmazonQLspInstaller extends BaseLspInstaller.BaseLspInstaller<AmazonQResourcePaths> {
     constructor() {
         super(getAmazonQLspConfig(), 'amazonqLsp')
     }
@@ -17,11 +21,12 @@ export class AmazonQLspInstaller extends BaseLspInstaller.BaseLspInstaller {
         await fs.chmod(resourcePaths.node, 0o755)
     }
 
-    protected override resourcePaths(assetDirectory?: string): ResourcePaths {
+    protected override resourcePaths(assetDirectory?: string): AmazonQResourcePaths {
         if (!assetDirectory) {
             return {
                 lsp: this.config.path ?? '',
                 node: getNodeExecutableName(),
+                mynahUI: '', // TODO make mynah UI configurable
             }
         }
 
@@ -29,6 +34,7 @@ export class AmazonQLspInstaller extends BaseLspInstaller.BaseLspInstaller {
         return {
             lsp: path.join(assetDirectory, 'servers/aws-lsp-codewhisperer.js'),
             node: nodePath,
+            mynahUI: path.join(assetDirectory, 'clients/amazonq-ui.js'),
         }
     }
 }

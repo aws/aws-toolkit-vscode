@@ -7,7 +7,15 @@ import * as vscode from 'vscode'
 import { activateAmazonQCommon, amazonQContextPrefix, deactivateCommon } from './extension'
 import { DefaultAmazonQAppInitContext } from 'aws-core-vscode/amazonq'
 import { activate as activateQGumby } from 'aws-core-vscode/amazonqGumby'
-import { ExtContext, globals, CrashMonitoring, getLogger, isNetworkError, isSageMaker } from 'aws-core-vscode/shared'
+import {
+    ExtContext,
+    globals,
+    CrashMonitoring,
+    getLogger,
+    isNetworkError,
+    isSageMaker,
+    Experiments,
+} from 'aws-core-vscode/shared'
 import { filetypes, SchemaService } from 'aws-core-vscode/sharedNode'
 import { updateDevMode } from 'aws-core-vscode/dev'
 import { CommonAuthViewProvider } from 'aws-core-vscode/login'
@@ -43,8 +51,10 @@ async function activateAmazonQNode(context: vscode.ExtensionContext) {
         extensionContext: context,
     }
 
-    await activateCWChat(context)
-    await activateQGumby(extContext as ExtContext)
+    if (!Experiments.instance.get('amazonqChatLSP', false)) {
+        await activateCWChat(context)
+        await activateQGumby(extContext as ExtContext)
+    }
 
     const authProvider = new CommonAuthViewProvider(
         context,

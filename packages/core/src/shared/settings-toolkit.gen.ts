@@ -42,7 +42,8 @@ export const toolkitSettings = {
     },
     "aws.experiments": {
         "jsonResourceModification": {},
-        "amazonqLSP": {}
+        "amazonqLSP": {},
+        "amazonqChatLSP": {}
     },
     "aws.resources.enabledResources": {},
     "aws.lambda.recentlyUploaded": {},
