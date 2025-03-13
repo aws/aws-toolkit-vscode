@@ -8,11 +8,11 @@ import { ResourcePaths } from '../../shared/lsp/types'
 import { getNodeExecutableName } from '../../shared/lsp/utils/platform'
 import { fs } from '../../shared/fs/fs'
 import { BaseLspInstaller } from '../../shared/lsp/baseLspInstaller'
-import { getAmazonQWorkspaceLspConfig } from './config'
+import { getAmazonQWorkspaceLspConfig, LspConfig } from './config'
 
-export class WorkspaceLSPInstaller extends BaseLspInstaller {
-    constructor() {
-        super(getAmazonQWorkspaceLspConfig(), 'amazonqWorkspaceLsp')
+export class WorkspaceLspInstaller extends BaseLspInstaller {
+    constructor(lspConfig: LspConfig = getAmazonQWorkspaceLspConfig()) {
+        super(lspConfig, 'amazonqWorkspaceLsp')
     }
 
     protected override async postInstall(assetDirectory: string): Promise<void> {

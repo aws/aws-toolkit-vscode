@@ -6,10 +6,11 @@
 import { fs, getNodeExecutableName, BaseLspInstaller, ResourcePaths } from 'aws-core-vscode/shared'
 import path from 'path'
 import { getAmazonQLspConfig } from './config'
+import { LspConfig } from 'aws-core-vscode/amazonq'
 
 export class AmazonQLspInstaller extends BaseLspInstaller.BaseLspInstaller {
-    constructor() {
-        super(getAmazonQLspConfig(), 'amazonqLsp')
+    constructor(lspConfig: LspConfig = getAmazonQLspConfig()) {
+        super(lspConfig, 'amazonqLsp')
     }
 
     protected override async postInstall(assetDirectory: string): Promise<void> {

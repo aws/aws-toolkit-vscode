@@ -7,13 +7,12 @@ import * as vscode from 'vscode'
 import * as path from 'path'
 import { getLogger } from '../../shared/logger/logger'
 import { CurrentWsFolders, collectFilesForIndex } from '../../shared/utilities/workspaceUtils'
-import { LspClient } from './lspClient'
-import { activate as activateLsp } from './lspClient'
+import { activate as activateLsp, LspClient } from './lspClient'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import globals, { isWeb } from '../../shared/extensionGlobals'
 import { isAmazonInternalOs } from '../../shared/vscode/env'
-import { WorkspaceLSPInstaller } from './workspaceInstaller'
+import { WorkspaceLspInstaller } from './workspaceInstaller'
 import { lspSetupStage } from '../../shared/lsp/utils/setupStage'
 import { RelevantTextDocumentAddition } from '../../codewhispererChat/controllers/chat/model'
 
@@ -196,7 +195,7 @@ export class LspController {
 
     private async setupLsp(context: vscode.ExtensionContext) {
         await lspSetupStage('all', async () => {
-            const installResult = await new WorkspaceLSPInstaller().resolve()
+            const installResult = await new WorkspaceLspInstaller().resolve()
             await lspSetupStage('launch', async () => activateLsp(context, installResult.resourcePaths))
             this.logger.info('LspController: LSP activated')
         })
