@@ -1,4 +1,0 @@
-{
-	"type": "Feature",
-	"description": "Amazon Q Chat: You can now keep a \"library\" of prompt files in your home directory under `~/.aws/amazonq/prompts` and then quickly add them to the context using `@` on any project you’re working on. Prompt files are in markdown (`.md`) format."
-}
