@@ -7,9 +7,11 @@ import globals from '../extensionGlobals'
 import { AwsClient, AwsClientConstructor, AwsCommand, AwsCommandConstructor } from '../awsClientBuilderV3'
 import { PaginationConfiguration, Paginator } from '@aws-sdk/types'
 import { AsyncCollection, toCollection } from '../utilities/asyncCollection'
-import { isDefined } from '../utilities/tsUtils'
-import { withPerfLogOnFail } from '../logger/perfLogger'
+import { hasKey, isDefined } from '../utilities/tsUtils'
+import { PerfLog } from '../logger/perfLogger'
 import { truncateProps } from '../utilities/textUtilities'
+import { getLogger } from '../logger/logger'
+import { ToolkitError } from '../errors'
 
 type SDKPaginator<C, CommandInput extends object, CommandOutput extends object> = (
     config: Omit<PaginationConfiguration, 'client'> & { client: C },
@@ -37,13 +39,25 @@ export abstract class ClientWrapper<C extends AwsClient> implements vscode.Dispo
         CommandOptions extends CommandInput,
         Command extends AwsCommand<CommandInput, CommandOutput>,
     >(command: AwsCommandConstructor<CommandInput, Command>, commandOptions: CommandOptions): Promise<CommandOutput> {
-        const makeRequest = withPerfLogOnFail(
-            'API Request',
-            () => this.getClient().send(new command(commandOptions)),
-            truncateProps(commandOptions, 20, ['nextToken'])
-        )
-
-        return makeRequest()
+        const action = 'API Request'
+        const perflog = new PerfLog(action)
+        return await this.getClient()
+            .send(new command(commandOptions))
+            .catch((e: Error) => {
+                const errWithoutStack = { ...e, name: e.name, message: e.message }
+                delete errWithoutStack['stack']
+                const timecost = perflog.elapsed().toFixed(1)
+                getLogger().error(
+                    `${action} failed (time: %dms) \nparams: %O\nerror: %O`,
+                    timecost,
+                    truncateProps(commandOptions, 20, ['nextToken']),
+                    errWithoutStack
+                )
+                throw new ToolkitError(`${action}: ${errWithoutStack.message}`, {
+                    code: extractCode(errWithoutStack),
+                    cause: errWithoutStack,
+                })
+            })
     }
 
     protected makePaginatedRequest<CommandInput extends object, CommandOutput extends object, Output extends object>(
@@ -72,4 +86,12 @@ export abstract class ClientWrapper<C extends AwsClient> implements vscode.Dispo
     public dispose() {
         this.client?.destroy()
     }
+}
+
+function extractCode(e: Error): string {
+    return hasKey(e, 'code') && typeof e['code'] === 'string'
+        ? e.code
+        : hasKey(e, 'Code') && typeof e['Code'] === 'string'
+          ? e.Code
+          : e.name
 }

@@ -263,13 +263,13 @@ export async function onDeserialize<Input extends object, Output extends object>
             const err = { ...e, name: e.name, mesage: e.message }
             delete err['stack']
             recordErrorTelemetry(err, serviceId)
-            logErrorWithHeaders(request, err, logTail)
+            getLogger().error(`API Error %s: %O`, logTail, err)
         }
         throw e
     }
 }
 
-export async function logOnFinalize<Input extends object, Output extends object>(
+export function logOnFinalize<Input extends object, Output extends object>(
     next: FinalizeHandler<Input, Output>,
     args: FinalizeHandlerArguments<Input>
 ) {
@@ -277,7 +277,13 @@ export async function logOnFinalize<Input extends object, Output extends object>
     if (HttpRequest.isInstance(request)) {
         const { hostname, path } = request
         const input = partialClone(args.input, 3, ['clientSecret', 'accessToken', 'refreshToken'], '[omitted]')
-        getLogger().debug(`API Request (%s %s): %O`, hostname, path, input)
+        getLogger().debug(
+            `API Request (%s %s):\n headers: %O\n input: %O`,
+            hostname,
+            path,
+            filterRequestHeaders(request),
+            input
+        )
     }
     return next(args)
 }
@@ -319,7 +325,7 @@ export function addKeepAliveHeader<Input extends object, Output extends object>(
     return next(args)
 }
 
-export function logErrorWithHeaders(response: HttpRequest, err: Omit<Error, 'stack'>, logTail?: string) {
+function filterRequestHeaders(request: HttpRequest) {
     const logHeaderNames = [
         'x-amzn-requestid',
         'x-amzn-trace-id',
@@ -328,8 +334,5 @@ export function logErrorWithHeaders(response: HttpRequest, err: Omit<Error, 'sta
         'x-amz-cf-id',
         'x-amz-cf-pop',
     ]
-    const filteredHeaders = Object.fromEntries(
-        Object.entries(response.headers).filter(([k, v]) => logHeaderNames.includes(k))
-    )
-    getLogger().error('API request failed %s\n headers: %O\n %O', logTail, filteredHeaders, err)
+    return Object.fromEntries(Object.entries(request.headers).filter(([k, _]) => logHeaderNames.includes(k)))
 }

@@ -19,7 +19,6 @@ import {
     logOnFinalize,
     overwriteEndpoint,
     recordErrorTelemetry,
-    logErrorWithHeaders,
 } from '../../shared/awsClientBuilderV3'
 import { Client } from '@aws-sdk/smithy-client'
 import { DevSettings, extensionVersion } from '../../shared'
@@ -281,20 +280,12 @@ describe('AwsClientBuilderV3', function () {
             assert.strictEqual(newArgs.request.path, '/testPath')
         })
 
-        it('logs specific headers on request failure', async function () {
-            const response = new HttpRequest({
-                body: 'test body',
-                headers: {
-                    'x-amzn-RequestId': 'fakeId',
-                    'x-amzn-requestid': 'realId',
-                    'x-amz-id-2': 'otherId',
-                },
-            })
+        it('logs specific headers in the filter list', async function () {
+            const next = async (args: any) => args
+            await logOnFinalize(next, args)
 
-            logErrorWithHeaders(response, new Error('test error'), 'host-path')
-            assertLogsContain('realId', false, 'error')
-            assert.throws(() => assertLogsContain('fakeId', false, 'error'))
-            assert.throws(() => assertLogsContain('otherId', false, 'error'))
+            assertLogsContain('realId', false, 'debug')
+            assert.throws(() => assertLogsContain('fakeId', false, 'debug'))
         })
     })
 
