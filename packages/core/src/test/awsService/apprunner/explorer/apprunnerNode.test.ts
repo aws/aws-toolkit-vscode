@@ -8,7 +8,7 @@ import * as FakeTimers from '@sinonjs/fake-timers'
 import * as sinon from 'sinon'
 import { AppRunnerNode } from '../../../../awsService/apprunner/explorer/apprunnerNode'
 import { AppRunnerServiceNode } from '../../../../awsService/apprunner/explorer/apprunnerServiceNode'
-import { AppRunnerClient, AppRunnerServiceSummary } from '../../../../shared/clients/apprunner'
+import { AppRunnerClient, ServiceSummary } from '../../../../shared/clients/apprunner'
 import { PlaceholderNode } from '../../../../shared/treeview/nodes/placeholderNode'
 import { AWSTreeNodeBase } from '../../../../shared/treeview/nodes/awsTreeNodeBase'
 import { installFakeClock } from '../../../testUtil'
@@ -20,7 +20,7 @@ describe('AppRunnerNode', function () {
     let clock: FakeTimers.InstalledClock
     let refreshStub: sinon.SinonStub<[], void>
 
-    const exampleSummaries: AppRunnerServiceSummary[] = [
+    const exampleSummaries: ServiceSummary[] = [
         {
             ServiceName: 'test1',
             Status: 'RUNNING',

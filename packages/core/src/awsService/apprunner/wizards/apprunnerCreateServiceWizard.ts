@@ -16,13 +16,9 @@ import { makeDeploymentButton } from './deploymentButton'
 import { createExitPrompter } from '../../../shared/ui/common/exitPrompter'
 import { IamClient } from '../../../shared/clients/iam'
 import { DefaultEcrClient } from '../../../shared/clients/ecrClient'
-import {
-    AppRunnerClient,
-    AppRunnerCreateServiceRequest,
-    AppRunnerSourceConfiguration,
-} from '../../../shared/clients/apprunner'
+import { AppRunnerClient, CreateServiceRequest, SourceConfiguration } from '../../../shared/clients/apprunner'
 import { getAppRunnerCreateServiceDocUrl } from '../../../shared/extensionUtilities'
-import { InstanceConfiguration } from '@aws-sdk/client-apprunner'
+import * as AppRunner from '@aws-sdk/client-apprunner'
 
 const localize = nls.loadMessageBundle()
 
@@ -58,14 +54,14 @@ const validateName = (name: string) => {
     return undefined
 }
 
-function createInstanceStep(): Prompter<InstanceConfiguration> {
+function createInstanceStep(): Prompter<AppRunner.InstanceConfiguration> {
     const enumerations = [
         [1, 2],
         [1, 3],
         [2, 4],
     ]
 
-    const items: picker.DataQuickPickItem<InstanceConfiguration>[] = enumerations.map((e) => ({
+    const items: picker.DataQuickPickItem<AppRunner.InstanceConfiguration>[] = enumerations.map((e) => ({
         label: `${e[0]} vCPUs, ${e[1]} GBs Memory`,
         data: { Cpu: `${e[0]} vCPU`, Memory: `${e[1]} GB` },
     }))
@@ -78,10 +74,10 @@ function createInstanceStep(): Prompter<InstanceConfiguration> {
 
 function createSourcePrompter(
     autoDeployButton: QuickInputToggleButton
-): Prompter<AppRunnerCreateServiceRequest['SourceConfiguration']> {
+): Prompter<CreateServiceRequest['SourceConfiguration']> {
     const ecrPath = {
         label: 'ECR',
-        data: { ImageRepository: {} } as AppRunnerSourceConfiguration,
+        data: { ImageRepository: {} } as SourceConfiguration,
         detail: localize(
             'AWS.apprunner.createService.ecr.detail',
             'Create a service from a public or private Elastic Container Registry repository'
@@ -90,7 +86,7 @@ function createSourcePrompter(
 
     const repositoryPath = {
         label: 'Repository',
-        data: { CodeRepository: {} } as AppRunnerSourceConfiguration,
+        data: { CodeRepository: {} } as SourceConfiguration,
         detail: localize('AWS.apprunner.createService.repository.detail', 'Create a service from a GitHub repository'),
     }
 
@@ -100,11 +96,11 @@ function createSourcePrompter(
     })
 }
 
-export class CreateAppRunnerServiceWizard extends Wizard<AppRunnerCreateServiceRequest> {
+export class CreateAppRunnerServiceWizard extends Wizard<CreateServiceRequest> {
     public constructor(
         region: string,
-        initState: WizardState<AppRunnerCreateServiceRequest> = {},
-        implicitState: WizardState<AppRunnerCreateServiceRequest> = {},
+        initState: WizardState<CreateServiceRequest> = {},
+        implicitState: WizardState<CreateServiceRequest> = {},
         clients = {
             iam: new IamClient(region),
             ecr: new DefaultEcrClient(region),

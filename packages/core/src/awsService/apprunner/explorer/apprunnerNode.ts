@@ -8,13 +8,8 @@ import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { AppRunnerServiceNode } from './apprunnerServiceNode'
 import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
 import * as nls from 'vscode-nls'
-import {
-    AppRunnerClient,
-    AppRunnerCreateServiceRequest,
-    AppRunnerServiceSummary,
-} from '../../../shared/clients/apprunner'
+import { AppRunnerClient, CreateServiceRequest, ServiceSummary } from '../../../shared/clients/apprunner'
 import { PollingSet } from '../../../shared/utilities/pollingSet'
-import { ListServicesRequest } from '@aws-sdk/client-apprunner'
 
 const localize = nls.loadMessageBundle()
 
@@ -46,9 +41,9 @@ export class AppRunnerNode extends AWSTreeNodeBase {
         })
     }
 
-    private async getServiceSummaries(request: ListServicesRequest = {}): Promise<AppRunnerServiceSummary[]> {
+    private async getServiceSummaries(): Promise<ServiceSummary[]> {
         // TODO: avoid resolving all services at once.
-        const serviceCollection = this.client.paginateServices(request)
+        const serviceCollection = this.client.paginateServices({})
         return await serviceCollection.flatten().promise()
     }
 
@@ -90,7 +85,7 @@ export class AppRunnerNode extends AWSTreeNodeBase {
         this.pollingSet.delete(id)
     }
 
-    public async createService(request: AppRunnerCreateServiceRequest): Promise<void> {
+    public async createService(request: CreateServiceRequest): Promise<void> {
         await this.client.createService(request)
         this.refresh()
     }

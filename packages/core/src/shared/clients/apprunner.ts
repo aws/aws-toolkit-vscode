@@ -3,140 +3,115 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import {
-    AppRunnerClient as AppRunnerClientSDK,
-    CodeConfiguration,
-    CodeConfigurationValues,
-    CodeRepository,
-    ConnectionSummary,
-    CreateConnectionCommand,
-    CreateConnectionRequest,
-    CreateConnectionResponse,
-    CreateServiceCommand,
-    CreateServiceRequest,
-    CreateServiceResponse,
-    DeleteServiceCommand,
-    DeleteServiceRequest,
-    DeleteServiceResponse,
-    DescribeServiceCommand,
-    DescribeServiceRequest,
-    DescribeServiceResponse,
-    ImageRepository,
-    ListConnectionsCommand,
-    ListConnectionsRequest,
-    ListConnectionsResponse,
-    ListOperationsCommand,
-    ListOperationsRequest,
-    ListOperationsResponse,
-    ListServicesCommand,
-    ListServicesRequest,
-    ListServicesResponse,
-    paginateListServices,
-    PauseServiceCommand,
-    PauseServiceRequest,
-    PauseServiceResponse,
-    ResumeServiceCommand,
-    ResumeServiceRequest,
-    ResumeServiceResponse,
-    ServiceSummary,
-    SourceCodeVersion,
-    SourceConfiguration,
-    StartDeploymentCommand,
-    StartDeploymentRequest,
-    StartDeploymentResponse,
-    UpdateServiceCommand,
-    UpdateServiceRequest,
-    UpdateServiceResponse,
-} from '@aws-sdk/client-apprunner'
+import * as AppRunner from '@aws-sdk/client-apprunner'
 import { ClientWrapper } from './clientWrapper'
 import { hasProps, RequiredProps } from '../utilities/tsUtils'
 import { AsyncCollection } from '../utilities/asyncCollection'
 
-export type AppRunnerServiceSummary = RequiredProps<
-    ServiceSummary,
+export type ServiceSummary = RequiredProps<
+    AppRunner.ServiceSummary,
     'ServiceName' | 'ServiceArn' | 'Status' | 'ServiceId'
 >
-export type AppRunnerImageRepository = RequiredProps<ImageRepository, 'ImageIdentifier' | 'ImageRepositoryType'>
+export type ImageRepository = RequiredProps<AppRunner.ImageRepository, 'ImageIdentifier' | 'ImageRepositoryType'>
 
-export type AppRunnerCodeConfigurationValues = RequiredProps<CodeConfigurationValues, 'Runtime'>
-interface AppRunnerCodeConfiguration extends RequiredProps<CodeConfiguration, 'ConfigurationSource'> {
-    CodeConfigurationValues: AppRunnerCodeConfigurationValues
+export type CodeConfigurationValues = RequiredProps<AppRunner.CodeConfigurationValues, 'Runtime'>
+interface CodeConfiguration extends RequiredProps<AppRunner.CodeConfiguration, 'ConfigurationSource'> {
+    CodeConfigurationValues: CodeConfigurationValues
 }
-export interface AppRunnerCodeRepository extends RequiredProps<CodeRepository, 'RepositoryUrl'> {
-    SourceCodeVersion: RequiredProps<SourceCodeVersion, 'Type' | 'Value'>
-    CodeConfiguration: AppRunnerCodeConfiguration
+export interface CodeRepository extends RequiredProps<AppRunner.CodeRepository, 'RepositoryUrl'> {
+    SourceCodeVersion: RequiredProps<AppRunner.SourceCodeVersion, 'Type' | 'Value'>
+    CodeConfiguration: CodeConfiguration
 }
-export interface AppRunnerSourceConfiguration extends SourceConfiguration {
-    CodeRepository?: AppRunnerCodeRepository
+export interface SourceConfiguration extends AppRunner.SourceConfiguration {
+    CodeRepository?: CodeRepository
     ImageRepository?: RequiredProps<ImageRepository, 'ImageIdentifier' | 'ImageRepositoryType'>
 }
-export interface AppRunnerCreateServiceRequest extends RequiredProps<CreateServiceRequest, 'ServiceName'> {
-    SourceConfiguration: AppRunnerSourceConfiguration
+export interface CreateServiceRequest extends RequiredProps<AppRunner.CreateServiceRequest, 'ServiceName'> {
+    SourceConfiguration: SourceConfiguration
 }
 
 // Note: Many of the requests return a type of Service, but Service <: ServiceSummary.
-type WithServiceSummary<T> = Omit<T, 'Service'> & { Service: AppRunnerServiceSummary }
-export class AppRunnerClient extends ClientWrapper<AppRunnerClientSDK> {
+type WithServiceSummary<T> = Omit<T, 'Service'> & { Service: ServiceSummary }
+export class AppRunnerClient extends ClientWrapper<AppRunner.AppRunnerClient> {
     public constructor(regionCode: string) {
-        super(regionCode, AppRunnerClientSDK)
+        super(regionCode, AppRunner.AppRunnerClient)
     }
 
     public async createService(
-        request: AppRunnerCreateServiceRequest
-    ): Promise<WithServiceSummary<CreateServiceResponse>> {
-        return await this.makeRequest(CreateServiceCommand, request)
+        request: CreateServiceRequest
+    ): Promise<WithServiceSummary<AppRunner.CreateServiceResponse>> {
+        return await this.makeRequest(AppRunner.CreateServiceCommand, request)
     }
 
-    public async listServices(request: ListServicesRequest): Promise<ListServicesResponse> {
-        return await this.makeRequest(ListServicesCommand, request)
+    public async listServices(request: AppRunner.ListServicesRequest): Promise<AppRunner.ListServicesResponse> {
+        return await this.makeRequest(AppRunner.ListServicesCommand, request)
     }
 
-    public paginateServices(request: ListServicesRequest): AsyncCollection<AppRunnerServiceSummary[]> {
-        return this.makePaginatedRequest(paginateListServices, request, (page) => page.ServiceSummaryList).map(
-            (summaries) => summaries.filter(isServiceSummary)
-        )
+    public paginateServices(request: AppRunner.ListServicesRequest): AsyncCollection<ServiceSummary[]> {
+        return this.makePaginatedRequest(
+            AppRunner.paginateListServices,
+            request,
+            (page) => page.ServiceSummaryList
+        ).map((summaries) => summaries.filter(isServiceSummary))
 
-        function isServiceSummary(s: ServiceSummary): s is AppRunnerServiceSummary {
+        function isServiceSummary(s: AppRunner.ServiceSummary): s is ServiceSummary {
             return hasProps(s, 'ServiceName', 'ServiceArn', 'Status', 'ServiceId')
         }
     }
 
-    public async pauseService(request: PauseServiceRequest): Promise<WithServiceSummary<PauseServiceResponse>> {
-        return await this.makeRequest(PauseServiceCommand, request)
+    public async pauseService(
+        request: AppRunner.PauseServiceRequest
+    ): Promise<WithServiceSummary<AppRunner.PauseServiceResponse>> {
+        return await this.makeRequest(AppRunner.PauseServiceCommand, request)
     }
 
-    public async resumeService(request: ResumeServiceRequest): Promise<WithServiceSummary<ResumeServiceResponse>> {
-        return await this.makeRequest(ResumeServiceCommand, request)
+    public async resumeService(
+        request: AppRunner.ResumeServiceRequest
+    ): Promise<WithServiceSummary<AppRunner.ResumeServiceResponse>> {
+        return await this.makeRequest(AppRunner.ResumeServiceCommand, request)
     }
 
-    public async updateService(request: UpdateServiceRequest): Promise<WithServiceSummary<UpdateServiceResponse>> {
-        return await this.makeRequest(UpdateServiceCommand, request)
+    public async updateService(
+        request: AppRunner.UpdateServiceRequest
+    ): Promise<WithServiceSummary<AppRunner.UpdateServiceResponse>> {
+        return await this.makeRequest(AppRunner.UpdateServiceCommand, request)
     }
 
-    public async createConnection(request: CreateConnectionRequest): Promise<CreateConnectionResponse> {
-        return await this.makeRequest(CreateConnectionCommand, request)
+    public async createConnection(
+        request: AppRunner.CreateConnectionRequest
+    ): Promise<AppRunner.CreateConnectionResponse> {
+        return await this.makeRequest(AppRunner.CreateConnectionCommand, request)
     }
 
-    public async listConnections(request: ListConnectionsRequest = {}): Promise<ConnectionSummary[]> {
-        const result: ListConnectionsResponse = await this.makeRequest(ListConnectionsCommand, request)
+    public async listConnections(
+        request: AppRunner.ListConnectionsRequest = {}
+    ): Promise<AppRunner.ConnectionSummary[]> {
+        const result: AppRunner.ListConnectionsResponse = await this.makeRequest(
+            AppRunner.ListConnectionsCommand,
+            request
+        )
         return result.ConnectionSummaryList ?? []
     }
 
     public async describeService(
-        request: DescribeServiceRequest
-    ): Promise<WithServiceSummary<DescribeServiceResponse>> {
-        return await this.makeRequest(DescribeServiceCommand, request)
+        request: AppRunner.DescribeServiceRequest
+    ): Promise<WithServiceSummary<AppRunner.DescribeServiceResponse>> {
+        return await this.makeRequest(AppRunner.DescribeServiceCommand, request)
     }
 
-    public async startDeployment(request: StartDeploymentRequest): Promise<StartDeploymentResponse> {
-        return await this.makeRequest(StartDeploymentCommand, request)
+    public async startDeployment(
+        request: AppRunner.StartDeploymentRequest
+    ): Promise<AppRunner.StartDeploymentResponse> {
+        return await this.makeRequest(AppRunner.StartDeploymentCommand, request)
     }
 
-    public async listOperations(request: ListOperationsRequest): Promise<ListOperationsResponse> {
-        return await this.makeRequest(ListOperationsCommand, request)
+    public async listOperations(request: AppRunner.ListOperationsRequest): Promise<AppRunner.ListOperationsResponse> {
+        return await this.makeRequest(AppRunner.ListOperationsCommand, request)
     }
 
-    public async deleteService(request: DeleteServiceRequest): Promise<WithServiceSummary<DeleteServiceResponse>> {
-        return this.makeRequest(DeleteServiceCommand, request)
+    public async deleteService(
+        request: AppRunner.DeleteServiceRequest
+    ): Promise<WithServiceSummary<AppRunner.DeleteServiceResponse>> {
+        return this.makeRequest(AppRunner.DeleteServiceCommand, request)
     }
 }

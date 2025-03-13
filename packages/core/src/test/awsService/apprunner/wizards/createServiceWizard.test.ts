@@ -8,10 +8,10 @@ import { CreateAppRunnerServiceWizard } from '../../../../awsService/apprunner/w
 import { stub } from '../../../utilities/stubber'
 import { IamClient } from '../../../../shared/clients/iam'
 import { DefaultEcrClient } from '../../../../shared/clients/ecrClient'
-import { AppRunnerClient, AppRunnerCreateServiceRequest } from '../../../../shared/clients/apprunner'
+import { AppRunnerClient, CreateServiceRequest } from '../../../../shared/clients/apprunner'
 
 describe('CreateServiceWizard', function () {
-    let tester: WizardTester<AppRunnerCreateServiceRequest>
+    let tester: WizardTester<CreateServiceRequest>
 
     beforeEach(async function () {
         const regionCode = 'us-east-1'

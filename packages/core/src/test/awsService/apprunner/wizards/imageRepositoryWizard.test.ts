@@ -9,11 +9,10 @@ import {
     ImageIdentifierForm,
     TaggedEcrRepository,
 } from '../../../../awsService/apprunner/wizards/imageRepositoryWizard'
-import { ImageRepository } from '@aws-sdk/client-apprunner'
-import { AppRunnerSourceConfiguration } from '../../../../shared/clients/apprunner'
+import { ImageRepository, SourceConfiguration } from '../../../../shared/clients/apprunner'
 
 describe('AppRunnerImageRepositoryWizard', function () {
-    let tester: WizardTester<AppRunnerSourceConfiguration>
+    let tester: WizardTester<SourceConfiguration>
     let repoTester: WizardTester<ImageRepository>
 
     beforeEach(async function () {
