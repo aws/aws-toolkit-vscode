@@ -22,10 +22,8 @@ import {
     BuildHandler,
     BuildMiddleware,
     DeserializeHandler,
-    DeserializeMiddleware,
     Handler,
     FinalizeHandler,
-    FinalizeRequestMiddleware,
     HandlerExecutionContext,
     MetadataBearer,
     MiddlewareStack,
@@ -216,30 +214,36 @@ export function recordErrorTelemetry(err: Error, serviceName?: string) {
     })
 }
 
-export const defaultDeserializeMiddleware: DeserializeMiddleware<any, any> =
-    (next: DeserializeHandler<any, any>, context: HandlerExecutionContext) =>
-    async (args: DeserializeHandlerArguments<any>) =>
-        onDeserialize(next, context, args)
+export function defaultDeserializeMiddleware<Input extends object, Output extends object>(
+    next: DeserializeHandler<Input, Output>,
+    context: HandlerExecutionContext
+) {
+    return async (args: DeserializeHandlerArguments<Input>) => onDeserialize(next, context, args)
+}
 
-export const finalizeLoggingMiddleware: FinalizeRequestMiddleware<any, any> =
-    (next: FinalizeHandler<any, any>) => async (args: FinalizeHandlerArguments<any>) =>
-        logOnFinalize(next, args)
+export function finalizeLoggingMiddleware<Input extends object, Output extends object>(
+    next: FinalizeHandler<Input, Output>
+) {
+    return async (args: FinalizeHandlerArguments<Input>) => logOnFinalize(next, args)
+}
 
-function getEndpointMiddleware(settings: DevSettings = DevSettings.instance): BuildMiddleware<any, any> {
-    return (next: BuildHandler<any, any>, context: HandlerExecutionContext) =>
-        async (args: BuildHandlerArguments<any>) =>
+function getEndpointMiddleware<Input extends object, Output extends object>(
+    settings: DevSettings = DevSettings.instance
+): BuildMiddleware<Input, Output> {
+    return (next: BuildHandler<Input, Output>, context: HandlerExecutionContext) =>
+        async (args: BuildHandlerArguments<Input>) =>
             overwriteEndpoint(next, context, settings, args)
 }
 
-const keepAliveMiddleware: BuildMiddleware<any, any> =
-    (next: BuildHandler<any, any>) => async (args: BuildHandlerArguments<any>) =>
-        addKeepAliveHeader(next, args)
+function keepAliveMiddleware<Input extends object, Output extends object>(next: BuildHandler<Input, Output>) {
+    return async (args: BuildHandlerArguments<Input>) => addKeepAliveHeader(next, args)
+}
 
-export async function onDeserialize(
-    next: DeserializeHandler<any, any>,
+export async function onDeserialize<Input extends object, Output extends object>(
+    next: DeserializeHandler<Input, Output>,
     context: HandlerExecutionContext,
-    args: DeserializeHandlerArguments<any>
-): Promise<DeserializeHandlerOutput<any>> {
+    args: DeserializeHandlerArguments<Input>
+): Promise<DeserializeHandlerOutput<Output>> {
     const request = args.request
     if (!HttpRequest.isInstance(request)) {
         return next(args)
@@ -265,7 +269,10 @@ export async function onDeserialize(
     }
 }
 
-export async function logOnFinalize(next: FinalizeHandler<any, any>, args: FinalizeHandlerArguments<any>) {
+export async function logOnFinalize<Input extends object, Output extends object>(
+    next: FinalizeHandler<Input, Output>,
+    args: FinalizeHandlerArguments<Input>
+) {
     const request = args.request
     if (HttpRequest.isInstance(request)) {
         const { hostname, path } = request
@@ -275,11 +282,11 @@ export async function logOnFinalize(next: FinalizeHandler<any, any>, args: Final
     return next(args)
 }
 
-export function overwriteEndpoint(
-    next: BuildHandler<any, any>,
+export function overwriteEndpoint<Input extends object, Output extends object>(
+    next: BuildHandler<Input, Output>,
     context: HandlerExecutionContext,
     settings: DevSettings,
-    args: BuildHandlerArguments<any>
+    args: BuildHandlerArguments<Input>
 ) {
     const request = args.request
     if (HttpRequest.isInstance(request)) {
@@ -301,7 +308,10 @@ export function overwriteEndpoint(
  * @param args
  * @returns
  */
-export function addKeepAliveHeader(next: BuildHandler<any, any>, args: BuildHandlerArguments<any>) {
+export function addKeepAliveHeader<Input extends object, Output extends object>(
+    next: BuildHandler<Input, Output>,
+    args: BuildHandlerArguments<Input>
+) {
     const request = args.request
     if (HttpRequest.isInstance(request)) {
         request.headers['Connection'] = 'keep-alive'
