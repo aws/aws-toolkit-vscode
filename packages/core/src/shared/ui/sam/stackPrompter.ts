@@ -4,7 +4,7 @@
  */
 import { StackSummary } from 'aws-sdk/clients/cloudformation'
 import { getAwsConsoleUrl } from '../../awsConsole'
-import { CloudFormationClient } from '../../clients/cloudFormationClient'
+import { CloudFormationClient } from '../../clients/cloudFormation'
 import * as vscode from 'vscode'
 import { createCommonButtons } from '../buttons'
 import { createQuickPick } from '../pickerPrompter'

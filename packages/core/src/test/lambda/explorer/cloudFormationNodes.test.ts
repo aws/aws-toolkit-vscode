@@ -12,7 +12,7 @@ import {
     contextValueCloudformationLambdaFunction,
 } from '../../../lambda/explorer/cloudFormationNodes'
 import { LambdaFunctionNode } from '../../../lambda/explorer/lambdaFunctionNode'
-import { CloudFormationClient } from '../../../shared/clients/cloudFormationClient'
+import { CloudFormationClient } from '../../../shared/clients/cloudFormation'
 import { DefaultLambdaClient } from '../../../shared/clients/lambdaClient'
 import globals from '../../../shared/extensionGlobals'
 import { TestAWSTreeNode } from '../../shared/treeview/nodes/testAWSTreeNode'

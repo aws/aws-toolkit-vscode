@@ -11,7 +11,7 @@ import * as SamConfigModule from '../../../shared/sam/config'
 import * as ResolveEnvModule from '../../../shared/env/resolveEnv'
 import * as ProcessUtilsModule from '../../../shared/utilities/processUtils'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
-import * as CloudFormationClientModule from '../../../shared/clients/cloudFormationClient'
+import * as CloudFormationClientModule from '../../../shared/clients/cloudFormation'
 
 import {
     createEnvironmentPrompter,
@@ -44,7 +44,7 @@ import { getTestWindow } from '../vscode/window'
 import { S3Client } from '../../../shared/clients/s3'
 import { RequiredProps } from '../../../shared/utilities/tsUtils'
 import S3 from 'aws-sdk/clients/s3'
-import { CloudFormationClient } from '../../../shared/clients/cloudFormationClient'
+import { CloudFormationClient } from '../../../shared/clients/cloudFormation'
 import CloudFormation from 'aws-sdk/clients/cloudformation'
 import { intoCollection } from '../../../shared/utilities/collectionUtils'
 import { SamConfig, Environment, parseConfig } from '../../../shared/sam/config'

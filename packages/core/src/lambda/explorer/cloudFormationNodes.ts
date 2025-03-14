@@ -9,7 +9,7 @@ const localize = nls.loadMessageBundle()
 import { CloudFormation, Lambda } from 'aws-sdk'
 import * as os from 'os'
 import * as vscode from 'vscode'
-import { CloudFormationClient } from '../../shared/clients/cloudFormationClient'
+import { CloudFormationClient } from '../../shared/clients/cloudFormation'
 import { DefaultLambdaClient } from '../../shared/clients/lambdaClient'
 
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'

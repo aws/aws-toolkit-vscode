@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-import { CloudFormationClient, CloudFormationClient } from '../../../shared/clients/cloudFormationClient'
+import { CloudFormationClient, CloudFormationClient } from '../../../shared/clients/cloudFormation'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
 import { makeChildrenNodes } from '../../../shared/treeview/utils'

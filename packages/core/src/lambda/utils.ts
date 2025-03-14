@@ -9,7 +9,7 @@ const localize = nls.loadMessageBundle()
 import xml2js = require('xml2js')
 import { CloudFormation, Lambda } from 'aws-sdk'
 import * as vscode from 'vscode'
-import { CloudFormationClient } from '../shared/clients/cloudFormationClient'
+import { CloudFormationClient } from '../shared/clients/cloudFormation'
 import { LambdaClient } from '../shared/clients/lambdaClient'
 import { getFamily, getNodeMajorVersion, RuntimeFamily } from './models/samLambdaRuntime'
 import { getLogger } from '../shared/logger/logger'
