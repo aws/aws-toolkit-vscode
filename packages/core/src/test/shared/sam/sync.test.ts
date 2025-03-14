@@ -44,7 +44,7 @@ import { getTestWindow } from '../vscode/window'
 import { S3Client } from '../../../shared/clients/s3'
 import { RequiredProps } from '../../../shared/utilities/tsUtils'
 import S3 from 'aws-sdk/clients/s3'
-import { DefaultCloudFormationClient } from '../../../shared/clients/cloudFormationClient'
+import { CloudFormationClient } from '../../../shared/clients/cloudFormationClient'
 import CloudFormation from 'aws-sdk/clients/cloudformation'
 import { intoCollection } from '../../../shared/utilities/collectionUtils'
 import { SamConfig, Environment, parseConfig } from '../../../shared/sam/config'
@@ -132,7 +132,7 @@ describe('SAM SyncWizard', async () => {
     let workspaceFolder: vscode.WorkspaceFolder
     let templateFile: vscode.Uri
 
-    let mockDefaultCFNClient: sinon.SinonStubbedInstance<DefaultCloudFormationClient>
+    let mockDefaultCFNClient: sinon.SinonStubbedInstance<CloudFormationClient>
     let mockDefaultS3Client: sinon.SinonStubbedInstance<S3Client>
     let registry: CloudFormationTemplateRegistry
 
@@ -143,7 +143,7 @@ describe('SAM SyncWizard', async () => {
         sandbox = sinon.createSandbox()
 
         // Simulate return of deployed stacks
-        mockDefaultCFNClient = sandbox.createStubInstance(CloudFormationClientModule.DefaultCloudFormationClient)
+        mockDefaultCFNClient = sandbox.createStubInstance(CloudFormationClientModule.CloudFormationClient)
         sandbox.stub(CloudFormationClientModule, 'DefaultCloudFormationClient').returns(mockDefaultCFNClient)
         mockDefaultCFNClient.listAllStacks.returns(intoCollection(stackSummaries))
 
@@ -1075,7 +1075,7 @@ describe('SAM runSync', () => {
     let spyWriteSamconfigGlobal: sinon.SinonSpy
     let spyRunInterminal: sinon.SinonSpy
 
-    let mockDefaultCFNClient: sinon.SinonStubbedInstance<DefaultCloudFormationClient>
+    let mockDefaultCFNClient: sinon.SinonStubbedInstance<CloudFormationClient>
     let mockDefaultS3Client: sinon.SinonStubbedInstance<S3Client>
     let registry: CloudFormationTemplateRegistry
 
@@ -1093,7 +1093,7 @@ describe('SAM runSync', () => {
         await registry.addItem(templateFile)
 
         // Simulate return of deployed stacks
-        mockDefaultCFNClient = sandbox.createStubInstance(CloudFormationClientModule.DefaultCloudFormationClient)
+        mockDefaultCFNClient = sandbox.createStubInstance(CloudFormationClientModule.CloudFormationClient)
         sandbox.stub(CloudFormationClientModule, 'DefaultCloudFormationClient').returns(mockDefaultCFNClient)
         mockDefaultCFNClient.listAllStacks.returns(intoCollection(stackSummaries))
 

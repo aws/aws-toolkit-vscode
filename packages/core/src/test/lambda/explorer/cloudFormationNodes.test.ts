@@ -12,7 +12,7 @@ import {
     contextValueCloudformationLambdaFunction,
 } from '../../../lambda/explorer/cloudFormationNodes'
 import { LambdaFunctionNode } from '../../../lambda/explorer/lambdaFunctionNode'
-import { DefaultCloudFormationClient } from '../../../shared/clients/cloudFormationClient'
+import { CloudFormationClient } from '../../../shared/clients/cloudFormationClient'
 import { DefaultLambdaClient } from '../../../shared/clients/lambdaClient'
 import globals from '../../../shared/extensionGlobals'
 import { TestAWSTreeNode } from '../../shared/treeview/nodes/testAWSTreeNode'
@@ -34,7 +34,7 @@ function createLambdaClient(...functionNames: string[]) {
 }
 
 function createCloudFormationClient(...stackNames: string[]) {
-    const client = stub(DefaultCloudFormationClient, { regionCode })
+    const client = stub(CloudFormationClient, { regionCode })
     client.describeStackResources.resolves({ StackResources: [] })
     client.listStacks.returns(
         asyncGenerator(

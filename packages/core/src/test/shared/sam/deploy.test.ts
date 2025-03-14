@@ -13,7 +13,7 @@ import { samconfigCompleteData, samconfigInvalidData, validTemplateData } from '
 import * as SamUtilsModule from '../../../shared/sam/utils'
 import assert from 'assert'
 import { getTestWindow } from '../vscode/window'
-import { DefaultCloudFormationClient } from '../../../shared/clients/cloudFormationClient'
+import { CloudFormationClient } from '../../../shared/clients/cloudFormationClient'
 import { intoCollection } from '../../../shared/utilities/collectionUtils'
 import { clickBackButton, createPromptHandler, PrompterTester } from '../wizards/prompterTester'
 import { RegionNode } from '../../../awsexplorer/regionNode'
@@ -42,7 +42,7 @@ describe('SAM DeployWizard', async function () {
     let workspaceFolder: vscode.WorkspaceFolder
     let templateFile: vscode.Uri
 
-    let mockDefaultCFNClient: sinon.SinonStubbedInstance<DefaultCloudFormationClient>
+    let mockDefaultCFNClient: sinon.SinonStubbedInstance<CloudFormationClient>
     let mockDefaultS3Client: sinon.SinonStubbedInstance<S3Client>
 
     beforeEach(async () => {
@@ -52,7 +52,7 @@ describe('SAM DeployWizard', async function () {
         sandbox = sinon.createSandbox()
 
         // Simulate return of deployed stacks
-        mockDefaultCFNClient = sandbox.createStubInstance(CloudFormationClientModule.DefaultCloudFormationClient)
+        mockDefaultCFNClient = sandbox.createStubInstance(CloudFormationClientModule.CloudFormationClient)
         sandbox.stub(CloudFormationClientModule, 'DefaultCloudFormationClient').returns(mockDefaultCFNClient)
         mockDefaultCFNClient.listAllStacks.returns(intoCollection(stackSummaries))
 

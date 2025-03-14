@@ -8,7 +8,7 @@ import { AWSTreeNodeBase } from '../treeview/nodes/awsTreeNodeBase'
 import { TreeNode, isTreeNode } from '../treeview/resourceTreeDataProvider'
 import globals from '../../shared/extensionGlobals'
 import { ToolkitError } from '../../shared/errors'
-import { DefaultCloudFormationClient } from '../clients/cloudFormationClient'
+import { CloudFormationClient } from '../clients/cloudFormationClient'
 import { S3Client } from '../clients/s3'
 import { samDeployUrl } from '../constants'
 import { getSpawnEnv } from '../env/resolveEnv'
@@ -115,8 +115,7 @@ export class DeployWizard extends CompositeWizard<DeployParams> {
                 paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,
         })
         this.form.stackName.bindPrompter(
-            ({ region }) =>
-                createStackPrompter(new DefaultCloudFormationClient(region!), deployMementoRootKey, samDeployUrl),
+            ({ region }) => createStackPrompter(new CloudFormationClient(region!), deployMementoRootKey, samDeployUrl),
             {
                 showWhen: ({ paramsSource }) =>
                     paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,

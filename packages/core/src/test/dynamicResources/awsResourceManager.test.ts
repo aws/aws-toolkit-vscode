@@ -13,7 +13,7 @@ import { ResourceNode } from '../../dynamicResources/explorer/nodes/resourceNode
 import { ResourceTypeNode } from '../../dynamicResources/explorer/nodes/resourceTypeNode'
 import { formatResourceModel, AwsResourceManager } from '../../dynamicResources/awsResourceManager'
 import { CloudControlClient, DefaultCloudControlClient } from '../../shared/clients/cloudControlClient'
-import { CloudFormationClient, DefaultCloudFormationClient } from '../../shared/clients/cloudFormationClient'
+import { CloudFormationClient, CloudFormationClient } from '../../shared/clients/cloudFormationClient'
 import { makeTemporaryToolkitFolder, readFileAsString } from '../../shared/filesystemUtilities'
 import { FakeExtensionContext } from '../fakeExtensionContext'
 import { existsSync } from 'fs' // eslint-disable-line no-restricted-imports
@@ -51,7 +51,7 @@ describe('ResourceManager', function () {
         cloudControl = stub(DefaultCloudControlClient, {
             regionCode: '',
         })
-        cloudFormation = stub(DefaultCloudFormationClient, {
+        cloudFormation = stub(CloudFormationClient, {
             regionCode: '',
         })
         sandbox = sinon.createSandbox()

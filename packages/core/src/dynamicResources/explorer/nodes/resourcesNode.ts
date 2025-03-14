@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-import { CloudFormationClient, DefaultCloudFormationClient } from '../../../shared/clients/cloudFormationClient'
+import { CloudFormationClient, CloudFormationClient } from '../../../shared/clients/cloudFormationClient'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
 import { makeChildrenNodes } from '../../../shared/treeview/utils'
@@ -23,7 +23,7 @@ export class ResourcesNode extends AWSTreeNodeBase {
 
     public constructor(
         public readonly region: string,
-        public readonly cloudFormation: CloudFormationClient = new DefaultCloudFormationClient(region),
+        public readonly cloudFormation: CloudFormationClient = new CloudFormationClient(region),
         private readonly cloudControl: CloudControlClient = new DefaultCloudControlClient(region),
         private readonly settings = new ResourcesSettings()
     ) {

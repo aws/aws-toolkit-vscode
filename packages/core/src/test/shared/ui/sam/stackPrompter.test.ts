@@ -10,7 +10,7 @@ import * as vscode from 'vscode'
 import * as AwsConsoleModule from '../../../../shared/awsConsole'
 import * as SamUtilsModule from '../../../../shared/sam/utils'
 import * as ButtonsModule from '../../../../shared/ui/buttons'
-import { DefaultCloudFormationClient } from '../../../../shared/clients/cloudFormationClient'
+import { CloudFormationClient } from '../../../../shared/clients/cloudFormationClient'
 import { samSyncUrl } from '../../../../shared/constants'
 import { createStackPrompter } from '../../../../shared/ui/sam/stackPrompter'
 import { intoCollection } from '../../../../shared/utilities/collectionUtils'
@@ -18,7 +18,7 @@ import { sleep } from '../../../../shared/utilities/timeoutUtils'
 
 describe('createStackPrompter', () => {
     let sandbox: sinon.SinonSandbox
-    const cfnClient = new DefaultCloudFormationClient('us-east-1')
+    const cfnClient = new CloudFormationClient('us-east-1')
     const mementoRootKey = 'samcli.sync.params'
 
     beforeEach(() => {

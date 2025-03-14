@@ -10,7 +10,7 @@ import * as path from 'path'
 import * as localizedText from '../localizedText'
 import { S3Client } from '../clients/s3'
 import { DataQuickPickItem, createMultiPick, createQuickPick } from '../ui/pickerPrompter'
-import { DefaultCloudFormationClient } from '../clients/cloudFormationClient'
+import { CloudFormationClient } from '../clients/cloudFormationClient'
 import * as CloudFormation from '../cloudformation/cloudformation'
 import { DefaultEcrClient } from '../clients/ecrClient'
 import { createRegionPrompter } from '../ui/common/region'
@@ -217,8 +217,7 @@ export class SyncWizard extends CompositeWizard<SyncParams> {
         })
 
         this.form.stackName.bindPrompter(
-            ({ region }) =>
-                createStackPrompter(new DefaultCloudFormationClient(region!), syncMementoRootKey, samSyncUrl),
+            ({ region }) => createStackPrompter(new CloudFormationClient(region!), syncMementoRootKey, samSyncUrl),
             {
                 showWhen: ({ paramsSource }) =>
                     paramsSource === ParamsSource.Specify || paramsSource === ParamsSource.SpecifyAndSave,

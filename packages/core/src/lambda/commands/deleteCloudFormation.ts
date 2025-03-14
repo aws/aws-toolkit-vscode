@@ -7,7 +7,7 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
-import { DefaultCloudFormationClient } from '../../shared/clients/cloudFormationClient'
+import { CloudFormationClient } from '../../shared/clients/cloudFormationClient'
 
 import * as localizedText from '../../shared/localizedText'
 import { getLogger, Logger } from '../../shared/logger/logger'
@@ -45,7 +45,7 @@ export async function deleteCloudFormation(refresh: () => void, node?: CloudForm
         })
 
         if (userResponse) {
-            const client = new DefaultCloudFormationClient(node.regionCode)
+            const client = new CloudFormationClient(node.regionCode)
 
             await client.deleteStack(stackName)
 

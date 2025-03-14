@@ -7,10 +7,9 @@ import { CloudFormation } from 'aws-sdk'
 import globals from '../extensionGlobals'
 import { AsyncCollection } from '../utilities/asyncCollection'
 import { pageableToCollection } from '../utilities/collectionUtils'
-import { ClassToInterfaceType, isNonNullable } from '../utilities/tsUtils'
+import { isNonNullable } from '../utilities/tsUtils'
 
-export type CloudFormationClient = ClassToInterfaceType<DefaultCloudFormationClient>
-export class DefaultCloudFormationClient {
+export class CloudFormationClient {
     public constructor(public readonly regionCode: string) {}
 
     public async deleteStack(name: string): Promise<void> {

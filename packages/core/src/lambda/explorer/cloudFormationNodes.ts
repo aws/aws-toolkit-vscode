@@ -9,7 +9,7 @@ const localize = nls.loadMessageBundle()
 import { CloudFormation, Lambda } from 'aws-sdk'
 import * as os from 'os'
 import * as vscode from 'vscode'
-import { DefaultCloudFormationClient } from '../../shared/clients/cloudFormationClient'
+import { CloudFormationClient } from '../../shared/clients/cloudFormationClient'
 import { DefaultLambdaClient } from '../../shared/clients/lambdaClient'
 
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
@@ -28,7 +28,7 @@ export class CloudFormationNode extends AWSTreeNodeBase {
 
     public constructor(
         public override readonly regionCode: string,
-        private readonly client = new DefaultCloudFormationClient(regionCode)
+        private readonly client = new CloudFormationClient(regionCode)
     ) {
         super('CloudFormation', vscode.TreeItemCollapsibleState.Collapsed)
         this.stackNodes = new Map<string, CloudFormationStackNode>()
@@ -68,7 +68,7 @@ export class CloudFormationStackNode extends AWSTreeNodeBase implements AWSResou
         public override readonly regionCode: string,
         private stackSummary: CloudFormation.StackSummary,
         private readonly lambdaClient = new DefaultLambdaClient(regionCode),
-        private readonly cloudformationClient = new DefaultCloudFormationClient(regionCode)
+        private readonly cloudformationClient = new CloudFormationClient(regionCode)
     ) {
         super('', vscode.TreeItemCollapsibleState.Collapsed)
 
