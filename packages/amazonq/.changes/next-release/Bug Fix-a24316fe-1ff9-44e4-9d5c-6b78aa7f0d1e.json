@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Code Review: Fixed a bug where issues are double counted in the Q chat"
+}
