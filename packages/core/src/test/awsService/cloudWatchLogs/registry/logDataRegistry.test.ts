@@ -25,7 +25,6 @@ import {
     testLogData,
     unregisteredData,
 } from '../utils.test'
-import { CloudWatchLogs } from 'aws-sdk'
 import { FilteredLogEvents } from 'aws-sdk/clients/cloudwatchlogs'
 import { formatDateTimestamp } from '../../../../shared/datetime'
 
@@ -130,7 +129,7 @@ describe('LogDataRegistry', async function () {
         const pageToken2 = 'page2Token'
 
         function createCwlEvents(id: string, count: number): FilteredLogEvents {
-            let events: CloudWatchLogs.FilteredLogEvents = []
+            let events: FilteredLogEvents = []
             for (let i = 0; i < count; i++) {
                 events = events.concat({ message: `message-${id}`, logStreamName: `stream-${id}` })
             }
@@ -141,7 +140,7 @@ describe('LogDataRegistry', async function () {
             return async function (
                 logGroupInfo: CloudWatchLogsGroupInfo,
                 parameters: CloudWatchLogsParameters,
-                nextToken?: CloudWatchLogs.NextToken
+                nextToken?: string
             ) {
                 return getSimulatedCwlResponse(nextToken, isPage1Empty)
             }
@@ -153,10 +152,7 @@ describe('LogDataRegistry', async function () {
          * @param isPage1Empty A flag to indicate if Page 1 should have data/isn't the tail.
          * @returns
          */
-        function getSimulatedCwlResponse(
-            token: CloudWatchLogs.NextToken | undefined,
-            isPage1Empty: boolean
-        ): CloudWatchLogsResponse {
+        function getSimulatedCwlResponse(token: string | undefined, isPage1Empty: boolean): CloudWatchLogsResponse {
             switch (token) {
                 case pageToken1:
                     if (isPage1Empty) {
