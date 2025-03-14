@@ -3,22 +3,23 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { CloudWatchLogs } from 'aws-sdk'
 import * as CloudWatchLogsV3 from '@aws-sdk/client-cloudwatch-logs'
-import globals from '../extensionGlobals'
 import { ClientWrapper } from './clientWrapper'
 
+// TODO: each consumer of CWL client implements their own pagination. This should be done here.
 export class CloudWatchLogsClient extends ClientWrapper<CloudWatchLogsV3.CloudWatchLogsClient> {
     public constructor(regionCode: string) {
         super(regionCode, CloudWatchLogsV3.CloudWatchLogsClient)
     }
 
     public async *describeLogGroups(
-        request: CloudWatchLogs.DescribeLogGroupsRequest = {}
-    ): AsyncIterableIterator<CloudWatchLogs.LogGroup> {
-        const sdkClient = await this.createSdkClient()
+        request: CloudWatchLogsV3.DescribeLogGroupsRequest = {}
+    ): AsyncIterableIterator<CloudWatchLogsV3.LogGroup> {
         do {
-            const response = await this.invokeDescribeLogGroups(request, sdkClient)
+            const response: CloudWatchLogsV3.DescribeLogGroupsResponse = await this.makeRequest(
+                CloudWatchLogsV3.DescribeLogGroupsCommand,
+                request
+            )
             if (response.logGroups) {
                 yield* response.logGroups
             }
@@ -27,37 +28,20 @@ export class CloudWatchLogsClient extends ClientWrapper<CloudWatchLogsV3.CloudWa
     }
 
     public async describeLogStreams(
-        request: CloudWatchLogs.DescribeLogStreamsRequest
-    ): Promise<CloudWatchLogs.DescribeLogStreamsResponse> {
-        const sdkClient = await this.createSdkClient()
-
-        return sdkClient.describeLogStreams(request).promise()
+        request: CloudWatchLogsV3.DescribeLogStreamsRequest
+    ): Promise<CloudWatchLogsV3.DescribeLogStreamsResponse> {
+        return await this.makeRequest(CloudWatchLogsV3.DescribeLogStreamsCommand, request)
     }
 
     public async getLogEvents(
-        request: CloudWatchLogs.GetLogEventsRequest
-    ): Promise<CloudWatchLogs.GetLogEventsResponse> {
-        const sdkClient = await this.createSdkClient()
-
-        return sdkClient.getLogEvents(request).promise()
+        request: CloudWatchLogsV3.GetLogEventsRequest
+    ): Promise<CloudWatchLogsV3.GetLogEventsResponse> {
+        return await this.makeRequest(CloudWatchLogsV3.GetLogEventsCommand, request)
     }
 
     public async filterLogEvents(
-        request: CloudWatchLogs.FilterLogEventsRequest
-    ): Promise<CloudWatchLogs.FilterLogEventsResponse> {
-        const sdkClient = await this.createSdkClient()
-
-        return sdkClient.filterLogEvents(request).promise()
-    }
-
-    protected async invokeDescribeLogGroups(
-        request: CloudWatchLogs.DescribeLogGroupsRequest,
-        sdkClient: CloudWatchLogs
-    ): Promise<CloudWatchLogs.DescribeLogGroupsResponse> {
-        return sdkClient.describeLogGroups(request).promise()
-    }
-
-    protected async createSdkClient(): Promise<CloudWatchLogs> {
-        return await globals.sdkClientBuilder.createAwsService(CloudWatchLogs, undefined, this.regionCode)
+        request: CloudWatchLogsV3.FilterLogEventsRequest
+    ): Promise<CloudWatchLogsV3.FilterLogEventsResponse> {
+        return await this.makeRequest(CloudWatchLogsV3.FilterLogEventsCommand, request)
     }
 }

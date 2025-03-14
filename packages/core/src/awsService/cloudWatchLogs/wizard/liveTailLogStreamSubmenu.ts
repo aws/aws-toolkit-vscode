@@ -8,7 +8,7 @@ import { createCommonButtons } from '../../../shared/ui/buttons'
 import { createInputBox, InputBoxPrompter } from '../../../shared/ui/inputPrompter'
 import { createQuickPick, DataQuickPickItem, QuickPickPrompter } from '../../../shared/ui/pickerPrompter'
 import { pageableToCollection } from '../../../shared/utilities/collectionUtils'
-import { CloudWatchLogs } from 'aws-sdk'
+import * as CloudWatchLogs from '@aws-sdk/client-cloudwatch-logs'
 import { isValidResponse, StepEstimator } from '../../../shared/wizards/wizard'
 import { isNonNullable } from '../../../shared/utilities/tsUtils'
 import {
