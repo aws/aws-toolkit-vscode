@@ -4,7 +4,6 @@ import {
   SENSITIVE_STRING,
   ExceptionOptionType as __ExceptionOptionType,
 } from "@smithy/smithy-client";
-import { DocumentType as __DocumentType } from "@smithy/types";
 
 /**
  * @public
@@ -1269,239 +1268,6 @@ export const ShellStateFilterSensitiveLog = (obj: ShellState): any => ({
 })
 
 /**
- * @public
- */
-export type ToolResultContentBlock =
-  | ToolResultContentBlock.JsonMember
-  | ToolResultContentBlock.TextMember
-  | ToolResultContentBlock.$UnknownMember
-
-/**
- * @public
- */
-export namespace ToolResultContentBlock {
-
-  /**
-   * A tool result that is text.
-   * @public
-   */
-  export interface TextMember {
-    text: string;
-    json?: never;
-    $unknown?: never;
-  }
-
-  /**
-   * A tool result that is JSON format data.
-   * @public
-   */
-  export interface JsonMember {
-    text?: never;
-    json: __DocumentType;
-    $unknown?: never;
-  }
-
-  /**
-   * @public
-   */
-  export interface $UnknownMember {
-    text?: never;
-    json?: never;
-    $unknown: [string, any];
-  }
-
-  export interface Visitor<T> {
-    text: (value: string) => T;
-    json: (value: __DocumentType) => T;
-    _: (name: string, value: any) => T;
-  }
-
-  export const visit = <T>(
-    value: ToolResultContentBlock,
-    visitor: Visitor<T>
-  ): T => {
-    if (value.text !== undefined) return visitor.text(value.text);
-    if (value.json !== undefined) return visitor.json(value.json);
-    return visitor._(value.$unknown[0], value.$unknown[1]);
-  }
-
-}
-/**
- * @internal
- */
-export const ToolResultContentBlockFilterSensitiveLog = (obj: ToolResultContentBlock): any => {
-  if (obj.text !== undefined) return {text:
-    SENSITIVE_STRING
-  };
-  if (obj.json !== undefined) return {json:
-    SENSITIVE_STRING
-  };
-  if (obj.$unknown !== undefined) return {[obj.$unknown[0]]: 'UNKNOWN'};
-}
-
-/**
- * @public
- * @enum
- */
-export const ToolResultStatus = {
-  ERROR: "error",
-  SUCCESS: "success",
-} as const
-/**
- * @public
- */
-export type ToolResultStatus = typeof ToolResultStatus[keyof typeof ToolResultStatus]
-
-/**
- * A tool result that contains the results for a tool request that was previously made.
- * @public
- */
-export interface ToolResult {
-  /**
-   * The ID for the tool request.
-   * @public
-   */
-  toolUseId: string | undefined;
-
-  /**
-   * Content of the tool result.
-   * @public
-   */
-  content: (ToolResultContentBlock)[] | undefined;
-
-  /**
-   * Status of the tools result.
-   * @public
-   */
-  status?: ToolResultStatus | undefined;
-}
-
-/**
- * @internal
- */
-export const ToolResultFilterSensitiveLog = (obj: ToolResult): any => ({
-  ...obj,
-  ...(obj.content && { content:
-    obj.content.map(
-      item =>
-      ToolResultContentBlockFilterSensitiveLog(item)
-    )
-  }),
-})
-
-/**
- * The input schema for the tool in JSON format.
- * @public
- */
-export interface ToolInputSchema {
-  json?: __DocumentType | undefined;
-}
-
-/**
- * @internal
- */
-export const ToolInputSchemaFilterSensitiveLog = (obj: ToolInputSchema): any => ({
-  ...obj,
-  ...(obj.json && { json:
-    SENSITIVE_STRING
-  }),
-})
-
-/**
- * The specification for the tool.
- * @public
- */
-export interface ToolSpecification {
-  /**
-   * The input schema for the tool in JSON format.
-   * @public
-   */
-  inputSchema: ToolInputSchema | undefined;
-
-  /**
-   * The name for the tool.
-   * @public
-   */
-  name: string | undefined;
-
-  /**
-   * The description for the tool.
-   * @public
-   */
-  description?: string | undefined;
-}
-
-/**
- * @internal
- */
-export const ToolSpecificationFilterSensitiveLog = (obj: ToolSpecification): any => ({
-  ...obj,
-  ...(obj.inputSchema && { inputSchema:
-    ToolInputSchemaFilterSensitiveLog(obj.inputSchema)
-  }),
-  ...(obj.name && { name:
-    SENSITIVE_STRING
-  }),
-  ...(obj.description && { description:
-    SENSITIVE_STRING
-  }),
-})
-
-/**
- * Information about a tool that can be used.
- * @public
- */
-export type Tool =
-  | Tool.ToolSpecificationMember
-  | Tool.$UnknownMember
-
-/**
- * @public
- */
-export namespace Tool {
-
-  /**
-   * The specification for the tool.
-   * @public
-   */
-  export interface ToolSpecificationMember {
-    toolSpecification: ToolSpecification;
-    $unknown?: never;
-  }
-
-  /**
-   * @public
-   */
-  export interface $UnknownMember {
-    toolSpecification?: never;
-    $unknown: [string, any];
-  }
-
-  export interface Visitor<T> {
-    toolSpecification: (value: ToolSpecification) => T;
-    _: (name: string, value: any) => T;
-  }
-
-  export const visit = <T>(
-    value: Tool,
-    visitor: Visitor<T>
-  ): T => {
-    if (value.toolSpecification !== undefined) return visitor.toolSpecification(value.toolSpecification);
-    return visitor._(value.$unknown[0], value.$unknown[1]);
-  }
-
-}
-/**
- * @internal
- */
-export const ToolFilterSensitiveLog = (obj: Tool): any => {
-  if (obj.toolSpecification !== undefined) return {toolSpecification:
-    ToolSpecificationFilterSensitiveLog(obj.toolSpecification)
-  };
-  if (obj.$unknown !== undefined) return {[obj.$unknown[0]]: 'UNKNOWN'};
-}
-
-/**
  * Settings information passed by the Q widget
  * @public
  */
@@ -1567,18 +1333,6 @@ export interface UserInputMessageContext {
    * @public
    */
   additionalContext?: (AdditionalContentEntry)[] | undefined;
-
-  /**
-   * ToolResults for the requested ToolUses
-   * @public
-   */
-  toolResults?: (ToolResult)[] | undefined;
-
-  /**
-   * Tools that can be used.
-   * @public
-   */
-  tools?: (Tool)[] | undefined;
 }
 
 /**
@@ -1611,18 +1365,6 @@ export const UserInputMessageContextFilterSensitiveLog = (obj: UserInputMessageC
     obj.additionalContext.map(
       item =>
       AdditionalContentEntryFilterSensitiveLog(item)
-    )
-  }),
-  ...(obj.toolResults && { toolResults:
-    obj.toolResults.map(
-      item =>
-      ToolResultFilterSensitiveLog(item)
-    )
-  }),
-  ...(obj.tools && { tools:
-    obj.tools.map(
-      item =>
-      ToolFilterSensitiveLog(item)
     )
   }),
 })
@@ -3025,49 +2767,6 @@ export const SupplementaryWebLinksEventFilterSensitiveLog = (obj: SupplementaryW
 })
 
 /**
- * Event for a ToolUse request. Multiple ToolUse requests can be returned from a single request, so each ToolUse has a unique 'toolUseId'.
- * @public
- */
-export interface ToolUseEvent {
-  /**
-   * The ID for the tool request.
-   * @public
-   */
-  toolUseId: string | undefined;
-
-  /**
-   * The name for the tool.
-   * @public
-   */
-  name: string | undefined;
-
-  /**
-   * Represents the serialized json input for the ToolUse request. This field should be concatenated until 'stop' is true.
-   * @public
-   */
-  input?: string | undefined;
-
-  /**
-   * This field is true when all of the serialized input for this ToolUse request has been sent.
-   * @public
-   */
-  stop?: boolean | undefined;
-}
-
-/**
- * @internal
- */
-export const ToolUseEventFilterSensitiveLog = (obj: ToolUseEvent): any => ({
-  ...obj,
-  ...(obj.name && { name:
-    SENSITIVE_STRING
-  }),
-  ...(obj.input && { input:
-    SENSITIVE_STRING
-  }),
-})
-
-/**
  * Streaming events from UniDirectional Streaming Conversational APIs.
  * @public
  */
@@ -3083,7 +2782,6 @@ export type ChatResponseStream =
   | ChatResponseStream.InvalidStateEventMember
   | ChatResponseStream.MessageMetadataEventMember
   | ChatResponseStream.SupplementaryWebLinksEventMember
-  | ChatResponseStream.ToolUseEventMember
   | ChatResponseStream.$UnknownMember
 
 /**
@@ -3105,7 +2803,6 @@ export namespace ChatResponseStream {
     codeEvent?: never;
     intentsEvent?: never;
     interactionComponentsEvent?: never;
-    toolUseEvent?: never;
     invalidStateEvent?: never;
     error?: never;
     $unknown?: never;
@@ -3125,7 +2822,6 @@ export namespace ChatResponseStream {
     codeEvent?: never;
     intentsEvent?: never;
     interactionComponentsEvent?: never;
-    toolUseEvent?: never;
     invalidStateEvent?: never;
     error?: never;
     $unknown?: never;
@@ -3145,7 +2841,6 @@ export namespace ChatResponseStream {
     codeEvent?: never;
     intentsEvent?: never;
     interactionComponentsEvent?: never;
-    toolUseEvent?: never;
     invalidStateEvent?: never;
     error?: never;
     $unknown?: never;
@@ -3165,7 +2860,6 @@ export namespace ChatResponseStream {
     codeEvent?: never;
     intentsEvent?: never;
     interactionComponentsEvent?: never;
-    toolUseEvent?: never;
     invalidStateEvent?: never;
     error?: never;
     $unknown?: never;
@@ -3185,7 +2879,6 @@ export namespace ChatResponseStream {
     codeEvent?: never;
     intentsEvent?: never;
     interactionComponentsEvent?: never;
-    toolUseEvent?: never;
     invalidStateEvent?: never;
     error?: never;
     $unknown?: never;
@@ -3205,7 +2898,6 @@ export namespace ChatResponseStream {
     codeEvent?: never;
     intentsEvent?: never;
     interactionComponentsEvent?: never;
-    toolUseEvent?: never;
     invalidStateEvent?: never;
     error?: never;
     $unknown?: never;
@@ -3225,7 +2917,6 @@ export namespace ChatResponseStream {
     codeEvent: CodeEvent;
     intentsEvent?: never;
     interactionComponentsEvent?: never;
-    toolUseEvent?: never;
     invalidStateEvent?: never;
     error?: never;
     $unknown?: never;
@@ -3245,7 +2936,6 @@ export namespace ChatResponseStream {
     codeEvent?: never;
     intentsEvent: IntentsEvent;
     interactionComponentsEvent?: never;
-    toolUseEvent?: never;
     invalidStateEvent?: never;
     error?: never;
     $unknown?: never;
@@ -3265,27 +2955,6 @@ export namespace ChatResponseStream {
     codeEvent?: never;
     intentsEvent?: never;
     interactionComponentsEvent: InteractionComponentsEvent;
-    toolUseEvent?: never;
-    invalidStateEvent?: never;
-    error?: never;
-    $unknown?: never;
-  }
-
-  /**
-   * ToolUse event
-   * @public
-   */
-  export interface ToolUseEventMember {
-    messageMetadataEvent?: never;
-    assistantResponseEvent?: never;
-    dryRunSucceedEvent?: never;
-    codeReferenceEvent?: never;
-    supplementaryWebLinksEvent?: never;
-    followupPromptEvent?: never;
-    codeEvent?: never;
-    intentsEvent?: never;
-    interactionComponentsEvent?: never;
-    toolUseEvent: ToolUseEvent;
     invalidStateEvent?: never;
     error?: never;
     $unknown?: never;
@@ -3305,7 +2974,6 @@ export namespace ChatResponseStream {
     codeEvent?: never;
     intentsEvent?: never;
     interactionComponentsEvent?: never;
-    toolUseEvent?: never;
     invalidStateEvent: InvalidStateEvent;
     error?: never;
     $unknown?: never;
@@ -3325,7 +2993,6 @@ export namespace ChatResponseStream {
     codeEvent?: never;
     intentsEvent?: never;
     interactionComponentsEvent?: never;
-    toolUseEvent?: never;
     invalidStateEvent?: never;
     error: InternalServerException;
     $unknown?: never;
@@ -3344,7 +3011,6 @@ export namespace ChatResponseStream {
     codeEvent?: never;
     intentsEvent?: never;
     interactionComponentsEvent?: never;
-    toolUseEvent?: never;
     invalidStateEvent?: never;
     error?: never;
     $unknown: [string, any];
@@ -3360,7 +3026,6 @@ export namespace ChatResponseStream {
     codeEvent: (value: CodeEvent) => T;
     intentsEvent: (value: IntentsEvent) => T;
     interactionComponentsEvent: (value: InteractionComponentsEvent) => T;
-    toolUseEvent: (value: ToolUseEvent) => T;
     invalidStateEvent: (value: InvalidStateEvent) => T;
     error: (value: InternalServerException) => T;
     _: (name: string, value: any) => T;
@@ -3379,7 +3044,6 @@ export namespace ChatResponseStream {
     if (value.codeEvent !== undefined) return visitor.codeEvent(value.codeEvent);
     if (value.intentsEvent !== undefined) return visitor.intentsEvent(value.intentsEvent);
     if (value.interactionComponentsEvent !== undefined) return visitor.interactionComponentsEvent(value.interactionComponentsEvent);
-    if (value.toolUseEvent !== undefined) return visitor.toolUseEvent(value.toolUseEvent);
     if (value.invalidStateEvent !== undefined) return visitor.invalidStateEvent(value.invalidStateEvent);
     if (value.error !== undefined) return visitor.error(value.error);
     return visitor._(value.$unknown[0], value.$unknown[1]);
@@ -3416,9 +3080,6 @@ export const ChatResponseStreamFilterSensitiveLog = (obj: ChatResponseStream): a
   };
   if (obj.interactionComponentsEvent !== undefined) return {interactionComponentsEvent:
     InteractionComponentsEventFilterSensitiveLog(obj.interactionComponentsEvent)
-  };
-  if (obj.toolUseEvent !== undefined) return {toolUseEvent:
-    ToolUseEventFilterSensitiveLog(obj.toolUseEvent)
   };
   if (obj.invalidStateEvent !== undefined) return {invalidStateEvent:
     obj.invalidStateEvent
