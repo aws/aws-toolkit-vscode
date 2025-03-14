@@ -4,11 +4,15 @@
  */
 
 import { CloudControl } from 'aws-sdk'
+import * as CloudControlV3 from '@aws-sdk/client-cloudcontrol'
 import globals from '../extensionGlobals'
 import { localize } from '../utilities/vsCodeUtils'
+import { ClientWrapper } from './clientWrapper'
 
-export class CloudControlClient {
-    public constructor(public readonly regionCode: string) {}
+export class CloudControlClient extends ClientWrapper<CloudControlV3.CloudControlClient> {
+    public constructor(regionCode: string) {
+        super(regionCode, CloudControlV3.CloudControlClient)
+    }
 
     public async createResource(request: CloudControl.CreateResourceInput): Promise<CloudControl.CreateResourceOutput> {
         const client = await this.createSdkClient()
