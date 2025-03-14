@@ -3,21 +3,19 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as CloudControlV3 from '@aws-sdk/client-cloudcontrol'
+import * as CloudControl from '@aws-sdk/client-cloudcontrol'
 import globals from '../extensionGlobals'
 import { localize } from '../utilities/vsCodeUtils'
 import { ClientWrapper } from './clientWrapper'
 
-export class CloudControlClient extends ClientWrapper<CloudControlV3.CloudControlClient> {
+export class CloudControlClient extends ClientWrapper<CloudControl.CloudControlClient> {
     public constructor(regionCode: string) {
-        super(regionCode, CloudControlV3.CloudControlClient)
+        super(regionCode, CloudControl.CloudControlClient)
     }
 
-    public async createResource(
-        request: CloudControlV3.CreateResourceInput
-    ): Promise<CloudControlV3.CreateResourceOutput> {
-        const createResponse: CloudControlV3.CreateResourceOutput = await this.makeRequest(
-            CloudControlV3.CreateResourceCommand,
+    public async createResource(request: CloudControl.CreateResourceInput): Promise<CloudControl.CreateResourceOutput> {
+        const createResponse: CloudControl.CreateResourceOutput = await this.makeRequest(
+            CloudControl.CreateResourceCommand,
             request
         )
 
@@ -25,28 +23,26 @@ export class CloudControlClient extends ClientWrapper<CloudControlV3.CloudContro
         return createResponse
     }
 
-    public async deleteResource(request: CloudControlV3.DeleteResourceInput): Promise<void> {
-        const deleteResponse: CloudControlV3.DeleteResourceOutput = await this.makeRequest(
-            CloudControlV3.DeleteResourceCommand,
+    public async deleteResource(request: CloudControl.DeleteResourceInput): Promise<void> {
+        const deleteResponse: CloudControl.DeleteResourceOutput = await this.makeRequest(
+            CloudControl.DeleteResourceCommand,
             request
         )
 
         await this.pollForCompletion(deleteResponse.ProgressEvent!)
     }
 
-    public async listResources(
-        request: CloudControlV3.ListResourcesInput
-    ): Promise<CloudControlV3.ListResourcesOutput> {
-        return await this.makeRequest(CloudControlV3.ListResourcesCommand, request)
+    public async listResources(request: CloudControl.ListResourcesInput): Promise<CloudControl.ListResourcesOutput> {
+        return await this.makeRequest(CloudControl.ListResourcesCommand, request)
     }
 
-    public async getResource(request: CloudControlV3.GetResourceInput): Promise<CloudControlV3.GetResourceOutput> {
-        return await this.makeRequest(CloudControlV3.GetResourceCommand, request)
+    public async getResource(request: CloudControl.GetResourceInput): Promise<CloudControl.GetResourceOutput> {
+        return await this.makeRequest(CloudControl.GetResourceCommand, request)
     }
 
-    public async updateResource(request: CloudControlV3.UpdateResourceInput): Promise<void> {
-        const updateResponse: CloudControlV3.UpdateResourceOutput = await this.makeRequest(
-            CloudControlV3.UpdateResourceCommand,
+    public async updateResource(request: CloudControl.UpdateResourceInput): Promise<void> {
+        const updateResponse: CloudControl.UpdateResourceOutput = await this.makeRequest(
+            CloudControl.UpdateResourceCommand,
             request
         )
 
@@ -54,13 +50,13 @@ export class CloudControlClient extends ClientWrapper<CloudControlV3.CloudContro
     }
 
     private async getResourceRequestStatus(
-        request: CloudControlV3.GetResourceRequestStatusInput
-    ): Promise<CloudControlV3.GetResourceRequestStatusOutput> {
-        return await this.makeRequest(CloudControlV3.GetResourceRequestStatusCommand, request)
+        request: CloudControl.GetResourceRequestStatusInput
+    ): Promise<CloudControl.GetResourceRequestStatusOutput> {
+        return await this.makeRequest(CloudControl.GetResourceRequestStatusCommand, request)
     }
 
     private async pollForCompletion(
-        progressEvent: CloudControlV3.ProgressEvent,
+        progressEvent: CloudControl.ProgressEvent,
         baseDelay: number = 500,
         maxRetries: number = 10
     ): Promise<void> {
