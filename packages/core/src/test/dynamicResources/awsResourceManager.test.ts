@@ -20,7 +20,8 @@ import { existsSync } from 'fs' // eslint-disable-line no-restricted-imports
 import { ResourceTypeMetadata } from '../../dynamicResources/model/resources'
 import globals from '../../shared/extensionGlobals'
 import { Stub, stub } from '../utilities/stubber'
-import { CloudControl, CloudFormation } from 'aws-sdk'
+import { CloudFormation } from 'aws-sdk'
+import * as CloudControl from '@aws-sdk/client-cloudcontrol'
 import { fs } from '../../shared'
 
 describe('ResourceManager', function () {
