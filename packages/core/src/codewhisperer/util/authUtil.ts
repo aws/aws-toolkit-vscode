@@ -535,6 +535,7 @@ export const AuthStates = {
      * but fetching/refreshing the token resulted in a network error.
      */
     connectedWithNetworkError: 'connectedWithNetworkError',
+    pendingProfileSelection: 'pendingProfileSelection',
 } as const
 const Features = {
     codewhispererCore: 'codewhispererCore',

@@ -22,6 +22,7 @@ import { AuthError, AuthFlowState, userCancelled } from '../types'
 import { ToolkitError } from '../../../../shared/errors'
 import { withTelemetryContext } from '../../../../shared/telemetry/util'
 import { builderIdStartUrl } from '../../../../auth/sso/constants'
+import { RegionProfile } from '../../../../codewhisperer/models/model'
 
 const className = 'AmazonQLoginWebview'
 export class AmazonQLoginWebview extends CommonAuthWebview {
@@ -156,6 +157,8 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
         if (featureAuthStates.amazonQ === 'expired') {
             this.authState = this.isReauthenticating ? 'REAUTHENTICATING' : 'REAUTHNEEDED'
             return
+        } else if (featureAuthStates.amazonQ === 'pendingProfileSelection') {
+            return
         }
         this.authState = 'LOGIN'
     }
@@ -200,6 +203,38 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
 
     /** If users are unauthenticated in Q/CW, we should always display the auth screen. */
     async quitLoginScreen() {}
+
+    override listRegionProfiles(): Promise<RegionProfile[]> {
+        // TODO: uncomment
+        // return AuthUtil.instance.regionProfileManager.listRegionProfile()
+
+        return Promise.resolve([
+            {
+                name: 'ACME platform work',
+                region: 'us-east-1',
+                arn: 'foo',
+                description: 'Some description for ACME Platform Work',
+            },
+            {
+                name: 'EU payments TEAM',
+                region: 'us-east-1',
+                arn: 'bar',
+                description: 'Some description for EU payments TEAM',
+            },
+            {
+                name: 'CodeWhisperer TEAM',
+                region: 'us-east-1',
+                arn: 'baz',
+                description: 'Some description for CodeWhisperer TEAM',
+            },
+        ])
+    }
+
+    override selectRegionProfile(profile: RegionProfile): Promise<void> {
+        // TODO: uncomment
+        // return AuthUtil.instance.regionProfileManager.switchRegionProfile(profile)
+        return Promise.resolve()
+    }
 
     private setupConnectionEventEmitter(): void {
         // allows the frontend to listen to Amazon Q auth events from the backend

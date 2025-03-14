@@ -12,12 +12,18 @@ configure app to AMAZONQ if for Amazon Q login
             :state="authFlowState"
             :key="refreshKey"
         ></Reauthenticate>
+        <RegionProfileSelector
+            v-if="authFlowState === 'PENDING_PROFILE_SELECTION'"
+            :app="app"
+            :state="authFlowState"
+        ></RegionProfileSelector>
     </div>
 </template>
 <script lang="ts">
 import { PropType, defineComponent } from 'vue'
 import Login from './login.vue'
 import Reauthenticate from './reauthenticate.vue'
+import RegionProfileSelector from './regionProfileSelector.vue'
 import { AuthFlowState, FeatureId } from './types'
 import { WebviewClientFactory } from '../../../webviews/client'
 import { CommonAuthWebview } from './backend'
@@ -29,6 +35,7 @@ export default defineComponent({
     components: {
         Login,
         Reauthenticate,
+        RegionProfileSelector,
     },
     data() {
         return {
