@@ -6,7 +6,7 @@ import { ArrayConstructor } from '../../shared/utilities/typeConstructors'
 import { fromExtensionManifest, migrateSetting } from '../../shared/settings'
 
 const description = {
-    showCodeWithReferences: Boolean, // eslint-disable-line id-length
+    showCodeWithReferences: Boolean,
     importRecommendationForInlineCodeSuggestions: Boolean, // eslint-disable-line id-length
     shareContentWithAWS: Boolean,
     workspaceIndex: Boolean,
