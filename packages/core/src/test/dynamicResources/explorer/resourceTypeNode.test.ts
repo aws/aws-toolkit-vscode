@@ -12,7 +12,7 @@ import {
     assertNodeListOnlyHasErrorNode,
     assertNodeListOnlyHasPlaceholderNode,
 } from '../../utilities/explorerNodeAssertions'
-import { CloudControlClient } from '../../../shared/clients/cloudControlClient'
+import { CloudControlClient } from '../../../shared/clients/cloudControl'
 import { CloudControl } from 'aws-sdk'
 import { ResourceTypeMetadata } from '../../../dynamicResources/model/resources'
 import sinon from 'sinon'
