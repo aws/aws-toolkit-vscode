@@ -431,7 +431,7 @@ export class LspController {
             return
         }
         this._contextCommandSymbolsUpdated = true
-        getLogger().debug(`Adding symbols to context commands`)
+        getLogger().debug(`LspController: Start adding symbols to context picker menu`)
         const indexSeqNum = await LspClient.instance.getIndexSequenceNumber()
         await LspClient.instance.updateIndex([], 'context_command_symbol_update')
         await waitUntil(
@@ -445,7 +445,7 @@ export class LspController {
                 this._contextCommandSymbolsUpdated = false
                 return false
             },
-            { interval: 500, timeout: 5_000, truthy: true }
+            { interval: 1000, timeout: 30_000, truthy: true }
         )
     }
 }
