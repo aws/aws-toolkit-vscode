@@ -85,7 +85,8 @@ export default defineComponent({
 // TODO: Move this in to a reusable class for other webviews, it feels a bit messy here
 let didSetReady = false
 
-// Setup error handlers to report 
+// Setup error handlers to report. This may not actually be able to catch certain errors that we'd expect,
+// so this may have to be revisited.
 window.onerror = function (message) {
     if (didSetReady) {
         return
@@ -119,7 +120,7 @@ const handleLoaded = () => {
     if (!foundElement) {
         setUiReady((window as any).uiState, `Could not find element: ${(window as any).uiReadyElementId}`)
     } else {
-        // Successful load!    
+        // Successful load!
         setUiReady((window as any).uiState)
     }
 }
