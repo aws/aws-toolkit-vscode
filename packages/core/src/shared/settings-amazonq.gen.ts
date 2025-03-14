@@ -22,7 +22,7 @@ export const amazonqSettings = {
         "AmazonQLspManifestMessage": {},
         "AmazonQ-WorkspaceLspManifestMessage":{}
     },
-    "amazonQ.showInlineCodeSuggestionsWithCodeReferences": {},
+    "amazonQ.showCodeWithReferences": {},
     "amazonQ.allowFeatureDevelopmentToRunCodeAndTests": {},
     "amazonQ.importRecommendationForInlineCodeSuggestions": {},
     "amazonQ.shareContentWithAWS": {},
