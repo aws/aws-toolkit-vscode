@@ -1,4 +1,4 @@
 {
 	"type": "Feature",
-	"description": "/review: update reference tracker checkbox label"
+	"description": "/review: rename setting `showInlineCodeSuggestionsWithCodeReferences` to `showCodeWithReferences`"
 }
