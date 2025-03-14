@@ -45,7 +45,6 @@ import { S3Client } from '../../../shared/clients/s3'
 import { RequiredProps } from '../../../shared/utilities/tsUtils'
 import S3 from 'aws-sdk/clients/s3'
 import { CloudFormationClient } from '../../../shared/clients/cloudFormation'
-import CloudFormation from 'aws-sdk/clients/cloudformation'
 import { intoCollection } from '../../../shared/utilities/collectionUtils'
 import { SamConfig, Environment, parseConfig } from '../../../shared/sam/config'
 import { RegionProvider } from '../../../shared/regions/regionProvider'
@@ -2184,22 +2183,22 @@ const s3BucketListSummary: Array<
     { Name: 'stack-3-bucket', region: 'us-west-2' },
 ]
 
-const stackSummaries: CloudFormation.StackSummary[][] = [
+const stackSummaries: CloudFormationClientModule.StackSummary[][] = [
     [
         {
             StackName: 'stack1',
             StackStatus: 'CREATE_COMPLETE',
             CreationTime: new Date(),
-        } as CloudFormation.StackSummary,
+        } as CloudFormationClientModule.StackSummary,
         {
             StackName: 'stack2',
             StackStatus: 'CREATE_COMPLETE',
             CreationTime: new Date(),
-        } as CloudFormation.StackSummary,
+        } as CloudFormationClientModule.StackSummary,
         {
             StackName: 'stack3',
             StackStatus: 'CREATE_COMPLETE',
             CreationTime: new Date(),
-        } as CloudFormation.StackSummary,
+        } as CloudFormationClientModule.StackSummary,
     ],
 ]

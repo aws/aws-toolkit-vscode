@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as vscode from 'vscode'
-import { CloudFormation, S3 } from 'aws-sdk'
+import { S3 } from 'aws-sdk'
 import { AppNode } from '../../../awsService/appBuilder/explorer/nodes/appNode'
 import { assertTelemetry, getWorkspaceFolder, TestFolder } from '../../testUtil'
 import { DeployParams, DeployWizard, getDeployWizard, runDeploy } from '../../../shared/sam/deploy'
@@ -1297,22 +1297,22 @@ const s3BucketListSummary: Array<
     { Name: 'stack-3-bucket', region: 'us-west-2' },
 ]
 
-const stackSummaries: CloudFormation.StackSummary[][] = [
+const stackSummaries: CloudFormationClientModule.StackSummary[][] = [
     [
         {
             StackName: 'stack1',
             StackStatus: 'CREATE_COMPLETE',
             CreationTime: new Date(),
-        } as CloudFormation.StackSummary,
+        } as CloudFormationClientModule.StackSummary,
         {
             StackName: 'stack2',
             StackStatus: 'CREATE_COMPLETE',
             CreationTime: new Date(),
-        } as CloudFormation.StackSummary,
+        } as CloudFormationClientModule.StackSummary,
         {
             StackName: 'stack3',
             StackStatus: 'CREATE_COMPLETE',
             CreationTime: new Date(),
-        } as CloudFormation.StackSummary,
+        } as CloudFormationClientModule.StackSummary,
     ],
 ]

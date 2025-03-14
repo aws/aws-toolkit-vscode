@@ -7,7 +7,6 @@ import { CloudFormation } from 'aws-sdk'
 import * as CloudFormationV3 from '@aws-sdk/client-cloudformation'
 import globals from '../extensionGlobals'
 import { AsyncCollection } from '../utilities/asyncCollection'
-import { pageableToCollection } from '../utilities/collectionUtils'
 import { hasProps, isNonNullable, RequiredProps } from '../utilities/tsUtils'
 import { ClientWrapper } from './clientWrapper'
 
@@ -55,22 +54,14 @@ export class CloudFormationClient extends ClientWrapper<CloudFormationV3.CloudFo
 
             request.NextToken = response.NextToken
         } while (request.NextToken)
-
-        function isStackSummary(s: CloudFormationV3.StackSummary | undefined): s is StackSummary {
-            return (
-                isNonNullable(s) &&
-                hasProps(s, 'StackName', 'CreationTime', 'StackStatus', 'DriftInformation') &&
-                hasProps(s.DriftInformation, 'StackDriftStatus')
-            )
-        }
     }
 
-    public listAllStacks(request: CloudFormation.ListStacksInput = {}): AsyncCollection<CloudFormation.StackSummary[]> {
-        const client = this.createSdkClient()
-        const requester = async (req: CloudFormation.ListStacksInput) => (await client).listStacks(req).promise()
-        const collection = pageableToCollection(requester, request, 'NextToken', 'StackSummaries')
-
-        return collection.filter(isNonNullable)
+    public listAllStacks(request: CloudFormationV3.ListStacksInput = {}): AsyncCollection<StackSummary[]> {
+        return this.makePaginatedRequest(
+            CloudFormationV3.paginateListStacks,
+            request,
+            (page) => page.StackSummaries
+        ).map((s) => s.filter(isStackSummary))
     }
 
     public async *listTypes(): AsyncIterableIterator<CloudFormation.TypeSummary> {
@@ -106,4 +97,12 @@ export class CloudFormationClient extends ClientWrapper<CloudFormationV3.CloudFo
     private async createSdkClient(): Promise<CloudFormation> {
         return await globals.sdkClientBuilder.createAwsService(CloudFormation, undefined, this.regionCode)
     }
+}
+
+function isStackSummary(s: CloudFormationV3.StackSummary | undefined): s is StackSummary {
+    return (
+        isNonNullable(s) &&
+        hasProps(s, 'StackName', 'CreationTime', 'StackStatus', 'DriftInformation') &&
+        hasProps(s.DriftInformation, 'StackDriftStatus')
+    )
 }

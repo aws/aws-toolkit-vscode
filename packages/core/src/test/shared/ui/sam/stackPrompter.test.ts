@@ -4,13 +4,12 @@
  */
 
 import assert from 'assert'
-import CloudFormation from 'aws-sdk/clients/cloudformation'
 import sinon from 'sinon'
 import * as vscode from 'vscode'
 import * as AwsConsoleModule from '../../../../shared/awsConsole'
 import * as SamUtilsModule from '../../../../shared/sam/utils'
 import * as ButtonsModule from '../../../../shared/ui/buttons'
-import { CloudFormationClient } from '../../../../shared/clients/cloudFormation'
+import { CloudFormationClient, StackSummary } from '../../../../shared/clients/cloudFormation'
 import { samSyncUrl } from '../../../../shared/constants'
 import { createStackPrompter } from '../../../../shared/ui/sam/stackPrompter'
 import { intoCollection } from '../../../../shared/utilities/collectionUtils'
@@ -31,23 +30,23 @@ describe('createStackPrompter', () => {
 
     it('should create a prompter with existing stacks', async () => {
         // Arrange
-        const stackSummaries: CloudFormation.StackSummary[][] = [
+        const stackSummaries: StackSummary[][] = [
             [
                 {
                     StackName: 'stack1',
                     StackStatus: 'CREATE_COMPLETE',
                     CreationTime: new Date(),
-                } as CloudFormation.StackSummary,
+                } as StackSummary,
                 {
                     StackName: 'stack2',
                     StackStatus: 'CREATE_COMPLETE',
                     CreationTime: new Date(),
-                } as CloudFormation.StackSummary,
+                } as StackSummary,
                 {
                     StackName: 'stack3',
                     StackStatus: 'CREATE_COMPLETE',
                     CreationTime: new Date(),
-                } as CloudFormation.StackSummary,
+                } as StackSummary,
             ],
         ]
         const expectedItems = [
