@@ -63,15 +63,15 @@ export abstract class ClientWrapper<C extends AwsClient> implements vscode.Dispo
                 const errWithoutStack = { ...e, name: e.name, message: e.message }
                 delete errWithoutStack['stack']
                 const timecost = perflog.elapsed().toFixed(1)
-                getLogger().error(
-                    `${action} failed (time: %dms) \nparams: %O\nerror: %O`,
-                    timecost,
-                    truncateProps(commandOptions, 20, ['nextToken']),
-                    errWithoutStack
-                )
                 if (requestOptions?.fallbackValue) {
                     return requestOptions.fallbackValue
                 }
+                // Error is already logged in middleware before this, so we omit it here.
+                getLogger().error(
+                    `${action} failed without fallback (time: %dms) \nparams: %O`,
+                    timecost,
+                    truncateProps(commandOptions, 20, ['nextToken'])
+                )
                 throw new ToolkitError(`${action}: ${errWithoutStack.message}`, {
                     code: extractCode(errWithoutStack),
                     cause: errWithoutStack,

@@ -244,7 +244,7 @@ describe('AwsClientBuilderV3', function () {
             await telemetry.vscode_executeCommand.run(async (_span) => {
                 await assert.rejects(onDeserialize(next, context, args))
             })
-            assertLogsContain('test error', false, 'error')
+            assertLogsContain('test error', false, 'warn')
             assertTelemetry('vscode_executeCommand', { requestServiceType: 'foo' })
         })
 

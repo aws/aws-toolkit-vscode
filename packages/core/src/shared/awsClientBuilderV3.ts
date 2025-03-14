@@ -263,7 +263,7 @@ export async function onDeserialize<Input extends object, Output extends object>
             const err = { ...e, name: e.name, mesage: e.message }
             delete err['stack']
             recordErrorTelemetry(err, serviceId)
-            getLogger().error(`API Error %s: %O`, logTail, err)
+            getLogger().warn(`API Request %s resulted in error: %O`, logTail, err)
         }
         throw e
     }
