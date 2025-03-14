@@ -4,7 +4,6 @@
  */
 
 import assert from 'assert'
-import { CloudFormation } from 'aws-sdk'
 import * as os from 'os'
 import {
     CloudFormationNode,
@@ -12,7 +11,7 @@ import {
     contextValueCloudformationLambdaFunction,
 } from '../../../lambda/explorer/cloudFormationNodes'
 import { LambdaFunctionNode } from '../../../lambda/explorer/lambdaFunctionNode'
-import { CloudFormationClient, StackSummary } from '../../../shared/clients/cloudFormation'
+import { CloudFormationClient, StackResource, StackSummary } from '../../../shared/clients/cloudFormation'
 import { DefaultLambdaClient } from '../../../shared/clients/lambdaClient'
 import globals from '../../../shared/extensionGlobals'
 import { TestAWSTreeNode } from '../../shared/treeview/nodes/testAWSTreeNode'
@@ -78,11 +77,11 @@ describe('CloudFormationStackNode', function () {
         return new CloudFormationStackNode(parentNode, regionCode, summary, lambdaClient, cloudFormationClient)
     }
 
-    function generateStackResources(...functionNames: string[]): CloudFormation.StackResource[] {
+    function generateStackResources(...functionNames: string[]): StackResource[] {
         return functionNames.map((name) => ({
             PhysicalResourceId: name,
             LogicalResourceId: name,
-            ResourceStatus: 'CREATED',
+            ResourceStatus: 'CREATE_COMPLETE',
             ResourceType: 'Lambda::Function',
             Timestamp: new globals.clock.Date(),
         }))

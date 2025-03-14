@@ -14,6 +14,12 @@ export interface StackSummary
     extends RequiredProps<CloudFormationV3.StackSummary, 'StackName' | 'CreationTime' | 'StackStatus'> {
     DriftInformation: RequiredProps<CloudFormationV3.StackDriftInformation, 'StackDriftStatus'>
 }
+
+export type StackResource = RequiredProps<CloudFormationV3.StackResource, 'ResourceType'>
+
+export interface DescribeStackResourcesOutput extends CloudFormationV3.DescribeStackResourcesOutput {
+    StackResources: StackResource[]
+}
 export class CloudFormationClient extends ClientWrapper<CloudFormationV3.CloudFormationClient> {
     public constructor(regionCode: string) {
         super(regionCode, CloudFormationV3.CloudFormationClient)
@@ -64,17 +70,18 @@ export class CloudFormationClient extends ClientWrapper<CloudFormationV3.CloudFo
         ).map((s) => s.filter(isStackSummary))
     }
 
-    public async *listTypes(): AsyncIterableIterator<CloudFormation.TypeSummary> {
-        const client = await this.createSdkClient()
-
-        const request: CloudFormation.ListTypesInput = {
+    public async *listTypes(): AsyncIterableIterator<CloudFormationV3.TypeSummary> {
+        const request: CloudFormationV3.ListTypesInput = {
             DeprecatedStatus: 'LIVE',
             Type: 'RESOURCE',
             Visibility: 'PUBLIC',
         }
 
         do {
-            const response: CloudFormation.ListTypesOutput = await client.listTypes(request).promise()
+            const response: CloudFormationV3.ListTypesOutput = await this.makeRequest(
+                CloudFormationV3.ListTypesCommand,
+                request
+            )
 
             if (response.TypeSummaries) {
                 yield* response.TypeSummaries
@@ -84,14 +91,8 @@ export class CloudFormationClient extends ClientWrapper<CloudFormationV3.CloudFo
         } while (request.NextToken)
     }
 
-    public async describeStackResources(name: string): Promise<CloudFormation.DescribeStackResourcesOutput> {
-        const client = await this.createSdkClient()
-
-        return await client
-            .describeStackResources({
-                StackName: name,
-            })
-            .promise()
+    public async describeStackResources(name: string): Promise<DescribeStackResourcesOutput> {
+        return await this.makeRequest(CloudFormationV3.DescribeStackResourcesCommand, { StackName: name })
     }
 
     private async createSdkClient(): Promise<CloudFormation> {
