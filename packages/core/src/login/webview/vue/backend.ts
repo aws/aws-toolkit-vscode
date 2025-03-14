@@ -63,17 +63,19 @@ export abstract class CommonAuthWebview extends VueWebview {
 
     private didCall: { login: boolean; reauth: boolean } = { login: false, reauth: false }
     public setUiReady(state: 'login' | 'reauth') {
-        // Prevent telemetry spam, since showing/hiding chat triggers this each time.
-        // So only emit once.
+        this.loadTimeout?.dispose()
+
+        // Only emit once to prevent telemetry spam, since showing/hiding chat triggers this each time.
         if (this.didCall[state]) {
             return
         }
-
-        telemetry.webview_load.emit({
+        telemetry.toolkit_didLoadModule.emit({
             passive: true,
-            webviewName: state,
+            module: state,
             result: 'Succeeded',
+            traceId: this.traceId,
         })
+        this.traceId = undefined
         this.didCall[state] = true
     }
 

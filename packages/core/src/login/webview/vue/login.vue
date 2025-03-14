@@ -145,6 +145,7 @@
                 ></SelectableItem>
                 <button
                     class="continue-button"
+                    id="connection-selection-continue-button"
                     :disabled="selectedLoginOption === 0"
                     v-on:click="handleContinueClick()"
                 >
@@ -368,8 +369,6 @@ export default defineComponent({
         // Pre-select the first available login option
         await this.preselectLoginOption()
         await this.handleUrlInput() // validate the default startUrl
-
-        await client.setUiReady('login')
     },
     methods: {
         toggleItemSelection(itemId: number) {
@@ -590,6 +589,18 @@ export default defineComponent({
         },
     },
 })
+
+/**
+ * The ID of the element we will use to determine that the UI has completed its initial load.
+ *
+ * This makes assumptions that we will be in a certain state of the UI (eg showing a form vs. a loading bar).
+ * So if the UI flow changes, this may need to be updated.
+ */
+export function getReadyElementId() {
+    // On every initial load, we ASSUME that the user will always be in the connection selection state,
+    // which is why we specifically look for this button.
+    return 'connection-selection-continue-button'
+}
 </script>
 
 <style>
