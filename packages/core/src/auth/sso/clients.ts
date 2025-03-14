@@ -16,7 +16,6 @@ import {
     SSOServiceException,
 } from '@aws-sdk/client-sso'
 import {
-    AuthorizationPendingException,
     CreateTokenRequest,
     RegisterClientRequest,
     SSOOIDC,
@@ -24,18 +23,18 @@ import {
     StartDeviceAuthorizationRequest,
 } from '@aws-sdk/client-sso-oidc'
 import { AsyncCollection } from '../../shared/utilities/asyncCollection'
-import { pageableToCollection, partialClone } from '../../shared/utilities/collectionUtils'
+import { pageableToCollection } from '../../shared/utilities/collectionUtils'
 import { assertHasProps, isNonNullable, RequiredProps, selectFrom } from '../../shared/utilities/tsUtils'
 import { getLogger } from '../../shared/logger/logger'
 import { SsoAccessTokenProvider } from './ssoAccessTokenProvider'
 import { AwsClientResponseError, isClientFault } from '../../shared/errors'
 import { DevSettings } from '../../shared/settings'
 import { SdkError } from '@aws-sdk/types'
-import { HttpRequest, HttpResponse } from '@smithy/protocol-http'
 import { StandardRetryStrategy, defaultRetryDecider } from '@smithy/middleware-retry'
 import { AuthenticationFlow } from './model'
 import { toSnakeCase } from '../../shared/utilities/textUtilities'
 import { getUserAgent, withTelemetryContext } from '../../shared/telemetry/util'
+import { defaultDeserializeMiddleware, finalizeLoggingMiddleware } from '../../shared/awsClientBuilderV3'
 
 export class OidcClient {
     public constructor(
@@ -249,52 +248,6 @@ export class SsoClient {
 }
 
 function addLoggingMiddleware(client: SSOOIDCClient) {
-    client.middlewareStack.add(
-        (next, context) => (args) => {
-            if (HttpRequest.isInstance(args.request)) {
-                const { hostname, path } = args.request
-                const input = partialClone(
-                    // TODO: Fix
-                    args.input as unknown as Record<string, unknown>,
-                    3,
-                    ['clientSecret', 'accessToken', 'refreshToken'],
-                    '[omitted]'
-                )
-                getLogger().debug('API request (%s %s): %O', hostname, path, input)
-            }
-            return next(args)
-        },
-        { step: 'finalizeRequest' }
-    )
-
-    client.middlewareStack.add(
-        (next, context) => async (args) => {
-            if (!HttpRequest.isInstance(args.request)) {
-                return next(args)
-            }
-
-            const { hostname, path } = args.request
-            const result = await next(args).catch((e) => {
-                if (e instanceof Error && !(e instanceof AuthorizationPendingException)) {
-                    const err = { ...e }
-                    delete err['stack']
-                    getLogger().error('API response (%s %s): %O', hostname, path, err)
-                }
-                throw e
-            })
-            if (HttpResponse.isInstance(result.response)) {
-                const output = partialClone(
-                    // TODO: Fix
-                    result.output as unknown as Record<string, unknown>,
-                    3,
-                    ['clientSecret', 'accessToken', 'refreshToken'],
-                    '[omitted]'
-                )
-                getLogger().debug('API response (%s %s): %O', hostname, path, output)
-            }
-
-            return result
-        },
-        { step: 'deserialize' }
-    )
+    client.middlewareStack.add(finalizeLoggingMiddleware, { step: 'finalizeRequest' })
+    client.middlewareStack.add(defaultDeserializeMiddleware, { step: 'deserialize' })
 }
