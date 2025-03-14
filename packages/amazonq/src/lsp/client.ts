@@ -11,7 +11,14 @@ import { registerInlineCompletion } from '../app/inline/completion'
 import { AmazonQLspAuth, encryptionKey, notificationTypes } from './auth'
 import { AuthUtil } from 'aws-core-vscode/codewhisperer'
 import { ConnectionMetadata } from '@aws/language-server-runtimes/protocol'
-import { ResourcePaths, Settings, oidcClientName, createServerOptions, globals } from 'aws-core-vscode/shared'
+import {
+    ResourcePaths,
+    Settings,
+    oidcClientName,
+    createServerOptions,
+    globals,
+    getLogger,
+} from 'aws-core-vscode/shared'
 
 const localize = nls.loadMessageBundle()
 
@@ -99,6 +106,16 @@ export async function startLanguageServer(extensionContext: vscode.ExtensionCont
                 },
             }
         })
+
+        // Temporary code for pen test. Will be removed when we switch to the real flare auth
+        const authInterval = setInterval(async () => {
+            try {
+                await auth.init()
+            } catch (e) {
+                getLogger('amazonqLsp').error('Unable to update bearer token: %s', (e as Error).message)
+                clearInterval(authInterval)
+            }
+        }, 300000) // every 5 minutes
 
         toDispose.push(
             AuthUtil.instance.auth.onDidChangeActiveConnection(async () => {
