@@ -6,7 +6,7 @@
 import assert from 'assert'
 import { createResource, updateResource } from '../../../dynamicResources/commands/saveResource'
 import { AddOperation } from 'fast-json-patch'
-import { CloudControlClient } from '../../../shared/clients/cloudControlClient'
+import { CloudControlClient } from '../../../shared/clients/cloudControl'
 import { getTestWindow } from '../../shared/vscode/window'
 import sinon from 'sinon'
 

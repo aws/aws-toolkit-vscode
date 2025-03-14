@@ -74,11 +74,13 @@ export async function listScanResults(
     for (const [key, issues] of codeScanIssueMap.entries()) {
         // Project path example: /Users/username/project
         // Key example: project/src/main/java/com/example/App.java
+        const mappedProjectPaths: Set<string> = new Set()
         for (const projectPath of projectPaths) {
             // We need to remove the project path from the key to get the absolute path to the file
             // Do not use .. in between because there could be multiple project paths in the same parent dir.
             const filePath = path.join(projectPath, key.split('/').slice(1).join('/'))
             if (existsSync(filePath) && statSync(filePath).isFile()) {
+                mappedProjectPaths.add(filePath)
                 const document = await vscode.workspace.openTextDocument(filePath)
                 const aggregatedCodeScanIssue: AggregatedCodeScanIssue = {
                     filePath: filePath,
@@ -88,7 +90,11 @@ export async function listScanResults(
             }
         }
         const maybeAbsolutePath = `/${key}`
-        if (existsSync(maybeAbsolutePath) && statSync(maybeAbsolutePath).isFile()) {
+        if (
+            !mappedProjectPaths.has(maybeAbsolutePath) &&
+            existsSync(maybeAbsolutePath) &&
+            statSync(maybeAbsolutePath).isFile()
+        ) {
             const document = await vscode.workspace.openTextDocument(maybeAbsolutePath)
             const aggregatedCodeScanIssue: AggregatedCodeScanIssue = {
                 filePath: maybeAbsolutePath,

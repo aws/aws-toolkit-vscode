@@ -12,7 +12,7 @@ import { makeChildrenNodes } from '../../../shared/treeview/utils'
 import { toArrayAsync, updateInPlace } from '../../../shared/utilities/collectionUtils'
 import { ResourceTypeNode } from './resourceTypeNode'
 import { CloudFormation } from 'aws-sdk'
-import { CloudControlClient, DefaultCloudControlClient } from '../../../shared/clients/cloudControlClient'
+import { CloudControlClient } from '../../../shared/clients/cloudControl'
 import { memoizedGetResourceTypes, ResourceTypeMetadata } from '../../model/resources'
 import { ResourcesSettings } from '../../commands/configure'
 
@@ -24,7 +24,7 @@ export class ResourcesNode extends AWSTreeNodeBase {
     public constructor(
         public readonly region: string,
         public readonly cloudFormation: CloudFormationClient = new DefaultCloudFormationClient(region),
-        private readonly cloudControl: CloudControlClient = new DefaultCloudControlClient(region),
+        private readonly cloudControl: CloudControlClient = new CloudControlClient(region),
         private readonly settings = new ResourcesSettings()
     ) {
         super(localize('AWS.explorerNode.resources.label', 'Resources'), vscode.TreeItemCollapsibleState.Collapsed)
