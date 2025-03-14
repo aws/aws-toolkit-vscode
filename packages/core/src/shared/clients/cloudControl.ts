@@ -14,12 +14,15 @@ export class CloudControlClient extends ClientWrapper<CloudControlV3.CloudContro
         super(regionCode, CloudControlV3.CloudControlClient)
     }
 
-    public async createResource(request: CloudControl.CreateResourceInput): Promise<CloudControl.CreateResourceOutput> {
-        const client = await this.createSdkClient()
+    public async createResource(
+        request: CloudControlV3.CreateResourceInput
+    ): Promise<CloudControlV3.CreateResourceOutput> {
+        const createResponse: CloudControlV3.CreateResourceOutput = await this.makeRequest(
+            CloudControlV3.CreateResourceCommand,
+            request
+        )
 
-        const createResponse = await client.createResource(request).promise()
-
-        await this.pollForCompletion(client, createResponse.ProgressEvent!)
+        await this.pollForCompletionV3(createResponse.ProgressEvent!)
         return createResponse
     }
 
@@ -49,6 +52,71 @@ export class CloudControlClient extends ClientWrapper<CloudControlV3.CloudContro
         const updateResponse = await client.updateResource(request).promise()
 
         await this.pollForCompletion(client, updateResponse.ProgressEvent!)
+    }
+
+    private async getResourceRequestStatus(
+        request: CloudControlV3.GetResourceRequestStatusInput
+    ): Promise<CloudControlV3.GetResourceRequestStatusOutput> {
+        return await this.makeRequest(CloudControlV3.GetResourceRequestStatusCommand, request)
+    }
+
+    private async pollForCompletionV3(
+        progressEvent: CloudControlV3.ProgressEvent,
+        baseDelay: number = 500,
+        maxRetries: number = 10
+    ): Promise<void> {
+        for (let i = 0; i < maxRetries; i++) {
+            const operationStatus = progressEvent.OperationStatus
+
+            switch (operationStatus) {
+                case 'SUCCESS':
+                    return
+                case 'FAILED':
+                    throw new Error(
+                        localize(
+                            'AWS.message.error.cloudControl.pollResourceStatus.failed',
+                            'Resource operation failed: {0} ({1})',
+                            progressEvent.StatusMessage,
+                            progressEvent.ErrorCode
+                        )
+                    )
+                case 'CANCEL_COMPLETE':
+                    throw new Error(
+                        localize(
+                            'AWS.message.error.cloudControl.pollResourceStatus.cancelled',
+                            'Resource operation cancelled: {0}',
+                            progressEvent.StatusMessage
+                        )
+                    )
+                case 'IN_PROGRESS':
+                case 'CANCEL_IN_PROGRESS':
+                case 'PENDING':
+                    break
+                default:
+                    throw new Error(
+                        localize(
+                            'AWS.message.error.cloudControl.pollResourceStatus.invalidOperationStatus',
+                            'Invalid resource operation status: {0}',
+                            operationStatus
+                        )
+                    )
+            }
+
+            if (i + 1 < maxRetries) {
+                await new Promise<void>((resolve) => globals.clock.setTimeout(resolve, baseDelay * 2 ** i))
+                const resourceRequestStatus = await this.getResourceRequestStatus({
+                    RequestToken: progressEvent.RequestToken,
+                })
+                progressEvent = resourceRequestStatus.ProgressEvent!
+            }
+        }
+        throw new Error(
+            localize(
+                'AWS.message.error.cloudControl.pollResourceStatus.timeout',
+                'Failed to get terminal resource operation status for {0} before timeout. Please try again later',
+                progressEvent.Identifier
+            )
+        )
     }
 
     private async pollForCompletion(

@@ -12,7 +12,7 @@ import { makeChildrenNodes } from '../../../shared/treeview/utils'
 import { toArrayAsync, updateInPlace } from '../../../shared/utilities/collectionUtils'
 import { ResourceTypeNode } from './resourceTypeNode'
 import { CloudFormation } from 'aws-sdk'
-import { CloudControlClient, CloudControlClient } from '../../../shared/clients/cloudControl'
+import { CloudControlClient } from '../../../shared/clients/cloudControl'
 import { memoizedGetResourceTypes, ResourceTypeMetadata } from '../../model/resources'
 import { ResourcesSettings } from '../../commands/configure'
 
