@@ -42,7 +42,6 @@ export class Session {
     public generatedFilePath: string = ''
     public projectRootPath: string = ''
     public fileLanguage: string | undefined = 'plaintext'
-    public stopIteration: boolean = false
     public targetFileInfo: TargetFileInfo | undefined
     public jobSummary: string = ''
 

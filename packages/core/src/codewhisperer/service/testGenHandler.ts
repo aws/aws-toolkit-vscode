@@ -18,6 +18,7 @@ import {
     CreateUploadUrlError,
     ExportResultsArchiveError,
     InvalidSourceZipError,
+    TestGenFailedError,
     TestGenStoppedError,
     TestGenTimedOutError,
 } from '../../amazonqTest/error'
@@ -193,9 +194,16 @@ export async function pollTestJobStatus(
             }
         }
         ChatSessionManager.Instance.getSession().targetFileInfo = targetFileInfo
-        if (resp.testGenerationJob?.status !== CodeWhispererConstants.TestGenerationJobStatus.IN_PROGRESS) {
-            // This can be FAILED or COMPLETED
-            status = resp.testGenerationJob?.status as CodeWhispererConstants.TestGenerationJobStatus
+        status = resp.testGenerationJob?.status as CodeWhispererConstants.TestGenerationJobStatus
+        if (status === CodeWhispererConstants.TestGenerationJobStatus.FAILED) {
+            session.numberOfTestsGenerated = 0
+            logger.verbose(`Test generation failed.`)
+            if (resp.testGenerationJob?.jobStatusReason) {
+                throw new TestGenFailedError(resp.testGenerationJob?.jobStatusReason)
+            } else {
+                throw new TestGenFailedError()
+            }
+        } else if (status === CodeWhispererConstants.TestGenerationJobStatus.COMPLETED) {
             logger.verbose(`testgen job status: ${status}`)
             logger.verbose(`Complete polling test job status.`)
             break
