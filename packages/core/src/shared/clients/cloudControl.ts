@@ -5,11 +5,9 @@
 
 import { CloudControl } from 'aws-sdk'
 import globals from '../extensionGlobals'
-import { ClassToInterfaceType } from '../utilities/tsUtils'
 import { localize } from '../utilities/vsCodeUtils'
 
-export type CloudControlClient = ClassToInterfaceType<DefaultCloudControlClient>
-export class DefaultCloudControlClient implements CloudControlClient {
+export class CloudControlClient {
     public constructor(public readonly regionCode: string) {}
 
     public async createResource(request: CloudControl.CreateResourceInput): Promise<CloudControl.CreateResourceOutput> {

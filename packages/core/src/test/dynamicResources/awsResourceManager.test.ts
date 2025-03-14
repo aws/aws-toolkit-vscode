@@ -12,7 +12,7 @@ import { ResourcesNode } from '../../dynamicResources/explorer/nodes/resourcesNo
 import { ResourceNode } from '../../dynamicResources/explorer/nodes/resourceNode'
 import { ResourceTypeNode } from '../../dynamicResources/explorer/nodes/resourceTypeNode'
 import { formatResourceModel, AwsResourceManager } from '../../dynamicResources/awsResourceManager'
-import { CloudControlClient, DefaultCloudControlClient } from '../../shared/clients/cloudControlClient'
+import { CloudControlClient, CloudControlClient } from '../../shared/clients/cloudControl'
 import { CloudFormationClient, DefaultCloudFormationClient } from '../../shared/clients/cloudFormationClient'
 import { makeTemporaryToolkitFolder, readFileAsString } from '../../shared/filesystemUtilities'
 import { FakeExtensionContext } from '../fakeExtensionContext'
@@ -48,7 +48,7 @@ describe('ResourceManager', function () {
     }
 
     beforeEach(async function () {
-        cloudControl = stub(DefaultCloudControlClient, {
+        cloudControl = stub(CloudControlClient, {
             regionCode: '',
         })
         cloudFormation = stub(DefaultCloudFormationClient, {
