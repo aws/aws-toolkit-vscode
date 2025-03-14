@@ -387,12 +387,12 @@
                 },
                 {
                     "command": "aws.amazonq.openSecurityIssuePanel",
-                    "when": "view == aws.amazonq.SecurityIssuesTree && (viewItem == issueWithoutFix || viewItem == issueWithFix)",
+                    "when": "view == aws.amazonq.SecurityIssuesTree && (viewItem == issueWithoutFix || viewItem == issueWithFix || viewItem == issueWithFixDisabled)",
                     "group": "inline@4"
                 },
                 {
                     "command": "aws.amazonq.security.ignore",
-                    "when": "view == aws.amazonq.SecurityIssuesTree && (viewItem == issueWithoutFix || viewItem == issueWithFix)",
+                    "when": "view == aws.amazonq.SecurityIssuesTree && (viewItem == issueWithoutFix || viewItem == issueWithFix || viewItem == issueWithFixDisabled)",
                     "group": "inline@5"
                 },
                 {
@@ -402,7 +402,7 @@
                 },
                 {
                     "submenu": "aws.amazonq.submenu.securityIssueMoreActions",
-                    "when": "view == aws.amazonq.SecurityIssuesTree && (viewItem == issueWithoutFix || viewItem == issueWithFix)",
+                    "when": "view == aws.amazonq.SecurityIssuesTree && (viewItem == issueWithoutFix || viewItem == issueWithFix || viewItem == issueWithFixDisabled)",
                     "group": "inline@7"
                 }
             ],
