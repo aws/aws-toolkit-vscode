@@ -9,10 +9,37 @@
  * When thrown from common components, individual agents can catch and transform this error
  * to provide their own customized error messages.
  */
-import { ToolkitError } from '../shared/errors'
+import { ErrorInformation, ToolkitError } from '../shared/errors'
 
-export class ContentLengthError extends ToolkitError {
-    constructor(message: string) {
-        super(message, { code: 'ContentLengthError' })
+/**
+ * Errors extending this class are considered "errors" in service metrics.
+ */
+export class ClientError extends ToolkitError {
+    constructor(message: string, info: ErrorInformation = {}) {
+        super(message, info)
+    }
+}
+
+/**
+ * Errors extending this class are considered "faults" in service metrics.
+ */
+export class ServiceError extends ToolkitError {
+    constructor(message: string, info: ErrorInformation = {}) {
+        super(message, info)
+    }
+}
+
+/**
+ * Errors extending this class are considered "LLM failures" in service metrics.
+ */
+export class LlmError extends ToolkitError {
+    constructor(message: string, info: ErrorInformation = {}) {
+        super(message, info)
+    }
+}
+
+export class ContentLengthError extends ClientError {
+    constructor(message: string, info: ErrorInformation = { code: 'ContentLengthError' }) {
+        super(message, info)
     }
 }

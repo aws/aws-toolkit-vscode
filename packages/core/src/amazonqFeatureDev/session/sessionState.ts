@@ -6,11 +6,11 @@
 import { MynahIcons } from '@aws/mynah-ui'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { ToolkitError } from '../../shared/errors'
 import { getLogger } from '../../shared/logger/logger'
 import { featureDevScheme } from '../constants'
 import {
-    FeatureDevServiceError,
+    ApiClientError,
+    ApiServiceError,
     IllegalStateTransition,
     NoChangeRequiredException,
     PromptRefusalException,
@@ -37,6 +37,7 @@ import {
     BasePrepareCodeGenState,
     CreateNextStateParams,
 } from '../../amazonq/session/sessionState'
+import { LlmError } from '../../amazonq/errors'
 
 export class ConversationNotStartedState implements Omit<SessionState, 'uploadId'> {
     public tokenSource: vscode.CancellationTokenSource
@@ -178,9 +179,11 @@ export class FeatureDevCodeGenState extends BaseCodeGenState {
     protected handleError(messenger: BaseMessenger, codegenResult: any): Error {
         switch (true) {
             case codegenResult.codeGenerationStatusDetail?.includes('Guardrails'): {
-                return new FeatureDevServiceError(
+                return new ApiClientError(
                     i18n('AWS.amazonq.featureDev.error.codeGen.default'),
-                    'GuardrailsException'
+                    'GetTaskAssistCodeGeneration',
+                    'GuardrailsException',
+                    400
                 )
             }
             case codegenResult.codeGenerationStatusDetail?.includes('PromptRefusal'): {
@@ -190,21 +193,25 @@ export class FeatureDevCodeGenState extends BaseCodeGenState {
                 if (codegenResult.codeGenerationStatusDetail?.includes('NO_CHANGE_REQUIRED')) {
                     return new NoChangeRequiredException()
                 }
-                return new FeatureDevServiceError(
-                    i18n('AWS.amazonq.featureDev.error.codeGen.default'),
-                    'EmptyPatchException'
-                )
+                return new LlmError(i18n('AWS.amazonq.featureDev.error.codeGen.default'), {
+                    code: 'EmptyPatchException',
+                })
             }
             case codegenResult.codeGenerationStatusDetail?.includes('Throttling'): {
-                return new FeatureDevServiceError(
+                return new ApiClientError(
                     i18n('AWS.amazonq.featureDev.error.throttling'),
-                    'ThrottlingException'
+                    'GetTaskAssistCodeGeneration',
+                    'ThrottlingException',
+                    429
                 )
             }
             default: {
-                return new ToolkitError(i18n('AWS.amazonq.featureDev.error.codeGen.default'), {
-                    code: 'CodeGenFailed',
-                })
+                return new ApiServiceError(
+                    i18n('AWS.amazonq.featureDev.error.codeGen.default'),
+                    'GetTaskAssistCodeGeneration',
+                    'UnknownException',
+                    500
+                )
             }
         }
     }

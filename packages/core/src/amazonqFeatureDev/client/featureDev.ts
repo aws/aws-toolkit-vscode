@@ -14,12 +14,14 @@ import { featureName, startTaskAssistLimitReachedMessage } from '../constants'
 import { CodeReference } from '../../amazonq/webview/ui/connector'
 import {
     ApiError,
+    ApiServiceError,
     CodeIterationLimitError,
     ContentLengthError,
+    FeatureDevServiceError,
     MonthlyConversationLimitError,
     UnknownApiError,
 } from '../errors'
-import { ToolkitError, isAwsError } from '../../shared/errors'
+import { isAwsError } from '../../shared/errors'
 import { getCodewhispererConfig } from '../../codewhisperer/client/codewhisperer'
 import { createCodeWhispererChatStreamingClient } from '../../shared/clients/codewhispererChatClient'
 import { getClientId, getOptOutPreference, getOperatingSystem } from '../../shared/telemetry/util'
@@ -93,7 +95,7 @@ export class FeatureDevClient implements FeatureClient {
                 ) {
                     throw new MonthlyConversationLimitError(e.message)
                 }
-                throw new ApiError(e.message, 'CreateConversation', e.code, e.statusCode ?? 400)
+                throw ApiError.of(e.message, 'CreateConversation', e.code, e.statusCode ?? 500)
             }
 
             throw new UnknownApiError(e instanceof Error ? e.message : 'Unknown error', 'CreateConversation')
@@ -136,7 +138,7 @@ export class FeatureDevClient implements FeatureClient {
                 if (e.code === 'ValidationException' && e.message.includes('Invalid contentLength')) {
                     throw new ContentLengthError()
                 }
-                throw new ApiError(e.message, 'CreateUploadUrl', e.code, e.statusCode ?? 400)
+                throw ApiError.of(e.message, 'CreateUploadUrl', e.code, e.statusCode ?? 500)
             }
 
             throw new UnknownApiError(e instanceof Error ? e.message : 'Unknown error', 'CreateUploadUrl')
@@ -198,8 +200,10 @@ export class FeatureDevClient implements FeatureClient {
                 ) {
                     throw new CodeIterationLimitError()
                 }
+                throw ApiError.of(e.message, 'StartTaskAssistCodeGeneration', e.code, e.statusCode ?? 500)
             }
-            throw new ToolkitError((e as Error).message, { code: 'StartCodeGenerationFailed' })
+
+            throw new UnknownApiError(e instanceof Error ? e.message : 'Unknown error', 'StartTaskAssistCodeGeneration')
         }
     }
 
@@ -220,7 +224,12 @@ export class FeatureDevClient implements FeatureClient {
                     (e as any).requestId
                 }`
             )
-            throw new ToolkitError((e as Error).message, { code: 'GetCodeGenerationFailed' })
+
+            if (isAwsError(e)) {
+                throw ApiError.of(e.message, 'GetTaskAssistCodeGeneration', e.code, e.statusCode ?? 500)
+            }
+
+            throw new UnknownApiError(e instanceof Error ? e.message : 'Unknown error', 'GetTaskAssistCodeGeneration')
         }
     }
 
@@ -235,7 +244,12 @@ export class FeatureDevClient implements FeatureClient {
             const archiveResponse = await streamingClient.exportResultArchive(params)
             const buffer: number[] = []
             if (archiveResponse.body === undefined) {
-                throw new ToolkitError('Empty response from CodeWhisperer Streaming service.')
+                throw new ApiServiceError(
+                    'Empty response from CodeWhisperer Streaming service.',
+                    'ExportResultArchive',
+                    'EmptyResponse',
+                    500
+                )
             }
             for await (const chunk of archiveResponse.body) {
                 if (chunk.internalServerException !== undefined) {
@@ -274,7 +288,12 @@ export class FeatureDevClient implements FeatureClient {
                     (e as any).requestId
                 }`
             )
-            throw new ToolkitError((e as Error).message, { code: 'ExportResultArchiveFailed' })
+
+            if (isAwsError(e)) {
+                throw ApiError.of(e.message, 'ExportResultArchive', e.code, e.statusCode ?? 500)
+            }
+
+            throw new FeatureDevServiceError(e instanceof Error ? e.message : 'Unknown error', 'ExportResultArchive')
         }
     }
 

@@ -15,7 +15,7 @@ import {
     createUserFacingErrorMessage,
     denyListedErrors,
     FeatureDevServiceError,
-    isAPIClientError,
+    getMetricResult,
     MonthlyConversationLimitError,
     NoChangeRequiredException,
     PrepareRepoFailedError,
@@ -550,34 +550,7 @@ export class FeatureDevController {
             this.messenger.sendUpdatePlaceholder(tabID, i18n('AWS.amazonq.featureDev.pillText.selectOption'))
         } catch (err: any) {
             getLogger().error(`${featureName}: Error during code generation: ${err}`)
-
-            let result: string
-            switch (err.constructor.name) {
-                case FeatureDevServiceError.name:
-                    if (err.code === 'EmptyPatchException') {
-                        result = MetricDataResult.LlmFailure
-                    } else if (err.code === 'GuardrailsException' || err.code === 'ThrottlingException') {
-                        result = MetricDataResult.Error
-                    } else {
-                        result = MetricDataResult.Fault
-                    }
-                    break
-                case MonthlyConversationLimitError.name:
-                case CodeIterationLimitError.name:
-                case PromptRefusalException.name:
-                case NoChangeRequiredException.name:
-                    result = MetricDataResult.Error
-                    break
-                default:
-                    if (isAPIClientError(err)) {
-                        result = MetricDataResult.Error
-                    } else {
-                        result = MetricDataResult.Fault
-                    }
-                    break
-            }
-
-            await session.sendMetricDataTelemetry(MetricDataOperationName.EndCodeGeneration, result)
+            await session.sendMetricDataTelemetry(MetricDataOperationName.EndCodeGeneration, getMetricResult(err))
             throw err
         } finally {
             // Finish processing the event
