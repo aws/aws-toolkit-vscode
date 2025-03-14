@@ -20,8 +20,9 @@ import { existsSync } from 'fs' // eslint-disable-line no-restricted-imports
 import { ResourceTypeMetadata } from '../../dynamicResources/model/resources'
 import globals from '../../shared/extensionGlobals'
 import { Stub, stub } from '../utilities/stubber'
-import { CloudControl, CloudFormation } from 'aws-sdk'
+import { CloudControl } from 'aws-sdk'
 import { fs } from '../../shared'
+import { DescribeTypeOutput } from '@aws-sdk/client-cloudformation'
 
 describe('ResourceManager', function () {
     let sandbox: sinon.SinonSandbox
@@ -237,7 +238,7 @@ describe('ResourceManager', function () {
         })
         cloudFormation.describeType.callsFake(async (name: string) => {
             if (name === fakeTypeName) {
-                return { Schema: '{}' } as any as CloudFormation.DescribeTypeOutput
+                return { Schema: '{}' } as any as DescribeTypeOutput
             }
             throw new Error()
         })

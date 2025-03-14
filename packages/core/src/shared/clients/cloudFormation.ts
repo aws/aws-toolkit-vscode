@@ -3,9 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { CloudFormation } from 'aws-sdk'
 import * as CloudFormationV3 from '@aws-sdk/client-cloudformation'
-import globals from '../extensionGlobals'
 import { AsyncCollection } from '../utilities/asyncCollection'
 import { hasProps, isNonNullable, RequiredProps } from '../utilities/tsUtils'
 import { ClientWrapper } from './clientWrapper'
@@ -29,21 +27,14 @@ export class CloudFormationClient extends ClientWrapper<CloudFormationV3.CloudFo
         return await this.makeRequest(CloudFormationV3.DeleteStackCommand, { StackName: name })
     }
 
-    public async describeType(typeName: string): Promise<CloudFormation.DescribeTypeOutput> {
-        const client = await this.createSdkClient()
-
-        return await client
-            .describeType({
-                Type: 'RESOURCE',
-                TypeName: typeName,
-            })
-            .promise()
+    public async describeType(typeName: string): Promise<CloudFormationV3.DescribeTypeOutput> {
+        return await this.makeRequest(CloudFormationV3.DescribeTypeCommand, { TypeName: typeName })
     }
 
     public async *listStacks(
-        statusFilter: string[] = ['CREATE_COMPLETE', 'UPDATE_COMPLETE']
+        statusFilter: CloudFormationV3.StackStatus[] = ['CREATE_COMPLETE', 'UPDATE_COMPLETE']
     ): AsyncIterableIterator<StackSummary> {
-        const request: CloudFormation.ListStacksInput = {
+        const request: CloudFormationV3.ListStacksInput = {
             StackStatusFilter: statusFilter,
         }
 
@@ -93,10 +84,6 @@ export class CloudFormationClient extends ClientWrapper<CloudFormationV3.CloudFo
 
     public async describeStackResources(name: string): Promise<DescribeStackResourcesOutput> {
         return await this.makeRequest(CloudFormationV3.DescribeStackResourcesCommand, { StackName: name })
-    }
-
-    private async createSdkClient(): Promise<CloudFormation> {
-        return await globals.sdkClientBuilder.createAwsService(CloudFormation, undefined, this.regionCode)
     }
 }
 
