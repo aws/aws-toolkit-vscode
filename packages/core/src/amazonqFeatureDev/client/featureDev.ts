@@ -264,6 +264,9 @@ export class FeatureDevClient implements FeatureClient {
 
             const newFileContents: { zipFilePath: string; fileContent: string }[] = []
             for (const [filePath, fileContent] of Object.entries(newFiles)) {
+                if (filePath === '.amazonq/dev/run_command_log.txt') {
+                    continue
+                }
                 newFileContents.push({ zipFilePath: filePath, fileContent })
             }
 
