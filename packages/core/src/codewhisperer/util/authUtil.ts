@@ -45,7 +45,7 @@ import { asStringifiedStack } from '../../shared/telemetry/spans'
 import { withTelemetryContext } from '../../shared/telemetry/util'
 import { focusAmazonQPanel } from '../../codewhispererChat/commands/registerCommands'
 import { throttle } from 'lodash'
-
+import { RegionProfileManager } from '../region/regionProfileNamager'
 /** Backwards compatibility for connections w pre-chat scopes */
 export const codeWhispererCoreScopes = [...scopesCodeWhispererCore]
 export const codeWhispererChatScopes = [...codeWhispererCoreScopes, ...scopesCodeWhispererChat]
@@ -105,7 +105,10 @@ export class AuthUtil {
     )
     public readonly restore = () => this.secondaryAuth.restoreConnection()
 
-    public constructor(public readonly auth = Auth.instance) {}
+    public constructor(
+        public readonly auth = Auth.instance,
+        public readonly regionProfileManager = new RegionProfileManager()
+    ) {}
 
     public initCodeWhispererHooks = once(() => {
         this.auth.onDidChangeConnectionState(async (e) => {

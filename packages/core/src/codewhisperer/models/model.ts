@@ -48,6 +48,13 @@ export const vsCodeState: VsCodeState = {
     isFreeTierLimitReached: false,
 }
 
+export interface RegionProfile {
+    name: string
+    region: string
+    arn: string
+    description: string
+}
+
 export type UtgStrategy = 'byName' | 'byContent'
 
 export type CrossFileStrategy = 'opentabs' | 'codemap' | 'bm25' | 'default'
