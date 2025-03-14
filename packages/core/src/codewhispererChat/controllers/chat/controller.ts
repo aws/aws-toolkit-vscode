@@ -541,9 +541,9 @@ export class ChatController {
                 } else if (contextCommandItem.symbol) {
                     symbolsCmd.children?.[0].commands.push({
                         command: contextCommandItem.symbol.name,
-                        description: `${contextCommandItem.symbol.kind} defined at L${contextCommandItem.symbol.range.start.line} of ${path.join(wsFolderName, contextCommandItem.relativePath)}`,
+                        description: `${contextCommandItem.symbol.kind} L${contextCommandItem.symbol.range.start.line}-L${contextCommandItem.symbol.range.end.line} of\n ${path.join(wsFolderName, contextCommandItem.relativePath)}`,
                         route: [contextCommandItem.workspaceFolder, contextCommandItem.relativePath],
-                        label: 'symbol',
+                        label: 'code',
                         id: contextCommandItem.id,
                         icon: 'paper-clip' as MynahIconsType,
                     })
