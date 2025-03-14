@@ -11,7 +11,7 @@ import { CloudFormationClient } from '../../../shared/clients/cloudFormationClie
 import { assertNodeListOnlyHasPlaceholderNode } from '../../utilities/explorerNodeAssertions'
 import { asyncGenerator } from '../../../shared/utilities/collectionUtils'
 import { CloudFormation } from 'aws-sdk'
-import { CloudControlClient } from '../../../shared/clients/cloudControlClient'
+import { CloudControlClient } from '../../../shared/clients/cloudControl'
 import { Settings } from '../../../shared/settings'
 import { ResourcesSettings } from '../../../dynamicResources/commands/configure'
 import sinon from 'sinon'
