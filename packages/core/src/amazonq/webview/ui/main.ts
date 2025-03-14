@@ -63,7 +63,7 @@ export const createMynahUI = (
         const { error, message } = e
         ideApi.postMessage({
             type: 'error',
-            event: connector.isUIReady ? 'webview_error' : 'webview_load',
+            event: connector.isUIReady ? 'webview_error' : 'toolkit_didLoadModule',
             errorMessage: error ? error.toString() : message,
         })
     })

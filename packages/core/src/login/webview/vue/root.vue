@@ -16,8 +16,8 @@ configure app to AMAZONQ if for Amazon Q login
 </template>
 <script lang="ts">
 import { PropType, defineComponent } from 'vue'
-import Login from './login.vue'
-import Reauthenticate from './reauthenticate.vue'
+import Login, { getReadyElementId as getLoginReadyElementId } from './login.vue'
+import Reauthenticate, { getReadyElementId as getReauthReadyElementId } from './reauthenticate.vue'
 import { AuthFlowState, FeatureId } from './types'
 import { WebviewClientFactory } from '../../../webviews/client'
 import { CommonAuthWebview } from './backend'
@@ -51,15 +51,67 @@ export default defineComponent({
         })
 
         await this.refreshAuthState()
+
+        // We were recieving the 'load' event before refreshAuthState() resolved (I'm assuming behavior w/ Vue + browser loading not blocking),
+        // so post refreshAuhState() if we detect we already loaded, then execute immediately since the event already happened.
+        if (didLoad) {
+            handleLoaded()
+        } else {
+            window.addEventListener('load', () => {
+                handleLoaded()
+            })
+        }
     },
     methods: {
         async refreshAuthState() {
             await client.refreshAuthState()
             this.authFlowState = await client.getAuthState()
+
+            // Used for telemetry purposes
+            if (this.authFlowState === 'LOGIN') {
+                ;(window as any).uiState = 'login'
+                ;(window as any).uiReadyElementId = getLoginReadyElementId()
+            } else if (this.authFlowState && this.authFlowState !== undefined) {
+                ;(window as any).uiState = 'reauth'
+                ;(window as any).uiReadyElementId = getReauthReadyElementId()
+            }
+
             this.refreshKey += 1
         },
     },
 })
+
+// THe following handles the process of indicating the UI has loaded successfully.
+let emittedReady = false
+let errorMessage: string | undefined = undefined
+// Catch JS errors
+window.onerror = function (message) {
+    errorMessage = message.toString()
+}
+// Listen for DOM errors
+document.addEventListener(
+    'error',
+    function (e) {
+        errorMessage = e.message
+    },
+    true
+)
+let didLoad = false
+window.addEventListener('load', () => {
+    didLoad = true
+})
+const handleLoaded = () => {
+    // TODO: See if this ever gets triggered, and if not, delete emittedReady
+    if (emittedReady) {
+        console.log(`NIKOLAS: load event triggered a subsequent time`)
+    }
+
+    if (!emittedReady && errorMessage === undefined && !!document.getElementById((window as any).uiReadyElementId)) {
+        emittedReady = true // ensure we only emit once per load
+        client.setUiReady((window as any).uiState)
+        window.postMessage({ command: `ui-is-ready`, state: (window as any).uiState })
+    }
+}
 </script>
 <style>
 body {

@@ -137,6 +137,11 @@ export class CommonAuthViewProvider implements WebviewViewProvider {
         }
         webviewView.webview.html = this._getHtmlForWebview(this.extensionContext.extensionUri, webviewView.webview)
         // register the webview server
+        //
+        // TODO: Fix potential race condition, since setup() sets up the message handlers, but it is possible that
+        // when setting the .html above it will execute the HTML (and send messages) before the handlers are configured.
+        // To repro, add a sleep right after setting .html and watch how nothing loads. I'm assuming all the messages are
+        // dropped.
         await this.webView?.setup(webviewView.webview)
     }
 

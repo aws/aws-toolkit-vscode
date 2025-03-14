@@ -127,9 +127,6 @@ export default defineComponent({
 
         this.doShow = true
     },
-    async mounted() {
-        await client.setUiReady('reauth')
-    },
     methods: {
         async reauthenticate() {
             client.emitUiClick('auth_reauthenticate')
@@ -148,6 +145,16 @@ export default defineComponent({
         },
     },
 })
+
+/**
+ * The ID of the element we will use to determine that the UI has completed its initial load.
+ *
+ * This makes assumptions that we will be in a certain state of the UI (eg showing a form vs. a loading bar).
+ * So if the UI flow changes, this may need to be updated.
+ */
+export function getReadyElementId() {
+    return 'button#reauthenticate'
+}
 </script>
 <style>
 @import './base.css';

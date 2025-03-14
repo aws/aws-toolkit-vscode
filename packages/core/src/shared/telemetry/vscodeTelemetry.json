@@ -986,16 +986,6 @@
             "passive": true
         },
         {
-            "name": "webview_load",
-            "description": "Represents a webview load event",
-            "metadata": [
-                {
-                    "type": "webviewName",
-                    "required": true
-                }
-            ]
-        },
-        {
             "name": "webview_error",
             "description": "Represents an error that occurs in a webview",
             "metadata": [

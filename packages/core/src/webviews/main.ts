@@ -7,6 +7,9 @@ import * as vscode from 'vscode'
 import { Protocol, registerWebviewServer } from './server'
 import { getIdeProperties } from '../shared/extensionUtilities'
 import { getFunctions } from '../shared/utilities/classUtils'
+import { telemetry } from '../shared/telemetry/telemetry'
+import { randomUUID } from '../shared/crypto'
+import { Timeout } from '../shared/utilities/timeoutUtils'
 
 interface WebviewParams {
     /**
@@ -152,6 +155,16 @@ export abstract class VueWebview {
     public abstract readonly id: string
 
     /**
+     * A unique identifier used to connect the opening/loaded metrics of a webview
+     */
+    public traceId: string | undefined = undefined
+    /**
+     * When the webview is doing its initial render/load, this times out if it takes too long
+     * to get a "success" message (we assume something went wrong)
+     */
+    public loadTimeout: Timeout | undefined
+
+    /**
      * The relative location, from the repository root, to the frontend entrypoint.
      */
     public readonly source: string
@@ -189,6 +202,7 @@ export abstract class VueWebview {
 
     protected dispose(): void {
         this.disposed = true
+        this.loadTimeout?.dispose()
         this.onDidDisposeEmitter.fire()
     }
 
@@ -225,9 +239,35 @@ export abstract class VueWebview {
             }
 
             public async setup(webview: vscode.Webview) {
+                this.setupTelemetry()
+
                 const server = registerWebviewServer(webview, this.instance.protocol, this.instance.id)
                 this.instance.onDidDispose(() => {
                     server.dispose()
+                })
+            }
+
+            /**
+             * Setup telemetry events that report on the initial loading of a webview
+             */
+            private setupTelemetry() {
+                this.instance.traceId = randomUUID()
+                // Notify intent to open a module, this does not mean it successfully opened
+                telemetry.toolkit_willOpenModule.emit({
+                    module: this.instance.id,
+                    result: 'Succeeded',
+                    traceId: this.instance.traceId,
+                })
+                this.instance.loadTimeout = new Timeout(10_000)
+                this.instance.loadTimeout.token.onCancellationRequested(() => {
+                    // Timeout expired, so loading failed
+                    telemetry.toolkit_didLoadModule.emit({
+                        module: this.instance.id,
+                        result: 'Failed',
+                        traceId: this.instance.traceId,
+                        reason: 'LoadTimedOut',
+                        reasonDesc: 'Likely due to an error in the frontend',
+                    })
                 })
             }
 
