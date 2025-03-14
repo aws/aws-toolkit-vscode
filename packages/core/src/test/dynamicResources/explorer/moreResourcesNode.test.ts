@@ -10,7 +10,7 @@ import { ResourceTypeNode } from '../../../dynamicResources/explorer/nodes/resou
 import { CloudFormationClient } from '../../../shared/clients/cloudFormation'
 import { assertNodeListOnlyHasPlaceholderNode } from '../../utilities/explorerNodeAssertions'
 import { asyncGenerator } from '../../../shared/utilities/collectionUtils'
-import { CloudControlClient } from '../../../shared/clients/cloudControlClient'
+import { CloudControlClient } from '../../../shared/clients/cloudControl'
 import { Settings } from '../../../shared/settings'
 import { ResourcesSettings } from '../../../dynamicResources/commands/configure'
 import sinon from 'sinon'
