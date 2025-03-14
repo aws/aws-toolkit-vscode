@@ -16,8 +16,8 @@ configure app to AMAZONQ if for Amazon Q login
 </template>
 <script lang="ts">
 import { PropType, defineComponent } from 'vue'
-import Login from './login.vue'
-import Reauthenticate from './reauthenticate.vue'
+import Login, { getReadyElementId as getLoginReadyElementId } from './login.vue'
+import Reauthenticate, { getReadyElementId as getReauthReadyElementId } from './reauthenticate.vue'
 import { AuthFlowState, FeatureId } from './types'
 import { WebviewClientFactory } from '../../../webviews/client'
 import { CommonAuthWebview } from './backend'
@@ -51,15 +51,83 @@ export default defineComponent({
         })
 
         await this.refreshAuthState()
+
+        // We were recieving the 'load' event before refreshAuthState() resolved (I'm assuming behavior w/ Vue + browser loading not blocking),
+        // so post refreshAuhState() if we detect we already loaded, then execute immediately since the event already happened.
+        if (didLoad) {
+            handleLoaded()
+        } else {
+            window.addEventListener('load', () => {
+                handleLoaded()
+            })
+        }
     },
     methods: {
         async refreshAuthState() {
             await client.refreshAuthState()
             this.authFlowState = await client.getAuthState()
+
+            // Used for telemetry purposes
+            if (this.authFlowState === 'LOGIN') {
+                ;(window as any).uiState = 'login'
+                ;(window as any).uiReadyElementId = getLoginReadyElementId()
+            } else if (this.authFlowState && this.authFlowState !== undefined) {
+                ;(window as any).uiState = 'reauth'
+                ;(window as any).uiReadyElementId = getReauthReadyElementId()
+            }
+
             this.refreshKey += 1
         },
     },
 })
+
+// ---- START ---- The following handles the process of indicating the UI has loaded successfully.
+// TODO: Move this in to a reusable class for other webviews, it feels a bit messy here
+let didSetReady = false
+
+// Setup error handlers to report 
+window.onerror = function (message) {
+    if (didSetReady) {
+        return
+    }
+
+    setUiReady((window as any).uiState, message.toString())
+}
+document.addEventListener(
+    'error',
+    (e) => {
+        if (didSetReady) {
+            return
+        }
+
+        setUiReady((window as any).uiState, e.message)
+    },
+    true
+)
+
+let didLoad = false
+window.addEventListener('load', () => {
+    didLoad = true
+})
+const handleLoaded = () => {
+    // in case some unexpected behavior triggers this flow again, skip since we already emitted for this instance
+    if (didSetReady) {
+        return
+    }
+
+    const foundElement = !!document.getElementById((window as any).uiReadyElementId)
+    if (!foundElement) {
+        setUiReady((window as any).uiState, `Could not find element: ${(window as any).uiReadyElementId}`)
+    } else {
+        // Successful load!    
+        setUiReady((window as any).uiState)
+    }
+}
+const setUiReady = (state: 'login' | 'reauth', errorMessage?: string) => {
+    client.setUiReady(state, errorMessage)
+    didSetReady = true
+}
+// ---- END ----
 </script>
 <style>
 body {
