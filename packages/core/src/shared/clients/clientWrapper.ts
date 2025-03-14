@@ -43,7 +43,7 @@ export abstract class ClientWrapper<C extends AwsClient> implements vscode.Dispo
         const perflog = new PerfLog(action)
         return await this.getClient()
             .send(new command(commandOptions))
-            .catch((e: Error) => {
+            .catch((e) => {
                 const errWithoutStack = { ...e, name: e.name, message: e.message }
                 delete errWithoutStack['stack']
                 const timecost = perflog.elapsed().toFixed(1)
