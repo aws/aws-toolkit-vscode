@@ -100,6 +100,11 @@ export async function startLanguageServer(extensionContext: vscode.ExtensionCont
             }
         })
 
+        // Temporary code for pen test. Will be removed when we switch to the real flare auth
+        setInterval(async () => {
+            await auth.init()
+        }, 300000) // every 5 minutes
+
         toDispose.push(
             AuthUtil.instance.auth.onDidChangeActiveConnection(async () => {
                 await auth.init()
