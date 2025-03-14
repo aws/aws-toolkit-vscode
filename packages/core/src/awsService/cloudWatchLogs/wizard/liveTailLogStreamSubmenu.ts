@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import { Prompter, PromptResult } from '../../../shared/ui/prompter'
-import { DefaultCloudWatchLogsClient } from '../../../shared/clients/cloudWatchLogsClient'
+import { CloudWatchLogsClient } from '../../../shared/clients/cloudWatchLogsClient'
 import { createCommonButtons } from '../../../shared/ui/buttons'
 import { createInputBox, InputBoxPrompter } from '../../../shared/ui/inputPrompter'
 import { createQuickPick, DataQuickPickItem, QuickPickPrompter } from '../../../shared/ui/pickerPrompter'
@@ -87,7 +87,7 @@ export class LogStreamFilterSubmenu extends Prompter<LogStreamFilterResponse> {
 
     public createLogStreamSelector(): QuickPickPrompter<string> {
         const helpUri = startLiveTailLogStreamNamesHelpUrl
-        const client = new DefaultCloudWatchLogsClient(this.region)
+        const client = new CloudWatchLogsClient(this.region)
         const request: CloudWatchLogs.DescribeLogStreamsRequest = {
             logGroupIdentifier: this.logGroupArn,
             orderBy: 'LastEventTime',

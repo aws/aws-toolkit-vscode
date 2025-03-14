@@ -12,7 +12,7 @@ import { MultiStepWizard, WIZARD_RETRY, WIZARD_TERMINATE, WizardStep } from '../
 import { LogGroupNode } from '../explorer/logGroupNode'
 import { CloudWatchLogs } from 'aws-sdk'
 
-import { DefaultCloudWatchLogsClient } from '../../../shared/clients/cloudWatchLogsClient'
+import { CloudWatchLogsClient } from '../../../shared/clients/cloudWatchLogsClient'
 import { getPaginatedAwsCallIter, IteratorTransformer } from '../../../shared/utilities/collectionUtils'
 import {
     CloudWatchLogsGroupInfo,
@@ -82,7 +82,7 @@ export class DefaultSelectLogStreamWizardContext implements SelectLogStreamWizar
     ) {}
 
     public async pickLogStream(): Promise<LogSearchChoice> {
-        const client = new DefaultCloudWatchLogsClient(this.regionCode)
+        const client = new CloudWatchLogsClient(this.regionCode)
         const request: CloudWatchLogs.DescribeLogStreamsRequest = {
             logGroupName: this.logGroupName,
             orderBy: 'LastEventTime',

@@ -17,7 +17,7 @@ import {
 import { DataQuickPickItem } from '../../../shared/ui/pickerPrompter'
 import { isValidResponse, isWizardControl, Wizard, WIZARD_RETRY } from '../../../shared/wizards/wizard'
 import { cwlUriSchema, msgKey, recordTelemetryFilter } from '../cloudWatchLogsUtils'
-import { DefaultCloudWatchLogsClient } from '../../../shared/clients/cloudWatchLogsClient'
+import { CloudWatchLogsClient } from '../../../shared/clients/cloudWatchLogsClient'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { getLogger } from '../../../shared/logger/logger'
 import { TimeFilterResponse, TimeFilterSubmenu } from '../timeFilterSubmenu'
@@ -110,7 +110,7 @@ export async function searchLogGroup(
 }
 
 async function getLogGroupsFromRegion(regionCode: string): Promise<DataQuickPickItem<string>[]> {
-    const client = new DefaultCloudWatchLogsClient(regionCode)
+    const client = new CloudWatchLogsClient(regionCode)
     const logGroups = await logGroupsToArray(client.describeLogGroups())
     const options = logGroups.map<DataQuickPickItem<string>>((logGroupString) => ({
         label: logGroupString,

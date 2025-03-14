@@ -4,12 +4,14 @@
  */
 
 import { CloudWatchLogs } from 'aws-sdk'
+import * as CloudWatchLogsV3 from '@aws-sdk/client-cloudwatch-logs'
 import globals from '../extensionGlobals'
-import { ClassToInterfaceType } from '../utilities/tsUtils'
+import { ClientWrapper } from './clientWrapper'
 
-export type CloudWatchLogsClient = ClassToInterfaceType<DefaultCloudWatchLogsClient>
-export class DefaultCloudWatchLogsClient {
-    public constructor(public readonly regionCode: string) {}
+export class CloudWatchLogsClient extends ClientWrapper<CloudWatchLogsV3.CloudWatchLogsClient> {
+    public constructor(regionCode: string) {
+        super(regionCode, CloudWatchLogsV3.CloudWatchLogsClient)
+    }
 
     public async *describeLogGroups(
         request: CloudWatchLogs.DescribeLogGroupsRequest = {}

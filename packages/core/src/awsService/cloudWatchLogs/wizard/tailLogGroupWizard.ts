@@ -6,7 +6,7 @@
 import * as nls from 'vscode-nls'
 import globals from '../../../shared/extensionGlobals'
 import { ToolkitError } from '../../../shared/errors'
-import { DefaultCloudWatchLogsClient } from '../../../shared/clients/cloudWatchLogsClient'
+import { CloudWatchLogsClient } from '../../../shared/clients/cloudWatchLogsClient'
 import { cwlFilterPatternHelpUrl } from '../../../shared/constants'
 import { createBackButton, createExitButton, createHelpButton } from '../../../shared/ui/buttons'
 import { RegionSubmenu, RegionSubmenuResponse } from '../../../shared/ui/common/regionSubmenu'
@@ -64,7 +64,7 @@ export function createRegionLogGroupSubmenu(): RegionSubmenu<string> {
 }
 
 async function getLogGroupQuickPickOptions(regionCode: string): Promise<DataQuickPickItem<string>[]> {
-    const client = new DefaultCloudWatchLogsClient(regionCode)
+    const client = new CloudWatchLogsClient(regionCode)
     const logGroups = client.describeLogGroups()
 
     const logGroupsOptions: DataQuickPickItem<string>[] = []

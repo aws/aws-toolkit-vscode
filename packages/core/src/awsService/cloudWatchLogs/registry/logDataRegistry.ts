@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import { CloudWatchLogs } from 'aws-sdk'
 import { CloudWatchLogsSettings, uriToKey, msgKey, cwlUriSchema } from '../cloudWatchLogsUtils'
-import { DefaultCloudWatchLogsClient } from '../../../shared/clients/cloudWatchLogsClient'
+import { CloudWatchLogsClient } from '../../../shared/clients/cloudWatchLogsClient'
 import { waitTimeout } from '../../../shared/utilities/timeoutUtils'
 import { Messages } from '../../../shared/utilities/messages'
 import { pageableToCollection } from '../../../shared/utilities/collectionUtils'
@@ -212,7 +212,7 @@ export async function filterLogEventsFromUri(
     nextToken?: string,
     completeTimeout = false
 ): Promise<CloudWatchLogsResponse> {
-    const client = new DefaultCloudWatchLogsClient(logGroupInfo.regionName)
+    const client = new CloudWatchLogsClient(logGroupInfo.regionName)
 
     const cwlParameters: CloudWatchLogs.FilterLogEventsRequest = {
         logGroupName: logGroupInfo.groupName,

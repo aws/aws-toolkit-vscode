@@ -16,7 +16,7 @@ import { AWSResourceNode } from '../../../shared/treeview/nodes/awsResourceNode'
 import * as nls from 'vscode-nls'
 import { getLogger } from '../../../shared/logger/logger'
 import { getIcon } from '../../../shared/icons'
-import { DefaultCloudWatchLogsClient } from '../../../shared/clients/cloudWatchLogsClient'
+import { CloudWatchLogsClient } from '../../../shared/clients/cloudWatchLogsClient'
 const localize = nls.loadMessageBundle()
 
 const contextBase = 'awsAppRunnerServiceNode'
@@ -43,7 +43,7 @@ export class AppRunnerServiceNode extends CloudWatchLogsBase implements AWSResou
         private readonly client: AppRunnerClient,
         private _info: AppRunner.Service,
         private currentOperation: AppRunner.OperationSummary & { Type?: ServiceOperation } = {},
-        cloudwatchClient = new DefaultCloudWatchLogsClient(client.regionCode)
+        cloudwatchClient = new CloudWatchLogsClient(client.regionCode)
     ) {
         super('App Runner Service', parent.regionCode, cloudwatchClient)
 
