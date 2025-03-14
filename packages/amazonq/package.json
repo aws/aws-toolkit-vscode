@@ -122,7 +122,7 @@
                     },
                     "additionalProperties": false
                 },
-                "amazonQ.showInlineCodeSuggestionsWithCodeReferences": {
+                "amazonQ.showCodeWithReferences": {
                     "type": "boolean",
                     "markdownDescription": "%AWS.configuration.description.amazonq%",
                     "default": true
