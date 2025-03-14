@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { AppRunner } from 'aws-sdk'
 import * as nls from 'vscode-nls'
 import { createCommonButtons, QuickInputToggleButton } from '../../../shared/ui/buttons'
 import * as input from '../../../shared/ui/inputPrompter'
@@ -17,8 +16,9 @@ import { makeDeploymentButton } from './deploymentButton'
 import { createExitPrompter } from '../../../shared/ui/common/exitPrompter'
 import { IamClient } from '../../../shared/clients/iam'
 import { DefaultEcrClient } from '../../../shared/clients/ecrClient'
-import { DefaultAppRunnerClient } from '../../../shared/clients/apprunnerClient'
+import { AppRunnerClient, CreateServiceRequest, SourceConfiguration } from '../../../shared/clients/apprunner'
 import { getAppRunnerCreateServiceDocUrl } from '../../../shared/extensionUtilities'
+import * as AppRunner from '@aws-sdk/client-apprunner'
 
 const localize = nls.loadMessageBundle()
 
@@ -74,10 +74,10 @@ function createInstanceStep(): Prompter<AppRunner.InstanceConfiguration> {
 
 function createSourcePrompter(
     autoDeployButton: QuickInputToggleButton
-): Prompter<AppRunner.CreateServiceRequest['SourceConfiguration']> {
+): Prompter<CreateServiceRequest['SourceConfiguration']> {
     const ecrPath = {
         label: 'ECR',
-        data: { ImageRepository: {} } as AppRunner.SourceConfiguration,
+        data: { ImageRepository: {} } as SourceConfiguration,
         detail: localize(
             'AWS.apprunner.createService.ecr.detail',
             'Create a service from a public or private Elastic Container Registry repository'
@@ -86,7 +86,7 @@ function createSourcePrompter(
 
     const repositoryPath = {
         label: 'Repository',
-        data: { CodeRepository: {} } as AppRunner.SourceConfiguration,
+        data: { CodeRepository: {} } as SourceConfiguration,
         detail: localize('AWS.apprunner.createService.repository.detail', 'Create a service from a GitHub repository'),
     }
 
@@ -96,15 +96,15 @@ function createSourcePrompter(
     })
 }
 
-export class CreateAppRunnerServiceWizard extends Wizard<AppRunner.CreateServiceRequest> {
+export class CreateAppRunnerServiceWizard extends Wizard<CreateServiceRequest> {
     public constructor(
         region: string,
-        initState: WizardState<AppRunner.CreateServiceRequest> = {},
-        implicitState: WizardState<AppRunner.CreateServiceRequest> = {},
+        initState: WizardState<CreateServiceRequest> = {},
+        implicitState: WizardState<CreateServiceRequest> = {},
         clients = {
             iam: new IamClient(region),
             ecr: new DefaultEcrClient(region),
-            apprunner: new DefaultAppRunnerClient(region),
+            apprunner: new AppRunnerClient(region),
         }
     ) {
         super({

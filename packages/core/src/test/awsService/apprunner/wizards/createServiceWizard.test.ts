@@ -4,15 +4,14 @@
  */
 
 import { createWizardTester, WizardTester } from '../../../shared/wizards/wizardTestUtils'
-import { AppRunner } from 'aws-sdk'
 import { CreateAppRunnerServiceWizard } from '../../../../awsService/apprunner/wizards/apprunnerCreateServiceWizard'
 import { stub } from '../../../utilities/stubber'
 import { IamClient } from '../../../../shared/clients/iam'
 import { DefaultEcrClient } from '../../../../shared/clients/ecrClient'
-import { DefaultAppRunnerClient } from '../../../../shared/clients/apprunnerClient'
+import { AppRunnerClient, CreateServiceRequest } from '../../../../shared/clients/apprunner'
 
 describe('CreateServiceWizard', function () {
-    let tester: WizardTester<AppRunner.CreateServiceRequest>
+    let tester: WizardTester<CreateServiceRequest>
 
     beforeEach(async function () {
         const regionCode = 'us-east-1'
@@ -23,7 +22,7 @@ describe('CreateServiceWizard', function () {
             {
                 iam: stub(IamClient, { regionCode }),
                 ecr: stub(DefaultEcrClient, { regionCode }),
-                apprunner: stub(DefaultAppRunnerClient, { regionCode }),
+                apprunner: stub(AppRunnerClient, { regionCode }),
             }
         )
 

@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { AppRunner } from 'aws-sdk'
 import { createCommonButtons, QuickInputButton, QuickInputToggleButton } from '../../../shared/ui/buttons'
 import { toArrayAsync } from '../../../shared/utilities/collectionUtils'
 import { EcrClient, EcrRepository } from '../../../shared/clients/ecrClient'
@@ -22,6 +21,7 @@ import { createRolePrompter } from '../../../shared/ui/common/roles'
 import { getLogger } from '../../../shared/logger/logger'
 import { getAppRunnerCreateServiceDocUrl, isCloud9 } from '../../../shared/extensionUtilities'
 import { createExitPrompter } from '../../../shared/ui/common/exitPrompter'
+import { ImageRepository, SourceConfiguration } from '../../../shared/clients/apprunner'
 
 const localize = nls.loadMessageBundle()
 
@@ -223,8 +223,8 @@ export class ImageIdentifierForm extends WizardForm<{ repo: TaggedEcrRepository 
 function createImageRepositorySubForm(
     ecrClient: EcrClient,
     autoDeployButton: QuickInputToggleButton
-): WizardForm<AppRunner.ImageRepository> {
-    const subform = new WizardForm<AppRunner.ImageRepository>()
+): WizardForm<ImageRepository> {
+    const subform = new WizardForm<ImageRepository>()
     const form = subform.body
 
     // note: this is intentionally initialized only once to preserve caches
@@ -253,7 +253,7 @@ function createImageRepositorySubForm(
     return subform
 }
 
-export class AppRunnerImageRepositoryWizard extends Wizard<AppRunner.SourceConfiguration> {
+export class AppRunnerImageRepositoryWizard extends Wizard<SourceConfiguration> {
     constructor(ecrClient: EcrClient, iamClient: IamClient, autoDeployButton = makeDeploymentButton()) {
         super()
         const form = this.form

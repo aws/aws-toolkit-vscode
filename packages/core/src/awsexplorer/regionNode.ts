@@ -22,7 +22,7 @@ import { ResourcesNode } from '../dynamicResources/explorer/nodes/resourcesNode'
 import { AppRunnerNode } from '../awsService/apprunner/explorer/apprunnerNode'
 import { DocumentDBNode } from '../docdb/explorer/docdbNode'
 import { DefaultDocumentDBClient } from '../shared/clients/docdbClient'
-import { DefaultAppRunnerClient } from '../shared/clients/apprunnerClient'
+import { AppRunnerClient } from '../shared/clients/apprunner'
 import { DefaultEcrClient } from '../shared/clients/ecrClient'
 import { DefaultRedshiftClient } from '../shared/clients/redshiftClient'
 import { DefaultIotClient } from '../shared/clients/iotClient'
@@ -53,7 +53,7 @@ const serviceCandidates: ServiceNode[] = [
     },
     {
         serviceId: 'apprunner',
-        createFn: (regionCode: string) => new AppRunnerNode(regionCode, new DefaultAppRunnerClient(regionCode)),
+        createFn: (regionCode: string) => new AppRunnerNode(regionCode, new AppRunnerClient(regionCode)),
     },
     {
         serviceId: 'cloudformation',

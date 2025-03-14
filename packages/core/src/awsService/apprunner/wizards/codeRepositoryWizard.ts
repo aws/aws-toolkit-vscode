@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { AppRunner } from 'aws-sdk'
 import * as nls from 'vscode-nls'
 import { createCommonButtons, createRefreshButton, QuickInputToggleButton } from '../../../shared/ui/buttons'
 import { Remote } from '../../../../types/git.d'
@@ -11,14 +10,25 @@ import { GitExtension } from '../../../shared/extensions/git'
 import * as vscode from 'vscode'
 import { WizardForm } from '../../../shared/wizards/wizardForm'
 import { createVariablesPrompter } from '../../../shared/ui/common/variablesPrompter'
-import { AppRunnerClient } from '../../../shared/clients/apprunnerClient'
+import {
+    AppRunnerClient,
+    SourceConfiguration,
+    CodeRepository,
+    CodeConfigurationValues,
+} from '../../../shared/clients/apprunner'
 import { makeDeploymentButton } from './deploymentButton'
-import { createLabelQuickPick, createQuickPick, QuickPickPrompter } from '../../../shared/ui/pickerPrompter'
+import {
+    createLabelQuickPick,
+    createQuickPick,
+    DataQuickPickItem,
+    QuickPickPrompter,
+} from '../../../shared/ui/pickerPrompter'
 import { createInputBox, InputBoxPrompter } from '../../../shared/ui/inputPrompter'
-import { apprunnerConnectionHelpUrl, apprunnerConfigHelpUrl, apprunnerRuntimeHelpUrl } from '../../../shared/constants'
+import { apprunnerConfigHelpUrl, apprunnerConnectionHelpUrl, apprunnerRuntimeHelpUrl } from '../../../shared/constants'
 import { Wizard, WIZARD_BACK } from '../../../shared/wizards/wizard'
 import { openUrl } from '../../../shared/utilities/vsCodeUtils'
 import { getAppRunnerCreateServiceDocUrl } from '../../../shared/extensionUtilities'
+import * as AppRunner from '@aws-sdk/client-apprunner'
 
 const localize = nls.loadMessageBundle()
 
@@ -82,9 +92,9 @@ function createBranchPrompter(
 }
 
 function createRuntimePrompter(): QuickPickPrompter<AppRunner.Runtime> {
-    const items = [
-        { label: 'python3', data: 'PYTHON_3' },
-        { label: 'nodejs12', data: 'NODEJS_16' },
+    const items: DataQuickPickItem<AppRunner.Runtime>[] = [
+        { label: 'python3', data: AppRunner.Runtime.PYTHON_3 },
+        { label: 'nodejs16', data: AppRunner.Runtime.NODEJS_16 },
     ]
 
     return createQuickPick(items, {
@@ -158,10 +168,12 @@ export function createConnectionPrompter(client: AppRunnerClient) {
     const getItems = async () => {
         const resp = await client.listConnections()
 
-        return resp.ConnectionSummaryList.filter((conn) => conn.Status === 'AVAILABLE').map((conn) => ({
-            label: conn.ConnectionName!,
-            data: conn,
-        }))
+        return resp
+            .filter((conn) => conn.Status === 'AVAILABLE')
+            .map((conn) => ({
+                label: conn.ConnectionName!,
+                data: conn,
+            }))
     }
 
     const refreshButton = createRefreshButton()
@@ -184,21 +196,24 @@ function createSourcePrompter(): QuickPickPrompter<AppRunner.ConfigurationSource
     )
     const apiLabel = localize('AWS.apprunner.createService.configSource.apiLabel', 'Configure all settings here')
     const repoLabel = localize('AWS.apprunner.createService.configSource.repoLabel', 'Use configuration file')
+    const apiItem: DataQuickPickItem<AppRunner.ConfigurationSource> = {
+        label: apiLabel,
+        data: AppRunner.ConfigurationSource.API,
+    }
+    const repoItem: DataQuickPickItem<AppRunner.ConfigurationSource> = {
+        label: repoLabel,
+        data: AppRunner.ConfigurationSource.REPOSITORY,
+        detail: configDetail,
+    }
 
-    return createQuickPick(
-        [
-            { label: apiLabel, data: 'API' },
-            { label: repoLabel, data: 'REPOSITORY', detail: configDetail },
-        ],
-        {
-            title: localize('AWS.apprunner.createService.configSource.title', 'Choose configuration source'),
-            buttons: createCommonButtons(apprunnerConfigHelpUrl),
-        }
-    )
+    return createQuickPick([apiItem, repoItem], {
+        title: localize('AWS.apprunner.createService.configSource.title', 'Choose configuration source'),
+        buttons: createCommonButtons(apprunnerConfigHelpUrl),
+    })
 }
 
-function createCodeRepositorySubForm(git: GitExtension): WizardForm<AppRunner.CodeRepository> {
-    const subform = new WizardForm<AppRunner.CodeRepository>()
+function createCodeRepositorySubForm(git: GitExtension): WizardForm<CodeRepository> {
+    const subform = new WizardForm<CodeRepository>()
     const form = subform.body
 
     form.RepositoryUrl.bindPrompter(() => createRepoPrompter(git).transform((r) => r.fetchUrl!))
@@ -210,7 +225,7 @@ function createCodeRepositorySubForm(git: GitExtension): WizardForm<AppRunner.Co
     form.CodeConfiguration.ConfigurationSource.bindPrompter(createSourcePrompter)
     form.SourceCodeVersion.Type.setDefault(() => 'BRANCH')
 
-    const codeConfigForm = new WizardForm<AppRunner.CodeConfigurationValues>()
+    const codeConfigForm = new WizardForm<CodeConfigurationValues>()
     codeConfigForm.body.Runtime.bindPrompter(createRuntimePrompter)
     codeConfigForm.body.BuildCommand.bindPrompter((state) => createBuildCommandPrompter(state.Runtime!))
     codeConfigForm.body.StartCommand.bindPrompter((state) => createStartCommandPrompter(state.Runtime!))
@@ -227,7 +242,7 @@ function createCodeRepositorySubForm(git: GitExtension): WizardForm<AppRunner.Co
     return subform
 }
 
-export class AppRunnerCodeRepositoryWizard extends Wizard<AppRunner.SourceConfiguration> {
+export class AppRunnerCodeRepositoryWizard extends Wizard<SourceConfiguration> {
     constructor(
         client: AppRunnerClient,
         git: GitExtension,

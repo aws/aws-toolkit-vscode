@@ -8,15 +8,13 @@ import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { AppRunnerServiceNode } from './apprunnerServiceNode'
 import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
 import * as nls from 'vscode-nls'
-import { AppRunnerClient } from '../../../shared/clients/apprunnerClient'
-import { getPaginatedAwsCallIter } from '../../../shared/utilities/collectionUtils'
-import { AppRunner } from 'aws-sdk'
+import { AppRunnerClient, CreateServiceRequest, ServiceSummary } from '../../../shared/clients/apprunner'
 import { PollingSet } from '../../../shared/utilities/pollingSet'
 
 const localize = nls.loadMessageBundle()
 
 export class AppRunnerNode extends AWSTreeNodeBase {
-    private readonly serviceNodes: Map<AppRunner.ServiceId, AppRunnerServiceNode> = new Map()
+    private readonly serviceNodes: Map<string, AppRunnerServiceNode> = new Map()
     private readonly pollingSet: PollingSet<string> = new PollingSet(20000, this.refresh.bind(this))
 
     public constructor(
@@ -43,30 +41,10 @@ export class AppRunnerNode extends AWSTreeNodeBase {
         })
     }
 
-    private async getServiceSummaries(request: AppRunner.ListServicesRequest = {}): Promise<AppRunner.Service[]> {
-        const iterator = getPaginatedAwsCallIter({
-            awsCall: async (request) => await this.client.listServices(request),
-            nextTokenNames: {
-                request: 'NextToken',
-                response: 'NextToken',
-            },
-            request,
-        })
-
-        const services: AppRunner.Service[] = []
-
-        while (true) {
-            const next = await iterator.next()
-
-            // eslint-disable-next-line unicorn/no-array-for-each
-            next.value.ServiceSummaryList.forEach((summary: AppRunner.Service) => services.push(summary))
-
-            if (next.done) {
-                break
-            }
-        }
-
-        return services
+    private async getServiceSummaries(): Promise<ServiceSummary[]> {
+        // TODO: avoid resolving all services at once.
+        const serviceCollection = this.client.paginateServices({})
+        return await serviceCollection.flatten().promise()
     }
 
     public async updateChildren(): Promise<void> {
@@ -107,7 +85,7 @@ export class AppRunnerNode extends AWSTreeNodeBase {
         this.pollingSet.delete(id)
     }
 
-    public async createService(request: AppRunner.CreateServiceRequest): Promise<void> {
+    public async createService(request: CreateServiceRequest): Promise<void> {
         await this.client.createService(request)
         this.refresh()
     }
