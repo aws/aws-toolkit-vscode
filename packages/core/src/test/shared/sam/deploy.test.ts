@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as vscode from 'vscode'
-import { CloudFormation, S3 } from 'aws-sdk'
+import { S3 } from 'aws-sdk'
 import { AppNode } from '../../../awsService/appBuilder/explorer/nodes/appNode'
 import { assertTelemetry, getWorkspaceFolder, TestFolder } from '../../testUtil'
 import { DeployParams, DeployWizard, getDeployWizard, runDeploy } from '../../../shared/sam/deploy'
@@ -13,13 +13,13 @@ import { samconfigCompleteData, samconfigInvalidData, validTemplateData } from '
 import * as SamUtilsModule from '../../../shared/sam/utils'
 import assert from 'assert'
 import { getTestWindow } from '../vscode/window'
-import { DefaultCloudFormationClient } from '../../../shared/clients/cloudFormationClient'
+import { CloudFormationClient } from '../../../shared/clients/cloudFormation'
 import { intoCollection } from '../../../shared/utilities/collectionUtils'
 import { clickBackButton, createPromptHandler, PrompterTester } from '../wizards/prompterTester'
 import { RegionNode } from '../../../awsexplorer/regionNode'
 import { createTestRegionProvider } from '../regions/testUtil'
 import { S3Client } from '../../../shared/clients/s3'
-import * as CloudFormationClientModule from '../../../shared/clients/cloudFormationClient'
+import * as CloudFormationClientModule from '../../../shared/clients/cloudFormation'
 import * as S3ClientModule from '../../../shared/clients/s3'
 import * as ProcessUtilsModule from '../../../shared/utilities/processUtils'
 import * as ProcessTerminalModule from '../../../shared/sam/processTerminal'
@@ -42,7 +42,7 @@ describe('SAM DeployWizard', async function () {
     let workspaceFolder: vscode.WorkspaceFolder
     let templateFile: vscode.Uri
 
-    let mockDefaultCFNClient: sinon.SinonStubbedInstance<DefaultCloudFormationClient>
+    let mockDefaultCFNClient: sinon.SinonStubbedInstance<CloudFormationClient>
     let mockDefaultS3Client: sinon.SinonStubbedInstance<S3Client>
 
     beforeEach(async () => {
@@ -52,8 +52,8 @@ describe('SAM DeployWizard', async function () {
         sandbox = sinon.createSandbox()
 
         // Simulate return of deployed stacks
-        mockDefaultCFNClient = sandbox.createStubInstance(CloudFormationClientModule.DefaultCloudFormationClient)
-        sandbox.stub(CloudFormationClientModule, 'DefaultCloudFormationClient').returns(mockDefaultCFNClient)
+        mockDefaultCFNClient = sandbox.createStubInstance(CloudFormationClientModule.CloudFormationClient)
+        sandbox.stub(CloudFormationClientModule, 'CloudFormationClient').returns(mockDefaultCFNClient)
         mockDefaultCFNClient.listAllStacks.returns(intoCollection(stackSummaries))
 
         // Simulate return of list bucket
@@ -1297,22 +1297,22 @@ const s3BucketListSummary: Array<
     { Name: 'stack-3-bucket', region: 'us-west-2' },
 ]
 
-const stackSummaries: CloudFormation.StackSummary[][] = [
+const stackSummaries: CloudFormationClientModule.StackSummary[][] = [
     [
         {
             StackName: 'stack1',
             StackStatus: 'CREATE_COMPLETE',
             CreationTime: new Date(),
-        } as CloudFormation.StackSummary,
+        } as CloudFormationClientModule.StackSummary,
         {
             StackName: 'stack2',
             StackStatus: 'CREATE_COMPLETE',
             CreationTime: new Date(),
-        } as CloudFormation.StackSummary,
+        } as CloudFormationClientModule.StackSummary,
         {
             StackName: 'stack3',
             StackStatus: 'CREATE_COMPLETE',
             CreationTime: new Date(),
-        } as CloudFormation.StackSummary,
+        } as CloudFormationClientModule.StackSummary,
     ],
 ]

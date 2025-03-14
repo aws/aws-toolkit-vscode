@@ -4,7 +4,7 @@
  */
 import { StackSummary } from 'aws-sdk/clients/cloudformation'
 import { getAwsConsoleUrl } from '../../awsConsole'
-import { DefaultCloudFormationClient } from '../../clients/cloudFormationClient'
+import { CloudFormationClient } from '../../clients/cloudFormation'
 import * as vscode from 'vscode'
 import { createCommonButtons } from '../buttons'
 import { createQuickPick } from '../pickerPrompter'
@@ -27,11 +27,7 @@ const canShowStack = (s: StackSummary) =>
  * @returns A quick pick prompter configured for stack selection
  *
  */
-export function createStackPrompter(
-    client: DefaultCloudFormationClient,
-    mementoRootKey: string,
-    samCommandUrl: vscode.Uri
-) {
+export function createStackPrompter(client: CloudFormationClient, mementoRootKey: string, samCommandUrl: vscode.Uri) {
     const recentStack = getRecentResponse(mementoRootKey, client.regionCode, 'stackName')
     const consoleUrl = getAwsConsoleUrl('cloudformation', client.regionCode)
     const items = client.listAllStacks().map((stacks) =>

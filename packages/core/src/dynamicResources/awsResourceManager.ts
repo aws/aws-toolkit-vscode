@@ -6,7 +6,7 @@
 import { writeFileSync } from 'fs' // eslint-disable-line no-restricted-imports
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { CloudFormationClient } from '../shared/clients/cloudFormationClient'
+import { CloudFormationClient } from '../shared/clients/cloudFormation'
 import {
     getNonexistentFilename,
     makeTemporaryToolkitFolder,
