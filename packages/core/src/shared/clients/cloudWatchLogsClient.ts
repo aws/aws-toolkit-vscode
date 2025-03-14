@@ -6,7 +6,6 @@
 import * as CloudWatchLogsV3 from '@aws-sdk/client-cloudwatch-logs'
 import { ClientWrapper } from './clientWrapper'
 
-// TODO: each consumer of CWL client implements their own pagination. This should be done here.
 export class CloudWatchLogsClient extends ClientWrapper<CloudWatchLogsV3.CloudWatchLogsClient> {
     public constructor(regionCode: string) {
         super(regionCode, CloudWatchLogsV3.CloudWatchLogsClient)

@@ -6,7 +6,6 @@
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
-import { CloudWatchLogs } from 'aws-sdk'
 import * as vscode from 'vscode'
 
 import { CloudWatchLogsClient } from '../../../shared/clients/cloudWatchLogsClient'
@@ -16,6 +15,7 @@ import { toMap, updateInPlace, toArrayAsync } from '../../../shared/utilities/co
 import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
 import { makeChildrenNodes } from '../../../shared/treeview/utils'
 import { LogGroupNode } from './logGroupNode'
+import { LogGroup } from '@aws-sdk/client-cloudwatch-logs'
 
 export abstract class CloudWatchLogsBase extends AWSTreeNodeBase {
     protected readonly logGroupNodes: Map<string, LogGroupNode>
@@ -30,7 +30,7 @@ export abstract class CloudWatchLogsBase extends AWSTreeNodeBase {
         this.logGroupNodes = new Map<string, LogGroupNode>()
     }
 
-    protected abstract getLogGroups(client: CloudWatchLogsClient): Promise<Map<string, CloudWatchLogs.LogGroup>>
+    protected abstract getLogGroups(client: CloudWatchLogsClient): Promise<Map<string, LogGroup>>
 
     public override async getChildren(): Promise<AWSTreeNodeBase[]> {
         return await makeChildrenNodes({
@@ -63,7 +63,7 @@ export class CloudWatchLogsNode extends CloudWatchLogsBase {
         this.contextValue = 'awsCloudWatchLogParentNode'
     }
 
-    protected async getLogGroups(client: CloudWatchLogsClient): Promise<Map<string, CloudWatchLogs.LogGroup>> {
+    protected async getLogGroups(client: CloudWatchLogsClient): Promise<Map<string, LogGroup>> {
         return toMap(await toArrayAsync(client.describeLogGroups()), (configuration) => configuration.logGroupName)
     }
 }

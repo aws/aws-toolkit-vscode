@@ -4,13 +4,13 @@
  */
 
 import * as vscode from 'vscode'
-import { CloudWatchLogs } from 'aws-sdk'
 import { CloudWatchLogsSettings, uriToKey, msgKey, cwlUriSchema } from '../cloudWatchLogsUtils'
 import { CloudWatchLogsClient } from '../../../shared/clients/cloudWatchLogsClient'
 import { waitTimeout } from '../../../shared/utilities/timeoutUtils'
 import { Messages } from '../../../shared/utilities/messages'
 import { pageableToCollection } from '../../../shared/utilities/collectionUtils'
 import { Settings } from '../../../shared/settings'
+import * as CloudWatchLogs from '@aws-sdk/client-cloudwatch-logs'
 // TODO: Add debug logging statements
 
 /** Uri as a string */
@@ -301,9 +301,9 @@ export type CloudWatchLogsParameters = {
 }
 
 export type CloudWatchLogsResponse = {
-    events: CloudWatchLogs.FilteredLogEvents
-    nextForwardToken?: CloudWatchLogs.NextToken
-    nextBackwardToken?: CloudWatchLogs.NextToken
+    events: CloudWatchLogs.FilteredLogEvent[]
+    nextForwardToken?: string
+    nextBackwardToken?: string
 }
 
 export type CloudWatchLogsAction = (
@@ -323,10 +323,10 @@ export class CloudWatchLogsData {
     logGroupInfo!: CloudWatchLogsGroupInfo
     retrieveLogsFunction!: CloudWatchLogsAction
     next?: {
-        token: CloudWatchLogs.NextToken
+        token: string
     }
     previous?: {
-        token: CloudWatchLogs.NextToken
+        token: string
     }
     busy: boolean = false
 }
