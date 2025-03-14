@@ -26,6 +26,7 @@ import { TemplateItem, createTemplatePrompter } from '../ui/sam/templatePrompter
 import { createDeployParamsSourcePrompter, ParamsSource } from '../ui/sam/paramsSourcePrompter'
 import { getErrorCode, getProjectRoot, getSamCliPathAndVersion, getSource, updateRecentResponse } from './utils'
 import { runInTerminal } from './processTerminal'
+import { deployMementoRootKey } from './constants'
 import {
     TemplateParametersForm,
     TemplateParametersWizard,
@@ -64,7 +65,6 @@ function getDeployEntryPoint(arg: vscode.Uri | AWSTreeNodeBase | TreeNode | unde
         return SamDeployEntryPoints.CommandPalette
     }
 }
-const deployMementoRootKey = 'samcli.deploy.params'
 
 type DeployResult = {
     isSuccess: boolean

@@ -18,6 +18,7 @@ import {
     ParamsSource,
     resolveBuildFlags,
     runBuild,
+    SamBuildResult,
 } from '../../../shared/sam/build'
 import { TreeNode } from '../../../shared/treeview/resourceTreeDataProvider'
 import { createWizardTester } from '../wizards/wizardTestUtils'
@@ -34,6 +35,7 @@ import { samconfigCompleteData, validTemplateData } from './samTestUtils'
 import { CloudFormationTemplateRegistry } from '../../../shared/fs/templateRegistry'
 import { getTestWindow } from '../vscode/window'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
+import { SamAppLocation } from '../../../awsService/appBuilder/explorer/samProject'
 import { SemVer } from 'semver'
 
 describe('SAM BuildWizard', async function () {
@@ -423,22 +425,8 @@ describe('SAM runBuild', () => {
             verifyCorrectDependencyCall()
         })
 
-        it('[entry: appbuilder node] with default flags should instantiate correct process in terminal', async () => {
-            const prompterTester = PrompterTester.init()
-                .handleQuickPick('Specify parameter source for build', async (quickPick) => {
-                    // Need sometime to wait for the template to search for template file
-                    await quickPick.untilReady()
-
-                    assert.strictEqual(quickPick.items.length, 2)
-                    const items = quickPick.items
-                    assert.strictEqual(quickPick.items.length, 2)
-                    assert.deepStrictEqual(items[0], { data: ParamsSource.Specify, label: 'Specify build flags' })
-                    assert.deepStrictEqual(items[1].label, 'Use default values')
-                    quickPick.acceptItem(quickPick.items[1])
-                })
-                .build()
-
-            // Invoke sync command from command palette
+        it('[entry: appbuilder node] with default flags should instantiate correct process in terminal and show progress notification', async () => {
+            const prompterTester = getPrompterTester()
             const expectedSamAppLocation = {
                 workspaceFolder: workspaceFolder,
                 samTemplateUri: templateFile,
@@ -446,6 +434,10 @@ describe('SAM runBuild', () => {
             }
 
             await runBuild(new AppNode(expectedSamAppLocation))
+
+            getTestWindow()
+                .getFirstMessage()
+                .assertProgress(`Building SAM template at ${expectedSamAppLocation.samTemplateUri.path}`)
 
             assert.deepEqual(mockChildProcessClass.getCall(0).args, [
                 'sam-cli-path',
@@ -470,6 +462,27 @@ describe('SAM runBuild', () => {
             ])
             verifyCorrectDependencyCall()
             prompterTester.assertCallAll()
+        })
+
+        it('[entry: appbuilder node] should throw an error when running two build processes in parallel for the same template', async () => {
+            const prompterTester = getPrompterTester()
+            const expectedSamAppLocation = {
+                workspaceFolder: workspaceFolder,
+                samTemplateUri: templateFile,
+                projectRoot: projectRoot,
+            }
+            await assert.rejects(
+                async () => {
+                    await runInParallel(expectedSamAppLocation)
+                },
+                (e: any) => {
+                    assert.strictEqual(e instanceof ToolkitError, true)
+                    assert.strictEqual(e.message, 'This template is already being built')
+                    assert.strictEqual(e.code, 'BuildInProgress')
+                    return true
+                }
+            )
+            prompterTester.assertCallAll(undefined, 2)
         })
 
         it('[entry: command palette] use samconfig should instantiate correct process in terminal', async () => {
@@ -587,6 +600,38 @@ describe('SAM runBuild', () => {
     })
 })
 
+async function runInParallel(samLocation: SamAppLocation): Promise<[SamBuildResult, SamBuildResult]> {
+    return Promise.all([runBuild(new AppNode(samLocation)), delayedRunBuild(samLocation)])
+}
+
+// We add a small delay to avoid the unlikely but possible race condition.
+async function delayedRunBuild(samLocation: SamAppLocation): Promise<SamBuildResult> {
+    return new Promise(async (resolve, reject) => {
+        // Add a small delay before returning the build promise
+        setTimeout(() => {
+            // Do nothing, just let the delay pass
+        }, 20)
+
+        const buildPromise = runBuild(new AppNode(samLocation))
+        buildPromise.then(resolve).catch(reject)
+    })
+}
+
+function getPrompterTester() {
+    return PrompterTester.init()
+        .handleQuickPick('Specify parameter source for build', async (quickPick) => {
+            // Need sometime to wait for the template to search for template file
+            await quickPick.untilReady()
+
+            assert.strictEqual(quickPick.items.length, 2)
+            const items = quickPick.items
+            assert.strictEqual(quickPick.items.length, 2)
+            assert.deepStrictEqual(items[0], { data: ParamsSource.Specify, label: 'Specify build flags' })
+            assert.deepStrictEqual(items[1].label, 'Use default values')
+            quickPick.acceptItem(quickPick.items[1])
+        })
+        .build()
+}
 function testResolveBuildFlags(
     sandbox: sinon.SinonSandbox,
     parsedVersion: SemVer,
