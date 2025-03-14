@@ -16,7 +16,7 @@ import {
     isPermissionsError,
     scrubNames,
 } from '../errors'
-import globals from '../extensionGlobals'
+import globals, { isWeb } from '../extensionGlobals'
 import { isWin } from '../vscode/env'
 import { resolvePath } from '../utilities/pathUtils'
 import crypto from 'crypto'
@@ -541,6 +541,43 @@ export class FileSystem {
             throw new Error('call fs.init() before using fs.getHomeDirectory()')
         }
         return this.#homeDir
+    }
+
+    /**
+     * Gets the application cache folder for the current platform
+     *
+     * Follows the cache_dir convention outlined in https://crates.io/crates/dirs
+     */
+    getCacheDir(): string {
+        if (isWeb()) {
+            const homeDir = this.#homeDir
+            if (!homeDir) {
+                throw new ToolkitError('Web home directory not found', {
+                    code: 'WebHomeDirectoryNotFound',
+                })
+            }
+            return homeDir
+        }
+        switch (process.platform) {
+            case 'darwin': {
+                return _path.join(this.getUserHomeDir(), 'Library/Caches')
+            }
+            case 'win32': {
+                const localAppData = process.env.LOCALAPPDATA
+                if (!localAppData) {
+                    throw new ToolkitError('LOCALAPPDATA environment variable not set', {
+                        code: 'LocalAppDataNotFound',
+                    })
+                }
+                return localAppData
+            }
+            case 'linux': {
+                return _path.join(this.getUserHomeDir(), '.cache')
+            }
+            default: {
+                throw new Error(`Unsupported platform: ${process.platform}. Expected 'darwin', 'win32', 'linux'.`)
+            }
+        }
     }
 
     /**

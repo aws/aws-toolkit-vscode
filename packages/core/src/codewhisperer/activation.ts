@@ -6,12 +6,9 @@
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { getTabSizeSetting } from '../shared/utilities/editorUtilities'
-import { KeyStrokeHandler } from './service/keyStrokeHandler'
 import * as EditorContext from './util/editorContext'
 import * as CodeWhispererConstants from './models/constants'
 import {
-    vsCodeState,
-    ConfigurationEntry,
     CodeSuggestionsState,
     CodeScansState,
     SecurityTreeViewFilterState,
@@ -19,13 +16,11 @@ import {
     CodeScanIssue,
     CodeIssueGroupingStrategyState,
 } from './models/model'
-import { invokeRecommendation } from './commands/invokeRecommendation'
 import { acceptSuggestion } from './commands/onInlineAcceptance'
 import { CodeWhispererSettings } from './util/codewhispererSettings'
 import { ExtContext } from '../shared/extensions'
 import { CodeWhispererTracker } from './tracker/codewhispererTracker'
 import * as codewhispererClient from './client/codewhisperer'
-import { runtimeLanguageContext } from './util/runtimeLanguageContext'
 import { getLogger } from '../shared/logger/logger'
 import {
     enableCodeSuggestions,
@@ -59,7 +54,6 @@ import {
     showExploreAgentsView,
     showCodeIssueGroupingQuickPick,
 } from './commands/basicCommands'
-import { sleep } from '../shared/utilities/timeoutUtils'
 import { ReferenceLogViewProvider } from './service/referenceLogViewProvider'
 import { ReferenceHoverProvider } from './service/referenceHoverProvider'
 import { ReferenceInlineProvider } from './service/referenceInlineProvider'
@@ -73,7 +67,6 @@ import { RecommendationHandler } from './service/recommendationHandler'
 import { Commands, registerCommandErrorHandler, registerDeclaredCommands } from '../shared/vscode/commands2'
 import { InlineCompletionService, refreshStatusBar } from './service/inlineCompletionService'
 import { isInlineCompletionEnabled } from './util/commonUtil'
-import { CodeWhispererCodeCoverageTracker } from './tracker/codewhispererCodeCoverageTracker'
 import { AuthUtil } from './util/authUtil'
 import { ImportAdderProvider } from './service/importAdderProvider'
 import { TelemetryHelper } from './util/telemetryHelper'
@@ -96,13 +89,11 @@ import { SecurityIssueTreeViewProvider } from './service/securityIssueTreeViewPr
 import { setContext } from '../shared/vscode/setContext'
 import { syncSecurityIssueWebview } from './views/securityIssue/securityIssueWebview'
 import { detectCommentAboveLine } from '../shared/utilities/commentUtils'
-import { UserWrittenCodeTracker } from './tracker/userWrittenCodeTracker'
 
 let localize: nls.LocalizeFunc
 
 export async function activate(context: ExtContext): Promise<void> {
     localize = nls.loadMessageBundle()
-    const codewhispererSettings = CodeWhispererSettings.instance
 
     // Import old CodeWhisperer settings into Amazon Q
     await CodeWhispererSettings.instance.importSettings()
@@ -301,16 +292,6 @@ export async function activate(context: ExtContext): Promise<void> {
                 SecurityIssueProvider.instance.issues.some((group) => group.issues.some((issue) => issue.visible))
             void setContext('aws.amazonq.security.noMatches', noMatches)
         }),
-        // manual trigger
-        Commands.register({ id: 'aws.amazonq.invokeInlineCompletion', autoconnect: true }, async () => {
-            invokeRecommendation(
-                vscode.window.activeTextEditor as vscode.TextEditor,
-                client,
-                await getConfigEntry()
-            ).catch((e) => {
-                getLogger().error('invokeRecommendation failed: %s', (e as Error).message)
-            })
-        }),
         // select customization
         selectCustomizationPrompt.register(),
         // notify new customizations
@@ -476,90 +457,6 @@ export async function activate(context: ExtContext): Promise<void> {
                 )
             }
         })
-    }
-
-    function getAutoTriggerStatus(): boolean {
-        return CodeSuggestionsState.instance.isSuggestionsEnabled()
-    }
-
-    async function getConfigEntry(): Promise<ConfigurationEntry> {
-        const isShowMethodsEnabled: boolean =
-            vscode.workspace.getConfiguration('editor').get('suggest.showMethods') || false
-        const isAutomatedTriggerEnabled: boolean = getAutoTriggerStatus()
-        const isManualTriggerEnabled: boolean = true
-        const isSuggestionsWithCodeReferencesEnabled = codewhispererSettings.isSuggestionsWithCodeReferencesEnabled()
-
-        // TODO:remove isManualTriggerEnabled
-        return {
-            isShowMethodsEnabled,
-            isManualTriggerEnabled,
-            isAutomatedTriggerEnabled,
-            isSuggestionsWithCodeReferencesEnabled,
-        }
-    }
-
-    if (isInlineCompletionEnabled()) {
-        await setSubscriptionsforInlineCompletion()
-        await AuthUtil.instance.setVscodeContextProps()
-    }
-
-    async function setSubscriptionsforInlineCompletion() {
-        RecommendationHandler.instance.subscribeSuggestionCommands()
-        /**
-         * Automated trigger
-         */
-        context.extensionContext.subscriptions.push(
-            vscode.window.onDidChangeActiveTextEditor(async (editor) => {
-                await RecommendationHandler.instance.onEditorChange()
-            }),
-            vscode.window.onDidChangeWindowState(async (e) => {
-                await RecommendationHandler.instance.onFocusChange()
-            }),
-            vscode.window.onDidChangeTextEditorSelection(async (e) => {
-                await RecommendationHandler.instance.onCursorChange(e)
-            }),
-            vscode.workspace.onDidChangeTextDocument(async (e) => {
-                const editor = vscode.window.activeTextEditor
-                if (!editor) {
-                    return
-                }
-                if (e.document !== editor.document) {
-                    return
-                }
-                if (!runtimeLanguageContext.isLanguageSupported(e.document)) {
-                    return
-                }
-
-                CodeWhispererCodeCoverageTracker.getTracker(e.document.languageId)?.countTotalTokens(e)
-                UserWrittenCodeTracker.instance.onTextDocumentChange(e)
-                /**
-                 * Handle this keystroke event only when
-                 * 1. It is not a backspace
-                 * 2. It is not caused by CodeWhisperer editing
-                 * 3. It is not from undo/redo.
-                 */
-                if (e.contentChanges.length === 0 || vsCodeState.isCodeWhispererEditing) {
-                    return
-                }
-
-                if (vsCodeState.lastUserModificationTime) {
-                    TelemetryHelper.instance.setTimeSinceLastModification(
-                        performance.now() - vsCodeState.lastUserModificationTime
-                    )
-                }
-                vsCodeState.lastUserModificationTime = performance.now()
-                /**
-                 * Important:  Doing this sleep(10) is to make sure
-                 * 1. this event is processed by vs code first
-                 * 2. editor.selection.active has been successfully updated by VS Code
-                 * Then this event can be processed by our code.
-                 */
-                await sleep(CodeWhispererConstants.vsCodeCursorUpdateDelay)
-                if (!RecommendationHandler.instance.isSuggestionVisible()) {
-                    await KeyStrokeHandler.instance.processKeyStroke(e, editor, client, await getConfigEntry())
-                }
-            })
-        )
     }
 
     void FeatureConfigProvider.instance.fetchFeatureConfigs().catch((error) => {

@@ -42,6 +42,7 @@ async function activateAmazonQNode(context: vscode.ExtensionContext) {
     const extContext = {
         extensionContext: context,
     }
+
     await activateCWChat(context)
     await activateQGumby(extContext as ExtContext)
 

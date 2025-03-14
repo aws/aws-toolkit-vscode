@@ -427,6 +427,32 @@ Example:
 }
 ```
 
+<a name="amazonqLsp-settings">Overrides specifically for the Amazon Q language server</a> can be set using the `aws.dev.amazonqLsp` setting. This is a JSON object consisting of keys/values required to override language server: `manifestUrl`, `supportedVersions`, `id`, and `path`.
+
+Example:
+
+```json
+"aws.dev.amazonqLsp": {
+    "manifestUrl": "https://custom.url/manifest.json",
+    "supportedVersions": "4.0.0",
+    "id": "AmazonQ",
+    "path": "/custom/path/to/local/lsp/folder",
+}
+```
+
+<a name="amazonqWorkspaceLsp-settings">Overrides specifically for the Amazon Q Workspace Context language server</a> can be set using the `aws.dev.amazonqWorkspaceLsp` setting. This is a JSON object consisting of keys/values required to override language server: `manifestUrl`, `supportedVersions`, `id`, and `path`.
+
+Example:
+
+```json
+"aws.dev.amazonqWorkspaceLsp": {
+    "manifestUrl": "https://custom.url/manifest.json",
+    "supportedVersions": "4.0.0",
+    "id": "AmazonQ",
+    "path": "/custom/path/to/local/lsp/folder",
+}
+```
+
 ### Environment variables
 
 Environment variables can be used to modify the behaviour of VSCode. The following are environment variables that can be used to configure the extension:
@@ -472,6 +498,14 @@ Unlike the user setting overrides, not all of these environment variables have t
 
 -   `__CODEWHISPERER_REGION`: for aws.dev.codewhispererService.region
 -   `__CODEWHISPERER_ENDPOINT`: for aws.dev.codewhispererService.endpoint
+-   `__AMAZONQLSP_MANIFEST_URL`: for aws.dev.amazonqLsp.manifestUrl
+-   `__AMAZONQLSP_SUPPORTED_VERSIONS`: for aws.dev.amazonqLsp.supportedVersions
+-   `__AMAZONQLSP_ID`: for aws.dev.amazonqLsp.id
+-   `__AMAZONQLSP_PATH`: for aws.dev.amazonqWorkspaceLsp.locationOverride
+-   `__AMAZONQWORKSPACELSP_MANIFEST_URL`: for aws.dev.amazonqWorkspaceLsp.manifestUrl
+-   `__AMAZONQWORKSPACELSP_SUPPORTED_VERSIONS`: for aws.dev.amazonqWorkspaceLsp.supportedVersions
+-   `__AMAZONQWORKSPACELSP_ID`: for aws.dev.amazonqWorkspaceLsp.id
+-   `__AMAZONQWORKSPACELSP_PATH`: for aws.dev.amazonqWorkspaceLsp.locationOverride
 
 #### Lambda
 

@@ -246,6 +246,10 @@
                         "jsonResourceModification": {
                             "type": "boolean",
                             "default": false
+                        },
+                        "amazonqLSP": {
+                            "type": "boolean",
+                            "default": false
                         }
                     },
                     "additionalProperties": false

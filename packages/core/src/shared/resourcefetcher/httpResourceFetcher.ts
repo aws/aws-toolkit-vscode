@@ -8,6 +8,7 @@ import { getLogger, Logger } from '../logger/logger'
 import { ResourceFetcher } from './resourcefetcher'
 import { Timeout, CancelEvent, waitUntil } from '../utilities/timeoutUtils'
 import request, { RequestError } from '../request'
+import { isUserCancelledError } from '../errors'
 
 type RequestHeaders = { eTag?: string; gZip?: boolean }
 
@@ -22,6 +23,7 @@ export class HttpResourceFetcher implements ResourceFetcher<Response> {
      * @param {string} params.friendlyName If URL is not shown, replaces the URL with this text.
      * @param {Timeout} params.timeout Timeout token to abort/cancel the request. Similar to `AbortSignal`.
      * @param {number} params.retries The number of retries a get request should make if one fails
+     * @param {boolean} params.throwOnError True if we want to throw if there's request error, defaul to false
      */
     public constructor(
         private readonly url: string,
@@ -29,8 +31,11 @@ export class HttpResourceFetcher implements ResourceFetcher<Response> {
             showUrl: boolean
             friendlyName?: string
             timeout?: Timeout
+            throwOnError?: boolean
         }
-    ) {}
+    ) {
+        this.params.throwOnError = this.params.throwOnError ?? false
+    }
 
     /**
      * Returns the response of the resource, or undefined if the response failed could not be retrieved.
@@ -82,6 +87,9 @@ export class HttpResourceFetcher implements ResourceFetcher<Response> {
                 `Error downloading ${this.logText()}: %s`,
                 error.message ?? error.code ?? error.response.statusText ?? error.response.status
             )
+            if (this.params.throwOnError) {
+                throw error
+            }
             return undefined
         }
     }
@@ -112,7 +120,10 @@ export class HttpResourceFetcher implements ResourceFetcher<Response> {
                 timeout: 3000,
                 interval: 100,
                 backoff: 2,
-                retryOnFail: true,
+                retryOnFail: (error: Error) => {
+                    // Retry unless the user intentionally canceled the operation.
+                    return !isUserCancelledError(error)
+                },
             }
         )
     }

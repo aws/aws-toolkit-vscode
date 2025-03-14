@@ -50,23 +50,38 @@ import { UserWrittenCodeTracker } from '../tracker/userWrittenCodeTracker'
  * It does not contain UI/UX related logic
  */
 
-// below commands override VS Code inline completion commands
-const prevCommand = Commands.declare('editor.action.inlineSuggest.showPrevious', () => async () => {
-    await RecommendationHandler.instance.showRecommendation(-1)
-})
-const nextCommand = Commands.declare('editor.action.inlineSuggest.showNext', () => async () => {
-    await RecommendationHandler.instance.showRecommendation(1)
-})
-
-const rejectCommand = Commands.declare('aws.amazonq.rejectCodeSuggestion', () => async () => {
-    telemetry.record({
-        traceId: TelemetryHelper.instance.traceId,
+/**
+ * Commands as a level of indirection so that declare doesn't intercept any registrations for the
+ * language server implementation.
+ *
+ * Otherwise you'll get:
+ *     "Unable to launch amazonq language server: Command "aws.amazonq.rejectCodeSuggestion" has already been declared by the Toolkit"
+ */
+function createCommands() {
+    // below commands override VS Code inline completion commands
+    const prevCommand = Commands.declare('editor.action.inlineSuggest.showPrevious', () => async () => {
+        await RecommendationHandler.instance.showRecommendation(-1)
+    })
+    const nextCommand = Commands.declare('editor.action.inlineSuggest.showNext', () => async () => {
+        await RecommendationHandler.instance.showRecommendation(1)
     })
 
-    await vscode.commands.executeCommand('editor.action.inlineSuggest.hide')
-    RecommendationHandler.instance.reportUserDecisions(-1)
-    await Commands.tryExecute('aws.amazonq.refreshAnnotation')
-})
+    const rejectCommand = Commands.declare('aws.amazonq.rejectCodeSuggestion', () => async () => {
+        telemetry.record({
+            traceId: TelemetryHelper.instance.traceId,
+        })
+
+        await vscode.commands.executeCommand('editor.action.inlineSuggest.hide')
+        RecommendationHandler.instance.reportUserDecisions(-1)
+        await Commands.tryExecute('aws.amazonq.refreshAnnotation')
+    })
+
+    return {
+        prevCommand,
+        nextCommand,
+        rejectCommand,
+    }
+}
 
 const lock = new AsyncLock({ maxPending: 1 })
 
@@ -579,6 +594,7 @@ export class RecommendationHandler {
     // They are subscribed when suggestion starts and disposed when suggestion is accepted/rejected
     // to avoid impacting other plugins or user who uses this API
     private registerCommandOverrides() {
+        const { prevCommand, nextCommand, rejectCommand } = createCommands()
         this.prev = prevCommand.register()
         this.next = nextCommand.register()
         this.reject = rejectCommand.register()

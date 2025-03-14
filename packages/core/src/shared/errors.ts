@@ -16,6 +16,7 @@ import { CodeWhispererStreamingServiceException } from '@amzn/codewhisperer-stre
 import { driveLetterRegex } from './utilities/pathUtils'
 import { getLogger } from './logger/logger'
 import { crashMonitoringDirName } from './constants'
+import { RequestCancelledError } from './request'
 
 let _username = 'unknown-user'
 let _isAutomation = false
@@ -618,7 +619,11 @@ function hasTime(error: Error): error is typeof error & { time: Date } {
 }
 
 export function isUserCancelledError(error: unknown): boolean {
-    return CancellationError.isUserCancelled(error) || (error instanceof ToolkitError && error.cancelled)
+    return (
+        CancellationError.isUserCancelled(error) ||
+        (error instanceof ToolkitError && error.cancelled) ||
+        error instanceof RequestCancelledError
+    )
 }
 
 /**

@@ -24,11 +24,15 @@
 import { isWeb } from './extensionGlobals'
 
 export function randomUUID(): `${string}-${string}-${string}-${string}-${string}` {
+    return getCrypto().randomUUID()
+}
+
+function getCrypto() {
     if (isWeb()) {
-        return globalThis.crypto.randomUUID()
+        return globalThis.crypto
     }
 
-    return require('crypto').randomUUID()
+    return require('crypto')
 }
 
 /**
@@ -53,4 +57,11 @@ export function truncateUuid(uuid: string) {
 
     const cleanedUUID = uuid.replace(/-/g, '')
     return `${cleanedUUID.substring(0, 4)}...${cleanedUUID.substring(cleanedUUID.length - 4)}`
+}
+
+export function createHash(algorithm: string, contents: string | Buffer): string {
+    const crypto = getCrypto()
+    const hash = crypto.createHash(algorithm)
+    hash.update(contents)
+    return `${algorithm}:${hash.digest('hex')}`
 }
