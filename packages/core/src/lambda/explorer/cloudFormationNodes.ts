@@ -9,7 +9,7 @@ const localize = nls.loadMessageBundle()
 import { CloudFormation, Lambda } from 'aws-sdk'
 import * as os from 'os'
 import * as vscode from 'vscode'
-import { CloudFormationClient } from '../../shared/clients/cloudFormation'
+import { CloudFormationClient, StackSummary } from '../../shared/clients/cloudFormation'
 import { DefaultLambdaClient } from '../../shared/clients/lambdaClient'
 
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
@@ -66,7 +66,7 @@ export class CloudFormationStackNode extends AWSTreeNodeBase implements AWSResou
     public constructor(
         public readonly parent: AWSTreeNodeBase,
         public override readonly regionCode: string,
-        private stackSummary: CloudFormation.StackSummary,
+        private stackSummary: StackSummary,
         private readonly lambdaClient = new DefaultLambdaClient(regionCode),
         private readonly cloudformationClient = new CloudFormationClient(regionCode)
     ) {
@@ -114,7 +114,7 @@ export class CloudFormationStackNode extends AWSTreeNodeBase implements AWSResou
         })
     }
 
-    public update(stackSummary: CloudFormation.StackSummary): void {
+    public update(stackSummary: StackSummary): void {
         this.stackSummary = stackSummary
         this.label = `${this.stackName} [${stackSummary.StackStatus}]`
         this.tooltip = `${this.stackName}${os.EOL}${this.stackId}`

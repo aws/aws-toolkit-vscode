@@ -12,7 +12,7 @@ import {
     contextValueCloudformationLambdaFunction,
 } from '../../../lambda/explorer/cloudFormationNodes'
 import { LambdaFunctionNode } from '../../../lambda/explorer/lambdaFunctionNode'
-import { CloudFormationClient } from '../../../shared/clients/cloudFormation'
+import { CloudFormationClient, StackSummary } from '../../../shared/clients/cloudFormation'
 import { DefaultLambdaClient } from '../../../shared/clients/lambdaClient'
 import globals from '../../../shared/extensionGlobals'
 import { TestAWSTreeNode } from '../../shared/treeview/nodes/testAWSTreeNode'
@@ -44,6 +44,9 @@ function createCloudFormationClient(...stackNames: string[]) {
                     StackName: name,
                     CreationTime: new globals.clock.Date(),
                     StackStatus: 'CREATE_COMPLETE',
+                    DriftInformation: {
+                        StackDriftStatus: 'UNKNOWN',
+                    },
                 }
             })
         )
@@ -53,12 +56,15 @@ function createCloudFormationClient(...stackNames: string[]) {
 }
 
 describe('CloudFormationStackNode', function () {
-    function createStackSummary() {
+    function createStackSummary(): StackSummary {
         return {
             CreationTime: new globals.clock.Date(),
             StackId: '1',
             StackName: 'myStack',
             StackStatus: 'UPDATE_COMPLETE',
+            DriftInformation: {
+                StackDriftStatus: 'UNKNOWN',
+            },
         }
     }
 

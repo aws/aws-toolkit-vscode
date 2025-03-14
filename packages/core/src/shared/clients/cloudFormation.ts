@@ -8,9 +8,13 @@ import * as CloudFormationV3 from '@aws-sdk/client-cloudformation'
 import globals from '../extensionGlobals'
 import { AsyncCollection } from '../utilities/asyncCollection'
 import { pageableToCollection } from '../utilities/collectionUtils'
-import { isNonNullable } from '../utilities/tsUtils'
+import { hasProps, isNonNullable, RequiredProps } from '../utilities/tsUtils'
 import { ClientWrapper } from './clientWrapper'
 
+export interface StackSummary
+    extends RequiredProps<CloudFormationV3.StackSummary, 'StackName' | 'CreationTime' | 'StackStatus'> {
+    DriftInformation: RequiredProps<CloudFormationV3.StackDriftInformation, 'StackDriftStatus'>
+}
 export class CloudFormationClient extends ClientWrapper<CloudFormationV3.CloudFormationClient> {
     public constructor(regionCode: string) {
         super(regionCode, CloudFormationV3.CloudFormationClient)
@@ -33,22 +37,32 @@ export class CloudFormationClient extends ClientWrapper<CloudFormationV3.CloudFo
 
     public async *listStacks(
         statusFilter: string[] = ['CREATE_COMPLETE', 'UPDATE_COMPLETE']
-    ): AsyncIterableIterator<CloudFormation.StackSummary> {
-        const client = await this.createSdkClient()
-
+    ): AsyncIterableIterator<StackSummary> {
         const request: CloudFormation.ListStacksInput = {
             StackStatusFilter: statusFilter,
         }
 
         do {
-            const response: CloudFormation.ListStacksOutput = await client.listStacks(request).promise()
+            const response: CloudFormationV3.ListStacksOutput = await this.makeRequest(
+                CloudFormationV3.ListStacksCommand,
+                request
+            )
 
-            if (response.StackSummaries) {
-                yield* response.StackSummaries
+            const filteredResponse = response.StackSummaries?.filter(isStackSummary)
+            if (filteredResponse && filteredResponse.length > 0) {
+                yield* filteredResponse
             }
 
             request.NextToken = response.NextToken
         } while (request.NextToken)
+
+        function isStackSummary(s: CloudFormationV3.StackSummary | undefined): s is StackSummary {
+            return (
+                isNonNullable(s) &&
+                hasProps(s, 'StackName', 'CreationTime', 'StackStatus', 'DriftInformation') &&
+                hasProps(s.DriftInformation, 'StackDriftStatus')
+            )
+        }
     }
 
     public listAllStacks(request: CloudFormation.ListStacksInput = {}): AsyncCollection<CloudFormation.StackSummary[]> {
