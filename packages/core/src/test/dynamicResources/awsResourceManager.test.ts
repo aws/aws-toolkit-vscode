@@ -13,7 +13,7 @@ import { ResourceNode } from '../../dynamicResources/explorer/nodes/resourceNode
 import { ResourceTypeNode } from '../../dynamicResources/explorer/nodes/resourceTypeNode'
 import { formatResourceModel, AwsResourceManager } from '../../dynamicResources/awsResourceManager'
 import { CloudControlClient, DefaultCloudControlClient } from '../../shared/clients/cloudControlClient'
-import { CloudFormationClient, CloudFormationClient } from '../../shared/clients/cloudFormation'
+import { CloudFormationClient } from '../../shared/clients/cloudFormation'
 import { makeTemporaryToolkitFolder, readFileAsString } from '../../shared/filesystemUtilities'
 import { FakeExtensionContext } from '../fakeExtensionContext'
 import { existsSync } from 'fs' // eslint-disable-line no-restricted-imports

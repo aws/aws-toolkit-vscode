@@ -144,7 +144,7 @@ describe('SAM SyncWizard', async () => {
 
         // Simulate return of deployed stacks
         mockDefaultCFNClient = sandbox.createStubInstance(CloudFormationClientModule.CloudFormationClient)
-        sandbox.stub(CloudFormationClientModule, 'DefaultCloudFormationClient').returns(mockDefaultCFNClient)
+        sandbox.stub(CloudFormationClientModule, 'CloudFormationClient').returns(mockDefaultCFNClient)
         mockDefaultCFNClient.listAllStacks.returns(intoCollection(stackSummaries))
 
         // Simulate return of list bucket
@@ -1094,7 +1094,7 @@ describe('SAM runSync', () => {
 
         // Simulate return of deployed stacks
         mockDefaultCFNClient = sandbox.createStubInstance(CloudFormationClientModule.CloudFormationClient)
-        sandbox.stub(CloudFormationClientModule, 'DefaultCloudFormationClient').returns(mockDefaultCFNClient)
+        sandbox.stub(CloudFormationClientModule, 'CloudFormationClient').returns(mockDefaultCFNClient)
         mockDefaultCFNClient.listAllStacks.returns(intoCollection(stackSummaries))
 
         // Simulate return of list bucket

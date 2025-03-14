@@ -4,22 +4,20 @@
  */
 
 import { CloudFormation } from 'aws-sdk'
+import * as CloudFormationV3 from '@aws-sdk/client-cloudformation'
 import globals from '../extensionGlobals'
 import { AsyncCollection } from '../utilities/asyncCollection'
 import { pageableToCollection } from '../utilities/collectionUtils'
 import { isNonNullable } from '../utilities/tsUtils'
+import { ClientWrapper } from './clientWrapper'
 
-export class CloudFormationClient {
-    public constructor(public readonly regionCode: string) {}
+export class CloudFormationClient extends ClientWrapper<CloudFormationV3.CloudFormationClient> {
+    public constructor(regionCode: string) {
+        super(regionCode, CloudFormationV3.CloudFormationClient)
+    }
 
-    public async deleteStack(name: string): Promise<void> {
-        const client = await this.createSdkClient()
-
-        await client
-            .deleteStack({
-                StackName: name,
-            })
-            .promise()
+    public async deleteStack(name: string): Promise<CloudFormationV3.DeleteStackCommandOutput> {
+        return await this.makeRequest(CloudFormationV3.DeleteStackCommand, { StackName: name })
     }
 
     public async describeType(typeName: string): Promise<CloudFormation.DescribeTypeOutput> {
