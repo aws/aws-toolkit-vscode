@@ -104,6 +104,9 @@ export async function activate(context: ExtContext): Promise<void> {
     localize = nls.loadMessageBundle()
     const codewhispererSettings = CodeWhispererSettings.instance
 
+    // Import old CodeWhisperer settings into Amazon Q
+    await CodeWhispererSettings.instance.importSettings()
+
     // initialize AuthUtil earlier to make sure it can listen to connection change events.
     const auth = AuthUtil.instance
     auth.initCodeWhispererHooks()
@@ -156,7 +159,7 @@ export async function activate(context: ExtContext): Promise<void> {
                 EditorContext.updateTabSize(getTabSizeSetting())
             }
 
-            if (configurationChangeEvent.affectsConfiguration('amazonQ.showInlineCodeSuggestionsWithCodeReferences')) {
+            if (configurationChangeEvent.affectsConfiguration('amazonQ.showCodeWithReferences')) {
                 ReferenceLogViewProvider.instance.update()
                 if (auth.isEnterpriseSsoInUse()) {
                     await vscode.window
@@ -212,7 +215,7 @@ export async function activate(context: ExtContext): Promise<void> {
             if (id === 'codewhisperer') {
                 await vscode.commands.executeCommand(
                     'workbench.action.openSettings',
-                    `@id:amazonQ.showInlineCodeSuggestionsWithCodeReferences`
+                    `@id:amazonQ.showCodeWithReferences`
                 )
             } else {
                 await openSettings('amazonQ')
