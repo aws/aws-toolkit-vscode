@@ -104,6 +104,7 @@ export function triggerPayloadToChatRequest(triggerPayload: TriggerPayload): { c
 
     return {
         conversationState: {
+            conversationId: 'dummyConversationId',
             currentMessage: {
                 userInputMessage: {
                     content: triggerPayload.message
@@ -119,6 +120,7 @@ export function triggerPayloadToChatRequest(triggerPayload: TriggerPayload): { c
                         additionalContext: triggerPayload.additionalContents,
                     },
                     userIntent: triggerPayload.userIntent,
+                    origin: 'IDE',
                 },
             },
             chatTriggerType,
