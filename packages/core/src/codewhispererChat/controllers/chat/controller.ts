@@ -934,9 +934,9 @@ export class ChatController {
     private async resolveContextCommandPayload(
         triggerPayload: TriggerPayload,
         session: ChatSession
-    ): Promise<string[]> {
+    ): Promise<DocumentReference[]> {
         const contextCommands: ContextCommandItem[] = []
-        const relativePaths: string[] = []
+        const result: DocumentReference[] = []
 
         // Check for workspace rules to add to context
         const workspaceRules = await this.collectWorkspaceRules()
@@ -1016,6 +1016,8 @@ export class ChatController {
                     name: prompt.name.substring(0, aditionalContentNameLimit),
                     description: description.substring(0, aditionalContentNameLimit),
                     innerContext: prompt.content.substring(0, additionalContentInnerContextLimit),
+                    start: prompt.startLine,
+                    end: prompt.endLine,
                 }
                 // make sure the relevantDocument + additionalContext
                 // combined does not exceed 40k characters before generating the request payload.
@@ -1041,12 +1043,15 @@ export class ChatController {
                 if (prompt.filePath.startsWith(getUserPromptsDirectory())) {
                     relativePath = path.basename(prompt.filePath)
                 }
-                relativePaths.push(relativePath)
+                result.push({
+                    relativeFilePath: relativePath,
+                    lineRanges: [{ first: entry.start, second: entry.end }],
+                })
             }
         }
         getLogger().info(`Retrieved chunks of additional context count: ${triggerPayload.additionalContents.length} `)
 
-        return relativePaths
+        return result
     }
 
     private async generateResponse(
@@ -1083,7 +1088,7 @@ export class ChatController {
         }
 
         const session = this.sessionStorage.getSession(tabID)
-        const relativePathsOfContextCommandFiles = await this.resolveContextCommandPayload(triggerPayload, session)
+        const ContextCommandDocumentReferences = await this.resolveContextCommandPayload(triggerPayload, session)
         triggerPayload.useRelevantDocuments =
             triggerPayload.context?.some(
                 (context) => typeof context !== 'string' && context.command === '@workspace'
@@ -1131,24 +1136,22 @@ export class ChatController {
 
         const request = triggerPayloadToChatRequest(triggerPayload)
 
-        if (triggerPayload.documentReferences !== undefined) {
-            const relativePathsOfMergedRelevantDocuments = triggerPayload.documentReferences.map(
-                (doc) => doc.relativeFilePath
-            )
-            const seen: string[] = []
-            for (const relativePath of relativePathsOfContextCommandFiles) {
-                if (!relativePathsOfMergedRelevantDocuments.includes(relativePath) && !seen.includes(relativePath)) {
-                    triggerPayload.documentReferences.push({
-                        relativeFilePath: relativePath,
-                        lineRanges: [{ first: -1, second: -1 }],
-                    })
-                    seen.push(relativePath)
-                }
+        const relativePathsOfMergedRelevantDocuments = triggerPayload.documentReferences.map(
+            (doc) => doc.relativeFilePath
+        )
+        const seen: string[] = []
+        for (const documentReference of ContextCommandDocumentReferences) {
+            if (
+                !relativePathsOfMergedRelevantDocuments.includes(documentReference.relativeFilePath) &&
+                !seen.includes(documentReference.relativeFilePath)
+            ) {
+                triggerPayload.documentReferences.push(documentReference)
+                seen.push(documentReference.relativeFilePath)
             }
-            if (triggerPayload.documentReferences) {
-                for (const doc of triggerPayload.documentReferences) {
-                    session.contexts.set(doc.relativeFilePath, doc.lineRanges)
-                }
+        }
+        if (triggerPayload.documentReferences) {
+            for (const doc of triggerPayload.documentReferences) {
+                session.contexts.set(doc.relativeFilePath, doc.lineRanges)
             }
         }
 

@@ -100,8 +100,6 @@ export type SymbolType =
     | 'Delegate'
     | 'Namespace'
     | 'Object'
-    | 'Component'
-    | 'Implementation'
     | 'Module'
     | 'Method'
 
