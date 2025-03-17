@@ -3,20 +3,20 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as CloudWatchLogsV3 from '@aws-sdk/client-cloudwatch-logs'
+import * as CloudWatchLogs from '@aws-sdk/client-cloudwatch-logs'
 import { ClientWrapper } from './clientWrapper'
 
-export class CloudWatchLogsClient extends ClientWrapper<CloudWatchLogsV3.CloudWatchLogsClient> {
+export class CloudWatchLogsClient extends ClientWrapper<CloudWatchLogs.CloudWatchLogsClient> {
     public constructor(regionCode: string) {
-        super(regionCode, CloudWatchLogsV3.CloudWatchLogsClient)
+        super(regionCode, CloudWatchLogs.CloudWatchLogsClient)
     }
 
     public async *describeLogGroups(
-        request: CloudWatchLogsV3.DescribeLogGroupsRequest = {}
-    ): AsyncIterableIterator<CloudWatchLogsV3.LogGroup> {
+        request: CloudWatchLogs.DescribeLogGroupsRequest = {}
+    ): AsyncIterableIterator<CloudWatchLogs.LogGroup> {
         do {
-            const response: CloudWatchLogsV3.DescribeLogGroupsResponse = await this.makeRequest(
-                CloudWatchLogsV3.DescribeLogGroupsCommand,
+            const response: CloudWatchLogs.DescribeLogGroupsResponse = await this.makeRequest(
+                CloudWatchLogs.DescribeLogGroupsCommand,
                 request
             )
             if (response.logGroups) {
@@ -27,20 +27,20 @@ export class CloudWatchLogsClient extends ClientWrapper<CloudWatchLogsV3.CloudWa
     }
 
     public async describeLogStreams(
-        request: CloudWatchLogsV3.DescribeLogStreamsRequest
-    ): Promise<CloudWatchLogsV3.DescribeLogStreamsResponse> {
-        return await this.makeRequest(CloudWatchLogsV3.DescribeLogStreamsCommand, request)
+        request: CloudWatchLogs.DescribeLogStreamsRequest
+    ): Promise<CloudWatchLogs.DescribeLogStreamsResponse> {
+        return await this.makeRequest(CloudWatchLogs.DescribeLogStreamsCommand, request)
     }
 
     public async getLogEvents(
-        request: CloudWatchLogsV3.GetLogEventsRequest
-    ): Promise<CloudWatchLogsV3.GetLogEventsResponse> {
-        return await this.makeRequest(CloudWatchLogsV3.GetLogEventsCommand, request)
+        request: CloudWatchLogs.GetLogEventsRequest
+    ): Promise<CloudWatchLogs.GetLogEventsResponse> {
+        return await this.makeRequest(CloudWatchLogs.GetLogEventsCommand, request)
     }
 
     public async filterLogEvents(
-        request: CloudWatchLogsV3.FilterLogEventsRequest
-    ): Promise<CloudWatchLogsV3.FilterLogEventsResponse> {
-        return await this.makeRequest(CloudWatchLogsV3.FilterLogEventsCommand, request)
+        request: CloudWatchLogs.FilterLogEventsRequest
+    ): Promise<CloudWatchLogs.FilterLogEventsResponse> {
+        return await this.makeRequest(CloudWatchLogs.FilterLogEventsCommand, request)
     }
 }
