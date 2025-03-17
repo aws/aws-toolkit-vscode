@@ -39,6 +39,18 @@ AWS Infrastructure Composer maintains a real-time visual representation of your 
 
 Unified software development service to quickly build and deliver applications on AWS.
 
+## [Step Functions](https://aws.amazon.com/step-functions/)
+
+Step Functions Workflow Studio provides a dynamic, visual representation of your state machine definition. Any changes you make, such as adding new resources or adjusting service configurations, are automatically reflected in your state machine definition.
+
+With Workflow Studio integrated with VS Code, you can do the following:
+
+-   Design state machines visually from within VS Code
+-   Seamlessly use both text and visual editing
+-   Test and debug your workflow states
+
+![Step Functions](https://raw.githubusercontent.com/aws/aws-toolkit-vscode/HEAD/docs/marketplace/vscode/stepFunctions.gif)
+
 **Dev Environments** - launch VS Code in a cloud development environment, available on-demand in the cloud and automatically created with branch code and consistent project settings, providing faster setup, development, and testing
 
 ## View, modify, and deploy AWS resources
@@ -73,7 +85,6 @@ Unified software development service to quickly build and deliver applications o
 
 -   **EC2** - `Connect VS Code` or `Open Terminal` to EC2 instances
 -   **Redshift** - view database objects and run SQL queries in a notebook interface
--   **Step Functions** - work with asl files and render state machine visuals
 -   **CloudFormation** - view CloudFormation stacks
 -   **API Gateway** - invoke an API gateway endpoint
 -   **S3** - view and create S3 folders and buckets, download and upload files, and edit supported files
