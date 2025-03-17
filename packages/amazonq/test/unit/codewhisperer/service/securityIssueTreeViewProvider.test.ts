@@ -12,6 +12,7 @@ import {
     SeverityItem,
     CodeIssueGroupingStrategyState,
     CodeIssueGroupingStrategy,
+    sasRuleId,
 } from 'aws-core-vscode/codewhisperer'
 import { createCodeScanIssue } from 'aws-core-vscode/test'
 import assert from 'assert'
@@ -152,5 +153,25 @@ describe('SecurityIssueTreeViewProvider', function () {
                 assert.ok(issueItems.every((item) => item.description?.toString().startsWith('[Ln ')))
             }
         })
+    })
+})
+
+describe('IssueItem', function () {
+    it('has issueWithFix context value for issues with suggested fix', function () {
+        const issueItem = new IssueItem(
+            'file/path',
+            createCodeScanIssue({ suggestedFixes: [{ code: 'fixCode', description: 'fixDescription' }] })
+        )
+        assert.strictEqual(issueItem.contextValue, 'issueWithFix')
+    })
+
+    it('has issueWithoutFix context value for issues without suggested fix', function () {
+        const issueItem = new IssueItem('file/path', createCodeScanIssue({ suggestedFixes: [] }))
+        assert.strictEqual(issueItem.contextValue, 'issueWithoutFix')
+    })
+
+    it('has issueWithFixDisabled context value for SAS findings', function () {
+        const issueItem = new IssueItem('file/path', createCodeScanIssue({ ruleId: sasRuleId }))
+        assert.strictEqual(issueItem.contextValue, 'issueWithFixDisabled')
     })
 })
