@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as vscode from 'vscode'
-import { S3 } from 'aws-sdk'
+import { S3Bucket } from '../../../shared/clients/s3'
 import { AppNode } from '../../../awsService/appBuilder/explorer/nodes/appNode'
 import { assertTelemetry, getWorkspaceFolder, TestFolder } from '../../testUtil'
 import { DeployParams, DeployWizard, getDeployWizard, runDeploy } from '../../../shared/sam/deploy'
@@ -1288,7 +1288,7 @@ describe('SAM Deploy', () => {
 })
 
 const s3BucketListSummary: Array<
-    RequiredProps<S3.Bucket, 'Name'> & {
+    RequiredProps<S3Bucket, 'Name'> & {
         readonly region: string
     }
 > = [
