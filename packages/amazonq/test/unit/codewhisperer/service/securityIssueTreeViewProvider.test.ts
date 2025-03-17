@@ -154,24 +154,24 @@ describe('SecurityIssueTreeViewProvider', function () {
             }
         })
     })
+})
 
-    describe('IssueItem', function () {
-        it('has issueWithFix context value for issues with suggested fix', function () {
-            const issueItem = new IssueItem(
-                'file/path',
-                createCodeScanIssue({ suggestedFixes: [{ code: 'fixCode', description: 'fixDescription' }] })
-            )
-            assert.strictEqual(issueItem.contextValue, 'issueWithFix')
-        })
+describe('IssueItem', function () {
+    it('has issueWithFix context value for issues with suggested fix', function () {
+        const issueItem = new IssueItem(
+            'file/path',
+            createCodeScanIssue({ suggestedFixes: [{ code: 'fixCode', description: 'fixDescription' }] })
+        )
+        assert.strictEqual(issueItem.contextValue, 'issueWithFix')
+    })
 
-        it('has issueWithoutFix context value for issues without suggested fix', function () {
-            const issueItem = new IssueItem('file/path', createCodeScanIssue({ suggestedFixes: [] }))
-            assert.strictEqual(issueItem.contextValue, 'issueWithoutFix')
-        })
+    it('has issueWithoutFix context value for issues without suggested fix', function () {
+        const issueItem = new IssueItem('file/path', createCodeScanIssue({ suggestedFixes: [] }))
+        assert.strictEqual(issueItem.contextValue, 'issueWithoutFix')
+    })
 
-        it('has issueWithFixDisabled context value for SAS findings', function () {
-            const issueItem = new IssueItem('file/path', createCodeScanIssue({ ruleId: sasRuleId }))
-            assert.strictEqual(issueItem.contextValue, 'issueWithFixDisabled')
-        })
+    it('has issueWithFixDisabled context value for SAS findings', function () {
+        const issueItem = new IssueItem('file/path', createCodeScanIssue({ ruleId: sasRuleId }))
+        assert.strictEqual(issueItem.contextValue, 'issueWithFixDisabled')
     })
 })
