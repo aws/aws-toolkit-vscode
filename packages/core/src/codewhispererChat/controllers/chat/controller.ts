@@ -552,7 +552,7 @@ export class ChatController {
         }
 
         this.messenger.sendContextCommandData(contextCommand)
-        LspController.instance.updateContextCommandSymbols()
+        LspController.instance.updateContextCommandSymbolsOnce()
     }
 
     private handlePromptCreate(tabID: string) {
@@ -1088,7 +1088,7 @@ export class ChatController {
         }
 
         const session = this.sessionStorage.getSession(tabID)
-        const ContextCommandDocumentReferences = await this.resolveContextCommandPayload(triggerPayload, session)
+        const contextCommandDocumentReferences = await this.resolveContextCommandPayload(triggerPayload, session)
         triggerPayload.useRelevantDocuments =
             triggerPayload.context?.some(
                 (context) => typeof context !== 'string' && context.command === '@workspace'
@@ -1140,7 +1140,7 @@ export class ChatController {
             (doc) => doc.relativeFilePath
         )
         const seen: string[] = []
-        for (const documentReference of ContextCommandDocumentReferences) {
+        for (const documentReference of contextCommandDocumentReferences) {
             if (
                 !relativePathsOfMergedRelevantDocuments.includes(documentReference.relativeFilePath) &&
                 !seen.includes(documentReference.relativeFilePath)

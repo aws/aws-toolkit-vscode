@@ -426,7 +426,7 @@ export class LspController {
         })
     }
 
-    async updateContextCommandSymbols() {
+    async updateContextCommandSymbolsOnce() {
         if (this._contextCommandSymbolsUpdated) {
             return
         }
