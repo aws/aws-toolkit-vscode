@@ -1,4 +1,4 @@
 {
 	"type": "Bug Fix",
-	"description": "/test: show customer facing error message"
+	"description": "/test: show descriptive error message"
 }
