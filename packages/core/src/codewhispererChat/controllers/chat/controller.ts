@@ -455,7 +455,7 @@ export class ChatController {
                             },
                         ],
                         description: i18n('AWS.amazonq.context.symbols.description'),
-                        icon: 'paper-clip' as MynahIconsType,
+                        icon: 'code-block' as MynahIconsType,
                     },
                     {
                         command: i18n('AWS.amazonq.context.prompts.title'),
@@ -545,7 +545,7 @@ export class ChatController {
                         route: [contextCommandItem.workspaceFolder, contextCommandItem.relativePath],
                         label: 'code',
                         id: contextCommandItem.id,
-                        icon: 'paper-clip' as MynahIconsType,
+                        icon: 'code-block' as MynahIconsType,
                     })
                 }
             }
