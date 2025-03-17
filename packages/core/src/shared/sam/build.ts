@@ -242,7 +242,11 @@ export async function runBuild(arg?: TreeNode): Promise<SamBuildResult> {
                 cancellable: true,
                 location: vscode.ProgressLocation.Notification,
             },
-            async (progress) => {
+            async (progress, token) => {
+                token.onCancellationRequested(async () => {
+                    throw new CancellationError('user')
+                })
+
                 progress.report({ message: `Building SAM template at ${params.template.uri.path}` })
 
                 // Create a child process to run the SAM build command
@@ -257,8 +261,6 @@ export async function runBuild(arg?: TreeNode): Promise<SamBuildResult> {
                 await runInTerminal(buildProcess, 'build')
             }
         )
-
-        await unregisterTemplateBuild(params.template.uri.path)
 
         return {
             isSuccess: true,
