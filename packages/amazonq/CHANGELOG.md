@@ -1,3 +1,13 @@
+## 1.51.0 2025-03-12
+
+- **Bug Fix** increase scan timeout to reduce front-end timeout errors
+- **Bug Fix** Amazon Q chat: Create a new prompt form does not autofocus or submit with Enter press
+- **Bug Fix** /review: Zip files are created with the wrong file path for file scans in multifolder workspaces.
+- **Bug Fix** /review: Invalid file path characters caused some detections to be skipped on Windows
+- **Feature** Amazon Q Chat: You can now keep a "library" of prompt files in your home directory under `~/.aws/amazonq/prompts` and then quickly add them to the context using `@` on any project you’re working on. Prompt files are in markdown (`.md`) format.
+- **Feature** /review: show code diff for fix preview
+- **Feature** /test: display test plan summary in chat after generating tests
+
 ## 1.50.0 2025-03-06
 
 - **Bug Fix** /doc: Usage in multiple chat tabs may cause unexpected behavior.
