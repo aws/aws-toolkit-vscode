@@ -8,7 +8,7 @@ const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
 
-import { CloudWatchLogsClient } from '../../../shared/clients/cloudWatchLogsClient'
+import { CloudWatchLogsClient } from '../../../shared/clients/cloudWatchLogs'
 
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { toMap, updateInPlace, toArrayAsync } from '../../../shared/utilities/collectionUtils'

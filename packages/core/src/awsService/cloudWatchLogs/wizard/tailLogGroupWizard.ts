@@ -6,7 +6,7 @@
 import * as nls from 'vscode-nls'
 import globals from '../../../shared/extensionGlobals'
 import { ToolkitError } from '../../../shared/errors'
-import { CloudWatchLogsClient } from '../../../shared/clients/cloudWatchLogsClient'
+import { CloudWatchLogsClient } from '../../../shared/clients/cloudWatchLogs'
 import { cwlFilterPatternHelpUrl } from '../../../shared/constants'
 import { createBackButton, createExitButton, createHelpButton } from '../../../shared/ui/buttons'
 import { RegionSubmenu, RegionSubmenuResponse } from '../../../shared/ui/common/regionSubmenu'

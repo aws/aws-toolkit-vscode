@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import { CloudWatchLogsSettings, uriToKey, msgKey, cwlUriSchema } from '../cloudWatchLogsUtils'
-import { CloudWatchLogsClient } from '../../../shared/clients/cloudWatchLogsClient'
+import { CloudWatchLogsClient } from '../../../shared/clients/cloudWatchLogs'
 import { waitTimeout } from '../../../shared/utilities/timeoutUtils'
 import { Messages } from '../../../shared/utilities/messages'
 import { pageableToCollection } from '../../../shared/utilities/collectionUtils'

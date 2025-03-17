@@ -17,7 +17,7 @@ import {
 import { DataQuickPickItem } from '../../../shared/ui/pickerPrompter'
 import { isValidResponse, isWizardControl, Wizard, WIZARD_RETRY } from '../../../shared/wizards/wizard'
 import { cwlUriSchema, msgKey, recordTelemetryFilter } from '../cloudWatchLogsUtils'
-import { CloudWatchLogsClient } from '../../../shared/clients/cloudWatchLogsClient'
+import { CloudWatchLogsClient } from '../../../shared/clients/cloudWatchLogs'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { getLogger } from '../../../shared/logger/logger'
 import { TimeFilterResponse, TimeFilterSubmenu } from '../timeFilterSubmenu'

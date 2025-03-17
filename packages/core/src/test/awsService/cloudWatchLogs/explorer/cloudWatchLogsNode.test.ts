@@ -11,7 +11,7 @@ import {
     assertNodeListOnlyHasErrorNode,
     assertNodeListOnlyHasPlaceholderNode,
 } from '../../../utilities/explorerNodeAssertions'
-import { CloudWatchLogsClient } from '../../../../shared/clients/cloudWatchLogsClient'
+import { CloudWatchLogsClient } from '../../../../shared/clients/cloudWatchLogs'
 import { stub } from '../../../utilities/stubber'
 
 const fakeRegionCode = 'someregioncode'

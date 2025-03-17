@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import { Prompter, PromptResult } from '../../../shared/ui/prompter'
-import { CloudWatchLogsClient } from '../../../shared/clients/cloudWatchLogsClient'
+import { CloudWatchLogsClient } from '../../../shared/clients/cloudWatchLogs'
 import { createCommonButtons } from '../../../shared/ui/buttons'
 import { createInputBox, InputBoxPrompter } from '../../../shared/ui/inputPrompter'
 import { createQuickPick, DataQuickPickItem, QuickPickPrompter } from '../../../shared/ui/pickerPrompter'
