@@ -6,9 +6,14 @@
 import { featureName, clientErrorMessages, startTaskAssistLimitReachedMessage } from './constants'
 import { uploadCodeError } from './userFacingText'
 import { i18n } from '../shared/i18n-helper'
-import { ClientError, LlmError, ServiceError, ContentLengthError as SharedContentLengthError } from '../amazonq/errors'
+import { LlmError } from '../amazonq/errors'
 import { MetricDataResult } from '../amazonq/commons/types'
-import { ToolkitError } from '../shared/errors'
+import {
+    ClientError,
+    ServiceError,
+    ContentLengthError as CommonContentLengthError,
+    ToolkitError,
+} from '../shared/errors'
 
 export class ConversationIdNotFoundError extends ServiceError {
     constructor() {
@@ -104,7 +109,7 @@ export class IllegalStateError extends ServiceError {
     }
 }
 
-export class ContentLengthError extends SharedContentLengthError {
+export class ContentLengthError extends CommonContentLengthError {
     constructor() {
         super(i18n('AWS.amazonq.featureDev.error.contentLengthError'), { code: ContentLengthError.name })
     }

@@ -33,7 +33,7 @@ import { UpdateAnswerMessage } from '../../amazonq/commons/connector/connectorMe
 import { FollowUpTypes } from '../../amazonq/commons/types'
 import { SessionConfig } from '../../amazonq/commons/session/sessionConfigFactory'
 import { Messenger } from '../../amazonq/commons/connector/baseMessenger'
-import { ContentLengthError as CommonAmazonQContentLengthError } from '../../amazonq/errors'
+import { ContentLengthError as CommonContentLengthError } from '../../shared/errors'
 export class Session {
     private _state?: SessionState | Omit<SessionState, 'uploadId'>
     private task: string = ''
@@ -159,7 +159,7 @@ export class Session {
 
             return resp.interaction
         } catch (e) {
-            if (e instanceof CommonAmazonQContentLengthError) {
+            if (e instanceof CommonContentLengthError) {
                 getLogger().debug(`Content length validation failed: ${e.message}`)
                 throw new ContentLengthError()
             }

@@ -12,34 +12,10 @@
 import { ErrorInformation, ToolkitError } from '../shared/errors'
 
 /**
- * Errors extending this class are considered "errors" in service metrics.
- */
-export class ClientError extends ToolkitError {
-    constructor(message: string, info: ErrorInformation = {}) {
-        super(message, info)
-    }
-}
-
-/**
- * Errors extending this class are considered "faults" in service metrics.
- */
-export class ServiceError extends ToolkitError {
-    constructor(message: string, info: ErrorInformation = {}) {
-        super(message, info)
-    }
-}
-
-/**
  * Errors extending this class are considered "LLM failures" in service metrics.
  */
 export class LlmError extends ToolkitError {
     constructor(message: string, info: ErrorInformation = {}) {
-        super(message, info)
-    }
-}
-
-export class ContentLengthError extends ClientError {
-    constructor(message: string, info: ErrorInformation = { code: 'ContentLengthError' }) {
         super(message, info)
     }
 }
