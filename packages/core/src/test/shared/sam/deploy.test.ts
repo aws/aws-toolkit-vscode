@@ -25,7 +25,6 @@ import * as ProcessUtilsModule from '../../../shared/utilities/processUtils'
 import * as ProcessTerminalModule from '../../../shared/sam/processTerminal'
 import * as ResolveEnvModule from '../../../shared/env/resolveEnv'
 import * as SamConfiModule from '../../../shared/sam/config'
-import { RequiredProps } from '../../../shared/utilities/tsUtils'
 import { UserAgent as __UserAgent } from '@smithy/types'
 
 import { SamAppLocation } from '../../../awsService/appBuilder/explorer/samProject'
@@ -1287,14 +1286,10 @@ describe('SAM Deploy', () => {
     })
 })
 
-const s3BucketListSummary: Array<
-    RequiredProps<S3Bucket, 'Name'> & {
-        readonly region: string
-    }
-> = [
-    { Name: 'stack-1-bucket', region: 'us-west-2' },
-    { Name: 'stack-2-bucket', region: 'us-west-2' },
-    { Name: 'stack-3-bucket', region: 'us-west-2' },
+const s3BucketListSummary: Array<Omit<S3Bucket, 'BucketRegion'> & { readonly region: string }> = [
+    { Name: 'stack-1-bucket', region: 'us-west-2', Arn: 'arn-1' },
+    { Name: 'stack-2-bucket', region: 'us-west-2', Arn: 'arn-2' },
+    { Name: 'stack-3-bucket', region: 'us-west-2', Arn: 'arn-3' },
 ]
 
 const stackSummaries: CloudFormationClientModule.StackSummary[][] = [
