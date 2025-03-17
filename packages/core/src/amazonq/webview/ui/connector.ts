@@ -711,7 +711,7 @@ export class Connector {
                         tabType: 'cwc',
                     })
                 } else {
-                    this.cwChatConnector.onCustomFormAction(tabId, action)
+                    this.cwChatConnector.onCustomFormAction(tabId, messageId ?? '', action)
                 }
                 break
             case 'agentWalkthrough': {

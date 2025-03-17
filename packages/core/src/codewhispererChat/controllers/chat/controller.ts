@@ -4,6 +4,9 @@
  */
 import * as path from 'path'
 import * as vscode from 'vscode'
+import * as os from 'os'
+import { fs } from '../../../shared/fs/fs'
+import { ChildProcess } from '../../../shared/utilities/processUtils'
 import { Event as VSCodeEvent, Uri, workspace, window, ViewColumn, Position, Selection } from 'vscode'
 import { EditorContextExtractor } from '../../editor/context/extractor'
 import { ChatSessionStorage } from '../../storages/chatSession'
@@ -68,7 +71,6 @@ import { MynahIconsType, MynahUIDataModel, QuickActionCommand } from '@aws/mynah
 import { LspClient } from '../../../amazonq/lsp/lspClient'
 import { AdditionalContextPrompt, ContextCommandItem, ContextCommandItemType } from '../../../amazonq/lsp/types'
 import { workspaceCommand } from '../../../amazonq/webview/ui/tabs/constants'
-import fs from '../../../shared/fs/fs'
 import { FeatureConfigProvider, Features } from '../../../shared/featureConfig'
 import { i18n } from '../../../shared/i18n-helper'
 import {
@@ -132,6 +134,8 @@ export interface ChatControllerMessageListeners {
 }
 
 export class ChatController {
+    // Store the last terminal output
+    private lastTerminalOutput: string = ''
     private readonly sessionStorage: ChatSessionStorage
     private readonly triggerEventsStorage: TriggerEventsStorage
     private readonly messenger: Messenger
@@ -560,20 +564,99 @@ export class ChatController {
     }
 
     private async processCustomFormAction(message: CustomFormActionMessage) {
-        if (message.action.id === 'submit-create-prompt') {
-            const userPromptsDirectory = getUserPromptsDirectory()
-
-            const title = message.action.formItemValues?.['prompt-name']
-            const newFilePath = path.join(
-                userPromptsDirectory,
-                title ? `${title}${promptFileExtension}` : `default${promptFileExtension}`
-            )
-            const newFileContent = new Uint8Array(Buffer.from(''))
-            await fs.writeFile(newFilePath, newFileContent)
-            const newFileDoc = await vscode.workspace.openTextDocument(newFilePath)
-            await vscode.window.showTextDocument(newFileDoc)
-            telemetry.ui_click.emit({ elementId: 'amazonq_createSavedPrompt' })
+        const session = this.sessionStorage.getSession(message.tabID ?? '')
+        if (!session) {
+            getLogger().error(`No session found for tab: ${message.tabID ?? 'unknown'}`)
+            return
         }
+        if (message.action.id === 'RunCommand') {
+            const terminals = vscode.window.terminals
+            let terminal: vscode.Terminal
+
+            if (terminals.length > 0) {
+                terminal = terminals[0]
+            } else {
+                terminal = vscode.window.createTerminal('Amazon Q Terminal')
+            }
+
+            terminal.show()
+
+            const command = session.storedBashCommands[0]
+
+            // Get the current path of the terminal
+            const currentPath = await this.getCurrentTerminalPath(terminal)
+
+            let terminalOutput = ''
+
+            try {
+                // Execute the command in the terminal's current directory
+                const childProcess = new ChildProcess('bash', ['-c', command], {
+                    spawnOptions: { cwd: currentPath },
+                    collect: true,
+                })
+
+                const result = await childProcess.run()
+
+                if (result.exitCode !== 0 || result.error) {
+                    const errorMessage = result.error ? result.error.message : result.stderr
+                    getLogger().error(`Error executing command: ${errorMessage}`)
+                    terminal.sendText(`echo "Error executing command: ${errorMessage}"`)
+                    this.lastTerminalOutput = `Error: ${errorMessage}`
+                } else {
+                    terminalOutput = result.stdout.trim()
+                    terminal.sendText(command)
+                    getLogger().info(`Command executed: ${command}`)
+                    getLogger().info(`Command output: ${terminalOutput}`)
+                    this.lastTerminalOutput = terminalOutput
+                }
+            } catch (error) {
+                const errorMessage = error instanceof Error ? error.message : String(error)
+                getLogger().error(`Error executing command: ${errorMessage}`)
+                terminal.sendText(`echo "Error executing command: ${errorMessage}"`)
+                this.lastTerminalOutput = `Error: ${errorMessage}`
+            }
+        }
+        getLogger().error(`Last terminal output: ${this.getLastTerminalOutput()}`)
+        this.messenger.sendMessage(this.getLastTerminalOutput(), message.tabID ?? '', message.tabID ?? 'unknown')
+        session.storedBashCommands = []
+    }
+
+    private async getCurrentTerminalPath(terminal: vscode.Terminal): Promise<string> {
+        try {
+            // Get the current workspace folders
+            const workspaceFolders = vscode.workspace.workspaceFolders
+
+            // Try to get the terminal's creation options
+            // We need to use type assertion since the API types might not expose cwd directly
+            const options = terminal.creationOptions as any
+            if (options) {
+                // Check if cwd exists in the options
+                if (options.cwd) {
+                    if (typeof options.cwd === 'string') {
+                        return options.cwd
+                    } else if (options.cwd instanceof vscode.Uri) {
+                        return options.cwd.fsPath
+                    }
+                }
+            }
+
+            // If there's an active workspace folder, use its path
+            if (workspaceFolders && workspaceFolders.length > 0) {
+                const activeWorkspace = workspaceFolders[0]
+                return activeWorkspace.uri.fsPath
+            }
+
+            // Fallback to user's home directory
+            return os.homedir()
+        } catch (err) {
+            getLogger().error(`Failed to get terminal path: ${err}`)
+            return os.homedir()
+        }
+    }
+
+    // Get the last terminal output
+    public getLastTerminalOutput(): string {
+        return this.lastTerminalOutput
     }
 
     private async processContextSelected(message: ContextSelectedMessage) {

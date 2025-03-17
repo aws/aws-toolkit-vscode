@@ -18,6 +18,9 @@ export class ChatSession {
     // TODO: doesn't handle the edge case when two files share the same relativePath string but from different root
     // e.g. root_a/file1 vs root_b/file1
     relativePathToWorkspaceRoot: Map<string, string> = new Map()
+
+    public storedBashCommands: string[] = []
+
     public get sessionIdentifier(): string | undefined {
         return this.sessionId
     }
