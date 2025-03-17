@@ -1,3 +1,7 @@
+## 3.50.0 2025-03-13
+
+- Miscellaneous non-user-facing changes
+
 ## 3.49.0 2025-03-06
 
 - **Feature** Step Functions: Updated previewStateMachine command to open with Workflow Studio instead
