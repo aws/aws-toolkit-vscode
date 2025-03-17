@@ -17,10 +17,12 @@ phases:
             - export EXTENSION_NAME=$([ "$TARGET_EXTENSION" = "amazonq" ] && echo "Amazon Q" || echo "AWS Toolkit")
             - export VERSION=$(node -e "console.log(require('./packages/${TARGET_EXTENSION}/package.json').version);")
             - export CHANGELOG=$(cat packages/${TARGET_EXTENSION}/CHANGELOG.md | perl -ne 'BEGIN{$/="\n\n"} print if $. == 2')
-            - MESSAGE=$(envsubst < ./buildspec/release/notify.txt)
+            - MESSAGE=$(envsubst < ./buildspec/release/notify.txt | jq -R -s '.')
+            - echo "Will post message - \n\n${MESSAGE}\n"
+            - echo "Full command - 'curl -v POST \"[NOTIFY_URL]\" -H \"Content-Type:application/json\" --data \"{\"Content\":${MESSAGE}}\"'"
             - |
                 if [ "$STAGE" != "prod" ]; then
-                  echo "SKIPPED (stage=${STAGE}): 'curl -v POST \"[NOTIFY_URL]\" -H \"Content-Type:application/json\" --data \"{\"Content\":\"${MESSAGE}\"}\"'"
+                  echo "SKIPPED (stage=${STAGE}): curl -v POST ..."
                   exit 0
                 fi
-                curl -v POST "${NOTIFY_URL}" -H "Content-Type:application/json" --data "{\"Content\":\"${MESSAGE}\"}"
+                curl -v POST "${NOTIFY_URL}" -H "Content-Type:application/json" --data "{\"Content\":${MESSAGE}}"
