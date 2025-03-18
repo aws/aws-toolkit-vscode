@@ -80,12 +80,19 @@
             v-if="!isFixAvailable"
             @click="generateFix"
             class="mr-8 button-theme-primary"
-            :disabled="isGenerateFixLoading"
+            :disabled="isGenerateFixLoading || isGenerateFixDisabled"
         >
             Generate Fix
         </button>
         <button v-if="isFixAvailable" @click="applyFix" class="mr-8 button-theme-primary">Accept Fix</button>
-        <button v-if="isFixAvailable" @click="regenerateFix" class="mr-8 button-theme-secondary">Regenerate Fix</button>
+        <button
+            v-if="isFixAvailable"
+            @click="regenerateFix"
+            class="mr-8 button-theme-secondary"
+            :disabled="isGenerateFixDisabled"
+        >
+            Regenerate Fix
+        </button>
         <button @click="explainWithQ" class="mr-8 button-theme-secondary">Explain</button>
         <button @click="ignoreIssue" class="mr-8 button-theme-secondary">Ignore</button>
         <button @click="ignoreAllIssues" class="mr-8 button-theme-secondary">Ignore All</button>
@@ -103,8 +110,8 @@ import highSeverity from '../../../../../resources/images/severity-high.svg'
 import criticalSeverity from '../../../../../resources/images/severity-critical.svg'
 import markdownIt from 'markdown-it'
 import hljs from 'highlight.js'
-import { parsePatch } from 'diff'
 import { CodeScanIssue } from '../../../models/model'
+import { sasRuleId } from '../../../models/constants'
 
 const client = WebviewClientFactory.create<SecurityIssueWebview>()
 const severityImages: Record<string, string> = {
@@ -198,6 +205,7 @@ export default defineComponent({
             fixedCode: '',
             referenceText: '',
             referenceSpan: [0, 0],
+            isGenerateFixDisabled: false,
         }
     },
     created() {
@@ -278,6 +286,7 @@ export default defineComponent({
             this.endLine = issue.endLine
             this.isFixAvailable = false
             this.isFixDescriptionAvailable = false
+            this.isGenerateFixDisabled = issue.ruleId === sasRuleId
             if (suggestedFix) {
                 this.isFixAvailable = !!suggestedFix.code && suggestedFix.code?.trim() !== ''
                 this.suggestedFix = suggestedFix.code ?? ''
@@ -344,28 +353,11 @@ export default defineComponent({
             if (!this.isFixAvailable) {
                 return
             }
-            const [parsedDiff] = parsePatch(this.suggestedFix)
-            const { oldStart } = parsedDiff.hunks[0]
-            const [referenceStart, referenceEnd] = this.referenceSpan
-            const htmlString = md.render(`
-\`\`\`${this.languageId} showLineNumbers startFrom=${oldStart} ${
-                referenceStart && referenceEnd
-                    ? `highlightStart=${referenceStart + 1} highlightEnd=${referenceEnd + 1}`
-                    : ''
-            }
-${this.fixedCode}
+            return md.render(`
+\`\`\`${this.languageId} 
+${this.suggestedFix.replaceAll('--- buggyCode\n', '').replaceAll('+++ fixCode\n', '')}
 \`\`\`
       `)
-            const parser = new DOMParser()
-            const doc = parser.parseFromString(htmlString, 'text/html')
-            const referenceTracker = doc.querySelector('.reference-tracker')
-            if (referenceTracker) {
-                const tooltip = doc.createElement('div')
-                tooltip.classList.add('tooltip')
-                tooltip.innerHTML = this.referenceText
-                referenceTracker.appendChild(tooltip)
-            }
-            return doc.body.innerHTML
         },
         scrollTo(refName: string) {
             this.$nextTick(() => this.$refs?.[refName]?.scrollIntoView({ behavior: 'smooth' }))

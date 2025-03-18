@@ -261,7 +261,7 @@ export const codeScanZipExt = '.zip'
 
 export const contextTruncationTimeoutSeconds = 10
 
-export const standardScanTimeoutMs = 600_000 // 10 minutes
+export const standardScanTimeoutMs = 900_000 // 15 minutes
 
 export const expressScanTimeoutMs = 60_000
 
@@ -334,9 +334,12 @@ export const securityScanLanguageIds = [
     'sh',
     'shell',
     'shellscript',
+    'brazilPackageConfig',
 ] as const
 
 export type SecurityScanLanguageId = (typeof securityScanLanguageIds)[number]
+
+export const sasRuleId = 'sbom-software-assurance-services'
 
 // wait time for editor to update editor.selection.active (in milliseconds)
 export const vsCodeCursorUpdateDelay = 10

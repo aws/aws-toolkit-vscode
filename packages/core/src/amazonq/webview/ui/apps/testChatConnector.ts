@@ -86,6 +86,7 @@ export class Connector extends BaseConnector {
 
     onCustomFormAction(
         tabId: string,
+        messageId: string,
         action: {
             id: string
             text?: string | undefined
@@ -105,6 +106,33 @@ export class Connector extends BaseConnector {
             tabID: tabId,
             description: action.description,
         })
+
+        if (this.onChatAnswerUpdated === undefined) {
+            return
+        }
+        const answer: ChatItem = {
+            type: ChatItemType.ANSWER,
+            messageId: messageId,
+            buttons: [],
+        }
+        // TODO: Add more cases for Accept/Reject/viewDiff.
+        switch (action.id) {
+            case 'Provide-Feedback':
+                answer.buttons = [
+                    {
+                        keepCardAfterClick: true,
+                        text: 'Thanks for providing feedback.',
+                        id: 'utg_provided_feedback',
+                        status: 'success',
+                        position: 'outside',
+                        disabled: true,
+                    },
+                ]
+                break
+            default:
+                break
+        }
+        this.onChatAnswerUpdated(tabId, answer)
     }
 
     onFileDiff = (tabID: string, filePath: string, deleted: boolean, messageId?: string): void => {

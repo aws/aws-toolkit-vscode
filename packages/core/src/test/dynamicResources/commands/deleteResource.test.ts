@@ -6,13 +6,13 @@
 import * as sinon from 'sinon'
 import assert from 'assert'
 import { deleteResource } from '../../../dynamicResources/commands/deleteResource'
-import { DefaultCloudControlClient } from '../../../shared/clients/cloudControlClient'
+import { CloudControlClient } from '../../../shared/clients/cloudControl'
 import { assertNoErrorMessages, getTestWindow } from '../../shared/vscode/window'
 
 describe('deleteResource', function () {
     const fakeType = 'fakeType'
     const fakeIdentifier = 'fakeIdentifier'
-    const cloudControl = new DefaultCloudControlClient('')
+    const cloudControl = new CloudControlClient('')
     let sandbox: sinon.SinonSandbox
 
     beforeEach(function () {

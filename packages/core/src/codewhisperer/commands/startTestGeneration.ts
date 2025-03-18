@@ -20,8 +20,6 @@ import { ChatSessionManager } from '../../amazonqTest/chat/storages/chatSession'
 import { ChildProcess, spawn } from 'child_process' // eslint-disable-line no-restricted-imports
 import { BuildStatus } from '../../amazonqTest/chat/session/session'
 import { fs } from '../../shared/fs/fs'
-import { TestGenerationJobStatus } from '../models/constants'
-import { TestGenFailedError } from '../../amazonqTest/error'
 import { Range } from '../client/codewhispereruserclient'
 
 // eslint-disable-next-line unicorn/no-null
@@ -112,18 +110,13 @@ export async function startTestGenerationProcess(
         if (!shouldContinueRunning(tabID)) {
             return
         }
-        const jobStatus = await pollTestJobStatus(
+        await pollTestJobStatus(
             testJob.testGenerationJob.testGenerationJobId,
             testJob.testGenerationJob.testGenerationJobGroupName,
             filePath,
             initialExecution
         )
         // TODO: Send status to test summary
-        if (jobStatus === TestGenerationJobStatus.FAILED) {
-            session.numberOfTestsGenerated = 0
-            logger.verbose(`Test generation failed.`)
-            throw new TestGenFailedError()
-        }
         throwIfCancelled()
         if (!shouldContinueRunning(tabID)) {
             return

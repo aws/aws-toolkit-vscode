@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "/review: Zip files are created with the wrong file path for file scans in multifolder workspaces."
-}
