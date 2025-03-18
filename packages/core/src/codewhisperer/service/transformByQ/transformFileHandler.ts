@@ -28,6 +28,7 @@ export function getDependenciesFolderInfo(): FolderInfo {
     }
 }
 
+// TO-DO: what happens when intermediate build logs are massive from downloading dependencies? exlude those lines?
 export async function writeAndShowBuildLogs() {
     const logFilePath = path.join(os.tmpdir(), 'build-logs.txt')
     writeFileSync(logFilePath, transformByQState.getBuildLog())
@@ -135,6 +136,18 @@ export async function parseBuildFile() {
         getLogger().error(`CodeTransformation: error scanning for absolute paths, tranformation continuing: ${err}`)
     }
     return undefined
+}
+
+export async function validateYamlFile(fileContents: string, message: any) {
+    const requiredKeys = ['dependencyManagement:', 'identifier:', 'targetVersion:']
+    for (const key of requiredKeys) {
+        if (!fileContents.includes(key)) {
+            getLogger().info(`CodeTransformation: missing yaml key: ${key}`)
+            transformByQState.getChatMessenger()?.sendUnrecoverableErrorResponse('missing-yaml-key', message.tabID)
+            return false
+        }
+    }
+    return true
 }
 
 export async function validateSQLMetadataFile(fileContents: string, message: any) {
