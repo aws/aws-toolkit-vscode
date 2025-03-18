@@ -199,6 +199,7 @@ export async function pollTestJobStatus(
             session.numberOfTestsGenerated = 0
             logger.verbose(`Test generation failed.`)
             if (resp.testGenerationJob?.jobStatusReason) {
+                session.stopIteration = true
                 throw new TestGenFailedError(resp.testGenerationJob?.jobStatusReason)
             } else {
                 throw new TestGenFailedError()

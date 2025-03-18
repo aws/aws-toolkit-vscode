@@ -284,7 +284,10 @@ export class TestController {
         this.messenger.sendUpdatePromptProgress(data.tabID, null)
         const session = this.sessionStorage.getSession()
         const isCancel = data.error.uiMessage === unitTestGenerationCancelMessage
-        const telemetryErrorMessage = getTelemetryReasonDesc(data.error.uiMessage.replaceAll('```', ''))
+        let telemetryErrorMessage = getTelemetryReasonDesc(data.error)
+        if (session.stopIteration) {
+            telemetryErrorMessage = getTelemetryReasonDesc(data.error.uiMessage.replaceAll('```', ''))
+        }
         TelemetryHelper.instance.sendTestGenerationToolkitEvent(
             session,
             session.isSupportedLanguage,
@@ -306,13 +309,26 @@ export class TestController {
             undefined,
             isCancel ? 'CANCELLED' : 'FAILED'
         )
-        this.messenger.sendMessage(
-            data.error.uiMessage.replaceAll('```', ''),
-            data.tabID,
-            'answer',
-            'testGenErrorMessage',
-            this.getFeedbackButtons()
-        )
+        if (session.stopIteration) {
+            // Error from Science
+            this.messenger.sendMessage(
+                data.error.uiMessage.replaceAll('```', ''),
+                data.tabID,
+                'answer',
+                'testGenErrorMessage',
+                this.getFeedbackButtons()
+            )
+        } else {
+            isCancel
+                ? this.messenger.sendMessage(
+                      data.error.uiMessage,
+                      data.tabID,
+                      'answer',
+                      'testGenErrorMessage',
+                      this.getFeedbackButtons()
+                  )
+                : this.sendErrorMessage(data)
+        }
         await this.sessionCleanUp()
         return
     }
@@ -1382,6 +1398,7 @@ export class TestController {
         session.sourceFilePath = ''
         session.generatedFilePath = ''
         session.projectRootPath = ''
+        session.stopIteration = false
         session.fileLanguage = undefined
         ChatSessionManager.Instance.setIsInProgress(false)
         session.linesOfCodeGenerated = 0
