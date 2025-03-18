@@ -13,6 +13,7 @@ import {
 } from '@amzn/codewhisperer-streaming'
 import { ChatTriggerType, TriggerPayload } from '../model'
 import { undefinedIfEmpty } from '../../../../shared/utilities/textUtilities'
+import { getLogger } from '../../../../shared'
 
 const fqnNameSizeDownLimit = 1
 const fqnNameSizeUpLimit = 256
@@ -38,6 +39,126 @@ const filePathSizeLimit = 4_000
 const customerMessageSizeLimit = 4_000
 
 export function triggerPayloadToChatRequest(triggerPayload: TriggerPayload): { conversationState: ConversationState } {
+    // truncate
+    let remainingPayloadSize = 100_000
+    // Type A context:  Preserving userInput as much as possible
+    if (triggerPayload.message !== undefined) {
+        if (triggerPayload.message.length <= remainingPayloadSize) {
+            remainingPayloadSize -= triggerPayload.message.length
+        } else {
+            triggerPayload.message = triggerPayload.message.substring(0, remainingPayloadSize)
+            remainingPayloadSize = 0
+        }
+    }
+    // TODO: send truncation telemetry if needed
+    getLogger().debug(`current request user input size: ${triggerPayload.message?.length}`)
+
+    // Type B1(prompts) context: Preserving prompts as much as possible
+    let totalPromptSize = 0
+    if (triggerPayload.additionalContents !== undefined) {
+        for (const additionalContent of triggerPayload.additionalContents) {
+            if (additionalContent.type === 'prompt' && additionalContent.innerContext !== undefined) {
+                if (additionalContent.innerContext.length <= remainingPayloadSize) {
+                    remainingPayloadSize -= additionalContent.innerContext.length
+                } else {
+                    additionalContent.innerContext = additionalContent.innerContext.substring(0, remainingPayloadSize)
+                    remainingPayloadSize = 0
+                }
+                totalPromptSize += additionalContent.innerContext.length
+            }
+        }
+    }
+
+    getLogger().debug(`current request total prompts size: ${totalPromptSize}`)
+
+    // Type C context: Preserving current file context as much as possible
+    // truncate the text to keep texts in the middle instead of blindly truncating the tail
+    if (triggerPayload.fileText !== undefined) {
+        if (triggerPayload.fileText.length <= remainingPayloadSize) {
+            remainingPayloadSize -= triggerPayload.fileText.length
+        } else {
+            // Calculate the middle point
+            const middle = Math.floor(triggerPayload.fileText.length / 2)
+            // Calculate how much text we can take from each side of the middle
+            const halfRemaining = Math.floor(remainingPayloadSize / 2)
+            // Get text from around the middle point
+            const startPos = middle - halfRemaining
+            const endPos = middle + halfRemaining
+
+            triggerPayload.fileText = triggerPayload.fileText.substring(startPos, endPos)
+            remainingPayloadSize = 0
+        }
+    }
+    getLogger().debug(`current request file content size: ${triggerPayload.fileText?.length}`)
+
+    // Type B1(rules) context: Preserving rules as much as possible
+    let totalRulesSize = 0
+    if (triggerPayload.additionalContents !== undefined) {
+        for (const additionalContent of triggerPayload.additionalContents) {
+            if (additionalContent.type === 'rule' && additionalContent.innerContext !== undefined) {
+                if (additionalContent.innerContext.length <= remainingPayloadSize) {
+                    remainingPayloadSize -= additionalContent.innerContext.length
+                } else {
+                    additionalContent.innerContext = additionalContent.innerContext.substring(0, remainingPayloadSize)
+                    remainingPayloadSize = 0
+                }
+                totalRulesSize += additionalContent.innerContext.length
+            }
+        }
+    }
+
+    getLogger().debug(`current request rules size: ${totalRulesSize}`)
+
+    // Type B2(explicit @files) context: Preserving files as much as possible
+    if (triggerPayload.additionalContents !== undefined) {
+        for (const additionalContent of triggerPayload.additionalContents) {
+            if (additionalContent.type === 'file' && additionalContent.innerContext !== undefined) {
+                if (additionalContent.innerContext.length <= remainingPayloadSize) {
+                    remainingPayloadSize -= additionalContent.innerContext.length
+                } else {
+                    additionalContent.innerContext = additionalContent.innerContext.substring(0, remainingPayloadSize)
+                    remainingPayloadSize = 0
+                }
+            }
+        }
+    }
+
+    // Type B3 @workspace context: Preserving workspace as much as possible
+    let totalWorkspaceSize = 0
+    if (triggerPayload.relevantTextDocuments !== undefined) {
+        for (const relevantDocument of triggerPayload.relevantTextDocuments) {
+            if (relevantDocument.text !== undefined) {
+                if (relevantDocument.text.length <= remainingPayloadSize) {
+                    // remainingPayloadSize -= relevantDocument.text.length
+                } else {
+                    // relevantDocument.text = relevantDocument.text.substring(0, remainingPayloadSize)
+                    // remainingPayloadSize = 0
+                }
+                totalWorkspaceSize += relevantDocument.text.length
+            }
+        }
+    }
+
+    getLogger().debug(`current request workspace size: ${totalWorkspaceSize}`)
+
+    getLogger().debug(
+        `current request total payload size: ${(triggerPayload.message?.length ?? 0) + totalPromptSize + (triggerPayload.fileText?.length ?? 0) + totalRulesSize + totalWorkspaceSize}`
+    )
+
+    // Filter out empty innerContext from additionalContents
+    if (triggerPayload.additionalContents !== undefined) {
+        triggerPayload.additionalContents = triggerPayload.additionalContents.filter(
+            (content) => content.innerContext !== undefined && content.innerContext !== ''
+        )
+    }
+
+    // Filter out empty text from relevantTextDocuments
+    if (triggerPayload.relevantTextDocuments !== undefined) {
+        triggerPayload.relevantTextDocuments = triggerPayload.relevantTextDocuments.filter(
+            (doc) => doc.text !== undefined && doc.text !== ''
+        )
+    }
+
     let document: TextDocument | undefined = undefined
     let cursorState: CursorState | undefined = undefined
 
