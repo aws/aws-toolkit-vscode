@@ -603,7 +603,7 @@ export class FeatureDevController {
                         open
                     )
                     if (resp === open) {
-                        await vscode.commands.executeCommand('aws.AmazonQChatView.focus')
+                        await vscode.commands.executeCommand('aws.amazonq.AmazonQChatView.focus')
                         // TODO add focusing on the specific tab once that's implemented
                     }
                 }
