@@ -797,7 +797,12 @@ async function processClientInstructions(jobId: string, clientInstructionsPath: 
 export async function runClientSideBuild(projectPath: string, clientInstructionArtifactId: string) {
     // baseCommand will be one of: '.\mvnw.cmd', './mvnw', 'mvn'
     const baseCommand = transformByQState.getMavenName()
-    const args = ['test']
+    const args = ['clean']
+    if (transformByQState.getCustomBuildCommand() === CodeWhispererConstants.skipUnitTestsBuildCommand) {
+        args.push('test-compile')
+    } else {
+        args.push('test')
+    }
     // TO-DO / QUESTION: why not use the build command from the downloaded manifest?
     transformByQState.appendToBuildLog(`Running ${baseCommand} ${args}`)
     const environment = { ...process.env, JAVA_HOME: transformByQState.getTargetJavaHome() }

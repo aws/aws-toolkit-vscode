@@ -42,6 +42,7 @@ import {
     parseBuildFile,
     validateSQLMetadataFile,
     createLocalBuildUploadZip,
+    validateYamlFile,
 } from '../../../codewhisperer/service/transformByQ/transformFileHandler'
 import { uploadArtifactToS3 } from '../../../codewhisperer/indexNode'
 import request from '../../../shared/request'
@@ -50,6 +51,19 @@ import * as nodefs from 'fs' // eslint-disable-line no-restricted-imports
 describe('transformByQ', function () {
     let fetchStub: sinon.SinonStub
     let tempDir: string
+    const validYamlFile = `name: "custom-dependency-management"
+description: "Custom dependency version management for Java migration from JDK 8/11/17 to JDK 17/21"
+dependencyManagement:
+  dependencies:
+    - identifier: "com.example:library1"
+        targetVersion: "2.1.0"
+        versionProperty: "library1.version"
+        originType: "FIRST_PARTY"
+  plugins:
+    - identifier: "com.example.plugin"
+        targetVersion: "1.2.0"
+        versionProperty: "plugin.version"`
+
     const validSctFile = `<?xml version="1.0" encoding="UTF-8"?>
     <tree>
     <instances>
@@ -468,6 +482,17 @@ describe('transformByQ', function () {
             'I detected 1 potential absolute file path(s) in your pom.xml file: **system/**. Absolute file paths might cause issues when I build your code. Any errors will show up in the build log.'
         const warningMessage = await parseBuildFile()
         assert.strictEqual(expectedWarning, warningMessage)
+    })
+
+    it(`WHEN validateYamlFile on fully valid .yaml file THEN passes validation`, async function () {
+        const isValidYaml = await validateYamlFile(validYamlFile, { tabID: 'abc123' })
+        assert.strictEqual(isValidYaml, true)
+    })
+
+    it(`WHEN validateYamlFile on invalid .yaml file THEN fails validation`, async function () {
+        const invalidYamlFile = validYamlFile.replace('dependencyManagement', 'invalidKey')
+        const isValidYaml = await validateYamlFile(invalidYamlFile, { tabID: 'abc123' })
+        assert.strictEqual(isValidYaml, false)
     })
 
     it(`WHEN validateMetadataFile on fully valid .sct file THEN passes validation`, async function () {

@@ -50,6 +50,7 @@ export type UnrecoverableErrorType =
     | 'job-start-failed'
     | 'unsupported-source-db'
     | 'unsupported-target-db'
+    | 'missing-yaml-key'
     | 'error-parsing-sct-file'
     | 'invalid-zip-no-sct-file'
     | 'invalid-from-to-jdk'
@@ -345,6 +346,35 @@ export class Messenger {
         )
     }
 
+    public sendPermissionToBuildMessage(tabID: string) {
+        const message = CodeWhispererConstants.buildLocallyChatMessage
+
+        const buttons: ChatItemButton[] = []
+        buttons.push({
+            keepCardAfterClick: false,
+            text: 'Agree',
+            id: ButtonActions.AGREE_TO_LOCAL_BUILD,
+            position: 'outside',
+        })
+        buttons.push({
+            keepCardAfterClick: false,
+            text: 'No, stop the transformation',
+            id: ButtonActions.CANCEL_TRANSFORMATION_FORM,
+            position: 'outside',
+        })
+
+        this.dispatcher.sendChatMessage(
+            new ChatMessage(
+                {
+                    message,
+                    messageType: 'ai-prompt',
+                    buttons,
+                },
+                tabID
+            )
+        )
+    }
+
     public sendAsyncEventProgress(
         tabID: string,
         inProgress: boolean,
@@ -460,6 +490,9 @@ export class Messenger {
                 break
             case 'unsupported-target-db':
                 message = CodeWhispererConstants.invalidMetadataFileUnsupportedTargetDB
+                break
+            case 'missing-yaml-key':
+                message = CodeWhispererConstants.invalidYamlFileMissingKey
                 break
             case 'error-parsing-sct-file':
                 message = CodeWhispererConstants.invalidMetadataFileErrorParsing
@@ -786,7 +819,7 @@ dependencyManagement:
       originType: "FIRST_PARTY" # or "THIRD_PARTY"  # Optional
     - identifier: "com.example:library2"
       targetVersion: "3.0.0"
-      origin: "THIRD_PARTY"
+      originType: "THIRD_PARTY"
   plugins:
     - identifier: "com.example.plugin"
       targetVersion: "1.2.0"

@@ -587,6 +587,9 @@ export const buildSucceededChatMessage = 'I was able to build your project and w
 export const buildSucceededNotification =
     'Amazon Q was able to build your project and will start transforming your code soon.'
 
+export const buildLocallyChatMessage =
+    'I will build your project on this machine throughout the transformation process.'
+
 export const absolutePathDetectedMessage = (numPaths: number, buildFile: string, listOfPaths: string) =>
     `I detected ${numPaths} potential absolute file path(s) in your ${buildFile} file: **${listOfPaths}**. Absolute file paths might cause issues when I build your code. Any errors will show up in the build log.`
 
@@ -598,6 +601,9 @@ export const invalidMetadataFileUnsupportedSourceDB =
 
 export const invalidMetadataFileUnsupportedTargetDB =
     'I can only convert SQL for migrations to Aurora PostgreSQL or Amazon RDS for PostgreSQL target databases. The provided .sct file indicates another target database for this migration.'
+
+export const invalidYamlFileMissingKey =
+    'Your YAML file is not formatted correctly. Make sure that the .yaml file you upload follows the format of the sample file provided.'
 
 export const invalidMetadataFileErrorParsing =
     "It looks like the .sct file you provided isn't valid. Make sure that you've uploaded the .zip file you retrieved from your schema conversion in AWS DMS."
