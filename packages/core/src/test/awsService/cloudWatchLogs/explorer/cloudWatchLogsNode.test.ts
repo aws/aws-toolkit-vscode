@@ -11,7 +11,7 @@ import {
     assertNodeListOnlyHasErrorNode,
     assertNodeListOnlyHasPlaceholderNode,
 } from '../../../utilities/explorerNodeAssertions'
-import { DefaultCloudWatchLogsClient } from '../../../../shared/clients/cloudWatchLogsClient'
+import { CloudWatchLogsClient } from '../../../../shared/clients/cloudWatchLogs'
 import { stub } from '../../../utilities/stubber'
 
 const fakeRegionCode = 'someregioncode'
@@ -25,7 +25,7 @@ describe('CloudWatchLogsNode', function () {
     let logGroupNames: string[]
 
     function createClient() {
-        const client = stub(DefaultCloudWatchLogsClient, { regionCode: fakeRegionCode })
+        const client = stub(CloudWatchLogsClient, { regionCode: fakeRegionCode })
         client.describeLogGroups.callsFake(() => asyncGenerator(logGroupNames.map((name) => ({ logGroupName: name }))))
 
         return client
