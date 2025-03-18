@@ -103,24 +103,24 @@ export class InlineCompletionManager implements Disposable {
 
         const prevCommand = Commands.declare('editor.action.inlineSuggest.showPrevious', () => async () => {
             SessionManager.instance.decrementActiveIndex()
+            await commands.executeCommand('editor.action.inlineSuggest.hide')
             this.disposable.dispose()
             this.disposable = languages.registerInlineCompletionItemProvider(
                 CodeWhispererConstants.platformLanguageIds,
                 new AmazonQInlineCompletionItemProvider(this.languageClient, false)
             )
-            await commands.executeCommand('editor.action.inlineSuggest.hide')
             await commands.executeCommand('editor.action.inlineSuggest.trigger')
         })
         prevCommand.register()
 
         const nextCommand = Commands.declare('editor.action.inlineSuggest.showNext', () => async () => {
             SessionManager.instance.incrementActiveIndex()
+            await commands.executeCommand('editor.action.inlineSuggest.hide')
             this.disposable.dispose()
             this.disposable = languages.registerInlineCompletionItemProvider(
                 CodeWhispererConstants.platformLanguageIds,
                 new AmazonQInlineCompletionItemProvider(this.languageClient, false)
             )
-            await commands.executeCommand('editor.action.inlineSuggest.hide')
             await commands.executeCommand('editor.action.inlineSuggest.trigger')
         })
         nextCommand.register()
