@@ -22,7 +22,7 @@ import { TabType } from './ui/storages/tabsStorage'
 import { amazonqMark } from '../../shared/performance/marks'
 
 export class AmazonQChatViewProvider implements WebviewViewProvider {
-    public static readonly viewType = 'aws.AmazonQChatView'
+    public static readonly viewType = 'aws.amazonq.AmazonQChatView'
 
     webViewContentGenerator: WebViewContentGenerator
     webView: Webview | undefined

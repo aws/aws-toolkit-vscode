@@ -220,7 +220,7 @@
                 },
                 {
                     "type": "webview",
-                    "id": "aws.AmazonQChatView",
+                    "id": "aws.amazonq.AmazonQChatView",
                     "name": "%AWS.amazonq.chat%",
                     "when": "!aws.isWebExtHost && !aws.amazonq.showLoginView"
                 }
@@ -340,32 +340,32 @@
                 },
                 {
                     "command": "aws.amazonq.openReferencePanel",
-                    "when": "view == aws.AmazonQChatView",
+                    "when": "view == aws.amazonq.AmazonQChatView",
                     "group": "0_topAmazonQ@1"
                 },
                 {
                     "command": "aws.amazonq.learnMore",
-                    "when": "view == aws.AmazonQChatView || view == aws.amazonq.AmazonCommonAuth",
+                    "when": "view =~ /^aws\\.amazonq/",
                     "group": "1_amazonQ@1"
                 },
                 {
                     "command": "aws.amazonq.signout",
-                    "when": "(view == aws.AmazonQChatView) && aws.codewhisperer.connected",
+                    "when": "(view == aws.amazonq.AmazonQChatView) && aws.codewhisperer.connected",
                     "group": "2_amazonQ@4"
                 },
                 {
                     "command": "aws.amazonq.reconnect",
-                    "when": "(view == aws.AmazonQChatView) && aws.codewhisperer.connectionExpired",
+                    "when": "(view == aws.amazonq.AmazonQChatView) && aws.codewhisperer.connectionExpired",
                     "group": "2_amazonQ@3"
                 },
                 {
                     "submenu": "aws.amazonq.submenu.feedback",
-                    "when": "view == aws.AmazonQChatView || view == aws.amazonq.AmazonCommonAuth",
+                    "when": "view =~ /^aws\\.amazonq/",
                     "group": "y_toolkitMeta@1"
                 },
                 {
                     "submenu": "aws.amazonq.submenu.help",
-                    "when": "view == aws.AmazonQChatView || view == aws.amazonq.AmazonCommonAuth",
+                    "when": "view =~ /^aws\\.amazonq/",
                     "group": "y_toolkitMeta@2"
                 },
                 {
