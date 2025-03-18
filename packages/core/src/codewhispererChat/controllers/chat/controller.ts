@@ -980,12 +980,12 @@ export class ChatController {
         if (Array.isArray(prompts) && prompts.length > 0) {
             triggerPayload.additionalContextLengths = this.telemetryHelper.getContextLengths(prompts)
             for (const prompt of prompts.slice(0, 20)) {
-                let description = prompt.description
                 // Add system prompt for user prompts and workspace rules
                 const contextType = this.telemetryHelper.getContextType(prompt)
-                if (contextType === 'rule' || contextType === 'prompt') {
-                    description = `You must follow the instructions in ${prompt.relativePath}. Below are lines ${prompt.startLine}-${prompt.endLine} of this file:\n`
-                }
+                const description =
+                    contextType === 'rule' || contextType === 'prompt'
+                        ? `You must follow the instructions in ${prompt.relativePath}. Below are lines ${prompt.startLine}-${prompt.endLine} of this file:\n`
+                        : prompt.description
                 const entry = {
                     name: prompt.name.substring(0, aditionalContentNameLimit),
                     description: description.substring(0, aditionalContentNameLimit),

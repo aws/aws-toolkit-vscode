@@ -43,6 +43,7 @@ import { getSelectedCustomization } from '../../../codewhisperer/util/customizat
 import { undefinedIfEmpty } from '../../../shared/utilities/textUtilities'
 import { AdditionalContextPrompt } from '../../../amazonq/lsp/types'
 import { getUserPromptsDirectory, promptFileExtension } from '../../constants'
+import { isInDirectory } from '../../../shared/filesystemUtilities'
 
 export function logSendTelemetryEventFailure(error: any) {
     let requestId: string | undefined
@@ -149,9 +150,9 @@ export class CWCTelemetryHelper {
 
     public getContextType(prompt: AdditionalContextPrompt): string {
         if (prompt.filePath.endsWith(promptFileExtension)) {
-            if (prompt.relativePath.startsWith(path.join('.amazonq', 'rules'))) {
+            if (isInDirectory(path.join('.amazonq', 'rules'), prompt.relativePath)) {
                 return 'rule'
-            } else if (prompt.filePath.startsWith(getUserPromptsDirectory())) {
+            } else if (isInDirectory(getUserPromptsDirectory(), prompt.filePath)) {
                 return 'prompt'
             }
         }
