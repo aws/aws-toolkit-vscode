@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "/review: Code Issues ellipses menu displays AWS Toolkit options, if installed."
+}
