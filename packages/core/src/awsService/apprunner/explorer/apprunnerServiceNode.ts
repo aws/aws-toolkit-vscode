@@ -9,14 +9,14 @@ import { AppRunnerNode } from './apprunnerNode'
 
 import { toArrayAsync, toMap } from '../../../shared/utilities/collectionUtils'
 import { CloudWatchLogsBase } from '../../../awsService/cloudWatchLogs/explorer/cloudWatchLogsNode'
-import { CloudWatchLogs } from 'aws-sdk'
 import { AWSResourceNode } from '../../../shared/treeview/nodes/awsResourceNode'
 
 import * as nls from 'vscode-nls'
 import { getLogger } from '../../../shared/logger/logger'
 import { getIcon } from '../../../shared/icons'
-import { DefaultCloudWatchLogsClient } from '../../../shared/clients/cloudWatchLogsClient'
 import * as AppRunner from '@aws-sdk/client-apprunner'
+import { CloudWatchLogsClient } from '../../../shared/clients/cloudWatchLogs'
+import { LogGroup } from '@aws-sdk/client-cloudwatch-logs'
 const localize = nls.loadMessageBundle()
 
 const contextBase = 'awsAppRunnerServiceNode'
@@ -43,7 +43,7 @@ export class AppRunnerServiceNode extends CloudWatchLogsBase implements AWSResou
         private readonly client: AppRunnerClient,
         private _info: ServiceSummary,
         private currentOperation: AppRunner.OperationSummary & { Type?: ServiceOperation } = {},
-        cloudwatchClient = new DefaultCloudWatchLogsClient(client.regionCode)
+        cloudwatchClient = new CloudWatchLogsClient(client.regionCode)
     ) {
         super('App Runner Service', parent.regionCode, cloudwatchClient)
 
@@ -63,7 +63,7 @@ export class AppRunnerServiceNode extends CloudWatchLogsBase implements AWSResou
         return `https://${this._info.ServiceUrl}`
     }
 
-    protected async getLogGroups(): Promise<Map<string, CloudWatchLogs.LogGroup>> {
+    protected async getLogGroups(): Promise<Map<string, LogGroup>> {
         return toMap(
             await toArrayAsync(
                 this.cloudwatchClient.describeLogGroups({

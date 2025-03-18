@@ -4,7 +4,6 @@
  */
 
 import assert from 'assert'
-import { CloudFormation } from 'aws-sdk'
 import * as os from 'os'
 import {
     CloudFormationNode,
@@ -12,7 +11,7 @@ import {
     contextValueCloudformationLambdaFunction,
 } from '../../../lambda/explorer/cloudFormationNodes'
 import { LambdaFunctionNode } from '../../../lambda/explorer/lambdaFunctionNode'
-import { DefaultCloudFormationClient } from '../../../shared/clients/cloudFormationClient'
+import { CloudFormationClient, StackResource, StackSummary } from '../../../shared/clients/cloudFormation'
 import { DefaultLambdaClient } from '../../../shared/clients/lambdaClient'
 import globals from '../../../shared/extensionGlobals'
 import { TestAWSTreeNode } from '../../shared/treeview/nodes/testAWSTreeNode'
@@ -34,7 +33,7 @@ function createLambdaClient(...functionNames: string[]) {
 }
 
 function createCloudFormationClient(...stackNames: string[]) {
-    const client = stub(DefaultCloudFormationClient, { regionCode })
+    const client = stub(CloudFormationClient, { regionCode })
     client.describeStackResources.resolves({ StackResources: [] })
     client.listStacks.returns(
         asyncGenerator(
@@ -44,6 +43,9 @@ function createCloudFormationClient(...stackNames: string[]) {
                     StackName: name,
                     CreationTime: new globals.clock.Date(),
                     StackStatus: 'CREATE_COMPLETE',
+                    DriftInformation: {
+                        StackDriftStatus: 'UNKNOWN',
+                    },
                 }
             })
         )
@@ -53,12 +55,15 @@ function createCloudFormationClient(...stackNames: string[]) {
 }
 
 describe('CloudFormationStackNode', function () {
-    function createStackSummary() {
+    function createStackSummary(): StackSummary {
         return {
             CreationTime: new globals.clock.Date(),
             StackId: '1',
             StackName: 'myStack',
             StackStatus: 'UPDATE_COMPLETE',
+            DriftInformation: {
+                StackDriftStatus: 'UNKNOWN',
+            },
         }
     }
 
@@ -72,11 +77,11 @@ describe('CloudFormationStackNode', function () {
         return new CloudFormationStackNode(parentNode, regionCode, summary, lambdaClient, cloudFormationClient)
     }
 
-    function generateStackResources(...functionNames: string[]): CloudFormation.StackResource[] {
+    function generateStackResources(...functionNames: string[]): StackResource[] {
         return functionNames.map((name) => ({
             PhysicalResourceId: name,
             LogicalResourceId: name,
-            ResourceStatus: 'CREATED',
+            ResourceStatus: 'CREATE_COMPLETE',
             ResourceType: 'Lambda::Function',
             Timestamp: new globals.clock.Date(),
         }))

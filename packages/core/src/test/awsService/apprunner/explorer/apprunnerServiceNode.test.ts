@@ -8,7 +8,7 @@ import * as sinon from 'sinon'
 import { AppRunnerNode } from '../../../../awsService/apprunner/explorer/apprunnerNode'
 import { AppRunnerServiceNode } from '../../../../awsService/apprunner/explorer/apprunnerServiceNode'
 import { AppRunnerClient, ServiceSummary } from '../../../../shared/clients/apprunner'
-import { DefaultCloudWatchLogsClient } from '../../../../shared/clients/cloudWatchLogsClient'
+import { CloudWatchLogsClient } from '../../../../shared/clients/cloudWatchLogs'
 import { asyncGenerator } from '../../../../shared/utilities/collectionUtils'
 import { AWSTreeNodeBase } from '../../../../shared/treeview/nodes/awsTreeNodeBase'
 import { stub } from '../../../utilities/stubber'
@@ -32,7 +32,7 @@ describe('AppRunnerServiceNode', function () {
     })
 
     beforeEach(function () {
-        const cloudwatchClient = stub(DefaultCloudWatchLogsClient, { regionCode: 'us-east-1' })
+        const cloudwatchClient = stub(CloudWatchLogsClient, { regionCode: 'us-east-1' })
         cloudwatchClient.describeLogGroups.returns(asyncGenerator([{ logGroupName: 'logs' }]))
 
         mockApprunnerClient = stub(AppRunnerClient, { regionCode: 'us-east-1' })
