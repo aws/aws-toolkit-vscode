@@ -11,7 +11,7 @@ import * as SamConfigModule from '../../../shared/sam/config'
 import * as ResolveEnvModule from '../../../shared/env/resolveEnv'
 import * as ProcessUtilsModule from '../../../shared/utilities/processUtils'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
-import * as CloudFormationClientModule from '../../../shared/clients/cloudFormationClient'
+import * as CloudFormationClientModule from '../../../shared/clients/cloudFormation'
 
 import {
     createEnvironmentPrompter,
@@ -44,8 +44,7 @@ import { getTestWindow } from '../vscode/window'
 import { S3Client } from '../../../shared/clients/s3'
 import { RequiredProps } from '../../../shared/utilities/tsUtils'
 import S3 from 'aws-sdk/clients/s3'
-import { DefaultCloudFormationClient } from '../../../shared/clients/cloudFormationClient'
-import CloudFormation from 'aws-sdk/clients/cloudformation'
+import { CloudFormationClient } from '../../../shared/clients/cloudFormation'
 import { intoCollection } from '../../../shared/utilities/collectionUtils'
 import { SamConfig, Environment, parseConfig } from '../../../shared/sam/config'
 import { RegionProvider } from '../../../shared/regions/regionProvider'
@@ -132,7 +131,7 @@ describe('SAM SyncWizard', async () => {
     let workspaceFolder: vscode.WorkspaceFolder
     let templateFile: vscode.Uri
 
-    let mockDefaultCFNClient: sinon.SinonStubbedInstance<DefaultCloudFormationClient>
+    let mockDefaultCFNClient: sinon.SinonStubbedInstance<CloudFormationClient>
     let mockDefaultS3Client: sinon.SinonStubbedInstance<S3Client>
     let registry: CloudFormationTemplateRegistry
 
@@ -143,8 +142,8 @@ describe('SAM SyncWizard', async () => {
         sandbox = sinon.createSandbox()
 
         // Simulate return of deployed stacks
-        mockDefaultCFNClient = sandbox.createStubInstance(CloudFormationClientModule.DefaultCloudFormationClient)
-        sandbox.stub(CloudFormationClientModule, 'DefaultCloudFormationClient').returns(mockDefaultCFNClient)
+        mockDefaultCFNClient = sandbox.createStubInstance(CloudFormationClientModule.CloudFormationClient)
+        sandbox.stub(CloudFormationClientModule, 'CloudFormationClient').returns(mockDefaultCFNClient)
         mockDefaultCFNClient.listAllStacks.returns(intoCollection(stackSummaries))
 
         // Simulate return of list bucket
@@ -1075,7 +1074,7 @@ describe('SAM runSync', () => {
     let spyWriteSamconfigGlobal: sinon.SinonSpy
     let spyRunInterminal: sinon.SinonSpy
 
-    let mockDefaultCFNClient: sinon.SinonStubbedInstance<DefaultCloudFormationClient>
+    let mockDefaultCFNClient: sinon.SinonStubbedInstance<CloudFormationClient>
     let mockDefaultS3Client: sinon.SinonStubbedInstance<S3Client>
     let registry: CloudFormationTemplateRegistry
 
@@ -1093,8 +1092,8 @@ describe('SAM runSync', () => {
         await registry.addItem(templateFile)
 
         // Simulate return of deployed stacks
-        mockDefaultCFNClient = sandbox.createStubInstance(CloudFormationClientModule.DefaultCloudFormationClient)
-        sandbox.stub(CloudFormationClientModule, 'DefaultCloudFormationClient').returns(mockDefaultCFNClient)
+        mockDefaultCFNClient = sandbox.createStubInstance(CloudFormationClientModule.CloudFormationClient)
+        sandbox.stub(CloudFormationClientModule, 'CloudFormationClient').returns(mockDefaultCFNClient)
         mockDefaultCFNClient.listAllStacks.returns(intoCollection(stackSummaries))
 
         // Simulate return of list bucket
@@ -2184,22 +2183,22 @@ const s3BucketListSummary: Array<
     { Name: 'stack-3-bucket', region: 'us-west-2' },
 ]
 
-const stackSummaries: CloudFormation.StackSummary[][] = [
+const stackSummaries: CloudFormationClientModule.StackSummary[][] = [
     [
         {
             StackName: 'stack1',
             StackStatus: 'CREATE_COMPLETE',
             CreationTime: new Date(),
-        } as CloudFormation.StackSummary,
+        } as CloudFormationClientModule.StackSummary,
         {
             StackName: 'stack2',
             StackStatus: 'CREATE_COMPLETE',
             CreationTime: new Date(),
-        } as CloudFormation.StackSummary,
+        } as CloudFormationClientModule.StackSummary,
         {
             StackName: 'stack3',
             StackStatus: 'CREATE_COMPLETE',
             CreationTime: new Date(),
-        } as CloudFormation.StackSummary,
+        } as CloudFormationClientModule.StackSummary,
     ],
 ]
