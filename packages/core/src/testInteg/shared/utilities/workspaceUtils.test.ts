@@ -9,6 +9,7 @@ import * as vscode from 'vscode'
 import {
     collectFiles,
     collectFilesForIndex,
+    CollectFilesResultItem,
     findParentProjectFile,
     findStringInDirectory,
     getWorkspaceFoldersByPrefixes,
@@ -468,6 +469,12 @@ describe('workspaceUtils', () => {
             return toFile(fileContent, path.join(workspaceFolder.uri.fsPath, ...pathParts))
         }
 
+        // for some reason, uri created inline differ in subfields, so we skip them for assertion
+        const processResults = (results: Omit<CollectFilesResultItem, 'fileContent'>[]) =>
+            results
+                .map(({ fileUri, ...r }) => ({ ...r }))
+                .sort((l, r) => l.relativeFilePath.localeCompare(r.relativeFilePath))
+
         beforeEach(async function () {
             workspaceFolder = await createTestWorkspaceFolder()
             sandbox.stub(vscode.workspace, 'workspaceFolders').value([workspaceFolder])
@@ -509,11 +516,9 @@ describe('workspaceUtils', () => {
             await writeFile(['src', 'folder3', 'negate_test1'], fileContent)
             await writeFile(['src', 'folder3', 'negate_test6'], fileContent)
 
-            const result = (await collectFilesForIndex([workspaceFolder.uri.fsPath], [workspaceFolder], true))
-                // for some reason, uri created inline differ in subfields, so skipping them from assertion
-                .map(({ fileUri, ...r }) => ({ ...r }))
-
-            result.sort((l, r) => l.relativeFilePath.localeCompare(r.relativeFilePath))
+            const result = processResults(
+                await collectFilesForIndex([workspaceFolder.uri.fsPath], [workspaceFolder], true)
+            )
 
             // non-posix filePath check here is important.
             assert.deepStrictEqual(
@@ -544,11 +549,9 @@ describe('workspaceUtils', () => {
             await writeFile([`a.js`], fileContent)
             await writeFile([`b.java`], fileContent)
 
-            const result = (await collectFilesForIndex([workspaceFolder.uri.fsPath], [workspaceFolder], true))
-                // for some reason, uri created inline differ in subfields, so skipping them from assertion
-                .map(({ fileUri, ...r }) => ({ ...r }))
-
-            result.sort((l, r) => l.relativeFilePath.localeCompare(r.relativeFilePath))
+            const result = processResults(
+                await collectFilesForIndex([workspaceFolder.uri.fsPath], [workspaceFolder], true)
+            )
 
             // non-posix filePath check here is important.
             assert.deepStrictEqual(
@@ -579,11 +582,9 @@ describe('workspaceUtils', () => {
             await writeFile([`a.js`], fileContent)
             await writeFile([`b.java`], fileContent)
 
-            const result = (await collectFilesForIndex([workspaceFolder.uri.fsPath], [workspaceFolder], true, 30))
-                // for some reason, uri created inline differ in subfields, so skipping them from assertion
-                .map(({ fileUri, ...r }) => ({ ...r }))
-
-            result.sort((l, r) => l.relativeFilePath.localeCompare(r.relativeFilePath))
+            const result = processResults(
+                await collectFilesForIndex([workspaceFolder.uri.fsPath], [workspaceFolder], true)
+            )
 
             // non-posix filePath check here is important.
             assert.deepStrictEqual(
