@@ -2,11 +2,11 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import { fromExtensionManifest } from '../../shared/settings'
 import { ArrayConstructor } from '../../shared/utilities/typeConstructors'
+import { fromExtensionManifest, migrateSetting } from '../../shared/settings'
 
 const description = {
-    showInlineCodeSuggestionsWithCodeReferences: Boolean, // eslint-disable-line id-length
+    showCodeWithReferences: Boolean,
     importRecommendationForInlineCodeSuggestions: Boolean, // eslint-disable-line id-length
     shareContentWithAWS: Boolean,
     workspaceIndex: Boolean,
@@ -18,8 +18,15 @@ const description = {
 }
 
 export class CodeWhispererSettings extends fromExtensionManifest('amazonQ', description) {
+    // TODO: Remove after a few releases
+    public async importSettings() {
+        await migrateSetting(
+            { key: 'amazonQ.showInlineCodeSuggestionsWithCodeReferences', type: Boolean },
+            { key: 'amazonQ.showCodeWithReferences' }
+        )
+    }
     public isSuggestionsWithCodeReferencesEnabled(): boolean {
-        return this.get(`showInlineCodeSuggestionsWithCodeReferences`, false)
+        return this.get(`showCodeWithReferences`, false)
     }
     public isImportRecommendationEnabled(): boolean {
         return this.get(`importRecommendationForInlineCodeSuggestions`, false)

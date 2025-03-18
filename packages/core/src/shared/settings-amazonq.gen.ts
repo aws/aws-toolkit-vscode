@@ -20,7 +20,7 @@ export const amazonqSettings = {
         "minIdeVersion": {},
         "ssoCacheError": {}
     },
-    "amazonQ.showInlineCodeSuggestionsWithCodeReferences": {},
+    "amazonQ.showCodeWithReferences": {},
     "amazonQ.allowFeatureDevelopmentToRunCodeAndTests": {},
     "amazonQ.importRecommendationForInlineCodeSuggestions": {},
     "amazonQ.shareContentWithAWS": {},
