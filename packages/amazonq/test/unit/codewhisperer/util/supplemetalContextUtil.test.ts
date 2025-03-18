@@ -7,11 +7,14 @@ import assert from 'assert'
 import * as FakeTimers from '@sinonjs/fake-timers'
 import * as vscode from 'vscode'
 import * as sinon from 'sinon'
+import * as os from 'os'
 import * as crossFile from 'aws-core-vscode/codewhisperer'
 import { TestFolder, assertTabCount, installFakeClock } from 'aws-core-vscode/test'
 import { CodeWhispererSupplementalContext, FeatureConfigProvider } from 'aws-core-vscode/codewhisperer'
 import { toTextEditor } from 'aws-core-vscode/test'
 import { LspController } from 'aws-core-vscode/amazonq'
+
+const newLine = os.EOL
 
 describe('supplementalContextUtil', function () {
     let testFolder: TestFolder
@@ -116,13 +119,13 @@ describe('supplementalContextUtil', function () {
         it('truncateLineByLine should drop the last line if max length is greater than threshold', function () {
             const input =
                 repeatString('a', 11) +
-                '\n' +
+                newLine +
                 repeatString('b', 11) +
-                '\n' +
+                newLine +
                 repeatString('c', 11) +
-                '\n' +
+                newLine +
                 repeatString('d', 11) +
-                '\n' +
+                newLine +
                 repeatString('e', 11)
 
             assert.ok(input.length > 50)
@@ -130,37 +133,37 @@ describe('supplementalContextUtil', function () {
             assert.strictEqual(
                 actual,
                 repeatString('a', 11) +
-                    '\n' +
+                    newLine +
                     repeatString('b', 11) +
-                    '\n' +
+                    newLine +
                     repeatString('c', 11) +
-                    '\n' +
+                    newLine +
                     repeatString('d', 11)
             )
 
-            const input2 = repeatString('b\n', 10)
+            const input2 = repeatString(`b${newLine}`, 10)
             const actual2 = crossFile.truncateLineByLine(input2, 8)
             assert.strictEqual(actual2.length, 8)
         })
 
         it('truncation context should make context length per item lte 10240 cap', function () {
             const chunkA: crossFile.CodeWhispererSupplementalContextItem = {
-                content: repeatString('a\n', 4000),
+                content: repeatString(`a${newLine}`, 4000),
                 filePath: 'a.java',
                 score: 0,
             }
             const chunkB: crossFile.CodeWhispererSupplementalContextItem = {
-                content: repeatString('b\n', 6000),
+                content: repeatString(`b${newLine}`, 6000),
                 filePath: 'b.java',
                 score: 1,
             }
             const chunkC: crossFile.CodeWhispererSupplementalContextItem = {
-                content: repeatString('c\n', 1000),
+                content: repeatString(`c${newLine}`, 1000),
                 filePath: 'c.java',
                 score: 2,
             }
             const chunkD: crossFile.CodeWhispererSupplementalContextItem = {
-                content: repeatString('d\n', 1500),
+                content: repeatString(`d${newLine}`, 1500),
                 filePath: 'd.java',
                 score: 3,
             }
@@ -260,7 +263,7 @@ describe('supplementalContextUtil', function () {
             })
 
             it('should flip the value if negative max length is provided', function () {
-                const input = 'aaaaa\nbbbbb'
+                const input = `aaaaa${newLine}bbbbb`
                 const actual = crossFile.truncateLineByLine(input, -6)
                 const expected = crossFile.truncateLineByLine(input, 6)
                 assert.strictEqual(actual, expected)
