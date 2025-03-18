@@ -13,46 +13,125 @@ import {
     TextDocument,
     commands,
     languages,
+    Disposable,
 } from 'vscode'
 import { LanguageClient } from 'vscode-languageclient'
 import {
-    InlineCompletionListWithReferences,
-    InlineCompletionWithReferencesParams,
-    inlineCompletionWithReferencesRequestType,
     logInlineCompletionSessionResultsNotificationType,
     LogInlineCompletionSessionResultsParams,
 } from '@aws/language-server-runtimes/protocol'
+import { Commands } from 'aws-core-vscode/shared'
+import { SessionManager } from './sessionManager'
+import { RecommendationService } from './recommendationService'
 import { CodeWhispererConstants } from 'aws-core-vscode/codewhisperer'
 
-export function registerInlineCompletion(languageClient: LanguageClient) {
-    const inlineCompletionProvider = new AmazonQInlineCompletionItemProvider(languageClient)
-    languages.registerInlineCompletionItemProvider(CodeWhispererConstants.platformLanguageIds, inlineCompletionProvider)
+export class InlineCompletionManager implements Disposable {
+    private disposable: Disposable
+    private inlineCompletionProvider: AmazonQInlineCompletionItemProvider
+    private languageClient: LanguageClient
 
-    const onInlineAcceptance = async (
-        sessionId: string,
-        itemId: string,
-        requestStartTime: number,
-        firstCompletionDisplayLatency?: number
-    ) => {
-        const params: LogInlineCompletionSessionResultsParams = {
-            sessionId: sessionId,
-            completionSessionResult: {
-                [itemId]: {
-                    seen: true,
-                    accepted: true,
-                    discarded: false,
-                },
-            },
-            totalSessionDisplayTime: Date.now() - requestStartTime,
-            firstCompletionDisplayLatency: firstCompletionDisplayLatency,
-        }
-        languageClient.sendNotification(logInlineCompletionSessionResultsNotificationType as any, params)
+    constructor(languageClient: LanguageClient) {
+        this.languageClient = languageClient
+        this.inlineCompletionProvider = new AmazonQInlineCompletionItemProvider(languageClient)
+        this.disposable = languages.registerInlineCompletionItemProvider(
+            CodeWhispererConstants.platformLanguageIds,
+            this.inlineCompletionProvider
+        )
     }
-    commands.registerCommand('aws.sample-vscode-ext-amazonq.accept', onInlineAcceptance)
+
+    public dispose(): void {
+        if (this.disposable) {
+            this.disposable.dispose()
+        }
+    }
+
+    public registerInlineCompletion() {
+        const onInlineAcceptance = async (
+            sessionId: string,
+            itemId: string,
+            requestStartTime: number,
+            firstCompletionDisplayLatency?: number
+        ) => {
+            // TODO: also log the seen state for other suggestions in session
+            const params: LogInlineCompletionSessionResultsParams = {
+                sessionId: sessionId,
+                completionSessionResult: {
+                    [itemId]: {
+                        seen: true,
+                        accepted: true,
+                        discarded: false,
+                    },
+                },
+                totalSessionDisplayTime: Date.now() - requestStartTime,
+                firstCompletionDisplayLatency: firstCompletionDisplayLatency,
+            }
+            this.languageClient.sendNotification(logInlineCompletionSessionResultsNotificationType as any, params)
+            this.disposable.dispose()
+            this.disposable = languages.registerInlineCompletionItemProvider(
+                CodeWhispererConstants.platformLanguageIds,
+                this.inlineCompletionProvider
+            )
+        }
+        commands.registerCommand('aws.sample-vscode-ext-amazonq.accept', onInlineAcceptance)
+
+        const oninlineRejection = async (sessionId: string, itemId: string) => {
+            await commands.executeCommand('editor.action.inlineSuggest.hide')
+            // TODO: also log the seen state for other suggestions in session
+            const params: LogInlineCompletionSessionResultsParams = {
+                sessionId: sessionId,
+                completionSessionResult: {
+                    [itemId]: {
+                        seen: true,
+                        accepted: false,
+                        discarded: false,
+                    },
+                },
+            }
+            this.languageClient.sendNotification(logInlineCompletionSessionResultsNotificationType as any, params)
+            this.disposable.dispose()
+            this.disposable = languages.registerInlineCompletionItemProvider(
+                CodeWhispererConstants.platformLanguageIds,
+                this.inlineCompletionProvider
+            )
+        }
+        commands.registerCommand('aws.sample-vscode-ext-amazonq.reject', oninlineRejection)
+
+        /*
+            We have to overwrite the prev. and next. commands because the inlineCompletionProvider only contained the current item
+            To show prev. and next. recommendation we need to re-register a new provider with the previous or next item
+        */
+
+        const prevCommand = Commands.declare('editor.action.inlineSuggest.showPrevious', () => async () => {
+            SessionManager.instance.decrementActiveIndex()
+            this.disposable.dispose()
+            this.disposable = languages.registerInlineCompletionItemProvider(
+                CodeWhispererConstants.platformLanguageIds,
+                new AmazonQInlineCompletionItemProvider(this.languageClient, false)
+            )
+            await commands.executeCommand('editor.action.inlineSuggest.hide')
+            await commands.executeCommand('editor.action.inlineSuggest.trigger')
+        })
+        prevCommand.register()
+
+        const nextCommand = Commands.declare('editor.action.inlineSuggest.showNext', () => async () => {
+            SessionManager.instance.incrementActiveIndex()
+            this.disposable.dispose()
+            this.disposable = languages.registerInlineCompletionItemProvider(
+                CodeWhispererConstants.platformLanguageIds,
+                new AmazonQInlineCompletionItemProvider(this.languageClient, false)
+            )
+            await commands.executeCommand('editor.action.inlineSuggest.hide')
+            await commands.executeCommand('editor.action.inlineSuggest.trigger')
+        })
+        nextCommand.register()
+    }
 }
 
 export class AmazonQInlineCompletionItemProvider implements InlineCompletionItemProvider {
-    constructor(private readonly languageClient: LanguageClient) {}
+    constructor(
+        private readonly languageClient: LanguageClient,
+        private readonly isNewSesion: boolean = true
+    ) {}
 
     async provideInlineCompletionItems(
         document: TextDocument,
@@ -60,34 +139,17 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
         context: InlineCompletionContext,
         token: CancellationToken
     ): Promise<InlineCompletionItem[] | InlineCompletionList> {
-        const requestStartTime = Date.now()
-        const request: InlineCompletionWithReferencesParams = {
-            textDocument: {
-                uri: document.uri.toString(),
-            },
-            position,
-            context,
+        if (this.isNewSesion) {
+            // make service requests if it's a new session
+            await RecommendationService.instance.getAllRecommendations(
+                this.languageClient,
+                document,
+                position,
+                context,
+                token
+            )
         }
-
-        const response = await this.languageClient.sendRequest(
-            inlineCompletionWithReferencesRequestType as any,
-            request,
-            token
-        )
-
-        const list: InlineCompletionListWithReferences = response as InlineCompletionListWithReferences
-        this.languageClient.info(`Client: Received ${list.items.length} suggestions`)
-        const firstCompletionDisplayLatency = Date.now() - requestStartTime
-
-        // Add completion session tracking and attach onAcceptance command to each item to record used decision
-        for (const item of list.items) {
-            item.command = {
-                command: 'aws.sample-vscode-ext-amazonq.accept',
-                title: 'On acceptance',
-                arguments: [list.sessionId, item.itemId, requestStartTime, firstCompletionDisplayLatency],
-            }
-        }
-
-        return list as InlineCompletionList
+        // get active item from session for displaying
+        return SessionManager.instance.getActiveRecommendation()
     }
 }
