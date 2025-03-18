@@ -42,10 +42,10 @@ export class SshConfig {
     protected async getProxyCommand(command: string): Promise<Result<string, ToolkitError>> {
         if (this.isWin()) {
             // Some older versions of OpenSSH (7.8 and below) have a bug where attempting to use powershell.exe directly will fail without an absolute path
-            const proc = new ChildProcess('powershell.exe', ['-Command', '(get-command powershell.exe).Path'])
+            const proc = new ChildProcess('pwsh', ['-Command', '(get-command pwsh).Path'])
             const r = await proc.run()
             if (r.exitCode !== 0) {
-                return Result.err(new ToolkitError('Failed to get absolute path for powershell', { cause: r.error }))
+                return Result.err(new ToolkitError('Failed to get absolute path for pwsh', { cause: r.error }))
             }
             return Result.ok(`"${r.stdout}" -ExecutionPolicy RemoteSigned -File "${command}" %h`)
         } else {
