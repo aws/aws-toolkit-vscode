@@ -2,7 +2,7 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-
+import * as vscode from 'vscode'
 import { ExtensionContext, OutputChannel, Uri } from 'vscode'
 import { LoginManager } from '../auth/deprecated/loginManager'
 import { AwsResourceManager } from '../dynamicResources/awsResourceManager'
@@ -155,6 +155,7 @@ export function initialize(context: ExtensionContext, isWeb: boolean = false): T
         manifestPaths: {} as ToolkitGlobals['manifestPaths'],
         visualizationResourcePaths: {} as ToolkitGlobals['visualizationResourcePaths'],
         isWeb,
+        isEmbedded: isWeb && !!(vscode.window.sendMessage && vscode.window.receiveMessage),
     })
     void setContext('aws.isWebExtHost', isWeb)
 
@@ -238,4 +239,6 @@ export interface ToolkitGlobals {
     }
     /** If this extension is running in Web mode (the browser), compared to running on the desktop (node) */
     isWeb: boolean
+    /** If this extension is hosted in a parent browser context that supports postMessage between frames */
+    isEmbedded: boolean
 }
