@@ -569,7 +569,7 @@ describe('workspaceUtils', () => {
             await writeFile([`top.java`], fileContent)
 
             const result = processIndexResults(
-                await collectFilesForIndex([workspaceFolder.uri.fsPath], [workspaceFolder], true)
+                await collectFilesForIndex([workspaceFolder.uri.fsPath], [workspaceFolder], true, 30)
             )
 
             // non-posix filePath check here is important.
@@ -577,12 +577,12 @@ describe('workspaceUtils', () => {
                 [
                     {
                         workspaceFolder,
-                        relativeFilePath: 'top.js',
+                        relativeFilePath: 'top.java',
                         fileSizeBytes: 14,
                     },
                     {
                         workspaceFolder,
-                        relativeFilePath: 'top.java',
+                        relativeFilePath: 'top.js',
                         fileSizeBytes: 14,
                     },
                 ] satisfies typeof result,
