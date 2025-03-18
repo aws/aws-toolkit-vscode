@@ -95,18 +95,6 @@ const tasks: CopyTask[] = [
         target: path.join('../../node_modules/aws-core-vscode/dist', 'vue'),
         destination: 'vue/',
     },
-
-    // Mynah
-    {
-        target: path.join(
-            '../../node_modules',
-            '@aws',
-            'fully-qualified-names',
-            'node',
-            'aws_fully_qualified_names_bg.wasm'
-        ),
-        destination: path.join('src', 'aws_fully_qualified_names_bg.wasm'),
-    },
     {
         target: path.join('../../node_modules', 'web-tree-sitter', 'tree-sitter.wasm'),
         destination: path.join('src', 'tree-sitter.wasm'),
