@@ -257,11 +257,7 @@ describe('workspaceUtils', () => {
             await writeFile(['src', 'folder3', 'negate_test1'], fileContent)
             await writeFile(['src', 'folder3', 'negate_test6'], fileContent)
 
-            const result = (await collectFiles([workspaceFolder.uri.fsPath], [workspaceFolder]))
-                // for some reason, uri created inline differ in subfields, so skipping them from assertion
-                .map(({ fileUri, zipFilePath, ...r }) => ({ ...r }))
-
-            result.sort((l, r) => l.relativeFilePath.localeCompare(r.relativeFilePath))
+            const result = processIndexResults(await collectFiles([workspaceFolder.uri.fsPath], [workspaceFolder]))
 
             // non-posix filePath check here is important.
             assert.deepStrictEqual(
@@ -469,12 +465,6 @@ describe('workspaceUtils', () => {
             return toFile(fileContent, path.join(workspaceFolder.uri.fsPath, ...pathParts))
         }
 
-        // for some reason, uri created inline differ in subfields, so we skip them for assertion
-        const processResults = (results: Omit<CollectFilesResultItem, 'fileContent'>[]) =>
-            results
-                .map(({ fileUri, ...r }) => ({ ...r }))
-                .sort((l, r) => l.relativeFilePath.localeCompare(r.relativeFilePath))
-
         beforeEach(async function () {
             workspaceFolder = await createTestWorkspaceFolder()
             sandbox.stub(vscode.workspace, 'workspaceFolders').value([workspaceFolder])
@@ -516,7 +506,7 @@ describe('workspaceUtils', () => {
             await writeFile(['src', 'folder3', 'negate_test1'], fileContent)
             await writeFile(['src', 'folder3', 'negate_test6'], fileContent)
 
-            const result = processResults(
+            const result = processIndexResults(
                 await collectFilesForIndex([workspaceFolder.uri.fsPath], [workspaceFolder], true)
             )
 
@@ -527,13 +517,11 @@ describe('workspaceUtils', () => {
                         workspaceFolder,
                         relativeFilePath: path.join('src', 'folder2', 'a.js'),
                         fileSizeBytes: 12,
-                        zipFilePath: path.join('src', 'folder2', 'a.js'),
                     },
                     {
                         workspaceFolder,
                         relativeFilePath: path.join('src', 'folder2', 'b.cs'),
                         fileSizeBytes: 12,
-                        zipFilePath: path.join('src', 'folder2', 'b.cs'),
                     },
                 ] satisfies typeof result,
                 result
@@ -549,7 +537,7 @@ describe('workspaceUtils', () => {
             await writeFile([`a.js`], fileContent)
             await writeFile([`b.java`], fileContent)
 
-            const result = processResults(
+            const result = processIndexResults(
                 await collectFilesForIndex([workspaceFolder.uri.fsPath], [workspaceFolder], true)
             )
 
@@ -560,13 +548,11 @@ describe('workspaceUtils', () => {
                         workspaceFolder,
                         relativeFilePath: 'a.js',
                         fileSizeBytes: 14,
-                        zipFilePath: 'a.js',
                     },
                     {
                         workspaceFolder,
                         relativeFilePath: 'b.java',
                         fileSizeBytes: 14,
-                        zipFilePath: 'b.java',
                     },
                 ] satisfies typeof result,
                 result
@@ -576,13 +562,13 @@ describe('workspaceUtils', () => {
         it('returns top level files when max size is reached', async function () {
             const fileContent = 'this is a file'
 
-            await writeFile(['path', 'to', 'file', 'a2.js'], fileContent)
-            await writeFile(['path', 'to', 'file', `b2.java`], fileContent)
+            await writeFile(['path', 'to', 'file', 'bot.js'], fileContent)
+            await writeFile(['path', 'to', 'file', `bot.java`], fileContent)
 
-            await writeFile([`a.js`], fileContent)
-            await writeFile([`b.java`], fileContent)
+            await writeFile([`top.js`], fileContent)
+            await writeFile([`top.java`], fileContent)
 
-            const result = processResults(
+            const result = processIndexResults(
                 await collectFilesForIndex([workspaceFolder.uri.fsPath], [workspaceFolder], true)
             )
 
@@ -591,15 +577,13 @@ describe('workspaceUtils', () => {
                 [
                     {
                         workspaceFolder,
-                        relativeFilePath: 'a.js',
+                        relativeFilePath: 'top.js',
                         fileSizeBytes: 14,
-                        zipFilePath: 'a.js',
                     },
                     {
                         workspaceFolder,
-                        relativeFilePath: 'b.java',
+                        relativeFilePath: 'top.java',
                         fileSizeBytes: 14,
-                        zipFilePath: 'b.java',
                     },
                 ] satisfies typeof result,
                 result
@@ -618,3 +602,10 @@ describe('workspaceUtils', () => {
         })
     })
 })
+
+// for some reason, uri created inline differ in subfields, so skipping them from assertion
+function processIndexResults(results: Omit<CollectFilesResultItem, 'fileContent'>[] | CollectFilesResultItem[]) {
+    return results
+        .map(({ zipFilePath, fileUri, ...r }) => ({ ...r }))
+        .sort((l, r) => l.relativeFilePath.localeCompare(r.relativeFilePath))
+}
