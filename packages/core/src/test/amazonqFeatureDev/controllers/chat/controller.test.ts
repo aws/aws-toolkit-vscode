@@ -24,7 +24,7 @@ import {
     ContentLengthError,
     createUserFacingErrorMessage,
     FeatureDevServiceError,
-    isAPIClientError,
+    getMetricResult,
     MonthlyConversationLimitError,
     NoChangeRequiredException,
     PrepareRepoFailedError,
@@ -470,24 +470,6 @@ describe('Controller', () => {
         describe('onCodeGeneration', function () {
             let session: any
             let sendMetricDataTelemetrySpy: sinon.SinonStub
-
-            const errorResultMapping = new Map([
-                ['EmptyPatchException', MetricDataResult.LlmFailure],
-                [PromptRefusalException.name, MetricDataResult.Error],
-                [NoChangeRequiredException.name, MetricDataResult.Error],
-                [MonthlyConversationLimitError.name, MetricDataResult.Error],
-                [CodeIterationLimitError.name, MetricDataResult.Error],
-            ])
-
-            function getMetricResult(error: ToolkitError): MetricDataResult {
-                if (error instanceof FeatureDevServiceError && error.code) {
-                    return errorResultMapping.get(error.code) ?? MetricDataResult.Error
-                }
-                if (isAPIClientError(error)) {
-                    return MetricDataResult.Error
-                }
-                return errorResultMapping.get(error.constructor.name) ?? MetricDataResult.Fault
-            }
 
             async function verifyException(error: ToolkitError) {
                 sinon.stub(session, 'send').throws(error)

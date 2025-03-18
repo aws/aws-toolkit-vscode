@@ -7,14 +7,14 @@ import assert from 'assert'
 import * as vscode from 'vscode'
 import { ResourcesNode } from '../../../dynamicResources/explorer/nodes/resourcesNode'
 import { ResourceTypeNode } from '../../../dynamicResources/explorer/nodes/resourceTypeNode'
-import { CloudFormationClient } from '../../../shared/clients/cloudFormationClient'
+import { CloudFormationClient } from '../../../shared/clients/cloudFormation'
 import { assertNodeListOnlyHasPlaceholderNode } from '../../utilities/explorerNodeAssertions'
 import { asyncGenerator } from '../../../shared/utilities/collectionUtils'
-import { CloudFormation } from 'aws-sdk'
-import { CloudControlClient } from '../../../shared/clients/cloudControlClient'
+import { CloudControlClient } from '../../../shared/clients/cloudControl'
 import { Settings } from '../../../shared/settings'
 import { ResourcesSettings } from '../../../dynamicResources/commands/configure'
 import sinon from 'sinon'
+import { TypeSummary } from '@aws-sdk/client-cloudformation'
 
 const unsortedText = ['zebra', 'Antelope', 'aardvark', 'elephant']
 const sortedText = ['aardvark', 'Antelope', 'elephant', 'zebra']
@@ -101,8 +101,8 @@ describe('ResourcesNode', function () {
 
     function prepareMock(resourceTypes: string[]) {
         const listStub = sinon.stub().returns(
-            asyncGenerator<CloudFormation.TypeSummary>(
-                resourceTypes.map<CloudFormation.TypeSummary>((resourceType) => {
+            asyncGenerator<TypeSummary>(
+                resourceTypes.map<TypeSummary>((resourceType) => {
                     return {
                         TypeName: resourceType,
                     }

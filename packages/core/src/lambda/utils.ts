@@ -7,9 +7,9 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import xml2js = require('xml2js')
-import { CloudFormation, Lambda } from 'aws-sdk'
+import { Lambda } from 'aws-sdk'
 import * as vscode from 'vscode'
-import { CloudFormationClient } from '../shared/clients/cloudFormationClient'
+import { CloudFormationClient, StackSummary } from '../shared/clients/cloudFormation'
 import { LambdaClient } from '../shared/clients/lambdaClient'
 import { getFamily, getNodeMajorVersion, RuntimeFamily } from './models/samLambdaRuntime'
 import { getLogger } from '../shared/logger/logger'
@@ -18,9 +18,7 @@ import { FileResourceFetcher } from '../shared/resourcefetcher/fileResourceFetch
 import { sampleRequestManifestPath } from './constants'
 import globals from '../shared/extensionGlobals'
 
-export async function* listCloudFormationStacks(
-    client: CloudFormationClient
-): AsyncIterableIterator<CloudFormation.StackSummary> {
+export async function* listCloudFormationStacks(client: CloudFormationClient): AsyncIterableIterator<StackSummary> {
     // TODO: this 'loading' message needs to go under each regional entry
     // in the explorer, and be removed when that region's query completes
     const status = vscode.window.setStatusBarMessage(

@@ -21,10 +21,6 @@ const changesFile = path.join(changesDirectory, `${packageJson.version}.json`)
 nodefs.mkdirSync(nextReleaseDirectory, { recursive: true })
 
 const changeFiles = nodefs.readdirSync(nextReleaseDirectory)
-if (changeFiles.length === 0) {
-    console.warn('no changes to release (missing .changes/ directory)')
-    process.exit()
-}
 try {
     nodefs.accessSync(changesFile)
     console.log(`error: changelog data file already exists: ${changesFile}`)
@@ -45,21 +41,25 @@ for (const changeFile of changeFiles) {
     changelog.entries.push(file)
 }
 
-changelog.entries.sort((x: { type: string }, y: { type: string }) => x.type.localeCompare(y.type))
-
 // Write changelog file
 nodefs.writeFileSync(changesFile, JSON.stringify(changelog, undefined, '\t'))
 const fileData = nodefs.readFileSync(path.join(cwd, 'CHANGELOG.md'))
 let append = `## ${packageJson.version} ${timestamp}\n\n`
-for (const file of changelog.entries) {
-    append += `- **${file.type}** ${file.description}\n`
+if (changelog.entries.length === 0) {
+    console.warn('no changes to release (missing .changes/ directory)')
+    append += '- Miscellaneous non-user-facing changes\n'
+} else {
+    changelog.entries.sort((x: { type: string }, y: { type: string }) => x.type.localeCompare(y.type))
+    for (const file of changelog.entries) {
+        append += `- **${file.type}** ${file.description}\n`
+    }
 }
 
 append += '\n' + fileData.toString()
 nodefs.writeFileSync('CHANGELOG.md', append)
 
 child_process.execSync(`git add ${changesDirectory}`)
-child_process.execSync(`git rm -rf ${nextReleaseDirectory}`)
+child_process.execSync(`git rm -rf --ignore-unmatch ${nextReleaseDirectory}`)
 child_process.execSync('git add CHANGELOG.md')
 
 console.log(changesFile)
