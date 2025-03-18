@@ -462,19 +462,20 @@ describe('workspaceUtils', () => {
     })
 
     describe('collectFilesForIndex', function () {
+        let workspaceFolder: vscode.WorkspaceFolder
+
+        const writeFile = (pathParts: string[], fileContent: string) => {
+            return toFile(fileContent, path.join(workspaceFolder.uri.fsPath, ...pathParts))
+        }
+
+        beforeEach(async function () {
+            workspaceFolder = await createTestWorkspaceFolder()
+            sandbox.stub(vscode.workspace, 'workspaceFolders').value([workspaceFolder])
+        })
+
         it('returns all files in the workspace not excluded by gitignore and is a supported programming language', async function () {
-            // these variables are a manual selection of settings for the test in order to test the collectFiles function
-            const fileAmount = 3
-            const fileNamePrefix = 'file'
             const fileContent = 'test content'
 
-            const workspaceFolder = await createTestWorkspace(fileAmount, { fileNamePrefix, fileContent })
-
-            const writeFile = (pathParts: string[], fileContent: string) => {
-                return toFile(fileContent, path.join(workspaceFolder.uri.fsPath, ...pathParts))
-            }
-
-            sandbox.stub(vscode.workspace, 'workspaceFolders').value([workspaceFolder])
             const gitignoreContent = `file2
             # different formats of prefixes
             /build
@@ -535,18 +536,7 @@ describe('workspaceUtils', () => {
         })
 
         it('does not include build related files', async function () {
-            // these variables are a manual selection of settings for the test in order to test the collectFiles function
-            const fileAmount = 3
-            const fileNamePrefix = 'file'
             const fileContent = 'this is a file'
-
-            const workspaceFolder = await createTestWorkspace(fileAmount, { fileNamePrefix, fileContent })
-
-            const writeFile = (pathParts: string[], fileContent: string) => {
-                return toFile(fileContent, path.join(workspaceFolder.uri.fsPath, ...pathParts))
-            }
-
-            sandbox.stub(vscode.workspace, 'workspaceFolders').value([workspaceFolder])
 
             await writeFile(['bin', `ignored1`], fileContent)
             await writeFile(['bin', `ignored2`], fileContent)
@@ -581,18 +571,7 @@ describe('workspaceUtils', () => {
         })
 
         it('returns top level files when max size is reached', async function () {
-            // these variables are a manual selection of settings for the test in order to test the collectFiles function
-            const fileAmount = 3
-            const fileNamePrefix = 'file'
             const fileContent = 'this is a file'
-
-            const workspaceFolder = await createTestWorkspace(fileAmount, { fileNamePrefix, fileContent })
-
-            const writeFile = (pathParts: string[], fileContent: string) => {
-                return toFile(fileContent, path.join(workspaceFolder.uri.fsPath, ...pathParts))
-            }
-
-            sandbox.stub(vscode.workspace, 'workspaceFolders').value([workspaceFolder])
 
             await writeFile(['path', 'to', 'file', 'a2.js'], fileContent)
             await writeFile(['path', 'to', 'file', `b2.java`], fileContent)
