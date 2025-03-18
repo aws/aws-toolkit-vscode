@@ -57,8 +57,10 @@ import {
     openBuildLogFile,
     parseBuildFile,
     validateSQLMetadataFile,
+    validateYamlFile,
 } from '../../../codewhisperer/service/transformByQ/transformFileHandler'
 import { getAuthType } from '../../../auth/utils'
+import fs from '../../../shared/fs/fs'
 
 // These events can be interactions within the chat,
 // or elsewhere in the IDE
@@ -389,6 +391,9 @@ export class GumbyController {
                 transformByQState.setCustomDependencyVersionFilePath('')
                 this.promptJavaHome('source', message.tabID)
                 break
+            case ButtonActions.AGREE_TO_LOCAL_BUILD:
+                await this.prepareLanguageUpgradeProject(message) // build project locally right after user agrees to do so
+                break
             case ButtonActions.VIEW_TRANSFORMATION_HUB:
                 await vscode.commands.executeCommand(GumbyCommands.FOCUS_TRANSFORMATION_HUB, CancelActionPositions.Chat)
                 break
@@ -589,8 +594,12 @@ export class GumbyController {
         if (!fileUri || fileUri.length === 0) {
             return
         }
-        // TO-DO: validate the YAML file?
-        this.messenger.sendMessage('Received custom dependency version YAML file!', message.tabID, 'ai-prompt')
+        const fileContents = await fs.readFileText(fileUri[0].fsPath)
+        const isValidYaml = await validateYamlFile(fileContents, message)
+        if (!isValidYaml) {
+            return
+        }
+        this.messenger.sendMessage('Received custom dependency version YAML file.', message.tabID, 'ai-prompt')
         transformByQState.setCustomDependencyVersionFilePath(fileUri[0].fsPath)
         this.promptJavaHome('source', message.tabID)
     }
@@ -690,7 +699,7 @@ export class GumbyController {
                 const pathToJavaHome = extractPath(data.message)
                 if (pathToJavaHome) {
                     transformByQState.setTargetJavaHome(pathToJavaHome)
-                    await this.prepareLanguageUpgradeProject(data) // build project locally right after saving target JDK path
+                    this.messenger.sendPermissionToBuildMessage(data.tabID)
                 } else {
                     this.messenger.sendUnrecoverableErrorResponse('invalid-java-home', data.tabID)
                 }
