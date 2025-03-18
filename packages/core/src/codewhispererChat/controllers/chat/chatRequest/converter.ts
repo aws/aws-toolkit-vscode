@@ -10,9 +10,12 @@ import {
     RelevantTextDocument,
     SymbolType,
     TextDocument,
+    Tool,
 } from '@amzn/codewhisperer-streaming'
 import { ChatTriggerType, TriggerPayload } from '../model'
 import { undefinedIfEmpty } from '../../../../shared/utilities/textUtilities'
+import toolsJson from '../../../tools/tool_index.json'
+import { getWorkspaceParentDirectory } from '../../../../shared/utilities/workspaceUtils'
 
 const fqnNameSizeDownLimit = 1
 const fqnNameSizeUpLimit = 256
@@ -102,6 +105,15 @@ export function triggerPayloadToChatRequest(triggerPayload: TriggerPayload): { c
     const customizationArn: string | undefined = undefinedIfEmpty(triggerPayload.customization.arn)
     const chatTriggerType = triggerPayload.trigger === ChatTriggerType.InlineChatMessage ? 'INLINE_CHAT' : 'MANUAL'
 
+    const operatingSystem = 'macos'
+    const currentWorkingDirectory = getWorkspaceParentDirectory(triggerPayload.filePath!)
+
+    const tools: Tool[] = Object.entries(toolsJson).map(([, toolSpec]) => ({
+        toolSpecification: {
+            ...toolSpec,
+            inputSchema: { json: toolSpec.input_schema },
+        },
+    }))
     return {
         conversationState: {
             conversationId: 'dummyConversationId',
@@ -117,7 +129,14 @@ export function triggerPayloadToChatRequest(triggerPayload: TriggerPayload): { c
                             relevantDocuments,
                             useRelevantDocuments,
                         },
+                        envState: {
+                            operatingSystem,
+                            currentWorkingDirectory,
+                            environmentVariables: [],
+                        },
                         additionalContext: triggerPayload.additionalContents,
+                        tools,
+                        toolResults: triggerPayload.toolResults,
                     },
                     userIntent: triggerPayload.userIntent,
                     origin: 'IDE',
@@ -125,6 +144,7 @@ export function triggerPayloadToChatRequest(triggerPayload: TriggerPayload): { c
             },
             chatTriggerType,
             customizationArn: customizationArn,
+            history: triggerPayload.history,
         },
     }
 }

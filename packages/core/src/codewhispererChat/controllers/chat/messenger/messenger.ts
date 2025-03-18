@@ -38,6 +38,9 @@ import { extractCodeBlockLanguage } from '../../../../shared/markdown'
 import { extractAuthFollowUp } from '../../../../amazonq/util/authUtils'
 import { helpMessage } from '../../../../amazonq/webview/ui/texts/constants'
 import { ChatItemButton, ChatItemFormItem, MynahUIDataModel } from '@aws/mynah-ui'
+import { FsRead } from '../../../tools/fsRead'
+import { triggerPayloadToChatRequest } from '../chatRequest/converter'
+import { getWorkspaceParentDirectory } from '../../../../shared/utilities/workspaceUtils'
 
 export type StaticTextResponseType = 'quick-action-help' | 'onboarding-help' | 'transform' | 'help'
 
@@ -129,6 +132,7 @@ export class Messenger {
         let followUps: FollowUp[] = []
         let relatedSuggestions: Suggestion[] = []
         let codeBlockLanguage: string = 'plaintext'
+        const toolUse: { toolUseId: string; name: string; input: string } = { toolUseId: '', name: '', input: '' }
 
         if (response.message === undefined) {
             throw new ToolkitError(
@@ -184,6 +188,13 @@ export class Messenger {
                                 information: `Reference code under **${reference.licenseName}** license from repository \`${reference.repository}\``,
                             })),
                         ]
+                    }
+
+                    const cwChatEvent: cwChatResponseStream = chatEvent
+                    if (cwChatEvent.toolUseEvent?.input !== undefined && cwChatEvent.toolUseEvent.input.length > 0) {
+                        toolUse.input += cwChatEvent.toolUseEvent.input
+                        toolUse.toolUseId = cwChatEvent.toolUseEvent.toolUseId ?? ''
+                        toolUse.name = cwChatEvent.toolUseEvent.name ?? ''
                     }
 
                     if (
@@ -330,6 +341,41 @@ export class Messenger {
                         tabID
                     )
                 )
+
+                const toolInputParsed = JSON.parse(toolUse.input)
+                const fsRead = new FsRead({ path: toolInputParsed.path })
+                const result = await fsRead.invoke({
+                    env: { currentDir: () => getWorkspaceParentDirectory(triggerPayload.filePath!)! },
+                })
+                // eslint-disable-next-line aws-toolkits/no-console-log
+                console.log(result)
+
+                const newRequest = triggerPayloadToChatRequest({
+                    ...triggerPayload,
+                    toolResults: [
+                        {
+                            content: [{ text: result.output.content }],
+                            toolUseId: toolUse.toolUseId,
+                            status: 'success',
+                        },
+                    ],
+                    history: [
+                        ...(triggerPayload.history ? triggerPayload.history : []),
+                        {
+                            assistantResponseMessage: {
+                                content: message,
+                                toolUses: [{ ...toolUse, input: JSON.parse(toolUse.input) }],
+                                messageId: messageID,
+                            },
+                        },
+                    ],
+                })
+                const { $metadata, generateAssistantResponseResponse } = await session.chatSso(newRequest)
+                response = {
+                    $metadata: $metadata,
+                    message: generateAssistantResponseResponse,
+                }
+                await this.sendAIResponse(response, session, tabID, triggerID, triggerPayload)
 
                 getLogger().info(
                     `All events received. requestId=%s counts=%s`,

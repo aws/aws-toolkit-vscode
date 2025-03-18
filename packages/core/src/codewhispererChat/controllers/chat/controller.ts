@@ -45,7 +45,7 @@ import { EditorContextCommand } from '../../commands/registerCommands'
 import { PromptsGenerator } from './prompts/promptsGenerator'
 import { TriggerEventsStorage } from '../../storages/triggerEvents'
 import { SendMessageRequest } from '@amzn/amazon-q-developer-streaming-client'
-import { CodeWhispererStreamingServiceException } from '@amzn/codewhisperer-streaming'
+import { CodeWhispererStreamingServiceException, UserInputMessage } from '@amzn/codewhisperer-streaming'
 import { UserIntentRecognizer } from './userIntent/userIntentRecognizer'
 import { CWCTelemetryHelper, recordTelemetryChatRunCommand } from './telemetryHelper'
 import { CodeWhispererTracker } from '../../../codewhisperer/tracker/codewhispererTracker'
@@ -1099,6 +1099,10 @@ export class ChatController {
         triggerPayload.documentReferences = this.mergeRelevantTextDocuments(triggerPayload.relevantTextDocuments || [])
 
         const request = triggerPayloadToChatRequest(triggerPayload)
+
+        const userInputMessage: UserInputMessage = request.conversationState.currentMessage
+            ?.userInputMessage as UserInputMessage
+        triggerPayload.history = [...(triggerPayload.history ? triggerPayload.history : []), { userInputMessage }]
 
         if (triggerPayload.documentReferences !== undefined) {
             const relativePathsOfMergedRelevantDocuments = triggerPayload.documentReferences.map(
