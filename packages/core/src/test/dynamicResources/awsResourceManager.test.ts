@@ -13,16 +13,16 @@ import { ResourceNode } from '../../dynamicResources/explorer/nodes/resourceNode
 import { ResourceTypeNode } from '../../dynamicResources/explorer/nodes/resourceTypeNode'
 import { formatResourceModel, AwsResourceManager } from '../../dynamicResources/awsResourceManager'
 import { CloudControlClient } from '../../shared/clients/cloudControl'
-import { CloudFormationClient, DefaultCloudFormationClient } from '../../shared/clients/cloudFormationClient'
+import { CloudFormationClient } from '../../shared/clients/cloudFormation'
 import { makeTemporaryToolkitFolder, readFileAsString } from '../../shared/filesystemUtilities'
 import { FakeExtensionContext } from '../fakeExtensionContext'
 import { existsSync } from 'fs' // eslint-disable-line no-restricted-imports
 import { ResourceTypeMetadata } from '../../dynamicResources/model/resources'
 import globals from '../../shared/extensionGlobals'
 import { Stub, stub } from '../utilities/stubber'
-import { CloudFormation } from 'aws-sdk'
 import * as CloudControl from '@aws-sdk/client-cloudcontrol'
 import { fs } from '../../shared'
+import { DescribeTypeOutput } from '@aws-sdk/client-cloudformation'
 
 describe('ResourceManager', function () {
     let sandbox: sinon.SinonSandbox
@@ -52,7 +52,7 @@ describe('ResourceManager', function () {
         cloudControl = stub(CloudControlClient, {
             regionCode: '',
         })
-        cloudFormation = stub(DefaultCloudFormationClient, {
+        cloudFormation = stub(CloudFormationClient, {
             regionCode: '',
         })
         sandbox = sinon.createSandbox()
@@ -238,7 +238,7 @@ describe('ResourceManager', function () {
         })
         cloudFormation.describeType.callsFake(async (name: string) => {
             if (name === fakeTypeName) {
-                return { Schema: '{}' } as any as CloudFormation.DescribeTypeOutput
+                return { Schema: '{}' } as any as DescribeTypeOutput
             }
             throw new Error()
         })
