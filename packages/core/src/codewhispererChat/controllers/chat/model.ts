@@ -178,7 +178,7 @@ export interface TriggerPayload {
     readonly query: string | undefined
     readonly codeSelection: Selection | undefined
     readonly trigger: ChatTriggerType
-    readonly fileText: string | undefined
+    fileText: string | undefined
     readonly fileLanguage: string | undefined
     readonly filePath: string | undefined
     message: string | undefined
@@ -188,7 +188,7 @@ export interface TriggerPayload {
     readonly customization: Customization
     readonly context?: string[] | QuickActionCommand[]
     relevantTextDocuments?: RelevantTextDocumentAddition[]
-    additionalContents?: AdditionalContentEntry[]
+    additionalContents?: AdditionalContentEntryAddition[]
     // a reference to all documents used in chat payload
     // for providing better context transparency
     documentReferences?: DocumentReference[]
@@ -215,6 +215,8 @@ export type AdditionalContextInfo = {
 
 // TODO move this to API definition (or just use this across the codebase)
 export type RelevantTextDocumentAddition = RelevantTextDocument & { startLine: number; endLine: number }
+
+export type AdditionalContentEntryAddition = AdditionalContentEntry & { type: string }
 
 export interface DocumentReference {
     readonly relativeFilePath: string

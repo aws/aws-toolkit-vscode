@@ -77,7 +77,7 @@ import {
     createSavedPromptCommandId,
     aditionalContentNameLimit,
     additionalContentInnerContextLimit,
-    contextMaxLength,
+    workspaceChunkMaxSize,
 } from '../../constants'
 import { ChatSession } from '../../clients/chat/v0/chat'
 
@@ -967,7 +967,6 @@ export class ChatController {
             getLogger().verbose(`Could not get context command prompts: ${e}`)
         }
 
-        let currentContextLength = 0
         triggerPayload.additionalContents = []
         const emptyLengths = {
             fileContextLength: 0,
@@ -990,15 +989,16 @@ export class ChatController {
                     name: prompt.name.substring(0, aditionalContentNameLimit),
                     description: description.substring(0, aditionalContentNameLimit),
                     innerContext: prompt.content.substring(0, additionalContentInnerContextLimit),
+                    type: contextType,
                 }
                 // make sure the relevantDocument + additionalContext
                 // combined does not exceed 40k characters before generating the request payload.
                 // Do truncation and make sure triggerPayload.documentReferences is up-to-date after truncation
                 // TODO: Use a context length indicator
-                if (currentContextLength + entry.innerContext.length > contextMaxLength) {
-                    getLogger().warn(`Selected context exceeds context size limit: ${entry.description} `)
-                    break
-                }
+                // if (currentContextLength + entry.innerContext.length > contextMaxLength) {
+                // getLogger().warn(`Selected context exceeds context size limit: ${entry.description} `)
+                // break
+                // }
 
                 if (contextType === 'rule') {
                     triggerPayload.truncatedAdditionalContextLengths.ruleContextLength += entry.innerContext.length
@@ -1009,7 +1009,6 @@ export class ChatController {
                 }
 
                 triggerPayload.additionalContents.push(entry)
-                currentContextLength += entry.innerContext.length
                 let relativePath = path.relative(workspaceFolder, prompt.filePath)
                 // Handle user prompts outside the workspace
                 if (prompt.filePath.startsWith(getUserPromptsDirectory())) {
@@ -1067,25 +1066,20 @@ export class ChatController {
             triggerPayload.message = triggerPayload.message.replace(/@workspace/, '')
             if (CodeWhispererSettings.instance.isLocalIndexEnabled()) {
                 const start = performance.now()
-                let remainingContextLength = contextMaxLength
-                for (const additionalContent of triggerPayload.additionalContents || []) {
-                    if (additionalContent.innerContext) {
-                        remainingContextLength -= additionalContent.innerContext.length
-                    }
-                }
+                // for (const additionalContent of triggerPayload.additionalContents || []) {
+                // if (additionalContent.innerContext) {
+                // remainingContextLength -= additionalContent.innerContext.length
+                // }
+                // }
                 triggerPayload.relevantTextDocuments = []
                 const relevantTextDocuments = await LspController.instance.query(triggerPayload.message)
                 for (const relevantDocument of relevantTextDocuments) {
                     if (relevantDocument.text !== undefined && relevantDocument.text.length > 0) {
-                        if (remainingContextLength > relevantDocument.text.length) {
-                            triggerPayload.relevantTextDocuments.push(relevantDocument)
-                            remainingContextLength -= relevantDocument.text.length
-                        } else {
-                            getLogger().warn(
-                                `Retrieved context exceeds context size limit: ${relevantDocument.relativeFilePath} `
-                            )
-                            break
+                        if (relevantDocument.text.length > workspaceChunkMaxSize) {
+                            relevantDocument.text = relevantDocument.text.substring(0, workspaceChunkMaxSize)
+                            getLogger().debug(`Truncating @workspace chunk: ${relevantDocument.relativeFilePath} `)
                         }
+                        triggerPayload.relevantTextDocuments.push(relevantDocument)
                     }
                 }
 
