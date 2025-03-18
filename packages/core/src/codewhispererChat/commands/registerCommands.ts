@@ -25,7 +25,7 @@ export const focusAmazonQPanel = Commands.declare(
          * So when we try to focus the following Views, only one will show depending
          * on the context.
          */
-        await vscode.commands.executeCommand('aws.AmazonQChatView.focus')
+        await vscode.commands.executeCommand('aws.amazonq.AmazonQChatView.focus')
         await vscode.commands.executeCommand('aws.amazonq.AmazonCommonAuth.focus')
     }
 )

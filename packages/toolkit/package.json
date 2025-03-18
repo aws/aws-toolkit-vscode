@@ -1353,12 +1353,12 @@
                 },
                 {
                     "submenu": "aws.toolkit.submenu.feedback",
-                    "when": "view =~ /^aws\\./ && view != aws.AmazonQChatView && view != aws.amazonq.AmazonCommonAuth",
+                    "when": "view =~ /^aws\\./ && !(view =~ /^aws\\.amazonq/)",
                     "group": "y_toolkitMeta@1"
                 },
                 {
                     "submenu": "aws.toolkit.submenu.help",
-                    "when": "view =~ /^aws\\./ && view != aws.AmazonQChatView && view != aws.amazonq.AmazonCommonAuth",
+                    "when": "view =~ /^aws\\./ && !(view =~ /^aws\\.amazonq/)",
                     "group": "y_toolkitMeta@2"
                 },
                 {
