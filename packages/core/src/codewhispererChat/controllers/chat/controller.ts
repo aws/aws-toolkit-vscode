@@ -588,8 +588,20 @@ export class ChatController {
                 // Execute the command in terminal
                 terminal.sendText(command)
 
-                // Store the outLogFilePath text in lastTerminalOutput
-                this.lastTerminalOutput = outLogFilePath
+                // Read the content from outLogFilePath and store it in lastTerminalOutput
+                try {
+                    // Wait a moment for the command to complete and write to the file
+                    await new Promise((resolve) => setTimeout(resolve, 500))
+
+                    if (await fs.existsFile(outLogFilePath)) {
+                        this.lastTerminalOutput = await fs.readFileText(outLogFilePath)
+                    } else {
+                        this.lastTerminalOutput = 'Command executed, but no output was captured.'
+                    }
+                } catch (readErr) {
+                    getLogger().error(`Failed to read output log file: ${readErr}`)
+                    this.lastTerminalOutput = `Error reading command output: ${readErr}`
+                }
 
                 getLogger().info(`Command executed: ${command}`)
                 getLogger().info(`Output saved to: ${outLogFilePath}`)
