@@ -6,7 +6,6 @@
 import * as vscode from 'vscode'
 import * as path from 'path'
 import {
-    collectFiles,
     CollectFilesFilter,
     defaultExcludePatterns,
     getWorkspaceFoldersByPrefixes,
@@ -28,6 +27,7 @@ import { ZipStream } from '../../shared/utilities/zipStream'
 import { isPresent } from '../../shared/utilities/collectionUtils'
 import { AuthUtil } from '../../codewhisperer/util/authUtil'
 import { TelemetryHelper } from '../util/telemetryHelper'
+import { zipProject } from './zipProjectUtil'
 
 export const SvgFileExtension = '.svg'
 
@@ -102,45 +102,27 @@ export async function prepareRepoData(
         const fileSizeByteLimit = options?.fileSizeByteLimit
             ? Math.min(options.fileSizeByteLimit, maxFileSizeBytes)
             : maxFileSizeBytes
-        const zip = options?.zip ?? new ZipStream()
 
         const autoBuildSetting = CodeWhispererSettings.instance.getAutoBuildSetting()
         const useAutoBuildFeature = autoBuildSetting[repoRootPaths[0]] ?? false
         const { excludePatterns, filterFn } = getFilterAndExcludePattern(useAutoBuildFeature, includeInfraDiagram)
 
-        const files = await collectFiles(repoRootPaths, workspaceFolders, {
-            maxTotalSizeBytes: maxRepoSizeBytes,
-            excludeByGitIgnore: true,
-            excludePatterns: excludePatterns,
-            filterFn: filterFn,
-        })
-
-        let totalBytes = 0
         const ignoredExtensionMap = new Map<string, number>()
-        const addedFilePaths = new Set()
-
-        for (const file of files) {
-            if (addedFilePaths.has(file.zipFilePath) || !(await fs.exists(file.fileUri.fsPath))) {
-                continue
-            }
-            addedFilePaths.add(file.zipFilePath)
-
-            const fileSize = (await fs.stat(file.fileUri.fsPath)).size
-
-            const isCodeFile_ = isCodeFile(file.relativeFilePath)
-            const isDevFile = file.relativeFilePath === 'devfile.yaml'
-            const isInfraDiagramFileExt = isInfraDiagramFile(file.relativeFilePath)
+        const isExcluded = (relativeFilePath: string, fileSize: number) => {
+            const isCodeFile_ = isCodeFile(relativeFilePath)
+            const isDevFile = relativeFilePath === 'devfile.yaml'
+            const isInfraDiagramFileExt = isInfraDiagramFile(relativeFilePath)
 
             let isExcludeFile = fileSize >= fileSizeByteLimit
             // When useAutoBuildFeature is on, only respect the gitignore rules filtered earlier and apply the size limit
             if (!isExcludeFile && !useAutoBuildFeature) {
                 isExcludeFile = isDevFile || (!isCodeFile_ && (!includeInfraDiagram || !isInfraDiagramFileExt))
             }
-
+            // Side-effect of isExcluded
             if (isExcludeFile) {
                 if (!isCodeFile_) {
                     const re = /(?:\.([^.]+))?$/
-                    const extensionArray = re.exec(file.relativeFilePath)
+                    const extensionArray = re.exec(relativeFilePath)
                     const extension = extensionArray?.length ? extensionArray[1] : undefined
                     if (extension) {
                         const currentCount = ignoredExtensionMap.get(extension)
@@ -148,40 +130,32 @@ export async function prepareRepoData(
                         ignoredExtensionMap.set(extension, (currentCount ?? 0) + 1)
                     }
                 }
-                continue
             }
 
-            totalBytes += fileSize
-            // Paths in zip should be POSIX compliant regardless of OS
-            // Reference: https://pkware.cachefly.net/webdocs/casestudies/APPNOTE.TXT
-            const posixPath = file.zipFilePath.split(path.sep).join(path.posix.sep)
-
-            try {
-                zip.writeFile(file.fileUri.fsPath, posixPath)
-            } catch (error) {
-                if (error instanceof Error && error.message.includes('File not found')) {
-                    // No-op: Skip if file was deleted or does not exist
-                    // Reference: https://github.com/cthackers/adm-zip/blob/1cd32f7e0ad3c540142a76609bb538a5cda2292f/adm-zip.js#L296-L321
-                    continue
-                }
-                throw error
-            }
+            return isExcludeFile
         }
+
+        const zipResult = await zipProject(
+            repoRootPaths,
+            workspaceFolders,
+            {
+                maxTotalSizeBytes: maxRepoSizeBytes,
+                excludeByGitIgnore: true,
+                excludePatterns: excludePatterns,
+                filterFn: filterFn,
+            },
+            isExcluded,
+            { zip: options?.zip ?? new ZipStream() }
+        )
 
         await emitIgnoredExtensionTelemetry(ignoredExtensionMap)
 
         if (telemetry) {
-            telemetry.setRepositorySize(totalBytes)
+            telemetry.setRepositorySize(zipResult.totalFileBytes)
         }
 
-        span.record({ amazonqRepositorySize: totalBytes })
-        const zipResult = await zip.finalize()
-
-        const zipFileBuffer = zipResult.streamBuffer.getContents() || Buffer.from('')
-        return {
-            zipFileBuffer,
-            zipFileChecksum: zipResult.hash,
-        }
+        span.record({ amazonqRepositorySize: zipResult.totalFileBytes })
+        return zipResult
     } catch (error) {
         getLogger().debug(`Failed to prepare repo: ${error}`)
         if (error instanceof ToolkitError && error.code === 'ContentLengthError') {
