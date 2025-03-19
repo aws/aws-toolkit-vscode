@@ -13,9 +13,9 @@ import { AmazonqCreateUpload, MetricName, Span } from '../../../shared/telemetry
 import { CurrentWsFolders } from '../../../amazonq/commons/types'
 import { ZipStream } from '../../../shared/utilities/zipStream'
 import fs from '../../../shared/fs/fs'
-import { ContentLengthError } from '../../../amazonq'
 import { TelemetryHelper } from '../../../amazonq/util/telemetryHelper'
 import { maxRepoSizeBytes } from '../../../amazonqFeatureDev'
+import { ContentLengthError } from '../../../shared'
 
 const testDevfilePrepareRepo = async (devfileEnabled: boolean) => {
     const files: Record<string, string> = {

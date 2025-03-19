@@ -16,7 +16,7 @@ import { PrepareRepoFailedError } from '../../amazonqFeatureDev/errors'
 import { getLogger } from '../../shared/logger/logger'
 import { maxFileSizeBytes } from '../../amazonqFeatureDev/limits'
 import { CurrentWsFolders, DeletedFileInfo, NewFileInfo, NewFileZipContents } from '../../amazonqDoc/types'
-import { hasCode, ToolkitError } from '../../shared/errors'
+import { ContentLengthError, ToolkitError } from '../../shared/errors'
 import { AmazonqCreateUpload, Span, telemetry as amznTelemetry, telemetry } from '../../shared/telemetry/telemetry'
 import { maxRepoSizeBytes } from '../../amazonqFeatureDev/constants'
 import { isCodeFile } from '../../shared/filetypes'
@@ -28,7 +28,6 @@ import { ZipStream } from '../../shared/utilities/zipStream'
 import { isPresent } from '../../shared/utilities/collectionUtils'
 import { AuthUtil } from '../../codewhisperer/util/authUtil'
 import { TelemetryHelper } from '../util/telemetryHelper'
-import { ContentLengthError } from '../errors'
 
 export const SvgFileExtension = '.svg'
 
@@ -110,7 +109,7 @@ export async function prepareRepoData(
         const { excludePatterns, filterFn } = getFilterAndExcludePattern(useAutoBuildFeature, includeInfraDiagram)
 
         const files = await collectFiles(repoRootPaths, workspaceFolders, {
-            maxSizeBytes: maxRepoSizeBytes,
+            maxTotalSizeBytes: maxRepoSizeBytes,
             excludeByGitIgnore: true,
             excludePatterns: excludePatterns,
             filterFn: filterFn,
@@ -121,21 +120,13 @@ export async function prepareRepoData(
         const addedFilePaths = new Set()
 
         for (const file of files) {
-            if (addedFilePaths.has(file.zipFilePath)) {
+            if (addedFilePaths.has(file.zipFilePath) || !(await fs.exists(file.fileUri.fsPath))) {
                 continue
             }
             addedFilePaths.add(file.zipFilePath)
 
-            let fileSize
-            try {
-                fileSize = (await fs.stat(file.fileUri)).size
-            } catch (error) {
-                if (hasCode(error) && error.code === 'ENOENT') {
-                    // No-op: Skip if file does not exist
-                    continue
-                }
-                throw error
-            }
+            const fileSize = (await fs.stat(file.fileUri.fsPath)).size
+
             const isCodeFile_ = isCodeFile(file.relativeFilePath)
             const isDevFile = file.relativeFilePath === 'devfile.yaml'
             const isInfraDiagramFileExt = isInfraDiagramFile(file.relativeFilePath)
