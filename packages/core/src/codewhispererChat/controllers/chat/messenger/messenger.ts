@@ -20,6 +20,7 @@ import {
     ChatResponseStream as cwChatResponseStream,
     CodeWhispererStreamingServiceException,
     SupplementaryWebLink,
+    ToolUse,
 } from '@amzn/codewhisperer-streaming'
 import { ChatMessage, ErrorMessage, FollowUp, Suggestion } from '../../../view/connector/connector'
 import { ChatSession } from '../../../clients/chat/v0/chat'
@@ -38,9 +39,6 @@ import { extractCodeBlockLanguage } from '../../../../shared/markdown'
 import { extractAuthFollowUp } from '../../../../amazonq/util/authUtils'
 import { helpMessage } from '../../../../amazonq/webview/ui/texts/constants'
 import { ChatItemButton, ChatItemFormItem, MynahUIDataModel } from '@aws/mynah-ui'
-import { FsRead } from '../../../tools/fsRead'
-import { triggerPayloadToChatRequest } from '../chatRequest/converter'
-import { getWorkspaceParentDirectory } from '../../../../shared/utilities/workspaceUtils'
 
 export type StaticTextResponseType = 'quick-action-help' | 'onboarding-help' | 'transform' | 'help'
 
@@ -132,7 +130,9 @@ export class Messenger {
         let followUps: FollowUp[] = []
         let relatedSuggestions: Suggestion[] = []
         let codeBlockLanguage: string = 'plaintext'
-        const toolUse: { toolUseId: string; name: string; input: string } = { toolUseId: '', name: '', input: '' }
+        let toolUseInput = ''
+        // TODO: Should this be an array?
+        const toolUse: ToolUse = { toolUseId: undefined, name: undefined, input: undefined }
 
         if (response.message === undefined) {
             throw new ToolkitError(
@@ -160,7 +160,7 @@ export class Messenger {
         })
 
         const eventCounts = new Map<string, number>()
-        waitUntil(
+        await waitUntil(
             async () => {
                 for await (const chatEvent of response.message!) {
                     for (const key of keys(chatEvent)) {
@@ -191,10 +191,38 @@ export class Messenger {
                     }
 
                     const cwChatEvent: cwChatResponseStream = chatEvent
-                    if (cwChatEvent.toolUseEvent?.input !== undefined && cwChatEvent.toolUseEvent.input.length > 0) {
-                        toolUse.input += cwChatEvent.toolUseEvent.input
+                    if (
+                        cwChatEvent.toolUseEvent?.input !== undefined &&
+                        cwChatEvent.toolUseEvent.input.length > 0 &&
+                        !cwChatEvent.toolUseEvent.stop
+                    ) {
+                        toolUseInput += cwChatEvent.toolUseEvent.input
+                    }
+
+                    if (cwChatEvent.toolUseEvent?.stop) {
+                        toolUse.input = JSON.parse(toolUseInput)
                         toolUse.toolUseId = cwChatEvent.toolUseEvent.toolUseId ?? ''
                         toolUse.name = cwChatEvent.toolUseEvent.name ?? ''
+                        session.setToolUse(toolUse)
+
+                        this.dispatcher.sendChatMessage(
+                            new ChatMessage(
+                                {
+                                    message: `Reading the file at \`${(toolUse.input as any)?.path}\` using the \`fs_read\` tool.`,
+                                    messageType: 'answer',
+                                    followUps: undefined,
+                                    followUpsHeader: undefined,
+                                    relatedSuggestions: undefined,
+                                    codeReference,
+                                    triggerID,
+                                    messageID: toolUse.toolUseId,
+                                    userIntent: triggerPayload.userIntent,
+                                    codeBlockLanguage: codeBlockLanguage,
+                                    contextList: undefined,
+                                },
+                                tabID
+                            )
+                        )
                     }
 
                     if (
@@ -342,41 +370,6 @@ export class Messenger {
                     )
                 )
 
-                const toolInputParsed = JSON.parse(toolUse.input)
-                const fsRead = new FsRead({ path: toolInputParsed.path })
-                const result = await fsRead.invoke({
-                    env: { currentDir: () => getWorkspaceParentDirectory(triggerPayload.filePath!)! },
-                })
-                // eslint-disable-next-line aws-toolkits/no-console-log
-                console.log(result)
-
-                const newRequest = triggerPayloadToChatRequest({
-                    ...triggerPayload,
-                    toolResults: [
-                        {
-                            content: [{ text: result.output.content }],
-                            toolUseId: toolUse.toolUseId,
-                            status: 'success',
-                        },
-                    ],
-                    history: [
-                        ...(triggerPayload.history ? triggerPayload.history : []),
-                        {
-                            assistantResponseMessage: {
-                                content: message,
-                                toolUses: [{ ...toolUse, input: JSON.parse(toolUse.input) }],
-                                messageId: messageID,
-                            },
-                        },
-                    ],
-                })
-                const { $metadata, generateAssistantResponseResponse } = await session.chatSso(newRequest)
-                response = {
-                    $metadata: $metadata,
-                    message: generateAssistantResponseResponse,
-                }
-                await this.sendAIResponse(response, session, tabID, triggerID, triggerPayload)
-
                 getLogger().info(
                     `All events received. requestId=%s counts=%s`,
                     response.$metadata.requestId,
@@ -395,6 +388,14 @@ export class Messenger {
                     responseCode,
                     codeReferenceCount: codeReference.length,
                     totalNumberOfCodeBlocksInResponse: await this.countTotalNumberOfCodeBlocks(message),
+                })
+
+                session.pushToChatHistory({
+                    assistantResponseMessage: {
+                        content: message,
+                        toolUses: toolUse.toolUseId === undefined ? undefined : [toolUse],
+                        messageId: messageID,
+                    },
                 })
             })
     }

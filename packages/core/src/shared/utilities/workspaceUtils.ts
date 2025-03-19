@@ -680,3 +680,10 @@ export async function findStringInDirectory(searchStr: string, dirPath: string) 
     })
     return spawnResult
 }
+
+export function tryGetCurrentWorkingDirectory() {
+    const activeTextEditor = vscode.window.activeTextEditor
+    return activeTextEditor
+        ? path.dirname(activeTextEditor.document.uri.fsPath)
+        : vscode.workspace.workspaceFolders?.[0].uri.fsPath
+}

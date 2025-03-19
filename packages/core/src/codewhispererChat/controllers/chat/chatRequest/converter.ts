@@ -4,6 +4,7 @@
  */
 
 import {
+    ChatMessage,
     ConversationState,
     CursorState,
     DocumentSymbol,
@@ -15,7 +16,7 @@ import {
 import { ChatTriggerType, TriggerPayload } from '../model'
 import { undefinedIfEmpty } from '../../../../shared/utilities/textUtilities'
 import toolsJson from '../../../tools/tool_index.json'
-import { getWorkspaceParentDirectory } from '../../../../shared/utilities/workspaceUtils'
+import { tryGetCurrentWorkingDirectory } from '../../../../shared/utilities/workspaceUtils'
 
 const fqnNameSizeDownLimit = 1
 const fqnNameSizeUpLimit = 256
@@ -105,8 +106,101 @@ export function triggerPayloadToChatRequest(triggerPayload: TriggerPayload): { c
     const customizationArn: string | undefined = undefinedIfEmpty(triggerPayload.customization.arn)
     const chatTriggerType = triggerPayload.trigger === ChatTriggerType.InlineChatMessage ? 'INLINE_CHAT' : 'MANUAL'
 
+    return {
+        conversationState: {
+            currentMessage: {
+                userInputMessage: {
+                    content: triggerPayload.message
+                        ? triggerPayload.message.substring(0, customerMessageSizeLimit)
+                        : '',
+                    userInputMessageContext: {
+                        editorState: {
+                            document,
+                            cursorState,
+                            relevantDocuments,
+                            useRelevantDocuments,
+                        },
+                        additionalContext: triggerPayload.additionalContents,
+                    },
+                    userIntent: triggerPayload.userIntent,
+                },
+            },
+            chatTriggerType,
+            customizationArn: customizationArn,
+        },
+    }
+}
+
+export function triggerPayloadToAgenticChatRequest(
+    triggerPayload: TriggerPayload,
+    chatHistory?: ChatMessage[]
+): { conversationState: ConversationState } {
+    let document: TextDocument | undefined = undefined
+    let cursorState: CursorState | undefined = undefined
+
+    if (triggerPayload.filePath !== undefined && triggerPayload.filePath !== '') {
+        const documentSymbolFqns: DocumentSymbol[] = []
+        if (triggerPayload.codeQuery?.fullyQualifiedNames?.used) {
+            for (const fqn of triggerPayload.codeQuery.fullyQualifiedNames.used) {
+                const elem = {
+                    name: fqn.symbol?.join('.') ?? '',
+                    type: SymbolType.USAGE,
+                    source: fqn.source?.join('.'),
+                }
+
+                if (
+                    elem.name.length >= fqnNameSizeDownLimit &&
+                    elem.name.length < fqnNameSizeUpLimit &&
+                    (elem.source === undefined ||
+                        (elem.source.length >= fqnNameSizeDownLimit && elem.source.length < fqnNameSizeUpLimit))
+                ) {
+                    documentSymbolFqns.push(elem)
+                }
+            }
+        }
+
+        let programmingLanguage
+        if (
+            triggerPayload.fileLanguage !== undefined &&
+            triggerPayload.fileLanguage !== '' &&
+            supportedLanguagesList.includes(triggerPayload.fileLanguage)
+        ) {
+            programmingLanguage = { languageName: triggerPayload.fileLanguage }
+        }
+
+        document = {
+            relativeFilePath: triggerPayload.filePath ? triggerPayload.filePath.substring(0, filePathSizeLimit) : '',
+            text: triggerPayload.fileText,
+            programmingLanguage: programmingLanguage,
+            documentSymbols: documentSymbolFqns,
+        }
+
+        if (triggerPayload.codeSelection?.start) {
+            cursorState = {
+                range: {
+                    start: {
+                        line: triggerPayload.codeSelection.start.line,
+                        character: triggerPayload.codeSelection.start.character,
+                    },
+                    end: {
+                        line: triggerPayload.codeSelection.end.line,
+                        character: triggerPayload.codeSelection.end.character,
+                    },
+                },
+            }
+        }
+    }
+
+    const relevantDocuments: RelevantTextDocument[] = triggerPayload.relevantTextDocuments
+        ? triggerPayload.relevantTextDocuments
+        : []
+    const useRelevantDocuments = triggerPayload.useRelevantDocuments
+    // service will throw validation exception if string is empty
+    const customizationArn: string | undefined = undefinedIfEmpty(triggerPayload.customization.arn)
+    const chatTriggerType = triggerPayload.trigger === ChatTriggerType.InlineChatMessage ? 'INLINE_CHAT' : 'MANUAL'
+
     const operatingSystem = 'macos'
-    const currentWorkingDirectory = getWorkspaceParentDirectory(triggerPayload.filePath!)
+    const currentWorkingDirectory = tryGetCurrentWorkingDirectory()
 
     const tools: Tool[] = Object.entries(toolsJson).map(([, toolSpec]) => ({
         toolSpecification: {
@@ -116,7 +210,6 @@ export function triggerPayloadToChatRequest(triggerPayload: TriggerPayload): { c
     }))
     return {
         conversationState: {
-            conversationId: 'dummyConversationId',
             currentMessage: {
                 userInputMessage: {
                     content: triggerPayload.message
@@ -144,7 +237,7 @@ export function triggerPayloadToChatRequest(triggerPayload: TriggerPayload): { c
             },
             chatTriggerType,
             customizationArn: customizationArn,
-            history: triggerPayload.history,
+            history: chatHistory,
         },
     }
 }

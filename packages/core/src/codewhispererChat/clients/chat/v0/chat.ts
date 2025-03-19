@@ -4,7 +4,12 @@
  */
 
 import { SendMessageCommandOutput, SendMessageRequest } from '@amzn/amazon-q-developer-streaming-client'
-import { GenerateAssistantResponseCommandOutput, GenerateAssistantResponseRequest } from '@amzn/codewhisperer-streaming'
+import {
+    ChatMessage,
+    GenerateAssistantResponseCommandOutput,
+    GenerateAssistantResponseRequest,
+    ToolUse,
+} from '@amzn/codewhisperer-streaming'
 import * as vscode from 'vscode'
 import { ToolkitError } from '../../../../shared/errors'
 import { createCodeWhispererChatStreamingClient } from '../../../../shared/clients/codewhispererChatClient'
@@ -13,6 +18,8 @@ import { UserWrittenCodeTracker } from '../../../../codewhisperer/tracker/userWr
 
 export class ChatSession {
     private sessionId?: string
+    private _toolUse: ToolUse | undefined
+    private _chatHistory: ChatMessage[] = []
 
     contexts: Map<string, { first: number; second: number }[]> = new Map()
     // TODO: doesn't handle the edge case when two files share the same relativePath string but from different root
@@ -20,6 +27,12 @@ export class ChatSession {
     relativePathToWorkspaceRoot: Map<string, string> = new Map()
     public get sessionIdentifier(): string | undefined {
         return this.sessionId
+    }
+    public get toolUse(): ToolUse | undefined {
+        return this._toolUse
+    }
+    public get chatHistory(): ChatMessage[] {
+        return this._chatHistory
     }
 
     public tokenSource!: vscode.CancellationTokenSource
@@ -35,6 +48,31 @@ export class ChatSession {
     public setSessionID(id?: string) {
         this.sessionId = id
     }
+    public setToolUse(toolUse: ToolUse | undefined) {
+        this._toolUse = toolUse
+    }
+    public pushToChatHistory(message: ChatMessage | undefined) {
+        if (message === undefined) {
+            return
+        }
+        this._chatHistory.push(this.formatChatHistoryMessage(message))
+    }
+
+    private formatChatHistoryMessage(message: ChatMessage): ChatMessage {
+        if (message.userInputMessage !== undefined) {
+            return {
+                userInputMessage: {
+                    ...message.userInputMessage,
+                    userInputMessageContext: {
+                        ...message.userInputMessage.userInputMessageContext,
+                        tools: undefined,
+                    },
+                },
+            }
+        }
+        return message
+    }
+
     async chatIam(chatRequest: SendMessageRequest): Promise<SendMessageCommandOutput> {
         const client = await createQDeveloperStreamingClient()
 
@@ -65,6 +103,8 @@ export class ChatSession {
         }
 
         const response = await client.generateAssistantResponse(chatRequest)
+        // eslint-disable-next-line aws-toolkits/no-console-log
+        console.log(response.$metadata.requestId)
         if (!response.generateAssistantResponseResponse) {
             throw new ToolkitError(
                 `Empty chat response. Session id: ${this.sessionId} Request ID: ${response.$metadata.requestId}`

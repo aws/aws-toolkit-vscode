@@ -16,7 +16,7 @@ const MAX_TOOL_RESPONSE_SIZE = 30720 // 30KB
 interface Context {
     fs?: typeof fs
     env: {
-        currentDir(): string
+        currentDir(): string | undefined
     }
 }
 
@@ -70,8 +70,11 @@ export class FsRead {
         return path.resolve(inputPath)
     }
 
-    private formatPath(cwd: string, filePath: string): string {
+    private formatPath(cwd: string | undefined, filePath: string): string {
         // Format path relative to cwd if possible
+        if (cwd === undefined) {
+            return filePath
+        }
         try {
             return path.relative(cwd, filePath) || filePath
         } catch {
