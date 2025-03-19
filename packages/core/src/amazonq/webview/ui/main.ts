@@ -352,6 +352,7 @@ export const createMynahUI = (
                     ...(item.followUp !== undefined ? { followUp: item.followUp } : {}),
                     ...(item.fileList !== undefined ? { fileList: item.fileList } : {}),
                     ...(item.header !== undefined ? { header: item.header } : { header: undefined }),
+                    ...(item.buttons !== undefined ? { buttons: item.buttons } : { buttons: undefined }),
                 })
                 if (
                     item.messageId !== undefined &&

@@ -4,6 +4,7 @@
  */
 import * as path from 'path'
 import * as vscode from 'vscode'
+import { fs } from '../../../shared/fs/fs'
 import { Event as VSCodeEvent, Uri, workspace, window, ViewColumn, Position, Selection } from 'vscode'
 import { EditorContextExtractor } from '../../editor/context/extractor'
 import { ChatSessionStorage } from '../../storages/chatSession'
@@ -68,7 +69,6 @@ import { MynahIconsType, MynahUIDataModel, QuickActionCommand } from '@aws/mynah
 import { LspClient } from '../../../amazonq/lsp/lspClient'
 import { AdditionalContextPrompt, ContextCommandItem, ContextCommandItemType } from '../../../amazonq/lsp/types'
 import { workspaceCommand } from '../../../amazonq/webview/ui/tabs/constants'
-import fs from '../../../shared/fs/fs'
 import { FeatureConfigProvider, Features } from '../../../shared/featureConfig'
 import { i18n } from '../../../shared/i18n-helper'
 import {
@@ -80,6 +80,7 @@ import {
     contextMaxLength,
 } from '../../constants'
 import { ChatSession } from '../../clients/chat/v0/chat'
+import { tempDirPath } from '../../../shared/filesystemUtilities'
 
 export interface ChatControllerMessagePublishers {
     readonly processPromptChatMessage: MessagePublisher<PromptMessage>
@@ -132,6 +133,8 @@ export interface ChatControllerMessageListeners {
 }
 
 export class ChatController {
+    // Store the last terminal output
+    private lastTerminalOutput: string = ''
     private readonly sessionStorage: ChatSessionStorage
     private readonly triggerEventsStorage: TriggerEventsStorage
     private readonly messenger: Messenger
@@ -560,20 +563,70 @@ export class ChatController {
     }
 
     private async processCustomFormAction(message: CustomFormActionMessage) {
-        if (message.action.id === 'submit-create-prompt') {
-            const userPromptsDirectory = getUserPromptsDirectory()
-
-            const title = message.action.formItemValues?.['prompt-name']
-            const newFilePath = path.join(
-                userPromptsDirectory,
-                title ? `${title}${promptFileExtension}` : `default${promptFileExtension}`
-            )
-            const newFileContent = new Uint8Array(Buffer.from(''))
-            await fs.writeFile(newFilePath, newFileContent)
-            const newFileDoc = await vscode.workspace.openTextDocument(newFilePath)
-            await vscode.window.showTextDocument(newFileDoc)
-            telemetry.ui_click.emit({ elementId: 'amazonq_createSavedPrompt' })
+        const session = this.sessionStorage.getSession(message.tabID ?? '')
+        if (!session) {
+            getLogger().error(`No session found for tab: ${message.tabID ?? 'unknown'}`)
+            return
         }
+        if (message.action.id === 'RunCommand') {
+            const terminals = vscode.window.terminals
+            let terminal: vscode.Terminal
+
+            if (terminals.length > 0) {
+                terminal = terminals[0]
+            } else {
+                terminal = vscode.window.createTerminal('Amazon Q Terminal')
+            }
+
+            terminal.show()
+            // Create a temporary file at /tmp/aws-toolkit-vscode/agenticChatTerminalCommandLogs.log
+            const outLogFilePath = path.join(tempDirPath, 'agenticChatTerminalCommandLogs.log')
+
+            try {
+                const command = `${session.storedBashCommands[0]} > ${outLogFilePath}`
+
+                // Execute the command in terminal
+                terminal.sendText(command)
+
+                // Read the content from outLogFilePath and store it in lastTerminalOutput
+                try {
+                    // Wait a moment for the command to complete and write to the file
+                    await new Promise((resolve) => setTimeout(resolve, 500))
+
+                    if (await fs.existsFile(outLogFilePath)) {
+                        this.lastTerminalOutput = await fs.readFileText(outLogFilePath)
+                    } else {
+                        this.lastTerminalOutput = 'Command executed, but no output was captured.'
+                    }
+                } catch (readErr) {
+                    getLogger().error(`Failed to read output log file: ${readErr}`)
+                    this.lastTerminalOutput = `Error reading command output: ${readErr}`
+                }
+
+                getLogger().info(`Command executed: ${command}`)
+                getLogger().info(`Output saved to: ${outLogFilePath}`)
+
+                // TODO: Move this deleting temp file logic near send the logs to RTS.
+                // Delete the temporary agenticChatTerminalCommandLogs file
+                fs.delete(outLogFilePath).catch((err: Error) => {
+                    getLogger().error(`Failed to delete output log file: ${err}`)
+                })
+            } catch (error) {
+                const errorMessage = error instanceof Error ? error.message : String(error)
+                getLogger().error(`Error executing command: ${errorMessage}`)
+                terminal.sendText(`echo "Error executing command: ${errorMessage}"`)
+                this.lastTerminalOutput = `Error: ${errorMessage}`
+            }
+        }
+
+        getLogger().info(`Last terminal output: ${this.getLastTerminalOutput()}`)
+        this.messenger.sendMessage(this.getLastTerminalOutput(), message.tabID ?? '', message.tabID ?? 'unknown')
+        session.storedBashCommands = []
+    }
+
+    // Get the last terminal output
+    public getLastTerminalOutput(): string {
+        return this.lastTerminalOutput
     }
 
     private async processContextSelected(message: ContextSelectedMessage) {

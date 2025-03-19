@@ -3,7 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ChatItemButton, ChatItemFormItem, ChatItemType, MynahUIDataModel, QuickActionCommand } from '@aws/mynah-ui'
+import {
+    ChatItem,
+    ChatItemButton,
+    ChatItemFormItem,
+    ChatItemType,
+    MynahUIDataModel,
+    QuickActionCommand,
+} from '@aws/mynah-ui'
 import { TabType } from '../storages/tabsStorage'
 import { CWCChatItem } from '../connector'
 import { BaseConnector, BaseConnectorProps } from './baseConnector'
@@ -18,12 +25,14 @@ export interface ConnectorProps extends BaseConnectorProps {
         title?: string,
         description?: string
     ) => void
+    onChatAnswerUpdated?: (tabID: string, message: ChatItem) => void
 }
 
 export class Connector extends BaseConnector {
     private readonly onCWCContextCommandMessage
     private readonly onContextCommandDataReceived
     private readonly onShowCustomForm
+    private readonly onChatAnswerUpdated
 
     override getTabType(): TabType {
         return 'cwc'
@@ -34,6 +43,7 @@ export class Connector extends BaseConnector {
         this.onCWCContextCommandMessage = props.onCWCContextCommandMessage
         this.onContextCommandDataReceived = props.onContextCommandDataReceived
         this.onShowCustomForm = props.onShowCustomForm
+        this.onChatAnswerUpdated = props.onChatAnswerUpdated
     }
 
     onSourceLinkClick = (tabID: string, messageId: string, link: string): void => {
@@ -96,6 +106,7 @@ export class Connector extends BaseConnector {
                 userIntent: messageData.userIntent,
                 codeBlockLanguage: messageData.codeBlockLanguage,
                 contextList: messageData.contextList,
+                buttons: messageData.buttons ?? undefined,
             }
 
             // If it is not there we will not set it
@@ -137,6 +148,7 @@ export class Connector extends BaseConnector {
                               options: messageData.followUps,
                           }
                         : undefined,
+                buttons: messageData.buttons ?? undefined,
             }
             this.onChatAnswerReceived(messageData.tabID, answer, messageData)
 
@@ -204,7 +216,7 @@ export class Connector extends BaseConnector {
         }
 
         if (messageData.type === 'customFormActionMessage') {
-            this.onCustomFormAction(messageData.tabID, messageData.action)
+            this.onCustomFormAction(messageData.tabID, messageData.messageId, messageData.action)
             return
         }
         // For other message types, call the base class handleMessageReceive
@@ -235,6 +247,7 @@ export class Connector extends BaseConnector {
 
     onCustomFormAction(
         tabId: string,
+        messageId: string,
         action: {
             id: string
             text?: string | undefined
@@ -248,9 +261,37 @@ export class Connector extends BaseConnector {
         this.sendMessageToExtension({
             command: 'form-action-click',
             action: action,
+            formSelectedValues: action.formItemValues,
             tabType: this.getTabType(),
             tabID: tabId,
         })
+
+        if (this.onChatAnswerUpdated === undefined) {
+            return
+        }
+        const answer: ChatItem = {
+            type: ChatItemType.ANSWER,
+            messageId: messageId,
+            buttons: [],
+        }
+
+        switch (action.id) {
+            case 'RunCommand':
+                answer.buttons = [
+                    {
+                        keepCardAfterClick: true,
+                        text: 'Executing Command',
+                        id: 'RunCommandClicked',
+                        status: 'success',
+                        position: 'outside',
+                        disabled: true,
+                    },
+                ]
+                break
+            default:
+                break
+        }
+        this.onChatAnswerUpdated(tabId, answer)
     }
 
     onFileClick = (tabID: string, filePath: string, messageId?: string) => {

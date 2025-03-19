@@ -37,7 +37,7 @@ import { LspController } from '../../../../amazonq/lsp/lspController'
 import { extractCodeBlockLanguage } from '../../../../shared/markdown'
 import { extractAuthFollowUp } from '../../../../amazonq/util/authUtils'
 import { helpMessage } from '../../../../amazonq/webview/ui/texts/constants'
-import { ChatItemButton, ChatItemFormItem, MynahUIDataModel } from '@aws/mynah-ui'
+import { ChatItemButton, ChatItemFormItem, MynahIcons, MynahUIDataModel } from '@aws/mynah-ui'
 
 export type StaticTextResponseType = 'quick-action-help' | 'onboarding-help' | 'transform' | 'help'
 
@@ -313,6 +313,50 @@ export class Messenger {
                     )
                 }
 
+                if (message.includes('```bash')) {
+                    let bashCommand: string | undefined
+                    try {
+                        const bashRegex = /```bash\s*([\s\S]*?)```/
+                        const match = message.match(bashRegex)
+                        if (match && match[1]) {
+                            bashCommand = match[1].trim()
+                            session.storedBashCommands.push(bashCommand)
+                            getLogger().info(`Extracted bash command: ${bashCommand}`)
+                        }
+
+                        const buttons: ChatItemButton[] = []
+                        buttons.push({
+                            keepCardAfterClick: true,
+                            text: 'Run the bash command in terminal',
+                            id: 'RunCommand',
+                            disabled: false, // allow button to be re-clicked
+                            position: 'outside',
+                            icon: 'comment' as MynahIcons,
+                        })
+
+                        this.dispatcher.sendChatMessage(
+                            new ChatMessage(
+                                {
+                                    message: message,
+                                    messageType: 'answer-part',
+                                    followUps: followUps,
+                                    followUpsHeader: undefined,
+                                    relatedSuggestions: undefined,
+                                    triggerID,
+                                    messageID,
+                                    userIntent: triggerPayload.userIntent,
+                                    codeBlockLanguage: undefined,
+                                    contextList: undefined,
+                                    buttons,
+                                },
+                                tabID
+                            )
+                        )
+                    } catch (error) {
+                        const errorMessage = error instanceof Error ? error.message : String(error)
+                        getLogger().error(`Error executing command: ${errorMessage}`)
+                    }
+                }
                 this.dispatcher.sendChatMessage(
                     new ChatMessage(
                         {
@@ -362,6 +406,26 @@ export class Messenger {
             },
             tabID,
             requestID
+        )
+    }
+
+    public sendMessage(message: string | undefined, messageID: string, tabID: string) {
+        this.dispatcher.sendChatMessage(
+            new ChatMessage(
+                {
+                    message: message,
+                    messageType: 'answer',
+                    followUps: [],
+                    followUpsHeader: undefined,
+                    relatedSuggestions: undefined,
+                    triggerID: '',
+                    messageID,
+                    userIntent: undefined,
+                    codeBlockLanguage: undefined,
+                    contextList: undefined,
+                },
+                tabID
+            )
         )
     }
 
