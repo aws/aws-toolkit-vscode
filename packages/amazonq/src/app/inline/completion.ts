@@ -106,8 +106,7 @@ export class InlineCompletionManager implements Disposable {
             To show prev. and next. recommendation we need to re-register a new provider with the previous or next item
         */
 
-        const prevCommandHandler = async () => {
-            this.sessionManager.decrementActiveIndex()
+        const swapProviderAndShow = async () => {
             await commands.executeCommand('editor.action.inlineSuggest.hide')
             this.disposable.dispose()
             this.disposable = languages.registerInlineCompletionItemProvider(
@@ -121,22 +120,16 @@ export class InlineCompletionManager implements Disposable {
             )
             await commands.executeCommand('editor.action.inlineSuggest.trigger')
         }
+
+        const prevCommandHandler = async () => {
+            this.sessionManager.decrementActiveIndex()
+            await swapProviderAndShow()
+        }
         commands.registerCommand('editor.action.inlineSuggest.showPrevious', prevCommandHandler)
 
         const nextCommandHandler = async () => {
             this.sessionManager.incrementActiveIndex()
-            await commands.executeCommand('editor.action.inlineSuggest.hide')
-            this.disposable.dispose()
-            this.disposable = languages.registerInlineCompletionItemProvider(
-                CodeWhispererConstants.platformLanguageIds,
-                new AmazonQInlineCompletionItemProvider(
-                    this.languageClient,
-                    this.recommendationService,
-                    this.sessionManager,
-                    false
-                )
-            )
-            await commands.executeCommand('editor.action.inlineSuggest.trigger')
+            await swapProviderAndShow()
         }
         commands.registerCommand('editor.action.inlineSuggest.showNext', nextCommandHandler)
     }
