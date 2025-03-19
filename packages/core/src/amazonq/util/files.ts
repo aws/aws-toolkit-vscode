@@ -45,6 +45,42 @@ function isInfraDiagramFile(relativePath: string) {
     )
 }
 
+function getFilterAndExcludePattern(useAutoBuildFeature: boolean, includeInfraDiagram: boolean) {
+    // We only respect gitignore file rules if useAutoBuildFeature is on, this is to avoid dropping necessary files for building the code (e.g. png files imported in js code)
+    if (useAutoBuildFeature) {
+        return { excludePatterns: [], filterFn: undefined }
+    }
+
+    // ensure svg is not filtered out by files search
+    const excludePatterns = includeInfraDiagram
+        ? defaultExcludePatterns.filter((p) => !p.endsWith(SvgFileExtension))
+        : defaultExcludePatterns
+
+    // ensure only infra diagram is included from all svg files
+    const filterFn: CollectFilesFilter | undefined = includeInfraDiagram
+        ? (relativePath: string) =>
+              relativePath.toLowerCase().endsWith(SvgFileExtension) && !isInfraDiagramFile(relativePath)
+        : undefined
+
+    return {
+        filterFn,
+        excludePatterns,
+    }
+}
+
+async function emitIgnoredExtensionTelemetry(ignoredExtensionMap: Map<string, number>) {
+    for (const [key, value] of ignoredExtensionMap) {
+        await amznTelemetry.amazonq_bundleExtensionIgnored.run(async (bundleSpan) => {
+            const event = {
+                filenameExt: key,
+                count: value,
+            }
+
+            bundleSpan.record(event)
+        })
+    }
+}
+
 export type PrepareRepoDataOptions = {
     telemetry?: TelemetryHelper
     zip?: ZipStream
@@ -63,7 +99,7 @@ export async function prepareRepoData(
 ) {
     try {
         const telemetry = options?.telemetry
-        const isIncludeInfraDiagram = options?.includeInfraDiagram ?? false
+        const includeInfraDiagram = options?.includeInfraDiagram ?? false
         const fileSizeByteLimit = options?.fileSizeByteLimit
             ? Math.min(options.fileSizeByteLimit, maxFileSizeBytes)
             : maxFileSizeBytes
@@ -71,25 +107,7 @@ export async function prepareRepoData(
 
         const autoBuildSetting = CodeWhispererSettings.instance.getAutoBuildSetting()
         const useAutoBuildFeature = autoBuildSetting[repoRootPaths[0]] ?? false
-        const excludePatterns: string[] = []
-        let filterFn: CollectFilesFilter | undefined = undefined
-
-        // We only respect gitignore file rules if useAutoBuildFeature is on, this is to avoid dropping necessary files for building the code (e.g. png files imported in js code)
-        if (!useAutoBuildFeature) {
-            if (isIncludeInfraDiagram) {
-                // ensure svg is not filtered out by files search
-                excludePatterns.push(...defaultExcludePatterns.filter((p) => !p.endsWith(SvgFileExtension)))
-                // ensure only infra diagram is included from all svg files
-                filterFn = (relativePath: string) => {
-                    if (!relativePath.toLowerCase().endsWith(SvgFileExtension)) {
-                        return false
-                    }
-                    return !isInfraDiagramFile(relativePath)
-                }
-            } else {
-                excludePatterns.push(...defaultExcludePatterns)
-            }
-        }
+        const { excludePatterns, filterFn } = getFilterAndExcludePattern(useAutoBuildFeature, includeInfraDiagram)
 
         const files = await collectFiles(repoRootPaths, workspaceFolders, {
             maxSizeBytes: maxRepoSizeBytes,
@@ -125,7 +143,7 @@ export async function prepareRepoData(
             let isExcludeFile = fileSize >= fileSizeByteLimit
             // When useAutoBuildFeature is on, only respect the gitignore rules filtered earlier and apply the size limit
             if (!isExcludeFile && !useAutoBuildFeature) {
-                isExcludeFile = isDevFile || (!isCodeFile_ && (!isIncludeInfraDiagram || !isInfraDiagramFileExt))
+                isExcludeFile = isDevFile || (!isCodeFile_ && (!includeInfraDiagram || !isInfraDiagramFileExt))
             }
 
             if (isExcludeFile) {
@@ -159,22 +177,7 @@ export async function prepareRepoData(
             }
         }
 
-        const iterator = ignoredExtensionMap.entries()
-
-        for (let i = 0; i < ignoredExtensionMap.size; i++) {
-            const iteratorValue = iterator.next().value
-            if (iteratorValue) {
-                const [key, value] = iteratorValue
-                await amznTelemetry.amazonq_bundleExtensionIgnored.run(async (bundleSpan) => {
-                    const event = {
-                        filenameExt: key,
-                        count: value,
-                    }
-
-                    bundleSpan.record(event)
-                })
-            }
-        }
+        await emitIgnoredExtensionTelemetry(ignoredExtensionMap)
 
         if (telemetry) {
             telemetry.setRepositorySize(totalBytes)
