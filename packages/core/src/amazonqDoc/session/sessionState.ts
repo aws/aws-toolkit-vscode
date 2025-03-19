@@ -143,7 +143,7 @@ export class DocPrepareCodeGenState extends BasePrepareCodeGenState {
     ) {
         return await prepareRepoData(workspaceRoots, workspaceFolders, span, {
             ...options,
-            isIncludeInfraDiagram: true,
+            includeInfraDiagram: true,
         })
     }
 }

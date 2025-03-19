@@ -48,7 +48,7 @@ function isInfraDiagramFile(relativePath: string) {
 export type PrepareRepoDataOptions = {
     telemetry?: TelemetryHelper
     zip?: ZipStream
-    isIncludeInfraDiagram?: boolean
+    includeInfraDiagram?: boolean
 }
 
 /**
@@ -62,7 +62,7 @@ export async function prepareRepoData(
 ) {
     try {
         const telemetry = options?.telemetry
-        const isIncludeInfraDiagram = options?.isIncludeInfraDiagram ?? false
+        const isIncludeInfraDiagram = options?.includeInfraDiagram ?? false
         const zip = options?.zip ?? new ZipStream()
 
         const autoBuildSetting = CodeWhispererSettings.instance.getAutoBuildSetting()
