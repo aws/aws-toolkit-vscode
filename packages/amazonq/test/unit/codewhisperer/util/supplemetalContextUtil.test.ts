@@ -130,11 +130,11 @@ describe('supplementalContextUtil', function () {
 
             assert.ok(input.length > 50)
             const actual = crossFile.truncateLineByLine(input, 50)
-            assert.ok(actual.length < 50)
+            assert.ok(actual.length <= 50)
 
             const input2 = repeatString(`b${newLine}`, 10)
             const actual2 = crossFile.truncateLineByLine(input2, 8)
-            assert.ok(actual2.length < 8)
+            assert.ok(actual2.length <= 8)
         })
 
         it('truncation context should make context length per item lte 10240 cap', function () {
@@ -174,9 +174,7 @@ describe('supplementalContextUtil', function () {
 
             const actual = crossFile.truncateSuppelementalContext(supplementalContext)
             assert.strictEqual(actual.supplementalContextItems.length, 3)
-            assert.ok(actual.supplementalContextItems.length > 20480)
-
-            assert.ok(actual.contentsLength < 20480)
+            assert.ok(actual.contentsLength <= 20480)
             assert.strictEqual(actual.strategy, 'codemap')
         })
 
