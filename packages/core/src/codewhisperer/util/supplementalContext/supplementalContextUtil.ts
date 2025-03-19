@@ -119,7 +119,7 @@ export function truncateLineByLine(input: string, l: number): string {
         return ''
     }
 
-    const shouldAddNewLineBack = input[input.length - 1] === os.EOL
+    const shouldAddNewLineBack = input.endsWith(os.EOL)
     let lines = input.trim().split(os.EOL)
     let curLen = input.length
     while (curLen > maxLength) {
