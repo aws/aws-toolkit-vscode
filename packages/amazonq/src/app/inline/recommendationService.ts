@@ -13,11 +13,7 @@ import { LanguageClient } from 'vscode-languageclient'
 import { SessionManager } from './sessionManager'
 
 export class RecommendationService {
-    static #instance: RecommendationService
-
-    public static get instance() {
-        return (this.#instance ??= new this())
-    }
+    constructor(private readonly sessionManager: SessionManager) {}
 
     async getAllRecommendations(
         languageClient: LanguageClient,
@@ -43,7 +39,12 @@ export class RecommendationService {
         )
 
         const firstCompletionDisplayLatency = Date.now() - requestStartTime
-        SessionManager.instance.startSession(firstResult.sessionId, firstResult.items, firstCompletionDisplayLatency)
+        this.sessionManager.startSession(
+            firstResult.sessionId,
+            firstResult.items,
+            requestStartTime,
+            firstCompletionDisplayLatency
+        )
 
         if (firstResult.partialResultToken) {
             // If there are more results to fetch, handle them in the background
@@ -51,7 +52,7 @@ export class RecommendationService {
                 languageClient.warn(`Error when getting suggestions: ${error}`)
             })
         } else {
-            SessionManager.instance.closeSession()
+            this.sessionManager.closeSession()
         }
     }
 
@@ -69,9 +70,9 @@ export class RecommendationService {
                 request,
                 token
             )
-            SessionManager.instance.updateSessionSuggestions(result.items)
+            this.sessionManager.updateSessionSuggestions(result.items)
             nextToken = result.partialResultToken
         }
-        SessionManager.instance.closeSession()
+        this.sessionManager.closeSession()
     }
 }

@@ -27,7 +27,8 @@ describe('RecommendationService', () => {
         insertText: 'ItemTwo',
     } as InlineCompletionItem
     const mockPartialResultToken = 'some-random-token'
-    const service = RecommendationService.instance
+    const sessionManager = new SessionManager()
+    const service = new RecommendationService(sessionManager)
 
     beforeEach(() => {
         sandbox = sinon.createSandbox()
@@ -41,7 +42,7 @@ describe('RecommendationService', () => {
 
     afterEach(() => {
         sandbox.restore()
-        SessionManager.instance.clear()
+        sessionManager.clear()
     })
 
     describe('getAllRecommendations', () => {
@@ -68,7 +69,7 @@ describe('RecommendationService', () => {
             })
 
             // Verify session management
-            const items = SessionManager.instance.getActiveRecommendation()
+            const items = sessionManager.getActiveRecommendation()
             assert.deepStrictEqual(items, [mockInlineCompletionItemOne])
         })
 
@@ -108,10 +109,10 @@ describe('RecommendationService', () => {
             })
 
             // Verify session management
-            const items = SessionManager.instance.getActiveRecommendation()
+            const items = sessionManager.getActiveRecommendation()
             assert.deepStrictEqual(items, [mockInlineCompletionItemOne, { insertText: '1' } as InlineCompletionItem])
-            SessionManager.instance.incrementActiveIndex()
-            const items2 = SessionManager.instance.getActiveRecommendation()
+            sessionManager.incrementActiveIndex()
+            const items2 = sessionManager.getActiveRecommendation()
             assert.deepStrictEqual(items2, [mockInlineCompletionItemTwo, { insertText: '1' } as InlineCompletionItem])
         })
     })

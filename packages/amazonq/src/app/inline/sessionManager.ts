@@ -4,7 +4,6 @@
  */
 
 import { InlineCompletionItemWithReferences } from '@aws/language-server-runtimes-types/inlineCompletionWithReferences'
-import { InlineCompletionItem } from 'vscode'
 
 // TODO: add more needed data to the session interface
 interface CodeWhispererSession {
@@ -12,27 +11,26 @@ interface CodeWhispererSession {
     suggestions: InlineCompletionItemWithReferences[]
     // TODO: might need to convert to enum states
     isRequestInProgress: boolean
+    requestStartTime: number
     firstCompletionDisplayLatency?: number
 }
 
 export class SessionManager {
-    static #instance: SessionManager
     private activeSession?: CodeWhispererSession
     private activeIndex: number = 0
-
-    public static get instance() {
-        return (this.#instance ??= new this())
-    }
+    constructor() {}
 
     public startSession(
         sessionId: string,
         suggestions: InlineCompletionItemWithReferences[],
+        requestStartTime: number,
         firstCompletionDisplayLatency?: number
     ) {
         this.activeSession = {
             sessionId,
             suggestions,
             isRequestInProgress: true,
+            requestStartTime,
             firstCompletionDisplayLatency,
         }
         this.activeIndex = 0
@@ -43,6 +41,10 @@ export class SessionManager {
             return
         }
         this.activeSession.isRequestInProgress = false
+    }
+
+    public getActiveSession() {
+        return this.activeSession
     }
 
     public updateSessionSuggestions(suggestions: InlineCompletionItemWithReferences[]) {
@@ -69,7 +71,7 @@ export class SessionManager {
         In order to keep track of the right suggestion state, and for features such as reference tracker, this hack is still needed
      */
 
-    public getActiveRecommendation(): InlineCompletionItem[] {
+    public getActiveRecommendation(): InlineCompletionItemWithReferences[] {
         let suggestionCount = this.activeSession?.suggestions.length
         if (!suggestionCount) {
             return []
@@ -78,7 +80,7 @@ export class SessionManager {
             suggestionCount += 1
         }
 
-        const activeSuggestion = this.activeSession?.suggestions[this.activeIndex] as InlineCompletionItem
+        const activeSuggestion = this.activeSession?.suggestions[this.activeIndex]
         if (!activeSuggestion) {
             return []
         }

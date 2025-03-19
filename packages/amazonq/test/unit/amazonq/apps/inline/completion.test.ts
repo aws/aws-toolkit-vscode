@@ -69,8 +69,8 @@ describe('InlineCompletionManager', () => {
         })
 
         it('should register accept and reject commands', () => {
-            assert(registerCommandStub.calledWith('aws.sample-vscode-ext-amazonq.accept'))
-            assert(registerCommandStub.calledWith('aws.sample-vscode-ext-amazonq.reject'))
+            assert(registerCommandStub.calledWith('aws.amazonq.acceptInline'))
+            assert(registerCommandStub.calledWith('aws.amazonq.rejectInline'))
         })
 
         describe('onInlineAcceptance', () => {
@@ -78,7 +78,7 @@ describe('InlineCompletionManager', () => {
                 // Get the acceptance handler
                 const acceptanceHandler = registerCommandStub
                     .getCalls()
-                    ?.find((call) => call.args[0] === 'aws.sample-vscode-ext-amazonq.accept')?.args[1]
+                    ?.find((call) => call.args[0] === 'aws.amazonq.acceptInline')?.args[1]
 
                 const sessionId = 'test-session'
                 const itemId = 'test-item'
@@ -90,7 +90,7 @@ describe('InlineCompletionManager', () => {
                 assert(sendNotificationStub.calledOnce)
                 assert(
                     sendNotificationStub.calledWith(
-                        sinon.match.any,
+                        'aws/logInlineCompletionSessionResults',
                         sinon.match({
                             sessionId,
                             completionSessionResult: {
@@ -114,7 +114,7 @@ describe('InlineCompletionManager', () => {
                 // Get the rejection handler
                 const rejectionHandler = registerCommandStub
                     .getCalls()
-                    .find((call) => call.args[0] === 'aws.sample-vscode-ext-amazonq.reject')?.args[1]
+                    .find((call) => call.args[0] === 'aws.amazonq.rejectInline')?.args[1]
 
                 const sessionId = 'test-session'
                 const itemId = 'test-item'
@@ -125,7 +125,7 @@ describe('InlineCompletionManager', () => {
                 assert(sendNotificationStub.calledOnce)
                 assert(
                     sendNotificationStub.calledWith(
-                        sinon.match.any,
+                        'aws/logInlineCompletionSessionResults',
                         sinon.match({
                             sessionId,
                             completionSessionResult: {

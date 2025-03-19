@@ -16,10 +16,7 @@ import {
     Disposable,
 } from 'vscode'
 import { LanguageClient } from 'vscode-languageclient'
-import {
-    logInlineCompletionSessionResultsNotificationType,
-    LogInlineCompletionSessionResultsParams,
-} from '@aws/language-server-runtimes/protocol'
+import { LogInlineCompletionSessionResultsParams } from '@aws/language-server-runtimes/protocol'
 import { SessionManager } from './sessionManager'
 import { RecommendationService } from './recommendationService'
 import { CodeWhispererConstants } from 'aws-core-vscode/codewhisperer'
@@ -28,10 +25,19 @@ export class InlineCompletionManager implements Disposable {
     private disposable: Disposable
     private inlineCompletionProvider: AmazonQInlineCompletionItemProvider
     private languageClient: LanguageClient
+    private sessionManager: SessionManager
+    private recommendationService: RecommendationService
+    private readonly logSessionResultMessageName = 'aws/logInlineCompletionSessionResults'
 
     constructor(languageClient: LanguageClient) {
         this.languageClient = languageClient
-        this.inlineCompletionProvider = new AmazonQInlineCompletionItemProvider(languageClient)
+        this.sessionManager = new SessionManager()
+        this.recommendationService = new RecommendationService(this.sessionManager)
+        this.inlineCompletionProvider = new AmazonQInlineCompletionItemProvider(
+            languageClient,
+            this.recommendationService,
+            this.sessionManager
+        )
         this.disposable = languages.registerInlineCompletionItemProvider(
             CodeWhispererConstants.platformLanguageIds,
             this.inlineCompletionProvider
@@ -64,16 +70,16 @@ export class InlineCompletionManager implements Disposable {
                 totalSessionDisplayTime: Date.now() - requestStartTime,
                 firstCompletionDisplayLatency: firstCompletionDisplayLatency,
             }
-            this.languageClient.sendNotification(logInlineCompletionSessionResultsNotificationType as any, params)
+            this.languageClient.sendNotification(this.logSessionResultMessageName, params)
             this.disposable.dispose()
             this.disposable = languages.registerInlineCompletionItemProvider(
                 CodeWhispererConstants.platformLanguageIds,
                 this.inlineCompletionProvider
             )
         }
-        commands.registerCommand('aws.sample-vscode-ext-amazonq.accept', onInlineAcceptance)
+        commands.registerCommand('aws.amazonq.acceptInline', onInlineAcceptance)
 
-        const oninlineRejection = async (sessionId: string, itemId: string) => {
+        const onInlineRejection = async (sessionId: string, itemId: string) => {
             await commands.executeCommand('editor.action.inlineSuggest.hide')
             // TODO: also log the seen state for other suggestions in session
             const params: LogInlineCompletionSessionResultsParams = {
@@ -86,14 +92,14 @@ export class InlineCompletionManager implements Disposable {
                     },
                 },
             }
-            this.languageClient.sendNotification(logInlineCompletionSessionResultsNotificationType as any, params)
+            this.languageClient.sendNotification(this.logSessionResultMessageName, params)
             this.disposable.dispose()
             this.disposable = languages.registerInlineCompletionItemProvider(
                 CodeWhispererConstants.platformLanguageIds,
                 this.inlineCompletionProvider
             )
         }
-        commands.registerCommand('aws.sample-vscode-ext-amazonq.reject', oninlineRejection)
+        commands.registerCommand('aws.amazonq.rejectInline', onInlineRejection)
 
         /*
             We have to overwrite the prev. and next. commands because the inlineCompletionProvider only contained the current item
@@ -101,24 +107,34 @@ export class InlineCompletionManager implements Disposable {
         */
 
         const prevCommandHandler = async () => {
-            SessionManager.instance.decrementActiveIndex()
+            this.sessionManager.decrementActiveIndex()
             await commands.executeCommand('editor.action.inlineSuggest.hide')
             this.disposable.dispose()
             this.disposable = languages.registerInlineCompletionItemProvider(
                 CodeWhispererConstants.platformLanguageIds,
-                new AmazonQInlineCompletionItemProvider(this.languageClient, false)
+                new AmazonQInlineCompletionItemProvider(
+                    this.languageClient,
+                    this.recommendationService,
+                    this.sessionManager,
+                    false
+                )
             )
             await commands.executeCommand('editor.action.inlineSuggest.trigger')
         }
         commands.registerCommand('editor.action.inlineSuggest.showPrevious', prevCommandHandler)
 
         const nextCommandHandler = async () => {
-            SessionManager.instance.incrementActiveIndex()
+            this.sessionManager.incrementActiveIndex()
             await commands.executeCommand('editor.action.inlineSuggest.hide')
             this.disposable.dispose()
             this.disposable = languages.registerInlineCompletionItemProvider(
                 CodeWhispererConstants.platformLanguageIds,
-                new AmazonQInlineCompletionItemProvider(this.languageClient, false)
+                new AmazonQInlineCompletionItemProvider(
+                    this.languageClient,
+                    this.recommendationService,
+                    this.sessionManager,
+                    false
+                )
             )
             await commands.executeCommand('editor.action.inlineSuggest.trigger')
         }
@@ -129,6 +145,8 @@ export class InlineCompletionManager implements Disposable {
 export class AmazonQInlineCompletionItemProvider implements InlineCompletionItemProvider {
     constructor(
         private readonly languageClient: LanguageClient,
+        private readonly recommendationService: RecommendationService,
+        private readonly sessionManager: SessionManager,
         private readonly isNewSesion: boolean = true
     ) {}
 
@@ -140,7 +158,7 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
     ): Promise<InlineCompletionItem[] | InlineCompletionList> {
         if (this.isNewSesion) {
             // make service requests if it's a new session
-            await RecommendationService.instance.getAllRecommendations(
+            await this.recommendationService.getAllRecommendations(
                 this.languageClient,
                 document,
                 position,
@@ -149,6 +167,23 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
             )
         }
         // get active item from session for displaying
-        return SessionManager.instance.getActiveRecommendation()
+        const items = this.sessionManager.getActiveRecommendation()
+        const session = this.sessionManager.getActiveSession()
+        if (!session || !items.length) {
+            return []
+        }
+        for (const item of items) {
+            item.command = {
+                command: 'aws.amazonq.acceptInline',
+                title: 'On acceptance',
+                arguments: [
+                    session.sessionId,
+                    item.itemId,
+                    session.requestStartTime,
+                    session.firstCompletionDisplayLatency,
+                ],
+            }
+        }
+        return items as InlineCompletionItem[]
     }
 }
