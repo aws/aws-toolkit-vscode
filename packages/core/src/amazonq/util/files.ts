@@ -87,7 +87,7 @@ export async function prepareRepoData(
         }
 
         const files = await collectFiles(repoRootPaths, workspaceFolders, {
-            maxSizeBytes: maxRepoSizeBytes,
+            maxTotalSizeBytes: maxRepoSizeBytes,
             excludeByGitIgnore: true,
             excludePatterns: excludePatterns,
             filterFn: filterFn,
