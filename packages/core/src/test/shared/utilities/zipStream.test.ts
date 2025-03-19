@@ -4,7 +4,7 @@
  */
 
 import assert from 'assert'
-import { ZipStream } from '../../../shared/utilities/zipStream'
+import { ZipStream, ZipStreamResult } from '../../../shared/utilities/zipStream'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import path from 'path'
 import fs from '../../../shared/fs/fs'
@@ -26,17 +26,7 @@ describe('zipStream', function () {
         await zipStream.writeString('foo bar', 'file.txt')
         const result = await zipStream.finalize()
 
-        const zipBuffer = result.streamBuffer.getContents()
-        assert.ok(zipBuffer)
-
-        const zipPath = path.join(tmpDir, 'test.zip')
-        await fs.writeFile(zipPath, zipBuffer)
-        const expectedMd5 = crypto
-            .createHash('md5')
-            .update(await fs.readFileBytes(zipPath))
-            .digest('base64')
-        assert.strictEqual(result.hash, expectedMd5)
-        assert.strictEqual(result.sizeInBytes, (await fs.stat(zipPath)).size)
+        await verifyResult(result, path.join(tmpDir, 'test.zip'))
     })
 
     it('should create a zip stream from binary content', async function () {
@@ -44,19 +34,9 @@ describe('zipStream', function () {
         await zipStream.writeData(Buffer.from('foo bar'), 'file.txt')
         const result = await zipStream.finalize()
 
-        const zipBuffer = result.streamBuffer.getContents()
-        assert.ok(zipBuffer)
+        await verifyResult(result, path.join(tmpDir, 'test.zip'))
 
-        const zipPath = path.join(tmpDir, 'test.zip')
-        await fs.writeFile(zipPath, zipBuffer)
-        const expectedMd5 = crypto
-            .createHash('md5')
-            .update(await fs.readFileBytes(zipPath))
-            .digest('base64')
-        assert.strictEqual(result.hash, expectedMd5)
-        assert.strictEqual(result.sizeInBytes, (await fs.stat(zipPath)).size)
-
-        const zipContents = await ZipStream.unzip(zipBuffer)
+        const zipContents = await ZipStream.unzip(result.streamBuffer.getContents() || Buffer.from(''))
         assert.strictEqual(zipContents.length, 1)
         assert.strictEqual(zipContents[0].filename, 'file.txt')
     })
@@ -69,18 +49,7 @@ describe('zipStream', function () {
         zipStream.writeFile(testFilePath, 'file.txt')
         const result = await zipStream.finalize()
 
-        const zipPath = path.join(tmpDir, 'test.zip')
-
-        const zipBuffer = result.streamBuffer.getContents()
-        assert.ok(zipBuffer)
-
-        await fs.writeFile(zipPath, zipBuffer)
-        const expectedMd5 = crypto
-            .createHash('md5')
-            .update(await fs.readFileBytes(zipPath))
-            .digest('base64')
-        assert.strictEqual(result.hash, expectedMd5)
-        assert.strictEqual(result.sizeInBytes, (await fs.stat(zipPath)).size)
+        await verifyResult(result, path.join(tmpDir, 'test.zip'))
     })
 
     it('should unzip from a buffer', async function () {
@@ -104,3 +73,16 @@ describe('zipStream', function () {
         assert.strictEqual(result.sizeInBytes, (await fs.stat(zipPath)).size)
     })
 })
+
+async function verifyResult(result: ZipStreamResult, zipPath: string) {
+    const zipBuffer = result.streamBuffer.getContents()
+    assert.ok(zipBuffer)
+
+    await fs.writeFile(zipPath, zipBuffer)
+    const expectedMd5 = crypto
+        .createHash('md5')
+        .update(await fs.readFileBytes(zipPath))
+        .digest('base64')
+    assert.strictEqual(result.hash, expectedMd5)
+    assert.strictEqual(result.sizeInBytes, (await fs.stat(zipPath)).size)
+}
