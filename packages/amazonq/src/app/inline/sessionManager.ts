@@ -92,4 +92,9 @@ export class SessionManager {
         }
         return items
     }
+
+    public clear() {
+        this.activeSession = undefined
+        this.activeIndex = 0
+    }
 }

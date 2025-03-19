@@ -20,7 +20,6 @@ import {
     logInlineCompletionSessionResultsNotificationType,
     LogInlineCompletionSessionResultsParams,
 } from '@aws/language-server-runtimes/protocol'
-import { Commands } from 'aws-core-vscode/shared'
 import { SessionManager } from './sessionManager'
 import { RecommendationService } from './recommendationService'
 import { CodeWhispererConstants } from 'aws-core-vscode/codewhisperer'
@@ -101,7 +100,7 @@ export class InlineCompletionManager implements Disposable {
             To show prev. and next. recommendation we need to re-register a new provider with the previous or next item
         */
 
-        const prevCommand = Commands.declare('editor.action.inlineSuggest.showPrevious', () => async () => {
+        const prevCommandHandler = async () => {
             SessionManager.instance.decrementActiveIndex()
             await commands.executeCommand('editor.action.inlineSuggest.hide')
             this.disposable.dispose()
@@ -110,10 +109,10 @@ export class InlineCompletionManager implements Disposable {
                 new AmazonQInlineCompletionItemProvider(this.languageClient, false)
             )
             await commands.executeCommand('editor.action.inlineSuggest.trigger')
-        })
-        prevCommand.register()
+        }
+        commands.registerCommand('editor.action.inlineSuggest.showPrevious', prevCommandHandler)
 
-        const nextCommand = Commands.declare('editor.action.inlineSuggest.showNext', () => async () => {
+        const nextCommandHandler = async () => {
             SessionManager.instance.incrementActiveIndex()
             await commands.executeCommand('editor.action.inlineSuggest.hide')
             this.disposable.dispose()
@@ -122,8 +121,8 @@ export class InlineCompletionManager implements Disposable {
                 new AmazonQInlineCompletionItemProvider(this.languageClient, false)
             )
             await commands.executeCommand('editor.action.inlineSuggest.trigger')
-        })
-        nextCommand.register()
+        }
+        commands.registerCommand('editor.action.inlineSuggest.showNext', nextCommandHandler)
     }
 }
 
