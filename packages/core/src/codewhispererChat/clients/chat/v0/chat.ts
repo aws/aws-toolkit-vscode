@@ -60,10 +60,6 @@ export class ChatSession {
     async chatSso(chatRequest: GenerateAssistantResponseRequest): Promise<GenerateAssistantResponseCommandOutput> {
         const client = await createCodeWhispererChatStreamingClient()
 
-        if (this.sessionId !== undefined && chatRequest.conversationState !== undefined) {
-            chatRequest.conversationState.conversationId = this.sessionId
-        }
-
         const response = await client.generateAssistantResponse(chatRequest)
         if (!response.generateAssistantResponseResponse) {
             throw new ToolkitError(

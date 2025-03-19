@@ -38,6 +38,7 @@ import { extractCodeBlockLanguage } from '../../../../shared/markdown'
 import { extractAuthFollowUp } from '../../../../amazonq/util/authUtils'
 import { helpMessage } from '../../../../amazonq/webview/ui/texts/constants'
 import { ChatItemButton, ChatItemFormItem, MynahUIDataModel } from '@aws/mynah-ui'
+import { ChatHistoryManager } from '../../../storages/chatHistory'
 
 export type StaticTextResponseType = 'quick-action-help' | 'onboarding-help' | 'transform' | 'help'
 
@@ -121,7 +122,8 @@ export class Messenger {
         session: ChatSession,
         tabID: string,
         triggerID: string,
-        triggerPayload: TriggerPayload
+        triggerPayload: TriggerPayload,
+        chatHistoryManager: ChatHistoryManager
     ) {
         let message = ''
         const messageID = response.$metadata.requestId ?? ''
@@ -330,6 +332,15 @@ export class Messenger {
                         tabID
                     )
                 )
+
+                chatHistoryManager.pushAssistantMessage({
+                    assistantResponseMessage: {
+                        messageId: messageID,
+                        content: message,
+                        references: codeReference,
+                        // TODO: Add tools data and follow up prompt details
+                    },
+                })
 
                 getLogger().info(
                     `All events received. requestId=%s counts=%s`,

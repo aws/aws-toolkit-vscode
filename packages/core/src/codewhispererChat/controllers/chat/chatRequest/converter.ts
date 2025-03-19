@@ -119,10 +119,12 @@ export function triggerPayloadToChatRequest(triggerPayload: TriggerPayload): { c
                         additionalContext: triggerPayload.additionalContents,
                     },
                     userIntent: triggerPayload.userIntent,
+                    origin: 'IDE',
                 },
             },
             chatTriggerType,
             customizationArn: customizationArn,
+            history: triggerPayload.chatHistory,
         },
     }
 }
