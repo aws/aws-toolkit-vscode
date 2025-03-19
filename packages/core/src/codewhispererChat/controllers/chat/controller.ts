@@ -4,9 +4,7 @@
  */
 import * as path from 'path'
 import * as vscode from 'vscode'
-import * as os from 'os'
 import { fs } from '../../../shared/fs/fs'
-import { ChildProcess } from '../../../shared/utilities/processUtils'
 import { Event as VSCodeEvent, Uri, workspace, window, ViewColumn, Position, Selection } from 'vscode'
 import { EditorContextExtractor } from '../../editor/context/extractor'
 import { ChatSessionStorage } from '../../storages/chatSession'
@@ -82,6 +80,7 @@ import {
     contextMaxLength,
 } from '../../constants'
 import { ChatSession } from '../../clients/chat/v0/chat'
+import { tempDirPath } from '../../../shared/filesystemUtilities'
 
 export interface ChatControllerMessagePublishers {
     readonly processPromptChatMessage: MessagePublisher<PromptMessage>
@@ -580,35 +579,26 @@ export class ChatController {
             }
 
             terminal.show()
-
-            const command = session.storedBashCommands[0]
-
-            // Get the current path of the terminal
-            const currentPath = await this.getCurrentTerminalPath(terminal)
-
-            let terminalOutput = ''
+            // Create a temporary file at /tmp/aws-toolkit-vscode/agenticChatTerminalCommandLogs.log
+            const outLogFilePath = path.join(tempDirPath, 'agenticChatTerminalCommandLogs.log')
 
             try {
-                // Execute the command in the terminal's current directory
-                const childProcess = new ChildProcess('bash', ['-c', command], {
-                    spawnOptions: { cwd: currentPath },
-                    collect: true,
+                const command = `${session.storedBashCommands[0]} > ${outLogFilePath}`
+
+                // Execute the command in terminal
+                terminal.sendText(command)
+
+                // Store the outLogFilePath text in lastTerminalOutput
+                this.lastTerminalOutput = outLogFilePath
+
+                getLogger().info(`Command executed: ${command}`)
+                getLogger().info(`Output saved to: ${outLogFilePath}`)
+
+                // TODO: Move this deleting temp file logic near send the logs to RTS.
+                // Delete the temporary agenticChatTerminalCommandLogs file
+                fs.delete(outLogFilePath).catch((err: Error) => {
+                    getLogger().error(`Failed to delete output log file: ${err}`)
                 })
-
-                const result = await childProcess.run()
-
-                if (result.exitCode !== 0 || result.error) {
-                    const errorMessage = result.error ? result.error.message : result.stderr
-                    getLogger().error(`Error executing command: ${errorMessage}`)
-                    terminal.sendText(`echo "Error executing command: ${errorMessage}"`)
-                    this.lastTerminalOutput = `Error: ${errorMessage}`
-                } else {
-                    terminalOutput = result.stdout.trim()
-                    terminal.sendText(command)
-                    getLogger().info(`Command executed: ${command}`)
-                    getLogger().info(`Command output: ${terminalOutput}`)
-                    this.lastTerminalOutput = terminalOutput
-                }
             } catch (error) {
                 const errorMessage = error instanceof Error ? error.message : String(error)
                 getLogger().error(`Error executing command: ${errorMessage}`)
@@ -616,42 +606,10 @@ export class ChatController {
                 this.lastTerminalOutput = `Error: ${errorMessage}`
             }
         }
-        getLogger().error(`Last terminal output: ${this.getLastTerminalOutput()}`)
+
+        getLogger().info(`Last terminal output: ${this.getLastTerminalOutput()}`)
         this.messenger.sendMessage(this.getLastTerminalOutput(), message.tabID ?? '', message.tabID ?? 'unknown')
         session.storedBashCommands = []
-    }
-
-    private async getCurrentTerminalPath(terminal: vscode.Terminal): Promise<string> {
-        try {
-            // Get the current workspace folders
-            const workspaceFolders = vscode.workspace.workspaceFolders
-
-            // Try to get the terminal's creation options
-            // We need to use type assertion since the API types might not expose cwd directly
-            const options = terminal.creationOptions as any
-            if (options) {
-                // Check if cwd exists in the options
-                if (options.cwd) {
-                    if (typeof options.cwd === 'string') {
-                        return options.cwd
-                    } else if (options.cwd instanceof vscode.Uri) {
-                        return options.cwd.fsPath
-                    }
-                }
-            }
-
-            // If there's an active workspace folder, use its path
-            if (workspaceFolders && workspaceFolders.length > 0) {
-                const activeWorkspace = workspaceFolders[0]
-                return activeWorkspace.uri.fsPath
-            }
-
-            // Fallback to user's home directory
-            return os.homedir()
-        } catch (err) {
-            getLogger().error(`Failed to get terminal path: ${err}`)
-            return os.homedir()
-        }
     }
 
     // Get the last terminal output
