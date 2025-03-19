@@ -8,6 +8,7 @@ import { readFileAsString } from '../filesystemUtilities'
 // Use require instead of import since this package doesn't support commonjs
 const { ZipWriter, TextReader, ZipReader, Uint8ArrayReader } = require('@zip.js/zip.js')
 import { getLogger } from '../logger/logger'
+import fs from '../fs/fs'
 
 export interface ZipStreamResult {
     sizeInBytes: number
@@ -109,6 +110,16 @@ export class ZipStream {
         return this._zipWriter.add(path, new TextReader(data))
     }
 
+    // TODO: add tests for this.
+    public writeData(data: Uint8Array, path: string) {
+        return this._zipWriter.add(path, new Uint8ArrayReader(data))
+    }
+
+    /**
+     * Add the content for file to zip at path.
+     * @param file file to read
+     * @param path path to write data to in zip.
+     */
     public writeFile(file: string, path: string) {
         // We use _numberOfFilesToStream to make sure we don't finalize too soon
         // (before the progress event has been fired for the last file)
@@ -153,6 +164,14 @@ export class ZipStream {
             hash: this._hasher.digest('base64'),
             streamBuffer: this._streamBuffer,
         }
+    }
+
+    // TODO: add tests for this.
+    public async finalizeToFile(targetPath: string) {
+        const result = await this.finalize()
+        const contents = result.streamBuffer.getContents() || Buffer.from('')
+        await fs.writeFile(targetPath, contents)
+        return result
     }
 
     public static async unzip(zipBuffer: Buffer): Promise<ZipReaderResult[]> {
