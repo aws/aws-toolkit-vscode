@@ -7,10 +7,10 @@ import path from 'path'
 import { LspVersion } from '../types'
 import { fs } from '../../../shared/fs/fs'
 import { partition } from '../../../shared/utilities/tsUtils'
-import { sort } from 'semver'
+import { parse, sort } from 'semver'
 
-async function getDownloadedVersions(installLocation: string) {
-    return (await fs.readdir(installLocation)).map(([f, _], __) => f)
+export async function getDownloadedVersions(installLocation: string) {
+    return (await fs.readdir(installLocation)).filter((x) => parse(x[0]) !== null).map(([f, _], __) => f)
 }
 
 function isDelisted(manifestVersions: LspVersion[], targetVersion: string): boolean {

@@ -4,7 +4,7 @@
  */
 
 import { Uri } from 'vscode'
-import { cleanLspDownloads, fs } from '../../../../shared'
+import { cleanLspDownloads, fs, getDownloadedVersions } from '../../../../shared'
 import { createTestWorkspaceFolder } from '../../../testUtil'
 import path from 'path'
 import assert from 'assert'
@@ -98,6 +98,18 @@ describe('cleanLSPDownloads', function () {
         )
 
         const result = (await fs.readdir(installationDir.fsPath)).map(([filename, _filetype], _index) => filename)
+        assert.strictEqual(result.length, 0)
+        assert.strictEqual(deleted.length, 1)
+    })
+
+    it('ignores invalid versions', async function () {
+        await fakeInstallVersions(['1.0.0', '.DS_STORE'], installationDir.fsPath)
+        const deleted = await cleanLspDownloads(
+            [{ serverVersion: '1.0.0', isDelisted: true, targets: [] }],
+            installationDir.fsPath
+        )
+
+        const result = await getDownloadedVersions(installationDir.fsPath)
         assert.strictEqual(result.length, 0)
         assert.strictEqual(deleted.length, 1)
     })
