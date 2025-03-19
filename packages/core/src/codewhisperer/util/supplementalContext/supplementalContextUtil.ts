@@ -100,7 +100,7 @@ export function truncateSuppelementalContext(
     let curTotalLength = c.reduce((acc, cur) => {
         return acc + cur.content.length
     }, 0)
-    while (curTotalLength >= 20480) {
+    while (curTotalLength >= 20480 && c.length - 1 >= 0) {
         const last = c[c.length - 1]
         c = c.slice(0, -1)
         curTotalLength -= last.content.length
@@ -122,7 +122,7 @@ export function truncateLineByLine(input: string, l: number): string {
     const shouldAddNewLineBack = input.endsWith(os.EOL)
     let lines = input.trim().split(os.EOL)
     let curLen = input.length
-    while (curLen > maxLength) {
+    while (curLen > maxLength && lines.length - 1 >= 0) {
         const last = lines[lines.length - 1]
         lines = lines.slice(0, -1)
         curLen -= last.length + 1
