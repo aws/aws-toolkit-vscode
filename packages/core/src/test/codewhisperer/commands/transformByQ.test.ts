@@ -41,6 +41,8 @@ import {
     setMaven,
     parseBuildFile,
     validateSQLMetadataFile,
+    createLocalBuildUploadZip,
+    validateYamlFile,
 } from '../../../codewhisperer/service/transformByQ/transformFileHandler'
 import { uploadArtifactToS3 } from '../../../codewhisperer/indexNode'
 import request from '../../../shared/request'
@@ -49,6 +51,19 @@ import * as nodefs from 'fs' // eslint-disable-line no-restricted-imports
 describe('transformByQ', function () {
     let fetchStub: sinon.SinonStub
     let tempDir: string
+    const validYamlFile = `name: "custom-dependency-management"
+description: "Custom dependency version management for Java migration from JDK 8/11/17 to JDK 17/21"
+dependencyManagement:
+  dependencies:
+    - identifier: "com.example:library1"
+        targetVersion: "2.1.0"
+        versionProperty: "library1.version"
+        originType: "FIRST_PARTY"
+  plugins:
+    - identifier: "com.example.plugin"
+        targetVersion: "1.2.0"
+        versionProperty: "plugin.version"`
+
     const validSctFile = `<?xml version="1.0" encoding="UTF-8"?>
     <tree>
     <instances>
@@ -284,6 +299,22 @@ describe('transformByQ', function () {
         assert.strictEqual(transformByQState.getMavenName(), '.\\mvnw.cmd')
     })
 
+    it(`WHEN local build zip created THEN zip contains all expected files and no unexpected files`, async function () {
+        const zipPath = await createLocalBuildUploadZip(tempDir, 0, 'sample stdout after running local build')
+        const zip = new AdmZip(zipPath)
+        const manifestEntry = zip.getEntry('manifest.json')
+        if (!manifestEntry) {
+            fail('manifest.json not found in the zip')
+        }
+        const manifestBuffer = manifestEntry.getData()
+        const manifestText = manifestBuffer.toString('utf8')
+        const manifest = JSON.parse(manifestText)
+        assert.strictEqual(manifest.capability, 'CLIENT_SIDE_BUILD')
+        assert.strictEqual(manifest.exitCode, 0)
+        assert.strictEqual(manifest.commandLogFileName, 'clientBuildLogs.log')
+        assert.strictEqual(zip.getEntries().length, 2) // expecting only manifest.json and clientBuildLogs.log
+    })
+
     it(`WHEN zip created THEN manifest.json contains test-compile custom build command`, async function () {
         const tempFileName = `testfile-${globals.clock.Date.now()}.zip`
         transformByQState.setProjectPath(tempDir)
@@ -447,6 +478,17 @@ describe('transformByQ', function () {
             'I detected 1 potential absolute file path(s) in your pom.xml file: **system/**. Absolute file paths might cause issues when I build your code. Any errors will show up in the build log.'
         const warningMessage = await parseBuildFile()
         assert.strictEqual(expectedWarning, warningMessage)
+    })
+
+    it(`WHEN validateYamlFile on fully valid .yaml file THEN passes validation`, async function () {
+        const isValidYaml = await validateYamlFile(validYamlFile, { tabID: 'abc123' })
+        assert.strictEqual(isValidYaml, true)
+    })
+
+    it(`WHEN validateYamlFile on invalid .yaml file THEN fails validation`, async function () {
+        const invalidYamlFile = validYamlFile.replace('dependencyManagement', 'invalidKey')
+        const isValidYaml = await validateYamlFile(invalidYamlFile, { tabID: 'abc123' })
+        assert.strictEqual(isValidYaml, false)
     })
 
     it(`WHEN validateMetadataFile on fully valid .sct file THEN passes validation`, async function () {
