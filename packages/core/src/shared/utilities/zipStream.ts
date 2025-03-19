@@ -110,17 +110,16 @@ export class ZipStream {
         return this._zipWriter.add(path, new TextReader(data))
     }
 
-    // TODO: add tests for this.
     public writeData(data: Uint8Array, path: string) {
         return this._zipWriter.add(path, new Uint8ArrayReader(data))
     }
 
     /**
      * Add the content for file to zip at path.
-     * @param file file to read
-     * @param path path to write data to in zip.
+     * @param sourceFilePath file to read
+     * @param targetFilePath path to write data to in zip.
      */
-    public writeFile(file: string, path: string) {
+    public writeFile(sourceFilePath: string, targetFilePath: string) {
         // We use _numberOfFilesToStream to make sure we don't finalize too soon
         // (before the progress event has been fired for the last file)
         // The problem is that we can't rely on progress.entries.total,
@@ -131,15 +130,15 @@ export class ZipStream {
         // We only start zipping another file if we're under our limit
         // of concurrent file streams
         if (this._filesBeingZipped < this._maxNumberOfFileStreams) {
-            void readFileAsString(file).then((content) => {
-                return this._zipWriter.add(path, new TextReader(content), {
+            void readFileAsString(sourceFilePath).then((content) => {
+                return this._zipWriter.add(targetFilePath, new TextReader(content), {
                     onend: this.boundFileCompletionCallback,
                     onstart: this.boundFileStartCallback,
                 })
             })
         } else {
             // Queue it for later (see "write" event)
-            this._filesToZip.push([file, path])
+            this._filesToZip.push([sourceFilePath, targetFilePath])
         }
     }
 
@@ -166,7 +165,6 @@ export class ZipStream {
         }
     }
 
-    // TODO: add tests for this.
     public async finalizeToFile(targetPath: string) {
         const result = await this.finalize()
         const contents = result.streamBuffer.getContents() || Buffer.from('')

@@ -21,7 +21,7 @@ describe('zipStream', function () {
         await fs.delete(tmpDir, { recursive: true })
     })
 
-    it('Should create a zip stream from text content', async function () {
+    it('should create a zip stream from text content', async function () {
         const zipStream = new ZipStream({ hashAlgorithm: 'md5' })
         await zipStream.writeString('foo bar', 'file.txt')
         const result = await zipStream.finalize()
@@ -39,7 +39,29 @@ describe('zipStream', function () {
         assert.strictEqual(result.sizeInBytes, (await fs.stat(zipPath)).size)
     })
 
-    it('Should create a zip stream from file', async function () {
+    it('should create a zip stream from binary content', async function () {
+        const zipStream = new ZipStream({ hashAlgorithm: 'md5' })
+        await zipStream.writeData(Buffer.from('foo bar'), 'file.txt')
+        const result = await zipStream.finalize()
+
+        const zipBuffer = result.streamBuffer.getContents()
+        assert.ok(zipBuffer)
+
+        const zipPath = path.join(tmpDir, 'test.zip')
+        await fs.writeFile(zipPath, zipBuffer)
+        const expectedMd5 = crypto
+            .createHash('md5')
+            .update(await fs.readFileBytes(zipPath))
+            .digest('base64')
+        assert.strictEqual(result.hash, expectedMd5)
+        assert.strictEqual(result.sizeInBytes, (await fs.stat(zipPath)).size)
+
+        const zipContents = await ZipStream.unzip(zipBuffer)
+        assert.strictEqual(zipContents.length, 1)
+        assert.strictEqual(zipContents[0].filename, 'file.txt')
+    })
+
+    it('should create a zip stream from file', async function () {
         const testFilePath = path.join(tmpDir, 'test.txt')
         await fs.writeFile(testFilePath, 'foo bar')
 
@@ -70,5 +92,15 @@ describe('zipStream', function () {
         assert.ok(zipBuffer)
         const zipEntries = await ZipStream.unzip(zipBuffer)
         assert.strictEqual(zipEntries[0].filename, 'file.txt')
+    })
+
+    it('should write contents to file', async function () {
+        const zipStream = new ZipStream()
+        await zipStream.writeString('foo bar', 'file.txt')
+        await zipStream.writeData(Buffer.from('foo bar'), 'file2.txt')
+        const zipPath = path.join(tmpDir, 'test.zip')
+        const result = await zipStream.finalizeToFile(path.join(tmpDir, 'test.zip'))
+
+        assert.strictEqual(result.sizeInBytes, (await fs.stat(zipPath)).size)
     })
 })
