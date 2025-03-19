@@ -4,19 +4,18 @@
  */
 import * as vscode from 'vscode'
 import assert from 'assert'
-import {
-    prepareRepoData,
-    PrepareRepoDataOptions,
-    TelemetryHelper,
-    maxRepoSizeBytes,
-} from 'aws-core-vscode/amazonqFeatureDev'
-import { assertTelemetry, getWorkspaceFolder, TestFolder } from 'aws-core-vscode/test'
-import { fs, AmazonqCreateUpload, ZipStream } from 'aws-core-vscode/shared'
-import { MetricName, Span } from 'aws-core-vscode/telemetry'
 import sinon from 'sinon'
-import { CodeWhispererSettings } from 'aws-core-vscode/codewhisperer'
-import { ContentLengthError, CurrentWsFolders } from 'aws-core-vscode/amazonq'
 import path from 'path'
+import { assertTelemetry, getWorkspaceFolder, TestFolder } from '../../testUtil'
+import { CodeWhispererSettings } from '../../../codewhisperer'
+import { prepareRepoData, PrepareRepoDataOptions } from '../../../amazonq/util/files'
+import { AmazonqCreateUpload, MetricName, Span } from '../../../shared/telemetry/telemetry'
+import { CurrentWsFolders } from '../../../amazonq/commons/types'
+import { ZipStream } from '../../../shared/utilities/zipStream'
+import fs from '../../../shared/fs/fs'
+import { ContentLengthError } from '../../../amazonq'
+import { TelemetryHelper } from '../../../amazonq/util/telemetryHelper'
+import { maxRepoSizeBytes } from '../../../amazonqFeatureDev'
 
 const testDevfilePrepareRepo = async (devfileEnabled: boolean) => {
     const files: Record<string, string> = {
@@ -100,7 +99,7 @@ describe('file utils', () => {
             await testPrepareRepoData([workspace], ['file1.md', 'file2.md'], defaultPrepareRepoDataOptions)
         })
 
-        it('infrastructure diagram is included', async function () {
+        it('infrastructure diagram only included with flag', async function () {
             const folder = await TestFolder.create()
             await folder.write('file1.md', 'test content')
             await folder.write('file2.svg', 'test content')
@@ -109,11 +108,15 @@ describe('file utils', () => {
 
             await testPrepareRepoData([workspace], ['file1.md', 'docs/infra.svg'], {
                 telemetry: new TelemetryHelper(),
-                isIncludeInfraDiagram: true,
+                includeInfraDiagram: true,
+            })
+
+            await testPrepareRepoData([workspace], ['file1.md'], {
+                telemetry: new TelemetryHelper(),
             })
         })
 
-        it('prepareRepoData ignores denied file extensions', async function () {
+        it('ignores denied file extensions', async function () {
             const folder = await TestFolder.create()
             await folder.write('file.mp4', 'test content')
             const workspace = getWorkspaceFolder(folder.path)
@@ -132,7 +135,7 @@ describe('file utils', () => {
         })
 
         // Test the logic that allows the customer to modify root source folder
-        it('prepareRepoData throws a ContentLengthError code when repo is too big', async function () {
+        it('throws a ContentLengthError code when repo is too big', async function () {
             const folder = await TestFolder.create()
             await folder.write('file.md', 'test content')
             const workspace = getWorkspaceFolder(folder.path)
@@ -152,7 +155,7 @@ describe('file utils', () => {
             )
         })
 
-        it('prepareRepoData properly handles multi-root workspaces', async function () {
+        it('properly handles multi-root workspaces', async function () {
             const folder = await TestFolder.create()
             const testFilePath = 'innerFolder/file.md'
             await folder.write(testFilePath, 'test content')
@@ -167,6 +170,18 @@ describe('file utils', () => {
                 [`${folderName}_${workspace1.name}/${testFilePath}`],
                 defaultPrepareRepoDataOptions
             )
+        })
+
+        it('ignores files past the size limit', async function () {
+            const folder = await TestFolder.create()
+            await folder.write('file1.md', '123')
+            await folder.write('file2.md', '12345')
+            const workspace = getWorkspaceFolder(folder.path)
+
+            await testPrepareRepoData([workspace], ['file1.md'], {
+                telemetry: new TelemetryHelper(),
+                fileSizeByteLimit: 4,
+            })
         })
     })
 })

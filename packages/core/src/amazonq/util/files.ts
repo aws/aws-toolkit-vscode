@@ -49,6 +49,7 @@ export type PrepareRepoDataOptions = {
     telemetry?: TelemetryHelper
     zip?: ZipStream
     includeInfraDiagram?: boolean
+    fileSizeByteLimit?: number // default to max
 }
 
 /**
@@ -63,6 +64,9 @@ export async function prepareRepoData(
     try {
         const telemetry = options?.telemetry
         const isIncludeInfraDiagram = options?.includeInfraDiagram ?? false
+        const fileSizeByteLimit = options?.fileSizeByteLimit
+            ? Math.min(options.fileSizeByteLimit, maxFileSizeBytes)
+            : maxFileSizeBytes
         const zip = options?.zip ?? new ZipStream()
 
         const autoBuildSetting = CodeWhispererSettings.instance.getAutoBuildSetting()
@@ -118,7 +122,7 @@ export async function prepareRepoData(
             const isDevFile = file.relativeFilePath === 'devfile.yaml'
             const isInfraDiagramFileExt = isInfraDiagramFile(file.relativeFilePath)
 
-            let isExcludeFile = fileSize >= maxFileSizeBytes
+            let isExcludeFile = fileSize >= fileSizeByteLimit
             // When useAutoBuildFeature is on, only respect the gitignore rules filtered earlier and apply the size limit
             if (!isExcludeFile && !useAutoBuildFeature) {
                 isExcludeFile = isDevFile || (!isCodeFile_ && (!isIncludeInfraDiagram || !isInfraDiagramFileExt))
