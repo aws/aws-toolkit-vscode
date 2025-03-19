@@ -26,7 +26,6 @@ import {
   BinaryPayloadEvent,
   ChatMessage,
   ChatResponseStream,
-  CitationEvent,
   CodeEvent,
   CodeReferenceEvent,
   ConflictException,
@@ -44,8 +43,6 @@ import {
   FollowupPrompt,
   FollowupPromptEvent,
   GitState,
-  ImageBlock,
-  ImageSource,
   IntentsEvent,
   InteractionComponent,
   InteractionComponentEntry,
@@ -75,7 +72,6 @@ import {
   ToolResult,
   ToolResultContentBlock,
   ToolSpecification,
-  ToolUse,
   ToolUseEvent,
   TransformationExportContext,
   UnitTestGenerationExportContext,
@@ -130,7 +126,6 @@ export const se_ExportResultArchiveCommand = async(
     'exportContext': _ => _json(_),
     'exportId': [],
     'exportIntent': [],
-    'profileArn': [],
   }));
   b.m("POST")
   .h(headers)
@@ -176,7 +171,6 @@ export const se_GenerateTaskAssistPlanCommand = async(
   let body: any;
   body = JSON.stringify(take(input, {
     'conversationState': _ => se_ConversationState(_, context),
-    'profileArn': [],
     'workspaceState': _ => _json(_),
   }));
   b.m("POST")
@@ -563,11 +557,6 @@ const de_CommandError = async(
             toolUseEvent: await de_ToolUseEvent_event(event["toolUseEvent"], context),
           };
         }
-        if (event["citationEvent"] != null) {
-          return {
-            citationEvent: await de_CitationEvent_event(event["citationEvent"], context),
-          };
-        }
         if (event["invalidStateEvent"] != null) {
           return {
             invalidStateEvent: await de_InvalidStateEvent_event(event["invalidStateEvent"], context),
@@ -636,15 +625,6 @@ const de_CommandError = async(
     const contents: BinaryPayloadEvent = {} as any;
     const data: any = await parseBody(output.body, context);
     Object.assign(contents, de_BinaryPayloadEvent(data, context));
-    return contents;
-  }
-  const de_CitationEvent_event = async (
-    output: any,
-    context: __SerdeContext
-  ): Promise<CitationEvent> => {
-    const contents: CitationEvent = {} as any;
-    const data: any = await parseBody(output.body, context);
-    Object.assign(contents, _json(data));
     return contents;
   }
   const de_CodeEvent_event = async (
@@ -753,22 +733,7 @@ const de_CommandError = async(
 
   // se_AppStudioState omitted.
 
-  /**
-   * serializeAws_restJson1AssistantResponseMessage
-   */
-  const se_AssistantResponseMessage = (
-    input: AssistantResponseMessage,
-    context: __SerdeContext
-  ): any => {
-    return take(input, {
-      'content': [],
-      'followupPrompt': _json,
-      'messageId': [],
-      'references': _json,
-      'supplementaryWebLinks': _json,
-      'toolUses': _ => se_ToolUses(_, context),
-    });
-  }
+  // se_AssistantResponseMessage omitted.
 
   /**
    * serializeAws_restJson1ChatHistory
@@ -790,7 +755,7 @@ const de_CommandError = async(
     context: __SerdeContext
   ): any => {
     return ChatMessage.visit(input, {
-      assistantResponseMessage: value => ({ "assistantResponseMessage": se_AssistantResponseMessage(value, context) }),
+      assistantResponseMessage: value => ({ "assistantResponseMessage": _json(value) }),
       userInputMessage: value => ({ "userInputMessage": se_UserInputMessage(value, context) }),
       _: (name, value) => ({ name: value } as any)
     });
@@ -835,44 +800,6 @@ const de_CommandError = async(
   // se_FollowupPrompt omitted.
 
   // se_GitState omitted.
-
-  /**
-   * serializeAws_restJson1ImageBlock
-   */
-  const se_ImageBlock = (
-    input: ImageBlock,
-    context: __SerdeContext
-  ): any => {
-    return take(input, {
-      'format': [],
-      'source': _ => se_ImageSource(_, context),
-    });
-  }
-
-  /**
-   * serializeAws_restJson1ImageBlocks
-   */
-  const se_ImageBlocks = (
-    input: (ImageBlock)[],
-    context: __SerdeContext
-  ): any => {
-    return input.filter((e: any) => e != null).map(entry => {
-      return se_ImageBlock(entry, context);
-    });
-  }
-
-  /**
-   * serializeAws_restJson1ImageSource
-   */
-  const se_ImageSource = (
-    input: ImageSource,
-    context: __SerdeContext
-  ): any => {
-    return ImageSource.visit(input, {
-      bytes: value => ({ "bytes": context.base64Encoder(value) }),
-      _: (name, value) => ({ name: value } as any)
-    });
-  }
 
   // se_Position omitted.
 
@@ -1019,32 +946,6 @@ const de_CommandError = async(
     });
   }
 
-  /**
-   * serializeAws_restJson1ToolUse
-   */
-  const se_ToolUse = (
-    input: ToolUse,
-    context: __SerdeContext
-  ): any => {
-    return take(input, {
-      'input': _ => se_SensitiveDocument(_, context),
-      'name': [],
-      'toolUseId': [],
-    });
-  }
-
-  /**
-   * serializeAws_restJson1ToolUses
-   */
-  const se_ToolUses = (
-    input: (ToolUse)[],
-    context: __SerdeContext
-  ): any => {
-    return input.filter((e: any) => e != null).map(entry => {
-      return se_ToolUse(entry, context);
-    });
-  }
-
   // se_TransformationExportContext omitted.
 
   // se_UnitTestGenerationExportContext omitted.
@@ -1058,8 +959,6 @@ const de_CommandError = async(
   ): any => {
     return take(input, {
       'content': [],
-      'images': _ => se_ImageBlocks(_, context),
-      'origin': [],
       'userInputMessageContext': _ => se_UserInputMessageContext(_, context),
       'userIntent': [],
     });
@@ -1106,10 +1005,6 @@ const de_CommandError = async(
       'bytes': context.base64Decoder,
     }) as any;
   }
-
-  // de_CitationEvent omitted.
-
-  // de_CitationTarget omitted.
 
   // de_CodeEvent omitted.
 

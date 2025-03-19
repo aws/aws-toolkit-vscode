@@ -227,6 +227,13 @@ CreateProfile
 </details>
 <details>
 <summary>
+CreateWorkspace
+</summary>
+
+[Command API Reference](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/client/codewhispererstreaming/command/CreateWorkspaceCommand/) / [Input](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/Package/-aws-sdk-client-codewhispererstreaming/Interface/CreateWorkspaceCommandInput/) / [Output](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/Package/-aws-sdk-client-codewhispererstreaming/Interface/CreateWorkspaceCommandOutput/)
+</details>
+<details>
+<summary>
 DeleteCustomization
 </summary>
 
@@ -297,6 +304,13 @@ ListTagsForResource
 </details>
 <details>
 <summary>
+ListWorkspaceMetadata
+</summary>
+
+[Command API Reference](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/client/codewhispererstreaming/command/ListWorkspaceMetadataCommand/) / [Input](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/Package/-aws-sdk-client-codewhispererstreaming/Interface/ListWorkspaceMetadataCommandInput/) / [Output](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/Package/-aws-sdk-client-codewhispererstreaming/Interface/ListWorkspaceMetadataCommandOutput/)
+</details>
+<details>
+<summary>
 TagResource
 </summary>
 
@@ -353,24 +367,10 @@ CreateUploadUrl
 </details>
 <details>
 <summary>
-CreateWorkspace
-</summary>
-
-[Command API Reference](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/client/codewhispererstreaming/command/CreateWorkspaceCommand/) / [Input](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/Package/-aws-sdk-client-codewhispererstreaming/Interface/CreateWorkspaceCommandInput/) / [Output](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/Package/-aws-sdk-client-codewhispererstreaming/Interface/CreateWorkspaceCommandOutput/)
-</details>
-<details>
-<summary>
 DeleteTaskAssistConversation
 </summary>
 
 [Command API Reference](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/client/codewhispererstreaming/command/DeleteTaskAssistConversationCommand/) / [Input](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/Package/-aws-sdk-client-codewhispererstreaming/Interface/DeleteTaskAssistConversationCommandInput/) / [Output](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/Package/-aws-sdk-client-codewhispererstreaming/Interface/DeleteTaskAssistConversationCommandOutput/)
-</details>
-<details>
-<summary>
-DeleteWorkspace
-</summary>
-
-[Command API Reference](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/client/codewhispererstreaming/command/DeleteWorkspaceCommand/) / [Input](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/Package/-aws-sdk-client-codewhispererstreaming/Interface/DeleteWorkspaceCommandInput/) / [Output](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/Package/-aws-sdk-client-codewhispererstreaming/Interface/DeleteWorkspaceCommandOutput/)
 </details>
 <details>
 <summary>
@@ -448,13 +448,6 @@ ListFeatureEvaluations
 </summary>
 
 [Command API Reference](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/client/codewhispererstreaming/command/ListFeatureEvaluationsCommand/) / [Input](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/Package/-aws-sdk-client-codewhispererstreaming/Interface/ListFeatureEvaluationsCommandInput/) / [Output](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/Package/-aws-sdk-client-codewhispererstreaming/Interface/ListFeatureEvaluationsCommandOutput/)
-</details>
-<details>
-<summary>
-ListWorkspaceMetadata
-</summary>
-
-[Command API Reference](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/client/codewhispererstreaming/command/ListWorkspaceMetadataCommand/) / [Input](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/Package/-aws-sdk-client-codewhispererstreaming/Interface/ListWorkspaceMetadataCommandInput/) / [Output](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/Package/-aws-sdk-client-codewhispererstreaming/Interface/ListWorkspaceMetadataCommandOutput/)
 </details>
 <details>
 <summary>
@@ -574,13 +567,6 @@ DeleteAssignment
 </summary>
 
 [Command API Reference](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/client/codewhispererstreaming/command/DeleteAssignmentCommand/) / [Input](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/Package/-aws-sdk-client-codewhispererstreaming/Interface/DeleteAssignmentCommandInput/) / [Output](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/Package/-aws-sdk-client-codewhispererstreaming/Interface/DeleteAssignmentCommandOutput/)
-</details>
-<details>
-<summary>
-DeleteConversation
-</summary>
-
-[Command API Reference](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/client/codewhispererstreaming/command/DeleteConversationCommand/) / [Input](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/Package/-aws-sdk-client-codewhispererstreaming/Interface/DeleteConversationCommandInput/) / [Output](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/Package/-aws-sdk-client-codewhispererstreaming/Interface/DeleteConversationCommandOutput/)
 </details>
 <details>
 <summary>
@@ -770,20 +756,6 @@ UntagResource
 </summary>
 
 [Command API Reference](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/client/codewhispererstreaming/command/UntagResourceCommand/) / [Input](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/Package/-aws-sdk-client-codewhispererstreaming/Interface/UntagResourceCommandInput/) / [Output](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/Package/-aws-sdk-client-codewhispererstreaming/Interface/UntagResourceCommandOutput/)
-</details>
-<details>
-<summary>
-UpdateConversation
-</summary>
-
-[Command API Reference](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/client/codewhispererstreaming/command/UpdateConversationCommand/) / [Input](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/Package/-aws-sdk-client-codewhispererstreaming/Interface/UpdateConversationCommandInput/) / [Output](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/Package/-aws-sdk-client-codewhispererstreaming/Interface/UpdateConversationCommandOutput/)
-</details>
-<details>
-<summary>
-UpdatePlugin
-</summary>
-
-[Command API Reference](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/client/codewhispererstreaming/command/UpdatePluginCommand/) / [Input](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/Package/-aws-sdk-client-codewhispererstreaming/Interface/UpdatePluginCommandInput/) / [Output](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/Package/-aws-sdk-client-codewhispererstreaming/Interface/UpdatePluginCommandOutput/)
 </details>
 <details>
 <summary>
