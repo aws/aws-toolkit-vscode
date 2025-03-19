@@ -308,7 +308,14 @@ export class LanguageServerResolver {
                 // attempt to unzip
                 const zipFile = new AdmZip(zip)
                 const extractPath = zip.replace('.zip', '')
-                zipFile.extractAllTo(extractPath, true)
+
+                /**
+                 * Avoid overwriting existing files during extraction to prevent file corruption.
+                 * On Mac ARM64 when a language server is already running in one VS Code window,
+                 * attempting to extract and overwrite its files from another window can cause
+                 * the newly started language server to crash with 'EXC_CRASH (SIGKILL (Code Signature Invalid))'.
+                 */
+                zipFile.extractAllTo(extractPath, false)
             } catch (e) {
                 return false
             }
