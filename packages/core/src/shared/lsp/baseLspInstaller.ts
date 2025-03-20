@@ -14,7 +14,7 @@ import { Range } from 'semver'
 import { getLogger } from '../logger/logger'
 import type { Logger, LogTopic } from '../logger/logger'
 
-export abstract class BaseLspInstaller {
+export abstract class BaseLspInstaller<T extends ResourcePaths = ResourcePaths> {
     private logger: Logger
 
     constructor(
@@ -24,7 +24,7 @@ export abstract class BaseLspInstaller {
         this.logger = getLogger(loggerName)
     }
 
-    async resolve(): Promise<LspResolution> {
+    async resolve(): Promise<LspResolution<T>> {
         const { id, manifestUrl, supportedVersions, path } = this.config
         if (path) {
             const overrideMsg = `Using language server override location: ${path}`
@@ -61,5 +61,5 @@ export abstract class BaseLspInstaller {
     }
 
     protected abstract postInstall(assetDirectory: string): Promise<void>
-    protected abstract resourcePaths(assetDirectory?: string): ResourcePaths
+    protected abstract resourcePaths(assetDirectory?: string): T
 }

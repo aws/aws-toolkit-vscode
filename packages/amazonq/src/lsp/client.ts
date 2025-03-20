@@ -11,18 +11,16 @@ import { registerInlineCompletion } from '../app/inline/completion'
 import { AmazonQLspAuth, encryptionKey, notificationTypes } from './auth'
 import { AuthUtil } from 'aws-core-vscode/codewhisperer'
 import { ConnectionMetadata } from '@aws/language-server-runtimes/protocol'
-import {
-    ResourcePaths,
-    Settings,
-    oidcClientName,
-    createServerOptions,
-    globals,
-    getLogger,
-} from 'aws-core-vscode/shared'
+import { Settings, oidcClientName, createServerOptions, globals, Experiments, getLogger } from 'aws-core-vscode/shared'
+import { activate } from './chat/activation'
+import { AmazonQResourcePaths } from './lspInstaller'
 
 const localize = nls.loadMessageBundle()
 
-export async function startLanguageServer(extensionContext: vscode.ExtensionContext, resourcePaths: ResourcePaths) {
+export async function startLanguageServer(
+    extensionContext: vscode.ExtensionContext,
+    resourcePaths: AmazonQResourcePaths
+) {
     const toDispose = extensionContext.subscriptions
 
     const serverModule = resourcePaths.lsp
@@ -97,6 +95,9 @@ export async function startLanguageServer(extensionContext: vscode.ExtensionCont
     return client.onReady().then(async () => {
         await auth.init()
         registerInlineCompletion(client)
+        if (Experiments.instance.get('amazonqChatLSP', false)) {
+            activate(client, encryptionKey, resourcePaths.mynahUI)
+        }
 
         // Request handler for when the server wants to know about the clients auth connnection
         client.onRequest<ConnectionMetadata, Error>(notificationTypes.getConnectionMetadata.method, () => {
