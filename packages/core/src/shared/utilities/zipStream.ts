@@ -59,6 +59,7 @@ export class ZipStream {
     boundFileStartCallback: (computedSize: number) => Promise<void>
 
     constructor(props: Partial<ZipStreamProps> = {}) {
+        getLogger().debug('Initializing ZipStream with props: %O', props)
         // Allow any user-provided values to override default values
         const mergedProps = { ...defaultProps, ...props }
         const { hashAlgorithm, compressionLevel, maxNumberOfFileStreams } = mergedProps
@@ -157,8 +158,10 @@ export class ZipStream {
         // We're done streaming all files, so we can close the zip stream
 
         await this._zipWriter.close()
+        const sizeInBytes = this._streamBuffer.size()
+        getLogger().debug('Finished finalizing zipStream with %d bytes of data', sizeInBytes)
         return {
-            sizeInBytes: this._streamBuffer.size(),
+            sizeInBytes,
             hash: this._hasher.digest('base64'),
             streamBuffer: this._streamBuffer,
         }
