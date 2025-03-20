@@ -7,7 +7,7 @@ import crypto from 'crypto'
 import { readFileAsString } from '../filesystemUtilities'
 
 // @ts-ignore
-import { ZipWriter, TextReader, ZipReader, Uint8ArrayReader, EntryMetaData } from '@zip.js/zip.js'
+import { ZipWriter, TextReader, ZipReader, Uint8ArrayReader, EntryMetaData, Entry } from '@zip.js/zip.js'
 import { getLogger } from '../logger/logger'
 import fs from '../fs/fs'
 
@@ -171,7 +171,7 @@ export class ZipStream {
         return result
     }
 
-    public static async unzip(zipBuffer: Buffer) {
+    public static async unzip(zipBuffer: Buffer): Promise<Entry[]> {
         const reader = new ZipReader(new Uint8ArrayReader(new Uint8Array(zipBuffer)))
         try {
             return await reader.getEntries()
