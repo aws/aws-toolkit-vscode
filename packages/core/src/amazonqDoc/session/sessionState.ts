@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ToolkitError } from '../../shared/errors'
 import { DocGenerationStep, docScheme, getFileSummaryPercentage, Mode } from '../constants'
 
 import { i18n } from '../../shared/i18n-helper'
@@ -11,7 +10,6 @@ import { i18n } from '../../shared/i18n-helper'
 import { CurrentWsFolders, NewFileInfo, SessionState, SessionStateAction, SessionStateConfig } from '../types'
 import {
     ContentLengthError,
-    DocServiceError,
     NoChangeRequiredException,
     PromptRefusalException,
     PromptTooVagueError,
@@ -20,11 +18,13 @@ import {
     ReadmeUpdateTooLargeError,
     WorkspaceEmptyError,
 } from '../errors'
+import { ApiClientError, ApiServiceError } from '../../amazonqFeatureDev/errors'
 import { DocMessenger } from '../messenger'
 import { BaseCodeGenState, BasePrepareCodeGenState, CreateNextStateParams } from '../../amazonq/session/sessionState'
 import { Intent } from '../../amazonq/commons/types'
 import { AmazonqCreateUpload, Span } from '../../shared/telemetry/telemetry'
 import { prepareRepoData, PrepareRepoDataOptions } from '../../amazonq/util/files'
+import { LlmError } from '../../amazonq/errors'
 
 export class DocCodeGenState extends BaseCodeGenState {
     protected handleProgress(messenger: DocMessenger, action: SessionStateAction, detail?: string): void {
@@ -82,21 +82,37 @@ export class DocCodeGenState extends BaseCodeGenState {
                 return new PromptRefusalException(codegenResult.codeGenerationRemainingIterationCount || 0)
             }
             case codegenResult.codeGenerationStatusDetail?.includes('Guardrails'): {
-                return new DocServiceError(i18n('AWS.amazonq.doc.error.docGen.default'), 'GuardrailsException')
+                return new ApiClientError(
+                    i18n('AWS.amazonq.doc.error.docGen.default'),
+                    'GetTaskAssistCodeGeneration',
+                    'GuardrailsException',
+                    400
+                )
             }
             case codegenResult.codeGenerationStatusDetail?.includes('EmptyPatch'): {
                 if (codegenResult.codeGenerationStatusDetail?.includes('NO_CHANGE_REQUIRED')) {
                     return new NoChangeRequiredException()
                 }
-                return new DocServiceError(i18n('AWS.amazonq.doc.error.docGen.default'), 'EmptyPatchException')
+
+                return new LlmError(i18n('AWS.amazonq.doc.error.docGen.default'), {
+                    code: 'EmptyPatchException',
+                })
             }
             case codegenResult.codeGenerationStatusDetail?.includes('Throttling'): {
-                return new DocServiceError(i18n('AWS.amazonq.featureDev.error.throttling'), 'ThrottlingException')
+                return new ApiClientError(
+                    i18n('AWS.amazonq.featureDev.error.throttling'),
+                    'GetTaskAssistCodeGeneration',
+                    'ThrottlingException',
+                    429
+                )
             }
             default: {
-                return new ToolkitError(i18n('AWS.amazonq.doc.error.docGen.default'), {
-                    code: 'DocGenerationFailed',
-                })
+                return new ApiServiceError(
+                    i18n('AWS.amazonq.doc.error.docGen.default'),
+                    'GetTaskAssistCodeGeneration',
+                    'UnknownException',
+                    500
+                )
             }
         }
     }
