@@ -11,7 +11,7 @@ import {
     SymbolType,
     TextDocument,
 } from '@amzn/codewhisperer-streaming'
-import { ChatTriggerType, TriggerPayload } from '../model'
+import { AdditionalContentEntryAddition, ChatTriggerType, RelevantTextDocumentAddition, TriggerPayload } from '../model'
 import { undefinedIfEmpty } from '../../../../shared/utilities/textUtilities'
 import { getLogger } from '../../../../shared/logger/logger'
 
@@ -39,110 +39,47 @@ const filePathSizeLimit = 4_000
 const customerMessageSizeLimit = 4_000
 
 export function triggerPayloadToChatRequest(triggerPayload: TriggerPayload): { conversationState: ConversationState } {
-    // truncate
+    // Flexible truncation logic
     let remainingPayloadSize = 100_000
-    // Type A context:  Preserving userInput as much as possible
-    if (triggerPayload.message !== undefined) {
-        if (triggerPayload.message.length <= remainingPayloadSize) {
-            remainingPayloadSize -= triggerPayload.message.length
-        } else {
-            triggerPayload.message = triggerPayload.message.substring(0, remainingPayloadSize)
-            remainingPayloadSize = 0
-        }
-    }
-    // TODO: send truncation telemetry if needed
-    getLogger().debug(`current request user input size: ${triggerPayload.message?.length}`)
+    const userInputTruncationInfo = preserveContexts(triggerPayload, remainingPayloadSize, ChatContextType.UserInput)
 
-    // Type B1(prompts) context: Preserving prompts as much as possible
-    let totalPromptSize = 0
-    if (triggerPayload.additionalContents !== undefined) {
-        for (const additionalContent of triggerPayload.additionalContents) {
-            if (additionalContent.type === 'prompt' && additionalContent.innerContext !== undefined) {
-                if (additionalContent.innerContext.length <= remainingPayloadSize) {
-                    remainingPayloadSize -= additionalContent.innerContext.length
-                } else {
-                    additionalContent.innerContext = additionalContent.innerContext.substring(0, remainingPayloadSize)
-                    remainingPayloadSize = 0
-                }
-                totalPromptSize += additionalContent.innerContext.length
-            }
-        }
-    }
-
-    getLogger().debug(`current request total prompts size: ${totalPromptSize}`)
+    // Type B1(prompts) context: Preserving @prompt as much as possible
+    const userSpecificPromptsTruncationInfo = preserveContexts(
+        triggerPayload,
+        userInputTruncationInfo.remainingPayloadSize,
+        ChatContextType.UserSpecificPrompts
+    )
 
     // Type C context: Preserving current file context as much as possible
-    // truncate the text to keep texts in the middle instead of blindly truncating the tail
-    if (triggerPayload.fileText !== undefined) {
-        if (triggerPayload.fileText.length <= remainingPayloadSize) {
-            remainingPayloadSize -= triggerPayload.fileText.length
-        } else {
-            // Calculate the middle point
-            const middle = Math.floor(triggerPayload.fileText.length / 2)
-            // Calculate how much text we can take from each side of the middle
-            const halfRemaining = Math.floor(remainingPayloadSize / 2)
-            // Get text from around the middle point
-            const startPos = middle - halfRemaining
-            const endPos = middle + halfRemaining
-
-            triggerPayload.fileText = triggerPayload.fileText.substring(startPos, endPos)
-            remainingPayloadSize = 0
-        }
-    }
-    getLogger().debug(`current request file content size: ${triggerPayload.fileText?.length}`)
+    const currentFileTruncationInfo = preserveContexts(
+        triggerPayload,
+        userSpecificPromptsTruncationInfo.remainingPayloadSize,
+        ChatContextType.CurrentFile
+    )
 
     // Type B1(rules) context: Preserving rules as much as possible
-    let totalRulesSize = 0
-    if (triggerPayload.additionalContents !== undefined) {
-        for (const additionalContent of triggerPayload.additionalContents) {
-            if (additionalContent.type === 'rule' && additionalContent.innerContext !== undefined) {
-                if (additionalContent.innerContext.length <= remainingPayloadSize) {
-                    remainingPayloadSize -= additionalContent.innerContext.length
-                } else {
-                    additionalContent.innerContext = additionalContent.innerContext.substring(0, remainingPayloadSize)
-                    remainingPayloadSize = 0
-                }
-                totalRulesSize += additionalContent.innerContext.length
-            }
-        }
-    }
-
-    getLogger().debug(`current request rules size: ${totalRulesSize}`)
+    const userSpecificRulesTruncationInfo = preserveContexts(
+        triggerPayload,
+        currentFileTruncationInfo.remainingPayloadSize,
+        ChatContextType.UserSpecificRules
+    )
 
     // Type B2(explicit @files) context: Preserving files as much as possible
-    if (triggerPayload.additionalContents !== undefined) {
-        for (const additionalContent of triggerPayload.additionalContents) {
-            if (additionalContent.type === 'file' && additionalContent.innerContext !== undefined) {
-                if (additionalContent.innerContext.length <= remainingPayloadSize) {
-                    remainingPayloadSize -= additionalContent.innerContext.length
-                } else {
-                    additionalContent.innerContext = additionalContent.innerContext.substring(0, remainingPayloadSize)
-                    remainingPayloadSize = 0
-                }
-            }
-        }
-    }
+    const userSpecificFilesTruncationInfo = preserveContexts(
+        triggerPayload,
+        userSpecificRulesTruncationInfo.remainingPayloadSize,
+        ChatContextType.UserSpecificFiles
+    )
 
     // Type B3 @workspace context: Preserving workspace as much as possible
-    let totalWorkspaceSize = 0
-    if (triggerPayload.relevantTextDocuments !== undefined) {
-        for (const relevantDocument of triggerPayload.relevantTextDocuments) {
-            if (relevantDocument.text !== undefined) {
-                if (relevantDocument.text.length <= remainingPayloadSize) {
-                    // remainingPayloadSize -= relevantDocument.text.length
-                } else {
-                    // relevantDocument.text = relevantDocument.text.substring(0, remainingPayloadSize)
-                    // remainingPayloadSize = 0
-                }
-                totalWorkspaceSize += relevantDocument.text.length
-            }
-        }
-    }
-
-    getLogger().debug(`current request workspace size: ${totalWorkspaceSize}`)
+    const workspaceTruncationInfo = preserveContexts(
+        triggerPayload,
+        userSpecificFilesTruncationInfo.remainingPayloadSize,
+        ChatContextType.Workspace
+    )
 
     getLogger().debug(
-        `current request total payload size: ${(triggerPayload.message?.length ?? 0) + totalPromptSize + (triggerPayload.fileText?.length ?? 0) + totalRulesSize + totalWorkspaceSize}`
+        `current request total payload size: ${userInputTruncationInfo.sizeAfter + userSpecificFilesTruncationInfo.sizeAfter + currentFileTruncationInfo.sizeAfter + userSpecificFilesTruncationInfo.sizeAfter + workspaceTruncationInfo.sizeAfter}`
     )
 
     // Filter out empty innerContext from additionalContents
@@ -246,4 +183,152 @@ export function triggerPayloadToChatRequest(triggerPayload: TriggerPayload): { c
             customizationArn: customizationArn,
         },
     }
+}
+
+function preserveContexts(
+    triggerPayload: TriggerPayload,
+    remainingPayloadSize: number,
+    contextType: ChatContextType
+): FlexibleTruncationInfo {
+    const typeToContextMap = new Map<
+        ChatContextType,
+        string | AdditionalContentEntryAddition[] | RelevantTextDocumentAddition[] | undefined
+    >([
+        [ChatContextType.UserInput, triggerPayload.message],
+        [ChatContextType.CurrentFile, triggerPayload.fileText],
+        [ChatContextType.UserSpecificPrompts, triggerPayload.additionalContents],
+        [ChatContextType.UserSpecificRules, triggerPayload.additionalContents],
+        [ChatContextType.UserSpecificFiles, triggerPayload.additionalContents],
+        [ChatContextType.Workspace, triggerPayload.relevantTextDocuments],
+    ])
+
+    let truncationInfo = {
+        remainingPayloadSize: remainingPayloadSize,
+        sizeBefore: 0,
+        sizeAfter: 0,
+        textAfter: '',
+    }
+
+    const contexts = typeToContextMap.get(contextType)
+    if (!contexts) {
+        getLogger().debug(
+            `Current request context size: type: ${contextType}, before: ${truncationInfo.sizeBefore}, after: ${truncationInfo.sizeAfter}`
+        )
+        return truncationInfo
+    }
+
+    switch (contextType) {
+        case ChatContextType.UserInput:
+            truncationInfo = truncate(contexts as string, truncationInfo)
+            triggerPayload.message = truncationInfo.textAfter
+            break
+        case ChatContextType.CurrentFile:
+            truncationInfo = truncate(contexts as string, truncationInfo)
+            triggerPayload.fileText = truncationInfo.textAfter
+            break
+        case ChatContextType.UserSpecificPrompts:
+            truncationInfo = truncateUserSpecificContexts(
+                contexts as AdditionalContentEntryAddition[],
+                truncationInfo,
+                'prompt'
+            )
+            break
+        case ChatContextType.UserSpecificRules:
+            truncationInfo = truncateUserSpecificContexts(
+                contexts as AdditionalContentEntryAddition[],
+                truncationInfo,
+                'rule'
+            )
+            break
+        case ChatContextType.UserSpecificFiles:
+            truncationInfo = truncateUserSpecificContexts(
+                contexts as AdditionalContentEntryAddition[],
+                truncationInfo,
+                'file'
+            )
+            break
+        case ChatContextType.Workspace:
+            truncationInfo = truncateWorkspaceContexts(contexts as RelevantTextDocumentAddition[], truncationInfo)
+            break
+        default:
+            getLogger().warn(`Unexpected context type: ${contextType}`)
+            return truncationInfo
+    }
+
+    getLogger().debug(
+        `Current request context size: type: ${contextType}, before: ${truncationInfo.sizeBefore}, after: ${truncationInfo.sizeAfter}`
+    )
+    return truncationInfo
+}
+
+function truncateUserSpecificContexts(
+    contexts: AdditionalContentEntryAddition[],
+    truncationInfo: FlexibleTruncationInfo,
+    type: string
+): FlexibleTruncationInfo {
+    for (const context of contexts) {
+        if (context.type !== type || !context.innerContext) {
+            continue
+        }
+        truncationInfo = truncate(context.innerContext, truncationInfo)
+        context.innerContext = truncationInfo.textAfter
+    }
+    return truncationInfo
+}
+
+function truncateWorkspaceContexts(
+    contexts: RelevantTextDocumentAddition[],
+    truncationInfo: FlexibleTruncationInfo
+): FlexibleTruncationInfo {
+    for (const context of contexts) {
+        if (!context.text) {
+            continue
+        }
+        truncationInfo = truncate(context.text, truncationInfo)
+        context.text = truncationInfo.textAfter
+    }
+    return truncationInfo
+}
+
+function truncate(
+    textBefore: string,
+    truncationInfo: FlexibleTruncationInfo,
+    isCurrentFile: Boolean = false
+): FlexibleTruncationInfo {
+    const sizeBefore = truncationInfo.sizeBefore + textBefore.length
+
+    // for all other types of contexts, we simply truncate the tail,
+    // for current file context, since it's expanded from the middle context, we truncate head and tail to preserve middle context
+    const middle = Math.floor(textBefore.length / 2)
+    const halfRemaining = Math.floor(truncationInfo.remainingPayloadSize / 2)
+    const startPos = isCurrentFile ? middle - halfRemaining : 0
+    const endPos = isCurrentFile
+        ? middle + (truncationInfo.remainingPayloadSize - halfRemaining)
+        : Math.min(textBefore.length, truncationInfo.remainingPayloadSize)
+    const textAfter = textBefore.substring(startPos, endPos)
+
+    const sizeAfter = truncationInfo.sizeAfter + textAfter.length
+    const remainingPayloadSize = truncationInfo.remainingPayloadSize - textAfter.length
+    return {
+        remainingPayloadSize,
+        sizeBefore,
+        sizeAfter,
+        textAfter,
+    }
+}
+
+type FlexibleTruncationInfo = {
+    readonly remainingPayloadSize: number
+    readonly sizeBefore: number
+    readonly sizeAfter: number
+    readonly textAfter: string
+}
+
+export enum ChatContextType {
+    UserInput = 'userInput',
+    CurrentFile = 'currentFile',
+    UserSpecificPrompts = 'userSpecificPrompts',
+    UserSpecificRules = 'userSpecificRules',
+    UserSpecificFiles = 'userSpecificFiles',
+    Workspace = 'workspace',
 }

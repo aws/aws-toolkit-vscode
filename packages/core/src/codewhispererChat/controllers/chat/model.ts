@@ -216,7 +216,7 @@ export type AdditionalContextInfo = {
 // TODO move this to API definition (or just use this across the codebase)
 export type RelevantTextDocumentAddition = RelevantTextDocument & { startLine: number; endLine: number }
 
-export type AdditionalContentEntryAddition = AdditionalContentEntry & { type: string }
+export type AdditionalContentEntryAddition = AdditionalContentEntry & { type: string; relativePath: string }
 
 export interface DocumentReference {
     readonly relativeFilePath: string
