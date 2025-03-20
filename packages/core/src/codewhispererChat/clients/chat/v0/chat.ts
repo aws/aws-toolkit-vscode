@@ -20,6 +20,7 @@ export class ChatSession {
     private sessionId?: string
     private _toolUse: ToolUse | undefined
     private _chatHistory: ChatMessage[] = []
+    private _listOfReadFiles: string[] = []
 
     contexts: Map<string, { first: number; second: number }[]> = new Map()
     // TODO: doesn't handle the edge case when two files share the same relativePath string but from different root
@@ -33,6 +34,9 @@ export class ChatSession {
     }
     public get chatHistory(): ChatMessage[] {
         return this._chatHistory
+    }
+    public get listOfReadFiles(): string[] {
+        return this._listOfReadFiles
     }
 
     public tokenSource!: vscode.CancellationTokenSource
@@ -56,6 +60,9 @@ export class ChatSession {
             return
         }
         this._chatHistory.push(this.formatChatHistoryMessage(message))
+    }
+    public pushToListOfReadFiles(filePath: string) {
+        this._listOfReadFiles.push(filePath)
     }
 
     private formatChatHistoryMessage(message: ChatMessage): ChatMessage {

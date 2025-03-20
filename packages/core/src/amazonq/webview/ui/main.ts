@@ -374,7 +374,7 @@ export const createMynahUI = (
                     fileList: {
                         fileTreeTitle: '',
                         filePaths: item.contextList.map((file) => file.relativeFilePath),
-                        rootFolderTitle: 'Context',
+                        rootFolderTitle: item.title,
                         flatList: true,
                         collapsed: true,
                         hideFileCount: true,

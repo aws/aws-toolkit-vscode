@@ -63,6 +63,7 @@ export interface CWCChatItem extends ChatItem {
     userIntent?: UserIntent
     codeBlockLanguage?: string
     contextList?: Context[]
+    title?: string
 }
 
 export interface Context {

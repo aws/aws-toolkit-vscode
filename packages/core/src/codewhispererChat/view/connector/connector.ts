@@ -208,6 +208,7 @@ export interface ChatMessageProps {
     readonly userIntent: string | undefined
     readonly codeBlockLanguage: string | undefined
     readonly contextList: DocumentReference[] | undefined
+    readonly title: string | undefined
 }
 
 export class ChatMessage extends UiMessage {
@@ -223,6 +224,7 @@ export class ChatMessage extends UiMessage {
     readonly userIntent: string | undefined
     readonly codeBlockLanguage: string | undefined
     readonly contextList: DocumentReference[] | undefined
+    readonly title: string | undefined
     override type = 'chatMessage'
 
     constructor(props: ChatMessageProps, tabID: string) {
@@ -238,6 +240,7 @@ export class ChatMessage extends UiMessage {
         this.userIntent = props.userIntent
         this.codeBlockLanguage = props.codeBlockLanguage
         this.contextList = props.contextList
+        this.title = props.title
     }
 }
 

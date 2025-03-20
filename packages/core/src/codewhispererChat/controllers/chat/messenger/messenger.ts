@@ -88,6 +88,7 @@ export class Messenger {
                     userIntent: undefined,
                     codeBlockLanguage: undefined,
                     contextList: mergedRelevantDocuments,
+                    title: 'Context',
                 },
                 tabID
             )
@@ -209,7 +210,7 @@ export class Messenger {
                         toolUse.name = cwChatEvent.toolUseEvent.name ?? ''
                         session.setToolUse(toolUse)
 
-                        const message = this.getToolUseMessage(toolUse)
+                        const message = this.getToolUseMessage(toolUse, session)
                         // TODO: for execute_bash command get users approval by adding button "Run" to below sendChatMessage and then execute this command -> "Running" handle the logic.
                         this.dispatcher.sendChatMessage(
                             new ChatMessage(
@@ -225,6 +226,7 @@ export class Messenger {
                                     userIntent: triggerPayload.userIntent,
                                     codeBlockLanguage: codeBlockLanguage,
                                     contextList: undefined,
+                                    title: undefined,
                                 },
                                 tabID
                             )
@@ -253,6 +255,7 @@ export class Messenger {
                                     userIntent: triggerPayload.userIntent,
                                     codeBlockLanguage: codeBlockLanguage,
                                     contextList: undefined,
+                                    title: undefined,
                                 },
                                 tabID
                             )
@@ -332,6 +335,7 @@ export class Messenger {
                                 userIntent: triggerPayload.userIntent,
                                 codeBlockLanguage: codeBlockLanguage,
                                 contextList: undefined,
+                                title: undefined,
                             },
                             tabID
                         )
@@ -352,6 +356,7 @@ export class Messenger {
                                 userIntent: triggerPayload.userIntent,
                                 codeBlockLanguage: undefined,
                                 contextList: undefined,
+                                title: undefined,
                             },
                             tabID
                         )
@@ -371,6 +376,7 @@ export class Messenger {
                             userIntent: triggerPayload.userIntent,
                             codeBlockLanguage: undefined,
                             contextList: undefined,
+                            title: undefined,
                         },
                         tabID
                     )
@@ -414,14 +420,20 @@ export class Messenger {
                 })
             })
     }
-    private getToolUseMessage(toolUse: ToolUse) {
+    private getToolUseMessage(toolUse: ToolUse, session: ChatSession) {
         if (toolUse.name === 'execute_bash') {
             const input = toolUse.input as unknown as ExecuteBashParams
             return `Executing the bash command \`${input.command}\` using the \`execute_bash\` tool.`
         }
         if (toolUse.name === 'fs_read') {
+            session.pushToListOfReadFiles((toolUse.input as any)?.path)
             // TODO: Show better UX according to figma and store all the previous read files in session and show as complete.
-            return `Reading the file at \`${(toolUse.input as any)?.path}\` using the \`fs_read\` tool.`
+            const formattedFiles = session.listOfReadFiles
+                .map((filePath) => {
+                    return `• ${filePath}`
+                })
+                .join('\n')
+            return `Reading the following files ... \n${formattedFiles}\n`
         }
         if (toolUse.name === 'fs_write') {
             const input = toolUse.input as unknown as FsWriteParams
@@ -539,6 +551,7 @@ at \`${input.path}\` using the \`fs_write\` tool.`
                     userIntent: undefined,
                     codeBlockLanguage: undefined,
                     contextList: undefined,
+                    title: undefined,
                 },
                 tabID
             )
