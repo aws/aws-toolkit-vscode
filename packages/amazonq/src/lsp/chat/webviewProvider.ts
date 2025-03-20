@@ -15,7 +15,7 @@ import {
 import { LanguageServerResolver } from 'aws-core-vscode/shared'
 
 export class AmazonQChatViewProvider implements WebviewViewProvider {
-    public static readonly viewType = 'aws.AmazonQChatView'
+    public static readonly viewType = 'aws.amazonq.AmazonQChatView'
     private readonly onDidResolveWebviewEmitter = new EventEmitter<void>()
     public readonly onDidResolveWebview = this.onDidResolveWebviewEmitter.event
 

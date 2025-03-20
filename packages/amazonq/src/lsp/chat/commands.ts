@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { focusAmazonQPanel } from 'aws-core-vscode/amazonq'
-import { Commands, globals, placeholder } from 'aws-core-vscode/shared'
+import * as vscode from 'vscode'
+import { Commands, globals } from 'aws-core-vscode/shared'
 import { window } from 'vscode'
 import { AmazonQChatViewProvider } from './webviewProvider'
 
@@ -18,7 +18,7 @@ export function registerCommands(provider: AmazonQChatViewProvider) {
             const triggerType = getCommandTriggerType(data)
             const selection = getSelectedText()
 
-            void focusAmazonQPanel.execute(placeholder, 'aws.amazonq.sendToPrompt').then(() => {
+            void focusAmazonQPanel().then(() => {
                 void provider.webview?.postMessage({
                     command: 'sendToPrompt',
                     params: { selection: selection, triggerType },
@@ -26,7 +26,7 @@ export function registerCommands(provider: AmazonQChatViewProvider) {
             })
         }),
         Commands.register('aws.amazonq.openTab', () => {
-            void focusAmazonQPanel.execute(placeholder, 'aws.amazonq.openTab').then(() => {
+            void focusAmazonQPanel().then(() => {
                 void provider.webview?.postMessage({
                     command: 'aws/chat/openTab',
                     params: {},
@@ -58,11 +58,22 @@ function registerGenericCommand(commandName: string, genericCommand: string, pro
         const triggerType = getCommandTriggerType(data)
         const selection = getSelectedText()
 
-        void focusAmazonQPanel.execute(placeholder, commandName).then(() => {
+        void focusAmazonQPanel().then(() => {
             void provider.webview?.postMessage({
                 command: 'genericCommand',
                 params: { genericCommand, selection, triggerType },
             })
         })
     })
+}
+
+/**
+ * Importing focusAmazonQPanel from aws-core-vscode/amazonq leads to several dependencies down the chain not resolving since AmazonQ chat
+ * is currently only activated on node, but the language server is activated on both web and node.
+ *
+ * Instead, we just create our own as a temporary solution
+ */
+async function focusAmazonQPanel() {
+    await vscode.commands.executeCommand('aws.amazonq.AmazonQChatView.focus')
+    await vscode.commands.executeCommand('aws.amazonq.AmazonCommonAuth.focus')
 }

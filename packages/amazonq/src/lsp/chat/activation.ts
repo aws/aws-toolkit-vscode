@@ -8,7 +8,6 @@ import { LanguageClient } from 'vscode-languageclient'
 import { AmazonQChatViewProvider } from './webviewProvider'
 import { registerCommands } from './commands'
 import { registerLanguageServerEventListener, registerMessageListeners } from './messages'
-import { focusAmazonQPanel, focusAmazonQPanelKeybinding } from 'aws-core-vscode/amazonq'
 import { globals } from 'aws-core-vscode/shared'
 
 export function activate(languageClient: LanguageClient, encryptionKey: Buffer, mynahUIPath: string) {
@@ -19,10 +18,7 @@ export function activate(languageClient: LanguageClient, encryptionKey: Buffer, 
             webviewOptions: {
                 retainContextWhenHidden: true,
             },
-        }),
-
-        focusAmazonQPanel.register(),
-        focusAmazonQPanelKeybinding.register()
+        })
     )
 
     /**
