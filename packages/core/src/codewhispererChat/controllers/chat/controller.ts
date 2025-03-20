@@ -886,10 +886,12 @@ export class ChatController {
 
                     let result: any
                     switch (toolUse.name) {
+                        // TODO: Wait for user to click on "Run" button and then execute "execute_bash" command.
                         case 'execute_bash': {
                             const executeBash = new ExecuteBash(toolUse.input as unknown as ExecuteBashParams)
                             await executeBash.validate()
                             result = await executeBash.invoke(tryGetCurrentWorkingDirectory() ?? '', process.stdout)
+                            // TODO: If we are executing "execute_bash" command then show this in chat = result.output.content
                             break
                         }
                         case 'fs_read': {

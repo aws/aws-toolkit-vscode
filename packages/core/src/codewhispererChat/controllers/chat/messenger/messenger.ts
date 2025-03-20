@@ -210,7 +210,7 @@ export class Messenger {
                         session.setToolUse(toolUse)
 
                         const message = this.getToolUseMessage(toolUse)
-
+                        // TODO: for execute_bash command get users approval by adding button "Run" to below sendChatMessage and then execute this command -> "Running" handle the logic.
                         this.dispatcher.sendChatMessage(
                             new ChatMessage(
                                 {
@@ -420,12 +420,14 @@ export class Messenger {
             return `Executing the bash command \`${input.command}\` using the \`execute_bash\` tool.`
         }
         if (toolUse.name === 'fs_read') {
+            // TODO: Show better UX according to figma and store all the previous read files in session and show as complete.
             return `Reading the file at \`${(toolUse.input as any)?.path}\` using the \`fs_read\` tool.`
         }
         if (toolUse.name === 'fs_write') {
             const input = toolUse.input as unknown as FsWriteParams
             switch (input.command) {
                 case 'create': {
+                    // TODO: Create a file diff view here with filePath = input.path and content = input.file_text
                     return `Writing
 \`\`\`
 ${input.file_text}
