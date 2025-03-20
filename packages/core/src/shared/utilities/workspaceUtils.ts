@@ -391,7 +391,7 @@ export async function collectFiles(
     }
 
     let totalSizeBytes = 0
-    const storage = []
+    const storage: (Omit<CollectFilesResultItem, 'fileContent'> | CollectFilesResultItem)[] = []
     const excludePatternFilter = excludePatternsAsString(excludePatterns)
     for (const rootPath of sourcePaths) {
         const allFiles = await vscode.workspace.findFiles(
@@ -432,19 +432,21 @@ export async function collectFiles(
                 isText: !ZipConstants.knownBinaryFileExts.includes(path.extname(file.fsPath)),
             }
             if (includeContent) {
-                const content = await readFile(file)
+                const hasUnsavedChanges = isFileOpenAndDirty(file)
+                const content =
+                    result.isText && hasUnsavedChanges ? await getCurrentTextContent(file) : await readFile(file)
                 if (content === undefined) {
                     continue
                 }
-                totalSizeBytes += fileStat.size
+
                 storage.push({
                     ...result,
                     fileContent: content,
                 })
             } else {
-                totalSizeBytes += fileStat.size
                 storage.push(result)
             }
+            totalSizeBytes += fileStat.size
         }
     }
     return storage
@@ -462,6 +464,16 @@ export async function collectFiles(
             throw new ToolkitError(`Failed to find prefix for workspace folder ${folder.name}`)
         }
         return prefix === '' ? path : `${prefix}/${path}`
+    }
+
+    async function getCurrentTextContent(uri: vscode.Uri) {
+        const document = await vscode.workspace.openTextDocument(uri)
+        const content = document.getText()
+        return content
+    }
+
+    function isFileOpenAndDirty(uri: vscode.Uri) {
+        return vscode.workspace.textDocuments.some((document) => document.uri.fsPath === uri.fsPath && document.isDirty)
     }
 }
 

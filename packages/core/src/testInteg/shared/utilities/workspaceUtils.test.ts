@@ -363,6 +363,22 @@ describe('workspaceUtils', () => {
                 (e) => e instanceof ToolkitError && e.code === 'ContentLengthError'
             )
         })
+
+        it('pulls updated content from unsaved open files', async function () {
+            const workspace = await createTestWorkspaceFolder()
+            const filepath = path.join(workspace.uri.fsPath, 'file1')
+            await toFile('this is some text', filepath)
+
+            const document = await vscode.workspace.openTextDocument(filepath)
+            await vscode.window.showTextDocument(document)
+            void vscode.window.activeTextEditor?.edit((editBuilder) => {
+                editBuilder.insert(new vscode.Position(0, 0), '// a comment\n')
+            })
+
+            const result = await collectFiles([workspace.uri.fsPath], [workspace])
+            assert.strictEqual(result.length, 1)
+            assert.strictEqual(result[0].fileContent, '// a comment\nthis is some text')
+        })
     })
 
     describe('getWorkspaceFoldersByPrefixes', function () {
