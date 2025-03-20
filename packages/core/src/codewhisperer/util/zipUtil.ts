@@ -449,17 +449,20 @@ export class ZipUtil {
             }
 
             if (ZipConstants.knownBinaryFileExts.includes(fileExtension)) {
+                if (useCase === FeatureUseCase.TEST_GENERATION) {
+                    continue
+                }
+
                 zip.writeFile(file.fileUri.fsPath, path.dirname(zipEntryPath))
             } else {
                 // TODO: verify if this is needed
-                // const isFileOpenAndDirty = this.isFileOpenAndDirty(file.fileUri)
-                // const fileContent = isFileOpenAndDirty ? await this.getTextContent(file.fileUri) : file.fileContent
-                // const fileSize = Buffer.from(fileContent).length
+                const isFileOpenAndDirty = this.isFileOpenAndDirty(file.fileUri)
+                const fileContent = isFileOpenAndDirty ? await this.getTextContent(file.fileUri) : file.fileContent
 
-                this._totalLines += file.fileContent.split(ZipConstants.newlineRegex).length
+                this._totalLines += fileContent.split(ZipConstants.newlineRegex).length
 
                 this.incrementCountForLanguage(file.fileUri, languageCount)
-                zip.writeString(file.fileContent, zipEntryPath)
+                zip.writeString(fileContent, zipEntryPath)
             }
 
             this._pickedSourceFiles.add(file.fileUri.fsPath)
