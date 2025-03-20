@@ -434,16 +434,36 @@ export class ZipUtil {
             const zipEntryPath = this.getZipEntryPath(projectName, file.relativeFilePath)
             const fileExtension = path.extname(file.fileUri.fsPath)
 
-            if (ZipConstants.knownBinaryFileExts.includes(fileExtension)) {
-                if (useCase === FeatureUseCase.TEST_GENERATION) {
-                    continue
-                }
-                await this.processBinaryFile(zip, file.fileUri, zipEntryPath)
-            } else {
-                const isFileOpenAndDirty = this.isFileOpenAndDirty(file.fileUri)
-                const fileContent = isFileOpenAndDirty ? await this.getTextContent(file.fileUri) : file.fileContent
-                this.processTextFile(zip, file.fileUri, fileContent, languageCount, zipEntryPath)
+            if (
+                ZipConstants.knownBinaryFileExts.includes(fileExtension) &&
+                useCase === FeatureUseCase.TEST_GENERATION
+            ) {
+                continue
             }
+
+            if (
+                this.reachSizeLimit(this._totalSize, CodeWhispererConstants.CodeAnalysisScope.PROJECT) ||
+                this.willReachSizeLimit(this._totalSize, file.fileSizeBytes)
+            ) {
+                throw new ProjectSizeExceededError()
+            }
+
+            if (ZipConstants.knownBinaryFileExts.includes(fileExtension)) {
+                zip.writeFile(file.fileUri.fsPath, path.dirname(zipEntryPath))
+            } else {
+                // TODO: verify if this is needed
+                // const isFileOpenAndDirty = this.isFileOpenAndDirty(file.fileUri)
+                // const fileContent = isFileOpenAndDirty ? await this.getTextContent(file.fileUri) : file.fileContent
+                // const fileSize = Buffer.from(fileContent).length
+
+                this._totalLines += file.fileContent.split(ZipConstants.newlineRegex).length
+
+                this.incrementCountForLanguage(file.fileUri, languageCount)
+                zip.writeString(file.fileContent, zipEntryPath)
+            }
+
+            this._pickedSourceFiles.add(file.fileUri.fsPath)
+            this._totalSize += file.fileSizeBytes
         }
     }
 
@@ -497,21 +517,6 @@ export class ZipUtil {
 
         this.incrementCountForLanguage(uri, languageCount)
         zip.writeString(fileContent, zipEntryPath)
-    }
-
-    protected async processBinaryFile(zip: ZipStream, uri: vscode.Uri, zipEntryPath: string) {
-        const fileSize = (await fs.stat(uri.fsPath)).size
-
-        if (
-            this.reachSizeLimit(this._totalSize, CodeWhispererConstants.CodeAnalysisScope.PROJECT) ||
-            this.willReachSizeLimit(this._totalSize, fileSize)
-        ) {
-            throw new ProjectSizeExceededError()
-        }
-        this._pickedSourceFiles.add(uri.fsPath)
-        this._totalSize += fileSize
-
-        zip.writeFile(uri.fsPath, path.dirname(zipEntryPath))
     }
 
     protected incrementCountForLanguage(uri: vscode.Uri, languageCount: Map<CodewhispererLanguage, number>) {
