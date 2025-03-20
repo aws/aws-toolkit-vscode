@@ -13,7 +13,7 @@ import {
 } from '@amzn/codewhisperer-streaming'
 import { ChatTriggerType, TriggerPayload } from '../model'
 import { undefinedIfEmpty } from '../../../../shared/utilities/textUtilities'
-import { getLogger } from '../../../../shared'
+import { getLogger } from '../../../../shared/logger/logger'
 
 const fqnNameSizeDownLimit = 1
 const fqnNameSizeUpLimit = 256
