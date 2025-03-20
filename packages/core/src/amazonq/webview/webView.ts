@@ -20,6 +20,7 @@ import { MessageListener } from '../messages/messageListener'
 import { MessagePublisher } from '../messages/messagePublisher'
 import { TabType } from './ui/storages/tabsStorage'
 import { amazonqMark } from '../../shared/performance/marks'
+import { AuthUtil } from '../../codewhisperer/util/authUtil'
 
 export class AmazonQChatViewProvider implements WebviewViewProvider {
     public static readonly viewType = 'aws.AmazonQChatView'
@@ -44,6 +45,13 @@ export class AmazonQChatViewProvider implements WebviewViewProvider {
     ) {
         webviewView.onDidChangeVisibility(() => {
             this.onDidChangeAmazonQVisibility.fire(webviewView.visible)
+        })
+
+        AuthUtil.instance.regionProfileManager.onDidChangeRegionProfile(async () => {
+            webviewView.webview.html = await this.webViewContentGenerator.generate(
+                this.extensionContext.extensionUri,
+                webviewView.webview
+            )
         })
 
         const dist = Uri.joinPath(this.extensionContext.extensionUri, 'dist')

@@ -107,7 +107,7 @@ export class AuthUtil {
 
     public constructor(
         public readonly auth = Auth.instance,
-        public readonly regionProfileManager = new RegionProfileManager()
+        public readonly regionProfileManager = new RegionProfileManager(() => this.conn)
     ) {}
 
     public initCodeWhispererHooks = once(() => {
@@ -139,13 +139,19 @@ export class AuthUtil {
                 await showAmazonQWalkthroughOnce()
             }
         })
+
+        this.regionProfileManager.onDidChangeRegionProfile(async () => {
+            await this.setVscodeContextProps()
+        })
     })
 
     public async setVscodeContextProps() {
         await setContext('aws.codewhisperer.connected', this.isConnected())
-        const doShowAmazonQLoginView = !this.isConnected() || this.isConnectionExpired()
+        const doShowAmazonQLoginView =
+            !this.isConnected() || this.isConnectionExpired() || this.requireProfileSelection()
         await setContext('aws.amazonq.showLoginView', doShowAmazonQLoginView)
         await setContext('aws.codewhisperer.connectionExpired', this.isConnectionExpired())
+        await setContext('aws.amazonq.connectedSsoIdc', isIdcSsoConnection(this.conn))
     }
 
     public reformatStartUrl(startUrl: string | undefined) {
@@ -294,6 +300,10 @@ export class AuthUtil {
         }
 
         return connectionExpired
+    }
+
+    private requireProfileSelection(): boolean {
+        return isIdcSsoConnection(this.conn) && this.regionProfileManager.activeRegionProfile === undefined
     }
 
     private logConnection() {
@@ -461,12 +471,23 @@ export class AuthUtil {
         }
 
         if (isBuilderIdConnection(conn) || isIdcSsoConnection(conn) || isSageMaker()) {
+            // TODO: refactor
             if (isValidCodeWhispererCoreConnection(conn)) {
-                state[Features.codewhispererCore] = AuthStates.connected
+                if (this.requireProfileSelection()) {
+                    state[Features.codewhispererCore] = AuthStates.pendingProfileSelection
+                } else {
+                    state[Features.codewhispererCore] = AuthStates.connected
+                }
             }
             if (isValidAmazonQConnection(conn)) {
-                for (const v of Object.values(Features)) {
-                    state[v as Feature] = AuthStates.connected
+                if (this.requireProfileSelection()) {
+                    for (const v of Object.values(Features)) {
+                        state[v as Feature] = AuthStates.pendingProfileSelection
+                    }
+                } else {
+                    for (const v of Object.values(Features)) {
+                        state[v as Feature] = AuthStates.connected
+                    }
                 }
             }
         }

@@ -19,6 +19,7 @@ export type contextKey =
     | 'aws.amazonq.security.noMatches'
     | 'aws.amazonq.notifications.show'
     | 'aws.codecatalyst.connected'
+    | 'aws.amazonq.connectedSsoIdc'
     | 'aws.codewhisperer.connected'
     | 'aws.codewhisperer.connectionExpired'
     | 'aws.codewhisperer.tutorial.workInProgress'

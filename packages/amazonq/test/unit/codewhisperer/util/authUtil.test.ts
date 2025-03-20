@@ -384,7 +384,7 @@ describe('getChatAuthState()', function () {
 
             const result = await authUtil.getChatAuthState()
             assert.deepStrictEqual(result, {
-                codewhispererCore: AuthStates.connected,
+                codewhispererCore: AuthStates.pendingProfileSelection,
                 codewhispererChat: AuthStates.expired,
                 amazonQ: AuthStates.expired,
             })
@@ -399,9 +399,9 @@ describe('getChatAuthState()', function () {
 
             const result = await authUtil.getChatAuthState()
             assert.deepStrictEqual(result, {
-                codewhispererCore: AuthStates.connected,
-                codewhispererChat: AuthStates.connected,
-                amazonQ: AuthStates.connected,
+                codewhispererCore: AuthStates.pendingProfileSelection,
+                codewhispererChat: AuthStates.pendingProfileSelection,
+                amazonQ: AuthStates.pendingProfileSelection,
             })
         })
 

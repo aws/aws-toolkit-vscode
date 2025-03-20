@@ -158,6 +158,7 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
             this.authState = this.isReauthenticating ? 'REAUTHENTICATING' : 'REAUTHNEEDED'
             return
         } else if (featureAuthStates.amazonQ === 'pendingProfileSelection') {
+            this.authState = 'PENDING_PROFILE_SELECTION'
             return
         }
         this.authState = 'LOGIN'
@@ -205,41 +206,18 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
     async quitLoginScreen() {}
 
     override listRegionProfiles(): Promise<RegionProfile[]> {
-        // TODO: uncomment
-        // return AuthUtil.instance.regionProfileManager.listRegionProfile()
-
-        return Promise.resolve([
-            {
-                name: 'ACME platform work',
-                region: 'us-east-1',
-                arn: 'foo',
-                description: 'Some description for ACME Platform Work',
-            },
-            {
-                name: 'EU payments TEAM',
-                region: 'us-east-1',
-                arn: 'bar',
-                description: 'Some description for EU payments TEAM',
-            },
-            {
-                name: 'CodeWhisperer TEAM',
-                region: 'us-east-1',
-                arn: 'baz',
-                description: 'Some description for CodeWhisperer TEAM',
-            },
-        ])
+        return AuthUtil.instance.regionProfileManager.listRegionProfile()
     }
 
-    override selectRegionProfile(profile: RegionProfile): Promise<void> {
-        // TODO: uncomment
-        // return AuthUtil.instance.regionProfileManager.switchRegionProfile(profile)
-        return Promise.resolve()
+    override selectRegionProfile(profile: RegionProfile) {
+        return AuthUtil.instance.regionProfileManager.switchRegionProfile(profile)
     }
 
     private setupConnectionEventEmitter(): void {
         // allows the frontend to listen to Amazon Q auth events from the backend
         const codeWhispererConnectionChanged = createThrottle(() => this.onActiveConnectionModified.fire())
         AuthUtil.instance.secondaryAuth.onDidChangeActiveConnection(codeWhispererConnectionChanged)
+        AuthUtil.instance.regionProfileManager.onDidChangeRegionProfile(codeWhispererConnectionChanged)
 
         /**
          * Multiple events can be received in rapid succession and if

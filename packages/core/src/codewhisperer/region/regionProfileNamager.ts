@@ -3,16 +3,26 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as vscode from 'vscode'
 import { getIcon } from '../../shared/icons'
 import { DataQuickPickItem } from '../../shared/ui/pickerPrompter'
 import { RegionProfile } from '../models/model'
 import { showConfirmationMessage } from '../../shared/utilities/messages'
+import { Connection, isIdcSsoConnection } from '../../auth/connection'
 
 // TODO: Implementation
 export class RegionProfileManager {
     private _activeRegionProfile: RegionProfile | undefined
+    private _onDidChangeRegionProfile = new vscode.EventEmitter<RegionProfile | undefined>()
+    public readonly onDidChangeRegionProfile = this._onDidChangeRegionProfile.event
+
+    public constructor(private readonly connectionProvider: () => Connection | undefined) {}
 
     get activeRegionProfile() {
+        const conn = this.connectionProvider()
+        if (conn === undefined || !isIdcSsoConnection(conn)) {
+            return undefined
+        }
         return this._activeRegionProfile
     }
 
@@ -60,6 +70,7 @@ export class RegionProfileManager {
         }
 
         this._activeRegionProfile = regionProfile
+        this._onDidChangeRegionProfile.fire(regionProfile)
     }
 
     async generateQuickPickItem(): Promise<DataQuickPickItem<string>[]> {
