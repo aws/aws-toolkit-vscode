@@ -6,6 +6,8 @@ import { WritableStreamBuffer } from 'stream-buffers'
 import crypto from 'crypto'
 import { readFileAsString } from '../filesystemUtilities'
 
+// Does not offer CommonJS support officially: https://github.com/gildas-lormeau/zip.js/issues/362.
+// Webpack appears to handle this for us expirementally.
 // @ts-ignore
 import { ZipWriter, TextReader, ZipReader, Uint8ArrayReader, EntryMetaData, Entry } from '@zip.js/zip.js'
 import { getLogger } from '../logger/logger'
