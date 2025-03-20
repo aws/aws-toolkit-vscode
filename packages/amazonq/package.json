@@ -340,12 +340,17 @@
                 },
                 {
                     "command": "aws.amazonq.openReferencePanel",
-                    "when": "view == aws.AmazonQChatView",
+                    "when": "view == aws.amazonq.AmazonQChatView",
                     "group": "0_topAmazonQ@1"
                 },
                 {
                     "command": "aws.amazonq.learnMore",
                     "when": "view == aws.AmazonQChatView || view == aws.amazonq.AmazonCommonAuth",
+                    "group": "1_amazonQ@1"
+                },
+                {
+                    "command": "aws.amazonq.selectRegionProfile",
+                    "when": "view == aws.AmazonQChatView && aws.amazonq.connectedSsoIdc == true",
                     "group": "1_amazonQ@1"
                 },
                 {
@@ -555,6 +560,12 @@
             {
                 "command": "aws.amazonq.openReferencePanel",
                 "title": "%AWS.command.codewhisperer.openReferencePanel%",
+                "category": "%AWS.amazonq.title%",
+                "enablement": "aws.codewhisperer.connected"
+            },
+            {
+                "command": "aws.amazonq.selectRegionProfile",
+                "title": "Switch Profile",
                 "category": "%AWS.amazonq.title%",
                 "enablement": "aws.codewhisperer.connected"
             },
