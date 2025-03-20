@@ -9,6 +9,8 @@ import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import path from 'path'
 import fs from '../../../shared/fs/fs'
 import crypto from 'crypto'
+// @ts-ignore
+import { BlobWriter } from '@zip.js/zip.js'
 
 describe('zipStream', function () {
     let tmpDir: string
@@ -42,13 +44,19 @@ describe('zipStream', function () {
 
     it('should unzip from a buffer', async function () {
         const zipStream = new ZipStream()
-        await zipStream.writeString('foo bar', 'file.txt', true)
+        await zipStream.writeString('foo bar foo', 'file.txt', true)
         const result = await zipStream.finalize()
 
         const zipBuffer = result.streamBuffer.getContents()
         assert.ok(zipBuffer)
         const zipEntries = await ZipStream.unzip(zipBuffer)
         assert.strictEqual(zipEntries[0].filename, 'file.txt')
+        assert.strictEqual(zipEntries.length, 1)
+
+        // Read data back from zip to verify
+        const data = await zipEntries[0].getData!(new BlobWriter('text/plain'))
+        const textData = await data.text()
+        assert.strictEqual(textData, 'foo bar foo')
     })
 
     it('should write contents to file', async function () {
