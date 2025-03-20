@@ -50,6 +50,7 @@ export async function createCodeFixJob(
     uploadId: string,
     snippetRange: CodeWhispererUserClient.Range,
     description: string,
+    referenceTrackerConfiguration: CodeWhispererUserClient.ReferenceTrackerConfiguration,
     codeFixName?: string,
     ruleId?: string
 ) {
@@ -60,6 +61,7 @@ export async function createCodeFixJob(
         codeFixName,
         ruleId,
         description,
+        referenceTrackerConfiguration,
     }
 
     const resp = await client.startCodeFixJob(req).catch((err) => {
