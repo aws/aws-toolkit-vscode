@@ -23,22 +23,10 @@ describe('zipStream', function () {
 
     it('should create a zip stream from text content', async function () {
         const zipStream = new ZipStream({ hashAlgorithm: 'md5' })
-        await zipStream.writeString('foo bar', 'file.txt')
+        await zipStream.writeString('foo bar', 'file.txt', true)
         const result = await zipStream.finalize()
 
         await verifyResult(result, path.join(tmpDir, 'test.zip'))
-    })
-
-    it('should create a zip stream from binary content', async function () {
-        const zipStream = new ZipStream({ hashAlgorithm: 'md5' })
-        await zipStream.writeData(Buffer.from('foo bar'), 'file.txt')
-        const result = await zipStream.finalize()
-
-        await verifyResult(result, path.join(tmpDir, 'test.zip'))
-
-        const zipContents = await ZipStream.unzip(result.streamBuffer.getContents() || Buffer.from(''))
-        assert.strictEqual(zipContents.length, 1)
-        assert.strictEqual(zipContents[0].filename, 'file.txt')
     })
 
     it('should create a zip stream from file', async function () {
@@ -54,7 +42,7 @@ describe('zipStream', function () {
 
     it('should unzip from a buffer', async function () {
         const zipStream = new ZipStream()
-        await zipStream.writeString('foo bar', 'file.txt')
+        await zipStream.writeString('foo bar', 'file.txt', true)
         const result = await zipStream.finalize()
 
         const zipBuffer = result.streamBuffer.getContents()
@@ -65,8 +53,7 @@ describe('zipStream', function () {
 
     it('should write contents to file', async function () {
         const zipStream = new ZipStream()
-        await zipStream.writeString('foo bar', 'file.txt')
-        await zipStream.writeData(Buffer.from('foo bar'), 'file2.txt')
+        await zipStream.writeString('foo bar', 'file.txt', true)
         const zipPath = path.join(tmpDir, 'test.zip')
         const result = await zipStream.finalizeToFile(path.join(tmpDir, 'test.zip'))
 

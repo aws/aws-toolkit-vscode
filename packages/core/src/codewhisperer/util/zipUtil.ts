@@ -189,11 +189,10 @@ export class ZipUtil {
 
                 if (fileType === vscode.FileType.File) {
                     try {
-                        const fileContent = await vscode.workspace.fs.readFile(vscode.Uri.file(filePath))
-                        const buffer = Buffer.from(fileContent)
+                        const fileUri = vscode.Uri.file(filePath)
                         const relativePath = path.relative(metadataDir, filePath)
                         const pathWithMetadata = path.join(metadataDirName, relativePath)
-                        zip.writeData(buffer, pathWithMetadata)
+                        zip.writeFile(fileUri.fsPath, pathWithMetadata)
                     } catch (error) {
                         getLogger().error(`Failed to add file ${filePath} to zip: ${error}`)
                     }
