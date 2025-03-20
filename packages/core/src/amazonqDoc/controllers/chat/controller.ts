@@ -30,6 +30,7 @@ import {
     SelectedFolderNotInWorkspaceFolderError,
     WorkspaceFolderNotFoundError,
     createUserFacingErrorMessage,
+    getMetricResult,
 } from '../../../amazonqFeatureDev/errors'
 import { BaseChatSessionStorage } from '../../../amazonq/commons/baseChatStorage'
 import { DocMessenger } from '../../messenger'
@@ -44,7 +45,7 @@ import {
 import { getPathsFromZipFilePath, SvgFileExtension } from '../../../amazonq/util/files'
 import { FollowUpTypes } from '../../../amazonq/commons/types'
 import { DocGenerationTask, DocGenerationTasks } from '../docGenerationTask'
-import { DevPhase } from '../../types'
+import { DevPhase, MetricDataOperationName, MetricDataResult } from '../../types'
 
 export interface ChatControllerEventEmitters {
     readonly processHumanChatMessage: EventEmitter<any>
@@ -554,6 +555,7 @@ export class DocController {
         await session.preloader(message)
 
         try {
+            await session.sendDocMetricData(MetricDataOperationName.StartDocGeneration, MetricDataResult.Success)
             await session.send(message, docGenerationTask.mode, docGenerationTask.folderPath)
             const filePaths = session.state.filePaths ?? []
             const deletedFiles = session.state.deletedFiles ?? []
@@ -624,6 +626,10 @@ export class DocController {
 
                 await session.sendDocTelemetryEvent(docGenerationEvent, 'generation')
             }
+        } catch (err: any) {
+            getLogger().error(`${featureName}: Error during doc generation: ${err}`)
+            await session.sendDocMetricData(MetricDataOperationName.EndDocGeneration, getMetricResult(err))
+            throw err
         } finally {
             if (session?.state?.tokenSource?.token.isCancellationRequested) {
                 await this.newTask({ tabID })
@@ -633,6 +639,7 @@ export class DocController {
                 this.messenger.sendChatInputEnabled(tabID, false)
             }
         }
+        await session.sendDocMetricData(MetricDataOperationName.EndDocGeneration, MetricDataResult.Success)
     }
 
     private authClicked(message: any) {
