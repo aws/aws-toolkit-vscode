@@ -82,6 +82,8 @@ import {
 import { ChatSession } from '../../clients/chat/v0/chat'
 import { FsRead, FsReadParams } from '../../tools/fsRead'
 import { tryGetCurrentWorkingDirectory } from '../../../shared/utilities/workspaceUtils'
+import FsWrite, { DefaultContext, FsWriteParams } from '../../tools/fsWrite'
+import ExecuteBash, { ExecuteBashParams } from '../../tools/executeBash'
 
 export interface ChatControllerMessagePublishers {
     readonly processPromptChatMessage: MessagePublisher<PromptMessage>
@@ -855,11 +857,23 @@ export class ChatController {
 
                     let result: any
                     switch (toolUse.name) {
+                        case 'execute_bash': {
+                            const executeBash = new ExecuteBash(toolUse.input as unknown as ExecuteBashParams)
+                            await executeBash.validate()
+                            result = await executeBash.invoke(tryGetCurrentWorkingDirectory() ?? '', process.stdout)
+                            break
+                        }
                         case 'fs_read': {
                             const fsRead = new FsRead(toolUse.input as unknown as FsReadParams)
                             result = await fsRead.invoke({
-                                env: { currentDir: () => tryGetCurrentWorkingDirectory() },
+                                env: { currentDir: () => tryGetCurrentWorkingDirectory() ?? '' },
                             })
+                            break
+                        }
+                        case 'fs_write': {
+                            const fsWrite = new FsWrite(toolUse.input as unknown as FsWriteParams)
+                            const ctx = new DefaultContext()
+                            result = await fsWrite.invoke(ctx, process.stdout)
                             break
                         }
                         default:
@@ -882,7 +896,11 @@ export class ChatController {
                             context: message.context,
                             toolResults: [
                                 {
-                                    content: [{ text: result.output.content }],
+                                    content: [
+                                        result.output.kind === 'text'
+                                            ? { text: result.output.content }
+                                            : { json: result.output.content },
+                                    ],
                                     toolUseId: toolUse.toolUseId,
                                     status: 'success',
                                 },

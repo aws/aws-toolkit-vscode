@@ -39,6 +39,8 @@ import { extractCodeBlockLanguage } from '../../../../shared/markdown'
 import { extractAuthFollowUp } from '../../../../amazonq/util/authUtils'
 import { helpMessage } from '../../../../amazonq/webview/ui/texts/constants'
 import { ChatItemButton, ChatItemFormItem, MynahUIDataModel } from '@aws/mynah-ui'
+import { FsWriteParams } from '../../../tools/fsWrite'
+import { ExecuteBashParams } from '../../../tools/executeBash'
 
 export type StaticTextResponseType = 'quick-action-help' | 'onboarding-help' | 'transform' | 'help'
 
@@ -205,10 +207,12 @@ export class Messenger {
                         toolUse.name = cwChatEvent.toolUseEvent.name ?? ''
                         session.setToolUse(toolUse)
 
+                        const message = this.getToolUseMessage(toolUse)
+
                         this.dispatcher.sendChatMessage(
                             new ChatMessage(
                                 {
-                                    message: `Reading the file at \`${(toolUse.input as any)?.path}\` using the \`fs_read\` tool.`,
+                                    message,
                                     messageType: 'answer',
                                     followUps: undefined,
                                     followUpsHeader: undefined,
@@ -398,6 +402,56 @@ export class Messenger {
                     },
                 })
             })
+    }
+    private getToolUseMessage(toolUse: ToolUse) {
+        if (toolUse.name === 'execute_bash') {
+            const input = toolUse.input as unknown as ExecuteBashParams
+            return `Executing the bash command \`${input.command}\` using the \`execute_bash\` tool.`
+        }
+        if (toolUse.name === 'fs_read') {
+            return `Reading the file at \`${(toolUse.input as any)?.path}\` using the \`fs_read\` tool.`
+        }
+        if (toolUse.name === 'fs_write') {
+            const input = toolUse.input as unknown as FsWriteParams
+            switch (input.command) {
+                case 'create': {
+                    return `Writing
+\`\`\`
+${input.file_text}
+\`\`\`
+into the file at \`${input.path}\` using the \`fs_write\` tool.`
+                }
+                case 'str_replace': {
+                    return `Replacing
+\`\`\`
+${input.old_str}
+\`\`\`
+with
+\`\`\`
+${input.new_str}
+\`\`\`
+at \`${input.path}\` using the \`fs_write\` tool.`
+                }
+                case 'insert': {
+                    return `Inserting
+\`\`\`
+${input.new_str}
+\`\`\`
+at line
+\`\`\`
+${input.insert_line}
+\`\`\`
+at \`${input.path}\` using the \`fs_write\` tool.`
+                }
+                case 'append': {
+                    return `Appending
+\`\`\`
+${input.new_str}
+\`\`\`
+at \`${input.path}\` using the \`fs_write\` tool.`
+                }
+            }
+        }
     }
 
     public sendErrorMessage(errorMessage: string | undefined, tabID: string, requestID: string | undefined) {
