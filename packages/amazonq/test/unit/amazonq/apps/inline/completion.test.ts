@@ -17,6 +17,8 @@ describe('InlineCompletionManager', () => {
     let executeCommandStub: sinon.SinonStub
     let disposableStub: sinon.SinonStub
     let sandbox: sinon.SinonSandbox
+    let getActiveSessionStub: sinon.SinonStub
+    let getActiveRecommendationStub: sinon.SinonStub
 
     beforeEach(() => {
         sandbox = sinon.createSandbox()
@@ -38,6 +40,8 @@ describe('InlineCompletionManager', () => {
         } as unknown as LanguageClient
 
         manager = new InlineCompletionManager(languageClient)
+        getActiveSessionStub = sandbox.stub(manager['sessionManager'], 'getActiveSession')
+        getActiveRecommendationStub = sandbox.stub(manager['sessionManager'], 'getActiveRecommendation')
     })
 
     afterEach(() => {
@@ -70,7 +74,7 @@ describe('InlineCompletionManager', () => {
 
         it('should register accept and reject commands', () => {
             assert(registerCommandStub.calledWith('aws.amazonq.acceptInline'))
-            assert(registerCommandStub.calledWith('aws.amazonq.rejectInline'))
+            assert(registerCommandStub.calledWith('aws.amazonq.rejectCodeSuggestion'))
         })
 
         describe('onInlineAcceptance', () => {
@@ -114,12 +118,23 @@ describe('InlineCompletionManager', () => {
                 // Get the rejection handler
                 const rejectionHandler = registerCommandStub
                     .getCalls()
-                    .find((call) => call.args[0] === 'aws.amazonq.rejectInline')?.args[1]
+                    .find((call) => call.args[0] === 'aws.amazonq.rejectCodeSuggestion')?.args[1]
 
                 const sessionId = 'test-session'
                 const itemId = 'test-item'
+                const mockSuggestion = {
+                    itemId,
+                    insertText: 'test',
+                }
 
-                await rejectionHandler(sessionId, itemId)
+                getActiveSessionStub.returns({
+                    sessionId: 'test-session',
+                    suggestions: [mockSuggestion],
+                    isRequestInProgress: false,
+                    requestStartTime: Date.now(),
+                })
+                getActiveRecommendationStub.returns([mockSuggestion])
+                await rejectionHandler()
 
                 assert(executeCommandStub.calledWith('editor.action.inlineSuggest.hide'))
                 assert(sendNotificationStub.calledOnce)

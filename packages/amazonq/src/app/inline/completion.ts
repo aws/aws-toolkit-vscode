@@ -79,9 +79,19 @@ export class InlineCompletionManager implements Disposable {
         }
         commands.registerCommand('aws.amazonq.acceptInline', onInlineAcceptance)
 
-        const onInlineRejection = async (sessionId: string, itemId: string) => {
+        const onInlineRejection = async () => {
             await commands.executeCommand('editor.action.inlineSuggest.hide')
             // TODO: also log the seen state for other suggestions in session
+            this.disposable.dispose()
+            this.disposable = languages.registerInlineCompletionItemProvider(
+                CodeWhispererConstants.platformLanguageIds,
+                this.inlineCompletionProvider
+            )
+            const sessionId = this.sessionManager.getActiveSession()?.sessionId
+            const itemId = this.sessionManager.getActiveRecommendation()[0]?.itemId
+            if (!sessionId || !itemId) {
+                return
+            }
             const params: LogInlineCompletionSessionResultsParams = {
                 sessionId: sessionId,
                 completionSessionResult: {
@@ -93,13 +103,8 @@ export class InlineCompletionManager implements Disposable {
                 },
             }
             this.languageClient.sendNotification(this.logSessionResultMessageName, params)
-            this.disposable.dispose()
-            this.disposable = languages.registerInlineCompletionItemProvider(
-                CodeWhispererConstants.platformLanguageIds,
-                this.inlineCompletionProvider
-            )
         }
-        commands.registerCommand('aws.amazonq.rejectInline', onInlineRejection)
+        commands.registerCommand('aws.amazonq.rejectCodeSuggestion', onInlineRejection)
 
         /*
             We have to overwrite the prev. and next. commands because the inlineCompletionProvider only contained the current item
