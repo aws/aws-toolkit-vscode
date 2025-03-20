@@ -420,7 +420,7 @@ export class ZipUtil {
                   )
                 : vscode.workspace.workspaceFolders) as CurrentWsFolders,
             {
-                maxSizeBytes: this.getProjectScanPayloadSizeLimitInBytes(),
+                maxTotalSizeBytes: this.getProjectScanPayloadSizeLimitInBytes(),
                 excludePatterns:
                     useCase === FeatureUseCase.TEST_GENERATION
                         ? [...CodeWhispererConstants.testGenExcludePatterns, ...defaultExcludePatterns]

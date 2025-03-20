@@ -334,9 +334,12 @@ export const securityScanLanguageIds = [
     'sh',
     'shell',
     'shellscript',
+    'brazilPackageConfig',
 ] as const
 
 export type SecurityScanLanguageId = (typeof securityScanLanguageIds)[number]
+
+export const sasRuleId = 'sbom-software-assurance-services'
 
 // wait time for editor to update editor.selection.active (in milliseconds)
 export const vsCodeCursorUpdateDelay = 10
@@ -853,6 +856,8 @@ export const crossFileContextConfig = {
     topK: 3,
     numberOfLinesEachChunk: 50,
     maximumTotalLength: 20480,
+    maxLengthEachChunk: 10240,
+    maxContextCount: 5,
 }
 
 export const utgConfig = {

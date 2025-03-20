@@ -4,7 +4,6 @@
  */
 
 import assert from 'assert'
-import { CloudWatchLogs } from 'aws-sdk'
 import * as sinon from 'sinon'
 import * as vscode from 'vscode'
 import { AsyncCollection } from '../../../shared/utilities/asyncCollection'
@@ -33,7 +32,7 @@ import {
     partialClone,
     inspect,
 } from '../../../shared/utilities/collectionUtils'
-
+import * as CloudWatchLogs from '@aws-sdk/client-cloudwatch-logs'
 import { asyncGenerator } from '../../../shared/utilities/collectionUtils'
 
 describe('CollectionUtils', async function () {
@@ -370,7 +369,7 @@ describe('CollectionUtils', async function () {
                 [CloudWatchLogs.DescribeLogStreamsRequest],
                 CloudWatchLogs.DescribeLogStreamsResponse
             >()
-            const responses: CloudWatchLogs.LogStreams[] = [
+            const responses: CloudWatchLogs.LogStream[][] = [
                 [{ logStreamName: 'stream1' }, { logStreamName: 'stream2' }, { logStreamName: 'stream3' }],
                 [{ logStreamName: 'stream4' }, { logStreamName: 'stream5' }, { logStreamName: 'stream6' }],
                 [{ logStreamName: 'stream7' }, { logStreamName: 'stream8' }, { logStreamName: 'stream9' }],

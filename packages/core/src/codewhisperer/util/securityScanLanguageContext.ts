@@ -47,6 +47,7 @@ export class SecurityScanLanguageContext {
             sh: 'shell',
             shell: 'shell',
             shellscript: 'shell',
+            brazilPackageConfig: 'plaintext',
         })
     }
 

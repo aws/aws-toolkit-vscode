@@ -84,6 +84,7 @@ import { FsRead, FsReadParams } from '../../tools/fsRead'
 import { tryGetCurrentWorkingDirectory } from '../../../shared/utilities/workspaceUtils'
 import FsWrite, { DefaultContext, FsWriteParams } from '../../tools/fsWrite'
 import ExecuteBash, { ExecuteBashParams } from '../../tools/executeBash'
+import { ChatHistoryManager } from '../../storages/chatHistory'
 
 export interface ChatControllerMessagePublishers {
     readonly processPromptChatMessage: MessagePublisher<PromptMessage>
@@ -145,6 +146,7 @@ export class ChatController {
     private readonly userIntentRecognizer: UserIntentRecognizer
     private readonly telemetryHelper: CWCTelemetryHelper
     private userPromptsWatcher: vscode.FileSystemWatcher | undefined
+    private readonly chatHistoryManager: ChatHistoryManager
 
     public constructor(
         private readonly chatControllerMessageListeners: ChatControllerMessageListeners,
@@ -162,6 +164,7 @@ export class ChatController {
         this.editorContentController = new EditorContentController()
         this.promptGenerator = new PromptsGenerator()
         this.userIntentRecognizer = new UserIntentRecognizer()
+        this.chatHistoryManager = new ChatHistoryManager()
 
         onDidChangeAmazonQVisibility((visible) => {
             if (visible) {
@@ -399,6 +402,7 @@ export class ChatController {
 
     private async processTabCloseMessage(message: TabClosedMessage) {
         this.sessionStorage.deleteSession(message.tabID)
+        this.chatHistoryManager.clear()
         this.triggerEventsStorage.removeTabEvents(message.tabID)
         // this.telemetryHelper.recordCloseChat(message.tabID)
     }
@@ -658,6 +662,7 @@ export class ChatController {
         getLogger().error(`error: ${errorMessage} tabID: ${tabID} requestID: ${requestID}`)
 
         this.sessionStorage.deleteSession(tabID)
+        this.chatHistoryManager.clear()
     }
 
     private async processContextMenuCommand(command: EditorContextCommand) {
@@ -718,6 +723,13 @@ export class ChatController {
                     command,
                 })
 
+                this.chatHistoryManager.appendUserMessage({
+                    userInputMessage: {
+                        content: prompt,
+                        userIntent: this.userIntentRecognizer.getFromContextMenuCommand(command),
+                    },
+                })
+
                 return this.generateResponse(
                     {
                         message: prompt,
@@ -731,6 +743,7 @@ export class ChatController {
                         codeQuery: context?.focusAreaContext?.names,
                         userIntent: this.userIntentRecognizer.getFromContextMenuCommand(command),
                         customization: getSelectedCustomization(),
+                        chatHistory: this.chatHistoryManager.getHistory(),
                     },
                     triggerID
                 )
@@ -770,6 +783,7 @@ export class ChatController {
         switch (message.command) {
             case 'clear':
                 this.sessionStorage.deleteSession(message.tabID)
+                this.chatHistoryManager.clear()
                 this.triggerEventsStorage.removeTabEvents(message.tabID)
                 recordTelemetryChatRunCommand('clear')
                 return
@@ -795,6 +809,13 @@ export class ChatController {
                 context: lastTriggerEvent.context,
             })
 
+            this.chatHistoryManager.appendUserMessage({
+                userInputMessage: {
+                    content: message.message,
+                    userIntent: message.userIntent,
+                },
+            })
+
             return this.generateResponse(
                 {
                     message: message.message,
@@ -808,6 +829,7 @@ export class ChatController {
                     codeQuery: lastTriggerEvent.context?.focusAreaContext?.names,
                     userIntent: message.userIntent,
                     customization: getSelectedCustomization(),
+                    chatHistory: this.chatHistoryManager.getHistory(),
                 },
                 triggerID
             )
@@ -828,6 +850,12 @@ export class ChatController {
                     type: 'chat_message',
                     context,
                 })
+                this.chatHistoryManager.appendUserMessage({
+                    userInputMessage: {
+                        content: message.message,
+                        userIntent: message.userIntent,
+                    },
+                })
                 await this.generateResponse(
                     {
                         message: message.message,
@@ -842,6 +870,7 @@ export class ChatController {
                         userIntent: this.userIntentRecognizer.getFromPromptChatMessage(message),
                         customization: getSelectedCustomization(),
                         context: message.context,
+                        chatHistory: this.chatHistoryManager.getHistory(),
                     },
                     triggerID,
                     true
@@ -1049,9 +1078,15 @@ export class ChatController {
         if (Array.isArray(prompts) && prompts.length > 0) {
             triggerPayload.additionalContextLengths = this.telemetryHelper.getContextLengths(prompts)
             for (const prompt of prompts.slice(0, 20)) {
+                // Add system prompt for user prompts and workspace rules
+                const contextType = this.telemetryHelper.getContextType(prompt)
+                const description =
+                    contextType === 'rule' || contextType === 'prompt'
+                        ? `You must follow the instructions in ${prompt.relativePath}. Below are lines ${prompt.startLine}-${prompt.endLine} of this file:\n`
+                        : prompt.description
                 const entry = {
                     name: prompt.name.substring(0, aditionalContentNameLimit),
-                    description: prompt.description.substring(0, aditionalContentNameLimit),
+                    description: description.substring(0, aditionalContentNameLimit),
                     innerContext: prompt.content.substring(0, additionalContentInnerContextLimit),
                 }
                 // make sure the relevantDocument + additionalContext
@@ -1063,7 +1098,6 @@ export class ChatController {
                     break
                 }
 
-                const contextType = this.telemetryHelper.getContextType(prompt)
                 if (contextType === 'rule') {
                     triggerPayload.truncatedAdditionalContextLengths.ruleContextLength += entry.innerContext.length
                 } else if (contextType === 'prompt') {
@@ -1171,6 +1205,15 @@ export class ChatController {
         const request = agentic
             ? triggerPayloadToAgenticChatRequest(triggerPayload, session.chatHistory)
             : triggerPayloadToChatRequest(triggerPayload)
+        if (
+            this.chatHistoryManager.getConversationId() !== undefined &&
+            this.chatHistoryManager.getConversationId() !== ''
+        ) {
+            request.conversationState.conversationId = this.chatHistoryManager.getConversationId()
+        } else {
+            this.chatHistoryManager.setConversationId(randomUUID())
+            request.conversationState.conversationId = this.chatHistoryManager.getConversationId()
+        }
 
         if (triggerPayload.documentReferences !== undefined) {
             const relativePathsOfMergedRelevantDocuments = triggerPayload.documentReferences.map(
@@ -1225,7 +1268,14 @@ export class ChatController {
                 } metadata: ${inspect(response.$metadata, { depth: 12 })}`
             )
             session.pushToChatHistory(request.conversationState.currentMessage)
-            await this.messenger.sendAIResponse(response, session, tabID, triggerID, triggerPayload)
+            await this.messenger.sendAIResponse(
+                response,
+                session,
+                tabID,
+                triggerID,
+                triggerPayload,
+                this.chatHistoryManager
+            )
         } catch (e: any) {
             this.telemetryHelper.recordMessageResponseError(triggerPayload, tabID, getHttpStatusCode(e) ?? 0)
             // clears session, record telemetry before this call
