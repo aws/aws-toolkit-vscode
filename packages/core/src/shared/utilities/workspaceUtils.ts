@@ -20,6 +20,7 @@ import fs from '../fs/fs'
 import { ChildProcess } from './processUtils'
 import { isWin } from '../vscode/env'
 import { maxRepoSizeBytes } from '../../amazonqFeatureDev/constants'
+import { ZipConstants } from '../../codewhisperer/util/zipUtil'
 
 type GitIgnoreRelativeAcceptor = {
     folderPath: string
@@ -335,6 +336,7 @@ export type CollectFilesResultItem = {
     fileUri: vscode.Uri
     fileContent: string
     fileSizeBytes: number
+    isText: boolean
     zipFilePath: string
 }
 export type CollectFilesFilter = (relativePath: string) => boolean // returns true if file should be filtered out
@@ -421,12 +423,13 @@ export async function collectFiles(
                 continue
             }
 
-            const result = {
+            const result: Omit<CollectFilesResultItem, 'fileContent'> = {
                 workspaceFolder: relativePath.workspaceFolder,
                 relativeFilePath: relativePath.relativePath,
                 fileUri: file,
                 fileSizeBytes: fileStat.size,
                 zipFilePath: prefixWithFolderPrefix(relativePath.workspaceFolder, relativePath.relativePath),
+                isText: !ZipConstants.knownBinaryFileExts.includes(path.extname(file.fsPath)),
             }
             if (includeContent) {
                 const content = await readFile(file)
