@@ -145,7 +145,7 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
         private readonly languageClient: LanguageClient,
         private readonly recommendationService: RecommendationService,
         private readonly sessionManager: SessionManager,
-        private readonly isNewSesion: boolean = true
+        private readonly isNewSession: boolean = true
     ) {}
 
     async provideInlineCompletionItems(
@@ -154,7 +154,7 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
         context: InlineCompletionContext,
         token: CancellationToken
     ): Promise<InlineCompletionItem[] | InlineCompletionList> {
-        if (this.isNewSesion) {
+        if (this.isNewSession) {
             // make service requests if it's a new session
             await this.recommendationService.getAllRecommendations(
                 this.languageClient,

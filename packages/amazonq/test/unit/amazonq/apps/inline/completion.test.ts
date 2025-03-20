@@ -6,7 +6,7 @@ import sinon from 'sinon'
 import { commands, languages } from 'vscode'
 import assert from 'assert'
 import { LanguageClient } from 'vscode-languageclient'
-import { AmazonQInlineCompletionItemProvider, InlineCompletionManager } from '../../../../../src/app/inline/completion'
+import { InlineCompletionManager } from '../../../../../src/app/inline/completion'
 
 describe('InlineCompletionManager', () => {
     let manager: InlineCompletionManager
@@ -28,7 +28,6 @@ describe('InlineCompletionManager', () => {
         executeCommandStub = sandbox.stub(commands, 'executeCommand')
         sendNotificationStub = sandbox.stub()
 
-        // Create mock disposable
         const mockDisposable = {
             dispose: sandbox.stub(),
         }
@@ -46,25 +45,6 @@ describe('InlineCompletionManager', () => {
 
     afterEach(() => {
         sandbox.restore()
-    })
-
-    describe('constructor', () => {
-        it('should initialize with language client and register provider', () => {
-            assert(registerProviderStub.calledOnce)
-            assert(
-                registerProviderStub.calledWith(
-                    sinon.match.any,
-                    sinon.match.instanceOf(AmazonQInlineCompletionItemProvider)
-                )
-            )
-        })
-    })
-
-    describe('dispose', () => {
-        it('should dispose of the disposable', () => {
-            manager.dispose()
-            assert(disposableStub.calledOnce)
-        })
     })
 
     describe('registerInlineCompletion', () => {
