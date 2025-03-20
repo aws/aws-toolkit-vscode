@@ -18,7 +18,11 @@ import { docChat } from '../../amazonqDoc/constants'
 import { DocMessenger } from '../../amazonqDoc/messenger'
 import { AppToWebViewMessageDispatcher } from '../../amazonq/commons/connector/connectorMessages'
 import { createSessionConfig } from '../../amazonq/commons/session/sessionConfigFactory'
-import { DocV2GenerationEvent, DocV2AcceptanceEvent } from '../../amazonqFeatureDev/client/featuredevproxyclient'
+import {
+    DocV2GenerationEvent,
+    DocV2AcceptanceEvent,
+    MetricData,
+} from '../../amazonqFeatureDev/client/featuredevproxyclient'
 import { FollowUpTypes } from '../../amazonq/commons/types'
 
 export function createMessenger(sandbox: sinon.SinonSandbox): DocMessenger {
@@ -192,16 +196,33 @@ export function createExpectedEvent(params: EventParams) {
     }
 }
 
+export function createExpectedMetricData(operationName: string, result: string) {
+    return {
+        metricName: 'Operation',
+        metricValue: 1,
+        timestamp: new Date(),
+        product: 'DocGeneration',
+        dimensions: [
+            {
+                name: 'operationName',
+                value: operationName,
+            },
+            {
+                name: 'result',
+                value: result,
+            },
+        ],
+    }
+}
+
 export async function assertTelemetry(params: {
     spy: sinon.SinonStub
-    expectedEvent: DocV2GenerationEvent | DocV2AcceptanceEvent
-    type: 'generation' | 'acceptance'
-    callIndex?: number
+    expectedEvent: DocV2GenerationEvent | DocV2AcceptanceEvent | MetricData
+    type: 'generation' | 'acceptance' | 'metric'
     sandbox: sinon.SinonSandbox
 }) {
     await new Promise((resolve) => setTimeout(resolve, 100))
-    const spyCall = params.callIndex !== undefined ? params.spy.getCall(params.callIndex) : params.spy
-    params.sandbox.assert.calledWith(spyCall, params.sandbox.match(params.expectedEvent), params.type)
+    params.sandbox.assert.calledWith(params.spy, params.sandbox.match(params.expectedEvent), params.type)
 }
 
 export async function updateFilePaths(
