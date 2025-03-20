@@ -2,7 +2,6 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import admZip from 'adm-zip'
 import * as vscode from 'vscode'
 import path from 'path'
 import { tempDirPath, testGenerationLogsDir } from '../../shared/filesystemUtilities'
@@ -25,6 +24,7 @@ import { ChildProcess, ChildProcessOptions } from '../../shared/utilities/proces
 import { ProjectZipError } from '../../amazonqTest/error'
 import { removeAnsi } from '../../shared/utilities/textUtilities'
 import { normalize } from '../../shared/utilities/pathUtils'
+import { ZipStream } from '../../shared/utilities/zipStream'
 
 export interface ZipMetadata {
     rootDir: string
@@ -109,7 +109,7 @@ export class ZipUtil {
         if (!uri) {
             throw new NoActiveFileError()
         }
-        const zip = new admZip()
+        const zip = new ZipStream()
 
         const content = await this.getTextContent(uri)
 
@@ -121,14 +121,14 @@ export class ZipUtil {
             // Set includeWorkspaceFolder to false because we are already manually prepending the projectName
             const relativePath = vscode.workspace.asRelativePath(uri, false)
             const zipEntryPath = this.getZipEntryPath(projectName, relativePath)
-            zip.addFile(zipEntryPath, Buffer.from(content, 'utf-8'))
+            zip.writeString(content, zipEntryPath)
 
             if (scope === CodeWhispererConstants.CodeAnalysisScope.FILE_ON_DEMAND) {
                 const gitDiffContent = `+++ b/${normalize(zipEntryPath)}` // Sending file path in payload for LLM code review
-                zip.addFile(ZipConstants.codeDiffFilePath, Buffer.from(gitDiffContent, 'utf-8'))
+                zip.writeString(gitDiffContent, ZipConstants.codeDiffFilePath)
             }
         } else {
-            zip.addFile(uri.fsPath, Buffer.from(content, 'utf-8'))
+            zip.writeString(content, uri.fsPath)
         }
 
         this._pickedSourceFiles.add(uri.fsPath)
@@ -139,7 +139,7 @@ export class ZipUtil {
             throw new FileSizeExceededError()
         }
         const zipFilePath = this.getZipDirPath(FeatureUseCase.CODE_SCAN) + CodeWhispererConstants.codeScanZipExt
-        zip.writeZip(zipFilePath)
+        await zip.finalizeToFile(zipFilePath)
         return zipFilePath
     }
 
@@ -170,13 +170,13 @@ export class ZipUtil {
      * await processMetadataDir(zip, '/path/to/directory');
      * ```
      */
-    protected async processMetadataDir(zip: admZip, metadataDir: string) {
+    protected async processMetadataDir(zip: ZipStream, metadataDir: string) {
         const metadataDirName = path.basename(metadataDir)
         // Helper function to add empty directory to zip
         const addEmptyDirectory = (dirPath: string) => {
             const relativePath = path.relative(metadataDir, dirPath)
             const pathWithMetadata = path.join(metadataDirName, relativePath, '/')
-            zip.addFile(pathWithMetadata, Buffer.from(''))
+            zip.writeString('', pathWithMetadata)
         }
 
         // Recursive function to process directories
@@ -189,11 +189,10 @@ export class ZipUtil {
 
                 if (fileType === vscode.FileType.File) {
                     try {
-                        const fileContent = await vscode.workspace.fs.readFile(vscode.Uri.file(filePath))
-                        const buffer = Buffer.from(fileContent)
+                        const fileUri = vscode.Uri.file(filePath)
                         const relativePath = path.relative(metadataDir, filePath)
                         const pathWithMetadata = path.join(metadataDirName, relativePath)
-                        zip.addFile(pathWithMetadata, buffer)
+                        zip.writeFile(fileUri.fsPath, pathWithMetadata)
                     } catch (error) {
                         getLogger().error(`Failed to add file ${filePath} to zip: ${error}`)
                     }
@@ -207,7 +206,7 @@ export class ZipUtil {
     }
 
     protected async zipProject(useCase: FeatureUseCase, projectPath?: string, metadataDir?: string) {
-        const zip = new admZip()
+        const zip = new ZipStream()
         let projectPaths = []
         if (useCase === FeatureUseCase.TEST_GENERATION && projectPath) {
             projectPaths.push(projectPath)
@@ -232,12 +231,12 @@ export class ZipUtil {
         }
         this._language = [...languageCount.entries()].reduce((a, b) => (b[1] > a[1] ? b : a))[0]
         const zipFilePath = this.getZipDirPath(useCase) + CodeWhispererConstants.codeScanZipExt
-        zip.writeZip(zipFilePath)
+        await zip.finalizeToFile(zipFilePath)
         return zipFilePath
     }
 
     protected async processCombinedGitDiff(
-        zip: admZip,
+        zip: ZipStream,
         projectPaths: string[],
         filePath?: string,
         scope?: CodeWhispererConstants.CodeAnalysisScope
@@ -254,7 +253,7 @@ export class ZipUtil {
             })
         }
         if (gitDiffContent) {
-            zip.addFile(ZipConstants.codeDiffFilePath, Buffer.from(gitDiffContent, 'utf-8'))
+            zip.writeString(gitDiffContent, ZipConstants.codeDiffFilePath)
         }
     }
 
@@ -403,7 +402,7 @@ export class ZipUtil {
     }
 
     protected async processSourceFiles(
-        zip: admZip,
+        zip: ZipStream,
         languageCount: Map<CodewhispererLanguage, number>,
         projectPaths: string[] | undefined,
         useCase: FeatureUseCase
@@ -412,26 +411,30 @@ export class ZipUtil {
             return
         }
 
-        const sourceFiles = await collectFiles(
-            projectPaths,
-            (useCase === FeatureUseCase.TEST_GENERATION
+        const workspaceFolders = (
+            useCase === FeatureUseCase.TEST_GENERATION
                 ? [...(vscode.workspace.workspaceFolders ?? [])].sort(
                       (a, b) => b.uri.fsPath.length - a.uri.fsPath.length
                   )
-                : vscode.workspace.workspaceFolders) as CurrentWsFolders,
-            {
-                maxTotalSizeBytes: this.getProjectScanPayloadSizeLimitInBytes(),
-                excludePatterns:
-                    useCase === FeatureUseCase.TEST_GENERATION
-                        ? [...CodeWhispererConstants.testGenExcludePatterns, ...defaultExcludePatterns]
-                        : defaultExcludePatterns,
-            }
-        )
+                : vscode.workspace.workspaceFolders
+        ) as CurrentWsFolders
+
+        const collectFilesOptions = {
+            maxTotalSizeBytes: this.getProjectScanPayloadSizeLimitInBytes(),
+            excludePatterns:
+                useCase === FeatureUseCase.TEST_GENERATION
+                    ? [...CodeWhispererConstants.testGenExcludePatterns, ...defaultExcludePatterns]
+                    : defaultExcludePatterns,
+        }
+
+        const sourceFiles = await collectFiles(projectPaths, workspaceFolders, collectFilesOptions)
+
         for (const file of sourceFiles) {
             const projectName = path.basename(file.workspaceFolder.uri.fsPath)
             const zipEntryPath = this.getZipEntryPath(projectName, file.relativeFilePath)
+            const fileExtension = path.extname(file.fileUri.fsPath)
 
-            if (ZipConstants.knownBinaryFileExts.includes(path.extname(file.fileUri.fsPath))) {
+            if (ZipConstants.knownBinaryFileExts.includes(fileExtension)) {
                 if (useCase === FeatureUseCase.TEST_GENERATION) {
                     continue
                 }
@@ -444,7 +447,7 @@ export class ZipUtil {
         }
     }
 
-    protected processOtherFiles(zip: admZip, languageCount: Map<CodewhispererLanguage, number>) {
+    protected processOtherFiles(zip: ZipStream, languageCount: Map<CodewhispererLanguage, number>) {
         for (const document of vscode.workspace.textDocuments
             .filter((document) => document.uri.scheme === 'file')
             .filter((document) => vscode.workspace.getWorkspaceFolder(document.uri) === undefined)) {
@@ -474,7 +477,7 @@ export class ZipUtil {
     }
 
     protected processTextFile(
-        zip: admZip,
+        zip: ZipStream,
         uri: vscode.Uri,
         fileContent: string,
         languageCount: Map<CodewhispererLanguage, number>,
@@ -493,10 +496,10 @@ export class ZipUtil {
         this._totalLines += fileContent.split(ZipConstants.newlineRegex).length
 
         this.incrementCountForLanguage(uri, languageCount)
-        zip.addFile(zipEntryPath, Buffer.from(fileContent, 'utf-8'))
+        zip.writeString(fileContent, zipEntryPath)
     }
 
-    protected async processBinaryFile(zip: admZip, uri: vscode.Uri, zipEntryPath: string) {
+    protected async processBinaryFile(zip: ZipStream, uri: vscode.Uri, zipEntryPath: string) {
         const fileSize = (await fs.stat(uri.fsPath)).size
 
         if (
@@ -508,7 +511,7 @@ export class ZipUtil {
         this._pickedSourceFiles.add(uri.fsPath)
         this._totalSize += fileSize
 
-        zip.addLocalFile(uri.fsPath, path.dirname(zipEntryPath))
+        zip.writeFile(uri.fsPath, path.dirname(zipEntryPath))
     }
 
     protected incrementCountForLanguage(uri: vscode.Uri, languageCount: Map<CodewhispererLanguage, number>) {

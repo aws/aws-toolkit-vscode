@@ -144,7 +144,7 @@ export async function prepareRepoData(
                 excludePatterns: excludePatterns,
                 filterFn: filterFn,
             },
-            isExcluded,
+            { isExcluded },
             { zip: options?.zip ?? new ZipStream() }
         )
 

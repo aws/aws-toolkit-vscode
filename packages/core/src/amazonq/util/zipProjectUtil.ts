@@ -4,13 +4,11 @@
  */
 
 import path from 'path'
-import { fs } from '../../shared/fs/fs'
 import { collectFiles, CollectFilesOptions } from '../../shared/utilities/workspaceUtils'
 import { CurrentWsFolders } from '../commons/types'
 import { ZipStream } from '../../shared/utilities/zipStream'
-import { hasCode } from '../../shared/errors'
 
-export interface ZippedResult {
+export interface ZippedWorkspaceResult {
     zipFileBuffer: Buffer
     zipFileChecksum: string
     totalFileBytes: number
@@ -20,13 +18,19 @@ interface ZipProjectOptions {
     zip?: ZipStream
 }
 
+interface ZipProjectCustomizations {
+    isExcluded?: (relativePath: string, fileSize: number) => boolean
+    checkForError?: (relativePath: string, fileSize: number) => void | never
+    computeSideEffects?: (filePath: string) => Promise<void> | void
+}
+
 export async function zipProject(
     repoRootPaths: string[],
     workspaceFolders: CurrentWsFolders,
     collectFilesOptions: CollectFilesOptions,
-    isExcluded: (relativePath: string, fileSize: number) => boolean,
+    customizations?: ZipProjectCustomizations,
     options?: ZipProjectOptions
-): Promise<ZippedResult> {
+): Promise<ZippedWorkspaceResult> {
     const zip = options?.zip ?? new ZipStream()
     const files = await collectFiles(repoRootPaths, workspaceFolders, collectFilesOptions)
     const zippedFiles = new Set()
@@ -37,25 +41,18 @@ export async function zipProject(
         }
         zippedFiles.add(file.zipFilePath)
 
-        const fileSize = await fs
-            .stat(file.fileUri.fsPath)
-            .then((r) => r.size)
-            .catch((e) => {
-                if (hasCode(e) && e.code === 'ENOENT') {
-                    // No-op: Skip if file does not exist
-                    return
-                }
-                throw e
-            })
-        if (!fileSize) {
+        if (customizations?.isExcluded && customizations.isExcluded(file.relativeFilePath, file.fileSizeBytes)) {
             continue
         }
-
-        if (isExcluded(file.relativeFilePath, fileSize)) {
-            continue
+        if (customizations?.checkForError) {
+            customizations.checkForError(file.relativeFilePath, file.fileSizeBytes)
         }
 
-        totalBytes += fileSize
+        if (customizations?.computeSideEffects) {
+            await customizations.computeSideEffects(file.fileUri.fsPath)
+        }
+
+        totalBytes += file.fileSizeBytes
         // Paths in zip should be POSIX compliant regardless of OS
         // Reference: https://pkware.cachefly.net/webdocs/casestudies/APPNOTE.TXT
         const posixPath = file.zipFilePath.split(path.sep).join(path.posix.sep)

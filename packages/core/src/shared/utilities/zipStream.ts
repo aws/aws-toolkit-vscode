@@ -5,18 +5,18 @@
 import { WritableStreamBuffer } from 'stream-buffers'
 import crypto from 'crypto'
 import { readFileAsString } from '../filesystemUtilities'
-// Use require instead of import since this package doesn't support commonjs
-const { ZipWriter, TextReader, ZipReader, Uint8ArrayReader } = require('@zip.js/zip.js')
+
+// Does not offer CommonJS support officially: https://github.com/gildas-lormeau/zip.js/issues/362.
+// Webpack appears to handle this for us expirementally.
+// @ts-ignore
+import { ZipWriter, TextReader, ZipReader, Uint8ArrayReader, EntryMetaData, Entry } from '@zip.js/zip.js'
 import { getLogger } from '../logger/logger'
+import fs from '../fs/fs'
 
 export interface ZipStreamResult {
     sizeInBytes: number
     hash: string
     streamBuffer: WritableStreamBuffer
-}
-
-export type ZipReaderResult = {
-    filename: string
 }
 
 export type ZipStreamProps = {
@@ -49,8 +49,6 @@ const defaultProps: ZipStreamProps = {
  * ```
  */
 export class ZipStream {
-    // TypeScript compiler is confused about using ZipWriter as a type
-    // @ts-ignore
     private _zipWriter: ZipWriter<WritableStream>
     private _streamBuffer: WritableStreamBuffer
     private _hasher: crypto.Hash
@@ -59,10 +57,11 @@ export class ZipStream {
     private _filesToZip: [string, string][] = []
     private _filesBeingZipped: number = 0
     private _maxNumberOfFileStreams: number
-    boundFileCompletionCallback: (progress: number, total: number) => void
-    boundFileStartCallback: (totalBytes: number) => void
+    boundFileCompletionCallback: (computedSize: number) => Promise<void>
+    boundFileStartCallback: (computedSize: number) => Promise<void>
 
     constructor(props: Partial<ZipStreamProps> = {}) {
+        getLogger().debug('Initializing ZipStream with props: %O', props)
         // Allow any user-provided values to override default values
         const mergedProps = { ...defaultProps, ...props }
         const { hashAlgorithm, compressionLevel, maxNumberOfFileStreams } = mergedProps
@@ -86,11 +85,11 @@ export class ZipStream {
         this._hasher = crypto.createHash(hashAlgorithm)
     }
 
-    public onStartCompressingFile(totalBytes: number) {
+    public async onStartCompressingFile(_totalBytes: number): Promise<void> {
         this._filesBeingZipped++
     }
 
-    public onFinishedCompressingFile(computedsize: number) {
+    public async onFinishedCompressingFile(_computedsize: number) {
         this._numberOfFilesSucceeded++
         this._filesBeingZipped--
 
@@ -104,31 +103,44 @@ export class ZipStream {
             })
         }
     }
-
-    public writeString(data: string, path: string) {
-        return this._zipWriter.add(path, new TextReader(data))
+    /**
+     * Writes data to the specified path.
+     * @param data
+     * @param path
+     * @param returnPromise optional parameter specifying if caller wants a promise.
+     * @returns promise to that resolves when data is written.
+     */
+    public writeString(data: string, path: string, returnPromise: true): Promise<EntryMetaData>
+    public writeString(data: string, path: string, returnPromise?: false): void
+    public writeString(data: string, path: string, returnPromise?: boolean): void | Promise<EntryMetaData> {
+        const promise = this._zipWriter.add(path, new TextReader(data))
+        return returnPromise ? promise : undefined
     }
 
-    public writeFile(file: string, path: string) {
+    /**
+     * Add the content for file to zip at path.
+     * @param sourceFilePath file to read
+     * @param targetFilePath path to write data to in zip.
+     */
+    public writeFile(sourceFilePath: string, targetFilePath: string) {
         // We use _numberOfFilesToStream to make sure we don't finalize too soon
         // (before the progress event has been fired for the last file)
         // The problem is that we can't rely on progress.entries.total,
         // because files can be added to the queue faster
         // than the progress event is fired
         this._numberOfFilesToStream++
-        // console.log('this._numberOfFilesToStream is now', this._numberOfFilesToStream)
         // We only start zipping another file if we're under our limit
         // of concurrent file streams
         if (this._filesBeingZipped < this._maxNumberOfFileStreams) {
-            void readFileAsString(file).then((content) => {
-                return this._zipWriter.add(path, new TextReader(content), {
+            void readFileAsString(sourceFilePath).then((content) => {
+                return this._zipWriter.add(targetFilePath, new TextReader(content), {
                     onend: this.boundFileCompletionCallback,
                     onstart: this.boundFileStartCallback,
                 })
             })
         } else {
             // Queue it for later (see "write" event)
-            this._filesToZip.push([file, path])
+            this._filesToZip.push([sourceFilePath, targetFilePath])
         }
     }
 
@@ -148,14 +160,23 @@ export class ZipStream {
         // We're done streaming all files, so we can close the zip stream
 
         await this._zipWriter.close()
+        const sizeInBytes = this._streamBuffer.size()
+        getLogger().debug('Finished finalizing zipStream with %d bytes of data', sizeInBytes)
         return {
-            sizeInBytes: this._streamBuffer.size(),
+            sizeInBytes,
             hash: this._hasher.digest('base64'),
             streamBuffer: this._streamBuffer,
         }
     }
 
-    public static async unzip(zipBuffer: Buffer): Promise<ZipReaderResult[]> {
+    public async finalizeToFile(targetPath: string, onProgress?: (percentComplete: number) => void) {
+        const result = await this.finalize(onProgress)
+        const contents = result.streamBuffer.getContents() || Buffer.from('')
+        await fs.writeFile(targetPath, contents)
+        return result
+    }
+
+    public static async unzip(zipBuffer: Buffer): Promise<Entry[]> {
         const reader = new ZipReader(new Uint8ArrayReader(new Uint8Array(zipBuffer)))
         try {
             return await reader.getEntries()
