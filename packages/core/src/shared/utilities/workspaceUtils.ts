@@ -330,7 +330,7 @@ async function filterOutGitignoredFiles(
     return gitIgnoreFilter.filterFiles(files)
 }
 
-export type FileInformation = {
+type FileInformation = {
     fileUri: vscode.Uri
     fileSizeBytes: number
     isText: boolean
@@ -338,9 +338,9 @@ export type FileInformation = {
 
 export interface CollectFilesResultItem extends FileInformation {
     workspaceFolder: vscode.WorkspaceFolder
+    zipFilePath: string
     relativeFilePath: string
     fileContent: string
-    zipFilePath: string
 }
 export type CollectFilesFilter = (relativePath: string) => boolean // returns true if file should be filtered out
 export interface CollectFilesOptions {
@@ -426,7 +426,7 @@ export async function collectFiles(
                 continue
             }
 
-            const fileStats = await getFileStats(file, includeContent, fileStat.size)
+            const fileStats = await getFileInfo(file, includeContent, fileStat.size)
             if (fileStats) {
                 storage.push({
                     ...fileStats,
@@ -480,7 +480,18 @@ const workspaceFolderPrefixGuards = {
     maximumFoldersWithMatchingSubfolders: 10_000,
 }
 
-export async function getFileStats(file: vscode.Uri, includeContent: boolean, fileSize?: number) {
+export async function getFileInfo(
+    file: vscode.Uri,
+    includeContent: true,
+    fileSize?: number
+): Promise<FileInformation & { fileContent: string }>
+export async function getFileInfo(file: vscode.Uri, includeContent: false, fileSize?: number): Promise<FileInformation>
+export async function getFileInfo(
+    file: vscode.Uri,
+    includeContent: boolean,
+    fileSize?: number
+): Promise<FileInformation | (FileInformation & { fileContent: string })>
+export async function getFileInfo(file: vscode.Uri, includeContent: boolean, fileSize?: number) {
     const fileWithoutContent = {
         fileUri: file,
         fileSizeBytes: fileSize ?? (await fs.stat(file)).size,
@@ -490,9 +501,6 @@ export async function getFileStats(file: vscode.Uri, includeContent: boolean, fi
         const hasUnsavedChanges = isFileOpenAndDirty(file)
         const fileContent =
             fileWithoutContent.isText && hasUnsavedChanges ? await getCurrentTextContent(file) : await readFile(file)
-        if (fileContent === undefined) {
-            return
-        }
         return {
             ...fileWithoutContent,
             fileContent,

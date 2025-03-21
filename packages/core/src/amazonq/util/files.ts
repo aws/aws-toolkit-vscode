@@ -7,7 +7,6 @@ import * as vscode from 'vscode'
 import * as path from 'path'
 import {
     CollectFilesFilter,
-    CollectFilesResultItem,
     defaultExcludePatterns,
     getWorkspaceFoldersByPrefixes,
 } from '../../shared/utilities/workspaceUtils'
@@ -28,7 +27,7 @@ import { ZipStream } from '../../shared/utilities/zipStream'
 import { isPresent } from '../../shared/utilities/collectionUtils'
 import { AuthUtil } from '../../codewhisperer/util/authUtil'
 import { TelemetryHelper } from '../util/telemetryHelper'
-import { zipProject } from './zipProjectUtil'
+import { ZipExcluder, zipProject } from './zipProjectUtil'
 
 export const SvgFileExtension = '.svg'
 
@@ -109,7 +108,7 @@ export async function prepareRepoData(
         const { excludePatterns, filterFn } = getFilterAndExcludePattern(useAutoBuildFeature, includeInfraDiagram)
 
         const ignoredExtensionMap = new Map<string, number>()
-        const isExcluded = (file: CollectFilesResultItem) => {
+        const isExcluded: ZipExcluder = (file) => {
             const isCodeFile_ = isCodeFile(file.relativeFilePath)
             const isDevFile = file.relativeFilePath === 'devfile.yaml'
             const isInfraDiagramFileExt = isInfraDiagramFile(file.relativeFilePath)

@@ -12,12 +12,7 @@ import { fs } from '../../shared/fs/fs'
 import { getLoggerForScope } from '../service/securityScanHandler'
 import { runtimeLanguageContext } from './runtimeLanguageContext'
 import { CodewhispererLanguage } from '../../shared/telemetry/telemetry.gen'
-import {
-    CollectFilesOptions,
-    CollectFilesResultItem,
-    CurrentWsFolders,
-    defaultExcludePatterns,
-} from '../../shared/utilities/workspaceUtils'
+import { CollectFilesOptions, CurrentWsFolders, defaultExcludePatterns } from '../../shared/utilities/workspaceUtils'
 import {
     FileSizeExceededError,
     NoActiveFileError,
@@ -30,7 +25,7 @@ import { ProjectZipError } from '../../amazonqTest/error'
 import { removeAnsi } from '../../shared/utilities/textUtilities'
 import { normalize } from '../../shared/utilities/pathUtils'
 import { ZipStream } from '../../shared/utilities/zipStream'
-import { addProjectToZip } from '../../amazonq/util/zipProjectUtil'
+import { addProjectToZip, ZipErrorCheck, ZipExcluder, ZipTracker } from '../../amazonq/util/zipProjectUtil'
 
 export interface ZipMetadata {
     rootDir: string
@@ -430,17 +425,17 @@ export class ZipUtil {
                     : defaultExcludePatterns,
             includeContent: true,
         }
-        const isExcluded = (file: CollectFilesResultItem) =>
+        const isExcluded: ZipExcluder = (file) =>
             ZipConstants.knownBinaryFileExts.includes(path.extname(file.fileUri.fsPath)) &&
             useCase === FeatureUseCase.TEST_GENERATION
 
-        const checkForError = (file: CollectFilesResultItem) =>
+        const checkForError: ZipErrorCheck = (file) =>
             this.reachSizeLimit(this._totalSize, CodeWhispererConstants.CodeAnalysisScope.PROJECT) ||
             this.willReachSizeLimit(this._totalSize, file.fileSizeBytes)
                 ? new ProjectSizeExceededError()
                 : undefined
 
-        const computeSideEffects = (file: CollectFilesResultItem) => {
+        const computeSideEffects: ZipTracker = (file) => {
             if (file.isText) {
                 this._totalLines += file.fileContent.split(ZipConstants.newlineRegex).length
                 this.incrementCountForLanguage(file.fileUri, languageCount)

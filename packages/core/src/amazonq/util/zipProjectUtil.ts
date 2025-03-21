@@ -2,8 +2,14 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
+import vscode from 'vscode'
 import path from 'path'
-import { collectFiles, CollectFilesOptions, CollectFilesResultItem } from '../../shared/utilities/workspaceUtils'
+import {
+    collectFiles,
+    CollectFilesOptions,
+    CollectFilesResultItem,
+    getFileInfo,
+} from '../../shared/utilities/workspaceUtils'
 import { CurrentWsFolders } from '../commons/types'
 import { ZipStream } from '../../shared/utilities/zipStream'
 
@@ -28,14 +34,19 @@ interface ZipProjectOptions {
     nonPosixPath?: boolean
 }
 
+export type ZipExcluder = (file: Omit<CollectFilesResultItem, 'workspaceFolder'>) => boolean
+export type ZipErrorCheck = (file: Omit<CollectFilesResultItem, 'workspaceFolder'>) => Error | undefined
+export type ZipTracker = (file: Omit<CollectFilesResultItem, 'workspaceFolder'>) => Promise<void> | void
+
 interface ZipProjectCustomizations {
-    isExcluded?: (file: CollectFilesResultItem) => boolean
-    checkForError?: (file: CollectFilesResultItem) => Error | undefined
-    computeSideEffects?: (file: CollectFilesResultItem) => Promise<void> | void
+    isExcluded?: ZipExcluder
+    checkForError?: ZipErrorCheck
+    computeSideEffects?: ZipTracker
 }
 
 export async function addFileToZip(
-    file: CollectFilesResultItem,
+    file: Omit<CollectFilesResultItem, 'workspaceFolder'>,
+    targetFilePath: string,
     zip: ZipStream,
     customizations?: ZipProjectCustomizations,
     options?: ZipProjectOptions
@@ -48,19 +59,12 @@ export async function addFileToZip(
         throw errorToThrow
     }
 
-    // Paths in zip should be POSIX compliant regardless of OS
-    // Reference: https://pkware.cachefly.net/webdocs/casestudies/APPNOTE.TXT
-    const zipFilePath = options?.includeProjectName
-        ? path.join(path.basename(file.workspaceFolder.uri.fsPath), file.zipFilePath)
-        : file.zipFilePath
-    const posixPath = options?.nonPosixPath ? zipFilePath : zipFilePath.split(path.sep).join(path.posix.sep)
-
     try {
         // filepath will be out-of-sync for files with unsaved changes.
         if (file.isText) {
-            zip.writeString(file.fileContent, posixPath)
+            zip.writeString(file.fileContent, targetFilePath)
         } else {
-            zip.writeFile(file.fileUri.fsPath, path.dirname(posixPath))
+            zip.writeFile(file.fileUri.fsPath, path.dirname(targetFilePath))
         }
     } catch (error) {
         if (error instanceof Error && error.message.includes('File not found')) {
@@ -95,7 +99,14 @@ export async function addProjectToZip(
         }
         zippedFiles.add(file.zipFilePath)
 
-        const addFileResult = await addFileToZip(file, zip, customizations, options)
+        // Paths in zip should be POSIX compliant regardless of OS
+        // Reference: https://pkware.cachefly.net/webdocs/casestudies/APPNOTE.TXT
+        const zipFilePath = options?.includeProjectName
+            ? path.join(path.basename(file.workspaceFolder.uri.fsPath), file.zipFilePath)
+            : file.zipFilePath
+        const targetPath = options?.nonPosixPath ? zipFilePath : zipFilePath.split(path.sep).join(path.posix.sep)
+
+        const addFileResult = await addFileToZip(file, targetPath, zip, customizations, options)
         if (addFileResult.result === 'added') {
             totalBytes += addFileResult.addedBytes
         }
@@ -126,4 +137,23 @@ export async function zipProject(
         zipFileChecksum: zipResult.hash,
         totalFileBytes: totalBytesAdded,
     }
+}
+// TODO: remove vscode dep
+export async function zipFile(
+    file: vscode.Uri,
+    targetPath: string,
+    customizations?: ZipProjectCustomizations,
+    options?: ZipProjectOptions
+) {
+    return await addFileToZip(
+        {
+            ...(await getFileInfo(file, true)),
+            zipFilePath: targetPath,
+            relativeFilePath: file.fsPath,
+        },
+        targetPath,
+        new ZipStream(),
+        customizations,
+        options
+    )
 }
