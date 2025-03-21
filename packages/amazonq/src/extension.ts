@@ -41,7 +41,6 @@ import * as vscode from 'vscode'
 import { registerCommands } from './commands'
 import { focusAmazonQPanel } from 'aws-core-vscode/codewhispererChat'
 import { activate as activateAmazonqLsp } from './lsp/activation'
-import { activate as activateInlineCompletion } from './app/inline/activation'
 
 export const amazonQContextPrefix = 'amazonq'
 
@@ -118,11 +117,8 @@ export async function activateAmazonQCommon(context: vscode.ExtensionContext, is
     }
     // This contains every lsp agnostic things (auth, security scan, code scan)
     await activateCodeWhisperer(extContext as ExtContext)
-    if (Experiments.instance.get('amazonqLSP', false)) {
-        await activateAmazonqLsp(context)
-    } else {
-        await activateInlineCompletion()
-    }
+    Experiments.instance.get('amazonqLSP', false)
+    await activateAmazonqLsp(context)
 
     // Generic extension commands
     registerGenericCommands(context, amazonQContextPrefix)

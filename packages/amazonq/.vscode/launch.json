@@ -14,7 +14,7 @@
             "env": {
                 "SSMDOCUMENT_LANGUAGESERVER_PORT": "6010",
                 "WEBPACK_DEVELOPER_SERVER": "http://localhost:8080"
-                // "__AMAZONQLSP_PATH": "${workspaceFolder}/../../../language-servers/app/aws-lsp-codewhisperer-runtimes/out/token-standalone.js",
+                //"__AMAZONQLSP_PATH": "${workspaceFolder}/../../../language-servers/app/aws-lsp-codewhisperer-runtimes/out/token-standalone.js"
             },
             "envFile": "${workspaceFolder}/.local.env",
             "outFiles": ["${workspaceFolder}/dist/**/*.js", "${workspaceFolder}/../core/dist/**/*.js"],

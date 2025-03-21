@@ -18,14 +18,13 @@ export const amazonqSettings = {
         "amazonQWelcomePage": {},
         "amazonQSessionConfigurationMessage": {},
         "minIdeVersion": {},
-        "ssoCacheError": {},
-        "AmazonQLspManifestMessage": {},
-        "AmazonQ-WorkspaceLspManifestMessage":{}
+        "ssoCacheError": {}
     },
     "amazonQ.showCodeWithReferences": {},
     "amazonQ.allowFeatureDevelopmentToRunCodeAndTests": {},
     "amazonQ.importRecommendationForInlineCodeSuggestions": {},
     "amazonQ.shareContentWithAWS": {},
+    "amazonQ.workspaceContext": {},
     "amazonQ.workspaceIndex": {},
     "amazonQ.workspaceIndexWorkerThreads": {},
     "amazonQ.workspaceIndexUseGPU": {},
