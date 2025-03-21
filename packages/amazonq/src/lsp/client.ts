@@ -123,7 +123,7 @@ export async function startLanguageServer(extensionContext: vscode.ExtensionCont
                 getLogger('amazonqLsp').error('Unable to update bearer token: %s', (e as Error).message)
                 clearInterval(authInterval)
             }
-        }, 300000) // every 5 minutes
+        }, 30 * 1000) // every 30 seconds
 
         toDispose.push(
             AuthUtil.instance.auth.onDidChangeActiveConnection(async () => {
