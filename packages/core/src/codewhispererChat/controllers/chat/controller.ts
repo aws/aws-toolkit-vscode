@@ -447,6 +447,17 @@ export class ChatController {
                         icon: 'file' as MynahIconsType,
                     },
                     {
+                        command: i18n('AWS.amazonq.context.code.title'),
+                        children: [
+                            {
+                                groupName: i18n('AWS.amazonq.context.code.title'),
+                                commands: [],
+                            },
+                        ],
+                        description: i18n('AWS.amazonq.context.code.description'),
+                        icon: 'code-block' as MynahIconsType,
+                    },
+                    {
                         command: i18n('AWS.amazonq.context.prompts.title'),
                         children: [
                             {
@@ -470,7 +481,8 @@ export class ChatController {
                 commands: [{ command: commandName, description: commandDescription }],
             })
         }
-        const promptsCmd: QuickActionCommand = contextCommand[0].commands?.[3]
+        const symbolsCmd: QuickActionCommand = contextCommand[0].commands?.[3]
+        const promptsCmd: QuickActionCommand = contextCommand[0].commands?.[4]
 
         // Check for user prompts
         try {
@@ -513,22 +525,34 @@ export class ChatController {
                         command: path.basename(contextCommandItem.relativePath),
                         description: path.join(wsFolderName, contextCommandItem.relativePath),
                         route: [contextCommandItem.workspaceFolder, contextCommandItem.relativePath],
-                        id: 'file',
+                        label: 'file' as ContextCommandItemType,
+                        id: contextCommandItem.id,
                         icon: 'file' as MynahIconsType,
                     })
-                } else {
+                } else if (contextCommandItem.type === 'folder') {
                     folderCmd.children?.[0].commands.push({
                         command: path.basename(contextCommandItem.relativePath),
                         description: path.join(wsFolderName, contextCommandItem.relativePath),
                         route: [contextCommandItem.workspaceFolder, contextCommandItem.relativePath],
-                        id: 'folder',
+                        label: 'folder' as ContextCommandItemType,
+                        id: contextCommandItem.id,
                         icon: 'folder' as MynahIconsType,
+                    })
+                } else if (contextCommandItem.symbol) {
+                    symbolsCmd.children?.[0].commands.push({
+                        command: contextCommandItem.symbol.name,
+                        description: `${contextCommandItem.symbol.kind}, ${contextCommandItem.relativePath}, L${contextCommandItem.symbol.range.start.line}-${contextCommandItem.symbol.range.end.line}`,
+                        route: [contextCommandItem.workspaceFolder, contextCommandItem.relativePath],
+                        label: 'code' as ContextCommandItemType,
+                        id: contextCommandItem.id,
+                        icon: 'code-block' as MynahIconsType,
                     })
                 }
             }
         }
 
         this.messenger.sendContextCommandData(contextCommand)
+        void LspController.instance.updateContextCommandSymbolsOnce()
     }
 
     private handlePromptCreate(tabID: string) {
@@ -910,9 +934,9 @@ export class ChatController {
     private async resolveContextCommandPayload(
         triggerPayload: TriggerPayload,
         session: ChatSession
-    ): Promise<string[]> {
+    ): Promise<DocumentReference[]> {
         const contextCommands: ContextCommandItem[] = []
-        const relativePaths: string[] = []
+        const result: DocumentReference[] = []
 
         // Check for workspace rules to add to context
         const workspaceRules = await this.collectWorkspaceRules()
@@ -935,10 +959,12 @@ export class ChatController {
         if (triggerPayload.context !== undefined && triggerPayload.context.length > 0) {
             for (const context of triggerPayload.context) {
                 if (typeof context !== 'string' && context.route && context.route.length === 2) {
+                    const itemType = (context.label || '') as ContextCommandItemType
                     contextCommands.push({
                         workspaceFolder: context.route[0] || '',
-                        type: context.icon === 'folder' ? 'folder' : 'file',
+                        type: itemType,
                         relativePath: context.route[1] || '',
+                        id: context.id,
                     })
                 }
             }
@@ -990,6 +1016,8 @@ export class ChatController {
                     name: prompt.name.substring(0, aditionalContentNameLimit),
                     description: description.substring(0, aditionalContentNameLimit),
                     innerContext: prompt.content.substring(0, additionalContentInnerContextLimit),
+                    start: prompt.startLine,
+                    end: prompt.endLine,
                 }
                 // make sure the relevantDocument + additionalContext
                 // combined does not exceed 40k characters before generating the request payload.
@@ -1015,12 +1043,15 @@ export class ChatController {
                 if (prompt.filePath.startsWith(getUserPromptsDirectory())) {
                     relativePath = path.basename(prompt.filePath)
                 }
-                relativePaths.push(relativePath)
+                result.push({
+                    relativeFilePath: relativePath,
+                    lineRanges: [{ first: entry.start, second: entry.end }],
+                })
             }
         }
         getLogger().info(`Retrieved chunks of additional context count: ${triggerPayload.additionalContents.length} `)
 
-        return relativePaths
+        return result
     }
 
     private async generateResponse(
@@ -1057,7 +1088,7 @@ export class ChatController {
         }
 
         const session = this.sessionStorage.getSession(tabID)
-        const relativePathsOfContextCommandFiles = await this.resolveContextCommandPayload(triggerPayload, session)
+        const contextCommandDocumentReferences = await this.resolveContextCommandPayload(triggerPayload, session)
         triggerPayload.useRelevantDocuments =
             triggerPayload.context?.some(
                 (context) => typeof context !== 'string' && context.command === '@workspace'
@@ -1105,24 +1136,22 @@ export class ChatController {
 
         const request = triggerPayloadToChatRequest(triggerPayload)
 
-        if (triggerPayload.documentReferences !== undefined) {
-            const relativePathsOfMergedRelevantDocuments = triggerPayload.documentReferences.map(
-                (doc) => doc.relativeFilePath
-            )
-            const seen: string[] = []
-            for (const relativePath of relativePathsOfContextCommandFiles) {
-                if (!relativePathsOfMergedRelevantDocuments.includes(relativePath) && !seen.includes(relativePath)) {
-                    triggerPayload.documentReferences.push({
-                        relativeFilePath: relativePath,
-                        lineRanges: [{ first: -1, second: -1 }],
-                    })
-                    seen.push(relativePath)
-                }
+        const relativePathsOfMergedRelevantDocuments = triggerPayload.documentReferences.map(
+            (doc) => doc.relativeFilePath
+        )
+        const seen: string[] = []
+        for (const documentReference of contextCommandDocumentReferences) {
+            if (
+                !relativePathsOfMergedRelevantDocuments.includes(documentReference.relativeFilePath) &&
+                !seen.includes(documentReference.relativeFilePath)
+            ) {
+                triggerPayload.documentReferences.push(documentReference)
+                seen.push(documentReference.relativeFilePath)
             }
-            if (triggerPayload.documentReferences) {
-                for (const doc of triggerPayload.documentReferences) {
-                    session.contexts.set(doc.relativeFilePath, doc.lineRanges)
-                }
+        }
+        if (triggerPayload.documentReferences) {
+            for (const doc of triggerPayload.documentReferences) {
+                session.contexts.set(doc.relativeFilePath, doc.lineRanges)
             }
         }
 

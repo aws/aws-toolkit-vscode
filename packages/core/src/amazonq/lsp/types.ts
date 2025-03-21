@@ -88,12 +88,44 @@ export const GetIndexSequenceNumberRequestType: RequestType<GetRepomapIndexJSONR
     'lsp/getIndexSequenceNumber'
 )
 
-export type ContextCommandItemType = 'file' | 'folder'
+export type ContextCommandItemType = 'file' | 'folder' | 'code'
+
+export type SymbolType =
+    | 'Class'
+    | 'Function'
+    | 'Interface'
+    | 'Type'
+    | 'Enum'
+    | 'Struct'
+    | 'Delegate'
+    | 'Namespace'
+    | 'Object'
+    | 'Module'
+    | 'Method'
+
+export interface Position {
+    line: number
+    column: number
+}
+export interface Span {
+    start: Position
+    end: Position
+}
+
+// LSP definition of DocumentSymbol
+
+export interface DocumentSymbol {
+    name: string
+    kind: SymbolType
+    range: Span
+}
 
 export interface ContextCommandItem {
     workspaceFolder: string
     type: ContextCommandItemType
     relativePath: string
+    symbol?: DocumentSymbol
+    id?: string
 }
 
 export type GetContextCommandPromptRequestPayload = {
