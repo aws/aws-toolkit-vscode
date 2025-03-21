@@ -70,7 +70,7 @@ export class ZipUtil {
         return CodeWhispererConstants.projectScanPayloadSizeLimitBytes
     }
 
-    protected reachSizeLimit(size: number, scope: CodeWhispererConstants.CodeAnalysisScope): boolean {
+    public reachSizeLimit(size: number, scope: CodeWhispererConstants.CodeAnalysisScope): boolean {
         return CodeWhispererConstants.isFileAnalysisScope(scope)
             ? size > this.getFileScanPayloadSizeLimitInBytes()
             : size > this.getProjectScanPayloadSizeLimitInBytes()
