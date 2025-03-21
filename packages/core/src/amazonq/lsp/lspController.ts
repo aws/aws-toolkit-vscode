@@ -194,28 +194,37 @@ export class LspController {
             }
         })
     }
-
+    /**
+     * Updates context command symbols once per session by synchronizing with the LSP client index.
+     * Context menu will contain file and folders to begin with,
+     * then this asynchronous function should be invoked after the files and folders are found
+     * the LSP then further starts to parse workspace and find symbols, which takes
+     * anywhere from 5 seconds to about 40 seconds, depending on project size.
+     * @returns {Promise<void>}
+     */
     async updateContextCommandSymbolsOnce() {
         if (this._contextCommandSymbolsUpdated) {
             return
         }
         this._contextCommandSymbolsUpdated = true
         getLogger().debug(`LspController: Start adding symbols to context picker menu`)
-        const indexSeqNum = await LspClient.instance.getIndexSequenceNumber()
-        await LspClient.instance.updateIndex([], 'context_command_symbol_update')
-        await waitUntil(
-            async () => {
-                const newIndexSeqNum = await LspClient.instance.getIndexSequenceNumber()
-                if (newIndexSeqNum > indexSeqNum) {
-                    await vscode.commands.executeCommand(`aws.amazonq.updateContextCommandItems`)
-                    this._contextCommandSymbolsUpdated = true
-                    return true
-                }
-                this._contextCommandSymbolsUpdated = false
-                return false
-            },
-            { interval: 1000, timeout: 60_000, truthy: true }
-        )
+        try {
+            const indexSeqNum = await LspClient.instance.getIndexSequenceNumber()
+            await LspClient.instance.updateIndex([], 'context_command_symbol_update')
+            await waitUntil(
+                async () => {
+                    const newIndexSeqNum = await LspClient.instance.getIndexSequenceNumber()
+                    if (newIndexSeqNum > indexSeqNum) {
+                        await vscode.commands.executeCommand(`aws.amazonq.updateContextCommandItems`)
+                        return true
+                    }
+                    return false
+                },
+                { interval: 1000, timeout: 60_000, truthy: true }
+            )
+        } finally {
+            this._contextCommandSymbolsUpdated = false
+        }
     }
 
     private async setupLsp(context: vscode.ExtensionContext) {

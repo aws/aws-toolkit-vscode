@@ -552,7 +552,7 @@ export class ChatController {
         }
 
         this.messenger.sendContextCommandData(contextCommand)
-        LspController.instance.updateContextCommandSymbolsOnce()
+        void LspController.instance.updateContextCommandSymbolsOnce()
     }
 
     private handlePromptCreate(tabID: string) {
