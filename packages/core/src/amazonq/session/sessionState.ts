@@ -29,6 +29,7 @@ import { prepareRepoData, getDeletedFileInfos, registerNewFiles, PrepareRepoData
 import { uploadCode } from '../util/upload'
 
 export const EmptyCodeGenID = 'EMPTY_CURRENT_CODE_GENERATION_ID'
+const RunCommandLogFileName = '.amazonq/dev/run_command.log'
 
 export interface BaseMessenger {
     sendAnswer(params: any): void
@@ -103,6 +104,22 @@ export abstract class CodeGenBase {
                 case CodeGenerationStatus.COMPLETE: {
                     const { newFileContents, deletedFiles, references } =
                         await this.config.proxyClient.exportResultArchive(this.conversationId)
+
+                    const logFileInfo = newFileContents.find(
+                        (file: { zipFilePath: string; fileContent: string }) =>
+                            file.zipFilePath === RunCommandLogFileName
+                    )
+                    if (logFileInfo) {
+                        const filePath = `${this.config.workspaceRoots[0]}/${RunCommandLogFileName}`
+                        const fileUri = vscode.Uri.file(filePath)
+
+                        await fs.writeFile(fileUri, new TextEncoder().encode(logFileInfo.fileContent), {
+                            create: true,
+                            overwrite: true,
+                        })
+                        newFileContents.splice(newFileContents.indexOf(logFileInfo), 1)
+                    }
+
                     const newFileInfo = registerNewFiles(
                         fs,
                         newFileContents,
