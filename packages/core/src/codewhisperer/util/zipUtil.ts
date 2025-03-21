@@ -30,6 +30,7 @@ import { ProjectZipError } from '../../amazonqTest/error'
 import { removeAnsi } from '../../shared/utilities/textUtilities'
 import { normalize } from '../../shared/utilities/pathUtils'
 import { ZipStream } from '../../shared/utilities/zipStream'
+import { getTextContent } from '../../shared/utilities/vsCodeUtils'
 
 export interface ZipMetadata {
     rootDir: string
@@ -77,12 +78,6 @@ export class ZipUtil {
         return CodeWhispererConstants.projectScanPayloadSizeLimitBytes
     }
 
-    protected async getTextContent(uri: vscode.Uri) {
-        const document = await vscode.workspace.openTextDocument(uri)
-        const content = document.getText()
-        return content
-    }
-
     public reachSizeLimit(size: number, scope: CodeWhispererConstants.CodeAnalysisScope): boolean {
         if (
             scope === CodeWhispererConstants.CodeAnalysisScope.FILE_AUTO ||
@@ -105,7 +100,7 @@ export class ZipUtil {
         }
         const zip = new ZipStream()
 
-        const content = await this.getTextContent(uri)
+        const content = await getTextContent(uri)
 
         const workspaceFolder = vscode.workspace.getWorkspaceFolder(uri)
         if (workspaceFolder) {
@@ -431,7 +426,7 @@ export class ZipUtil {
                 await this.processBinaryFile(zip, file.fileUri, zipEntryPath)
             } else {
                 const isFileOpenAndDirty = this.isFileOpenAndDirty(file.fileUri)
-                const fileContent = isFileOpenAndDirty ? await this.getTextContent(file.fileUri) : file.fileContent
+                const fileContent = isFileOpenAndDirty ? await getTextContent(file.fileUri) : file.fileContent
                 this.processTextFile(zip, file.fileUri, fileContent, languageCount, zipEntryPath)
             }
         }

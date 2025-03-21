@@ -254,3 +254,9 @@ export function subscribeOnce<T>(event: vscode.Event<T>): vscode.Event<T> {
         return result
     }
 }
+
+export async function getTextContent(uri: vscode.Uri) {
+    const document = await vscode.workspace.openTextDocument(uri)
+    const content = document.getText()
+    return content
+}
