@@ -439,6 +439,8 @@
         "serveVue": "Local server for Vue.js code for development purposes. Provides faster iteration when updating Vue files"
     },
     "devDependencies": {
+        "@aws/language-server-runtimes": "^0.2.27",
+        "@aws/chat-client-ui-types": "^0.0.8",
         "@aws-sdk/types": "^3.13.1",
         "@cspotcode/source-map-support": "^0.8.1",
         "@sinonjs/fake-timers": "^10.0.2",

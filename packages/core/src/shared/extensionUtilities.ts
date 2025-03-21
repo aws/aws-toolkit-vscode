@@ -48,6 +48,13 @@ export function productName() {
     return isAmazonQ() ? 'Amazon Q' : `${getIdeProperties().company} Toolkit`
 }
 
+/** Gets the client name stored in oidc */
+export const oidcClientName = once(_oidcClientName)
+function _oidcClientName() {
+    const companyName = getIdeProperties().company
+    return isCloud9() ? `${companyName} Cloud9` : `${companyName} IDE Extensions for VSCode`
+}
+
 export const getExtensionId = () => {
     return isAmazonQ() ? VSCODE_EXTENSION_ID.amazonq : VSCODE_EXTENSION_ID.awstoolkit
 }

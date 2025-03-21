@@ -17,3 +17,27 @@ With this approach, the follow things can be tested:
 -   Whether or not certain features show/not show depending on the status of the users auth
 -   Run requests directly against the backend and see if we get results back
 -   Clicking any follow up buttons (including examples)
+
+## Flare Chat E2E Test flow (Not implemented yet)
+
+This is the new flow that should be introduced when we moved to Flare chat.
+
+```mermaid
+sequenceDiagram
+    participant test as Test
+    participant framework as Test Framework
+    participant ui as Virtual DOM
+    participant lsp as Language Server
+    participant mynah as Mynah UI
+
+    test->>test: starts
+    test->>framework: creates test framework
+    framework->>ui: adds mynah ui to virtual dom
+    test->>lsp: waits for language server activation
+    test->>mynah: triggers action on mynah ui
+    mynah->>framework: sends message
+    framework->>lsp: sends message
+    lsp->>framework: gets response
+    framework->>ui: displays response
+    test->>ui: assert test expectations
+```
