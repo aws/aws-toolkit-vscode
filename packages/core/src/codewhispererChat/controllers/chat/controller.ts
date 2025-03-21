@@ -77,7 +77,7 @@ import {
     createSavedPromptCommandId,
     aditionalContentNameLimit,
     additionalContentInnerContextLimit,
-    contextMaxLength,
+    workspaceChunkMaxSize,
 } from '../../constants'
 import { ChatSession } from '../../clients/chat/v0/chat'
 
@@ -907,12 +907,8 @@ export class ChatController {
         return rulesFiles
     }
 
-    private async resolveContextCommandPayload(
-        triggerPayload: TriggerPayload,
-        session: ChatSession
-    ): Promise<string[]> {
+    private async resolveContextCommandPayload(triggerPayload: TriggerPayload, session: ChatSession) {
         const contextCommands: ContextCommandItem[] = []
-        const relativePaths: string[] = []
 
         // Check for workspace rules to add to context
         const workspaceRules = await this.collectWorkspaceRules()
@@ -967,7 +963,6 @@ export class ChatController {
             getLogger().verbose(`Could not get context command prompts: ${e}`)
         }
 
-        let currentContextLength = 0
         triggerPayload.additionalContents = []
         const emptyLengths = {
             fileContextLength: 0,
@@ -986,18 +981,18 @@ export class ChatController {
                     contextType === 'rule' || contextType === 'prompt'
                         ? `You must follow the instructions in ${prompt.relativePath}. Below are lines ${prompt.startLine}-${prompt.endLine} of this file:\n`
                         : prompt.description
+
+                // Handle user prompts outside the workspace
+                const relativePath = prompt.filePath.startsWith(getUserPromptsDirectory())
+                    ? path.basename(prompt.filePath)
+                    : path.relative(workspaceFolder, prompt.filePath)
+
                 const entry = {
                     name: prompt.name.substring(0, aditionalContentNameLimit),
                     description: description.substring(0, aditionalContentNameLimit),
                     innerContext: prompt.content.substring(0, additionalContentInnerContextLimit),
-                }
-                // make sure the relevantDocument + additionalContext
-                // combined does not exceed 40k characters before generating the request payload.
-                // Do truncation and make sure triggerPayload.documentReferences is up-to-date after truncation
-                // TODO: Use a context length indicator
-                if (currentContextLength + entry.innerContext.length > contextMaxLength) {
-                    getLogger().warn(`Selected context exceeds context size limit: ${entry.description} `)
-                    break
+                    type: contextType,
+                    relativePath: relativePath,
                 }
 
                 if (contextType === 'rule') {
@@ -1009,18 +1004,9 @@ export class ChatController {
                 }
 
                 triggerPayload.additionalContents.push(entry)
-                currentContextLength += entry.innerContext.length
-                let relativePath = path.relative(workspaceFolder, prompt.filePath)
-                // Handle user prompts outside the workspace
-                if (prompt.filePath.startsWith(getUserPromptsDirectory())) {
-                    relativePath = path.basename(prompt.filePath)
-                }
-                relativePaths.push(relativePath)
             }
         }
         getLogger().info(`Retrieved chunks of additional context count: ${triggerPayload.additionalContents.length} `)
-
-        return relativePaths
     }
 
     private async generateResponse(
@@ -1057,7 +1043,7 @@ export class ChatController {
         }
 
         const session = this.sessionStorage.getSession(tabID)
-        const relativePathsOfContextCommandFiles = await this.resolveContextCommandPayload(triggerPayload, session)
+        await this.resolveContextCommandPayload(triggerPayload, session)
         triggerPayload.useRelevantDocuments =
             triggerPayload.context?.some(
                 (context) => typeof context !== 'string' && context.command === '@workspace'
@@ -1067,25 +1053,15 @@ export class ChatController {
             triggerPayload.message = triggerPayload.message.replace(/@workspace/, '')
             if (CodeWhispererSettings.instance.isLocalIndexEnabled()) {
                 const start = performance.now()
-                let remainingContextLength = contextMaxLength
-                for (const additionalContent of triggerPayload.additionalContents || []) {
-                    if (additionalContent.innerContext) {
-                        remainingContextLength -= additionalContent.innerContext.length
-                    }
-                }
                 triggerPayload.relevantTextDocuments = []
                 const relevantTextDocuments = await LspController.instance.query(triggerPayload.message)
                 for (const relevantDocument of relevantTextDocuments) {
                     if (relevantDocument.text !== undefined && relevantDocument.text.length > 0) {
-                        if (remainingContextLength > relevantDocument.text.length) {
-                            triggerPayload.relevantTextDocuments.push(relevantDocument)
-                            remainingContextLength -= relevantDocument.text.length
-                        } else {
-                            getLogger().warn(
-                                `Retrieved context exceeds context size limit: ${relevantDocument.relativeFilePath} `
-                            )
-                            break
+                        if (relevantDocument.text.length > workspaceChunkMaxSize) {
+                            relevantDocument.text = relevantDocument.text.substring(0, workspaceChunkMaxSize)
+                            getLogger().debug(`Truncating @workspace chunk: ${relevantDocument.relativeFilePath} `)
                         }
+                        triggerPayload.relevantTextDocuments.push(relevantDocument)
                     }
                 }
 
@@ -1101,28 +1077,32 @@ export class ChatController {
             }
         }
 
+        const request = triggerPayloadToChatRequest(triggerPayload)
         triggerPayload.documentReferences = this.mergeRelevantTextDocuments(triggerPayload.relevantTextDocuments || [])
 
-        const request = triggerPayloadToChatRequest(triggerPayload)
-
+        // Update context transparency after it's truncated dynamically to show users only the context sent.
         if (triggerPayload.documentReferences !== undefined) {
             const relativePathsOfMergedRelevantDocuments = triggerPayload.documentReferences.map(
                 (doc) => doc.relativeFilePath
             )
             const seen: string[] = []
-            for (const relativePath of relativePathsOfContextCommandFiles) {
-                if (!relativePathsOfMergedRelevantDocuments.includes(relativePath) && !seen.includes(relativePath)) {
-                    triggerPayload.documentReferences.push({
-                        relativeFilePath: relativePath,
-                        lineRanges: [{ first: -1, second: -1 }],
-                    })
-                    seen.push(relativePath)
+            if (triggerPayload.additionalContents) {
+                for (const additionalContent of triggerPayload.additionalContents) {
+                    const relativePath = additionalContent.relativePath
+                    if (
+                        !relativePathsOfMergedRelevantDocuments.includes(relativePath) &&
+                        !seen.includes(relativePath)
+                    ) {
+                        triggerPayload.documentReferences.push({
+                            relativeFilePath: relativePath,
+                            lineRanges: [{ first: -1, second: -1 }],
+                        })
+                        seen.push(relativePath)
+                    }
                 }
             }
-            if (triggerPayload.documentReferences) {
-                for (const doc of triggerPayload.documentReferences) {
-                    session.contexts.set(doc.relativeFilePath, doc.lineRanges)
-                }
+            for (const doc of triggerPayload.documentReferences) {
+                session.contexts.set(doc.relativeFilePath, doc.lineRanges)
             }
         }
 

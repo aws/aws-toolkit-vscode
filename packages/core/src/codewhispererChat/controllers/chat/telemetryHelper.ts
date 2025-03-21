@@ -529,7 +529,7 @@ export class CWCTelemetryHelper {
             credentialStartUrl: AuthUtil.instance.startUrl,
             codewhispererCustomizationArn: triggerPayload.customization.arn,
             cwsprChatHasProjectContext: hasProjectLevelContext,
-            cwsprChatHasContextList: triggerPayload.documentReferences && triggerPayload.documentReferences?.length > 0,
+            cwsprChatHasContextList: triggerPayload.documentReferences && triggerPayload.documentReferences.length > 0,
             cwsprChatFolderContextCount: contextCounts.folderContextCount,
             cwsprChatFileContextCount: contextCounts.fileContextCount,
             cwsprChatFileContextLength: triggerPayload.additionalContextLengths?.fileContextLength ?? 0,
