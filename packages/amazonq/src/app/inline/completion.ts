@@ -22,40 +22,11 @@ import {
     logInlineCompletionSessionResultsNotificationType,
     LogInlineCompletionSessionResultsParams,
 } from '@aws/language-server-runtimes/protocol'
-
-export const CodewhispererInlineCompletionLanguages = [
-    { scheme: 'file', language: 'typescript' },
-    { scheme: 'file', language: 'javascript' },
-    { scheme: 'file', language: 'json' },
-    { scheme: 'file', language: 'yaml' },
-    { scheme: 'file', language: 'java' },
-    { scheme: 'file', language: 'go' },
-    { scheme: 'file', language: 'php' },
-    { scheme: 'file', language: 'rust' },
-    { scheme: 'file', language: 'kotlin' },
-    { scheme: 'file', language: 'terraform' },
-    { scheme: 'file', language: 'ruby' },
-    { scheme: 'file', language: 'shellscript' },
-    { scheme: 'file', language: 'dart' },
-    { scheme: 'file', language: 'lua' },
-    { scheme: 'file', language: 'powershell' },
-    { scheme: 'file', language: 'r' },
-    { scheme: 'file', language: 'swift' },
-    { scheme: 'file', language: 'systemverilog' },
-    { scheme: 'file', language: 'scala' },
-    { scheme: 'file', language: 'vue' },
-    { scheme: 'file', language: 'csharp' },
-    { scheme: 'file', language: 'python' },
-    { scheme: 'file', language: 'c' },
-    { scheme: 'file', language: 'cpp' },
-    { scheme: 'file', language: 'sql' },
-    { scheme: 'file', language: 'tsx' },
-    { scheme: 'file', language: 'jsx' },
-]
+import { CodeWhispererConstants } from 'aws-core-vscode/codewhisperer'
 
 export function registerInlineCompletion(languageClient: LanguageClient) {
     const inlineCompletionProvider = new AmazonQInlineCompletionItemProvider(languageClient)
-    languages.registerInlineCompletionItemProvider(CodewhispererInlineCompletionLanguages, inlineCompletionProvider)
+    languages.registerInlineCompletionItemProvider(CodeWhispererConstants.platformLanguageIds, inlineCompletionProvider)
 
     const onInlineAcceptance = async (
         sessionId: string,
