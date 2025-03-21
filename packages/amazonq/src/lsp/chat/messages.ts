@@ -9,6 +9,7 @@ import {
     AUTH_FOLLOW_UP_CLICKED,
     CHAT_OPTIONS,
     COPY_TO_CLIPBOARD,
+    DISCLAIMER_ACKNOWLEDGED,
 } from '@aws/chat-client-ui-types'
 import {
     ChatResult,
@@ -25,6 +26,7 @@ import { window } from 'vscode'
 import { Disposable, LanguageClient, Position, State, TextDocumentIdentifier } from 'vscode-languageclient'
 import * as jose from 'jose'
 import { AmazonQChatViewProvider } from './webviewProvider'
+import { globals } from 'aws-core-vscode/shared'
 
 export function registerLanguageServerEventListener(languageClient: LanguageClient, provider: AmazonQChatViewProvider) {
     languageClient.onDidChangeState(({ oldState, newState }) => {
@@ -80,6 +82,9 @@ export function registerMessageListeners(
             case AUTH_FOLLOW_UP_CLICKED:
                 // TODO hook this into auth
                 languageClient.info('[VSCode Client] AuthFollowUp clicked')
+                break
+            case DISCLAIMER_ACKNOWLEDGED:
+                globals.globalState.tryUpdate('aws.amazonq.disclaimerAcknowledged', true)
                 break
             case chatRequestType.method: {
                 const partialResultToken = uuidv4()

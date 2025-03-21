@@ -12,7 +12,7 @@ import {
     WebviewViewResolveContext,
     Uri,
 } from 'vscode'
-import { LanguageServerResolver } from 'aws-core-vscode/shared'
+import { globals, LanguageServerResolver } from 'aws-core-vscode/shared'
 
 export class AmazonQChatViewProvider implements WebviewViewProvider {
     public static readonly viewType = 'aws.amazonq.AmazonQChatView'
@@ -34,13 +34,14 @@ export class AmazonQChatViewProvider implements WebviewViewProvider {
         }
 
         const uiPath = webviewView.webview.asWebviewUri(Uri.parse(this.mynahUIPath)).toString()
-        webviewView.webview.html = getWebviewContent(uiPath)
+        const disclaimerAcknowledged = globals.globalState.tryGet('aws.amazonq.disclaimerAcknowledged', Boolean, false)
+        webviewView.webview.html = getWebviewContent(uiPath, disclaimerAcknowledged)
 
         this.onDidResolveWebviewEmitter.fire()
     }
 }
 
-function getWebviewContent(mynahUIPath: string) {
+function getWebviewContent(mynahUIPath: string, disclaimerAcknowledged: boolean) {
     return `
     <!DOCTYPE html>
     <html lang="en">
@@ -65,7 +66,7 @@ function getWebviewContent(mynahUIPath: string) {
         <script type="text/javascript" src="${mynahUIPath.toString()}" defer onload="init()"></script>
         <script type="text/javascript">
             const init = () => {
-                amazonQChat.createChat(acquireVsCodeApi(), {disclaimerAcknowledged: false});
+                amazonQChat.createChat(acquireVsCodeApi(), {disclaimerAcknowledged: ${disclaimerAcknowledged}});
             }
         </script>
     </body>
