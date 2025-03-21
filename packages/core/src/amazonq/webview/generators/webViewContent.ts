@@ -9,6 +9,7 @@ import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import { FeatureConfigProvider, FeatureContext } from '../../../shared/featureConfig'
 import globals from '../../../shared/extensionGlobals'
 import { isSageMaker } from '../../../shared/extensionUtilities'
+import { RegionProfile } from '../../../codewhisperer/models/model'
 
 export class WebViewContentGenerator {
     private async generateFeatureConfigsData(): Promise<string> {
@@ -84,6 +85,20 @@ export class WebViewContentGenerator {
 
         const welcomeLoadCount = globals.globalState.tryGet('aws.amazonq.welcomeChatShowCount', Number, 0)
 
+        // only show profile card when the two conditions
+        //  1. profile count >= 2
+        //  2. not default (fallback) which has empty arn
+        const regionProfile: RegionProfile | undefined = AuthUtil.instance.regionProfileManager.activeRegionProfile
+        // TODO: uncomment
+        // if (
+        //     regionProfile &&
+        //     (regionProfile.arn.length === 0 || AuthUtil.instance.regionProfileManager.profiles.length < 2)
+        // ) {
+        //     regionProfile = undefined
+        // }
+
+        const regionProfileString: string = JSON.stringify(regionProfile)
+
         return `
         <script type="text/javascript" src="${javascriptEntrypoint.toString()}" defer onload="init()"></script>
         ${cssLinks}
@@ -91,7 +106,7 @@ export class WebViewContentGenerator {
             const init = () => {
                 createMynahUI(acquireVsCodeApi(), ${
                     (await AuthUtil.instance.getChatAuthState()).amazonQ === 'connected'
-                },${featureConfigsString},${welcomeLoadCount},${disclaimerAcknowledged},${disabledCommandsString});
+                },${featureConfigsString},${welcomeLoadCount},${disclaimerAcknowledged},${regionProfileString},${disabledCommandsString});
             }
         </script>
         `

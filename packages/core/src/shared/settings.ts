@@ -5,7 +5,6 @@
 
 import * as vscode from 'vscode'
 import * as codecatalyst from './clients/codecatalystClient'
-import * as codewhisperer from '../codewhisperer/client/codewhisperer'
 import { getLogger } from './logger/logger'
 import {
     cast,
@@ -23,6 +22,7 @@ import { telemetry } from './telemetry/telemetry'
 import globals from './extensionGlobals'
 import toolkitSettings from './settings-toolkit.gen'
 import amazonQSettings from './settings-amazonq.gen'
+import { CodeWhispererConfig } from '../codewhisperer/models/model'
 
 type Workspace = Pick<typeof vscode.workspace, 'getConfiguration' | 'onDidChangeConfiguration'>
 
@@ -776,9 +776,9 @@ type AwsDevSetting = keyof ResolvedDevSettings
 type ServiceClients = keyof ServiceTypeMap
 interface ServiceTypeMap {
     codecatalystService: codecatalyst.CodeCatalystConfig
-    codewhispererService: codewhisperer.CodeWhispererConfig
     amazonqLsp: object // type is provided inside of amazon q
     amazonqWorkspaceLsp: object // type is provided inside of amazon q
+    codewhispererService: CodeWhispererConfig
 }
 
 /**

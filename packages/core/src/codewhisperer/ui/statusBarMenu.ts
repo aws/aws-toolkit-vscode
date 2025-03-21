@@ -21,6 +21,7 @@ import {
     createSignIn,
     switchToAmazonQNode,
     createSecurityScan,
+    createSelectRegionProfileNode,
 } from './codeWhispererNodes'
 import { hasVendedIamCredentials } from '../../auth/auth'
 import { AuthUtil } from '../util/authUtil'
@@ -92,6 +93,7 @@ export function getQuickPickItems(): DataQuickPickItem<string>[] {
         // Add settings and signout
         createSeparator(),
         createSettingsNode(),
+        ...(AuthUtil.instance.isValidEnterpriseSsoInUse() ? [createSelectRegionProfileNode()] : []),
         ...(AuthUtil.instance.isConnected() && !hasVendedIamCredentials() ? [createSignout()] : []),
     ]
 

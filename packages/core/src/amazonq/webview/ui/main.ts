@@ -34,6 +34,7 @@ import { welcomeScreenTabData } from './walkthrough/welcome'
 import { agentWalkthroughDataModel } from './walkthrough/agent'
 import { createClickTelemetry, createOpenAgentTelemetry } from './telemetry/actions'
 import { disclaimerAcknowledgeButtonId, disclaimerCard } from './texts/disclaimer'
+import { RegionProfile } from '../../../codewhisperer/models/model'
 
 /**
  * The number of welcome chat tabs that can be opened before the NEXT one will become
@@ -47,6 +48,7 @@ export const createMynahUI = (
     featureConfigsSerialized: [string, FeatureContext][],
     welcomeCount: number,
     disclaimerAcknowledged: boolean,
+    regionProfile: RegionProfile | undefined,
     disabledCommands?: string[]
 ) => {
     let disclaimerCardActive = !disclaimerAcknowledged
@@ -122,6 +124,7 @@ export const createMynahUI = (
         isDocEnabled,
         disabledCommands,
         commandHighlight: highlightCommand,
+        regionProfile,
     })
 
     // eslint-disable-next-line prefer-const

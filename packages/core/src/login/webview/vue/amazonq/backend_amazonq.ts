@@ -22,6 +22,7 @@ import { AuthError, AuthFlowState, userCancelled } from '../types'
 import { ToolkitError } from '../../../../shared/errors'
 import { withTelemetryContext } from '../../../../shared/telemetry/util'
 import { builderIdStartUrl } from '../../../../auth/sso/constants'
+import { RegionProfile } from '../../../../codewhisperer/models/model'
 
 const className = 'AmazonQLoginWebview'
 export class AmazonQLoginWebview extends CommonAuthWebview {
@@ -157,6 +158,9 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
         if (featureAuthStates.amazonQ === 'expired') {
             this.authState = this.isReauthenticating ? 'REAUTHENTICATING' : 'REAUTHNEEDED'
             return
+        } else if (featureAuthStates.amazonQ === 'pendingProfileSelection') {
+            this.authState = 'PENDING_PROFILE_SELECTION'
+            return
         }
         this.authState = 'LOGIN'
     }
@@ -202,10 +206,19 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
     /** If users are unauthenticated in Q/CW, we should always display the auth screen. */
     async quitLoginScreen() {}
 
+    override listRegionProfiles(): Promise<RegionProfile[]> {
+        return AuthUtil.instance.regionProfileManager.listRegionProfile()
+    }
+
+    override selectRegionProfile(profile: RegionProfile) {
+        return AuthUtil.instance.regionProfileManager.switchRegionProfile(profile)
+    }
+
     private setupConnectionEventEmitter(): void {
         // allows the frontend to listen to Amazon Q auth events from the backend
         const codeWhispererConnectionChanged = createThrottle(() => this.onActiveConnectionModified.fire())
         AuthUtil.instance.secondaryAuth.onDidChangeActiveConnection(codeWhispererConnectionChanged)
+        AuthUtil.instance.regionProfileManager.onDidChangeRegionProfile(codeWhispererConnectionChanged)
 
         /**
          * Multiple events can be received in rapid succession and if

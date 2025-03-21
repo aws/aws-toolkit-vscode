@@ -32,6 +32,7 @@ import { DevSettings } from '../../../shared/settings'
 import { AuthSSOServer } from '../../../auth/sso/server'
 import { getLogger } from '../../../shared/logger/logger'
 import { isValidUrl } from '../../../shared/utilities/uriUtils'
+import { RegionProfile } from '../../../codewhisperer/models/model'
 
 export abstract class CommonAuthWebview extends VueWebview {
     private readonly className = 'CommonAuthWebview'
@@ -214,6 +215,10 @@ export abstract class CommonAuthWebview extends VueWebview {
 
     /** List current connections known by the extension for the purpose of preventing duplicates. */
     abstract listSsoConnections(): Promise<SsoConnection[]>
+
+    abstract listRegionProfiles(): Promise<RegionProfile[]>
+
+    abstract selectRegionProfile(profile: RegionProfile): Promise<void>
 
     /**
      * Emit stored metric metadata. Does not reset the stored metric metadata, because it
