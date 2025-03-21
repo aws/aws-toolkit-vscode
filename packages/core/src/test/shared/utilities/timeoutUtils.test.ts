@@ -394,6 +394,46 @@ export const timeoutUtilsDescribe = describe('timeoutUtils', async function () {
             fn = sandbox.stub()
         })
 
+        it('should retry when retryOnFail callback returns true', async function () {
+            fn.onCall(0).throws(new Error('Retry error'))
+            fn.onCall(1).throws(new Error('Retry error'))
+            fn.onCall(2).resolves('success')
+
+            const res = waitUntil(fn, {
+                retryOnFail: (error: Error) => {
+                    return error.message === 'Retry error'
+                },
+            })
+
+            await clock.tickAsync(timeoutUtils.waitUntilDefaultInterval)
+            assert.strictEqual(fn.callCount, 2)
+            await clock.tickAsync(timeoutUtils.waitUntilDefaultInterval)
+            assert.strictEqual(fn.callCount, 3)
+            assert.strictEqual(await res, 'success')
+        })
+
+        it('should not retry when retryOnFail callback returns false', async function () {
+            fn.onCall(0).throws(new Error('Retry error'))
+            fn.onCall(1).throws(new Error('Retry error'))
+            fn.onCall(2).throws(new Error('Last error'))
+            fn.onCall(3).resolves('this is not hit')
+
+            const res = assert.rejects(
+                waitUntil(fn, {
+                    retryOnFail: (error: Error) => {
+                        return error.message === 'Retry error'
+                    },
+                }),
+                (e) => e instanceof Error && e.message === 'Last error'
+            )
+
+            await clock.tickAsync(timeoutUtils.waitUntilDefaultInterval)
+            assert.strictEqual(fn.callCount, 2)
+            await clock.tickAsync(timeoutUtils.waitUntilDefaultInterval)
+            assert.strictEqual(fn.callCount, 3)
+            await res
+        })
+
         it('retries the function until it succeeds', async function () {
             fn.onCall(0).throws()
             fn.onCall(1).throws()
