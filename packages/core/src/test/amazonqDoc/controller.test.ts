@@ -9,22 +9,47 @@ import {
     ControllerSetup,
     createController,
     createExpectedEvent,
+    createExpectedMetricData,
     createSession,
     EventMetrics,
     FollowUpSequences,
     generateVirtualMemoryUri,
     updateFilePaths,
 } from './utils'
-import { CurrentWsFolders, NewFileInfo } from '../../amazonqDoc/types'
+import { CurrentWsFolders, MetricDataOperationName, MetricDataResult, NewFileInfo } from '../../amazonqDoc/types'
 import { DocCodeGenState, docScheme, Session } from '../../amazonqDoc'
 import { AuthUtil } from '../../codewhisperer'
-import { FeatureDevClient } from '../../amazonqFeatureDev'
-import { waitUntil } from '../../shared'
+import {
+    ApiClientError,
+    ApiServiceError,
+    CodeIterationLimitError,
+    FeatureDevClient,
+    getMetricResult,
+    MonthlyConversationLimitError,
+    PrepareRepoFailedError,
+    TabIdNotFoundError,
+    UploadCodeError,
+    UploadURLExpired,
+    UserMessageNotFoundError,
+    ZipFileError,
+} from '../../amazonqFeatureDev'
+import { i18n, ToolkitError, waitUntil } from '../../shared'
 import { FollowUpTypes } from '../../amazonq/commons/types'
 import { FileSystem } from '../../shared/fs/fs'
 import { ReadmeBuilder } from './mockContent'
 import * as path from 'path'
-describe(`Controller - Doc Generation`, () => {
+import {
+    ContentLengthError,
+    NoChangeRequiredException,
+    PromptRefusalException,
+    PromptTooVagueError,
+    PromptUnrelatedError,
+    ReadmeTooLargeError,
+    ReadmeUpdateTooLargeError,
+    WorkspaceEmptyError,
+} from '../../amazonqDoc/errors'
+import { LlmError } from '../../amazonq/errors'
+describe('Controller - Doc Generation', () => {
     const firstTabID = '123'
     const firstConversationID = '123'
     const firstUploadID = '123'
@@ -139,12 +164,12 @@ describe(`Controller - Doc Generation`, () => {
         }
     }
 
-    async function setupTest(sandbox: sinon.SinonSandbox, isMultiTabs?: boolean) {
+    async function setupTest(sandbox: sinon.SinonSandbox, isMultiTabs?: boolean, error?: ToolkitError) {
         controllerSetup = await createController(sandbox)
         session = await createCodeGenState(sandbox, firstTabID, firstConversationID, firstUploadID)
         sendDocTelemetrySpy = sandbox.stub(session, 'sendDocTelemetryEvent').resolves()
         sandbox.stub(session, 'preloader').resolves()
-        sandbox.stub(session, 'send').resolves()
+        error ? sandbox.stub(session, 'send').throws(error) : sandbox.stub(session, 'send').resolves()
         Object.defineProperty(session, '_conversationId', {
             value: firstConversationID,
             writable: true,
@@ -202,6 +227,7 @@ describe(`Controller - Doc Generation`, () => {
     const retryTest = async (
         testMethod: () => Promise<void>,
         isMultiTabs?: boolean,
+        error?: ToolkitError,
         maxRetries: number = 3,
         delayMs: number = 1000
     ): Promise<void> => {
@@ -209,8 +235,12 @@ describe(`Controller - Doc Generation`, () => {
 
         for (let attempt = 1; attempt <= maxRetries + 1; attempt++) {
             sandbox = sinon.createSandbox()
+            sandbox.useFakeTimers({
+                now: new Date('2025-03-20T12:00:00.000Z'),
+                toFake: ['Date'],
+            })
             try {
-                await setupTest(sandbox, isMultiTabs)
+                await setupTest(sandbox, isMultiTabs, error)
                 await testMethod()
                 sandbox.restore()
                 return
@@ -285,7 +315,6 @@ describe(`Controller - Doc Generation`, () => {
                 spy: sendDocTelemetrySpy,
                 expectedEvent: secondExpectedEvent,
                 type: 'generation',
-                callIndex: 1,
                 sandbox,
             })
         })
@@ -307,7 +336,6 @@ describe(`Controller - Doc Generation`, () => {
                 spy: sendDocTelemetrySpy,
                 expectedEvent,
                 type: 'acceptance',
-                callIndex: 1,
                 sandbox,
             })
         })
@@ -346,14 +374,12 @@ describe(`Controller - Doc Generation`, () => {
                 ...EventMetrics.DATA_FLOW,
                 interactionType: 'UPDATE_README',
                 conversationId: firstConversationID,
-                callIndex: 1,
             })
 
             await assertTelemetry({
                 spy: sendDocTelemetrySpy,
                 expectedEvent,
                 type: 'generation',
-                callIndex: 1,
                 sandbox,
             })
         })
@@ -376,7 +402,6 @@ describe(`Controller - Doc Generation`, () => {
                 spy: sendDocTelemetrySpy,
                 expectedEvent,
                 type: 'acceptance',
-                callIndex: 1,
                 sandbox,
             })
         })
@@ -418,7 +443,6 @@ describe(`Controller - Doc Generation`, () => {
                 spy: sendDocTelemetrySpy,
                 expectedEvent,
                 type: 'acceptance',
-                callIndex: 1,
                 sandbox,
             })
         })
@@ -458,5 +482,96 @@ describe(`Controller - Doc Generation`, () => {
                 sandbox,
             })
         }, true)
+    })
+
+    describe('Doc Generation Error Handling', () => {
+        const errors = [
+            {
+                name: 'MonthlyConversationLimitError',
+                error: new MonthlyConversationLimitError('Service Quota Exceeded'),
+            },
+            {
+                name: 'DocGenerationGuardrailsException',
+                error: new ApiClientError(
+                    i18n('AWS.amazonq.doc.error.docGen.default'),
+                    'GetTaskAssistCodeGeneration',
+                    'GuardrailsException',
+                    400
+                ),
+            },
+            {
+                name: 'DocGenerationEmptyPatchException',
+                error: new LlmError(i18n('AWS.amazonq.doc.error.docGen.default'), {
+                    code: 'EmptyPatchException',
+                }),
+            },
+            {
+                name: 'DocGenerationThrottlingException',
+                error: new ApiClientError(
+                    i18n('AWS.amazonq.featureDev.error.throttling'),
+                    'GetTaskAssistCodeGeneration',
+                    'ThrottlingException',
+                    429
+                ),
+            },
+            { name: 'UploadCodeError', error: new UploadCodeError('403: Forbiden') },
+            { name: 'UserMessageNotFoundError', error: new UserMessageNotFoundError() },
+            { name: 'TabIdNotFoundError', error: new TabIdNotFoundError() },
+            { name: 'PrepareRepoFailedError', error: new PrepareRepoFailedError() },
+            { name: 'PromptRefusalException', error: new PromptRefusalException(0) },
+            { name: 'ZipFileError', error: new ZipFileError() },
+            { name: 'CodeIterationLimitError', error: new CodeIterationLimitError() },
+            { name: 'UploadURLExpired', error: new UploadURLExpired() },
+            { name: 'NoChangeRequiredException', error: new NoChangeRequiredException() },
+            { name: 'ReadmeTooLargeError', error: new ReadmeTooLargeError() },
+            { name: 'ReadmeUpdateTooLargeError', error: new ReadmeUpdateTooLargeError(0) },
+            { name: 'ContentLengthError', error: new ContentLengthError() },
+            { name: 'WorkspaceEmptyError', error: new WorkspaceEmptyError() },
+            { name: 'PromptUnrelatedError', error: new PromptUnrelatedError(0) },
+            { name: 'PromptTooVagueError', error: new PromptTooVagueError(0) },
+            { name: 'PromptRefusalException', error: new PromptRefusalException(0) },
+            {
+                name: 'default',
+                error: new ApiServiceError(
+                    i18n('AWS.amazonq.doc.error.docGen.default'),
+                    'GetTaskAssistCodeGeneration',
+                    'UnknownException',
+                    500
+                ),
+            },
+        ]
+        for (const { name, error } of errors) {
+            it(`should emit failure operation telemetry when ${name} occurs`, async () => {
+                await retryTest(
+                    async () => {
+                        await performAction('generate', getSessionStub)
+
+                        const expectedSuccessMetric = createExpectedMetricData(
+                            MetricDataOperationName.StartDocGeneration,
+                            MetricDataResult.Success
+                        )
+                        await assertTelemetry({
+                            spy: sendDocTelemetrySpy,
+                            expectedEvent: expectedSuccessMetric,
+                            type: 'metric',
+                            sandbox,
+                        })
+
+                        const expectedFailureMetric = createExpectedMetricData(
+                            MetricDataOperationName.EndDocGeneration,
+                            getMetricResult(error)
+                        )
+                        await assertTelemetry({
+                            spy: sendDocTelemetrySpy,
+                            expectedEvent: expectedFailureMetric,
+                            type: 'metric',
+                            sandbox,
+                        })
+                    },
+                    undefined,
+                    error
+                )
+            })
+        }
     })
 })
