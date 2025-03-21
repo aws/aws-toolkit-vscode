@@ -1053,11 +1053,6 @@ export class ChatController {
             triggerPayload.message = triggerPayload.message.replace(/@workspace/, '')
             if (CodeWhispererSettings.instance.isLocalIndexEnabled()) {
                 const start = performance.now()
-                // for (const additionalContent of triggerPayload.additionalContents || []) {
-                // if (additionalContent.innerContext) {
-                // remainingContextLength -= additionalContent.innerContext.length
-                // }
-                // }
                 triggerPayload.relevantTextDocuments = []
                 const relevantTextDocuments = await LspController.instance.query(triggerPayload.message)
                 for (const relevantDocument of relevantTextDocuments) {
