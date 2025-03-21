@@ -45,6 +45,8 @@ export type globalKey =
     | 'aws.toolkit.amazonq.dismissed'
     | 'aws.toolkit.amazonqInstall.dismissed'
     | 'aws.amazonq.workspaceIndexToggleOn'
+    | 'aws.toolkit.lsp.versions'
+    | 'aws.toolkit.lsp.manifest'
     | 'aws.amazonq.customization.overrideV2'
     // Deprecated/legacy names. New keys should start with "aws.".
     | '#sessionCreationDates' // Legacy name from `ssoAccessTokenProvider.ts`.
