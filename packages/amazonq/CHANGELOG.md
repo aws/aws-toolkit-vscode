@@ -1,3 +1,27 @@
+## 1.52.0 2025-03-20
+
+- **Bug Fix** Amazon Q chat: @Folders and @Files are missing `@` prefix in chat history
+- **Bug Fix** /review: Code Issues ellipses menu displays AWS Toolkit options, if installed.
+- **Bug Fix** Amazon Q chat: Progress indicator height is stretched
+- **Bug Fix** Amazon Q chat: Long descriptions in context list are cut off
+- **Bug Fix** Amazon Q chat: Improve responses for saved prompts and workspace rules
+- **Bug Fix** /test: show descriptive error message
+- **Bug Fix** Code Review: Fixed a bug where issues are double counted in the Q chat
+- **Bug Fix** Amazon Q chat: Animation timings are too long
+- **Bug Fix** Fix inline completion failure due to context length exceeding the threshold
+- **Feature** /review: passing referenceTrackerConfiguration to StartCodeFixJob
+- **Feature** /review: rename setting `showInlineCodeSuggestionsWithCodeReferences` to `showCodeWithReferences`
+
+## 1.51.0 2025-03-12
+
+- **Bug Fix** increase scan timeout to reduce front-end timeout errors
+- **Bug Fix** Amazon Q chat: Create a new prompt form does not autofocus or submit with Enter press
+- **Bug Fix** /review: Zip files are created with the wrong file path for file scans in multifolder workspaces.
+- **Bug Fix** /review: Invalid file path characters caused some detections to be skipped on Windows
+- **Feature** Amazon Q Chat: You can now keep a "library" of prompt files in your home directory under `~/.aws/amazonq/prompts` and then quickly add them to the context using `@` on any project you’re working on. Prompt files are in markdown (`.md`) format.
+- **Feature** /review: show code diff for fix preview
+- **Feature** /test: display test plan summary in chat after generating tests
+
 ## 1.50.0 2025-03-06
 
 - **Bug Fix** /doc: Usage in multiple chat tabs may cause unexpected behavior.

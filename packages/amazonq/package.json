@@ -2,7 +2,7 @@
     "name": "amazon-q-vscode",
     "displayName": "Amazon Q",
     "description": "The most capable generative AI-powered assistant for building, operating, and transforming software, with advanced capabilities for managing data and AI",
-    "version": "1.51.0-SNAPSHOT",
+    "version": "1.53.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
     ],
@@ -32,7 +32,8 @@
         "Codewhisperer",
         "AI",
         "Assistant",
-        "Chatbot"
+        "Chatbot",
+        "Q Developer"
     ],
     "preview": false,
     "qna": "https://github.com/aws/aws-toolkit-vscode/issues",
@@ -122,7 +123,7 @@
                     },
                     "additionalProperties": false
                 },
-                "amazonQ.showInlineCodeSuggestionsWithCodeReferences": {
+                "amazonQ.showCodeWithReferences": {
                     "type": "boolean",
                     "markdownDescription": "%AWS.configuration.description.amazonq%",
                     "default": true
@@ -220,7 +221,7 @@
                 },
                 {
                     "type": "webview",
-                    "id": "aws.AmazonQChatView",
+                    "id": "aws.amazonq.AmazonQChatView",
                     "name": "%AWS.amazonq.chat%",
                     "when": "!aws.isWebExtHost && !aws.amazonq.showLoginView"
                 }
@@ -345,7 +346,7 @@
                 },
                 {
                     "command": "aws.amazonq.learnMore",
-                    "when": "view == aws.AmazonQChatView || view == aws.amazonq.AmazonCommonAuth",
+                    "when": "view =~ /^aws\\.amazonq/",
                     "group": "1_amazonQ@1"
                 },
                 {
@@ -355,22 +356,22 @@
                 },
                 {
                     "command": "aws.amazonq.signout",
-                    "when": "(view == aws.AmazonQChatView) && aws.codewhisperer.connected",
+                    "when": "(view == aws.amazonq.AmazonQChatView) && aws.codewhisperer.connected",
                     "group": "2_amazonQ@4"
                 },
                 {
                     "command": "aws.amazonq.reconnect",
-                    "when": "(view == aws.AmazonQChatView) && aws.codewhisperer.connectionExpired",
+                    "when": "(view == aws.amazonq.AmazonQChatView) && aws.codewhisperer.connectionExpired",
                     "group": "2_amazonQ@3"
                 },
                 {
                     "submenu": "aws.amazonq.submenu.feedback",
-                    "when": "view == aws.AmazonQChatView || view == aws.amazonq.AmazonCommonAuth",
+                    "when": "view =~ /^aws\\.amazonq/",
                     "group": "y_toolkitMeta@1"
                 },
                 {
                     "submenu": "aws.amazonq.submenu.help",
-                    "when": "view == aws.AmazonQChatView || view == aws.amazonq.AmazonCommonAuth",
+                    "when": "view =~ /^aws\\.amazonq/",
                     "group": "y_toolkitMeta@2"
                 },
                 {
@@ -392,12 +393,12 @@
                 },
                 {
                     "command": "aws.amazonq.openSecurityIssuePanel",
-                    "when": "view == aws.amazonq.SecurityIssuesTree && (viewItem == issueWithoutFix || viewItem == issueWithFix)",
+                    "when": "view == aws.amazonq.SecurityIssuesTree && (viewItem == issueWithoutFix || viewItem == issueWithFix || viewItem == issueWithFixDisabled)",
                     "group": "inline@4"
                 },
                 {
                     "command": "aws.amazonq.security.ignore",
-                    "when": "view == aws.amazonq.SecurityIssuesTree && (viewItem == issueWithoutFix || viewItem == issueWithFix)",
+                    "when": "view == aws.amazonq.SecurityIssuesTree && (viewItem == issueWithoutFix || viewItem == issueWithFix || viewItem == issueWithFixDisabled)",
                     "group": "inline@5"
                 },
                 {
@@ -407,7 +408,7 @@
                 },
                 {
                     "submenu": "aws.amazonq.submenu.securityIssueMoreActions",
-                    "when": "view == aws.amazonq.SecurityIssuesTree && (viewItem == issueWithoutFix || viewItem == issueWithFix)",
+                    "when": "view == aws.amazonq.SecurityIssuesTree && (viewItem == issueWithoutFix || viewItem == issueWithFix || viewItem == issueWithFixDisabled)",
                     "group": "inline@7"
                 }
             ],

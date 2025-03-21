@@ -28,6 +28,7 @@ const className = 'AmazonQLoginWebview'
 export class AmazonQLoginWebview extends CommonAuthWebview {
     public override id: string = 'aws.amazonq.AmazonCommonAuth'
     public static sourcePath: string = 'vue/src/login/webview/vue/amazonq/index.js'
+    public override supportsLoadTelemetry: boolean = true
 
     override onActiveConnectionModified = new vscode.EventEmitter<void>()
 

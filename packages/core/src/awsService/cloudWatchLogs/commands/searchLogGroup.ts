@@ -17,11 +17,10 @@ import {
 import { DataQuickPickItem } from '../../../shared/ui/pickerPrompter'
 import { isValidResponse, isWizardControl, Wizard, WIZARD_RETRY } from '../../../shared/wizards/wizard'
 import { cwlUriSchema, msgKey, recordTelemetryFilter } from '../cloudWatchLogsUtils'
-import { DefaultCloudWatchLogsClient } from '../../../shared/clients/cloudWatchLogsClient'
+import { CloudWatchLogsClient } from '../../../shared/clients/cloudWatchLogs'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { getLogger } from '../../../shared/logger/logger'
 import { TimeFilterResponse, TimeFilterSubmenu } from '../timeFilterSubmenu'
-import { CloudWatchLogs } from 'aws-sdk'
 import { ExtendedInputBoxOptions, InputBox, InputBoxPrompter } from '../../../shared/ui/inputPrompter'
 import { RegionSubmenu, RegionSubmenuResponse } from '../../../shared/ui/common/regionSubmenu'
 import { truncate } from '../../../shared/utilities/textUtilities'
@@ -30,6 +29,7 @@ import { PromptResult } from '../../../shared/ui/prompter'
 import { ToolkitError } from '../../../shared/errors'
 import { Messages } from '../../../shared/utilities/messages'
 import { showFile } from '../../../shared/utilities/textDocumentUtilities'
+import { LogGroup } from '@aws-sdk/client-cloudwatch-logs'
 
 const localize = nls.loadMessageBundle()
 
@@ -110,7 +110,7 @@ export async function searchLogGroup(
 }
 
 async function getLogGroupsFromRegion(regionCode: string): Promise<DataQuickPickItem<string>[]> {
-    const client = new DefaultCloudWatchLogsClient(regionCode)
+    const client = new CloudWatchLogsClient(regionCode)
     const logGroups = await logGroupsToArray(client.describeLogGroups())
     const options = logGroups.map<DataQuickPickItem<string>>((logGroupString) => ({
         label: logGroupString,
@@ -119,7 +119,7 @@ async function getLogGroupsFromRegion(regionCode: string): Promise<DataQuickPick
     return options
 }
 
-async function logGroupsToArray(logGroups: AsyncIterableIterator<CloudWatchLogs.LogGroup>): Promise<string[]> {
+async function logGroupsToArray(logGroups: AsyncIterableIterator<LogGroup>): Promise<string[]> {
     const logGroupsArray = []
     for await (const logGroupObject of logGroups) {
         logGroupObject.logGroupName && logGroupsArray.push(logGroupObject.logGroupName)

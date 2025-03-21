@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import { ChildNodeLoader, ChildNodePage } from '../../../awsexplorer/childNodeLoader'
-import { CloudControlClient } from '../../../shared/clients/cloudControlClient'
+import { CloudControlClient } from '../../../shared/clients/cloudControl'
 import { getLogger } from '../../../shared/logger/logger'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { LoadMoreNode } from '../../../shared/treeview/nodes/loadMoreNode'

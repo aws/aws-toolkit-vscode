@@ -689,6 +689,10 @@ export const generateFix = Commands.declare(
             if (!targetIssue) {
                 return
             }
+            if (targetIssue.ruleId === CodeWhispererConstants.sasRuleId) {
+                getLogger().warn('GenerateFix is not available for SAS findings.')
+                return
+            }
             await telemetry.codewhisperer_codeScanIssueGenerateFix.run(async () => {
                 try {
                     await vscode.commands

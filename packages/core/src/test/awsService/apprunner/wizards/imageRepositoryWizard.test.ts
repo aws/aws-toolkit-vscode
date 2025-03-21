@@ -3,17 +3,17 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { AppRunner } from 'aws-sdk'
 import { createWizardTester, WizardTester } from '../../../shared/wizards/wizardTestUtils'
 import {
     AppRunnerImageRepositoryWizard,
     ImageIdentifierForm,
     TaggedEcrRepository,
 } from '../../../../awsService/apprunner/wizards/imageRepositoryWizard'
+import { ImageRepository, SourceConfiguration } from '../../../../shared/clients/apprunner'
 
 describe('AppRunnerImageRepositoryWizard', function () {
-    let tester: WizardTester<AppRunner.SourceConfiguration>
-    let repoTester: WizardTester<AppRunner.ImageRepository>
+    let tester: WizardTester<SourceConfiguration>
+    let repoTester: WizardTester<ImageRepository>
 
     beforeEach(async function () {
         const wizard = new AppRunnerImageRepositoryWizard({} as any, {} as any) // the clients will never be called

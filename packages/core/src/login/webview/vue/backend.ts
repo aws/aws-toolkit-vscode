@@ -63,18 +63,25 @@ export abstract class CommonAuthWebview extends VueWebview {
     }
 
     private didCall: { login: boolean; reauth: boolean } = { login: false, reauth: false }
-    public setUiReady(state: 'login' | 'reauth') {
-        // Prevent telemetry spam, since showing/hiding chat triggers this each time.
-        // So only emit once.
+    /**
+     * Called when the UI load process is completed, regardless of success or failure
+     *
+     * @param errorMessage IF an error is caught on the frontend, this is the message. It will result in a failure metric.
+     *                     Otherwise we assume success.
+     */
+    public setUiReady(state: 'login' | 'reauth', errorMessage?: string) {
+        // Only emit once to prevent telemetry spam, since showing/hiding chat triggers this each time.
+        // TODO: Research how to not trigger this on every show/hide
         if (this.didCall[state]) {
             return
         }
 
-        telemetry.webview_load.emit({
-            passive: true,
-            webviewName: state,
-            result: 'Succeeded',
-        })
+        if (errorMessage) {
+            this.setLoadFailure(state, errorMessage)
+        } else {
+            this.setDidLoad(state)
+        }
+
         this.didCall[state] = true
     }
 

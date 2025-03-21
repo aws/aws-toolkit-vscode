@@ -23,7 +23,7 @@ import { amazonqMark } from '../../shared/performance/marks'
 import { AuthUtil } from '../../codewhisperer/util/authUtil'
 
 export class AmazonQChatViewProvider implements WebviewViewProvider {
-    public static readonly viewType = 'aws.AmazonQChatView'
+    public static readonly viewType = 'aws.amazonq.AmazonQChatView'
 
     webViewContentGenerator: WebViewContentGenerator
     webView: Webview | undefined

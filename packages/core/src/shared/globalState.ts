@@ -45,6 +45,8 @@ export type globalKey =
     | 'aws.toolkit.amazonq.dismissed'
     | 'aws.toolkit.amazonqInstall.dismissed'
     | 'aws.amazonq.workspaceIndexToggleOn'
+    | 'aws.toolkit.lsp.versions'
+    | 'aws.toolkit.lsp.manifest'
     | 'aws.amazonq.customization.overrideV2'
     | 'aws.amazonq.regionProfiles'
     // Deprecated/legacy names. New keys should start with "aws.".
