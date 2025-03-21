@@ -44,7 +44,7 @@ describe('manifestResolver', function () {
     it('attempts to fetch from remote first', async function () {
         remoteStub.resolves(manifestResult('remote'))
 
-        const r = await new ManifestResolver('remote-manifest.com', serverName).resolve()
+        const r = await new ManifestResolver('remote-manifest.com', serverName, '').resolve()
         assert.strictEqual(r.location, 'remote')
         assertTelemetry('languageServer_setup', {
             manifestLocation: 'remote',
@@ -59,7 +59,7 @@ describe('manifestResolver', function () {
         remoteStub.rejects(new Error('failed to fetch'))
         localStub.resolves(manifestResult('cache'))
 
-        const r = await new ManifestResolver('remote-manifest.com', serverName).resolve()
+        const r = await new ManifestResolver('remote-manifest.com', serverName, '').resolve()
         assert.strictEqual(r.location, 'cache')
         assertTelemetry('languageServer_setup', [
             {
@@ -82,7 +82,7 @@ describe('manifestResolver', function () {
         remoteStub.rejects(new Error('failed to fetch'))
         localStub.rejects(new Error('failed to fetch'))
 
-        await assert.rejects(new ManifestResolver('remote-manifest.com', serverName).resolve(), /failed to fetch/)
+        await assert.rejects(new ManifestResolver('remote-manifest.com', serverName, '').resolve(), /failed to fetch/)
         assertTelemetry('languageServer_setup', [
             {
                 manifestLocation: 'remote',

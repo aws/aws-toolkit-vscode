@@ -9,7 +9,8 @@ import { LspConfig } from 'aws-core-vscode/amazonq'
 export const defaultAmazonQLspConfig: LspConfig = {
     manifestUrl: 'https://aws-toolkit-language-servers.amazonaws.com/codewhisperer/0/manifest.json',
     supportedVersions: '^3.1.1',
-    id: 'AmazonQ', // used for identification in global storage/local disk location. Do not change.
+    id: 'AmazonQ', // used across IDEs for identifying global storage/local disk locations. Do not change.
+    suppressPromptPrefix: 'amazonQ',
     path: undefined,
 }
 
