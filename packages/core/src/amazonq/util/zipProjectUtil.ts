@@ -2,9 +2,8 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-
 import path from 'path'
-import { collectFiles, CollectFilesOptions } from '../../shared/utilities/workspaceUtils'
+import { collectFiles, CollectFilesOptions, CollectFilesResultItem } from '../../shared/utilities/workspaceUtils'
 import { CurrentWsFolders } from '../commons/types'
 import { ZipStream } from '../../shared/utilities/zipStream'
 
@@ -19,9 +18,9 @@ interface ZipProjectOptions {
 }
 
 interface ZipProjectCustomizations {
-    isExcluded?: (relativePath: string, fileSize: number) => boolean
-    checkForError?: (relativePath: string, fileSize: number) => void | never
-    computeSideEffects?: (filePath: string) => Promise<void> | void
+    isExcluded?: (file: CollectFilesResultItem) => boolean
+    checkForError?: (file: CollectFilesResultItem) => Error | undefined
+    computeSideEffects?: (file: CollectFilesResultItem) => Promise<void> | void
 }
 
 export async function zipProject(
@@ -41,15 +40,16 @@ export async function zipProject(
         }
         zippedFiles.add(file.zipFilePath)
 
-        if (customizations?.isExcluded && customizations.isExcluded(file.relativeFilePath, file.fileSizeBytes)) {
+        if (customizations?.isExcluded && customizations.isExcluded(file)) {
             continue
         }
-        if (customizations?.checkForError) {
-            customizations.checkForError(file.relativeFilePath, file.fileSizeBytes)
+        const errorToThrow = customizations?.checkForError ? customizations.checkForError(file) : undefined
+        if (errorToThrow) {
+            throw errorToThrow
         }
 
         if (customizations?.computeSideEffects) {
-            await customizations.computeSideEffects(file.fileUri.fsPath)
+            await customizations.computeSideEffects(file)
         }
 
         totalBytes += file.fileSizeBytes
@@ -58,7 +58,12 @@ export async function zipProject(
         const posixPath = file.zipFilePath.split(path.sep).join(path.posix.sep)
 
         try {
-            zip.writeFile(file.fileUri.fsPath, posixPath)
+            // filepath will be out-of-sync for files with unsaved changes.
+            if (file.isText) {
+                zip.writeString(file.fileContent, posixPath)
+            } else {
+                zip.writeFile(file.fileUri.fsPath, posixPath)
+            }
         } catch (error) {
             if (error instanceof Error && error.message.includes('File not found')) {
                 // No-op: Skip if file was deleted or does not exist

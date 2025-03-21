@@ -7,6 +7,7 @@ import * as vscode from 'vscode'
 import * as path from 'path'
 import {
     CollectFilesFilter,
+    CollectFilesResultItem,
     defaultExcludePatterns,
     getWorkspaceFoldersByPrefixes,
 } from '../../shared/utilities/workspaceUtils'
@@ -108,12 +109,12 @@ export async function prepareRepoData(
         const { excludePatterns, filterFn } = getFilterAndExcludePattern(useAutoBuildFeature, includeInfraDiagram)
 
         const ignoredExtensionMap = new Map<string, number>()
-        const isExcluded = (relativeFilePath: string, fileSize: number) => {
-            const isCodeFile_ = isCodeFile(relativeFilePath)
-            const isDevFile = relativeFilePath === 'devfile.yaml'
-            const isInfraDiagramFileExt = isInfraDiagramFile(relativeFilePath)
+        const isExcluded = (file: CollectFilesResultItem) => {
+            const isCodeFile_ = isCodeFile(file.relativeFilePath)
+            const isDevFile = file.relativeFilePath === 'devfile.yaml'
+            const isInfraDiagramFileExt = isInfraDiagramFile(file.relativeFilePath)
 
-            let isExcludeFile = fileSize >= fileSizeByteLimit
+            let isExcludeFile = file.fileSizeBytes >= fileSizeByteLimit
             // When useAutoBuildFeature is on, only respect the gitignore rules filtered earlier and apply the size limit
             if (!isExcludeFile && !useAutoBuildFeature) {
                 isExcludeFile = isDevFile || (!isCodeFile_ && (!includeInfraDiagram || !isInfraDiagramFileExt))
@@ -122,7 +123,7 @@ export async function prepareRepoData(
             if (isExcludeFile) {
                 if (!isCodeFile_) {
                     const re = /(?:\.([^.]+))?$/
-                    const extensionArray = re.exec(relativeFilePath)
+                    const extensionArray = re.exec(file.relativeFilePath)
                     const extension = extensionArray?.length ? extensionArray[1] : undefined
                     if (extension) {
                         const currentCount = ignoredExtensionMap.get(extension)
