@@ -14,6 +14,7 @@ export type LogTopic =
     | 'unknown'
     | 'chat'
     | 'stepfunctions'
+    | 'fsRead'
 
 class ErrorLog {
     constructor(
