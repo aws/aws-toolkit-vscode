@@ -445,7 +445,7 @@ export class LspController {
                 this._contextCommandSymbolsUpdated = false
                 return false
             },
-            { interval: 1000, timeout: 30_000, truthy: true }
+            { interval: 1000, timeout: 60_000, truthy: true }
         )
     }
 }

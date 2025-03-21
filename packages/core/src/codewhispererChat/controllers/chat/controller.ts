@@ -447,14 +447,14 @@ export class ChatController {
                         icon: 'file' as MynahIconsType,
                     },
                     {
-                        command: i18n('AWS.amazonq.context.symbols.title'),
+                        command: i18n('AWS.amazonq.context.code.title'),
                         children: [
                             {
-                                groupName: i18n('AWS.amazonq.context.symbols.title'),
+                                groupName: i18n('AWS.amazonq.context.code.title'),
                                 commands: [],
                             },
                         ],
-                        description: i18n('AWS.amazonq.context.symbols.description'),
+                        description: i18n('AWS.amazonq.context.code.description'),
                         icon: 'code-block' as MynahIconsType,
                     },
                     {
