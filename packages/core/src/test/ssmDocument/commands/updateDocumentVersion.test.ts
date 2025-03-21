@@ -57,6 +57,7 @@ describe('openDocumentItem', async function () {
             fakeDoc,
             ssmClient,
             fakeRegion,
+            // jscpd:ignore-start
             stub(RegistryItemNode, {
                 documentType: '',
                 regionCode: '',
@@ -74,6 +75,7 @@ describe('openDocumentItem', async function () {
                 accessibilityInformation: undefined,
                 checkboxState: undefined,
             })
+            // jscpd:ignore-end
         )
         sinon.stub(documentNode, 'listSchemaVersion').resolves(fakeSchemaList)
         const updateVersionStub = sinon.stub(documentNode, 'updateDocumentVersion')
