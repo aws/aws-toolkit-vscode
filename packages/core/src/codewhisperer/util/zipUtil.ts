@@ -30,7 +30,7 @@ import { ProjectZipError } from '../../amazonqTest/error'
 import { removeAnsi } from '../../shared/utilities/textUtilities'
 import { normalize } from '../../shared/utilities/pathUtils'
 import { ZipStream } from '../../shared/utilities/zipStream'
-import { zipProject } from '../../amazonq/util/zipProjectUtil'
+import { addToZip } from '../../amazonq/util/zipProjectUtil'
 
 export interface ZipMetadata {
     rootDir: string
@@ -453,17 +453,11 @@ export class ZipUtil {
             this._totalSize += file.fileSizeBytes
         }
 
-        await zipProject(
-            projectPaths,
-            workspaceFolders,
-            collectFilesOptions,
-            {
-                isExcluded,
-                checkForError,
-                computeSideEffects,
-            },
-            { zip }
-        )
+        await addToZip(projectPaths, workspaceFolders, collectFilesOptions, zip, {
+            isExcluded,
+            checkForError,
+            computeSideEffects,
+        })
     }
 
     protected processOtherFiles(zip: ZipStream, languageCount: Map<CodewhispererLanguage, number>) {

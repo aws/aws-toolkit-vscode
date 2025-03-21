@@ -23,14 +23,13 @@ interface ZipProjectCustomizations {
     computeSideEffects?: (file: CollectFilesResultItem) => Promise<void> | void
 }
 
-export async function zipProject(
+export async function addToZip(
     repoRootPaths: string[],
     workspaceFolders: CurrentWsFolders,
     collectFilesOptions: CollectFilesOptions,
-    customizations?: ZipProjectCustomizations,
-    options?: ZipProjectOptions
-): Promise<ZippedWorkspaceResult> {
-    const zip = options?.zip ?? new ZipStream()
+    zip: ZipStream,
+    customizations?: ZipProjectCustomizations
+) {
     const files = await collectFiles(repoRootPaths, workspaceFolders, collectFilesOptions)
     const zippedFiles = new Set()
     let totalBytes: number = 0
@@ -74,11 +73,28 @@ export async function zipProject(
         }
     }
 
+    return { zip, totalBytesAdded: totalBytes }
+}
+
+export async function zipProject(
+    repoRootPaths: string[],
+    workspaceFolders: CurrentWsFolders,
+    collectFilesOptions: CollectFilesOptions,
+    customizations?: ZipProjectCustomizations,
+    options?: ZipProjectOptions
+): Promise<ZippedWorkspaceResult> {
+    const { zip, totalBytesAdded } = await addToZip(
+        repoRootPaths,
+        workspaceFolders,
+        collectFilesOptions,
+        options?.zip ?? new ZipStream(),
+        customizations
+    )
     const zipResult = await zip.finalize()
     const zipFileBuffer = zipResult.streamBuffer.getContents() || Buffer.from('')
     return {
         zipFileBuffer,
         zipFileChecksum: zipResult.hash,
-        totalFileBytes: totalBytes,
+        totalFileBytes: totalBytesAdded,
     }
 }
