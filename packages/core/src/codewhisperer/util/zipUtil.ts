@@ -12,7 +12,12 @@ import { fs } from '../../shared/fs/fs'
 import { getLoggerForScope } from '../service/securityScanHandler'
 import { runtimeLanguageContext } from './runtimeLanguageContext'
 import { CodewhispererLanguage } from '../../shared/telemetry/telemetry.gen'
-import { CurrentWsFolders, collectFiles, defaultExcludePatterns } from '../../shared/utilities/workspaceUtils'
+import {
+    CurrentWsFolders,
+    collectFiles,
+    defaultExcludePatterns,
+    getWorkspacePaths,
+} from '../../shared/utilities/workspaceUtils'
 import {
     FileSizeExceededError,
     NoActiveFileError,
@@ -70,17 +75,6 @@ export class ZipUtil {
 
     getProjectScanPayloadSizeLimitInBytes(): number {
         return CodeWhispererConstants.projectScanPayloadSizeLimitBytes
-    }
-
-    public getProjectPaths() {
-        const workspaceFolders = vscode.workspace.workspaceFolders
-        return workspaceFolders?.map((folder) => folder.uri.fsPath) ?? []
-    }
-
-    public getProjectPath(filePath: string) {
-        const fileUri = vscode.Uri.file(filePath)
-        const workspaceFolder = vscode.workspace.getWorkspaceFolder(fileUri)
-        return workspaceFolder?.uri.fsPath
     }
 
     protected async getTextContent(uri: vscode.Uri) {
@@ -211,7 +205,7 @@ export class ZipUtil {
         if (useCase === FeatureUseCase.TEST_GENERATION && projectPath) {
             projectPaths.push(projectPath)
         } else {
-            projectPaths = this.getProjectPaths()
+            projectPaths = getWorkspacePaths()
         }
         if (useCase === FeatureUseCase.CODE_SCAN) {
             await this.processCombinedGitDiff(zip, projectPaths, '', CodeWhispererConstants.CodeAnalysisScope.PROJECT)
