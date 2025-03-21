@@ -20,7 +20,6 @@ export type contextKey =
     | 'aws.amazonq.notifications.show'
     | 'aws.amazonq.connectedSsoIdc'
     | 'aws.codecatalyst.connected'
-    | 'aws.amazonq.connectedSsoIdc'
     | 'aws.codewhisperer.connected'
     | 'aws.codewhisperer.connectionExpired'
     | 'aws.codewhisperer.tutorial.workInProgress'

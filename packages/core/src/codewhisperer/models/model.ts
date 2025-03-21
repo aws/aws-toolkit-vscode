@@ -48,6 +48,11 @@ export const vsCodeState: VsCodeState = {
     isFreeTierLimitReached: false,
 }
 
+export interface CodeWhispererConfig {
+    readonly region: string
+    readonly endpoint: string
+}
+
 export interface RegionProfile {
     name: string
     region: string

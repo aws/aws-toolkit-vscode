@@ -23,24 +23,17 @@ import { indent } from '../../shared/utilities/textUtilities'
 import { getClientId, getOptOutPreference, getOperatingSystem } from '../../shared/telemetry/util'
 import { extensionVersion, getServiceEnvVarConfig } from '../../shared/vscode/env'
 import { DevSettings } from '../../shared/settings'
+import { CodeWhispererConfig } from '../models/model'
 
 const keepAliveHeader = 'keep-alive-codewhisperer'
-export interface CodeWhispererConfig {
-    readonly region: string
-    readonly endpoint: string
-}
-
-export const defaultServiceConfig: CodeWhispererConfig = {
-    region: 'us-east-1',
-    endpoint: 'https://codewhisperer.us-east-1.amazonaws.com/',
-}
 
 export function getCodewhispererConfig(): CodeWhispererConfig {
+    const clientConfig = AuthUtil.instance.regionProfileManager.clientConfig
     return {
-        ...DevSettings.instance.getServiceConfig('codewhispererService', defaultServiceConfig),
+        ...DevSettings.instance.getServiceConfig('codewhispererService', clientConfig),
 
         // Environment variable overrides
-        ...getServiceEnvVarConfig('codewhisperer', Object.keys(defaultServiceConfig)),
+        ...getServiceEnvVarConfig('codewhisperer', Object.keys(clientConfig)),
     }
 }
 
