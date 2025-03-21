@@ -671,3 +671,69 @@ export async function findStringInDirectory(searchStr: string, dirPath: string) 
     })
     return spawnResult
 }
+
+/**
+ * Returns a one-character tag for a directory ('d'), symlink ('l'), or file ('-').
+ */
+export function formatListing(name: string, fileType: vscode.FileType, fullPath: string): string {
+    let typeChar = '-'
+    if (fileType === vscode.FileType.Directory) {
+        typeChar = 'd'
+    } else if (fileType === vscode.FileType.SymbolicLink) {
+        typeChar = 'l'
+    }
+    return `${typeChar} ${fullPath}`
+}
+
+/**
+ * Recursively lists directories using a BFS approach, returning lines like:
+ * d /absolute/path/to/folder
+ * - /absolute/path/to/file.txt
+ *
+ * You can either pass a custom callback or rely on the default `formatListing`.
+ *
+ * @param dirUri The folder to begin traversing
+ * @param maxDepth Maximum depth to descend (0 => just this folder)
+ * @param customFormatCallback Optional. If given, it will override the default line-formatting
+ */
+export async function readDirectoryRecursively(
+    dirUri: vscode.Uri,
+    maxDepth: number,
+    customFormatCallback?: (name: string, fileType: vscode.FileType, fullPath: string) => string
+): Promise<string[]> {
+    const logger = getLogger()
+    logger.info(`Reading directory: ${dirUri.fsPath} to max depth: ${maxDepth}`)
+
+    const queue: Array<{ uri: vscode.Uri; depth: number }> = [{ uri: dirUri, depth: 0 }]
+    const results: string[] = []
+
+    const formatter = customFormatCallback ?? formatListing
+
+    while (queue.length > 0) {
+        const { uri, depth } = queue.shift()!
+        if (depth > maxDepth) {
+            logger.info(`Skipping directory: ${uri.fsPath} (depth ${depth} > max ${maxDepth})`)
+            continue
+        }
+
+        let entries: [string, vscode.FileType][]
+        try {
+            entries = await fs.readdir(uri)
+        } catch (err) {
+            logger.error(`Cannot read directory: ${uri.fsPath} (${err})`)
+            results.push(`Cannot read directory: ${uri.fsPath} (${err})`)
+            continue
+        }
+
+        for (const [name, fileType] of entries) {
+            const childUri = vscode.Uri.joinPath(uri, name)
+            results.push(formatter(name, fileType, childUri.fsPath))
+
+            if (fileType === vscode.FileType.Directory && depth < maxDepth) {
+                queue.push({ uri: childUri, depth: depth + 1 })
+            }
+        }
+    }
+
+    return results
+}
