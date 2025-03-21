@@ -11,6 +11,7 @@ import fs from '../../../shared/fs/fs'
 import crypto from 'crypto'
 // @ts-ignore
 import { BlobWriter } from '@zip.js/zip.js'
+import { assertLogsContain } from '../../globalSetup.test'
 
 describe('zipStream', function () {
     let tmpDir: string
@@ -66,6 +67,25 @@ describe('zipStream', function () {
         const result = await zipStream.finalizeToFile(path.join(tmpDir, 'test.zip'))
 
         assert.strictEqual(result.sizeInBytes, (await fs.stat(zipPath)).size)
+    })
+
+    it('only writes to target paths once', async function () {
+        const testFilePath = path.join(tmpDir, 'test.txt')
+        await fs.writeFile(testFilePath, 'foo bar')
+        const testFilePath2 = path.join(tmpDir, 'test2.txt')
+        await fs.writeFile(testFilePath2, 'foo bar')
+
+        const zipStream = new ZipStream()
+        zipStream.writeFile(testFilePath, 'file.txt')
+        zipStream.writeFile(testFilePath2, 'file.txt')
+        const result = await zipStream.finalize()
+
+        const zipBuffer = result.streamBuffer.getContents()
+        assert.ok(zipBuffer)
+        const zipEntries = await ZipStream.unzip(zipBuffer)
+
+        assert.strictEqual(zipEntries.length, 1)
+        assertLogsContain('duplicate file', false, 'debug')
     })
 })
 

@@ -57,6 +57,8 @@ export class ZipStream {
     private _filesToZip: [string, string][] = []
     private _filesBeingZipped: number = 0
     private _maxNumberOfFileStreams: number
+    private _targetFilesAdded: Set<string> = new Set()
+
     boundFileCompletionCallback: (computedSize: number) => Promise<void>
     boundFileStartCallback: (computedSize: number) => Promise<void>
 
@@ -123,6 +125,11 @@ export class ZipStream {
      * @param targetFilePath path to write data to in zip.
      */
     public writeFile(sourceFilePath: string, targetFilePath: string) {
+        if (this._targetFilesAdded.has(targetFilePath)) {
+            getLogger().debug(`Skipping duplicate file added to zip: ${targetFilePath}`)
+            return
+        }
+        this._targetFilesAdded.add(targetFilePath)
         // We use _numberOfFilesToStream to make sure we don't finalize too soon
         // (before the progress event has been fired for the last file)
         // The problem is that we can't rely on progress.entries.total,
