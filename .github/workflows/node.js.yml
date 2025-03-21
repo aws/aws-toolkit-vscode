@@ -126,6 +126,7 @@ jobs:
             matrix:
                 node-version: [18.x]
                 vscode-version: [minimum, stable, insiders]
+                package: [amazonq, toolkit]
         env:
             VSCODE_TEST_VERSION: ${{ matrix.vscode-version }}
             NODE_OPTIONS: '--max-old-space-size=8192'
@@ -141,28 +142,17 @@ jobs:
             - name: Tests
               uses: coactions/setup-xvfb@v1
               with:
-                  run: npm test
-            - name: Code coverage (Toolkit)
+                  run: npm run test -w packages/${{ matrix.package }}
+            - name: Code coverage for ${{ matrix.package }}
               env:
                   # Unset NODE_OPTIONS because of https://github.com/codecov/uploader/issues/475
                   NODE_OPTIONS: ''
               if: ${{ github.repository == 'aws/aws-toolkit-vscode' && github.event_name == 'pull_request' && github.base_ref == 'master' }}
               uses: codecov/codecov-action@v5
               with:
-                  flags: macos-toolkit-unittests
+                  flags: macos-${{ matrix.package }}-unittests
                   verbose: true
-                  file: ./coverage/toolkit/lcov.info
-                  token: ${{ secrets.CODECOV_TOKEN }}
-            - name: Code coverage (Amazon Q)
-              env:
-                  # Unset NODE_OPTIONS because of https://github.com/codecov/uploader/issues/475
-                  NODE_OPTIONS: ''
-              if: ${{ github.repository == 'aws/aws-toolkit-vscode' && github.event_name == 'pull_request' && github.base_ref == 'master' }}
-              uses: codecov/codecov-action@v5
-              with:
-                  flags: macos-amazonq-unittests
-                  verbose: true
-                  file: ./coverage/amazonq/lcov.info
+                  file: ./coverage/${{ matrix.package }}/lcov.info
                   token: ${{ secrets.CODECOV_TOKEN }}
 
     web:
@@ -200,6 +190,7 @@ jobs:
             matrix:
                 node-version: [18.x]
                 vscode-version: [stable, insiders]
+                package: [amazonq, toolkit]
         env:
             VSCODE_TEST_VERSION: ${{ matrix.vscode-version }}
             NODE_OPTIONS: '--max-old-space-size=8192'
@@ -211,15 +202,15 @@ jobs:
                   node-version: ${{ matrix.node-version }}
             - run: npm ci
             - name: Tests
-              run: npm test
-            - name: Code coverage
+              run: npm run test -w packages/${{ matrix.package }}
+            - name: Code coverage for ${{ matrix.package }}
               env:
                   # Unset NODE_OPTIONS because of https://github.com/codecov/uploader/issues/475
                   NODE_OPTIONS: ''
               if: ${{ github.repository == 'aws/aws-toolkit-vscode' && github.event_name == 'pull_request' && github.base_ref == 'master' }}
               uses: codecov/codecov-action@v5
               with:
-                  flags: windows-unittests
+                  flags: windows-${{ matrix.package }}-unittests
                   verbose: true
-                  file: ./coverage/lcov.info
+                  file: ./coverage/${{ matrix.package }}/lcov.info
                   token: ${{ secrets.CODECOV_TOKEN }}
