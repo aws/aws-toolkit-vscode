@@ -4,8 +4,7 @@
  */
 
 import AsyncLock from 'async-lock'
-import { AppRunnerClient } from '../../../shared/clients/apprunnerClient'
-import { AppRunner } from 'aws-sdk'
+import { AppRunnerClient, ServiceSummary } from '../../../shared/clients/apprunner'
 import { AppRunnerNode } from './apprunnerNode'
 
 import { toArrayAsync, toMap } from '../../../shared/utilities/collectionUtils'
@@ -15,6 +14,7 @@ import { AWSResourceNode } from '../../../shared/treeview/nodes/awsResourceNode'
 import * as nls from 'vscode-nls'
 import { getLogger } from '../../../shared/logger/logger'
 import { getIcon } from '../../../shared/icons'
+import * as AppRunner from '@aws-sdk/client-apprunner'
 import { CloudWatchLogsClient } from '../../../shared/clients/cloudWatchLogs'
 import { LogGroup } from '@aws-sdk/client-cloudwatch-logs'
 const localize = nls.loadMessageBundle()
@@ -41,7 +41,7 @@ export class AppRunnerServiceNode extends CloudWatchLogsBase implements AWSResou
     constructor(
         public readonly parent: AppRunnerNode,
         private readonly client: AppRunnerClient,
-        private _info: AppRunner.Service,
+        private _info: ServiceSummary,
         private currentOperation: AppRunner.OperationSummary & { Type?: ServiceOperation } = {},
         cloudwatchClient = new CloudWatchLogsClient(client.regionCode)
     ) {
@@ -55,7 +55,7 @@ export class AppRunnerServiceNode extends CloudWatchLogsBase implements AWSResou
         this.update(_info)
     }
 
-    public get info(): Readonly<AppRunner.Service> {
+    public get info(): Readonly<ServiceSummary> {
         return this._info
     }
 
@@ -81,7 +81,7 @@ export class AppRunnerServiceNode extends CloudWatchLogsBase implements AWSResou
         this.label = `${this._info.ServiceName} [${displayStatus}]`
     }
 
-    public update(info: AppRunner.ServiceSummary | AppRunner.Service): void {
+    public update(info: ServiceSummary): void {
         // update can be called multiple times during an event loop
         // this would rarely cause the node's status to appear as 'Operation in progress'
         this.lock
@@ -135,7 +135,7 @@ export class AppRunnerServiceNode extends CloudWatchLogsBase implements AWSResou
             })
     }
 
-    private updateInfo(info: AppRunner.ServiceSummary | AppRunner.Service): void {
+    private updateInfo(info: ServiceSummary): void {
         if (info.Status === 'OPERATION_IN_PROGRESS' && this.currentOperation.Type === undefined) {
             // Asynchronous since it is not currently possible for race-conditions to occur with updating operations
             void this.updateOperation()
@@ -171,13 +171,14 @@ export class AppRunnerServiceNode extends CloudWatchLogsBase implements AWSResou
         this.setOperation(this._info, resp.OperationId, 'START_DEPLOYMENT')
     }
 
-    public setOperation(info: AppRunner.Service, id?: string, type?: ServiceOperation): void {
+    // eslint-disable-next-line @typescript-eslint/no-duplicate-type-constituents
+    public setOperation(info: ServiceSummary, id?: string, type?: ServiceOperation): void {
         this.currentOperation.Id = id
         this.currentOperation.Type = type
         this.update(info)
     }
 
-    public async describe(): Promise<AppRunner.Service> {
+    public async describe(): Promise<ServiceSummary> {
         const resp = await this.client.describeService({ ServiceArn: this.arn })
         this.update(resp.Service)
         return this._info

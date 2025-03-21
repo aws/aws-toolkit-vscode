@@ -45,7 +45,6 @@ export { CodeReference } from '../codewhispererChat/view/connector/connector'
 export { extractAuthFollowUp } from './util/authUtils'
 export { Messenger } from './commons/connector/baseMessenger'
 export * from './lsp/config'
-export { ContentLengthError } from './errors'
 export * as WorkspaceLspInstaller from './lsp/workspaceInstaller'
 import { FeatureContext } from '../shared/featureConfig'
 
