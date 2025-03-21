@@ -14,7 +14,7 @@ export interface ZippedWorkspaceResult {
 }
 
 interface ZipProjectOptions {
-    zip?: ZipStream
+    includeProjectName?: boolean
 }
 
 interface ZipProjectCustomizations {
@@ -28,7 +28,8 @@ export async function addToZip(
     workspaceFolders: CurrentWsFolders,
     collectFilesOptions: CollectFilesOptions,
     zip: ZipStream,
-    customizations?: ZipProjectCustomizations
+    customizations?: ZipProjectCustomizations,
+    options?: ZipProjectOptions
 ) {
     const files = await collectFiles(repoRootPaths, workspaceFolders, collectFilesOptions)
     const zippedFiles = new Set()
@@ -47,21 +48,20 @@ export async function addToZip(
             throw errorToThrow
         }
 
-        if (customizations?.computeSideEffects) {
-            await customizations.computeSideEffects(file)
-        }
-
         totalBytes += file.fileSizeBytes
         // Paths in zip should be POSIX compliant regardless of OS
         // Reference: https://pkware.cachefly.net/webdocs/casestudies/APPNOTE.TXT
-        const posixPath = file.zipFilePath.split(path.sep).join(path.posix.sep)
+        const zipFilePath = options?.includeProjectName
+            ? path.join(path.basename(file.workspaceFolder.uri.fsPath), file.zipFilePath)
+            : file.zipFilePath
+        const posixPath = zipFilePath.split(path.sep).join(path.posix.sep)
 
         try {
             // filepath will be out-of-sync for files with unsaved changes.
             if (file.isText) {
                 zip.writeString(file.fileContent, posixPath)
             } else {
-                zip.writeFile(file.fileUri.fsPath, posixPath)
+                zip.writeFile(file.fileUri.fsPath, path.dirname(posixPath))
             }
         } catch (error) {
             if (error instanceof Error && error.message.includes('File not found')) {
@@ -70,6 +70,10 @@ export async function addToZip(
                 continue
             }
             throw error
+        }
+
+        if (customizations?.computeSideEffects) {
+            await customizations.computeSideEffects(file)
         }
     }
 
@@ -81,14 +85,15 @@ export async function zipProject(
     workspaceFolders: CurrentWsFolders,
     collectFilesOptions: CollectFilesOptions,
     customizations?: ZipProjectCustomizations,
-    options?: ZipProjectOptions
+    options?: ZipProjectOptions & { zip?: ZipStream }
 ): Promise<ZippedWorkspaceResult> {
     const { zip, totalBytesAdded } = await addToZip(
         repoRootPaths,
         workspaceFolders,
         collectFilesOptions,
         options?.zip ?? new ZipStream(),
-        customizations
+        customizations,
+        options
     )
     const zipResult = await zip.finalize()
     const zipFileBuffer = zipResult.streamBuffer.getContents() || Buffer.from('')

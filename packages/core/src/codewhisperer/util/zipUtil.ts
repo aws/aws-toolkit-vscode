@@ -453,11 +453,18 @@ export class ZipUtil {
             this._totalSize += file.fileSizeBytes
         }
 
-        await addToZip(projectPaths, workspaceFolders, collectFilesOptions, zip, {
-            isExcluded,
-            checkForError,
-            computeSideEffects,
-        })
+        await addToZip(
+            projectPaths,
+            workspaceFolders,
+            collectFilesOptions,
+            zip,
+            {
+                isExcluded,
+                checkForError,
+                computeSideEffects,
+            },
+            { includeProjectName: true }
+        )
     }
 
     protected processOtherFiles(zip: ZipStream, languageCount: Map<CodewhispererLanguage, number>) {
