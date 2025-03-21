@@ -16,7 +16,6 @@ import {
     CollectFilesOptions,
     CollectFilesResultItem,
     CurrentWsFolders,
-    collectFiles,
     defaultExcludePatterns,
 } from '../../shared/utilities/workspaceUtils'
 import {
@@ -31,6 +30,7 @@ import { ProjectZipError } from '../../amazonqTest/error'
 import { removeAnsi } from '../../shared/utilities/textUtilities'
 import { normalize } from '../../shared/utilities/pathUtils'
 import { ZipStream } from '../../shared/utilities/zipStream'
+import { zipProject } from '../../amazonq/util/zipProjectUtil'
 
 export interface ZipMetadata {
     rootDir: string
@@ -453,29 +453,17 @@ export class ZipUtil {
             this._totalSize += file.fileSizeBytes
         }
 
-        const sourceFiles = await collectFiles(projectPaths, workspaceFolders, collectFilesOptions)
-
-        for (const file of sourceFiles) {
-            const projectName = path.basename(file.workspaceFolder.uri.fsPath)
-            const zipEntryPath = this.getZipEntryPath(projectName, file.relativeFilePath)
-
-            if (isExcluded(file)) {
-                continue
-            }
-
-            const errorToThrow = checkForError(file)
-            if (errorToThrow) {
-                throw errorToThrow
-            }
-
-            if (file.isText) {
-                zip.writeString(file.fileContent, zipEntryPath)
-            } else {
-                zip.writeFile(file.fileUri.fsPath, path.dirname(zipEntryPath))
-            }
-
-            computeSideEffects(file)
-        }
+        await zipProject(
+            projectPaths,
+            workspaceFolders,
+            collectFilesOptions,
+            {
+                isExcluded,
+                checkForError,
+                computeSideEffects,
+            },
+            { zip }
+        )
     }
 
     protected processOtherFiles(zip: ZipStream, languageCount: Map<CodewhispererLanguage, number>) {
