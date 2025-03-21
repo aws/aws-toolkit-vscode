@@ -8,6 +8,10 @@
                 "command": {
                     "type": "string",
                     "description": "Bash command to execute"
+                },
+                "cwd": {
+                    "type": "string",
+                    "description": "Optional parameter to set the current working directory for the bash command. If not provided, the tool will default to the user's home directory."
                 }
             },
             "required": ["command"]

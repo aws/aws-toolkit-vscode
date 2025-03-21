@@ -10,6 +10,7 @@
 import { spawn } from 'child_process'
 import * as readline from 'readline'
 import { Writable } from 'stream'
+import { fs } from '../../shared/fs/fs'
 
 // Constants
 const READONLY_COMMANDS: string[] = ['ls', 'cat', 'echo', 'pwd', 'which', 'head', 'tail']
@@ -24,6 +25,7 @@ const DANGEROUS_PATTERNS: string[] = ['|', '<(', '$(', '`', '>', '&&', '||']
  */
 export interface ExecuteBashParams {
     command: string
+    cwd?: string
 }
 
 /**
@@ -43,9 +45,11 @@ export type OutputKind = { type: 'json'; content: any } | { type: 'text'; conten
  */
 export class ExecuteBash {
     command: string
+    cwd?: string
 
     constructor(params: ExecuteBashParams) {
         this.command = params.command
+        this.cwd = params.cwd
     }
 
     /**
@@ -126,13 +130,13 @@ export class ExecuteBash {
     /**
      * Invoke the bash command and return the result
      */
-    async invoke(currentDirectory: string, updates: Writable): Promise<InvokeOutput> {
+    async invoke(updates: Writable): Promise<InvokeOutput> {
         return new Promise((resolve, reject) => {
             try {
                 // Spawn bash process
                 const child = spawn('bash', ['-c', this.command], {
                     stdio: ['inherit', 'pipe', 'pipe'],
-                    cwd: currentDirectory,
+                    cwd: this.cwd ?? fs.getUserHomeDir(),
                 })
 
                 // Set up output buffers

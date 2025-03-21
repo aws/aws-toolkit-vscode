@@ -1089,6 +1089,8 @@ const de_CommandError = async(
 
   // se_UserSettings omitted.
 
+  // se_WorkspaceFolderList omitted.
+
   // se_WorkspaceState omitted.
 
   // de_AssistantResponseEvent omitted.

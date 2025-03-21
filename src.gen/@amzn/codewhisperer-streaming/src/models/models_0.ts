@@ -1270,6 +1270,12 @@ export interface EditorState {
    * @public
    */
   useRelevantDocuments?: boolean | undefined;
+
+  /**
+   * Represents IDE provided list of workspace folders
+   * @public
+   */
+  workspaceFolders?: (string)[] | undefined;
 }
 
 /**
@@ -1288,6 +1294,9 @@ export const EditorStateFilterSensitiveLog = (obj: EditorState): any => ({
       item =>
       RelevantTextDocumentFilterSensitiveLog(item)
     )
+  }),
+  ...(obj.workspaceFolders && { workspaceFolders:
+    SENSITIVE_STRING
   }),
 })
 

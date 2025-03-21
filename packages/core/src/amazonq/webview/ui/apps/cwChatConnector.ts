@@ -97,6 +97,7 @@ export class Connector extends BaseConnector {
                 codeBlockLanguage: messageData.codeBlockLanguage,
                 contextList: messageData.contextList,
                 title: messageData.title,
+                buttons: messageData.buttons,
             }
 
             // If it is not there we will not set it

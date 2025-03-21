@@ -16,6 +16,7 @@ import {
 import { ChatTriggerType, TriggerPayload } from '../model'
 import { undefinedIfEmpty } from '../../../../shared/utilities/textUtilities'
 import toolsJson from '../../../tools/tool_index.json'
+import vscode from 'vscode'
 import { tryGetCurrentWorkingDirectory } from '../../../../shared/utilities/workspaceUtils'
 
 const fqnNameSizeDownLimit = 1
@@ -201,7 +202,6 @@ export function triggerPayloadToAgenticChatRequest(
     const chatTriggerType = triggerPayload.trigger === ChatTriggerType.InlineChatMessage ? 'INLINE_CHAT' : 'MANUAL'
 
     const operatingSystem = 'macos'
-    const currentWorkingDirectory = tryGetCurrentWorkingDirectory()
 
     const tools: Tool[] = Object.entries(toolsJson).map(([, toolSpec]) => ({
         toolSpecification: {
@@ -222,10 +222,11 @@ export function triggerPayloadToAgenticChatRequest(
                             cursorState,
                             relevantDocuments,
                             useRelevantDocuments,
+                            workspaceFolders: vscode.workspace.workspaceFolders?.map((ws) => ws.uri.fsPath) ?? [],
                         },
                         envState: {
                             operatingSystem,
-                            currentWorkingDirectory,
+                            currentWorkingDirectory: tryGetCurrentWorkingDirectory(),
                             environmentVariables: [],
                         },
                         additionalContext: triggerPayload.additionalContents,

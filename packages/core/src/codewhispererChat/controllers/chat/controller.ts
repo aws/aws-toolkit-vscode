@@ -45,7 +45,7 @@ import { EditorContextCommand } from '../../commands/registerCommands'
 import { PromptsGenerator } from './prompts/promptsGenerator'
 import { TriggerEventsStorage } from '../../storages/triggerEvents'
 import { SendMessageRequest } from '@amzn/amazon-q-developer-streaming-client'
-import { CodeWhispererStreamingServiceException } from '@amzn/codewhisperer-streaming'
+import { CodeWhispererStreamingServiceException, ToolResult } from '@amzn/codewhisperer-streaming'
 import { UserIntentRecognizer } from './userIntent/userIntentRecognizer'
 import { CWCTelemetryHelper, recordTelemetryChatRunCommand } from './telemetryHelper'
 import { CodeWhispererTracker } from '../../../codewhisperer/tracker/codewhispererTracker'
@@ -81,7 +81,6 @@ import {
 } from '../../constants'
 import { ChatSession } from '../../clients/chat/v0/chat'
 import { FsRead, FsReadParams } from '../../tools/fsRead'
-import { tryGetCurrentWorkingDirectory } from '../../../shared/utilities/workspaceUtils'
 import FsWrite, { DefaultContext, FsWriteParams } from '../../tools/fsWrite'
 import ExecuteBash, { ExecuteBashParams } from '../../tools/executeBash'
 import { ChatHistoryManager } from '../../storages/chatHistory'
@@ -581,6 +580,8 @@ export class ChatController {
             const newFileDoc = await vscode.workspace.openTextDocument(newFilePath)
             await vscode.window.showTextDocument(newFileDoc)
             telemetry.ui_click.emit({ elementId: 'amazonq_createSavedPrompt' })
+        } else if (message.action.id === 'confirm-tool-use') {
+            await this.processToolUseMessage(message)
         }
     }
 
@@ -877,29 +878,53 @@ export class ChatController {
                     triggerID,
                     true
                 )
+            })
+            .catch((e) => {
+                this.processException(e, message.tabID)
+            })
+    }
 
-                while (true) {
-                    const toolUse = session.toolUse
-                    if (!toolUse || !toolUse.input) {
-                        break
-                    }
-                    session.setToolUse(undefined)
+    private async processToolUseMessage(message: CustomFormActionMessage) {
+        const tabID = message.tabID
+        if (!tabID) {
+            return
+        }
+        this.editorContextExtractor
+            .extractContextForTrigger('ChatMessage')
+            .then(async (context) => {
+                const triggerID = randomUUID()
+                this.triggerEventsStorage.addTriggerEvent({
+                    id: triggerID,
+                    tabID: message.tabID,
+                    message: undefined,
+                    type: 'chat_message',
+                    context,
+                })
+                const session = this.sessionStorage.getSession(tabID)
+                const toolUse = session.toolUse
+                if (!toolUse || !toolUse.input) {
+                    return
+                }
+                session.setToolUse(undefined)
 
-                    let result: any
+                let result: any
+                const toolResults: ToolResult[] = []
+                try {
                     switch (toolUse.name) {
                         // TODO: Wait for user to click on "Run" button and then execute "execute_bash" command.
                         case 'execute_bash': {
                             const executeBash = new ExecuteBash(toolUse.input as unknown as ExecuteBashParams)
                             await executeBash.validate()
-                            result = await executeBash.invoke(tryGetCurrentWorkingDirectory() ?? '', process.stdout)
-                            // TODO: If we are executing "execute_bash" command then show this in chat = result.output.content
+                            result = await executeBash.invoke(process.stdout)
                             break
                         }
                         case 'fs_read': {
                             const fsRead = new FsRead(toolUse.input as unknown as FsReadParams)
-                            result = await fsRead.invoke({
-                                env: { currentDir: () => tryGetCurrentWorkingDirectory() ?? '' },
-                            })
+                            const ctx = {
+                                env: { currentDir: () => undefined },
+                            }
+                            await fsRead.validate(ctx)
+                            result = await fsRead.invoke(ctx)
                             break
                         }
                         case 'fs_write': {
@@ -911,40 +936,41 @@ export class ChatController {
                         default:
                             break
                     }
-
-                    await this.generateResponse(
-                        {
-                            message: '',
-                            trigger: ChatTriggerType.ChatMessage,
-                            query: message.message,
-                            codeSelection: context?.focusAreaContext?.selectionInsideExtendedCodeBlock,
-                            fileText: context?.focusAreaContext?.extendedCodeBlock,
-                            fileLanguage: context?.activeFileContext?.fileLanguage,
-                            filePath: context?.activeFileContext?.filePath,
-                            matchPolicy: context?.activeFileContext?.matchPolicy,
-                            codeQuery: context?.focusAreaContext?.names,
-                            userIntent: this.userIntentRecognizer.getFromPromptChatMessage(message),
-                            customization: getSelectedCustomization(),
-                            context: message.context,
-                            toolResults: [
-                                {
-                                    content: [
-                                        result.output.kind === 'text'
-                                            ? { text: result.output.content }
-                                            : { json: result.output.content },
-                                    ],
-                                    toolUseId: toolUse.toolUseId,
-                                    status: 'success',
-                                },
-                            ],
-                        },
-                        triggerID,
-                        true
-                    )
+                    toolResults.push({
+                        content: [
+                            result.output.kind === 'text'
+                                ? { text: result.output.content }
+                                : { json: result.output.content },
+                        ],
+                        toolUseId: toolUse.toolUseId,
+                        status: 'success',
+                    })
+                } catch (e: any) {
+                    toolResults.push({ content: [{ text: e.message }], toolUseId: toolUse.toolUseId, status: 'error' })
                 }
+
+                await this.generateResponse(
+                    {
+                        message: '',
+                        trigger: ChatTriggerType.ChatMessage,
+                        query: undefined,
+                        codeSelection: context?.focusAreaContext?.selectionInsideExtendedCodeBlock,
+                        fileText: context?.focusAreaContext?.extendedCodeBlock,
+                        fileLanguage: context?.activeFileContext?.fileLanguage,
+                        filePath: context?.activeFileContext?.filePath,
+                        matchPolicy: context?.activeFileContext?.matchPolicy,
+                        codeQuery: context?.focusAreaContext?.names,
+                        userIntent: undefined,
+                        customization: getSelectedCustomization(),
+                        context: undefined,
+                        toolResults: toolResults,
+                    },
+                    triggerID,
+                    true
+                )
             })
             .catch((e) => {
-                this.processException(e, message.tabID)
+                this.processException(e, tabID)
             })
     }
 

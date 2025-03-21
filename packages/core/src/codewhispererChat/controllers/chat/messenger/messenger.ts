@@ -9,6 +9,7 @@ import {
     AuthNeededException,
     CodeReference,
     ContextCommandData,
+    CustomFormActionMessage,
     EditorContextCommandMessage,
     OpenSettingsMessage,
     QuickActionMessage,
@@ -40,7 +41,7 @@ import { extractAuthFollowUp } from '../../../../amazonq/util/authUtils'
 import { helpMessage } from '../../../../amazonq/webview/ui/texts/constants'
 import { ChatItemButton, ChatItemFormItem, MynahUIDataModel } from '@aws/mynah-ui'
 import { FsWriteParams } from '../../../tools/fsWrite'
-import { ExecuteBashParams } from '../../../tools/executeBash'
+import ExecuteBash, { ExecuteBashParams } from '../../../tools/executeBash'
 import { ChatHistoryManager } from '../../../storages/chatHistory'
 
 export type StaticTextResponseType = 'quick-action-help' | 'onboarding-help' | 'transform' | 'help'
@@ -211,7 +212,9 @@ export class Messenger {
                         session.setToolUse(toolUse)
 
                         const message = this.getToolUseMessage(toolUse, session)
-                        // TODO: for execute_bash command get users approval by adding button "Run" to below sendChatMessage and then execute this command -> "Running" handle the logic.
+                        const isConfirmationRequired = this.getIsConfirmationRequired(toolUse)
+                        // TODO: for execute_bash command get users approval by adding button "Run" to below sendChatMessage and then execute this command -> "Running" handle the logic.                        const isConfirmationRequired = this.getIsConfirmationRequired(toolUse)
+
                         this.dispatcher.sendChatMessage(
                             new ChatMessage(
                                 {
@@ -227,10 +230,20 @@ export class Messenger {
                                     codeBlockLanguage: codeBlockLanguage,
                                     contextList: undefined,
                                     title: undefined,
+                                    buttons: isConfirmationRequired
+                                        ? [{ id: 'confirm-tool-use', text: 'Confirm', position: 'outside' }]
+                                        : [],
                                 },
                                 tabID
                             )
                         )
+                        if (!isConfirmationRequired) {
+                            this.dispatcher.sendCustomFormActionMessage(
+                                new CustomFormActionMessage(tabID, {
+                                    id: 'confirm-tool-use',
+                                })
+                            )
+                        }
                     }
 
                     if (
@@ -420,10 +433,22 @@ export class Messenger {
                 })
             })
     }
+    // TODO: Make this cleaner
+    private getIsConfirmationRequired(toolUse: ToolUse) {
+        if (toolUse.name === 'execute_bash') {
+            const executeBash = new ExecuteBash(toolUse.input as unknown as ExecuteBashParams)
+            return executeBash.requiresAcceptance()
+        }
+        return toolUse.name === 'fs_write'
+    }
     private getToolUseMessage(toolUse: ToolUse, session: ChatSession) {
         if (toolUse.name === 'execute_bash') {
             const input = toolUse.input as unknown as ExecuteBashParams
-            return `Executing the bash command \`${input.command}\` using the \`execute_bash\` tool.`
+            return `Executing the bash command
+\`\`\`bash
+${input.command}
+\`\`\`
+using the \`execute_bash\` tool.`
         }
         if (toolUse.name === 'fs_read') {
             session.pushToListOfReadFiles((toolUse.input as any)?.path)
