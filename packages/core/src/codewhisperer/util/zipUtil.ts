@@ -463,7 +463,7 @@ export class ZipUtil {
                 checkForError,
                 computeSideEffects,
             },
-            { includeProjectName: true }
+            { includeProjectName: true, nonPosixPath: true }
         )
     }
 

@@ -15,6 +15,7 @@ export interface ZippedWorkspaceResult {
 
 interface ZipProjectOptions {
     includeProjectName?: boolean
+    nonPosixPath?: boolean
 }
 
 interface ZipProjectCustomizations {
@@ -54,7 +55,7 @@ export async function addToZip(
         const zipFilePath = options?.includeProjectName
             ? path.join(path.basename(file.workspaceFolder.uri.fsPath), file.zipFilePath)
             : file.zipFilePath
-        const posixPath = zipFilePath.split(path.sep).join(path.posix.sep)
+        const posixPath = options?.nonPosixPath ? zipFilePath : zipFilePath.split(path.sep).join(path.posix.sep)
 
         try {
             // filepath will be out-of-sync for files with unsaved changes.
