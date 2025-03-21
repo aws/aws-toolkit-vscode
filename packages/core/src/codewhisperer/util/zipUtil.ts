@@ -30,7 +30,7 @@ import { ProjectZipError } from '../../amazonqTest/error'
 import { removeAnsi } from '../../shared/utilities/textUtilities'
 import { normalize } from '../../shared/utilities/pathUtils'
 import { ZipStream } from '../../shared/utilities/zipStream'
-import { addToZip } from '../../amazonq/util/zipProjectUtil'
+import { addProjectToZip } from '../../amazonq/util/zipProjectUtil'
 
 export interface ZipMetadata {
     rootDir: string
@@ -213,12 +213,9 @@ export class ZipUtil {
 
     protected async zipProject(useCase: FeatureUseCase, projectPath?: string, metadataDir?: string) {
         const zip = new ZipStream()
-        let projectPaths = []
-        if (useCase === FeatureUseCase.TEST_GENERATION && projectPath) {
-            projectPaths.push(projectPath)
-        } else {
-            projectPaths = this.getProjectPaths()
-        }
+        const projectPaths =
+            useCase === FeatureUseCase.TEST_GENERATION && projectPath ? [projectPath] : this.getProjectPaths()
+
         if (useCase === FeatureUseCase.CODE_SCAN) {
             await this.processCombinedGitDiff(zip, projectPaths, '', CodeWhispererConstants.CodeAnalysisScope.PROJECT)
         }
@@ -453,7 +450,7 @@ export class ZipUtil {
             this._totalSize += file.fileSizeBytes
         }
 
-        await addToZip(
+        await addProjectToZip(
             projectPaths,
             workspaceFolders,
             collectFilesOptions,

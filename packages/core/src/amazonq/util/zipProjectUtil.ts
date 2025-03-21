@@ -13,6 +13,16 @@ export interface ZippedWorkspaceResult {
     totalFileBytes: number
 }
 
+interface ZipFileAddedResult {
+    result: 'added'
+    addedBytes: number
+}
+
+interface ZipFileSkippedResult {
+    result: 'skipped'
+    reason: 'excluded' | 'missing'
+}
+
 interface ZipProjectOptions {
     includeProjectName?: boolean
     nonPosixPath?: boolean
@@ -24,7 +34,51 @@ interface ZipProjectCustomizations {
     computeSideEffects?: (file: CollectFilesResultItem) => Promise<void> | void
 }
 
-export async function addToZip(
+export async function addFileToZip(
+    file: CollectFilesResultItem,
+    zip: ZipStream,
+    customizations?: ZipProjectCustomizations,
+    options?: ZipProjectOptions
+): Promise<ZipFileAddedResult | ZipFileSkippedResult> {
+    if (customizations?.isExcluded && customizations.isExcluded(file)) {
+        return { result: 'skipped', reason: 'excluded' }
+    }
+    const errorToThrow = customizations?.checkForError ? customizations.checkForError(file) : undefined
+    if (errorToThrow) {
+        throw errorToThrow
+    }
+
+    // Paths in zip should be POSIX compliant regardless of OS
+    // Reference: https://pkware.cachefly.net/webdocs/casestudies/APPNOTE.TXT
+    const zipFilePath = options?.includeProjectName
+        ? path.join(path.basename(file.workspaceFolder.uri.fsPath), file.zipFilePath)
+        : file.zipFilePath
+    const posixPath = options?.nonPosixPath ? zipFilePath : zipFilePath.split(path.sep).join(path.posix.sep)
+
+    try {
+        // filepath will be out-of-sync for files with unsaved changes.
+        if (file.isText) {
+            zip.writeString(file.fileContent, posixPath)
+        } else {
+            zip.writeFile(file.fileUri.fsPath, path.dirname(posixPath))
+        }
+    } catch (error) {
+        if (error instanceof Error && error.message.includes('File not found')) {
+            // No-op: Skip if file was deleted or does not exist
+            // Reference: https://github.com/cthackers/adm-zip/blob/1cd32f7e0ad3c540142a76609bb538a5cda2292f/adm-zip.js#L296-L321
+            return { result: 'skipped', reason: 'missing' }
+        }
+        throw error
+    }
+
+    if (customizations?.computeSideEffects) {
+        await customizations.computeSideEffects(file)
+    }
+
+    return { result: 'added', addedBytes: file.fileSizeBytes }
+}
+
+export async function addProjectToZip(
     repoRootPaths: string[],
     workspaceFolders: CurrentWsFolders,
     collectFilesOptions: CollectFilesOptions,
@@ -41,40 +95,9 @@ export async function addToZip(
         }
         zippedFiles.add(file.zipFilePath)
 
-        if (customizations?.isExcluded && customizations.isExcluded(file)) {
-            continue
-        }
-        const errorToThrow = customizations?.checkForError ? customizations.checkForError(file) : undefined
-        if (errorToThrow) {
-            throw errorToThrow
-        }
-
-        totalBytes += file.fileSizeBytes
-        // Paths in zip should be POSIX compliant regardless of OS
-        // Reference: https://pkware.cachefly.net/webdocs/casestudies/APPNOTE.TXT
-        const zipFilePath = options?.includeProjectName
-            ? path.join(path.basename(file.workspaceFolder.uri.fsPath), file.zipFilePath)
-            : file.zipFilePath
-        const posixPath = options?.nonPosixPath ? zipFilePath : zipFilePath.split(path.sep).join(path.posix.sep)
-
-        try {
-            // filepath will be out-of-sync for files with unsaved changes.
-            if (file.isText) {
-                zip.writeString(file.fileContent, posixPath)
-            } else {
-                zip.writeFile(file.fileUri.fsPath, path.dirname(posixPath))
-            }
-        } catch (error) {
-            if (error instanceof Error && error.message.includes('File not found')) {
-                // No-op: Skip if file was deleted or does not exist
-                // Reference: https://github.com/cthackers/adm-zip/blob/1cd32f7e0ad3c540142a76609bb538a5cda2292f/adm-zip.js#L296-L321
-                continue
-            }
-            throw error
-        }
-
-        if (customizations?.computeSideEffects) {
-            await customizations.computeSideEffects(file)
+        const addFileResult = await addFileToZip(file, zip, customizations, options)
+        if (addFileResult.result === 'added') {
+            totalBytes += addFileResult.addedBytes
         }
     }
 
@@ -88,7 +111,7 @@ export async function zipProject(
     customizations?: ZipProjectCustomizations,
     options?: ZipProjectOptions & { zip?: ZipStream }
 ): Promise<ZippedWorkspaceResult> {
-    const { zip, totalBytesAdded } = await addToZip(
+    const { zip, totalBytesAdded } = await addProjectToZip(
         repoRootPaths,
         workspaceFolders,
         collectFilesOptions,

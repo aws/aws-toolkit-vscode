@@ -330,13 +330,16 @@ async function filterOutGitignoredFiles(
     return gitIgnoreFilter.filterFiles(files)
 }
 
-export type CollectFilesResultItem = {
-    workspaceFolder: vscode.WorkspaceFolder
-    relativeFilePath: string
+export type FileInformation = {
     fileUri: vscode.Uri
-    fileContent: string
     fileSizeBytes: number
     isText: boolean
+}
+
+export interface CollectFilesResultItem extends FileInformation {
+    workspaceFolder: vscode.WorkspaceFolder
+    relativeFilePath: string
+    fileContent: string
     zipFilePath: string
 }
 export type CollectFilesFilter = (relativePath: string) => boolean // returns true if file should be filtered out
@@ -423,28 +426,14 @@ export async function collectFiles(
                 continue
             }
 
-            const result: Omit<CollectFilesResultItem, 'fileContent'> = {
-                workspaceFolder: relativePath.workspaceFolder,
-                relativeFilePath: relativePath.relativePath,
-                fileUri: file,
-                fileSizeBytes: fileStat.size,
-                zipFilePath: prefixWithFolderPrefix(relativePath.workspaceFolder, relativePath.relativePath),
-                isText: !ZipConstants.knownBinaryFileExts.includes(path.extname(file.fsPath)),
-            }
-            if (includeContent) {
-                const hasUnsavedChanges = isFileOpenAndDirty(file)
-                const content =
-                    result.isText && hasUnsavedChanges ? await getCurrentTextContent(file) : await readFile(file)
-                if (content === undefined) {
-                    continue
-                }
-
+            const fileStats = await getFileStats(file, includeContent, fileStat.size)
+            if (fileStats) {
                 storage.push({
-                    ...result,
-                    fileContent: content,
+                    ...fileStats,
+                    workspaceFolder: relativePath.workspaceFolder,
+                    relativeFilePath: relativePath.relativePath,
+                    zipFilePath: prefixWithFolderPrefix(relativePath.workspaceFolder, relativePath.relativePath),
                 })
-            } else {
-                storage.push(result)
             }
             totalSizeBytes += fileStat.size
         }
@@ -464,16 +453,6 @@ export async function collectFiles(
             throw new ToolkitError(`Failed to find prefix for workspace folder ${folder.name}`)
         }
         return prefix === '' ? path : `${prefix}/${path}`
-    }
-
-    async function getCurrentTextContent(uri: vscode.Uri) {
-        const document = await vscode.workspace.openTextDocument(uri)
-        const content = document.getText()
-        return content
-    }
-
-    function isFileOpenAndDirty(uri: vscode.Uri) {
-        return vscode.workspace.textDocuments.some((document) => document.uri.fsPath === uri.fsPath && document.isDirty)
     }
 }
 
@@ -499,6 +478,38 @@ const workspaceFolderPrefixGuards = {
      * the maximum suffix that can be added to a folder prefix in case of full subfolder path matches
      */
     maximumFoldersWithMatchingSubfolders: 10_000,
+}
+
+export async function getFileStats(file: vscode.Uri, includeContent: boolean, fileSize?: number) {
+    const fileWithoutContent = {
+        fileUri: file,
+        fileSizeBytes: fileSize ?? (await fs.stat(file)).size,
+        isText: !ZipConstants.knownBinaryFileExts.includes(path.extname(file.fsPath)),
+    }
+    if (includeContent) {
+        const hasUnsavedChanges = isFileOpenAndDirty(file)
+        const fileContent =
+            fileWithoutContent.isText && hasUnsavedChanges ? await getCurrentTextContent(file) : await readFile(file)
+        if (fileContent === undefined) {
+            return
+        }
+        return {
+            ...fileWithoutContent,
+            fileContent,
+        }
+    } else {
+        return fileWithoutContent
+    }
+
+    function isFileOpenAndDirty(uri: vscode.Uri) {
+        return vscode.workspace.textDocuments.some((document) => document.uri.fsPath === uri.fsPath && document.isDirty)
+    }
+
+    async function getCurrentTextContent(uri: vscode.Uri) {
+        const document = await vscode.workspace.openTextDocument(uri)
+        const content = document.getText()
+        return content
+    }
 }
 
 /**
