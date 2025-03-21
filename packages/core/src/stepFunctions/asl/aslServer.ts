@@ -37,8 +37,8 @@ import {
 
 import { posix } from 'path'
 import * as URL from 'url'
-import { getLanguageModelCache } from '../../shared/languageServer/languageModelCache'
-import { formatError, runSafe, runSafeAsync } from '../../shared/languageServer/utils/runner'
+import { getLanguageModelCache } from '../../shared/lsp/languageModelCache'
+import { formatError, runSafe, runSafeAsync } from '../../shared/lsp/utils/runner'
 import { YAML_ASL, JSON_ASL } from '../constants/aslFormats'
 
 export const ResultLimitReached: NotificationType<string, any> = new NotificationType('asl/resultLimitReached')
