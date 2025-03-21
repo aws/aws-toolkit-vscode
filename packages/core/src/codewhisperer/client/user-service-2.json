@@ -2206,7 +2206,8 @@
                 "uploadId": { "shape": "UploadId" },
                 "description": { "shape": "StartCodeFixJobRequestDescriptionString" },
                 "ruleId": { "shape": "StartCodeFixJobRequestRuleIdString" },
-                "codeFixName": { "shape": "CodeFixName" }
+                "codeFixName": { "shape": "CodeFixName" },
+                "referenceTrackerConfiguration": { "shape": "ReferenceTrackerConfiguration" }
             }
         },
         "StartCodeFixJobRequestDescriptionString": {

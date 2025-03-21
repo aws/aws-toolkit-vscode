@@ -16,6 +16,8 @@ import globals from '../../../shared/extensionGlobals'
 import { openUrl } from '../../../shared/utilities/vsCodeUtils'
 import { DefaultAmazonQAppInitContext } from '../../apps/initContext'
 
+const qChatModuleName = 'amazonqChat'
+
 export function dispatchWebViewMessagesToApps(
     webview: Webview,
     webViewToAppsMessagePublishers: Map<TabType, MessagePublisher<any>>
@@ -29,8 +31,8 @@ export function dispatchWebViewMessagesToApps(
                  * This would be equivalent of the duration between "user clicked open q" and "ui has become available"
                  * NOTE: Amazon Q UI is only loaded ONCE. The state is saved between each hide/show of the webview.
                  */
-                telemetry.webview_load.emit({
-                    webviewName: 'amazonq',
+                telemetry.toolkit_didLoadModule.emit({
+                    module: qChatModuleName,
                     duration: performance.measure(amazonqMark.uiReady, amazonqMark.open).duration,
                     result: 'Succeeded',
                 })
@@ -86,12 +88,19 @@ export function dispatchWebViewMessagesToApps(
         }
 
         if (msg.type === 'error') {
-            const event = msg.event === 'webview_load' ? telemetry.webview_load : telemetry.webview_error
-            event.emit({
-                webviewName: 'amazonqChat',
-                result: 'Failed',
-                reasonDesc: msg.errorMessage,
-            })
+            if (msg.event === 'toolkit_didLoadModule') {
+                telemetry.toolkit_didLoadModule.emit({
+                    module: qChatModuleName,
+                    result: 'Failed',
+                    reasonDesc: msg.errorMessage,
+                })
+            } else {
+                telemetry.webview_error.emit({
+                    webviewName: qChatModuleName,
+                    result: 'Failed',
+                    reasonDesc: msg.errorMessage,
+                })
+            }
             return
         }
 
