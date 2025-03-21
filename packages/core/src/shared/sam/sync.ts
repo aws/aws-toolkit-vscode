@@ -51,6 +51,7 @@ import { ParamsSource, createSyncParamsSourcePrompter } from '../ui/sam/paramsSo
 import { createEcrPrompter } from '../ui/sam/ecrPrompter'
 import { BucketSource, createBucketNamePrompter, createBucketSourcePrompter } from '../ui/sam/bucketPrompter'
 import { runInTerminal } from './processTerminal'
+import { syncMementoRootKey } from './constants'
 import {
     TemplateParametersForm,
     TemplateParametersWizard,
@@ -72,8 +73,6 @@ export interface SyncParams {
     readonly skipDependencyLayer?: boolean
     readonly syncFlags?: string
 }
-
-export const syncMementoRootKey = 'samcli.sync.params'
 
 // TODO: hook this up so it prompts the user when more than 1 environment is present in `samconfig.toml`
 export function createEnvironmentPrompter(config: SamConfig, environments = config.listEnvironments()) {
