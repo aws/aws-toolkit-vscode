@@ -1,3 +1,7 @@
+## 3.51.0 2025-03-20
+
+- **Feature** Update Step Functions marketplace documentation.
+
 ## 3.50.0 2025-03-13
 
 - Miscellaneous non-user-facing changes

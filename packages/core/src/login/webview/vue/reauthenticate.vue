@@ -61,7 +61,7 @@ and the final results are retrieved by the frontend. For this Component to updat
                 </div>
 
                 <div>
-                    <button id="reauthenticate" v-on:click="reauthenticate">Re-authenticate</button>
+                    <button id="reauthenticate-button" v-on:click="reauthenticate">Re-authenticate</button>
                     <div v-if="errorMessage" id="error-message" style="color: red">{{ errorMessage }}</div>
                 </div>
 
@@ -127,9 +127,6 @@ export default defineComponent({
 
         this.doShow = true
     },
-    async mounted() {
-        await client.setUiReady('reauth')
-    },
     methods: {
         async reauthenticate() {
             client.emitUiClick('auth_reauthenticate')
@@ -148,6 +145,16 @@ export default defineComponent({
         },
     },
 })
+
+/**
+ * The ID of the element we will use to determine that the UI has completed its initial load.
+ *
+ * This makes assumptions that we will be in a certain state of the UI (eg showing a form vs. a loading bar).
+ * So if the UI flow changes, this may need to be updated.
+ */
+export function getReadyElementId() {
+    return 'reauthenticate-button'
+}
 </script>
 <style>
 @import './base.css';
@@ -199,7 +206,7 @@ export default defineComponent({
     flex-direction: column;
 }
 
-button#reauthenticate {
+button#reauthenticate-button {
     cursor: pointer;
     background-color: var(--vscode-button-background);
     color: white;
@@ -231,7 +238,7 @@ button#cancel {
     cursor: pointer;
 }
 
-body.vscode-high-contrast:not(body.vscode-high-contrast-light) button#reauthenticate {
+body.vscode-high-contrast:not(body.vscode-high-contrast-light) button#reauthenticate-button {
     background-color: white;
     color: black;
 }

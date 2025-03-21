@@ -8,13 +8,13 @@ import { EcrRepositoryNode } from '../../../awsService/ecr/explorer/ecrRepositor
 import { EcrTagNode } from '../../../awsService/ecr/explorer/ecrTagNode'
 
 import { CreateAppRunnerServiceWizard } from '../wizards/apprunnerCreateServiceWizard'
-import { DefaultAppRunnerClient } from '../../../shared/clients/apprunnerClient'
+import { AppRunnerClient } from '../../../shared/clients/apprunner'
 import { telemetry } from '../../../shared/telemetry/telemetry'
 import { Result } from '../../../shared/telemetry/telemetry'
 
 export async function createFromEcr(
     node: EcrTagNode | EcrRepositoryNode,
-    client = new DefaultAppRunnerClient(node.regionCode)
+    client = new AppRunnerClient(node.regionCode)
 ): Promise<void> {
     let telemetryResult: Result = 'Failed'
 
