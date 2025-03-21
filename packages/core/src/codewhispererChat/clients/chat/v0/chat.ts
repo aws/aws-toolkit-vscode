@@ -61,8 +61,12 @@ export class ChatSession {
         }
         this._chatHistory.push(this.formatChatHistoryMessage(message))
     }
-    public pushToListOfReadFiles(filePath: string) {
-        this._listOfReadFiles.push(filePath)
+    public pushToListOfReadFiles(filePath: string | undefined) {
+        if (!filePath) {
+            this._listOfReadFiles = []
+        } else {
+            this._listOfReadFiles.push(filePath)
+        }
     }
 
     private formatChatHistoryMessage(message: ChatMessage): ChatMessage {

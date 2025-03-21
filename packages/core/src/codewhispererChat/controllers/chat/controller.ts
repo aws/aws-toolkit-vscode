@@ -839,6 +839,8 @@ export class ChatController {
     }
 
     private async processPromptMessageAsNewThread(message: PromptMessage) {
+        const session = this.sessionStorage.getSession(message.tabID)
+        session.pushToListOfReadFiles(undefined)
         this.editorContextExtractor
             .extractContextForTrigger('ChatMessage')
             .then(async (context) => {
@@ -876,7 +878,6 @@ export class ChatController {
                     true
                 )
 
-                const session = this.sessionStorage.getSession(message.tabID)
                 while (true) {
                     const toolUse = session.toolUse
                     if (!toolUse || !toolUse.input) {
