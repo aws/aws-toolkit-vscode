@@ -40,7 +40,7 @@ const customerMessageSizeLimit = 4_000
 
 export function triggerPayloadToChatRequest(triggerPayload: TriggerPayload): { conversationState: ConversationState } {
     // Flexible truncation logic
-    let remainingPayloadSize = 100_000
+    const remainingPayloadSize = 100_000
 
     // Type A context: Preserving user input as much as possible
     const userInputTruncationInfo = preserveContexts(triggerPayload, remainingPayloadSize, ChatContextType.UserInput)
