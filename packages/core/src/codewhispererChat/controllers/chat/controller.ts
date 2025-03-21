@@ -525,7 +525,7 @@ export class ChatController {
                         command: path.basename(contextCommandItem.relativePath),
                         description: path.join(wsFolderName, contextCommandItem.relativePath),
                         route: [contextCommandItem.workspaceFolder, contextCommandItem.relativePath],
-                        label: 'file',
+                        label: 'file' as ContextCommandItemType,
                         id: contextCommandItem.id,
                         icon: 'file' as MynahIconsType,
                     })
@@ -534,7 +534,7 @@ export class ChatController {
                         command: path.basename(contextCommandItem.relativePath),
                         description: path.join(wsFolderName, contextCommandItem.relativePath),
                         route: [contextCommandItem.workspaceFolder, contextCommandItem.relativePath],
-                        label: 'folder',
+                        label: 'folder' as ContextCommandItemType,
                         id: contextCommandItem.id,
                         icon: 'folder' as MynahIconsType,
                     })
@@ -543,7 +543,7 @@ export class ChatController {
                         command: contextCommandItem.symbol.name,
                         description: `${contextCommandItem.symbol.kind}, ${contextCommandItem.relativePath}, L${contextCommandItem.symbol.range.start.line}-${contextCommandItem.symbol.range.end.line}`,
                         route: [contextCommandItem.workspaceFolder, contextCommandItem.relativePath],
-                        label: 'code',
+                        label: 'code' as ContextCommandItemType,
                         id: contextCommandItem.id,
                         icon: 'code-block' as MynahIconsType,
                     })

@@ -88,7 +88,7 @@ export const GetIndexSequenceNumberRequestType: RequestType<GetRepomapIndexJSONR
     'lsp/getIndexSequenceNumber'
 )
 
-export type ContextCommandItemType = 'file' | 'folder' | 'symbol'
+export type ContextCommandItemType = 'file' | 'folder' | 'code'
 
 export type SymbolType =
     | 'Class'
