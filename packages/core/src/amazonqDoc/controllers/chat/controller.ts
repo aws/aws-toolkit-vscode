@@ -45,6 +45,7 @@ import { getPathsFromZipFilePath, SvgFileExtension } from '../../../amazonq/util
 import { FollowUpTypes } from '../../../amazonq/commons/types'
 import { DocGenerationTask, DocGenerationTasks } from '../docGenerationTask'
 import { DevPhase } from '../../types'
+import { normalize } from '../../../shared/utilities/pathUtils'
 
 export interface ChatControllerEventEmitters {
     readonly processHumanChatMessage: EventEmitter<any>
@@ -160,7 +161,9 @@ export class DocController {
                 // Display path should always include workspace folder name
                 displayPath = path.join(relativePath.workspaceFolder.name, relativePath.relativePath)
                 // Only include workspace folder name in API call if multi-root workspace
-                docGenerationTask.folderPath = isMultiRootWorkspace() ? displayPath : relativePath.relativePath
+                docGenerationTask.folderPath = normalize(
+                    isMultiRootWorkspace() ? displayPath : relativePath.relativePath
+                )
 
                 if (!relativePath.relativePath) {
                     docGenerationTask.folderLevel = 'ENTIRE_WORKSPACE'
