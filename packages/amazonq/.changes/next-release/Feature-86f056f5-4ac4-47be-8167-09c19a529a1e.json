@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "The logs emitted by the Agent during user command execution will be accepted and written to .amazonq/dev/run_command.log file in the user's local repository."
+}
