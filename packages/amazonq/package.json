@@ -752,6 +752,11 @@
                 "enablement": "aws.codewhisperer.connected"
             },
             {
+                "command": "aws.amazonq.focusChat",
+                "title": "%AWS.amazonq.openChat%",
+                "category": "%AWS.amazonq.title%"
+            },
+            {
                 "command": "aws.amazonq.exploreAgents",
                 "title": "%AWS.amazonq.exploreAgents%",
                 "category": "%AWS.amazonq.title%",
