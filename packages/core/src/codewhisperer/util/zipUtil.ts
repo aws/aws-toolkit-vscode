@@ -12,7 +12,13 @@ import { fs } from '../../shared/fs/fs'
 import { getLoggerForScope } from '../service/securityScanHandler'
 import { runtimeLanguageContext } from './runtimeLanguageContext'
 import { CodewhispererLanguage } from '../../shared/telemetry/telemetry.gen'
-import { CurrentWsFolders, collectFiles, defaultExcludePatterns } from '../../shared/utilities/workspaceUtils'
+import {
+    CollectFilesOptions,
+    CollectFilesResultItem,
+    CurrentWsFolders,
+    collectFiles,
+    defaultExcludePatterns,
+} from '../../shared/utilities/workspaceUtils'
 import {
     FileSizeExceededError,
     NoActiveFileError,
@@ -419,12 +425,32 @@ export class ZipUtil {
                 : vscode.workspace.workspaceFolders
         ) as CurrentWsFolders
 
-        const collectFilesOptions = {
+        const collectFilesOptions: CollectFilesOptions = {
             maxTotalSizeBytes: this.getProjectScanPayloadSizeLimitInBytes(),
             excludePatterns:
                 useCase === FeatureUseCase.TEST_GENERATION
                     ? [...CodeWhispererConstants.testGenExcludePatterns, ...defaultExcludePatterns]
                     : defaultExcludePatterns,
+            includeContent: true,
+        }
+        const isExcluded = (file: CollectFilesResultItem) =>
+            ZipConstants.knownBinaryFileExts.includes(path.extname(file.fileUri.fsPath)) &&
+            useCase === FeatureUseCase.TEST_GENERATION
+
+        const checkForError = (file: CollectFilesResultItem) =>
+            this.reachSizeLimit(this._totalSize, CodeWhispererConstants.CodeAnalysisScope.PROJECT) ||
+            this.willReachSizeLimit(this._totalSize, file.fileSizeBytes)
+                ? new ProjectSizeExceededError()
+                : undefined
+
+        const computeSideEffects = (file: CollectFilesResultItem) => {
+            if (file.isText) {
+                this._totalLines += file.fileContent.split(ZipConstants.newlineRegex).length
+                this.incrementCountForLanguage(file.fileUri, languageCount)
+            }
+
+            this._pickedSourceFiles.add(file.fileUri.fsPath)
+            this._totalSize += file.fileSizeBytes
         }
 
         const sourceFiles = await collectFiles(projectPaths, workspaceFolders, collectFilesOptions)
@@ -432,41 +458,23 @@ export class ZipUtil {
         for (const file of sourceFiles) {
             const projectName = path.basename(file.workspaceFolder.uri.fsPath)
             const zipEntryPath = this.getZipEntryPath(projectName, file.relativeFilePath)
-            const fileExtension = path.extname(file.fileUri.fsPath)
 
-            if (
-                ZipConstants.knownBinaryFileExts.includes(fileExtension) &&
-                useCase === FeatureUseCase.TEST_GENERATION
-            ) {
+            if (isExcluded(file)) {
                 continue
             }
 
-            if (
-                this.reachSizeLimit(this._totalSize, CodeWhispererConstants.CodeAnalysisScope.PROJECT) ||
-                this.willReachSizeLimit(this._totalSize, file.fileSizeBytes)
-            ) {
-                throw new ProjectSizeExceededError()
+            const errorToThrow = checkForError(file)
+            if (errorToThrow) {
+                throw errorToThrow
             }
 
-            if (ZipConstants.knownBinaryFileExts.includes(fileExtension)) {
-                if (useCase === FeatureUseCase.TEST_GENERATION) {
-                    continue
-                }
-
-                zip.writeFile(file.fileUri.fsPath, path.dirname(zipEntryPath))
+            if (file.isText) {
+                zip.writeString(file.fileContent, zipEntryPath)
             } else {
-                // TODO: verify if this is needed
-                const isFileOpenAndDirty = this.isFileOpenAndDirty(file.fileUri)
-                const fileContent = isFileOpenAndDirty ? await this.getTextContent(file.fileUri) : file.fileContent
-
-                this._totalLines += fileContent.split(ZipConstants.newlineRegex).length
-
-                this.incrementCountForLanguage(file.fileUri, languageCount)
-                zip.writeString(fileContent, zipEntryPath)
+                zip.writeFile(file.fileUri.fsPath, path.dirname(zipEntryPath))
             }
 
-            this._pickedSourceFiles.add(file.fileUri.fsPath)
-            this._totalSize += file.fileSizeBytes
+            computeSideEffects(file)
         }
     }
 
