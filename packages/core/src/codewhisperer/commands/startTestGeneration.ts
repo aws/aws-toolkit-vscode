@@ -21,6 +21,7 @@ import { ChildProcess, spawn } from 'child_process' // eslint-disable-line no-re
 import { BuildStatus } from '../../amazonqTest/chat/session/session'
 import { fs } from '../../shared/fs/fs'
 import { Range } from '../client/codewhispereruserclient'
+import { getWorkspaceForFile } from '../../shared/utilities/workspaceUtils'
 
 // eslint-disable-next-line unicorn/no-null
 let spawnResult: ChildProcess | null = null
@@ -48,7 +49,7 @@ export async function startTestGenerationProcess(
 
         const zipUtil = new ZipUtil()
         if (initialExecution) {
-            const projectPath = zipUtil.getProjectPath(filePath) ?? ''
+            const projectPath = getWorkspaceForFile(filePath) ?? ''
             const relativeTargetPath = path.relative(projectPath, filePath)
             session.listOfTestGenerationJobId = []
             session.shortAnswer = undefined

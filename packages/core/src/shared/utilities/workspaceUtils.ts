@@ -671,3 +671,14 @@ export async function findStringInDirectory(searchStr: string, dirPath: string) 
     })
     return spawnResult
 }
+
+export function getWorkspacePaths() {
+    const workspaceFolders = vscode.workspace.workspaceFolders
+    return workspaceFolders?.map((folder) => folder.uri.fsPath) ?? []
+}
+
+export function getWorkspaceForFile(filepath: string) {
+    const fileUri = vscode.Uri.file(filepath)
+    const workspaceFolder = vscode.workspace.getWorkspaceFolder(fileUri)
+    return workspaceFolder?.uri.fsPath
+}
