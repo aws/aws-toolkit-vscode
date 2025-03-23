@@ -5,10 +5,9 @@
 
 import assert from 'assert'
 import * as sinon from 'sinon'
-import { AppRunner } from 'aws-sdk'
 import { AppRunnerNode } from '../../../../awsService/apprunner/explorer/apprunnerNode'
 import { AppRunnerServiceNode } from '../../../../awsService/apprunner/explorer/apprunnerServiceNode'
-import { DefaultAppRunnerClient } from '../../../../shared/clients/apprunnerClient'
+import { AppRunnerClient, ServiceSummary } from '../../../../shared/clients/apprunner'
 import { CloudWatchLogsClient } from '../../../../shared/clients/cloudWatchLogs'
 import { asyncGenerator } from '../../../../shared/utilities/collectionUtils'
 import { AWSTreeNodeBase } from '../../../../shared/treeview/nodes/awsTreeNodeBase'
@@ -16,11 +15,11 @@ import { stub } from '../../../utilities/stubber'
 import { getLabel } from '../../../../shared/treeview/utils'
 
 describe('AppRunnerServiceNode', function () {
-    let mockApprunnerClient: ReturnType<typeof stub<DefaultAppRunnerClient>>
+    let mockApprunnerClient: ReturnType<typeof stub<AppRunnerClient>>
     let mockParentNode: AppRunnerNode
     let node: AppRunnerServiceNode
 
-    const exampleInfo: AppRunner.Service = {
+    const exampleInfo: ServiceSummary = {
         ServiceName: 'test1',
         Status: 'RUNNING',
         ServiceArn: 'test-arn1',
@@ -36,8 +35,9 @@ describe('AppRunnerServiceNode', function () {
         const cloudwatchClient = stub(CloudWatchLogsClient, { regionCode: 'us-east-1' })
         cloudwatchClient.describeLogGroups.returns(asyncGenerator([{ logGroupName: 'logs' }]))
 
-        mockApprunnerClient = stub(DefaultAppRunnerClient, { regionCode: 'us-east-1' })
+        mockApprunnerClient = stub(AppRunnerClient, { regionCode: 'us-east-1' })
         mockApprunnerClient.listOperations.resolves({ OperationSummaryList: [] })
+        // jscpd:ignore-start
         mockParentNode = stub(AppRunnerNode, {
             regionCode: '',
             client: mockApprunnerClient,
@@ -54,6 +54,7 @@ describe('AppRunnerServiceNode', function () {
             accessibilityInformation: undefined,
             checkboxState: undefined,
         })
+        // jscpd:ignore-end
         node = new AppRunnerServiceNode(mockParentNode, mockApprunnerClient, exampleInfo, {}, cloudwatchClient)
     })
 

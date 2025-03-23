@@ -42,7 +42,8 @@ import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import { getSelectedCustomization } from '../../../codewhisperer/util/customizationUtil'
 import { undefinedIfEmpty } from '../../../shared/utilities/textUtilities'
 import { AdditionalContextPrompt } from '../../../amazonq/lsp/types'
-import { getUserPromptsDirectory } from '../../constants'
+import { getUserPromptsDirectory, promptFileExtension } from '../../constants'
+import { isInDirectory } from '../../../shared/filesystemUtilities'
 
 export function logSendTelemetryEventFailure(error: any) {
     let requestId: string | undefined
@@ -148,13 +149,14 @@ export class CWCTelemetryHelper {
     }
 
     public getContextType(prompt: AdditionalContextPrompt): string {
-        if (prompt.relativePath.startsWith(path.join('.amazonq', 'rules'))) {
-            return 'rule'
-        } else if (prompt.filePath.startsWith(getUserPromptsDirectory())) {
-            return 'prompt'
-        } else {
-            return 'file'
+        if (prompt.filePath.endsWith(promptFileExtension)) {
+            if (isInDirectory(path.join('.amazonq', 'rules'), prompt.relativePath)) {
+                return 'rule'
+            } else if (isInDirectory(getUserPromptsDirectory(), prompt.filePath)) {
+                return 'prompt'
+            }
         }
+        return 'file'
     }
 
     public getContextLengths(prompts: AdditionalContextPrompt[]): AdditionalContextLengths {

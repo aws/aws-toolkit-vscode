@@ -11,11 +11,11 @@ import {
     maxRepoSizeBytes,
 } from 'aws-core-vscode/amazonqFeatureDev'
 import { assertTelemetry, getWorkspaceFolder, TestFolder } from 'aws-core-vscode/test'
-import { fs, AmazonqCreateUpload, ZipStream } from 'aws-core-vscode/shared'
+import { fs, AmazonqCreateUpload, ZipStream, ContentLengthError } from 'aws-core-vscode/shared'
 import { MetricName, Span } from 'aws-core-vscode/telemetry'
 import sinon from 'sinon'
 import { CodeWhispererSettings } from 'aws-core-vscode/codewhisperer'
-import { ContentLengthError, CurrentWsFolders } from 'aws-core-vscode/amazonq'
+import { CurrentWsFolders } from 'aws-core-vscode/amazonq'
 import path from 'path'
 
 const testDevfilePrepareRepo = async (devfileEnabled: boolean) => {

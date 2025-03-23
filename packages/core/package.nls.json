@@ -324,6 +324,7 @@
     "AWS.codewhisperer.customization.notification.new_customizations.learn_more": "Learn More",
     "AWS.amazonq.title": "Amazon Q",
     "AWS.amazonq.chat": "Chat",
+    "AWS.amazonq.openChat": "Open Chat",
     "AWS.amazonq.context.folders.title": "Folders",
     "AWS.amazonq.context.folders.description": "Add all files in a folder to context",
     "AWS.amazonq.context.files.title": "Files",

@@ -831,6 +831,30 @@ export class PermissionsError extends ToolkitError {
     }
 }
 
+/**
+ * Errors extending this class are considered "errors" in service metrics.
+ */
+export class ClientError extends ToolkitError {
+    constructor(message: string, info: ErrorInformation = { code: '400' }) {
+        super(message, info)
+    }
+}
+
+/**
+ * Errors extending this class are considered "faults" in service metrics.
+ */
+export class ServiceError extends ToolkitError {
+    constructor(message: string, info: ErrorInformation = { code: '500' }) {
+        super(message, info)
+    }
+}
+
+export class ContentLengthError extends ClientError {
+    constructor(message: string, info: ErrorInformation = { code: 'ContentLengthError' }) {
+        super(message, info)
+    }
+}
+
 export function isNetworkError(err?: unknown): err is Error & { code: string } {
     if (!(err instanceof Error)) {
         return false
