@@ -212,14 +212,14 @@ describe('triggerPayloadToChatRequest', () => {
 
         const result = triggerPayloadToChatRequest(payload)
 
-        const userInputLength = result.conversationState.currentMessage?.userInputMessage?.content?.length!
+        const userInputLength = result.conversationState.currentMessage?.userInputMessage?.content?.length
         const promptContext =
             result.conversationState.currentMessage?.userInputMessage?.userInputMessageContext?.additionalContext?.find(
                 (c) => c.name === 'prompt'
             )?.innerContext
         const currentFileLength =
             result.conversationState.currentMessage?.userInputMessage?.userInputMessageContext?.editorState?.document
-                ?.text?.length!
+                ?.text?.length
         const ruleContext =
             result.conversationState.currentMessage?.userInputMessage?.userInputMessageContext?.additionalContext?.find(
                 (c) => c.name === 'rule'
