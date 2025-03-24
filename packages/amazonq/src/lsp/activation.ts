@@ -18,9 +18,9 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
             Commands.register({ id: 'aws.amazonq.invokeInlineCompletion', autoconnect: true }, async () => {
                 await vscode.commands.executeCommand('editor.action.inlineSuggest.trigger')
             }),
-            Commands.declare('aws.amazonq.rejectCodeSuggestion', () => async () => {
-                await vscode.commands.executeCommand('editor.action.inlineSuggest.hide')
-            }).register()
+            vscode.workspace.onDidCloseTextDocument(async () => {
+                await vscode.commands.executeCommand('aws.amazonq.rejectCodeSuggestion')
+            })
         )
     } catch (err) {
         const e = err as ToolkitError
