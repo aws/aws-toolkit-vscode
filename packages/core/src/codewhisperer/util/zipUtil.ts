@@ -28,7 +28,7 @@ import { ZipStream } from '../../shared/utilities/zipStream'
 import { getTextContent } from '../../shared/utilities/textDocumentUtilities'
 import { ChildProcess, ChildProcessOptions } from '../../shared/utilities/processUtils'
 import { removeAnsi } from '../../shared/utilities/textUtilities'
-import { isFileOpenAndDirty } from '../../amazonq/util/files'
+import { isFileOpenAndDirty } from '../../shared/utilities/vsCodeUtils'
 
 export interface ZipMetadata {
     rootDir: string

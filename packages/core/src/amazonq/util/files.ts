@@ -299,7 +299,3 @@ export function registerNewFiles(
 
     return result
 }
-
-export function isFileOpenAndDirty(uri: vscode.Uri) {
-    return vscode.workspace.textDocuments.some((document) => document.uri.fsPath === uri.fsPath && document.isDirty)
-}
