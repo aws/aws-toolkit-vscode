@@ -40,6 +40,46 @@ describe('triggerPayloadToChatRequest', () => {
         userIntent: undefined,
     }
 
+    const createLargeString = (size: number, prefix: string = '') => prefix + 'x'.repeat(size - prefix.length)
+
+    const createPrompt = (size: number) => {
+        return {
+            name: 'prompt',
+            description: 'prompt',
+            relativePath: 'path-prompt',
+            type: 'prompt',
+            innerContext: createLargeString(size, 'prompt-'),
+        }
+    }
+
+    const createRule = (size: number) => {
+        return {
+            name: 'rule',
+            description: 'rule',
+            relativePath: 'path-rule',
+            type: 'rule',
+            innerContext: createLargeString(size, 'rule-'),
+        }
+    }
+
+    const createFile = (size: number) => {
+        return {
+            name: 'file',
+            description: 'file',
+            relativePath: 'path-file',
+            type: 'file',
+            innerContext: createLargeString(size, 'file-'),
+        }
+    }
+
+    const createBaseTriggerPayload = (): TriggerPayload => ({
+        ...mockBasicPayload,
+        message: '',
+        fileText: '',
+        filePath: 'test.ts',
+        fileLanguage: 'typescript',
+        customization: { arn: '' },
+    })
     it('should convert basic trigger payload to chat request', () => {
         const result = triggerPayloadToChatRequest(mockBasicPayload)
 
@@ -122,47 +162,6 @@ describe('triggerPayloadToChatRequest', () => {
             filePathSizeLimit
         )
     })
-})
-
-describe('Context Priority Truncation Tests', () => {
-    const createLargeString = (size: number, prefix: string = '') => prefix + 'x'.repeat(size - prefix.length)
-
-    const createBaseTriggerPayload = (): TriggerPayload => ({
-        message: '',
-        fileText: '',
-        filePath: 'test.ts',
-        fileLanguage: 'typescript',
-        trigger: ChatTriggerType.ChatMessage,
-        customization: { arn: '' },
-        relevantTextDocuments: [],
-        additionalContents: [],
-        useRelevantDocuments: true,
-        contextLengths: {
-            truncatedUserInputContextLength: 0,
-            truncatedFocusFileContextLength: 0,
-            truncatedWorkspaceContextLength: 0,
-            truncatedAdditionalContextLengths: {
-                promptContextLength: 0,
-                ruleContextLength: 0,
-                fileContextLength: 0,
-            },
-            additionalContextLengths: {
-                fileContextLength: 0,
-                promptContextLength: 0,
-                ruleContextLength: 0,
-            },
-            workspaceContextLength: 0,
-            userInputContextLength: 0,
-            focusFileContextLength: 0,
-        },
-        query: undefined,
-        codeSelection: undefined,
-        matchPolicy: undefined,
-        codeQuery: undefined,
-        userIntent: undefined,
-        context: [],
-        documentReferences: [],
-    })
 
     it('should preserve Type A (user input) over all other types when size exceeds limit', () => {
         const payload = createBaseTriggerPayload()
@@ -171,15 +170,7 @@ describe('Context Priority Truncation Tests', () => {
         const currentFileSize = 20_000
 
         payload.message = createLargeString(userInputSize, 'userInput-')
-        payload.additionalContents = [
-            {
-                name: 'prompt1',
-                description: 'prompt1',
-                relativePath: 'path1',
-                type: 'prompt',
-                innerContext: createLargeString(promptSize, 'prompt-'),
-            },
-        ]
+        payload.additionalContents = [createPrompt(promptSize)]
         payload.fileText = createLargeString(currentFileSize, 'currentFile-')
 
         const result = triggerPayloadToChatRequest(payload)
@@ -204,22 +195,7 @@ describe('Context Priority Truncation Tests', () => {
         const currentFileSize = 40_000
         const ruleSize = 30_000
 
-        payload.additionalContents = [
-            {
-                name: 'prompt',
-                description: 'prompt',
-                relativePath: 'path1',
-                type: 'prompt',
-                innerContext: createLargeString(promptSize, 'prompt-'),
-            },
-            {
-                name: 'rule',
-                description: 'rule',
-                relativePath: 'path2',
-                type: 'rule',
-                innerContext: createLargeString(ruleSize, 'rule-'),
-            },
-        ]
+        payload.additionalContents = [createPrompt(promptSize), createRule(ruleSize)]
         payload.fileText = createLargeString(currentFileSize, 'currentFile-')
 
         const result = triggerPayloadToChatRequest(payload)
@@ -249,22 +225,7 @@ describe('Context Priority Truncation Tests', () => {
         const workspaceSize = 10_000
 
         payload.fileText = createLargeString(currentFileSize, 'currentFile-')
-        payload.additionalContents = [
-            {
-                name: 'rule',
-                description: 'rule',
-                relativePath: 'path1',
-                type: 'rule',
-                innerContext: createLargeString(ruleSize, 'rule-'),
-            },
-            {
-                name: 'file',
-                description: 'file',
-                relativePath: 'path2',
-                type: 'file',
-                innerContext: createLargeString(fileSize, 'file-'),
-            },
-        ]
+        payload.additionalContents = [createRule(ruleSize), createFile(fileSize)]
         payload.relevantTextDocuments = [
             {
                 relativeFilePath: 'workspace.ts',
@@ -306,29 +267,7 @@ describe('Context Priority Truncation Tests', () => {
         const workspaceSize = 5_000
 
         payload.message = createLargeString(userInputSize, 'userInput-')
-        payload.additionalContents = [
-            {
-                name: 'prompt',
-                description: 'prompt',
-                relativePath: 'path1',
-                type: 'prompt',
-                innerContext: createLargeString(promptSize, 'prompt-'),
-            },
-            {
-                name: 'rule',
-                description: 'rule',
-                relativePath: 'path2',
-                type: 'rule',
-                innerContext: createLargeString(ruleSize, 'rule-'),
-            },
-            {
-                name: 'file',
-                description: 'file',
-                relativePath: 'path3',
-                type: 'file',
-                innerContext: createLargeString(fileSize, 'file-'),
-            },
-        ]
+        payload.additionalContents = [createPrompt(promptSize), createRule(ruleSize), createFile(fileSize)]
         payload.fileText = createLargeString(currentFileSize, 'currentFile-')
         payload.relevantTextDocuments = [
             {
