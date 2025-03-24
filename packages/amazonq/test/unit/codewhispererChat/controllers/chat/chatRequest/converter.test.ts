@@ -1,6 +1,10 @@
 import assert from 'assert'
-import { ChatTriggerType, TriggerPayload, triggerPayloadToChatRequest } from 'aws-core-vscode/codewhispererChat'
-import { filePathSizeLimit } from '../../../../../../../core/dist/src/codewhispererChat/controllers/chat/chatRequest/converter'
+import {
+    ChatTriggerType,
+    filePathSizeLimit,
+    TriggerPayload,
+    triggerPayloadToChatRequest,
+} from 'aws-core-vscode/codewhispererChat'
 
 describe('triggerPayloadToChatRequest', () => {
     const mockBasicPayload: TriggerPayload = {
