@@ -71,13 +71,13 @@ export class ZipUtil {
         return CodeWhispererConstants.projectScanPayloadSizeLimitBytes
     }
 
-    public reachSizeLimit(size: number, scope: CodeWhispererConstants.CodeAnalysisScope): boolean {
+    public aboveByteLimit(size: number, scope: CodeWhispererConstants.CodeAnalysisScope): boolean {
         return CodeWhispererConstants.isFileAnalysisScope(scope)
             ? size > this.getFileScanPayloadSizeLimitInBytes()
             : size > this.getProjectScanPayloadSizeLimitInBytes()
     }
 
-    public willReachSizeLimit(current: number, adding: number): boolean {
+    public willReachProjectByteLimit(current: number, adding: number): boolean {
         const willReachLimit = current + adding > this.getProjectScanPayloadSizeLimitInBytes()
         return willReachLimit
     }
@@ -112,7 +112,7 @@ export class ZipUtil {
         this._totalSize += (await fs.stat(uri.fsPath)).size
         this._totalLines += content.split(ZipConstants.newlineRegex).length
 
-        if (this.reachSizeLimit(this._totalSize, scope)) {
+        if (this.aboveByteLimit(this._totalSize, scope)) {
             throw new FileSizeExceededError()
         }
         const zipFilePath = this.getZipDirPath(FeatureUseCase.CODE_SCAN) + CodeWhispererConstants.codeScanZipExt
@@ -305,8 +305,8 @@ export class ZipUtil {
         const fileSize = Buffer.from(fileContent).length
 
         if (
-            this.reachSizeLimit(this._totalSize, CodeWhispererConstants.CodeAnalysisScope.PROJECT) ||
-            this.willReachSizeLimit(this._totalSize, fileSize)
+            this.aboveByteLimit(this._totalSize, CodeWhispererConstants.CodeAnalysisScope.PROJECT) ||
+            this.willReachProjectByteLimit(this._totalSize, fileSize)
         ) {
             throw new ProjectSizeExceededError()
         }
@@ -322,8 +322,8 @@ export class ZipUtil {
         const fileSize = (await fs.stat(uri.fsPath)).size
 
         if (
-            this.reachSizeLimit(this._totalSize, CodeWhispererConstants.CodeAnalysisScope.PROJECT) ||
-            this.willReachSizeLimit(this._totalSize, fileSize)
+            this.aboveByteLimit(this._totalSize, CodeWhispererConstants.CodeAnalysisScope.PROJECT) ||
+            this.willReachProjectByteLimit(this._totalSize, fileSize)
         ) {
             throw new ProjectSizeExceededError()
         }

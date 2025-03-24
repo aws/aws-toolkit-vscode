@@ -33,6 +33,68 @@ describe('zipUtil', function () {
             sinon.restore()
         })
 
+        it('returns the proper size limit for zip', function () {
+            assert.strictEqual(
+                zipUtil.aboveByteLimit(
+                    CodeWhispererConstants.fileScanPayloadSizeLimitBytes + 1,
+                    CodeAnalysisScope.FILE_ON_DEMAND
+                ),
+                true
+            )
+
+            assert.strictEqual(
+                zipUtil.aboveByteLimit(
+                    CodeWhispererConstants.fileScanPayloadSizeLimitBytes + 1,
+                    CodeAnalysisScope.FILE_AUTO
+                ),
+                true
+            )
+
+            assert.strictEqual(
+                zipUtil.aboveByteLimit(
+                    CodeWhispererConstants.projectScanPayloadSizeLimitBytes + 1,
+                    CodeAnalysisScope.PROJECT
+                ),
+                true
+            )
+
+            assert.strictEqual(
+                zipUtil.aboveByteLimit(
+                    CodeWhispererConstants.fileScanPayloadSizeLimitBytes - 1,
+                    CodeAnalysisScope.FILE_ON_DEMAND
+                ),
+                false
+            )
+
+            assert.strictEqual(
+                zipUtil.aboveByteLimit(
+                    CodeWhispererConstants.fileScanPayloadSizeLimitBytes - 1,
+                    CodeAnalysisScope.FILE_AUTO
+                ),
+                false
+            )
+
+            assert.strictEqual(
+                zipUtil.aboveByteLimit(
+                    CodeWhispererConstants.projectScanPayloadSizeLimitBytes - 1,
+                    CodeAnalysisScope.PROJECT
+                ),
+                false
+            )
+        })
+
+        it('determines if adding file will exceed project byte limit', function () {
+            assert.strictEqual(
+                zipUtil.willReachProjectByteLimit(CodeWhispererConstants.projectScanPayloadSizeLimitBytes, 1),
+                true
+            )
+
+            assert.strictEqual(
+                zipUtil.willReachProjectByteLimit(CodeWhispererConstants.projectScanPayloadSizeLimitBytes - 10, 9),
+                false
+            )
+        })
+
         it('Should generate zip for file scan and return expected metadata', async function () {
             const zipMetadata = await zipUtil.generateZip(vscode.Uri.file(appCodePath), CodeAnalysisScope.FILE_AUTO)
             assert.strictEqual(zipMetadata.lines, 49)
@@ -45,7 +107,7 @@ describe('zipUtil', function () {
         })
 
         it('Should throw error if payload size limit is reached for file scan', async function () {
-            sinon.stub(zipUtil, 'reachSizeLimit').returns(true)
+            sinon.stub(zipUtil, 'aboveByteLimit').returns(true)
 
             await assert.rejects(
                 () => zipUtil.generateZip(vscode.Uri.file(appCodePath), CodeAnalysisScope.FILE_AUTO),
@@ -65,7 +127,7 @@ describe('zipUtil', function () {
         })
 
         it('Should throw error if payload size limit is reached for project scan', async function () {
-            sinon.stub(zipUtil, 'reachSizeLimit').returns(true)
+            sinon.stub(zipUtil, 'aboveByteLimit').returns(true)
 
             await assert.rejects(
                 () => zipUtil.generateZip(vscode.Uri.file(appCodePath), CodeAnalysisScope.PROJECT),
@@ -74,7 +136,7 @@ describe('zipUtil', function () {
         })
 
         it('Should throw error if payload size limit will be reached for project scan', async function () {
-            sinon.stub(zipUtil, 'willReachSizeLimit').returns(true)
+            sinon.stub(zipUtil, 'aboveByteLimit').returns(true)
 
             await assert.rejects(
                 () => zipUtil.generateZip(vscode.Uri.file(appCodePath), CodeAnalysisScope.PROJECT),
