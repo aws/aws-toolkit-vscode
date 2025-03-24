@@ -15,7 +15,7 @@ describe('triggerPayloadToChatRequest', () => {
         trigger: ChatTriggerType.ChatMessage,
         contextLengths: {
             truncatedUserInputContextLength: 0,
-            truncatedCurrentFileContextLength: 0,
+            truncatedFocusFileContextLength: 0,
             truncatedWorkspaceContextLength: 0,
             truncatedAdditionalContextLengths: {
                 promptContextLength: 0,
@@ -29,7 +29,7 @@ describe('triggerPayloadToChatRequest', () => {
             },
             workspaceContextLength: 0,
             userInputContextLength: 0,
-            currentFileContextLength: 0,
+            focusFileContextLength: 0,
         },
         context: [],
         documentReferences: [],
@@ -139,7 +139,7 @@ describe('Context Priority Truncation Tests', () => {
         useRelevantDocuments: true,
         contextLengths: {
             truncatedUserInputContextLength: 0,
-            truncatedCurrentFileContextLength: 0,
+            truncatedFocusFileContextLength: 0,
             truncatedWorkspaceContextLength: 0,
             truncatedAdditionalContextLengths: {
                 promptContextLength: 0,
@@ -153,7 +153,7 @@ describe('Context Priority Truncation Tests', () => {
             },
             workspaceContextLength: 0,
             userInputContextLength: 0,
-            currentFileContextLength: 0,
+            focusFileContextLength: 0,
         },
         query: undefined,
         codeSelection: undefined,

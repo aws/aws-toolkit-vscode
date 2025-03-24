@@ -543,8 +543,8 @@ export class CWCTelemetryHelper {
             cwsprChatPromptContextLength: triggerPayload.contextLengths.additionalContextLengths.promptContextLength,
             cwsprChatPromptContextTruncatedLength:
                 triggerPayload.contextLengths.truncatedAdditionalContextLengths.promptContextLength,
-            cwsprChatCurrentFileContextLength: triggerPayload.contextLengths.currentFileContextLength,
-            cwsprChatCurrentFileContextTruncatedLength: triggerPayload.contextLengths.truncatedCurrentFileContextLength,
+            cwsprChatFocusFileContextLength: triggerPayload.contextLengths.focusFileContextLength,
+            cwsprChatFocusFileContextTruncatedLength: triggerPayload.contextLengths.truncatedFocusFileContextLength,
             cwsprChatUserInputContextLength: triggerPayload.contextLengths.userInputContextLength,
             cwsprChatUserInputContextTruncatedLength: triggerPayload.contextLengths.truncatedUserInputContextLength,
             cwsprChatWorkspaceContextLength: triggerPayload.contextLengths.workspaceContextLength,

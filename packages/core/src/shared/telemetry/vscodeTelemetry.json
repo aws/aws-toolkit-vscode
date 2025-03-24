@@ -230,14 +230,14 @@
             "description": "The number of executed operations"
         },
         {
-            "name": "cwsprChatCurrentFileContextLength",
+            "name": "cwsprChatFocusFileContextLength",
             "type": "int",
-            "description": "cwsprChatCurrentFileContextLength"
+            "description": "cwsprChatFocusFileContextLength"
         },
         {
-            "name": "cwsprChatCurrentFileContextTruncatedLength",
+            "name": "cwsprChatFocusFileContextTruncatedLength",
             "type": "int",
-            "description": "cwsprChatCurrentFileContextTruncatedLength"
+            "description": "cwsprChatFocusFileContextTruncatedLength"
         },
         {
             "name": "cwsprChatUserInputContextLength",
@@ -1174,11 +1174,11 @@
                     "type": "cwsprChatConversationType"
                 },
                 {
-                    "type": "cwsprChatCurrentFileContextLength",
+                    "type": "cwsprChatFocusFileContextLength",
                     "required": false
                 },
                 {
-                    "type": "cwsprChatCurrentFileContextTruncatedLength",
+                    "type": "cwsprChatFocusFileContextTruncatedLength",
                     "required": false
                 },
                 {

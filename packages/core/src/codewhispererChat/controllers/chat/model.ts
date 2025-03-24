@@ -205,8 +205,8 @@ export type ContextLengths = {
     truncatedWorkspaceContextLength: number
     userInputContextLength: number
     truncatedUserInputContextLength: number
-    currentFileContextLength: number
-    truncatedCurrentFileContextLength: number
+    focusFileContextLength: number
+    truncatedFocusFileContextLength: number
 }
 
 export type AdditionalContextLengths = {

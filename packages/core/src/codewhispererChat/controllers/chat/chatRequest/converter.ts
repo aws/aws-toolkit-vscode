@@ -205,7 +205,7 @@ function preserveContexts(
         case ChatContextType.CurrentFile:
             truncationInfo = truncate(contexts as string, truncationInfo)
             triggerPayload.fileText = truncationInfo.textAfter
-            triggerPayload.contextLengths.truncatedCurrentFileContextLength = truncationInfo.sizeAfter
+            triggerPayload.contextLengths.truncatedFocusFileContextLength = truncationInfo.sizeAfter
             break
         case ChatContextType.UserSpecificPrompts:
             truncationInfo = truncateUserSpecificContexts(
@@ -279,7 +279,7 @@ function truncateWorkspaceContexts(
 function truncate(
     textBefore: string,
     truncationInfo: FlexibleTruncationInfo,
-    isCurrentFile: Boolean = false
+    isCurrentFile: boolean = false
 ): FlexibleTruncationInfo {
     const sizeBefore = truncationInfo.sizeBefore + textBefore.length
 

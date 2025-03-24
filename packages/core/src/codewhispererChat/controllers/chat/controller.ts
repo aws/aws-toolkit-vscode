@@ -1080,7 +1080,7 @@ export class ChatController {
         }
 
         triggerPayload.contextLengths.userInputContextLength = triggerPayload.message.length
-        triggerPayload.contextLengths.currentFileContextLength = triggerPayload.fileText.length
+        triggerPayload.contextLengths.focusFileContextLength = triggerPayload.fileText.length
         const request = triggerPayloadToChatRequest(triggerPayload)
         triggerPayload.documentReferences = this.mergeRelevantTextDocuments(triggerPayload.relevantTextDocuments)
 

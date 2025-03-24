@@ -37,6 +37,6 @@ export const defaultContextLengths: ContextLengths = {
     truncatedWorkspaceContextLength: 0,
     userInputContextLength: 0,
     truncatedUserInputContextLength: 0,
-    currentFileContextLength: 0,
-    truncatedCurrentFileContextLength: 0,
+    focusFileContextLength: 0,
+    truncatedFocusFileContextLength: 0,
 }
