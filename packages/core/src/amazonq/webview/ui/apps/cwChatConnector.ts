@@ -101,7 +101,7 @@ export class Connector extends BaseConnector {
                 messageId: messageData.messageID ?? messageData.triggerID,
                 body: messageData.message,
                 followUp: followUps,
-                canBeVoted: true,
+                canBeVoted: messageData.canBeVoted ?? false,
                 codeReference: messageData.codeReference,
                 userIntent: messageData.userIntent,
                 codeBlockLanguage: messageData.codeBlockLanguage,
@@ -109,11 +109,6 @@ export class Connector extends BaseConnector {
                 title: messageData.title,
                 buttons: messageData.buttons ?? undefined,
                 fileList: messageData.fileList ?? undefined,
-            }
-
-            // If it is not there we will not set it
-            if (messageData.messageType === 'answer-part' || messageData.messageType === 'answer') {
-                answer.canBeVoted = true
             }
 
             if (messageData.relatedSuggestions !== undefined) {
@@ -151,6 +146,7 @@ export class Connector extends BaseConnector {
                           }
                         : undefined,
                 buttons: messageData.buttons ?? undefined,
+                canBeVoted: messageData.canBeVoted ?? false,
             }
             this.onChatAnswerReceived(messageData.tabID, answer, messageData)
 
@@ -268,7 +264,7 @@ export class Connector extends BaseConnector {
             tabID: tabId,
         })
 
-        if (this.onChatAnswerUpdated === undefined) {
+        if (!this.onChatAnswerUpdated || !['accept-code-diff', 'reject-code-diff'].includes(action.id)) {
             return
         }
         const answer: ChatItem = {

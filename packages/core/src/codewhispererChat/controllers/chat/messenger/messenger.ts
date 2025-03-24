@@ -95,6 +95,9 @@ export class Messenger {
                     codeBlockLanguage: undefined,
                     contextList: mergedRelevantDocuments,
                     title: 'Context',
+                    buttons: undefined,
+                    fileList: undefined,
+                    canBeVoted: false,
                 },
                 tabID
             )
@@ -343,6 +346,7 @@ export class Messenger {
                                                   filePaths: [relativePath],
                                               }
                                             : undefined,
+                                    canBeVoted: isConfirmationRequired,
                                 },
                                 tabID
                             )
@@ -572,10 +576,11 @@ using the \`execute_bash\` tool.`
             return `Reading the following files ... \n${formattedFiles}\n`
         }
         if (toolUse.name === 'fs_write') {
+            return `Please see the generated code below. Click on the file to review the changes in the code editor and select Accept or Reject.`
+            /*
             const input = toolUse.input as unknown as FsWriteParams
             switch (input.command) {
                 case 'create': {
-                    // TODO: Create a file diff view here with filePath = input.path and content = input.file_text
                     return `Writing
 \`\`\`
 ${input.file_text}
@@ -612,6 +617,7 @@ ${input.new_str}
 at \`${input.path}\` using the \`fs_write\` tool.`
                 }
             }
+                */
         }
     }
 

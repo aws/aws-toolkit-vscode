@@ -391,6 +391,10 @@ export class ChatController {
         const session = this.sessionStorage.getSession(message.tabID)
         const filePath = session.getFilePath ?? message.filePath
         const fileExists = await fs.existsFile(filePath)
+        // Check if fileExists=false, If yes, return instead of showing broken diff experience.
+        if (!fileExists) {
+            return
+        }
         const leftUri = fileExists ? vscode.Uri.file(filePath) : vscode.Uri.from({ scheme: 'untitled' })
         const rightUri = vscode.Uri.file(session.getTempFilePath ?? filePath)
         const fileName = path.basename(filePath)

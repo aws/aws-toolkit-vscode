@@ -217,6 +217,7 @@ export interface ChatMessageProps {
     readonly title: string | undefined
     readonly buttons?: ChatItemButton[]
     readonly fileList?: FileList
+    readonly canBeVoted?: boolean
 }
 
 export class ChatMessage extends UiMessage {
@@ -235,6 +236,7 @@ export class ChatMessage extends UiMessage {
     readonly title: string | undefined
     readonly buttons?: ChatItemButton[]
     readonly fileList?: FileList
+    readonly canBeVoted?: boolean = false
     override type = 'chatMessage'
 
     constructor(props: ChatMessageProps, tabID: string) {
@@ -253,6 +255,7 @@ export class ChatMessage extends UiMessage {
         this.title = props.title
         this.buttons = props.buttons
         this.fileList = props.fileList
+        this.canBeVoted = props.canBeVoted
     }
 }
 
