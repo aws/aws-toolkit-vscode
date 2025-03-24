@@ -95,14 +95,14 @@ describe('CodeWhisperer security scan', async function () {
 
         const projectPaths = getWorkspacePaths()
         const scope = CodeWhispererConstants.CodeAnalysisScope.PROJECT
-        const zipMetadata = await zipUtil.generateZip(uri, scope)
+        const zipMetadata = await zipUtil.generateZip(uri, 'project')
         const codeScanName = randomUUID()
 
         let artifactMap
         try {
             artifactMap = await getPresignedUrlAndUpload(client, zipMetadata, scope, codeScanName)
         } finally {
-            await zipUtil.removeTmpFiles(zipMetadata, scope)
+            await zipUtil.removeTmpFiles(zipMetadata)
         }
         return {
             artifactMap: artifactMap,

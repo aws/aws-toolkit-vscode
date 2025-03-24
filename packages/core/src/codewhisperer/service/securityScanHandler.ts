@@ -422,7 +422,7 @@ export async function uploadArtifactToS3(
     }
 }
 
-// TODO: Refactor this
+// // TODO: Refactor this
 export function getLoggerForScope(scope?: CodeWhispererConstants.CodeAnalysisScope) {
     return scope === CodeWhispererConstants.CodeAnalysisScope.FILE_AUTO ? getNullLogger() : getLogger()
 }

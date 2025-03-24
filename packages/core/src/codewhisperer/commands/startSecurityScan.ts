@@ -156,7 +156,8 @@ export async function startSecurityScan(
                 scanUuid,
             })
         }
-        const zipMetadata = await zipUtil.generateZip(editor?.document.uri, scope)
+        const zipType = scope === CodeAnalysisScope.PROJECT ? 'project' : 'file'
+        const zipMetadata = await zipUtil.generateZip(editor?.document.uri, zipType)
         const projectPaths = getWorkspacePaths()
 
         const contextTruncationStartTime = performance.now()
@@ -190,7 +191,7 @@ export async function startSecurityScan(
         try {
             artifactMap = await getPresignedUrlAndUpload(client, zipMetadata, scope, scanName)
         } finally {
-            await zipUtil.removeTmpFiles(zipMetadata, scope)
+            await zipUtil.removeTmpFiles(zipMetadata)
             codeScanTelemetryEntry.artifactsUploadDuration = performance.now() - uploadStartTime
         }
 
