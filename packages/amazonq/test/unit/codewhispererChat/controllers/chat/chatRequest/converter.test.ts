@@ -163,108 +163,31 @@ describe('triggerPayloadToChatRequest', () => {
         )
     })
 
-    it('should preserve Type A (user input) over all other types when size exceeds limit', () => {
-        const payload = createBaseTriggerPayload()
-        const userInputSize = 60_000
-        const promptSize = 30_000
-        const currentFileSize = 20_000
+    it('should preserve priority order', () => {
+        const before1 = [5000, 30000, 40000, 20000, 15000, 25000] // Total: 135,000
+        const after1 = [5000, 30000, 40000, 15000, 10000, 0] // Total: 100,000
+        checkContextTruncationHelper(before1, after1)
 
-        payload.message = createLargeString(userInputSize, 'userInput-')
-        payload.additionalContents = [createPrompt(promptSize)]
-        payload.fileText = createLargeString(currentFileSize, 'currentFile-')
+        const before2 = [1000, 2000, 3000, 4000, 5000, 90000] // Total: 105,000
+        const after2 = [1000, 2000, 3000, 4000, 5000, 85000] // Total: 100,000
+        checkContextTruncationHelper(before2, after2)
 
-        const result = triggerPayloadToChatRequest(payload)
+        const before3 = [10000, 40000, 80000, 30000, 20000, 50000] // Total: 230,000
+        const after3 = [10000, 40000, 50000, 0, 0, 0] // Total: 100,000
+        checkContextTruncationHelper(before3, after3)
 
-        // User input should be preserved completely
-        assert.strictEqual(result.conversationState.currentMessage?.userInputMessage?.content?.length, userInputSize)
+        const before4 = [5000, 5000, 150000, 5000, 5000, 5000] // Total: 175,000
+        const after4 = [5000, 5000, 80000, 5000, 5000, 0] // Total: 100,000
+        checkContextTruncationHelper(before4, after4)
 
-        // Other contexts should be truncated
-        assert.ok(
-            result.conversationState.currentMessage?.userInputMessage?.userInputMessageContext?.additionalContext?.[0]
-                .innerContext?.length! < promptSize
-        )
-        assert.ok(
-            result.conversationState.currentMessage?.userInputMessage?.userInputMessageContext?.editorState?.document
-                ?.text?.length! < currentFileSize
-        )
+        const before5 = [50000, 80000, 20000, 10000, 10000, 10000] // Total: 180,000
+        const after5 = [50000, 50000, 0, 0, 0, 0] // Total: 100,000
+        checkContextTruncationHelper(before5, after5)
     })
 
-    it('should preserve Type B1(prompts) over lower priority contexts when size exceeds limit', () => {
+    function checkContextTruncationHelper(before: number[], after: number[]) {
         const payload = createBaseTriggerPayload()
-        const promptSize = 50_000
-        const currentFileSize = 40_000
-        const ruleSize = 30_000
-
-        payload.additionalContents = [createPrompt(promptSize), createRule(ruleSize)]
-        payload.fileText = createLargeString(currentFileSize, 'currentFile-')
-
-        const result = triggerPayloadToChatRequest(payload)
-
-        // Prompt context should be preserved more than others
-        const promptContext =
-            result.conversationState.currentMessage?.userInputMessage?.userInputMessageContext?.additionalContext?.find(
-                (c) => c?.name === 'prompt'
-            )?.innerContext
-        const ruleContext =
-            result.conversationState.currentMessage?.userInputMessage?.userInputMessageContext?.additionalContext?.find(
-                (c) => c?.name === 'rule'
-            )?.innerContext
-
-        assert.ok(promptContext!.length > ruleContext!.length)
-        assert.ok(
-            result.conversationState.currentMessage?.userInputMessage?.userInputMessageContext?.editorState?.document
-                ?.text?.length! < currentFileSize
-        )
-    })
-
-    it('should preserve Type C (current file) over B1(rules), B2(files), and B3(workspace)', () => {
-        const payload = createBaseTriggerPayload()
-        const currentFileSize = 40_000
-        const ruleSize = 30_000
-        const fileSize = 20_000
-        const workspaceSize = 10_000
-
-        payload.fileText = createLargeString(currentFileSize, 'currentFile-')
-        payload.additionalContents = [createRule(ruleSize), createFile(fileSize)]
-        payload.relevantTextDocuments = [
-            {
-                relativeFilePath: 'workspace.ts',
-                text: createLargeString(workspaceSize, 'workspace-'),
-                startLine: -1,
-                endLine: -1,
-            },
-        ]
-
-        const result = triggerPayloadToChatRequest(payload)
-
-        const currentFileLength =
-            result.conversationState.currentMessage?.userInputMessage?.userInputMessageContext?.editorState?.document
-                ?.text?.length!
-        const ruleContext =
-            result.conversationState.currentMessage?.userInputMessage?.userInputMessageContext?.additionalContext?.find(
-                (c) => c.name === 'rule'
-            )?.innerContext
-        const fileContext =
-            result.conversationState.currentMessage?.userInputMessage?.userInputMessageContext?.additionalContext?.find(
-                (c) => c.name === 'file'
-            )?.innerContext
-        const workspaceContext =
-            result.conversationState.currentMessage?.userInputMessage?.userInputMessageContext?.editorState
-                ?.relevantDocuments?.[0].text
-
-        assert.ok(currentFileLength > ruleContext!.length)
-        assert.ok(ruleContext!.length > fileContext!.length)
-        assert.ok(fileContext!.length > workspaceContext!.length)
-    })
-
-    it('should preserve priority order when all context types are present', () => {
-        const payload = createBaseTriggerPayload()
-        const userInputSize = 30_000
-        const promptSize = 25_000
-        const currentFileSize = 20_000
-        const ruleSize = 15_000
-        const fileSize = 10_000
-        const workspaceSize = 5_000
+        const [userInputSize, promptSize, currentFileSize, ruleSize, fileSize, workspaceSize] = before
 
         payload.message = createLargeString(userInputSize, 'userInput-')
         payload.additionalContents = [createPrompt(promptSize), createRule(ruleSize), createFile(fileSize)]
@@ -301,10 +224,11 @@ describe('triggerPayloadToChatRequest', () => {
                 ?.relevantDocuments?.[0].text
 
         // Verify priority ordering
-        assert.ok(userInputLength >= promptContext!.length)
-        assert.ok(promptContext!.length >= currentFileLength)
-        assert.ok(currentFileLength >= ruleContext!.length)
-        assert.ok(ruleContext!.length >= fileContext!.length)
-        assert.ok(fileContext!.length >= workspaceContext!.length)
-    })
+        assert.strictEqual(userInputLength, after[0])
+        assert.strictEqual(promptContext?.length, after[1])
+        assert.strictEqual(currentFileLength, after[2])
+        assert.strictEqual(ruleContext?.length, after[3])
+        assert.strictEqual(fileContext?.length, after[4])
+        assert.strictEqual(workspaceContext?.length, after[5])
+    }
 })
