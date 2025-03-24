@@ -230,7 +230,7 @@ describe('triggerPayloadToChatRequest', () => {
             )?.innerContext
         const workspaceContext =
             result.conversationState.currentMessage?.userInputMessage?.userInputMessageContext?.editorState
-                ?.relevantDocuments?.[0].text
+                ?.relevantDocuments?.[0]?.text
 
         // Verify priority ordering
         assert.strictEqual(userInputLength, after[0])
