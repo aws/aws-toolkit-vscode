@@ -10,8 +10,8 @@ import { join } from 'path'
 import path from 'path'
 import JSZip from 'jszip'
 import { getTestWorkspaceFolder } from '../../testInteg/integrationTestsUtilities'
-import { ZipUtil } from '../../codewhisperer/util/zipUtil'
-import { CodeAnalysisScope, codeScanTruncDirPrefix } from '../../codewhisperer/models/constants'
+import { getPrefixFromUseCase, ZipUtil } from '../../codewhisperer/util/zipUtil'
+import { CodeAnalysisScope, codeScanTruncDirPrefix, FeatureUseCase } from '../../codewhisperer/models/constants'
 import { ToolkitError } from '../../shared/errors'
 import { fs } from '../../shared/fs/fs'
 import { tempDirPath } from '../../shared/filesystemUtilities'
@@ -24,47 +24,47 @@ describe('zipUtil', function () {
     const appCodePath = join(appRoot, 'HelloWorldFunction', 'src', 'main', 'java', 'helloworld', 'App.java')
     const appCodePathWithRepeatedProjectName = join(workspaceFolder, 'workspaceFolder', 'App.java')
 
+    it('returns the proper size limit for zip', function () {
+        assert.strictEqual(
+            ZipUtil.aboveByteLimit(CodeWhispererConstants.fileScanPayloadSizeLimitBytes + 1, 'file'),
+            true
+        )
+
+        assert.strictEqual(
+            ZipUtil.aboveByteLimit(CodeWhispererConstants.projectScanPayloadSizeLimitBytes + 1, 'project'),
+            true
+        )
+
+        assert.strictEqual(
+            ZipUtil.aboveByteLimit(CodeWhispererConstants.fileScanPayloadSizeLimitBytes - 1, 'file'),
+            false
+        )
+
+        assert.strictEqual(
+            ZipUtil.aboveByteLimit(CodeWhispererConstants.projectScanPayloadSizeLimitBytes - 1, 'project'),
+            false
+        )
+    })
+
+    it('determines if adding file will exceed project byte limit', function () {
+        assert.strictEqual(
+            ZipUtil.willReachProjectByteLimit(CodeWhispererConstants.projectScanPayloadSizeLimitBytes, 1),
+            true
+        )
+
+        assert.strictEqual(
+            ZipUtil.willReachProjectByteLimit(CodeWhispererConstants.projectScanPayloadSizeLimitBytes - 10, 9),
+            false
+        )
+    })
+
     describe('generateZip', function () {
         let zipUtil: ZipUtil
         beforeEach(function () {
-            zipUtil = new ZipUtil()
+            zipUtil = new ZipUtil(getPrefixFromUseCase(FeatureUseCase.CODE_SCAN))
         })
         afterEach(function () {
             sinon.restore()
-        })
-
-        it('returns the proper size limit for zip', function () {
-            assert.strictEqual(
-                zipUtil.aboveByteLimit(CodeWhispererConstants.fileScanPayloadSizeLimitBytes + 1, 'file'),
-                true
-            )
-
-            assert.strictEqual(
-                zipUtil.aboveByteLimit(CodeWhispererConstants.projectScanPayloadSizeLimitBytes + 1, 'project'),
-                true
-            )
-
-            assert.strictEqual(
-                zipUtil.aboveByteLimit(CodeWhispererConstants.fileScanPayloadSizeLimitBytes - 1, 'file'),
-                false
-            )
-
-            assert.strictEqual(
-                zipUtil.aboveByteLimit(CodeWhispererConstants.projectScanPayloadSizeLimitBytes - 1, 'project'),
-                false
-            )
-        })
-
-        it('determines if adding file will exceed project byte limit', function () {
-            assert.strictEqual(
-                zipUtil.willReachProjectByteLimit(CodeWhispererConstants.projectScanPayloadSizeLimitBytes, 1),
-                true
-            )
-
-            assert.strictEqual(
-                zipUtil.willReachProjectByteLimit(CodeWhispererConstants.projectScanPayloadSizeLimitBytes - 10, 9),
-                false
-            )
         })
 
         it('Should generate zip for file scan and return expected metadata', async function () {
@@ -79,7 +79,7 @@ describe('zipUtil', function () {
         })
 
         it('Should throw error if payload size limit is reached for file scan', async function () {
-            sinon.stub(zipUtil, 'aboveByteLimit').returns(true)
+            sinon.stub(ZipUtil, 'aboveByteLimit').returns(true)
 
             await assert.rejects(
                 () => zipUtil.generateZip(vscode.Uri.file(appCodePath), CodeAnalysisScope.FILE_AUTO),
@@ -99,7 +99,7 @@ describe('zipUtil', function () {
         })
 
         it('Should throw error if payload size limit is reached for project scan', async function () {
-            sinon.stub(zipUtil, 'aboveByteLimit').returns(true)
+            sinon.stub(ZipUtil, 'aboveByteLimit').returns(true)
 
             await assert.rejects(
                 () => zipUtil.generateZip(vscode.Uri.file(appCodePath), CodeAnalysisScope.PROJECT),
@@ -108,7 +108,7 @@ describe('zipUtil', function () {
         })
 
         it('Should throw error if payload size limit will be reached for project scan', async function () {
-            sinon.stub(zipUtil, 'aboveByteLimit').returns(true)
+            sinon.stub(ZipUtil, 'aboveByteLimit').returns(true)
 
             await assert.rejects(
                 () => zipUtil.generateZip(vscode.Uri.file(appCodePath), CodeAnalysisScope.PROJECT),
@@ -132,7 +132,7 @@ describe('zipUtil', function () {
                 editBuilder.insert(new vscode.Position(0, 0), '// a comment\n')
             })
 
-            const zipMetadata2 = await new ZipUtil().generateZip(
+            const zipMetadata2 = await new ZipUtil(getPrefixFromUseCase(FeatureUseCase.CODE_SCAN)).generateZip(
                 vscode.Uri.file(appCodePath),
                 CodeAnalysisScope.PROJECT
             )
@@ -170,7 +170,7 @@ describe('zipUtil', function () {
         let testTempDirPath: string
 
         beforeEach(function () {
-            zipUtil = new ZipUtil()
+            zipUtil = new ZipUtil(getPrefixFromUseCase(FeatureUseCase.TEST_GENERATION))
             testTempDirPath = path.join(tempDirPath, CodeWhispererConstants.TestGenerationTruncDirPrefix)
             getZipDirPathStub = sinon.stub(zipUtil, 'getZipDirPath')
             getZipDirPathStub.callsFake(() => testTempDirPath)

@@ -56,28 +56,28 @@ export class ZipUtil {
     protected _pickedSourceFiles: Set<string> = new Set<string>()
     protected _pickedBuildFiles: Set<string> = new Set<string>()
     protected _totalSize: number = 0
+    protected _zipDir: string = ''
     protected _totalBuildSize: number = 0
     protected _tmpDir: string = tempDirPath
-    protected _zipDir: string = ''
     protected _totalLines: number = 0
     protected _fetchedDirs: Set<string> = new Set<string>()
     protected _language: CodewhispererLanguage | undefined
     protected _timestamp: string = Date.now().toString()
-    protected _payloadByteLimits = {
+    protected static _payloadByteLimits = {
         file: CodeWhispererConstants.fileScanPayloadSizeLimitBytes,
         project: CodeWhispererConstants.projectScanPayloadSizeLimitBytes,
     }
-    constructor() {}
+    constructor(protected _zipDirPrefix: string) {}
 
-    public aboveByteLimit(size: number, limitType: ZipType): boolean {
+    public static aboveByteLimit(size: number, limitType: ZipType): boolean {
         return size > this._payloadByteLimits[limitType]
     }
 
-    public willReachProjectByteLimit(current: number, adding: number): boolean {
-        return this.aboveByteLimit(current + adding, 'project')
+    public static willReachProjectByteLimit(current: number, adding: number): boolean {
+        return ZipUtil.aboveByteLimit(current + adding, 'project')
     }
 
-    protected async zipFile(uri: vscode.Uri | undefined, scope: CodeWhispererConstants.CodeAnalysisScope) {
+    protected async zipFile(uri: vscode.Uri | undefined, includeGitDiffHeader?: boolean) {
         if (!uri) {
             throw new NoActiveFileError()
         }
@@ -95,7 +95,7 @@ export class ZipUtil {
             const zipEntryPath = this.getZipEntryPath(projectName, relativePath)
             zip.writeString(content, zipEntryPath)
 
-            if (scope === CodeWhispererConstants.CodeAnalysisScope.FILE_ON_DEMAND) {
+            if (includeGitDiffHeader) {
                 const gitDiffContent = `+++ b/${normalize(zipEntryPath)}` // Sending file path in payload for LLM code review
                 zip.writeString(gitDiffContent, ZipConstants.codeDiffFilePath)
             }
@@ -107,7 +107,7 @@ export class ZipUtil {
         this._totalSize += (await fs.stat(uri.fsPath)).size
         this._totalLines += content.split(ZipConstants.newlineRegex).length
 
-        if (this.aboveByteLimit(this._totalSize, 'file')) {
+        if (ZipUtil.aboveByteLimit(this._totalSize, 'file')) {
             throw new FileSizeExceededError()
         }
         const zipFilePath = this.getZipDirPath(FeatureUseCase.CODE_SCAN) + CodeWhispererConstants.codeScanZipExt
@@ -186,11 +186,18 @@ export class ZipUtil {
             projectPaths = getWorkspacePaths()
         }
         if (useCase === FeatureUseCase.CODE_SCAN) {
-            await this.processCombinedGitDiff(zip, projectPaths, '', CodeWhispererConstants.CodeAnalysisScope.PROJECT)
+            await this.processCombinedGitDiff(zip, projectPaths, '')
         }
         const languageCount = new Map<CodewhispererLanguage, number>()
 
-        await this.processSourceFiles(zip, languageCount, projectPaths, useCase)
+        await this.processSourceFiles(
+            zip,
+            languageCount,
+            projectPaths,
+            this.getWorkspaceFolders(useCase),
+            this.getExcludePatterns(useCase),
+            useCase === FeatureUseCase.TEST_GENERATION
+        )
         if (metadataDir) {
             await this.processMetadataDir(zip, metadataDir)
         }
@@ -207,51 +214,51 @@ export class ZipUtil {
         return zipFilePath
     }
 
-    protected async processCombinedGitDiff(
-        zip: ZipStream,
-        projectPaths: string[],
-        filePath?: string,
-        scope?: CodeWhispererConstants.CodeAnalysisScope
-    ) {
+    protected async processCombinedGitDiff(zip: ZipStream, projectPaths: string[], filePath?: string) {
         const gitDiffContent = await getGitDiffContentForProjects(projectPaths, filePath)
         if (gitDiffContent) {
             zip.writeString(gitDiffContent, ZipConstants.codeDiffFilePath)
         }
     }
 
+    // TODO: remove
+    private getWorkspaceFolders(useCase: FeatureUseCase) {
+        return (
+            useCase === FeatureUseCase.TEST_GENERATION
+                ? [...(vscode.workspace.workspaceFolders ?? [])].sort(
+                      (a, b) => b.uri.fsPath.length - a.uri.fsPath.length
+                  )
+                : vscode.workspace.workspaceFolders
+        ) as CurrentWsFolders
+    }
+
+    private getExcludePatterns(useCase: FeatureUseCase) {
+        return useCase === FeatureUseCase.TEST_GENERATION
+            ? [...CodeWhispererConstants.testGenExcludePatterns, ...defaultExcludePatterns]
+            : defaultExcludePatterns
+    }
+
     protected async processSourceFiles(
         zip: ZipStream,
         languageCount: Map<CodewhispererLanguage, number>,
         projectPaths: string[] | undefined,
-        useCase: FeatureUseCase
+        workspaceFolders: CurrentWsFolders,
+        excludePatterns: string[],
+        includeBinary?: boolean
     ) {
         if (!projectPaths || projectPaths.length === 0) {
             return
         }
 
-        const sourceFiles = await collectFiles(
-            projectPaths,
-            (useCase === FeatureUseCase.TEST_GENERATION
-                ? [...(vscode.workspace.workspaceFolders ?? [])].sort(
-                      (a, b) => b.uri.fsPath.length - a.uri.fsPath.length
-                  )
-                : vscode.workspace.workspaceFolders) as CurrentWsFolders,
-            {
-                maxTotalSizeBytes: this._payloadByteLimits['project'],
-                excludePatterns:
-                    useCase === FeatureUseCase.TEST_GENERATION
-                        ? [...CodeWhispererConstants.testGenExcludePatterns, ...defaultExcludePatterns]
-                        : defaultExcludePatterns,
-            }
-        )
+        const sourceFiles = await collectFiles(projectPaths, workspaceFolders, {
+            maxTotalSizeBytes: ZipUtil._payloadByteLimits['project'],
+            excludePatterns,
+        })
         for (const file of sourceFiles) {
             const projectName = path.basename(file.workspaceFolder.uri.fsPath)
             const zipEntryPath = this.getZipEntryPath(projectName, file.relativeFilePath)
 
-            if (ZipConstants.knownBinaryFileExts.includes(path.extname(file.fileUri.fsPath))) {
-                if (useCase === FeatureUseCase.TEST_GENERATION) {
-                    continue
-                }
+            if (ZipConstants.knownBinaryFileExts.includes(path.extname(file.fileUri.fsPath)) && includeBinary) {
                 await this.processBinaryFile(zip, file.fileUri, zipEntryPath)
             } else {
                 const isFileOpenAndDirty = this.isFileOpenAndDirty(file.fileUri)
@@ -300,8 +307,8 @@ export class ZipUtil {
         const fileSize = Buffer.from(fileContent).length
 
         if (
-            this.aboveByteLimit(this._totalSize, 'project') ||
-            this.willReachProjectByteLimit(this._totalSize, fileSize)
+            ZipUtil.aboveByteLimit(this._totalSize, 'project') ||
+            ZipUtil.willReachProjectByteLimit(this._totalSize, fileSize)
         ) {
             throw new ProjectSizeExceededError()
         }
@@ -317,8 +324,8 @@ export class ZipUtil {
         const fileSize = (await fs.stat(uri.fsPath)).size
 
         if (
-            this.aboveByteLimit(this._totalSize, 'project') ||
-            this.willReachProjectByteLimit(this._totalSize, fileSize)
+            ZipUtil.aboveByteLimit(this._totalSize, 'project') ||
+            ZipUtil.willReachProjectByteLimit(this._totalSize, fileSize)
         ) {
             throw new ProjectSizeExceededError()
         }
@@ -342,12 +349,12 @@ export class ZipUtil {
 
     public getZipDirPath(useCase: FeatureUseCase): string {
         if (this._zipDir === '') {
-            const prefix =
-                useCase === FeatureUseCase.TEST_GENERATION
-                    ? CodeWhispererConstants.TestGenerationTruncDirPrefix
-                    : CodeWhispererConstants.codeScanTruncDirPrefix
+            // const prefix =
+            //     useCase === FeatureUseCase.TEST_GENERATION
+            //         ? CodeWhispererConstants.TestGenerationTruncDirPrefix
+            //         : CodeWhispererConstants.codeScanTruncDirPrefix
 
-            this._zipDir = path.join(this._tmpDir, `${prefix}_${this._timestamp}`)
+            this._zipDir = path.join(this._tmpDir, `${this._zipDirPrefix}_${this._timestamp}`)
         }
         return this._zipDir
     }
@@ -363,7 +370,7 @@ export class ZipUtil {
                 scope === CodeWhispererConstants.CodeAnalysisScope.FILE_AUTO ||
                 scope === CodeWhispererConstants.CodeAnalysisScope.FILE_ON_DEMAND
             ) {
-                zipFilePath = await this.zipFile(uri, scope)
+                zipFilePath = await this.zipFile(uri, scope === CodeWhispererConstants.CodeAnalysisScope.FILE_AUTO)
             } else if (scope === CodeWhispererConstants.CodeAnalysisScope.PROJECT) {
                 zipFilePath = await this.zipProject(FeatureUseCase.CODE_SCAN)
             } else {
@@ -390,7 +397,6 @@ export class ZipUtil {
 
     public async generateZipTestGen(projectPath: string, initialExecution: boolean): Promise<ZipMetadata> {
         try {
-            // const repoMapFile = await LspClient.instance.getRepoMapJSON()
             const zipDirPath = this.getZipDirPath(FeatureUseCase.TEST_GENERATION)
 
             const metadataDir = path.join(zipDirPath, 'utgRequiredArtifactsDir')
@@ -403,11 +409,6 @@ export class ZipUtil {
                 testCoverageDir: path.join(metadataDir, 'testCoverageDir'),
             }
             await Promise.all(Object.values(dirs).map((dir) => fs.mkdir(dir)))
-
-            // if (await fs.exists(repoMapFile)) {
-            //     await fs.copy(repoMapFile, path.join(dirs.repoMapDir, 'repoMapData.json'))
-            //     await fs.delete(repoMapFile)
-            // }
 
             if (!initialExecution) {
                 await this.processTestCoverageFiles(dirs.testCoverageDir)
@@ -454,6 +455,12 @@ interface GitDiffOptions {
     projectName: string
     filepath?: string
     scope?: CodeWhispererConstants.CodeAnalysisScope
+}
+
+export function getPrefixFromUseCase(useCase: FeatureUseCase) {
+    return useCase === FeatureUseCase.TEST_GENERATION
+        ? CodeWhispererConstants.TestGenerationTruncDirPrefix
+        : CodeWhispererConstants.codeScanTruncDirPrefix
 }
 
 async function getGitDiffContentForProjects(

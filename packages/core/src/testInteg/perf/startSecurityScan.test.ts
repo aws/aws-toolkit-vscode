@@ -21,7 +21,7 @@ import {
 } from '../../test/testUtil'
 import { getTestWindow } from '../../test/shared/vscode/window'
 import { SeverityLevel } from '../../test/shared/vscode/message'
-import { CodeAnalysisScope, ZipUtil } from '../../codewhisperer'
+import { CodeAnalysisScope, CodeWhispererConstants, getPrefixFromUseCase, ZipUtil } from '../../codewhisperer'
 import { getEqualOSTestOptions, performanceTest } from '../../shared/performance/performance'
 import { createClient } from '../../test/codewhisperer/testUtil'
 import { fs } from '../../shared'
@@ -81,7 +81,7 @@ describe('startSecurityScanPerformanceTest', function () {
                     getFetchStubWithResponse({ status: 200, statusText: 'testing stub' })
                     const commandSpy = sinon.spy(vscode.commands, 'executeCommand')
                     const securityScanRenderSpy = sinon.spy(diagnosticsProvider, 'initSecurityScanRender')
-                    const zipUtil = new ZipUtil()
+                    const zipUtil = new ZipUtil(getPrefixFromUseCase(CodeWhispererConstants.FeatureUseCase.CODE_SCAN))
                     const zipSpy = sinon.spy(zipUtil)
                     const fsSpy = sinon.spy(fs)
                     await model.CodeScansState.instance.setScansEnabled(true)
