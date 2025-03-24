@@ -18,6 +18,7 @@ import AdmZip from 'adm-zip'
 import path from 'path'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { tempDirPath } from '../../shared/filesystemUtilities'
+import { CodeWhispererSettings } from '../util/codewhispererSettings'
 
 export async function startCodeFixGeneration(
     client: DefaultCodeWhispererClient,
@@ -69,6 +70,11 @@ export async function startCodeFixGeneration(
                 end: { line: issue.endLine, character: 0 },
             },
             issue.recommendation.text,
+            {
+                recommendationsWithReferences: CodeWhispererSettings.instance.isSuggestionsWithCodeReferencesEnabled()
+                    ? 'ALLOW'
+                    : 'BLOCK',
+            },
             codeFixName,
             issue.ruleId
         )
