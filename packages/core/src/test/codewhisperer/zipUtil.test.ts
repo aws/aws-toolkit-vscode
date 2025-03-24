@@ -35,50 +35,22 @@ describe('zipUtil', function () {
 
         it('returns the proper size limit for zip', function () {
             assert.strictEqual(
-                zipUtil.aboveByteLimit(
-                    CodeWhispererConstants.fileScanPayloadSizeLimitBytes + 1,
-                    CodeAnalysisScope.FILE_ON_DEMAND
-                ),
+                zipUtil.aboveByteLimit(CodeWhispererConstants.fileScanPayloadSizeLimitBytes + 1, 'file'),
                 true
             )
 
             assert.strictEqual(
-                zipUtil.aboveByteLimit(
-                    CodeWhispererConstants.fileScanPayloadSizeLimitBytes + 1,
-                    CodeAnalysisScope.FILE_AUTO
-                ),
+                zipUtil.aboveByteLimit(CodeWhispererConstants.projectScanPayloadSizeLimitBytes + 1, 'project'),
                 true
             )
 
             assert.strictEqual(
-                zipUtil.aboveByteLimit(
-                    CodeWhispererConstants.projectScanPayloadSizeLimitBytes + 1,
-                    CodeAnalysisScope.PROJECT
-                ),
-                true
-            )
-
-            assert.strictEqual(
-                zipUtil.aboveByteLimit(
-                    CodeWhispererConstants.fileScanPayloadSizeLimitBytes - 1,
-                    CodeAnalysisScope.FILE_ON_DEMAND
-                ),
+                zipUtil.aboveByteLimit(CodeWhispererConstants.fileScanPayloadSizeLimitBytes - 1, 'file'),
                 false
             )
 
             assert.strictEqual(
-                zipUtil.aboveByteLimit(
-                    CodeWhispererConstants.fileScanPayloadSizeLimitBytes - 1,
-                    CodeAnalysisScope.FILE_AUTO
-                ),
-                false
-            )
-
-            assert.strictEqual(
-                zipUtil.aboveByteLimit(
-                    CodeWhispererConstants.projectScanPayloadSizeLimitBytes - 1,
-                    CodeAnalysisScope.PROJECT
-                ),
+                zipUtil.aboveByteLimit(CodeWhispererConstants.projectScanPayloadSizeLimitBytes - 1, 'project'),
                 false
             )
         })

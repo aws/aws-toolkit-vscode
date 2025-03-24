@@ -50,6 +50,8 @@ export const ZipConstants = {
     codeDiffFilePath: 'codeDiff/code.diff',
 }
 
+type ZipType = 'file' | 'project'
+
 export class ZipUtil {
     protected _pickedSourceFiles: Set<string> = new Set<string>()
     protected _pickedBuildFiles: Set<string> = new Set<string>()
@@ -61,25 +63,18 @@ export class ZipUtil {
     protected _fetchedDirs: Set<string> = new Set<string>()
     protected _language: CodewhispererLanguage | undefined
     protected _timestamp: string = Date.now().toString()
+    protected _payloadByteLimits = {
+        file: CodeWhispererConstants.fileScanPayloadSizeLimitBytes,
+        project: CodeWhispererConstants.projectScanPayloadSizeLimitBytes,
+    }
     constructor() {}
 
-    getFileScanPayloadSizeLimitInBytes(): number {
-        return CodeWhispererConstants.fileScanPayloadSizeLimitBytes
-    }
-
-    getProjectScanPayloadSizeLimitInBytes(): number {
-        return CodeWhispererConstants.projectScanPayloadSizeLimitBytes
-    }
-
-    public aboveByteLimit(size: number, scope: CodeWhispererConstants.CodeAnalysisScope): boolean {
-        return CodeWhispererConstants.isFileAnalysisScope(scope)
-            ? size > this.getFileScanPayloadSizeLimitInBytes()
-            : size > this.getProjectScanPayloadSizeLimitInBytes()
+    public aboveByteLimit(size: number, limitType: ZipType): boolean {
+        return size > this._payloadByteLimits[limitType]
     }
 
     public willReachProjectByteLimit(current: number, adding: number): boolean {
-        const willReachLimit = current + adding > this.getProjectScanPayloadSizeLimitInBytes()
-        return willReachLimit
+        return this.aboveByteLimit(current + adding, 'project')
     }
 
     protected async zipFile(uri: vscode.Uri | undefined, scope: CodeWhispererConstants.CodeAnalysisScope) {
@@ -112,7 +107,7 @@ export class ZipUtil {
         this._totalSize += (await fs.stat(uri.fsPath)).size
         this._totalLines += content.split(ZipConstants.newlineRegex).length
 
-        if (this.aboveByteLimit(this._totalSize, scope)) {
+        if (this.aboveByteLimit(this._totalSize, 'file')) {
             throw new FileSizeExceededError()
         }
         const zipFilePath = this.getZipDirPath(FeatureUseCase.CODE_SCAN) + CodeWhispererConstants.codeScanZipExt
@@ -242,7 +237,7 @@ export class ZipUtil {
                   )
                 : vscode.workspace.workspaceFolders) as CurrentWsFolders,
             {
-                maxTotalSizeBytes: this.getProjectScanPayloadSizeLimitInBytes(),
+                maxTotalSizeBytes: this._payloadByteLimits['project'],
                 excludePatterns:
                     useCase === FeatureUseCase.TEST_GENERATION
                         ? [...CodeWhispererConstants.testGenExcludePatterns, ...defaultExcludePatterns]
@@ -305,7 +300,7 @@ export class ZipUtil {
         const fileSize = Buffer.from(fileContent).length
 
         if (
-            this.aboveByteLimit(this._totalSize, CodeWhispererConstants.CodeAnalysisScope.PROJECT) ||
+            this.aboveByteLimit(this._totalSize, 'project') ||
             this.willReachProjectByteLimit(this._totalSize, fileSize)
         ) {
             throw new ProjectSizeExceededError()
@@ -322,7 +317,7 @@ export class ZipUtil {
         const fileSize = (await fs.stat(uri.fsPath)).size
 
         if (
-            this.aboveByteLimit(this._totalSize, CodeWhispererConstants.CodeAnalysisScope.PROJECT) ||
+            this.aboveByteLimit(this._totalSize, 'project') ||
             this.willReachProjectByteLimit(this._totalSize, fileSize)
         ) {
             throw new ProjectSizeExceededError()
