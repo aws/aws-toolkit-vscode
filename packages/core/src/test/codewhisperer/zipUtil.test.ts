@@ -69,7 +69,7 @@ describe('zipUtil', function () {
 
         it('Should generate zip for file scan and return expected metadata', async function () {
             const zipMetadata = await zipUtil.generateZip(vscode.Uri.file(appCodePath), 'file', {
-                includeGitDiffHeader: true,
+                includeGitDiff: true,
             })
             assert.strictEqual(zipMetadata.lines, 49)
             assert.ok(zipMetadata.rootDir.includes(codeScanTruncDirPrefix))
@@ -84,7 +84,7 @@ describe('zipUtil', function () {
             sinon.stub(ZipUtil, 'aboveByteLimit').returns(true)
 
             await assert.rejects(
-                () => zipUtil.generateZip(vscode.Uri.file(appCodePath), 'file', { includeGitDiffHeader: true }),
+                () => zipUtil.generateZip(vscode.Uri.file(appCodePath), 'file', { includeGitDiff: true }),
                 new ToolkitError(`Payload size limit reached`, { code: 'FileSizeExceeded' })
             )
         })

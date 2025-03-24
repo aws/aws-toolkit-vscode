@@ -42,8 +42,15 @@ export interface ZipMetadata {
 }
 
 export interface GenerateZipOptions {
-    includeGitDiffHeader?: boolean
+    includeGitDiff?: boolean
     silent?: boolean
+}
+
+export interface ZipProjectOptions {
+    projectPath?: string
+    includeGitDiff?: boolean
+    metadataDir?: string
+    includeNonWorkspaceFiles?: boolean
 }
 
 export const ZipConstants = {
@@ -180,31 +187,23 @@ export class ZipUtil {
         await processDirectory(metadataDir)
     }
 
-    protected async zipProject(useCase: FeatureUseCase, projectPath?: string, metadataDir?: string) {
+    protected async zipProject(
+        workspaceFolders: CurrentWsFolders,
+        excludePatterns: string[],
+        options?: ZipProjectOptions
+    ) {
         const zip = new ZipStream()
-        let projectPaths = []
-        if (useCase === FeatureUseCase.TEST_GENERATION && projectPath) {
-            projectPaths.push(projectPath)
-        } else {
-            projectPaths = getWorkspacePaths()
-        }
-        if (useCase === FeatureUseCase.CODE_SCAN) {
+        const projectPaths = options?.projectPath ? [options?.projectPath] : getWorkspacePaths()
+        if (options?.includeGitDiff) {
             await this.processCombinedGitDiff(zip, projectPaths, '')
         }
         const languageCount = new Map<CodewhispererLanguage, number>()
 
-        await this.processSourceFiles(
-            zip,
-            languageCount,
-            projectPaths,
-            this.getWorkspaceFolders(useCase),
-            this.getExcludePatterns(useCase),
-            useCase === FeatureUseCase.TEST_GENERATION
-        )
-        if (metadataDir) {
-            await this.processMetadataDir(zip, metadataDir)
+        await this.processSourceFiles(zip, languageCount, projectPaths, workspaceFolders, excludePatterns)
+        if (options?.metadataDir) {
+            await this.processMetadataDir(zip, options?.metadataDir)
         }
-        if (useCase !== FeatureUseCase.TEST_GENERATION) {
+        if (options?.includeNonWorkspaceFiles) {
             this.processOtherFiles(zip, languageCount)
         }
 
@@ -364,9 +363,14 @@ export class ZipUtil {
     ): Promise<ZipMetadata> {
         try {
             const zipDirPath = this.getZipDirPath()
-            const zipFilePath = await (zipType === 'file'
-                ? this.zipFile(uri, options?.includeGitDiffHeader)
-                : this.zipProject(FeatureUseCase.CODE_SCAN))
+            const zipFilePath =
+                zipType === 'file'
+                    ? await this.zipFile(uri, options?.includeGitDiff)
+                    : await this.zipProject(
+                          this.getWorkspaceFolders(FeatureUseCase.CODE_SCAN),
+                          this.getExcludePatterns(FeatureUseCase.CODE_SCAN),
+                          { includeGitDiff: options?.includeGitDiff, includeNonWorkspaceFiles: true }
+                      )
 
             if (!options?.silent) {
                 getLogger().debug(`Picked source files: [${[...this._pickedSourceFiles].join(', ')}]`)
@@ -413,7 +417,14 @@ export class ZipUtil {
                 }
             }
 
-            const zipFilePath: string = await this.zipProject(FeatureUseCase.TEST_GENERATION, projectPath, metadataDir)
+            const zipFilePath: string = await this.zipProject(
+                this.getWorkspaceFolders(FeatureUseCase.TEST_GENERATION),
+                this.getExcludePatterns(FeatureUseCase.TEST_GENERATION),
+                {
+                    metadataDir,
+                    projectPath,
+                }
+            )
             const zipFileSize = (await fs.stat(zipFilePath)).size
             return {
                 rootDir: zipDirPath,
