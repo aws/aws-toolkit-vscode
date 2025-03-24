@@ -22,7 +22,6 @@ import {
     NoSourceFilesError,
     ProjectSizeExceededError,
 } from '../models/errors'
-import { FeatureUseCase } from '../models/constants'
 import { ProjectZipError } from '../../amazonqTest/error'
 import { normalize } from '../../shared/utilities/pathUtils'
 import { ZipStream } from '../../shared/utilities/zipStream'
@@ -223,23 +222,6 @@ export class ZipUtil {
         }
     }
 
-    // TODO: remove
-    private getWorkspaceFolders(useCase: FeatureUseCase) {
-        return (
-            useCase === FeatureUseCase.TEST_GENERATION
-                ? [...(vscode.workspace.workspaceFolders ?? [])].sort(
-                      (a, b) => b.uri.fsPath.length - a.uri.fsPath.length
-                  )
-                : vscode.workspace.workspaceFolders
-        ) as CurrentWsFolders
-    }
-    // TODO: remove
-    private getExcludePatterns(useCase: FeatureUseCase) {
-        return useCase === FeatureUseCase.TEST_GENERATION
-            ? [...CodeWhispererConstants.testGenExcludePatterns, ...defaultExcludePatterns]
-            : defaultExcludePatterns
-    }
-
     protected async processSourceFiles(
         zip: ZipStream,
         languageCount: Map<CodewhispererLanguage, number>,
@@ -363,14 +345,16 @@ export class ZipUtil {
     ): Promise<ZipMetadata> {
         try {
             const zipDirPath = this.getZipDirPath()
+            // We assume there is at least one workspace open.
+            const workspaceFolders = [...(vscode.workspace.workspaceFolders ?? [])] as CurrentWsFolders
+
             const zipFilePath =
                 zipType === 'file'
                     ? await this.zipFile(uri, options?.includeGitDiff)
-                    : await this.zipProject(
-                          this.getWorkspaceFolders(FeatureUseCase.CODE_SCAN),
-                          this.getExcludePatterns(FeatureUseCase.CODE_SCAN),
-                          { includeGitDiff: options?.includeGitDiff, includeNonWorkspaceFiles: true }
-                      )
+                    : await this.zipProject(workspaceFolders, defaultExcludePatterns, {
+                          includeGitDiff: options?.includeGitDiff,
+                          includeNonWorkspaceFiles: true,
+                      })
 
             if (!options?.silent) {
                 getLogger().debug(`Picked source files: [${[...this._pickedSourceFiles].join(', ')}]`)
@@ -416,10 +400,13 @@ export class ZipUtil {
                     await fs.copy(sourcePath, targetPath)
                 }
             }
-
+            // We assume there is at least workspace open.
+            const workspaceFolders = [...(vscode.workspace.workspaceFolders ?? [])].sort(
+                (a, b) => b.uri.fsPath.length - a.uri.fsPath.length
+            ) as CurrentWsFolders
             const zipFilePath: string = await this.zipProject(
-                this.getWorkspaceFolders(FeatureUseCase.TEST_GENERATION),
-                this.getExcludePatterns(FeatureUseCase.TEST_GENERATION),
+                workspaceFolders,
+                [...CodeWhispererConstants.testGenExcludePatterns, ...defaultExcludePatterns],
                 {
                     metadataDir,
                     projectPath,
