@@ -174,7 +174,7 @@ describe('triggerPayloadToChatRequest', () => {
 
     it('should preserve priority order', () => {
         const before1 = [5000, 30000, 40000, 20000, 15000, 25000] // Total: 135,000
-        const after1 = [5000, 30000, 40000, 15000, 10000, 0] // Total: 100,000
+        const after1 = [5000, 30000, 40000, 20000, 5000, 0] // Total: 100,000
         checkContextTruncationHelper(before1, after1)
 
         const before2 = [1000, 2000, 3000, 4000, 5000, 90000] // Total: 105,000
