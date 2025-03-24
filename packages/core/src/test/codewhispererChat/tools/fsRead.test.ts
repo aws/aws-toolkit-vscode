@@ -14,11 +14,17 @@ describe('FsRead Tool', () => {
         testFolder = await TestFolder.create()
     })
 
+    it('throws if path is empty', async () => {
+        const fsRead = new FsRead({ path: '' })
+        await assert.rejects(fsRead.validate(), /Path cannot be empty/i, 'Expected an error about empty path')
+    })
+
     it('reads entire file', async () => {
         const fileContent = 'Line 1\nLine 2\nLine 3'
         const filePath = await testFolder.write('fullFile.txt', fileContent)
 
         const fsRead = new FsRead({ path: filePath })
+        await fsRead.validate()
         const result = await fsRead.invoke()
 
         assert.strictEqual(result.output.kind, 'text', 'Output kind should be "text"')
@@ -30,6 +36,7 @@ describe('FsRead Tool', () => {
         const filePath = await testFolder.write('partialFile.txt', fileContent)
 
         const fsRead = new FsRead({ path: filePath, readRange: [2, 4] })
+        await fsRead.validate()
         const result = await fsRead.invoke()
 
         assert.strictEqual(result.output.kind, 'text')
@@ -42,6 +49,7 @@ describe('FsRead Tool', () => {
         await testFolder.write(path.join('subfolder', 'fileB.md'), '# fileB')
 
         const fsRead = new FsRead({ path: testFolder.path, readRange: [1] })
+        await fsRead.validate()
         const result = await fsRead.invoke()
 
         const lines = result.output.content.split('\n')
@@ -57,7 +65,7 @@ describe('FsRead Tool', () => {
         const fsRead = new FsRead({ path: missingPath })
 
         await assert.rejects(
-            fsRead.invoke(),
+            fsRead.validate(),
             /does not exist or cannot be accessed/i,
             'Expected an error indicating the path does not exist'
         )
@@ -68,6 +76,7 @@ describe('FsRead Tool', () => {
         const bigFilePath = await testFolder.write('bigFile.txt', bigContent)
 
         const fsRead = new FsRead({ path: bigFilePath })
+        await fsRead.validate()
 
         await assert.rejects(
             fsRead.invoke(),
@@ -80,8 +89,34 @@ describe('FsRead Tool', () => {
         const filePath = await testFolder.write('rangeTest.txt', '1\n2\n3')
         const fsRead = new FsRead({ path: filePath, readRange: [3, 2] })
 
+        await fsRead.validate()
         const result = await fsRead.invoke()
         assert.strictEqual(result.output.kind, 'text')
         assert.strictEqual(result.output.content, '')
+    })
+
+    it('expands ~ path', async () => {
+        const fsRead = new FsRead({ path: '~' })
+        await fsRead.validate()
+        const result = await fsRead.invoke()
+
+        assert.strictEqual(result.output.kind, 'text')
+        assert.ok(result.output.content.length > 0)
+    })
+
+    it('resolves relative path', async () => {
+        await testFolder.mkdir('relTest')
+        const filePath = path.join('relTest', 'relFile.txt')
+        const content = 'Hello from a relative file!'
+        await testFolder.write(filePath, content)
+
+        const relativePath = path.relative(process.cwd(), path.join(testFolder.path, filePath))
+
+        const fsRead = new FsRead({ path: relativePath })
+        await fsRead.validate()
+        const result = await fsRead.invoke()
+
+        assert.strictEqual(result.output.kind, 'text')
+        assert.strictEqual(result.output.content, content)
     })
 })

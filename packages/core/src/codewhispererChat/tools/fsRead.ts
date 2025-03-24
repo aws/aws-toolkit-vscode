@@ -6,7 +6,7 @@ import * as vscode from 'vscode'
 import { getLogger } from '../../shared/logger/logger'
 import { readDirectoryRecursively } from '../../shared/utilities/workspaceUtils'
 import fs from '../../shared/fs/fs'
-import { InvokeOutput, maxToolResponseSize, OutputKind } from './toolShared'
+import { InvokeOutput, maxToolResponseSize, OutputKind, sanitizePath } from './toolShared'
 
 export interface FsReadParams {
     path: string
@@ -14,8 +14,9 @@ export interface FsReadParams {
 }
 
 export class FsRead {
-    private readonly fsPath: string
+    private fsPath: string
     private readonly readRange?: number[]
+    private type?: boolean // true for file, false for directory
     private readonly logger = getLogger('fsRead')
 
     constructor(params: FsReadParams) {
@@ -23,27 +24,39 @@ export class FsRead {
         this.readRange = params.readRange
     }
 
+    public async validate(): Promise<void> {
+        this.logger.debug(`Validating fsPath: ${this.fsPath}`)
+        if (!this.fsPath || this.fsPath.trim().length === 0) {
+            throw new Error('Path cannot be empty.')
+        }
+
+        const sanitized = sanitizePath(this.fsPath)
+        this.fsPath = sanitized
+
+        const fileUri = vscode.Uri.file(this.fsPath)
+        let exists: boolean
+        try {
+            exists = await fs.exists(fileUri)
+            if (!exists) {
+                throw new Error(`Path: "${this.fsPath}" does not exist or cannot be accessed.`)
+            }
+        } catch (err) {
+            throw new Error(`Path: "${this.fsPath}" does not exist or cannot be accessed. (${err})`)
+        }
+
+        this.type = await fs.existsFile(fileUri)
+        this.logger.debug(`Validation succeeded for path: ${this.fsPath}`)
+    }
+
     public async invoke(): Promise<InvokeOutput> {
         try {
             const fileUri = vscode.Uri.file(this.fsPath)
-            let exists: boolean
-            try {
-                exists = await fs.exists(fileUri)
-                if (!exists) {
-                    throw new Error(`Path: "${this.fsPath}" does not exist or cannot be accessed.`)
-                }
-            } catch (err) {
-                throw new Error(`Path: "${this.fsPath}" does not exist or cannot be accessed. (${err})`)
-            }
 
-            const isFile = await fs.existsFile(fileUri)
-            const isDirectory = await fs.existsDir(fileUri)
-
-            if (isFile) {
+            if (this.type) {
                 const fileContents = await this.readFile(fileUri)
                 this.logger.info(`Read file: ${this.fsPath}, size: ${fileContents.length}`)
                 return this.handleFileRange(fileContents)
-            } else if (isDirectory) {
+            } else if (!this.type) {
                 const maxDepth = this.getDirectoryDepth() ?? 0
                 const listing = await readDirectoryRecursively(fileUri, maxDepth)
                 return this.createOutput(listing.join('\n'))
