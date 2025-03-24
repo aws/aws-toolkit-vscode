@@ -110,6 +110,12 @@ export interface CodeReference {
     }
 }
 
+export interface FileList {
+    fileTreeTitle?: string
+    rootFolderTitle?: string
+    filePaths?: string[]
+}
+
 export interface AuthNeededExceptionProps {
     readonly message: string
     readonly authType: AuthFollowUpType
@@ -210,6 +216,7 @@ export interface ChatMessageProps {
     readonly contextList: DocumentReference[] | undefined
     readonly title: string | undefined
     readonly buttons?: ChatItemButton[]
+    readonly fileList?: FileList
 }
 
 export class ChatMessage extends UiMessage {
@@ -227,6 +234,7 @@ export class ChatMessage extends UiMessage {
     readonly contextList: DocumentReference[] | undefined
     readonly title: string | undefined
     readonly buttons?: ChatItemButton[]
+    readonly fileList?: FileList
     override type = 'chatMessage'
 
     constructor(props: ChatMessageProps, tabID: string) {
@@ -244,6 +252,7 @@ export class ChatMessage extends UiMessage {
         this.contextList = props.contextList
         this.title = props.title
         this.buttons = props.buttons
+        this.fileList = props.fileList
     }
 }
 

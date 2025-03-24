@@ -95,6 +95,22 @@ export interface ViewDiff {
     totalCodeBlocks?: number
 }
 
+export interface OpenDiff {
+    command: string | undefined
+    tabID: string
+    messageId: string
+    filePath: string
+    referenceTrackerInformation?: CodeReference[]
+}
+
+export interface AcceptCodeDiff {
+    command: string | undefined
+    tabID: string
+    messageId: string
+    filePath: string
+    referenceTrackerInformation?: CodeReference[]
+}
+
 export type ChatPromptCommandType =
     | 'help'
     | 'clear'

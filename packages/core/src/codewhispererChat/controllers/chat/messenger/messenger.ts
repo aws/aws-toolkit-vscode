@@ -43,6 +43,11 @@ import { ChatItemButton, ChatItemFormItem, MynahUIDataModel } from '@aws/mynah-u
 import { FsWriteParams } from '../../../tools/fsWrite'
 import ExecuteBash, { ExecuteBashParams } from '../../../tools/executeBash'
 import { ChatHistoryManager } from '../../../storages/chatHistory'
+import path from 'path'
+import { workspace } from 'vscode'
+import { ZipUtil } from '../../../../codewhisperer/util/zipUtil'
+import { tempDirPath } from '../../../../shared/filesystemUtilities'
+import { fs } from '../../../../shared/fs/fs'
 
 export type StaticTextResponseType = 'quick-action-help' | 'onboarding-help' | 'transform' | 'help'
 
@@ -120,6 +125,80 @@ export class Messenger {
         const codeBlocks = document.querySelectorAll('pre > code')
 
         return codeBlocks.length
+    }
+
+    public async handleGeneratedTextIntoTempFile(session: ChatSession, absolutePath: string) {
+        // create a temp folder
+        const pathToArchiveDir = path.join(tempDirPath, 'q-chat')
+        const archivePathExists = await fs.existsDir(pathToArchiveDir)
+        if (archivePathExists) {
+            await fs.delete(pathToArchiveDir, { recursive: true })
+        }
+        await fs.mkdir(pathToArchiveDir)
+        const resultArtifactsDir = path.join(pathToArchiveDir, 'resultArtifacts')
+        await fs.mkdir(resultArtifactsDir)
+        const tempFilePath = path.join(resultArtifactsDir, `temp-${path.basename(absolutePath)}`)
+        // TODO: Write a function to write generated file context into the temp file
+        const toolCommand = session.toolUse?.input as unknown as FsWriteParams
+
+        switch (toolCommand.command) {
+            case 'append':
+                {
+                    /**
+                     * Open the file at the specified path
+                     * Add new_str to the end of the file
+                     * If the file doesn't end with a newline, add one before appending new_str
+                     */
+                    const fileContent = await fs.readFileText(absolutePath)
+                    const newContent = fileContent + (!fileContent.endsWith('\n') ? '\n' : '') + toolCommand.new_str
+                    await fs.writeFile(tempFilePath, newContent)
+                }
+                break
+            case 'create':
+                {
+                    /**
+                     * Create a new file at the specified path (We do check in processAcceptCodeDiff in controller.ts)
+                     * If the file already exists, override its content
+                     * Write the content provided in file_text to the file
+                     */
+                    await fs.writeFile(tempFilePath, toolCommand.file_text ?? '')
+                }
+                break
+            case 'insert':
+                {
+                    /**
+                     * Open the file at the specified path
+                     * Find the line number specified by insert_line
+                     * Insert new_str on a new line after the insert_line
+                     */
+                    const insertLine = toolCommand.insert_line
+                    const insertContent = toolCommand.new_str
+                    const fileContent = await fs.readFileText(absolutePath)
+                    const lines = fileContent.split('\n')
+                    lines.splice(insertLine, 0, insertContent)
+                    const newContent = lines.join('\n')
+                    await fs.writeFile(tempFilePath, newContent)
+                }
+                break
+            case 'str_replace':
+                {
+                    /**
+                     * Open the file at the specified path
+                     * Find the exact occurrence of old_str in the file
+                     * Replace old_str with new_str
+                     * If old_str is not unique in the file, no replacement is performed
+                     */
+                    // TODO: Need to handle if the occurences are 0 or more than 1.
+                    const fileContent = await fs.readFileText(absolutePath)
+                    const newContent = fileContent.replace(toolCommand.old_str, toolCommand.new_str)
+                    await fs.writeFile(tempFilePath, newContent)
+                }
+                break
+            default:
+                getLogger().error(`Unknown tool command in ${session.toolUse?.name}`)
+        }
+        session.setTempFilePath(tempFilePath)
+        getLogger().info(`tempFilePath: ${tempFilePath}`)
     }
 
     public async sendAIResponse(
@@ -210,11 +289,36 @@ export class Messenger {
                         toolUse.toolUseId = cwChatEvent.toolUseEvent.toolUseId ?? ''
                         toolUse.name = cwChatEvent.toolUseEvent.name ?? ''
                         session.setToolUse(toolUse)
+                        session.setFilePath((toolUse.input as unknown as FsWriteParams).path)
+                        const workspaceRoot = workspace.workspaceFolders?.[0]?.uri.fsPath
+                        const absolutePath = (toolUse.input as unknown as FsWriteParams).path
+                        const relativePath = workspaceRoot ? path.relative(workspaceRoot, absolutePath) : absolutePath
+                        const zipUtil = new ZipUtil()
+                        const projectPath = zipUtil.getProjectPath(absolutePath) ?? ''
 
                         const message = this.getToolUseMessage(toolUse, session)
                         const isConfirmationRequired = this.getIsConfirmationRequired(toolUse)
-                        // TODO: for execute_bash command get users approval by adding button "Run" to below sendChatMessage and then execute this command -> "Running" handle the logic.                        const isConfirmationRequired = this.getIsConfirmationRequired(toolUse)
-
+                        if (isConfirmationRequired && toolUse.name === 'fs_write') {
+                            await this.handleGeneratedTextIntoTempFile(session, absolutePath)
+                        }
+                        // Buttons
+                        const buttons: ChatItemButton[] = []
+                        if (isConfirmationRequired && toolUse.name === 'fs_write') {
+                            buttons.push({
+                                id: 'reject-code-diff',
+                                text: 'Reject',
+                                position: 'outside',
+                                status: 'error',
+                            })
+                            buttons.push({
+                                id: 'accept-code-diff',
+                                text: 'Accept',
+                                position: 'outside',
+                                status: 'success',
+                            })
+                        } else if (isConfirmationRequired) {
+                            buttons.push({ id: 'confirm-tool-use', text: 'Confirm', position: 'outside' })
+                        }
                         this.dispatcher.sendChatMessage(
                             new ChatMessage(
                                 {
@@ -230,13 +334,20 @@ export class Messenger {
                                     codeBlockLanguage: codeBlockLanguage,
                                     contextList: undefined,
                                     title: undefined,
-                                    buttons: isConfirmationRequired
-                                        ? [{ id: 'confirm-tool-use', text: 'Confirm', position: 'outside' }]
-                                        : [],
+                                    buttons,
+                                    fileList:
+                                        isConfirmationRequired && toolUse.name === 'fs_write'
+                                            ? {
+                                                  fileTreeTitle: 'Code suggestions',
+                                                  rootFolderTitle: path.basename(projectPath),
+                                                  filePaths: [relativePath],
+                                              }
+                                            : undefined,
                                 },
                                 tabID
                             )
                         )
+                        // If isConfirmationRequired is false, directly IDE proceed to Agentic loop instead of waiting for confirmation.
                         if (!isConfirmationRequired) {
                             this.dispatcher.sendCustomFormActionMessage(
                                 new CustomFormActionMessage(tabID, {
