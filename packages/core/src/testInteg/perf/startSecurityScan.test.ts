@@ -102,7 +102,7 @@ describe('startSecurityScanPerformanceTest', function () {
                     assert.ok(setup.commandSpy.neverCalledWith('workbench.action.problems.focus'))
                     assert.ok(setup.securityScanRenderSpy.calledOnce)
 
-                    assert.ok(setup.zipSpy.generateZip.calledOnce)
+                    assert.ok(setup.zipSpy.generateZipCodeScan.calledOnce)
                     assert.ok(setup.zipSpy.removeTmpFiles.calledOnce)
                     assert.ok(
                         getFsCallsUpperBound(setup.fsSpy) <= 5,

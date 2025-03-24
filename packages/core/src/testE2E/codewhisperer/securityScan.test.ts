@@ -95,7 +95,7 @@ describe('CodeWhisperer security scan', async function () {
 
         const projectPaths = getWorkspacePaths()
         const scope = CodeWhispererConstants.CodeAnalysisScope.PROJECT
-        const zipMetadata = await zipUtil.generateZip(uri, 'project')
+        const zipMetadata = await zipUtil.generateZipCodeScan(uri, 'project')
         const codeScanName = randomUUID()
 
         let artifactMap

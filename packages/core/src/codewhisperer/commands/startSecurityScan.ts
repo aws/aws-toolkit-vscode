@@ -157,7 +157,7 @@ export async function startSecurityScan(
             })
         }
         const zipType = scope === CodeAnalysisScope.PROJECT ? 'project' : 'file'
-        const zipMetadata = await zipUtil.generateZip(editor?.document.uri, zipType)
+        const zipMetadata = await zipUtil.generateZipCodeScan(editor?.document.uri, zipType)
         const projectPaths = getWorkspacePaths()
 
         const contextTruncationStartTime = performance.now()

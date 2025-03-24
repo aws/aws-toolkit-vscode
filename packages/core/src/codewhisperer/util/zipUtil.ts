@@ -28,6 +28,7 @@ import { ZipStream } from '../../shared/utilities/zipStream'
 import { getTextContent } from '../../shared/utilities/textDocumentUtilities'
 import { ChildProcess, ChildProcessOptions } from '../../shared/utilities/processUtils'
 import { removeAnsi } from '../../shared/utilities/textUtilities'
+import { isFileOpenAndDirty } from '../../amazonq/util/files'
 
 export interface ZipMetadata {
     rootDir: string
@@ -245,8 +246,8 @@ export class ZipUtil {
             if (ZipConstants.knownBinaryFileExts.includes(path.extname(file.fileUri.fsPath)) && includeBinary) {
                 await this.processBinaryFile(zip, file.fileUri, zipEntryPath)
             } else {
-                const isFileOpenAndDirty = this.isFileOpenAndDirty(file.fileUri)
-                const fileContent = isFileOpenAndDirty ? await getTextContent(file.fileUri) : file.fileContent
+                const hasUnsavedChanges = isFileOpenAndDirty(file.fileUri)
+                const fileContent = hasUnsavedChanges ? await getTextContent(file.fileUri) : file.fileContent
                 this.processTextFile(zip, file.fileUri, fileContent, languageCount, zipEntryPath)
             }
         }
@@ -327,10 +328,6 @@ export class ZipUtil {
         }
     }
 
-    protected isFileOpenAndDirty(uri: vscode.Uri) {
-        return vscode.workspace.textDocuments.some((document) => document.uri.fsPath === uri.fsPath && document.isDirty)
-    }
-
     public getZipDirPath(): string {
         if (this._zipDir === '') {
             this._zipDir = path.join(this._tmpDir, `${this._zipDirPrefix}_${this._timestamp}`)
@@ -338,7 +335,7 @@ export class ZipUtil {
         return this._zipDir
     }
 
-    public async generateZip(
+    public async generateZipCodeScan(
         uri: vscode.Uri | undefined,
         zipType: ZipType,
         options?: GenerateZipOptions
