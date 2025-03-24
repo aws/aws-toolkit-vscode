@@ -21,7 +21,7 @@ import {
 } from '../../codewhisperer/service/securityScanHandler'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import fs from '../../shared/fs/fs'
-import { getPrefixFromUseCase, ZipUtil } from '../../codewhisperer/util/zipUtil'
+import { ZipUtil } from '../../codewhisperer/util/zipUtil'
 import { randomUUID } from '../../shared/crypto'
 import { getWorkspacePaths } from '../../shared/utilities/workspaceUtils'
 
@@ -90,7 +90,7 @@ describe('CodeWhisperer security scan', async function () {
     */
     async function securityJobSetup(editor: vscode.TextEditor) {
         const codeScanStartTime = performance.now()
-        const zipUtil = new ZipUtil(getPrefixFromUseCase(CodeWhispererConstants.FeatureUseCase.CODE_SCAN))
+        const zipUtil = new ZipUtil(CodeWhispererConstants.codeScanTruncDirPrefix)
         const uri = editor.document.uri
 
         const projectPaths = getWorkspacePaths()

@@ -10,8 +10,8 @@ import { join } from 'path'
 import path from 'path'
 import JSZip from 'jszip'
 import { getTestWorkspaceFolder } from '../../testInteg/integrationTestsUtilities'
-import { getPrefixFromUseCase, ZipUtil } from '../../codewhisperer/util/zipUtil'
-import { CodeAnalysisScope, codeScanTruncDirPrefix, FeatureUseCase } from '../../codewhisperer/models/constants'
+import { ZipUtil } from '../../codewhisperer/util/zipUtil'
+import { CodeAnalysisScope, codeScanTruncDirPrefix } from '../../codewhisperer/models/constants'
 import { ToolkitError } from '../../shared/errors'
 import { fs } from '../../shared/fs/fs'
 import { tempDirPath } from '../../shared/filesystemUtilities'
@@ -61,7 +61,7 @@ describe('zipUtil', function () {
     describe('generateZip', function () {
         let zipUtil: ZipUtil
         beforeEach(function () {
-            zipUtil = new ZipUtil(getPrefixFromUseCase(FeatureUseCase.CODE_SCAN))
+            zipUtil = new ZipUtil(CodeWhispererConstants.codeScanTruncDirPrefix)
         })
         afterEach(function () {
             sinon.restore()
@@ -132,7 +132,7 @@ describe('zipUtil', function () {
                 editBuilder.insert(new vscode.Position(0, 0), '// a comment\n')
             })
 
-            const zipMetadata2 = await new ZipUtil(getPrefixFromUseCase(FeatureUseCase.CODE_SCAN)).generateZip(
+            const zipMetadata2 = await new ZipUtil(CodeWhispererConstants.codeScanTruncDirPrefix).generateZip(
                 vscode.Uri.file(appCodePath),
                 CodeAnalysisScope.PROJECT
             )
@@ -170,7 +170,7 @@ describe('zipUtil', function () {
         let testTempDirPath: string
 
         beforeEach(function () {
-            zipUtil = new ZipUtil(getPrefixFromUseCase(FeatureUseCase.TEST_GENERATION))
+            zipUtil = new ZipUtil(CodeWhispererConstants.TestGenerationTruncDirPrefix)
             testTempDirPath = path.join(tempDirPath, CodeWhispererConstants.TestGenerationTruncDirPrefix)
             getZipDirPathStub = sinon.stub(zipUtil, 'getZipDirPath')
             getZipDirPathStub.callsFake(() => testTempDirPath)

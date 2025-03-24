@@ -457,12 +457,6 @@ interface GitDiffOptions {
     scope?: CodeWhispererConstants.CodeAnalysisScope
 }
 
-export function getPrefixFromUseCase(useCase: FeatureUseCase) {
-    return useCase === FeatureUseCase.TEST_GENERATION
-        ? CodeWhispererConstants.TestGenerationTruncDirPrefix
-        : CodeWhispererConstants.codeScanTruncDirPrefix
-}
-
 async function getGitDiffContentForProjects(
     projectPaths: string[],
     filepath?: string,

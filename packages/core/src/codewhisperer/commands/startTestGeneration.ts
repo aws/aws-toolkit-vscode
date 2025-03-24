@@ -4,7 +4,7 @@
  */
 
 import { getLogger } from '../../shared/logger/logger'
-import { getPrefixFromUseCase, ZipUtil } from '../util/zipUtil'
+import { ZipUtil } from '../util/zipUtil'
 import { ArtifactMap } from '../client/codewhisperer'
 import { testGenerationLogsDir } from '../../shared/filesystemUtilities'
 import {
@@ -22,7 +22,7 @@ import { BuildStatus } from '../../amazonqTest/chat/session/session'
 import { fs } from '../../shared/fs/fs'
 import { Range } from '../client/codewhispereruserclient'
 import { getWorkspaceForFile } from '../../shared/utilities/workspaceUtils'
-import { FeatureUseCase } from '../indexNode'
+import * as CodeWhispererConstants from '../models/constants'
 
 // eslint-disable-next-line unicorn/no-null
 let spawnResult: ChildProcess | null = null
@@ -48,7 +48,7 @@ export async function startTestGenerationProcess(
          * Step 1: Zip the project
          */
 
-        const zipUtil = new ZipUtil(getPrefixFromUseCase(FeatureUseCase.TEST_GENERATION))
+        const zipUtil = new ZipUtil(CodeWhispererConstants.TestGenerationTruncDirPrefix)
         if (initialExecution) {
             const projectPath = getWorkspaceForFile(filePath) ?? ''
             const relativeTargetPath = path.relative(projectPath, filePath)

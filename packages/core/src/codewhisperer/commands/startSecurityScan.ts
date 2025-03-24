@@ -35,7 +35,7 @@ import { telemetry } from '../../shared/telemetry/telemetry'
 import { ToolkitError, getTelemetryReasonDesc, isAwsError } from '../../shared/errors'
 import { AuthUtil } from '../util/authUtil'
 import path from 'path'
-import { getPrefixFromUseCase, ZipMetadata, ZipUtil } from '../util/zipUtil'
+import { ZipMetadata, ZipUtil } from '../util/zipUtil'
 import { debounce } from 'lodash'
 import { once } from '../../shared/utilities/functionUtils'
 import { randomUUID } from '../../shared/crypto'
@@ -106,7 +106,7 @@ export async function startSecurityScan(
     context: vscode.ExtensionContext,
     scope: CodeWhispererConstants.CodeAnalysisScope,
     initiatedByChat: boolean,
-    zipUtil: ZipUtil = new ZipUtil(getPrefixFromUseCase(CodeWhispererConstants.FeatureUseCase.CODE_SCAN)),
+    zipUtil: ZipUtil = new ZipUtil(CodeWhispererConstants.codeScanTruncDirPrefix),
     scanUuid?: string
 ) {
     const logger = getLoggerForScope(scope)
