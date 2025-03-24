@@ -186,7 +186,7 @@ describe('triggerPayloadToChatRequest', () => {
         checkContextTruncationHelper(before3, after3)
 
         const before4 = [5000, 5000, 150000, 5000, 5000, 5000] // Total: 175,000
-        const after4 = [5000, 5000, 80000, 5000, 5000, 0] // Total: 100,000
+        const after4 = [5000, 5000, 90000, 0, 0, 0] // Total: 100,000
         checkContextTruncationHelper(before4, after4)
 
         const before5 = [50000, 80000, 20000, 10000, 10000, 10000] // Total: 180,000
