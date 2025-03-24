@@ -27,6 +27,13 @@ import { pageableToCollection } from '../../shared/utilities/collectionUtils'
 import { parse } from '@aws-sdk/util-arn-parser'
 import { ToolkitError } from '../../shared/errors'
 
+const defaultProfile: RegionProfile = {
+    name: 'default',
+    region: 'us-east-1',
+    arn: '',
+    description: 'defaultProfile when listAvailableProfiles fails',
+}
+
 // TODO: is there a better way to manage all endpoint strings in one place?
 export const defaultServiceConfig: CodeWhispererConfig = {
     region: 'us-east-1',
@@ -46,7 +53,14 @@ export class RegionProfileManager {
     private _onDidChangeRegionProfile = new vscode.EventEmitter<RegionProfile | undefined>()
     public readonly onDidChangeRegionProfile = this._onDidChangeRegionProfile.event
 
+    // Store the last API results (for UI propuse) so we don't need to call service again if doesn't require "latest" result
+    private _profiles: RegionProfile[] = []
+
     get activeRegionProfile() {
+        const conn = this.connectionProvider()
+        if (conn === undefined || !isIdcSsoConnection(conn)) {
+            return undefined
+        }
         return this._activeRegionProfile
     }
 
@@ -79,6 +93,10 @@ export class RegionProfileManager {
         }
 
         return defaultServiceConfig
+    }
+
+    get profiles(): RegionProfile[] {
+        return this._profiles
     }
 
     constructor(private readonly connectionProvider: () => Connection | undefined) {}
@@ -115,12 +133,14 @@ export class RegionProfileManager {
                 availableProfiles.push(...mappedPfs)
             } catch (e) {
                 RegionProfileManager.logger.error(`failed to listRegionProfile: ${e}`)
+                await this.switchRegionProfile(defaultProfile)
                 return []
             }
 
             RegionProfileManager.logger.info(`available amazonq profiles: ${availableProfiles.length}`)
         }
 
+        this._profiles = availableProfiles
         return availableProfiles
     }
 
@@ -147,7 +167,20 @@ export class RegionProfileManager {
             }
         }
 
+        await this._switchRegionProfile(regionProfile)
+    }
+
+    private async _switchRegionProfile(regionProfile: RegionProfile | undefined) {
         this._activeRegionProfile = regionProfile
+
+        this._onDidChangeRegionProfile.fire(regionProfile)
+        // dont show if it's a default (fallback)
+        if (regionProfile && !this.isDefault(regionProfile) && this.profiles.length > 1) {
+            void vscode.window.showInformationMessage(`You are using the ${regionProfile.name} profile for Q.`).then()
+        }
+
+        // persist to state
+        await this.persistSelectRegionProfile()
     }
 
     restoreProfileSelection = once(async () => {
@@ -182,7 +215,9 @@ export class RegionProfileManager {
 
     async persistSelectRegionProfile() {
         const conn = this.connectionProvider()
-        if (!conn || this.activeRegionProfile === undefined) {
+
+        // default has empty arn and shouldn't be persisted because it's just a fallback
+        if (!conn || this.activeRegionProfile === undefined || this.isDefault(this.activeRegionProfile)) {
             return
         }
 
@@ -195,6 +230,14 @@ export class RegionProfileManager {
 
         previousPersistedState[conn.id] = this.activeRegionProfile.arn
         await globals.globalState.update('aws.amazonq.regionProfiles', previousPersistedState)
+    }
+
+    isDefault(profile: RegionProfile): boolean {
+        return (
+            profile.arn === defaultProfile.arn &&
+            profile.name === defaultProfile.name &&
+            profile.region === defaultProfile.region
+        )
     }
 
     async generateQuickPickItem(): Promise<DataQuickPickItem<string>[]> {

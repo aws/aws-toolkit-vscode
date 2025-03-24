@@ -139,6 +139,10 @@ export class AuthUtil {
             if (this.isValidEnterpriseSsoInUse() || (this.isBuilderIdInUse() && !this.isConnectionExpired())) {
                 await showAmazonQWalkthroughOnce()
             }
+
+            if (!this.isConnected()) {
+                await this.regionProfileManager.switchRegionProfile(undefined)
+            }
         })
 
         this.regionProfileManager.onDidChangeRegionProfile(async () => {

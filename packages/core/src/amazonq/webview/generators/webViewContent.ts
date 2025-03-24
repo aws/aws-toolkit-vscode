@@ -88,14 +88,13 @@ export class WebViewContentGenerator {
         // only show profile card when the two conditions
         //  1. profile count >= 2
         //  2. not default (fallback) which has empty arn
-        const regionProfile: RegionProfile | undefined = AuthUtil.instance.regionProfileManager.activeRegionProfile
-        // TODO: uncomment
-        // if (
-        //     regionProfile &&
-        //     (regionProfile.arn.length === 0 || AuthUtil.instance.regionProfileManager.profiles.length < 2)
-        // ) {
-        //     regionProfile = undefined
-        // }
+        let regionProfile: RegionProfile | undefined = AuthUtil.instance.regionProfileManager.activeRegionProfile
+        if (
+            (regionProfile && AuthUtil.instance.regionProfileManager.isDefault(regionProfile)) ||
+            AuthUtil.instance.regionProfileManager.profiles.length === 1
+        ) {
+            regionProfile = undefined
+        }
 
         const regionProfileString: string = JSON.stringify(regionProfile)
 

@@ -209,6 +209,7 @@ export const createMynahUI = (
                 isDocEnabled,
                 disabledCommands,
                 commandHighlight: highlightCommand,
+                regionProfile,
             })
 
             featureConfigs = tryNewMap(featureConfigsSerialized)

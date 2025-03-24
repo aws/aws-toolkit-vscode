@@ -141,6 +141,7 @@ export class ChatController {
     private readonly userIntentRecognizer: UserIntentRecognizer
     private readonly telemetryHelper: CWCTelemetryHelper
     private userPromptsWatcher: vscode.FileSystemWatcher | undefined
+    private cancelTokenSource: vscode.CancellationTokenSource = new vscode.CancellationTokenSource()
 
     public constructor(
         private readonly chatControllerMessageListeners: ChatControllerMessageListeners,
@@ -165,6 +166,10 @@ export class ChatController {
             } else {
                 this.telemetryHelper.recordCloseChat()
             }
+        })
+
+        AuthUtil.instance.regionProfileManager.onDidChangeRegionProfile(() => {
+            this.cancelTokenSource.cancel()
         })
 
         this.chatControllerMessageListeners.processPromptChatMessage.onMessage((data) => {
@@ -1133,6 +1138,7 @@ export class ChatController {
         )
         let response: MessengerResponseType | undefined = undefined
         session.createNewTokenSource()
+        // TODO: onProfileChanged, abort previous response?
         try {
             this.messenger.sendInitalStream(tabID, triggerID, triggerPayload.documentReferences)
             this.telemetryHelper.setConversationStreamStartTime(tabID)
@@ -1157,7 +1163,15 @@ export class ChatController {
                     response.$metadata.requestId
                 } metadata: ${inspect(response.$metadata, { depth: 12 })}`
             )
-            await this.messenger.sendAIResponse(response, session, tabID, triggerID, triggerPayload)
+            this.cancelTokenSource = new vscode.CancellationTokenSource()
+            await this.messenger.sendAIResponse(
+                response,
+                session,
+                tabID,
+                triggerID,
+                triggerPayload,
+                this.cancelTokenSource.token
+            )
         } catch (e: any) {
             this.telemetryHelper.recordMessageResponseError(triggerPayload, tabID, getHttpStatusCode(e) ?? 0)
             // clears session, record telemetry before this call

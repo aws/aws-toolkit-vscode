@@ -118,8 +118,11 @@ export default defineComponent({
     async created() {
         this.doShow = true
     },
-    async mounted() {
+    async beforeMount() {
         this.availableRegionProfiles = await client.listRegionProfiles()
+        if (this.availableRegionProfiles.length === 1) {
+            await client.selectRegionProfile(this.availableRegionProfiles[0])
+        }
     },
     methods: {
         toggleItemSelection(itemId: number) {
