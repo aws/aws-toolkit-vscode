@@ -200,7 +200,7 @@ export function triggerPayloadToAgenticChatRequest(
     // service will throw validation exception if string is empty
     const customizationArn: string | undefined = undefinedIfEmpty(triggerPayload.customization.arn)
     const chatTriggerType = triggerPayload.trigger === ChatTriggerType.InlineChatMessage ? 'INLINE_CHAT' : 'MANUAL'
-
+    // TODO: Need to modify this OS to os.platform() and tryGetCurrentWorkingDirectory()
     const operatingSystem = 'macos'
 
     const tools: Tool[] = Object.entries(toolsJson).map(([, toolSpec]) => ({

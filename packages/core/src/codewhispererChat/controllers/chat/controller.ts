@@ -392,7 +392,7 @@ export class ChatController {
         const filePath = session.getFilePath ?? message.filePath
         const fileExists = await fs.existsFile(filePath)
         // Check if fileExists=false, If yes, return instead of showing broken diff experience.
-        if (!fileExists) {
+        if (!session.getTempFilePath) {
             return
         }
         const leftUri = fileExists ? vscode.Uri.file(filePath) : vscode.Uri.from({ scheme: 'untitled' })
@@ -972,11 +972,7 @@ export class ChatController {
                         }
                         case 'fs_read': {
                             const fsRead = new FsRead(toolUse.input as unknown as FsReadParams)
-                            const ctx = {
-                                env: { currentDir: () => undefined },
-                            }
-                            await fsRead.validate(ctx)
-                            result = await fsRead.invoke(ctx)
+                            result = await fsRead.invoke()
                             break
                         }
                         case 'fs_write': {
