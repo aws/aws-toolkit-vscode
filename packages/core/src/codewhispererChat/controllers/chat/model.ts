@@ -178,25 +178,35 @@ export interface TriggerPayload {
     readonly query: string | undefined
     readonly codeSelection: Selection | undefined
     readonly trigger: ChatTriggerType
-    fileText: string | undefined
+    fileText: string
     readonly fileLanguage: string | undefined
     readonly filePath: string | undefined
-    message: string | undefined
+    message: string
     readonly matchPolicy: MatchPolicy | undefined
     readonly codeQuery: CodeQuery | undefined
     readonly userIntent: UserIntent | undefined
     readonly customization: Customization
-    readonly context?: string[] | QuickActionCommand[]
-    relevantTextDocuments?: RelevantTextDocumentAddition[]
-    additionalContents?: AdditionalContentEntryAddition[]
+    readonly context: string[] | QuickActionCommand[]
+    relevantTextDocuments: RelevantTextDocumentAddition[]
+    additionalContents: AdditionalContentEntryAddition[]
     // a reference to all documents used in chat payload
     // for providing better context transparency
-    documentReferences?: DocumentReference[]
-    useRelevantDocuments?: boolean
+    documentReferences: DocumentReference[]
+    useRelevantDocuments: boolean
     traceId?: string
-    additionalContextLengths?: AdditionalContextLengths
-    truncatedAdditionalContextLengths?: AdditionalContextLengths
+    contextLengths: ContextLengths
     workspaceRulesCount?: number
+}
+
+export type ContextLengths = {
+    additionalContextLengths: AdditionalContextLengths
+    truncatedAdditionalContextLengths: AdditionalContextLengths
+    workspaceContextLength: number
+    truncatedWorkspaceContextLength: number
+    userInputContextLength: number
+    truncatedUserInputContextLength: number
+    currentFileContextLength: number
+    truncatedCurrentFileContextLength: number
 }
 
 export type AdditionalContextLengths = {

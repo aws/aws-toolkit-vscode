@@ -4,6 +4,7 @@
  */
 import * as path from 'path'
 import fs from '../shared/fs/fs'
+import { ContextLengths } from './controllers/chat/model'
 
 export const promptFileExtension = '.md'
 
@@ -20,3 +21,22 @@ export const getUserPromptsDirectory = () => {
 }
 
 export const createSavedPromptCommandId = 'create-saved-prompt'
+
+export const defaultContextLengths: ContextLengths = {
+    additionalContextLengths: {
+        fileContextLength: 0,
+        promptContextLength: 0,
+        ruleContextLength: 0,
+    },
+    truncatedAdditionalContextLengths: {
+        fileContextLength: 0,
+        promptContextLength: 0,
+        ruleContextLength: 0,
+    },
+    workspaceContextLength: 0,
+    truncatedWorkspaceContextLength: 0,
+    userInputContextLength: 0,
+    truncatedUserInputContextLength: 0,
+    currentFileContextLength: 0,
+    truncatedCurrentFileContextLength: 0,
+}

@@ -3,14 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import {
-    ConversationState,
-    CursorState,
-    DocumentSymbol,
-    RelevantTextDocument,
-    SymbolType,
-    TextDocument,
-} from '@amzn/codewhisperer-streaming'
+import { ConversationState, CursorState, DocumentSymbol, SymbolType, TextDocument } from '@amzn/codewhisperer-streaming'
 import { AdditionalContentEntryAddition, ChatTriggerType, RelevantTextDocumentAddition, TriggerPayload } from '../model'
 import { undefinedIfEmpty } from '../../../../shared/utilities/textUtilities'
 import { getLogger } from '../../../../shared/logger/logger'
@@ -36,7 +29,6 @@ export const supportedLanguagesList = [
 ]
 
 const filePathSizeLimit = 4_000
-const customerMessageSizeLimit = 4_000
 
 export function triggerPayloadToChatRequest(triggerPayload: TriggerPayload): { conversationState: ConversationState } {
     // Flexible truncation logic
@@ -81,7 +73,7 @@ export function triggerPayloadToChatRequest(triggerPayload: TriggerPayload): { c
     )
 
     getLogger().debug(
-        `current request total payload size: ${userInputTruncationInfo.sizeAfter + userSpecificFilesTruncationInfo.sizeAfter + currentFileTruncationInfo.sizeAfter + userSpecificFilesTruncationInfo.sizeAfter + workspaceTruncationInfo.sizeAfter}`
+        `current request total payload size: ${userInputTruncationInfo.sizeAfter + currentFileTruncationInfo.sizeAfter + userSpecificRulesTruncationInfo.sizeAfter + userSpecificFilesTruncationInfo.sizeAfter + workspaceTruncationInfo.sizeAfter}`
     )
 
     // Filter out empty innerContext from additionalContents
@@ -92,11 +84,9 @@ export function triggerPayloadToChatRequest(triggerPayload: TriggerPayload): { c
     }
 
     // Filter out empty text from relevantTextDocuments
-    if (triggerPayload.relevantTextDocuments !== undefined) {
-        triggerPayload.relevantTextDocuments = triggerPayload.relevantTextDocuments.filter(
-            (doc) => doc.text !== undefined && doc.text !== ''
-        )
-    }
+    triggerPayload.relevantTextDocuments = triggerPayload.relevantTextDocuments.filter(
+        (doc) => doc.text !== undefined && doc.text !== ''
+    )
 
     let document: TextDocument | undefined = undefined
     let cursorState: CursorState | undefined = undefined
@@ -154,10 +144,6 @@ export function triggerPayloadToChatRequest(triggerPayload: TriggerPayload): { c
         }
     }
 
-    const relevantDocuments: RelevantTextDocument[] = triggerPayload.relevantTextDocuments
-        ? triggerPayload.relevantTextDocuments
-        : []
-    const useRelevantDocuments = triggerPayload.useRelevantDocuments
     // service will throw validation exception if string is empty
     const customizationArn: string | undefined = undefinedIfEmpty(triggerPayload.customization.arn)
     const chatTriggerType = triggerPayload.trigger === ChatTriggerType.InlineChatMessage ? 'INLINE_CHAT' : 'MANUAL'
@@ -166,15 +152,13 @@ export function triggerPayloadToChatRequest(triggerPayload: TriggerPayload): { c
         conversationState: {
             currentMessage: {
                 userInputMessage: {
-                    content: triggerPayload.message
-                        ? triggerPayload.message.substring(0, customerMessageSizeLimit)
-                        : '',
+                    content: triggerPayload.message,
                     userInputMessageContext: {
                         editorState: {
                             document,
                             cursorState,
-                            relevantDocuments,
-                            useRelevantDocuments,
+                            relevantDocuments: triggerPayload.relevantTextDocuments,
+                            useRelevantDocuments: triggerPayload.useRelevantDocuments,
                         },
                         additionalContext: triggerPayload.additionalContents,
                     },
@@ -194,7 +178,7 @@ function preserveContexts(
 ): FlexibleTruncationInfo {
     const typeToContextMap = new Map<
         ChatContextType,
-        string | AdditionalContentEntryAddition[] | RelevantTextDocumentAddition[] | undefined
+        string | AdditionalContentEntryAddition[] | RelevantTextDocumentAddition[]
     >([
         [ChatContextType.UserInput, triggerPayload.message],
         [ChatContextType.CurrentFile, triggerPayload.fileText],
@@ -212,21 +196,16 @@ function preserveContexts(
     }
 
     const contexts = typeToContextMap.get(contextType)
-    if (!contexts) {
-        getLogger().debug(
-            `Current request context size: type: ${contextType}, before: ${truncationInfo.sizeBefore}, after: ${truncationInfo.sizeAfter}`
-        )
-        return truncationInfo
-    }
-
     switch (contextType) {
         case ChatContextType.UserInput:
             truncationInfo = truncate(contexts as string, truncationInfo)
             triggerPayload.message = truncationInfo.textAfter
+            triggerPayload.contextLengths.truncatedUserInputContextLength = truncationInfo.sizeAfter
             break
         case ChatContextType.CurrentFile:
             truncationInfo = truncate(contexts as string, truncationInfo)
             triggerPayload.fileText = truncationInfo.textAfter
+            triggerPayload.contextLengths.truncatedCurrentFileContextLength = truncationInfo.sizeAfter
             break
         case ChatContextType.UserSpecificPrompts:
             truncationInfo = truncateUserSpecificContexts(
@@ -234,6 +213,8 @@ function preserveContexts(
                 truncationInfo,
                 'prompt'
             )
+            triggerPayload.contextLengths.truncatedAdditionalContextLengths.promptContextLength =
+                truncationInfo.sizeAfter
             break
         case ChatContextType.UserSpecificRules:
             truncationInfo = truncateUserSpecificContexts(
@@ -241,6 +222,7 @@ function preserveContexts(
                 truncationInfo,
                 'rule'
             )
+            triggerPayload.contextLengths.truncatedAdditionalContextLengths.ruleContextLength = truncationInfo.sizeAfter
             break
         case ChatContextType.UserSpecificFiles:
             truncationInfo = truncateUserSpecificContexts(
@@ -248,9 +230,11 @@ function preserveContexts(
                 truncationInfo,
                 'file'
             )
+            triggerPayload.contextLengths.truncatedAdditionalContextLengths.fileContextLength = truncationInfo.sizeAfter
             break
         case ChatContextType.Workspace:
             truncationInfo = truncateWorkspaceContexts(contexts as RelevantTextDocumentAddition[], truncationInfo)
+            triggerPayload.contextLengths.truncatedWorkspaceContextLength = truncationInfo.sizeAfter
             break
         default:
             getLogger().warn(`Unexpected context type: ${contextType}`)

@@ -78,6 +78,7 @@ import {
     aditionalContentNameLimit,
     additionalContentInnerContextLimit,
     workspaceChunkMaxSize,
+    defaultContextLengths,
 } from '../../constants'
 import { ChatSession } from '../../clients/chat/v0/chat'
 
@@ -720,13 +721,21 @@ export class ChatController {
                         trigger: ChatTriggerType.ChatMessage,
                         query: undefined,
                         codeSelection: context?.focusAreaContext?.selectionInsideExtendedCodeBlock,
-                        fileText: context?.focusAreaContext?.extendedCodeBlock,
+                        fileText: context?.focusAreaContext?.extendedCodeBlock ?? '',
                         fileLanguage: context?.activeFileContext?.fileLanguage,
                         filePath: context?.activeFileContext?.filePath,
                         matchPolicy: context?.activeFileContext?.matchPolicy,
                         codeQuery: context?.focusAreaContext?.names,
                         userIntent: this.userIntentRecognizer.getFromContextMenuCommand(command),
                         customization: getSelectedCustomization(),
+                        additionalContents: [],
+                        relevantTextDocuments: [],
+                        documentReferences: [],
+                        useRelevantDocuments: false,
+                        contextLengths: {
+                            ...defaultContextLengths,
+                        },
+                        context: [],
                     },
                     triggerID
                 )
@@ -793,17 +802,25 @@ export class ChatController {
 
             return this.generateResponse(
                 {
-                    message: message.message,
+                    message: message.message ?? '',
                     trigger: ChatTriggerType.ChatMessage,
                     query: message.message,
                     codeSelection: lastTriggerEvent.context?.focusAreaContext?.selectionInsideExtendedCodeBlock,
-                    fileText: lastTriggerEvent.context?.focusAreaContext?.extendedCodeBlock,
+                    fileText: lastTriggerEvent.context?.focusAreaContext?.extendedCodeBlock ?? '',
                     fileLanguage: lastTriggerEvent.context?.activeFileContext?.fileLanguage,
                     filePath: lastTriggerEvent.context?.activeFileContext?.filePath,
                     matchPolicy: lastTriggerEvent.context?.activeFileContext?.matchPolicy,
                     codeQuery: lastTriggerEvent.context?.focusAreaContext?.names,
                     userIntent: message.userIntent,
                     customization: getSelectedCustomization(),
+                    contextLengths: {
+                        ...defaultContextLengths,
+                    },
+                    relevantTextDocuments: [],
+                    additionalContents: [],
+                    documentReferences: [],
+                    useRelevantDocuments: false,
+                    context: [],
                 },
                 triggerID
             )
@@ -826,18 +843,25 @@ export class ChatController {
                 })
                 return this.generateResponse(
                     {
-                        message: message.message,
+                        message: message.message ?? '',
                         trigger: ChatTriggerType.ChatMessage,
                         query: message.message,
                         codeSelection: context?.focusAreaContext?.selectionInsideExtendedCodeBlock,
-                        fileText: context?.focusAreaContext?.extendedCodeBlock,
+                        fileText: context?.focusAreaContext?.extendedCodeBlock ?? '',
                         fileLanguage: context?.activeFileContext?.fileLanguage,
                         filePath: context?.activeFileContext?.filePath,
                         matchPolicy: context?.activeFileContext?.matchPolicy,
                         codeQuery: context?.focusAreaContext?.names,
                         userIntent: this.userIntentRecognizer.getFromPromptChatMessage(message),
                         customization: getSelectedCustomization(),
-                        context: message.context,
+                        context: message.context ?? [],
+                        relevantTextDocuments: [],
+                        additionalContents: [],
+                        documentReferences: [],
+                        useRelevantDocuments: false,
+                        contextLengths: {
+                            ...defaultContextLengths,
+                        },
                     },
                     triggerID
                 )
@@ -928,17 +952,16 @@ export class ChatController {
         triggerPayload.workspaceRulesCount = workspaceRules.length
 
         // Add context commands added by user to context
-        if (triggerPayload.context !== undefined && triggerPayload.context.length > 0) {
-            for (const context of triggerPayload.context) {
-                if (typeof context !== 'string' && context.route && context.route.length === 2) {
-                    contextCommands.push({
-                        workspaceFolder: context.route[0] || '',
-                        type: context.icon === 'folder' ? 'folder' : 'file',
-                        relativePath: context.route[1] || '',
-                    })
-                }
+        for (const context of triggerPayload.context) {
+            if (typeof context !== 'string' && context.route && context.route.length === 2) {
+                contextCommands.push({
+                    workspaceFolder: context.route[0] || '',
+                    type: context.icon === 'folder' ? 'folder' : 'file',
+                    relativePath: context.route[1] || '',
+                })
             }
         }
+
         if (contextCommands.length === 0) {
             return []
         }
@@ -963,48 +986,29 @@ export class ChatController {
             getLogger().verbose(`Could not get context command prompts: ${e}`)
         }
 
-        triggerPayload.additionalContents = []
-        const emptyLengths = {
-            fileContextLength: 0,
-            promptContextLength: 0,
-            ruleContextLength: 0,
-        }
-        triggerPayload.additionalContextLengths = emptyLengths
-        triggerPayload.truncatedAdditionalContextLengths = emptyLengths
+        triggerPayload.contextLengths.additionalContextLengths = this.telemetryHelper.getContextLengths(prompts)
+        for (const prompt of prompts.slice(0, 20)) {
+            // Add system prompt for user prompts and workspace rules
+            const contextType = this.telemetryHelper.getContextType(prompt)
+            const description =
+                contextType === 'rule' || contextType === 'prompt'
+                    ? `You must follow the instructions in ${prompt.relativePath}. Below are lines ${prompt.startLine}-${prompt.endLine} of this file:\n`
+                    : prompt.description
 
-        if (Array.isArray(prompts) && prompts.length > 0) {
-            triggerPayload.additionalContextLengths = this.telemetryHelper.getContextLengths(prompts)
-            for (const prompt of prompts.slice(0, 20)) {
-                // Add system prompt for user prompts and workspace rules
-                const contextType = this.telemetryHelper.getContextType(prompt)
-                const description =
-                    contextType === 'rule' || contextType === 'prompt'
-                        ? `You must follow the instructions in ${prompt.relativePath}. Below are lines ${prompt.startLine}-${prompt.endLine} of this file:\n`
-                        : prompt.description
+            // Handle user prompts outside the workspace
+            const relativePath = prompt.filePath.startsWith(getUserPromptsDirectory())
+                ? path.basename(prompt.filePath)
+                : path.relative(workspaceFolder, prompt.filePath)
 
-                // Handle user prompts outside the workspace
-                const relativePath = prompt.filePath.startsWith(getUserPromptsDirectory())
-                    ? path.basename(prompt.filePath)
-                    : path.relative(workspaceFolder, prompt.filePath)
-
-                const entry = {
-                    name: prompt.name.substring(0, aditionalContentNameLimit),
-                    description: description.substring(0, aditionalContentNameLimit),
-                    innerContext: prompt.content.substring(0, additionalContentInnerContextLimit),
-                    type: contextType,
-                    relativePath: relativePath,
-                }
-
-                if (contextType === 'rule') {
-                    triggerPayload.truncatedAdditionalContextLengths.ruleContextLength += entry.innerContext.length
-                } else if (contextType === 'prompt') {
-                    triggerPayload.truncatedAdditionalContextLengths.promptContextLength += entry.innerContext.length
-                } else if (contextType === 'file') {
-                    triggerPayload.truncatedAdditionalContextLengths.fileContextLength += entry.innerContext.length
-                }
-
-                triggerPayload.additionalContents.push(entry)
+            const entry = {
+                name: prompt.name.substring(0, aditionalContentNameLimit),
+                description: description.substring(0, aditionalContentNameLimit),
+                innerContext: prompt.content.substring(0, additionalContentInnerContextLimit),
+                type: contextType,
+                relativePath: relativePath,
             }
+
+            triggerPayload.additionalContents.push(entry)
         }
         getLogger().info(`Retrieved chunks of additional context count: ${triggerPayload.additionalContents.length} `)
     }
@@ -1044,19 +1048,17 @@ export class ChatController {
 
         const session = this.sessionStorage.getSession(tabID)
         await this.resolveContextCommandPayload(triggerPayload, session)
-        triggerPayload.useRelevantDocuments =
-            triggerPayload.context?.some(
-                (context) => typeof context !== 'string' && context.command === '@workspace'
-            ) || false
-        triggerPayload.documentReferences = []
-        if (triggerPayload.useRelevantDocuments && triggerPayload.message) {
+        triggerPayload.useRelevantDocuments = triggerPayload.context.some(
+            (context) => typeof context !== 'string' && context.command === '@workspace'
+        )
+        if (triggerPayload.useRelevantDocuments) {
             triggerPayload.message = triggerPayload.message.replace(/@workspace/, '')
             if (CodeWhispererSettings.instance.isLocalIndexEnabled()) {
                 const start = performance.now()
-                triggerPayload.relevantTextDocuments = []
                 const relevantTextDocuments = await LspController.instance.query(triggerPayload.message)
                 for (const relevantDocument of relevantTextDocuments) {
-                    if (relevantDocument.text !== undefined && relevantDocument.text.length > 0) {
+                    if (relevantDocument.text && relevantDocument.text.length > 0) {
+                        triggerPayload.contextLengths.workspaceContextLength += relevantDocument.text.length
                         if (relevantDocument.text.length > workspaceChunkMaxSize) {
                             relevantDocument.text = relevantDocument.text.substring(0, workspaceChunkMaxSize)
                             getLogger().debug(`Truncating @workspace chunk: ${relevantDocument.relativeFilePath} `)
@@ -1077,36 +1079,31 @@ export class ChatController {
             }
         }
 
+        triggerPayload.contextLengths.userInputContextLength = triggerPayload.message.length
+        triggerPayload.contextLengths.currentFileContextLength = triggerPayload.fileText.length
         const request = triggerPayloadToChatRequest(triggerPayload)
-        triggerPayload.documentReferences = this.mergeRelevantTextDocuments(triggerPayload.relevantTextDocuments || [])
+        triggerPayload.documentReferences = this.mergeRelevantTextDocuments(triggerPayload.relevantTextDocuments)
 
         // Update context transparency after it's truncated dynamically to show users only the context sent.
-        if (triggerPayload.documentReferences !== undefined) {
-            const relativePathsOfMergedRelevantDocuments = triggerPayload.documentReferences.map(
-                (doc) => doc.relativeFilePath
-            )
-            const seen: string[] = []
-            if (triggerPayload.additionalContents) {
-                for (const additionalContent of triggerPayload.additionalContents) {
-                    const relativePath = additionalContent.relativePath
-                    if (
-                        !relativePathsOfMergedRelevantDocuments.includes(relativePath) &&
-                        !seen.includes(relativePath)
-                    ) {
-                        triggerPayload.documentReferences.push({
-                            relativeFilePath: relativePath,
-                            lineRanges: [{ first: -1, second: -1 }],
-                        })
-                        seen.push(relativePath)
-                    }
-                }
-            }
-            for (const doc of triggerPayload.documentReferences) {
-                session.contexts.set(doc.relativeFilePath, doc.lineRanges)
+        const relativePathsOfMergedRelevantDocuments = triggerPayload.documentReferences.map(
+            (doc) => doc.relativeFilePath
+        )
+        const seen: string[] = []
+        for (const additionalContent of triggerPayload.additionalContents) {
+            const relativePath = additionalContent.relativePath
+            if (!relativePathsOfMergedRelevantDocuments.includes(relativePath) && !seen.includes(relativePath)) {
+                triggerPayload.documentReferences.push({
+                    relativeFilePath: relativePath,
+                    lineRanges: [{ first: -1, second: -1 }],
+                })
+                seen.push(relativePath)
             }
         }
+        for (const doc of triggerPayload.documentReferences) {
+            session.contexts.set(doc.relativeFilePath, doc.lineRanges)
+        }
 
-        getLogger().info(
+        getLogger().debug(
             `request from tab: ${tabID} conversationID: ${session.sessionIdentifier} request: ${inspect(request, {
                 depth: 12,
             })}`
