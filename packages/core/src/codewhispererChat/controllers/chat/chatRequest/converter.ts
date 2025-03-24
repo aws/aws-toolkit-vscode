@@ -28,7 +28,7 @@ export const supportedLanguagesList = [
     'sql',
 ]
 
-const filePathSizeLimit = 4_000
+export const filePathSizeLimit = 4_000
 
 export function triggerPayloadToChatRequest(triggerPayload: TriggerPayload): { conversationState: ConversationState } {
     // Flexible truncation logic
