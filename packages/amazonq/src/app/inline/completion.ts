@@ -19,7 +19,7 @@ import { LanguageClient } from 'vscode-languageclient'
 import { LogInlineCompletionSessionResultsParams } from '@aws/language-server-runtimes/protocol'
 import { SessionManager } from './sessionManager'
 import { RecommendationService } from './recommendationService'
-import { CodeWhispererConstants } from 'aws-core-vscode/codewhisperer'
+import { CodeWhispererConstants, ReferenceInlineProvider } from 'aws-core-vscode/codewhisperer'
 
 export class InlineCompletionManager implements Disposable {
     private disposable: Disposable
@@ -181,6 +181,11 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
                     session.firstCompletionDisplayLatency,
                 ],
             }
+            ReferenceInlineProvider.instance.setInlineReference(
+                position.line,
+                item.insertText as string,
+                item.references
+            )
         }
         return items as InlineCompletionItem[]
     }
