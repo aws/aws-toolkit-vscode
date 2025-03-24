@@ -233,11 +233,11 @@ describe('triggerPayloadToChatRequest', () => {
                 ?.relevantDocuments?.[0]?.text
 
         // Verify priority ordering
-        assert.strictEqual(userInputLength, after[0])
-        assert.strictEqual(promptContext?.length, after[1])
-        assert.strictEqual(currentFileLength, after[2])
-        assert.strictEqual(ruleContext?.length, after[3])
-        assert.strictEqual(fileContext?.length, after[4])
-        assert.strictEqual(workspaceContext?.length, after[5])
+        assert.strictEqual(userInputLength ?? 0, after[0])
+        assert.strictEqual(promptContext?.length ?? 0, after[1])
+        assert.strictEqual(currentFileLength ?? 0, after[2])
+        assert.strictEqual(ruleContext?.length ?? 0, after[3])
+        assert.strictEqual(fileContext?.length ?? 0, after[4])
+        assert.strictEqual(workspaceContext?.length ?? 0, after[5])
     }
 })
