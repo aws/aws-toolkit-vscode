@@ -222,8 +222,8 @@ export class LspController {
                 },
                 { interval: 1000, timeout: 60_000, truthy: true }
             )
-        } finally {
-            this._contextCommandSymbolsUpdated = false
+        } catch (err) {
+            getLogger().error(`LspController: Failed to find symbols`)
         }
     }
 
