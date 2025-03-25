@@ -47,7 +47,8 @@ export const createMynahUI = (
     featureConfigsSerialized: [string, FeatureContext][],
     welcomeCount: number,
     disclaimerAcknowledged: boolean,
-    disabledCommands?: string[]
+    disabledCommands?: string[],
+    service?: string
 ) => {
     let disclaimerCardActive = !disclaimerAcknowledged
     // eslint-disable-next-line prefer-const
@@ -58,6 +59,7 @@ export const createMynahUI = (
     const responseMetadata = new Map<string, string[]>()
 
     let savedContextCommands: MynahUIDataModel['contextCommands'] = []
+    const serviceName = service ?? ''
 
     window.addEventListener('error', (e) => {
         const { error, message } = e
@@ -624,7 +626,7 @@ export const createMynahUI = (
                 tabsStorage.updateTabTypeFromUnknown(tabID, 'cwc')
                 mynahUI?.updateTabDefaults({
                     store: {
-                        ...tabDataGenerator.getTabData('cwc', true),
+                        ...tabDataGenerator.getTabData('cwc', true, undefined, serviceName),
                         tabHeaderDetails: void 0,
                         compactMode: false,
                         tabBackground: false,
@@ -931,7 +933,7 @@ export const createMynahUI = (
                 store: {
                     ...(showWelcomePage()
                         ? welcomeScreenTabData(tabDataGenerator).store
-                        : tabDataGenerator.getTabData('cwc', true)),
+                        : tabDataGenerator.getTabData('cwc', true, undefined, serviceName)),
                     ...(disclaimerCardActive ? { promptInputStickyCard: disclaimerCard } : {}),
                 },
             },
@@ -939,7 +941,7 @@ export const createMynahUI = (
         defaults: {
             store: showWelcomePage()
                 ? welcomeScreenTabData(tabDataGenerator).store
-                : tabDataGenerator.getTabData('cwc', true),
+                : tabDataGenerator.getTabData('cwc', true, undefined, serviceName),
         },
         config: {
             maxTabs: 10,
