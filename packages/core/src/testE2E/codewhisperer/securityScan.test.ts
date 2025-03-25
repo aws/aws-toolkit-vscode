@@ -24,6 +24,7 @@ import fs from '../../shared/fs/fs'
 import { ZipUtil } from '../../codewhisperer/util/zipUtil'
 import { randomUUID } from '../../shared/crypto'
 import { getWorkspacePaths } from '../../shared/utilities/workspaceUtils'
+import { generateZipCodeScanForProject } from '../../codewhisperer/commands/startSecurityScan'
 
 const filePromptWithSecurityIssues = `from flask import app
 
@@ -94,7 +95,7 @@ describe('CodeWhisperer security scan', async function () {
 
         const projectPaths = getWorkspacePaths()
         const scope = CodeWhispererConstants.CodeAnalysisScope.PROJECT
-        const zipMetadata = await zipUtil.generateZipCodeScanForProject()
+        const zipMetadata = await generateZipCodeScanForProject(zipUtil)
         const codeScanName = randomUUID()
 
         let artifactMap
