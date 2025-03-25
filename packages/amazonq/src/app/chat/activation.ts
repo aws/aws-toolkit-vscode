@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import { ExtensionContext, window } from 'vscode'
 import { telemetry } from 'aws-core-vscode/telemetry'
 import { AuthUtil, CodeWhispererSettings } from 'aws-core-vscode/codewhisperer'
-import { Commands, placeholder, funcUtil } from 'aws-core-vscode/shared'
+import { Commands, placeholder, funcUtil, getLogger, setContext } from 'aws-core-vscode/shared'
 import * as amazonq from 'aws-core-vscode/amazonq'
 import { scanChatAppInit } from '../amazonqScan'
 import { init as inlineChatInit } from '../../inlineChat/app'
@@ -16,6 +16,11 @@ export async function activate(context: ExtensionContext) {
     const appInitContext = amazonq.DefaultAmazonQAppInitContext.instance
 
     registerApps(appInitContext, context)
+    const serviceName = process.env.SERVICE_NAME ?? 'SageMakerUnifiedStudio' // Fallback service name to a generic name AmazonQ
+    const amazonQState = amazonq.AmazonQState.initialize(serviceName)
+    getLogger().info(`In Extension activation - q state is initialized ${amazonQState.serviceName}`)
+    // Create a context key for SageMaker Studio state and set in context
+    await setContext('aws.amazonq.isSagemakerStudio', amazonQState.isSageMakerUnifiedStudio())
 
     const provider = new amazonq.AmazonQChatViewProvider(
         context,
