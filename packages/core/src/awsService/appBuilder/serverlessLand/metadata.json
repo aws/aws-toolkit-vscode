@@ -53,7 +53,7 @@
             ]
         },
         "Process SQS Records with Lambda": {
-            "name": "Rest API",
+            "name": "Process SQS Records with Lambda",
             "description": "Lambda, SQS • Python, Javascript, Java, .NET • SAM",
             "implementation": [
                 {
@@ -75,6 +75,32 @@
                     "iac": "sam",
                     "runtime": "dotnet",
                     "assetName": "sqs-lambda-dotnet-sam"
+                }
+            ]
+        },
+        "Process SNS notification messages with Lambda": {
+            "name": "Process SNS notification messages with Lambda",
+            "description": "Lambda, SNS • Python, Javascript, Java, .NET • SAM",
+            "implementation": [
+                {
+                    "iac": "sam",
+                    "runtime": "python",
+                    "assetName": "sns-lambda-python-sam"
+                },
+                {
+                    "iac": "sam",
+                    "runtime": "javascript",
+                    "assetName": "sns-lambda-nodejs-sam"
+                },
+                {
+                    "iac": "sam",
+                    "runtime": "java",
+                    "assetName": "sns-lambda-java-sam"
+                },
+                {
+                    "iac": "sam",
+                    "runtime": "dotnet",
+                    "assetName": "sns-lambda-dotnet-sam"
                 }
             ]
         }
