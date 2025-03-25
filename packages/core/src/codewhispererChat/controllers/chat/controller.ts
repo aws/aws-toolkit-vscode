@@ -1030,6 +1030,8 @@ export class ChatController {
                 innerContext: prompt.content.substring(0, additionalContentInnerContextLimit),
                 type: contextType,
                 relativePath: relativePath,
+                startLine: prompt.startLine,
+                endLine: prompt.endLine,
             }
 
             triggerPayload.additionalContents.push(entry)
@@ -1118,7 +1120,10 @@ export class ChatController {
             if (!relativePathsOfMergedRelevantDocuments.includes(relativePath) && !seen.includes(relativePath)) {
                 triggerPayload.documentReferences.push({
                     relativeFilePath: relativePath,
-                    lineRanges: [{ first: -1, second: -1 }],
+                    lineRanges:
+                        additionalContent.name === 'symbol'
+                            ? [{ first: additionalContent.startLine, second: additionalContent.endLine }]
+                            : [{ first: -1, second: -1 }],
                 })
                 seen.push(relativePath)
             }

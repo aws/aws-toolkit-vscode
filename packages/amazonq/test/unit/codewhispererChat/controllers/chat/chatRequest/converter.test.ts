@@ -58,6 +58,8 @@ describe('triggerPayloadToChatRequest', () => {
             relativePath: 'path-prompt',
             type: 'prompt',
             innerContext: createLargeString(size, 'prompt-'),
+            startLine: 0,
+            endLine: 100,
         }
     }
 
@@ -68,6 +70,8 @@ describe('triggerPayloadToChatRequest', () => {
             relativePath: 'path-rule',
             type: 'rule',
             innerContext: createLargeString(size, 'rule-'),
+            startLine: 0,
+            endLine: 100,
         }
     }
 
@@ -78,6 +82,8 @@ describe('triggerPayloadToChatRequest', () => {
             relativePath: 'path-file',
             type: 'file',
             innerContext: createLargeString(size, 'file-'),
+            startLine: 0,
+            endLine: 100,
         }
     }
 
@@ -116,13 +122,23 @@ describe('triggerPayloadToChatRequest', () => {
         const payloadWithEmptyContents: TriggerPayload = {
             ...mockBasicPayload,
             additionalContents: [
-                { name: 'prompt1', description: 'prompt1', relativePath: 'path1', type: 'prompt', innerContext: '' },
+                {
+                    name: 'prompt1',
+                    description: 'prompt1',
+                    relativePath: 'path1',
+                    type: 'prompt',
+                    innerContext: '',
+                    startLine: 0,
+                    endLine: 100,
+                },
                 {
                     name: 'prompt2',
                     description: 'prompt2',
                     relativePath: 'path2',
                     type: 'prompt',
                     innerContext: 'valid content',
+                    startLine: 0,
+                    endLine: 100,
                 },
             ],
         }
