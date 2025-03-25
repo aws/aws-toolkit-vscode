@@ -9,8 +9,12 @@ import { LanguageClient } from 'vscode-languageclient'
 import { AmazonQInlineCompletionItemProvider, InlineCompletionManager } from '../../../../../src/app/inline/completion'
 import { RecommendationService } from '../../../../../src/app/inline/recommendationService'
 import { SessionManager } from '../../../../../src/app/inline/sessionManager'
-import { createMockDocument } from 'aws-core-vscode/test'
-import { ReferenceInlineProvider } from 'aws-core-vscode/codewhisperer'
+import { createMockDocument, createMockTextEditor } from 'aws-core-vscode/test'
+import {
+    ReferenceHoverProvider,
+    ReferenceInlineProvider,
+    ReferenceLogViewProvider,
+} from 'aws-core-vscode/codewhisperer'
 
 describe('InlineCompletionManager', () => {
     let manager: InlineCompletionManager
@@ -23,10 +27,32 @@ describe('InlineCompletionManager', () => {
     let sandbox: sinon.SinonSandbox
     let getActiveSessionStub: sinon.SinonStub
     let getActiveRecommendationStub: sinon.SinonStub
+    let logReferenceStub: sinon.SinonStub
+    let getReferenceStub: sinon.SinonStub
+    let hoverReferenceStub: sinon.SinonStub
     const mockDocument = createMockDocument()
+    const mockEditor = createMockTextEditor()
     const mockPosition = { line: 0, character: 0 } as Position
     const mockContext = { triggerKind: 1, selectedCompletionInfo: undefined }
     const mockToken = { isCancellationRequested: false } as CancellationToken
+    const fakeReferences = [
+        {
+            message: '',
+            licenseName: 'TEST_LICENSE',
+            repository: 'TEST_REPO',
+            recommendationContentSpan: {
+                start: 0,
+                end: 10,
+            },
+        },
+    ]
+    const mockSuggestions = [
+        {
+            itemId: 'test-item',
+            insertText: 'test',
+            references: fakeReferences,
+        },
+    ]
 
     beforeEach(() => {
         sandbox = sinon.createSandbox()
@@ -49,6 +75,9 @@ describe('InlineCompletionManager', () => {
         manager = new InlineCompletionManager(languageClient)
         getActiveSessionStub = sandbox.stub(manager['sessionManager'], 'getActiveSession')
         getActiveRecommendationStub = sandbox.stub(manager['sessionManager'], 'getActiveRecommendation')
+        getReferenceStub = sandbox.stub(ReferenceLogViewProvider, 'getReferenceLog')
+        logReferenceStub = sandbox.stub(ReferenceLogViewProvider.instance, 'addReferenceLog')
+        hoverReferenceStub = sandbox.stub(ReferenceHoverProvider.instance, 'addCodeReferences')
     })
 
     afterEach(() => {
@@ -73,11 +102,16 @@ describe('InlineCompletionManager', () => {
                     ?.find((call) => call.args[0] === 'aws.amazonq.acceptInline')?.args[1]
 
                 const sessionId = 'test-session'
-                const itemId = 'test-item'
                 const requestStartTime = Date.now() - 1000
                 const firstCompletionDisplayLatency = 500
 
-                await acceptanceHandler(sessionId, itemId, requestStartTime, firstCompletionDisplayLatency)
+                await acceptanceHandler(
+                    sessionId,
+                    mockSuggestions[0],
+                    mockEditor,
+                    requestStartTime,
+                    firstCompletionDisplayLatency
+                )
 
                 assert(sendNotificationStub.calledOnce)
                 assert(
@@ -86,7 +120,7 @@ describe('InlineCompletionManager', () => {
                         sinon.match({
                             sessionId,
                             completionSessionResult: {
-                                [itemId]: {
+                                [mockSuggestions[0].itemId]: {
                                     seen: true,
                                     accepted: true,
                                     discarded: false,
@@ -98,6 +132,39 @@ describe('InlineCompletionManager', () => {
 
                 assert(disposableStub.calledOnce)
                 assert(registerProviderStub.calledTwice) // Once in constructor, once after acceptance
+            })
+
+            it('should log reference if there is any', async () => {
+                const acceptanceHandler = registerCommandStub
+                    .getCalls()
+                    ?.find((call) => call.args[0] === 'aws.amazonq.acceptInline')?.args[1]
+
+                const sessionId = 'test-session'
+                const requestStartTime = Date.now() - 1000
+                const firstCompletionDisplayLatency = 500
+                const mockReferenceLog = 'test reference log'
+                getReferenceStub.returns(mockReferenceLog)
+
+                await acceptanceHandler(
+                    sessionId,
+                    mockSuggestions[0],
+                    mockEditor,
+                    requestStartTime,
+                    firstCompletionDisplayLatency
+                )
+
+                assert(getReferenceStub.calledOnce)
+                assert(
+                    getReferenceStub.calledWith(
+                        mockSuggestions[0].insertText,
+                        mockSuggestions[0].references,
+                        mockEditor
+                    )
+                )
+                assert(logReferenceStub.calledOnce)
+                assert(logReferenceStub.calledWith(mockReferenceLog))
+                assert(hoverReferenceStub.calledOnce)
+                assert(hoverReferenceStub.calledWith(mockSuggestions[0].insertText, mockSuggestions[0].references))
             })
         })
 
@@ -190,24 +257,6 @@ describe('InlineCompletionManager', () => {
 
     describe('AmazonQInlineCompletionItemProvider', () => {
         describe('provideInlineCompletionItems', () => {
-            const fakeReferences = [
-                {
-                    message: '',
-                    licenseName: 'TEST_LICENSE',
-                    repository: 'TEST_REPO',
-                    recommendationContentSpan: {
-                        start: 0,
-                        end: 10,
-                    },
-                },
-            ]
-            const mockSuggestions = [
-                {
-                    itemId: 'test-item',
-                    insertText: 'test',
-                    references: fakeReferences,
-                },
-            ]
             let mockSessionManager: SessionManager
             let provider: AmazonQInlineCompletionItemProvider
             let getAllRecommendationsStub: sinon.SinonStub

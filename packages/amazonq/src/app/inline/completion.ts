@@ -14,12 +14,22 @@ import {
     commands,
     languages,
     Disposable,
+    window,
+    TextEditor,
 } from 'vscode'
 import { LanguageClient } from 'vscode-languageclient'
-import { LogInlineCompletionSessionResultsParams } from '@aws/language-server-runtimes/protocol'
+import {
+    InlineCompletionItemWithReferences,
+    LogInlineCompletionSessionResultsParams,
+} from '@aws/language-server-runtimes/protocol'
 import { SessionManager } from './sessionManager'
 import { RecommendationService } from './recommendationService'
-import { CodeWhispererConstants, ReferenceInlineProvider } from 'aws-core-vscode/codewhisperer'
+import {
+    CodeWhispererConstants,
+    ReferenceHoverProvider,
+    ReferenceInlineProvider,
+    ReferenceLogViewProvider,
+} from 'aws-core-vscode/codewhisperer'
 
 export class InlineCompletionManager implements Disposable {
     private disposable: Disposable
@@ -53,7 +63,8 @@ export class InlineCompletionManager implements Disposable {
     public registerInlineCompletion() {
         const onInlineAcceptance = async (
             sessionId: string,
-            itemId: string,
+            item: InlineCompletionItemWithReferences,
+            editor: TextEditor,
             requestStartTime: number,
             firstCompletionDisplayLatency?: number
         ) => {
@@ -61,7 +72,7 @@ export class InlineCompletionManager implements Disposable {
             const params: LogInlineCompletionSessionResultsParams = {
                 sessionId: sessionId,
                 completionSessionResult: {
-                    [itemId]: {
+                    [item.itemId]: {
                         seen: true,
                         accepted: true,
                         discarded: false,
@@ -76,6 +87,15 @@ export class InlineCompletionManager implements Disposable {
                 CodeWhispererConstants.platformLanguageIds,
                 this.inlineCompletionProvider
             )
+            if (item.references && item.references.length) {
+                const referenceLog = ReferenceLogViewProvider.getReferenceLog(
+                    item.insertText as string,
+                    item.references,
+                    editor
+                )
+                ReferenceLogViewProvider.instance.addReferenceLog(referenceLog)
+                ReferenceHoverProvider.instance.addCodeReferences(item.insertText as string, item.references)
+            }
         }
         commands.registerCommand('aws.amazonq.acceptInline', onInlineAcceptance)
 
@@ -170,13 +190,15 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
         if (!session || !items.length) {
             return []
         }
+        const editor = window.activeTextEditor
         for (const item of items) {
             item.command = {
                 command: 'aws.amazonq.acceptInline',
                 title: 'On acceptance',
                 arguments: [
                     session.sessionId,
-                    item.itemId,
+                    item,
+                    editor,
                     session.requestStartTime,
                     session.firstCompletionDisplayLatency,
                 ],
