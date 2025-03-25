@@ -4,25 +4,19 @@
  */
 import * as vscode from 'vscode'
 import path from 'path'
-import { tempDirPath, testGenerationLogsDir } from '../../shared/filesystemUtilities'
+import { tempDirPath } from '../../shared/filesystemUtilities'
 import { getLogger, getNullLogger } from '../../shared/logger/logger'
 import * as CodeWhispererConstants from '../models/constants'
 import { fs } from '../../shared/fs/fs'
 import { runtimeLanguageContext } from './runtimeLanguageContext'
 import { CodewhispererLanguage } from '../../shared/telemetry/telemetry.gen'
-import {
-    CurrentWsFolders,
-    collectFiles,
-    defaultExcludePatterns,
-    getWorkspacePaths,
-} from '../../shared/utilities/workspaceUtils'
+import { CurrentWsFolders, collectFiles, getWorkspacePaths } from '../../shared/utilities/workspaceUtils'
 import {
     FileSizeExceededError,
     NoActiveFileError,
     NoSourceFilesError,
     ProjectSizeExceededError,
 } from '../models/errors'
-import { ProjectZipError } from '../../amazonqTest/error'
 import { normalize } from '../../shared/utilities/pathUtils'
 import { ZipStream } from '../../shared/utilities/zipStream'
 import { getTextContent } from '../../shared/utilities/textDocumentUtilities'
@@ -39,11 +33,6 @@ export interface ZipMetadata {
     zipFileSizeInBytes: number
     lines: number
     language: CodewhispererLanguage | undefined
-}
-
-export interface GenerateZipOptions {
-    includeGitDiff?: boolean
-    silent?: boolean
 }
 
 export interface ZipProjectOptions {
@@ -88,7 +77,7 @@ export class ZipUtil {
         return ZipUtil.aboveByteLimit(current + adding, 'project')
     }
 
-    protected async zipFile(uri: vscode.Uri | undefined, includeGitDiffHeader?: boolean) {
+    public async zipFile(uri: vscode.Uri | undefined, includeGitDiffHeader?: boolean) {
         if (!uri) {
             throw new NoActiveFileError()
         }
@@ -121,9 +110,10 @@ export class ZipUtil {
         if (ZipUtil.aboveByteLimit(this._totalSize, 'file')) {
             throw new FileSizeExceededError()
         }
-        const zipFilePath = this.getZipDirPath() + CodeWhispererConstants.codeScanZipExt
+        const zipDirPath = this.getZipDirPath()
+        const zipFilePath = zipDirPath + CodeWhispererConstants.codeScanZipExt
         await zip.finalizeToFile(zipFilePath)
-        return zipFilePath
+        return this.getGenerateZipResult(zipDirPath, zipFilePath)
     }
 
     protected getZipEntryPath(projectName: string, relativePath: string) {
@@ -188,7 +178,7 @@ export class ZipUtil {
         await processDirectory(metadataDir)
     }
 
-    protected async zipProject(
+    public async zipProject(
         workspaceFolders: CurrentWsFolders,
         excludePatterns: string[],
         options?: ZipProjectOptions
@@ -263,27 +253,6 @@ export class ZipUtil {
         }
     }
 
-    protected async processTestCoverageFiles(targetPath: string) {
-        // TODO: will be removed post release
-        const coverageFilePatterns = ['**/coverage.xml', '**/coverage.json', '**/coverage.txt']
-        let files: vscode.Uri[] = []
-
-        for (const pattern of coverageFilePatterns) {
-            files = await vscode.workspace.findFiles(pattern)
-            if (files.length > 0) {
-                break
-            }
-        }
-
-        await Promise.all(
-            files.map(async (file) => {
-                const fileName = path.basename(file.path)
-                const targetFilePath = path.join(targetPath, fileName)
-                await fs.copy(file.path, targetFilePath)
-            })
-        )
-    }
-
     protected processTextFile(
         zip: ZipStream,
         uri: vscode.Uri,
@@ -335,82 +304,6 @@ export class ZipUtil {
             this._zipDir = path.join(this._tmpDir, `${this._zipDirPrefix}_${this._timestamp}`)
         }
         return this._zipDir
-    }
-
-    public async generateZipCodeScanForFile(
-        uri: vscode.Uri | undefined,
-        options?: GenerateZipOptions
-    ): Promise<ZipMetadata> {
-        try {
-            const zipDirPath = this.getZipDirPath()
-            const zipFilePath = await this.zipFile(uri, options?.includeGitDiff)
-
-            return this.getGenerateZipResult(zipDirPath, zipFilePath, options?.silent)
-        } catch (error) {
-            getLogger().error('Zip error caused by: %O', error)
-            throw error
-        }
-    }
-
-    public async generateZipCodeScanForProject(options?: GenerateZipOptions): Promise<ZipMetadata> {
-        try {
-            // We assume there is at least one workspace open.
-            const workspaceFolders = [...(vscode.workspace.workspaceFolders ?? [])] as CurrentWsFolders
-
-            return await this.zipProject(workspaceFolders, defaultExcludePatterns, {
-                includeGitDiff: options?.includeGitDiff,
-                includeNonWorkspaceFiles: true,
-                silent: options?.silent,
-            })
-        } catch (error) {
-            getLogger().error('Zip error caused by: %O', error)
-            throw error
-        }
-    }
-
-    public async generateZipTestGen(projectPath: string, initialExecution: boolean): Promise<ZipMetadata> {
-        try {
-            const zipDirPath = this.getZipDirPath()
-
-            const metadataDir = path.join(zipDirPath, 'utgRequiredArtifactsDir')
-
-            // Create directories
-            const dirs = {
-                metadata: metadataDir,
-                buildAndExecuteLogDir: path.join(metadataDir, 'buildAndExecuteLogDir'),
-                repoMapDir: path.join(metadataDir, 'repoMapData'),
-                testCoverageDir: path.join(metadataDir, 'testCoverageDir'),
-            }
-            await Promise.all(Object.values(dirs).map((dir) => fs.mkdir(dir)))
-
-            if (!initialExecution) {
-                await this.processTestCoverageFiles(dirs.testCoverageDir)
-
-                const sourcePath = path.join(testGenerationLogsDir, 'output.log')
-                const targetPath = path.join(dirs.buildAndExecuteLogDir, 'output.log')
-                if (await fs.exists(sourcePath)) {
-                    await fs.copy(sourcePath, targetPath)
-                }
-            }
-            // We assume there is at least one workspace open.
-            const workspaceFolders = [...(vscode.workspace.workspaceFolders ?? [])].sort(
-                (a, b) => b.uri.fsPath.length - a.uri.fsPath.length
-            ) as CurrentWsFolders
-            return await this.zipProject(
-                workspaceFolders,
-                [...CodeWhispererConstants.testGenExcludePatterns, ...defaultExcludePatterns],
-                {
-                    metadataDir,
-                    projectPath,
-                    silent: true,
-                }
-            )
-        } catch (error) {
-            getLogger().error('Zip error caused by: %s', error)
-            throw new ProjectZipError(
-                error instanceof Error ? error.message : 'Unknown error occurred during zip operation'
-            )
-        }
     }
 
     protected async getGenerateZipResult(

@@ -50,7 +50,7 @@ import {
 import { SecurityIssueTreeViewProvider } from '../service/securityIssueTreeViewProvider'
 import { ChatSessionManager } from '../../amazonqScan/chat/storages/chatSession'
 import { TelemetryHelper } from '../util/telemetryHelper'
-import { getWorkspacePaths } from '../../shared/utilities/workspaceUtils'
+import { CurrentWsFolders, defaultExcludePatterns, getWorkspacePaths } from '../../shared/utilities/workspaceUtils'
 
 const localize = nls.loadMessageBundle()
 export const stopScanButton = localize('aws.codewhisperer.stopscan', 'Stop Scan')
@@ -159,8 +159,12 @@ export async function startSecurityScan(
         const zipType = scope === CodeAnalysisScope.PROJECT ? 'project' : 'file'
         const zipMetadata =
             zipType === 'file'
-                ? await zipUtil.generateZipCodeScanForFile(editor?.document.uri)
-                : await zipUtil.generateZipCodeScanForProject()
+                ? await zipUtil.zipFile(editor?.document.uri)
+                : await zipUtil.zipProject(
+                      [...(vscode.workspace.workspaceFolders ?? [])] as CurrentWsFolders,
+                      defaultExcludePatterns,
+                      { includeNonWorkspaceFiles: true }
+                  )
         const projectPaths = getWorkspacePaths()
 
         const contextTruncationStartTime = performance.now()
@@ -545,4 +549,28 @@ function showScanCompletedNotification(total: number, scannedFiles: Set<string>)
             SecurityIssueTreeViewProvider.focus()
         }
     })
+}
+
+export async function generateZipCodeScanForProject(
+    zipUtil: ZipUtil,
+    options?: {
+        includeGitDiff?: boolean
+        silent?: boolean
+    }
+): Promise<ZipMetadata> {
+    try {
+        // We assume there is at least one workspace open.
+        return await zipUtil.zipProject(
+            [...(vscode.workspace.workspaceFolders ?? [])] as CurrentWsFolders,
+            defaultExcludePatterns,
+            {
+                includeGitDiff: options?.includeGitDiff,
+                includeNonWorkspaceFiles: true,
+                silent: options?.silent,
+            }
+        )
+    } catch (error) {
+        getLogger().error('Zip error caused by: %O', error)
+        throw error
+    }
 }
