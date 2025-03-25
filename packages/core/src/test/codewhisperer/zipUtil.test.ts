@@ -17,6 +17,7 @@ import { fs } from '../../shared/fs/fs'
 import { CodeWhispererConstants } from '../../codewhisperer/indexNode'
 import { CurrentWsFolders, defaultExcludePatterns } from '../../shared/utilities/workspaceUtils'
 import { TestFolder } from '../testUtil'
+import { NoActiveFileError } from '../../codewhisperer/models/errors'
 
 describe('zipUtil', function () {
     const workspaceFolder = getTestWorkspaceFolder()
@@ -189,5 +190,45 @@ describe('zipUtil', function () {
 
         assert.strictEqual(await fs.exists(zipFilePath), false)
         assert.strictEqual(await fs.exists(zipFolderPath), false)
+    })
+
+    it('throws when uri is missing', async function () {
+        await assert.rejects(async () => {
+            await zipUtil.zipFile(undefined)
+        }, new NoActiveFileError())
+    })
+
+    it('allows overriding of project paths', async function () {
+        const project = await TestFolder.create()
+        const fileName = 'thisIsPartOfMyProject.py'
+        await project.write(fileName, 'file1')
+        const zipMetadata = await zipUtil.zipProject(
+            [{ uri: vscode.Uri.file(project.path), name: 'project1', index: 0 }],
+            defaultExcludePatterns,
+            {
+                projectPath: project.path,
+            }
+        )
+
+        assert.strictEqual(zipMetadata.scannedFiles.has(path.join(project.path, fileName)), true)
+    })
+
+    it('resolves the most popular language', async function () {
+        const project = await TestFolder.create()
+        await project.write('p1.py', '_')
+        await project.write('p2.py', '_')
+        await project.write('j.java', '_')
+        await project.write('t.ts', '_')
+        await project.write('t2.ts', '_')
+        await project.write('t3.ts', '_')
+        const zipMetadata = await zipUtil.zipProject(
+            [{ uri: vscode.Uri.file(project.path), name: 'project1', index: 0 }],
+            defaultExcludePatterns,
+            {
+                projectPath: project.path,
+            }
+        )
+
+        assert.strictEqual(zipMetadata.language, 'typescript')
     })
 })
