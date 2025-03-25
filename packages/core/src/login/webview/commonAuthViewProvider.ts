@@ -124,8 +124,6 @@ export class CommonAuthViewProvider implements WebviewViewProvider {
             }
 
             this.onDidChangeVisibility?.fire(webviewView.visible)
-            // force webview to reload
-            await vscode.commands.executeCommand('workbench.action.webview.reloadWebviewAction')
         })
 
         const dist = Uri.joinPath(this.extensionContext.extensionUri, 'dist')
