@@ -122,7 +122,7 @@ export class LspClient {
         }
     }
 
-    async updateIndex(filePath: string[], mode: 'update' | 'remove' | 'add') {
+    async updateIndex(filePath: string[], mode: 'update' | 'remove' | 'add' | 'context_command_symbol_update') {
         const payload: UpdateIndexV2RequestPayload = {
             filePaths: filePath,
             updateMode: mode,
