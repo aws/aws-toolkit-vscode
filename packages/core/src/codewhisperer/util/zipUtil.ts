@@ -52,7 +52,7 @@ export const ZipConstants = {
 }
 
 type ZipType = 'file' | 'project'
-type PayloadLimits = Record<ZipType, number>
+type PayloadLimits = Record<ZipType, number> & { [K in ZipType]: number }
 
 export class ZipUtil {
     protected _pickedSourceFiles: Set<string> = new Set<string>()
@@ -199,7 +199,7 @@ export class ZipUtil {
 
         await this.processSourceFiles(zip, languageCount, projectPaths, workspaceFolders, excludePatterns)
         if (options?.metadataDir) {
-            await this.processMetadataDir(zip, options?.metadataDir)
+            await this.processMetadataDir(zip, options.metadataDir)
         }
         if (options?.includeNonWorkspaceFiles) {
             this.processOtherFiles(zip, languageCount)
@@ -274,10 +274,7 @@ export class ZipUtil {
     ) {
         const fileSize = Buffer.from(fileContent).length
 
-        if (
-            this.aboveByteLimit(this._totalSize, 'project') ||
-            this.willReachProjectByteLimit(this._totalSize, fileSize)
-        ) {
+        if (this.willReachProjectByteLimit(this._totalSize, fileSize)) {
             throw new ProjectSizeExceededError()
         }
         this._pickedSourceFiles.add(uri.fsPath)
@@ -291,10 +288,7 @@ export class ZipUtil {
     protected async processBinaryFile(zip: ZipStream, uri: vscode.Uri, zipEntryPath: string) {
         const fileSize = (await fs.stat(uri.fsPath)).size
 
-        if (
-            this.aboveByteLimit(this._totalSize, 'project') ||
-            this.willReachProjectByteLimit(this._totalSize, fileSize)
-        ) {
+        if (this.willReachProjectByteLimit(this._totalSize, fileSize)) {
             throw new ProjectSizeExceededError()
         }
         this._pickedSourceFiles.add(uri.fsPath)
