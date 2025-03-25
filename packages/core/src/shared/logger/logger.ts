@@ -16,6 +16,7 @@ export type LogTopic =
     | 'stepfunctions'
     | 'fsRead'
     | 'fsWrite'
+    | 'executeBash'
 
 class ErrorLog {
     constructor(
