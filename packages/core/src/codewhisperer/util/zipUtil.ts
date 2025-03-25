@@ -416,7 +416,7 @@ export class ZipUtil {
                     await fs.copy(sourcePath, targetPath)
                 }
             }
-            // We assume there is at least workspace open.
+            // We assume there is at least one workspace open.
             const workspaceFolders = [...(vscode.workspace.workspaceFolders ?? [])].sort(
                 (a, b) => b.uri.fsPath.length - a.uri.fsPath.length
             ) as CurrentWsFolders
