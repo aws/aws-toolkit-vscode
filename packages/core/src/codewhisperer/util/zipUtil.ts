@@ -51,6 +51,7 @@ export interface ZipProjectOptions {
     includeGitDiff?: boolean
     metadataDir?: string
     includeNonWorkspaceFiles?: boolean
+    silent?: boolean
 }
 
 export const ZipConstants = {
@@ -210,10 +211,11 @@ export class ZipUtil {
         if (languageCount.size === 0) {
             throw new NoSourceFilesError()
         }
+        const zipDirPath = this.getZipDirPath()
         this._language = [...languageCount.entries()].reduce((a, b) => (b[1] > a[1] ? b : a))[0]
-        const zipFilePath = this.getZipDirPath() + CodeWhispererConstants.codeScanZipExt
+        const zipFilePath = zipDirPath + CodeWhispererConstants.codeScanZipExt
         await zip.finalizeToFile(zipFilePath)
-        return zipFilePath
+        return this.getGenerateZipResult(zipDirPath, zipFilePath)
     }
 
     protected async processCombinedGitDiff(zip: ZipStream, projectPaths: string[], filePath?: string) {
@@ -343,10 +345,7 @@ export class ZipUtil {
             const zipDirPath = this.getZipDirPath()
             const zipFilePath = await this.zipFile(uri, options?.includeGitDiff)
 
-            if (!options?.silent) {
-                getLogger().debug(`Picked source files: [${[...this._pickedSourceFiles].join(', ')}]`)
-            }
-            return this.getGenerateZipResult(zipDirPath, zipFilePath)
+            return this.getGenerateZipResult(zipDirPath, zipFilePath, options?.silent)
         } catch (error) {
             getLogger().error('Zip error caused by: %O', error)
             throw error
@@ -355,19 +354,14 @@ export class ZipUtil {
 
     public async generateZipCodeScanForProject(options?: GenerateZipOptions): Promise<ZipMetadata> {
         try {
-            const zipDirPath = this.getZipDirPath()
             // We assume there is at least one workspace open.
             const workspaceFolders = [...(vscode.workspace.workspaceFolders ?? [])] as CurrentWsFolders
 
-            const zipFilePath = await this.zipProject(workspaceFolders, defaultExcludePatterns, {
+            return await this.zipProject(workspaceFolders, defaultExcludePatterns, {
                 includeGitDiff: options?.includeGitDiff,
                 includeNonWorkspaceFiles: true,
+                silent: options?.silent,
             })
-
-            if (!options?.silent) {
-                getLogger().debug(`Picked source files: [${[...this._pickedSourceFiles].join(', ')}]`)
-            }
-            return this.getGenerateZipResult(zipDirPath, zipFilePath)
         } catch (error) {
             getLogger().error('Zip error caused by: %O', error)
             throw error
@@ -402,16 +396,15 @@ export class ZipUtil {
             const workspaceFolders = [...(vscode.workspace.workspaceFolders ?? [])].sort(
                 (a, b) => b.uri.fsPath.length - a.uri.fsPath.length
             ) as CurrentWsFolders
-            const zipFilePath: string = await this.zipProject(
+            return await this.zipProject(
                 workspaceFolders,
                 [...CodeWhispererConstants.testGenExcludePatterns, ...defaultExcludePatterns],
                 {
                     metadataDir,
                     projectPath,
+                    silent: true,
                 }
             )
-
-            return this.getGenerateZipResult(zipDirPath, zipFilePath)
         } catch (error) {
             getLogger().error('Zip error caused by: %s', error)
             throw new ProjectZipError(
@@ -420,7 +413,14 @@ export class ZipUtil {
         }
     }
 
-    protected async getGenerateZipResult(zipDirpath: string, zipFilePath: string): Promise<ZipMetadata> {
+    protected async getGenerateZipResult(
+        zipDirpath: string,
+        zipFilePath: string,
+        silent?: boolean
+    ): Promise<ZipMetadata> {
+        if (!silent) {
+            getLogger().debug(`Picked source files: [${[...this._pickedSourceFiles].join(', ')}]`)
+        }
         return {
             rootDir: zipDirpath,
             zipFilePath: zipFilePath,
