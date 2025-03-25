@@ -13,6 +13,11 @@ import { UserWrittenCodeTracker } from '../../../../codewhisperer/tracker/userWr
 
 export class ChatSession {
     private sessionId?: string
+    /**
+     * _listOfReadFiles = list of files read from the project to gather context before generating response.
+     * _filePath = The path helps the system locate exactly where to make the necessary changes in the project structure
+     * _tempFilePath = Used to show the code diff view in the editor including LLM changes.
+     */
     private _listOfReadFiles: string[] = []
     private _filePath: string | undefined
     private _tempFilePath: string | undefined
@@ -41,10 +46,10 @@ export class ChatSession {
     public get listOfReadFiles(): string[] {
         return this._listOfReadFiles
     }
-    public get getFilePath(): string | undefined {
+    public get filePath(): string | undefined {
         return this._filePath
     }
-    public get getTempFilePath(): string | undefined {
+    public get tempFilePath(): string | undefined {
         return this._tempFilePath
     }
     public setFilePath(filePath: string | undefined) {
@@ -53,12 +58,11 @@ export class ChatSession {
     public setTempFilePath(tempFilePath: string | undefined) {
         this._tempFilePath = tempFilePath
     }
-    public pushToListOfReadFiles(filePath?: string) {
-        if (filePath) {
-            this._listOfReadFiles.push(filePath)
-        } else {
-            this._listOfReadFiles = []
-        }
+    public pushToListOfReadFiles(filePath: string) {
+        this._listOfReadFiles.push(filePath)
+    }
+    public clearListOfReadFiles() {
+        this._listOfReadFiles = []
     }
     async chatIam(chatRequest: SendMessageRequest): Promise<SendMessageCommandOutput> {
         const client = await createQDeveloperStreamingClient()

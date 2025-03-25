@@ -398,23 +398,23 @@ export class ChatController {
 
     private async processOpenDiff(message: OpenDiff) {
         const session = this.sessionStorage.getSession(message.tabID)
-        const filePath = session.getFilePath ?? message.filePath
+        const filePath = session.filePath ?? message.filePath
         const fileExists = await fs.existsFile(filePath)
         // Check if fileExists=false, If yes, return instead of showing broken diff experience.
-        if (!session.getTempFilePath) {
+        if (!session.tempFilePath) {
             return
         }
         const leftUri = fileExists ? vscode.Uri.file(filePath) : vscode.Uri.from({ scheme: 'untitled' })
-        const rightUri = vscode.Uri.file(session.getTempFilePath ?? filePath)
+        const rightUri = vscode.Uri.file(session.tempFilePath ?? filePath)
         const fileName = path.basename(filePath)
         await vscode.commands.executeCommand('vscode.diff', leftUri, rightUri, `${fileName} ${amazonQTabSuffix}`)
     }
 
     private async processAcceptCodeDiff(message: CustomFormActionMessage) {
         const session = this.sessionStorage.getSession(message.tabID ?? '')
-        const filePath = session.getFilePath ?? ''
+        const filePath = session.filePath ?? ''
         const fileExists = await fs.existsFile(filePath)
-        const tempFilePath = session.getTempFilePath
+        const tempFilePath = session.tempFilePath
         const tempFileExists = await fs.existsFile(tempFilePath ?? '')
         if (fileExists && tempFileExists) {
             const fileContent = await fs.readFileText(filePath)
@@ -889,7 +889,7 @@ export class ChatController {
 
     private async processPromptMessageAsNewThread(message: PromptMessage) {
         const session = this.sessionStorage.getSession(message.tabID)
-        session.pushToListOfReadFiles(undefined)
+        session.clearListOfReadFiles()
         this.editorContextExtractor
             .extractContextForTrigger('ChatMessage')
             .then((context) => {
