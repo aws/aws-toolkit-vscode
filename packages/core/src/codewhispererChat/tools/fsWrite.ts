@@ -85,15 +85,55 @@ export class FsWrite {
     }
 
     private static async handleStrReplace(command: StrReplaceCommand, sanitizedPath: string): Promise<void> {
-        // TODO
+        const fileContent = await fs.readFileText(sanitizedPath)
+
+        const matches = [...fileContent.matchAll(new RegExp(this.escapeRegExp(command.oldStr), 'g'))]
+
+        if (matches.length === 0) {
+            throw new Error(`No occurrences of "${command.oldStr}" were found`)
+        }
+        if (matches.length > 1) {
+            throw new Error(`${matches.length} occurrences of oldStr were found when only 1 is expected`)
+        }
+
+        const newContent = fileContent.replace(command.oldStr, command.newStr)
+        await fs.writeFile(sanitizedPath, newContent)
+
+        void vscode.window.showInformationMessage(`Updated: ${sanitizedPath}`)
     }
 
     private static async handleInsert(command: InsertCommand, sanitizedPath: string): Promise<void> {
-        // TODO
+        const fileContent = await fs.readFileText(sanitizedPath)
+        const lines = fileContent.split('\n')
+
+        const numLines = lines.length
+        const insertLine = Math.max(0, Math.min(command.insertLine, numLines))
+
+        let newContent: string
+        if (insertLine === 0) {
+            newContent = command.newStr + '\n' + fileContent
+        } else {
+            newContent = [...lines.slice(0, insertLine), command.newStr, ...lines.slice(insertLine)].join('\n')
+        }
+
+        await fs.writeFile(sanitizedPath, newContent)
+
+        void vscode.window.showInformationMessage(`Updated: ${sanitizedPath}`)
     }
 
     private static async handleAppend(command: AppendCommand, sanitizedPath: string): Promise<void> {
-        // TODO
+        const fileContent = await fs.readFileText(sanitizedPath)
+        const needsNewline = fileContent.length !== 0 && !fileContent.endsWith('\n')
+
+        let contentToAppend = command.newStr
+        if (needsNewline) {
+            contentToAppend = '\n' + contentToAppend
+        }
+
+        const newContent = fileContent + contentToAppend
+        await fs.writeFile(sanitizedPath, newContent)
+
+        void vscode.window.showInformationMessage(`Updated: ${sanitizedPath}`)
     }
 
     private static getCreateCommandText(command: CreateCommand): string {
@@ -106,5 +146,9 @@ export class FsWrite {
         }
         this.logger.warn('No content provided for the create command')
         return ''
+    }
+
+    private static escapeRegExp(string: string): string {
+        return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
     }
 }
