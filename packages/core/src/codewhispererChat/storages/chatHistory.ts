@@ -12,8 +12,7 @@ import {
 } from '@amzn/codewhisperer-streaming'
 import { randomUUID } from '../../shared/crypto'
 import { getLogger } from '../../shared/logger/logger'
-import toolsJson from '../tools/tool_index.json'
-import { buildEnvState, buildShellState } from '../controllers/chat/chatRequest/converter'
+import { tools } from '../constants'
 
 // Maximum number of messages to keep in history
 const MaxConversationHistoryLength = 100
@@ -32,13 +31,7 @@ export class ChatHistoryManager {
     constructor() {
         this.conversationId = randomUUID()
         this.logger.info(`Generated new conversation id: ${this.conversationId}`)
-
-        this.tools = Object.entries(toolsJson).map(([, toolSpec]) => ({
-            toolSpecification: {
-                ...toolSpec,
-                inputSchema: { json: toolSpec.input_schema },
-            },
-        }))
+        this.tools = tools
     }
 
     /**
@@ -76,8 +69,6 @@ export class ChatHistoryManager {
                 content: newMessage.userInputMessage?.content ?? '',
                 userIntent: newMessage.userInputMessage?.userIntent ?? undefined,
                 userInputMessageContext: newMessage.userInputMessage?.userInputMessageContext ?? {
-                    envState: buildEnvState(),
-                    shellState: buildShellState(),
                     tools: this.tools,
                 },
                 origin: newMessage.userInputMessage?.origin ?? undefined,
@@ -184,7 +175,7 @@ export class ChatHistoryManager {
 
                         this.lastUserMessage.userInputMessage.userInputMessageContext = {
                             shellState: undefined,
-                            envState: buildEnvState(),
+                            envState: undefined,
                             toolResults: toolResults,
                             tools: this.tools.length === 0 ? undefined : [...this.tools],
                         }
@@ -200,7 +191,7 @@ export class ChatHistoryManager {
     addToolResults(toolResults: ToolResult[]): void {
         const userInputMessageContext: UserInputMessageContext = {
             shellState: undefined,
-            envState: buildEnvState(),
+            envState: undefined,
             toolResults: toolResults,
             tools: this.tools.length === 0 ? undefined : [...this.tools],
         }
@@ -213,37 +204,5 @@ export class ChatHistoryManager {
         if (this.lastUserMessage?.userInputMessage) {
             this.lastUserMessage.userInputMessage = msg
         }
-    }
-
-    /**
-     * Sets the next user message with "cancelled" tool results.
-     */
-    abandonToolUse(toolsToBeAbandoned: Array<[string, any]>, denyInput: string): void {
-        const toolResults = toolsToBeAbandoned.map(([toolUseId]) => ({
-            toolUseId,
-            content: [
-                {
-                    type: 'Text' as const,
-                    text: 'Tool use was cancelled by the user',
-                },
-            ],
-            status: ToolResultStatus.ERROR,
-        }))
-
-        const userInputMessageContext: UserInputMessageContext = {
-            shellState: undefined,
-            envState: buildEnvState(),
-            toolResults,
-            tools: this.tools.length > 0 ? [...this.tools] : undefined,
-        }
-
-        const msg: ChatMessage = {
-            userInputMessage: {
-                content: denyInput,
-                userInputMessageContext,
-            },
-        }
-
-        this.lastUserMessage = msg
     }
 }

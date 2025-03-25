@@ -4,6 +4,8 @@
  */
 import * as path from 'path'
 import fs from '../shared/fs/fs'
+import { Tool } from '@amzn/codewhisperer-streaming'
+import toolsJson from '../codewhispererChat/tools/tool_index.json'
 
 export const promptFileExtension = '.md'
 
@@ -19,3 +21,10 @@ export const getUserPromptsDirectory = () => {
 }
 
 export const createSavedPromptCommandId = 'create-saved-prompt'
+
+export const tools: Tool[] = Object.entries(toolsJson).map(([, toolSpec]) => ({
+    toolSpecification: {
+        ...toolSpec,
+        inputSchema: { json: toolSpec.inputSchema },
+    },
+}))

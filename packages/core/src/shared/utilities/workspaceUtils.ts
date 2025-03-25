@@ -673,26 +673,8 @@ export async function findStringInDirectory(searchStr: string, dirPath: string) 
 }
 
 /**
- * Attempts to determine the current working directory based on the active editor or workspace.
- *
- * This function first checks if there is an active text editor open. If so, it returns
- * the directory containing the active file. If no editor is active, it falls back to
- * the first workspace folder's path.
- *
- * @returns {string | undefined} The path to the current working directory if it can be determined,
- *                              or undefined if no workspace folders are available and no editor is active.
- */
-export function tryGetCurrentWorkingDirectory() {
-    const activeTextEditor = vscode.window.activeTextEditor
-    return activeTextEditor
-        ? path.dirname(activeTextEditor.document.uri.fsPath)
-        : vscode.workspace.workspaceFolders?.[0].uri.fsPath
-}
-
-/**
  * Returns a one-character tag for a directory ('d'), symlink ('l'), or file ('-').
- */
- * Returns a one-character tag for a directory ('d'), symlink ('l'), or file ('-').
+ *
  */
 export function formatListing(name: string, fileType: vscode.FileType, fullPath: string): string {
     let typeChar = '-'
