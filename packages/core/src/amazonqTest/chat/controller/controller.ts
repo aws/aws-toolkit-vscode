@@ -36,7 +36,11 @@ import {
 import { UserIntent } from '@amzn/codewhisperer-streaming'
 import { getSelectedCustomization } from '../../../codewhisperer/util/customizationUtil'
 import { createCodeWhispererChatStreamingClient } from '../../../shared/clients/codewhispererChatClient'
-import { ChatItemVotedMessage, ChatTriggerType } from '../../../codewhispererChat/controllers/chat/model'
+import {
+    ChatItemVotedMessage,
+    ChatTriggerType,
+    TriggerPayload,
+} from '../../../codewhispererChat/controllers/chat/model'
 import { triggerPayloadToChatRequest } from '../../../codewhispererChat/controllers/chat/chatRequest/converter'
 import { EditorContentController } from '../../../amazonq/commons/controllers/contentController'
 import { amazonQTabSuffix } from '../../../shared/constants'
@@ -67,6 +71,7 @@ import { TargetFileInfo } from '../../../codewhisperer/client/codewhispereruserc
 import { submitFeedback } from '../../../feedback/vue/submitFeedback'
 import { placeholder } from '../../../shared/vscode/commands2'
 import { Auth } from '../../../auth/auth'
+import { defaultContextLengths } from '../../../codewhispererChat/constants'
 
 export interface TestChatControllerEventEmitters {
     readonly tabOpened: vscode.EventEmitter<any>
@@ -916,7 +921,7 @@ export class TestController {
             // TODO: Write this entire gen response to basiccommands and call here.
             const editorText = await fs.readFileText(filePath)
 
-            const triggerPayload = {
+            const triggerPayload: TriggerPayload = {
                 query: `Generate unit tests for the following part of my code: ${message?.trim() || fileName}`,
                 codeSelection: undefined,
                 trigger: ChatTriggerType.ChatMessage,
@@ -928,6 +933,14 @@ export class TestController {
                 codeQuery: undefined,
                 userIntent: UserIntent.GENERATE_UNIT_TESTS,
                 customization: getSelectedCustomization(),
+                context: [],
+                relevantTextDocuments: [],
+                additionalContents: [],
+                documentReferences: [],
+                useRelevantDocuments: false,
+                contextLengths: {
+                    ...defaultContextLengths,
+                },
             }
             const chatRequest = triggerPayloadToChatRequest(triggerPayload)
             const client = await createCodeWhispererChatStreamingClient()
