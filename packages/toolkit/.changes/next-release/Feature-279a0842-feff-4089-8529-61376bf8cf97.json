@@ -1,4 +1,4 @@
 {
 	"type": "Feature",
-	"description": "Adding pattern for Serverless Land feature"
+	"description": "Lambda: Add 'Process SNS notification messages with Lambda' Serverless Land pattern."
 }
