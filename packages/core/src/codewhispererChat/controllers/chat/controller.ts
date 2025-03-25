@@ -1002,11 +1002,7 @@ export class ChatController {
         workspaceFolders.sort()
         const workspaceFolder = workspaceFolders[0]
         for (const contextCommand of contextCommands) {
-            const relativePath = path.relative(
-                workspaceFolder,
-                path.join(contextCommand.workspaceFolder, contextCommand.relativePath)
-            )
-            session.relativePathToWorkspaceRoot.set(relativePath, contextCommand.workspaceFolder)
+            session.relativePathToWorkspaceRoot.set(contextCommand.workspaceFolder, contextCommand.workspaceFolder)
         }
         let prompts: AdditionalContextPrompt[] = []
         try {
