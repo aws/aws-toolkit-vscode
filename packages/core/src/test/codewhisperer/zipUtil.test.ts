@@ -109,7 +109,7 @@ describe('zipUtil', function () {
         await assert.rejects(
             () =>
                 limitedZipUtil.zipProject(
-                    [{ uri: vscode.Uri.parse(testWorkspace.path), name: 'testWorkspace', index: 0 }],
+                    [{ uri: vscode.Uri.file(testWorkspace.path), name: 'testWorkspace', index: 0 }],
                     defaultExcludePatterns,
                     {
                         projectPath: testWorkspace.path,
@@ -243,7 +243,7 @@ describe('zipUtil', function () {
         const fileName = 'thisIsPartOfMyProject.py'
         await project.write(fileName, 'file1')
         const filepath = path.join(project.path, fileName)
-        await vscode.window.showTextDocument(vscode.Uri.parse(filepath))
+        await vscode.window.showTextDocument(vscode.Uri.file(filepath))
         const zipMetadata = await zipUtil.zipProject(
             [...(vscode.workspace.workspaceFolders ?? [])] as CurrentWsFolders,
             defaultExcludePatterns,
