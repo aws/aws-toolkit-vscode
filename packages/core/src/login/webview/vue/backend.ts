@@ -61,7 +61,6 @@ export abstract class CommonAuthWebview extends VueWebview {
         return globals.regionProvider.getRegions().reverse()
     }
 
-    private didCall: { login: boolean; reauth: boolean } = { login: false, reauth: false }
     /**
      * Called when the UI load process is completed, regardless of success or failure
      *
@@ -69,19 +68,11 @@ export abstract class CommonAuthWebview extends VueWebview {
      *                     Otherwise we assume success.
      */
     public setUiReady(state: 'login' | 'reauth', errorMessage?: string) {
-        // Only emit once to prevent telemetry spam, since showing/hiding chat triggers this each time.
-        // TODO: Research how to not trigger this on every show/hide
-        if (this.didCall[state]) {
-            return
-        }
-
         if (errorMessage) {
             this.setLoadFailure(state, errorMessage)
         } else {
             this.setDidLoad(state)
         }
-
-        this.didCall[state] = true
     }
 
     /**
