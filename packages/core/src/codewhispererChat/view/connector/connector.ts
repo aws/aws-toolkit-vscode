@@ -7,7 +7,7 @@ import { Timestamp } from 'aws-sdk/clients/apigateway'
 import { MessagePublisher } from '../../../amazonq/messages/messagePublisher'
 import { EditorContextCommandType } from '../../commands/registerCommands'
 import { AuthFollowUpType } from '../../../amazonq/auth/model'
-import { ChatItemButton, ChatItemFormItem, MynahUIDataModel, QuickActionCommand } from '@aws/mynah-ui'
+import { ChatItemButton, ChatItemContent, ChatItemFormItem, MynahUIDataModel, QuickActionCommand } from '@aws/mynah-ui'
 import { DocumentReference } from '../../controllers/chat/model'
 
 class UiMessage {
@@ -110,12 +110,6 @@ export interface CodeReference {
     }
 }
 
-export interface FileList {
-    fileTreeTitle?: string
-    rootFolderTitle?: string
-    filePaths?: string[]
-}
-
 export interface AuthNeededExceptionProps {
     readonly message: string
     readonly authType: AuthFollowUpType
@@ -216,7 +210,7 @@ export interface ChatMessageProps {
     readonly contextList: DocumentReference[] | undefined
     readonly title?: string
     readonly buttons?: ChatItemButton[]
-    readonly fileList?: FileList
+    readonly fileList?: ChatItemContent['fileList']
     readonly canBeVoted?: boolean
 }
 
@@ -235,7 +229,7 @@ export class ChatMessage extends UiMessage {
     readonly contextList: DocumentReference[] | undefined
     readonly title?: string
     readonly buttons?: ChatItemButton[]
-    readonly fileList?: FileList
+    readonly fileList?: ChatItemContent['fileList']
     readonly canBeVoted?: boolean = false
     override type = 'chatMessage'
 
