@@ -346,16 +346,7 @@ export class ZipUtil {
             if (!options?.silent) {
                 getLogger().debug(`Picked source files: [${[...this._pickedSourceFiles].join(', ')}]`)
             }
-            return {
-                rootDir: zipDirPath,
-                zipFilePath: zipFilePath,
-                srcPayloadSizeInBytes: this._totalSize,
-                scannedFiles: new Set([...this._pickedSourceFiles, ...this._pickedBuildFiles]),
-                zipFileSizeInBytes: (await fs.stat(zipFilePath)).size,
-                buildPayloadSizeInBytes: this._totalBuildSize,
-                lines: this._totalLines,
-                language: this._language,
-            }
+            return this.getGenerateZipResult(zipDirPath, zipFilePath)
         } catch (error) {
             getLogger().error('Zip error caused by: %O', error)
             throw error
@@ -376,16 +367,7 @@ export class ZipUtil {
             if (!options?.silent) {
                 getLogger().debug(`Picked source files: [${[...this._pickedSourceFiles].join(', ')}]`)
             }
-            return {
-                rootDir: zipDirPath,
-                zipFilePath: zipFilePath,
-                srcPayloadSizeInBytes: this._totalSize,
-                scannedFiles: new Set([...this._pickedSourceFiles, ...this._pickedBuildFiles]),
-                zipFileSizeInBytes: (await fs.stat(zipFilePath)).size,
-                buildPayloadSizeInBytes: this._totalBuildSize,
-                lines: this._totalLines,
-                language: this._language,
-            }
+            return this.getGenerateZipResult(zipDirPath, zipFilePath)
         } catch (error) {
             getLogger().error('Zip error caused by: %O', error)
             throw error
@@ -429,21 +411,25 @@ export class ZipUtil {
                 }
             )
 
-            return {
-                rootDir: zipDirPath,
-                zipFilePath: zipFilePath,
-                srcPayloadSizeInBytes: this._totalSize,
-                scannedFiles: new Set(this._pickedSourceFiles),
-                zipFileSizeInBytes: (await fs.stat(zipFilePath)).size,
-                buildPayloadSizeInBytes: this._totalBuildSize,
-                lines: this._totalLines,
-                language: this._language,
-            }
+            return this.getGenerateZipResult(zipDirPath, zipFilePath)
         } catch (error) {
             getLogger().error('Zip error caused by: %s', error)
             throw new ProjectZipError(
                 error instanceof Error ? error.message : 'Unknown error occurred during zip operation'
             )
+        }
+    }
+
+    protected async getGenerateZipResult(zipDirpath: string, zipFilePath: string): Promise<ZipMetadata> {
+        return {
+            rootDir: zipDirpath,
+            zipFilePath: zipFilePath,
+            srcPayloadSizeInBytes: this._totalSize,
+            scannedFiles: new Set(this._pickedSourceFiles),
+            zipFileSizeInBytes: (await fs.stat(zipFilePath)).size,
+            buildPayloadSizeInBytes: this._totalBuildSize,
+            lines: this._totalLines,
+            language: this._language,
         }
     }
     // TODO: Refactor this
