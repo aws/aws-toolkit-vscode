@@ -110,6 +110,12 @@ export interface CodeReference {
     }
 }
 
+export interface FileList {
+    fileTreeTitle?: string
+    rootFolderTitle?: string
+    filePaths?: string[]
+}
+
 export interface AuthNeededExceptionProps {
     readonly message: string
     readonly authType: AuthFollowUpType
@@ -208,6 +214,10 @@ export interface ChatMessageProps {
     readonly userIntent: string | undefined
     readonly codeBlockLanguage: string | undefined
     readonly contextList: DocumentReference[] | undefined
+    readonly title?: string
+    readonly buttons?: ChatItemButton[]
+    readonly fileList?: FileList
+    readonly canBeVoted?: boolean
 }
 
 export class ChatMessage extends UiMessage {
@@ -223,6 +233,10 @@ export class ChatMessage extends UiMessage {
     readonly userIntent: string | undefined
     readonly codeBlockLanguage: string | undefined
     readonly contextList: DocumentReference[] | undefined
+    readonly title?: string
+    readonly buttons?: ChatItemButton[]
+    readonly fileList?: FileList
+    readonly canBeVoted?: boolean = false
     override type = 'chatMessage'
 
     constructor(props: ChatMessageProps, tabID: string) {
@@ -238,6 +252,10 @@ export class ChatMessage extends UiMessage {
         this.userIntent = props.userIntent
         this.codeBlockLanguage = props.codeBlockLanguage
         this.contextList = props.contextList
+        this.title = props.title
+        this.buttons = props.buttons
+        this.fileList = props.fileList
+        this.canBeVoted = props.canBeVoted
     }
 }
 
@@ -316,6 +334,10 @@ export class AppToWebViewMessageDispatcher {
     }
 
     public sendShowCustomFormMessage(message: ShowCustomFormMessage) {
+        this.appsToWebViewMessagePublisher.publish(message)
+    }
+
+    public sendCustomFormActionMessage(message: CustomFormActionMessage) {
         this.appsToWebViewMessagePublisher.publish(message)
     }
 }

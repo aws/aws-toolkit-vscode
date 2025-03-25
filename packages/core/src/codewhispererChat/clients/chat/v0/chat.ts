@@ -13,6 +13,9 @@ import { UserWrittenCodeTracker } from '../../../../codewhisperer/tracker/userWr
 
 export class ChatSession {
     private sessionId?: string
+    private _listOfReadFiles: string[] = []
+    private _filePath: string | undefined
+    private _tempFilePath: string | undefined
 
     contexts: Map<string, { first: number; second: number }[]> = new Map()
     // TODO: doesn't handle the edge case when two files share the same relativePath string but from different root
@@ -34,6 +37,28 @@ export class ChatSession {
 
     public setSessionID(id?: string) {
         this.sessionId = id
+    }
+    public get listOfReadFiles(): string[] {
+        return this._listOfReadFiles
+    }
+    public get getFilePath(): string | undefined {
+        return this._filePath
+    }
+    public get getTempFilePath(): string | undefined {
+        return this._tempFilePath
+    }
+    public setFilePath(filePath: string | undefined) {
+        this._filePath = filePath
+    }
+    public setTempFilePath(tempFilePath: string | undefined) {
+        this._tempFilePath = tempFilePath
+    }
+    public pushToListOfReadFiles(filePath?: string) {
+        if (filePath) {
+            this._listOfReadFiles.push(filePath)
+        } else {
+            this._listOfReadFiles = []
+        }
     }
     async chatIam(chatRequest: SendMessageRequest): Promise<SendMessageCommandOutput> {
         const client = await createQDeveloperStreamingClient()
