@@ -20,6 +20,7 @@ import {
     ChatResponseStream as cwChatResponseStream,
     CodeWhispererStreamingServiceException,
     SupplementaryWebLink,
+    ToolUse,
 } from '@amzn/codewhisperer-streaming'
 import { ChatMessage, ErrorMessage, FollowUp, Suggestion } from '../../../view/connector/connector'
 import { ChatSession } from '../../../clients/chat/v0/chat'
@@ -135,6 +136,8 @@ export class Messenger {
         let followUps: FollowUp[] = []
         let relatedSuggestions: Suggestion[] = []
         let codeBlockLanguage: string = 'plaintext'
+        let toolUseInput = ''
+        const toolUse: ToolUse = { toolUseId: undefined, name: undefined, input: undefined }
 
         if (response.message === undefined) {
             throw new ToolkitError(
@@ -162,7 +165,7 @@ export class Messenger {
         })
 
         const eventCounts = new Map<string, number>()
-        waitUntil(
+        await waitUntil(
             async () => {
                 for await (const chatEvent of response.message!) {
                     for (const key of keys(chatEvent)) {
@@ -190,6 +193,53 @@ export class Messenger {
                                 information: `Reference code under **${reference.licenseName}** license from repository \`${reference.repository}\``,
                             })),
                         ]
+                    }
+
+                    const cwChatEvent: cwChatResponseStream = chatEvent
+                    if (
+                        cwChatEvent.toolUseEvent?.input !== undefined &&
+                        cwChatEvent.toolUseEvent.input.length > 0 &&
+                        !cwChatEvent.toolUseEvent.stop
+                    ) {
+                        toolUseInput += cwChatEvent.toolUseEvent.input
+                    }
+
+                    if (cwChatEvent.toolUseEvent?.stop) {
+                        toolUse.input = JSON.parse(toolUseInput)
+                        toolUse.toolUseId = cwChatEvent.toolUseEvent.toolUseId ?? ''
+                        toolUse.name = cwChatEvent.toolUseEvent.name ?? ''
+                        session.setToolUse(toolUse)
+
+                        const message = this.getToolUseMessage(toolUse)
+                        // const isConfirmationRequired = this.getIsConfirmationRequired(toolUse)
+
+                        this.dispatcher.sendChatMessage(
+                            new ChatMessage(
+                                {
+                                    message,
+                                    messageType: 'answer',
+                                    followUps: undefined,
+                                    followUpsHeader: undefined,
+                                    relatedSuggestions: undefined,
+                                    codeReference,
+                                    triggerID,
+                                    messageID: toolUse.toolUseId,
+                                    userIntent: triggerPayload.userIntent,
+                                    codeBlockLanguage: codeBlockLanguage,
+                                    contextList: undefined,
+                                    // TODO: confirmation buttons
+                                },
+                                tabID
+                            )
+                        )
+                        // TODO: setup permission action
+                        // if (!isConfirmationRequired) {
+                        //     this.dispatcher.sendCustomFormActionMessage(
+                        //         new CustomFormActionMessage(tabID, {
+                        //             id: 'confirm-tool-use',
+                        //         })
+                        //     )
+                        // }
                     }
 
                     if (
@@ -342,7 +392,7 @@ export class Messenger {
                         messageId: messageID,
                         content: message,
                         references: codeReference,
-                        // TODO: Add tools data and follow up prompt details
+                        toolUses: [{ ...toolUse }],
                     },
                 })
 
@@ -537,5 +587,68 @@ export class Messenger {
         this.dispatcher.sendShowCustomFormMessage(
             new ShowCustomFormMessage(tabID, formItems, buttons, title, description)
         )
+    }
+
+    // TODO: Make this cleaner
+    // private getIsConfirmationRequired(toolUse: ToolUse) {
+    //     if (toolUse.name === 'execute_bash') {
+    //         const executeBash = new ExecuteBash(toolUse.input as unknown as ExecuteBashParams)
+    //         return executeBash.requiresAcceptance()
+    //     }
+    //     return toolUse.name === 'fs_write'
+    // }
+    private getToolUseMessage(toolUse: ToolUse) {
+        if (toolUse.name === 'fs_read') {
+            return `Reading the file at \`${(toolUse.input as any)?.path}\` using the \`fs_read\` tool.`
+        }
+        //     if (toolUse.name === 'execute_bash') {
+        //         const input = toolUse.input as unknown as ExecuteBashParams
+        //         return `Executing the bash command
+        // \`\`\`bash
+        // ${input.command}
+        // \`\`\`
+        // using the \`execute_bash\` tool.`
+        //     }
+        //     if (toolUse.name === 'fs_write') {
+        //         const input = toolUse.input as unknown as FsWriteParams
+        //         switch (input.command) {
+        //             case 'create': {
+        //                 return `Writing
+        // \`\`\`
+        // ${input.file_text}
+        // \`\`\`
+        // into the file at \`${input.path}\` using the \`fs_write\` tool.`
+        //             }
+        //             case 'str_replace': {
+        //                 return `Replacing
+        // \`\`\`
+        // ${input.old_str}
+        // \`\`\`
+        // with
+        // \`\`\`
+        // ${input.new_str}
+        // \`\`\`
+        // at \`${input.path}\` using the \`fs_write\` tool.`
+        //             }
+        //             case 'insert': {
+        //                 return `Inserting
+        // \`\`\`
+        // ${input.new_str}
+        // \`\`\`
+        // at line
+        // \`\`\`
+        // ${input.insert_line}
+        // \`\`\`
+        // at \`${input.path}\` using the \`fs_write\` tool.`
+        //             }
+        //             case 'append': {
+        //                 return `Appending
+        // \`\`\`
+        // ${input.new_str}
+        // \`\`\`
+        // at \`${input.path}\` using the \`fs_write\` tool.`
+        //             }
+        //         }
+        //     }
     }
 }

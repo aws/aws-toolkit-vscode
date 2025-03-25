@@ -13,6 +13,7 @@ import {
 } from '@amzn/codewhisperer-streaming'
 import { ChatTriggerType, TriggerPayload } from '../model'
 import { undefinedIfEmpty } from '../../../../shared/utilities/textUtilities'
+import { tools } from '../../../constants'
 
 const fqnNameSizeDownLimit = 1
 const fqnNameSizeUpLimit = 256
@@ -115,10 +116,16 @@ export function triggerPayloadToChatRequest(triggerPayload: TriggerPayload): { c
                             cursorState,
                             relevantDocuments,
                             useRelevantDocuments,
+                            // TODO: Need workspace folders here after model update.
                         },
                         additionalContext: triggerPayload.additionalContents,
+                        tools,
+                        ...(triggerPayload.toolResults !== undefined &&
+                            triggerPayload.toolResults !== null && { toolResults: triggerPayload.toolResults }),
                     },
                     userIntent: triggerPayload.userIntent,
+                    ...(triggerPayload.origin !== undefined &&
+                        triggerPayload.origin !== null && { origin: triggerPayload.origin }),
                 },
             },
             chatTriggerType,
