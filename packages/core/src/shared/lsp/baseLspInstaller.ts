@@ -25,7 +25,7 @@ export abstract class BaseLspInstaller<T extends ResourcePaths = ResourcePaths> 
     }
 
     async resolve(): Promise<LspResolution<T>> {
-        const { id, manifestUrl, supportedVersions, path } = this.config
+        const { id, manifestUrl, supportedVersions, path, suppressPromptPrefix } = this.config
         if (path) {
             const overrideMsg = `Using language server override location: ${path}`
             this.logger.info(overrideMsg)
@@ -38,7 +38,7 @@ export abstract class BaseLspInstaller<T extends ResourcePaths = ResourcePaths> 
             }
         }
 
-        const manifest = await new ManifestResolver(manifestUrl, id).resolve()
+        const manifest = await new ManifestResolver(manifestUrl, id, suppressPromptPrefix).resolve()
         const installationResult = await new LanguageServerResolver(
             manifest,
             id,

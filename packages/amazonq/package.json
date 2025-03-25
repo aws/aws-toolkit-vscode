@@ -119,6 +119,14 @@
                         "ssoCacheError": {
                             "type": "boolean",
                             "default": false
+                        },
+                        "amazonQLspManifestMessage": {
+                            "type": "boolean",
+                            "default": false
+                        },
+                        "amazonQWorkspaceLspManifestMessage": {
+                            "type": "boolean",
+                            "default": false
                         }
                     },
                     "additionalProperties": false

@@ -249,7 +249,7 @@ export function createLspInstallerTests({
             })
 
             it('resolves release candidiates', async () => {
-                const original = new ManifestResolver(lspConfig.manifestUrl, lspConfig.id).resolve()
+                const original = new ManifestResolver(lspConfig.manifestUrl, lspConfig.id, '').resolve()
                 sandbox.stub(ManifestResolver.prototype, 'resolve').callsFake(async () => {
                     const originalManifest = await original
 
