@@ -674,7 +674,6 @@ export async function findStringInDirectory(searchStr: string, dirPath: string) 
 
 /**
  * Returns a one-character tag for a directory ('d'), symlink ('l'), or file ('-').
- *
  */
 export function formatListing(name: string, fileType: vscode.FileType, fullPath: string): string {
     let typeChar = '-'

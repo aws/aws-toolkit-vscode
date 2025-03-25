@@ -64,16 +64,7 @@ export class ChatHistoryManager {
      * Append a new user message to be sent
      */
     public appendUserMessage(newMessage: ChatMessage): void {
-        this.lastUserMessage = {
-            userInputMessage: {
-                content: newMessage.userInputMessage?.content ?? '',
-                userIntent: newMessage.userInputMessage?.userIntent ?? undefined,
-                userInputMessageContext: newMessage.userInputMessage?.userInputMessageContext ?? {
-                    tools: this.tools,
-                },
-                origin: newMessage.userInputMessage?.origin ?? undefined,
-            },
-        }
+        this.lastUserMessage = newMessage
         this.fixHistory()
         if (!newMessage.userInputMessage?.content || newMessage.userInputMessage?.content.trim() === '') {
             this.logger.warn('input must not be empty when adding new messages')
