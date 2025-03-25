@@ -5,16 +5,18 @@
 
 import assert from 'assert'
 import vscode from 'vscode'
+import path from 'path'
 import sinon from 'sinon'
 import { join } from 'path'
 import JSZip from 'jszip'
 import { getTestWorkspaceFolder } from '../../testInteg/integrationTestsUtilities'
-import { ZipUtil } from '../../codewhisperer/util/zipUtil'
+import { ZipMetadata, ZipUtil } from '../../codewhisperer/util/zipUtil'
 import { codeScanTruncDirPrefix } from '../../codewhisperer/models/constants'
 import { ToolkitError } from '../../shared/errors'
 import { fs } from '../../shared/fs/fs'
 import { CodeWhispererConstants } from '../../codewhisperer/indexNode'
 import { CurrentWsFolders, defaultExcludePatterns } from '../../shared/utilities/workspaceUtils'
+import { TestFolder } from '../testUtil'
 
 describe('zipUtil', function () {
     const workspaceFolder = getTestWorkspaceFolder()
@@ -164,5 +166,28 @@ describe('zipUtil', function () {
         const zip = await JSZip.loadAsync(zipFileData)
         const files = Object.keys(zip.files)
         assert.ok(files.includes(join('workspaceFolder', 'workspaceFolder', 'App.java')))
+    })
+
+    it('removes relevant files on cleanup', async function () {
+        const testFolder = await TestFolder.create()
+        const zipFile = 'thisIsAZip.zip'
+        const zipDir = 'thisIsADir'
+        await testFolder.write(zipFile, 'some content')
+        await testFolder.mkdir(zipDir)
+        await testFolder.write(path.join(zipDir, 'thisIsAFile.txt'), 'some content')
+
+        const zipFolderPath = path.join(testFolder.path, zipDir)
+        const zipFilePath = path.join(testFolder.path, zipFile)
+
+        assert.strictEqual(await fs.exists(zipFilePath), true)
+        assert.strictEqual(await fs.exists(zipFolderPath), true)
+
+        await zipUtil.removeTmpFiles({
+            zipFilePath: zipFilePath,
+            rootDir: zipFolderPath,
+        } as ZipMetadata)
+
+        assert.strictEqual(await fs.exists(zipFilePath), false)
+        assert.strictEqual(await fs.exists(zipFolderPath), false)
     })
 })
