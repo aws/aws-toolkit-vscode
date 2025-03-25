@@ -335,34 +335,53 @@ export class ZipUtil {
         return this._zipDir
     }
 
-    public async generateZipCodeScan(
+    public async generateZipCodeScanForFile(
         uri: vscode.Uri | undefined,
-        zipType: ZipType,
         options?: GenerateZipOptions
     ): Promise<ZipMetadata> {
         try {
             const zipDirPath = this.getZipDirPath()
-            // We assume there is at least one workspace open.
-            const workspaceFolders = [...(vscode.workspace.workspaceFolders ?? [])] as CurrentWsFolders
-
-            const zipFilePath =
-                zipType === 'file'
-                    ? await this.zipFile(uri, options?.includeGitDiff)
-                    : await this.zipProject(workspaceFolders, defaultExcludePatterns, {
-                          includeGitDiff: options?.includeGitDiff,
-                          includeNonWorkspaceFiles: true,
-                      })
+            const zipFilePath = await this.zipFile(uri, options?.includeGitDiff)
 
             if (!options?.silent) {
                 getLogger().debug(`Picked source files: [${[...this._pickedSourceFiles].join(', ')}]`)
             }
-            const zipFileSize = (await fs.stat(zipFilePath)).size
             return {
                 rootDir: zipDirPath,
                 zipFilePath: zipFilePath,
                 srcPayloadSizeInBytes: this._totalSize,
                 scannedFiles: new Set([...this._pickedSourceFiles, ...this._pickedBuildFiles]),
-                zipFileSizeInBytes: zipFileSize,
+                zipFileSizeInBytes: (await fs.stat(zipFilePath)).size,
+                buildPayloadSizeInBytes: this._totalBuildSize,
+                lines: this._totalLines,
+                language: this._language,
+            }
+        } catch (error) {
+            getLogger().error('Zip error caused by: %O', error)
+            throw error
+        }
+    }
+
+    public async generateZipCodeScanForProject(options?: GenerateZipOptions): Promise<ZipMetadata> {
+        try {
+            const zipDirPath = this.getZipDirPath()
+            // We assume there is at least one workspace open.
+            const workspaceFolders = [...(vscode.workspace.workspaceFolders ?? [])] as CurrentWsFolders
+
+            const zipFilePath = await this.zipProject(workspaceFolders, defaultExcludePatterns, {
+                includeGitDiff: options?.includeGitDiff,
+                includeNonWorkspaceFiles: true,
+            })
+
+            if (!options?.silent) {
+                getLogger().debug(`Picked source files: [${[...this._pickedSourceFiles].join(', ')}]`)
+            }
+            return {
+                rootDir: zipDirPath,
+                zipFilePath: zipFilePath,
+                srcPayloadSizeInBytes: this._totalSize,
+                scannedFiles: new Set([...this._pickedSourceFiles, ...this._pickedBuildFiles]),
+                zipFileSizeInBytes: (await fs.stat(zipFilePath)).size,
                 buildPayloadSizeInBytes: this._totalBuildSize,
                 lines: this._totalLines,
                 language: this._language,
@@ -409,13 +428,13 @@ export class ZipUtil {
                     projectPath,
                 }
             )
-            const zipFileSize = (await fs.stat(zipFilePath)).size
+
             return {
                 rootDir: zipDirPath,
                 zipFilePath: zipFilePath,
                 srcPayloadSizeInBytes: this._totalSize,
                 scannedFiles: new Set(this._pickedSourceFiles),
-                zipFileSizeInBytes: zipFileSize,
+                zipFileSizeInBytes: (await fs.stat(zipFilePath)).size,
                 buildPayloadSizeInBytes: this._totalBuildSize,
                 lines: this._totalLines,
                 language: this._language,

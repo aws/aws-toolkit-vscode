@@ -91,11 +91,10 @@ describe('CodeWhisperer security scan', async function () {
     async function securityJobSetup(editor: vscode.TextEditor) {
         const codeScanStartTime = performance.now()
         const zipUtil = new ZipUtil(CodeWhispererConstants.codeScanTruncDirPrefix)
-        const uri = editor.document.uri
 
         const projectPaths = getWorkspacePaths()
         const scope = CodeWhispererConstants.CodeAnalysisScope.PROJECT
-        const zipMetadata = await zipUtil.generateZipCodeScan(uri, 'project')
+        const zipMetadata = await zipUtil.generateZipCodeScanForProject()
         const codeScanName = randomUUID()
 
         let artifactMap
