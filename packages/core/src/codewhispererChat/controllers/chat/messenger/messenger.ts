@@ -86,6 +86,10 @@ export class Messenger {
                     userIntent: undefined,
                     codeBlockLanguage: undefined,
                     contextList: mergedRelevantDocuments,
+                    title: 'Context',
+                    buttons: undefined,
+                    fileList: undefined,
+                    canBeVoted: false,
                 },
                 tabID
             )
@@ -486,6 +490,7 @@ export class Messenger {
                     userIntent: undefined,
                     codeBlockLanguage: undefined,
                     contextList: undefined,
+                    title: undefined,
                 },
                 tabID
             )

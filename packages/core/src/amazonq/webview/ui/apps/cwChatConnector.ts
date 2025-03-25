@@ -3,7 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ChatItemButton, ChatItemFormItem, ChatItemType, MynahUIDataModel, QuickActionCommand } from '@aws/mynah-ui'
+import {
+    ChatItem,
+    ChatItemButton,
+    ChatItemFormItem,
+    ChatItemType,
+    MynahUIDataModel,
+    QuickActionCommand,
+} from '@aws/mynah-ui'
 import { TabType } from '../storages/tabsStorage'
 import { CWCChatItem } from '../connector'
 import { BaseConnector, BaseConnectorProps } from './baseConnector'
@@ -18,12 +25,14 @@ export interface ConnectorProps extends BaseConnectorProps {
         title?: string,
         description?: string
     ) => void
+    onChatAnswerUpdated?: (tabID: string, message: ChatItem) => void
 }
 
 export class Connector extends BaseConnector {
     private readonly onCWCContextCommandMessage
     private readonly onContextCommandDataReceived
     private readonly onShowCustomForm
+    private readonly onChatAnswerUpdated
 
     override getTabType(): TabType {
         return 'cwc'
@@ -34,6 +43,7 @@ export class Connector extends BaseConnector {
         this.onCWCContextCommandMessage = props.onCWCContextCommandMessage
         this.onContextCommandDataReceived = props.onContextCommandDataReceived
         this.onShowCustomForm = props.onShowCustomForm
+        this.onChatAnswerUpdated = props.onChatAnswerUpdated
     }
 
     onSourceLinkClick = (tabID: string, messageId: string, link: string): void => {
@@ -91,16 +101,14 @@ export class Connector extends BaseConnector {
                 messageId: messageData.messageID ?? messageData.triggerID,
                 body: messageData.message,
                 followUp: followUps,
-                canBeVoted: true,
+                canBeVoted: messageData.canBeVoted ?? false,
                 codeReference: messageData.codeReference,
                 userIntent: messageData.userIntent,
                 codeBlockLanguage: messageData.codeBlockLanguage,
                 contextList: messageData.contextList,
-            }
-
-            // If it is not there we will not set it
-            if (messageData.messageType === 'answer-part' || messageData.messageType === 'answer') {
-                answer.canBeVoted = true
+                title: messageData.title,
+                buttons: messageData.buttons ?? undefined,
+                fileList: messageData.fileList ?? undefined,
             }
 
             if (messageData.relatedSuggestions !== undefined) {
@@ -137,6 +145,8 @@ export class Connector extends BaseConnector {
                               options: messageData.followUps,
                           }
                         : undefined,
+                buttons: messageData.buttons ?? undefined,
+                canBeVoted: messageData.canBeVoted ?? false,
             }
             this.onChatAnswerReceived(messageData.tabID, answer, messageData)
 
@@ -204,7 +214,7 @@ export class Connector extends BaseConnector {
         }
 
         if (messageData.type === 'customFormActionMessage') {
-            this.onCustomFormAction(messageData.tabID, messageData.action)
+            this.onCustomFormAction(messageData.tabID, messageData.messageId, messageData.action)
             return
         }
         // For other message types, call the base class handleMessageReceive
@@ -235,6 +245,7 @@ export class Connector extends BaseConnector {
 
     onCustomFormAction(
         tabId: string,
+        messageId: string,
         action: {
             id: string
             text?: string | undefined
@@ -248,14 +259,53 @@ export class Connector extends BaseConnector {
         this.sendMessageToExtension({
             command: 'form-action-click',
             action: action,
+            formSelectedValues: action.formItemValues,
             tabType: this.getTabType(),
             tabID: tabId,
         })
+
+        if (!this.onChatAnswerUpdated || !['accept-code-diff', 'reject-code-diff'].includes(action.id)) {
+            return
+        }
+        const answer: ChatItem = {
+            type: ChatItemType.ANSWER,
+            messageId: messageId,
+            buttons: [],
+        }
+        switch (action.id) {
+            case 'accept-code-diff':
+                answer.buttons = [
+                    {
+                        keepCardAfterClick: true,
+                        text: 'Accepted code',
+                        id: 'accepted-code-diff',
+                        status: 'success',
+                        position: 'outside',
+                        disabled: true,
+                    },
+                ]
+                break
+            case 'reject-code-diff':
+                answer.buttons = [
+                    {
+                        keepCardAfterClick: true,
+                        text: 'Rejected code',
+                        id: 'rejected-code-diff',
+                        status: 'error',
+                        position: 'outside',
+                        disabled: true,
+                    },
+                ]
+                break
+            default:
+                break
+        }
+        this.onChatAnswerUpdated(tabId, answer)
     }
 
     onFileClick = (tabID: string, filePath: string, messageId?: string) => {
         this.sendMessageToExtension({
-            command: 'file-click',
+            command: messageId === '' ? 'file-click' : 'open-diff',
             tabID,
             messageId,
             filePath,

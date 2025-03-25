@@ -63,6 +63,7 @@ export interface CWCChatItem extends ChatItem {
     userIntent?: UserIntent
     codeBlockLanguage?: string
     contextList?: Context[]
+    title?: string
 }
 
 export interface Context {
@@ -711,7 +712,7 @@ export class Connector {
                         tabType: 'cwc',
                     })
                 } else {
-                    this.cwChatConnector.onCustomFormAction(tabId, action)
+                    this.cwChatConnector.onCustomFormAction(tabId, messageId ?? '', action)
                 }
                 break
             case 'agentWalkthrough': {

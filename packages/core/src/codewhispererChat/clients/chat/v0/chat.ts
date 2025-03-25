@@ -17,6 +17,14 @@ import { UserWrittenCodeTracker } from '../../../../codewhisperer/tracker/userWr
 
 export class ChatSession {
     private sessionId?: string
+    /**
+     * _readFiles = list of files read from the project to gather context before generating response.
+     * _filePath = The path helps the system locate exactly where to make the necessary changes in the project structure
+     * _tempFilePath = Used to show the code diff view in the editor including LLM changes.
+     */
+    private _readFiles: string[] = []
+    private _filePath: string | undefined
+    private _tempFilePath: string | undefined
     private _toolUse: ToolUse | undefined
 
     contexts: Map<string, { first: number; second: number }[]> = new Map()
@@ -47,6 +55,27 @@ export class ChatSession {
 
     public setSessionID(id?: string) {
         this.sessionId = id
+    }
+    public get listOfReadFiles(): string[] {
+        return this._readFiles
+    }
+    public get filePath(): string | undefined {
+        return this._filePath
+    }
+    public get tempFilePath(): string | undefined {
+        return this._tempFilePath
+    }
+    public setFilePath(filePath: string | undefined) {
+        this._filePath = filePath
+    }
+    public setTempFilePath(tempFilePath: string | undefined) {
+        this._tempFilePath = tempFilePath
+    }
+    public pushToListOfReadFiles(filePath: string) {
+        this._readFiles.push(filePath)
+    }
+    public clearListOfReadFiles() {
+        this._readFiles = []
     }
     async chatIam(chatRequest: SendMessageRequest): Promise<SendMessageCommandOutput> {
         const client = await createQDeveloperStreamingClient()

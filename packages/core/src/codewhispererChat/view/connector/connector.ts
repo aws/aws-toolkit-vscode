@@ -7,7 +7,7 @@ import { Timestamp } from 'aws-sdk/clients/apigateway'
 import { MessagePublisher } from '../../../amazonq/messages/messagePublisher'
 import { EditorContextCommandType } from '../../commands/registerCommands'
 import { AuthFollowUpType } from '../../../amazonq/auth/model'
-import { ChatItemButton, ChatItemFormItem, MynahUIDataModel, QuickActionCommand } from '@aws/mynah-ui'
+import { ChatItemButton, ChatItemContent, ChatItemFormItem, MynahUIDataModel, QuickActionCommand } from '@aws/mynah-ui'
 import { DocumentReference } from '../../controllers/chat/model'
 
 class UiMessage {
@@ -208,6 +208,10 @@ export interface ChatMessageProps {
     readonly userIntent: string | undefined
     readonly codeBlockLanguage: string | undefined
     readonly contextList: DocumentReference[] | undefined
+    readonly title?: string
+    readonly buttons?: ChatItemButton[]
+    readonly fileList?: ChatItemContent['fileList']
+    readonly canBeVoted?: boolean
 }
 
 export class ChatMessage extends UiMessage {
@@ -223,6 +227,10 @@ export class ChatMessage extends UiMessage {
     readonly userIntent: string | undefined
     readonly codeBlockLanguage: string | undefined
     readonly contextList: DocumentReference[] | undefined
+    readonly title?: string
+    readonly buttons?: ChatItemButton[]
+    readonly fileList?: ChatItemContent['fileList']
+    readonly canBeVoted?: boolean = false
     override type = 'chatMessage'
 
     constructor(props: ChatMessageProps, tabID: string) {
@@ -238,6 +246,10 @@ export class ChatMessage extends UiMessage {
         this.userIntent = props.userIntent
         this.codeBlockLanguage = props.codeBlockLanguage
         this.contextList = props.contextList
+        this.title = props.title
+        this.buttons = props.buttons
+        this.fileList = props.fileList
+        this.canBeVoted = props.canBeVoted
     }
 }
 

@@ -32,6 +32,7 @@ import {
     DocumentReference,
     FileClick,
     RelevantTextDocumentAddition,
+    OpenDiff,
 } from './model'
 import {
     AppToWebViewMessageDispatcher,
@@ -81,6 +82,7 @@ import {
 } from '../../constants'
 import { ChatSession } from '../../clients/chat/v0/chat'
 import { ChatHistoryManager } from '../../storages/chatHistory'
+import { amazonQTabSuffix } from '../../../shared/constants'
 import { FsRead, FsReadParams } from '../../tools/fsRead'
 
 export interface ChatControllerMessagePublishers {
@@ -91,6 +93,7 @@ export interface ChatControllerMessagePublishers {
     readonly processInsertCodeAtCursorPosition: MessagePublisher<InsertCodeAtCursorPosition>
     readonly processAcceptDiff: MessagePublisher<AcceptDiff>
     readonly processViewDiff: MessagePublisher<ViewDiff>
+    readonly processOpenDiff: MessagePublisher<OpenDiff>
     readonly processCopyCodeToClipboard: MessagePublisher<CopyCodeToClipboard>
     readonly processContextMenuCommand: MessagePublisher<EditorContextCommand>
     readonly processTriggerTabIDReceived: MessagePublisher<TriggerTabIDReceived>
@@ -116,6 +119,7 @@ export interface ChatControllerMessageListeners {
     readonly processInsertCodeAtCursorPosition: MessageListener<InsertCodeAtCursorPosition>
     readonly processAcceptDiff: MessageListener<AcceptDiff>
     readonly processViewDiff: MessageListener<ViewDiff>
+    readonly processOpenDiff: MessageListener<OpenDiff>
     readonly processCopyCodeToClipboard: MessageListener<CopyCodeToClipboard>
     readonly processContextMenuCommand: MessageListener<EditorContextCommand>
     readonly processTriggerTabIDReceived: MessageListener<TriggerTabIDReceived>
@@ -212,6 +216,10 @@ export class ChatController {
 
         this.chatControllerMessageListeners.processViewDiff.onMessage((data) => {
             return this.processViewDiff(data)
+        })
+
+        this.chatControllerMessageListeners.processOpenDiff.onMessage((data) => {
+            return this.processOpenDiff(data)
         })
 
         this.chatControllerMessageListeners.processCopyCodeToClipboard.onMessage((data) => {
@@ -387,6 +395,45 @@ export class ChatController {
             .catch((error) => {
                 this.telemetryHelper.recordInteractWithMessage(message, { result: 'Failed' })
             })
+    }
+
+    private async processOpenDiff(message: OpenDiff) {
+        const session = this.sessionStorage.getSession(message.tabID)
+        const filePath = session.filePath ?? message.filePath
+        const fileExists = await fs.existsFile(filePath)
+        // Check if fileExists=false, If yes, return instead of showing broken diff experience.
+        if (!session.tempFilePath) {
+            return
+        }
+        const leftUri = fileExists ? vscode.Uri.file(filePath) : vscode.Uri.from({ scheme: 'untitled' })
+        const rightUri = vscode.Uri.file(session.tempFilePath ?? filePath)
+        const fileName = path.basename(filePath)
+        await vscode.commands.executeCommand('vscode.diff', leftUri, rightUri, `${fileName} ${amazonQTabSuffix}`)
+    }
+
+    private async processAcceptCodeDiff(message: CustomFormActionMessage) {
+        const session = this.sessionStorage.getSession(message.tabID ?? '')
+        const filePath = session.filePath ?? ''
+        const fileExists = await fs.existsFile(filePath)
+        const tempFilePath = session.tempFilePath
+        const tempFileExists = await fs.existsFile(tempFilePath ?? '')
+        if (fileExists && tempFileExists) {
+            const fileContent = await fs.readFileText(filePath)
+            const tempFileContent = await fs.readFileText(tempFilePath ?? '')
+            if (fileContent !== tempFileContent) {
+                await fs.writeFile(filePath, tempFileContent)
+            }
+            await fs.delete(tempFilePath ?? '')
+            await vscode.commands.executeCommand('vscode.open', vscode.Uri.file(filePath))
+        } else if (!fileExists && tempFileExists) {
+            const fileContent = await fs.readFileText(tempFilePath ?? '')
+            await fs.writeFile(filePath, fileContent)
+            await fs.delete(tempFilePath ?? '')
+            await vscode.commands.executeCommand('vscode.open', vscode.Uri.file(filePath))
+        }
+        // Reset the filePaths to undefined
+        session.setFilePath(undefined)
+        session.setTempFilePath(undefined)
     }
 
     private async processCopyCodeToClipboard(message: CopyCodeToClipboard) {
@@ -578,6 +625,12 @@ export class ChatController {
             const newFileDoc = await vscode.workspace.openTextDocument(newFilePath)
             await vscode.window.showTextDocument(newFileDoc)
             telemetry.ui_click.emit({ elementId: 'amazonq_createSavedPrompt' })
+        } else if (message.action.id === 'accept-code-diff') {
+            await this.processAcceptCodeDiff(message)
+        } else if (message.action.id === 'reject-code-diff') {
+            // Reset the filePaths to undefined
+            this.sessionStorage.getSession(message.tabID ?? '').setFilePath(undefined)
+            this.sessionStorage.getSession(message.tabID ?? '').setTempFilePath(undefined)
         } else if (message.action.id === 'confirm-tool-use') {
             await this.processToolUseMessage(message)
         }
@@ -936,6 +989,8 @@ export class ChatController {
     }
 
     private async processPromptMessageAsNewThread(message: PromptMessage) {
+        const session = this.sessionStorage.getSession(message.tabID)
+        session.clearListOfReadFiles()
         this.editorContextExtractor
             .extractContextForTrigger('ChatMessage')
             .then(async (context) => {
