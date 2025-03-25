@@ -453,6 +453,17 @@ export class ChatController {
                         icon: 'file' as MynahIconsType,
                     },
                     {
+                        command: i18n('AWS.amazonq.context.code.title'),
+                        children: [
+                            {
+                                groupName: i18n('AWS.amazonq.context.code.title'),
+                                commands: [],
+                            },
+                        ],
+                        description: i18n('AWS.amazonq.context.code.description'),
+                        icon: 'code-block' as MynahIconsType,
+                    },
+                    {
                         command: i18n('AWS.amazonq.context.prompts.title'),
                         children: [
                             {
@@ -476,7 +487,8 @@ export class ChatController {
                 commands: [{ command: commandName, description: commandDescription }],
             })
         }
-        const promptsCmd: QuickActionCommand = contextCommand[0].commands?.[3]
+        const symbolsCmd: QuickActionCommand = contextCommand[0].commands?.[3]
+        const promptsCmd: QuickActionCommand = contextCommand[0].commands?.[4]
 
         // Check for user prompts
         try {
@@ -519,22 +531,40 @@ export class ChatController {
                         command: path.basename(contextCommandItem.relativePath),
                         description: path.join(wsFolderName, contextCommandItem.relativePath),
                         route: [contextCommandItem.workspaceFolder, contextCommandItem.relativePath],
-                        id: 'file',
+                        label: 'file' as ContextCommandItemType,
+                        id: contextCommandItem.id,
                         icon: 'file' as MynahIconsType,
                     })
-                } else {
+                } else if (contextCommandItem.type === 'folder') {
                     folderCmd.children?.[0].commands.push({
                         command: path.basename(contextCommandItem.relativePath),
                         description: path.join(wsFolderName, contextCommandItem.relativePath),
                         route: [contextCommandItem.workspaceFolder, contextCommandItem.relativePath],
-                        id: 'folder',
+                        label: 'folder' as ContextCommandItemType,
+                        id: contextCommandItem.id,
                         icon: 'folder' as MynahIconsType,
+                    })
+                }
+                // TODO: Remove the limit of 25k once the performance issue of mynahUI in webview is fixed.
+                else if (
+                    contextCommandItem.symbol &&
+                    symbolsCmd.children &&
+                    symbolsCmd.children[0].commands.length < 25_000
+                ) {
+                    symbolsCmd.children?.[0].commands.push({
+                        command: contextCommandItem.symbol.name,
+                        description: `${contextCommandItem.symbol.kind}, ${path.join(wsFolderName, contextCommandItem.relativePath)}, L${contextCommandItem.symbol.range.start.line}-${contextCommandItem.symbol.range.end.line}`,
+                        route: [contextCommandItem.workspaceFolder, contextCommandItem.relativePath],
+                        label: 'code' as ContextCommandItemType,
+                        id: contextCommandItem.id,
+                        icon: 'code-block' as MynahIconsType,
                     })
                 }
             }
         }
 
         this.messenger.sendContextCommandData(contextCommand)
+        void LspController.instance.updateContextCommandSymbolsOnce()
     }
 
     private handlePromptCreate(tabID: string) {
@@ -956,13 +986,13 @@ export class ChatController {
         }
         triggerPayload.workspaceRulesCount = workspaceRules.length
 
-        // Add context commands added by user to context
         for (const context of triggerPayload.context) {
             if (typeof context !== 'string' && context.route && context.route.length === 2) {
                 contextCommands.push({
                     workspaceFolder: context.route[0] || '',
-                    type: context.icon === 'folder' ? 'folder' : 'file',
+                    type: (context.label || '') as ContextCommandItemType,
                     relativePath: context.route[1] || '',
+                    id: context.id,
                 })
             }
         }
@@ -977,11 +1007,7 @@ export class ChatController {
         workspaceFolders.sort()
         const workspaceFolder = workspaceFolders[0]
         for (const contextCommand of contextCommands) {
-            const relativePath = path.relative(
-                workspaceFolder,
-                path.join(contextCommand.workspaceFolder, contextCommand.relativePath)
-            )
-            session.relativePathToWorkspaceRoot.set(relativePath, contextCommand.workspaceFolder)
+            session.relativePathToWorkspaceRoot.set(contextCommand.workspaceFolder, contextCommand.workspaceFolder)
         }
         let prompts: AdditionalContextPrompt[] = []
         try {
@@ -1011,6 +1037,8 @@ export class ChatController {
                 innerContext: prompt.content.substring(0, additionalContentInnerContextLimit),
                 type: contextType,
                 relativePath: relativePath,
+                startLine: prompt.startLine,
+                endLine: prompt.endLine,
             }
 
             triggerPayload.additionalContents.push(entry)
@@ -1099,7 +1127,10 @@ export class ChatController {
             if (!relativePathsOfMergedRelevantDocuments.includes(relativePath) && !seen.includes(relativePath)) {
                 triggerPayload.documentReferences.push({
                     relativeFilePath: relativePath,
-                    lineRanges: [{ first: -1, second: -1 }],
+                    lineRanges:
+                        additionalContent.name === 'symbol'
+                            ? [{ first: additionalContent.startLine, second: additionalContent.endLine }]
+                            : [{ first: -1, second: -1 }],
                 })
                 seen.push(relativePath)
             }
