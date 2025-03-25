@@ -7,7 +7,7 @@ import vscode, { env, version } from 'vscode'
 import * as nls from 'vscode-nls'
 import * as crypto from 'crypto'
 import { LanguageClient, LanguageClientOptions } from 'vscode-languageclient'
-import { registerInlineCompletion } from '../app/inline/completion'
+import { InlineCompletionManager } from '../app/inline/completion'
 import { AmazonQLspAuth, encryptionKey, notificationTypes } from './auth'
 import { AuthUtil } from 'aws-core-vscode/codewhisperer'
 import {
@@ -102,8 +102,9 @@ export async function startLanguageServer(
 
     return client.onReady().then(async () => {
         await auth.init()
-        registerInlineCompletion(client)
-        if (Experiments.instance.get('amazonqChatLSP', true)) {
+        const inlineManager = new InlineCompletionManager(client)
+        inlineManager.registerInlineCompletion()
+        if (Experiments.instance.get('amazonqChatLSP', false)) {
             activate(client, encryptionKey, resourcePaths.mynahUI)
         }
 
@@ -178,7 +179,8 @@ export async function startLanguageServer(
                         }),
                     },
                 } as DidChangeWorkspaceFoldersParams)
-            })
+            }),
+            inlineManager
         )
     })
 }
