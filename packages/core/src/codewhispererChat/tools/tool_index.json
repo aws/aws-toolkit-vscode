@@ -1,0 +1,23 @@
+{
+    "fsRead": {
+        "name": "fsRead",
+        "description": "A tool for reading files (e.g. `cat -n`), or listing files/directories (e.g. `ls -la` or `find . -maxdepth 2). The behavior of this tool is determined by the `path` parameter pointing to a file or directory.\n* If `path` is a file, this tool returns the result of running `cat -n`, and the optional `readRange` determines what range of lines will be read from the specified file.\n* If `path` is a directory, this tool returns the listed files and directories of the specified path, as if running `ls -la`. If the `readRange` parameter is provided, the tool acts like the `find . -maxdepth <readRange>`, where `readRange` is the number of subdirectories deep to search, e.g. [2] will run `find . -maxdepth 2`.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "path": {
+                    "description": "Absolute path to file or directory, e.g. `/repo/file.py` or `/repo`.",
+                    "type": "string"
+                },
+                "readRange": {
+                    "description": "Optional parameter when reading either files or directories.\n* When `path` is a file, if none is given, the full file is shown. If provided, the file will be shown in the indicated line number range, e.g. [11, 12] will show lines 11 and 12. Indexing at 1 to start. Setting `[startLine, -1]` shows all lines from `startLine` to the end of the file.\n* When `path` is a directory, if none is given, the results of `ls -l` are given. If provided, the current directory and indicated number of subdirectories will be shown, e.g. [2] will show the current directory and directories two levels deep.",
+                    "items": {
+                        "type": "integer"
+                    },
+                    "type": "array"
+                }
+            },
+            "required": ["path"]
+        }
+    }
+}

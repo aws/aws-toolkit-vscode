@@ -318,4 +318,8 @@ export class AppToWebViewMessageDispatcher {
     public sendShowCustomFormMessage(message: ShowCustomFormMessage) {
         this.appsToWebViewMessagePublisher.publish(message)
     }
+
+    public sendCustomFormActionMessage(message: CustomFormActionMessage) {
+        this.appsToWebViewMessagePublisher.publish(message)
+    }
 }
