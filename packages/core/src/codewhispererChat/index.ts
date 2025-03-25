@@ -7,7 +7,7 @@ export { FocusAreaContextExtractor } from './editor/context/focusArea/focusAreaE
 export { TryChatCodeLensProvider, resolveModifierKey, tryChatCodeLensCommand } from './editor/codelens'
 export { focusAmazonQPanel } from './commands/registerCommands'
 export { ChatSession } from './clients/chat/v0/chat'
-export { triggerPayloadToChatRequest } from './controllers/chat/chatRequest/converter'
+export { triggerPayloadToChatRequest, filePathSizeLimit } from './controllers/chat/chatRequest/converter'
 export { ChatTriggerType, PromptMessage, TriggerPayload } from './controllers/chat/model'
 export { UserIntentRecognizer } from './controllers/chat/userIntent/userIntentRecognizer'
 export { EditorContextExtractor } from './editor/context/extractor'
