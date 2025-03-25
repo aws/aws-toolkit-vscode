@@ -692,16 +692,15 @@ export function tryGetCurrentWorkingDirectory() {
 /**
  * Returns a one-character tag for a directory ('d'), symlink ('l'), or file ('-').
  */
-
+ * Returns a one-character tag for a directory ('d'), symlink ('l'), or file ('-').
+ */
 export function formatListing(name: string, fileType: vscode.FileType, fullPath: string): string {
     let typeChar = '-'
-
     if (fileType === vscode.FileType.Directory) {
         typeChar = 'd'
     } else if (fileType === vscode.FileType.SymbolicLink) {
         typeChar = 'l'
     }
-
     return `${typeChar} ${fullPath}`
 }
 
