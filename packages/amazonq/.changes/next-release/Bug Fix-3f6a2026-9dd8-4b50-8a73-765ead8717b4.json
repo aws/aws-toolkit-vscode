@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Amazon Q Chat: Choosing a nested subfolder for `/doc` on Windows results in `The folder you chose did not contain any source files` error"
+}
