@@ -17,7 +17,7 @@ import { fs } from '../../shared/fs/fs'
 import { CodeWhispererConstants } from '../../codewhisperer/indexNode'
 import { CurrentWsFolders, defaultExcludePatterns } from '../../shared/utilities/workspaceUtils'
 import { TestFolder } from '../testUtil'
-import { NoActiveFileError } from '../../codewhisperer/models/errors'
+import { NoActiveFileError, NoSourceFilesError } from '../../codewhisperer/models/errors'
 
 describe('zipUtil', function () {
     const workspaceFolder = getTestWorkspaceFolder()
@@ -230,5 +230,37 @@ describe('zipUtil', function () {
         )
 
         assert.strictEqual(zipMetadata.language, 'typescript')
+    })
+
+    it('able to process files outside of workspace', async function () {
+        const project = await TestFolder.create()
+        const fileName = 'thisIsPartOfMyProject.py'
+        await project.write(fileName, 'file1')
+        const filepath = path.join(project.path, fileName)
+        await vscode.window.showTextDocument(vscode.Uri.parse(filepath))
+        const zipMetadata = await zipUtil.zipProject(
+            [...(vscode.workspace.workspaceFolders ?? [])] as CurrentWsFolders,
+            defaultExcludePatterns,
+            {
+                includeNonWorkspaceFiles: true,
+            }
+        )
+
+        assert.strictEqual(zipMetadata.scannedFiles.has(path.join(project.path, fileName)), true)
+    })
+
+    it('throws on empty project', async function () {
+        const project = await TestFolder.create()
+        await assert.rejects(
+            async () =>
+                await zipUtil.zipProject(
+                    [{ uri: vscode.Uri.file(project.path), name: 'project1', index: 0 }] as CurrentWsFolders,
+                    defaultExcludePatterns,
+                    {
+                        includeNonWorkspaceFiles: true,
+                    }
+                ),
+            new NoSourceFilesError()
+        )
     })
 })
