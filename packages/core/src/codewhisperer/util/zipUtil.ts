@@ -23,6 +23,7 @@ import { getTextContent } from '../../shared/utilities/textDocumentUtilities'
 import { ChildProcess, ChildProcessOptions } from '../../shared/utilities/processUtils'
 import { removeAnsi } from '../../shared/utilities/textUtilities'
 import { isFileOpenAndDirty } from '../../shared/utilities/vsCodeUtils'
+import { ToolkitError } from '../../shared/errors'
 
 export interface ZipMetadata {
     rootDir: string
@@ -51,6 +52,7 @@ export const ZipConstants = {
 }
 
 type ZipType = 'file' | 'project'
+type PayloadLimits = Record<ZipType, number>
 
 export class ZipUtil {
     protected _pickedSourceFiles: Set<string> = new Set<string>()
@@ -63,18 +65,23 @@ export class ZipUtil {
     protected _fetchedDirs: Set<string> = new Set<string>()
     protected _language: CodewhispererLanguage | undefined
     protected _timestamp: string = Date.now().toString()
-    protected static _payloadByteLimits = {
-        file: CodeWhispererConstants.fileScanPayloadSizeLimitBytes,
-        project: CodeWhispererConstants.projectScanPayloadSizeLimitBytes,
+    protected _payloadByteLimits: PayloadLimits
+    constructor(
+        protected _zipDirPrefix: string,
+        payloadLimits?: PayloadLimits
+    ) {
+        this._payloadByteLimits = payloadLimits ?? {
+            file: CodeWhispererConstants.fileScanPayloadSizeLimitBytes,
+            project: CodeWhispererConstants.projectScanPayloadSizeLimitBytes,
+        }
     }
-    constructor(protected _zipDirPrefix: string) {}
 
-    public static aboveByteLimit(size: number, limitType: ZipType): boolean {
+    public aboveByteLimit(size: number, limitType: ZipType): boolean {
         return size > this._payloadByteLimits[limitType]
     }
 
-    public static willReachProjectByteLimit(current: number, adding: number): boolean {
-        return ZipUtil.aboveByteLimit(current + adding, 'project')
+    public willReachProjectByteLimit(current: number, adding: number): boolean {
+        return this.aboveByteLimit(current + adding, 'project')
     }
 
     public async zipFile(uri: vscode.Uri | undefined, includeGitDiffHeader?: boolean) {
@@ -107,7 +114,7 @@ export class ZipUtil {
         this._totalSize += (await fs.stat(uri.fsPath)).size
         this._totalLines += content.split(ZipConstants.newlineRegex).length
 
-        if (ZipUtil.aboveByteLimit(this._totalSize, 'file')) {
+        if (this.aboveByteLimit(this._totalSize, 'file')) {
             throw new FileSizeExceededError()
         }
         const zipDirPath = this.getZipDirPath()
@@ -226,10 +233,15 @@ export class ZipUtil {
         if (!projectPaths || projectPaths.length === 0) {
             return
         }
-
         const sourceFiles = await collectFiles(projectPaths, workspaceFolders, {
-            maxTotalSizeBytes: ZipUtil._payloadByteLimits['project'],
+            maxTotalSizeBytes: this._payloadByteLimits['project'],
             excludePatterns,
+        }).catch((e) => {
+            // Check if project is too large to collect.
+            if (e instanceof ToolkitError && e.code === 'ContentLengthError') {
+                throw new ProjectSizeExceededError()
+            }
+            throw e
         })
         for (const file of sourceFiles) {
             const projectName = path.basename(file.workspaceFolder.uri.fsPath)
@@ -263,8 +275,8 @@ export class ZipUtil {
         const fileSize = Buffer.from(fileContent).length
 
         if (
-            ZipUtil.aboveByteLimit(this._totalSize, 'project') ||
-            ZipUtil.willReachProjectByteLimit(this._totalSize, fileSize)
+            this.aboveByteLimit(this._totalSize, 'project') ||
+            this.willReachProjectByteLimit(this._totalSize, fileSize)
         ) {
             throw new ProjectSizeExceededError()
         }
@@ -280,8 +292,8 @@ export class ZipUtil {
         const fileSize = (await fs.stat(uri.fsPath)).size
 
         if (
-            ZipUtil.aboveByteLimit(this._totalSize, 'project') ||
-            ZipUtil.willReachProjectByteLimit(this._totalSize, fileSize)
+            this.aboveByteLimit(this._totalSize, 'project') ||
+            this.willReachProjectByteLimit(this._totalSize, fileSize)
         ) {
             throw new ProjectSizeExceededError()
         }

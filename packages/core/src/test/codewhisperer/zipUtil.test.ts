@@ -6,7 +6,6 @@
 import assert from 'assert'
 import vscode from 'vscode'
 import path from 'path'
-import sinon from 'sinon'
 import { join } from 'path'
 import JSZip from 'jszip'
 import { getTestWorkspaceFolder } from '../../testInteg/integrationTestsUtilities'
@@ -30,40 +29,36 @@ describe('zipUtil', function () {
         zipUtil = new ZipUtil(CodeWhispererConstants.codeScanTruncDirPrefix)
     })
 
-    afterEach(function () {
-        sinon.restore()
-    })
-
-    it('returns the proper size limit for zip', function () {
+    it('defaults to proper size limits for zip', function () {
         assert.strictEqual(
-            ZipUtil.aboveByteLimit(CodeWhispererConstants.fileScanPayloadSizeLimitBytes + 1, 'file'),
+            zipUtil.aboveByteLimit(CodeWhispererConstants.fileScanPayloadSizeLimitBytes + 1, 'file'),
             true
         )
 
         assert.strictEqual(
-            ZipUtil.aboveByteLimit(CodeWhispererConstants.projectScanPayloadSizeLimitBytes + 1, 'project'),
+            zipUtil.aboveByteLimit(CodeWhispererConstants.projectScanPayloadSizeLimitBytes + 1, 'project'),
             true
         )
 
         assert.strictEqual(
-            ZipUtil.aboveByteLimit(CodeWhispererConstants.fileScanPayloadSizeLimitBytes - 1, 'file'),
+            zipUtil.aboveByteLimit(CodeWhispererConstants.fileScanPayloadSizeLimitBytes - 1, 'file'),
             false
         )
 
         assert.strictEqual(
-            ZipUtil.aboveByteLimit(CodeWhispererConstants.projectScanPayloadSizeLimitBytes - 1, 'project'),
+            zipUtil.aboveByteLimit(CodeWhispererConstants.projectScanPayloadSizeLimitBytes - 1, 'project'),
             false
         )
     })
 
     it('determines if adding file will exceed project byte limit', function () {
         assert.strictEqual(
-            ZipUtil.willReachProjectByteLimit(CodeWhispererConstants.projectScanPayloadSizeLimitBytes, 1),
+            zipUtil.willReachProjectByteLimit(CodeWhispererConstants.projectScanPayloadSizeLimitBytes, 1),
             true
         )
 
         assert.strictEqual(
-            ZipUtil.willReachProjectByteLimit(CodeWhispererConstants.projectScanPayloadSizeLimitBytes - 10, 9),
+            zipUtil.willReachProjectByteLimit(CodeWhispererConstants.projectScanPayloadSizeLimitBytes - 10, 9),
             false
         )
     })
@@ -94,33 +89,44 @@ describe('zipUtil', function () {
     })
 
     it('throws error if payload size limit is reached for file', async function () {
-        sinon.stub(ZipUtil, 'aboveByteLimit').returns(true)
-
+        const limitedZipUtil = new ZipUtil(CodeWhispererConstants.codeScanTruncDirPrefix, {
+            file: 1,
+            project: 1,
+        })
         await assert.rejects(
-            () => zipUtil.zipFile(vscode.Uri.file(appCodePath), true),
+            () => limitedZipUtil.zipFile(vscode.Uri.file(appCodePath), true),
             new ToolkitError(`Payload size limit reached`, { code: 'FileSizeExceeded' })
         )
     })
 
     it('throws error if payload size limit is reached for project', async function () {
-        sinon.stub(ZipUtil, 'aboveByteLimit').returns(true)
-
+        const testWorkspace = await TestFolder.create()
+        await testWorkspace.write('afile.py', '12345')
+        const limitedZipUtil = new ZipUtil(CodeWhispererConstants.codeScanTruncDirPrefix, {
+            file: 1,
+            project: 4,
+        })
         await assert.rejects(
             () =>
-                zipUtil.zipProject(
-                    [...(vscode.workspace.workspaceFolders ?? [])] as CurrentWsFolders,
-                    defaultExcludePatterns
+                limitedZipUtil.zipProject(
+                    [{ uri: vscode.Uri.parse(testWorkspace.path), name: 'testWorkspace', index: 0 }],
+                    defaultExcludePatterns,
+                    {
+                        projectPath: testWorkspace.path,
+                    }
                 ),
             new ToolkitError('Payload size limit reached', { code: 'ProjectSizeExceeded' })
         )
     })
 
     it('throws error if payload size limit will be reached for project', async function () {
-        sinon.stub(ZipUtil, 'willReachProjectByteLimit').returns(true)
-
+        const limitedZipUtil = new ZipUtil(CodeWhispererConstants.codeScanTruncDirPrefix, {
+            file: 1,
+            project: 1,
+        })
         await assert.rejects(
             () =>
-                zipUtil.zipProject(
+                limitedZipUtil.zipProject(
                     [...(vscode.workspace.workspaceFolders ?? [])] as CurrentWsFolders,
                     defaultExcludePatterns
                 ),
@@ -255,10 +261,7 @@ describe('zipUtil', function () {
             async () =>
                 await zipUtil.zipProject(
                     [{ uri: vscode.Uri.file(project.path), name: 'project1', index: 0 }] as CurrentWsFolders,
-                    defaultExcludePatterns,
-                    {
-                        includeNonWorkspaceFiles: true,
-                    }
+                    defaultExcludePatterns
                 ),
             new NoSourceFilesError()
         )
