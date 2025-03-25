@@ -2,9 +2,18 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import { ChatMessage } from '@amzn/codewhisperer-streaming'
+import {
+    ChatMessage,
+    Tool,
+    ToolResult,
+    ToolResultStatus,
+    UserInputMessage,
+    UserInputMessageContext,
+} from '@amzn/codewhisperer-streaming'
 import { randomUUID } from '../../shared/crypto'
 import { getLogger } from '../../shared/logger/logger'
+import toolsJson from '../tools/tool_index.json'
+import { buildEnvState, buildShellState } from '../controllers/chat/chatRequest/converter'
 
 // Maximum number of messages to keep in history
 const MaxConversationHistoryLength = 100
@@ -18,10 +27,18 @@ export class ChatHistoryManager {
     private history: ChatMessage[] = []
     private logger = getLogger()
     private lastUserMessage?: ChatMessage
+    private tools: Tool[] = []
 
     constructor() {
         this.conversationId = randomUUID()
         this.logger.info(`Generated new conversation id: ${this.conversationId}`)
+
+        this.tools = Object.entries(toolsJson).map(([, toolSpec]) => ({
+            toolSpecification: {
+                ...toolSpec,
+                inputSchema: { json: toolSpec.input_schema },
+            },
+        }))
     }
 
     /**
@@ -54,20 +71,23 @@ export class ChatHistoryManager {
      * Append a new user message to be sent
      */
     public appendUserMessage(newMessage: ChatMessage): void {
+        this.lastUserMessage = {
+            userInputMessage: {
+                content: newMessage.userInputMessage?.content ?? '',
+                userIntent: newMessage.userInputMessage?.userIntent ?? undefined,
+                userInputMessageContext: newMessage.userInputMessage?.userInputMessageContext ?? {
+                    envState: buildEnvState(),
+                    shellState: buildShellState(),
+                    tools: this.tools,
+                },
+                origin: newMessage.userInputMessage?.origin ?? undefined,
+            },
+        }
         this.fixHistory()
         if (!newMessage.userInputMessage?.content || newMessage.userInputMessage?.content.trim() === '') {
             this.logger.warn('input must not be empty when adding new messages')
-            // const emptyMessage: ChatMessage = {
-            //     ...newMessage,
-            //     userInputMessage: {
-            //         ...newMessage.userInputMessage,
-            //         content: 'Empty user input',
-            //     },
-            // }
-            // this.history.push(emptyMessage)
         }
-        this.lastUserMessage = newMessage
-        this.history.push(newMessage)
+        this.history.push(this.lastUserMessage)
     }
 
     /**
@@ -91,15 +111,24 @@ export class ChatHistoryManager {
     public fixHistory(): void {
         // Trim the conversation history if it exceeds the maximum length
         if (this.history.length > MaxConversationHistoryLength) {
-            // Find the second oldest user message to be the new starting point
-            const secondUserMessageIndex = this.history
-                .slice(1) // Skip the first message which might be from the user
-                .findIndex((msg) => !msg.userInputMessage?.content || msg.userInputMessage?.content.trim() === '')
+            // Find the second oldest user message without tool results
+            let indexToTrim: number | undefined
 
-            if (secondUserMessageIndex !== -1) {
-                // +1 because we sliced off the first element
-                this.logger.debug(`Removing the first ${secondUserMessageIndex + 1} elements in the history`)
-                this.history = this.history.slice(secondUserMessageIndex + 1)
+            for (let i = 1; i < this.history.length; i++) {
+                const message = this.history[i]
+                if (message.userInputMessage) {
+                    const userMessage = message.userInputMessage
+                    const ctx = userMessage.userInputMessageContext
+                    const hasNoToolResults = ctx && (!ctx.toolResults || ctx.toolResults.length === 0)
+                    if (hasNoToolResults && userMessage.content !== '') {
+                        indexToTrim = i
+                        break
+                    }
+                }
+            }
+            if (indexToTrim !== undefined) {
+                this.logger.debug(`Removing the first ${indexToTrim} elements in the history`)
+                this.history.splice(0, indexToTrim)
             } else {
                 this.logger.debug('No valid starting user message found in the history, clearing')
                 this.history = []
@@ -107,12 +136,114 @@ export class ChatHistoryManager {
         }
 
         // Ensure the last message is from the assistant
-
         if (this.history.length > 0 && this.history[this.history.length - 1].userInputMessage !== undefined) {
             this.logger.debug('Last message in history is from the user, dropping')
             this.history.pop()
         }
 
         // TODO: If the last message from the assistant contains tool uses, ensure the next user message contains tool results
+
+        const lastHistoryMessage = this.history[this.history.length - 1]
+
+        if (
+            lastHistoryMessage &&
+            (lastHistoryMessage.assistantResponseMessage ||
+                lastHistoryMessage.assistantResponseMessage !== undefined) &&
+            this.lastUserMessage
+        ) {
+            const toolUses = lastHistoryMessage.assistantResponseMessage.toolUses
+
+            if (toolUses && toolUses.length > 0) {
+                if (this.lastUserMessage.userInputMessage) {
+                    if (this.lastUserMessage.userInputMessage.userInputMessageContext) {
+                        const ctx = this.lastUserMessage.userInputMessage.userInputMessageContext
+
+                        if (!ctx.toolResults || ctx.toolResults.length === 0) {
+                            ctx.toolResults = toolUses.map((toolUse) => ({
+                                toolUseId: toolUse.toolUseId,
+                                content: [
+                                    {
+                                        type: 'Text',
+                                        text: 'Tool use was cancelled by the user',
+                                    },
+                                ],
+                                status: ToolResultStatus.ERROR,
+                            }))
+                        }
+                    } else {
+                        const toolResults = toolUses.map((toolUse) => ({
+                            toolUseId: toolUse.toolUseId,
+                            content: [
+                                {
+                                    type: 'Text',
+                                    text: 'Tool use was cancelled by the user',
+                                },
+                            ],
+                            status: ToolResultStatus.ERROR,
+                        }))
+
+                        this.lastUserMessage.userInputMessage.userInputMessageContext = {
+                            shellState: undefined,
+                            envState: buildEnvState(),
+                            toolResults: toolResults,
+                            tools: this.tools.length === 0 ? undefined : [...this.tools],
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Adds tool results to the conversation.
+     */
+    addToolResults(toolResults: ToolResult[]): void {
+        const userInputMessageContext: UserInputMessageContext = {
+            shellState: undefined,
+            envState: buildEnvState(),
+            toolResults: toolResults,
+            tools: this.tools.length === 0 ? undefined : [...this.tools],
+        }
+
+        const msg: UserInputMessage = {
+            content: '',
+            userInputMessageContext: userInputMessageContext,
+        }
+
+        if (this.lastUserMessage?.userInputMessage) {
+            this.lastUserMessage.userInputMessage = msg
+        }
+    }
+
+    /**
+     * Sets the next user message with "cancelled" tool results.
+     */
+    abandonToolUse(toolsToBeAbandoned: Array<[string, any]>, denyInput: string): void {
+        const toolResults = toolsToBeAbandoned.map(([toolUseId]) => ({
+            toolUseId,
+            content: [
+                {
+                    type: 'Text' as const,
+                    text: 'Tool use was cancelled by the user',
+                },
+            ],
+            status: ToolResultStatus.ERROR,
+        }))
+
+        const userInputMessageContext: UserInputMessageContext = {
+            shellState: undefined,
+            envState: buildEnvState(),
+            toolResults,
+            tools: this.tools.length > 0 ? [...this.tools] : undefined,
+        }
+
+        const msg: ChatMessage = {
+            userInputMessage: {
+                content: denyInput,
+                userInputMessageContext,
+            },
+        }
+
+        this.lastUserMessage = msg
     }
 }

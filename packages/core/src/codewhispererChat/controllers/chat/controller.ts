@@ -45,7 +45,7 @@ import { EditorContextCommand } from '../../commands/registerCommands'
 import { PromptsGenerator } from './prompts/promptsGenerator'
 import { TriggerEventsStorage } from '../../storages/triggerEvents'
 import { SendMessageRequest } from '@amzn/amazon-q-developer-streaming-client'
-import { CodeWhispererStreamingServiceException } from '@amzn/codewhisperer-streaming'
+import { CodeWhispererStreamingServiceException, Origin, ToolResult } from '@amzn/codewhisperer-streaming'
 import { UserIntentRecognizer } from './userIntent/userIntentRecognizer'
 import { CWCTelemetryHelper, recordTelemetryChatRunCommand } from './telemetryHelper'
 import { CodeWhispererTracker } from '../../../codewhisperer/tracker/codewhispererTracker'
@@ -81,6 +81,7 @@ import {
 } from '../../constants'
 import { ChatSession } from '../../clients/chat/v0/chat'
 import { ChatHistoryManager } from '../../storages/chatHistory'
+import { FsRead, FsReadParams } from '../../tools/fsRead'
 
 export interface ChatControllerMessagePublishers {
     readonly processPromptChatMessage: MessagePublisher<PromptMessage>
@@ -577,6 +578,8 @@ export class ChatController {
             const newFileDoc = await vscode.workspace.openTextDocument(newFilePath)
             await vscode.window.showTextDocument(newFileDoc)
             telemetry.ui_click.emit({ elementId: 'amazonq_createSavedPrompt' })
+        } else if (message.action.id === 'confirm-tool-use') {
+            await this.processToolUseMessage(message)
         }
     }
 
@@ -834,10 +837,108 @@ export class ChatController {
         }
     }
 
+    private async processToolUseMessage(message: CustomFormActionMessage) {
+        const tabID = message.tabID
+        if (!tabID) {
+            return
+        }
+        this.editorContextExtractor
+            .extractContextForTrigger('ChatMessage')
+            .then(async (context) => {
+                const triggerID = randomUUID()
+                this.triggerEventsStorage.addTriggerEvent({
+                    id: triggerID,
+                    tabID: message.tabID,
+                    message: undefined,
+                    type: 'chat_message',
+                    context,
+                })
+                const session = this.sessionStorage.getSession(tabID)
+                const toolUse = session.toolUse
+                if (!toolUse || !toolUse.input) {
+                    return
+                }
+                session.setToolUse(undefined)
+
+                let result: any
+                const toolResults: ToolResult[] = []
+                try {
+                    switch (toolUse.name) {
+                        // case 'execute_bash': {
+                        //     const executeBash = new ExecuteBash(toolUse.input as unknown as ExecuteBashParams)
+                        //     await executeBash.validate()
+                        //     result = await executeBash.invoke(process.stdout)
+                        //     break
+                        // }
+                        case 'fs_read': {
+                            const fsRead = new FsRead(toolUse.input as unknown as FsReadParams)
+                            await fsRead.validate()
+                            result = await fsRead.invoke()
+                            break
+                        }
+                        // case 'fs_write': {
+                        //     const fsWrite = new FsWrite(toolUse.input as unknown as FsWriteParams)
+                        //     const ctx = new DefaultContext()
+                        //     result = await fsWrite.invoke(ctx, process.stdout)
+                        //     break
+                        // }
+                        // case 'open_file': {
+                        //     result = await openFile(toolUse.input as unknown as OpenFileParams)
+                        //     break
+                        // }
+                        default:
+                            break
+                    }
+                    toolResults.push({
+                        content: [
+                            result.output.kind === 'text'
+                                ? { text: result.output.content }
+                                : { json: result.output.content },
+                        ],
+                        toolUseId: toolUse.toolUseId,
+                        status: 'success',
+                    })
+                } catch (e: any) {
+                    toolResults.push({ content: [{ text: e.message }], toolUseId: toolUse.toolUseId, status: 'error' })
+                }
+
+                this.chatHistoryManager.appendUserMessage({
+                    userInputMessage: {
+                        content: 'Tool Results',
+                        userIntent: undefined,
+                        origin: Origin.IDE,
+                    },
+                })
+
+                await this.generateResponse(
+                    {
+                        message: 'Tool Results',
+                        trigger: ChatTriggerType.ChatMessage,
+                        query: undefined,
+                        codeSelection: context?.focusAreaContext?.selectionInsideExtendedCodeBlock,
+                        fileText: context?.focusAreaContext?.extendedCodeBlock,
+                        fileLanguage: context?.activeFileContext?.fileLanguage,
+                        filePath: context?.activeFileContext?.filePath,
+                        matchPolicy: context?.activeFileContext?.matchPolicy,
+                        codeQuery: context?.focusAreaContext?.names,
+                        userIntent: undefined,
+                        customization: getSelectedCustomization(),
+                        context: undefined,
+                        toolResults: toolResults,
+                        origin: Origin.IDE,
+                    },
+                    triggerID
+                )
+            })
+            .catch((e) => {
+                this.processException(e, tabID)
+            })
+    }
+
     private async processPromptMessageAsNewThread(message: PromptMessage) {
         this.editorContextExtractor
             .extractContextForTrigger('ChatMessage')
-            .then((context) => {
+            .then(async (context) => {
                 const triggerID = randomUUID()
                 this.triggerEventsStorage.addTriggerEvent({
                     id: triggerID,
@@ -850,9 +951,10 @@ export class ChatController {
                     userInputMessage: {
                         content: message.message,
                         userIntent: message.userIntent,
+                        origin: Origin.IDE,
                     },
                 })
-                return this.generateResponse(
+                await this.generateResponse(
                     {
                         message: message.message,
                         trigger: ChatTriggerType.ChatMessage,
@@ -867,6 +969,7 @@ export class ChatController {
                         customization: getSelectedCustomization(),
                         context: message.context,
                         chatHistory: this.chatHistoryManager.getHistory(),
+                        origin: Origin.IDE,
                     },
                     triggerID
                 )

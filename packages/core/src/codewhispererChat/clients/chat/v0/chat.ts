@@ -4,7 +4,11 @@
  */
 
 import { SendMessageCommandOutput, SendMessageRequest } from '@amzn/amazon-q-developer-streaming-client'
-import { GenerateAssistantResponseCommandOutput, GenerateAssistantResponseRequest } from '@amzn/codewhisperer-streaming'
+import {
+    GenerateAssistantResponseCommandOutput,
+    GenerateAssistantResponseRequest,
+    ToolUse,
+} from '@amzn/codewhisperer-streaming'
 import * as vscode from 'vscode'
 import { ToolkitError } from '../../../../shared/errors'
 import { createCodeWhispererChatStreamingClient } from '../../../../shared/clients/codewhispererChatClient'
@@ -13,6 +17,7 @@ import { UserWrittenCodeTracker } from '../../../../codewhisperer/tracker/userWr
 
 export class ChatSession {
     private sessionId?: string
+    private _toolUse: ToolUse | undefined
 
     contexts: Map<string, { first: number; second: number }[]> = new Map()
     // TODO: doesn't handle the edge case when two files share the same relativePath string but from different root
@@ -20,6 +25,14 @@ export class ChatSession {
     relativePathToWorkspaceRoot: Map<string, string> = new Map()
     public get sessionIdentifier(): string | undefined {
         return this.sessionId
+    }
+
+    public get toolUse(): ToolUse | undefined {
+        return this._toolUse
+    }
+
+    public setToolUse(toolUse: ToolUse | undefined) {
+        this._toolUse = toolUse
     }
 
     public tokenSource!: vscode.CancellationTokenSource
