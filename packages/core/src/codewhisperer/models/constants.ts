@@ -926,7 +926,3 @@ export const testGenExcludePatterns = [
     '**/*.deb',
     '**/*.model',
 ]
-
-export const isFileAnalysisScope = (scope: CodeAnalysisScope) => {
-    return scope === CodeAnalysisScope.FILE_AUTO || scope === CodeAnalysisScope.FILE_ON_DEMAND
-}
