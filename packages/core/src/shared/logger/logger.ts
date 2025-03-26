@@ -11,12 +11,15 @@ export type LogTopic =
     | 'notifications'
     | 'test'
     | 'childProcess'
-    | 'unknown'
+    | 'lsp'
+    | 'amazonqWorkspaceLsp'
+    | 'amazonqLsp'
     | 'chat'
     | 'stepfunctions'
     | 'fsRead'
     | 'fsWrite'
     | 'executeBash'
+    | 'unknown'
 
 class ErrorLog {
     constructor(

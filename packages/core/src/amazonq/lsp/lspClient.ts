@@ -10,7 +10,6 @@
 import * as vscode from 'vscode'
 import * as path from 'path'
 import * as nls from 'vscode-nls'
-import { spawn } from 'child_process' // eslint-disable-line no-restricted-imports
 import * as crypto from 'crypto'
 import * as jose from 'jose'
 
@@ -35,30 +34,18 @@ import {
     GetContextCommandPromptRequestType,
     AdditionalContextPrompt,
 } from './types'
-import { Writable } from 'stream'
 import { CodeWhispererSettings } from '../../codewhisperer/util/codewhispererSettings'
 import { fs } from '../../shared/fs/fs'
 import { getLogger } from '../../shared/logger/logger'
 import globals from '../../shared/extensionGlobals'
+import { ResourcePaths } from '../../shared/lsp/types'
+import { createServerOptions } from '../../shared/lsp/utils/platform'
 import { waitUntil } from '../../shared/utilities/timeoutUtils'
 
 const localize = nls.loadMessageBundle()
 
 const key = crypto.randomBytes(32)
 
-/**
- * Sends a json payload to the language server, who is waiting to know what the encryption key is.
- * Code reference: https://github.com/aws/language-servers/blob/7da212185a5da75a72ce49a1a7982983f438651a/client/vscode/src/credentialsActivation.ts#L77
- */
-export function writeEncryptionInit(stream: Writable): void {
-    const request = {
-        version: '1.0',
-        mode: 'JWT',
-        key: key.toString('base64'),
-    }
-    stream.write(JSON.stringify(request))
-    stream.write('\n')
-}
 /**
  * LspClient manages the API call between VS Code extension and LSP server
  * It encryptes the payload of API call.
@@ -135,7 +122,7 @@ export class LspClient {
         }
     }
 
-    async updateIndex(filePath: string[], mode: 'update' | 'remove' | 'add') {
+    async updateIndex(filePath: string[], mode: 'update' | 'remove' | 'add' | 'context_command_symbol_update') {
         const payload: UpdateIndexV2RequestPayload = {
             filePaths: filePath,
             updateMode: mode,
@@ -240,13 +227,11 @@ export class LspClient {
  * It will create a output channel named Amazon Q Language Server.
  * This function assumes the LSP server has already been downloaded.
  */
-export async function activate(extensionContext: ExtensionContext) {
+export async function activate(extensionContext: ExtensionContext, resourcePaths: ResourcePaths) {
     LspClient.instance
     const toDispose = extensionContext.subscriptions
 
     let rangeFormatting: Disposable | undefined
-    // The server is implemented in node
-    const serverModule = path.join(extensionContext.extensionPath, 'resources/qserver/lspServer.js')
     // The debug options for the server
     // --inspect=6009: runs the server in Node's Inspector mode so VS Code can attach to the server for debugging
     const debugOptions = { execArgv: ['--nolazy', '--preserve-symlinks', '--stdio'] }
@@ -265,15 +250,7 @@ export async function activate(extensionContext: ExtensionContext) {
         delete process.env.Q_WORKER_THREADS
     }
 
-    const nodename = process.platform === 'win32' ? 'node.exe' : 'node'
-
-    const child = spawn(extensionContext.asAbsolutePath(path.join('resources', nodename)), [
-        serverModule,
-        ...debugOptions.execArgv,
-    ])
-    // share an encryption key using stdin
-    // follow same practice of DEXP LSP server
-    writeEncryptionInit(child.stdin)
+    const serverModule = resourcePaths.lsp
 
     // If the extension is launch in debug mode the debug server options are use
     // Otherwise the run options are used
@@ -282,7 +259,12 @@ export async function activate(extensionContext: ExtensionContext) {
         debug: { module: serverModule, transport: TransportKind.ipc, options: debugOptions },
     }
 
-    serverOptions = () => Promise.resolve(child!)
+    serverOptions = createServerOptions({
+        encryptionKey: key,
+        executable: resourcePaths.node,
+        serverModule,
+        execArgv: debugOptions.execArgv,
+    })
 
     const documentSelector = [{ scheme: 'file', language: '*' }]
 

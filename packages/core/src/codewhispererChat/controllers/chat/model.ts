@@ -185,28 +185,38 @@ export interface TriggerPayload {
     readonly query: string | undefined
     readonly codeSelection: Selection | undefined
     readonly trigger: ChatTriggerType
-    readonly fileText: string | undefined
+    fileText: string
     readonly fileLanguage: string | undefined
     readonly filePath: string | undefined
-    message: string | undefined
+    message: string
     readonly matchPolicy: MatchPolicy | undefined
     readonly codeQuery: CodeQuery | undefined
     readonly userIntent: UserIntent | undefined
     readonly customization: Customization
-    readonly context?: string[] | QuickActionCommand[]
-    relevantTextDocuments?: RelevantTextDocumentAddition[]
-    additionalContents?: AdditionalContentEntry[]
+    readonly context: string[] | QuickActionCommand[]
+    relevantTextDocuments: RelevantTextDocumentAddition[]
+    additionalContents: AdditionalContentEntryAddition[]
     // a reference to all documents used in chat payload
     // for providing better context transparency
-    documentReferences?: DocumentReference[]
-    useRelevantDocuments?: boolean
+    documentReferences: DocumentReference[]
+    useRelevantDocuments: boolean
     traceId?: string
-    additionalContextLengths?: AdditionalContextLengths
-    truncatedAdditionalContextLengths?: AdditionalContextLengths
+    contextLengths: ContextLengths
     workspaceRulesCount?: number
     chatHistory?: ChatMessage[]
     toolResults?: ToolResult[]
     origin?: Origin
+}
+
+export type ContextLengths = {
+    additionalContextLengths: AdditionalContextLengths
+    truncatedAdditionalContextLengths: AdditionalContextLengths
+    workspaceContextLength: number
+    truncatedWorkspaceContextLength: number
+    userInputContextLength: number
+    truncatedUserInputContextLength: number
+    focusFileContextLength: number
+    truncatedFocusFileContextLength: number
 }
 
 export type AdditionalContextLengths = {
@@ -223,8 +233,12 @@ export type AdditionalContextInfo = {
     cwsprChatHasProjectContext?: boolean
 }
 
+export type LineInfo = { startLine: number; endLine: number }
+
 // TODO move this to API definition (or just use this across the codebase)
-export type RelevantTextDocumentAddition = RelevantTextDocument & { startLine: number; endLine: number }
+export type RelevantTextDocumentAddition = RelevantTextDocument & LineInfo
+
+export type AdditionalContentEntryAddition = AdditionalContentEntry & { type: string; relativePath: string } & LineInfo
 
 export interface DocumentReference {
     readonly relativeFilePath: string
