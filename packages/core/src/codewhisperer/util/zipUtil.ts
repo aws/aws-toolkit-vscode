@@ -349,7 +349,7 @@ interface GitDiffOptions {
     zipType?: ZipType
 }
 
-async function getGitDiffContentForProjects(projectPaths: string[], filepath?: string, zipType?: ZipType) {
+async function getGitDiffContentForProjects(projectPaths: string[], filepath?: string) {
     let gitDiffContent = ''
     for (const projectPath of projectPaths) {
         const projectName = path.basename(projectPath)
@@ -357,7 +357,7 @@ async function getGitDiffContentForProjects(projectPaths: string[], filepath?: s
             projectPath,
             projectName,
             filepath,
-            zipType,
+            zipType: 'project',
         })
     }
     return gitDiffContent
