@@ -666,13 +666,14 @@ export enum BuildSystem {
     Unknown = 'Unknown',
 }
 
+// TO-DO: include the custom YAML file path here somewhere?
 export class ZipManifest {
     sourcesRoot: string = 'sources/'
     dependenciesRoot: string = 'dependencies/'
     buildLogs: string = 'build-logs.txt'
     version: string = '1.0'
     hilCapabilities: string[] = ['HIL_1pDependency_VersionUpgrade']
-    transformCapabilities: string[] = ['EXPLAINABILITY_V1']
+    transformCapabilities: string[] = ['EXPLAINABILITY_V1', 'CLIENT_SIDE_BUILD']
     customBuildCommand: string = 'clean test'
     requestedConversions?: {
         sqlConversion?: {
@@ -759,6 +760,8 @@ export class TransformByQState {
 
     private metadataPathSQL: string = ''
 
+    private customVersionPath: string = ''
+
     private linesOfCodeSubmitted: number | undefined = undefined
 
     private planFilePath: string = ''
@@ -778,11 +781,13 @@ export class TransformByQState {
 
     private jobFailureErrorChatMessage: string | undefined = undefined
 
-    private errorLog: string = ''
+    private buildLog: string = ''
 
     private mavenName: string = ''
 
-    private javaHome: string | undefined = undefined
+    private sourceJavaHome: string | undefined = undefined
+
+    private targetJavaHome: string | undefined = undefined
 
     private chatControllers: ChatControllerEventEmitters | undefined = undefined
     private chatMessenger: Messenger | undefined = undefined
@@ -885,6 +890,10 @@ export class TransformByQState {
         return this.metadataPathSQL
     }
 
+    public getCustomDependencyVersionFilePath() {
+        return this.customVersionPath
+    }
+
     public getStatus() {
         return this.transformByQState
     }
@@ -925,16 +934,20 @@ export class TransformByQState {
         return this.jobFailureErrorChatMessage
     }
 
-    public getErrorLog() {
-        return this.errorLog
+    public getBuildLog() {
+        return this.buildLog
     }
 
     public getMavenName() {
         return this.mavenName
     }
 
-    public getJavaHome() {
-        return this.javaHome
+    public getSourceJavaHome() {
+        return this.sourceJavaHome
+    }
+
+    public getTargetJavaHome() {
+        return this.targetJavaHome
     }
 
     public getChatControllers() {
@@ -957,8 +970,12 @@ export class TransformByQState {
         return this.intervalId
     }
 
-    public appendToErrorLog(message: string) {
-        this.errorLog += `${message}\n\n`
+    public appendToBuildLog(message: string) {
+        this.buildLog += `${message}\n\n`
+    }
+
+    public clearBuildLog() {
+        this.buildLog = ''
     }
 
     public setToNotStarted() {
@@ -1049,6 +1066,10 @@ export class TransformByQState {
         this.metadataPathSQL = path
     }
 
+    public setCustomDependencyVersionFilePath(path: string) {
+        this.customVersionPath = path
+    }
+
     public setPlanFilePath(filePath: string) {
         this.planFilePath = filePath
     }
@@ -1089,8 +1110,12 @@ export class TransformByQState {
         this.mavenName = mavenName
     }
 
-    public setJavaHome(javaHome: string) {
-        this.javaHome = javaHome
+    public setSourceJavaHome(javaHome: string) {
+        this.sourceJavaHome = javaHome
+    }
+
+    public setTargetJavaHome(javaHome: string) {
+        this.targetJavaHome = javaHome
     }
 
     public setChatControllers(controllers: ChatControllerEventEmitters) {
@@ -1132,6 +1157,7 @@ export class TransformByQState {
         this.jobFailureMetadata = ''
         this.payloadFilePath = ''
         this.metadataPathSQL = ''
+        this.customVersionPath = ''
         this.sourceJDKVersion = undefined
         this.targetJDKVersion = undefined
         this.sourceDB = undefined
@@ -1139,7 +1165,7 @@ export class TransformByQState {
         this.sourceServerName = ''
         this.schemaOptions.clear()
         this.schema = ''
-        this.errorLog = ''
+        this.buildLog = ''
         this.customBuildCommand = ''
         this.intervalId = undefined
         this.produceMultipleDiffs = false
