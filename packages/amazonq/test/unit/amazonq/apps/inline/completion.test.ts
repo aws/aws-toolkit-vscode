@@ -253,7 +253,26 @@ describe('InlineCompletionManager', () => {
                 }
             })
         })
-    })
+    }),
+        describe('registerCustomization', () => {
+            beforeEach(() => {
+                manager.registerCustomization(languageClient)
+            })
+            it('should register connect customization command', async () => {
+                const connectCustomizationCall = registerCommandStub
+                    .getCalls()
+                    .find((call) => call.args[0] === 'aws.amazonq.connect')
+
+                assert(connectCustomizationCall, 'Connect customization command should be registered')
+            })
+            it('should register select customization command', async () => {
+                const connectCustomizationCall = registerCommandStub
+                    .getCalls()
+                    .find((call) => call.args[0] === 'aws.amazonq.select')
+
+                assert(connectCustomizationCall, 'Select customization command should be registered')
+            })
+        })
 
     describe('AmazonQInlineCompletionItemProvider', () => {
         describe('provideInlineCompletionItems', () => {

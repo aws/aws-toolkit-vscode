@@ -27,6 +27,7 @@ import { AuthUtil } from '../util/authUtil'
 import { submitFeedback } from '../../feedback/vue/submitFeedback'
 import { focusAmazonQPanel } from '../../codewhispererChat/commands/registerCommands'
 import { isWeb } from '../../shared/extensionGlobals'
+import { Experiments } from '../../shared/settings'
 
 export function createAutoSuggestions(running: boolean): DataQuickPickItem<'autoSuggestions'> {
     const labelResume = localize('AWS.codewhisperer.resumeCodeWhispererNode.label', 'Resume Auto-Suggestions')
@@ -129,11 +130,14 @@ export function createSelectCustomization(): DataQuickPickItem<'selectCustomizat
     const description =
         newCustomizationsAmount > 0 ? `${newCustomizationsAmount} new available` : `Using ${selectedCustomization.name}`
 
+    const selectCustomizationCommand = Experiments.instance.get('amazonqLSP', true)
+        ? () => vscode.commands.executeCommand('aws.amazonq.select')
+        : () => selectCustomizationPrompt.execute(placeholder, cwQuickPickSource)
     return {
         data: 'selectCustomization',
         label: codicon`${icon} ${label}`,
         description: description,
-        onClick: () => selectCustomizationPrompt.execute(placeholder, cwQuickPickSource),
+        onClick: selectCustomizationCommand,
     } as DataQuickPickItem<'selectCustomization'>
 }
 

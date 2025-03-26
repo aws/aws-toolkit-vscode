@@ -11,13 +11,20 @@ import * as vscode from 'vscode'
 import { createCommonButtons } from '../../shared/ui/buttons'
 import { DataQuickPickItem, showQuickPick } from '../../shared/ui/pickerPrompter'
 import { codeWhispererClient } from '../client/codewhisperer'
-import { Customization, ResourceArn } from '../client/codewhispereruserclient'
+import { Customization, ListAvailableCustomizationsResponse, ResourceArn } from '../client/codewhispereruserclient'
 import { codicon, getIcon } from '../../shared/icons'
 import { getLogger } from '../../shared/logger/logger'
 import { showMessageWithUrl } from '../../shared/utilities/messages'
 import { parse } from '@aws-sdk/util-arn-parser'
 import { Commands } from '../../shared/vscode/commands2'
 import { vsCodeState } from '../models/model'
+import { LanguageClient } from 'vscode-languageclient'
+import {
+    GetConfigurationFromServerParams,
+    getConfigurationFromServerRequestType,
+    UpdateConfigurationParams,
+} from '@aws/language-server-runtimes/protocol'
+import { Experiments } from '../../shared/settings'
 
 /**
  *
@@ -29,15 +36,19 @@ export const getNewCustomizations = (availableCustomizations: Customization[]) =
     return availableCustomizations.filter((c) => !persistedCustomizations.map((p) => p.arn).includes(c.arn))
 }
 
-export async function notifyNewCustomizations() {
+export async function notifyNewCustomizations(client?: LanguageClient) {
     let availableCustomizations: Customization[] = []
     try {
-        availableCustomizations = await getAvailableCustomizationsList()
+        if (Experiments.instance.get('amazonqLSP', true) && client) {
+            availableCustomizations = await getCustomizationsFromLsp(client)
+        } else {
+            availableCustomizations = await getAvailableCustomizationsList()
+        }
         AuthUtil.instance.isCustomizationFeatureEnabled = true
     } catch (error) {
         // On receiving any error, we will disable the customization feature
         AuthUtil.instance.isCustomizationFeatureEnabled = false
-        await setSelectedCustomization(baseCustomization)
+        await setSelectedCustomization(baseCustomization, false, client)
         getLogger().error(`Failed to fetch customizations: %O`, error)
         return
     }
@@ -66,7 +77,7 @@ export async function notifyNewCustomizations() {
     )
     void vscode.window.showInformationMessage(newCustomizationMessage, select, learnMore).then(async (resp) => {
         if (resp === select) {
-            showCustomizationPrompt().catch((e) => {
+            showCustomizationPrompt(client).catch((e) => {
                 getLogger().error('showCustomizationPrompt failed: %s', (e as Error).message)
             })
         } else if (resp === learnMore) {
@@ -123,7 +134,11 @@ export const getSelectedCustomization = (): Customization => {
  *  1. service returns non-empty override customization arn, refer to [featureConfig.ts]
  *  2. the override customization arn is different from the previous override customization if any. The purpose is to only do override once on users' behalf.
  */
-export const setSelectedCustomization = async (customization: Customization, isOverride: boolean = false) => {
+export const setSelectedCustomization = async (
+    customization: Customization,
+    isOverride: boolean = false,
+    client?: LanguageClient
+) => {
     if (!AuthUtil.instance.isValidEnterpriseSsoInUse() || !AuthUtil.instance.conn) {
         return
     }
@@ -147,6 +162,9 @@ export const setSelectedCustomization = async (customization: Customization, isO
     }
     vsCodeState.isFreeTierLimitReached = false
     await Commands.tryExecute('aws.amazonq.refreshStatusBar')
+    if (Experiments.instance.get('amazonqLSP', true) && client) {
+        await notifySelectedCustomizatioToLsp(client, customization.arn)
+    }
 }
 
 export const getPersistedCustomizations = (): Customization[] => {
@@ -183,9 +201,9 @@ export const setNewCustomizationsAvailable = async (num: number) => {
     vsCodeState.isFreeTierLimitReached = false
 }
 
-export async function showCustomizationPrompt() {
+export async function showCustomizationPrompt(client?: LanguageClient) {
     await setNewCustomizationsAvailable(0)
-    await showQuickPick(createCustomizationItems(), {
+    await showQuickPick(createCustomizationItems(client), {
         title: localize('AWS.codewhisperer.customization.quickPick.title', 'Select a Customization'),
         placeholder: localize(
             'AWS.codewhisperer.customization.quickPick.placeholder',
@@ -205,9 +223,14 @@ export async function showCustomizationPrompt() {
     })
 }
 
-const createCustomizationItems = async () => {
+const createCustomizationItems = async (client?: LanguageClient) => {
     const items = []
-    const availableCustomizations = await getAvailableCustomizationsList()
+    let availableCustomizations: Customization[] = []
+    if (Experiments.instance.get('amazonqLSP', true) && client) {
+        availableCustomizations = await getCustomizationsFromLsp(client)
+    } else {
+        availableCustomizations = await getAvailableCustomizationsList()
+    }
 
     // Order matters
     // 1. read the old snapshot of customizations
@@ -218,7 +241,7 @@ const createCustomizationItems = async () => {
 
     const selectedCustomization = getSelectedCustomization()
     if (!isSelectedCustomizationAvailable(availableCustomizations, selectedCustomization)) {
-        await switchToBaseCustomizationAndNotify()
+        await switchToBaseCustomizationAndNotify(client)
     }
 
     if (availableCustomizations.length === 0) {
@@ -257,7 +280,7 @@ const createCustomizationItems = async () => {
                 }
             }
 
-            return createCustomizationItem(c, persistedArns, shouldPrefixAccountId)
+            return createCustomizationItem(c, persistedArns, shouldPrefixAccountId, client)
         })
     )
     return items
@@ -286,7 +309,8 @@ const createBaseCustomizationItem = () => {
 const createCustomizationItem = (
     customization: Customization,
     persistedArns: (ResourceArn | undefined)[],
-    shouldPrefixAccountId: boolean
+    shouldPrefixAccountId: boolean,
+    client?: LanguageClient
 ) => {
     const accountId = parse(customization.arn).accountId
     const displayedName = customization.name
@@ -303,7 +327,7 @@ const createCustomizationItem = (
     return {
         label: label,
         onClick: async () => {
-            await selectCustomization(customization)
+            await selectCustomization(customization, client)
         },
         detail:
             customization.description !== ''
@@ -315,13 +339,13 @@ const createCustomizationItem = (
     } as DataQuickPickItem<string>
 }
 
-export const selectCustomization = async (customization: Customization) => {
+export const selectCustomization = async (customization: Customization, client?: LanguageClient) => {
     // If the newly selected customization is same as the old one, do nothing
     const selectedCustomization = getSelectedCustomization()
     if (selectedCustomization.arn === customization.arn) {
         return
     }
-    await setSelectedCustomization(customization)
+    await setSelectedCustomization(customization, false, client)
     const suffix =
         customization.arn === baseCustomization.arn ? customization.name : `${customization.name} customization.`
     void vscode.window.showInformationMessage(
@@ -345,9 +369,28 @@ export const getAvailableCustomizationsList = async () => {
     return items
 }
 
+export const getCustomizationsFromLsp = async (client: LanguageClient) => {
+    const response: ListAvailableCustomizationsResponse = await client.sendRequest(
+        getConfigurationFromServerRequestType.method,
+        {
+            section: 'aws.q',
+        } as GetConfigurationFromServerParams
+    )
+    return response.customizations
+}
+
+export const notifySelectedCustomizatioToLsp = async (client: LanguageClient, customizationArn: string) => {
+    client.sendNotification('workspace/didChangeConfiguration', {
+        section: 'amazonQ',
+        settings: {
+            customization: customizationArn,
+        },
+    } as UpdateConfigurationParams)
+}
+
 // show notification that selected customization is not available, switching back to base
-export const switchToBaseCustomizationAndNotify = async () => {
-    await setSelectedCustomization(baseCustomization)
+export const switchToBaseCustomizationAndNotify = async (client?: LanguageClient) => {
+    await setSelectedCustomization(baseCustomization, false, client)
     const selectCustomizationLabel = localize(
         'AWS.codewhisperer.customization.notification.selectCustomization',
         'Select Another Customization'
@@ -360,7 +403,7 @@ export const switchToBaseCustomizationAndNotify = async () => {
         selectCustomizationLabel
     )
     if (selection === selectCustomizationLabel) {
-        await showCustomizationPrompt()
+        await showCustomizationPrompt(client)
     }
 }
 
