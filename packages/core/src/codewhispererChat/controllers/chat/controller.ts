@@ -623,7 +623,7 @@ export class ChatController {
     }
     private async processFileClickMessage(message: FileClick) {
         const session = this.sessionStorage.getSession(message.tabID)
-        // Check if user clicked on filePath in the contextList or filePath in the fileListTress and perform the functionality accordingly.
+        // Check if user clicked on filePath in the contextList or in the fileListTree and perform the functionality accordingly.
         if (session.showDiffOnFileWrite) {
             const filePath = session.filePath ?? message.filePath
             const fileExists = await fs.existsFile(filePath)
