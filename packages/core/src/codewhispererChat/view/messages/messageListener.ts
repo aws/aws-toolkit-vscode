@@ -69,9 +69,6 @@ export class UIMessageListener {
             case 'view_diff':
                 this.processViewDiff(msg)
                 break
-            case 'open-diff':
-                this.processOpenDiff(msg)
-                break
             case 'code_was_copied_to_clipboard':
                 this.processCodeWasCopiedToClipboard(msg)
                 break
@@ -218,14 +215,6 @@ export class UIMessageListener {
 
     private processViewDiff(msg: any) {
         this.chatControllerMessagePublishers.processViewDiff.publish({
-            command: msg.command,
-            tabID: msg.tabID || msg.tabId,
-            ...msg,
-        })
-    }
-
-    private processOpenDiff(msg: any) {
-        this.chatControllerMessagePublishers.processOpenDiff.publish({
             command: msg.command,
             tabID: msg.tabID || msg.tabId,
             ...msg,

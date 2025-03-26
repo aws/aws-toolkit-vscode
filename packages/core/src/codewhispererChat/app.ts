@@ -28,7 +28,6 @@ import {
     AcceptDiff,
     QuickCommandGroupActionClick,
     FileClick,
-    OpenDiff,
 } from './controllers/chat/model'
 import { EditorContextCommand, registerCommands } from './commands/registerCommands'
 import { ContextSelectedMessage, CustomFormActionMessage } from './view/connector/connector'
@@ -42,7 +41,6 @@ export function init(appContext: AmazonQAppInitContext) {
         processInsertCodeAtCursorPosition: new EventEmitter<InsertCodeAtCursorPosition>(),
         processAcceptDiff: new EventEmitter<AcceptDiff>(),
         processViewDiff: new EventEmitter<ViewDiff>(),
-        processOpenDiff: new EventEmitter<OpenDiff>(),
         processCopyCodeToClipboard: new EventEmitter<CopyCodeToClipboard>(),
         processContextMenuCommand: new EventEmitter<EditorContextCommand>(),
         processTriggerTabIDReceived: new EventEmitter<TriggerTabIDReceived>(),
@@ -78,7 +76,6 @@ export function init(appContext: AmazonQAppInitContext) {
         ),
         processAcceptDiff: new MessageListener<AcceptDiff>(cwChatControllerEventEmitters.processAcceptDiff),
         processViewDiff: new MessageListener<ViewDiff>(cwChatControllerEventEmitters.processViewDiff),
-        processOpenDiff: new MessageListener<OpenDiff>(cwChatControllerEventEmitters.processOpenDiff),
         processCopyCodeToClipboard: new MessageListener<CopyCodeToClipboard>(
             cwChatControllerEventEmitters.processCopyCodeToClipboard
         ),
@@ -140,7 +137,6 @@ export function init(appContext: AmazonQAppInitContext) {
         ),
         processAcceptDiff: new MessagePublisher<AcceptDiff>(cwChatControllerEventEmitters.processAcceptDiff),
         processViewDiff: new MessagePublisher<ViewDiff>(cwChatControllerEventEmitters.processViewDiff),
-        processOpenDiff: new MessagePublisher<OpenDiff>(cwChatControllerEventEmitters.processOpenDiff),
         processCopyCodeToClipboard: new MessagePublisher<CopyCodeToClipboard>(
             cwChatControllerEventEmitters.processCopyCodeToClipboard
         ),

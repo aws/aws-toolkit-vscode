@@ -213,6 +213,8 @@ export class Messenger {
                         const message = this.getToolUseMessage(toolUse)
                         // const isConfirmationRequired = this.getIsConfirmationRequired(toolUse)
 
+                        // TODO: If toolUse is fs_write then session.setShowDiffOnFileWrite(true)
+
                         this.dispatcher.sendChatMessage(
                             new ChatMessage(
                                 {

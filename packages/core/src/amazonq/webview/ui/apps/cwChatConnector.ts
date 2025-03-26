@@ -305,7 +305,7 @@ export class Connector extends BaseConnector {
 
     onFileClick = (tabID: string, filePath: string, messageId?: string) => {
         this.sendMessageToExtension({
-            command: messageId === '' ? 'file-click' : 'open-diff',
+            command: 'file-click',
             tabID,
             messageId,
             filePath,
