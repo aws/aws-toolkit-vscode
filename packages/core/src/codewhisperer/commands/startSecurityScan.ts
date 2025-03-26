@@ -156,15 +156,11 @@ export async function startSecurityScan(
                 scanUuid,
             })
         }
-        const zipType = scope === CodeAnalysisScope.PROJECT ? 'project' : 'file'
         const zipMetadata =
-            zipType === 'file'
-                ? await zipUtil.zipFile(editor?.document.uri)
-                : await zipUtil.zipProject(
-                      [...(vscode.workspace.workspaceFolders ?? [])] as CurrentWsFolders,
-                      defaultExcludePatterns,
-                      { includeNonWorkspaceFiles: true }
-                  )
+            scope === CodeAnalysisScope.PROJECT
+                ? await generateZipCodeScanForProject(zipUtil)
+                : await zipUtil.zipFile(editor?.document.uri)
+
         const projectPaths = getWorkspacePaths()
 
         const contextTruncationStartTime = performance.now()
