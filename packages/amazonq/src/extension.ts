@@ -120,7 +120,9 @@ export async function activateAmazonQCommon(context: vscode.ExtensionContext, is
     await activateCodeWhisperer(extContext as ExtContext)
     if (Experiments.instance.get('amazonqLSP', false)) {
         await activateAmazonqLsp(context)
-    } else {
+    }
+
+    if (!Experiments.instance.get('amazonqLSPInline', false)) {
         await activateInlineCompletion()
     }
 
@@ -157,7 +159,7 @@ export async function activateAmazonQCommon(context: vscode.ExtensionContext, is
 
     context.subscriptions.push(
         Experiments.instance.onDidChange(async (event) => {
-            if (event.key === 'amazonqLSP' || event.key === 'amazonqChatLSP') {
+            if (event.key === 'amazonqLSP' || event.key === 'amazonqChatLSP' || event.key === 'amazonqLSPInline') {
                 await vscode.window
                     .showInformationMessage(
                         'Amazon Q LSP setting has changed. Reload VS Code for the changes to take effect.',
