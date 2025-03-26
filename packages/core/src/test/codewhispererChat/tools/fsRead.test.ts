@@ -25,7 +25,7 @@ describe('FsRead Tool', () => {
 
         const fsRead = new FsRead({ path: filePath })
         await fsRead.validate()
-        const result = await fsRead.invoke()
+        const result = await fsRead.invoke(process.stdout)
 
         assert.strictEqual(result.output.kind, 'text', 'Output kind should be "text"')
         assert.strictEqual(result.output.content, fileContent, 'File content should match exactly')
@@ -37,7 +37,7 @@ describe('FsRead Tool', () => {
 
         const fsRead = new FsRead({ path: filePath, readRange: [2, 4] })
         await fsRead.validate()
-        const result = await fsRead.invoke()
+        const result = await fsRead.invoke(process.stdout)
 
         assert.strictEqual(result.output.kind, 'text')
         assert.strictEqual(result.output.content, 'B\nC\nD')
@@ -50,7 +50,7 @@ describe('FsRead Tool', () => {
 
         const fsRead = new FsRead({ path: testFolder.path, readRange: [1] })
         await fsRead.validate()
-        const result = await fsRead.invoke()
+        const result = await fsRead.invoke(process.stdout)
 
         const lines = result.output.content.split('\n')
         const hasFileA = lines.some((line) => line.includes('- ') && line.includes('fileA.txt'))
@@ -79,7 +79,7 @@ describe('FsRead Tool', () => {
         await fsRead.validate()
 
         await assert.rejects(
-            fsRead.invoke(),
+            fsRead.invoke(process.stdout),
             /This tool only supports reading \d+ bytes at a time/i,
             'Expected a size-limit error'
         )
@@ -90,7 +90,7 @@ describe('FsRead Tool', () => {
         const fsRead = new FsRead({ path: filePath, readRange: [3, 2] })
 
         await fsRead.validate()
-        const result = await fsRead.invoke()
+        const result = await fsRead.invoke(process.stdout)
         assert.strictEqual(result.output.kind, 'text')
         assert.strictEqual(result.output.content, '')
     })
@@ -98,7 +98,7 @@ describe('FsRead Tool', () => {
     it('expands ~ path', async () => {
         const fsRead = new FsRead({ path: '~' })
         await fsRead.validate()
-        const result = await fsRead.invoke()
+        const result = await fsRead.invoke(process.stdout)
 
         assert.strictEqual(result.output.kind, 'text')
         assert.ok(result.output.content.length > 0)
@@ -114,7 +114,7 @@ describe('FsRead Tool', () => {
 
         const fsRead = new FsRead({ path: relativePath })
         await fsRead.validate()
-        const result = await fsRead.invoke()
+        const result = await fsRead.invoke(process.stdout)
 
         assert.strictEqual(result.output.kind, 'text')
         assert.strictEqual(result.output.content, content)

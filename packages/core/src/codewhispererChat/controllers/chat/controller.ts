@@ -45,7 +45,12 @@ import { EditorContextCommand } from '../../commands/registerCommands'
 import { PromptsGenerator } from './prompts/promptsGenerator'
 import { TriggerEventsStorage } from '../../storages/triggerEvents'
 import { SendMessageRequest } from '@amzn/amazon-q-developer-streaming-client'
-import { CodeWhispererStreamingServiceException, Origin, ToolResult } from '@amzn/codewhisperer-streaming'
+import {
+    CodeWhispererStreamingServiceException,
+    Origin,
+    ToolResult,
+    ToolResultStatus,
+} from '@amzn/codewhisperer-streaming'
 import { UserIntentRecognizer } from './userIntent/userIntentRecognizer'
 import { CWCTelemetryHelper, recordTelemetryChatRunCommand } from './telemetryHelper'
 import { CodeWhispererTracker } from '../../../codewhisperer/tracker/codewhispererTracker'
@@ -57,7 +62,7 @@ import { randomUUID } from '../../../shared/crypto'
 import { LspController } from '../../../amazonq/lsp/lspController'
 import { CodeWhispererSettings } from '../../../codewhisperer/util/codewhispererSettings'
 import { getSelectedCustomization } from '../../../codewhisperer/util/customizationUtil'
-import { getHttpStatusCode, AwsClientResponseError, ToolkitError } from '../../../shared/errors'
+import { getHttpStatusCode, AwsClientResponseError } from '../../../shared/errors'
 import { uiEventRecorder } from '../../../amazonq/util/eventRecorder'
 import { telemetry } from '../../../shared/telemetry/telemetry'
 import { isSsoConnection } from '../../../auth/connection'
@@ -84,9 +89,8 @@ import {
 import { ChatSession } from '../../clients/chat/v0/chat'
 import { ChatHistoryManager } from '../../storages/chatHistory'
 import { amazonQTabSuffix } from '../../../shared/constants'
-import { FsRead, FsReadParams } from '../../tools/fsRead'
-import { InvokeOutput, OutputKind } from '../../tools/toolShared'
-import { FsWrite, FsWriteCommand } from '../../tools/fsWrite'
+import { OutputKind, Tool, ToolUtils } from '../../tools/toolShared'
+import { Writable } from 'stream'
 
 export interface ChatControllerMessagePublishers {
     readonly processPromptChatMessage: MessagePublisher<PromptMessage>
@@ -943,46 +947,37 @@ export class ChatController {
                 }
                 session.setToolUse(undefined)
 
-                let result: InvokeOutput | undefined = undefined
                 const toolResults: ToolResult[] = []
-                try {
-                    switch (toolUse.name) {
-                        // case 'execute_bash': {
-                        //     const executeBash = new ExecuteBash(toolUse.input as unknown as ExecuteBashParams)
-                        //     await executeBash.validate()
-                        //     result = await executeBash.invoke(process.stdout)
-                        //     break
-                        // }
-                        case 'fsRead': {
-                            const fsRead = new FsRead(toolUse.input as unknown as FsReadParams)
-                            await fsRead.validate()
-                            result = await fsRead.invoke()
-                            break
-                        }
-                        case 'fsWrite': {
-                            const input = toolUse.input as unknown as FsWriteCommand
-                            await FsWrite.validate(input)
-                            result = await FsWrite.invoke(input)
-                            break
-                        }
-                        default:
-                            getLogger().warn('Received invalid tool: %s', toolUse.name)
-                            break
+
+                const result = ToolUtils.tryFromToolUse(toolUse)
+                if ('type' in result) {
+                    const tool: Tool = result
+
+                    try {
+                        await ToolUtils.validate(tool)
+
+                        const outputStream = new Writable()
+                        const output = await ToolUtils.invoke(tool, outputStream)
+
+                        toolResults.push({
+                            content: [
+                                output.output.kind === OutputKind.Text
+                                    ? { text: output.output.content }
+                                    : { json: output.output.content },
+                            ],
+                            toolUseId: toolUse.toolUseId,
+                            status: ToolResultStatus.SUCCESS,
+                        })
+                    } catch (e: any) {
+                        toolResults.push({
+                            content: [{ text: e.message }],
+                            toolUseId: toolUse.toolUseId,
+                            status: ToolResultStatus.ERROR,
+                        })
                     }
-                    if (!result) {
-                        throw new ToolkitError('Failed to execute tool and get results')
-                    }
-                    toolResults.push({
-                        content: [
-                            result.output.kind === OutputKind.Text
-                                ? { text: result.output.content }
-                                : { json: result.output.content },
-                        ],
-                        toolUseId: toolUse.toolUseId,
-                        status: 'success',
-                    })
-                } catch (e: any) {
-                    toolResults.push({ content: [{ text: e.message }], toolUseId: toolUse.toolUseId, status: 'error' })
+                } else {
+                    const toolResult: ToolResult = result
+                    toolResults.push(toolResult)
                 }
 
                 await this.generateResponse(
