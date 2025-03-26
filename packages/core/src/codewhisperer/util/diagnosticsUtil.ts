@@ -6,28 +6,42 @@ import * as vscode from 'vscode'
 import * as crypto from 'crypto'
 import { IdeDiagnostic } from '../client/codewhispereruserclient'
 
-export function getDiagnosticsOfCurrentFile(): vscode.Diagnostic[] {
+export function getDiagnosticsOfCurrentFile(): FileDiagnostic | undefined {
     if (vscode.window.activeTextEditor) {
-        return vscode.languages.getDiagnostics(vscode.window.activeTextEditor.document.uri)
+        return {
+            diagnostics: vscode.languages.getDiagnostics(vscode.window.activeTextEditor.document.uri),
+            filepath: vscode.window.activeTextEditor.document.uri.fsPath,
+        }
     }
-    return []
+    return undefined
+}
+
+export type FileDiagnostic = {
+    filepath: string
+    diagnostics: vscode.Diagnostic[]
 }
 
 export function getDiagnosticsDifferences(
-    oldDiagnostics: vscode.Diagnostic[],
-    newDiagnostics: vscode.Diagnostic[]
+    oldDiagnostics: FileDiagnostic | undefined,
+    newDiagnostics: FileDiagnostic | undefined
 ): { added: vscode.Diagnostic[]; removed: vscode.Diagnostic[] } {
     const result: { added: vscode.Diagnostic[]; removed: vscode.Diagnostic[] } = { added: [], removed: [] }
-
+    if (
+        oldDiagnostics === undefined ||
+        newDiagnostics === undefined ||
+        newDiagnostics.filepath !== oldDiagnostics.filepath
+    ) {
+        return result
+    }
     // Create sets for efficient lookup
-    const oldSet = new Set(oldDiagnostics.map((d) => getDiagnosticKey(d)))
-    const newSet = new Set(newDiagnostics.map((d) => getDiagnosticKey(d)))
+    const oldSet = new Set(oldDiagnostics.diagnostics.map((d) => getDiagnosticKey(d)))
+    const newSet = new Set(newDiagnostics.diagnostics.map((d) => getDiagnosticKey(d)))
 
     // Find added diagnostics (present in new but not in old)
-    result.added = newDiagnostics.filter((d) => !oldSet.has(getDiagnosticKey(d)))
+    result.added = newDiagnostics.diagnostics.filter((d) => !oldSet.has(getDiagnosticKey(d)))
 
     // Find removed diagnostics (present in old but not in new)
-    result.removed = oldDiagnostics.filter((d) => !newSet.has(getDiagnosticKey(d)))
+    result.removed = oldDiagnostics.diagnostics.filter((d) => !newSet.has(getDiagnosticKey(d)))
 
     return result
 }

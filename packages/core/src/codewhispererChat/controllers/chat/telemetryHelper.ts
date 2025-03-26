@@ -36,7 +36,9 @@ import globals from '../../../shared/extensionGlobals'
 import { getLogger } from '../../../shared/logger/logger'
 import { codeWhispererClient } from '../../../codewhisperer/client/codewhisperer'
 import { isAwsError } from '../../../shared/errors'
-import { ChatMessageInteractionType } from '../../../codewhisperer/client/codewhispereruserclient'
+import CodeWhispererUserClient, {
+    ChatMessageInteractionType,
+} from '../../../codewhisperer/client/codewhispereruserclient'
 import { supportedLanguagesList } from '../chat/chatRequest/converter'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import { getSelectedCustomization } from '../../../codewhisperer/util/customizationUtil'
@@ -44,6 +46,12 @@ import { undefinedIfEmpty } from '../../../shared/utilities/textUtilities'
 import { AdditionalContextPrompt } from '../../../amazonq/lsp/types'
 import { getUserPromptsDirectory, promptFileExtension } from '../../constants'
 import { isInDirectory } from '../../../shared/filesystemUtilities'
+import { sleep } from '../../../shared/utilities/timeoutUtils'
+import {
+    FileDiagnostic,
+    getDiagnosticsDifferences,
+    getDiagnosticsOfCurrentFile,
+} from '../../../codewhisperer/util/diagnosticsUtil'
 
 export function logSendTelemetryEventFailure(error: any) {
     let requestId: string | undefined
@@ -92,9 +100,15 @@ export class CWCTelemetryHelper {
         }
     > = new Map()
 
+    private documentDiagnostics: FileDiagnostic | undefined = undefined
+
     constructor(sessionStorage: ChatSessionStorage, triggerEventsStorage: TriggerEventsStorage) {
         this.sessionStorage = sessionStorage
         this.triggerEventsStorage = triggerEventsStorage
+    }
+
+    public setDocumentDiagnostics() {
+        this.documentDiagnostics = getDiagnosticsOfCurrentFile()
     }
 
     public static init(sessionStorage: ChatSessionStorage, triggerEventsStorage: TriggerEventsStorage) {
@@ -359,25 +373,49 @@ export class CWCTelemetryHelper {
         }
         telemetry.amazonq_interactWithMessage.emit({ ...event, ...additionalContextInfo })
 
-        codeWhispererClient
-            .sendTelemetryEvent({
-                telemetryEvent: {
-                    chatInteractWithMessageEvent: {
-                        conversationId: event.cwsprChatConversationId,
-                        messageId: event.cwsprChatMessageId,
-                        interactionType: this.getCWClientTelemetryInteractionType(event.cwsprChatInteractionType),
-                        interactionTarget: event.cwsprChatInteractionTarget,
-                        acceptedCharacterCount: event.cwsprChatAcceptedCharactersLength,
-                        acceptedLineCount: event.cwsprChatAcceptedNumberOfLines,
-                        acceptedSnippetHasReference: false,
-                        hasProjectLevelContext: this.responseWithContextInfo.get(event.cwsprChatMessageId)
-                            ?.cwsprChatHasProjectContext,
-                        customizationArn: undefinedIfEmpty(getSelectedCustomization().arn),
-                    },
-                },
+        let interactWithMessageEvent: CodeWhispererUserClient.ChatInteractWithMessageEvent = {
+            conversationId: event.cwsprChatConversationId,
+            messageId: event.cwsprChatMessageId,
+            interactionType: this.getCWClientTelemetryInteractionType(event.cwsprChatInteractionType),
+            interactionTarget: event.cwsprChatInteractionTarget,
+            acceptedCharacterCount: event.cwsprChatAcceptedCharactersLength,
+            acceptedLineCount: event.cwsprChatAcceptedNumberOfLines,
+            acceptedSnippetHasReference: false,
+            hasProjectLevelContext: this.responseWithContextInfo.get(event.cwsprChatMessageId)
+                ?.cwsprChatHasProjectContext,
+            customizationArn: undefinedIfEmpty(getSelectedCustomization().arn),
+        }
+        if (interactWithMessageEvent.interactionType === 'INSERT_AT_CURSOR') {
+            // wait 1 seconds for the user installed 3rd party LSP
+            // to update its diagnostics.
+            sleep(1000).then(() => {
+                const diagnosticDiff = getDiagnosticsDifferences(
+                    this.documentDiagnostics,
+                    getDiagnosticsOfCurrentFile()
+                )
+                interactWithMessageEvent.addedIdeDiagnostics = diagnosticDiff.added.map((it) => toIdeDiagnostics(it))
+                interactWithMessageEvent.removedIdeDiagnostics = diagnosticDiff.removed.map((it) =>
+                    toIdeDiagnostics(it)
+                )
+                codeWhispererClient
+                    .sendTelemetryEvent({
+                        telemetryEvent: {
+                            chatInteractWithMessageEvent: interactWithMessageEvent,
+                        },
+                    })
+                    .then()
+                    .catch(logSendTelemetryEventFailure)
             })
-            .then()
-            .catch(logSendTelemetryEventFailure)
+        } else {
+            codeWhispererClient
+                .sendTelemetryEvent({
+                    telemetryEvent: {
+                        chatInteractWithMessageEvent: interactWithMessageEvent,
+                    },
+                })
+                .then()
+                .catch(logSendTelemetryEventFailure)
+        }
     }
 
     private getCWClientTelemetryInteractionType(type: CwsprChatInteractionType): ChatMessageInteractionType {
