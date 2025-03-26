@@ -82,6 +82,22 @@ export function getFileRelativePath(editor: vscode.TextEditor): string {
     return relativePath.substring(0, CodeWhispererConstants.filenameCharsLimit)
 }
 
+async function getWorkspaceId(editor: vscode.TextEditor): Promise<string | undefined> {
+    try {
+        const workspaceIds: { workspaces: { workspaceRoot: string; workspaceId: string }[] } =
+            await vscode.commands.executeCommand('aws.amazonq.getWorkspaceId')
+        for (const item of workspaceIds.workspaces) {
+            const path = vscode.Uri.parse(item.workspaceRoot).fsPath
+            if (editor.document.uri.fsPath.startsWith(path)) {
+                return item.workspaceId
+            }
+        }
+    } catch (err) {
+        //TODO
+    }
+    return undefined
+}
+
 export async function buildListRecommendationRequest(
     editor: vscode.TextEditor,
     nextToken: string,
@@ -118,6 +134,7 @@ export async function buildListRecommendationRequest(
             supplementalContexts: supplementalContext,
             customizationArn: selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
             optOutPreference: getOptOutPreference(),
+            workspaceId: await getWorkspaceId(editor),
         },
         supplementalMetadata: supplementalContexts,
     }
