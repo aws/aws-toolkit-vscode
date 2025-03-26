@@ -8,6 +8,8 @@ import { VSCODE_EXTENSION_ID } from '../../../shared/extensions'
 import * as vscodeUtil from '../../../shared/utilities/vsCodeUtils'
 import * as vscode from 'vscode'
 import { getExcludePattern } from '../../../shared/fs/watchedFiles'
+import { TestFolder } from '../../testUtil'
+import path from 'path'
 
 describe('vscodeUtils', async function () {
     it('activateExtension(), isExtensionActive()', async function () {
@@ -117,5 +119,22 @@ describe('buildMissingExtensionMessage()', function () {
             message,
             `${feat} requires the ${extName} extension (\'${extId}\') to be installed and enabled.`
         )
+    })
+})
+
+describe('isOpenAndDirty', function () {
+    it('updates as file status changes ', async function () {
+        const testFolder = await TestFolder.create()
+        await testFolder.write('file1.md', 'test content')
+        const document = await vscode.workspace.openTextDocument(path.join(testFolder.path, '/file1.md'))
+        assert.strictEqual(vscodeUtil.isFileOpenAndDirty(document.uri), false)
+        await vscode.window.showTextDocument(document)
+        assert.strictEqual(vscodeUtil.isFileOpenAndDirty(document.uri), false)
+        await vscode.window.activeTextEditor?.edit((editBuilder) => {
+            editBuilder.insert(new vscode.Position(0, 0), '// a comment\n')
+        })
+        assert.strictEqual(vscodeUtil.isFileOpenAndDirty(document.uri), true)
+        await document.save()
+        assert.strictEqual(vscodeUtil.isFileOpenAndDirty(document.uri), false)
     })
 })

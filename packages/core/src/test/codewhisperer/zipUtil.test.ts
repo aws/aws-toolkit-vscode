@@ -5,18 +5,18 @@
 
 import assert from 'assert'
 import vscode from 'vscode'
-import sinon from 'sinon'
-import { join } from 'path'
 import path from 'path'
+import { join } from 'path'
 import JSZip from 'jszip'
 import { getTestWorkspaceFolder } from '../../testInteg/integrationTestsUtilities'
-import { ZipUtil } from '../../codewhisperer/util/zipUtil'
-import { CodeAnalysisScope, codeScanTruncDirPrefix } from '../../codewhisperer/models/constants'
+import { ZipMetadata, ZipUtil } from '../../codewhisperer/util/zipUtil'
+import { codeScanTruncDirPrefix } from '../../codewhisperer/models/constants'
 import { ToolkitError } from '../../shared/errors'
 import { fs } from '../../shared/fs/fs'
-import { tempDirPath } from '../../shared/filesystemUtilities'
 import { CodeWhispererConstants } from '../../codewhisperer/indexNode'
-import { LspClient } from '../../amazonq/lsp/lspClient'
+import { CurrentWsFolders, defaultExcludePatterns } from '../../shared/utilities/workspaceUtils'
+import { TestFolder } from '../testUtil'
+import { NoActiveFileError, NoSourceFilesError } from '../../codewhisperer/models/errors'
 
 describe('zipUtil', function () {
     const workspaceFolder = getTestWorkspaceFolder()
@@ -24,166 +24,246 @@ describe('zipUtil', function () {
     const appCodePath = join(appRoot, 'HelloWorldFunction', 'src', 'main', 'java', 'helloworld', 'App.java')
     const appCodePathWithRepeatedProjectName = join(workspaceFolder, 'workspaceFolder', 'App.java')
 
-    describe('generateZip', function () {
-        let zipUtil: ZipUtil
-        beforeEach(function () {
-            zipUtil = new ZipUtil()
-        })
-        afterEach(function () {
-            sinon.restore()
-        })
-
-        it('Should generate zip for file scan and return expected metadata', async function () {
-            const zipMetadata = await zipUtil.generateZip(vscode.Uri.file(appCodePath), CodeAnalysisScope.FILE_AUTO)
-            assert.strictEqual(zipMetadata.lines, 49)
-            assert.ok(zipMetadata.rootDir.includes(codeScanTruncDirPrefix))
-            assert.ok(zipMetadata.srcPayloadSizeInBytes > 0)
-            assert.strictEqual(zipMetadata.scannedFiles.size, 1)
-            assert.strictEqual(zipMetadata.buildPayloadSizeInBytes, 0)
-            assert.ok(zipMetadata.zipFileSizeInBytes > 0)
-            assert.ok(zipMetadata.zipFilePath.includes(codeScanTruncDirPrefix))
-        })
-
-        it('Should throw error if payload size limit is reached for file scan', async function () {
-            sinon.stub(zipUtil, 'reachSizeLimit').returns(true)
-
-            await assert.rejects(
-                () => zipUtil.generateZip(vscode.Uri.file(appCodePath), CodeAnalysisScope.FILE_AUTO),
-                new ToolkitError(`Payload size limit reached`, { code: 'FileSizeExceeded' })
-            )
-        })
-
-        it('Should generate zip for project scan and return expected metadata', async function () {
-            const zipMetadata = await zipUtil.generateZip(vscode.Uri.file(appCodePath), CodeAnalysisScope.PROJECT)
-            assert.ok(zipMetadata.lines > 0)
-            assert.ok(zipMetadata.rootDir.includes(codeScanTruncDirPrefix))
-            assert.ok(zipMetadata.srcPayloadSizeInBytes > 0)
-            assert.ok(zipMetadata.scannedFiles.size > 0)
-            assert.strictEqual(zipMetadata.buildPayloadSizeInBytes, 0)
-            assert.ok(zipMetadata.zipFileSizeInBytes > 0)
-            assert.ok(zipMetadata.zipFilePath.includes(codeScanTruncDirPrefix))
-        })
-
-        it('Should throw error if payload size limit is reached for project scan', async function () {
-            sinon.stub(zipUtil, 'reachSizeLimit').returns(true)
-
-            await assert.rejects(
-                () => zipUtil.generateZip(vscode.Uri.file(appCodePath), CodeAnalysisScope.PROJECT),
-                new ToolkitError('Payload size limit reached', { code: 'ProjectSizeExceeded' })
-            )
-        })
-
-        it('Should throw error if payload size limit will be reached for project scan', async function () {
-            sinon.stub(zipUtil, 'willReachSizeLimit').returns(true)
-
-            await assert.rejects(
-                () => zipUtil.generateZip(vscode.Uri.file(appCodePath), CodeAnalysisScope.PROJECT),
-                new ToolkitError('Payload size limit reached', { code: 'ProjectSizeExceeded' })
-            )
-        })
-
-        it('Should throw error if scan type is invalid', async function () {
-            await assert.rejects(
-                () => zipUtil.generateZip(vscode.Uri.file(appCodePath), 'unknown' as CodeAnalysisScope),
-                new ToolkitError('Unknown code analysis scope: unknown')
-            )
-        })
-
-        it('Should read file content instead of from disk if file is dirty', async function () {
-            const zipMetadata = await zipUtil.generateZip(vscode.Uri.file(appCodePath), CodeAnalysisScope.PROJECT)
-
-            const document = await vscode.workspace.openTextDocument(appCodePath)
-            await vscode.window.showTextDocument(document)
-            void vscode.window.activeTextEditor?.edit((editBuilder) => {
-                editBuilder.insert(new vscode.Position(0, 0), '// a comment\n')
-            })
-
-            const zipMetadata2 = await new ZipUtil().generateZip(
-                vscode.Uri.file(appCodePath),
-                CodeAnalysisScope.PROJECT
-            )
-            assert.equal(zipMetadata2.lines, zipMetadata.lines + 1)
-        })
-
-        it('should handle path with repeated project name for file scan', async function () {
-            const zipMetadata = await zipUtil.generateZip(
-                vscode.Uri.file(appCodePathWithRepeatedProjectName),
-                CodeAnalysisScope.FILE_ON_DEMAND
-            )
-
-            const zipFileData = await fs.readFileBytes(zipMetadata.zipFilePath)
-            const zip = await JSZip.loadAsync(zipFileData)
-            const files = Object.keys(zip.files)
-            assert.ok(files.includes(join('workspaceFolder', 'workspaceFolder', 'App.java')))
-        })
-
-        it('should handle path with repeated project name for project scan', async function () {
-            const zipMetadata = await zipUtil.generateZip(
-                vscode.Uri.file(appCodePathWithRepeatedProjectName),
-                CodeAnalysisScope.PROJECT
-            )
-
-            const zipFileData = await fs.readFileBytes(zipMetadata.zipFilePath)
-            const zip = await JSZip.loadAsync(zipFileData)
-            const files = Object.keys(zip.files)
-            assert.ok(files.includes(join('workspaceFolder', 'workspaceFolder', 'App.java')))
-        })
+    let zipUtil: ZipUtil
+    beforeEach(function () {
+        zipUtil = new ZipUtil(CodeWhispererConstants.codeScanTruncDirPrefix)
     })
 
-    describe('generateZipTestGen', function () {
-        let zipUtil: ZipUtil
-        let getZipDirPathStub: sinon.SinonStub
-        let testTempDirPath: string
+    it('defaults to proper size limits for zip', function () {
+        assert.strictEqual(
+            zipUtil.aboveByteLimit(CodeWhispererConstants.fileScanPayloadSizeLimitBytes + 1, 'file'),
+            true
+        )
 
-        beforeEach(function () {
-            zipUtil = new ZipUtil()
-            testTempDirPath = path.join(tempDirPath, CodeWhispererConstants.TestGenerationTruncDirPrefix)
-            getZipDirPathStub = sinon.stub(zipUtil, 'getZipDirPath')
-            getZipDirPathStub.callsFake(() => testTempDirPath)
+        assert.strictEqual(
+            zipUtil.aboveByteLimit(CodeWhispererConstants.projectScanPayloadSizeLimitBytes + 1, 'project'),
+            true
+        )
+
+        assert.strictEqual(
+            zipUtil.aboveByteLimit(CodeWhispererConstants.fileScanPayloadSizeLimitBytes - 1, 'file'),
+            false
+        )
+
+        assert.strictEqual(
+            zipUtil.aboveByteLimit(CodeWhispererConstants.projectScanPayloadSizeLimitBytes - 1, 'project'),
+            false
+        )
+    })
+
+    it('determines if adding file will exceed project byte limit', function () {
+        assert.strictEqual(
+            zipUtil.willReachProjectByteLimit(CodeWhispererConstants.projectScanPayloadSizeLimitBytes, 1),
+            true
+        )
+
+        assert.strictEqual(
+            zipUtil.willReachProjectByteLimit(CodeWhispererConstants.projectScanPayloadSizeLimitBytes - 10, 9),
+            false
+        )
+    })
+
+    it('generates zip for file scan and return expected metadata', async function () {
+        const zipMetadata = await zipUtil.zipFile(vscode.Uri.file(appCodePath), true)
+        assert.strictEqual(zipMetadata.lines, 49)
+        assert.ok(zipMetadata.rootDir.includes(codeScanTruncDirPrefix))
+        assert.ok(zipMetadata.srcPayloadSizeInBytes > 0)
+        assert.strictEqual(zipMetadata.scannedFiles.size, 1)
+        assert.strictEqual(zipMetadata.buildPayloadSizeInBytes, 0)
+        assert.ok(zipMetadata.zipFileSizeInBytes > 0)
+        assert.ok(zipMetadata.zipFilePath.includes(codeScanTruncDirPrefix))
+    })
+
+    it('generates zip for project scan and return expected metadata', async function () {
+        const zipMetadata = await zipUtil.zipProject(
+            [...(vscode.workspace.workspaceFolders ?? [])] as CurrentWsFolders,
+            defaultExcludePatterns
+        )
+        assert.ok(zipMetadata.lines > 0)
+        assert.ok(zipMetadata.rootDir.includes(codeScanTruncDirPrefix))
+        assert.ok(zipMetadata.srcPayloadSizeInBytes > 0)
+        assert.ok(zipMetadata.scannedFiles.size > 0)
+        assert.strictEqual(zipMetadata.buildPayloadSizeInBytes, 0)
+        assert.ok(zipMetadata.zipFileSizeInBytes > 0)
+        assert.ok(zipMetadata.zipFilePath.includes(codeScanTruncDirPrefix))
+    })
+
+    it('throws error if payload size limit is reached for file', async function () {
+        const limitedZipUtil = new ZipUtil(CodeWhispererConstants.codeScanTruncDirPrefix, {
+            file: 1,
+            project: 1,
+        })
+        await assert.rejects(
+            () => limitedZipUtil.zipFile(vscode.Uri.file(appCodePath), true),
+            new ToolkitError(`Payload size limit reached`, { code: 'FileSizeExceeded' })
+        )
+    })
+
+    it('throws error if payload size limit is reached for project', async function () {
+        const testWorkspace = await TestFolder.create()
+        await testWorkspace.write('afile.py', '12345')
+        const limitedZipUtil = new ZipUtil(CodeWhispererConstants.codeScanTruncDirPrefix, {
+            file: 1,
+            project: 4,
+        })
+        await assert.rejects(
+            () =>
+                limitedZipUtil.zipProject(
+                    [{ uri: vscode.Uri.file(testWorkspace.path), name: 'testWorkspace', index: 0 }],
+                    defaultExcludePatterns,
+                    {
+                        projectPath: testWorkspace.path,
+                    }
+                ),
+            new ToolkitError('Payload size limit reached', { code: 'ProjectSizeExceeded' })
+        )
+    })
+
+    it('throws error if payload size limit will be reached for project', async function () {
+        const limitedZipUtil = new ZipUtil(CodeWhispererConstants.codeScanTruncDirPrefix, {
+            file: 1,
+            project: 1,
+        })
+        await assert.rejects(
+            () =>
+                limitedZipUtil.zipProject(
+                    [...(vscode.workspace.workspaceFolders ?? [])] as CurrentWsFolders,
+                    defaultExcludePatterns
+                ),
+            new ToolkitError('Payload size limit reached', { code: 'ProjectSizeExceeded' })
+        )
+    })
+
+    it('reads file content instead of from disk if file is dirty', async function () {
+        const zipMetadata = await zipUtil.zipProject(
+            [...(vscode.workspace.workspaceFolders ?? [])] as CurrentWsFolders,
+            defaultExcludePatterns
+        )
+
+        const document = await vscode.workspace.openTextDocument(appCodePath)
+        await vscode.window.showTextDocument(document)
+        void vscode.window.activeTextEditor?.edit((editBuilder) => {
+            editBuilder.insert(new vscode.Position(0, 0), '// a comment\n')
         })
 
-        afterEach(function () {
-            sinon.restore()
-        })
+        const zipMetadata2 = await new ZipUtil(CodeWhispererConstants.codeScanTruncDirPrefix).zipProject(
+            [...(vscode.workspace.workspaceFolders ?? [])] as CurrentWsFolders,
+            defaultExcludePatterns
+        )
 
-        it('should generate zip for test generation successfully', async function () {
-            const mkdirSpy = sinon.spy(fs, 'mkdir')
+        assert.equal(zipMetadata2.lines, zipMetadata.lines + 1)
+    })
 
-            const result = await zipUtil.generateZipTestGen(appRoot, false)
+    it('handles path with repeated project name for file', async function () {
+        const zipMetadata = await zipUtil.zipFile(vscode.Uri.file(appCodePathWithRepeatedProjectName))
 
-            assert.ok(mkdirSpy.calledWith(path.join(testTempDirPath, 'utgRequiredArtifactsDir')))
-            assert.ok(
-                mkdirSpy.calledWith(path.join(testTempDirPath, 'utgRequiredArtifactsDir', 'buildAndExecuteLogDir'))
-            )
-            assert.ok(mkdirSpy.calledWith(path.join(testTempDirPath, 'utgRequiredArtifactsDir', 'repoMapData')))
-            assert.ok(mkdirSpy.calledWith(path.join(testTempDirPath, 'utgRequiredArtifactsDir', 'testCoverageDir')))
+        const zipFileData = await fs.readFileBytes(zipMetadata.zipFilePath)
+        const zip = await JSZip.loadAsync(zipFileData)
+        const files = Object.keys(zip.files)
+        assert.ok(files.includes(join('workspaceFolder', 'workspaceFolder', 'App.java')))
+    })
 
-            assert.strictEqual(result.rootDir, testTempDirPath)
-            assert.strictEqual(result.zipFilePath, testTempDirPath + CodeWhispererConstants.codeScanZipExt)
-            assert.ok(result.srcPayloadSizeInBytes > 0)
-            assert.strictEqual(result.buildPayloadSizeInBytes, 0)
-            assert.ok(result.zipFileSizeInBytes > 0)
-            assert.strictEqual(result.lines, 150)
-            assert.strictEqual(result.language, 'java')
-            assert.strictEqual(result.scannedFiles.size, 4)
-        })
+    it('handle path with repeated project name for project', async function () {
+        const zipMetadata = await zipUtil.zipProject(
+            [...(vscode.workspace.workspaceFolders ?? [])] as CurrentWsFolders,
+            defaultExcludePatterns
+        )
 
-        it('Should handle file system errors during directory creation', async function () {
-            sinon.stub(LspClient, 'instance').get(() => ({
-                getRepoMapJSON: sinon.stub().resolves('{"mock": "data"}'),
-            }))
-            sinon.stub(fs, 'mkdir').rejects(new Error('Directory creation failed'))
+        const zipFileData = await fs.readFileBytes(zipMetadata.zipFilePath)
+        const zip = await JSZip.loadAsync(zipFileData)
+        const files = Object.keys(zip.files)
+        assert.ok(files.includes(join('workspaceFolder', 'workspaceFolder', 'App.java')))
+    })
 
-            await assert.rejects(() => zipUtil.generateZipTestGen(appRoot, false), /Directory creation failed/)
-        })
+    it('removes relevant files on cleanup', async function () {
+        const testFolder = await TestFolder.create()
+        const zipFile = 'thisIsAZip.zip'
+        const zipDir = 'thisIsADir'
+        await testFolder.write(zipFile, 'some content')
+        await testFolder.mkdir(zipDir)
+        await testFolder.write(path.join(zipDir, 'thisIsAFile.txt'), 'some content')
 
-        it('Should handle zip project errors', async function () {
-            sinon.stub(LspClient, 'instance').get(() => ({
-                getRepoMapJSON: sinon.stub().resolves('{"mock": "data"}'),
-            }))
-            sinon.stub(zipUtil, 'zipProject' as keyof ZipUtil).rejects(new Error('Zip failed'))
+        const zipFolderPath = path.join(testFolder.path, zipDir)
+        const zipFilePath = path.join(testFolder.path, zipFile)
 
-            await assert.rejects(() => zipUtil.generateZipTestGen(appRoot, false), /Zip failed/)
-        })
+        assert.strictEqual(await fs.exists(zipFilePath), true)
+        assert.strictEqual(await fs.exists(zipFolderPath), true)
+
+        await zipUtil.removeTmpFiles({
+            zipFilePath: zipFilePath,
+            rootDir: zipFolderPath,
+        } as ZipMetadata)
+
+        assert.strictEqual(await fs.exists(zipFilePath), false)
+        assert.strictEqual(await fs.exists(zipFolderPath), false)
+    })
+
+    it('throws when uri is missing', async function () {
+        await assert.rejects(async () => {
+            await zipUtil.zipFile(undefined)
+        }, new NoActiveFileError())
+    })
+
+    it('allows overriding of project paths', async function () {
+        const project = await TestFolder.create()
+        const fileName = 'thisIsPartOfMyProject.py'
+        await project.write(fileName, 'file1')
+        const zipMetadata = await zipUtil.zipProject(
+            [{ uri: vscode.Uri.file(project.path), name: 'project1', index: 0 }],
+            defaultExcludePatterns,
+            {
+                projectPath: project.path,
+            }
+        )
+
+        assert.strictEqual(zipMetadata.scannedFiles.has(path.join(project.path, fileName)), true)
+    })
+
+    it('resolves the most popular language', async function () {
+        const project = await TestFolder.create()
+        await project.write('p1.py', '_')
+        await project.write('p2.py', '_')
+        await project.write('j.java', '_')
+        await project.write('t.ts', '_')
+        await project.write('t2.ts', '_')
+        await project.write('t3.ts', '_')
+        const zipMetadata = await zipUtil.zipProject(
+            [{ uri: vscode.Uri.file(project.path), name: 'project1', index: 0 }],
+            defaultExcludePatterns,
+            {
+                projectPath: project.path,
+            }
+        )
+
+        assert.strictEqual(zipMetadata.language, 'typescript')
+    })
+
+    it('able to process files outside of workspace', async function () {
+        const project = await TestFolder.create()
+        const fileName = 'thisIsPartOfMyProject.py'
+        await project.write(fileName, 'file1')
+        const filepath = path.join(project.path, fileName)
+        await vscode.window.showTextDocument(vscode.Uri.file(filepath))
+        const zipMetadata = await zipUtil.zipProject(
+            [...(vscode.workspace.workspaceFolders ?? [])] as CurrentWsFolders,
+            defaultExcludePatterns,
+            {
+                includeNonWorkspaceFiles: true,
+            }
+        )
+
+        assert.strictEqual(zipMetadata.scannedFiles.has(path.join(project.path, fileName)), true)
+    })
+
+    it('throws on empty project', async function () {
+        const project = await TestFolder.create()
+        await assert.rejects(
+            async () =>
+                await zipUtil.zipProject(
+                    [{ uri: vscode.Uri.file(project.path), name: 'project1', index: 0 }] as CurrentWsFolders,
+                    defaultExcludePatterns
+                ),
+            new NoSourceFilesError()
+        )
     })
 })

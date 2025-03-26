@@ -24,6 +24,7 @@ import fs from '../../shared/fs/fs'
 import { ZipUtil } from '../../codewhisperer/util/zipUtil'
 import { randomUUID } from '../../shared/crypto'
 import { getWorkspacePaths } from '../../shared/utilities/workspaceUtils'
+import { generateZipCodeScanForProject } from '../../codewhisperer/commands/startSecurityScan'
 
 const filePromptWithSecurityIssues = `from flask import app
 
@@ -90,19 +91,18 @@ describe('CodeWhisperer security scan', async function () {
     */
     async function securityJobSetup(editor: vscode.TextEditor) {
         const codeScanStartTime = performance.now()
-        const zipUtil = new ZipUtil()
-        const uri = editor.document.uri
+        const zipUtil = new ZipUtil(CodeWhispererConstants.codeScanTruncDirPrefix)
 
         const projectPaths = getWorkspacePaths()
         const scope = CodeWhispererConstants.CodeAnalysisScope.PROJECT
-        const zipMetadata = await zipUtil.generateZip(uri, scope)
+        const zipMetadata = await generateZipCodeScanForProject(zipUtil)
         const codeScanName = randomUUID()
 
         let artifactMap
         try {
             artifactMap = await getPresignedUrlAndUpload(client, zipMetadata, scope, codeScanName)
         } finally {
-            await zipUtil.removeTmpFiles(zipMetadata, scope)
+            await zipUtil.removeTmpFiles(zipMetadata)
         }
         return {
             artifactMap: artifactMap,

@@ -4,7 +4,7 @@
  */
 
 import { getLogger } from '../../shared/logger/logger'
-import { ZipUtil } from '../util/zipUtil'
+import { ZipMetadata, ZipUtil } from '../util/zipUtil'
 import { ArtifactMap } from '../client/codewhisperer'
 import { testGenerationLogsDir } from '../../shared/filesystemUtilities'
 import {
@@ -14,6 +14,7 @@ import {
     pollTestJobStatus,
     throwIfCancelled,
 } from '../service/testGenHandler'
+import vscode from 'vscode'
 import path from 'path'
 import { testGenState } from '../models/model'
 import { ChatSessionManager } from '../../amazonqTest/chat/storages/chatSession'
@@ -21,7 +22,9 @@ import { ChildProcess, spawn } from 'child_process' // eslint-disable-line no-re
 import { BuildStatus } from '../../amazonqTest/chat/session/session'
 import { fs } from '../../shared/fs/fs'
 import { Range } from '../client/codewhispereruserclient'
-import { getWorkspaceForFile } from '../../shared/utilities/workspaceUtils'
+import { CurrentWsFolders, defaultExcludePatterns, getWorkspaceForFile } from '../../shared/utilities/workspaceUtils'
+import * as CodeWhispererConstants from '../models/constants'
+import { ProjectZipError } from '../../amazonqTest/error'
 
 // eslint-disable-next-line unicorn/no-null
 let spawnResult: ChildProcess | null = null
@@ -47,7 +50,7 @@ export async function startTestGenerationProcess(
          * Step 1: Zip the project
          */
 
-        const zipUtil = new ZipUtil()
+        const zipUtil = new ZipUtil(CodeWhispererConstants.TestGenerationTruncDirPrefix)
         if (initialExecution) {
             const projectPath = getWorkspaceForFile(filePath) ?? ''
             const relativeTargetPath = path.relative(projectPath, filePath)
@@ -57,7 +60,7 @@ export async function startTestGenerationProcess(
             session.projectRootPath = projectPath
             session.listOfTestGenerationJobId = []
         }
-        const zipMetadata = await zipUtil.generateZipTestGen(session.projectRootPath, initialExecution)
+        const zipMetadata = await generateZipTestGen(zipUtil, session.projectRootPath, initialExecution)
         session.srcPayloadSize = zipMetadata.buildPayloadSizeInBytes
         session.srcZipFileSize = zipMetadata.zipFileSizeInBytes
 
@@ -252,4 +255,73 @@ export function cancelBuild() {
     } else {
         getLogger().info('No active build to cancel')
     }
+}
+
+export async function generateZipTestGen(
+    zipUtil: ZipUtil,
+    projectPath: string,
+    initialExecution: boolean
+): Promise<ZipMetadata> {
+    try {
+        const zipDirPath = zipUtil.getZipDirPath()
+
+        const metadataDir = path.join(zipDirPath, 'utgRequiredArtifactsDir')
+
+        // Create directories
+        const dirs = {
+            metadata: metadataDir,
+            buildAndExecuteLogDir: path.join(metadataDir, 'buildAndExecuteLogDir'),
+            repoMapDir: path.join(metadataDir, 'repoMapData'),
+            testCoverageDir: path.join(metadataDir, 'testCoverageDir'),
+        }
+        await Promise.all(Object.values(dirs).map((dir) => fs.mkdir(dir)))
+
+        if (!initialExecution) {
+            await processTestCoverageFiles(dirs.testCoverageDir)
+
+            const sourcePath = path.join(testGenerationLogsDir, 'output.log')
+            const targetPath = path.join(dirs.buildAndExecuteLogDir, 'output.log')
+            if (await fs.exists(sourcePath)) {
+                await fs.copy(sourcePath, targetPath)
+            }
+        }
+        // We assume there is at least one workspace open.
+        return await zipUtil.zipProject(
+            [...(vscode.workspace.workspaceFolders ?? [])].sort(
+                (a, b) => b.uri.fsPath.length - a.uri.fsPath.length
+            ) as CurrentWsFolders,
+            [...CodeWhispererConstants.testGenExcludePatterns, ...defaultExcludePatterns],
+            {
+                metadataDir,
+                projectPath,
+                silent: true,
+            }
+        )
+    } catch (error) {
+        getLogger().error('Zip error caused by: %s', error)
+        throw new ProjectZipError(
+            error instanceof Error ? error.message : 'Unknown error occurred during zip operation'
+        )
+    }
+}
+
+async function processTestCoverageFiles(targetPath: string) {
+    // TODO: will be removed post release
+    const coverageFilePatterns = ['**/coverage.xml', '**/coverage.json', '**/coverage.txt']
+    let files: vscode.Uri[] = []
+
+    for (const pattern of coverageFilePatterns) {
+        files = await vscode.workspace.findFiles(pattern)
+        if (files.length > 0) {
+            break
+        }
+    }
+
+    await Promise.all(
+        files.map(async (file) => {
+            const fileName = path.basename(file.path)
+            const targetFilePath = path.join(targetPath, fileName)
+            await fs.copy(file.path, targetFilePath)
+        })
+    )
 }

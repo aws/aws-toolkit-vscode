@@ -50,7 +50,7 @@ import {
 import { SecurityIssueTreeViewProvider } from '../service/securityIssueTreeViewProvider'
 import { ChatSessionManager } from '../../amazonqScan/chat/storages/chatSession'
 import { TelemetryHelper } from '../util/telemetryHelper'
-import { getWorkspacePaths } from '../../shared/utilities/workspaceUtils'
+import { CurrentWsFolders, defaultExcludePatterns, getWorkspacePaths } from '../../shared/utilities/workspaceUtils'
 
 const localize = nls.loadMessageBundle()
 export const stopScanButton = localize('aws.codewhisperer.stopscan', 'Stop Scan')
@@ -106,7 +106,7 @@ export async function startSecurityScan(
     context: vscode.ExtensionContext,
     scope: CodeWhispererConstants.CodeAnalysisScope,
     initiatedByChat: boolean,
-    zipUtil: ZipUtil = new ZipUtil(),
+    zipUtil: ZipUtil = new ZipUtil(CodeWhispererConstants.codeScanTruncDirPrefix),
     scanUuid?: string
 ) {
     const logger = getLoggerForScope(scope)
@@ -156,7 +156,11 @@ export async function startSecurityScan(
                 scanUuid,
             })
         }
-        const zipMetadata = await zipUtil.generateZip(editor?.document.uri, scope)
+        const zipMetadata =
+            scope === CodeAnalysisScope.PROJECT
+                ? await generateZipCodeScanForProject(zipUtil)
+                : await zipUtil.zipFile(editor?.document.uri)
+
         const projectPaths = getWorkspacePaths()
 
         const contextTruncationStartTime = performance.now()
@@ -190,7 +194,7 @@ export async function startSecurityScan(
         try {
             artifactMap = await getPresignedUrlAndUpload(client, zipMetadata, scope, scanName)
         } finally {
-            await zipUtil.removeTmpFiles(zipMetadata, scope)
+            await zipUtil.removeTmpFiles(zipMetadata)
             codeScanTelemetryEntry.artifactsUploadDuration = performance.now() - uploadStartTime
         }
 
@@ -541,4 +545,28 @@ function showScanCompletedNotification(total: number, scannedFiles: Set<string>)
             SecurityIssueTreeViewProvider.focus()
         }
     })
+}
+
+export async function generateZipCodeScanForProject(
+    zipUtil: ZipUtil,
+    options?: {
+        includeGitDiff?: boolean
+        silent?: boolean
+    }
+): Promise<ZipMetadata> {
+    try {
+        // We assume there is at least one workspace open.
+        return await zipUtil.zipProject(
+            [...(vscode.workspace.workspaceFolders ?? [])] as CurrentWsFolders,
+            defaultExcludePatterns,
+            {
+                includeGitDiff: options?.includeGitDiff,
+                includeNonWorkspaceFiles: true,
+                silent: options?.silent,
+            }
+        )
+    } catch (error) {
+        getLogger().error('Zip error caused by: %O', error)
+        throw error
+    }
 }
