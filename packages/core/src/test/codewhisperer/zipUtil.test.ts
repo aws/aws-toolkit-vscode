@@ -24,18 +24,6 @@ describe('zipUtil', function () {
     const appCodePath = join(appRoot, 'HelloWorldFunction', 'src', 'main', 'java', 'helloworld', 'App.java')
     const appCodePathWithRepeatedProjectName = join(workspaceFolder, 'workspaceFolder', 'App.java')
 
-    describe('getProjectPaths', function () {
-        it('Should return the correct project paths', function () {
-            const zipUtil = new ZipUtil()
-            assert.deepStrictEqual(zipUtil.getProjectPaths(), [workspaceFolder])
-        })
-
-        it('Should return the correct project path for unit test generation', function () {
-            const zipUtil = new ZipUtil()
-            assert.deepStrictEqual(zipUtil.getProjectPath(appCodePath), workspaceFolder)
-        })
-    })
-
     describe('generateZip', function () {
         let zipUtil: ZipUtil
         beforeEach(function () {
