@@ -55,17 +55,40 @@ export class InlineChatProvider {
                 })
                 return this.generateResponse(
                     {
-                        message: message.message,
+                        message: message.message ?? '',
                         trigger: ChatTriggerType.InlineChatMessage,
                         query: message.message,
                         codeSelection: context?.focusAreaContext?.selectionInsideExtendedCodeBlock,
-                        fileText: context?.focusAreaContext?.extendedCodeBlock,
+                        fileText: context?.focusAreaContext?.extendedCodeBlock ?? '',
                         fileLanguage: context?.activeFileContext?.fileLanguage,
                         filePath: context?.activeFileContext?.filePath,
                         matchPolicy: context?.activeFileContext?.matchPolicy,
                         codeQuery: context?.focusAreaContext?.names,
                         userIntent: this.userIntentRecognizer.getFromPromptChatMessage(message),
                         customization: getSelectedCustomization(),
+                        context: [],
+                        relevantTextDocuments: [],
+                        additionalContents: [],
+                        documentReferences: [],
+                        useRelevantDocuments: false,
+                        contextLengths: {
+                            additionalContextLengths: {
+                                fileContextLength: 0,
+                                promptContextLength: 0,
+                                ruleContextLength: 0,
+                            },
+                            truncatedAdditionalContextLengths: {
+                                fileContextLength: 0,
+                                promptContextLength: 0,
+                                ruleContextLength: 0,
+                            },
+                            workspaceContextLength: 0,
+                            truncatedWorkspaceContextLength: 0,
+                            userInputContextLength: 0,
+                            truncatedUserInputContextLength: 0,
+                            focusFileContextLength: 0,
+                            truncatedFocusFileContextLength: 0,
+                        },
                     },
                     triggerID
                 )
@@ -111,7 +134,10 @@ export class InlineChatProvider {
 
         const request = triggerPayloadToChatRequest(triggerPayload)
         const session = this.sessionStorage.getSession(tabID)
-        getLogger().info(`request from tab: ${tabID} conversationID: ${session.sessionIdentifier} request: %O`, request)
+        getLogger().debug(
+            `request from tab: ${tabID} conversationID: ${session.sessionIdentifier} request: %O`,
+            request
+        )
 
         let response: GenerateAssistantResponseCommandOutput | undefined = undefined
         session.createNewTokenSource()

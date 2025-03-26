@@ -2,7 +2,6 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import admZip from 'adm-zip'
 import * as vscode from 'vscode'
 import path from 'path'
 import { tempDirPath, testGenerationLogsDir } from '../../shared/filesystemUtilities'
@@ -13,7 +12,12 @@ import { fs } from '../../shared/fs/fs'
 import { getLoggerForScope } from '../service/securityScanHandler'
 import { runtimeLanguageContext } from './runtimeLanguageContext'
 import { CodewhispererLanguage } from '../../shared/telemetry/telemetry.gen'
-import { CurrentWsFolders, collectFiles, defaultExcludePatterns } from '../../shared/utilities/workspaceUtils'
+import {
+    CurrentWsFolders,
+    collectFiles,
+    defaultExcludePatterns,
+    getWorkspacePaths,
+} from '../../shared/utilities/workspaceUtils'
 import {
     FileSizeExceededError,
     NoActiveFileError,
@@ -21,10 +25,12 @@ import {
     ProjectSizeExceededError,
 } from '../models/errors'
 import { FeatureUseCase } from '../models/constants'
-import { ChildProcess, ChildProcessOptions } from '../../shared/utilities/processUtils'
 import { ProjectZipError } from '../../amazonqTest/error'
-import { removeAnsi } from '../../shared/utilities/textUtilities'
 import { normalize } from '../../shared/utilities/pathUtils'
+import { ZipStream } from '../../shared/utilities/zipStream'
+import { getTextContent } from '../../shared/utilities/textDocumentUtilities'
+import { ChildProcess, ChildProcessOptions } from '../../shared/utilities/processUtils'
+import { removeAnsi } from '../../shared/utilities/textUtilities'
 
 export interface ZipMetadata {
     rootDir: string
@@ -42,13 +48,6 @@ export const ZipConstants = {
     gitignoreFilename: '.gitignore',
     knownBinaryFileExts: ['.class'],
     codeDiffFilePath: 'codeDiff/code.diff',
-}
-
-interface GitDiffOptions {
-    projectPath: string
-    projectName: string
-    filePath?: string
-    scope?: CodeWhispererConstants.CodeAnalysisScope
 }
 
 export class ZipUtil {
@@ -72,32 +71,10 @@ export class ZipUtil {
         return CodeWhispererConstants.projectScanPayloadSizeLimitBytes
     }
 
-    public getProjectPaths() {
-        const workspaceFolders = vscode.workspace.workspaceFolders
-        return workspaceFolders?.map((folder) => folder.uri.fsPath) ?? []
-    }
-
-    public getProjectPath(filePath: string) {
-        const fileUri = vscode.Uri.file(filePath)
-        const workspaceFolder = vscode.workspace.getWorkspaceFolder(fileUri)
-        return workspaceFolder?.uri.fsPath
-    }
-
-    protected async getTextContent(uri: vscode.Uri) {
-        const document = await vscode.workspace.openTextDocument(uri)
-        const content = document.getText()
-        return content
-    }
-
     public reachSizeLimit(size: number, scope: CodeWhispererConstants.CodeAnalysisScope): boolean {
-        if (
-            scope === CodeWhispererConstants.CodeAnalysisScope.FILE_AUTO ||
-            scope === CodeWhispererConstants.CodeAnalysisScope.FILE_ON_DEMAND
-        ) {
-            return size > this.getFileScanPayloadSizeLimitInBytes()
-        } else {
-            return size > this.getProjectScanPayloadSizeLimitInBytes()
-        }
+        return CodeWhispererConstants.isFileAnalysisScope(scope)
+            ? size > this.getFileScanPayloadSizeLimitInBytes()
+            : size > this.getProjectScanPayloadSizeLimitInBytes()
     }
 
     public willReachSizeLimit(current: number, adding: number): boolean {
@@ -109,9 +86,9 @@ export class ZipUtil {
         if (!uri) {
             throw new NoActiveFileError()
         }
-        const zip = new admZip()
+        const zip = new ZipStream()
 
-        const content = await this.getTextContent(uri)
+        const content = await getTextContent(uri)
 
         const workspaceFolder = vscode.workspace.getWorkspaceFolder(uri)
         if (workspaceFolder) {
@@ -121,14 +98,14 @@ export class ZipUtil {
             // Set includeWorkspaceFolder to false because we are already manually prepending the projectName
             const relativePath = vscode.workspace.asRelativePath(uri, false)
             const zipEntryPath = this.getZipEntryPath(projectName, relativePath)
-            zip.addFile(zipEntryPath, Buffer.from(content, 'utf-8'))
+            zip.writeString(content, zipEntryPath)
 
             if (scope === CodeWhispererConstants.CodeAnalysisScope.FILE_ON_DEMAND) {
                 const gitDiffContent = `+++ b/${normalize(zipEntryPath)}` // Sending file path in payload for LLM code review
-                zip.addFile(ZipConstants.codeDiffFilePath, Buffer.from(gitDiffContent, 'utf-8'))
+                zip.writeString(gitDiffContent, ZipConstants.codeDiffFilePath)
             }
         } else {
-            zip.addFile(uri.fsPath, Buffer.from(content, 'utf-8'))
+            zip.writeString(content, uri.fsPath)
         }
 
         this._pickedSourceFiles.add(uri.fsPath)
@@ -139,7 +116,7 @@ export class ZipUtil {
             throw new FileSizeExceededError()
         }
         const zipFilePath = this.getZipDirPath(FeatureUseCase.CODE_SCAN) + CodeWhispererConstants.codeScanZipExt
-        zip.writeZip(zipFilePath)
+        await zip.finalizeToFile(zipFilePath)
         return zipFilePath
     }
 
@@ -170,13 +147,13 @@ export class ZipUtil {
      * await processMetadataDir(zip, '/path/to/directory');
      * ```
      */
-    protected async processMetadataDir(zip: admZip, metadataDir: string) {
+    protected async processMetadataDir(zip: ZipStream, metadataDir: string) {
         const metadataDirName = path.basename(metadataDir)
         // Helper function to add empty directory to zip
         const addEmptyDirectory = (dirPath: string) => {
             const relativePath = path.relative(metadataDir, dirPath)
             const pathWithMetadata = path.join(metadataDirName, relativePath, '/')
-            zip.addFile(pathWithMetadata, Buffer.from(''))
+            zip.writeString('', pathWithMetadata)
         }
 
         // Recursive function to process directories
@@ -189,11 +166,10 @@ export class ZipUtil {
 
                 if (fileType === vscode.FileType.File) {
                     try {
-                        const fileContent = await vscode.workspace.fs.readFile(vscode.Uri.file(filePath))
-                        const buffer = Buffer.from(fileContent)
+                        const fileUri = vscode.Uri.file(filePath)
                         const relativePath = path.relative(metadataDir, filePath)
                         const pathWithMetadata = path.join(metadataDirName, relativePath)
-                        zip.addFile(pathWithMetadata, buffer)
+                        zip.writeFile(fileUri.fsPath, pathWithMetadata)
                     } catch (error) {
                         getLogger().error(`Failed to add file ${filePath} to zip: ${error}`)
                     }
@@ -207,12 +183,12 @@ export class ZipUtil {
     }
 
     protected async zipProject(useCase: FeatureUseCase, projectPath?: string, metadataDir?: string) {
-        const zip = new admZip()
+        const zip = new ZipStream()
         let projectPaths = []
         if (useCase === FeatureUseCase.TEST_GENERATION && projectPath) {
             projectPaths.push(projectPath)
         } else {
-            projectPaths = this.getProjectPaths()
+            projectPaths = getWorkspacePaths()
         }
         if (useCase === FeatureUseCase.CODE_SCAN) {
             await this.processCombinedGitDiff(zip, projectPaths, '', CodeWhispererConstants.CodeAnalysisScope.PROJECT)
@@ -232,178 +208,24 @@ export class ZipUtil {
         }
         this._language = [...languageCount.entries()].reduce((a, b) => (b[1] > a[1] ? b : a))[0]
         const zipFilePath = this.getZipDirPath(useCase) + CodeWhispererConstants.codeScanZipExt
-        zip.writeZip(zipFilePath)
+        await zip.finalizeToFile(zipFilePath)
         return zipFilePath
     }
 
     protected async processCombinedGitDiff(
-        zip: admZip,
+        zip: ZipStream,
         projectPaths: string[],
         filePath?: string,
         scope?: CodeWhispererConstants.CodeAnalysisScope
     ) {
-        let gitDiffContent = ''
-        for (const projectPath of projectPaths) {
-            const projectName = path.basename(projectPath)
-            // Get diff content
-            gitDiffContent += await this.executeGitDiff({
-                projectPath,
-                projectName,
-                filePath,
-                scope,
-            })
-        }
+        const gitDiffContent = await getGitDiffContentForProjects(projectPaths, filePath)
         if (gitDiffContent) {
-            zip.addFile(ZipConstants.codeDiffFilePath, Buffer.from(gitDiffContent, 'utf-8'))
+            zip.writeString(gitDiffContent, ZipConstants.codeDiffFilePath)
         }
-    }
-
-    private async getGitUntrackedFiles(projectPath: string): Promise<string | undefined> {
-        const checkNewFileArgs = ['ls-files', '--others', '--exclude-standard']
-        const checkProcess = new ChildProcess('git', checkNewFileArgs)
-
-        try {
-            let output = ''
-            await checkProcess.run({
-                rejectOnError: true,
-                rejectOnErrorCode: true,
-                onStdout: (text) => {
-                    output += text
-                },
-                spawnOptions: {
-                    cwd: projectPath,
-                },
-            })
-            return output
-        } catch (err) {
-            getLogger().warn(`Failed to check if file is new: ${err}`)
-            return undefined
-        }
-    }
-
-    private async generateNewFileDiff(projectPath: string, projectName: string, relativePath: string): Promise<string> {
-        let diffContent = ''
-
-        const gitArgs = [
-            'diff',
-            '--no-index',
-            `--src-prefix=a/${projectName}/`,
-            `--dst-prefix=b/${projectName}/`,
-            '/dev/null', // Use /dev/null as the old file
-            relativePath,
-        ]
-
-        const childProcess = new ChildProcess('git', gitArgs)
-        const runOptions: ChildProcessOptions = {
-            rejectOnError: false,
-            rejectOnErrorCode: false,
-            onStdout: (text) => {
-                diffContent += text
-                getLogger().verbose(removeAnsi(text))
-            },
-            onStderr: (text) => {
-                getLogger().error(removeAnsi(text))
-            },
-            spawnOptions: {
-                cwd: projectPath,
-            },
-        }
-
-        try {
-            await childProcess.run(runOptions)
-            return diffContent
-        } catch (err) {
-            getLogger().warn(`Failed to run diff command: ${err}`)
-            return ''
-        }
-    }
-
-    private async generateHeadDiff(projectPath: string, projectName: string, relativePath?: string): Promise<string> {
-        let diffContent = ''
-
-        const gitArgs = [
-            'diff',
-            'HEAD',
-            `--src-prefix=a/${projectName}/`,
-            `--dst-prefix=b/${projectName}/`,
-            ...(relativePath ? [relativePath] : []),
-        ]
-
-        const childProcess = new ChildProcess('git', gitArgs)
-
-        const runOptions: ChildProcessOptions = {
-            rejectOnError: true,
-            rejectOnErrorCode: true,
-            onStdout: (text) => {
-                diffContent += text
-                getLogger().verbose(removeAnsi(text))
-            },
-            onStderr: (text) => {
-                getLogger().error(removeAnsi(text))
-            },
-            spawnOptions: {
-                cwd: projectPath,
-            },
-        }
-
-        try {
-            await childProcess.run(runOptions)
-            return diffContent
-        } catch (err) {
-            getLogger().warn(`Failed to run command \`${childProcess.toString()}\`: ${err}`)
-            return ''
-        }
-    }
-
-    private async executeGitDiff(options: GitDiffOptions): Promise<string> {
-        const { projectPath, projectName, filePath, scope } = options
-        const isProjectScope = scope === CodeWhispererConstants.CodeAnalysisScope.PROJECT
-
-        const untrackedFilesString = await this.getGitUntrackedFiles(projectPath)
-        const untrackedFilesArray = untrackedFilesString?.trim()?.split('\n')?.filter(Boolean)
-
-        if (isProjectScope && untrackedFilesArray && !untrackedFilesArray.length) {
-            return await this.generateHeadDiff(projectPath, projectName)
-        }
-
-        let diffContent = ''
-
-        if (isProjectScope) {
-            diffContent = await this.generateHeadDiff(projectPath, projectName)
-
-            if (untrackedFilesArray) {
-                const untrackedDiffs = await Promise.all(
-                    untrackedFilesArray.map((file) => this.generateNewFileDiff(projectPath, projectName, file))
-                )
-                diffContent += untrackedDiffs.join('')
-            }
-        } else if (!isProjectScope && filePath) {
-            const relativeFilePath = path.relative(projectPath, filePath)
-
-            const newFileDiff = await this.generateNewFileDiff(projectPath, projectName, relativeFilePath)
-            diffContent = this.rewriteDiff(newFileDiff)
-        }
-        return diffContent
-    }
-
-    private rewriteDiff(inputStr: string): string {
-        const lines = inputStr.split('\n')
-        const rewrittenLines = lines.slice(0, 5).map((line) => {
-            line = line.replace(/\\\\/g, '/')
-            line = line.replace(/("a\/[^"]*)/g, (match, p1) => p1)
-            line = line.replace(/("b\/[^"]*)/g, (match, p1) => p1)
-            line = line.replace(/"/g, '')
-
-            return line
-        })
-        const outputLines = [...rewrittenLines, ...lines.slice(5)]
-        const outputStr = outputLines.join('\n')
-
-        return outputStr
     }
 
     protected async processSourceFiles(
-        zip: admZip,
+        zip: ZipStream,
         languageCount: Map<CodewhispererLanguage, number>,
         projectPaths: string[] | undefined,
         useCase: FeatureUseCase
@@ -438,13 +260,13 @@ export class ZipUtil {
                 await this.processBinaryFile(zip, file.fileUri, zipEntryPath)
             } else {
                 const isFileOpenAndDirty = this.isFileOpenAndDirty(file.fileUri)
-                const fileContent = isFileOpenAndDirty ? await this.getTextContent(file.fileUri) : file.fileContent
+                const fileContent = isFileOpenAndDirty ? await getTextContent(file.fileUri) : file.fileContent
                 this.processTextFile(zip, file.fileUri, fileContent, languageCount, zipEntryPath)
             }
         }
     }
 
-    protected processOtherFiles(zip: admZip, languageCount: Map<CodewhispererLanguage, number>) {
+    protected processOtherFiles(zip: ZipStream, languageCount: Map<CodewhispererLanguage, number>) {
         for (const document of vscode.workspace.textDocuments
             .filter((document) => document.uri.scheme === 'file')
             .filter((document) => vscode.workspace.getWorkspaceFolder(document.uri) === undefined)) {
@@ -474,7 +296,7 @@ export class ZipUtil {
     }
 
     protected processTextFile(
-        zip: admZip,
+        zip: ZipStream,
         uri: vscode.Uri,
         fileContent: string,
         languageCount: Map<CodewhispererLanguage, number>,
@@ -493,10 +315,10 @@ export class ZipUtil {
         this._totalLines += fileContent.split(ZipConstants.newlineRegex).length
 
         this.incrementCountForLanguage(uri, languageCount)
-        zip.addFile(zipEntryPath, Buffer.from(fileContent, 'utf-8'))
+        zip.writeString(fileContent, zipEntryPath)
     }
 
-    protected async processBinaryFile(zip: admZip, uri: vscode.Uri, zipEntryPath: string) {
+    protected async processBinaryFile(zip: ZipStream, uri: vscode.Uri, zipEntryPath: string) {
         const fileSize = (await fs.stat(uri.fsPath)).size
 
         if (
@@ -508,7 +330,7 @@ export class ZipUtil {
         this._pickedSourceFiles.add(uri.fsPath)
         this._totalSize += fileSize
 
-        zip.addLocalFile(uri.fsPath, path.dirname(zipEntryPath))
+        zip.writeFile(uri.fsPath, path.dirname(zipEntryPath))
     }
 
     protected incrementCountForLanguage(uri: vscode.Uri, languageCount: Map<CodewhispererLanguage, number>) {
@@ -629,4 +451,174 @@ export class ZipUtil {
         await fs.delete(zipMetadata.rootDir, { recursive: true, force: true })
         logger.verbose(`Complete cleaning up temporary files.`)
     }
+}
+
+// TODO: port this to its own utility with tests.
+interface GitDiffOptions {
+    projectPath: string
+    projectName: string
+    filepath?: string
+    scope?: CodeWhispererConstants.CodeAnalysisScope
+}
+
+async function getGitDiffContentForProjects(
+    projectPaths: string[],
+    filepath?: string,
+    scope?: CodeWhispererConstants.CodeAnalysisScope
+) {
+    let gitDiffContent = ''
+    for (const projectPath of projectPaths) {
+        const projectName = path.basename(projectPath)
+        gitDiffContent += await getGitDiffContent({
+            projectPath,
+            projectName,
+            filepath,
+            scope,
+        })
+    }
+    return gitDiffContent
+}
+
+async function getGitDiffContent(options: GitDiffOptions): Promise<string> {
+    const { projectPath, projectName, filepath: filePath, scope } = options
+    const isProjectScope = scope === CodeWhispererConstants.CodeAnalysisScope.PROJECT
+
+    const untrackedFilesString = await getGitUntrackedFiles(projectPath)
+    const untrackedFilesArray = untrackedFilesString?.trim()?.split('\n')?.filter(Boolean)
+
+    if (isProjectScope && untrackedFilesArray && !untrackedFilesArray.length) {
+        return await generateHeadDiff(projectPath, projectName)
+    }
+
+    let diffContent = ''
+
+    if (isProjectScope) {
+        diffContent = await generateHeadDiff(projectPath, projectName)
+
+        if (untrackedFilesArray) {
+            const untrackedDiffs = await Promise.all(
+                untrackedFilesArray.map((file) => generateNewFileDiff(projectPath, projectName, file))
+            )
+            diffContent += untrackedDiffs.join('')
+        }
+    } else if (!isProjectScope && filePath) {
+        const relativeFilePath = path.relative(projectPath, filePath)
+
+        const newFileDiff = await generateNewFileDiff(projectPath, projectName, relativeFilePath)
+        diffContent = rewriteDiff(newFileDiff)
+    }
+    return diffContent
+}
+
+async function getGitUntrackedFiles(projectPath: string): Promise<string | undefined> {
+    const checkNewFileArgs = ['ls-files', '--others', '--exclude-standard']
+    const checkProcess = new ChildProcess('git', checkNewFileArgs)
+
+    try {
+        let output = ''
+        await checkProcess.run({
+            rejectOnError: true,
+            rejectOnErrorCode: true,
+            onStdout: (text) => {
+                output += text
+            },
+            spawnOptions: {
+                cwd: projectPath,
+            },
+        })
+        return output
+    } catch (err) {
+        getLogger().warn(`Failed to check if file is new: ${err}`)
+        return undefined
+    }
+}
+
+async function generateHeadDiff(projectPath: string, projectName: string, relativePath?: string): Promise<string> {
+    let diffContent = ''
+
+    const gitArgs = [
+        'diff',
+        'HEAD',
+        `--src-prefix=a/${projectName}/`,
+        `--dst-prefix=b/${projectName}/`,
+        ...(relativePath ? [relativePath] : []),
+    ]
+
+    const childProcess = new ChildProcess('git', gitArgs)
+
+    const runOptions: ChildProcessOptions = {
+        rejectOnError: true,
+        rejectOnErrorCode: true,
+        onStdout: (text) => {
+            diffContent += text
+            getLogger().verbose(removeAnsi(text))
+        },
+        onStderr: (text) => {
+            getLogger().error(removeAnsi(text))
+        },
+        spawnOptions: {
+            cwd: projectPath,
+        },
+    }
+
+    try {
+        await childProcess.run(runOptions)
+        return diffContent
+    } catch (err) {
+        getLogger().warn(`Failed to run command \`${childProcess.toString()}\`: ${err}`)
+        return ''
+    }
+}
+
+async function generateNewFileDiff(projectPath: string, projectName: string, relativePath: string): Promise<string> {
+    let diffContent = ''
+
+    const gitArgs = [
+        'diff',
+        '--no-index',
+        `--src-prefix=a/${projectName}/`,
+        `--dst-prefix=b/${projectName}/`,
+        '/dev/null', // Use /dev/null as the old file
+        relativePath,
+    ]
+
+    const childProcess = new ChildProcess('git', gitArgs)
+    const runOptions: ChildProcessOptions = {
+        rejectOnError: false,
+        rejectOnErrorCode: false,
+        onStdout: (text) => {
+            diffContent += text
+            getLogger().verbose(removeAnsi(text))
+        },
+        onStderr: (text) => {
+            getLogger().error(removeAnsi(text))
+        },
+        spawnOptions: {
+            cwd: projectPath,
+        },
+    }
+
+    try {
+        await childProcess.run(runOptions)
+        return diffContent
+    } catch (err) {
+        getLogger().warn(`Failed to run diff command: ${err}`)
+        return ''
+    }
+}
+
+function rewriteDiff(inputStr: string): string {
+    const lines = inputStr.split('\n')
+    const rewrittenLines = lines.slice(0, 5).map((line) => {
+        line = line.replace(/\\\\/g, '/')
+        line = line.replace(/("a\/[^"]*)/g, (match, p1) => p1)
+        line = line.replace(/("b\/[^"]*)/g, (match, p1) => p1)
+        line = line.replace(/"/g, '')
+
+        return line
+    })
+    const outputLines = [...rewrittenLines, ...lines.slice(5)]
+    const outputStr = outputLines.join('\n')
+
+    return outputStr
 }

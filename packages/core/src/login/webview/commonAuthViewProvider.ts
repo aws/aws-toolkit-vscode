@@ -124,8 +124,6 @@ export class CommonAuthViewProvider implements WebviewViewProvider {
             }
 
             this.onDidChangeVisibility?.fire(webviewView.visible)
-            // force webview to reload
-            await vscode.commands.executeCommand('workbench.action.webview.reloadWebviewAction')
         })
 
         const dist = Uri.joinPath(this.extensionContext.extensionUri, 'dist')
@@ -135,9 +133,10 @@ export class CommonAuthViewProvider implements WebviewViewProvider {
             enableCommandUris: true,
             localResourceRoots: [dist, resources],
         }
-        webviewView.webview.html = this._getHtmlForWebview(this.extensionContext.extensionUri, webviewView.webview)
         // register the webview server
         await this.webView?.setup(webviewView.webview)
+
+        webviewView.webview.html = this._getHtmlForWebview(this.extensionContext.extensionUri, webviewView.webview)
     }
 
     private _getHtmlForWebview(extensionURI: Uri, webview: vscode.Webview) {

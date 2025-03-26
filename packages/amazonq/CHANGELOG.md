@@ -1,3 +1,17 @@
+## 1.52.0 2025-03-20
+
+- **Bug Fix** Amazon Q chat: @Folders and @Files are missing `@` prefix in chat history
+- **Bug Fix** /review: Code Issues ellipses menu displays AWS Toolkit options, if installed.
+- **Bug Fix** Amazon Q chat: Progress indicator height is stretched
+- **Bug Fix** Amazon Q chat: Long descriptions in context list are cut off
+- **Bug Fix** Amazon Q chat: Improve responses for saved prompts and workspace rules
+- **Bug Fix** /test: show descriptive error message
+- **Bug Fix** Code Review: Fixed a bug where issues are double counted in the Q chat
+- **Bug Fix** Amazon Q chat: Animation timings are too long
+- **Bug Fix** Fix inline completion failure due to context length exceeding the threshold
+- **Feature** /review: passing referenceTrackerConfiguration to StartCodeFixJob
+- **Feature** /review: rename setting `showInlineCodeSuggestionsWithCodeReferences` to `showCodeWithReferences`
+
 ## 1.51.0 2025-03-12
 
 - **Bug Fix** increase scan timeout to reduce front-end timeout errors

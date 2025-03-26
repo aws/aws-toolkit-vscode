@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Amazon Q chat: @Folders and @Files are missing `@` prefix in chat history"
-}
