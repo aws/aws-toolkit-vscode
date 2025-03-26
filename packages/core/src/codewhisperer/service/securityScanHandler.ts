@@ -394,8 +394,8 @@ export async function uploadArtifactToS3(
             headers: resp?.requestHeaders ?? headersObj,
         }).response
         logger.debug(`StatusCode: ${response.status}, Text: ${response.statusText}`)
-        requestId = response.headers.get('x-amz-request-id') ?? undefined
-        id2 = response.headers.get('x-amz-id-2') ?? undefined
+        requestId = response.headers?.get('x-amz-request-id') ?? undefined
+        id2 = response.headers?.get('x-amz-id-2') ?? undefined
         responseCode = response.status.toString()
     } catch (error) {
         if (span && error instanceof RequestError) {
