@@ -9,6 +9,7 @@ import {
     AuthNeededException,
     CodeReference,
     ContextCommandData,
+    CustomFormActionMessage,
     EditorContextCommandMessage,
     OpenSettingsMessage,
     QuickActionMessage,
@@ -232,13 +233,14 @@ export class Messenger {
                                 tabID
                             )
                         )
+
+                        this.dispatcher.sendCustomFormActionMessage(
+                            new CustomFormActionMessage(tabID, {
+                                id: 'confirm-tool-use',
+                            })
+                        )
                         // TODO: setup permission action
                         // if (!isConfirmationRequired) {
-                        //     this.dispatcher.sendCustomFormActionMessage(
-                        //         new CustomFormActionMessage(tabID, {
-                        //             id: 'confirm-tool-use',
-                        //         })
-                        //     )
                         // }
                     }
 
@@ -392,7 +394,9 @@ export class Messenger {
                         messageId: messageID,
                         content: message,
                         references: codeReference,
-                        toolUses: [{ ...toolUse }],
+                        ...(toolUse &&
+                            toolUse.input !== undefined &&
+                            toolUse.input !== '' && { toolUses: [{ ...toolUse }] }),
                     },
                 })
 
