@@ -218,7 +218,7 @@ export class ZipUtil {
         filePath?: string,
         scope?: CodeWhispererConstants.CodeAnalysisScope
     ) {
-        const gitDiffContent = await getGitDiffContentForProjects(projectPaths, filePath, scope)
+        const gitDiffContent = await getGitDiffContentForProjects(projectPaths, filePath)
         if (gitDiffContent) {
             zip.writeString(gitDiffContent, ZipConstants.codeDiffFilePath)
         }
