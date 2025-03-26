@@ -41,6 +41,8 @@ import { extractAuthFollowUp } from '../../../../amazonq/util/authUtils'
 import { helpMessage } from '../../../../amazonq/webview/ui/texts/constants'
 import { ChatItemButton, ChatItemFormItem, MynahUIDataModel } from '@aws/mynah-ui'
 import { ChatHistoryManager } from '../../../storages/chatHistory'
+import { ExecuteBashParams } from '../../../tools/executeBash'
+import { FsWriteCommand } from '../../../tools/fsWrite'
 
 export type StaticTextResponseType = 'quick-action-help' | 'onboarding-help' | 'transform' | 'help'
 
@@ -604,57 +606,57 @@ export class Messenger {
     //     return toolUse.name === 'fs_write'
     // }
     private getToolUseMessage(toolUse: ToolUse) {
-        if (toolUse.name === 'fs_read') {
-            return `Reading the file at \`${(toolUse.input as any)?.path}\` using the \`fs_read\` tool.`
+        if (toolUse.name === 'fsRead') {
+            return `Reading the file at \`${(toolUse.input as any)?.path}\` using the \`fsRead\` tool.`
         }
-        //     if (toolUse.name === 'execute_bash') {
-        //         const input = toolUse.input as unknown as ExecuteBashParams
-        //         return `Executing the bash command
-        // \`\`\`bash
-        // ${input.command}
-        // \`\`\`
-        // using the \`execute_bash\` tool.`
-        //     }
-        //     if (toolUse.name === 'fs_write') {
-        //         const input = toolUse.input as unknown as FsWriteParams
-        //         switch (input.command) {
-        //             case 'create': {
-        //                 return `Writing
-        // \`\`\`
-        // ${input.file_text}
-        // \`\`\`
-        // into the file at \`${input.path}\` using the \`fs_write\` tool.`
-        //             }
-        //             case 'str_replace': {
-        //                 return `Replacing
-        // \`\`\`
-        // ${input.old_str}
-        // \`\`\`
-        // with
-        // \`\`\`
-        // ${input.new_str}
-        // \`\`\`
-        // at \`${input.path}\` using the \`fs_write\` tool.`
-        //             }
-        //             case 'insert': {
-        //                 return `Inserting
-        // \`\`\`
-        // ${input.new_str}
-        // \`\`\`
-        // at line
-        // \`\`\`
-        // ${input.insert_line}
-        // \`\`\`
-        // at \`${input.path}\` using the \`fs_write\` tool.`
-        //             }
-        //             case 'append': {
-        //                 return `Appending
-        // \`\`\`
-        // ${input.new_str}
-        // \`\`\`
-        // at \`${input.path}\` using the \`fs_write\` tool.`
-        //             }
-        //         }
-        //     }
+        if (toolUse.name === 'executeBash') {
+            const input = toolUse.input as unknown as ExecuteBashParams
+            return `Executing the bash command
+        \`\`\`bash
+        ${input.command}
+        \`\`\`
+        using the \`executeBash\` tool.`
+        }
+        if (toolUse.name === 'fsWrite') {
+            const input = toolUse.input as unknown as FsWriteCommand
+            switch (input.command) {
+                case 'create': {
+                    return `Writing
+        \`\`\`
+        ${input.fileText}
+        \`\`\`
+        into the file at \`${input.path}\` using the \`fsWrite\` tool.`
+                }
+                case 'strReplace': {
+                    return `Replacing
+        \`\`\`
+        ${input.oldStr}
+        \`\`\`
+        with
+        \`\`\`
+        ${input.newStr}
+        \`\`\`
+        at \`${input.path}\` using the \`fsWrite\` tool.`
+                }
+                case 'insert': {
+                    return `Inserting
+        \`\`\`
+        ${input.newStr}
+        \`\`\`
+        at line
+        \`\`\`
+        ${input.insertLine}
+        \`\`\`
+        at \`${input.path}\` using the \`fsWrite\` tool.`
+                }
+                case 'append': {
+                    return `Appending
+        \`\`\`
+        ${input.newStr}
+        \`\`\`
+        at \`${input.path}\` using the \`fsWrite\` tool.`
+                }
+            }
+        }
     }
 }

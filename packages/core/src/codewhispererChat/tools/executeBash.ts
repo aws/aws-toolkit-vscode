@@ -111,27 +111,32 @@ export class ExecuteBash {
                     stderr: stderrTrunc + (stderrSuffix ? ' ... truncated' : ''),
                 }
 
-                return {
+                resolve({
                     output: {
                         kind: OutputKind.Json,
                         content: outputJson,
                     },
-                }
+                })
             } catch (err: any) {
                 this.logger.error(`Failed to execute bash command '${this.command}': ${err.message}`)
-                throw new Error(`Failed to execute command: ${err.message}`)
+                reject(new Error(`Failed to execute command: ${err.message}`))
             }
         })
     }
 
     private static handleChunk(chunk: string, buffer: string[], updates: Writable) {
-        const lines = chunk.split(/\r?\n/)
-        for (const line of lines) {
-            updates.write(`${line}\n`)
-            buffer.push(line)
-            if (buffer.length > lineCount) {
-                buffer.shift()
+        try {
+            const lines = chunk.split(/\r?\n/)
+            for (const line of lines) {
+                updates.write(`${line}\n`)
+                buffer.push(line)
+                if (buffer.length > lineCount) {
+                    buffer.shift()
+                }
             }
+        } catch (error) {
+            // Log the error but don't let it crash the process
+            throw new Error('Error handling output chunk')
         }
     }
 

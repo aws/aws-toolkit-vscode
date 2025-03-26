@@ -21,7 +21,7 @@ export enum OutputKind {
 export interface InvokeOutput {
     output: {
         kind: OutputKind
-        content: string
+        content: string | any
     }
 }
 
