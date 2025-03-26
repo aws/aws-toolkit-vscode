@@ -69,7 +69,7 @@ export class ChatHistoryManager {
         if (!newMessage.userInputMessage?.content || newMessage.userInputMessage?.content.trim() === '') {
             this.logger.warn('input must not be empty when adding new messages')
         }
-        this.history.push(this.lastUserMessage)
+        this.history.push(this.formatChatHistoryMessage(this.lastUserMessage))
     }
 
     /**
@@ -195,5 +195,20 @@ export class ChatHistoryManager {
         if (this.lastUserMessage?.userInputMessage) {
             this.lastUserMessage.userInputMessage = msg
         }
+    }
+
+    private formatChatHistoryMessage(message: ChatMessage): ChatMessage {
+        if (message.userInputMessage !== undefined) {
+            return {
+                userInputMessage: {
+                    ...message.userInputMessage,
+                    userInputMessageContext: {
+                        ...message.userInputMessage.userInputMessageContext,
+                        tools: undefined,
+                    },
+                },
+            }
+        }
+        return message
     }
 }

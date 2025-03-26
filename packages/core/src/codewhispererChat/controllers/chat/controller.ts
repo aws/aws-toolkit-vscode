@@ -78,6 +78,7 @@ import {
     aditionalContentNameLimit,
     additionalContentInnerContextLimit,
     contextMaxLength,
+    tools,
 } from '../../constants'
 import { ChatSession } from '../../clients/chat/v0/chat'
 import { ChatHistoryManager } from '../../storages/chatHistory'
@@ -769,13 +770,6 @@ export class ChatController {
                     command,
                 })
 
-                this.chatHistoryManager.appendUserMessage({
-                    userInputMessage: {
-                        content: prompt,
-                        userIntent: this.userIntentRecognizer.getFromContextMenuCommand(command),
-                    },
-                })
-
                 return this.generateResponse(
                     {
                         message: prompt,
@@ -855,13 +849,6 @@ export class ChatController {
                 context: lastTriggerEvent.context,
             })
 
-            this.chatHistoryManager.appendUserMessage({
-                userInputMessage: {
-                    content: message.message,
-                    userIntent: message.userIntent,
-                },
-            })
-
             return this.generateResponse(
                 {
                     message: message.message,
@@ -917,7 +904,7 @@ export class ChatController {
                         //     result = await executeBash.invoke(process.stdout)
                         //     break
                         // }
-                        case 'fs_read': {
+                        case 'fsRead': {
                             const fsRead = new FsRead(toolUse.input as unknown as FsReadParams)
                             await fsRead.validate()
                             result = await fsRead.invoke()
@@ -949,17 +936,9 @@ export class ChatController {
                     toolResults.push({ content: [{ text: e.message }], toolUseId: toolUse.toolUseId, status: 'error' })
                 }
 
-                this.chatHistoryManager.appendUserMessage({
-                    userInputMessage: {
-                        content: 'Tool Results',
-                        userIntent: undefined,
-                        origin: Origin.IDE,
-                    },
-                })
-
                 await this.generateResponse(
                     {
-                        message: 'Tool Results',
+                        message: '',
                         trigger: ChatTriggerType.ChatMessage,
                         query: undefined,
                         codeSelection: context?.focusAreaContext?.selectionInsideExtendedCodeBlock,
@@ -973,6 +952,7 @@ export class ChatController {
                         context: undefined,
                         toolResults: toolResults,
                         origin: Origin.IDE,
+                        chatHistory: this.chatHistoryManager.getHistory(),
                     },
                     triggerID
                 )
@@ -996,13 +976,6 @@ export class ChatController {
                     message: message.message,
                     type: 'chat_message',
                     context,
-                })
-                this.chatHistoryManager.appendUserMessage({
-                    userInputMessage: {
-                        content: message.message,
-                        userIntent: message.userIntent,
-                        origin: Origin.IDE,
-                    },
                 })
                 await this.generateResponse(
                     {
@@ -1342,6 +1315,18 @@ export class ChatController {
             }
             this.telemetryHelper.recordEnterFocusConversation(triggerEvent.tabID)
             this.telemetryHelper.recordStartConversation(triggerEvent, triggerPayload)
+
+            this.chatHistoryManager.appendUserMessage({
+                userInputMessage: {
+                    content: triggerPayload.message,
+                    userIntent: triggerPayload.userIntent,
+                    ...(triggerPayload.origin && { origin: triggerPayload.origin }),
+                    userInputMessageContext: {
+                        tools: tools,
+                        ...(triggerPayload.toolResults && { toolResults: triggerPayload.toolResults }),
+                    },
+                },
+            })
 
             getLogger().info(
                 `response to tab: ${tabID} conversationID: ${session.sessionIdentifier} requestID: ${

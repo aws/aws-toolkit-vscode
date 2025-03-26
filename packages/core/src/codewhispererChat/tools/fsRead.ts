@@ -16,7 +16,7 @@ export interface FsReadParams {
 export class FsRead {
     private fsPath: string
     private readonly readRange?: number[]
-    private type?: boolean // true for file, false for directory
+    private isFile?: boolean // true for file, false for directory
     private readonly logger = getLogger('fsRead')
 
     constructor(params: FsReadParams) {
@@ -44,7 +44,7 @@ export class FsRead {
             throw new Error(`Path: "${this.fsPath}" does not exist or cannot be accessed. (${err})`)
         }
 
-        this.type = await fs.existsFile(fileUri)
+        this.isFile = await fs.existsFile(fileUri)
         this.logger.debug(`Validation succeeded for path: ${this.fsPath}`)
     }
 
@@ -52,11 +52,11 @@ export class FsRead {
         try {
             const fileUri = vscode.Uri.file(this.fsPath)
 
-            if (this.type) {
+            if (this.isFile) {
                 const fileContents = await this.readFile(fileUri)
                 this.logger.info(`Read file: ${this.fsPath}, size: ${fileContents.length}`)
                 return this.handleFileRange(fileContents)
-            } else if (!this.type) {
+            } else if (!this.isFile) {
                 const maxDepth = this.getDirectoryDepth() ?? 0
                 const listing = await readDirectoryRecursively(fileUri, maxDepth)
                 return this.createOutput(listing.join('\n'))
