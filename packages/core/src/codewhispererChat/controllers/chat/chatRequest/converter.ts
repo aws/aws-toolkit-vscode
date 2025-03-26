@@ -8,6 +8,7 @@ import { AdditionalContentEntryAddition, ChatTriggerType, RelevantTextDocumentAd
 import { undefinedIfEmpty } from '../../../../shared/utilities/textUtilities'
 import { tools } from '../../../constants'
 import { getLogger } from '../../../../shared/logger/logger'
+import vscode from 'vscode'
 
 const fqnNameSizeDownLimit = 1
 const fqnNameSizeUpLimit = 256
@@ -160,6 +161,7 @@ export function triggerPayloadToChatRequest(triggerPayload: TriggerPayload): { c
                             cursorState,
                             relevantDocuments: triggerPayload.relevantTextDocuments,
                             useRelevantDocuments: triggerPayload.useRelevantDocuments,
+                            workspaceFolders: vscode.workspace.workspaceFolders?.map(({ uri }) => uri.fsPath) ?? [],
                         },
                         additionalContext: triggerPayload.additionalContents,
                         tools,

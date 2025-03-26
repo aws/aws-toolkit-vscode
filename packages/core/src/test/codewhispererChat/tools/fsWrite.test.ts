@@ -107,7 +107,7 @@ describe('FsWrite Tool', function () {
             await fs.writeFile(filePath, 'Hello World')
 
             const command: StrReplaceCommand = {
-                command: 'str_replace',
+                command: 'strReplace',
                 path: filePath,
                 oldStr: 'Hello',
                 newStr: 'Goodbye',
@@ -124,7 +124,7 @@ describe('FsWrite Tool', function () {
             const filePath = path.join(testFolder.path, 'file1.txt')
 
             const command: StrReplaceCommand = {
-                command: 'str_replace',
+                command: 'strReplace',
                 path: filePath,
                 oldStr: 'Invalid',
                 newStr: 'Goodbye',
@@ -138,7 +138,7 @@ describe('FsWrite Tool', function () {
             await fs.writeFile(filePath, 'Hello Hello World')
 
             const command: StrReplaceCommand = {
-                command: 'str_replace',
+                command: 'strReplace',
                 path: filePath,
                 oldStr: 'Hello',
                 newStr: 'Goodbye',
@@ -155,7 +155,7 @@ describe('FsWrite Tool', function () {
             await fs.writeFile(filePath, 'Text with special chars: .*+?^${}()|[]\\')
 
             const command: StrReplaceCommand = {
-                command: 'str_replace',
+                command: 'strReplace',
                 path: filePath,
                 oldStr: '.*+?^${}()|[]\\',
                 newStr: 'REPLACED',
@@ -173,7 +173,7 @@ describe('FsWrite Tool', function () {
             await fs.writeFile(filePath, 'Line 1\n  Indented line\nLine 3')
 
             const command: StrReplaceCommand = {
-                command: 'str_replace',
+                command: 'strReplace',
                 path: filePath,
                 oldStr: '  Indented line\n',
                 newStr: '    Double indented\n',

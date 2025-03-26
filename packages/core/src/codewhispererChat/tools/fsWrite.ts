@@ -19,7 +19,7 @@ export interface CreateCommand extends BaseCommand {
 }
 
 export interface StrReplaceCommand extends BaseCommand {
-    command: 'str_replace'
+    command: 'strReplace'
     oldStr: string
     newStr: string
 }
@@ -47,7 +47,7 @@ export class FsWrite {
             case 'create':
                 await this.handleCreate(command, sanitizedPath)
                 break
-            case 'str_replace':
+            case 'strReplace':
                 await this.handleStrReplace(command, sanitizedPath)
                 break
             case 'insert':
@@ -63,6 +63,32 @@ export class FsWrite {
                 kind: OutputKind.Text,
                 content: '',
             },
+        }
+    }
+
+    public static async validate(command: FsWriteCommand): Promise<void> {
+        switch (command.command) {
+            case 'create':
+                if (!command.path) {
+                    throw new Error('Path must not be empty')
+                }
+                break
+            case 'strReplace':
+            case 'insert': {
+                const fileExists = await fs.existsFile(command.path)
+                if (!fileExists) {
+                    throw new Error('The provided path must exist in order to replace or insert contents into it')
+                }
+                break
+            }
+            case 'append':
+                if (!command.path) {
+                    throw new Error('Path must not be empty')
+                }
+                if (!command.newStr) {
+                    throw new Error('Content to append must not be empty')
+                }
+                break
         }
     }
 
