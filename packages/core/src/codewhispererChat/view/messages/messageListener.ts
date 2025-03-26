@@ -188,9 +188,8 @@ export class UIMessageListener {
         })
     }
 
-    private processInsertCodeAtCursorPosition(msg: any) {
-        this.referenceLogController.addReferenceLog(msg.codeReference, (msg.code as string) ?? '')
-        this.chatControllerMessagePublishers.processInsertCodeAtCursorPosition.publish({
+    private createCommonMessagePayload(msg: any) {
+        return {
             command: msg.command,
             tabID: msg.tabID,
             messageId: msg.messageId,
@@ -202,7 +201,16 @@ export class UIMessageListener {
             codeBlockIndex: msg.codeBlockIndex,
             totalCodeBlocks: msg.totalCodeBlocks,
             codeBlockLanguage: msg.codeBlockLanguage,
-        })
+        }
+    }
+    private processInsertCodeAtCursorPosition(msg: any) {
+        this.referenceLogController.addReferenceLog(msg.codeReference, (msg.code as string) ?? '')
+        this.chatControllerMessagePublishers.processInsertCodeAtCursorPosition.publish(
+            this.createCommonMessagePayload(msg)
+        )
+    }
+    private processCodeWasCopiedToClipboard(msg: any) {
+        this.chatControllerMessagePublishers.processCopyCodeToClipboard.publish(this.createCommonMessagePayload(msg))
     }
 
     private processAcceptDiff(msg: any) {
@@ -218,22 +226,6 @@ export class UIMessageListener {
             command: msg.command,
             tabID: msg.tabID || msg.tabId,
             ...msg,
-        })
-    }
-
-    private processCodeWasCopiedToClipboard(msg: any) {
-        this.chatControllerMessagePublishers.processCopyCodeToClipboard.publish({
-            command: msg.command,
-            tabID: msg.tabID,
-            messageId: msg.messageId,
-            userIntent: msg.userIntent,
-            code: msg.code,
-            insertionTargetType: msg.insertionTargetType,
-            codeReference: msg.codeReference,
-            eventId: msg.eventId,
-            codeBlockIndex: msg.codeBlockIndex,
-            totalCodeBlocks: msg.totalCodeBlocks,
-            codeBlockLanguage: msg.codeBlockLanguage,
         })
     }
 

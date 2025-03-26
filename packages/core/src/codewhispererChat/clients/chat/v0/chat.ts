@@ -79,7 +79,7 @@ export class ChatSession {
     public setTempFilePath(tempFilePath: string | undefined) {
         this._tempFilePath = tempFilePath
     }
-    public addListOfReadFiles(filePath: string) {
+    public addToReadFiles(filePath: string) {
         this._readFiles.push(filePath)
     }
     public clearListOfReadFiles() {
