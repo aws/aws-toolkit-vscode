@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Fix inline completion failure due to context length exceeding the threshold"
-}
