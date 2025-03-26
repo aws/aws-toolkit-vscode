@@ -57,7 +57,7 @@ import { randomUUID } from '../../../shared/crypto'
 import { LspController } from '../../../amazonq/lsp/lspController'
 import { CodeWhispererSettings } from '../../../codewhisperer/util/codewhispererSettings'
 import { getSelectedCustomization } from '../../../codewhisperer/util/customizationUtil'
-import { getHttpStatusCode, AwsClientResponseError } from '../../../shared/errors'
+import { getHttpStatusCode, AwsClientResponseError, ToolkitError } from '../../../shared/errors'
 import { uiEventRecorder } from '../../../amazonq/util/eventRecorder'
 import { telemetry } from '../../../shared/telemetry/telemetry'
 import { isSsoConnection } from '../../../auth/connection'
@@ -84,6 +84,8 @@ import { ChatSession } from '../../clients/chat/v0/chat'
 import { ChatHistoryManager } from '../../storages/chatHistory'
 import { amazonQTabSuffix } from '../../../shared/constants'
 import { FsRead, FsReadParams } from '../../tools/fsRead'
+import { InvokeOutput, OutputKind } from '../../tools/toolShared'
+import { FsWrite, FsWriteCommand } from '../../tools/fsWrite'
 
 export interface ChatControllerMessagePublishers {
     readonly processPromptChatMessage: MessagePublisher<PromptMessage>
@@ -894,7 +896,7 @@ export class ChatController {
                 }
                 session.setToolUse(undefined)
 
-                let result: any
+                let result: InvokeOutput | undefined = undefined
                 const toolResults: ToolResult[] = []
                 try {
                     switch (toolUse.name) {
@@ -910,22 +912,22 @@ export class ChatController {
                             result = await fsRead.invoke()
                             break
                         }
-                        // case 'fs_write': {
-                        //     const fsWrite = new FsWrite(toolUse.input as unknown as FsWriteParams)
-                        //     const ctx = new DefaultContext()
-                        //     result = await fsWrite.invoke(ctx, process.stdout)
-                        //     break
-                        // }
-                        // case 'open_file': {
-                        //     result = await openFile(toolUse.input as unknown as OpenFileParams)
-                        //     break
-                        // }
-                        default:
+                        case 'fsWrite': {
+                            const input = toolUse.input as unknown as FsWriteCommand
+                            await FsWrite.validate(input)
+                            result = await FsWrite.invoke(input)
                             break
+                        }
+                        default:
+                            getLogger().warn('Received invalid tool: %s', toolUse.name)
+                            break
+                    }
+                    if (!result) {
+                        throw new ToolkitError('Failed to execute tool and get results')
                     }
                     toolResults.push({
                         content: [
-                            result.output.kind === 'text'
+                            result.output.kind === OutputKind.Text
                                 ? { text: result.output.content }
                                 : { json: result.output.content },
                         ],
