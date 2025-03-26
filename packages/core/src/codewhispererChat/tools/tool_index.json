@@ -54,5 +54,23 @@
             },
             "required": ["command", "path"]
         }
+    },
+    "executeBash": {
+        "name": "executeBash",
+        "description": "Execute the specified bash command.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "command": {
+                    "type": "string",
+                    "description": "Bash command to execute"
+                },
+                "cwd": {
+                    "type": "string",
+                    "description": "Parameter to set the current working directory for the bash command."
+                }
+            },
+            "required": ["command", "cwd"]
+        }
     }
 }

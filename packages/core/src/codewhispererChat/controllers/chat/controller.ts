@@ -87,6 +87,7 @@ import { amazonQTabSuffix } from '../../../shared/constants'
 import { FsRead, FsReadParams } from '../../tools/fsRead'
 import { InvokeOutput, OutputKind } from '../../tools/toolShared'
 import { FsWrite, FsWriteCommand } from '../../tools/fsWrite'
+import { ExecuteBash, ExecuteBashParams } from '../../tools/executeBash'
 
 export interface ChatControllerMessagePublishers {
     readonly processPromptChatMessage: MessagePublisher<PromptMessage>
@@ -947,12 +948,12 @@ export class ChatController {
                 const toolResults: ToolResult[] = []
                 try {
                     switch (toolUse.name) {
-                        // case 'execute_bash': {
-                        //     const executeBash = new ExecuteBash(toolUse.input as unknown as ExecuteBashParams)
-                        //     await executeBash.validate()
-                        //     result = await executeBash.invoke(process.stdout)
-                        //     break
-                        // }
+                        case 'executeBash': {
+                            const executeBash = new ExecuteBash(toolUse.input as unknown as ExecuteBashParams)
+                            await executeBash.validate()
+                            result = await executeBash.invoke(process.stdout)
+                            break
+                        }
                         case 'fsRead': {
                             const fsRead = new FsRead(toolUse.input as unknown as FsReadParams)
                             await fsRead.validate()
@@ -966,12 +967,12 @@ export class ChatController {
                             break
                         }
                         default:
-                            getLogger().warn('Received invalid tool: %s', toolUse.name)
-                            break
+                            throw new ToolkitError(`Unsupported tool: ${toolUse.name}`)
                     }
                     if (!result) {
                         throw new ToolkitError('Failed to execute tool and get results')
                     }
+
                     toolResults.push({
                         content: [
                             result.output.kind === OutputKind.Text
@@ -982,7 +983,14 @@ export class ChatController {
                         status: 'success',
                     })
                 } catch (e: any) {
-                    toolResults.push({ content: [{ text: e.message }], toolUseId: toolUse.toolUseId, status: 'error' })
+                    const errorMessage = e instanceof Error ? e.message : 'Unknown error occurred during tool execution'
+                    getLogger().debug(`Tool execution failed: ${toolUse.name} - ${errorMessage}`)
+
+                    toolResults.push({
+                        content: [{ text: errorMessage }],
+                        toolUseId: toolUse.toolUseId,
+                        status: 'error',
+                    })
                 }
 
                 await this.generateResponse(
