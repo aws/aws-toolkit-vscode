@@ -32,7 +32,6 @@ import {
     DocumentReference,
     FileClick,
     RelevantTextDocumentAddition,
-    OpenDiff,
 } from './model'
 import {
     AppToWebViewMessageDispatcher,
@@ -94,7 +93,6 @@ export interface ChatControllerMessagePublishers {
     readonly processInsertCodeAtCursorPosition: MessagePublisher<InsertCodeAtCursorPosition>
     readonly processAcceptDiff: MessagePublisher<AcceptDiff>
     readonly processViewDiff: MessagePublisher<ViewDiff>
-    readonly processOpenDiff: MessagePublisher<OpenDiff>
     readonly processCopyCodeToClipboard: MessagePublisher<CopyCodeToClipboard>
     readonly processContextMenuCommand: MessagePublisher<EditorContextCommand>
     readonly processTriggerTabIDReceived: MessagePublisher<TriggerTabIDReceived>
@@ -120,7 +118,6 @@ export interface ChatControllerMessageListeners {
     readonly processInsertCodeAtCursorPosition: MessageListener<InsertCodeAtCursorPosition>
     readonly processAcceptDiff: MessageListener<AcceptDiff>
     readonly processViewDiff: MessageListener<ViewDiff>
-    readonly processOpenDiff: MessageListener<OpenDiff>
     readonly processCopyCodeToClipboard: MessageListener<CopyCodeToClipboard>
     readonly processContextMenuCommand: MessageListener<EditorContextCommand>
     readonly processTriggerTabIDReceived: MessageListener<TriggerTabIDReceived>
@@ -217,10 +214,6 @@ export class ChatController {
 
         this.chatControllerMessageListeners.processViewDiff.onMessage((data) => {
             return this.processViewDiff(data)
-        })
-
-        this.chatControllerMessageListeners.processOpenDiff.onMessage((data) => {
-            return this.processOpenDiff(data)
         })
 
         this.chatControllerMessageListeners.processCopyCodeToClipboard.onMessage((data) => {
@@ -396,20 +389,6 @@ export class ChatController {
             .catch((error) => {
                 this.telemetryHelper.recordInteractWithMessage(message, { result: 'Failed' })
             })
-    }
-
-    private async processOpenDiff(message: OpenDiff) {
-        const session = this.sessionStorage.getSession(message.tabID)
-        const filePath = session.filePath ?? message.filePath
-        const fileExists = await fs.existsFile(filePath)
-        // Check if fileExists=false, If yes, return instead of showing broken diff experience.
-        if (!session.tempFilePath) {
-            return
-        }
-        const leftUri = fileExists ? vscode.Uri.file(filePath) : vscode.Uri.from({ scheme: 'untitled' })
-        const rightUri = vscode.Uri.file(session.tempFilePath ?? filePath)
-        const fileName = path.basename(filePath)
-        await vscode.commands.executeCommand('vscode.diff', leftUri, rightUri, `${fileName} ${amazonQTabSuffix}`)
     }
 
     private async processAcceptCodeDiff(message: CustomFormActionMessage) {
@@ -644,55 +623,70 @@ export class ChatController {
     }
     private async processFileClickMessage(message: FileClick) {
         const session = this.sessionStorage.getSession(message.tabID)
-        const lineRanges = session.contexts.get(message.filePath)
+        // Check if user clicked on filePath in the contextList or in the fileListTree and perform the functionality accordingly.
+        if (session.showDiffOnFileWrite) {
+            const filePath = session.filePath ?? message.filePath
+            const fileExists = await fs.existsFile(filePath)
+            // Check if fileExists=false, If yes, return instead of showing broken diff experience.
+            if (!session.tempFilePath) {
+                void vscode.window.showInformationMessage('Generated code changes have been reviewed and processed.')
+                return
+            }
+            const leftUri = fileExists ? vscode.Uri.file(filePath) : vscode.Uri.from({ scheme: 'untitled' })
+            const rightUri = vscode.Uri.file(session.tempFilePath ?? filePath)
+            const fileName = path.basename(filePath)
+            await vscode.commands.executeCommand('vscode.diff', leftUri, rightUri, `${fileName} ${amazonQTabSuffix}`)
+        } else {
+            const lineRanges = session.contexts.get(message.filePath)
 
-        if (!lineRanges) {
-            return
-        }
+            if (!lineRanges) {
+                return
+            }
 
-        // Check if clicked file is in a different workspace root
-        const projectRoot =
-            session.relativePathToWorkspaceRoot.get(message.filePath) || workspace.workspaceFolders?.[0]?.uri.fsPath
-        if (!projectRoot) {
-            return
-        }
-        let absoluteFilePath = path.join(projectRoot, message.filePath)
+            // Check if clicked file is in a different workspace root
+            const projectRoot =
+                session.relativePathToWorkspaceRoot.get(message.filePath) || workspace.workspaceFolders?.[0]?.uri.fsPath
+            if (!projectRoot) {
+                return
+            }
+            let absoluteFilePath = path.join(projectRoot, message.filePath)
 
-        // Handle clicking on a user prompt outside the workspace
-        if (message.filePath.endsWith(promptFileExtension)) {
+            // Handle clicking on a user prompt outside the workspace
+            if (message.filePath.endsWith(promptFileExtension)) {
+                try {
+                    await vscode.workspace.fs.stat(vscode.Uri.file(absoluteFilePath))
+                } catch {
+                    absoluteFilePath = path.join(getUserPromptsDirectory(), message.filePath)
+                }
+            }
+
             try {
-                await vscode.workspace.fs.stat(vscode.Uri.file(absoluteFilePath))
-            } catch {
-                absoluteFilePath = path.join(getUserPromptsDirectory(), message.filePath)
-            }
+                // Open the file in VSCode
+                const document = await workspace.openTextDocument(absoluteFilePath)
+                const editor = await window.showTextDocument(document, ViewColumn.Active)
+
+                // Create multiple selections based on line ranges
+                const selections: Selection[] = lineRanges
+                    .filter(({ first, second }) => first !== -1 && second !== -1)
+                    .map(({ first, second }) => {
+                        const startPosition = new Position(first - 1, 0) // Convert 1-based to 0-based
+                        const endPosition = new Position(second - 1, document.lineAt(second - 1).range.end.character)
+                        return new Selection(
+                            startPosition.line,
+                            startPosition.character,
+                            endPosition.line,
+                            endPosition.character
+                        )
+                    })
+
+                // Apply multiple selections to the editor
+                if (selections.length > 0) {
+                    editor.selection = selections[0] // Set the first selection as active
+                    editor.selections = selections // Apply multiple selections
+                    editor.revealRange(selections[0], vscode.TextEditorRevealType.InCenter)
+                }
+            } catch (error) {}
         }
-
-        try {
-            // Open the file in VSCode
-            const document = await workspace.openTextDocument(absoluteFilePath)
-            const editor = await window.showTextDocument(document, ViewColumn.Active)
-
-            // Create multiple selections based on line ranges
-            const selections: Selection[] = lineRanges
-                .filter(({ first, second }) => first !== -1 && second !== -1)
-                .map(({ first, second }) => {
-                    const startPosition = new Position(first - 1, 0) // Convert 1-based to 0-based
-                    const endPosition = new Position(second - 1, document.lineAt(second - 1).range.end.character)
-                    return new Selection(
-                        startPosition.line,
-                        startPosition.character,
-                        endPosition.line,
-                        endPosition.character
-                    )
-                })
-
-            // Apply multiple selections to the editor
-            if (selections.length > 0) {
-                editor.selection = selections[0] // Set the first selection as active
-                editor.selections = selections // Apply multiple selections
-                editor.revealRange(selections[0], vscode.TextEditorRevealType.InCenter)
-            }
-        } catch (error) {}
     }
 
     private processException(e: any, tabID: string) {
@@ -971,6 +965,7 @@ export class ChatController {
     private async processPromptMessageAsNewThread(message: PromptMessage) {
         const session = this.sessionStorage.getSession(message.tabID)
         session.clearListOfReadFiles()
+        session.setShowDiffOnFileWrite(false)
         this.editorContextExtractor
             .extractContextForTrigger('ChatMessage')
             .then(async (context) => {
