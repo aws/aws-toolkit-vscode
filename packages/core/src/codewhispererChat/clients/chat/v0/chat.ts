@@ -73,8 +73,6 @@ export class ChatSession {
     async chatSso(chatRequest: GenerateAssistantResponseRequest): Promise<GenerateAssistantResponseCommandOutput> {
         const client = await createCodeWhispererChatStreamingClient()
 
-        // eslint-disable-next-line aws-toolkits/no-console-log
-        console.log(chatRequest)
         const response = await client.generateAssistantResponse(chatRequest)
         if (!response.generateAssistantResponseResponse) {
             throw new ToolkitError(
