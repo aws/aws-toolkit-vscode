@@ -14,6 +14,7 @@ import {
 import { ChatTriggerType, TriggerPayload } from '../model'
 import { undefinedIfEmpty } from '../../../../shared/utilities/textUtilities'
 import { tools } from '../../../constants'
+import vscode from 'vscode'
 
 const fqnNameSizeDownLimit = 1
 const fqnNameSizeUpLimit = 256
@@ -116,7 +117,7 @@ export function triggerPayloadToChatRequest(triggerPayload: TriggerPayload): { c
                             cursorState,
                             relevantDocuments,
                             useRelevantDocuments,
-                            // TODO: Need workspace folders here after model update.
+                            workspaceFolders: vscode.workspace.workspaceFolders?.map(({ uri }) => uri.fsPath) ?? [],
                         },
                         additionalContext: triggerPayload.additionalContents,
                         tools,

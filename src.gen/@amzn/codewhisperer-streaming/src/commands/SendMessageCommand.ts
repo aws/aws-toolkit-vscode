@@ -101,6 +101,9 @@ export interface SendMessageCommandOutput extends SendMessageResponse, __Metadat
  *                 },
  *               ],
  *               useRelevantDocuments: true || false,
+ *               workspaceFolders: [ // WorkspaceFolderList
+ *                 "STRING_VALUE",
+ *               ],
  *             },
  *             shellState: { // ShellState
  *               shellName: "STRING_VALUE", // required
@@ -288,6 +291,9 @@ export interface SendMessageCommandOutput extends SendMessageResponse, __Metadat
  *               },
  *             ],
  *             useRelevantDocuments: true || false,
+ *             workspaceFolders: [
+ *               "STRING_VALUE",
+ *             ],
  *           },
  *           shellState: {
  *             shellName: "STRING_VALUE", // required
