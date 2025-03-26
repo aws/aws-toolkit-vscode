@@ -223,10 +223,12 @@ export type AdditionalContextInfo = {
     cwsprChatHasProjectContext?: boolean
 }
 
-// TODO move this to API definition (or just use this across the codebase)
-export type RelevantTextDocumentAddition = RelevantTextDocument & { startLine: number; endLine: number }
+export type LineInfo = { startLine: number; endLine: number }
 
-export type AdditionalContentEntryAddition = AdditionalContentEntry & { type: string; relativePath: string }
+// TODO move this to API definition (or just use this across the codebase)
+export type RelevantTextDocumentAddition = RelevantTextDocument & LineInfo
+
+export type AdditionalContentEntryAddition = AdditionalContentEntry & { type: string; relativePath: string } & LineInfo
 
 export interface DocumentReference {
     readonly relativeFilePath: string
