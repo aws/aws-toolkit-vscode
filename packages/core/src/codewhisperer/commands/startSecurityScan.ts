@@ -50,7 +50,6 @@ import {
 import { SecurityIssueTreeViewProvider } from '../service/securityIssueTreeViewProvider'
 import { ChatSessionManager } from '../../amazonqScan/chat/storages/chatSession'
 import { TelemetryHelper } from '../util/telemetryHelper'
-import { getWorkspacePaths } from '../../shared/utilities/workspaceUtils'
 
 const localize = nls.loadMessageBundle()
 export const stopScanButton = localize('aws.codewhisperer.stopscan', 'Stop Scan')
@@ -157,7 +156,7 @@ export async function startSecurityScan(
             })
         }
         const zipMetadata = await zipUtil.generateZip(editor?.document.uri, scope)
-        const projectPaths = getWorkspacePaths()
+        const projectPaths = zipUtil.getProjectPaths()
 
         const contextTruncationStartTime = performance.now()
         codeScanTelemetryEntry.contextTruncationDuration = performance.now() - contextTruncationStartTime
