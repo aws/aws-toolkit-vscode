@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "/transform: ask user for permission to rerun job and view logs at end of partially successful transformation"
+}
