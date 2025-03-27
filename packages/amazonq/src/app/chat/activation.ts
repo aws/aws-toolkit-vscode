@@ -16,11 +16,7 @@ export async function activate(context: ExtensionContext) {
     const appInitContext = amazonq.DefaultAmazonQAppInitContext.instance
 
     registerApps(appInitContext, context)
-    const serviceName = process.env.SERVICE_NAME ?? 'SageMakerUnifiedStudio' // Fallback service name to a generic name AmazonQ
-    const amazonQState = amazonq.AmazonQState.initialize(serviceName)
-    getLogger().info(`In Extension activation - q state is initialized ${amazonQState.serviceName}`)
-    // Create a context key for SageMaker Studio state and set in context
-    await setContext('aws.amazonq.isSagemakerStudio', amazonQState.isSageMakerUnifiedStudio())
+    await setupAmazonQState()
 
     const provider = new amazonq.AmazonQChatViewProvider(
         context,
@@ -68,6 +64,14 @@ export async function activate(context: ExtensionContext) {
 
     void setupLsp()
     void setupAuthNotification()
+
+    async function setupAmazonQState() {
+        const serviceName = process.env.SERVICE_NAME ?? 'AmazonQ' // Fallback service name to a generic name AmazonQ
+        const amazonQState = amazonq.AmazonQState.initialize(serviceName)
+        getLogger().info(`In Extension activation - q state is initialized ${amazonQState.serviceName}`)
+        // Create a context key for SageMaker Studio state and set in context
+        await setContext('aws.amazonq.isSagemakerUnifiedStudio', amazonQState.isSageMakerUnifiedStudio())
+    }
 }
 
 function registerApps(appInitContext: amazonq.AmazonQAppInitContext, context: ExtensionContext) {
