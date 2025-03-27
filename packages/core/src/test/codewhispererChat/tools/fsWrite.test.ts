@@ -3,11 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import {
-    AppendCommand,
-    CreateCommand,
+    AppendParams,
+    CreateParams,
     FsWrite,
-    InsertCommand,
-    StrReplaceCommand,
+    InsertParams,
+    StrReplaceParams,
 } from '../../../codewhispererChat/tools/fsWrite'
 import { TestFolder } from '../../testUtil'
 import path from 'path'
@@ -34,12 +34,13 @@ describe('FsWrite Tool', function () {
             const fileExists = await fs.existsFile(filePath)
             assert.ok(!fileExists)
 
-            const command: CreateCommand = {
+            const params: CreateParams = {
                 command: 'create',
                 fileText: 'Hello World',
                 path: filePath,
             }
-            const output = await FsWrite.invoke(command)
+            const fsWrite = new FsWrite(params)
+            const output = await fsWrite.invoke(process.stdout)
 
             const content = await fs.readFileText(filePath)
             assert.strictEqual(content, 'Hello World')
@@ -52,12 +53,13 @@ describe('FsWrite Tool', function () {
             const fileExists = await fs.existsFile(filePath)
             assert.ok(fileExists)
 
-            const command: CreateCommand = {
+            const params: CreateParams = {
                 command: 'create',
                 fileText: 'Goodbye',
                 path: filePath,
             }
-            const output = await FsWrite.invoke(command)
+            const fsWrite = new FsWrite(params)
+            const output = await fsWrite.invoke(process.stdout)
 
             const content = await fs.readFileText(filePath)
             assert.strictEqual(content, 'Goodbye')
@@ -68,12 +70,13 @@ describe('FsWrite Tool', function () {
         it('uses newStr when fileText is not provided', async function () {
             const filePath = path.join(testFolder.path, 'file2.txt')
 
-            const command: CreateCommand = {
+            const params: CreateParams = {
                 command: 'create',
                 newStr: 'Hello World',
                 path: filePath,
             }
-            const output = await FsWrite.invoke(command)
+            const fsWrite = new FsWrite(params)
+            const output = await fsWrite.invoke(process.stdout)
 
             const content = await fs.readFileText(filePath)
             assert.strictEqual(content, 'Hello World')
@@ -84,11 +87,12 @@ describe('FsWrite Tool', function () {
         it('creates an empty file when no content is provided', async function () {
             const filePath = path.join(testFolder.path, 'file3.txt')
 
-            const command: CreateCommand = {
+            const params: CreateParams = {
                 command: 'create',
                 path: filePath,
             }
-            const output = await FsWrite.invoke(command)
+            const fsWrite = new FsWrite(params)
+            const output = await fsWrite.invoke(process.stdout)
 
             const content = await fs.readFileText(filePath)
             assert.strictEqual(content, '')
@@ -106,13 +110,14 @@ describe('FsWrite Tool', function () {
             const filePath = path.join(testFolder.path, 'file1.txt')
             await fs.writeFile(filePath, 'Hello World')
 
-            const command: StrReplaceCommand = {
+            const params: StrReplaceParams = {
                 command: 'strReplace',
                 path: filePath,
                 oldStr: 'Hello',
                 newStr: 'Goodbye',
             }
-            const output = await FsWrite.invoke(command)
+            const fsWrite = new FsWrite(params)
+            const output = await fsWrite.invoke(process.stdout)
 
             const content = await fs.readFileText(filePath)
             assert.strictEqual(content, 'Goodbye World')
@@ -123,29 +128,31 @@ describe('FsWrite Tool', function () {
         it('throws error when no matches are found', async function () {
             const filePath = path.join(testFolder.path, 'file1.txt')
 
-            const command: StrReplaceCommand = {
+            const params: StrReplaceParams = {
                 command: 'strReplace',
                 path: filePath,
                 oldStr: 'Invalid',
                 newStr: 'Goodbye',
             }
 
-            await assert.rejects(() => FsWrite.invoke(command), /No occurrences of "Invalid" were found/)
+            const fsWrite = new FsWrite(params)
+            await assert.rejects(() => fsWrite.invoke(process.stdout), /No occurrences of "Invalid" were found/)
         })
 
         it('throws error when multiple matches are found', async function () {
             const filePath = path.join(testFolder.path, 'file2.txt')
             await fs.writeFile(filePath, 'Hello Hello World')
 
-            const command: StrReplaceCommand = {
+            const params: StrReplaceParams = {
                 command: 'strReplace',
                 path: filePath,
                 oldStr: 'Hello',
                 newStr: 'Goodbye',
             }
 
+            const fsWrite = new FsWrite(params)
             await assert.rejects(
-                () => FsWrite.invoke(command),
+                () => fsWrite.invoke(process.stdout),
                 /2 occurrences of oldStr were found when only 1 is expected/
             )
         })
@@ -154,13 +161,14 @@ describe('FsWrite Tool', function () {
             const filePath = path.join(testFolder.path, 'file3.txt')
             await fs.writeFile(filePath, 'Text with special chars: .*+?^${}()|[]\\')
 
-            const command: StrReplaceCommand = {
+            const params: StrReplaceParams = {
                 command: 'strReplace',
                 path: filePath,
                 oldStr: '.*+?^${}()|[]\\',
                 newStr: 'REPLACED',
             }
-            const output = await FsWrite.invoke(command)
+            const fsWrite = new FsWrite(params)
+            const output = await fsWrite.invoke(process.stdout)
 
             const content = await fs.readFileText(filePath)
             assert.strictEqual(content, 'Text with special chars: REPLACED')
@@ -172,13 +180,14 @@ describe('FsWrite Tool', function () {
             const filePath = path.join(testFolder.path, 'file4.txt')
             await fs.writeFile(filePath, 'Line 1\n  Indented line\nLine 3')
 
-            const command: StrReplaceCommand = {
+            const params: StrReplaceParams = {
                 command: 'strReplace',
                 path: filePath,
                 oldStr: '  Indented line\n',
                 newStr: '    Double indented\n',
             }
-            const output = await FsWrite.invoke(command)
+            const fsWrite = new FsWrite(params)
+            const output = await fsWrite.invoke(process.stdout)
 
             const content = await fs.readFileText(filePath)
             assert.strictEqual(content, 'Line 1\n    Double indented\nLine 3')
@@ -196,13 +205,14 @@ describe('FsWrite Tool', function () {
             const filePath = path.join(testFolder.path, 'file1.txt')
             await fs.writeFile(filePath, 'Line 1\nLine 2\nLine 3\nLine 4')
 
-            const command: InsertCommand = {
+            const params: InsertParams = {
                 command: 'insert',
                 path: filePath,
                 insertLine: 2,
                 newStr: 'New Line',
             }
-            const output = await FsWrite.invoke(command)
+            const fsWrite = new FsWrite(params)
+            const output = await fsWrite.invoke(process.stdout)
 
             const newContent = await fs.readFileText(filePath)
             assert.strictEqual(newContent, 'Line 1\nLine 2\nNew Line\nLine 3\nLine 4')
@@ -212,13 +222,14 @@ describe('FsWrite Tool', function () {
 
         it('inserts text at the beginning when line number is 0', async function () {
             const filePath = path.join(testFolder.path, 'file1.txt')
-            const command: InsertCommand = {
+            const params: InsertParams = {
                 command: 'insert',
                 path: filePath,
                 insertLine: 0,
                 newStr: 'New First Line',
             }
-            const output = await FsWrite.invoke(command)
+            const fsWrite = new FsWrite(params)
+            const output = await fsWrite.invoke(process.stdout)
 
             const newContent = await fs.readFileText(filePath)
             assert.strictEqual(newContent, 'New First Line\nLine 1\nLine 2\nNew Line\nLine 3\nLine 4')
@@ -228,13 +239,14 @@ describe('FsWrite Tool', function () {
 
         it('inserts text at the end when line number exceeds file length', async function () {
             const filePath = path.join(testFolder.path, 'file1.txt')
-            const command: InsertCommand = {
+            const params: InsertParams = {
                 command: 'insert',
                 path: filePath,
                 insertLine: 10,
                 newStr: 'New Last Line',
             }
-            const output = await FsWrite.invoke(command)
+            const fsWrite = new FsWrite(params)
+            const output = await fsWrite.invoke(process.stdout)
 
             const newContent = await fs.readFileText(filePath)
             assert.strictEqual(newContent, 'New First Line\nLine 1\nLine 2\nNew Line\nLine 3\nLine 4\nNew Last Line')
@@ -246,13 +258,14 @@ describe('FsWrite Tool', function () {
             const filePath = path.join(testFolder.path, 'file2.txt')
             await fs.writeFile(filePath, '')
 
-            const command: InsertCommand = {
+            const params: InsertParams = {
                 command: 'insert',
                 path: filePath,
                 insertLine: 0,
                 newStr: 'First Line',
             }
-            const output = await FsWrite.invoke(command)
+            const fsWrite = new FsWrite(params)
+            const output = await fsWrite.invoke(process.stdout)
 
             const newContent = await fs.readFileText(filePath)
             assert.strictEqual(newContent, 'First Line\n')
@@ -263,13 +276,14 @@ describe('FsWrite Tool', function () {
         it('handles negative line numbers by inserting at the beginning', async function () {
             const filePath = path.join(testFolder.path, 'file2.txt')
 
-            const command: InsertCommand = {
+            const params: InsertParams = {
                 command: 'insert',
                 path: filePath,
                 insertLine: -1,
                 newStr: 'New First Line',
             }
-            const output = await FsWrite.invoke(command)
+            const fsWrite = new FsWrite(params)
+            const output = await fsWrite.invoke(process.stdout)
 
             const newContent = await fs.readFileText(filePath)
             assert.strictEqual(newContent, 'New First Line\nFirst Line\n')
@@ -280,14 +294,15 @@ describe('FsWrite Tool', function () {
         it('throws error when file does not exist', async function () {
             const filePath = path.join(testFolder.path, 'nonexistent.txt')
 
-            const command: InsertCommand = {
+            const params: InsertParams = {
                 command: 'insert',
                 path: filePath,
                 insertLine: 1,
                 newStr: 'New Line',
             }
 
-            await assert.rejects(() => FsWrite.invoke(command), /no such file or directory/)
+            const fsWrite = new FsWrite(params)
+            await assert.rejects(() => fsWrite.invoke(process.stdout), /no such file or directory/)
         })
     })
 
@@ -300,13 +315,14 @@ describe('FsWrite Tool', function () {
             const filePath = path.join(testFolder.path, 'file1.txt')
             await fs.writeFile(filePath, 'Line 1\nLine 2\nLine 3\n')
 
-            const command: AppendCommand = {
+            const params: AppendParams = {
                 command: 'append',
                 path: filePath,
                 newStr: 'Line 4',
             }
 
-            const output = await FsWrite.invoke(command)
+            const fsWrite = new FsWrite(params)
+            const output = await fsWrite.invoke(process.stdout)
 
             const newContent = await fs.readFileText(filePath)
             assert.strictEqual(newContent, 'Line 1\nLine 2\nLine 3\nLine 4')
@@ -318,13 +334,14 @@ describe('FsWrite Tool', function () {
             const filePath = path.join(testFolder.path, 'file2.txt')
             await fs.writeFile(filePath, 'Line 1\nLine 2\nLine 3')
 
-            const command: AppendCommand = {
+            const params: AppendParams = {
                 command: 'append',
                 path: filePath,
                 newStr: 'Line 4',
             }
 
-            const output = await FsWrite.invoke(command)
+            const fsWrite = new FsWrite(params)
+            const output = await fsWrite.invoke(process.stdout)
 
             const newContent = await fs.readFileText(filePath)
             assert.strictEqual(newContent, 'Line 1\nLine 2\nLine 3\nLine 4')
@@ -336,13 +353,13 @@ describe('FsWrite Tool', function () {
             const filePath = path.join(testFolder.path, 'file3.txt')
             await fs.writeFile(filePath, '')
 
-            const command: AppendCommand = {
+            const params: AppendParams = {
                 command: 'append',
                 path: filePath,
                 newStr: 'Line 1',
             }
-
-            const output = await FsWrite.invoke(command)
+            const fsWrite = new FsWrite(params)
+            const output = await fsWrite.invoke(process.stdout)
 
             const newContent = await fs.readFileText(filePath)
             assert.strictEqual(newContent, 'Line 1')
@@ -353,12 +370,13 @@ describe('FsWrite Tool', function () {
         it('appends multiple lines correctly', async function () {
             const filePath = path.join(testFolder.path, 'file3.txt')
 
-            const command: AppendCommand = {
+            const params: AppendParams = {
                 command: 'append',
                 path: filePath,
                 newStr: 'Line 2\nLine 3',
             }
-            const output = await FsWrite.invoke(command)
+            const fsWrite = new FsWrite(params)
+            const output = await fsWrite.invoke(process.stdout)
 
             const newContent = await fs.readFileText(filePath)
             assert.strictEqual(newContent, 'Line 1\nLine 2\nLine 3')
@@ -369,12 +387,13 @@ describe('FsWrite Tool', function () {
         it('handles appending empty string', async function () {
             const filePath = path.join(testFolder.path, 'file3.txt')
 
-            const command: AppendCommand = {
+            const params: AppendParams = {
                 command: 'append',
                 path: filePath,
                 newStr: '',
             }
-            const output = await FsWrite.invoke(command)
+            const fsWrite = new FsWrite(params)
+            const output = await fsWrite.invoke(process.stdout)
 
             const newContent = await fs.readFileText(filePath)
             assert.strictEqual(newContent, 'Line 1\nLine 2\nLine 3\n')
@@ -385,13 +404,14 @@ describe('FsWrite Tool', function () {
         it('throws error when file does not exist', async function () {
             const filePath = path.join(testFolder.path, 'nonexistent.txt')
 
-            const command: AppendCommand = {
+            const params: AppendParams = {
                 command: 'append',
                 path: filePath,
                 newStr: 'New Line',
             }
 
-            await assert.rejects(() => FsWrite.invoke(command), /no such file or directory/)
+            const fsWrite = new FsWrite(params)
+            await assert.rejects(() => fsWrite.invoke(process.stdout), /no such file or directory/)
         })
     })
 })

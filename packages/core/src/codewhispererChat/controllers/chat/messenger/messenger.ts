@@ -42,7 +42,7 @@ import { helpMessage } from '../../../../amazonq/webview/ui/texts/constants'
 import { ChatItemButton, ChatItemFormItem, MynahUIDataModel } from '@aws/mynah-ui'
 import { ChatHistoryManager } from '../../../storages/chatHistory'
 import { ExecuteBashParams } from '../../../tools/executeBash'
-import { FsWriteCommand } from '../../../tools/fsWrite'
+import { FsWriteParams } from '../../../tools/fsWrite'
 
 export type StaticTextResponseType = 'quick-action-help' | 'onboarding-help' | 'transform' | 'help'
 
@@ -639,7 +639,7 @@ export class Messenger {
         using the \`executeBash\` tool.`
         }
         if (toolUse.name === 'fsWrite') {
-            const input = toolUse.input as unknown as FsWriteCommand
+            const input = toolUse.input as unknown as FsWriteParams
             switch (input.command) {
                 case 'create': {
                     return `Writing

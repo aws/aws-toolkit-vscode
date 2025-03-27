@@ -45,7 +45,12 @@ import { EditorContextCommand } from '../../commands/registerCommands'
 import { PromptsGenerator } from './prompts/promptsGenerator'
 import { TriggerEventsStorage } from '../../storages/triggerEvents'
 import { SendMessageRequest } from '@amzn/amazon-q-developer-streaming-client'
-import { CodeWhispererStreamingServiceException, Origin, ToolResult } from '@amzn/codewhisperer-streaming'
+import {
+    CodeWhispererStreamingServiceException,
+    Origin,
+    ToolResult,
+    ToolResultStatus,
+} from '@amzn/codewhisperer-streaming'
 import { UserIntentRecognizer } from './userIntent/userIntentRecognizer'
 import { CWCTelemetryHelper, recordTelemetryChatRunCommand } from './telemetryHelper'
 import { CodeWhispererTracker } from '../../../codewhisperer/tracker/codewhispererTracker'
@@ -57,7 +62,7 @@ import { randomUUID } from '../../../shared/crypto'
 import { LspController } from '../../../amazonq/lsp/lspController'
 import { CodeWhispererSettings } from '../../../codewhisperer/util/codewhispererSettings'
 import { getSelectedCustomization } from '../../../codewhisperer/util/customizationUtil'
-import { getHttpStatusCode, AwsClientResponseError, ToolkitError } from '../../../shared/errors'
+import { getHttpStatusCode, AwsClientResponseError } from '../../../shared/errors'
 import { uiEventRecorder } from '../../../amazonq/util/eventRecorder'
 import { telemetry } from '../../../shared/telemetry/telemetry'
 import { isSsoConnection } from '../../../auth/connection'
@@ -84,10 +89,8 @@ import {
 import { ChatSession } from '../../clients/chat/v0/chat'
 import { ChatHistoryManager } from '../../storages/chatHistory'
 import { amazonQTabSuffix } from '../../../shared/constants'
-import { FsRead, FsReadParams } from '../../tools/fsRead'
-import { InvokeOutput, OutputKind } from '../../tools/toolShared'
-import { FsWrite, FsWriteCommand } from '../../tools/fsWrite'
-import { ExecuteBash, ExecuteBashParams } from '../../tools/executeBash'
+import { OutputKind } from '../../tools/toolShared'
+import { ToolUtils, Tool } from '../../tools/toolUtils'
 import { ChatStream } from '../../tools/chatStream'
 
 export interface ChatControllerMessagePublishers {
@@ -945,54 +948,37 @@ export class ChatController {
                 }
                 session.setToolUse(undefined)
 
-                let result: InvokeOutput | undefined = undefined
                 const toolResults: ToolResult[] = []
-                try {
-                    switch (toolUse.name) {
-                        case 'executeBash': {
-                            const executeBash = new ExecuteBash(toolUse.input as unknown as ExecuteBashParams)
-                            await executeBash.validate()
-                            const chatStream = new ChatStream(this.messenger, tabID, triggerID, toolUse.toolUseId)
-                            result = await executeBash.invoke(chatStream)
-                            break
-                        }
-                        case 'fsRead': {
-                            const fsRead = new FsRead(toolUse.input as unknown as FsReadParams)
-                            await fsRead.validate()
-                            result = await fsRead.invoke()
-                            break
-                        }
-                        case 'fsWrite': {
-                            const input = toolUse.input as unknown as FsWriteCommand
-                            await FsWrite.validate(input)
-                            result = await FsWrite.invoke(input)
-                            break
-                        }
-                        default:
-                            throw new ToolkitError(`Unsupported tool: ${toolUse.name}`)
-                    }
-                    if (!result) {
-                        throw new ToolkitError('Failed to execute tool and get results')
-                    }
 
-                    toolResults.push({
-                        content: [
-                            result.output.kind === OutputKind.Text
-                                ? { text: result.output.content }
-                                : { json: result.output.content },
-                        ],
-                        toolUseId: toolUse.toolUseId,
-                        status: 'success',
-                    })
-                } catch (e: any) {
-                    const errorMessage = e instanceof Error ? e.message : 'Unknown error occurred during tool execution'
-                    getLogger().debug(`Tool execution failed: ${toolUse.name} - ${errorMessage}`)
+                const result = ToolUtils.tryFromToolUse(toolUse)
+                if ('type' in result) {
+                    const tool: Tool = result
 
-                    toolResults.push({
-                        content: [{ text: errorMessage }],
-                        toolUseId: toolUse.toolUseId,
-                        status: 'error',
-                    })
+                    try {
+                        await ToolUtils.validate(tool)
+
+                        const chatStream = new ChatStream(this.messenger, tabID, triggerID, toolUse.toolUseId)
+                        const output = await ToolUtils.invoke(tool, chatStream)
+
+                        toolResults.push({
+                            content: [
+                                output.output.kind === OutputKind.Text
+                                    ? { text: output.output.content }
+                                    : { json: output.output.content },
+                            ],
+                            toolUseId: toolUse.toolUseId,
+                            status: ToolResultStatus.SUCCESS,
+                        })
+                    } catch (e: any) {
+                        toolResults.push({
+                            content: [{ text: e.message }],
+                            toolUseId: toolUse.toolUseId,
+                            status: ToolResultStatus.ERROR,
+                        })
+                    }
+                } else {
+                    const toolResult: ToolResult = result
+                    toolResults.push(toolResult)
                 }
 
                 await this.generateResponse(

@@ -7,6 +7,7 @@ import { getLogger } from '../../shared/logger/logger'
 import { readDirectoryRecursively } from '../../shared/utilities/workspaceUtils'
 import fs from '../../shared/fs/fs'
 import { InvokeOutput, maxToolResponseSize, OutputKind, sanitizePath } from './toolShared'
+import { Writable } from 'stream'
 
 export interface FsReadParams {
     path: string
@@ -48,7 +49,9 @@ export class FsRead {
         this.logger.debug(`Validation succeeded for path: ${this.fsPath}`)
     }
 
-    public async invoke(): Promise<InvokeOutput> {
+    public queueDescription(updates: Writable): void {}
+
+    public async invoke(updates: Writable): Promise<InvokeOutput> {
         try {
             const fileUri = vscode.Uri.file(this.fsPath)
 
@@ -120,7 +123,7 @@ export class FsRead {
         const byteCount = Buffer.byteLength(content, 'utf8')
         if (byteCount > maxToolResponseSize) {
             throw new Error(
-                `This tool only supports reading ${maxToolResponseSize} bytes at a time. 
+                `This tool only supports reading ${maxToolResponseSize} bytes at a time.
                 You tried to read ${byteCount} bytes. Try executing with fewer lines specified.`
             )
         }

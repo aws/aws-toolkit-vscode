@@ -7,54 +7,57 @@ import { InvokeOutput, OutputKind, sanitizePath } from './toolShared'
 import { getLogger } from '../../shared/logger/logger'
 import vscode from 'vscode'
 import { fs } from '../../shared/fs/fs'
+import { Writable } from 'stream'
 
-interface BaseCommand {
+interface BaseParams {
     path: string
 }
 
-export interface CreateCommand extends BaseCommand {
+export interface CreateParams extends BaseParams {
     command: 'create'
     fileText?: string
     newStr?: string
 }
 
-export interface StrReplaceCommand extends BaseCommand {
+export interface StrReplaceParams extends BaseParams {
     command: 'strReplace'
     oldStr: string
     newStr: string
 }
 
-export interface InsertCommand extends BaseCommand {
+export interface InsertParams extends BaseParams {
     command: 'insert'
     insertLine: number
     newStr: string
 }
 
-export interface AppendCommand extends BaseCommand {
+export interface AppendParams extends BaseParams {
     command: 'append'
     newStr: string
 }
 
-export type FsWriteCommand = CreateCommand | StrReplaceCommand | InsertCommand | AppendCommand
+export type FsWriteParams = CreateParams | StrReplaceParams | InsertParams | AppendParams
 
 export class FsWrite {
-    private static readonly logger = getLogger('fsWrite')
+    private readonly logger = getLogger('fsWrite')
 
-    public static async invoke(command: FsWriteCommand): Promise<InvokeOutput> {
-        const sanitizedPath = sanitizePath(command.path)
+    constructor(private readonly params: FsWriteParams) {}
 
-        switch (command.command) {
+    public async invoke(updates: Writable): Promise<InvokeOutput> {
+        const sanitizedPath = sanitizePath(this.params.path)
+
+        switch (this.params.command) {
             case 'create':
-                await this.handleCreate(command, sanitizedPath)
+                await this.handleCreate(this.params, sanitizedPath)
                 break
             case 'strReplace':
-                await this.handleStrReplace(command, sanitizedPath)
+                await this.handleStrReplace(this.params, sanitizedPath)
                 break
             case 'insert':
-                await this.handleInsert(command, sanitizedPath)
+                await this.handleInsert(this.params, sanitizedPath)
                 break
             case 'append':
-                await this.handleAppend(command, sanitizedPath)
+                await this.handleAppend(this.params, sanitizedPath)
                 break
         }
 
@@ -66,34 +69,36 @@ export class FsWrite {
         }
     }
 
-    public static async validate(command: FsWriteCommand): Promise<void> {
-        switch (command.command) {
+    public queueDescription(updates: Writable): void {}
+
+    public async validate(): Promise<void> {
+        switch (this.params.command) {
             case 'create':
-                if (!command.path) {
+                if (!this.params.path) {
                     throw new Error('Path must not be empty')
                 }
                 break
             case 'strReplace':
             case 'insert': {
-                const fileExists = await fs.existsFile(command.path)
+                const fileExists = await fs.existsFile(this.params.path)
                 if (!fileExists) {
                     throw new Error('The provided path must exist in order to replace or insert contents into it')
                 }
                 break
             }
             case 'append':
-                if (!command.path) {
+                if (!this.params.path) {
                     throw new Error('Path must not be empty')
                 }
-                if (!command.newStr) {
+                if (!this.params.newStr) {
                     throw new Error('Content to append must not be empty')
                 }
                 break
         }
     }
 
-    private static async handleCreate(command: CreateCommand, sanitizedPath: string): Promise<void> {
-        const content = this.getCreateCommandText(command)
+    private async handleCreate(params: CreateParams, sanitizedPath: string): Promise<void> {
+        const content = this.getCreateCommandText(params)
 
         const fileExists = await fs.existsFile(sanitizedPath)
         const actionType = fileExists ? 'Replacing' : 'Creating'
@@ -110,36 +115,36 @@ export class FsWrite {
         )
     }
 
-    private static async handleStrReplace(command: StrReplaceCommand, sanitizedPath: string): Promise<void> {
+    private async handleStrReplace(params: StrReplaceParams, sanitizedPath: string): Promise<void> {
         const fileContent = await fs.readFileText(sanitizedPath)
 
-        const matches = [...fileContent.matchAll(new RegExp(this.escapeRegExp(command.oldStr), 'g'))]
+        const matches = [...fileContent.matchAll(new RegExp(this.escapeRegExp(params.oldStr), 'g'))]
 
         if (matches.length === 0) {
-            throw new Error(`No occurrences of "${command.oldStr}" were found`)
+            throw new Error(`No occurrences of "${params.oldStr}" were found`)
         }
         if (matches.length > 1) {
             throw new Error(`${matches.length} occurrences of oldStr were found when only 1 is expected`)
         }
 
-        const newContent = fileContent.replace(command.oldStr, command.newStr)
+        const newContent = fileContent.replace(params.oldStr, params.newStr)
         await fs.writeFile(sanitizedPath, newContent)
 
         void vscode.window.showInformationMessage(`Updated: ${sanitizedPath}`)
     }
 
-    private static async handleInsert(command: InsertCommand, sanitizedPath: string): Promise<void> {
+    private async handleInsert(params: InsertParams, sanitizedPath: string): Promise<void> {
         const fileContent = await fs.readFileText(sanitizedPath)
         const lines = fileContent.split('\n')
 
         const numLines = lines.length
-        const insertLine = Math.max(0, Math.min(command.insertLine, numLines))
+        const insertLine = Math.max(0, Math.min(params.insertLine, numLines))
 
         let newContent: string
         if (insertLine === 0) {
-            newContent = command.newStr + '\n' + fileContent
+            newContent = params.newStr + '\n' + fileContent
         } else {
-            newContent = [...lines.slice(0, insertLine), command.newStr, ...lines.slice(insertLine)].join('\n')
+            newContent = [...lines.slice(0, insertLine), params.newStr, ...lines.slice(insertLine)].join('\n')
         }
 
         await fs.writeFile(sanitizedPath, newContent)
@@ -147,11 +152,11 @@ export class FsWrite {
         void vscode.window.showInformationMessage(`Updated: ${sanitizedPath}`)
     }
 
-    private static async handleAppend(command: AppendCommand, sanitizedPath: string): Promise<void> {
+    private async handleAppend(params: AppendParams, sanitizedPath: string): Promise<void> {
         const fileContent = await fs.readFileText(sanitizedPath)
         const needsNewline = fileContent.length !== 0 && !fileContent.endsWith('\n')
 
-        let contentToAppend = command.newStr
+        let contentToAppend = params.newStr
         if (needsNewline) {
             contentToAppend = '\n' + contentToAppend
         }
@@ -162,19 +167,19 @@ export class FsWrite {
         void vscode.window.showInformationMessage(`Updated: ${sanitizedPath}`)
     }
 
-    private static getCreateCommandText(command: CreateCommand): string {
-        if (command.fileText) {
-            return command.fileText
+    private getCreateCommandText(params: CreateParams): string {
+        if (params.fileText) {
+            return params.fileText
         }
-        if (command.newStr) {
+        if (params.newStr) {
             this.logger.warn('Required field `fileText` is missing, use the provided `newStr` instead')
-            return command.newStr
+            return params.newStr
         }
         this.logger.warn('No content provided for the create command')
         return ''
     }
 
-    private static escapeRegExp(string: string): string {
+    private escapeRegExp(string: string): string {
         return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
     }
 }
