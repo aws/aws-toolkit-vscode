@@ -90,8 +90,8 @@ import { ChatSession } from '../../clients/chat/v0/chat'
 import { ChatHistoryManager } from '../../storages/chatHistory'
 import { amazonQTabSuffix } from '../../../shared/constants'
 import { OutputKind } from '../../tools/toolShared'
-import { Writable } from 'stream'
 import { ToolUtils, Tool } from '../../tools/toolUtils'
+import { ChatStream } from '../../tools/chatStream'
 
 export interface ChatControllerMessagePublishers {
     readonly processPromptChatMessage: MessagePublisher<PromptMessage>
@@ -957,8 +957,8 @@ export class ChatController {
                     try {
                         await ToolUtils.validate(tool)
 
-                        const outputStream = new Writable()
-                        const output = await ToolUtils.invoke(tool, outputStream)
+                        const chatStream = new ChatStream(this.messenger, tabID, triggerID, toolUse.toolUseId)
+                        const output = await ToolUtils.invoke(tool, chatStream)
 
                         toolResults.push({
                             content: [
