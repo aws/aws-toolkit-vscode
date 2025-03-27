@@ -10,8 +10,9 @@
         },
         {
             "label": "watch",
-            "type": "npm",
-            "script": "watch",
+            "type": "shell",
+            "command": "npm",
+            "args": ["run", "watch"],
             "problemMatcher": "$tsc-watch",
             "isBackground": true
         },
