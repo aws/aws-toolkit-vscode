@@ -12,6 +12,7 @@ export enum ButtonActions {
     VIEW_DIFF = 'View-Diff',
     STOP_TEST_GEN = 'Stop-Test-Generation',
     STOP_BUILD = 'Stop-Build-Process',
+    STOP_FIXING_TEST = 'Stop-Fixing-Test',
     PROVIDE_FEEDBACK = 'Provide-Feedback',
 }
 

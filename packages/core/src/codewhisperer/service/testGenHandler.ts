@@ -41,6 +41,7 @@ import fs from '../../shared/fs/fs'
 export function throwIfCancelled() {
     // TODO: fileName will be '' if user gives propt without opening
     if (testGenState.isCancelling()) {
+        testGenState.setToNotStarted()
         throw new TestGenStoppedError()
     }
 }
@@ -151,11 +152,14 @@ export async function pollTestJobStatus(
         logger.debug('pollTestJobStatus testGenerationJob %O', resp.testGenerationJob)
         ChatSessionManager.Instance.getSession().testGenerationJob = resp.testGenerationJob
         const progressRate = resp.testGenerationJob?.progressRate ?? 0
-        testGenState.getChatControllers()?.sendUpdatePromptProgress.fire({
-            tabID: ChatSessionManager.Instance.getSession().tabID,
-            status: 'InProgress',
-            progressRate,
-        })
+        if (initialExecution) {
+            testGenState.getChatControllers()?.sendUpdatePromptProgress.fire({
+                tabID: ChatSessionManager.Instance.getSession().tabID,
+                status: 'InProgress',
+                progressRate,
+            })
+        }
+
         const jobSummary = resp.testGenerationJob?.jobSummary ?? ''
         const jobSummaryNoBackticks = jobSummary.replace(/^`+|`+$/g, '')
         ChatSessionManager.Instance.getSession().jobSummary = jobSummaryNoBackticks
@@ -164,7 +168,8 @@ export async function pollTestJobStatus(
         const targetFileInfo = packageInfo?.targetFileInfoList?.[0]
 
         if (packageInfo) {
-            // TODO: will need some fields from packageInfo such as buildCommand, packagePlan, packageSummary
+            // TODO: will use some fields from packageInfo in the future
+            ChatSessionManager.Instance.getSession().packageInfo = packageInfo
         }
         if (targetFileInfo) {
             if (targetFileInfo.numberOfTestMethods) {
@@ -261,13 +266,11 @@ export async function exportResultsArchive(
                 filePath: testFilePath,
                 projectName,
             })
-
-            // If User accepts the diff
-            testGenState.getChatControllers()?.sendUpdatePromptProgress.fire({
-                tabID: ChatSessionManager.Instance.getSession().tabID,
-                status: 'Completed',
-            })
         }
+        testGenState.getChatControllers()?.sendUpdatePromptProgress.fire({
+            tabID: ChatSessionManager.Instance.getSession().tabID,
+            status: 'Completed',
+        })
     } catch (e) {
         session.numberOfTestsGenerated = 0
         downloadErrorMessage = (e as Error).message

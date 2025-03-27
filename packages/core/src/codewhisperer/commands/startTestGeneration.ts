@@ -42,6 +42,7 @@ export async function startTestGenerationProcess(
             logger.verbose(`Tab ID mismatch: ${tabID} !== ${session.tabID}`)
             return
         }
+        testGenState.setToNotStarted()
         /**
          * Step 1: Zip the project
          */
@@ -51,7 +52,6 @@ export async function startTestGenerationProcess(
             const projectPath = zipUtil.getProjectPath(filePath) ?? ''
             const relativeTargetPath = path.relative(projectPath, filePath)
             session.listOfTestGenerationJobId = []
-            session.shortAnswer = undefined
             session.sourceFilePath = relativeTargetPath
             session.projectRootPath = projectPath
             session.listOfTestGenerationJobId = []
@@ -205,7 +205,7 @@ function runLocalBuild(
         if (spawnResult.stderr) {
             spawnResult.stderr.on('data', async (data) => {
                 const output = data.toString().trim()
-                getLogger().warn(`BUILD ERROR: ${output}`)
+                getLogger().warn(`${output}`)
                 buildLogs += output
             })
         }
