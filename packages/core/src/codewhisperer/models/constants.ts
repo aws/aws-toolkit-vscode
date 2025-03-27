@@ -472,9 +472,6 @@ export const amazonQFeedbackKey = 'Amazon Q'
 
 export const amazonQFeedbackText = 'Submit feedback'
 
-export const codeTransformTroubleshootStartJobFailed =
-    'https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/transform-java.html#quotas-java-transformation-ide'
-
 export const codeTransformTroubleshootProjectSize =
     'https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/troubleshooting-code-transformation.html#reduce-project-size'
 
@@ -617,13 +614,11 @@ export const failedToStartJobChatMessage =
 export const failedToStartJobNotification =
     'Amazon Q could not begin the transformation. Please try starting the transformation again.'
 
-export const tooManyJobsChatMessage = `Sorry, I couldn't begin the transformation. You have too many active transformations running. Please try again after your other transformations have completed. For more information, see the [Amazon Q documentation](${codeTransformTroubleshootStartJobFailed}).`
+export const failedToStartJobTooManyJobsChatMessage =
+    "Sorry, I couldn't begin the transformation. You have too many active transformations running. Please try again after your other transformations have completed."
 
-export const tooManyJobsNotification = `Amazon Q could not begin the transformation. You have too many active transformations running. Please try again after your other transformations have completed. For more information, see the [Amazon Q documentation](${codeTransformTroubleshootStartJobFailed}).`
-
-export const linesOfCodeLimitBreachedChatMessage = `Sorry, I couldn't begin the transformation. You have exceeded the lines of code limit. For more information, see the [Amazon Q documentation](${codeTransformTroubleshootStartJobFailed}).`
-
-export const linesOfCodeLimitBreachedNotification = `Amazon Q could not begin the transformation. You have exceeded the lines of code limit. For more information, see the [Amazon Q documentation](${codeTransformTroubleshootStartJobFailed}).`
+export const failedToStartJobTooManyJobsNotification =
+    'Amazon Q could not begin the transformation. You have too many active transformations running. Please try again after your other transformations have completed.'
 
 export const failedToUploadProjectChatMessage =
     "Sorry, I couldn't upload your project. Please try starting the transformation again."
@@ -651,7 +646,7 @@ export const genericErrorMessage =
     'Sorry, I am experiencing technical issues at the moment. Please try again in a few minutes.'
 
 export const jobCancelledChatMessage =
-    'If you want to start another transformation, choose **Start a new transformation**.'
+    'I cancelled your transformation. If you want to start another transformation, choose **Start a new transformation**.'
 
 export const jobCancelledNotification = 'You cancelled the transformation.'
 
