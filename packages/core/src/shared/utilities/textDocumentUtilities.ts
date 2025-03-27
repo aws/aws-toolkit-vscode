@@ -267,9 +267,3 @@ class ReadonlyDocument {
 }
 
 export const readonlyDocument = new ReadonlyDocument()
-
-export async function getTextContent(uri: vscode.Uri) {
-    const document = await vscode.workspace.openTextDocument(uri)
-    const content = document.getText()
-    return content
-}

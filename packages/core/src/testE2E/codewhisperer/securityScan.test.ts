@@ -23,7 +23,6 @@ import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import fs from '../../shared/fs/fs'
 import { ZipUtil } from '../../codewhisperer/util/zipUtil'
 import { randomUUID } from '../../shared/crypto'
-import { getWorkspacePaths } from '../../shared/utilities/workspaceUtils'
 
 const filePromptWithSecurityIssues = `from flask import app
 
@@ -93,7 +92,7 @@ describe('CodeWhisperer security scan', async function () {
         const zipUtil = new ZipUtil()
         const uri = editor.document.uri
 
-        const projectPaths = getWorkspacePaths()
+        const projectPaths = zipUtil.getProjectPaths()
         const scope = CodeWhispererConstants.CodeAnalysisScope.PROJECT
         const zipMetadata = await zipUtil.generateZip(uri, scope)
         const codeScanName = randomUUID()
