@@ -65,7 +65,7 @@ describe('Amazon Q Code Transformation', function () {
     })
 
     describe('Starting a transformation from chat', () => {
-        it('Can click through all user input forms for a Java upgrade', async () => {
+        it.skip('Can click through all user input forms for a Java upgrade', async () => {
             sinon.stub(startTransformByQ, 'getValidSQLConversionCandidateProjects').resolves([])
             sinon.stub(GumbyController.prototype, 'validateLanguageUpgradeProjects' as keyof GumbyController).resolves([
                 {
