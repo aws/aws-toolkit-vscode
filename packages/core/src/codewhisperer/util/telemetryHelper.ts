@@ -662,6 +662,7 @@ export class TelemetryHelper {
                         timestamp: new Date(Date.now()),
                     },
                 },
+                profileArn: AuthUtil.instance.regionProfileManager.activeRegionProfile?.arn,
             })
             .then()
             .catch((error) => {
@@ -697,6 +698,7 @@ export class TelemetryHelper {
                         codeAnalysisScope: scope === CodeAnalysisScopeClientSide.FILE_AUTO ? 'FILE' : 'PROJECT',
                     },
                 },
+                profileArn: AuthUtil.instance.regionProfileManager.activeRegionProfile?.arn,
             })
             .then()
             .catch((error) => {
@@ -726,6 +728,7 @@ export class TelemetryHelper {
                         timestamp: new Date(Date.now()),
                     },
                 },
+                profileArn: AuthUtil.instance.regionProfileManager.activeRegionProfile?.arn,
             })
             .then()
             .catch((error) => {
@@ -763,6 +766,7 @@ export class TelemetryHelper {
                         charsOfCodeGenerated,
                     },
                 },
+                profileArn: AuthUtil.instance.regionProfileManager.activeRegionProfile?.arn,
             })
             .then()
             .catch((error) => {
@@ -800,6 +804,7 @@ export class TelemetryHelper {
                         charsOfCodeAccepted,
                     },
                 },
+                profileArn: AuthUtil.instance.regionProfileManager.activeRegionProfile?.arn,
             })
             .then()
             .catch((error) => {
@@ -845,6 +850,7 @@ export class TelemetryHelper {
                         timestamp: new Date(Date.now()),
                     },
                 },
+                profileArn: AuthUtil.instance.regionProfileManager.activeRegionProfile?.arn,
             })
             .then()
             .catch((error) => {
@@ -893,6 +899,7 @@ export class TelemetryHelper {
                         timestamp: new Date(Date.now()),
                     },
                 },
+                profileArn: AuthUtil.instance.regionProfileManager.activeRegionProfile?.arn,
             })
             .then()
             .catch((error) => {
