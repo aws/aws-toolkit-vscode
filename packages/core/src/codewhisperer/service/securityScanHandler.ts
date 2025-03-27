@@ -384,20 +384,24 @@ export async function uploadArtifactToS3(
         headersObj['x-amz-server-side-encryption-aws-kms-key-id'] = resp.kmsKeyArn
     }
 
+    let requestId: string | undefined = undefined
+    let id2: string | undefined = undefined
+    let responseCode: string = ''
+
     try {
         const response = await request.fetch('PUT', resp.uploadUrl, {
             body: readFileSync(fileName),
             headers: resp?.requestHeaders ?? headersObj,
         }).response
         logger.debug(`StatusCode: ${response.status}, Text: ${response.statusText}`)
+        requestId = response.headers?.get('x-amz-request-id') ?? undefined
+        id2 = response.headers?.get('x-amz-id-2') ?? undefined
+        responseCode = response.status.toString()
     } catch (error) {
         if (span && error instanceof RequestError) {
-            const requestId = error.response.headers.get('x-amz-request-id') ?? undefined
-            span.record({
-                requestId: requestId,
-                requestServiceType: 's3',
-                httpStatusCode: error.code.toString(),
-            })
+            requestId = error.response.headers.get('x-amz-request-id') ?? undefined
+            id2 = error.response.headers.get('x-amz-id-2') ?? undefined
+            responseCode = error.code.toString()
         }
         let errorMessage = ''
         const isCodeScan = featureUseCase === FeatureUseCase.CODE_SCAN
@@ -419,6 +423,16 @@ export async function uploadArtifactToS3(
             ChatSessionManager.Instance.getSession().startTestGenerationRequestId = error.requestId
         }
         throw isCodeScan ? new UploadArtifactToS3Error(errorMessage) : new UploadTestArtifactToS3Error(errorMessage)
+    } finally {
+        getLogger().debug(`Upload to S3 response details: x-amz-request-id: ${requestId}, x-amz-id-2: ${id2}`)
+        if (span) {
+            span.record({
+                requestId: requestId,
+                requestId2: id2,
+                requestServiceType: 's3',
+                httpStatusCode: responseCode,
+            })
+        }
     }
 }
 
