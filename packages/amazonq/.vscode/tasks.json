@@ -5,9 +5,8 @@
     "tasks": [
         {
             "label": "watch",
-            "type": "shell",
-            "command": "npm",
-            "args": ["run", "watch"],
+            "type": "npm",
+            "script": "watch",
             "problemMatcher": "$tsc-watch",
             "isBackground": true,
             "group": {
