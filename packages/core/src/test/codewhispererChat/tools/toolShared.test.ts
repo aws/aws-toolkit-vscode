@@ -6,14 +6,8 @@
 import assert from 'assert'
 import * as sinon from 'sinon'
 import { Writable } from 'stream'
-import {
-    ToolUtils,
-    Tool,
-    ToolType,
-    sanitizePath,
-    OutputKind,
-    InvokeOutput,
-} from '../../../codewhispererChat/tools/toolShared'
+import { sanitizePath, OutputKind, InvokeOutput } from '../../../codewhispererChat/tools/toolShared'
+import { ToolUtils, Tool, ToolType } from '../../../codewhispererChat/tools/toolUtils'
 import { FsRead } from '../../../codewhispererChat/tools/fsRead'
 import { FsWrite } from '../../../codewhispererChat/tools/fsWrite'
 import { ExecuteBash } from '../../../codewhispererChat/tools/executeBash'

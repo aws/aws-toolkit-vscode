@@ -89,8 +89,9 @@ import {
 import { ChatSession } from '../../clients/chat/v0/chat'
 import { ChatHistoryManager } from '../../storages/chatHistory'
 import { amazonQTabSuffix } from '../../../shared/constants'
-import { OutputKind, Tool, ToolUtils } from '../../tools/toolShared'
+import { OutputKind } from '../../tools/toolShared'
 import { Writable } from 'stream'
+import { ToolUtils, Tool } from '../../tools/toolUtils'
 
 export interface ChatControllerMessagePublishers {
     readonly processPromptChatMessage: MessagePublisher<PromptMessage>
