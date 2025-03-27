@@ -219,9 +219,10 @@ export class DefaultCodeWhispererClient {
 
     public async listAvailableCustomizations(): Promise<ListAvailableCustomizationsResponse[]> {
         const client = await this.createUserSdkClient()
+        const profile = AuthUtil.instance.regionProfileManager.activeRegionProfile
         const requester = async (request: CodeWhispererUserClient.ListAvailableCustomizationsRequest) =>
             client.listAvailableCustomizations(request).promise()
-        return pageableToCollection(requester, {}, 'nextToken')
+        return pageableToCollection(requester, { profileArn: profile?.arn }, 'nextToken')
             .promise()
             .then((resps) => {
                 let logStr = 'amazonq: listAvailableCustomizations API request:'

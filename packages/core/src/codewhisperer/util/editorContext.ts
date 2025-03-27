@@ -18,6 +18,7 @@ import { checkLeftContextKeywordsForJson } from './commonUtil'
 import { CodeWhispererSupplementalContext } from '../models/model'
 import { getOptOutPreference } from '../../shared/telemetry/util'
 import { indent } from '../../shared/utilities/textUtilities'
+import { AuthUtil } from './authUtil'
 
 let tabSize: number = getTabSizeSetting()
 
@@ -108,6 +109,8 @@ export async function buildListRecommendationRequest(
           })
         : []
 
+    const profile = AuthUtil.instance.regionProfileManager.activeRegionProfile
+
     return {
         request: {
             fileContext: fileContext,
@@ -118,6 +121,7 @@ export async function buildListRecommendationRequest(
             supplementalContexts: supplementalContext,
             customizationArn: selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
             optOutPreference: getOptOutPreference(),
+            profileArn: profile?.arn,
         },
         supplementalMetadata: supplementalContexts,
     }

@@ -160,6 +160,7 @@ export class TelemetryHelper {
         supplementalContextMetadata?: CodeWhispererSupplementalContext | undefined
     ) {
         const selectedCustomization = getSelectedCustomization()
+        const profile = AuthUtil.instance.regionProfileManager.activeRegionProfile
 
         telemetry.codewhisperer_userTriggerDecision.emit({
             codewhispererAutomatedTriggerType: session.autoTriggerType,
@@ -218,6 +219,7 @@ export class TelemetryHelper {
                         acceptedCharacterCount: 0,
                     },
                 },
+                profileArn: profile?.arn,
             })
             .then()
             .catch((error) => {
@@ -364,6 +366,7 @@ export class TelemetryHelper {
         const aggregatedCompletionType = this.sessionDecisions[0].codewhispererCompletionType
         const aggregatedSuggestionState = this.getAggregatedSuggestionState(this.sessionDecisions)
         const selectedCustomization = getSelectedCustomization()
+        const profile = AuthUtil.instance.regionProfileManager.activeRegionProfile
         const generatedLines =
             acceptedRecommendationContent.trim() === '' ? 0 : acceptedRecommendationContent.split('\n').length
         const suggestionCount = this.sessionDecisions
@@ -443,6 +446,7 @@ export class TelemetryHelper {
                         acceptedCharacterCount: acceptedRecommendationContent.length,
                     },
                 },
+                profileArn: profile?.arn,
             })
             .then()
             .catch((error) => {
