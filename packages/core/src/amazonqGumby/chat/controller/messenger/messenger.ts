@@ -547,7 +547,8 @@ export class Messenger {
             message === CodeWhispererConstants.viewProposedChangesChatMessage
         ) {
             // get permission to re-run job and view logs after partially successful job is downloaded
-            this.sendFeedbackFormMessage(tabID)
+            // TODO: uncomment this when feature is ready
+            // this.sendFeedbackFormMessage(tabID)
         }
 
         this.dispatcher.sendChatMessage(
