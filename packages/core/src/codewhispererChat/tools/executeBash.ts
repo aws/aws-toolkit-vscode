@@ -74,6 +74,7 @@ export class ExecuteBash {
             const stdoutBuffer: string[] = []
             const stderrBuffer: string[] = []
 
+            let firstChunk = true
             const childProcessOptions: ChildProcessOptions = {
                 spawnOptions: {
                     cwd: this.workingDirectory,
@@ -82,7 +83,8 @@ export class ExecuteBash {
                 collect: false,
                 waitForStreams: true,
                 onStdout: (chunk: string) => {
-                    ExecuteBash.handleChunk(chunk, stdoutBuffer, updates)
+                    ExecuteBash.handleChunk(firstChunk ? '```console\n' + chunk : chunk, stdoutBuffer, updates)
+                    firstChunk = false
                 },
                 onStderr: (chunk: string) => {
                     ExecuteBash.handleChunk(chunk, stderrBuffer, updates)
@@ -203,11 +205,8 @@ export class ExecuteBash {
     }
 
     public queueDescription(updates: Writable): void {
-        updates.write(`I will run the following shell command: `)
-
-        if (this.command.length > 20) {
-            updates.write('\n')
-        }
-        updates.write(`\x1b[32m${this.command}\x1b[0m\n`)
+        updates.write(`I will run the following shell command:\n`)
+        updates.write('```bash\n' + this.command + '\n```')
+        updates.end()
     }
 }
