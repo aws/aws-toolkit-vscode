@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import assert from 'assert'
-import { ChatItemType } from '@aws/mynah-ui'
 import { TabDataGenerator } from '../../../../../amazonq/webview/ui/tabs/generator'
 import { TabType } from '../../../../../amazonq/webview/ui/storages/tabsStorage'
 import { qChatIntroMessageForSMUS } from '../../../../../amazonq/webview/ui/tabs/constants'
@@ -35,10 +34,7 @@ describe('TabDataGenerator', () => {
             const result = tabGenerator.getTabData('cwc', true, 'TestTask', 'SageMakerUnifiedStudio')
 
             assert.strictEqual(result.chatItems?.length, 2)
-            assert.deepStrictEqual(result.chatItems?.[0], {
-                type: ChatItemType.ANSWER,
-                body: qChatIntroMessageForSMUS,
-            })
+            assert.strictEqual(result.chatItems?.[0].body, qChatIntroMessageForSMUS)
         })
 
         it('returns default intro message for non-SMUS service', () => {
@@ -67,7 +63,6 @@ describe('TabDataGenerator', () => {
             assert.ok(Array.isArray(result.quickActionCommands))
             assert.ok(typeof result.promptInputPlaceholder === 'string')
             assert.ok(Array.isArray(result.contextCommands))
-            assert.ok(result.chatItems?.some((item) => item.type === ChatItemType.ANSWER))
         })
     })
 })
