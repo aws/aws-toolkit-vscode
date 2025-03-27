@@ -93,13 +93,13 @@ describe('RegionProfileManager', function () {
     describe('switch and get profile', function () {
         it('should switch if connection is IdC', async function () {
             await setupConnection('idc')
-            await sut.switchRegionProfile(profileFoo)
+            await sut.switchRegionProfile(profileFoo, 'user')
             assert.deepStrictEqual(sut.activeRegionProfile, profileFoo)
         })
 
         it('should do nothing and return undefined if connection is builder id', async function () {
             await setupConnection('builderId')
-            await sut.switchRegionProfile(profileFoo)
+            await sut.switchRegionProfile(profileFoo, 'user')
             assert.deepStrictEqual(sut.activeRegionProfile, undefined)
         })
     })
@@ -115,7 +115,7 @@ describe('RegionProfileManager', function () {
 
         it(`builder id should always use default profile IAD`, async function () {
             await setupConnection('builderId')
-            await sut.switchRegionProfile(profileFoo)
+            await sut.switchRegionProfile(profileFoo, 'user')
             assert.deepStrictEqual(sut.activeRegionProfile, undefined)
             const conn = authUtil.conn
             if (!conn) {
@@ -127,12 +127,15 @@ describe('RegionProfileManager', function () {
 
         it(`idc should return correct endpoint corresponding to profile region`, async function () {
             await setupConnection('idc')
-            await sut.switchRegionProfile({
-                name: 'foo',
-                region: 'eu-central-1',
-                arn: 'foo arn',
-                description: 'foo description',
-            })
+            await sut.switchRegionProfile(
+                {
+                    name: 'foo',
+                    region: 'eu-central-1',
+                    arn: 'foo arn',
+                    description: 'foo description',
+                },
+                'user'
+            )
             assert.ok(sut.activeRegionProfile)
             assert.deepStrictEqual(sut.clientConfig, {
                 region: 'eu-central-1',
@@ -142,12 +145,15 @@ describe('RegionProfileManager', function () {
 
         it(`idc should throw if corresponding endpoint is not defined`, async function () {
             await setupConnection('idc')
-            await sut.switchRegionProfile({
-                name: 'foo',
-                region: 'unknown region',
-                arn: 'foo arn',
-                description: 'foo description',
-            })
+            await sut.switchRegionProfile(
+                {
+                    name: 'foo',
+                    region: 'unknown region',
+                    arn: 'foo arn',
+                    description: 'foo description',
+                },
+                'user'
+            )
 
             assert.throws(() => {
                 sut.clientConfig
@@ -158,7 +164,7 @@ describe('RegionProfileManager', function () {
     describe('persistence', function () {
         it('persistSelectedRegionProfile', async function () {
             await setupConnection('idc')
-            await sut.switchRegionProfile(profileFoo)
+            await sut.switchRegionProfile(profileFoo, 'user')
             assert.deepStrictEqual(sut.activeRegionProfile, profileFoo)
             const conn = authUtil.conn
             if (!conn) {
@@ -199,7 +205,7 @@ describe('RegionProfileManager', function () {
         it('should reset activeProfile and global state', async function () {
             // setup
             await setupConnection('idc')
-            await sut.switchRegionProfile(profileFoo)
+            await sut.switchRegionProfile(profileFoo, 'user')
             assert.deepStrictEqual(sut.activeRegionProfile, profileFoo)
             const conn = authUtil.conn
             if (!conn) {
@@ -230,7 +236,7 @@ describe('RegionProfileManager', function () {
     describe('createQClient', function () {
         it(`should configure the endpoint and region correspondingly`, async function () {
             await setupConnection('idc')
-            await sut.switchRegionProfile(profileFoo)
+            await sut.switchRegionProfile(profileFoo, 'user')
             assert.deepStrictEqual(sut.activeRegionProfile, profileFoo)
             const conn = authUtil.conn as SsoConnection
 

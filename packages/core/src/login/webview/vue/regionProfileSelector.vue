@@ -138,7 +138,7 @@ export default defineComponent({
         onClickContinue() {
             if (this.availableRegionProfiles[this.selectedRegionProfileIndex] !== undefined) {
                 const selectedProfile = this.availableRegionProfiles[this.selectedRegionProfileIndex]
-                client.selectRegionProfile(selectedProfile)
+                client.selectRegionProfile(selectedProfile, 'auth')
             } else {
                 // TODO: handle error
             }
@@ -156,7 +156,7 @@ export default defineComponent({
                 this.availableRegionProfiles = r
                 // auto select and bypass this profile view if profile count === 1
                 if (this.availableRegionProfiles.length === 1) {
-                    await client.selectRegionProfile(this.availableRegionProfiles[0])
+                    await client.selectRegionProfile(this.availableRegionProfiles[0], 'update')
                 }
             }
         },

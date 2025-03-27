@@ -22,6 +22,7 @@ import { AuthError, AuthFlowState } from '../types'
 import { setContext } from '../../../../shared/vscode/setContext'
 import { builderIdStartUrl } from '../../../../auth/sso/constants'
 import { RegionProfile } from '../../../../codewhisperer/models/model'
+import { ProfileSwitchIntent } from '../../../../codewhisperer/region/regionProfileManager'
 
 export class ToolkitLoginWebview extends CommonAuthWebview {
     public override id: string = 'aws.toolkit.AmazonCommonAuth'
@@ -182,7 +183,7 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
         throw new Error('Method not implemented')
     }
 
-    override selectRegionProfile(profile: RegionProfile): Promise<void> {
+    override selectRegionProfile(profile: RegionProfile, source: ProfileSwitchIntent): Promise<void> {
         throw new Error('Method not implemented')
     }
 }

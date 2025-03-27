@@ -89,10 +89,7 @@ export class WebViewContentGenerator {
         //  1. profile count >= 2
         //  2. not default (fallback) which has empty arn
         let regionProfile: RegionProfile | undefined = AuthUtil.instance.regionProfileManager.activeRegionProfile
-        if (
-            (regionProfile && AuthUtil.instance.regionProfileManager.isDefault(regionProfile)) ||
-            AuthUtil.instance.regionProfileManager.profiles.length === 1
-        ) {
+        if (AuthUtil.instance.regionProfileManager.profiles.length === 1) {
             regionProfile = undefined
         }
 

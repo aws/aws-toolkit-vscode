@@ -26,14 +26,8 @@ import { getLogger } from '../../shared/logger/logger'
 import { pageableToCollection } from '../../shared/utilities/collectionUtils'
 import { parse } from '@aws-sdk/util-arn-parser'
 import { isAwsError, ToolkitError } from '../../shared/errors'
+import { telemetry } from '../../shared/telemetry/telemetry'
 import { localize } from '../../shared/utilities/vsCodeUtils'
-
-const defaultProfile: RegionProfile = {
-    name: 'default',
-    region: 'us-east-1',
-    arn: '',
-    description: 'defaultProfile when listAvailableProfiles fails',
-}
 
 // TODO: is there a better way to manage all endpoint strings in one place?
 export const defaultServiceConfig: CodeWhispererConfig = {
@@ -47,6 +41,14 @@ const endpoints = createConstantMap({
     'us-east-1': 'https://codewhisperer.us-east-1.amazonaws.com/',
     'eu-central-1': 'https://rts.prod-eu-central-1.codewhisperer.ai.aws.dev/',
 })
+
+/**
+ * 'user' -> users change the profile through Q menu
+ * 'auth' -> users change the profile through webview profile selector page
+ * 'update' -> plugin auto select the profile on users' behalf as there is only 1 profile
+ * 'reload' -> on plugin restart, plugin will try to reload previous selected profile
+ */
+export type ProfileSwitchIntent = 'user' | 'auth' | 'update' | 'reload'
 
 export class RegionProfileManager {
     private static logger = getLogger()
@@ -103,6 +105,8 @@ export class RegionProfileManager {
     constructor(private readonly connectionProvider: () => Connection | undefined) {}
 
     async listRegionProfile(): Promise<RegionProfile[]> {
+        this._profiles = []
+
         const conn = this.connectionProvider()
         if (conn === undefined || !isSsoConnection(conn)) {
             return []
@@ -145,7 +149,7 @@ export class RegionProfileManager {
         return availableProfiles
     }
 
-    async switchRegionProfile(regionProfile: RegionProfile | undefined) {
+    async switchRegionProfile(regionProfile: RegionProfile | undefined, source: ProfileSwitchIntent) {
         const conn = this.connectionProvider()
         if (conn === undefined || !isIdcSsoConnection(conn)) {
             return
@@ -154,6 +158,9 @@ export class RegionProfileManager {
         if (regionProfile && this.activeRegionProfile && regionProfile.arn === this.activeRegionProfile.arn) {
             return
         }
+
+        // TODO: make it typesafe
+        const ssoConn = this.connectionProvider() as SsoConnection
 
         // only prompt to users when users switch from A profile to B profile
         if (this.activeRegionProfile !== undefined && regionProfile !== undefined) {
@@ -169,8 +176,33 @@ export class RegionProfileManager {
             })
 
             if (!response) {
+                telemetry.amazonq_didSelectProfile.emit({
+                    source: source,
+                    amazonQProfileRegion: this.activeRegionProfile?.region ?? 'not-set',
+                    ssoRegion: ssoConn.ssoRegion,
+                    result: 'Cancelled',
+                    credentialStartUrl: ssoConn.startUrl,
+                    profileCount: this.profiles.length,
+                })
                 return
             }
+        }
+
+        if (source === 'reload' || source === 'update') {
+            telemetry.amazonq_profileState.emit({
+                source: source,
+                amazonQProfileRegion: regionProfile?.region ?? 'not-set',
+                result: 'Succeeded',
+            })
+        } else {
+            telemetry.amazonq_didSelectProfile.emit({
+                source: source,
+                amazonQProfileRegion: regionProfile?.region ?? 'not-set',
+                ssoRegion: ssoConn.ssoRegion,
+                result: 'Succeeded',
+                credentialStartUrl: ssoConn.startUrl,
+                profileCount: this.profiles.length,
+            })
         }
 
         await this._switchRegionProfile(regionProfile)
@@ -181,7 +213,7 @@ export class RegionProfileManager {
 
         this._onDidChangeRegionProfile.fire(regionProfile)
         // dont show if it's a default (fallback)
-        if (regionProfile && !this.isDefault(regionProfile) && this.profiles.length > 1) {
+        if (regionProfile && this.profiles.length > 1) {
             void vscode.window.showInformationMessage(`You are using the ${regionProfile.name} profile for Q.`).then()
         }
 
@@ -203,10 +235,32 @@ export class RegionProfileManager {
             return
         }
         // cross-validation
-        const profiles = this.listRegionProfile()
-        const r = (await profiles).find((it) => it.arn === previousSelected)
+        let profiles: RegionProfile[] = []
+        try {
+            profiles = await this.listRegionProfile()
+        } catch (e) {
+            telemetry.amazonq_profileState.emit({
+                source: 'reload',
+                amazonQProfileRegion: 'not-set',
+                reason: (e as Error).message,
+                result: 'Failed',
+            })
 
-        await this.switchRegionProfile(r)
+            return
+        }
+
+        const r = profiles.find((it) => it.arn === previousSelected)
+        if (!r) {
+            telemetry.amazonq_profileState.emit({
+                source: 'reload',
+                amazonQProfileRegion: 'not-set',
+                reason: 'profile could not be selected',
+                result: 'Failed',
+            })
+            return
+        }
+
+        await this.switchRegionProfile(r, 'reload')
     }
 
     private loadPersistedRegionProfle(): { [label: string]: string } {
@@ -223,7 +277,7 @@ export class RegionProfileManager {
         const conn = this.connectionProvider()
 
         // default has empty arn and shouldn't be persisted because it's just a fallback
-        if (!conn || this.activeRegionProfile === undefined || this.isDefault(this.activeRegionProfile)) {
+        if (!conn || this.activeRegionProfile === undefined) {
             return
         }
 
@@ -236,14 +290,6 @@ export class RegionProfileManager {
 
         previousPersistedState[conn.id] = this.activeRegionProfile.arn
         await globals.globalState.update('aws.amazonq.regionProfiles', previousPersistedState)
-    }
-
-    isDefault(profile: RegionProfile): boolean {
-        return (
-            profile.arn === defaultProfile.arn &&
-            profile.name === defaultProfile.name &&
-            profile.region === defaultProfile.region
-        )
     }
 
     async generateQuickPickItem(): Promise<DataQuickPickItem<string>[]> {
@@ -264,7 +310,7 @@ export class RegionProfileManager {
         const quickPickItems: DataQuickPickItem<string>[] = profiles.map((it) => {
             const label = it.name
             const onClick = async () => {
-                await this.switchRegionProfile(it)
+                await this.switchRegionProfile(it, 'user')
             }
             const data = it.arn
             const description = it.region

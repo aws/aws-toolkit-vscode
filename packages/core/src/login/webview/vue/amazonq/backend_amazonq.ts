@@ -23,6 +23,8 @@ import { ToolkitError } from '../../../../shared/errors'
 import { withTelemetryContext } from '../../../../shared/telemetry/util'
 import { builderIdStartUrl } from '../../../../auth/sso/constants'
 import { RegionProfile } from '../../../../codewhisperer/models/model'
+import { telemetry } from '../../../../shared/telemetry/telemetry'
+import { ProfileSwitchIntent } from '../../../../codewhisperer/region/regionProfileManager'
 
 const className = 'AmazonQLoginWebview'
 export class AmazonQLoginWebview extends CommonAuthWebview {
@@ -214,12 +216,22 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
         try {
             return await AuthUtil.instance.regionProfileManager.listRegionProfile()
         } catch (e) {
+            const conn = AuthUtil.instance.conn as SsoConnection | undefined
+            telemetry.amazonq_didSelectProfile.emit({
+                source: 'auth',
+                amazonQProfileRegion: AuthUtil.instance.regionProfileManager.activeRegionProfile?.region ?? 'not-set',
+                ssoRegion: conn?.ssoRegion,
+                result: 'Failed',
+                credentialStartUrl: conn?.startUrl,
+                reason: (e as Error).message,
+            })
+
             return (e as Error).message
         }
     }
 
-    override selectRegionProfile(profile: RegionProfile) {
-        return AuthUtil.instance.regionProfileManager.switchRegionProfile(profile)
+    override selectRegionProfile(profile: RegionProfile, source: ProfileSwitchIntent) {
+        return AuthUtil.instance.regionProfileManager.switchRegionProfile(profile, source)
     }
 
     private setupConnectionEventEmitter(): void {

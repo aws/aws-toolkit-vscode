@@ -139,11 +139,7 @@ export function createSelectCustomization(): DataQuickPickItem<'selectCustomizat
 }
 
 export function createSelectRegionProfileNode(): DataQuickPickItem<'selectRegionProfile'> {
-    let selectedRegionProfile = AuthUtil.instance.regionProfileManager.activeRegionProfile
-    // default shouldn't be shown as it's saying ListAvailableProfiles fail and we fallback to IAD
-    if (selectedRegionProfile && AuthUtil.instance.regionProfileManager.isDefault(selectedRegionProfile)) {
-        selectedRegionProfile = undefined
-    }
+    const selectedRegionProfile = AuthUtil.instance.regionProfileManager.activeRegionProfile
 
     const label = 'Change Profile'
     const icon = getIcon('vscode-arrow-swap')
