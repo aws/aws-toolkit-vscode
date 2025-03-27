@@ -19,6 +19,7 @@ export type LogTopic =
     | 'fsRead'
     | 'fsWrite'
     | 'executeBash'
+    | 'chatStream'
     | 'unknown'
 
 class ErrorLog {

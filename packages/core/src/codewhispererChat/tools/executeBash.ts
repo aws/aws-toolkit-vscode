@@ -126,9 +126,9 @@ export class ExecuteBash {
 
     private static handleChunk(chunk: string, buffer: string[], updates: Writable) {
         try {
+            updates.write(chunk)
             const lines = chunk.split(/\r?\n/)
             for (const line of lines) {
-                updates.write(`${line}\n`)
                 buffer.push(line)
                 if (buffer.length > lineCount) {
                     buffer.shift()

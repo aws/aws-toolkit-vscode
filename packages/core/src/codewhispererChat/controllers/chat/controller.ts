@@ -88,6 +88,7 @@ import { FsRead, FsReadParams } from '../../tools/fsRead'
 import { InvokeOutput, OutputKind } from '../../tools/toolShared'
 import { FsWrite, FsWriteCommand } from '../../tools/fsWrite'
 import { ExecuteBash, ExecuteBashParams } from '../../tools/executeBash'
+import { ChatStream } from '../../tools/chatStream'
 
 export interface ChatControllerMessagePublishers {
     readonly processPromptChatMessage: MessagePublisher<PromptMessage>
@@ -951,7 +952,8 @@ export class ChatController {
                         case 'executeBash': {
                             const executeBash = new ExecuteBash(toolUse.input as unknown as ExecuteBashParams)
                             await executeBash.validate()
-                            result = await executeBash.invoke(process.stdout)
+                            const chatStream = new ChatStream(this.messenger, tabID, triggerID, toolUse.toolUseId)
+                            result = await executeBash.invoke(chatStream)
                             break
                         }
                         case 'fsRead': {

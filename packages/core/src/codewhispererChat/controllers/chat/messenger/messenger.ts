@@ -438,6 +438,27 @@ export class Messenger {
         )
     }
 
+    public sendPartialBashToolLog(message: string, tabID: string, triggerID: string, toolUseId: string | undefined) {
+        this.dispatcher.sendChatMessage(
+            new ChatMessage(
+                {
+                    message,
+                    messageType: 'answer-part',
+                    followUps: undefined,
+                    followUpsHeader: undefined,
+                    relatedSuggestions: undefined,
+                    triggerID,
+                    messageID: toolUseId ?? `tool-output`,
+                    userIntent: undefined,
+                    codeBlockLanguage: 'plaintext',
+                    contextList: undefined,
+                    canBeVoted: false,
+                },
+                tabID
+            )
+        )
+    }
+
     private editorContextMenuCommandVerbs: Map<EditorContextCommandType, string> = new Map([
         ['aws.amazonq.explainCode', 'Explain'],
         ['aws.amazonq.explainIssue', 'Explain'],
