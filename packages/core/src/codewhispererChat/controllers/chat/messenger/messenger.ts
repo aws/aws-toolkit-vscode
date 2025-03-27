@@ -41,8 +41,8 @@ import { extractAuthFollowUp } from '../../../../amazonq/util/authUtils'
 import { helpMessage } from '../../../../amazonq/webview/ui/texts/constants'
 import { ChatItemButton, ChatItemFormItem, MynahUIDataModel } from '@aws/mynah-ui'
 import { ChatHistoryManager } from '../../../storages/chatHistory'
-import { ExecuteBashParams } from '../../../tools/executeBash'
-import { FsWriteParams } from '../../../tools/fsWrite'
+import { ToolUtils } from '../../../tools/toolUtils'
+import { ChatStream } from '../../../tools/chatStream'
 
 export type StaticTextResponseType = 'quick-action-help' | 'onboarding-help' | 'transform' | 'help'
 
@@ -213,39 +213,19 @@ export class Messenger {
                         toolUse.name = cwChatEvent.toolUseEvent.name ?? ''
                         session.setToolUse(toolUse)
 
-                        const message = this.getToolUseMessage(toolUse)
-                        // const isConfirmationRequired = this.getIsConfirmationRequired(toolUse)
+                        const tool = ToolUtils.tryFromToolUse(toolUse)
+                        if ('type' in tool) {
+                            const chatStream = new ChatStream(this, tabID, triggerID, toolUse.toolUseId)
+                            ToolUtils.queueDescription(tool, chatStream)
 
-                        // TODO: If toolUse is fs_write then session.setShowDiffOnFileWrite(true)
-
-                        this.dispatcher.sendChatMessage(
-                            new ChatMessage(
-                                {
-                                    message,
-                                    messageType: 'answer',
-                                    followUps: undefined,
-                                    followUpsHeader: undefined,
-                                    relatedSuggestions: undefined,
-                                    codeReference,
-                                    triggerID,
-                                    messageID: toolUse.toolUseId,
-                                    userIntent: triggerPayload.userIntent,
-                                    codeBlockLanguage: codeBlockLanguage,
-                                    contextList: undefined,
-                                    // TODO: confirmation buttons
-                                },
-                                tabID
+                            this.dispatcher.sendCustomFormActionMessage(
+                                new CustomFormActionMessage(tabID, {
+                                    id: 'confirm-tool-use',
+                                })
                             )
-                        )
-
-                        this.dispatcher.sendCustomFormActionMessage(
-                            new CustomFormActionMessage(tabID, {
-                                id: 'confirm-tool-use',
-                            })
-                        )
-                        // TODO: setup permission action
-                        // if (!isConfirmationRequired) {
-                        // }
+                        } else {
+                            // TODO: Handle the error
+                        }
                     }
 
                     if (
@@ -438,7 +418,7 @@ export class Messenger {
         )
     }
 
-    public sendPartialBashToolLog(message: string, tabID: string, triggerID: string, toolUseId: string | undefined) {
+    public sendPartialToolLog(message: string, tabID: string, triggerID: string, toolUseId: string | undefined) {
         this.dispatcher.sendChatMessage(
             new ChatMessage(
                 {
@@ -450,7 +430,7 @@ export class Messenger {
                     triggerID,
                     messageID: toolUseId ?? `tool-output`,
                     userIntent: undefined,
-                    codeBlockLanguage: 'plaintext',
+                    codeBlockLanguage: undefined,
                     contextList: undefined,
                     canBeVoted: false,
                 },
@@ -616,68 +596,5 @@ export class Messenger {
         this.dispatcher.sendShowCustomFormMessage(
             new ShowCustomFormMessage(tabID, formItems, buttons, title, description)
         )
-    }
-
-    // TODO: Make this cleaner
-    // private getIsConfirmationRequired(toolUse: ToolUse) {
-    //     if (toolUse.name === 'execute_bash') {
-    //         const executeBash = new ExecuteBash(toolUse.input as unknown as ExecuteBashParams)
-    //         return executeBash.requiresAcceptance()
-    //     }
-    //     return toolUse.name === 'fs_write'
-    // }
-    private getToolUseMessage(toolUse: ToolUse) {
-        if (toolUse.name === 'fsRead') {
-            return `Reading the file at \`${(toolUse.input as any)?.path}\` using the \`fsRead\` tool.`
-        }
-        if (toolUse.name === 'executeBash') {
-            const input = toolUse.input as unknown as ExecuteBashParams
-            return `Executing the bash command
-        \`\`\`bash
-        ${input.command}
-        \`\`\`
-        using the \`executeBash\` tool.`
-        }
-        if (toolUse.name === 'fsWrite') {
-            const input = toolUse.input as unknown as FsWriteParams
-            switch (input.command) {
-                case 'create': {
-                    return `Writing
-        \`\`\`
-        ${input.fileText}
-        \`\`\`
-        into the file at \`${input.path}\` using the \`fsWrite\` tool.`
-                }
-                case 'strReplace': {
-                    return `Replacing
-        \`\`\`
-        ${input.oldStr}
-        \`\`\`
-        with
-        \`\`\`
-        ${input.newStr}
-        \`\`\`
-        at \`${input.path}\` using the \`fsWrite\` tool.`
-                }
-                case 'insert': {
-                    return `Inserting
-        \`\`\`
-        ${input.newStr}
-        \`\`\`
-        at line
-        \`\`\`
-        ${input.insertLine}
-        \`\`\`
-        at \`${input.path}\` using the \`fsWrite\` tool.`
-                }
-                case 'append': {
-                    return `Appending
-        \`\`\`
-        ${input.newStr}
-        \`\`\`
-        at \`${input.path}\` using the \`fsWrite\` tool.`
-                }
-            }
-        }
     }
 }

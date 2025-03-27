@@ -23,29 +23,20 @@ export class ChatStream extends Writable {
     ) {
         super()
         this.logger.debug(`ChatStream created for tabID: ${tabID}, triggerID: ${triggerID}`)
+        this.messenger.sendInitalStream(tabID, triggerID, undefined)
     }
 
     override _write(chunk: Buffer, encoding: BufferEncoding, callback: (error?: Error | null) => void): void {
         const text = chunk.toString()
         this.accumulatedLogs += text
         this.logger.debug(`ChatStream received chunk: ${text}`)
-        this.messenger.sendPartialBashToolLog(
-            `\`\`\`bash\n${this.accumulatedLogs}\`\`\``,
-            this.tabID,
-            this.triggerID,
-            this.toolUseId
-        )
+        this.messenger.sendPartialToolLog(this.accumulatedLogs, this.tabID, this.triggerID, this.toolUseId)
         callback()
     }
 
     override _final(callback: (error?: Error | null) => void): void {
         if (this.accumulatedLogs.trim().length > 0) {
-            this.messenger.sendPartialBashToolLog(
-                `\`\`\`bash\n${this.accumulatedLogs}\`\`\``,
-                this.tabID,
-                this.triggerID,
-                this.toolUseId
-            )
+            this.messenger.sendPartialToolLog(this.accumulatedLogs, this.tabID, this.triggerID, this.toolUseId)
         }
         callback()
     }
