@@ -43,6 +43,10 @@ function getAmazonQCodeWhispererNodes() {
         return [createSignIn(), createLearnMore()]
     }
 
+    if (AuthUtil.instance.isConnected() && AuthUtil.instance.requireProfileSelection()) {
+        return []
+    }
+
     if (vsCodeState.isFreeTierLimitReached) {
         if (hasVendedIamCredentials()) {
             return [createFreeTierLimitMet(), createOpenReferenceLog()]

@@ -351,7 +351,7 @@
                 },
                 {
                     "command": "aws.amazonq.selectRegionProfile",
-                    "when": "view == aws.AmazonQChatView && aws.amazonq.connectedSsoIdc == true",
+                    "when": "view == aws.amazonq.AmazonQChatView && aws.amazonq.connectedSsoIdc == true",
                     "group": "1_amazonQ@1"
                 },
                 {
@@ -566,7 +566,7 @@
             },
             {
                 "command": "aws.amazonq.selectRegionProfile",
-                "title": "Switch Profile",
+                "title": "Change Profile",
                 "category": "%AWS.amazonq.title%",
                 "enablement": "aws.codewhisperer.connected"
             },

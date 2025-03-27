@@ -207,7 +207,7 @@ export abstract class CommonAuthWebview extends VueWebview {
     /** List current connections known by the extension for the purpose of preventing duplicates. */
     abstract listSsoConnections(): Promise<SsoConnection[]>
 
-    abstract listRegionProfiles(): Promise<RegionProfile[]>
+    abstract listRegionProfiles(): Promise<RegionProfile[] | string>
 
     abstract selectRegionProfile(profile: RegionProfile): Promise<void>
 

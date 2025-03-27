@@ -57,7 +57,7 @@ export class TabDataGenerator {
                 ? undefined
                 : {
                       type: ChatItemType.ANSWER,
-                      body: `You are using the ${this.regionProfile?.name} profile for this chat`,
+                      body: `You are using the ${this.regionProfile?.name} profile for this chat period`,
                       status: 'info',
                       messageId: 'regionProfile',
                   }

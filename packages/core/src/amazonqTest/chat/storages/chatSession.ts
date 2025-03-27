@@ -6,6 +6,7 @@
 
 import { Session } from '../session/session'
 import { getLogger } from '../../../shared/logger/logger'
+import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 
 export class SessionNotFoundError extends Error {}
 
@@ -14,7 +15,11 @@ export class ChatSessionManager {
     private activeSession: Session | undefined
     private isInProgress: boolean = false
 
-    constructor() {}
+    constructor() {
+        AuthUtil.instance.regionProfileManager.onDidChangeRegionProfile(() => {
+            this.removeActiveTab()
+        })
+    }
 
     public static get Instance() {
         return this._instance || (this._instance = new this())

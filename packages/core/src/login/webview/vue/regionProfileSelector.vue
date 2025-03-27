@@ -46,10 +46,10 @@
         </div>
 
         <div class="text-container">
-            <div id="title">Select profile</div>
+            <div id="title">Choose a Q Developer profile</div>
             <div class="description">
-                Profles have different configs defined by your adminstrators. Select the profile that best meets your
-                current working need and switch at any time.
+                Your administrator has given you access to Q from multiple profiles. Choose the profile that meets your
+                current working needs. You can change your profile at any time.
             </div>
         </div>
 
@@ -69,8 +69,18 @@
                 ></SelectableItem>
             </div>
 
-            <div id="button-container">
-                <button class="continue-button" v-on:click="onClickContinue()">Continue</button>
+            <div v-if="errorMessage" id="error-message">
+                We couldn't load your Q Developer profiles. Please try again.
+            </div>
+
+            <div>
+                <template v-if="errorMessage">
+                    <button id="reload" class="continue-button" v-on:click="listAvailableProfiles">Try again</button>
+                    <button id="signout" v-on:click="signout">Sign Out</button>
+                </template>
+                <template v-else>
+                    <button class="continue-button" v-on:click="onClickContinue()">Continue</button>
+                </template>
             </div>
         </div>
     </div>
@@ -119,10 +129,7 @@ export default defineComponent({
         this.doShow = true
     },
     async beforeMount() {
-        this.availableRegionProfiles = await client.listRegionProfiles()
-        if (this.availableRegionProfiles.length === 1) {
-            await client.selectRegionProfile(this.availableRegionProfiles[0])
-        }
+        await this.listAvailableProfiles()
     },
     methods: {
         toggleItemSelection(itemId: number) {
@@ -131,16 +138,32 @@ export default defineComponent({
         onClickContinue() {
             if (this.availableRegionProfiles[this.selectedRegionProfileIndex] !== undefined) {
                 const selectedProfile = this.availableRegionProfiles[this.selectedRegionProfileIndex]
-                console.log(`user selects ${selectedProfile.name}`)
                 client.selectRegionProfile(selectedProfile)
             } else {
                 // TODO: handle error
             }
         },
+        async signout() {
+            client.emitUiClick('auth_signout')
+            await client.signout()
+        },
+        async listAvailableProfiles() {
+            this.errorMessage = ''
+            const r = await client.listRegionProfiles()
+            if (typeof r === 'string') {
+                this.errorMessage = r
+            } else {
+                this.availableRegionProfiles = r
+                // auto select and bypass this profile view if profile count === 1
+                if (this.availableRegionProfiles.length === 1) {
+                    await client.selectRegionProfile(this.availableRegionProfiles[0])
+                }
+            }
+        },
     },
 })
 </script>
-<style>
+<style scoped>
 @import './base.css';
 
 /* TODO: clean up these CSS entries */
@@ -159,12 +182,13 @@ export default defineComponent({
     /* All items are centered vertically */
     justify-content: space-between;
     /** The overall height of the container, then spacing is automatic between child elements */
-    height: 7rem;
+    /* height: 7rem; */
+    align-items: center;
 }
 
 #content-container > * {
-    display: flex;
-    flex-direction: column;
+    width: 100%;
+    max-width: 260px;
 }
 
 #icon-container {
@@ -179,23 +203,12 @@ export default defineComponent({
     flex-direction: column;
     margin-bottom: 1rem;
     margin-left: 2rem;
-    margin-top: 2rem;
-}
-
-#button-container {
-    display: flex;
-    flex-direction: column;
-}
-
-body.vscode-high-contrast:not(body.vscode-high-contrast-light) button#reauthenticate {
-    background-color: white;
-    color: black;
+    margin-top: 1rem;
 }
 
 #title {
     font-weight: bold;
-    margin-bottom: 3px;
-    /* font-size: var(--font-size-base); */
+    margin-bottom: 1.5px;
 }
 
 .description {
@@ -203,12 +216,9 @@ body.vscode-high-contrast:not(body.vscode-high-contrast-light) button#reauthenti
     font-weight: normal;
 }
 
-#call-to-action {
-    font-weight: normal;
-}
-
 #error-message {
     text-align: center;
+    font-size: var(--font-size-base);
 }
 
 body.vscode-high-contrast-light .continue-button {
@@ -227,28 +237,17 @@ body.vscode-high-contrast-light .continue-button:disabled {
 }
 
 .option {
-    width: 85%;
-    padding-top: 8px;
-    padding-bottom: 15px;
-    align-items: center;
-    text-align: center;
-
-    margin-bottom: 10px;
-    margin-top: 10px;
+    width: 100%;
+    margin-bottom: 7px;
     cursor: pointer;
 }
 
-.continue-button {
-    background-color: var(--vscode-button-background);
-    color: white;
-    width: 85%;
-    height: 30px;
-    border: none;
-    border-radius: 4px;
-    font-weight: bold;
-    margin-bottom: 3px;
-    margin-top: 3px;
+button#signout {
     cursor: pointer;
-    font-size: var(--font-size-base);
+    color: var(--vscode-textLink-foreground);
+    border: none;
+    background: none;
+    user-select: none;
+    margin-top: 0.5rem;
 }
 </style>

@@ -69,7 +69,7 @@ import { UserWrittenCodeTracker } from '../tracker/userWrittenCodeTracker'
 import { parsePatch } from 'diff'
 import { createCodeIssueGroupingStrategyPrompter } from '../ui/prompters'
 import { cancel, confirm } from '../../shared/localizedText'
-import { DataQuickPickItem, showQuickPick } from '../../shared/ui/pickerPrompter'
+import { showQuickPick } from '../../shared/ui/pickerPrompter'
 import { i18n } from '../../shared/i18n-helper'
 
 const MessageTimeOut = 5_000
@@ -253,12 +253,14 @@ export const selectCustomizationPrompt = Commands.declare(
 export const selectRegionProfileCommand = Commands.declare(
     { id: 'aws.amazonq.selectRegionProfile', compositeKey: { 1: 'source' } },
     () => async (_: VsCodeCommandArg, source: CodeWhispererSource) => {
-        const quickPickItems: DataQuickPickItem<string>[] =
-            await AuthUtil.instance.regionProfileManager.generateQuickPickItem()
+        const quickPickItems = AuthUtil.instance.regionProfileManager.generateQuickPickItem()
 
         await showQuickPick(quickPickItems, {
-            title: localize('AWS.q.profile.quickPick.title', 'Select a Profile'),
-            placeholder: localize('AWS.q.profile.quickPick.placeholder', 'You have access to the following profiles'),
+            title: localize('AWS.amazonq.profile.quickPick.title', 'Select a Profile'),
+            placeholder: localize(
+                'AWS.amazonq.profile.quickPick.placeholder',
+                'You can choose from the following profiles:'
+            ),
             recentlyUsed: i18n('AWS.codewhisperer.customization.selected'),
         })
     }

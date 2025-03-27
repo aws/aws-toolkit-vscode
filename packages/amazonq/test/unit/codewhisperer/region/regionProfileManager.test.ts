@@ -195,6 +195,38 @@ describe('RegionProfileManager', function () {
         })
     })
 
+    describe('invalidate', function () {
+        it('should reset activeProfile and global state', async function () {
+            // setup
+            await setupConnection('idc')
+            await sut.switchRegionProfile(profileFoo)
+            assert.deepStrictEqual(sut.activeRegionProfile, profileFoo)
+            const conn = authUtil.conn
+            if (!conn) {
+                fail('connection should not be undefined')
+            }
+            await sut.persistSelectRegionProfile()
+            const state = globals.globalState.tryGet<{ [label: string]: string }>(
+                'aws.amazonq.regionProfiles',
+                Object,
+                {}
+            )
+            assert.strictEqual(state[conn.id], profileFoo.arn)
+
+            // subject to test
+            await sut.invalidateProfile(profileFoo.arn)
+
+            // assertion
+            assert.strictEqual(sut.activeRegionProfile, undefined)
+            const actualGlobalState = globals.globalState.tryGet<{ [label: string]: string }>(
+                'aws.amazonq.regionProfiles',
+                Object,
+                {}
+            )
+            assert.deepStrictEqual(actualGlobalState, {})
+        })
+    })
+
     describe('createQClient', function () {
         it(`should configure the endpoint and region correspondingly`, async function () {
             await setupConnection('idc')

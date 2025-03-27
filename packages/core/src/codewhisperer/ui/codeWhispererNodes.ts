@@ -145,7 +145,7 @@ export function createSelectRegionProfileNode(): DataQuickPickItem<'selectRegion
         selectedRegionProfile = undefined
     }
 
-    const label = 'Switch Profile'
+    const label = 'Change Profile'
     const icon = getIcon('vscode-arrow-swap')
     const description = selectedRegionProfile ? `Current profile: ${selectedRegionProfile.name}` : ''
 

@@ -36,6 +36,15 @@ export class AmazonQChatViewProvider implements WebviewViewProvider {
     ) {
         registerAssetsHttpsFileSystem(extensionContext)
         this.webViewContentGenerator = new WebViewContentGenerator()
+
+        AuthUtil.instance.regionProfileManager.onDidChangeRegionProfile(async () => {
+            if (this.webView) {
+                this.webView.html = await this.webViewContentGenerator.generate(
+                    this.extensionContext.extensionUri,
+                    this.webView
+                )
+            }
+        })
     }
 
     public async resolveWebviewView(
@@ -45,13 +54,6 @@ export class AmazonQChatViewProvider implements WebviewViewProvider {
     ) {
         webviewView.onDidChangeVisibility(() => {
             this.onDidChangeAmazonQVisibility.fire(webviewView.visible)
-        })
-
-        AuthUtil.instance.regionProfileManager.onDidChangeRegionProfile(async () => {
-            webviewView.webview.html = await this.webViewContentGenerator.generate(
-                this.extensionContext.extensionUri,
-                webviewView.webview
-            )
         })
 
         const dist = Uri.joinPath(this.extensionContext.extensionUri, 'dist')
@@ -71,6 +73,7 @@ export class AmazonQChatViewProvider implements WebviewViewProvider {
             webviewView.webview
         )
 
+        this.webView = webviewView.webview
         performance.mark(amazonqMark.open)
     }
 }

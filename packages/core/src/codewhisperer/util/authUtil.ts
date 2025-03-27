@@ -141,7 +141,7 @@ export class AuthUtil {
             }
 
             if (!this.isConnected()) {
-                await this.regionProfileManager.switchRegionProfile(undefined)
+                await this.regionProfileManager.invalidateProfile(this.regionProfileManager.activeRegionProfile?.arn)
             }
         })
 
@@ -307,7 +307,10 @@ export class AuthUtil {
         return connectionExpired
     }
 
-    private requireProfileSelection(): boolean {
+    requireProfileSelection(): boolean {
+        if (isBuilderIdConnection(this.conn)) {
+            return false
+        }
         return isIdcSsoConnection(this.conn) && this.regionProfileManager.activeRegionProfile === undefined
     }
 

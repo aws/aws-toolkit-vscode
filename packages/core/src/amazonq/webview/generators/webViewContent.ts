@@ -98,14 +98,24 @@ export class WebViewContentGenerator {
 
         const regionProfileString: string = JSON.stringify(regionProfile)
 
+        // AuthUtil.instance.getChatAuthState is throttled version which possibly return an old snapshot of auth state however webview initialization here requires the latest accurate
+        // otherwise features will be disabled as auth still says it's not connected & profile selected
+        const authState = (await AuthUtil.instance._getChatAuthState()).amazonQ
+
         return `
         <script type="text/javascript" src="${javascriptEntrypoint.toString()}" defer onload="init()"></script>
         ${cssLinks}
         <script type="text/javascript">
             const init = () => {
-                createMynahUI(acquireVsCodeApi(), ${
-                    (await AuthUtil.instance.getChatAuthState()).amazonQ === 'connected'
-                },${featureConfigsString},${welcomeLoadCount},${disclaimerAcknowledged},${regionProfileString},${disabledCommandsString});
+                createMynahUI(
+                    acquireVsCodeApi(), 
+                    ${authState === 'connected'},
+                    ${featureConfigsString},
+                    ${welcomeLoadCount},
+                    ${disclaimerAcknowledged},
+                    ${regionProfileString},
+                    ${disabledCommandsString}
+                );
             }
         </script>
         `

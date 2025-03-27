@@ -178,7 +178,7 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
         await this.showResourceExplorer()
     }
 
-    override listRegionProfiles(): Promise<RegionProfile[]> {
+    override listRegionProfiles(): Promise<RegionProfile[] | string> {
         throw new Error('Method not implemented')
     }
 

@@ -206,8 +206,16 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
     /** If users are unauthenticated in Q/CW, we should always display the auth screen. */
     async quitLoginScreen() {}
 
-    override listRegionProfiles(): Promise<RegionProfile[]> {
-        return AuthUtil.instance.regionProfileManager.listRegionProfile()
+    /**
+     * The purpose of returning Error.message is to notify vue frontend that API call fails and to render corresponding error message to users
+     * @returns ProfileList when API call succeeds, otherwise Error.message
+     */
+    override async listRegionProfiles(): Promise<RegionProfile[] | string> {
+        try {
+            return await AuthUtil.instance.regionProfileManager.listRegionProfile()
+        } catch (e) {
+            return (e as Error).message
+        }
     }
 
     override selectRegionProfile(profile: RegionProfile) {
