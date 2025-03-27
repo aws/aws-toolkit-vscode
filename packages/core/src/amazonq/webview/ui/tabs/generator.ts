@@ -53,7 +53,7 @@ export class TabDataGenerator {
             return {}
         }
 
-        const isSMUSProTier = serviceName ? serviceName === 'SageMakerUnifiedStudio' : false
+        const isSMUS = serviceName ? serviceName === 'SageMakerUnifiedStudio' : false
 
         const tabData: MynahUIDataModel = {
             tabTitle: taskName ?? TabTypeDataMap[tabType].title,
@@ -66,7 +66,7 @@ export class TabDataGenerator {
                 ? [
                       {
                           type: ChatItemType.ANSWER,
-                          body: isSMUSProTier ? qChatIntroMessageForSMUS : TabTypeDataMap[tabType].welcome,
+                          body: isSMUS ? qChatIntroMessageForSMUS : TabTypeDataMap[tabType].welcome,
                       },
                       {
                           type: ChatItemType.ANSWER,

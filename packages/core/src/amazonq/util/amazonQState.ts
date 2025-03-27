@@ -1,3 +1,10 @@
+/**
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Manages the state of Amazon Q service in the extension
+ * using Singleton pattern.
+ */
 export class AmazonQState {
     private static _instance: AmazonQState | undefined
     private readonly _serviceName: string

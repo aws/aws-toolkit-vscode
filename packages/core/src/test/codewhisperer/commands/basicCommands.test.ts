@@ -68,6 +68,7 @@ import { CodeWhispererSettings } from '../../../codewhisperer/util/codewhisperer
 import { confirm } from '../../../shared'
 import * as commentUtils from '../../../shared/utilities/commentUtils'
 import * as startCodeFixGeneration from '../../../codewhisperer/commands/startCodeFixGeneration'
+import { AmazonQState } from '../../../amazonq/util/amazonQState'
 
 describe('CodeWhisperer-basicCommands', function () {
     let targetCommand: Command<any> & vscode.Disposable
@@ -518,6 +519,83 @@ describe('CodeWhisperer-basicCommands', function () {
                 ])
                 e.dispose() // skip needing to select an item to continue
             })
+            await listCodeWhispererCommands.execute()
+        })
+
+        it('excludes sign out when in SageMaker Unified Studio', async function () {
+            sinon.stub(AuthUtil.instance, 'isConnected').returns(true)
+            sinon.stub(AuthUtil.instance, 'isConnectionExpired').returns(false)
+            sinon.stub(AmazonQState.instance, 'isSageMakerUnifiedStudio').get(() => true)
+
+            getTestWindow().onDidShowQuickPick((e) => {
+                e.assertContainsItems(
+                    createAutoSuggestions(true),
+                    createOpenReferenceLog(),
+                    createGettingStarted(),
+                    switchToAmazonQNode(),
+                    ...genericItems(),
+                    createSettingsNode()
+                )
+                e.dispose()
+            })
+
+            await listCodeWhispererCommands.execute()
+        })
+
+        it('includes sign out when authenticated and not in SageMaker Unified Studio', async function () {
+            sinon.stub(AuthUtil.instance, 'isConnected').returns(true)
+            sinon.stub(AuthUtil.instance, 'isConnectionExpired').returns(false)
+            sinon.stub(AmazonQState.instance, 'isSageMakerUnifiedStudio').get(() => false)
+            await CodeScansState.instance.setScansEnabled(false)
+
+            getTestWindow().onDidShowQuickPick((e) => {
+                e.assertContainsItems(
+                    createAutoSuggestions(true),
+                    createOpenReferenceLog(),
+                    createGettingStarted(),
+                    switchToAmazonQNode(),
+                    createAutoScans(false),
+                    ...genericItems(),
+                    createSettingsNode(),
+                    createSignout()
+                )
+                e.dispose()
+            })
+
+            await listCodeWhispererCommands.execute()
+        })
+
+        it('excludes sign out when using vended credentials in SageMaker Unified Studio', async function () {
+            sinon.stub(AuthUtil.instance, 'isConnected').returns(true)
+            sinon.stub(AuthUtil.instance, 'isConnectionExpired').returns(false)
+            sinon.stub(AmazonQState.instance, 'isSageMakerUnifiedStudio').get(() => true)
+            sinon.stub(AuthUtil.instance, 'isBuilderIdInUse').returns(true)
+
+            getTestWindow().onDidShowQuickPick((e) => {
+                e.assertContainsItems(
+                    createAutoSuggestions(true),
+                    createOpenReferenceLog(),
+                    createGettingStarted(),
+                    switchToAmazonQNode(),
+                    ...genericItems(),
+                    createSettingsNode()
+                )
+                e.dispose()
+            })
+
+            await listCodeWhispererCommands.execute()
+        })
+
+        it('shows expected items when connection is expired in SageMaker Unified Studio', async function () {
+            sinon.stub(AuthUtil.instance, 'isConnected').returns(true)
+            sinon.stub(AuthUtil.instance, 'isConnectionExpired').returns(true)
+            sinon.stub(AmazonQState.instance, 'isSageMakerUnifiedStudio').get(() => true)
+
+            getTestWindow().onDidShowQuickPick((e) => {
+                e.assertContainsItems(createReconnect(), createLearnMore(), ...genericItems())
+                e.dispose()
+            })
+
             await listCodeWhispererCommands.execute()
         })
     })

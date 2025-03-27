@@ -359,7 +359,7 @@
                 },
                 {
                     "command": "aws.amazonq.signout",
-                    "when": "(view == aws.amazonq.AmazonQChatView) && aws.codewhisperer.connected && !aws.amazonq.isSagemakerStudio",
+                    "when": "(view == aws.amazonq.AmazonQChatView) && aws.codewhisperer.connected && !aws.amazonq.isSagemakerUnifiedStudio",
                     "group": "2_amazonQ@4"
                 },
                 {
@@ -635,7 +635,7 @@
                 "title": "%AWS.command.codewhisperer.signout%",
                 "category": "%AWS.amazonq.title%",
                 "icon": "$(debug-disconnect)",
-                "enablement": "aws.codewhisperer.connected && !aws.amazonq.isSagemakerStudio"
+                "enablement": "aws.codewhisperer.connected && !aws.amazonq.isSagemakerUnifiedStudio"
             },
             {
                 "command": "aws.amazonq.learnMore",

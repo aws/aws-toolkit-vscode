@@ -37,7 +37,7 @@ export type contextKey =
     | 'gumby.wasQCodeTransformationUsed'
     | 'amazonq.inline.codelensShortcutEnabled'
     | 'aws.toolkit.lambda.walkthroughSelected'
-    | 'aws.amazonq.isSagemakerStudio'
+    | 'aws.amazonq.isSagemakerUnifiedStudio'
 
 const contextMap: Partial<Record<contextKey, any>> = {}
 
