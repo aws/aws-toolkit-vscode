@@ -933,6 +933,7 @@ export class TestController {
                 codeQuery: undefined,
                 userIntent: UserIntent.GENERATE_UNIT_TESTS,
                 customization: getSelectedCustomization(),
+                profile: AuthUtil.instance.regionProfileManager.activeRegionProfile,
                 context: [],
                 relevantTextDocuments: [],
                 additionalContents: [],

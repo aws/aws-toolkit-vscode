@@ -11,6 +11,7 @@ import { TabOpenType } from '../../../amazonq/webview/ui/storages/tabsStorage'
 import { CodeReference } from '../../view/connector/connector'
 import { Customization } from '../../../codewhisperer/client/codewhispereruserclient'
 import { QuickActionCommand } from '@aws/mynah-ui'
+import { RegionProfile } from '../../../codewhisperer/models/model'
 
 export interface TriggerTabIDReceived {
     tabID: string
@@ -186,6 +187,7 @@ export interface TriggerPayload {
     readonly codeQuery: CodeQuery | undefined
     readonly userIntent: UserIntent | undefined
     readonly customization: Customization
+    readonly profile: RegionProfile | undefined
     readonly context: string[] | QuickActionCommand[]
     relevantTextDocuments: RelevantTextDocumentAddition[]
     additionalContents: AdditionalContentEntryAddition[]

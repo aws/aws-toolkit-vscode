@@ -66,6 +66,7 @@ export class InlineChatProvider {
                         codeQuery: context?.focusAreaContext?.names,
                         userIntent: this.userIntentRecognizer.getFromPromptChatMessage(message),
                         customization: getSelectedCustomization(),
+                        profile: AuthUtil.instance.regionProfileManager.activeRegionProfile,
                         context: [],
                         relevantTextDocuments: [],
                         additionalContents: [],

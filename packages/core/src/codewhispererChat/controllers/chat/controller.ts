@@ -763,6 +763,7 @@ export class ChatController {
                         codeQuery: context?.focusAreaContext?.names,
                         userIntent: this.userIntentRecognizer.getFromContextMenuCommand(command),
                         customization: getSelectedCustomization(),
+                        profile: AuthUtil.instance.regionProfileManager.activeRegionProfile,
                         additionalContents: [],
                         relevantTextDocuments: [],
                         documentReferences: [],
@@ -848,6 +849,7 @@ export class ChatController {
                     codeQuery: lastTriggerEvent.context?.focusAreaContext?.names,
                     userIntent: message.userIntent,
                     customization: getSelectedCustomization(),
+                    profile: AuthUtil.instance.regionProfileManager.activeRegionProfile,
                     contextLengths: {
                         ...defaultContextLengths,
                     },
@@ -889,6 +891,7 @@ export class ChatController {
                         codeQuery: context?.focusAreaContext?.names,
                         userIntent: this.userIntentRecognizer.getFromPromptChatMessage(message),
                         customization: getSelectedCustomization(),
+                        profile: AuthUtil.instance.regionProfileManager.activeRegionProfile,
                         context: message.context ?? [],
                         relevantTextDocuments: [],
                         additionalContents: [],
