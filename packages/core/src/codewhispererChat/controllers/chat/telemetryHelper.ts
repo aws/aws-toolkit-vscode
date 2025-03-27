@@ -51,6 +51,7 @@ import {
     FileDiagnostic,
     getDiagnosticsDifferences,
     getDiagnosticsOfCurrentFile,
+    toIdeDiagnostics,
 } from '../../../codewhisperer/util/diagnosticsUtil'
 
 export function logSendTelemetryEventFailure(error: any) {

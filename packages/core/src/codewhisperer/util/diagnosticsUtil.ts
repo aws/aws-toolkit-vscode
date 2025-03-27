@@ -55,7 +55,7 @@ export function toIdeDiagnostics(diagnostic: vscode.Diagnostic): IdeDiagnostic {
     }
 }
 
-function getDiagnosticsType(message: string): string {
+export function getDiagnosticsType(message: string): string {
     // Convert message to lowercase for case-insensitive matching
     const lowercaseMessage = message.toLowerCase()
     // Syntax Error keywords
