@@ -72,8 +72,9 @@ export class FsWrite {
 
     public queueDescription(updates: Writable): void {
         const fileName = path.basename(this.params.path)
-        const fileUri = vscode.Uri.file(this.params.path)
-        updates.write(`Writing to: [${fileName}](${fileUri})`)
+        updates.write(
+            `Please see the generated code below for \`${fileName}\`. Click on the file to review the changes in the code editor and select Accept or Reject.`
+        )
         updates.end()
     }
 
@@ -135,8 +136,6 @@ export class FsWrite {
 
         const newContent = fileContent.replace(params.oldStr, params.newStr)
         await fs.writeFile(sanitizedPath, newContent)
-
-        void vscode.window.showInformationMessage(`Updated: ${sanitizedPath}`)
     }
 
     private async handleInsert(params: InsertParams, sanitizedPath: string): Promise<void> {
@@ -154,8 +153,6 @@ export class FsWrite {
         }
 
         await fs.writeFile(sanitizedPath, newContent)
-
-        void vscode.window.showInformationMessage(`Updated: ${sanitizedPath}`)
     }
 
     private async handleAppend(params: AppendParams, sanitizedPath: string): Promise<void> {
@@ -169,8 +166,6 @@ export class FsWrite {
 
         const newContent = fileContent + contentToAppend
         await fs.writeFile(sanitizedPath, newContent)
-
-        void vscode.window.showInformationMessage(`Updated: ${sanitizedPath}`)
     }
 
     private getCreateCommandText(params: CreateParams): string {

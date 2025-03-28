@@ -24,8 +24,6 @@ export class ChatSession {
      * _showDiffOnFileWrite = Controls whether to show diff view (true) or file context view (false) to the user
      */
     private _readFiles: string[] = []
-    private _filePath: string | undefined
-    private _tempFilePath: string | undefined
     private _toolUse: ToolUse | undefined
     private _showDiffOnFileWrite: boolean = false
 
@@ -61,23 +59,11 @@ export class ChatSession {
     public get readFiles(): string[] {
         return this._readFiles
     }
-    public get filePath(): string | undefined {
-        return this._filePath
-    }
-    public get tempFilePath(): string | undefined {
-        return this._tempFilePath
-    }
     public get showDiffOnFileWrite(): boolean {
         return this._showDiffOnFileWrite
     }
     public setShowDiffOnFileWrite(value: boolean) {
         this._showDiffOnFileWrite = value
-    }
-    public setFilePath(filePath: string | undefined) {
-        this._filePath = filePath
-    }
-    public setTempFilePath(tempFilePath: string | undefined) {
-        this._tempFilePath = tempFilePath
     }
     public addToReadFiles(filePath: string) {
         this._readFiles.push(filePath)

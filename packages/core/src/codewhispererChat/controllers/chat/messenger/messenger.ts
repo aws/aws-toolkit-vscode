@@ -39,10 +39,12 @@ import { LspController } from '../../../../amazonq/lsp/lspController'
 import { extractCodeBlockLanguage } from '../../../../shared/markdown'
 import { extractAuthFollowUp } from '../../../../amazonq/util/authUtils'
 import { helpMessage } from '../../../../amazonq/webview/ui/texts/constants'
-import { ChatItemButton, ChatItemFormItem, MynahUIDataModel } from '@aws/mynah-ui'
+import { ChatItemButton, ChatItemContent, ChatItemFormItem, MynahUIDataModel } from '@aws/mynah-ui'
 import { ChatHistoryManager } from '../../../storages/chatHistory'
-import { ToolUtils } from '../../../tools/toolUtils'
+import { ToolType, ToolUtils } from '../../../tools/toolUtils'
 import { ChatStream } from '../../../tools/chatStream'
+import path from 'path'
+import { getWorkspaceForFile } from '../../../../shared/utilities/workspaceUtils'
 
 export type StaticTextResponseType = 'quick-action-help' | 'onboarding-help' | 'transform' | 'help'
 
@@ -215,21 +217,18 @@ export class Messenger {
 
                         const tool = ToolUtils.tryFromToolUse(toolUse)
                         if ('type' in tool) {
+                            if (tool.type === ToolType.FsWrite) {
+                                session.setShowDiffOnFileWrite(true)
+                            }
                             const requiresAcceptance = ToolUtils.requiresAcceptance(tool)
-
-                            const chatStream = new ChatStream(
-                                this,
-                                tabID,
-                                triggerID,
-                                toolUse.toolUseId,
-                                requiresAcceptance
-                            )
+                            const chatStream = new ChatStream(this, tabID, triggerID, toolUse, requiresAcceptance)
                             ToolUtils.queueDescription(tool, chatStream)
 
                             if (!requiresAcceptance) {
+                                // Need separate id for read tool and safe bash command execution as 'confirm-tool-use' id is required to change button status from `Confirm` to `Confirmed` state in cwChatConnector.ts which will impact generic tool execution.
                                 this.dispatcher.sendCustomFormActionMessage(
                                     new CustomFormActionMessage(tabID, {
-                                        id: 'confirm-tool-use',
+                                        id: 'generic-tool-execution',
                                     })
                                 )
                             }
@@ -432,15 +431,40 @@ export class Messenger {
         message: string,
         tabID: string,
         triggerID: string,
-        toolUseId: string | undefined,
+        toolUse: ToolUse | undefined,
         requiresAcceptance = false
     ) {
         const buttons: ChatItemButton[] = []
-        if (requiresAcceptance) {
+        let fileList: ChatItemContent['fileList'] = {}
+        if (requiresAcceptance && toolUse?.name === ToolType.ExecuteBash) {
             buttons.push({
                 id: 'confirm-tool-use',
                 text: 'Confirm',
                 position: 'outside',
+                status: 'info',
+            })
+        } else if (requiresAcceptance && toolUse?.name === ToolType.FsWrite) {
+            // FileList
+            const absoluteFilePath = (toolUse?.input as any).path
+            const projectPath = getWorkspaceForFile(absoluteFilePath)
+            const relativePath = projectPath ? path.relative(projectPath, absoluteFilePath) : absoluteFilePath
+            fileList = {
+                fileTreeTitle: 'Code suggestions',
+                rootFolderTitle: path.basename(projectPath ?? 'Default'),
+                filePaths: [relativePath],
+            }
+            // Buttons
+            buttons.push({
+                id: 'reject-code-diff',
+                text: 'Reject',
+                position: 'outside',
+                status: 'error',
+            })
+            buttons.push({
+                id: 'accept-code-diff',
+                text: 'Accept',
+                position: 'outside',
+                status: 'success',
             })
         }
 
@@ -453,12 +477,13 @@ export class Messenger {
                     followUpsHeader: undefined,
                     relatedSuggestions: undefined,
                     triggerID,
-                    messageID: toolUseId ?? `tool-output`,
+                    messageID: toolUse?.toolUseId ?? `tool-output`,
                     userIntent: undefined,
                     codeBlockLanguage: undefined,
                     contextList: undefined,
                     canBeVoted: false,
                     buttons,
+                    fileList: requiresAcceptance && toolUse?.name === ToolType.FsWrite ? fileList : undefined,
                 },
                 tabID
             )
