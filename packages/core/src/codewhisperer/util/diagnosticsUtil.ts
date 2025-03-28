@@ -47,9 +47,18 @@ export function getDiagnosticsDifferences(
 }
 
 export function toIdeDiagnostics(diagnostic: vscode.Diagnostic): IdeDiagnostic {
+    let severity = 'INFORMATION'
+    if (diagnostic.severity === vscode.DiagnosticSeverity.Error) {
+        severity = 'ERROR'
+    } else if (diagnostic.severity === vscode.DiagnosticSeverity.Hint) {
+        severity = 'HINT'
+    }
+    if (diagnostic.severity === vscode.DiagnosticSeverity.Warning) {
+        severity = 'INFORMATION'
+    }
     return {
         ideDiagnosticType: getDiagnosticsType(diagnostic.message),
-        severity: diagnostic.severity.toString(),
+        severity: severity,
         source: diagnostic.source,
         range: diagnostic.range,
     }
