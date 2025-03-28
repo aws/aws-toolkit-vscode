@@ -17,7 +17,7 @@ export async function createCodeWhispererChatStreamingClient(): Promise<CodeWhis
         endpoint: cwsprConfig.endpoint,
         token: { token: bearerToken },
         customUserAgent: getUserAgent(),
-        retryStrategy: new ConfiguredRetryStrategy(3, (attempt: number) => 500 + attempt ** 10),
+        retryStrategy: new ConfiguredRetryStrategy(1, (attempt: number) => 500 + attempt ** 10),
     })
     return streamingClient
 }
