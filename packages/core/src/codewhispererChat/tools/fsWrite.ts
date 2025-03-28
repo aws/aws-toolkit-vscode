@@ -44,7 +44,7 @@ export class FsWrite {
 
     constructor(private readonly params: FsWriteParams) {}
 
-    public async invoke(updates: Writable): Promise<InvokeOutput> {
+    public async invoke(updates?: Writable): Promise<InvokeOutput> {
         const sanitizedPath = sanitizePath(this.params.path)
 
         switch (this.params.command) {

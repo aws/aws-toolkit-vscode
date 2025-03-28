@@ -777,9 +777,7 @@ export class ChatController {
             }
             const tool: Tool = result
             await ToolUtils.validate(tool)
-
-            const chatStream = new ChatStream(this.messenger, message.tabID, randomUUID(), clonedToolUse)
-            await ToolUtils.invoke(tool, chatStream)
+            await ToolUtils.invoke(tool)
 
             // Check if fileExists=false, If yes, return instead of showing broken diff experience.
             if (!tempFilePath) {
