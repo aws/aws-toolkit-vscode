@@ -77,7 +77,6 @@ export class AmazonQLspAuth {
 
     public updateBearerToken = onceChanged(this._updateBearerToken.bind(this))
     private async _updateBearerToken(token: string) {
-        getLogger('amazonqLsp').info('Sending updated bearer token to LSP')
         const request = await this.createUpdateCredentialsRequest({
             token,
         })
