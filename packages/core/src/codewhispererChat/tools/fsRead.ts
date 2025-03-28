@@ -8,6 +8,7 @@ import { readDirectoryRecursively } from '../../shared/utilities/workspaceUtils'
 import fs from '../../shared/fs/fs'
 import { InvokeOutput, maxToolResponseSize, OutputKind, sanitizePath } from './toolShared'
 import { Writable } from 'stream'
+import path from 'path'
 
 export interface FsReadParams {
     path: string
@@ -49,7 +50,12 @@ export class FsRead {
         this.logger.debug(`Validation succeeded for path: ${this.fsPath}`)
     }
 
-    public queueDescription(updates: Writable): void {}
+    public queueDescription(updates: Writable): void {
+        const fileName = path.basename(this.fsPath)
+        const fileUri = vscode.Uri.file(this.fsPath)
+        updates.write(`Reading: [${fileName}](${fileUri})`)
+        updates.end()
+    }
 
     public async invoke(updates: Writable): Promise<InvokeOutput> {
         try {

@@ -215,14 +215,24 @@ export class Messenger {
 
                         const tool = ToolUtils.tryFromToolUse(toolUse)
                         if ('type' in tool) {
-                            const chatStream = new ChatStream(this, tabID, triggerID, toolUse.toolUseId)
+                            const requiresAcceptance = ToolUtils.requiresAcceptance(tool)
+
+                            const chatStream = new ChatStream(
+                                this,
+                                tabID,
+                                triggerID,
+                                toolUse.toolUseId,
+                                requiresAcceptance
+                            )
                             ToolUtils.queueDescription(tool, chatStream)
 
-                            this.dispatcher.sendCustomFormActionMessage(
-                                new CustomFormActionMessage(tabID, {
-                                    id: 'confirm-tool-use',
-                                })
-                            )
+                            if (!requiresAcceptance) {
+                                this.dispatcher.sendCustomFormActionMessage(
+                                    new CustomFormActionMessage(tabID, {
+                                        id: 'confirm-tool-use',
+                                    })
+                                )
+                            }
                         } else {
                             // TODO: Handle the error
                         }
@@ -418,7 +428,22 @@ export class Messenger {
         )
     }
 
-    public sendPartialToolLog(message: string, tabID: string, triggerID: string, toolUseId: string | undefined) {
+    public sendPartialToolLog(
+        message: string,
+        tabID: string,
+        triggerID: string,
+        toolUseId: string | undefined,
+        requiresAcceptance = false
+    ) {
+        const buttons: ChatItemButton[] = []
+        if (requiresAcceptance) {
+            buttons.push({
+                id: 'confirm-tool-use',
+                text: 'Confirm',
+                position: 'outside',
+            })
+        }
+
         this.dispatcher.sendChatMessage(
             new ChatMessage(
                 {
@@ -433,6 +458,7 @@ export class Messenger {
                     codeBlockLanguage: undefined,
                     contextList: undefined,
                     canBeVoted: false,
+                    buttons,
                 },
                 tabID
             )
