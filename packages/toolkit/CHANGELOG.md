@@ -1,3 +1,8 @@
+## 3.52.0 2025-03-28
+
+- **Bug Fix** SAM build: prevent running multiple build processes for the same template
+- **Feature** Lambda: Add 'Process SNS notification messages with Lambda' Serverless Land pattern.
+
 ## 3.51.0 2025-03-20
 
 - **Feature** Update Step Functions marketplace documentation.
