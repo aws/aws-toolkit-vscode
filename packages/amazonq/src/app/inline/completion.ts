@@ -65,7 +65,7 @@ export class InlineCompletionManager implements Disposable {
 
     public registerCustomization(client: LanguageClient) {
         commands.registerCommand(
-            'aws.amazonq.connect',
+            '_aws.amazonq.customization.connect',
             async (
                 source: string,
                 startUrl?: string,
@@ -83,9 +83,12 @@ export class InlineCompletionManager implements Disposable {
             }
         )
 
-        commands.registerCommand('aws.amazonq.select', async (customization: any, source: CodeWhispererSource) => {
-            return await selectCustomizationHandler(client)(customization, source)
-        })
+        commands.registerCommand(
+            '_aws.amazonq.customization.select',
+            async (customization: any, source: CodeWhispererSource) => {
+                return await selectCustomizationHandler(client)(customization, source)
+            }
+        )
     }
 
     public registerInlineCompletion() {

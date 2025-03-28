@@ -163,7 +163,7 @@ export const setSelectedCustomization = async (
     vsCodeState.isFreeTierLimitReached = false
     await Commands.tryExecute('aws.amazonq.refreshStatusBar')
     if (Experiments.instance.get('amazonqLSP', true) && client) {
-        await notifySelectedCustomizatioToLsp(client, customization.arn)
+        await notifySelectedCustomizationToLsp(client, customization.arn)
     }
 }
 
@@ -379,7 +379,7 @@ export const getCustomizationsFromLsp = async (client: LanguageClient) => {
     return response.customizations
 }
 
-export const notifySelectedCustomizatioToLsp = async (client: LanguageClient, customizationArn: string) => {
+export const notifySelectedCustomizationToLsp = async (client: LanguageClient, customizationArn: string) => {
     client.sendNotification('workspace/didChangeConfiguration', {
         section: 'amazonQ',
         settings: {

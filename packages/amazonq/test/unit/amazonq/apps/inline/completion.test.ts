@@ -261,14 +261,14 @@ describe('InlineCompletionManager', () => {
             it('should register connect customization command', async () => {
                 const connectCustomizationCall = registerCommandStub
                     .getCalls()
-                    .find((call) => call.args[0] === 'aws.amazonq.connect')
+                    .find((call) => call.args[0] === '_aws.amazonq.customization.connect')
 
                 assert(connectCustomizationCall, 'Connect customization command should be registered')
             })
             it('should register select customization command', async () => {
                 const connectCustomizationCall = registerCommandStub
                     .getCalls()
-                    .find((call) => call.args[0] === 'aws.amazonq.select')
+                    .find((call) => call.args[0] === '_aws.amazonq.customization.select')
 
                 assert(connectCustomizationCall, 'Select customization command should be registered')
             })
