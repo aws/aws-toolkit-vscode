@@ -13,6 +13,7 @@ import {
     Uri,
 } from 'vscode'
 import { LanguageServerResolver } from 'aws-core-vscode/shared'
+import * as path from 'path'
 
 export class AmazonQChatViewProvider implements WebviewViewProvider {
     public static readonly viewType = 'aws.amazonq.AmazonQChatView'
@@ -30,7 +31,7 @@ export class AmazonQChatViewProvider implements WebviewViewProvider {
         webviewView.webview.options = {
             enableScripts: true,
             enableCommandUris: true,
-            localResourceRoots: [lspDir],
+            localResourceRoots: [lspDir, Uri.parse(path.dirname(this.mynahUIPath))],
         }
 
         const uiPath = webviewView.webview.asWebviewUri(Uri.parse(this.mynahUIPath)).toString()

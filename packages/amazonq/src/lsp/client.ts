@@ -97,7 +97,7 @@ export async function startLanguageServer(
         const inlineManager = new InlineCompletionManager(client)
         inlineManager.registerInlineCompletion()
         if (Experiments.instance.get('amazonqChatLSP', false)) {
-            activate(client, encryptionKey, resourcePaths.mynahUI)
+            activate(client, encryptionKey, resourcePaths.ui)
         }
 
         // Request handler for when the server wants to know about the clients auth connnection
