@@ -66,35 +66,20 @@ export function toIdeDiagnostics(diagnostic: vscode.Diagnostic): IdeDiagnostic {
 }
 
 export function getDiagnosticsType(message: string): string {
-    // Convert message to lowercase for case-insensitive matching
+    const errorTypes = new Map([
+        ['SYNTAX_ERROR', ['expected', 'indent', 'syntax']],
+        ['TYPE_ERROR', ['type', 'cast']],
+        ['REFERENCE_ERROR', ['undefined', 'not defined', 'undeclared', 'reference']],
+        ['BEST_PRACTICE', ['deprecated', 'unused', 'uninitialized', 'not initialized']],
+        ['SECURITY', ['security', 'vulnerability']],
+    ])
+
     const lowercaseMessage = message.toLowerCase()
-    // Syntax Error keywords
-    if (['expected', 'indent', 'syntax'].some((keyword) => lowercaseMessage.includes(keyword))) {
-        return 'SYNTAX_ERROR'
-    }
 
-    // Type Error keywords
-    if (['type', 'cast'].some((keyword) => lowercaseMessage.includes(keyword))) {
-        return 'TYPE_ERROR'
-    }
-
-    // Reference Error keywords
-    if (['undefined', 'not defined', 'undeclared', 'reference'].some((keyword) => lowercaseMessage.includes(keyword))) {
-        return 'REFERENCE_ERROR'
-    }
-
-    // Best Practice keywords
-    if (
-        ['deprecated', 'unused', 'uninitialized', 'not initialized'].some((keyword) =>
-            lowercaseMessage.includes(keyword)
-        )
-    ) {
-        return 'BEST_PRACTICE'
-    }
-
-    // Security keywords
-    if (['security', 'vulnerability'].some((keyword) => lowercaseMessage.includes(keyword))) {
-        return 'SECURITY'
+    for (const [errorType, keywords] of errorTypes) {
+        if (keywords.some((keyword) => lowercaseMessage.includes(keyword))) {
+            return errorType
+        }
     }
 
     return 'OTHER'
