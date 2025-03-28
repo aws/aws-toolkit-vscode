@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "SAM build: prevent running multiple build processes for the same template"
-}
