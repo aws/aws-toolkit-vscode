@@ -14,11 +14,11 @@ import { Range } from 'semver'
 import { getLogger } from '../logger/logger'
 import type { Logger, LogTopic } from '../logger/logger'
 
-export abstract class BaseLspInstaller<T extends ResourcePaths = ResourcePaths> {
+export abstract class BaseLspInstaller<T extends ResourcePaths = ResourcePaths, Config extends LspConfig = LspConfig> {
     private logger: Logger
 
     constructor(
-        protected config: LspConfig,
+        protected config: Config,
         loggerName: Extract<LogTopic, 'amazonqLsp' | 'amazonqWorkspaceLsp'>
     ) {
         this.logger = getLogger(loggerName)

@@ -45,7 +45,8 @@ sequenceDiagram
     npm run package
     ```
     to get the project setup
-3. Uncomment the `__AMAZONQLSP_PATH` variable in `amazonq/.vscode/launch.json` Extension configuration
+3. Uncomment the `__AMAZONQLSP_PATH` variable in `amazonq/.vscode/launch.json` Extension configuration if you just want basic inline completion support
+    1. Uncomment the `__AMAZONQLSP_UI` variable in `amazonq/.vscode/launch.json` Extension configuration if you want chat support as well
 4. Use the `Launch LSP with Debugging` configuration and set breakpoints in VSCode or the language server
 
 ## Amazon Q Inline Activation
