@@ -67,17 +67,6 @@ export class ExecuteBash {
 
     public async invoke(updates?: Writable): Promise<InvokeOutput> {
         this.logger.info(`Invoking bash command: "${this.command}" in cwd: "${this.workingDirectory}"`)
-        if (!updates) {
-            // updates passed as undefined only in the code diff is clicked to avoid showing Q Streaming spinner component to the user.
-            return new Promise(async (resolve) => {
-                resolve({
-                    output: {
-                        kind: OutputKind.Json,
-                        content: '',
-                    },
-                })
-            })
-        }
 
         return new Promise(async (resolve, reject) => {
             this.logger.debug(`Spawning process with command: bash -c "${this.command}" (cwd=${this.workingDirectory})`)
@@ -137,9 +126,9 @@ export class ExecuteBash {
         })
     }
 
-    private static handleChunk(chunk: string, buffer: string[], updates: Writable) {
+    private static handleChunk(chunk: string, buffer: string[], updates?: Writable) {
         try {
-            updates.write(chunk)
+            updates?.write(chunk)
             const lines = chunk.split(/\r?\n/)
             for (const line of lines) {
                 buffer.push(line)

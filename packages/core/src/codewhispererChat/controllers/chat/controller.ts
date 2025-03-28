@@ -90,7 +90,7 @@ import { ChatSession } from '../../clients/chat/v0/chat'
 import { ChatHistoryManager } from '../../storages/chatHistory'
 import { amazonQTabSuffix } from '../../../shared/constants'
 import { OutputKind } from '../../tools/toolShared'
-import { ToolUtils, Tool } from '../../tools/toolUtils'
+import { ToolUtils, Tool, ToolType } from '../../tools/toolUtils'
 import { ChatStream } from '../../tools/chatStream'
 import { FsWriteParams } from '../../tools/fsWrite'
 import { tempDirPath } from '../../../shared/filesystemUtilities'
@@ -661,10 +661,6 @@ export class ChatController {
                             toolUseId: toolUse.toolUseId,
                             status: ToolResultStatus.SUCCESS,
                         })
-                        // Close the diff view if User accept the generated code changes.
-                        if (vscode.window.tabGroups.activeTabGroup.activeTab?.label.includes(amazonQTabSuffix)) {
-                            await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
-                        }
                     } catch (e: any) {
                         toolResults.push({
                             content: [{ text: e.message }],
@@ -675,6 +671,13 @@ export class ChatController {
                 } else {
                     const toolResult: ToolResult = result
                     toolResults.push(toolResult)
+                }
+
+                if (toolUse.name === ToolType.FsWrite) {
+                    await vscode.commands.executeCommand(
+                        'vscode.open',
+                        vscode.Uri.file((toolUse.input as unknown as FsWriteParams).path)
+                    )
                 }
 
                 await this.generateResponse(
@@ -710,6 +713,13 @@ export class ChatController {
             })
     }
 
+    private async closeDiffView() {
+        // Close the diff view if User reject the generated code changes.
+        if (vscode.window.tabGroups.activeTabGroup.activeTab?.label.includes(amazonQTabSuffix)) {
+            await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
+        }
+    }
+
     private async processCustomFormAction(message: CustomFormActionMessage) {
         switch (message.action.id) {
             case 'submit-create-prompt':
@@ -718,15 +728,11 @@ export class ChatController {
             case 'accept-code-diff':
             case 'confirm-tool-use':
             case 'generic-tool-execution':
+                await this.closeDiffView()
                 await this.processToolUseMessage(message)
                 break
             case 'reject-code-diff':
-                // Close the diff view if User reject the generated code changes.
-                if (vscode.window.tabGroups.activeTabGroup.activeTab?.label.includes(amazonQTabSuffix)) {
-                    await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
-                }
-                // TODO: Do session cleanUp.
-                getLogger().info('Generated response is rejected')
+                await this.closeDiffView()
                 break
             default:
                 getLogger().warn(`Unhandled action: ${message.action.id}`)
