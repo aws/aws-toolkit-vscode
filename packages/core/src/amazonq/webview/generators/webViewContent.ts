@@ -94,10 +94,7 @@ export class WebViewContentGenerator {
         }
 
         const regionProfileString: string = JSON.stringify(regionProfile)
-
-        // AuthUtil.instance.getChatAuthState is throttled version which possibly return an old snapshot of auth state however webview initialization here requires the latest accurate
-        // otherwise features will be disabled as auth still says it's not connected & profile selected
-        const authState = (await AuthUtil.instance._getChatAuthState()).amazonQ
+        const authState = (await AuthUtil.instance.getChatAuthState()).amazonQ
 
         return `
         <script type="text/javascript" src="${javascriptEntrypoint.toString()}" defer onload="init()"></script>
