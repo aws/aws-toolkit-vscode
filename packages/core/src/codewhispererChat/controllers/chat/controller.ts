@@ -753,7 +753,7 @@ export class ChatController {
             await fs.mkdir(resultArtifactsDir)
             const tempFilePath = path.join(
                 resultArtifactsDir,
-                `temp-${path.basename((session.toolUse?.input as any).path)}`
+                `temp-${path.basename((session.toolUse?.input as unknown as FsWriteParams).path)}`
             )
 
             // If we have existing filePath copy file content from existing file to temporary file.

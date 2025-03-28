@@ -435,7 +435,7 @@ export class Messenger {
         requiresAcceptance = false
     ) {
         const buttons: ChatItemButton[] = []
-        let fileList: ChatItemContent['fileList'] = {}
+        let fileList: ChatItemContent['fileList'] = undefined
         if (requiresAcceptance && toolUse?.name === ToolType.ExecuteBash) {
             buttons.push({
                 id: 'confirm-tool-use',
@@ -483,7 +483,7 @@ export class Messenger {
                     contextList: undefined,
                     canBeVoted: false,
                     buttons,
-                    fileList: toolUse?.name === ToolType.FsWrite ? fileList : undefined,
+                    fileList,
                 },
                 tabID
             )
