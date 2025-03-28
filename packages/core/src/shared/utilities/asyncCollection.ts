@@ -150,7 +150,7 @@ async function* filterGenerator<T, U extends T, R = T>(
         }
 
         if (predicate(value)) {
-            yield value
+            yield value as unknown as Awaited<U>
         }
     }
 }

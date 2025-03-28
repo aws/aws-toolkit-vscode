@@ -4,6 +4,7 @@ import {
   SENSITIVE_STRING,
   ExceptionOptionType as __ExceptionOptionType,
 } from "@smithy/smithy-client";
+import { DocumentType as __DocumentType } from "@smithy/types";
 
 /**
  * @public
@@ -43,6 +44,46 @@ export class AccessDeniedException extends __BaseException {
     this.reason = opts.reason;
   }
 }
+
+/**
+ * Structure representing a single entry of additional contextual content
+ * @public
+ */
+export interface AdditionalContentEntry {
+  /**
+   * The name/identifier for this context entry
+   * @public
+   */
+  name: string | undefined;
+
+  /**
+   * A description of what this context entry represents
+   * @public
+   */
+  description: string | undefined;
+
+  /**
+   * The actual contextual content
+   * @public
+   */
+  innerContext?: string | undefined;
+}
+
+/**
+ * @internal
+ */
+export const AdditionalContentEntryFilterSensitiveLog = (obj: AdditionalContentEntry): any => ({
+  ...obj,
+  ...(obj.name && { name:
+    SENSITIVE_STRING
+  }),
+  ...(obj.description && { description:
+    SENSITIVE_STRING
+  }),
+  ...(obj.innerContext && { innerContext:
+    SENSITIVE_STRING
+  }),
+})
 
 /**
  * This exception is thrown when an unexpected error occurred during the processing of a request.
@@ -178,13 +219,13 @@ export interface AppStudioState {
    * The namespace of the context. Examples: 'ui.Button', 'ui.Table.DataSource', 'ui.Table.RowActions.Button', 'logic.invokeAWS', 'logic.JavaScript'
    * @public
    */
-  namespace: string;
+  namespace: string | undefined;
 
   /**
    * The name of the property. Examples: 'visibility', 'disability', 'value', 'code'
    * @public
    */
-  propertyName: string;
+  propertyName: string | undefined;
 
   /**
    * The value of the property.
@@ -196,7 +237,7 @@ export interface AppStudioState {
    * Context about how the property is used
    * @public
    */
-  propertyContext: string;
+  propertyContext: string | undefined;
 }
 
 /**
@@ -227,7 +268,7 @@ export interface AssistantResponseEvent {
    * The content of the text message in markdown format.
    * @public
    */
-  content: string;
+  content: string | undefined;
 }
 
 /**
@@ -300,7 +341,7 @@ export interface FollowupPrompt {
    * The content of the text message in markdown format.
    * @public
    */
-  content: string;
+  content: string | undefined;
 
   /**
    * User Intent
@@ -320,7 +361,7 @@ export const FollowupPromptFilterSensitiveLog = (obj: FollowupPrompt): any => ({
 })
 
 /**
- * Represents span in a text
+ * Represents span in a text.
  * @public
  */
 export interface Span {
@@ -364,19 +405,19 @@ export interface Reference {
  */
 export interface SupplementaryWebLink {
   /**
-   * URL of the web reference link
+   * URL of the web reference link.
    * @public
    */
-  url: string;
+  url: string | undefined;
 
   /**
-   * Title of the web reference link
+   * Title of the web reference link.
    * @public
    */
-  title: string;
+  title: string | undefined;
 
   /**
-   * Relevant text snippet from the link
+   * Relevant text snippet from the link.
    * @public
    */
   snippet?: string | undefined;
@@ -399,6 +440,43 @@ export const SupplementaryWebLinkFilterSensitiveLog = (obj: SupplementaryWebLink
 })
 
 /**
+ * Contains information about a tool that the model is requesting be run. The model uses the result from the tool to generate a response.
+ * @public
+ */
+export interface ToolUse {
+  /**
+   * The ID for the tool request.
+   * @public
+   */
+  toolUseId: string | undefined;
+
+  /**
+   * The name for the tool.
+   * @public
+   */
+  name: string | undefined;
+
+  /**
+   * The input to pass to the tool.
+   * @public
+   */
+  input: __DocumentType | undefined;
+}
+
+/**
+ * @internal
+ */
+export const ToolUseFilterSensitiveLog = (obj: ToolUse): any => ({
+  ...obj,
+  ...(obj.name && { name:
+    SENSITIVE_STRING
+  }),
+  ...(obj.input && { input:
+    SENSITIVE_STRING
+  }),
+})
+
+/**
  * Markdown text message.
  * @public
  */
@@ -413,7 +491,7 @@ export interface AssistantResponseMessage {
    * The content of the text message in markdown format.
    * @public
    */
-  content: string;
+  content: string | undefined;
 
   /**
    * Web References
@@ -432,6 +510,12 @@ export interface AssistantResponseMessage {
    * @public
    */
   followupPrompt?: FollowupPrompt | undefined;
+
+  /**
+   * ToolUse Request
+   * @public
+   */
+  toolUses?: (ToolUse)[] | undefined;
 }
 
 /**
@@ -450,6 +534,12 @@ export const AssistantResponseMessageFilterSensitiveLog = (obj: AssistantRespons
   }),
   ...(obj.followupPrompt && { followupPrompt:
     FollowupPromptFilterSensitiveLog(obj.followupPrompt)
+  }),
+  ...(obj.toolUses && { toolUses:
+    obj.toolUses.map(
+      item =>
+      ToolUseFilterSensitiveLog(item)
+    )
   }),
 })
 
@@ -499,8 +589,167 @@ export class ConflictException extends __BaseException {
  * @public
  */
 export interface ProgrammingLanguage {
-  languageName: string;
+  languageName: string | undefined;
 }
+
+/**
+ * @public
+ * @enum
+ */
+export const ImageFormat = {
+  GIF: "gif",
+  JPEG: "jpeg",
+  PNG: "png",
+  WEBP: "webp",
+} as const
+/**
+ * @public
+ */
+export type ImageFormat = typeof ImageFormat[keyof typeof ImageFormat]
+
+/**
+ * Image bytes limited to ~10MB considering overhead of base64 encoding
+ * @public
+ */
+export type ImageSource =
+  | ImageSource.BytesMember
+  | ImageSource.$UnknownMember
+
+/**
+ * @public
+ */
+export namespace ImageSource {
+
+  export interface BytesMember {
+    bytes: Uint8Array;
+    $unknown?: never;
+  }
+
+  /**
+   * @public
+   */
+  export interface $UnknownMember {
+    bytes?: never;
+    $unknown: [string, any];
+  }
+
+  export interface Visitor<T> {
+    bytes: (value: Uint8Array) => T;
+    _: (name: string, value: any) => T;
+  }
+
+  export const visit = <T>(
+    value: ImageSource,
+    visitor: Visitor<T>
+  ): T => {
+    if (value.bytes !== undefined) return visitor.bytes(value.bytes);
+    return visitor._(value.$unknown[0], value.$unknown[1]);
+  }
+
+}
+/**
+ * @internal
+ */
+export const ImageSourceFilterSensitiveLog = (obj: ImageSource): any => {
+  if (obj.bytes !== undefined) return {bytes:
+    obj.bytes
+  };
+  if (obj.$unknown !== undefined) return {[obj.$unknown[0]]: 'UNKNOWN'};
+}
+
+/**
+ * Represents the image source itself and the format of the image.
+ * @public
+ */
+export interface ImageBlock {
+  format: ImageFormat | undefined;
+  /**
+   * Image bytes limited to ~10MB considering overhead of base64 encoding
+   * @public
+   */
+  source: ImageSource | undefined;
+}
+
+/**
+ * @internal
+ */
+export const ImageBlockFilterSensitiveLog = (obj: ImageBlock): any => ({
+  ...obj,
+  ...(obj.source && { source:
+    SENSITIVE_STRING
+  }),
+})
+
+/**
+ * @public
+ * @enum
+ */
+export const Origin = {
+  /**
+   * Any AI Editor.
+   */
+  AI_EDITOR: "AI_EDITOR",
+  /**
+   * AWS Chatbot
+   */
+  CHATBOT: "CHATBOT",
+  /**
+   * Any CLI caller.
+   */
+  CLI: "CLI",
+  /**
+   * AWS Management Console (https://<region>.console.aws.amazon.com)
+   */
+  CONSOLE: "CONSOLE",
+  /**
+   * AWS Documentation Website (https://docs.aws.amazon.com)
+   */
+  DOCUMENTATION: "DOCUMENTATION",
+  /**
+   * Any caller from GitLab Q integration.
+   */
+  GITLAB: "GITLAB",
+  /**
+   * Any IDE caller.
+   */
+  IDE: "IDE",
+  /**
+   * AWS Marketing Website (https://aws.amazon.com)
+   */
+  MARKETING: "MARKETING",
+  /**
+   * MD.
+   */
+  MD: "MD",
+  /**
+   * AWS Mobile Application (ACMA)
+   */
+  MOBILE: "MOBILE",
+  /**
+   * Amazon OpenSearch dashboard
+   */
+  OPENSEARCH_DASHBOARD: "OPENSEARCH_DASHBOARD",
+  /**
+   * Amazon SageMaker's Rome Chat.
+   */
+  SAGE_MAKER: "SAGE_MAKER",
+  /**
+   * Internal Service Traffic (Integ Tests, Canaries, etc.). This is the default when no Origin header present in request.
+   */
+  SERVICE_INTERNAL: "SERVICE_INTERNAL",
+  /**
+   * Unified Search in AWS Management Console (https://<region>.console.aws.amazon.com)
+   */
+  UNIFIED_SEARCH: "UNIFIED_SEARCH",
+  /**
+   * Origin header is not set.
+   */
+  UNKNOWN: "UNKNOWN",
+} as const
+/**
+ * @public
+ */
+export type Origin = typeof Origin[keyof typeof Origin]
 
 /**
  * Information about the state of the AWS management console page from which the user is calling
@@ -552,19 +801,19 @@ export interface RuntimeDiagnostic {
    * A human-readable string describing the source of the diagnostic
    * @public
    */
-  source: string;
+  source: string | undefined;
 
   /**
    * Diagnostic Error type
    * @public
    */
-  severity: DiagnosticSeverity;
+  severity: DiagnosticSeverity | undefined;
 
   /**
    * The diagnostic's message.
    * @public
    */
-  message: string;
+  message: string | undefined;
 }
 
 /**
@@ -601,13 +850,13 @@ export interface DocumentSymbol {
    * Name of the Document Symbol
    * @public
    */
-  name: string;
+  name: string | undefined;
 
   /**
    * Symbol type - DECLARATION / USAGE
    * @public
    */
-  type: SymbolType;
+  type: SymbolType | undefined;
 
   /**
    * Symbol package / source for FullyQualified names
@@ -625,7 +874,7 @@ export interface TextDocument {
    * Filepath relative to the root of the workspace
    * @public
    */
-  relativeFilePath: string;
+  relativeFilePath: string | undefined;
 
   /**
    * The text document's language identifier.
@@ -668,13 +917,13 @@ export interface Position {
    * Line position in a document.
    * @public
    */
-  line: number;
+  line: number | undefined;
 
   /**
    * Character offset on a line in a document (zero-based)
    * @public
    */
-  character: number;
+  character: number | undefined;
 }
 
 /**
@@ -686,13 +935,13 @@ export interface Range {
    * The range's start position.
    * @public
    */
-  start: Position;
+  start: Position | undefined;
 
   /**
    * The range's end position.
    * @public
    */
-  end: Position;
+  end: Position | undefined;
 }
 
 /**
@@ -704,31 +953,31 @@ export interface TextDocumentDiagnostic {
    * Represents a Text Document associated with Diagnostic
    * @public
    */
-  document: TextDocument;
+  document: TextDocument | undefined;
 
   /**
    * The range at which the message applies.
    * @public
    */
-  range: Range;
+  range: Range | undefined;
 
   /**
    * A human-readable string describing the source of the diagnostic
    * @public
    */
-  source: string;
+  source: string | undefined;
 
   /**
    * Diagnostic Error type
    * @public
    */
-  severity: DiagnosticSeverity;
+  severity: DiagnosticSeverity | undefined;
 
   /**
    * The diagnostic's message.
    * @public
    */
-  message: string;
+  message: string | undefined;
 }
 
 /**
@@ -888,7 +1137,7 @@ export interface RelevantTextDocument {
    * Filepath relative to the root of the workspace
    * @public
    */
-  relativeFilePath: string;
+  relativeFilePath: string | undefined;
 
   /**
    * The text document's language identifier.
@@ -950,6 +1199,12 @@ export interface EditorState {
    * @public
    */
   useRelevantDocuments?: boolean | undefined;
+
+  /**
+   * Represents IDE provided list of workspace folders
+   * @public
+   */
+  workspaceFolders?: (string)[] | undefined;
 }
 
 /**
@@ -968,6 +1223,9 @@ export const EditorStateFilterSensitiveLog = (obj: EditorState): any => ({
       item =>
       RelevantTextDocumentFilterSensitiveLog(item)
     )
+  }),
+  ...(obj.workspaceFolders && { workspaceFolders:
+    SENSITIVE_STRING
   }),
 })
 
@@ -1079,7 +1337,7 @@ export interface ShellHistoryEntry {
    * The shell command that was run
    * @public
    */
-  command: string;
+  command: string | undefined;
 
   /**
    * The directory the command was ran in
@@ -1134,7 +1392,7 @@ export interface ShellState {
    * The name of the current shell
    * @public
    */
-  shellName: string;
+  shellName: string | undefined;
 
   /**
    * The history previous shell commands for the current shell
@@ -1155,6 +1413,239 @@ export const ShellStateFilterSensitiveLog = (obj: ShellState): any => ({
     )
   }),
 })
+
+/**
+ * @public
+ */
+export type ToolResultContentBlock =
+  | ToolResultContentBlock.JsonMember
+  | ToolResultContentBlock.TextMember
+  | ToolResultContentBlock.$UnknownMember
+
+/**
+ * @public
+ */
+export namespace ToolResultContentBlock {
+
+  /**
+   * A tool result that is text.
+   * @public
+   */
+  export interface TextMember {
+    text: string;
+    json?: never;
+    $unknown?: never;
+  }
+
+  /**
+   * A tool result that is JSON format data.
+   * @public
+   */
+  export interface JsonMember {
+    text?: never;
+    json: __DocumentType;
+    $unknown?: never;
+  }
+
+  /**
+   * @public
+   */
+  export interface $UnknownMember {
+    text?: never;
+    json?: never;
+    $unknown: [string, any];
+  }
+
+  export interface Visitor<T> {
+    text: (value: string) => T;
+    json: (value: __DocumentType) => T;
+    _: (name: string, value: any) => T;
+  }
+
+  export const visit = <T>(
+    value: ToolResultContentBlock,
+    visitor: Visitor<T>
+  ): T => {
+    if (value.text !== undefined) return visitor.text(value.text);
+    if (value.json !== undefined) return visitor.json(value.json);
+    return visitor._(value.$unknown[0], value.$unknown[1]);
+  }
+
+}
+/**
+ * @internal
+ */
+export const ToolResultContentBlockFilterSensitiveLog = (obj: ToolResultContentBlock): any => {
+  if (obj.text !== undefined) return {text:
+    SENSITIVE_STRING
+  };
+  if (obj.json !== undefined) return {json:
+    SENSITIVE_STRING
+  };
+  if (obj.$unknown !== undefined) return {[obj.$unknown[0]]: 'UNKNOWN'};
+}
+
+/**
+ * @public
+ * @enum
+ */
+export const ToolResultStatus = {
+  ERROR: "error",
+  SUCCESS: "success",
+} as const
+/**
+ * @public
+ */
+export type ToolResultStatus = typeof ToolResultStatus[keyof typeof ToolResultStatus]
+
+/**
+ * A tool result that contains the results for a tool request that was previously made.
+ * @public
+ */
+export interface ToolResult {
+  /**
+   * The ID for the tool request.
+   * @public
+   */
+  toolUseId: string | undefined;
+
+  /**
+   * Content of the tool result.
+   * @public
+   */
+  content: (ToolResultContentBlock)[] | undefined;
+
+  /**
+   * Status of the tools result.
+   * @public
+   */
+  status?: ToolResultStatus | undefined;
+}
+
+/**
+ * @internal
+ */
+export const ToolResultFilterSensitiveLog = (obj: ToolResult): any => ({
+  ...obj,
+  ...(obj.content && { content:
+    obj.content.map(
+      item =>
+      ToolResultContentBlockFilterSensitiveLog(item)
+    )
+  }),
+})
+
+/**
+ * The input schema for the tool in JSON format.
+ * @public
+ */
+export interface ToolInputSchema {
+  json?: __DocumentType | undefined;
+}
+
+/**
+ * @internal
+ */
+export const ToolInputSchemaFilterSensitiveLog = (obj: ToolInputSchema): any => ({
+  ...obj,
+  ...(obj.json && { json:
+    SENSITIVE_STRING
+  }),
+})
+
+/**
+ * The specification for the tool.
+ * @public
+ */
+export interface ToolSpecification {
+  /**
+   * The input schema for the tool in JSON format.
+   * @public
+   */
+  inputSchema: ToolInputSchema | undefined;
+
+  /**
+   * The name for the tool.
+   * @public
+   */
+  name: string | undefined;
+
+  /**
+   * The description for the tool.
+   * @public
+   */
+  description?: string | undefined;
+}
+
+/**
+ * @internal
+ */
+export const ToolSpecificationFilterSensitiveLog = (obj: ToolSpecification): any => ({
+  ...obj,
+  ...(obj.inputSchema && { inputSchema:
+    ToolInputSchemaFilterSensitiveLog(obj.inputSchema)
+  }),
+  ...(obj.name && { name:
+    SENSITIVE_STRING
+  }),
+  ...(obj.description && { description:
+    SENSITIVE_STRING
+  }),
+})
+
+/**
+ * Information about a tool that can be used.
+ * @public
+ */
+export type Tool =
+  | Tool.ToolSpecificationMember
+  | Tool.$UnknownMember
+
+/**
+ * @public
+ */
+export namespace Tool {
+
+  /**
+   * The specification for the tool.
+   * @public
+   */
+  export interface ToolSpecificationMember {
+    toolSpecification: ToolSpecification;
+    $unknown?: never;
+  }
+
+  /**
+   * @public
+   */
+  export interface $UnknownMember {
+    toolSpecification?: never;
+    $unknown: [string, any];
+  }
+
+  export interface Visitor<T> {
+    toolSpecification: (value: ToolSpecification) => T;
+    _: (name: string, value: any) => T;
+  }
+
+  export const visit = <T>(
+    value: Tool,
+    visitor: Visitor<T>
+  ): T => {
+    if (value.toolSpecification !== undefined) return visitor.toolSpecification(value.toolSpecification);
+    return visitor._(value.$unknown[0], value.$unknown[1]);
+  }
+
+}
+/**
+ * @internal
+ */
+export const ToolFilterSensitiveLog = (obj: Tool): any => {
+  if (obj.toolSpecification !== undefined) return {toolSpecification:
+    ToolSpecificationFilterSensitiveLog(obj.toolSpecification)
+  };
+  if (obj.$unknown !== undefined) return {[obj.$unknown[0]]: 'UNKNOWN'};
+}
 
 /**
  * Settings information passed by the Q widget
@@ -1216,6 +1707,24 @@ export interface UserInputMessageContext {
    * @public
    */
   userSettings?: UserSettings | undefined;
+
+  /**
+   * List of additional contextual content entries that can be included with the message.
+   * @public
+   */
+  additionalContext?: (AdditionalContentEntry)[] | undefined;
+
+  /**
+   * ToolResults for the requested ToolUses.
+   * @public
+   */
+  toolResults?: (ToolResult)[] | undefined;
+
+  /**
+   * Tools that can be used.
+   * @public
+   */
+  tools?: (Tool)[] | undefined;
 }
 
 /**
@@ -1244,10 +1753,28 @@ export const UserInputMessageContextFilterSensitiveLog = (obj: UserInputMessageC
   ...(obj.consoleState && { consoleState:
     ConsoleStateFilterSensitiveLog(obj.consoleState)
   }),
+  ...(obj.additionalContext && { additionalContext:
+    obj.additionalContext.map(
+      item =>
+      AdditionalContentEntryFilterSensitiveLog(item)
+    )
+  }),
+  ...(obj.toolResults && { toolResults:
+    obj.toolResults.map(
+      item =>
+      ToolResultFilterSensitiveLog(item)
+    )
+  }),
+  ...(obj.tools && { tools:
+    obj.tools.map(
+      item =>
+      ToolFilterSensitiveLog(item)
+    )
+  }),
 })
 
 /**
- * Structure to represent a chat input message from User
+ * Structure to represent a chat input message from User.
  * @public
  */
 export interface UserInputMessage {
@@ -1255,19 +1782,31 @@ export interface UserInputMessage {
    * The content of the chat message.
    * @public
    */
-  content: string;
+  content: string | undefined;
 
   /**
-   * Chat message context associated with the Chat Message
+   * Chat message context associated with the Chat Message.
    * @public
    */
   userInputMessageContext?: UserInputMessageContext | undefined;
 
   /**
-   * User Intent
+   * User Intent.
    * @public
    */
   userIntent?: UserIntent | undefined;
+
+  /**
+   * User Input Origin.
+   * @public
+   */
+  origin?: Origin | undefined;
+
+  /**
+   * Images associated with the Chat Message.
+   * @public
+   */
+  images?: (ImageBlock)[] | undefined;
 }
 
 /**
@@ -1280,6 +1819,12 @@ export const UserInputMessageFilterSensitiveLog = (obj: UserInputMessage): any =
   }),
   ...(obj.userInputMessageContext && { userInputMessageContext:
     UserInputMessageContextFilterSensitiveLog(obj.userInputMessageContext)
+  }),
+  ...(obj.images && { images:
+    obj.images.map(
+      item =>
+      ImageBlockFilterSensitiveLog(item)
+    )
   }),
 })
 
@@ -1297,7 +1842,7 @@ export type ChatMessage =
 export namespace ChatMessage {
 
   /**
-   * Structure to represent a chat input message from User
+   * Structure to represent a chat input message from User.
    * @public
    */
   export interface UserInputMessageMember {
@@ -1355,6 +1900,106 @@ export const ChatMessageFilterSensitiveLog = (obj: ChatMessage): any => {
 }
 
 /**
+ * Represents the target of a citation event
+ * @public
+ */
+export type CitationTarget =
+  | CitationTarget.LocationMember
+  | CitationTarget.RangeMember
+  | CitationTarget.$UnknownMember
+
+/**
+ * @public
+ */
+export namespace CitationTarget {
+
+  /**
+   * Represents a position in the response text where a citation should be added
+   * @public
+   */
+  export interface LocationMember {
+    location: number;
+    range?: never;
+    $unknown?: never;
+  }
+
+  /**
+   * Represents the range in the response text to be targetted by a citation
+   * @public
+   */
+  export interface RangeMember {
+    location?: never;
+    range: Span;
+    $unknown?: never;
+  }
+
+  /**
+   * @public
+   */
+  export interface $UnknownMember {
+    location?: never;
+    range?: never;
+    $unknown: [string, any];
+  }
+
+  export interface Visitor<T> {
+    location: (value: number) => T;
+    range: (value: Span) => T;
+    _: (name: string, value: any) => T;
+  }
+
+  export const visit = <T>(
+    value: CitationTarget,
+    visitor: Visitor<T>
+  ): T => {
+    if (value.location !== undefined) return visitor.location(value.location);
+    if (value.range !== undefined) return visitor.range(value.range);
+    return visitor._(value.$unknown[0], value.$unknown[1]);
+  }
+
+}
+
+/**
+ * Streaming response event for citations
+ * @public
+ */
+export interface CitationEvent {
+  /**
+   * The position or the range of the response text to be cited
+   * @public
+   */
+  target: CitationTarget | undefined;
+
+  /**
+   * The text inside the citation '1' in [1]
+   * @public
+   */
+  citationText?: string | undefined;
+
+  /**
+   * The link to the document being cited
+   * @public
+   */
+  citationLink: string | undefined;
+}
+
+/**
+ * @internal
+ */
+export const CitationEventFilterSensitiveLog = (obj: CitationEvent): any => ({
+  ...obj,
+  ...(obj.target && { target:
+    obj.target
+  }),
+  ...(obj.citationText && { citationText:
+    SENSITIVE_STRING
+  }),
+  ...(obj.citationLink && { citationLink:
+    SENSITIVE_STRING
+  }),
+})
+
+/**
  * Streaming response event for generated code text.
  * @public
  */
@@ -1363,7 +2008,7 @@ export interface CodeEvent {
    * Generated code snippet.
    * @public
    */
-  content: string;
+  content: string | undefined;
 }
 
 /**
@@ -1502,13 +2147,13 @@ export interface CloudWatchTroubleshootingLink {
    * A label for the link.
    * @public
    */
-  label: string;
+  label: string | undefined;
 
   /**
    * Stringified JSON payload. See spec here https://code.amazon.com/packages/CloudWatchOdysseyModel/blobs/50c0832f0e393e4ab68827eb4f04d832366821c1/--/model/events.smithy#L28 .
    * @public
    */
-  investigationPayload: string;
+  investigationPayload: string | undefined;
 
   /**
    * Fallback string, if target channel does not support the CloudWatchTroubleshootingLink.
@@ -1562,13 +2207,13 @@ export interface WebLink {
    * A label for the link
    * @public
    */
-  label: string;
+  label: string | undefined;
 
   /**
    * URL of the Weblink
    * @public
    */
-  url: string;
+  url: string | undefined;
 }
 
 /**
@@ -1614,7 +2259,7 @@ export interface Text {
    * Contains text content that may include sensitive information and can support Markdown formatting.
    * @public
    */
-  content: string;
+  content: string | undefined;
 }
 
 /**
@@ -1680,13 +2325,13 @@ export interface Alert {
    * Enum defining types of alerts that can be issued.
    * @public
    */
-  type: AlertType;
+  type: AlertType | undefined;
 
   /**
    * Contains the content of the alert, which may include sensitive information.
    * @public
    */
-  content: (AlertComponent)[];
+  content: (AlertComponent)[] | undefined;
 }
 
 /**
@@ -1711,13 +2356,13 @@ export interface InfrastructureUpdateTransition {
    * The current state of the infrastructure before the update.
    * @public
    */
-  currentState: string;
+  currentState: string | undefined;
 
   /**
    * The next state of the infrastructure following the update.
    * @public
    */
-  nextState: string;
+  nextState: string | undefined;
 }
 
 /**
@@ -1824,19 +2469,19 @@ export interface Step {
    * A unique identifier for the step. It must be a non-negative integer to ensure each step is distinct.
    * @public
    */
-  id: number;
+  id: number | undefined;
 
   /**
    * Enum representing all possible step states, combining terminal and non-terminal states.
    * @public
    */
-  state: StepState;
+  state: StepState | undefined;
 
   /**
    * A label for the step, providing a concise description.
    * @public
    */
-  label: string;
+  label: string | undefined;
 
   /**
    * Optional content providing additional details about the step.
@@ -1891,7 +2536,7 @@ export interface Progress {
    * A collection of steps that make up a process. Each step is detailed using the Step structure.
    * @public
    */
-  content: (ProgressComponent)[];
+  content: (ProgressComponent)[] | undefined;
 }
 
 /**
@@ -1916,37 +2561,37 @@ export interface Resource {
    * Card title.
    * @public
    */
-  title: string;
+  title: string | undefined;
 
   /**
    * Link for the resource item
    * @public
    */
-  link: string;
+  link: string | undefined;
 
   /**
    * Short text about that resource for example Region: us-east-1
    * @public
    */
-  description: string;
+  description: string | undefined;
 
   /**
    * Resource type e.g AWS EC2
    * @public
    */
-  type: string;
+  type: string | undefined;
 
   /**
    * Amazon resource number e.g arn:aws:aec:.....
    * @public
    */
-  ARN: string;
+  ARN: string | undefined;
 
   /**
    * A stringified object
    * @public
    */
-  resourceJsonString: string;
+  resourceJsonString: string | undefined;
 }
 
 /**
@@ -1989,7 +2634,7 @@ export interface ResourceList {
    * List of resources
    * @public
    */
-  items: (Resource)[];
+  items: (Resource)[] | undefined;
 }
 
 /**
@@ -2065,13 +2710,13 @@ export interface Section {
    * Contains text content that may include sensitive information and can support Markdown formatting.
    * @public
    */
-  title: string;
+  title: string | undefined;
 
   /**
    * Contains a list of interaction components e.g Text, Alert, List, etc.
    * @public
    */
-  content: (SectionComponent)[];
+  content: (SectionComponent)[] | undefined;
 
   /**
    * Action associated with the Section
@@ -2104,7 +2749,7 @@ export const SectionFilterSensitiveLog = (obj: Section): any => ({
  * @public
  */
 export interface Suggestion {
-  value: string;
+  value: string | undefined;
 }
 
 /**
@@ -2122,7 +2767,7 @@ export const SuggestionFilterSensitiveLog = (obj: Suggestion): any => ({
  * @public
  */
 export interface Suggestions {
-  items: (Suggestion)[];
+  items: (Suggestion)[] | undefined;
 }
 
 /**
@@ -2188,7 +2833,7 @@ export interface TaskActionNote {
    * Content of the note, which may include sensitive information.
    * @public
    */
-  content: string;
+  content: string | undefined;
 
   /**
    * Enum defining the types of notes that can be associated with a task action.
@@ -2216,7 +2861,7 @@ export interface TaskAction {
    * A label for the action.
    * @public
    */
-  label: string;
+  label: string | undefined;
 
   /**
    * Structure representing a note associated with a task action.
@@ -2240,7 +2885,7 @@ export interface TaskAction {
    * Map representing key-value pairs for the payload of a task action.
    * @public
    */
-  payload: Record<string, string>;
+  payload: Record<string, string> | undefined;
 
   /**
    * Structure representing a confirmation message related to a task action.
@@ -2326,13 +2971,13 @@ export interface TaskOverview {
    * A label for the task overview.
    * @public
    */
-  label: string;
+  label: string | undefined;
 
   /**
    * Text description providing details about the task. This field may include sensitive information and supports Markdown formatting.
    * @public
    */
-  description: string;
+  description: string | undefined;
 }
 
 /**
@@ -2357,13 +3002,13 @@ export interface TaskDetails {
    * Structure representing an overview of a task, including a label and description.
    * @public
    */
-  overview: TaskOverview;
+  overview: TaskOverview | undefined;
 
   /**
    * Lists the components that can be used to form the task's content.
    * @public
    */
-  content: (TaskComponent)[];
+  content: (TaskComponent)[] | undefined;
 
   /**
    * Optional list of actions associated with the task.
@@ -2403,7 +3048,7 @@ export interface TaskReference {
    * Unique identifier for the task.
    * @public
    */
-  taskId: string;
+  taskId: string | undefined;
 }
 
 /**
@@ -2536,7 +3181,7 @@ export interface InteractionComponentEntry {
    * Interaction component
    * @public
    */
-  interactionComponent: InteractionComponent;
+  interactionComponent: InteractionComponent | undefined;
 }
 
 /**
@@ -2558,7 +3203,7 @@ export interface InteractionComponentsEvent {
    * List of identifiable interaction components
    * @public
    */
-  interactionComponentEntries: (InteractionComponentEntry)[];
+  interactionComponentEntries: (InteractionComponentEntry)[] | undefined;
 }
 
 /**
@@ -2595,9 +3240,9 @@ export interface InvalidStateEvent {
    * Reasons for Invalid State Event
    * @public
    */
-  reason: InvalidStateReason;
+  reason: InvalidStateReason | undefined;
 
-  message: string;
+  message: string | undefined;
 }
 
 /**
@@ -2644,11 +3289,55 @@ export const SupplementaryWebLinksEventFilterSensitiveLog = (obj: SupplementaryW
 })
 
 /**
+ * Event for a ToolUse request. Multiple ToolUse requests can be returned from a single request, so each ToolUse has a unique 'toolUseId'.
+ * @public
+ */
+export interface ToolUseEvent {
+  /**
+   * The ID for the tool request.
+   * @public
+   */
+  toolUseId: string | undefined;
+
+  /**
+   * The name for the tool.
+   * @public
+   */
+  name: string | undefined;
+
+  /**
+   * Represents the serialized json input for the ToolUse request. This field should be concatenated until 'stop' is true.
+   * @public
+   */
+  input?: string | undefined;
+
+  /**
+   * This field is true when all of the serialized input for this ToolUse request has been sent.
+   * @public
+   */
+  stop?: boolean | undefined;
+}
+
+/**
+ * @internal
+ */
+export const ToolUseEventFilterSensitiveLog = (obj: ToolUseEvent): any => ({
+  ...obj,
+  ...(obj.name && { name:
+    SENSITIVE_STRING
+  }),
+  ...(obj.input && { input:
+    SENSITIVE_STRING
+  }),
+})
+
+/**
  * Streaming events from UniDirectional Streaming Conversational APIs.
  * @public
  */
 export type ChatResponseStream =
   | ChatResponseStream.AssistantResponseEventMember
+  | ChatResponseStream.CitationEventMember
   | ChatResponseStream.CodeEventMember
   | ChatResponseStream.CodeReferenceEventMember
   | ChatResponseStream.DryRunSucceedEventMember
@@ -2659,6 +3348,7 @@ export type ChatResponseStream =
   | ChatResponseStream.InvalidStateEventMember
   | ChatResponseStream.MessageMetadataEventMember
   | ChatResponseStream.SupplementaryWebLinksEventMember
+  | ChatResponseStream.ToolUseEventMember
   | ChatResponseStream.$UnknownMember
 
 /**
@@ -2680,6 +3370,8 @@ export namespace ChatResponseStream {
     codeEvent?: never;
     intentsEvent?: never;
     interactionComponentsEvent?: never;
+    toolUseEvent?: never;
+    citationEvent?: never;
     invalidStateEvent?: never;
     error?: never;
     $unknown?: never;
@@ -2699,6 +3391,8 @@ export namespace ChatResponseStream {
     codeEvent?: never;
     intentsEvent?: never;
     interactionComponentsEvent?: never;
+    toolUseEvent?: never;
+    citationEvent?: never;
     invalidStateEvent?: never;
     error?: never;
     $unknown?: never;
@@ -2718,6 +3412,8 @@ export namespace ChatResponseStream {
     codeEvent?: never;
     intentsEvent?: never;
     interactionComponentsEvent?: never;
+    toolUseEvent?: never;
+    citationEvent?: never;
     invalidStateEvent?: never;
     error?: never;
     $unknown?: never;
@@ -2737,6 +3433,8 @@ export namespace ChatResponseStream {
     codeEvent?: never;
     intentsEvent?: never;
     interactionComponentsEvent?: never;
+    toolUseEvent?: never;
+    citationEvent?: never;
     invalidStateEvent?: never;
     error?: never;
     $unknown?: never;
@@ -2756,6 +3454,8 @@ export namespace ChatResponseStream {
     codeEvent?: never;
     intentsEvent?: never;
     interactionComponentsEvent?: never;
+    toolUseEvent?: never;
+    citationEvent?: never;
     invalidStateEvent?: never;
     error?: never;
     $unknown?: never;
@@ -2775,6 +3475,8 @@ export namespace ChatResponseStream {
     codeEvent?: never;
     intentsEvent?: never;
     interactionComponentsEvent?: never;
+    toolUseEvent?: never;
+    citationEvent?: never;
     invalidStateEvent?: never;
     error?: never;
     $unknown?: never;
@@ -2794,6 +3496,8 @@ export namespace ChatResponseStream {
     codeEvent: CodeEvent;
     intentsEvent?: never;
     interactionComponentsEvent?: never;
+    toolUseEvent?: never;
+    citationEvent?: never;
     invalidStateEvent?: never;
     error?: never;
     $unknown?: never;
@@ -2813,6 +3517,8 @@ export namespace ChatResponseStream {
     codeEvent?: never;
     intentsEvent: IntentsEvent;
     interactionComponentsEvent?: never;
+    toolUseEvent?: never;
+    citationEvent?: never;
     invalidStateEvent?: never;
     error?: never;
     $unknown?: never;
@@ -2832,6 +3538,50 @@ export namespace ChatResponseStream {
     codeEvent?: never;
     intentsEvent?: never;
     interactionComponentsEvent: InteractionComponentsEvent;
+    toolUseEvent?: never;
+    citationEvent?: never;
+    invalidStateEvent?: never;
+    error?: never;
+    $unknown?: never;
+  }
+
+  /**
+   * ToolUse event
+   * @public
+   */
+  export interface ToolUseEventMember {
+    messageMetadataEvent?: never;
+    assistantResponseEvent?: never;
+    dryRunSucceedEvent?: never;
+    codeReferenceEvent?: never;
+    supplementaryWebLinksEvent?: never;
+    followupPromptEvent?: never;
+    codeEvent?: never;
+    intentsEvent?: never;
+    interactionComponentsEvent?: never;
+    toolUseEvent: ToolUseEvent;
+    citationEvent?: never;
+    invalidStateEvent?: never;
+    error?: never;
+    $unknown?: never;
+  }
+
+  /**
+   * Citation event
+   * @public
+   */
+  export interface CitationEventMember {
+    messageMetadataEvent?: never;
+    assistantResponseEvent?: never;
+    dryRunSucceedEvent?: never;
+    codeReferenceEvent?: never;
+    supplementaryWebLinksEvent?: never;
+    followupPromptEvent?: never;
+    codeEvent?: never;
+    intentsEvent?: never;
+    interactionComponentsEvent?: never;
+    toolUseEvent?: never;
+    citationEvent: CitationEvent;
     invalidStateEvent?: never;
     error?: never;
     $unknown?: never;
@@ -2851,6 +3601,8 @@ export namespace ChatResponseStream {
     codeEvent?: never;
     intentsEvent?: never;
     interactionComponentsEvent?: never;
+    toolUseEvent?: never;
+    citationEvent?: never;
     invalidStateEvent: InvalidStateEvent;
     error?: never;
     $unknown?: never;
@@ -2870,6 +3622,8 @@ export namespace ChatResponseStream {
     codeEvent?: never;
     intentsEvent?: never;
     interactionComponentsEvent?: never;
+    toolUseEvent?: never;
+    citationEvent?: never;
     invalidStateEvent?: never;
     error: InternalServerException;
     $unknown?: never;
@@ -2888,6 +3642,8 @@ export namespace ChatResponseStream {
     codeEvent?: never;
     intentsEvent?: never;
     interactionComponentsEvent?: never;
+    toolUseEvent?: never;
+    citationEvent?: never;
     invalidStateEvent?: never;
     error?: never;
     $unknown: [string, any];
@@ -2903,6 +3659,8 @@ export namespace ChatResponseStream {
     codeEvent: (value: CodeEvent) => T;
     intentsEvent: (value: IntentsEvent) => T;
     interactionComponentsEvent: (value: InteractionComponentsEvent) => T;
+    toolUseEvent: (value: ToolUseEvent) => T;
+    citationEvent: (value: CitationEvent) => T;
     invalidStateEvent: (value: InvalidStateEvent) => T;
     error: (value: InternalServerException) => T;
     _: (name: string, value: any) => T;
@@ -2921,6 +3679,8 @@ export namespace ChatResponseStream {
     if (value.codeEvent !== undefined) return visitor.codeEvent(value.codeEvent);
     if (value.intentsEvent !== undefined) return visitor.intentsEvent(value.intentsEvent);
     if (value.interactionComponentsEvent !== undefined) return visitor.interactionComponentsEvent(value.interactionComponentsEvent);
+    if (value.toolUseEvent !== undefined) return visitor.toolUseEvent(value.toolUseEvent);
+    if (value.citationEvent !== undefined) return visitor.citationEvent(value.citationEvent);
     if (value.invalidStateEvent !== undefined) return visitor.invalidStateEvent(value.invalidStateEvent);
     if (value.error !== undefined) return visitor.error(value.error);
     return visitor._(value.$unknown[0], value.$unknown[1]);
@@ -2957,6 +3717,12 @@ export const ChatResponseStreamFilterSensitiveLog = (obj: ChatResponseStream): a
   };
   if (obj.interactionComponentsEvent !== undefined) return {interactionComponentsEvent:
     InteractionComponentsEventFilterSensitiveLog(obj.interactionComponentsEvent)
+  };
+  if (obj.toolUseEvent !== undefined) return {toolUseEvent:
+    ToolUseEventFilterSensitiveLog(obj.toolUseEvent)
+  };
+  if (obj.citationEvent !== undefined) return {citationEvent:
+    CitationEventFilterSensitiveLog(obj.citationEvent)
   };
   if (obj.invalidStateEvent !== undefined) return {invalidStateEvent:
     obj.invalidStateEvent
@@ -3065,13 +3831,13 @@ export interface ConversationState {
    * Holds the current message being processed or displayed.
    * @public
    */
-  currentMessage: ChatMessage;
+  currentMessage: ChatMessage | undefined;
 
   /**
    * Trigger Reason for Chat
    * @public
    */
-  chatTriggerType: ChatTriggerType;
+  chatTriggerType: ChatTriggerType | undefined;
 
   customizationArn?: string | undefined;
 }
@@ -3151,61 +3917,6 @@ export class ServiceQuotaExceededException extends __BaseException {
 }
 
 /**
- * @public
- * @enum
- */
-export const Origin = {
-  /**
-   * AWS Chatbot
-   */
-  CHATBOT: "CHATBOT",
-  /**
-   * AWS Management Console (https://<region>.console.aws.amazon.com)
-   */
-  CONSOLE: "CONSOLE",
-  /**
-   * AWS Documentation Website (https://docs.aws.amazon.com)
-   */
-  DOCUMENTATION: "DOCUMENTATION",
-  /**
-   * Any IDE caller.
-   */
-  IDE: "IDE",
-  /**
-   * AWS Marketing Website (https://aws.amazon.com)
-   */
-  MARKETING: "MARKETING",
-  /**
-   * MD.
-   */
-  MD: "MD",
-  /**
-   * AWS Mobile Application (ACMA)
-   */
-  MOBILE: "MOBILE",
-  /**
-   * Amazon SageMaker's Rome Chat.
-   */
-  SAGE_MAKER: "SAGE_MAKER",
-  /**
-   * Internal Service Traffic (Integ Tests, Canaries, etc.). This is the default when no Origin header present in request.
-   */
-  SERVICE_INTERNAL: "SERVICE_INTERNAL",
-  /**
-   * Unified Search in AWS Management Console (https://<region>.console.aws.amazon.com)
-   */
-  UNIFIED_SEARCH: "UNIFIED_SEARCH",
-  /**
-   * Origin header is not set.
-   */
-  UNKNOWN: "UNKNOWN",
-} as const
-/**
- * @public
- */
-export type Origin = typeof Origin[keyof typeof Origin]
-
-/**
  * Structure to represent a SendMessage request.
  * @public
  */
@@ -3214,7 +3925,7 @@ export interface SendMessageRequest {
    * Structure to represent the current state of a chat conversation.
    * @public
    */
-  conversationState: ConversationState;
+  conversationState: ConversationState | undefined;
 
   profileArn?: string | undefined;
   /**
@@ -3245,7 +3956,7 @@ export interface SendMessageResponse {
    * Streaming events from UniDirectional Streaming Conversational APIs.
    * @public
    */
-  sendMessageResponse: AsyncIterable<ChatResponseStream>;
+  sendMessageResponse: AsyncIterable<ChatResponseStream> | undefined;
 }
 
 /**
@@ -3266,13 +3977,13 @@ export interface GenerateCodeFromCommandsRequest {
    * Format of the output - language/format eg. typescript/cdk
    * @public
    */
-  outputFormat: OutputFormat;
+  outputFormat: OutputFormat | undefined;
 
   /**
    * CommandInput can be extended to either a list of strings or a single string.
    * @public
    */
-  commands: CommandInput;
+  commands: CommandInput | undefined;
 }
 
 /**
@@ -3408,7 +4119,7 @@ export interface GenerateCodeFromCommandsResponse {
    * Streaming events from UniDirectional streaming infrastructure code generation APIs.
    * @public
    */
-  generatedCodeFromCommandsResponse: AsyncIterable<GenerateCodeFromCommandsResponseStream>;
+  generatedCodeFromCommandsResponse: AsyncIterable<GenerateCodeFromCommandsResponseStream> | undefined;
 }
 
 /**

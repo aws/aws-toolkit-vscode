@@ -101,6 +101,9 @@ export interface SendMessageCommandOutput extends SendMessageResponse, __Metadat
  *                 },
  *               ],
  *               useRelevantDocuments: true || false,
+ *               workspaceFolders: [ // WorkspaceFolderList
+ *                 "STRING_VALUE",
+ *               ],
  *             },
  *             shellState: { // ShellState
  *               shellName: "STRING_VALUE", // required
@@ -213,6 +216,15 @@ export interface SendMessageCommandOutput extends SendMessageResponse, __Metadat
  *             ],
  *           },
  *           userIntent: "SUGGEST_ALTERNATE_IMPLEMENTATION" || "APPLY_COMMON_BEST_PRACTICES" || "IMPROVE_CODE" || "SHOW_EXAMPLES" || "CITE_SOURCES" || "EXPLAIN_LINE_BY_LINE" || "EXPLAIN_CODE_SELECTION" || "GENERATE_CLOUDFORMATION_TEMPLATE" || "GENERATE_UNIT_TESTS" || "CODE_GENERATION",
+ *           origin: "STRING_VALUE",
+ *           images: [ // ImageBlocks
+ *             { // ImageBlock
+ *               format: "png" || "jpeg" || "gif" || "webp", // required
+ *               source: { // ImageSource Union: only one key present
+ *                 bytes: new Uint8Array(), // e.g. Buffer.from("") or new TextEncoder().encode("")
+ *               },
+ *             },
+ *           ],
  *         },
  *         assistantResponseMessage: { // AssistantResponseMessage
  *           messageId: "STRING_VALUE",
@@ -239,6 +251,13 @@ export interface SendMessageCommandOutput extends SendMessageResponse, __Metadat
  *             content: "STRING_VALUE", // required
  *             userIntent: "SUGGEST_ALTERNATE_IMPLEMENTATION" || "APPLY_COMMON_BEST_PRACTICES" || "IMPROVE_CODE" || "SHOW_EXAMPLES" || "CITE_SOURCES" || "EXPLAIN_LINE_BY_LINE" || "EXPLAIN_CODE_SELECTION" || "GENERATE_CLOUDFORMATION_TEMPLATE" || "GENERATE_UNIT_TESTS" || "CODE_GENERATION",
  *           },
+ *           toolUses: [ // ToolUses
+ *             { // ToolUse
+ *               toolUseId: "STRING_VALUE", // required
+ *               name: "STRING_VALUE", // required
+ *               input: "DOCUMENT_VALUE", // required
+ *             },
+ *           ],
  *         },
  *       },
  *     ],
@@ -272,6 +291,9 @@ export interface SendMessageCommandOutput extends SendMessageResponse, __Metadat
  *               },
  *             ],
  *             useRelevantDocuments: true || false,
+ *             workspaceFolders: [
+ *               "STRING_VALUE",
+ *             ],
  *           },
  *           shellState: {
  *             shellName: "STRING_VALUE", // required
@@ -365,6 +387,15 @@ export interface SendMessageCommandOutput extends SendMessageResponse, __Metadat
  *           ],
  *         },
  *         userIntent: "SUGGEST_ALTERNATE_IMPLEMENTATION" || "APPLY_COMMON_BEST_PRACTICES" || "IMPROVE_CODE" || "SHOW_EXAMPLES" || "CITE_SOURCES" || "EXPLAIN_LINE_BY_LINE" || "EXPLAIN_CODE_SELECTION" || "GENERATE_CLOUDFORMATION_TEMPLATE" || "GENERATE_UNIT_TESTS" || "CODE_GENERATION",
+ *         origin: "STRING_VALUE",
+ *         images: [
+ *           {
+ *             format: "png" || "jpeg" || "gif" || "webp", // required
+ *             source: {//  Union: only one key present
+ *               bytes: new Uint8Array(), // e.g. Buffer.from("") or new TextEncoder().encode("")
+ *             },
+ *           },
+ *         ],
  *       },
  *       assistantResponseMessage: {
  *         messageId: "STRING_VALUE",
@@ -391,6 +422,13 @@ export interface SendMessageCommandOutput extends SendMessageResponse, __Metadat
  *           content: "STRING_VALUE", // required
  *           userIntent: "SUGGEST_ALTERNATE_IMPLEMENTATION" || "APPLY_COMMON_BEST_PRACTICES" || "IMPROVE_CODE" || "SHOW_EXAMPLES" || "CITE_SOURCES" || "EXPLAIN_LINE_BY_LINE" || "EXPLAIN_CODE_SELECTION" || "GENERATE_CLOUDFORMATION_TEMPLATE" || "GENERATE_UNIT_TESTS" || "CODE_GENERATION",
  *         },
+ *         toolUses: [
+ *           {
+ *             toolUseId: "STRING_VALUE", // required
+ *             name: "STRING_VALUE", // required
+ *             input: "DOCUMENT_VALUE", // required
+ *           },
+ *         ],
  *       },
  *     },
  *     chatTriggerType: "MANUAL" || "DIAGNOSTIC" || "INLINE_CHAT", // required
@@ -652,6 +690,17 @@ export interface SendMessageCommandOutput extends SendMessageResponse, __Metadat
  * //       name: "STRING_VALUE", // required
  * //       input: "STRING_VALUE",
  * //       stop: true || false,
+ * //     },
+ * //     citationEvent: { // CitationEvent
+ * //       target: { // CitationTarget Union: only one key present
+ * //         location: Number("int"),
+ * //         range: {
+ * //           start: Number("int"),
+ * //           end: Number("int"),
+ * //         },
+ * //       },
+ * //       citationText: "STRING_VALUE",
+ * //       citationLink: "STRING_VALUE", // required
  * //     },
  * //     invalidStateEvent: { // InvalidStateEvent
  * //       reason: "INVALID_TASK_ASSIST_PLAN", // required
