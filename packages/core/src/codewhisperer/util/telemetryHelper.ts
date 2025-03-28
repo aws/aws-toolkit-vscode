@@ -441,35 +441,33 @@ export class TelemetryHelper {
         }
         this.resetUserTriggerDecisionTelemetry()
 
-        // wait 1 seconds for the user installed 3rd party LSP
-        // to update its diagnostics.
-        sleep(1000).then(() => {
-            const diagnosticDiff = getDiagnosticsDifferences(
-                session.diagnosticsBeforeAccept,
-                getDiagnosticsOfCurrentFile()
-            )
-            userTriggerDecisionEvent.addedIdeDiagnostics = diagnosticDiff.added.map((it) => toIdeDiagnostics(it))
-            userTriggerDecisionEvent.removedIdeDiagnostics = diagnosticDiff.removed.map((it) => toIdeDiagnostics(it))
+        const sendEvent = () =>
             client
-                .sendTelemetryEvent({
-                    telemetryEvent: {
-                        userTriggerDecisionEvent: userTriggerDecisionEvent,
-                    },
-                })
-                .then()
+                .sendTelemetryEvent({ telemetryEvent: { userTriggerDecisionEvent: userTriggerDecisionEvent } })
                 .catch((error) => {
-                    let requestId: string | undefined
-                    if (isAwsError(error)) {
-                        requestId = error.requestId
-                    }
-
+                    const requestId = isAwsError(error) ? error.requestId : undefined
                     getLogger().debug(
-                        `Failed to sendTelemetryEvent to CodeWhisperer, requestId: ${requestId ?? ''}, message: ${
-                            error.message
-                        }`
+                        `Failed to sendTelemetryEvent to CodeWhisperer, requestId: ${requestId ?? ''}, message: ${error.message}`
                     )
                 })
-        })
+
+        if (userTriggerDecisionEvent.suggestionState === 'ACCEPT') {
+            // wait 1 seconds for the user installed 3rd party LSP
+            // to update its diagnostics.
+            sleep(1000).then(() => {
+                const diagnosticDiff = getDiagnosticsDifferences(
+                    session.diagnosticsBeforeAccept,
+                    getDiagnosticsOfCurrentFile()
+                )
+                userTriggerDecisionEvent.addedIdeDiagnostics = diagnosticDiff.added.map((it) => toIdeDiagnostics(it))
+                userTriggerDecisionEvent.removedIdeDiagnostics = diagnosticDiff.removed.map((it) =>
+                    toIdeDiagnostics(it)
+                )
+                sendEvent()
+            })
+        } else {
+            sendEvent()
+        }
     }
 
     public getLastTriggerDecisionForClassifier() {
