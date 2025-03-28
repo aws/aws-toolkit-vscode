@@ -5,7 +5,14 @@
 import { IAM, StepFunctions } from 'aws-sdk'
 import * as vscode from 'vscode'
 
+export enum WorkflowMode {
+    Toolkit = 'toolkit',
+    Readonly = 'readonly',
+}
+
 export type WebviewContext = {
+    stateMachineName: string
+    mode: WorkflowMode
     panel: vscode.WebviewPanel
     textDocument: vscode.TextDocument
     disposables: vscode.Disposable[]
@@ -54,7 +61,7 @@ export interface Message {
     messageType: MessageType
 }
 
-export type FileChangeEventTrigger = 'INITIAL_RENDER' | 'MANUAL_SAVE'
+export type FileChangeEventTrigger = 'INITIAL_RENDER' | 'MANUAL_SAVE' | 'CFN_TEMPLATE_CHANGE'
 
 export interface FileChangedMessage extends Message {
     fileName: string
