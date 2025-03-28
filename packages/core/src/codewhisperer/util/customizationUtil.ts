@@ -370,13 +370,19 @@ export const getAvailableCustomizationsList = async () => {
 }
 
 export const getCustomizationsFromLsp = async (client: LanguageClient) => {
-    const response: ListAvailableCustomizationsResponse = await client.sendRequest(
-        getConfigurationFromServerRequestType.method,
-        {
-            section: 'aws.q',
-        } as GetConfigurationFromServerParams
-    )
-    return response.customizations
+    let items: Customization[] = []
+    try {
+        const response: ListAvailableCustomizationsResponse = await client.sendRequest(
+            getConfigurationFromServerRequestType.method,
+            {
+                section: 'aws.q',
+            } as GetConfigurationFromServerParams
+        )
+        items = response.customizations
+    } catch (e) {
+        getLogger().error(`Failed to get customizations from LSP: ${e}`)
+    }
+    return items
 }
 
 export const notifySelectedCustomizationToLsp = async (client: LanguageClient, customizationArn: string) => {
