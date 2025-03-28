@@ -93,14 +93,7 @@ export async function startLanguageServer(
     const auth = new AmazonQLspAuth(client)
 
     return client.onReady().then(async () => {
-        await auth.init()
-        const inlineManager = new InlineCompletionManager(client)
-        inlineManager.registerInlineCompletion()
-        if (Experiments.instance.get('amazonqChatLSP', false)) {
-            activate(client, encryptionKey, resourcePaths.mynahUI)
-        }
-
-        // Request handler for when the server wants to know about the clients auth connnection
+        // Request handler for when the server wants to know about the clients auth connnection. Must be registered before the initial auth init call
         client.onRequest<ConnectionMetadata, Error>(notificationTypes.getConnectionMetadata.method, () => {
             return {
                 sso: {
@@ -108,6 +101,13 @@ export async function startLanguageServer(
                 },
             }
         })
+
+        await auth.init()
+        const inlineManager = new InlineCompletionManager(client)
+        inlineManager.registerInlineCompletion()
+        if (Experiments.instance.get('amazonqChatLSP', false)) {
+            activate(client, encryptionKey, resourcePaths.mynahUI)
+        }
 
         // Temporary code for pen test. Will be removed when we switch to the real flare auth
         const authInterval = setInterval(async () => {
