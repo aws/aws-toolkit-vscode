@@ -8,6 +8,7 @@ import { getLogger } from '../../shared/logger/logger'
 import vscode from 'vscode'
 import { fs } from '../../shared/fs/fs'
 import { Writable } from 'stream'
+import path from 'path'
 
 interface BaseParams {
     path: string
@@ -69,7 +70,12 @@ export class FsWrite {
         }
     }
 
-    public queueDescription(updates: Writable): void {}
+    public queueDescription(updates: Writable): void {
+        const fileName = path.basename(this.params.path)
+        const fileUri = vscode.Uri.file(this.params.path)
+        updates.write(`Writing to: [${fileName}](${fileUri})`)
+        updates.end()
+    }
 
     public async validate(): Promise<void> {
         switch (this.params.command) {

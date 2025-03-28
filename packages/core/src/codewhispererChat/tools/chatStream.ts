@@ -19,6 +19,7 @@ export class ChatStream extends Writable {
         private readonly tabID: string,
         private readonly triggerID: string,
         private readonly toolUseId: string | undefined,
+        private readonly requiresAcceptance = false,
         private readonly logger = getLogger('chatStream')
     ) {
         super()
@@ -30,13 +31,25 @@ export class ChatStream extends Writable {
         const text = chunk.toString()
         this.accumulatedLogs += text
         this.logger.debug(`ChatStream received chunk: ${text}`)
-        this.messenger.sendPartialToolLog(this.accumulatedLogs, this.tabID, this.triggerID, this.toolUseId)
+        this.messenger.sendPartialToolLog(
+            this.accumulatedLogs,
+            this.tabID,
+            this.triggerID,
+            this.toolUseId,
+            this.requiresAcceptance
+        )
         callback()
     }
 
     override _final(callback: (error?: Error | null) => void): void {
         if (this.accumulatedLogs.trim().length > 0) {
-            this.messenger.sendPartialToolLog(this.accumulatedLogs, this.tabID, this.triggerID, this.toolUseId)
+            this.messenger.sendPartialToolLog(
+                this.accumulatedLogs,
+                this.tabID,
+                this.triggerID,
+                this.toolUseId,
+                this.requiresAcceptance
+            )
         }
         callback()
     }
