@@ -1,4 +1,0 @@
-{
-	"type": "Feature",
-	"description": "(Experimental) Amazon Q inline code suggestions via Amazon Q Language Server. (enable with `aws.experiments.amazonqLSP: true`)"
-}
