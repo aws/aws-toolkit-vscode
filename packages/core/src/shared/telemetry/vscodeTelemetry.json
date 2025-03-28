@@ -435,6 +435,20 @@
             ]
         },
         {
+            "name": "stepfunctions_renderCDKStateMachineGraph",
+            "description": "Triggered when rendering StateMachine Graph from CDK Applications."
+        },
+        {
+            "name": "stepfunctions_cfnTemplateChange",
+            "description": "Triggered when the CloudFormation template file associated with AWS Step Functions State Machine visualization is modified.",
+            "metadata": [
+                {
+                    "type": "id",
+                    "required": true
+                }
+            ]
+        },
+        {
             "name": "vscode_activeRegions",
             "description": "Record the number of active regions at startup and when regions are added/removed",
             "unit": "Count",

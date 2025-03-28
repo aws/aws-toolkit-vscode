@@ -8,7 +8,7 @@ import * as vscode from 'vscode'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { i18n } from '../../shared/i18n-helper'
 import { broadcastFileChange } from './handleMessage'
-import { FileWatchInfo, WebviewContext } from './types'
+import { FileWatchInfo, WebviewContext, WorkflowMode } from './types'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { handleMessage } from './handleMessage'
 import { isInvalidJsonFile } from '../utils'
@@ -28,6 +28,8 @@ export class WorkflowStudioEditor {
     protected isPanelDisposed = false
     private readonly onVisualizationDisposeEmitter = new vscode.EventEmitter<void>()
     private fileId: string
+    private readonly mode: WorkflowMode
+    private readonly stateMachineName: string
     public workSpacePath: string
     public defaultTemplatePath: string
     public defaultTemplateName: string
@@ -39,8 +41,12 @@ export class WorkflowStudioEditor {
         textDocument: vscode.TextDocument,
         webviewPanel: vscode.WebviewPanel,
         fileId: string,
-        getWebviewContent: () => Promise<string>
+        getWebviewContent: () => Promise<string>,
+        mode: WorkflowMode,
+        stateMachineName: string
     ) {
+        this.mode = mode
+        this.stateMachineName = stateMachineName
         this.getWebviewContent = getWebviewContent
         this.documentUri = textDocument.uri
         this.webviewPanel = webviewPanel
@@ -102,6 +108,8 @@ export class WorkflowStudioEditor {
             fileStates: this.fileStates,
             loaderNotification: undefined,
             fileId: this.fileId,
+            mode: this.mode,
+            stateMachineName: this.stateMachineName,
         }
 
         void vscode.window.withProgress(
@@ -149,6 +157,24 @@ export class WorkflowStudioEditor {
                                 })
                                 await broadcastFileChange(contextObject, 'MANUAL_SAVE')
                             })
+                        })
+                    )
+
+                    // When rendering StateMachine Graph from CDK applications, we are getting StateMachine ASL definition from the CloudFormation template produced by `cdk synth`
+                    // Track file content update in the CloudFormation template and update the webview to render the updated StateMachine Graph
+                    contextObject.disposables.push(
+                        vscode.workspace.onDidChangeTextDocument(async (textDocument) => {
+                            if (
+                                textDocument.document.uri.fsPath === contextObject.textDocument.uri.fsPath &&
+                                contextObject.mode === WorkflowMode.Readonly
+                            ) {
+                                await telemetry.stepfunctions_cfnTemplateChange.run(async (span) => {
+                                    span.record({
+                                        id: contextObject.fileId,
+                                    })
+                                    await broadcastFileChange(contextObject, 'CFN_TEMPLATE_CHANGE')
+                                })
+                            }
                         })
                     )
 

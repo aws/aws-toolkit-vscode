@@ -15,6 +15,7 @@ import {
     SyncFileRequestMessage,
     ApiCallRequestMessage,
     UnsupportedMessage,
+    WorkflowMode,
 } from './types'
 import { submitFeedback } from '../../feedback/vue/submitFeedback'
 import { placeholder } from '../../shared/vscode/commands2'
@@ -26,6 +27,10 @@ import { WorkflowStudioApiHandler } from './workflowStudioApiHandler'
 import globals from '../../shared/extensionGlobals'
 import { getLogger } from '../../shared/logger/logger'
 import { publishStateMachine } from '../commands/publishStateMachine'
+import {
+    getStateMachineDefinitionFromCfnTemplate,
+    toUnescapedAslJsonString,
+} from '../commands/visualizeStateMachine/getStateMachineDefinitionFromCfnTemplate'
 
 const localize = nls.loadMessageBundle()
 
@@ -37,29 +42,29 @@ const localize = nls.loadMessageBundle()
  */
 export async function handleMessage(message: Message, context: WebviewContext) {
     const { command, messageType } = message
-
+    const isReadonlyMode = context.mode && context.mode === WorkflowMode.Readonly
     if (messageType === MessageType.REQUEST) {
         switch (command) {
             case Command.INIT:
                 void initMessageHandler(context)
                 break
             case Command.SAVE_FILE:
-                void saveFileMessageHandler(message as SaveFileRequestMessage, context)
+                !isReadonlyMode && void saveFileMessageHandler(message as SaveFileRequestMessage, context)
                 break
             case Command.SAVE_FILE_AND_DEPLOY:
-                void saveFileAndDeployMessageHandler(message as SaveFileRequestMessage, context)
+                !isReadonlyMode && void saveFileAndDeployMessageHandler(message as SaveFileRequestMessage, context)
                 break
             case Command.AUTO_SYNC_FILE:
-                void autoSyncFileMessageHandler(message as SyncFileRequestMessage, context)
+                !isReadonlyMode && void autoSyncFileMessageHandler(message as SyncFileRequestMessage, context)
                 break
             case Command.CLOSE_WFS:
                 void closeCustomEditorMessageHandler(context)
                 break
             case Command.OPEN_FEEDBACK:
-                void submitFeedback(placeholder, 'Workflow Studio')
+                !isReadonlyMode && void submitFeedback(placeholder, 'Workflow Studio')
                 break
             case Command.API_CALL:
-                apiCallMessageHandler(message as ApiCallRequestMessage, context)
+                !isReadonlyMode && apiCallMessageHandler(message as ApiCallRequestMessage, context)
                 break
             default:
                 void handleUnsupportedMessage(context, message)
@@ -86,9 +91,15 @@ export async function handleMessage(message: Message, context: WebviewContext) {
  */
 async function initMessageHandler(context: WebviewContext) {
     const filePath = context.defaultTemplatePath
-
+    let fileContents: string
     try {
-        const fileContents = context.textDocument.getText().toString()
+        if (context.mode === WorkflowMode.Readonly) {
+            const definitionString = getStateMachineDefinitionFromCfnTemplate(context.stateMachineName, filePath)
+            fileContents = toUnescapedAslJsonString(definitionString ? definitionString : '')
+        } else {
+            fileContents = context.textDocument.getText().toString()
+        }
+
         context.fileStates[filePath] = { fileContents }
 
         await broadcastFileChange(context, 'INITIAL_RENDER')
@@ -110,11 +121,22 @@ async function initMessageHandler(context: WebviewContext) {
  * @param trigger: The action that triggered the change (either initial render or user saving the file)
  */
 export async function broadcastFileChange(context: WebviewContext, trigger: FileChangeEventTrigger) {
+    const filePath = context.defaultTemplatePath
+    let fileContents: string
+    if (context.mode === WorkflowMode.Readonly) {
+        const definitionString = getStateMachineDefinitionFromCfnTemplate(context.stateMachineName, filePath)
+        fileContents = toUnescapedAslJsonString(definitionString ? definitionString : '')
+    } else {
+        fileContents = context.textDocument.getText().toString()
+    }
     await context.panel.webview.postMessage({
         messageType: MessageType.BROADCAST,
         command: Command.FILE_CHANGED,
-        fileName: context.defaultTemplateName,
-        fileContents: context.textDocument.getText().toString(),
+        fileName:
+            context.mode === WorkflowMode.Readonly && context.stateMachineName
+                ? context.stateMachineName
+                : context.defaultTemplateName,
+        fileContents,
         filePath: context.defaultTemplatePath,
         trigger,
     } as FileChangedMessage)

@@ -16,7 +16,6 @@ import { publishStateMachine } from './commands/publishStateMachine'
 import { Commands } from '../shared/vscode/commands2'
 
 import { ASL_FORMATS, YAML_ASL, JSON_ASL } from './constants/aslFormats'
-import { AslVisualizationCDKManager } from './commands/visualizeStateMachine/aslVisualizationCDKManager'
 import { renderCdkStateMachineGraph } from './commands/visualizeStateMachine/renderStateMachineGraphCDK'
 import { ToolkitError } from '../shared/errors'
 import { telemetry } from '../shared/telemetry/telemetry'
@@ -88,11 +87,9 @@ async function registerStepFunctionCommands(
     awsContext: AwsContext,
     outputChannel: vscode.OutputChannel
 ): Promise<void> {
-    const cdkVisualizationManager = new AslVisualizationCDKManager(extensionContext)
-
     extensionContext.subscriptions.push(
         previewStateMachineCommand.register(),
-        renderCdkStateMachineGraph.register(cdkVisualizationManager),
+        renderCdkStateMachineGraph.register(),
         Commands.register('aws.stepfunctions.createStateMachineFromTemplate', async () => {
             try {
                 await createStateMachineFromTemplate(extensionContext)
