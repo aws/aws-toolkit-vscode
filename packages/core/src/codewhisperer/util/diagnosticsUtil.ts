@@ -33,15 +33,16 @@ export function getDiagnosticsDifferences(
     ) {
         return result
     }
-    // Create sets for efficient lookup
-    const oldSet = new Set(oldDiagnostics.diagnostics.map((d) => getDiagnosticKey(d)))
-    const newSet = new Set(newDiagnostics.diagnostics.map((d) => getDiagnosticKey(d)))
 
-    // Find added diagnostics (present in new but not in old)
-    result.added = newDiagnostics.diagnostics.filter((d) => !oldSet.has(getDiagnosticKey(d)))
+    // Create maps using diagnostic key for uniqueness
+    const oldMap = new Map(oldDiagnostics.diagnostics.map((d) => [getDiagnosticKey(d), d]))
+    const newMap = new Map(newDiagnostics.diagnostics.map((d) => [getDiagnosticKey(d), d]))
 
-    // Find removed diagnostics (present in old but not in new)
-    result.removed = oldDiagnostics.diagnostics.filter((d) => !newSet.has(getDiagnosticKey(d)))
+    // Get added diagnostics (in new but not in old)
+    result.added = [...newMap.values()].filter((d) => !oldMap.has(getDiagnosticKey(d)))
+
+    // Get removed diagnostics (in old but not in new)
+    result.removed = [...oldMap.values()].filter((d) => !newMap.has(getDiagnosticKey(d)))
 
     return result
 }
