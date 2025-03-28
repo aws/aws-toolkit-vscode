@@ -443,7 +443,7 @@ export class Messenger {
                 position: 'outside',
                 status: 'info',
             })
-        } else if (requiresAcceptance && toolUse?.name === ToolType.FsWrite) {
+        } else if (toolUse?.name === ToolType.FsWrite) {
             // FileList
             const absoluteFilePath = (toolUse?.input as any).path
             const projectPath = getWorkspaceForFile(absoluteFilePath)
@@ -483,7 +483,7 @@ export class Messenger {
                     contextList: undefined,
                     canBeVoted: false,
                     buttons,
-                    fileList: requiresAcceptance && toolUse?.name === ToolType.FsWrite ? fileList : undefined,
+                    fileList: toolUse?.name === ToolType.FsWrite ? fileList : undefined,
                 },
                 tabID
             )

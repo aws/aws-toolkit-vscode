@@ -19,8 +19,6 @@ export class ChatSession {
     private sessionId?: string
     /**
      * _readFiles = list of files read from the project to gather context before generating response.
-     * _filePath = The path helps the system locate exactly where to make the necessary changes in the project structure
-     * _tempFilePath = Used to show the code diff view in the editor including LLM changes.
      * _showDiffOnFileWrite = Controls whether to show diff view (true) or file context view (false) to the user
      */
     private _readFiles: string[] = []
