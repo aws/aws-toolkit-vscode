@@ -108,6 +108,7 @@ export async function updateRecentResponse(
         getLogger().warn(`sam: unable to save response at key "${key}": %s`, err)
     }
 }
+
 export function getSamCliErrorMessage(stderr: string): string {
     // Split the stderr string by newline, filter out empty lines, and get the last line
     const lines = stderr
