@@ -1,3 +1,10 @@
+## 1.53.0 2025-03-28
+
+- **Bug Fix** Amazon Q Chat: Choosing a nested subfolder for `/doc` on Windows results in `The folder you chose did not contain any source files` error
+- **Feature** Add support for Code search in Q chat
+- **Feature** (Experimental) Amazon Q inline code suggestions via Amazon Q Language Server. (enable with `aws.experiments.amazonqLSP: true`)
+- **Feature** Command Palette: Add `Amazon Q: Open Chat` command.
+
 ## 1.52.0 2025-03-20
 
 - **Bug Fix** Amazon Q chat: @Folders and @Files are missing `@` prefix in chat history

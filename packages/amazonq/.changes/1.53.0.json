@@ -1,0 +1,22 @@
+{
+	"date": "2025-03-28",
+	"version": "1.53.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q Chat: Choosing a nested subfolder for `/doc` on Windows results in `The folder you chose did not contain any source files` error"
+		},
+		{
+			"type": "Feature",
+			"description": "Add support for Code search in Q chat"
+		},
+		{
+			"type": "Feature",
+			"description": "(Experimental) Amazon Q inline code suggestions via Amazon Q Language Server. (enable with `aws.experiments.amazonqLSP: true`)"
+		},
+		{
+			"type": "Feature",
+			"description": "Command Palette: Add `Amazon Q: Open Chat` command."
+		}
+	]
+}
