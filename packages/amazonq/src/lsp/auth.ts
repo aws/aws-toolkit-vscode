@@ -14,6 +14,8 @@ import * as crypto from 'crypto'
 import { LanguageClient } from 'vscode-languageclient'
 import { AuthUtil } from 'aws-core-vscode/codewhisperer'
 import { Writable } from 'stream'
+import { onceChanged } from 'aws-core-vscode/utils'
+import { getLogger, oneMinute } from 'aws-core-vscode/shared'
 
 export const encryptionKey = crypto.randomBytes(32)
 
@@ -64,7 +66,7 @@ export const notificationTypes = {
 export class AmazonQLspAuth {
     constructor(private readonly client: LanguageClient) {}
 
-    async init() {
+    async refreshConnection() {
         const activeConnection = AuthUtil.instance.auth.activeConnection
         if (activeConnection?.type === 'sso') {
             // send the token to the language server
@@ -73,7 +75,8 @@ export class AmazonQLspAuth {
         }
     }
 
-    private async updateBearerToken(token: string) {
+    public updateBearerToken = onceChanged(this._updateBearerToken.bind(this))
+    private async _updateBearerToken(token: string) {
         const request = await this.createUpdateCredentialsRequest({
             token,
         })
@@ -81,6 +84,16 @@ export class AmazonQLspAuth {
         await this.client.sendRequest(notificationTypes.updateBearerToken.method, request)
 
         this.client.info(`UpdateBearerToken: ${JSON.stringify(request)}`)
+    }
+
+    public startTokenRefreshInterval(pollingTime: number = oneMinute) {
+        const interval = setInterval(async () => {
+            await this.refreshConnection().catch((e) => {
+                getLogger('amazonqLsp').error('Unable to update bearer token: %s', (e as Error).message)
+                clearInterval(interval)
+            })
+        }, pollingTime)
+        return interval
     }
 
     private async createUpdateCredentialsRequest(data: any) {
