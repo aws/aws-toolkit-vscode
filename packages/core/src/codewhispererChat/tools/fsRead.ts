@@ -63,7 +63,7 @@ export class FsRead {
             return this.handleFileRange(fileContents)
         } catch (error: any) {
             this.logger.error(`Failed to read "${this.fsPath}": ${error.message || error}`)
-            throw new Error(`[fs_read] Failed to read "${this.fsPath}": ${error.message || error}`)
+            throw new Error(`Failed to read "${this.fsPath}": ${error.message || error}`)
         }
     }
 

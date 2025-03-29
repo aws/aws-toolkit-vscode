@@ -23,7 +23,6 @@ export class ListDirectory {
     }
 
     public async validate(): Promise<void> {
-        this.logger.debug(`Validating fsPath: ${this.fsPath}`)
         if (!this.fsPath || this.fsPath.trim().length === 0) {
             throw new Error('Path cannot be empty.')
         }
@@ -31,23 +30,21 @@ export class ListDirectory {
         const sanitized = sanitizePath(this.fsPath)
         this.fsPath = sanitized
 
-        const fileUri = vscode.Uri.file(this.fsPath)
-        let exists: boolean
+        const pathUri = vscode.Uri.file(this.fsPath)
+        let pathExists: boolean
         try {
-            exists = await fs.exists(fileUri)
-            if (!exists) {
+            pathExists = await fs.existsDir(pathUri)
+            if (!pathExists) {
                 throw new Error(`Path: "${this.fsPath}" does not exist or cannot be accessed.`)
             }
         } catch (err) {
             throw new Error(`Path: "${this.fsPath}" does not exist or cannot be accessed. (${err})`)
         }
-
-        this.logger.debug(`Validation succeeded for path: ${this.fsPath}`)
     }
 
     public queueDescription(updates: Writable): void {
         const fileName = path.basename(this.fsPath)
-        updates.write(`Listing directory on: [${fileName}]`)
+        updates.write(`Listing directory on filePath: ${fileName}`)
         updates.end()
     }
 
@@ -58,7 +55,7 @@ export class ListDirectory {
             return this.createOutput(listing.join('\n'))
         } catch (error: any) {
             this.logger.error(`Failed to list directory "${this.fsPath}": ${error.message || error}`)
-            throw new Error(`[fs_read] Failed to list directory "${this.fsPath}": ${error.message || error}`)
+            throw new Error(`Failed to list directory "${this.fsPath}": ${error.message || error}`)
         }
     }
 
