@@ -4,7 +4,6 @@
  */
 import * as vscode from 'vscode'
 import { getLogger } from '../../shared/logger/logger'
-import { readDirectoryRecursively } from '../../shared/utilities/workspaceUtils'
 import fs from '../../shared/fs/fs'
 import { InvokeOutput, maxToolResponseSize, OutputKind, sanitizePath } from './toolShared'
 import { Writable } from 'stream'
@@ -18,7 +17,6 @@ export interface FsReadParams {
 export class FsRead {
     private fsPath: string
     private readonly readRange?: number[]
-    private isFile?: boolean // true for file, false for directory
     private readonly logger = getLogger('fsRead')
 
     constructor(params: FsReadParams) {
@@ -36,17 +34,16 @@ export class FsRead {
         this.fsPath = sanitized
 
         const fileUri = vscode.Uri.file(this.fsPath)
-        let exists: boolean
+        let fileExists: boolean
         try {
-            exists = await fs.exists(fileUri)
-            if (!exists) {
+            fileExists = await fs.existsFile(fileUri)
+            if (!fileExists) {
                 throw new Error(`Path: "${this.fsPath}" does not exist or cannot be accessed.`)
             }
         } catch (err) {
             throw new Error(`Path: "${this.fsPath}" does not exist or cannot be accessed. (${err})`)
         }
 
-        this.isFile = await fs.existsFile(fileUri)
         this.logger.debug(`Validation succeeded for path: ${this.fsPath}`)
     }
 
@@ -61,20 +58,12 @@ export class FsRead {
         try {
             const fileUri = vscode.Uri.file(this.fsPath)
 
-            if (this.isFile) {
-                const fileContents = await this.readFile(fileUri)
-                this.logger.info(`Read file: ${this.fsPath}, size: ${fileContents.length}`)
-                return this.handleFileRange(fileContents)
-            } else if (!this.isFile) {
-                const maxDepth = this.getDirectoryDepth() ?? 0
-                const listing = await readDirectoryRecursively(fileUri, maxDepth)
-                return this.createOutput(listing.join('\n'))
-            } else {
-                throw new Error(`"${this.fsPath}" is neither a standard file nor directory.`)
-            }
+            const fileContents = await this.readFile(fileUri)
+            this.logger.info(`Read file: ${this.fsPath}, size: ${fileContents.length}`)
+            return this.handleFileRange(fileContents)
         } catch (error: any) {
             this.logger.error(`Failed to read "${this.fsPath}": ${error.message || error}`)
-            throw new Error(`[fs_read] Failed to read "${this.fsPath}": ${error.message || error}`)
+            throw new Error(`Failed to read "${this.fsPath}": ${error.message || error}`)
         }
     }
 
@@ -116,13 +105,6 @@ export class FsRead {
         const finalStart = Math.max(0, Math.min(lineCount - 1, convert(startIdx)))
         const finalEnd = Math.max(0, Math.min(lineCount - 1, convert(endIdx)))
         return [finalStart, finalEnd]
-    }
-
-    private getDirectoryDepth(): number | undefined {
-        if (!this.readRange || this.readRange.length === 0) {
-            return 0
-        }
-        return this.readRange[0]
     }
 
     private enforceMaxSize(content: string): string {
