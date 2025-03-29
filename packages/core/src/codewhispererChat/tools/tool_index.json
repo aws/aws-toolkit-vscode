@@ -22,7 +22,7 @@
     },
     "fsWrite": {
         "name": "fsWrite",
-        "description": "A tool for creating and editing files\n * The `create` command will override the file at `path` if it already exists as a file, and otherwise create a new file\n * The `append` command will add content to the end of an existing file, automatically adding a newline if the file doesn't end with one. The file must exist.\n Notes for using the `strReplace` command:\n * The `oldStr` parameter should match EXACTLY one or more consecutive lines from the original file. Be mindful of whitespaces!\n * If the `oldStr` parameter is not unique in the file, the replacement will not be performed. Make sure to include enough context in `oldStr` to make it unique\n * The `newStr` parameter should contain the edited lines that should replace the `oldStr`. The `insert` command will insert `newStr` after `insertLine` and place it on its own line.",
+        "description": "A tool for creating and editing a file.\n * The `create` command will override the file at `path` if it already exists as a file, and otherwise create a new file\n * The `append` command will add content to the end of an existing file, automatically adding a newline if the file doesn't end with one. The file must exist.\n Notes for using the `strReplace` command:\n * The `oldStr` parameter should match EXACTLY one or more consecutive lines from the original file. Be mindful of whitespaces!\n * If the `oldStr` parameter is not unique in the file, the replacement will not be performed. Make sure to include enough context in `oldStr` to make it unique\n * The `newStr` parameter should contain the edited lines that should replace the `oldStr`. The `insert` command will insert `newStr` after `insertLine` and place it on its own line.",
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -75,7 +75,7 @@
     },
     "listDirectory": {
         "name": "listDirectory",
-        "description": "List the contents of a directory\n * Use this tool for discovery, before using more targeted tools like fsRead.\n *Useful to try to understand the file structure before diving deeper into specific files.\n *Can be used to explore the codebase.",
+        "description": "List the contents of a directory.\n * Use this tool for discovery, before using more targeted tools like fsRead.\n *Useful to try to understand the file structure before diving deeper into specific files.\n *Can be used to explore the codebase.",
         "inputSchema": {
             "type": "object",
             "properties": {

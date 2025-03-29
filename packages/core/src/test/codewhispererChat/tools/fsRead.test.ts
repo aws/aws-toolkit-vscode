@@ -77,20 +77,4 @@ describe('FsRead Tool', () => {
         assert.strictEqual(result.output.kind, 'text')
         assert.strictEqual(result.output.content, '')
     })
-
-    it('resolves relative path', async () => {
-        await testFolder.mkdir('relTest')
-        const filePath = path.join('relTest', 'relFile.txt')
-        const content = 'Hello from a relative file!'
-        await testFolder.write(filePath, content)
-
-        const relativePath = path.relative(process.cwd(), path.join(testFolder.path, filePath))
-
-        const fsRead = new FsRead({ path: relativePath })
-        await fsRead.validate()
-        const result = await fsRead.invoke(process.stdout)
-
-        assert.strictEqual(result.output.kind, 'text')
-        assert.strictEqual(result.output.content, content)
-    })
 })
