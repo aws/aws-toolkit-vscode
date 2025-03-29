@@ -264,7 +264,10 @@ export class Connector extends BaseConnector {
             tabID: tabId,
         })
 
-        if (!this.onChatAnswerUpdated || !['accept-code-diff', 'reject-code-diff'].includes(action.id)) {
+        if (
+            !this.onChatAnswerUpdated ||
+            !['accept-code-diff', 'reject-code-diff', 'confirm-tool-use'].includes(action.id)
+        ) {
             return
         }
         const answer: ChatItem = {
@@ -292,6 +295,18 @@ export class Connector extends BaseConnector {
                         text: 'Rejected code',
                         id: 'rejected-code-diff',
                         status: 'error',
+                        position: 'outside',
+                        disabled: true,
+                    },
+                ]
+                break
+            case 'confirm-tool-use':
+                answer.buttons = [
+                    {
+                        keepCardAfterClick: true,
+                        text: 'Confirmed',
+                        id: 'confirmed-tool-use',
+                        status: 'success',
                         position: 'outside',
                         disabled: true,
                     },

@@ -65,7 +65,7 @@ export class ExecuteBash {
         }
     }
 
-    public async invoke(updates: Writable): Promise<InvokeOutput> {
+    public async invoke(updates?: Writable): Promise<InvokeOutput> {
         this.logger.info(`Invoking bash command: "${this.command}" in cwd: "${this.workingDirectory}"`)
 
         return new Promise(async (resolve, reject) => {
@@ -126,9 +126,9 @@ export class ExecuteBash {
         })
     }
 
-    private static handleChunk(chunk: string, buffer: string[], updates: Writable) {
+    private static handleChunk(chunk: string, buffer: string[], updates?: Writable) {
         try {
-            updates.write(chunk)
+            updates?.write(chunk)
             const lines = chunk.split(/\r?\n/)
             for (const line of lines) {
                 buffer.push(line)
