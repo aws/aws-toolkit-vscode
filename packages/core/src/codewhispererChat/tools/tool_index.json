@@ -75,7 +75,7 @@
     },
     "listDirectory": {
         "name": "listDirectory",
-        "description": "List the contents of a directory. Use this tool for discovery, before using more targeted tools like fsRead. Useful to try to understand the file structure before diving deeper into specific files. Can be used to explore the codebase.",
+        "description": "List the contents of a directory\n * Use this tool for discovery, before using more targeted tools like fsRead.\n *Useful to try to understand the file structure before diving deeper into specific files.\n *Can be used to explore the codebase.",
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -85,7 +85,7 @@
                 },
                 "path": {
                     "type": "string",
-                    "description": "Absolute path to file or directory, e.g. `/repo/file.py` or `/repo`."
+                    "description": "Absolute path to a directory, e.g., `/repo`."
                 }
             },
             "required": ["path"]

@@ -34,10 +34,10 @@ export class FsRead {
         this.fsPath = sanitized
 
         const fileUri = vscode.Uri.file(this.fsPath)
-        let exists: boolean
+        let fileExists: boolean
         try {
-            exists = await fs.exists(fileUri)
-            if (!exists) {
+            fileExists = await fs.existsFile(fileUri)
+            if (!fileExists) {
                 throw new Error(`Path: "${this.fsPath}" does not exist or cannot be accessed.`)
             }
         } catch (err) {
