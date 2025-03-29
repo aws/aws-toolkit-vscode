@@ -55,20 +55,4 @@ describe('ListDirectory Tool', () => {
         assert.strictEqual(result.output.kind, 'text')
         assert.ok(result.output.content.length > 0)
     })
-
-    it('resolves relative path', async () => {
-        await testFolder.mkdir('relTest')
-        const filePath = path.join('relTest', 'relFile.txt')
-        const content = 'Hello from a relative file!'
-        await testFolder.write(filePath, content)
-
-        const relativePath = path.relative(process.cwd(), path.join(testFolder.path, filePath))
-
-        const listDirectory = new ListDirectory({ path: relativePath })
-        await listDirectory.validate()
-        const result = await listDirectory.invoke(process.stdout)
-
-        assert.strictEqual(result.output.kind, 'text')
-        assert.strictEqual(result.output.content, content)
-    })
 })

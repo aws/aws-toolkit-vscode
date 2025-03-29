@@ -147,7 +147,7 @@ describe('ToolUtils', function () {
             }
             mockListDirectory.invoke.resolves(expectedOutput)
 
-            const tool: Tool = { type: ToolType.ListDirectory, tool: mockFsRead as unknown as ListDirectory }
+            const tool: Tool = { type: ToolType.ListDirectory, tool: mockListDirectory as unknown as ListDirectory }
             const result = await ToolUtils.invoke(tool, mockWritable as unknown as Writable)
 
             assert.deepStrictEqual(result, expectedOutput)
