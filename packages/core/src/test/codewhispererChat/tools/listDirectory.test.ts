@@ -29,8 +29,10 @@ describe('ListDirectory Tool', () => {
         const result = await listDirectory.invoke(process.stdout)
 
         const lines = result.output.content.split('\n')
-        const hasFileA = lines.some((line: string | string[]) => line.includes('- ') && line.includes('fileA.txt'))
-        const hasSubfolder = lines.some((line: string | string[]) => line.includes('d ') && line.includes('subfolder'))
+        const hasFileA = lines.some((line: string | string[]) => line.includes('[FILE] ') && line.includes('fileA.txt'))
+        const hasSubfolder = lines.some(
+            (line: string | string[]) => line.includes('[DIR] ') && line.includes('subfolder')
+        )
 
         assert.ok(hasFileA, 'Should list fileA.txt in the directory output')
         assert.ok(hasSubfolder, 'Should list the subfolder in the directory output')
