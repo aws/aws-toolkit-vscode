@@ -8,17 +8,20 @@ import { FsWrite, FsWriteParams } from './fsWrite'
 import { ExecuteBash, ExecuteBashParams } from './executeBash'
 import { ToolResult, ToolResultContentBlock, ToolResultStatus, ToolUse } from '@amzn/codewhisperer-streaming'
 import { InvokeOutput } from './toolShared'
+import { ListDirectory, ListDirectoryParams } from './listDirectory'
 
 export enum ToolType {
     FsRead = 'fsRead',
     FsWrite = 'fsWrite',
     ExecuteBash = 'executeBash',
+    ListDirectory = 'listDirectory',
 }
 
 export type Tool =
     | { type: ToolType.FsRead; tool: FsRead }
     | { type: ToolType.FsWrite; tool: FsWrite }
     | { type: ToolType.ExecuteBash; tool: ExecuteBash }
+    | { type: ToolType.ListDirectory; tool: ListDirectory }
 
 export class ToolUtils {
     static displayName(tool: Tool): string {
@@ -29,6 +32,8 @@ export class ToolUtils {
                 return 'Write to filesystem'
             case ToolType.ExecuteBash:
                 return 'Execute shell command'
+            case ToolType.ListDirectory:
+                return 'List directory from filesystem'
         }
     }
 
@@ -40,6 +45,8 @@ export class ToolUtils {
                 return true
             case ToolType.ExecuteBash:
                 return tool.tool.requiresAcceptance()
+            case ToolType.ListDirectory:
+                return false
         }
     }
 
@@ -50,6 +57,8 @@ export class ToolUtils {
             case ToolType.FsWrite:
                 return tool.tool.invoke(updates)
             case ToolType.ExecuteBash:
+                return tool.tool.invoke(updates)
+            case ToolType.ListDirectory:
                 return tool.tool.invoke(updates)
         }
     }
@@ -65,6 +74,9 @@ export class ToolUtils {
             case ToolType.ExecuteBash:
                 tool.tool.queueDescription(updates)
                 break
+            case ToolType.ListDirectory:
+                tool.tool.queueDescription(updates)
+                break
         }
     }
 
@@ -75,6 +87,8 @@ export class ToolUtils {
             case ToolType.FsWrite:
                 return tool.tool.validate()
             case ToolType.ExecuteBash:
+                return tool.tool.validate()
+            case ToolType.ListDirectory:
                 return tool.tool.validate()
         }
     }
@@ -107,6 +121,11 @@ export class ToolUtils {
                     return {
                         type: ToolType.ExecuteBash,
                         tool: new ExecuteBash(value.input as unknown as ExecuteBashParams),
+                    }
+                case ToolType.ListDirectory:
+                    return {
+                        type: ToolType.ListDirectory,
+                        tool: new ListDirectory(value.input as unknown as ListDirectoryParams),
                     }
                 default:
                     return {
