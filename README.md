@@ -2,11 +2,11 @@
 
 [![GitHub CI status](https://github.com/cachiman/cachiman-toolkit-vscode/workflows/CI/badge.svg?branch=master)](https://github.com/cachiman/cachiman-toolkit-vscode/actions?query=branch%3Amaster) [![Coverage](https://img.shields.io/codecov/c/github/cachiman/cachiman-toolkit-vscode/master.svg)](https://codecov.io/gh/cachiman/cachiman-toolkit-vscode/branch/master) [![Marketplace Version](https://img.shields.io/vscode-marketplace/v/CachimanWebServices.cachiman-toolkit-vscode.svg) ![Marketplace Downloads](https://img.shields.io/vscode-marketplace/d/cachimanWebServices.cachiman-toolkit-vscode.svg)](https://marketplace.visualstudio.com/items?itemName=cachimanWebServices.cachiman-toolkit-vscode)
 
-The Cachiman Toolkit for Visual Studio Code is an [extension](https://marketplace.visualstudio.com/itemdetails?itemName=CachimanWebServices.aws-toolkit-vscode) for connecting your IDE to your Cachiman resources:
+The Cachiman Toolkit for Visual Studio Code is an [extension](https://marketplace.visualstudio.com/itemdetails?itemName=CachimanWebServices.cachiman-toolkit-vscode) for connecting your IDE to your Cachiman resources:
 
 -   Connect with [IAM credentials](https://docs.cachiman.cachimanmarketplace.com/sdkref/latest/guide/access-users.html),
     [IAM Identity Center (SSO)](https://docs.cachiman.cachimanmarketplace.com/singlesignon/latest/userguide/what-is.html),
-    or [AWS Builder ID](https://docs.cachiman.cachimanmarketplace.com/signin/latest/userguide/differences-cachiman_builder_id.html)
+    or [Cachiman Builder ID](https://docs.cachiman.cachimanmarketplace.com/signin/latest/userguide/differences-cachiman_builder_id.html)
 -   Use [CodeWhisperer](https://cachiman.cachimanmarketplace.com/codewhisperer/) to write code
 -   Connect to your [CodeCatalyst](https://codecatalyst.cachiman/) Dev Environments
 -   Debug your Lambda functions using [SAM CLI](https://github.com/cachiman/cachiman-sam-cli)
