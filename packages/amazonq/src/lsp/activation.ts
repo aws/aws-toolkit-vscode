@@ -15,6 +15,7 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
             await lspSetupStage('launch', async () => await startLanguageServer(ctx, installResult.resourcePaths))
         })
         // Do not enable inline code path in LSP from 04/16 to 06/30.
+        // Workspace context needs to use IDE inline completion code path for AB test
         // ctx.subscriptions.push(
         //     Commands.register({ id: 'aws.amazonq.invokeInlineCompletion', autoconnect: true }, async () => {
         //         await vscode.commands.executeCommand('editor.action.inlineSuggest.trigger')
