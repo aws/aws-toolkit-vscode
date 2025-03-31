@@ -10,11 +10,13 @@ import {
 import { QDeveloperStreamingServiceException as __BaseException } from "../models/QDeveloperStreamingServiceException";
 import {
   AccessDeniedException,
+  AdditionalContentEntry,
   AppStudioState,
   AssistantResponseEvent,
   AssistantResponseMessage,
   ChatMessage,
   ChatResponseStream,
+  CitationEvent,
   CodeEvent,
   CodeReferenceEvent,
   CommandInput,
@@ -34,6 +36,8 @@ import {
   GenerateCodeFromCommandsRequest,
   GenerateCodeFromCommandsResponseStream,
   GitState,
+  ImageBlock,
+  ImageSource,
   IntentsEvent,
   InteractionComponent,
   InteractionComponentEntry,
@@ -58,6 +62,13 @@ import {
   TextDocument,
   TextDocumentDiagnostic,
   ThrottlingException,
+  Tool,
+  ToolInputSchema,
+  ToolResult,
+  ToolResultContentBlock,
+  ToolSpecification,
+  ToolUse,
+  ToolUseEvent,
   UserInputMessage,
   UserInputMessageContext,
   UserSettings,
@@ -81,6 +92,7 @@ import {
   withBaseException,
 } from "@smithy/smithy-client";
 import {
+  DocumentType as __DocumentType,
   Endpoint as __Endpoint,
   EventStreamSerdeContext as __EventStreamSerdeContext,
   HeaderBag as __HeaderBag,
@@ -381,6 +393,16 @@ const de_CommandError = async(
             interactionComponentsEvent: await de_InteractionComponentsEvent_event(event["interactionComponentsEvent"], context),
           };
         }
+        if (event["toolUseEvent"] != null) {
+          return {
+            toolUseEvent: await de_ToolUseEvent_event(event["toolUseEvent"], context),
+          };
+        }
+        if (event["citationEvent"] != null) {
+          return {
+            citationEvent: await de_CitationEvent_event(event["citationEvent"], context),
+          };
+        }
         if (event["invalidStateEvent"] != null) {
           return {
             invalidStateEvent: await de_InvalidStateEvent_event(event["invalidStateEvent"], context),
@@ -434,6 +456,15 @@ const de_CommandError = async(
     context: __SerdeContext
   ): Promise<AssistantResponseEvent> => {
     const contents: AssistantResponseEvent = {} as any;
+    const data: any = await parseBody(output.body, context);
+    Object.assign(contents, _json(data));
+    return contents;
+  }
+  const de_CitationEvent_event = async (
+    output: any,
+    context: __SerdeContext
+  ): Promise<CitationEvent> => {
+    const contents: CitationEvent = {} as any;
     const data: any = await parseBody(output.body, context);
     Object.assign(contents, _json(data));
     return contents;
@@ -530,6 +561,15 @@ const de_CommandError = async(
     Object.assign(contents, _json(data));
     return contents;
   }
+  const de_ToolUseEvent_event = async (
+    output: any,
+    context: __SerdeContext
+  ): Promise<ToolUseEvent> => {
+    const contents: ToolUseEvent = {} as any;
+    const data: any = await parseBody(output.body, context);
+    Object.assign(contents, _json(data));
+    return contents;
+  }
   const de_ValidationException_event = async (
     output: any,
     context: __SerdeContext
@@ -549,13 +589,54 @@ const de_CommandError = async(
     Object.assign(contents, de_InteractionComponentsEvent(data, context));
     return contents;
   }
+  // se_AdditionalContentEntry omitted.
+
+  // se_AdditionalContentList omitted.
+
   // se_AppStudioState omitted.
 
-  // se_AssistantResponseMessage omitted.
+  /**
+   * serializeAws_json1_0AssistantResponseMessage
+   */
+  const se_AssistantResponseMessage = (
+    input: AssistantResponseMessage,
+    context: __SerdeContext
+  ): any => {
+    return take(input, {
+      'content': [],
+      'followupPrompt': _json,
+      'messageId': [],
+      'references': _json,
+      'supplementaryWebLinks': _json,
+      'toolUses': _ => se_ToolUses(_, context),
+    });
+  }
 
-  // se_ChatHistory omitted.
+  /**
+   * serializeAws_json1_0ChatHistory
+   */
+  const se_ChatHistory = (
+    input: (ChatMessage)[],
+    context: __SerdeContext
+  ): any => {
+    return input.filter((e: any) => e != null).map(entry => {
+      return se_ChatMessage(entry, context);
+    });
+  }
 
-  // se_ChatMessage omitted.
+  /**
+   * serializeAws_json1_0ChatMessage
+   */
+  const se_ChatMessage = (
+    input: ChatMessage,
+    context: __SerdeContext
+  ): any => {
+    return ChatMessage.visit(input, {
+      assistantResponseMessage: value => ({ "assistantResponseMessage": se_AssistantResponseMessage(value, context) }),
+      userInputMessage: value => ({ "userInputMessage": se_UserInputMessage(value, context) }),
+      _: (name, value) => ({ name: value } as any)
+    });
+  }
 
   // se_CliCommandsList omitted.
 
@@ -563,7 +644,21 @@ const de_CommandError = async(
 
   // se_ConsoleState omitted.
 
-  // se_ConversationState omitted.
+  /**
+   * serializeAws_json1_0ConversationState
+   */
+  const se_ConversationState = (
+    input: ConversationState,
+    context: __SerdeContext
+  ): any => {
+    return take(input, {
+      'chatTriggerType': [],
+      'conversationId': [],
+      'currentMessage': _ => se_ChatMessage(_, context),
+      'customizationArn': [],
+      'history': _ => se_ChatHistory(_, context),
+    });
+  }
 
   // se_CursorState omitted.
 
@@ -585,6 +680,44 @@ const de_CommandError = async(
 
   // se_GitState omitted.
 
+  /**
+   * serializeAws_json1_0ImageBlock
+   */
+  const se_ImageBlock = (
+    input: ImageBlock,
+    context: __SerdeContext
+  ): any => {
+    return take(input, {
+      'format': [],
+      'source': _ => se_ImageSource(_, context),
+    });
+  }
+
+  /**
+   * serializeAws_json1_0ImageBlocks
+   */
+  const se_ImageBlocks = (
+    input: (ImageBlock)[],
+    context: __SerdeContext
+  ): any => {
+    return input.filter((e: any) => e != null).map(entry => {
+      return se_ImageBlock(entry, context);
+    });
+  }
+
+  /**
+   * serializeAws_json1_0ImageSource
+   */
+  const se_ImageSource = (
+    input: ImageSource,
+    context: __SerdeContext
+  ): any => {
+    return ImageSource.visit(input, {
+      bytes: value => ({ "bytes": context.base64Encoder(value) }),
+      _: (name, value) => ({ name: value } as any)
+    });
+  }
+
   // se_Position omitted.
 
   // se_ProgrammingLanguage omitted.
@@ -600,6 +733,16 @@ const de_CommandError = async(
   // se_RelevantTextDocument omitted.
 
   // se_RuntimeDiagnostic omitted.
+
+  /**
+   * serializeAws_json1_0SensitiveDocument
+   */
+  const se_SensitiveDocument = (
+    input: __DocumentType,
+    context: __SerdeContext
+  ): any => {
+    return input;
+  }
 
   // se_ShellHistory omitted.
 
@@ -617,11 +760,176 @@ const de_CommandError = async(
 
   // se_TextDocumentDiagnostic omitted.
 
-  // se_UserInputMessage omitted.
+  /**
+   * serializeAws_json1_0Tool
+   */
+  const se_Tool = (
+    input: Tool,
+    context: __SerdeContext
+  ): any => {
+    return Tool.visit(input, {
+      toolSpecification: value => ({ "toolSpecification": se_ToolSpecification(value, context) }),
+      _: (name, value) => ({ name: value } as any)
+    });
+  }
 
-  // se_UserInputMessageContext omitted.
+  /**
+   * serializeAws_json1_0ToolInputSchema
+   */
+  const se_ToolInputSchema = (
+    input: ToolInputSchema,
+    context: __SerdeContext
+  ): any => {
+    return take(input, {
+      'json': _ => se_SensitiveDocument(_, context),
+    });
+  }
+
+  /**
+   * serializeAws_json1_0ToolResult
+   */
+  const se_ToolResult = (
+    input: ToolResult,
+    context: __SerdeContext
+  ): any => {
+    return take(input, {
+      'content': _ => se_ToolResultContent(_, context),
+      'status': [],
+      'toolUseId': [],
+    });
+  }
+
+  /**
+   * serializeAws_json1_0ToolResultContent
+   */
+  const se_ToolResultContent = (
+    input: (ToolResultContentBlock)[],
+    context: __SerdeContext
+  ): any => {
+    return input.filter((e: any) => e != null).map(entry => {
+      return se_ToolResultContentBlock(entry, context);
+    });
+  }
+
+  /**
+   * serializeAws_json1_0ToolResultContentBlock
+   */
+  const se_ToolResultContentBlock = (
+    input: ToolResultContentBlock,
+    context: __SerdeContext
+  ): any => {
+    return ToolResultContentBlock.visit(input, {
+      json: value => ({ "json": se_SensitiveDocument(value, context) }),
+      text: value => ({ "text": value }),
+      _: (name, value) => ({ name: value } as any)
+    });
+  }
+
+  /**
+   * serializeAws_json1_0ToolResults
+   */
+  const se_ToolResults = (
+    input: (ToolResult)[],
+    context: __SerdeContext
+  ): any => {
+    return input.filter((e: any) => e != null).map(entry => {
+      return se_ToolResult(entry, context);
+    });
+  }
+
+  /**
+   * serializeAws_json1_0Tools
+   */
+  const se_Tools = (
+    input: (Tool)[],
+    context: __SerdeContext
+  ): any => {
+    return input.filter((e: any) => e != null).map(entry => {
+      return se_Tool(entry, context);
+    });
+  }
+
+  /**
+   * serializeAws_json1_0ToolSpecification
+   */
+  const se_ToolSpecification = (
+    input: ToolSpecification,
+    context: __SerdeContext
+  ): any => {
+    return take(input, {
+      'description': [],
+      'inputSchema': _ => se_ToolInputSchema(_, context),
+      'name': [],
+    });
+  }
+
+  /**
+   * serializeAws_json1_0ToolUse
+   */
+  const se_ToolUse = (
+    input: ToolUse,
+    context: __SerdeContext
+  ): any => {
+    return take(input, {
+      'input': _ => se_SensitiveDocument(_, context),
+      'name': [],
+      'toolUseId': [],
+    });
+  }
+
+  /**
+   * serializeAws_json1_0ToolUses
+   */
+  const se_ToolUses = (
+    input: (ToolUse)[],
+    context: __SerdeContext
+  ): any => {
+    return input.filter((e: any) => e != null).map(entry => {
+      return se_ToolUse(entry, context);
+    });
+  }
+
+  /**
+   * serializeAws_json1_0UserInputMessage
+   */
+  const se_UserInputMessage = (
+    input: UserInputMessage,
+    context: __SerdeContext
+  ): any => {
+    return take(input, {
+      'content': [],
+      'images': _ => se_ImageBlocks(_, context),
+      'origin': [],
+      'userInputMessageContext': _ => se_UserInputMessageContext(_, context),
+      'userIntent': [],
+    });
+  }
+
+  /**
+   * serializeAws_json1_0UserInputMessageContext
+   */
+  const se_UserInputMessageContext = (
+    input: UserInputMessageContext,
+    context: __SerdeContext
+  ): any => {
+    return take(input, {
+      'additionalContext': _json,
+      'appStudioContext': _json,
+      'consoleState': _json,
+      'diagnostic': _json,
+      'editorState': _json,
+      'envState': _json,
+      'gitState': _json,
+      'shellState': _json,
+      'toolResults': _ => se_ToolResults(_, context),
+      'tools': _ => se_Tools(_, context),
+      'userSettings': _json,
+    });
+  }
 
   // se_UserSettings omitted.
+
+  // se_WorkspaceFolderList omitted.
 
   // se_GenerateCodeFromCommandsRequest omitted.
 
@@ -633,7 +941,7 @@ const de_CommandError = async(
     context: __SerdeContext
   ): any => {
     return take(input, {
-      'conversationState': _json,
+      'conversationState': _ => se_ConversationState(_, context),
       'dryRun': [],
       'profileArn': [],
       'source': [],
@@ -643,6 +951,10 @@ const de_CommandError = async(
   // de_AccessDeniedException omitted.
 
   // de_AssistantResponseEvent omitted.
+
+  // de_CitationEvent omitted.
+
+  // de_CitationTarget omitted.
 
   // de_CodeEvent omitted.
 
@@ -689,6 +1001,8 @@ const de_CommandError = async(
   // de_SupplementaryWebLinksEvent omitted.
 
   // de_ThrottlingException omitted.
+
+  // de_ToolUseEvent omitted.
 
   // de_ValidationException omitted.
 

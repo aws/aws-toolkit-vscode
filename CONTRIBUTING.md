@@ -42,8 +42,11 @@ Then clone the repository and install NPM packages:
 
 ### Run
 
-Due to the monorepo structure of the project, you must have the `aws-toolkit-vscode/packages/toolkit` folder open as root folder in the workspace.
-The easiest way to open the project: File > Open Workspace from File > choose `aws-toolkit-vscode/aws-toolkit-vscode.code-workspace`
+Due to the monorepo structure of the project, you must open the project using the
+`aws-toolkit-vscode.code-workspace` project file.
+
+1. Run the `File: Open Workspace from File...` command in vscode.
+2. Select the `aws-toolkit-vscode.code-workspace` project file.
 
 To run the extension from VSCode as a Node.js app:
 
@@ -164,8 +167,7 @@ See [web.md](./docs/web.md) for working with the web mode implementation of the 
 See [TESTPLAN.md](./docs/TESTPLAN.md) to understand the project's test
 structure, mechanics and philosophy.
 
-You can run tests directly from VSCode. Due to the monorepo structure of the project, you must have the `aws-toolkit-vscode/packages/toolkit` folder open as root folder in the workspace.
-The easiest way to open the project: File > Open Workspace from File > choose `aws-toolkit-vscode/aws-toolkit-vscode.code-workspace`
+You can run tests directly from VSCode. Due to the monorepo structure of the project, you must [open the project via the `aws-toolkit-vscode.code-workspace` project file](#run).
 
 1. Select `View > Debug`, or select the Debug pane from the sidebar.
 2. From the dropdown at the top of the Debug pane, select the `Extension Tests` configuration.
@@ -180,12 +182,13 @@ Tests will write logs to `./.test-reports/testLog.log`.
 
 #### Run a specific test
 
-To run a single test in VSCode, do any one of:
+To run a single test in VSCode, do any _one_ of the following:
 
 -   Run the _Extension Tests (current file)_ launch-config.
--   Use Mocha's [it.only()](https://mochajs.org/#exclusive-tests) or `describe.only()`.
--   Run in your terminal:
-
+    -   Note: if you don't see this in the vscode debug menu, confirm that you opened the project
+        [via the `aws-toolkit-vscode.code-workspace` project file](#run).
+-   or... Use Mocha's [it.only()](https://mochajs.org/#exclusive-tests) or `describe.only()`.
+-   or... Run in your terminal:
     -   Unix/macOS/POSIX shell:
         ```
         TEST_FILE=../core/src/test/foo.test.ts npm run test
@@ -194,8 +197,7 @@ To run a single test in VSCode, do any one of:
         ```
         $Env:TEST_FILE = "../core/src/test/foo.test.ts"; npm run test
         ```
-
--   To run all tests in a particular subdirectory, you can edit
+-   or... To run all tests in a particular subdirectory, you can edit
     `src/test/index.ts:rootTestsPath` to point to a subdirectory:
     ```
     rootTestsPath: __dirname + '/shared/sam/debugger/'
