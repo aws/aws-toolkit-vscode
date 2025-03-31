@@ -56,6 +56,7 @@ export interface ExportResultArchiveCommandOutput extends ExportResultArchiveRes
  *       testGenerationJobId: "STRING_VALUE",
  *     },
  *   },
+ *   profileArn: "STRING_VALUE",
  * };
  * const command = new ExportResultArchiveCommand(input);
  * const response = await client.send(command);
