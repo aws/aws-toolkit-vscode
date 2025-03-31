@@ -30,7 +30,6 @@ import { Commands } from '../../shared/vscode/commands2'
 import { createExitButton } from '../../shared/ui/buttons'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { getLogger } from '../../shared/logger/logger'
-import { AmazonQState } from '../../amazonq/util/amazonQState'
 
 function getAmazonQCodeWhispererNodes() {
     const autoTriggerEnabled = CodeSuggestionsState.instance.isSuggestionsEnabled()
@@ -93,11 +92,7 @@ export function getQuickPickItems(): DataQuickPickItem<string>[] {
         // Add settings and signout
         createSeparator(),
         createSettingsNode(),
-        ...(AuthUtil.instance.isConnected() &&
-        !hasVendedIamCredentials() &&
-        !AmazonQState.instance.isSageMakerUnifiedStudio()
-            ? [createSignout()]
-            : []),
+        ...(AuthUtil.instance.isConnected() && !hasVendedIamCredentials() ? [createSignout()] : []),
     ]
 
     return children

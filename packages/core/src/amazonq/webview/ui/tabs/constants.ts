@@ -10,18 +10,19 @@ const qChatIntroMessage = `Hi, I'm Amazon Q. I can answer your software developm
   Ask me to explain, debug, or optimize your code.
   You can enter \`/\` to see a list of quick actions. Use \`@\` to add saved prompts, files, folders, or your entire workspace as context.`
 
+export const qChatIntroMessageForSMUS = `Hi, I'm Amazon Q. I can answer your software development questions.\n\
+  Ask me to explain, debug, or optimize your code.\n\
+  You can enter \`/\` to see a list of quick actions. Use \`@\` to add saved prompts, files, folders, or your entire workspace as context.
+  You are now using Q free tier.\n\
+  `
+export const sageMakerUnifiedStudio = 'SageMakerUnifiedStudio'
+
 export type TabTypeData = {
     title: string
     placeholder: string
     welcome: string
     contextCommands?: QuickActionCommandGroup[]
 }
-
-export const qChatIntroMessageForSMUS = `Hi, I'm Amazon Q. I can answer your software development questions.\n\
-Ask me to explain, debug, or optimize your code.\n\
-You can enter \`/\` to see a list of quick actions. Use \`@\` to add saved prompts, files, folders, or your entire workspace as context.
-You are now using Q free tier.\n\
-`
 
 export const workspaceCommand: QuickActionCommandGroup = {
     groupName: 'Mention code',

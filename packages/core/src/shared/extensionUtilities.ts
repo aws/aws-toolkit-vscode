@@ -30,6 +30,7 @@ const cloud9Appname = 'AWS Cloud9'
 const cloud9CnAppname = 'Amazon Cloud9'
 const sageMakerAppname = 'SageMaker Code Editor'
 const notInitialized = 'notInitialized'
+const sageMakerUnifiedStudio = 'SageMakerUnifiedStudio'
 
 function _isAmazonQ() {
     const id = globals.context.extension.id
@@ -145,6 +146,14 @@ function createCloud9Properties(company: string): IdeProperties {
     }
 }
 
+function isSageMakerUnifiedStudio(): boolean {
+    const service = process.env.SERVICE_NAME
+    if (service) {
+        return service === sageMakerUnifiedStudio
+    }
+    return false
+}
+
 /**
  * Decides if the current system is (the specified flavor of) Cloud9.
  */
@@ -157,8 +166,12 @@ export function isCloud9(flavor: 'classic' | 'codecatalyst' | 'any' = 'any'): bo
     return (flavor === 'classic' && !codecat) || (flavor === 'codecatalyst' && codecat)
 }
 
-export function isSageMaker(): boolean {
-    return vscode.env.appName === sageMakerAppname
+export function isSageMaker(isUnifiedStudio?: boolean): boolean {
+    const isSM = vscode.env.appName === sageMakerAppname
+    if (isUnifiedStudio) {
+        return isSM && isSageMakerUnifiedStudio()
+    }
+    return isSM
 }
 
 export function isCn(): boolean {
