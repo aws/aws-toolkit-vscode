@@ -260,8 +260,7 @@ export async function uploadPayload(
  */
 const mavenExcludedExtensions = ['.repositories', '.sha1']
 
-// TO-DO: should we exclude mvnw and mvnw.cmd?
-const sourceExcludedExtensions = ['.DS_Store', 'mvnw', 'mvnw.cmd']
+const sourceExcludedExtensions = ['.DS_Store']
 
 /**
  * Determines if the specified file path corresponds to a Maven metadata file
@@ -370,7 +369,6 @@ export async function zipCode(
                     sctFileName: metadataZip.getEntries().filter((entry) => entry.name.endsWith('.sct'))[0].name,
                 },
             }
-            // TO-DO: later consider making this add to path.join(zipManifest.dependenciesRoot, 'qct-sct-metadata', entry.entryName) so that it's more organized
             for (const entry of metadataZip.getEntries()) {
                 zip.addFile(path.join(zipManifest.dependenciesRoot, entry.name), entry.getData())
             }
@@ -863,8 +861,6 @@ export function findDownloadArtifactProgressUpdate(transformationSteps: Transfor
                     progressUpdates[j].status === 'AWAITING_CLIENT_ACTION' &&
                     progressUpdates[j].downloadArtifacts?.[0]?.downloadArtifactId
                 ) {
-                    // TO-DO: make sure length is always 1
-                    console.log(`found progress update; length = ${progressUpdates[j].downloadArtifacts?.length}`)
                     return progressUpdates[j]
                 }
             }
