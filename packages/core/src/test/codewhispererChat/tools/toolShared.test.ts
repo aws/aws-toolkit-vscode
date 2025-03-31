@@ -103,7 +103,7 @@ describe('ToolUtils', function () {
             const result = await ToolUtils.invoke(tool, mockWritable as unknown as Writable)
 
             assert.deepStrictEqual(result, expectedOutput)
-            assert(mockFsRead.invoke.calledOnceWith(mockWritable))
+            assert(mockFsRead.invoke.calledOnceWith(mockWritable as unknown as Writable | undefined))
         })
 
         it('delegates to FsWrite tool invoke method', async function () {
@@ -119,7 +119,7 @@ describe('ToolUtils', function () {
             const result = await ToolUtils.invoke(tool, mockWritable as unknown as Writable)
 
             assert.deepStrictEqual(result, expectedOutput)
-            assert(mockFsWrite.invoke.calledOnceWith(mockWritable))
+            assert(mockFsWrite.invoke.calledOnceWith(mockWritable as unknown as Writable | undefined))
         })
 
         it('delegates to ExecuteBash tool invoke method', async function () {
@@ -135,7 +135,7 @@ describe('ToolUtils', function () {
             const result = await ToolUtils.invoke(tool, mockWritable as unknown as Writable)
 
             assert.deepStrictEqual(result, expectedOutput)
-            assert(mockExecuteBash.invoke.calledOnceWith(mockWritable))
+            assert(mockExecuteBash.invoke.calledOnceWith(mockWritable as unknown as Writable | undefined))
         })
 
         it('delegates to ListDirectory tool invoke method', async function () {
@@ -151,7 +151,7 @@ describe('ToolUtils', function () {
             const result = await ToolUtils.invoke(tool, mockWritable as unknown as Writable)
 
             assert.deepStrictEqual(result, expectedOutput)
-            assert(mockListDirectory.invoke.calledOnceWith(mockWritable))
+            assert(mockListDirectory.invoke.calledOnceWith(mockWritable as unknown as Writable | undefined))
         })
     })
 

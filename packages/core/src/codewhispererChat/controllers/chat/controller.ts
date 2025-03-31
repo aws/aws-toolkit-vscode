@@ -90,8 +90,10 @@ import { ChatSession } from '../../clients/chat/v0/chat'
 import { ChatHistoryManager } from '../../storages/chatHistory'
 import { amazonQTabSuffix } from '../../../shared/constants'
 import { OutputKind } from '../../tools/toolShared'
-import { ToolUtils, Tool } from '../../tools/toolUtils'
+import { ToolUtils, Tool, ToolType } from '../../tools/toolUtils'
 import { ChatStream } from '../../tools/chatStream'
+import { FsWrite, FsWriteParams } from '../../tools/fsWrite'
+import { tempDirPath } from '../../../shared/filesystemUtilities'
 
 export interface ChatControllerMessagePublishers {
     readonly processPromptChatMessage: MessagePublisher<PromptMessage>
@@ -412,31 +414,6 @@ export class ChatController {
             })
     }
 
-    private async processAcceptCodeDiff(message: CustomFormActionMessage) {
-        const session = this.sessionStorage.getSession(message.tabID ?? '')
-        const filePath = session.filePath ?? ''
-        const fileExists = await fs.existsFile(filePath)
-        const tempFilePath = session.tempFilePath
-        const tempFileExists = await fs.existsFile(tempFilePath ?? '')
-        if (fileExists && tempFileExists) {
-            const fileContent = await fs.readFileText(filePath)
-            const tempFileContent = await fs.readFileText(tempFilePath ?? '')
-            if (fileContent !== tempFileContent) {
-                await fs.writeFile(filePath, tempFileContent)
-            }
-            await fs.delete(tempFilePath ?? '')
-            await vscode.commands.executeCommand('vscode.open', vscode.Uri.file(filePath))
-        } else if (!fileExists && tempFileExists) {
-            const fileContent = await fs.readFileText(tempFilePath ?? '')
-            await fs.writeFile(filePath, fileContent)
-            await fs.delete(tempFilePath ?? '')
-            await vscode.commands.executeCommand('vscode.open', vscode.Uri.file(filePath))
-        }
-        // Reset the filePaths to undefined
-        session.setFilePath(undefined)
-        session.setTempFilePath(undefined)
-    }
-
     private async processCopyCodeToClipboard(message: CopyCodeToClipboard) {
         this.telemetryHelper.recordInteractWithMessage(message)
     }
@@ -641,29 +618,137 @@ export class ChatController {
             this.handlePromptCreate(message.tabID)
         }
     }
+    private async handleCreatePrompt(message: CustomFormActionMessage) {
+        const userPromptsDirectory = getUserPromptsDirectory()
+        const title = message.action.formItemValues?.['prompt-name'] ?? 'default'
+        const newFilePath = path.join(userPromptsDirectory, `${title}${promptFileExtension}`)
+
+        await fs.writeFile(newFilePath, new Uint8Array(Buffer.from('')))
+        const newFileDoc = await vscode.workspace.openTextDocument(newFilePath)
+        await vscode.window.showTextDocument(newFileDoc)
+
+        telemetry.ui_click.emit({ elementId: 'amazonq_createSavedPrompt' })
+    }
+
+    private async processToolUseMessage(message: CustomFormActionMessage) {
+        const tabID = message.tabID
+        if (!tabID) {
+            return
+        }
+        this.editorContextExtractor
+            .extractContextForTrigger('ChatMessage')
+            .then(async (context) => {
+                const triggerID = randomUUID()
+                this.triggerEventsStorage.addTriggerEvent({
+                    id: triggerID,
+                    tabID: message.tabID,
+                    message: undefined,
+                    type: 'chat_message',
+                    context,
+                })
+                const session = this.sessionStorage.getSession(tabID)
+                const toolUse = session.toolUse
+                if (!toolUse || !toolUse.input) {
+                    return
+                }
+                session.setToolUse(undefined)
+
+                const toolResults: ToolResult[] = []
+
+                const result = ToolUtils.tryFromToolUse(toolUse)
+                if ('type' in result) {
+                    const tool: Tool = result
+
+                    try {
+                        await ToolUtils.validate(tool)
+
+                        const chatStream = new ChatStream(this.messenger, tabID, triggerID, toolUse)
+                        const output = await ToolUtils.invoke(tool, chatStream)
+
+                        toolResults.push({
+                            content: [
+                                output.output.kind === OutputKind.Text
+                                    ? { text: output.output.content }
+                                    : { json: output.output.content },
+                            ],
+                            toolUseId: toolUse.toolUseId,
+                            status: ToolResultStatus.SUCCESS,
+                        })
+                    } catch (e: any) {
+                        toolResults.push({
+                            content: [{ text: e.message }],
+                            toolUseId: toolUse.toolUseId,
+                            status: ToolResultStatus.ERROR,
+                        })
+                    }
+                } else {
+                    const toolResult: ToolResult = result
+                    toolResults.push(toolResult)
+                }
+
+                if (toolUse.name === ToolType.FsWrite) {
+                    await vscode.commands.executeCommand(
+                        'vscode.open',
+                        vscode.Uri.file((toolUse.input as unknown as FsWriteParams).path)
+                    )
+                }
+
+                await this.generateResponse(
+                    {
+                        message: '',
+                        trigger: ChatTriggerType.ChatMessage,
+                        query: undefined,
+                        codeSelection: context?.focusAreaContext?.selectionInsideExtendedCodeBlock,
+                        fileText: context?.focusAreaContext?.extendedCodeBlock ?? '',
+                        fileLanguage: context?.activeFileContext?.fileLanguage,
+                        filePath: context?.activeFileContext?.filePath,
+                        matchPolicy: context?.activeFileContext?.matchPolicy,
+                        codeQuery: context?.focusAreaContext?.names,
+                        userIntent: undefined,
+                        customization: getSelectedCustomization(),
+                        toolResults: toolResults,
+                        origin: Origin.IDE,
+                        chatHistory: this.chatHistoryManager.getHistory(),
+                        context: [],
+                        relevantTextDocuments: [],
+                        additionalContents: [],
+                        documentReferences: [],
+                        useRelevantDocuments: false,
+                        contextLengths: {
+                            ...defaultContextLengths,
+                        },
+                    },
+                    triggerID
+                )
+            })
+            .catch((e) => {
+                this.processException(e, tabID)
+            })
+    }
+
+    private async closeDiffView() {
+        // Close the diff view if User reject the generated code changes.
+        if (vscode.window.tabGroups.activeTabGroup.activeTab?.label.includes(amazonQTabSuffix)) {
+            await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
+        }
+    }
 
     private async processCustomFormAction(message: CustomFormActionMessage) {
-        if (message.action.id === 'submit-create-prompt') {
-            const userPromptsDirectory = getUserPromptsDirectory()
-
-            const title = message.action.formItemValues?.['prompt-name']
-            const newFilePath = path.join(
-                userPromptsDirectory,
-                title ? `${title}${promptFileExtension}` : `default${promptFileExtension}`
-            )
-            const newFileContent = new Uint8Array(Buffer.from(''))
-            await fs.writeFile(newFilePath, newFileContent)
-            const newFileDoc = await vscode.workspace.openTextDocument(newFilePath)
-            await vscode.window.showTextDocument(newFileDoc)
-            telemetry.ui_click.emit({ elementId: 'amazonq_createSavedPrompt' })
-        } else if (message.action.id === 'accept-code-diff') {
-            await this.processAcceptCodeDiff(message)
-        } else if (message.action.id === 'reject-code-diff') {
-            // Reset the filePaths to undefined
-            this.sessionStorage.getSession(message.tabID ?? '').setFilePath(undefined)
-            this.sessionStorage.getSession(message.tabID ?? '').setTempFilePath(undefined)
-        } else if (message.action.id === 'confirm-tool-use') {
-            await this.processToolUseMessage(message)
+        switch (message.action.id) {
+            case 'submit-create-prompt':
+                await this.handleCreatePrompt(message)
+                break
+            case 'accept-code-diff':
+            case 'confirm-tool-use':
+            case 'generic-tool-execution':
+                await this.closeDiffView()
+                await this.processToolUseMessage(message)
+                break
+            case 'reject-code-diff':
+                await this.closeDiffView()
+                break
+            default:
+                getLogger().warn(`Unhandled action: ${message.action.id}`)
         }
     }
 
@@ -676,17 +761,60 @@ export class ChatController {
         const session = this.sessionStorage.getSession(message.tabID)
         // Check if user clicked on filePath in the contextList or in the fileListTree and perform the functionality accordingly.
         if (session.showDiffOnFileWrite) {
-            const filePath = session.filePath ?? message.filePath
-            const fileExists = await fs.existsFile(filePath)
-            // Check if fileExists=false, If yes, return instead of showing broken diff experience.
-            if (!session.tempFilePath) {
-                void vscode.window.showInformationMessage('Generated code changes have been reviewed and processed.')
-                return
+            try {
+                // Create a temporary file path to show the diff view
+                const pathToArchiveDir = path.join(tempDirPath, 'q-chat')
+                const archivePathExists = await fs.existsDir(pathToArchiveDir)
+                if (archivePathExists) {
+                    await fs.delete(pathToArchiveDir, { recursive: true })
+                }
+                await fs.mkdir(pathToArchiveDir)
+                const resultArtifactsDir = path.join(pathToArchiveDir, 'resultArtifacts')
+                await fs.mkdir(resultArtifactsDir)
+                const tempFilePath = path.join(
+                    resultArtifactsDir,
+                    `temp-${path.basename((session.toolUse?.input as unknown as FsWriteParams).path)}`
+                )
+
+                // If we have existing filePath copy file content from existing file to temporary file.
+                const filePath = (session.toolUse?.input as any).path ?? message.filePath
+                const fileExists = await fs.existsFile(filePath)
+                if (fileExists) {
+                    const fileContent = await fs.readFileText(filePath)
+                    await fs.writeFile(tempFilePath, fileContent)
+                }
+
+                // Create a deep clone of the toolUse object and pass this toolUse to FsWrite tool execution to get the modified temporary file.
+                const clonedToolUse = structuredClone(session.toolUse)
+                if (!clonedToolUse) {
+                    return
+                }
+                const input = clonedToolUse.input as unknown as FsWriteParams
+                input.path = tempFilePath
+
+                const fsWrite = new FsWrite(input)
+                await fsWrite.invoke()
+
+                // Check if fileExists=false, If yes, return instead of showing broken diff experience.
+                if (!tempFilePath) {
+                    void vscode.window.showInformationMessage(
+                        'Generated code changes have been reviewed and processed.'
+                    )
+                    return
+                }
+                const leftUri = fileExists ? vscode.Uri.file(filePath) : vscode.Uri.from({ scheme: 'untitled' })
+                const rightUri = vscode.Uri.file(tempFilePath ?? filePath)
+                const fileName = path.basename(filePath)
+                await vscode.commands.executeCommand(
+                    'vscode.diff',
+                    leftUri,
+                    rightUri,
+                    `${fileName} ${amazonQTabSuffix}`
+                )
+            } catch (error) {
+                getLogger().error(`Unexpected error in diff view generation: ${error}`)
+                void vscode.window.showErrorMessage(`Failed to open diff view.`)
             }
-            const leftUri = fileExists ? vscode.Uri.file(filePath) : vscode.Uri.from({ scheme: 'untitled' })
-            const rightUri = vscode.Uri.file(session.tempFilePath ?? filePath)
-            const fileName = path.basename(filePath)
-            await vscode.commands.executeCommand('vscode.diff', leftUri, rightUri, `${fileName} ${amazonQTabSuffix}`)
         } else {
             const lineRanges = session.contexts.get(message.filePath)
 
@@ -936,95 +1064,6 @@ export class ChatController {
         } catch (e) {
             this.processException(e, message.tabID)
         }
-    }
-
-    private async processToolUseMessage(message: CustomFormActionMessage) {
-        const tabID = message.tabID
-        if (!tabID) {
-            return
-        }
-        this.editorContextExtractor
-            .extractContextForTrigger('ChatMessage')
-            .then(async (context) => {
-                const triggerID = randomUUID()
-                this.triggerEventsStorage.addTriggerEvent({
-                    id: triggerID,
-                    tabID: message.tabID,
-                    message: undefined,
-                    type: 'chat_message',
-                    context,
-                })
-                const session = this.sessionStorage.getSession(tabID)
-                const toolUse = session.toolUse
-                if (!toolUse || !toolUse.input) {
-                    return
-                }
-                session.setToolUse(undefined)
-
-                const toolResults: ToolResult[] = []
-
-                const result = ToolUtils.tryFromToolUse(toolUse)
-                if ('type' in result) {
-                    const tool: Tool = result
-
-                    try {
-                        await ToolUtils.validate(tool)
-
-                        const chatStream = new ChatStream(this.messenger, tabID, triggerID, toolUse.toolUseId)
-                        const output = await ToolUtils.invoke(tool, chatStream)
-
-                        toolResults.push({
-                            content: [
-                                output.output.kind === OutputKind.Text
-                                    ? { text: output.output.content }
-                                    : { json: output.output.content },
-                            ],
-                            toolUseId: toolUse.toolUseId,
-                            status: ToolResultStatus.SUCCESS,
-                        })
-                    } catch (e: any) {
-                        toolResults.push({
-                            content: [{ text: e.message }],
-                            toolUseId: toolUse.toolUseId,
-                            status: ToolResultStatus.ERROR,
-                        })
-                    }
-                } else {
-                    const toolResult: ToolResult = result
-                    toolResults.push(toolResult)
-                }
-
-                await this.generateResponse(
-                    {
-                        message: '',
-                        trigger: ChatTriggerType.ChatMessage,
-                        query: undefined,
-                        codeSelection: context?.focusAreaContext?.selectionInsideExtendedCodeBlock,
-                        fileText: context?.focusAreaContext?.extendedCodeBlock ?? '',
-                        fileLanguage: context?.activeFileContext?.fileLanguage,
-                        filePath: context?.activeFileContext?.filePath,
-                        matchPolicy: context?.activeFileContext?.matchPolicy,
-                        codeQuery: context?.focusAreaContext?.names,
-                        userIntent: undefined,
-                        customization: getSelectedCustomization(),
-                        toolResults: toolResults,
-                        origin: Origin.IDE,
-                        chatHistory: this.chatHistoryManager.getHistory(),
-                        context: [],
-                        relevantTextDocuments: [],
-                        additionalContents: [],
-                        documentReferences: [],
-                        useRelevantDocuments: false,
-                        contextLengths: {
-                            ...defaultContextLengths,
-                        },
-                    },
-                    triggerID
-                )
-            })
-            .catch((e) => {
-                this.processException(e, tabID)
-            })
     }
 
     private async processPromptMessageAsNewThread(message: PromptMessage) {
