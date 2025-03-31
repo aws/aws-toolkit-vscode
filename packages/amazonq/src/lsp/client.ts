@@ -14,7 +14,7 @@ import { ConnectionMetadata } from '@aws/language-server-runtimes/protocol'
 import { Settings, oidcClientName, createServerOptions, globals, Experiments, getLogger } from 'aws-core-vscode/shared'
 import { activate } from './chat/activation'
 import { AmazonQResourcePaths } from './lspInstaller'
-import { notifyNewCustomizations } from 'aws-core-vscode/codewhisperer'
+import { CustomizationService } from '../app/inline/customizationService'
 
 const localize = nls.loadMessageBundle()
 
@@ -97,14 +97,14 @@ export async function startLanguageServer(
         await auth.init()
         const inlineManager = new InlineCompletionManager(client)
         inlineManager.registerInlineCompletion()
-        inlineManager.registerCustomization(client)
+        const customizationService = new CustomizationService(client)
+        customizationService.registerCustomization()
         if (Experiments.instance.get('amazonqChatLSP', false)) {
             activate(client, encryptionKey, resourcePaths.mynahUI)
         }
         if (AuthUtil.instance.isValidEnterpriseSsoInUse()) {
-            await notifyNewCustomizations(client)
+            await customizationService.notifyNewCustomizations()
         }
-
         // Request handler for when the server wants to know about the clients auth connnection
         client.onRequest<ConnectionMetadata, Error>(notificationTypes.getConnectionMetadata.method, () => {
             return {

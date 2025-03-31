@@ -26,12 +26,9 @@ import { SessionManager } from './sessionManager'
 import { RecommendationService } from './recommendationService'
 import {
     CodeWhispererConstants,
-    CodeWhispererSource,
-    connectCustomizationHandler,
     ReferenceHoverProvider,
     ReferenceInlineProvider,
     ReferenceLogViewProvider,
-    selectCustomizationHandler,
 } from 'aws-core-vscode/codewhisperer'
 
 export class InlineCompletionManager implements Disposable {
@@ -61,34 +58,6 @@ export class InlineCompletionManager implements Disposable {
         if (this.disposable) {
             this.disposable.dispose()
         }
-    }
-
-    public registerCustomization(client: LanguageClient) {
-        commands.registerCommand(
-            '_aws.amazonq.customization.connect',
-            async (
-                source: string,
-                startUrl?: string,
-                region?: string,
-                customizationArn?: string,
-                customizationNamePrefix?: string
-            ) => {
-                return await connectCustomizationHandler(client)(
-                    source,
-                    startUrl,
-                    region,
-                    customizationArn,
-                    customizationNamePrefix
-                )
-            }
-        )
-
-        commands.registerCommand(
-            '_aws.amazonq.customization.select',
-            async (customization: any, source: CodeWhispererSource) => {
-                return await selectCustomizationHandler(client)(customization, source)
-            }
-        )
     }
 
     public registerInlineCompletion() {

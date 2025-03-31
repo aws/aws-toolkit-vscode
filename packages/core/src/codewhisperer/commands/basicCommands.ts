@@ -69,7 +69,6 @@ import { UserWrittenCodeTracker } from '../tracker/userWrittenCodeTracker'
 import { parsePatch } from 'diff'
 import { createCodeIssueGroupingStrategyPrompter } from '../ui/prompters'
 import { cancel, confirm } from '../../shared/localizedText'
-import { LanguageClient } from 'vscode-languageclient'
 
 const MessageTimeOut = 5_000
 
@@ -238,18 +237,15 @@ export const showFileScan = Commands.declare(
         }
 )
 
-export const selectCustomizationHandler =
-    (client?: LanguageClient) => async (_: VsCodeCommandArg, source: CodeWhispererSource) => {
+export const selectCustomizationPrompt = Commands.declare(
+    { id: 'aws.amazonq.selectCustomization', compositeKey: { 1: 'source' } },
+    () => async (_: VsCodeCommandArg, source: CodeWhispererSource) => {
         if (isBuilderIdConnection(AuthUtil.instance.conn)) {
             throw new Error(`Select Customizations are not supported with the Amazon Builder ID connection.`)
         }
         telemetry.ui_click.emit({ elementId: 'cw_selectCustomization_Cta' })
-        void showCustomizationPrompt(client).then()
+        void showCustomizationPrompt().then()
     }
-
-export const selectCustomizationPrompt = Commands.declare(
-    { id: 'aws.amazonq.selectCustomization', compositeKey: { 1: 'source' } },
-    () => selectCustomizationHandler()
 )
 
 export const reconnect = Commands.declare(
@@ -267,53 +263,6 @@ export const showSsoSignIn = Commands.declare('aws.amazonq.sso', () => async () 
 // It can optionally set a customization too based on given values to match on
 
 // This command is only declared and registered in Amazon Q if Q exists
-
-export const connectCustomizationHandler =
-    (client?: LanguageClient) =>
-    async (
-        source: string,
-        startUrl?: string,
-        region?: string,
-        customizationArn?: string,
-        customizationNamePrefix?: string
-    ) => {
-        SsoAccessTokenProvider.authSource = source
-        if (startUrl && region) {
-            await connectToEnterpriseSso(startUrl, region)
-        } else {
-            await getStartUrl()
-        }
-
-        // No customization match information given, exit early.
-        if (!customizationArn && !customizationNamePrefix) {
-            return
-        }
-
-        let persistedCustomizations = getPersistedCustomizations()
-
-        // Check if any customizations have already been persisted.
-        // If not, call `notifyNewCustomizations` to handle it then recheck.
-        if (persistedCustomizations.length === 0) {
-            await notifyNewCustomizations(client)
-            persistedCustomizations = getPersistedCustomizations()
-        }
-
-        // If given an ARN, assume a specific customization is desired and find an entry that matches it. Ignores the prefix logic.
-        // Otherwise if only a prefix is given, find an entry that matches it.
-        // Backwards compatible with previous implementation.
-        const match = customizationArn
-            ? persistedCustomizations.find((c) => c.arn === customizationArn)
-            : persistedCustomizations.find((c) => c.name?.startsWith(customizationNamePrefix as string))
-
-        // If no match is found, nothing to do :)
-        if (!match) {
-            getLogger().error(`No customization match found: arn=${customizationArn} prefix=${customizationNamePrefix}`)
-            return
-        }
-        // Since we selected based on a match, we'll reuse the persisted values.
-        await selectCustomization(match, client)
-    }
-
 export const connectWithCustomization = Commands.declare(
     { id: 'aws.codeWhisperer.connect', compositeKey: { 0: 'source' } },
     /**
@@ -324,7 +273,52 @@ export const connectWithCustomization = Commands.declare(
      * customizationArn: select customization by ARN. If provided, `customizationNamePrefix` is ignored.
      * customizationNamePrefix: select customization by prefix, if `customizationArn` is `undefined`.
      */
-    () => connectCustomizationHandler()
+    () =>
+        async (
+            source: string,
+            startUrl?: string,
+            region?: string,
+            customizationArn?: string,
+            customizationNamePrefix?: string
+        ) => {
+            SsoAccessTokenProvider.authSource = source
+            if (startUrl && region) {
+                await connectToEnterpriseSso(startUrl, region)
+            } else {
+                await getStartUrl()
+            }
+
+            // No customization match information given, exit early.
+            if (!customizationArn && !customizationNamePrefix) {
+                return
+            }
+
+            let persistedCustomizations = getPersistedCustomizations()
+
+            // Check if any customizations have already been persisted.
+            // If not, call `notifyNewCustomizations` to handle it then recheck.
+            if (persistedCustomizations.length === 0) {
+                await notifyNewCustomizations()
+                persistedCustomizations = getPersistedCustomizations()
+            }
+
+            // If given an ARN, assume a specific customization is desired and find an entry that matches it. Ignores the prefix logic.
+            // Otherwise if only a prefix is given, find an entry that matches it.
+            // Backwards compatible with previous implementation.
+            const match = customizationArn
+                ? persistedCustomizations.find((c) => c.arn === customizationArn)
+                : persistedCustomizations.find((c) => c.name?.startsWith(customizationNamePrefix as string))
+
+            // If no match is found, nothing to do :)
+            if (!match) {
+                getLogger().error(
+                    `No customization match found: arn=${customizationArn} prefix=${customizationNamePrefix}`
+                )
+                return
+            }
+            // Since we selected based on a match, we'll reuse the persisted values.
+            await selectCustomization(match)
+        }
 )
 
 export const showLearnMore = Commands.declare(
