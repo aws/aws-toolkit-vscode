@@ -13,6 +13,7 @@ import { UserWrittenCodeTracker } from '../../../../codewhisperer/tracker/userWr
 
 export class ChatSession {
     private sessionId?: string
+    localHistoryHydrated: boolean = false
 
     contexts: Map<string, { first: number; second: number }[]> = new Map()
     // TODO: doesn't handle the edge case when two files share the same relativePath string but from different root
