@@ -1,23 +1,29 @@
+/*!
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import * as sinon from 'sinon'
 import { LanguageClient } from 'vscode-languageclient'
 import { AuthUtil } from 'aws-core-vscode/codewhisperer'
 import { registerMessageListeners } from '../../../../../src/lsp/chat/messages'
 import { AmazonQChatViewProvider } from '../../../../../src/lsp/chat/webviewProvider'
-import { SecondaryAuth } from '../../../../../../core/dist/src/auth/secondaryAuth'
-import { Connection } from '../../../../../../core/dist/src/auth/connection'
+import { SecondaryAuth, Connection } from 'aws-core-vscode/amazonq'
 
 describe('registerMessageListeners', () => {
     let languageClient: LanguageClient
     let provider: AmazonQChatViewProvider
     let sandbox: sinon.SinonSandbox
     let messageHandler: (message: any) => void | Promise<void>
+    let errorStub: sinon.SinonStub
 
     beforeEach(() => {
         sandbox = sinon.createSandbox()
+        errorStub = sandbox.stub()
 
         languageClient = {
             info: sandbox.stub(),
-            error: sandbox.stub(),
+            error: errorStub,
             sendNotification: sandbox.stub(),
         } as unknown as LanguageClient
 
@@ -25,7 +31,9 @@ describe('registerMessageListeners', () => {
             webview: {
                 onDidReceiveMessage: (callback: (message: any) => void | Promise<void>) => {
                     messageHandler = callback
-                    return { dispose: () => {} }
+                    return {
+                        dispose: (): void => {},
+                    }
                 },
             },
         } as any
@@ -90,8 +98,8 @@ describe('registerMessageListeners', () => {
                 },
             })
 
-            sinon.assert.calledOnce(languageClient.error as sinon.SinonStub)
-            sinon.assert.calledWith(languageClient.error as sinon.SinonStub, sinon.match(/Failed to re-authenticate/))
+            sinon.assert.calledOnce(errorStub)
+            sinon.assert.calledWith(errorStub, sinon.match(/Failed to re-authenticate/))
         })
 
         it('should log error if full authentication fails', async () => {
@@ -104,8 +112,8 @@ describe('registerMessageListeners', () => {
                 },
             })
 
-            sinon.assert.calledOnce(languageClient.error as sinon.SinonStub)
-            sinon.assert.calledWith(languageClient.error as sinon.SinonStub, sinon.match(/Failed to authenticate/))
+            sinon.assert.calledOnce(errorStub)
+            sinon.assert.calledWith(errorStub, sinon.match(/Failed to authenticate/))
         })
     })
 })

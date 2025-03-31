@@ -81,7 +81,7 @@ export function registerMessageListeners(
             }
             case AUTH_FOLLOW_UP_CLICKED: {
                 languageClient.info('[VSCode Client] AuthFollowUp clicked')
-                let authType = message.params.authFollowupType
+                const authType = message.params.authFollowupType
                 const reAuthTypes: AuthFollowUpType[] = ['re-auth', 'missing_scopes']
                 const fullAuthTypes: AuthFollowUpType[] = ['full-auth', 'use-supported-auth']
 
