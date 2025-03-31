@@ -93,7 +93,7 @@ async function getWorkspaceId(editor: vscode.TextEditor): Promise<string | undef
             }
         }
     } catch (err) {
-        //TODO
+        getLogger().warn(`No workspace id found ${err}`)
     }
     return undefined
 }

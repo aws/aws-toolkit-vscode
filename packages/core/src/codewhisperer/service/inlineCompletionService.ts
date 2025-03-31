@@ -111,6 +111,7 @@ export class InlineCompletionService {
         }
 
         await this.setState('loading')
+
         RecommendationHandler.instance.checkAndResetCancellationTokens()
         RecommendationHandler.instance.documentUri = editor.document.uri
         let response: GetRecommendationsResponse = {
