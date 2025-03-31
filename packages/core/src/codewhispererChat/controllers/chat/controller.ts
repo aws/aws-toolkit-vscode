@@ -761,48 +761,60 @@ export class ChatController {
         const session = this.sessionStorage.getSession(message.tabID)
         // Check if user clicked on filePath in the contextList or in the fileListTree and perform the functionality accordingly.
         if (session.showDiffOnFileWrite) {
-            // Create a temporary file path to show the diff view
-            const pathToArchiveDir = path.join(tempDirPath, 'q-chat')
-            const archivePathExists = await fs.existsDir(pathToArchiveDir)
-            if (archivePathExists) {
-                await fs.delete(pathToArchiveDir, { recursive: true })
-            }
-            await fs.mkdir(pathToArchiveDir)
-            const resultArtifactsDir = path.join(pathToArchiveDir, 'resultArtifacts')
-            await fs.mkdir(resultArtifactsDir)
-            const tempFilePath = path.join(
-                resultArtifactsDir,
-                `temp-${path.basename((session.toolUse?.input as unknown as FsWriteParams).path)}`
-            )
+            try {
+                // Create a temporary file path to show the diff view
+                const pathToArchiveDir = path.join(tempDirPath, 'q-chat')
+                const archivePathExists = await fs.existsDir(pathToArchiveDir)
+                if (archivePathExists) {
+                    await fs.delete(pathToArchiveDir, { recursive: true })
+                }
+                await fs.mkdir(pathToArchiveDir)
+                const resultArtifactsDir = path.join(pathToArchiveDir, 'resultArtifacts')
+                await fs.mkdir(resultArtifactsDir)
+                const tempFilePath = path.join(
+                    resultArtifactsDir,
+                    `temp-${path.basename((session.toolUse?.input as unknown as FsWriteParams).path)}`
+                )
 
-            // If we have existing filePath copy file content from existing file to temporary file.
-            const filePath = (session.toolUse?.input as any).path ?? message.filePath
-            const fileExists = await fs.existsFile(filePath)
-            if (fileExists) {
-                const fileContent = await fs.readFileText(filePath)
-                await fs.writeFile(tempFilePath, fileContent)
-            }
+                // If we have existing filePath copy file content from existing file to temporary file.
+                const filePath = (session.toolUse?.input as any).path ?? message.filePath
+                const fileExists = await fs.existsFile(filePath)
+                if (fileExists) {
+                    const fileContent = await fs.readFileText(filePath)
+                    await fs.writeFile(tempFilePath, fileContent)
+                }
 
-            // Create a deep clone of the toolUse object and pass this toolUse to FsWrite tool execution to get the modified temporary file.
-            const clonedToolUse = structuredClone(session.toolUse)
-            if (!clonedToolUse) {
-                return
-            }
-            const input = clonedToolUse.input as unknown as FsWriteParams
-            input.path = tempFilePath
+                // Create a deep clone of the toolUse object and pass this toolUse to FsWrite tool execution to get the modified temporary file.
+                const clonedToolUse = structuredClone(session.toolUse)
+                if (!clonedToolUse) {
+                    return
+                }
+                const input = clonedToolUse.input as unknown as FsWriteParams
+                input.path = tempFilePath
 
-            const fsWrite = new FsWrite(input)
-            await fsWrite.invoke()
+                const fsWrite = new FsWrite(input)
+                await fsWrite.invoke()
 
-            // Check if fileExists=false, If yes, return instead of showing broken diff experience.
-            if (!tempFilePath) {
-                void vscode.window.showInformationMessage('Generated code changes have been reviewed and processed.')
-                return
+                // Check if fileExists=false, If yes, return instead of showing broken diff experience.
+                if (!tempFilePath) {
+                    void vscode.window.showInformationMessage(
+                        'Generated code changes have been reviewed and processed.'
+                    )
+                    return
+                }
+                const leftUri = fileExists ? vscode.Uri.file(filePath) : vscode.Uri.from({ scheme: 'untitled' })
+                const rightUri = vscode.Uri.file(tempFilePath ?? filePath)
+                const fileName = path.basename(filePath)
+                await vscode.commands.executeCommand(
+                    'vscode.diff',
+                    leftUri,
+                    rightUri,
+                    `${fileName} ${amazonQTabSuffix}`
+                )
+            } catch (error) {
+                getLogger().error(`Unexpected error in diff view generation: ${error}`)
+                void vscode.window.showErrorMessage(`Failed to open diff view.`)
             }
-            const leftUri = fileExists ? vscode.Uri.file(filePath) : vscode.Uri.from({ scheme: 'untitled' })
-            const rightUri = vscode.Uri.file(tempFilePath ?? filePath)
-            const fileName = path.basename(filePath)
-            await vscode.commands.executeCommand('vscode.diff', leftUri, rightUri, `${fileName} ${amazonQTabSuffix}`)
         } else {
             const lineRanges = session.contexts.get(message.filePath)
 
