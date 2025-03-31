@@ -280,6 +280,22 @@
             ],
             "documentation": "<p>Lists the findings from a particular code analysis job.</p>"
         },
+        "ListEvents": {
+            "name": "ListEvents",
+            "http": {
+                "method": "POST",
+                "requestUri": "/"
+            },
+            "input": { "shape": "ListEventsRequest" },
+            "output": { "shape": "ListEventsResponse" },
+            "errors": [
+                { "shape": "ThrottlingException" },
+                { "shape": "InternalServerException" },
+                { "shape": "ValidationException" },
+                { "shape": "AccessDeniedException" }
+            ],
+            "documentation": "<p>List events for agent activity</p>"
+        },
         "ListFeatureEvaluations": {
             "name": "ListFeatureEvaluations",
             "http": {
@@ -689,7 +705,9 @@
                 "acceptedLineCount": { "shape": "Integer" },
                 "acceptedSnippetHasReference": { "shape": "Boolean" },
                 "hasProjectLevelContext": { "shape": "Boolean" },
-                "userIntent": { "shape": "UserIntent" }
+                "userIntent": { "shape": "UserIntent" },
+                "addedIdeDiagnostics": { "shape": "IdeDiagnosticList" },
+                "removedIdeDiagnostics": { "shape": "IdeDiagnosticList" }
             }
         },
         "ChatInteractWithMessageEventInteractionTargetString": {
@@ -1079,7 +1097,8 @@
         "CreateWorkspaceRequestWorkspaceRootString": {
             "type": "string",
             "max": 1024,
-            "min": 1
+            "min": 1,
+            "sensitive": true
         },
         "CreateWorkspaceResponse": {
             "type": "structure",
@@ -1394,6 +1413,10 @@
                 "useRelevantDocuments": {
                     "shape": "Boolean",
                     "documentation": "<p>Whether service should use relevant document in prompt</p>"
+                },
+                "workspaceFolders": {
+                    "shape": "WorkspaceFolderList",
+                    "documentation": "<p>Represents IDE provided list of workspace folders</p>"
                 }
             },
             "documentation": "<p>Represents the state of an Editor</p>"
@@ -1475,6 +1498,34 @@
             "type": "string",
             "max": 2048,
             "min": 0
+        },
+        "Event": {
+            "type": "structure",
+            "required": ["eventId", "generationId", "eventTimestamp", "eventType", "eventBlob"],
+            "members": {
+                "eventId": { "shape": "UUID" },
+                "generationId": { "shape": "UUID" },
+                "eventTimestamp": { "shape": "SyntheticTimestamp_date_time" },
+                "eventType": { "shape": "EventType" },
+                "eventBlob": { "shape": "EventBlob" }
+            }
+        },
+        "EventBlob": {
+            "type": "blob",
+            "max": 400000,
+            "min": 1,
+            "sensitive": true
+        },
+        "EventList": {
+            "type": "list",
+            "member": { "shape": "Event" },
+            "max": 10,
+            "min": 1
+        },
+        "EventType": {
+            "type": "string",
+            "max": 100,
+            "min": 1
         },
         "ExternalIdentityDetails": {
             "type": "structure",
@@ -1629,7 +1680,8 @@
                 "TASK_ASSIST",
                 "TRANSFORMATIONS",
                 "CHAT_CUSTOMIZATION",
-                "TRANSFORMATIONS_WEBAPP"
+                "TRANSFORMATIONS_WEBAPP",
+                "FEATURE_DEVELOPMENT"
             ],
             "max": 64,
             "min": 1
@@ -1806,6 +1858,46 @@
             "enum": ["JETBRAINS", "VSCODE", "CLI", "JUPYTER_MD", "JUPYTER_SM", "ECLIPSE", "VISUAL_STUDIO"],
             "max": 64,
             "min": 1
+        },
+        "IdeDiagnostic": {
+            "type": "structure",
+            "required": ["ideDiagnosticType"],
+            "members": {
+                "range": {
+                    "shape": "Range",
+                    "documentation": "<p>The range at which the message applies.</p>"
+                },
+                "source": {
+                    "shape": "IdeDiagnosticSourceString",
+                    "documentation": "<p>A human-readable string describing the source of the diagnostic</p>"
+                },
+                "severity": {
+                    "shape": "DiagnosticSeverity",
+                    "documentation": "<p>Diagnostic Error type</p>"
+                },
+                "ideDiagnosticType": {
+                    "shape": "IdeDiagnosticType",
+                    "documentation": "<p>Type of the diagnostic</p>"
+                }
+            },
+            "documentation": "<p>Structure to represent metadata about a Diagnostic from user local IDE</p>"
+        },
+        "IdeDiagnosticList": {
+            "type": "list",
+            "member": { "shape": "IdeDiagnostic" },
+            "documentation": "<p>List of IDE Diagnostics</p>",
+            "max": 1024,
+            "min": 0
+        },
+        "IdeDiagnosticSourceString": {
+            "type": "string",
+            "max": 1024,
+            "min": 0,
+            "sensitive": true
+        },
+        "IdeDiagnosticType": {
+            "type": "string",
+            "enum": ["SYNTAX_ERROR", "TYPE_ERROR", "REFERENCE_ERROR", "BEST_PRACTICE", "SECURITY", "OTHER"]
         },
         "IdempotencyToken": {
             "type": "string",
@@ -1995,6 +2087,30 @@
                 "codeAnalysisFindings": { "shape": "SensitiveString" }
             }
         },
+        "ListEventsRequest": {
+            "type": "structure",
+            "required": ["conversationId"],
+            "members": {
+                "conversationId": { "shape": "UUID" },
+                "maxResults": { "shape": "ListEventsRequestMaxResultsInteger" },
+                "nextToken": { "shape": "NextToken" }
+            }
+        },
+        "ListEventsRequestMaxResultsInteger": {
+            "type": "integer",
+            "box": true,
+            "max": 50,
+            "min": 1
+        },
+        "ListEventsResponse": {
+            "type": "structure",
+            "required": ["conversationId", "events"],
+            "members": {
+                "conversationId": { "shape": "UUID" },
+                "events": { "shape": "EventList" },
+                "nextToken": { "shape": "NextToken" }
+            }
+        },
         "ListFeatureEvaluationsRequest": {
             "type": "structure",
             "required": ["userContext"],
@@ -2023,7 +2139,8 @@
         "ListWorkspaceMetadataRequestWorkspaceRootString": {
             "type": "string",
             "max": 1024,
-            "min": 1
+            "min": 1,
+            "sensitive": true
         },
         "ListWorkspaceMetadataResponse": {
             "type": "structure",
@@ -2065,6 +2182,11 @@
             "max": 128,
             "min": 1,
             "pattern": "[-a-zA-Z0-9._]*"
+        },
+        "NextToken": {
+            "type": "string",
+            "max": 1000,
+            "min": 0
         },
         "Notifications": {
             "type": "list",
@@ -2892,6 +3014,10 @@
         "SymbolType": {
             "type": "string",
             "enum": ["DECLARATION", "USAGE"]
+        },
+        "SyntheticTimestamp_date_time": {
+            "type": "timestamp",
+            "timestampFormat": "iso8601"
         },
         "TargetCode": {
             "type": "structure",
@@ -3752,7 +3878,9 @@
                 "generatedLine": { "shape": "PrimitiveInteger" },
                 "numberOfRecommendations": { "shape": "PrimitiveInteger" },
                 "perceivedLatencyMilliseconds": { "shape": "Double" },
-                "acceptedCharacterCount": { "shape": "PrimitiveInteger" }
+                "acceptedCharacterCount": { "shape": "PrimitiveInteger" },
+                "addedIdeDiagnostics": { "shape": "IdeDiagnosticList" },
+                "removedIdeDiagnostics": { "shape": "IdeDiagnosticList" }
             }
         },
         "ValidationException": {
@@ -3785,6 +3913,18 @@
                 "relativePath": { "shape": "SensitiveString" },
                 "programmingLanguage": { "shape": "ProgrammingLanguage" }
             }
+        },
+        "WorkspaceFolderList": {
+            "type": "list",
+            "member": { "shape": "WorkspaceFolderListMemberString" },
+            "max": 100,
+            "min": 0
+        },
+        "WorkspaceFolderListMemberString": {
+            "type": "string",
+            "max": 4096,
+            "min": 1,
+            "sensitive": true
         },
         "WorkspaceList": {
             "type": "list",

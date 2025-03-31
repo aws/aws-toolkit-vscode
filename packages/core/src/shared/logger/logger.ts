@@ -19,6 +19,7 @@ export type LogTopic =
     | 'fsRead'
     | 'fsWrite'
     | 'executeBash'
+    | 'listDirectory'
     | 'chatStream'
     | 'unknown'
 

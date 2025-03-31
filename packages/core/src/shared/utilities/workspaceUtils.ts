@@ -673,14 +673,14 @@ export async function findStringInDirectory(searchStr: string, dirPath: string) 
 }
 
 /**
- * Returns a one-character tag for a directory ('d'), symlink ('l'), or file ('-').
+ * Returns a prefix for a directory ('[DIR]'), symlink ('[LINK]'), or file ('[FILE]').
  */
 export function formatListing(name: string, fileType: vscode.FileType, fullPath: string): string {
-    let typeChar = '-'
+    let typeChar = '[FILE]'
     if (fileType === vscode.FileType.Directory) {
-        typeChar = 'd'
+        typeChar = '[DIR]'
     } else if (fileType === vscode.FileType.SymbolicLink) {
-        typeChar = 'l'
+        typeChar = '[LINK]'
     }
     return `${typeChar} ${fullPath}`
 }

@@ -1,16 +1,16 @@
 {
     "fsRead": {
         "name": "fsRead",
-        "description": "A tool for reading files (e.g. `cat -n`), or listing files/directories (e.g. `ls -la` or `find . -maxdepth 2). The behavior of this tool is determined by the `path` parameter pointing to a file or directory.\n* If `path` is a file, this tool returns the result of running `cat -n`, and the optional `readRange` determines what range of lines will be read from the specified file.\n* If `path` is a directory, this tool returns the listed files and directories of the specified path, as if running `ls -la`. If the `readRange` parameter is provided, the tool acts like the `find . -maxdepth <readRange>`, where `readRange` is the number of subdirectories deep to search, e.g. [2] will run `find . -maxdepth 2`.",
+        "description": "A tool for reading a file. \n* This tool returns the contents of a file, and the optional `readRange` determines what range of lines will be read from the specified file.",
         "inputSchema": {
             "type": "object",
             "properties": {
                 "path": {
-                    "description": "Absolute path to file or directory, e.g. `/repo/file.py` or `/repo`.",
+                    "description": "Absolute path to a file, e.g. `/repo/file.py`.",
                     "type": "string"
                 },
                 "readRange": {
-                    "description": "Optional parameter when reading either files or directories.\n* When `path` is a file, if none is given, the full file is shown. If provided, the file will be shown in the indicated line number range, e.g. [11, 12] will show lines 11 and 12. Indexing at 1 to start. Setting `[startLine, -1]` shows all lines from `startLine` to the end of the file.\n* When `path` is a directory, if none is given, the results of `ls -l` are given. If provided, the current directory and indicated number of subdirectories will be shown, e.g. [2] will show the current directory and directories two levels deep.",
+                    "description": "Optional parameter when reading files.\n* If none is given, the full file is shown. If provided, the file will be shown in the indicated line number range, e.g. [11, 12] will show lines 11 and 12. Indexing at 1 to start. Setting `[startLine, -1]` shows all lines from `startLine` to the end of the file.",
                     "items": {
                         "type": "integer"
                     },
@@ -22,7 +22,7 @@
     },
     "fsWrite": {
         "name": "fsWrite",
-        "description": "A tool for creating and editing files\n * The `create` command will override the file at `path` if it already exists as a file, and otherwise create a new file\n * The `append` command will add content to the end of an existing file, automatically adding a newline if the file doesn't end with one. The file must exist.\n Notes for using the `strReplace` command:\n * The `oldStr` parameter should match EXACTLY one or more consecutive lines from the original file. Be mindful of whitespaces!\n * If the `oldStr` parameter is not unique in the file, the replacement will not be performed. Make sure to include enough context in `oldStr` to make it unique\n * The `newStr` parameter should contain the edited lines that should replace the `oldStr`. The `insert` command will insert `newStr` after `insertLine` and place it on its own line.",
+        "description": "A tool for creating and editing a file.\n * The `create` command will override the file at `path` if it already exists as a file, and otherwise create a new file\n * The `append` command will add content to the end of an existing file, automatically adding a newline if the file doesn't end with one. The file must exist.\n Notes for using the `strReplace` command:\n * The `oldStr` parameter should match EXACTLY one or more consecutive lines from the original file. Be mindful of whitespaces!\n * If the `oldStr` parameter is not unique in the file, the replacement will not be performed. Make sure to include enough context in `oldStr` to make it unique\n * The `newStr` parameter should contain the edited lines that should replace the `oldStr`. The `insert` command will insert `newStr` after `insertLine` and place it on its own line.",
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -71,6 +71,24 @@
                 }
             },
             "required": ["command", "cwd"]
+        }
+    },
+    "listDirectory": {
+        "name": "listDirectory",
+        "description": "List the contents of a directory.\n * Use this tool for discovery, before using more targeted tools like fsRead.\n *Useful to try to understand the file structure before diving deeper into specific files.\n *Can be used to explore the codebase.\n *Results clearly distinguish between files, directories or symlinks with [FILE], [DIR] and [LINK] prefixes.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "explanation": {
+                    "description": "One sentence explanation as to why this tool is being used, and how it contributes to the goal.",
+                    "type": "string"
+                },
+                "path": {
+                    "type": "string",
+                    "description": "Absolute path to a directory, e.g., `/repo`."
+                }
+            },
+            "required": ["path"]
         }
     }
 }

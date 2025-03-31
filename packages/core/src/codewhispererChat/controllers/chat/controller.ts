@@ -307,7 +307,20 @@ export class ChatController {
     }
 
     private processResponseBodyLinkClick(click: ResponseBodyLinkClickMessage) {
-        this.openLinkInExternalBrowser(click)
+        const uri = vscode.Uri.parse(click.link)
+        if (uri.scheme === 'file') {
+            void this.openFile(uri.fsPath)
+        } else {
+            this.openLinkInExternalBrowser(click)
+        }
+    }
+
+    private async openFile(absolutePath: string) {
+        const fileExists = await fs.existsFile(absolutePath)
+        if (fileExists) {
+            const document = await vscode.workspace.openTextDocument(absolutePath)
+            await vscode.window.showTextDocument(document)
+        }
     }
 
     private processSourceLinkClick(click: SourceLinkClickMessage) {

@@ -47,4 +47,17 @@ export function injectJSDOM() {
 
     // jsdom doesn't have support for structuredClone. See https://github.com/jsdom/jsdom/issues/3363
     global.structuredClone = (val: any) => JSON.parse(JSON.stringify(val))
+
+    global.IntersectionObserver = class IntersectionObserver {
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+        takeRecords() {
+            return []
+        }
+        // eslint-disable-next-line unicorn/no-null
+        root = null
+        rootMargin = ''
+        thresholds = []
+    }
 }
