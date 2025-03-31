@@ -23,6 +23,8 @@ import { ToolkitError } from '../../../../shared/errors'
 import { withTelemetryContext } from '../../../../shared/telemetry/util'
 import { builderIdStartUrl } from '../../../../auth/sso/constants'
 import { RegionProfile } from '../../../../codewhisperer/models/model'
+import { randomUUID } from '../../../../shared/crypto'
+import globals from '../../../../shared/extensionGlobals'
 import { telemetry } from '../../../../shared/telemetry/telemetry'
 import { ProfileSwitchIntent } from '../../../../codewhisperer/region/regionProfileManager'
 
@@ -162,6 +164,13 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
             return
         } else if (featureAuthStates.amazonQ === 'pendingProfileSelection') {
             this.authState = 'PENDING_PROFILE_SELECTION'
+            // possible that user starts with "profile selection" state therefore the timeout for auth flow should be disposed otherwise will emit failure
+            this.loadMetadata?.loadTimeout?.dispose()
+            this.loadMetadata = {
+                traceId: randomUUID(),
+                loadTimeout: undefined,
+                start: globals.clock.Date.now(),
+            }
             return
         }
         this.authState = 'LOGIN'

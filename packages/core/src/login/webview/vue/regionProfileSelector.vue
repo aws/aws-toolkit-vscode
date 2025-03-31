@@ -79,7 +79,13 @@
                     <button id="signout" v-on:click="signout">Sign Out</button>
                 </template>
                 <template v-else>
-                    <button class="continue-button" v-on:click="onClickContinue()">Continue</button>
+                    <button
+                        class="continue-button"
+                        id="profile-selection-continue-button"
+                        v-on:click="onClickContinue()"
+                    >
+                        Continue
+                    </button>
                 </template>
             </div>
         </div>
@@ -162,6 +168,18 @@ export default defineComponent({
         },
     },
 })
+
+/**
+ * The ID of the element we will use to determine that the UI has completed its initial load.
+ *
+ * This makes assumptions that we will be in a certain state of the UI (eg showing a form vs. a loading bar).
+ * So if the UI flow changes, this may need to be updated.
+ */
+export function getReadyElementId() {
+    // On every initial load, we ASSUME that the user will always be in the connection selection state,
+    // which is why we specifically look for this button.
+    return 'profile-selection-continue-button'
+}
 </script>
 <style scoped>
 @import './base.css';

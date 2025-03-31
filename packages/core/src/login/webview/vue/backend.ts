@@ -69,7 +69,7 @@ export abstract class CommonAuthWebview extends VueWebview {
      * @param errorMessage IF an error is caught on the frontend, this is the message. It will result in a failure metric.
      *                     Otherwise we assume success.
      */
-    public setUiReady(state: 'login' | 'reauth', errorMessage?: string) {
+    public setUiReady(state: 'login' | 'reauth' | 'selectProfile', errorMessage?: string) {
         if (errorMessage) {
             this.setLoadFailure(state, errorMessage)
         } else {
