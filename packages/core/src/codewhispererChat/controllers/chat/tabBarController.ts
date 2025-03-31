@@ -20,8 +20,8 @@ export class TabBarController {
     private readonly messenger: Messenger
     private chatHistoryDb = Database.getInstance()
     private loadedChats: boolean = false
-    private searchTimeout: NodeJS.Timeout | null = null
-    private readonly DEBOUNCE_TIME = 300 // milliseconds
+    private searchTimeout: NodeJS.Timeout | undefined = undefined
+    private readonly DebounceTime = 300 // milliseconds
 
     constructor(messenger: Messenger) {
         this.messenger = messenger
@@ -41,7 +41,9 @@ export class TabBarController {
     async processFilterChangeMessage(msg: DetailedListFilterChangeMessage) {
         if (msg.listType === 'history') {
             const searchFilter = msg.filterValues['search']
-            if (typeof searchFilter !== 'string') return
+            if (typeof searchFilter !== 'string') {
+                return
+            }
 
             // Clear any pending search
             if (this.searchTimeout) {
@@ -52,16 +54,16 @@ export class TabBarController {
             this.searchTimeout = setTimeout(() => {
                 const searchResults = this.chatHistoryDb.searchMessages(searchFilter)
                 this.messenger.sendUpdateDetailedListMessage('history', { list: searchResults })
-            }, this.DEBOUNCE_TIME)
+            }, this.DebounceTime)
         }
     }
 
     processItemSelectMessage(msg: DetailedListItemSelectMessage) {
         if (msg.listType === 'history') {
-            let historyID = msg.item.id
+            const historyID = msg.item.id
             if (historyID) {
                 const selectedTab = this.chatHistoryDb.getTab(historyID)
-                let openTabID = this.chatHistoryDb.getTabId(historyID)
+                const openTabID = this.chatHistoryDb.getTabId(historyID)
                 if (!selectedTab?.isOpen || !openTabID) {
                     this.restoreTab(selectedTab)
                 } else {
