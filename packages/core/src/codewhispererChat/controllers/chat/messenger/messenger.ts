@@ -44,7 +44,7 @@ import { extractCodeBlockLanguage } from '../../../../shared/markdown'
 import { extractAuthFollowUp } from '../../../../amazonq/util/authUtils'
 import { helpMessage } from '../../../../amazonq/webview/ui/texts/constants'
 import { ChatItem, ChatItemButton, ChatItemFormItem, DetailedList, MynahUIDataModel } from '@aws/mynah-ui'
-import { Database } from '../../../../shared/clients/chatDb/chatDb'
+import { Database } from '../../../../shared/db/chatDb/chatDb'
 import { TabType } from '../../../../amazonq/webview/ui/storages/tabsStorage'
 
 export type StaticTextResponseType = 'quick-action-help' | 'onboarding-help' | 'transform' | 'help'

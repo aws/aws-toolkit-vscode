@@ -33,7 +33,19 @@ export enum ClientType {
     CLI = 'CLI',
 }
 
-export class FileSystemAdapter {
+/**
+ *
+ * This adapter implements the LokiPersistenceAdapter interface for file system operations using web-compatible shared fs utils.
+ * It provides methods for loading, saving, and deleting databases, as well as ensuring
+ * the existence of the directory.
+ *
+ * Error Handling:
+ * - All methods use try-catch blocks to to prevent breaking the application
+ * - In case of errors, the callback functions are used to communicate the error state
+ *   without throwing exceptions.
+ *
+ */
+export class FileSystemAdapter implements LokiPersistenceAdapter {
     private directory
     constructor(directory: string) {
         this.directory = directory

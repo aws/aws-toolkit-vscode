@@ -14,10 +14,23 @@ import {
     Tab,
     TabCollection,
     updateOrCreateConversation,
-} from './helpers'
+} from './util'
 import crypto from 'crypto'
 import path from 'path'
 import { fs } from '../../fs/fs'
+
+/**
+ * A singleton database class that manages chat history persistence using LokiJS.
+ * This class handles storage and retrieval of chat conversations, messages, and tab states
+ * for the Amazon Q VS Code extension.
+ *
+ * The database is stored in the user's home directory under .aws/amazonq/history
+ * with a unique filename based on the workspace identifier.
+ *
+ *
+ * @singleton
+ * @class
+ */
 
 export class Database {
     private static instance: Database | undefined = undefined
@@ -30,7 +43,7 @@ export class Database {
     initialized: boolean = false
 
     constructor() {
-        this.dbDirectory = path.join(fs.getUserHomeDir(), '.aws', 'amazonq', 'history')
+        this.dbDirectory = path.join(fs.getUserHomeDir(), '.aws/amazonq/history')
         const workspaceId = this.getWorkspaceIdentifier()
         const dbName = `chat-history-${workspaceId}.json`
 
@@ -59,7 +72,7 @@ export class Database {
         // Case 1: .code-workspace file (saved workspace)
         const workspace = vscode.workspace.workspaceFile
         if (workspace) {
-            crypto.createHash('md5').update(workspace.fsPath).digest('hex')
+            return crypto.createHash('md5').update(workspace.fsPath).digest('hex')
         }
 
         // Case 2: Multi-root workspace (unsaved)

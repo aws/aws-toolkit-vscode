@@ -9,7 +9,7 @@ import { ChatControllerMessagePublishers } from '../../controllers/chat/controll
 import { ReferenceLogController } from './referenceLogController'
 import { getLogger } from '../../../shared/logger/logger'
 import { openSettingsId } from '../../../shared/settings'
-import { Database } from '../../../shared/clients/chatDb/chatDb'
+import { Database } from '../../../shared/db/chatDb/chatDb'
 
 export interface UIMessageListenerProps {
     readonly chatControllerMessagePublishers: ChatControllerMessagePublishers

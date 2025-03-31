@@ -13,6 +13,9 @@ import { UserWrittenCodeTracker } from '../../../../codewhisperer/tracker/userWr
 
 export class ChatSession {
     private sessionId?: string
+    /**
+     * True if messages from local history have been sent to session.
+     */
     localHistoryHydrated: boolean = false
 
     contexts: Map<string, { first: number; second: number }[]> = new Map()

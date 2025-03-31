@@ -11,9 +11,9 @@ import {
 } from '../../view/connector/connector'
 import * as vscode from 'vscode'
 import { Messenger } from './messenger/messenger'
-import { Database } from '../../../shared/clients/chatDb/chatDb'
+import { Database } from '../../../shared/db/chatDb/chatDb'
 import { TabBarButtonClick, SaveChatMessage } from './model'
-import { Conversation, Tab } from '../../../shared/clients/chatDb/helpers'
+import { Conversation, Tab } from '../../../shared/db/chatDb/util'
 import { DetailedListItemGroup, MynahIconsType } from '@aws/mynah-ui'
 
 export class TabBarController {

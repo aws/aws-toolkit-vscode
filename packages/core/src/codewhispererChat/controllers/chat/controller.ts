@@ -86,7 +86,7 @@ import {
     defaultContextLengths,
 } from '../../constants'
 import { ChatSession } from '../../clients/chat/v0/chat'
-import { Database } from '../../../shared/clients/chatDb/chatDb'
+import { Database } from '../../../shared/db/chatDb/chatDb'
 import { TabBarController } from './tabBarController'
 
 export interface ChatControllerMessagePublishers {
