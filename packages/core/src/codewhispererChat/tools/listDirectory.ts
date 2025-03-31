@@ -48,7 +48,7 @@ export class ListDirectory {
         updates.end()
     }
 
-    public async invoke(updates: Writable): Promise<InvokeOutput> {
+    public async invoke(updates?: Writable): Promise<InvokeOutput> {
         try {
             const fileUri = vscode.Uri.file(this.fsPath)
             const listing = await readDirectoryRecursively(fileUri, 0)

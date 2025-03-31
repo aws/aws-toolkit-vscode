@@ -151,7 +151,7 @@ describe('ToolUtils', function () {
             const result = await ToolUtils.invoke(tool, mockWritable as unknown as Writable)
 
             assert.deepStrictEqual(result, expectedOutput)
-            assert(mockListDirectory.invoke.calledOnceWith(mockWritable))
+            assert(mockListDirectory.invoke.calledOnceWith(mockWritable as unknown as Writable | undefined))
         })
     })
 
