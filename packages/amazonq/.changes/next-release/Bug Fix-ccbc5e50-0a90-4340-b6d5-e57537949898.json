@@ -1,4 +1,4 @@
 {
 	"type": "Bug Fix",
-	"description": "Amazon Q chat: @Prompts not added to context"
+	"description": "Amazon Q chat: `@prompts` not added to context"
 }
