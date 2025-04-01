@@ -1,0 +1,14 @@
+{
+	"date": "2025-03-28",
+	"version": "3.52.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "SAM build: prevent running multiple build processes for the same template"
+		},
+		{
+			"type": "Feature",
+			"description": "Lambda: Add 'Process SNS notification messages with Lambda' Serverless Land pattern."
+		}
+	]
+}
