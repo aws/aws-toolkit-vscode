@@ -52,7 +52,7 @@ export class Database {
             autosave: true,
             autoload: true,
             autoloadCallback: () => this.databaseInitialize(),
-            autosaveInterval: 4000,
+            autosaveInterval: 1000,
             persistenceMethod: 'fs',
         })
     }
@@ -201,9 +201,6 @@ export class Database {
         return []
     }
 
-    /**
-     * Returns DetailedListItemGroup[]
-     */
     getHistory(): DetailedListItemGroup[] {
         if (this.initialized) {
             const tabCollection = this.db.getCollection<Tab>(TabCollection)
@@ -217,6 +214,10 @@ export class Database {
         if (this.initialized) {
             const tabCollection = this.db.getCollection<Tab>(TabCollection)
             tabCollection.findAndRemove({ historyId })
+            const tabId = this.getTabId(historyId)
+            if (tabId) {
+                this.historyIdMapping.delete(tabId)
+            }
         }
     }
 

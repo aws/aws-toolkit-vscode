@@ -112,6 +112,7 @@ export interface ConnectorProps {
         update: (data: DetailedList) => void
         close: () => void
         changeTarget: (direction: 'up' | 'down', snapOnLastAndFirst?: boolean) => void
+        getTargetElementId: () => string | undefined
     }
     onSelectTab: (tabID: string, eventID: string) => void
     onExportChat: (tabID: string, format: 'markdown' | 'html') => string

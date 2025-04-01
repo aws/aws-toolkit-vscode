@@ -966,10 +966,12 @@ export const createMynahUI = (
                 {
                     id: 'history_sheet',
                     icon: MynahIcons.COMMENT,
+                    description: 'View chat history',
                 },
                 {
                     id: 'export_chat',
                     icon: MynahIcons.EXTERNAL,
+                    description: 'Export chat',
                 },
             ],
         },

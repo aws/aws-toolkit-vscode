@@ -17,10 +17,14 @@ export class DetailedListConnector {
         update: (data: DetailedList) => void
         close: () => void
         changeTarget: (direction: 'up' | 'down', snapOnLastAndFirst?: boolean) => void
+        getTargetElementId: () => string | undefined
     }
     closeList() {}
     updateList(_data: DetailedList) {}
     changeTarget(_direction: 'up' | 'down', _snapOnLastAndFirst?: boolean) {}
+    getTargetElementId(): string | undefined {
+        return undefined
+    }
 
     constructor(
         type: DetailedListType,
@@ -29,6 +33,7 @@ export class DetailedListConnector {
             update: (data: DetailedList) => void
             close: () => void
             changeTarget: (direction: 'up' | 'down', snapOnLastAndFirst?: boolean) => void
+            getTargetElementId: () => string | undefined
         }
     ) {
         this.type = type
@@ -37,7 +42,7 @@ export class DetailedListConnector {
     }
 
     openList(messageData: any) {
-        const { update, close, changeTarget } = this.onOpenDetailedList({
+        const { update, close, changeTarget, getTargetElementId } = this.onOpenDetailedList({
             tabId: messageData.tabID,
             detailedList: messageData.detailedList,
             events: {
@@ -50,6 +55,7 @@ export class DetailedListConnector {
         this.closeList = close
         this.updateList = update
         this.changeTarget = changeTarget
+        this.getTargetElementId = getTargetElementId
     }
 
     onFilterValueChange = (filterValues: Record<string, any>, isValid: boolean) => {
@@ -84,7 +90,12 @@ export class DetailedListConnector {
         if (e.key === 'Escape') {
             this.closeList()
         } else if (e.key === 'Enter') {
-            // todo: call onItemSelect on Enter
+            const targetElementId = this.getTargetElementId()
+            if (targetElementId) {
+                this.onItemSelect({
+                    id: targetElementId,
+                })
+            }
         } else if (e.key === 'ArrowUp') {
             this.changeTarget('up')
         } else if (e.key === 'ArrowDown') {
