@@ -139,7 +139,7 @@ describe('RegionProfileManager', function () {
             assert.ok(sut.activeRegionProfile)
             assert.deepStrictEqual(sut.clientConfig, {
                 region: 'eu-central-1',
-                endpoint: 'https://rts.prod-eu-central-1.codewhisperer.ai.aws.dev/',
+                endpoint: 'https://q.eu-central-1.amazonaws.com/',
             })
         })
 
