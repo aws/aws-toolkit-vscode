@@ -89,6 +89,22 @@ export async function launchProjectCreationWizard(
 export async function downloadPatternCode(config: CreateServerlessLandWizardForm, assetName: string): Promise<void> {
     const fullAssetName = assetName + '.zip'
     const location = vscode.Uri.joinPath(config.location, config.name)
+
+    if (await fs.exists(location)) {
+        const choice = await vscode.window.showInformationMessage(
+            localize(
+                'AWS.toolkit.serverlessLand.fileExistsPrompt',
+                '{0} already exists in the selected directory, overwrite?',
+                config.name
+            ),
+            'Yes',
+            'No'
+        )
+        if (choice !== 'Yes') {
+            return Promise.reject(new ToolkitError(`A folder named ${config.name} already exists in this path.`))
+        }
+        await vscode.workspace.fs.delete(location)
+    }
     try {
         await getPattern(serverlessLandOwner, serverlessLandRepo, fullAssetName, location, true)
     } catch (error) {
