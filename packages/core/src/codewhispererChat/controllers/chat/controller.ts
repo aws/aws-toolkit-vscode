@@ -662,7 +662,9 @@ export class ChatController {
                     try {
                         await ToolUtils.validate(tool)
 
-                        const chatStream = new ChatStream(this.messenger, tabID, triggerID, toolUse)
+                        const chatStream = new ChatStream(this.messenger, tabID, triggerID, toolUse, {
+                            requiresAcceptance: false,
+                        })
                         const output = await ToolUtils.invoke(tool, chatStream)
 
                         toolResults.push({

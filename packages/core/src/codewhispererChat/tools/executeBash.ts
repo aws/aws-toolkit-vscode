@@ -5,18 +5,128 @@
 
 import { Writable } from 'stream'
 import { getLogger } from '../../shared/logger/logger'
-import { fs } from '../../shared/fs/fs' // e.g. for getUserHomeDir()
+import { fs } from '../../shared/fs/fs'
 import { ChildProcess, ChildProcessOptions } from '../../shared/utilities/processUtils'
 import { InvokeOutput, OutputKind, sanitizePath } from './toolShared'
+import { split } from 'shlex'
 
-export const readOnlyCommands: string[] = ['ls', 'cat', 'echo', 'pwd', 'which', 'head', 'tail']
+export enum CommandCategory {
+    ReadOnly,
+    HighRisk,
+    Destructive,
+}
+
+export const dangerousPatterns = new Set(['<(', '$(', '`', '>', '&&', '||'])
+export const commandCategories = new Map<string, CommandCategory>([
+    // ReadOnly commands
+    ['ls', CommandCategory.ReadOnly],
+    ['cat', CommandCategory.ReadOnly],
+    ['bat', CommandCategory.ReadOnly],
+    ['pwd', CommandCategory.ReadOnly],
+    ['echo', CommandCategory.ReadOnly],
+    ['file', CommandCategory.ReadOnly],
+    ['less', CommandCategory.ReadOnly],
+    ['more', CommandCategory.ReadOnly],
+    ['tree', CommandCategory.ReadOnly],
+    ['find', CommandCategory.ReadOnly],
+    ['top', CommandCategory.ReadOnly],
+    ['htop', CommandCategory.ReadOnly],
+    ['ps', CommandCategory.ReadOnly],
+    ['df', CommandCategory.ReadOnly],
+    ['du', CommandCategory.ReadOnly],
+    ['free', CommandCategory.ReadOnly],
+    ['uname', CommandCategory.ReadOnly],
+    ['date', CommandCategory.ReadOnly],
+    ['whoami', CommandCategory.ReadOnly],
+    ['which', CommandCategory.ReadOnly],
+    ['ping', CommandCategory.ReadOnly],
+    ['ifconfig', CommandCategory.ReadOnly],
+    ['ip', CommandCategory.ReadOnly],
+    ['netstat', CommandCategory.ReadOnly],
+    ['ss', CommandCategory.ReadOnly],
+    ['dig', CommandCategory.ReadOnly],
+    ['grep', CommandCategory.ReadOnly],
+    ['wc', CommandCategory.ReadOnly],
+    ['sort', CommandCategory.ReadOnly],
+    ['diff', CommandCategory.ReadOnly],
+    ['head', CommandCategory.ReadOnly],
+    ['tail', CommandCategory.ReadOnly],
+
+    // HighRisk commands
+    ['chmod', CommandCategory.HighRisk],
+    ['chown', CommandCategory.HighRisk],
+    ['mv', CommandCategory.HighRisk],
+    ['cp', CommandCategory.HighRisk],
+    ['ln', CommandCategory.HighRisk],
+    ['mount', CommandCategory.HighRisk],
+    ['umount', CommandCategory.HighRisk],
+    ['kill', CommandCategory.HighRisk],
+    ['killall', CommandCategory.HighRisk],
+    ['pkill', CommandCategory.HighRisk],
+    ['iptables', CommandCategory.HighRisk],
+    ['route', CommandCategory.HighRisk],
+    ['systemctl', CommandCategory.HighRisk],
+    ['service', CommandCategory.HighRisk],
+    ['crontab', CommandCategory.HighRisk],
+    ['at', CommandCategory.HighRisk],
+    ['tar', CommandCategory.HighRisk],
+    ['awk', CommandCategory.HighRisk],
+    ['sed', CommandCategory.HighRisk],
+    ['wget', CommandCategory.HighRisk],
+    ['curl', CommandCategory.HighRisk],
+    ['nc', CommandCategory.HighRisk],
+    ['ssh', CommandCategory.HighRisk],
+    ['scp', CommandCategory.HighRisk],
+    ['ftp', CommandCategory.HighRisk],
+    ['sftp', CommandCategory.HighRisk],
+    ['rsync', CommandCategory.HighRisk],
+    ['chroot', CommandCategory.HighRisk],
+    ['lsof', CommandCategory.HighRisk],
+    ['strace', CommandCategory.HighRisk],
+    ['gdb', CommandCategory.HighRisk],
+
+    // Destructive commands
+    ['rm', CommandCategory.Destructive],
+    ['dd', CommandCategory.Destructive],
+    ['mkfs', CommandCategory.Destructive],
+    ['fdisk', CommandCategory.Destructive],
+    ['shutdown', CommandCategory.Destructive],
+    ['reboot', CommandCategory.Destructive],
+    ['poweroff', CommandCategory.Destructive],
+    ['sudo', CommandCategory.Destructive],
+    ['su', CommandCategory.Destructive],
+    ['useradd', CommandCategory.Destructive],
+    ['userdel', CommandCategory.Destructive],
+    ['passwd', CommandCategory.Destructive],
+    ['visudo', CommandCategory.Destructive],
+    ['insmod', CommandCategory.Destructive],
+    ['rmmod', CommandCategory.Destructive],
+    ['modprobe', CommandCategory.Destructive],
+    ['apt', CommandCategory.Destructive],
+    ['yum', CommandCategory.Destructive],
+    ['dnf', CommandCategory.Destructive],
+    ['pacman', CommandCategory.Destructive],
+    ['perl', CommandCategory.Destructive],
+    ['python', CommandCategory.Destructive],
+    ['bash', CommandCategory.Destructive],
+    ['sh', CommandCategory.Destructive],
+    ['exec', CommandCategory.Destructive],
+    ['eval', CommandCategory.Destructive],
+    ['xargs', CommandCategory.Destructive],
+])
 export const maxBashToolResponseSize: number = 1024 * 1024 // 1MB
 export const lineCount: number = 1024
-export const dangerousPatterns: string[] = ['|', '<(', '$(', '`', '>', '&&', '||']
+export const destructiveCommandWarningMessage = '⚠️ WARNING: Destructive command detected:\n\n'
+export const highRiskCommandWarningMessage = '⚠️ WARNING: High risk command detected:\n\n'
 
 export interface ExecuteBashParams {
     command: string
     cwd?: string
+}
+
+export interface CommandValidation {
+    requiresAcceptance: boolean
+    warning?: string
 }
 
 export class ExecuteBash {
@@ -34,7 +144,7 @@ export class ExecuteBash {
             throw new Error('Bash command cannot be empty.')
         }
 
-        const args = ExecuteBash.parseCommand(this.command)
+        const args = split(this.command)
         if (!args || args.length === 0) {
             throw new Error('No command found.')
         }
@@ -46,22 +156,67 @@ export class ExecuteBash {
         }
     }
 
-    public requiresAcceptance(): boolean {
+    public requiresAcceptance(): CommandValidation {
         try {
-            const args = ExecuteBash.parseCommand(this.command)
+            const args = split(this.command)
             if (!args || args.length === 0) {
-                return true
+                return { requiresAcceptance: true }
             }
 
-            if (args.some((arg) => dangerousPatterns.some((pattern) => arg.includes(pattern)))) {
-                return true
+            // Split commands by pipe and process each segment
+            let currentCmd: string[] = []
+            const allCommands: string[][] = []
+
+            for (const arg of args) {
+                if (arg === '|') {
+                    if (currentCmd.length > 0) {
+                        allCommands.push(currentCmd)
+                    }
+                    currentCmd = []
+                } else if (arg.includes('|')) {
+                    return { requiresAcceptance: true }
+                } else {
+                    currentCmd.push(arg)
+                }
             }
 
-            const command = args[0]
-            return !readOnlyCommands.includes(command)
+            if (currentCmd.length > 0) {
+                allCommands.push(currentCmd)
+            }
+
+            for (const cmdArgs of allCommands) {
+                if (cmdArgs.length === 0) {
+                    return { requiresAcceptance: true }
+                }
+
+                const command = cmdArgs[0]
+                const category = commandCategories.get(command)
+
+                switch (category) {
+                    case CommandCategory.Destructive:
+                        return { requiresAcceptance: true, warning: destructiveCommandWarningMessage }
+                    case CommandCategory.HighRisk:
+                        return {
+                            requiresAcceptance: true,
+                            warning: highRiskCommandWarningMessage,
+                        }
+                    case CommandCategory.ReadOnly:
+                        if (
+                            cmdArgs.some((arg) =>
+                                Array.from(dangerousPatterns).some((pattern) => arg.includes(pattern))
+                            )
+                        ) {
+                            return { requiresAcceptance: true, warning: highRiskCommandWarningMessage }
+                        }
+                        return { requiresAcceptance: false }
+                    default:
+                        return { requiresAcceptance: true, warning: highRiskCommandWarningMessage }
+                }
+            }
+            return { requiresAcceptance: true }
         } catch (error) {
             this.logger.warn(`Error while checking acceptance: ${(error as Error).message}`)
-            return true
+            return { requiresAcceptance: true }
         }
     }
 
@@ -165,43 +320,6 @@ export class ExecuteBash {
             throw new Error(`Command "${cmd}" found but 'which' returned empty output.`)
         }
         return output
-    }
-
-    private static parseCommand(command: string): string[] | undefined {
-        const result: string[] = []
-        let current = ''
-        let inQuote: string | undefined
-        let escaped = false
-
-        for (const char of command) {
-            if (escaped) {
-                current += char
-                escaped = false
-            } else if (char === '\\') {
-                escaped = true
-            } else if (inQuote) {
-                if (char === inQuote) {
-                    inQuote = undefined
-                } else {
-                    current += char
-                }
-            } else if (char === '"' || char === "'") {
-                inQuote = char
-            } else if (char === ' ' || char === '\t') {
-                if (current) {
-                    result.push(current)
-                    current = ''
-                }
-            } else {
-                current += char
-            }
-        }
-
-        if (current) {
-            result.push(current)
-        }
-
-        return result
     }
 
     public queueDescription(updates: Writable): void {

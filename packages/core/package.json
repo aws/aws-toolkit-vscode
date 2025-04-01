@@ -492,7 +492,8 @@
         "umd-compat-loader": "^2.1.2",
         "vue-loader": "^17.2.2",
         "vue-style-loader": "^4.1.3",
-        "webfont": "^11.2.26"
+        "webfont": "^11.2.26",
+        "shlex": "^2.1.2"
     },
     "dependencies": {
         "@amzn/amazon-q-developer-streaming-client": "file:../../src.gen/@amzn/amazon-q-developer-streaming-client",
