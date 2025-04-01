@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "Amazon Q chat: Code blocks in chat messages have a max-height of 21 lines and can be scrolled inside"
+}
