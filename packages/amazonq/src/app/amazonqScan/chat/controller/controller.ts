@@ -108,6 +108,10 @@ export class ScanController {
                 interactionType: data.vote,
             })
         })
+
+        AuthUtil.instance.regionProfileManager.onDidChangeRegionProfile(() => {
+            this.sessionStorage.removeActiveTab()
+        })
     }
 
     private async tabOpened(message: any) {

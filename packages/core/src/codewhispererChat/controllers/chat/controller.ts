@@ -268,6 +268,9 @@ export class ChatController {
         this.chatControllerMessageListeners.processFileClick.onMessage((data) => {
             return this.processFileClickMessage(data)
         })
+        AuthUtil.instance.regionProfileManager.onDidChangeRegionProfile(() => {
+            this.sessionStorage.deleteAllSessions()
+        })
     }
 
     private registerUserPromptsWatcher() {
