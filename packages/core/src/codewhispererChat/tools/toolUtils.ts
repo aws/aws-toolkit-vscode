@@ -50,14 +50,14 @@ export class ToolUtils {
         }
     }
 
-    static async invoke(tool: Tool, updates: Writable): Promise<InvokeOutput> {
+    static async invoke(tool: Tool, updates?: Writable): Promise<InvokeOutput> {
         switch (tool.type) {
             case ToolType.FsRead:
                 return tool.tool.invoke(updates)
             case ToolType.FsWrite:
                 return tool.tool.invoke(updates)
             case ToolType.ExecuteBash:
-                return tool.tool.invoke(updates)
+                return tool.tool.invoke(updates ?? undefined)
             case ToolType.ListDirectory:
                 return tool.tool.invoke(updates)
         }
