@@ -8,7 +8,7 @@ import { LanguageClient } from 'vscode-languageclient'
 import { AuthUtil } from 'aws-core-vscode/codewhisperer'
 import { registerMessageListeners } from '../../../../../src/lsp/chat/messages'
 import { AmazonQChatViewProvider } from '../../../../../src/lsp/chat/webviewProvider'
-import { SecondaryAuth, Connection, AuthFollowUpType } from 'aws-core-vscode/amazonq'
+import { secondaryAuth, authConnection, AuthFollowUpType } from 'aws-core-vscode/amazonq'
 
 describe('registerMessageListeners', () => {
     let languageClient: LanguageClient
@@ -80,7 +80,7 @@ describe('registerMessageListeners', () => {
                 reauthenticate: reauthenticateStub,
                 secondaryAuth: {
                     deleteConnection: deleteConnectionStub,
-                } as unknown as SecondaryAuth<Connection>,
+                } as unknown as secondaryAuth.SecondaryAuth<authConnection.Connection>,
             } as unknown as AuthUtil
 
             sandbox.replaceGetter(AuthUtil, 'instance', () => mockAuthUtil)
