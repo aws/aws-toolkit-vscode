@@ -542,15 +542,6 @@ export class Messenger {
             })
         }
 
-        if (
-            transformByQState.isPartiallySucceeded() &&
-            message === CodeWhispererConstants.viewProposedChangesChatMessage
-        ) {
-            // get permission to re-run job and view logs after partially successful job is downloaded
-            // TODO: uncomment this when feature is ready
-            // this.sendFeedbackFormMessage(tabID)
-        }
-
         this.dispatcher.sendChatMessage(
             new ChatMessage(
                 {
@@ -807,65 +798,5 @@ ${codeSnippet}
                 tabID
             )
         )
-    }
-
-    public sendFeedbackFormMessage(tabID: string) {
-        const formItems: ChatItemFormItem[] = []
-        formItems.push({
-            id: 'TransformFeedbackRerunJob',
-            type: 'radiogroup',
-            title: 'To improve our service, do we have permission to re-run your job? (you will *not* be charged)',
-            mandatory: true,
-            options: [
-                {
-                    value: 'Yes',
-                    label: 'Yes',
-                },
-                {
-                    value: 'No',
-                    label: 'No',
-                },
-            ],
-        })
-
-        formItems.push({
-            id: 'TransformFeedbackViewLogs',
-            type: 'radiogroup',
-            title: 'Do we also have permission to view the logs associated with your job?',
-            mandatory: true,
-            options: [
-                {
-                    value: 'Yes',
-                    label: 'Yes',
-                },
-                {
-                    value: 'No',
-                    label: 'No',
-                },
-            ],
-        })
-
-        this.dispatcher.sendChatPrompt(
-            new ChatPrompt(
-                {
-                    message: 'Amazon Q Permissions Form',
-                    formItems: formItems,
-                },
-                'FeedbackForm',
-                tabID,
-                false
-            )
-        )
-    }
-
-    public sendFeedbackReceivedMessage(canRerunJob: string, canViewLogs: string, tabID: string) {
-        const message = `### Response received
--------------
-| | |
-| :------------------- | -------: |
-| **Permission to re-run job**             |   ${canRerunJob}   |
-| **Permission to view logs** |  ${canViewLogs}   |
-    `
-        this.dispatcher.sendChatMessage(new ChatMessage({ message, messageType: 'prompt' }, tabID))
     }
 }
