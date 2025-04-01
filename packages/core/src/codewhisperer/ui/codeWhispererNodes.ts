@@ -130,7 +130,7 @@ export function createSelectCustomization(): DataQuickPickItem<'selectCustomizat
     const description =
         newCustomizationsAmount > 0 ? `${newCustomizationsAmount} new available` : `Using ${selectedCustomization.name}`
 
-    const selectCustomizationCommand = Experiments.instance.get('amazonqLSP', true)
+    const selectCustomizationCommand = Experiments.instance.get('amazonqLSPInline', false)
         ? () => vscode.commands.executeCommand('_aws.amazonq.customization.select')
         : () => selectCustomizationPrompt.execute(placeholder, cwQuickPickSource)
     return {
