@@ -7,6 +7,7 @@ import { Writable } from 'stream'
 import { getLogger } from '../../shared/logger/logger'
 import { Messenger } from '../controllers/chat/messenger/messenger'
 import { ToolUse } from '@amzn/codewhisperer-streaming'
+import { CommandValidation } from './executeBash'
 
 /**
  * A writable stream that feeds each chunk/line to the chat UI.
@@ -20,7 +21,7 @@ export class ChatStream extends Writable {
         private readonly tabID: string,
         private readonly triggerID: string,
         private readonly toolUse: ToolUse | undefined,
-        private readonly requiresAcceptance = false,
+        private readonly validation: CommandValidation,
         private readonly logger = getLogger('chatStream')
     ) {
         super()
@@ -37,7 +38,7 @@ export class ChatStream extends Writable {
             this.tabID,
             this.triggerID,
             this.toolUse,
-            this.requiresAcceptance
+            this.validation
         )
         callback()
     }
@@ -49,7 +50,7 @@ export class ChatStream extends Writable {
                 this.tabID,
                 this.triggerID,
                 this.toolUse,
-                this.requiresAcceptance
+                this.validation
             )
         }
         callback()

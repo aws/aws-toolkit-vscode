@@ -44,13 +44,13 @@ describe('ExecuteBash Tool', () => {
 
     it('set requiresAcceptance=true if the command has dangerous patterns', () => {
         const execBash = new ExecuteBash({ command: 'ls && rm -rf /' })
-        const needsAcceptance = execBash.requiresAcceptance()
+        const needsAcceptance = execBash.requiresAcceptance().requiresAcceptance
         assert.equal(needsAcceptance, true, 'Should require acceptance for dangerous pattern')
     })
 
     it('set requiresAcceptance=false if it is a read-only command', () => {
         const execBash = new ExecuteBash({ command: 'cat file.txt' })
-        const needsAcceptance = execBash.requiresAcceptance()
+        const needsAcceptance = execBash.requiresAcceptance().requiresAcceptance
         assert.equal(needsAcceptance, false, 'Read-only command should not require acceptance')
     })
 
