@@ -29,7 +29,8 @@ const manifestTimeoutMs = 15000
 export class ManifestResolver {
     constructor(
         private readonly manifestURL: string,
-        private readonly lsName: string
+        private readonly lsName: string,
+        private readonly supressPrefix: string
     ) {}
 
     /**
@@ -109,9 +110,9 @@ export class ManifestResolver {
      */
     private async checkDeprecation(manifest: Manifest): Promise<void> {
         const prompts = AmazonQPromptSettings.instance
-        const lspId = `${this.lsName}LspManifestMessage` as keyof typeof amazonQPrompts
+        const lspId = `${this.supressPrefix}LspManifestMessage` as keyof typeof amazonQPrompts
 
-        // Sanity check, if the lsName is changed then we also need to update the prompt keys in settings-amazonq.gen
+        // Sanity check, if the lsName is changed then we also need to update the prompt keys in core/package.json
         if (!(lspId in amazonQPrompts)) {
             logger.error(`LSP ID "${lspId}" not found in amazonQPrompts.`)
             return
