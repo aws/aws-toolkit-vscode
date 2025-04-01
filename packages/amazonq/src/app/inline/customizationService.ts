@@ -29,10 +29,12 @@ import { LanguageClient } from 'vscode-languageclient'
 import { telemetry } from 'aws-core-vscode/telemetry'
 
 /*
-    This class is a consolidates core/src/codewhisperer/util/customizationUtil.ts and the customization commands into a class
+    This class consolidates core/src/codewhisperer/util/customizationUtil.ts and the customization commands into a class
     The main difference is in the getCustomizationsFromLsp and notifySelectedCustomizationToLsp functions
     The original file and commands can be deprecated later
  */
+
+// jscpd:ignore-start
 export class CustomizationService {
     constructor(private readonly client: LanguageClient) {}
 
@@ -403,3 +405,4 @@ export class CustomizationService {
         return isNewCustomization ? '   New' : ''
     }
 }
+// jscpd:ignore-end

@@ -22,6 +22,7 @@ import { getConfigurationFromServerRequestType } from '@aws/language-server-runt
 
 const enterpriseSsoStartUrl = 'https://enterprise.awsapps.com/start'
 
+// jscpd:ignore-start
 describe('CustomizationService', function () {
     let auth: ReturnType<typeof createTestAuth>
     let ssoConn: SsoConnection
@@ -160,3 +161,4 @@ describe('CustomizationService', function () {
         assert.strictEqual(customizationService.getSelectedCustomization().arn, 'OVERRIDE_V2')
     })
 })
+// jscpd:ignore-end
