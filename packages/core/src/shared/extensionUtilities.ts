@@ -22,13 +22,16 @@ import {
     samDeployDocUrl,
     samInitDocUrl,
 } from './constants'
+import {
+    cloud9Appname,
+    cloud9CnAppname,
+    sageMakerAppname,
+    sageMakerUnifiedStudio,
+    vscodeAppname,
+} from './vscode/constants'
 
 const localize = nls.loadMessageBundle()
 
-const vscodeAppname = 'Visual Studio Code'
-const cloud9Appname = 'AWS Cloud9'
-const cloud9CnAppname = 'Amazon Cloud9'
-const sageMakerAppname = 'SageMaker Code Editor'
 const notInitialized = 'notInitialized'
 
 function _isAmazonQ() {
@@ -65,6 +68,8 @@ export function commandsPrefix(): string {
 }
 
 let computeRegion: string | undefined = notInitialized
+let serviceName: string = notInitialized
+let isSMUS: boolean = false
 
 export function getIdeType(): 'vscode' | 'cloud9' | 'sagemaker' | 'unknown' {
     if (vscode.env.appName === cloud9Appname || vscode.env.appName === cloud9CnAppname) {
@@ -145,6 +150,14 @@ function createCloud9Properties(company: string): IdeProperties {
     }
 }
 
+function isSageMakerUnifiedStudio(): boolean {
+    if (serviceName === notInitialized) {
+        serviceName = process.env.SERVICE_NAME ?? ''
+        isSMUS = serviceName === sageMakerUnifiedStudio
+    }
+    return isSMUS
+}
+
 /**
  * Decides if the current system is (the specified flavor of) Cloud9.
  */
@@ -157,8 +170,20 @@ export function isCloud9(flavor: 'classic' | 'codecatalyst' | 'any' = 'any'): bo
     return (flavor === 'classic' && !codecat) || (flavor === 'codecatalyst' && codecat)
 }
 
-export function isSageMaker(): boolean {
-    return vscode.env.appName === sageMakerAppname
+/**
+ *
+ * @param appName to identify the proper SM instance
+ * @returns true if the current system is SageMaker(SMAI or SMUS)
+ */
+export function isSageMaker(appName: string = 'SMAI'): boolean {
+    switch (appName) {
+        case 'SMAI':
+            return vscode.env.appName === sageMakerAppname
+        case 'SMUS':
+            return vscode.env.appName === sageMakerAppname && isSageMakerUnifiedStudio()
+        default:
+            return false
+    }
 }
 
 export function isCn(): boolean {
