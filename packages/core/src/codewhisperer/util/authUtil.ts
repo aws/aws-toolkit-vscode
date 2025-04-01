@@ -151,7 +151,9 @@ export class AuthUtil {
     })
 
     public async setVscodeContextProps() {
-        await setContext('aws.codewhisperer.connected', this.isConnected())
+        // if users are "pending profile selection", they're not fully connected and require profile selection for Q usage
+        // requireProfileSelection() always returns false for builderID users
+        await setContext('aws.codewhisperer.connected', this.isConnected() && !this.requireProfileSelection())
         const doShowAmazonQLoginView =
             !this.isConnected() || this.isConnectionExpired() || this.requireProfileSelection()
         await setContext('aws.amazonq.showLoginView', doShowAmazonQLoginView)
