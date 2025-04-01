@@ -68,6 +68,7 @@ import { CodeWhispererSettings } from '../../../codewhisperer/util/codewhisperer
 import { confirm } from '../../../shared'
 import * as commentUtils from '../../../shared/utilities/commentUtils'
 import * as startCodeFixGeneration from '../../../codewhisperer/commands/startCodeFixGeneration'
+import * as extUtils from '../../../shared/extensionUtilities'
 
 describe('CodeWhisperer-basicCommands', function () {
     let targetCommand: Command<any> & vscode.Disposable
@@ -518,6 +519,42 @@ describe('CodeWhisperer-basicCommands', function () {
                 ])
                 e.dispose() // skip needing to select an item to continue
             })
+            await listCodeWhispererCommands.execute()
+        })
+
+        it('includes sign out when connected and not in SageMaker', async function () {
+            sinon.stub(AuthUtil.instance, 'isConnected').returns(true)
+            sinon.stub(AuthUtil.instance, 'isConnectionExpired').returns(false)
+            sinon.stub(extUtils, 'isSageMaker').value(false)
+            await CodeScansState.instance.setScansEnabled(false)
+
+            getTestWindow().onDidShowQuickPick((e) => {
+                e.assertContainsItems(
+                    createAutoSuggestions(true),
+                    createOpenReferenceLog(),
+                    createGettingStarted(),
+                    createAutoScans(false),
+                    switchToAmazonQNode(),
+                    ...genericItems(),
+                    createSettingsNode(),
+                    createSignout()
+                )
+                e.dispose()
+            })
+
+            await listCodeWhispererCommands.execute()
+        })
+
+        it('shows expected items when connection is expired and in SageMaker', async function () {
+            sinon.stub(AuthUtil.instance, 'isConnected').returns(true)
+            sinon.stub(AuthUtil.instance, 'isConnectionExpired').returns(true)
+            sinon.stub(extUtils, 'isSageMaker').value(true)
+
+            getTestWindow().onDidShowQuickPick((e) => {
+                e.assertContainsItems(createReconnect(), createLearnMore(), ...genericItems())
+                e.dispose()
+            })
+
             await listCodeWhispererCommands.execute()
         })
     })

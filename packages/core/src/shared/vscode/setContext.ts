@@ -13,6 +13,7 @@ import * as vscode from 'vscode'
 export type contextKey =
     | 'aws.isDevMode'
     | 'aws.isSageMaker'
+    | 'aws.isSageMakerUnifiedStudio'
     | 'aws.isWebExtHost'
     | 'aws.isInternalUser'
     | 'aws.amazonq.showLoginView'

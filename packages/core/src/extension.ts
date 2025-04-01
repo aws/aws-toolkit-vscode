@@ -17,7 +17,7 @@ import globals, { initialize, isWeb } from './shared/extensionGlobals'
 import { join } from 'path'
 import { Commands } from './shared/vscode/commands2'
 import { endpointsFileUrl, githubCreateIssueUrl, githubUrl } from './shared/constants'
-import { getIdeProperties, aboutExtension, getDocUrl } from './shared/extensionUtilities'
+import { getIdeProperties, aboutExtension, getDocUrl, isSageMaker } from './shared/extensionUtilities'
 import { logAndShowError, logAndShowWebviewError } from './shared/utilities/logAndShowUtils'
 import { telemetry } from './shared/telemetry/telemetry'
 import { openUrl } from './shared/utilities/vsCodeUtils'
@@ -54,6 +54,7 @@ import { AWSClientBuilderV3 } from './shared/awsClientBuilderV3'
 import { setupUninstallHandler } from './shared/handleUninstall'
 import { maybeShowMinVscodeWarning } from './shared/extensionStartup'
 import { getLogger } from './shared/logger/logger'
+import { setContext } from './shared/vscode/setContext'
 
 disableAwsSdkWarning()
 
@@ -117,6 +118,9 @@ export async function activateCommon(
 
     // telemetry
     await activateTelemetry(context, globals.awsContext, Settings.instance, 'AWS Toolkit For VS Code')
+
+    // set context var to identify if its SageMaker Unified Studio or not
+    await setContext('aws.isSageMakerUnifiedStudio', isSageMaker('SMUS'))
 
     // Create this now, but don't call vscode.window.registerUriHandler() until after all
     // Toolkit services have a chance to register their path handlers. #4105

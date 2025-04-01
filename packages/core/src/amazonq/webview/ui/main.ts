@@ -47,7 +47,8 @@ export const createMynahUI = (
     featureConfigsSerialized: [string, FeatureContext][],
     welcomeCount: number,
     disclaimerAcknowledged: boolean,
-    disabledCommands?: string[]
+    disabledCommands?: string[],
+    isSMUS?: boolean
 ) => {
     let disclaimerCardActive = !disclaimerAcknowledged
     // eslint-disable-next-line prefer-const
@@ -624,7 +625,7 @@ export const createMynahUI = (
                 tabsStorage.updateTabTypeFromUnknown(tabID, 'cwc')
                 mynahUI?.updateTabDefaults({
                     store: {
-                        ...tabDataGenerator.getTabData('cwc', true),
+                        ...tabDataGenerator.getTabData('cwc', true, undefined, isSMUS),
                         tabHeaderDetails: void 0,
                         compactMode: false,
                         tabBackground: false,
@@ -931,7 +932,7 @@ export const createMynahUI = (
                 store: {
                     ...(showWelcomePage()
                         ? welcomeScreenTabData(tabDataGenerator).store
-                        : tabDataGenerator.getTabData('cwc', true)),
+                        : tabDataGenerator.getTabData('cwc', true, undefined, isSMUS)),
                     ...(disclaimerCardActive ? { promptInputStickyCard: disclaimerCard } : {}),
                 },
             },
@@ -939,7 +940,7 @@ export const createMynahUI = (
         defaults: {
             store: showWelcomePage()
                 ? welcomeScreenTabData(tabDataGenerator).store
-                : tabDataGenerator.getTabData('cwc', true),
+                : tabDataGenerator.getTabData('cwc', true, undefined, isSMUS),
         },
         config: {
             maxTabs: 10,
