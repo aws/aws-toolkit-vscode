@@ -9,6 +9,7 @@ import {
     AUTH_FOLLOW_UP_CLICKED,
     CHAT_OPTIONS,
     COPY_TO_CLIPBOARD,
+    AuthFollowUpType,
 } from '@aws/chat-client-ui-types'
 import {
     ChatResult,
@@ -25,6 +26,7 @@ import { window } from 'vscode'
 import { Disposable, LanguageClient, Position, State, TextDocumentIdentifier } from 'vscode-languageclient'
 import * as jose from 'jose'
 import { AmazonQChatViewProvider } from './webviewProvider'
+import { AuthUtil } from 'aws-core-vscode/codewhisperer'
 
 export function registerLanguageServerEventListener(languageClient: LanguageClient, provider: AmazonQChatViewProvider) {
     languageClient.onDidChangeState(({ oldState, newState }) => {
@@ -77,10 +79,33 @@ export function registerMessageListeners(
                 })
                 break
             }
-            case AUTH_FOLLOW_UP_CLICKED:
-                // TODO hook this into auth
+            case AUTH_FOLLOW_UP_CLICKED: {
                 languageClient.info('[VSCode Client] AuthFollowUp clicked')
+                const authType = message.params.authFollowupType
+                const reAuthTypes: AuthFollowUpType[] = ['re-auth', 'missing_scopes']
+                const fullAuthTypes: AuthFollowUpType[] = ['full-auth', 'use-supported-auth']
+
+                if (reAuthTypes.includes(authType)) {
+                    try {
+                        await AuthUtil.instance.reauthenticate()
+                    } catch (e) {
+                        languageClient.error(
+                            `[VSCode Client] Failed to re-authenticate after AUTH_FOLLOW_UP_CLICKED: ${(e as Error).message}`
+                        )
+                    }
+                }
+
+                if (fullAuthTypes.includes(authType)) {
+                    try {
+                        await AuthUtil.instance.secondaryAuth.deleteConnection()
+                    } catch (e) {
+                        languageClient.error(
+                            `[VSCode Client] Failed to authenticate after AUTH_FOLLOW_UP_CLICKED: ${(e as Error).message}`
+                        )
+                    }
+                }
                 break
+            }
             case chatRequestType.method: {
                 const partialResultToken = uuidv4()
                 const chatDisposable = languageClient.onProgress(chatRequestType, partialResultToken, (partialResult) =>

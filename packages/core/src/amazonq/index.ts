@@ -46,6 +46,8 @@ export { extractAuthFollowUp } from './util/authUtils'
 export { Messenger } from './commons/connector/baseMessenger'
 export * from './lsp/config'
 export * as WorkspaceLspInstaller from './lsp/workspaceInstaller'
+export * as secondaryAuth from '../auth/secondaryAuth'
+export * as authConnection from '../auth/connection'
 import { FeatureContext } from '../shared/featureConfig'
 
 /**
