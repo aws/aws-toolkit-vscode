@@ -90,7 +90,7 @@ export function registerMessageListeners(
                         await AuthUtil.instance.reauthenticate()
                     } catch (e) {
                         languageClient.error(
-                            `[VSCode Client] Failed to re-authenticate after AUTH_FOLLOW_UP_CLICKED: ${e}`
+                            `[VSCode Client] Failed to re-authenticate after AUTH_FOLLOW_UP_CLICKED: ${(e as Error).message}`
                         )
                     }
                 }
@@ -100,7 +100,7 @@ export function registerMessageListeners(
                         await AuthUtil.instance.secondaryAuth.deleteConnection()
                     } catch (e) {
                         languageClient.error(
-                            `[VSCode Client] Failed to authenticate after AUTH_FOLLOW_UP_CLICKED: ${e}`
+                            `[VSCode Client] Failed to authenticate after AUTH_FOLLOW_UP_CLICKED: ${(e as Error).message}`
                         )
                     }
                 }

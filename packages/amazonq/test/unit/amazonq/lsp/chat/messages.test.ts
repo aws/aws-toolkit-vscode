@@ -8,7 +8,7 @@ import { LanguageClient } from 'vscode-languageclient'
 import { AuthUtil } from 'aws-core-vscode/codewhisperer'
 import { registerMessageListeners } from '../../../../../src/lsp/chat/messages'
 import { AmazonQChatViewProvider } from '../../../../../src/lsp/chat/webviewProvider'
-import { SecondaryAuth, Connection } from 'aws-core-vscode/amazonq'
+import { SecondaryAuth, Connection, AuthFollowUpType } from 'aws-core-vscode/amazonq'
 
 describe('registerMessageListeners', () => {
     let languageClient: LanguageClient
@@ -50,6 +50,28 @@ describe('registerMessageListeners', () => {
         let deleteConnectionStub: sinon.SinonStub
         let reauthenticateStub: sinon.SinonStub
 
+        const authFollowUpClickedCommand = 'authFollowUpClicked'
+
+        interface TestCase {
+            authType: AuthFollowUpType
+            stubToReject: sinon.SinonStub
+            errorMessage: string
+        }
+
+        const testFailure = async (testCase: TestCase) => {
+            testCase.stubToReject.rejects(new Error())
+
+            await messageHandler({
+                command: authFollowUpClickedCommand,
+                params: {
+                    authFollowupType: testCase.authType,
+                },
+            })
+
+            sinon.assert.calledOnce(errorStub)
+            sinon.assert.calledWith(errorStub, sinon.match(testCase.errorMessage))
+        }
+
         beforeEach(() => {
             deleteConnectionStub = sandbox.stub().resolves()
             reauthenticateStub = sandbox.stub().resolves()
@@ -64,9 +86,9 @@ describe('registerMessageListeners', () => {
             sandbox.replaceGetter(AuthUtil, 'instance', () => mockAuthUtil)
         })
 
-        it('should handle re-authentication request', async () => {
+        it('handles re-authentication request', async () => {
             await messageHandler({
-                command: 'authFollowUpClicked',
+                command: authFollowUpClickedCommand,
                 params: {
                     authFollowupType: 're-auth',
                 },
@@ -76,9 +98,9 @@ describe('registerMessageListeners', () => {
             sinon.assert.notCalled(deleteConnectionStub)
         })
 
-        it('should handle full authentication request', async () => {
+        it('handles full authentication request', async () => {
             await messageHandler({
-                command: 'authFollowUpClicked',
+                command: authFollowUpClickedCommand,
                 params: {
                     authFollowupType: 'full-auth',
                 },
@@ -88,32 +110,20 @@ describe('registerMessageListeners', () => {
             sinon.assert.calledOnce(deleteConnectionStub)
         })
 
-        it('should log error if re-authentication fails', async () => {
-            reauthenticateStub.rejects(new Error())
-
-            await messageHandler({
-                command: 'authFollowUpClicked',
-                params: {
-                    authFollowupType: 're-auth',
-                },
+        it('logs error if re-authentication fails', async () => {
+            await testFailure({
+                authType: 're-auth',
+                stubToReject: reauthenticateStub,
+                errorMessage: 'Failed to re-authenticate',
             })
-
-            sinon.assert.calledOnce(errorStub)
-            sinon.assert.calledWith(errorStub, sinon.match(/Failed to re-authenticate/))
         })
 
-        it('should log error if full authentication fails', async () => {
-            deleteConnectionStub.rejects(new Error())
-
-            await messageHandler({
-                command: 'authFollowUpClicked',
-                params: {
-                    authFollowupType: 'full-auth',
-                },
+        it('logs error if full authentication fails', async () => {
+            await testFailure({
+                authType: 'full-auth',
+                stubToReject: deleteConnectionStub,
+                errorMessage: 'Failed to authenticate',
             })
-
-            sinon.assert.calledOnce(errorStub)
-            sinon.assert.calledWith(errorStub, sinon.match(/Failed to authenticate/))
         })
     })
 })
