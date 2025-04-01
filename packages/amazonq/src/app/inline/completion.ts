@@ -29,6 +29,7 @@ import {
     ReferenceHoverProvider,
     ReferenceInlineProvider,
     ReferenceLogViewProvider,
+    ImportAdderProvider,
 } from 'aws-core-vscode/codewhisperer'
 
 export class InlineCompletionManager implements Disposable {
@@ -66,6 +67,7 @@ export class InlineCompletionManager implements Disposable {
             item: InlineCompletionItemWithReferences,
             editor: TextEditor,
             requestStartTime: number,
+            startLine: number,
             firstCompletionDisplayLatency?: number
         ) => {
             // TODO: also log the seen state for other suggestions in session
@@ -95,6 +97,9 @@ export class InlineCompletionManager implements Disposable {
                 )
                 ReferenceLogViewProvider.instance.addReferenceLog(referenceLog)
                 ReferenceHoverProvider.instance.addCodeReferences(item.insertText as string, item.references)
+            }
+            if (item.mostRelevantMissingImports?.length) {
+                await ImportAdderProvider.instance.onAcceptRecommendation(editor, item, startLine)
             }
         }
         commands.registerCommand('aws.amazonq.acceptInline', onInlineAcceptance)
@@ -200,6 +205,7 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
                     item,
                     editor,
                     session.requestStartTime,
+                    position.line,
                     session.firstCompletionDisplayLatency,
                 ],
             }
@@ -208,6 +214,7 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
                 item.insertText as string,
                 item.references
             )
+            ImportAdderProvider.instance.onShowRecommendation(document, position.line, item)
         }
         return items as InlineCompletionItem[]
     }
