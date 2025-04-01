@@ -16,7 +16,9 @@ export enum CommandCategory {
     Destructive,
 }
 
-export const dangerousPatterns = new Set(['<(', '$(', '`', '>', '&&', '||'])
+export const dangerousPatterns = new Set(['<(', '$(', '`'])
+export const splitOperators = new Set(['|', '&&', '||', '>'])
+export const splitOperatorsArray = Array.from(splitOperators)
 export const commandCategories = new Map<string, CommandCategory>([
     // ReadOnly commands
     ['ls', CommandCategory.ReadOnly],
@@ -163,17 +165,17 @@ export class ExecuteBash {
                 return { requiresAcceptance: true }
             }
 
-            // Split commands by pipe and process each segment
+            // Split commands by operators and process each segment
             let currentCmd: string[] = []
             const allCommands: string[][] = []
 
             for (const arg of args) {
-                if (arg === '|') {
+                if (splitOperators.has(arg)) {
                     if (currentCmd.length > 0) {
                         allCommands.push(currentCmd)
                     }
                     currentCmd = []
-                } else if (arg.includes('|')) {
+                } else if (splitOperatorsArray.some((op) => arg.includes(op))) {
                     return { requiresAcceptance: true }
                 } else {
                     currentCmd.push(arg)
@@ -208,12 +210,12 @@ export class ExecuteBash {
                         ) {
                             return { requiresAcceptance: true, warning: highRiskCommandWarningMessage }
                         }
-                        return { requiresAcceptance: false }
+                        continue
                     default:
                         return { requiresAcceptance: true, warning: highRiskCommandWarningMessage }
                 }
             }
-            return { requiresAcceptance: true }
+            return { requiresAcceptance: false }
         } catch (error) {
             this.logger.warn(`Error while checking acceptance: ${(error as Error).message}`)
             return { requiresAcceptance: true }
