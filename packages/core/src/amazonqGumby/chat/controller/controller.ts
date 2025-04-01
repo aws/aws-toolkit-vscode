@@ -28,7 +28,6 @@ import {
     validateCanCompileProject,
     getValidSQLConversionCandidateProjects,
     openHilPomFile,
-    getFeedbackCommentData,
 } from '../../../codewhisperer/commands/startTransformByQ'
 import { JDKVersion, TransformationCandidateProject, transformByQState } from '../../../codewhisperer/models/model'
 import {
@@ -62,7 +61,6 @@ import {
     validateSQLMetadataFile,
 } from '../../../codewhisperer/service/transformByQ/transformFileHandler'
 import { getAuthType } from '../../../auth/utils'
-import globals from '../../../shared/extensionGlobals'
 
 // These events can be interactions within the chat,
 // or elsewhere in the IDE
@@ -372,9 +370,6 @@ export class GumbyController {
             case ButtonActions.CONFIRM_SKIP_TESTS_FORM:
                 await this.handleSkipTestsSelection(message)
                 break
-            case ButtonActions.CONFIRM_FEEDBACK_FORM:
-                await this.handleFeedback(message)
-                break
             case ButtonActions.CONFIRM_SELECTIVE_TRANSFORMATION_FORM:
                 await this.handleOneOrMultipleDiffs(message)
                 break
@@ -636,17 +631,6 @@ export class GumbyController {
         // at this point job is either completed, partially_completed, cancelled, or failed
         if (data.message) {
             this.messenger.sendJobFinishedMessage(data.tabID, data.message, data.includeStartNewTransformationButton)
-        }
-    }
-
-    private async handleFeedback(message: any) {
-        const canRerunJob = message.formSelectedValues['TransformFeedbackRerunJob']
-        const canViewLogs = message.formSelectedValues['TransformFeedbackViewLogs']
-        const comment = `Permission to re-run job: ${canRerunJob}\nPermission to view logs: ${canViewLogs}\n${getFeedbackCommentData()}`
-        this.messenger.sendFeedbackReceivedMessage(canRerunJob, canViewLogs, message.tabID)
-        if (comment.toLowerCase().includes('yes')) {
-            // post feedback if user says yes to at least one of the questions
-            await globals.telemetry.postFeedback({ comment: comment, sentiment: 'Positive' })
         }
     }
 
