@@ -45,8 +45,16 @@ sequenceDiagram
     npm run package
     ```
     to get the project setup
-3. Uncomment the `__AMAZONQLSP_PATH` variable in `amazonq/.vscode/launch.json` Extension configuration
-4. Use the `Launch LSP with Debugging` configuration and set breakpoints in VSCode or the language server
+3. Enable the lsp experiment:
+    ```
+    "aws.experiments": {
+      "amazonqLSP": true,
+      "amazonqLSPInline": true, // optional: enables inline completion from flare
+      "amazonqLSPChat": true // optional: enables chat from flare
+    }
+    ```
+4. Uncomment the `__AMAZONQLSP_PATH` variable in `amazonq/.vscode/launch.json` Extension configuration
+5. Use the `Launch LSP with Debugging` configuration and set breakpoints in VSCode or the language server
 
 ## Amazon Q Inline Activation
 
