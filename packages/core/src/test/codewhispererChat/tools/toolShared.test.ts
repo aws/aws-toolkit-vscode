@@ -14,12 +14,14 @@ import { ExecuteBash } from '../../../codewhispererChat/tools/executeBash'
 import { ToolUse } from '@amzn/codewhisperer-streaming'
 import path from 'path'
 import fs from '../../../shared/fs/fs'
+import { ListDirectory } from '../../../codewhispererChat/tools/listDirectory'
 
 describe('ToolUtils', function () {
     let sandbox: sinon.SinonSandbox
     let mockFsRead: sinon.SinonStubbedInstance<FsRead>
     let mockFsWrite: sinon.SinonStubbedInstance<FsWrite>
     let mockExecuteBash: sinon.SinonStubbedInstance<ExecuteBash>
+    let mockListDirectory: sinon.SinonStubbedInstance<ListDirectory>
     let mockWritable: sinon.SinonStubbedInstance<Writable>
 
     beforeEach(function () {
@@ -27,6 +29,7 @@ describe('ToolUtils', function () {
         mockFsRead = sandbox.createStubInstance(FsRead)
         mockFsWrite = sandbox.createStubInstance(FsWrite)
         mockExecuteBash = sandbox.createStubInstance(ExecuteBash)
+        mockListDirectory = sandbox.createStubInstance(ListDirectory)
         mockWritable = {
             write: sandbox.stub(),
         } as unknown as sinon.SinonStubbedInstance<Writable>
@@ -51,6 +54,11 @@ describe('ToolUtils', function () {
             const tool: Tool = { type: ToolType.ExecuteBash, tool: mockExecuteBash as unknown as ExecuteBash }
             assert.strictEqual(ToolUtils.displayName(tool), 'Execute shell command')
         })
+
+        it('returns correct display name for ListDirectory tool', function () {
+            const tool: Tool = { type: ToolType.ListDirectory, tool: mockListDirectory as unknown as ListDirectory }
+            assert.strictEqual(ToolUtils.displayName(tool), 'List directory from filesystem')
+        })
     })
 
     describe('requiresAcceptance', function () {
@@ -74,6 +82,11 @@ describe('ToolUtils', function () {
 
             assert(mockExecuteBash.requiresAcceptance.calledTwice)
         })
+
+        it('returns false for ListDirectory tool', function () {
+            const tool: Tool = { type: ToolType.ListDirectory, tool: mockListDirectory as unknown as ListDirectory }
+            assert.strictEqual(ToolUtils.requiresAcceptance(tool), false)
+        })
     })
 
     describe('invoke', function () {
@@ -90,7 +103,7 @@ describe('ToolUtils', function () {
             const result = await ToolUtils.invoke(tool, mockWritable as unknown as Writable)
 
             assert.deepStrictEqual(result, expectedOutput)
-            assert(mockFsRead.invoke.calledOnceWith(mockWritable))
+            assert(mockFsRead.invoke.calledOnceWith(mockWritable as unknown as Writable | undefined))
         })
 
         it('delegates to FsWrite tool invoke method', async function () {
@@ -106,7 +119,7 @@ describe('ToolUtils', function () {
             const result = await ToolUtils.invoke(tool, mockWritable as unknown as Writable)
 
             assert.deepStrictEqual(result, expectedOutput)
-            assert(mockFsWrite.invoke.calledOnceWith(mockWritable))
+            assert(mockFsWrite.invoke.calledOnceWith(mockWritable as unknown as Writable | undefined))
         })
 
         it('delegates to ExecuteBash tool invoke method', async function () {
@@ -122,7 +135,23 @@ describe('ToolUtils', function () {
             const result = await ToolUtils.invoke(tool, mockWritable as unknown as Writable)
 
             assert.deepStrictEqual(result, expectedOutput)
-            assert(mockExecuteBash.invoke.calledOnceWith(mockWritable))
+            assert(mockExecuteBash.invoke.calledOnceWith(mockWritable as unknown as Writable | undefined))
+        })
+
+        it('delegates to ListDirectory tool invoke method', async function () {
+            const expectedOutput: InvokeOutput = {
+                output: {
+                    kind: OutputKind.Text,
+                    content: 'test content',
+                },
+            }
+            mockListDirectory.invoke.resolves(expectedOutput)
+
+            const tool: Tool = { type: ToolType.ListDirectory, tool: mockListDirectory as unknown as ListDirectory }
+            const result = await ToolUtils.invoke(tool, mockWritable as unknown as Writable)
+
+            assert.deepStrictEqual(result, expectedOutput)
+            assert(mockListDirectory.invoke.calledOnceWith(mockWritable as unknown as Writable | undefined))
         })
     })
 
@@ -146,6 +175,13 @@ describe('ToolUtils', function () {
             ToolUtils.queueDescription(tool, mockWritable as unknown as Writable)
 
             assert(mockExecuteBash.queueDescription.calledOnceWith(mockWritable))
+        })
+
+        it('delegates to ListDirectory tool queueDescription method', function () {
+            const tool: Tool = { type: ToolType.ListDirectory, tool: mockListDirectory as unknown as ListDirectory }
+            ToolUtils.queueDescription(tool, mockWritable as unknown as Writable)
+
+            assert(mockListDirectory.queueDescription.calledOnceWith(mockWritable))
         })
     })
 
@@ -175,6 +211,15 @@ describe('ToolUtils', function () {
             await ToolUtils.validate(tool)
 
             assert(mockExecuteBash.validate.calledOnce)
+        })
+
+        it('delegates to ListDirectory tool validate method', async function () {
+            mockListDirectory.validate.resolves()
+
+            const tool: Tool = { type: ToolType.ListDirectory, tool: mockListDirectory as unknown as ListDirectory }
+            await ToolUtils.validate(tool)
+
+            assert(mockListDirectory.validate.calledOnce)
         })
     })
 
@@ -224,6 +269,22 @@ describe('ToolUtils', function () {
             if ('type' in result) {
                 assert.strictEqual(result.type, ToolType.ExecuteBash)
                 assert(result.tool instanceof ExecuteBash)
+            }
+        })
+
+        it('creates ListDirectory tool from ToolUse', function () {
+            const toolUse: ToolUse = {
+                toolUseId: 'test-id',
+                name: ToolType.ListDirectory,
+                input: { path: '/test/path' },
+            }
+
+            const result = ToolUtils.tryFromToolUse(toolUse)
+
+            assert.strictEqual('type' in result, true)
+            if ('type' in result) {
+                assert.strictEqual(result.type, ToolType.ListDirectory)
+                assert(result.tool instanceof ListDirectory)
             }
         })
 

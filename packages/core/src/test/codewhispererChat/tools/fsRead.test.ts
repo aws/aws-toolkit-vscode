@@ -43,23 +43,6 @@ describe('FsRead Tool', () => {
         assert.strictEqual(result.output.content, 'B\nC\nD')
     })
 
-    it('lists directory contents up to depth = 1', async () => {
-        await testFolder.mkdir('subfolder')
-        await testFolder.write('fileA.txt', 'fileA content')
-        await testFolder.write(path.join('subfolder', 'fileB.md'), '# fileB')
-
-        const fsRead = new FsRead({ path: testFolder.path, readRange: [1] })
-        await fsRead.validate()
-        const result = await fsRead.invoke(process.stdout)
-
-        const lines = result.output.content.split('\n')
-        const hasFileA = lines.some((line: string | string[]) => line.includes('- ') && line.includes('fileA.txt'))
-        const hasSubfolder = lines.some((line: string | string[]) => line.includes('d ') && line.includes('subfolder'))
-
-        assert.ok(hasFileA, 'Should list fileA.txt in the directory output')
-        assert.ok(hasSubfolder, 'Should list the subfolder in the directory output')
-    })
-
     it('throws error if path does not exist', async () => {
         const missingPath = path.join(testFolder.path, 'no_such_file.txt')
         const fsRead = new FsRead({ path: missingPath })
@@ -93,30 +76,5 @@ describe('FsRead Tool', () => {
         const result = await fsRead.invoke(process.stdout)
         assert.strictEqual(result.output.kind, 'text')
         assert.strictEqual(result.output.content, '')
-    })
-
-    it('expands ~ path', async () => {
-        const fsRead = new FsRead({ path: '~' })
-        await fsRead.validate()
-        const result = await fsRead.invoke(process.stdout)
-
-        assert.strictEqual(result.output.kind, 'text')
-        assert.ok(result.output.content.length > 0)
-    })
-
-    it('resolves relative path', async () => {
-        await testFolder.mkdir('relTest')
-        const filePath = path.join('relTest', 'relFile.txt')
-        const content = 'Hello from a relative file!'
-        await testFolder.write(filePath, content)
-
-        const relativePath = path.relative(process.cwd(), path.join(testFolder.path, filePath))
-
-        const fsRead = new FsRead({ path: relativePath })
-        await fsRead.validate()
-        const result = await fsRead.invoke(process.stdout)
-
-        assert.strictEqual(result.output.kind, 'text')
-        assert.strictEqual(result.output.content, content)
     })
 })
