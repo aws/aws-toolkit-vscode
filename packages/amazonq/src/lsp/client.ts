@@ -7,6 +7,7 @@ import vscode, { env, version } from 'vscode'
 import * as nls from 'vscode-nls'
 import * as crypto from 'crypto'
 import { LanguageClient, LanguageClientOptions, RequestType } from 'vscode-languageclient'
+import { InlineCompletionManager } from '../app/inline/completion'
 import { AmazonQLspAuth, encryptionKey, notificationTypes } from './auth'
 import { AuthUtil } from 'aws-core-vscode/codewhisperer'
 import {
@@ -31,7 +32,6 @@ import {
 } from 'aws-core-vscode/shared'
 import { activate } from './chat/activation'
 import { AmazonQResourcePaths } from './lspInstaller'
-import { InlineCompletionManager } from '../app/inline/completion'
 
 const localize = nls.loadMessageBundle()
 
@@ -211,7 +211,6 @@ export async function startLanguageServer(
                     },
                 } as DidChangeWorkspaceFoldersParams)
             })
-            //inlineManager
         )
     })
 }
