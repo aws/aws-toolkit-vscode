@@ -19,7 +19,7 @@ export class ChatHistoryStorage {
      * @param tabId The ID of the tab
      * @returns The ChatHistoryManager for the specified tab
      */
-    public getHistory(tabId: string): ChatHistoryManager {
+    public getTabHistory(tabId: string): ChatHistoryManager {
         const historyFromStorage = this.histories.get(tabId)
         if (historyFromStorage !== undefined) {
             return historyFromStorage

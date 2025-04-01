@@ -710,7 +710,7 @@ export class ChatController {
                         customization: getSelectedCustomization(),
                         toolResults: toolResults,
                         origin: Origin.IDE,
-                        chatHistory: this.chatHistoryStorage.getHistory(tabID).getHistory(),
+                        chatHistory: this.chatHistoryStorage.getTabHistory(tabID).getHistory(),
                         context: session.context ?? [],
                         relevantTextDocuments: [],
                         additionalContents: [],
@@ -1010,7 +1010,7 @@ export class ChatController {
         switch (message.command) {
             case 'clear':
                 this.sessionStorage.deleteSession(message.tabID)
-                this.chatHistoryStorage.getHistory(message.tabID).clear()
+                this.chatHistoryStorage.getTabHistory(message.tabID).clear()
                 this.triggerEventsStorage.removeTabEvents(message.tabID)
                 recordTelemetryChatRunCommand('clear')
                 return
@@ -1049,7 +1049,7 @@ export class ChatController {
                     codeQuery: lastTriggerEvent.context?.focusAreaContext?.names,
                     userIntent: message.userIntent,
                     customization: getSelectedCustomization(),
-                    chatHistory: this.chatHistoryStorage.getHistory(message.tabID).getHistory(),
+                    chatHistory: this.chatHistoryStorage.getTabHistory(message.tabID).getHistory(),
                     contextLengths: {
                         ...defaultContextLengths,
                     },
@@ -1098,7 +1098,7 @@ export class ChatController {
                         codeQuery: context?.focusAreaContext?.names,
                         userIntent: this.userIntentRecognizer.getFromPromptChatMessage(message),
                         customization: getSelectedCustomization(),
-                        chatHistory: this.chatHistoryStorage.getHistory(message.tabID).getHistory(),
+                        chatHistory: this.chatHistoryStorage.getTabHistory(message.tabID).getHistory(),
                         origin: Origin.IDE,
                         context: message.context ?? [],
                         relevantTextDocuments: [],
@@ -1326,7 +1326,7 @@ export class ChatController {
         triggerPayload.contextLengths.userInputContextLength = triggerPayload.message.length
         triggerPayload.contextLengths.focusFileContextLength = triggerPayload.fileText.length
 
-        const chatHistory = this.chatHistoryStorage.getHistory(tabID)
+        const chatHistory = this.chatHistoryStorage.getTabHistory(tabID)
         const newUserMessage = {
             userInputMessage: {
                 content: triggerPayload.message,
