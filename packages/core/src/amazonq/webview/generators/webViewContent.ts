@@ -83,7 +83,7 @@ export class WebViewContentGenerator {
         const disclaimerAcknowledged = globals.globalState.tryGet('aws.amazonq.disclaimerAcknowledged', Boolean, false)
 
         const welcomeLoadCount = globals.globalState.tryGet('aws.amazonq.welcomeChatShowCount', Number, 0)
-        const serviceName = process.env.SERVICE_NAME ?? ''
+        const isSMUS = isSageMaker('SMUS')
 
         return `
         <script type="text/javascript" src="${javascriptEntrypoint.toString()}" defer onload="init()"></script>
@@ -92,7 +92,7 @@ export class WebViewContentGenerator {
             const init = () => {
                 createMynahUI(acquireVsCodeApi(), ${
                     (await AuthUtil.instance.getChatAuthState()).amazonQ === 'connected'
-                },${featureConfigsString},${welcomeLoadCount},${disclaimerAcknowledged},${disabledCommandsString}, '${serviceName}');
+                },${featureConfigsString},${welcomeLoadCount},${disclaimerAcknowledged},${disabledCommandsString},${isSMUS});
             }
         </script>
         `

@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import { ExtensionContext, window } from 'vscode'
 import { telemetry } from 'aws-core-vscode/telemetry'
 import { AuthUtil, CodeWhispererSettings } from 'aws-core-vscode/codewhisperer'
-import { Commands, placeholder, funcUtil, setContext, isSageMaker } from 'aws-core-vscode/shared'
+import { Commands, placeholder, funcUtil } from 'aws-core-vscode/shared'
 import * as amazonq from 'aws-core-vscode/amazonq'
 import { scanChatAppInit } from '../amazonqScan'
 import { init as inlineChatInit } from '../../inlineChat/app'
@@ -16,7 +16,6 @@ export async function activate(context: ExtensionContext) {
     const appInitContext = amazonq.DefaultAmazonQAppInitContext.instance
 
     registerApps(appInitContext, context)
-    await setIsSMUSContext()
 
     const provider = new amazonq.AmazonQChatViewProvider(
         context,
@@ -64,12 +63,6 @@ export async function activate(context: ExtensionContext) {
 
     void setupLsp()
     void setupAuthNotification()
-
-    async function setIsSMUSContext() {
-        // set context key for SageMaker Unified Studio
-        const isSMUS = isSageMaker(true)
-        await setContext('aws.isSageMakerUnifiedStudio', isSMUS)
-    }
 }
 
 function registerApps(appInitContext: amazonq.AmazonQAppInitContext, context: ExtensionContext) {

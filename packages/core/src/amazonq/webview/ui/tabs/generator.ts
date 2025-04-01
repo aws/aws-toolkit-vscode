@@ -7,7 +7,7 @@ import { ChatItemType, MynahUIDataModel, QuickActionCommandGroup } from '@aws/my
 import { TabType } from '../storages/tabsStorage'
 import { FollowUpGenerator } from '../followUps/generator'
 import { QuickActionGenerator } from '../quickActions/generator'
-import { qChatIntroMessageForSMUS, sageMakerUnifiedStudio, TabTypeDataMap } from './constants'
+import { qChatIntroMessageForSMUS, TabTypeDataMap } from './constants'
 import { agentWalkthroughDataModel } from '../walkthrough/agent'
 import { FeatureContext } from '../../../../shared/featureConfig'
 
@@ -43,7 +43,7 @@ export class TabDataGenerator {
         tabType: TabType,
         needWelcomeMessages: boolean,
         taskName?: string,
-        serviceName?: string
+        isSMUS?: boolean
     ): MynahUIDataModel {
         if (tabType === 'agentWalkthrough') {
             return agentWalkthroughDataModel
@@ -52,8 +52,6 @@ export class TabDataGenerator {
         if (tabType === 'welcome') {
             return {}
         }
-
-        const isSMUS = serviceName ? serviceName === sageMakerUnifiedStudio : false
 
         const tabData: MynahUIDataModel = {
             tabTitle: taskName ?? TabTypeDataMap[tabType].title,

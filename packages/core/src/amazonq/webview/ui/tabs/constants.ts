@@ -15,7 +15,6 @@ export const qChatIntroMessageForSMUS = `Hi, I'm Amazon Q. I can answer your sof
   You can enter \`/\` to see a list of quick actions. Use \`@\` to add saved prompts, files, folders, or your entire workspace as context.
   You are now using Q free tier.\n\
   `
-export const sageMakerUnifiedStudio = 'SageMakerUnifiedStudio'
 
 export type TabTypeData = {
     title: string

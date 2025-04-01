@@ -1108,12 +1108,10 @@ export class Auth implements AuthService, ConnectionManager {
  *
  * @param isC9 boolean for if Cloud9 is host
  * @param isSM boolean for if SageMaker is host
- * @param isSMUS boolean for if SageMaker Unified Studio is host
  * @returns boolean for if C9 "OR" SM
  */
-export function hasVendedIamCredentials(isC9?: boolean, isSM?: boolean, isSMUS?: boolean) {
+export function hasVendedIamCredentials(isC9?: boolean, isSM?: boolean) {
     isC9 ??= isCloud9()
     isSM ??= isSageMaker()
-    isSMUS ??= isSageMaker(true)
-    return isSM || isC9 || isSMUS
+    return isSM || isC9
 }
