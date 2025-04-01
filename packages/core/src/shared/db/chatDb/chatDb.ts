@@ -119,10 +119,14 @@ export class Database {
         }
     }
 
-    getTabId(historyId: string) {
-        for (const [tabId, id] of this.historyIdMapping) {
-            if (id === historyId) {
-                return tabId
+    // If conversation is open, return its tabId, else return undefined
+    getOpenTabId(historyId: string) {
+        const selectedTab = this.getTab(historyId)
+        if (selectedTab?.isOpen) {
+            for (const [tabId, id] of this.historyIdMapping) {
+                if (id === historyId) {
+                    return tabId
+                }
             }
         }
         return undefined
@@ -214,7 +218,7 @@ export class Database {
         if (this.initialized) {
             const tabCollection = this.db.getCollection<Tab>(TabCollection)
             tabCollection.findAndRemove({ historyId })
-            const tabId = this.getTabId(historyId)
+            const tabId = this.getOpenTabId(historyId)
             if (tabId) {
                 this.historyIdMapping.delete(tabId)
             }

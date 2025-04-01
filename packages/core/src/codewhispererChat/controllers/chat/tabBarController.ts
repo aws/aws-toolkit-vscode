@@ -26,14 +26,21 @@ export class TabBarController {
     constructor(messenger: Messenger) {
         this.messenger = messenger
     }
-    processActionClickMessage(msg: DetailedListActionClickMessage) {
+    async processActionClickMessage(msg: DetailedListActionClickMessage) {
         if (msg.listType === 'history') {
             if (msg.action.text === 'Delete') {
                 this.chatHistoryDb.deleteHistory(msg.action.id)
                 this.messenger.sendUpdateDetailedListMessage('history', { list: this.generateHistoryList() })
             } else if (msg.action.text === 'Export') {
-                const selectedTab = this.chatHistoryDb.getTab(msg.action.id)
-                this.restoreTab(selectedTab, true)
+                // If conversation is already open, export it
+                const openTabId = this.chatHistoryDb.getOpenTabId(msg.action.id)
+                if (openTabId) {
+                    await this.exportChatButtonClicked({ tabID: openTabId, buttonId: 'export_chat' })
+                } // If conversation is not open, restore it before exporting
+                else {
+                    const selectedTab = this.chatHistoryDb.getTab(msg.action.id)
+                    this.restoreTab(selectedTab, true)
+                }
             }
         }
     }
@@ -58,13 +65,14 @@ export class TabBarController {
         }
     }
 
+    // If selected is conversation is already open, select that tab. Else, open new tab with conversation.
     processItemSelectMessage(msg: DetailedListItemSelectMessage) {
         if (msg.listType === 'history') {
             const historyID = msg.item.id
             if (historyID) {
-                const selectedTab = this.chatHistoryDb.getTab(historyID)
-                const openTabID = this.chatHistoryDb.getTabId(historyID)
-                if (!selectedTab?.isOpen || !openTabID) {
+                const openTabID = this.chatHistoryDb.getOpenTabId(historyID)
+                if (!openTabID) {
+                    const selectedTab = this.chatHistoryDb.getTab(historyID)
                     this.restoreTab(selectedTab)
                 } else {
                     this.messenger.sendSelectTabMessage(openTabID, historyID)
