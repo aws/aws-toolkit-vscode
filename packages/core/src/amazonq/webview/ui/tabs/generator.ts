@@ -7,7 +7,7 @@ import { ChatItemType, MynahUIDataModel, QuickActionCommandGroup } from '@aws/my
 import { TabType } from '../storages/tabsStorage'
 import { FollowUpGenerator } from '../followUps/generator'
 import { QuickActionGenerator } from '../quickActions/generator'
-import { TabTypeDataMap } from './constants'
+import { qChatIntroMessageForSMUS, TabTypeDataMap } from './constants'
 import { agentWalkthroughDataModel } from '../walkthrough/agent'
 import { FeatureContext } from '../../../../shared/featureConfig'
 
@@ -39,7 +39,12 @@ export class TabDataGenerator {
         this.highlightCommand = props.commandHighlight
     }
 
-    public getTabData(tabType: TabType, needWelcomeMessages: boolean, taskName?: string): MynahUIDataModel {
+    public getTabData(
+        tabType: TabType,
+        needWelcomeMessages: boolean,
+        taskName?: string,
+        isSMUS?: boolean
+    ): MynahUIDataModel {
         if (tabType === 'agentWalkthrough') {
             return agentWalkthroughDataModel
         }
@@ -59,7 +64,7 @@ export class TabDataGenerator {
                 ? [
                       {
                           type: ChatItemType.ANSWER,
-                          body: TabTypeDataMap[tabType].welcome,
+                          body: isSMUS ? qChatIntroMessageForSMUS : TabTypeDataMap[tabType].welcome,
                       },
                       {
                           type: ChatItemType.ANSWER,

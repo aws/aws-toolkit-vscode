@@ -527,6 +527,7 @@ export class ChatController {
                             command: path.basename(name, promptFileExtension),
                             icon: 'magic' as MynahIconsType,
                             id: 'prompt',
+                            label: 'file' as ContextCommandItemType,
                             route: [userPromptsDirectory, name],
                         }))
                 )

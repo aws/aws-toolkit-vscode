@@ -52,6 +52,7 @@ for (const [name, config, defaultConfig, setEnv, resetEnv] of [
             manifestUrl: 'https://custom.url/manifest.json',
             supportedVersions: '4.0.0',
             id: 'AmazonQSetting',
+            suppressPromptPrefix: 'amazonQSetting',
             path: '/custom/path',
         }
 
@@ -94,7 +95,8 @@ for (const [name, config, defaultConfig, setEnv, resetEnv] of [
             const envConfig: LspConfig = {
                 manifestUrl: 'https://another-custom.url/manifest.json',
                 supportedVersions: '5.1.1',
-                id: 'AmazonQEnv',
+                id: 'AmazonQSetting',
+                suppressPromptPrefix: 'amazonQSetting',
                 path: '/some/new/custom/path',
             }
 
