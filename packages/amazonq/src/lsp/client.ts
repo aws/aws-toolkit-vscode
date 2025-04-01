@@ -147,7 +147,7 @@ export async function startLanguageServer(
                 getLogger('amazonqLsp').error('Unable to update bearer token: %s', (e as Error).message)
                 clearInterval(authInterval)
             }
-        }, 30 * 1000) // every 30 seconds
+        }, 10 * 1000) // every 10 seconds
 
         toDispose.push(
             AuthUtil.instance.auth.onDidChangeActiveConnection(async () => {
