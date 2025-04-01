@@ -18,6 +18,7 @@ import { checkLeftContextKeywordsForJson } from './commonUtil'
 import { CodeWhispererSupplementalContext } from '../models/model'
 import { getOptOutPreference } from '../../shared/telemetry/util'
 import { indent } from '../../shared/utilities/textUtilities'
+import { isInDirectory } from '../../shared'
 
 let tabSize: number = getTabSizeSetting()
 
@@ -88,7 +89,7 @@ async function getWorkspaceId(editor: vscode.TextEditor): Promise<string | undef
             await vscode.commands.executeCommand('aws.amazonq.getWorkspaceId')
         for (const item of workspaceIds.workspaces) {
             const path = vscode.Uri.parse(item.workspaceRoot).fsPath
-            if (editor.document.uri.fsPath.startsWith(path)) {
+            if (isInDirectory(path, editor.document.uri.fsPath)) {
                 return item.workspaceId
             }
         }
