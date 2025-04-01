@@ -14,16 +14,19 @@ import { ToolkitError } from '../../../../shared/errors'
 import { createCodeWhispererChatStreamingClient } from '../../../../shared/clients/codewhispererChatClient'
 import { createQDeveloperStreamingClient } from '../../../../shared/clients/qDeveloperChatClient'
 import { UserWrittenCodeTracker } from '../../../../codewhisperer/tracker/userWrittenCodeTracker'
+import { PromptMessage } from '../../../controllers/chat/model'
 
 export class ChatSession {
     private sessionId?: string
     /**
      * _readFiles = list of files read from the project to gather context before generating response.
      * _showDiffOnFileWrite = Controls whether to show diff view (true) or file context view (false) to the user
+     * _context = Additional context to be passed to the LLM for generating the response
      */
     private _readFiles: string[] = []
     private _toolUse: ToolUse | undefined
     private _showDiffOnFileWrite: boolean = false
+    private _context: PromptMessage['context']
 
     contexts: Map<string, { first: number; second: number }[]> = new Map()
     // TODO: doesn't handle the edge case when two files share the same relativePath string but from different root
@@ -39,6 +42,14 @@ export class ChatSession {
 
     public setToolUse(toolUse: ToolUse | undefined) {
         this._toolUse = toolUse
+    }
+
+    public get context(): PromptMessage['context'] {
+        return this._context
+    }
+
+    public setContext(context: PromptMessage['context']) {
+        this._context = context
     }
 
     public tokenSource!: vscode.CancellationTokenSource

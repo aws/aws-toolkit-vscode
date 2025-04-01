@@ -709,7 +709,7 @@ export class ChatController {
                         toolResults: toolResults,
                         origin: Origin.IDE,
                         chatHistory: this.chatHistoryManager.getHistory(),
-                        context: [],
+                        context: session.context ?? [],
                         relevantTextDocuments: [],
                         additionalContents: [],
                         documentReferences: [],
@@ -1081,6 +1081,10 @@ export class ChatController {
                     type: 'chat_message',
                     context,
                 })
+
+                // Save the context for the agentic loop
+                session.setContext(message.context)
+
                 await this.generateResponse(
                     {
                         message: message.message ?? '',
