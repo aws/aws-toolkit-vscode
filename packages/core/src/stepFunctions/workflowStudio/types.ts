@@ -5,7 +5,14 @@
 import { IAM, StepFunctions } from 'aws-sdk'
 import * as vscode from 'vscode'
 
+export enum WorkflowMode {
+    Editable = 'toolkit',
+    Readonly = 'readonly',
+}
+
 export type WebviewContext = {
+    stateMachineName: string
+    mode: WorkflowMode
     panel: vscode.WebviewPanel
     textDocument: vscode.TextDocument
     disposables: vscode.Disposable[]
