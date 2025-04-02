@@ -16,6 +16,7 @@ import {
     QuickActionCommand,
     ChatItemFormItem,
     ChatItemButton,
+    DetailedList,
 } from '@aws/mynah-ui'
 import { Connector as CWChatConnector } from './apps/cwChatConnector'
 import { Connector as FeatureDevChatConnector } from './apps/featureDevChatConnector'
@@ -30,6 +31,7 @@ import { WelcomeFollowupType } from './apps/amazonqCommonsConnector'
 import { AuthFollowUpType } from './followUps/generator'
 import { DiffTreeFileInfo } from './diffTree/types'
 import { UserIntent } from '@amzn/codewhisperer-streaming'
+import { DetailedListSheetProps } from '@aws/mynah-ui/dist/components/detailed-list/detailed-list-sheet'
 
 export interface CodeReference {
     licenseName?: string
@@ -94,7 +96,7 @@ export interface ConnectorProps {
     onUpdatePromptProgress: (tabID: string, progressField: ProgressField) => void
     onChatInputEnabled: (tabID: string, enabled: boolean) => void
     onUpdateAuthentication: (featureDevEnabled: boolean, authenticatingTabIDs: string[]) => void
-    onNewTab: (tabType: TabType) => void
+    onNewTab: (tabType: TabType, chats?: ChatItem[]) => string | undefined
     onFileActionClick: (tabID: string, messageId: string, filePath: string, actionName: string) => void
     handleCommand: (chatPrompt: ChatPrompt, tabId: string) => void
     sendStaticMessages: (tabID: string, messages: ChatItem[]) => void
@@ -106,6 +108,14 @@ export interface ConnectorProps {
         title?: string,
         description?: string
     ) => void
+    onOpenDetailedList: (data: DetailedListSheetProps) => {
+        update: (data: DetailedList) => void
+        close: () => void
+        changeTarget: (direction: 'up' | 'down', snapOnLastAndFirst?: boolean) => void
+        getTargetElementId: () => string | undefined
+    }
+    onSelectTab: (tabID: string, eventID: string) => void
+    onExportChat: (tabID: string, format: 'markdown' | 'html') => string
     tabsStorage: TabsStorage
 }
 
@@ -291,6 +301,7 @@ export class Connector {
         this.tabsStorage.updateTabLastCommand(messageData.tabID, '')
     }
 
+    // Run when user opens new tab in UI
     onTabAdd = (tabID: string): void => {
         this.tabsStorage.addTab({
             id: tabID,
@@ -682,6 +693,16 @@ export class Connector {
                 return this.cwChatConnector.onFormTextualItemKeyPress(tabId, event, formData, itemId, eventId)
         }
         return false
+    }
+
+    onTabBarButtonClick = async (tabId: string, buttonId: string, eventId?: string) => {
+        this.sendMessageToExtension({
+            command: 'tab-bar-button-clicked',
+            buttonId,
+            type: '',
+            tabID: tabId,
+            tabType: 'cwc',
+        })
     }
 
     onCustomFormAction = (
