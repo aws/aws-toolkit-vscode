@@ -5,15 +5,17 @@
 
 import { fs, getNodeExecutableName, BaseLspInstaller, ResourcePaths } from 'aws-core-vscode/shared'
 import path from 'path'
-import { getAmazonQLspConfig } from './config'
-import { LspConfig } from 'aws-core-vscode/amazonq'
+import { ExtendedAmazonQLSPConfig, getAmazonQLspConfig } from './config'
 
 export interface AmazonQResourcePaths extends ResourcePaths {
-    mynahUI: string
+    ui: string
 }
 
-export class AmazonQLspInstaller extends BaseLspInstaller.BaseLspInstaller<AmazonQResourcePaths> {
-    constructor(lspConfig: LspConfig = getAmazonQLspConfig()) {
+export class AmazonQLspInstaller extends BaseLspInstaller.BaseLspInstaller<
+    AmazonQResourcePaths,
+    ExtendedAmazonQLSPConfig
+> {
+    constructor(lspConfig: ExtendedAmazonQLSPConfig = getAmazonQLspConfig()) {
         super(lspConfig, 'amazonqLsp')
     }
 
@@ -27,7 +29,7 @@ export class AmazonQLspInstaller extends BaseLspInstaller.BaseLspInstaller<Amazo
             return {
                 lsp: this.config.path ?? '',
                 node: getNodeExecutableName(),
-                mynahUI: '', // TODO make mynah UI configurable
+                ui: this.config.ui ?? '',
             }
         }
 
@@ -35,7 +37,7 @@ export class AmazonQLspInstaller extends BaseLspInstaller.BaseLspInstaller<Amazo
         return {
             lsp: path.join(assetDirectory, 'servers/aws-lsp-codewhisperer.js'),
             node: nodePath,
-            mynahUI: path.join(assetDirectory, 'clients/amazonq-ui.js'),
+            ui: path.join(assetDirectory, 'clients/amazonq-ui.js'),
         }
     }
 }
