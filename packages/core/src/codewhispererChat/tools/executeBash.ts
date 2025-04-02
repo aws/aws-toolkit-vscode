@@ -232,6 +232,7 @@ export class ExecuteBash {
             const stderrBuffer: string[] = []
 
             let firstChunk = true
+            let firstStderrChunk = true
             const childProcessOptions: ChildProcessOptions = {
                 spawnOptions: {
                     cwd: this.workingDirectory,
@@ -244,7 +245,8 @@ export class ExecuteBash {
                     firstChunk = false
                 },
                 onStderr: (chunk: string) => {
-                    ExecuteBash.handleChunk(chunk, stderrBuffer, updates)
+                    ExecuteBash.handleChunk(firstStderrChunk ? '```console\n' + chunk : chunk, stderrBuffer, updates)
+                    firstStderrChunk = false
                 },
             }
 
