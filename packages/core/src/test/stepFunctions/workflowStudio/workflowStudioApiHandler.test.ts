@@ -7,7 +7,13 @@ import assert from 'assert'
 import sinon from 'sinon'
 import { WorkflowStudioApiHandler } from '../../../stepFunctions/workflowStudio/workflowStudioApiHandler'
 import { MockDocument } from '../../fake/fakeDocument'
-import { ApiAction, Command, MessageType, WebviewContext } from '../../../stepFunctions/workflowStudio/types'
+import {
+    ApiAction,
+    Command,
+    MessageType,
+    WebviewContext,
+    WorkflowMode,
+} from '../../../stepFunctions/workflowStudio/types'
 import * as vscode from 'vscode'
 import { assertTelemetry } from '../../testUtil'
 import { DefaultStepFunctionsClient } from '../../../shared/clients/stepFunctionsClient'
@@ -45,6 +51,8 @@ describe('WorkflowStudioApiHandler', function () {
         postMessageStub = sinon.stub(panel.webview, 'postMessage')
 
         const context: WebviewContext = {
+            stateMachineName: '',
+            mode: WorkflowMode.Editable,
             defaultTemplateName: '',
             defaultTemplatePath: '',
             disposables: [],
