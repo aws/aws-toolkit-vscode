@@ -44,7 +44,7 @@ export class ListDirectory {
 
     public queueDescription(updates: Writable): void {
         const fileName = path.basename(this.fsPath)
-        updates.write(`Listing directory on filePath: ${fileName}`)
+        updates.write(`Listing directory: ${fileName}`)
         updates.end()
     }
 
