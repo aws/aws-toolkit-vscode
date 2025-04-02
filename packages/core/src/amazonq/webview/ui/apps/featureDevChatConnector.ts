@@ -30,7 +30,6 @@ export interface ConnectorProps extends BaseConnectorProps {
     onUpdatePlaceholder: (tabID: string, newPlaceholder: string) => void
     onChatInputEnabled: (tabID: string, enabled: boolean) => void
     onUpdateAuthentication: (featureDevEnabled: boolean, authenticatingTabIDs: string[]) => void
-    onNewTab: (tabType: TabType) => void
 }
 
 export class Connector extends BaseConnector {
@@ -40,7 +39,6 @@ export class Connector extends BaseConnector {
     private readonly updatePlaceholder
     private readonly chatInputEnabled
     private readonly onUpdateAuthentication
-    private readonly onNewTab
 
     override getTabType(): TabType {
         return 'featuredev'
@@ -53,7 +51,6 @@ export class Connector extends BaseConnector {
         this.updatePlaceholder = props.onUpdatePlaceholder
         this.chatInputEnabled = props.onChatInputEnabled
         this.onUpdateAuthentication = props.onUpdateAuthentication
-        this.onNewTab = props.onNewTab
         this.onChatAnswerUpdated = props.onChatAnswerUpdated
     }
 

@@ -9,6 +9,7 @@ import { ChatControllerMessagePublishers } from '../../controllers/chat/controll
 import { ReferenceLogController } from './referenceLogController'
 import { getLogger } from '../../../shared/logger/logger'
 import { openSettingsId } from '../../../shared/settings'
+import { Database } from '../../../shared/db/chatDb/chatDb'
 
 export interface UIMessageListenerProps {
     readonly chatControllerMessagePublishers: ChatControllerMessagePublishers
@@ -119,7 +120,61 @@ export class UIMessageListener {
             case 'file-click':
                 this.fileClick(msg)
                 break
+            case 'tab-restored':
+                this.tabRestored(msg)
+                break
+            case 'tab-bar-button-clicked':
+                this.tabBarButtonClicked(msg)
+                break
+            case 'save-chat':
+                this.saveChat(msg)
+                break
+            case 'detailed-list-filter-change':
+                this.processDetailedListFilterChange(msg)
+                break
+            case 'detailed-list-item-select':
+                this.processDetailedListItemSelect(msg)
+                break
+            case 'detailed-list-action-click':
+                this.processDetailedListActionClick(msg)
+                break
         }
+    }
+
+    private processDetailedListFilterChange(msg: any) {
+        this.chatControllerMessagePublishers.processDetailedListFilterChangeMessage.publish(msg)
+    }
+    private processDetailedListItemSelect(msg: any) {
+        this.chatControllerMessagePublishers.processDetailedListItemSelectMessage.publish(msg)
+    }
+    private processDetailedListActionClick(msg: any) {
+        this.chatControllerMessagePublishers.processDetailedListActionClickMessage.publish(msg)
+    }
+
+    private tabRestored(msg: any) {
+        const chatHistoryDb = Database.getInstance()
+        chatHistoryDb.setHistoryIdMapping(msg.newTabId, msg.historyId)
+        if (msg.exportTab) {
+            this.chatControllerMessagePublishers.processTabBarButtonClick.publish({
+                tabID: msg.newTabId,
+                buttonId: 'export_chat',
+            })
+        }
+        chatHistoryDb.updateTabOpenState(msg.newTabId, true)
+    }
+
+    private saveChat(msg: any) {
+        this.chatControllerMessagePublishers.processSaveChat.publish({
+            uri: msg.uri,
+            serializedChat: msg.serializedChat,
+        })
+    }
+
+    private tabBarButtonClicked(msg: any) {
+        this.chatControllerMessagePublishers.processTabBarButtonClick.publish({
+            tabID: msg.tabID,
+            buttonId: msg.buttonId,
+        })
     }
 
     private processUIIsReady() {

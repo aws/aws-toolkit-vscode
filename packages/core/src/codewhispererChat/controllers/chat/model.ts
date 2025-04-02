@@ -10,7 +10,7 @@ import { Selection } from 'vscode'
 import { TabOpenType } from '../../../amazonq/webview/ui/storages/tabsStorage'
 import { CodeReference } from '../../view/connector/connector'
 import { Customization } from '../../../codewhisperer/client/codewhispereruserclient'
-import { QuickActionCommand } from '@aws/mynah-ui'
+import { ChatItem, QuickActionCommand } from '@aws/mynah-ui'
 
 export interface TriggerTabIDReceived {
     tabID: string
@@ -141,6 +141,16 @@ export interface FooterInfoLinkClick {
     link: string
 }
 
+export interface TabBarButtonClick {
+    tabID: string
+    buttonId: string
+}
+
+export interface SaveChatMessage {
+    serializedChat: string
+    uri: string
+}
+
 export interface QuickCommandGroupActionClick {
     command: string
     actionId: string
@@ -186,7 +196,7 @@ export interface TriggerPayload {
     readonly codeQuery: CodeQuery | undefined
     readonly userIntent: UserIntent | undefined
     readonly customization: Customization
-    readonly context: string[] | QuickActionCommand[]
+    context: string[] | QuickActionCommand[]
     relevantTextDocuments: RelevantTextDocumentAddition[]
     additionalContents: AdditionalContentEntryAddition[]
     // a reference to all documents used in chat payload
@@ -196,6 +206,7 @@ export interface TriggerPayload {
     traceId?: string
     contextLengths: ContextLengths
     workspaceRulesCount?: number
+    history?: ChatItem[]
 }
 
 export type ContextLengths = {

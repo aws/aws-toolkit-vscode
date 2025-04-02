@@ -3,12 +3,21 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ChatItem, ChatItemAction, ChatItemType, FeedbackPayload, QuickActionCommand } from '@aws/mynah-ui'
+import {
+    ChatItem,
+    ChatItemAction,
+    ChatItemType,
+    DetailedList,
+    FeedbackPayload,
+    QuickActionCommand,
+} from '@aws/mynah-ui'
 import { ExtensionMessage } from '../commands'
 import { CodeReference } from './amazonqCommonsConnector'
 import { TabOpenType, TabsStorage, TabType } from '../storages/tabsStorage'
 import { FollowUpGenerator } from '../followUps/generator'
 import { CWCChatItem } from '../connector'
+import { DetailedListSheetProps } from '@aws/mynah-ui/dist/components/detailed-list/detailed-list-sheet'
+import { DetailedListConnector, DetailedListType } from '../detailedList/detailedListConnector'
 
 interface ChatPayload {
     chatMessage: string
@@ -23,6 +32,15 @@ export interface BaseConnectorProps {
     onError: (tabID: string, message: string, title: string) => void
     onWarning: (tabID: string, message: string, title: string) => void
     onOpenSettingsMessage: (tabID: string) => void
+    onNewTab: (tabType: TabType, chats?: ChatItem[]) => string | undefined
+    onOpenDetailedList: (data: DetailedListSheetProps) => {
+        update: (data: DetailedList) => void
+        close: () => void
+        changeTarget: (direction: 'up' | 'down', snapOnLastAndFirst?: boolean) => void
+        getTargetElementId: () => string | undefined
+    }
+    onSelectTab: (tabID: string, eventID: string) => void
+    onExportChat: (tabId: string, format: 'html' | 'markdown') => string
     tabsStorage: TabsStorage
 }
 
@@ -32,8 +50,13 @@ export abstract class BaseConnector {
     protected readonly onWarning
     protected readonly onChatAnswerReceived
     protected readonly onOpenSettingsMessage
+    protected readonly onNewTab
+    protected readonly onOpenDetailedList
+    protected readonly onExportChat
+    protected readonly onSelectTab
     protected readonly followUpGenerator: FollowUpGenerator
     protected readonly tabsStorage
+    protected historyConnector
 
     abstract getTabType(): TabType
 
@@ -43,8 +66,17 @@ export abstract class BaseConnector {
         this.onWarning = props.onWarning
         this.onError = props.onError
         this.onOpenSettingsMessage = props.onOpenSettingsMessage
+        this.onNewTab = props.onNewTab
         this.tabsStorage = props.tabsStorage
+        this.onOpenDetailedList = props.onOpenDetailedList
+        this.onExportChat = props.onExportChat
+        this.onSelectTab = props.onSelectTab
         this.followUpGenerator = new FollowUpGenerator()
+        this.historyConnector = new DetailedListConnector(
+            DetailedListType.history,
+            this.sendMessageToExtension,
+            this.onOpenDetailedList
+        )
     }
 
     onResponseBodyLinkClick = (tabID: string, messageId: string, link: string): void => {
@@ -295,6 +327,54 @@ export abstract class BaseConnector {
         if (messageData.type === 'openSettingsMessage') {
             await this.processOpenSettingsMessage(messageData)
             return
+        }
+
+        if (messageData.type === 'restoreTabMessage') {
+            const newTabId = this.onNewTab(messageData.tabType, messageData.chats)
+            this.sendMessageToExtension({
+                command: 'tab-restored',
+                historyId: messageData.historyId,
+                newTabId,
+                tabType: this.getTabType(),
+                exportTab: messageData.exportTab,
+            })
+            return
+        }
+
+        if (messageData.type === 'updateDetailedListMessage') {
+            if (messageData.listType === DetailedListType.history) {
+                this.historyConnector.updateList(messageData.detailedList)
+            }
+            return
+        }
+
+        if (messageData.type === 'closeDetailedListMessage') {
+            if (messageData.listType === DetailedListType.history) {
+                this.historyConnector.closeList()
+            }
+            return
+        }
+
+        if (messageData.type === 'openDetailedListMessage') {
+            if (messageData.listType === DetailedListType.history) {
+                this.historyConnector.openList(messageData)
+            }
+            return
+        }
+
+        if (messageData.type === 'exportChatMessage') {
+            const serializedChat = this.onExportChat(messageData.tabID, messageData.format)
+            this.sendMessageToExtension({
+                command: 'save-chat',
+                uri: messageData.uri,
+                serializedChat,
+                tabType: 'cwc',
+            })
+            return
+        }
+
+        if (messageData.type === 'selectTabMessage') {
+            this.onSelectTab(messageData.tabID, messageData.eventID)
         }
     }
 }
