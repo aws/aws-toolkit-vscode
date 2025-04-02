@@ -44,5 +44,12 @@ type MessageCommand =
     | 'update-welcome-count'
     | 'quick-command-group-action-click'
     | 'context-selected'
+    | 'tab-restored'
+    | 'tab-bar-button-clicked'
+    | 'export-chat'
+    | 'save-chat'
+    | 'detailed-list-filter-change'
+    | 'detailed-list-item-select'
+    | 'detailed-list-action-click'
 
 export type ExtensionMessage = Record<string, any> & { command: MessageCommand }
