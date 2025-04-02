@@ -111,9 +111,7 @@ export abstract class CodeGenBase {
                             file.zipFilePath === RunCommandLogFileName
                     )
                     if (logFileInfo) {
-                        logFileInfo.fileContent = truncate(logFileInfo.fileContent, 10000000) // Limit to max 20MB
-                        if (logFileInfo.fileContent.length === 10000000) {
-                            logFileInfo.fileContent += '\n... [truncated]'
+                        logFileInfo.fileContent = truncate(logFileInfo.fileContent, 10000000, '\n... [truncated]') // Limit to max 20MB
                         }
                         getLogger().info(`sessionState: Run Command logs, ${logFileInfo.fileContent}`)
                         newFileContents.splice(newFileContents.indexOf(logFileInfo), 1)
