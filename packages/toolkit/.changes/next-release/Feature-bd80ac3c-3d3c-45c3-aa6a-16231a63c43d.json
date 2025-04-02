@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "Step Functions: Use WorkflowStudio to render StateMachine Graph in CDK applications"
+}
