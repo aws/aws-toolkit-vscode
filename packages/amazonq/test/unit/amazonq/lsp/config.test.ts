@@ -6,25 +6,27 @@
 import assert from 'assert'
 import { DevSettings } from 'aws-core-vscode/shared'
 import sinon from 'sinon'
-import { defaultAmazonQLspConfig, getAmazonQLspConfig } from '../../../../src/lsp/config'
-import { LspConfig, getAmazonQWorkspaceLspConfig, defaultAmazonQWorkspaceLspConfig } from 'aws-core-vscode/amazonq'
+import { defaultAmazonQLspConfig, ExtendedAmazonQLSPConfig, getAmazonQLspConfig } from '../../../../src/lsp/config'
+import { defaultAmazonQWorkspaceLspConfig, getAmazonQWorkspaceLspConfig, LspConfig } from 'aws-core-vscode/amazonq'
 
 for (const [name, config, defaultConfig, setEnv, resetEnv] of [
     [
         'getAmazonQLspConfig',
         getAmazonQLspConfig,
         defaultAmazonQLspConfig,
-        (envConfig: LspConfig) => {
+        (envConfig: ExtendedAmazonQLSPConfig) => {
             process.env.__AMAZONQLSP_MANIFEST_URL = envConfig.manifestUrl
             process.env.__AMAZONQLSP_SUPPORTED_VERSIONS = envConfig.supportedVersions
             process.env.__AMAZONQLSP_ID = envConfig.id
             process.env.__AMAZONQLSP_PATH = envConfig.path
+            process.env.__AMAZONQLSP_UI = envConfig.ui
         },
         () => {
             delete process.env.__AMAZONQLSP_MANIFEST_URL
             delete process.env.__AMAZONQLSP_SUPPORTED_VERSIONS
             delete process.env.__AMAZONQLSP_ID
             delete process.env.__AMAZONQLSP_PATH
+            delete process.env.__AMAZONQLSP_UI
         },
     ],
     [
@@ -52,8 +54,9 @@ for (const [name, config, defaultConfig, setEnv, resetEnv] of [
             manifestUrl: 'https://custom.url/manifest.json',
             supportedVersions: '4.0.0',
             id: 'AmazonQSetting',
-            suppressPromptPrefix: 'amazonQSetting',
+            suppressPromptPrefix: config().suppressPromptPrefix,
             path: '/custom/path',
+            ...(name === 'getAmazonQLspConfig' && { ui: '/chat/client/location' }),
         }
 
         beforeEach(() => {
@@ -75,7 +78,7 @@ for (const [name, config, defaultConfig, setEnv, resetEnv] of [
             assert.deepStrictEqual(config(), defaultConfig)
         })
 
-        it('overrides location', () => {
+        it('overrides path', () => {
             const path = '/custom/path/to/lsp'
             serviceConfigStub.returns({ path })
 
@@ -92,21 +95,9 @@ for (const [name, config, defaultConfig, setEnv, resetEnv] of [
         })
 
         it('environment variable takes precedence over settings', () => {
-            const envConfig: LspConfig = {
-                manifestUrl: 'https://another-custom.url/manifest.json',
-                supportedVersions: '5.1.1',
-                id: 'AmazonQSetting',
-                suppressPromptPrefix: 'amazonQSetting',
-                path: '/some/new/custom/path',
-            }
-
-            setEnv(envConfig)
-            serviceConfigStub.returns(settingConfig)
-
-            assert.deepStrictEqual(config(), {
-                ...defaultAmazonQLspConfig,
-                ...envConfig,
-            })
+            setEnv(settingConfig)
+            serviceConfigStub.returns({})
+            assert.deepStrictEqual(config(), settingConfig)
         })
     })
 }
