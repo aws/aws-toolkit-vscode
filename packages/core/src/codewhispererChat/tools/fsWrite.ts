@@ -8,7 +8,6 @@ import { getLogger } from '../../shared/logger/logger'
 import vscode from 'vscode'
 import { fs } from '../../shared/fs/fs'
 import { Writable } from 'stream'
-import path from 'path'
 
 interface BaseParams {
     path: string
@@ -70,11 +69,116 @@ export class FsWrite {
         }
     }
 
-    public queueDescription(updates: Writable): void {
-        const fileName = path.basename(this.params.path)
-        updates.write(
-            `Please see the generated code below for \`${fileName}\`. Click on the file to review the changes in the code editor and select Accept or Reject.`
-        )
+    private generateSmartDiff(oldStr: string, newStr: string): string {
+        // Split both strings into arrays of lines
+        const oldLines = oldStr.split('\n')
+        const newLines = newStr.split('\n')
+        let result = ''
+
+        // If strings are identical, return empty string
+        if (oldStr === newStr) {
+            return result
+        }
+
+        let i = 0 // Index for oldLines
+        let j = 0 // Index for newLines
+
+        // Loop through both arrays until we've processed all lines
+        while (i < oldLines.length || j < newLines.length) {
+            if (i < oldLines.length && j < newLines.length && oldLines[i] === newLines[j]) {
+                // Line is unchanged - prefix with space
+                result += ` ${oldLines[i]}\n`
+                i++
+                j++
+            } else {
+                // Line is different
+                if (i < oldLines.length) {
+                    // Remove line - prefix with minus
+                    result += `-${oldLines[i]}\n`
+                    i++
+                }
+                if (j < newLines.length) {
+                    // Add line - prefix with plus
+                    result += `+${newLines[j]}\n`
+                    j++
+                }
+            }
+        }
+
+        return result
+    }
+
+    private async getInsertContext(path: string, insertLine: number, newStr: string): Promise<string> {
+        const fileContent = await fs.readFileText(path)
+        const lines = fileContent.split('\n')
+        const startLine = Math.max(0, insertLine - 2)
+        const endLine = Math.min(lines.length, insertLine + 3)
+
+        const contextLines: string[] = []
+
+        // Add lines before insertion point
+        for (let i = startLine; i < insertLine; i++) {
+            contextLines.push(` ${lines[i]}`)
+        }
+
+        // Add the new line with a '+' prefix
+        contextLines.push(`+${newStr}`)
+
+        // Add lines after insertion point
+        for (let i = insertLine; i < endLine; i++) {
+            contextLines.push(` ${lines[i]}`)
+        }
+
+        return contextLines.join('\n')
+    }
+
+    private async handleAppendContent(sanitizedPath: string, newStr: string) {
+        const fileContent = await fs.readFileText(sanitizedPath)
+        const needsNewline = fileContent.length !== 0 && !fileContent.endsWith('\n')
+
+        let contentToAppend = newStr
+        if (needsNewline) {
+            contentToAppend = '\n' + contentToAppend
+        }
+
+        // Get the last 3 lines from existing content
+        const lines = fileContent.split('\n')
+        const last3Lines = lines.slice(-3)
+
+        // Format the output with the last 3 lines and new content
+        // const formattedOutput = [
+        //     ...last3Lines,
+        //     `+ ${contentToAppend.trim()}`, // Add '+' prefix to new content
+        // ].join('\n')
+
+        return `${last3Lines.join('\n')}\n+ ${contentToAppend.trim()}` // [last3Lines, contentToAppend.trim()] // `${last3Lines.join('\n')}\n+ ${contentToAppend.trim()}`
+    }
+
+    public async queueDescription(updates: Writable): Promise<void> {
+        // const fileName = path.basename(this.params.path)
+        switch (this.params.command) {
+            case 'create':
+                updates.write(`\`\`\`diff-typescript
+${'+' + this.params.fileText?.replace(/\n/g, '\n+')}
+                    `)
+                break
+            case 'strReplace':
+                updates.write(`\`\`\`diff-typescript
+${this.generateSmartDiff(this.params.oldStr, this.params.newStr)}
+\`\`\`
+`)
+                break
+            case 'insert':
+                updates.write(`\`\`\`diff-typescript
+${await this.getInsertContext(this.params.path, this.params.insertLine, this.params.newStr)}
+\`\`\``)
+                break
+            case 'append':
+                updates.write(`\`\`\`diff-typescript
+${await this.handleAppendContent(this.params.path, this.params.newStr)}
+\`\`\``)
+                break
+        }
         updates.end()
     }
 
@@ -138,20 +242,29 @@ export class FsWrite {
         await fs.writeFile(sanitizedPath, newContent)
     }
 
-    private async handleInsert(params: InsertParams, sanitizedPath: string): Promise<void> {
+    private async getLineToInsert(
+        sanitizedPath: string,
+        insertLine: number,
+        newStr: string
+    ): Promise<[number, string]> {
         const fileContent = await fs.readFileText(sanitizedPath)
         const lines = fileContent.split('\n')
 
         const numLines = lines.length
-        const insertLine = Math.max(0, Math.min(params.insertLine, numLines))
+        const insertLineInFile = Math.max(0, Math.min(insertLine, numLines))
 
         let newContent: string
-        if (insertLine === 0) {
-            newContent = params.newStr + '\n' + fileContent
+        if (insertLineInFile === 0) {
+            newContent = newStr + '\n' + fileContent
         } else {
-            newContent = [...lines.slice(0, insertLine), params.newStr, ...lines.slice(insertLine)].join('\n')
+            newContent = [...lines.slice(0, insertLineInFile), newStr, ...lines.slice(insertLineInFile)].join('\n')
         }
 
+        return [insertLineInFile, newContent]
+    }
+
+    private async handleInsert(params: InsertParams, sanitizedPath: string): Promise<void> {
+        const [, newContent] = await this.getLineToInsert(sanitizedPath, params.insertLine, params.newStr)
         await fs.writeFile(sanitizedPath, newContent)
     }
 

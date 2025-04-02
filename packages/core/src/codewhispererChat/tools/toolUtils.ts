@@ -63,13 +63,13 @@ export class ToolUtils {
         }
     }
 
-    static queueDescription(tool: Tool, updates: Writable): void {
+    static async queueDescription(tool: Tool, updates: Writable): Promise<void> {
         switch (tool.type) {
             case ToolType.FsRead:
                 tool.tool.queueDescription(updates)
                 break
             case ToolType.FsWrite:
-                tool.tool.queueDescription(updates)
+                await tool.tool.queueDescription(updates)
                 break
             case ToolType.ExecuteBash:
                 tool.tool.queueDescription(updates)

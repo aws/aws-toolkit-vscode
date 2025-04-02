@@ -8,6 +8,7 @@ import {
     ChatItemButton,
     ChatItemFormItem,
     ChatItemType,
+    MynahIconsType,
     MynahUIDataModel,
     QuickActionCommand,
 } from '@aws/mynah-ui'
@@ -109,6 +110,10 @@ export class Connector extends BaseConnector {
                 title: messageData.title,
                 buttons: messageData.buttons ?? undefined,
                 fileList: messageData.fileList ?? undefined,
+                header: messageData.header ?? undefined,
+                padding: messageData.padding ?? undefined,
+                fullWidth: messageData.fullWidth ?? undefined,
+                codeBlockActions: messageData.codeBlockActions ?? undefined,
             }
 
             if (messageData.relatedSuggestions !== undefined) {
@@ -147,6 +152,10 @@ export class Connector extends BaseConnector {
                         : undefined,
                 buttons: messageData.buttons ?? undefined,
                 canBeVoted: messageData.canBeVoted ?? false,
+                header: messageData.header ?? undefined,
+                padding: messageData.padding ?? undefined,
+                fullWidth: messageData.fullWidth ?? undefined,
+                codeBlockActions: messageData.codeBlockActions ?? undefined,
             }
             this.onChatAnswerReceived(messageData.tabID, answer, messageData)
 
@@ -270,35 +279,32 @@ export class Connector extends BaseConnector {
         ) {
             return
         }
+        // Can not assign body as "undefined" or "null" because both of these values will be overriden at main.ts in onChatAnswerUpdated
+        // TODO: Refactor in next PR if necessary.
         const answer: ChatItem = {
             type: ChatItemType.ANSWER,
             messageId: messageId,
             buttons: [],
+            body: ' ',
         }
         switch (action.id) {
             case 'accept-code-diff':
-                answer.buttons = [
-                    {
-                        keepCardAfterClick: true,
-                        text: 'Accepted code',
-                        id: 'accepted-code-diff',
+                if (answer.header) {
+                    answer.header.status = {
+                        icon: 'ok' as MynahIconsType,
+                        text: 'Accepted',
                         status: 'success',
-                        position: 'outside',
-                        disabled: true,
-                    },
-                ]
+                    }
+                }
                 break
             case 'reject-code-diff':
-                answer.buttons = [
-                    {
-                        keepCardAfterClick: true,
-                        text: 'Rejected code',
-                        id: 'rejected-code-diff',
+                if (answer.header) {
+                    answer.header.status = {
+                        icon: 'cancel' as MynahIconsType,
+                        text: 'Rejected',
                         status: 'error',
-                        position: 'outside',
-                        disabled: true,
-                    },
-                ]
+                    }
+                }
                 break
             case 'confirm-tool-use':
                 answer.buttons = [
