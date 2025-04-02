@@ -11,15 +11,7 @@ import { InlineCompletionManager } from '../app/inline/completion'
 import { AmazonQLspAuth, encryptionKey, notificationTypes } from './auth'
 import { AuthUtil } from 'aws-core-vscode/codewhisperer'
 import { ConnectionMetadata } from '@aws/language-server-runtimes/protocol'
-import {
-    Settings,
-    oidcClientName,
-    createServerOptions,
-    globals,
-    Experiments,
-    getLogger,
-    Commands,
-} from 'aws-core-vscode/shared'
+import { Settings, oidcClientName, createServerOptions, globals, Experiments, Commands } from 'aws-core-vscode/shared'
 import { activate } from './chat/activation'
 import { AmazonQResourcePaths } from './lspInstaller'
 
@@ -109,7 +101,7 @@ export async function startLanguageServer(
                 },
             }
         })
-        await auth.init()
+        await auth.refreshConnection()
 
         if (Experiments.instance.get('amazonqLSPInline', false)) {
             const inlineManager = new InlineCompletionManager(client)
@@ -129,23 +121,16 @@ export async function startLanguageServer(
             activate(client, encryptionKey, resourcePaths.ui)
         }
 
-        // Temporary code for pen test. Will be removed when we switch to the real flare auth
-        const authInterval = setInterval(async () => {
-            try {
-                await auth.init()
-            } catch (e) {
-                getLogger('amazonqLsp').error('Unable to update bearer token: %s', (e as Error).message)
-                clearInterval(authInterval)
-            }
-        }, 300000) // every 5 minutes
+        const refreshInterval = auth.startTokenRefreshInterval()
 
         toDispose.push(
             AuthUtil.instance.auth.onDidChangeActiveConnection(async () => {
-                await auth.init()
+                await auth.refreshConnection()
             }),
             AuthUtil.instance.auth.onDidDeleteConnection(async () => {
                 client.sendNotification(notificationTypes.deleteBearerToken.method)
-            })
+            }),
+            { dispose: () => clearInterval(refreshInterval) }
         )
     })
 }
