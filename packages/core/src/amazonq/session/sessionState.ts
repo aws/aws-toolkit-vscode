@@ -112,7 +112,6 @@ export abstract class CodeGenBase {
                     )
                     if (logFileInfo) {
                         logFileInfo.fileContent = truncate(logFileInfo.fileContent, 10000000, '\n... [truncated]') // Limit to max 20MB
-                        }
                         getLogger().info(`sessionState: Run Command logs, ${logFileInfo.fileContent}`)
                         newFileContents.splice(newFileContents.indexOf(logFileInfo), 1)
                     }
