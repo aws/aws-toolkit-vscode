@@ -54,7 +54,7 @@ for (const [name, config, defaultConfig, setEnv, resetEnv] of [
             manifestUrl: 'https://custom.url/manifest.json',
             supportedVersions: '4.0.0',
             id: 'AmazonQSetting',
-            suppressPromptPrefix: 'amazonQSetting',
+            suppressPromptPrefix: config().suppressPromptPrefix,
             path: '/custom/path',
             ...(name === 'getAmazonQLspConfig' && { ui: '/chat/client/location' }),
         }
