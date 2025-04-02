@@ -7,8 +7,17 @@ import { Timestamp } from 'aws-sdk/clients/apigateway'
 import { MessagePublisher } from '../../../amazonq/messages/messagePublisher'
 import { EditorContextCommandType } from '../../commands/registerCommands'
 import { AuthFollowUpType } from '../../../amazonq/auth/model'
-import { ChatItemButton, ChatItemFormItem, MynahUIDataModel, QuickActionCommand } from '@aws/mynah-ui'
+import {
+    ChatItem,
+    ChatItemButton,
+    ChatItemFormItem,
+    DetailedList,
+    DetailedListItem,
+    MynahUIDataModel,
+    QuickActionCommand,
+} from '@aws/mynah-ui'
 import { DocumentReference } from '../../controllers/chat/model'
+import { TabType } from '../../../amazonq/webview/ui/storages/tabsStorage'
 
 class UiMessage {
     readonly time: number = Date.now()
@@ -132,6 +141,116 @@ export class AuthNeededException extends UiMessage {
 
 export class OpenSettingsMessage extends UiMessage {
     override type = 'openSettingsMessage'
+}
+
+export class RestoreTabMessage extends UiMessage {
+    override type = 'restoreTabMessage'
+    readonly tabType: TabType
+    readonly chats: ChatItem[]
+    readonly historyId: string
+    readonly exportTab?: boolean
+
+    constructor(historyId: string, tabType: TabType, chats: ChatItem[], exportTab?: boolean) {
+        super(undefined)
+        this.chats = chats
+        this.tabType = tabType
+        this.historyId = historyId
+        this.exportTab = exportTab
+    }
+}
+
+export class OpenDetailedListMessage extends UiMessage {
+    override type = 'openDetailedListMessage'
+    readonly detailedList: DetailedList
+    listType: string
+
+    constructor(tabID: string, listType: string, data: DetailedList) {
+        super(tabID)
+        this.listType = listType
+        this.detailedList = data
+    }
+}
+
+export class UpdateDetailedListMessage extends UiMessage {
+    override type = 'updateDetailedListMessage'
+    readonly detailedList: DetailedList
+    listType: string
+
+    constructor(listType: string, data: DetailedList) {
+        super(undefined)
+        this.listType = listType
+        this.detailedList = data
+    }
+}
+
+export class CloseDetailedListMessage extends UiMessage {
+    override type = 'closeDetailedListMessage'
+    listType: string
+
+    constructor(listType: string) {
+        super(undefined)
+        this.listType = listType
+    }
+}
+
+export class ExportChatMessage extends UiMessage {
+    override type = 'exportChatMessage'
+    readonly format: 'markdown' | 'html'
+    readonly uri: string
+
+    constructor(tabID: string, format: 'markdown' | 'html', uri: string) {
+        super(tabID)
+        this.format = format
+        this.uri = uri
+    }
+}
+
+export class SelectTabMessage extends UiMessage {
+    override type = 'selectTabMessage'
+    readonly eventID?: string
+
+    constructor(tabID: string, eventID?: string) {
+        super(tabID)
+        this.eventID = eventID
+    }
+}
+
+export class DetailedListFilterChangeMessage extends UiMessage {
+    override type = 'detailedListFilterChangeMessage'
+    readonly listType: string
+    readonly filterValues: Record<string, any>
+    readonly isValid: boolean
+
+    constructor(listType: string, filterValues: Record<string, any>, isValid: boolean) {
+        super(undefined)
+        this.listType = listType
+        this.filterValues = filterValues
+        this.isValid = isValid
+    }
+}
+
+export class DetailedListItemSelectMessage extends UiMessage {
+    override type = 'detailedListItemSelectMessage'
+    readonly listType: string
+    readonly item: DetailedListItem
+
+    constructor(listType: string, item: DetailedListItem) {
+        super(undefined)
+        this.listType = listType
+        this.item = item
+    }
+}
+
+export class DetailedListActionClickMessage extends UiMessage {
+    override type = 'detailedListActionClickMessage'
+    readonly listType: string
+    action: ChatItemButton
+
+    constructor(listType: string, action: ChatItemButton) {
+        super(undefined)
+        this.listType = listType
+        this.action = action
+    }
 }
 
 export class ContextCommandData extends UiMessage {
@@ -308,6 +427,30 @@ export class AppToWebViewMessageDispatcher {
     }
 
     public sendOpenSettingsMessage(message: OpenSettingsMessage) {
+        this.appsToWebViewMessagePublisher.publish(message)
+    }
+
+    public sendRestoreTabMessage(message: RestoreTabMessage) {
+        this.appsToWebViewMessagePublisher.publish(message)
+    }
+
+    public sendOpenDetailedListMessage(message: OpenDetailedListMessage) {
+        this.appsToWebViewMessagePublisher.publish(message)
+    }
+
+    public sendUpdateDetailedListMessage(message: UpdateDetailedListMessage) {
+        this.appsToWebViewMessagePublisher.publish(message)
+    }
+
+    public sendCloseDetailedListMessage(message: CloseDetailedListMessage) {
+        this.appsToWebViewMessagePublisher.publish(message)
+    }
+
+    public sendSerializeTabMessage(message: ExportChatMessage) {
+        this.appsToWebViewMessagePublisher.publish(message)
+    }
+
+    public sendSelectTabMessage(message: SelectTabMessage) {
         this.appsToWebViewMessagePublisher.publish(message)
     }
 

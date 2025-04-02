@@ -3,9 +3,17 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ConversationState, CursorState, DocumentSymbol, SymbolType, TextDocument } from '@amzn/codewhisperer-streaming'
+import {
+    ConversationState,
+    CursorState,
+    DocumentSymbol,
+    SymbolType,
+    TextDocument,
+    ChatMessage,
+} from '@amzn/codewhisperer-streaming'
 import { AdditionalContentEntryAddition, ChatTriggerType, RelevantTextDocumentAddition, TriggerPayload } from '../model'
 import { undefinedIfEmpty } from '../../../../shared/utilities/textUtilities'
+import { ChatItemType } from '../../../../amazonq/commons/model'
 import { getLogger } from '../../../../shared/logger/logger'
 
 const fqnNameSizeDownLimit = 1
@@ -147,6 +155,22 @@ export function triggerPayloadToChatRequest(triggerPayload: TriggerPayload): { c
     // service will throw validation exception if string is empty
     const customizationArn: string | undefined = undefinedIfEmpty(triggerPayload.customization.arn)
     const chatTriggerType = triggerPayload.trigger === ChatTriggerType.InlineChatMessage ? 'INLINE_CHAT' : 'MANUAL'
+    const history =
+        triggerPayload.history &&
+        triggerPayload.history.length > 0 &&
+        (triggerPayload.history.map((chat) =>
+            chat.type === ('answer' as ChatItemType)
+                ? {
+                      assistantResponseMessage: {
+                          content: chat.body,
+                      },
+                  }
+                : {
+                      userInputMessage: {
+                          content: chat.body,
+                      },
+                  }
+        ) as ChatMessage[])
 
     return {
         conversationState: {
@@ -167,6 +191,7 @@ export function triggerPayloadToChatRequest(triggerPayload: TriggerPayload): { c
             },
             chatTriggerType,
             customizationArn: customizationArn,
+            history: history || undefined,
         },
     }
 }
