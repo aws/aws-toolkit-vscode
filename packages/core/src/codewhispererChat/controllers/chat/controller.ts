@@ -1097,7 +1097,7 @@ export class ChatController {
                         filePath: context?.activeFileContext?.filePath,
                         matchPolicy: context?.activeFileContext?.matchPolicy,
                         codeQuery: context?.focusAreaContext?.names,
-                        userIntent: this.userIntentRecognizer.getFromPromptChatMessage(message),
+                        userIntent: undefined,
                         customization: getSelectedCustomization(),
                         chatHistory: this.chatHistoryStorage.getTabHistory(message.tabID).getHistory(),
                         origin: Origin.IDE,
