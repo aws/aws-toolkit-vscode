@@ -19,6 +19,7 @@ import {
     getProjectUri,
     downloadPatternCode,
 } from '../../../../awsService/appBuilder/serverlessLand/main'
+import { getTestWindow } from '../../../shared/vscode/window'
 import { fs } from '../../../../shared/fs/fs'
 import * as downloadPatterns from '../../../../shared/utilities/downloadPatterns'
 import { ExtContext } from '../../../../shared/extensions'
@@ -83,29 +84,32 @@ describe('createNewServerlessLandProject', () => {
 describe('downloadPatternCode', () => {
     let sandbox: sinon.SinonSandbox
     let getPatternStub: sinon.SinonStub
+    let mockConfig: any
 
     beforeEach(function () {
         sandbox = sinon.createSandbox()
         getPatternStub = sandbox.stub(downloadPatterns, 'getPattern')
+        mockConfig = {
+            name: 'test-project',
+            location: vscode.Uri.file('/test'),
+            pattern: 'test-project-sam-python',
+            runtime: 'python',
+            iac: 'sam',
+            assetName: 'test-project-sam-python',
+        }
     })
     afterEach(function () {
         sandbox.restore()
+        getPatternStub.restore()
     })
-    const mockConfig = {
-        name: 'test-project',
-        location: vscode.Uri.file('/test'),
-        pattern: 'test-project-sam-python',
-        runtime: 'python',
-        iac: 'sam',
-        assetName: 'test-project-sam-python',
-    }
+
     it('successfully downloads pattern code', async () => {
         const mockAssetName = 'test-project-sam-python.zip'
         const serverlessLandOwner = 'aws-samples'
         const serverlessLandRepo = 'serverless-patterns'
         const mockLocation = vscode.Uri.joinPath(mockConfig.location, mockConfig.name)
 
-        await downloadPatternCode(mockConfig, 'test-project-sam-python')
+        await downloadPatternCode(mockConfig, mockConfig.assetName)
         assert(getPatternStub.calledOnce)
         assert(getPatternStub.firstCall.args[0] === serverlessLandOwner)
         assert(getPatternStub.firstCall.args[1] === serverlessLandRepo)
@@ -114,15 +118,50 @@ describe('downloadPatternCode', () => {
         assert(getPatternStub.firstCall.args[4] === true)
     })
     it('handles download failure', async () => {
-        const mockAssetName = 'test-project-sam-python.zip'
         const error = new Error('Download failed')
         getPatternStub.rejects(error)
         try {
-            await downloadPatternCode(mockConfig, mockAssetName)
+            await downloadPatternCode(mockConfig, mockConfig.assetName)
             assert.fail('Expected an error to be thrown')
         } catch (err: any) {
             assert.strictEqual(err.message, 'Failed to download pattern: Error: Download failed')
         }
+    })
+    it('downloads pattern when directory exists and user confirms overwrite', async function () {
+        const mockAssetName = 'test-project-sam-python.zip'
+        const serverlessLandOwner = 'aws-samples'
+        const serverlessLandRepo = 'serverless-patterns'
+        const mockLocation = vscode.Uri.joinPath(mockConfig.location, mockConfig.name)
+
+        getTestWindow().onDidShowMessage((message) => {
+            message.selectItem('Yes')
+        })
+
+        await downloadPatternCode(mockConfig, mockConfig.assetName)
+        assert(getPatternStub.calledOnce)
+        assert(getPatternStub.firstCall.args[0] === serverlessLandOwner)
+        assert(getPatternStub.firstCall.args[1] === serverlessLandRepo)
+        assert(getPatternStub.firstCall.args[2] === mockAssetName)
+        assert(getPatternStub.firstCall.args[3].toString() === mockLocation.toString())
+        assert(getPatternStub.firstCall.args[4] === true)
+    })
+    it('aborts download when directory exists and user declines overwrite', async function () {
+        const existsStub = sinon.stub(fs, 'exists').resolves(true)
+
+        const messagePromise = new Promise<void>((resolve) => {
+            getTestWindow().onDidShowMessage((message) => {
+                resolve()
+                message.selectItem('No')
+            })
+        })
+        try {
+            await Promise.all([messagePromise, downloadPatternCode(mockConfig, mockConfig.assetName)])
+            assert.fail('A folder named test-project already exists in this path.')
+        } catch (e) {
+            assert.strictEqual((e as Error).message, `A folder named ${mockConfig.name} already exists in this path.`)
+        }
+        assert(getPatternStub.notCalled)
+        existsStub.restore()
     })
 })
 
