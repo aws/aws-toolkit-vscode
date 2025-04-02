@@ -54,6 +54,7 @@ sequenceDiagram
     }
     ```
 4. Uncomment the `__AMAZONQLSP_PATH` variable in `amazonq/.vscode/launch.json` Extension configuration
+    1. Uncomment the `__AMAZONQLSP_UI` variable in `amazonq/.vscode/launch.json` Extension configuration if you want to debug the flare chat-client as well
 5. Use the `Launch LSP with Debugging` configuration and set breakpoints in VSCode or the language server
 
 ## Amazon Q Inline Activation

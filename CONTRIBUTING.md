@@ -439,6 +439,7 @@ Example:
     "supportedVersions": "4.0.0",
     "id": "AmazonQ",
     "path": "/custom/path/to/local/lsp/folder",
+    "ui": "/custom/path/to/chat-client/ui"
 }
 ```
 
@@ -503,11 +504,12 @@ Unlike the user setting overrides, not all of these environment variables have t
 -   `__AMAZONQLSP_MANIFEST_URL`: for aws.dev.amazonqLsp.manifestUrl
 -   `__AMAZONQLSP_SUPPORTED_VERSIONS`: for aws.dev.amazonqLsp.supportedVersions
 -   `__AMAZONQLSP_ID`: for aws.dev.amazonqLsp.id
--   `__AMAZONQLSP_PATH`: for aws.dev.amazonqWorkspaceLsp.locationOverride
+-   `__AMAZONQLSP_PATH`: for aws.dev.amazonqLsp.path
+-   `__AMAZONQLSP_UI`: for aws.dev.amazonqLsp.ui
 -   `__AMAZONQWORKSPACELSP_MANIFEST_URL`: for aws.dev.amazonqWorkspaceLsp.manifestUrl
 -   `__AMAZONQWORKSPACELSP_SUPPORTED_VERSIONS`: for aws.dev.amazonqWorkspaceLsp.supportedVersions
 -   `__AMAZONQWORKSPACELSP_ID`: for aws.dev.amazonqWorkspaceLsp.id
--   `__AMAZONQWORKSPACELSP_PATH`: for aws.dev.amazonqWorkspaceLsp.locationOverride
+-   `__AMAZONQWORKSPACELSP_PATH`: for aws.dev.amazonqWorkspaceLsp.path
 
 #### Lambda
 
