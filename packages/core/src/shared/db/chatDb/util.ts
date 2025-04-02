@@ -193,12 +193,12 @@ export function groupTabsByDate(tabs: Tab[]): DetailedListItemGroup[] {
 const getConversationActions = (historyId: string): ChatItemButton[] => [
     {
         text: 'Export',
-        icon: 'trash' as MynahIconsType,
+        icon: 'external' as MynahIconsType,
         id: historyId,
     },
     {
         text: 'Delete',
-        icon: 'external' as MynahIconsType,
+        icon: 'trash' as MynahIconsType,
         id: historyId,
     },
 ]
