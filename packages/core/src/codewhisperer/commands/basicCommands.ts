@@ -372,6 +372,9 @@ export const openSecurityIssuePanel = Commands.declare(
             undefined,
             !!targetIssue.suggestedFixes.length
         )
+        if (targetIssue.suggestedFixes.length === 0) {
+            await generateFix.execute(targetIssue, targetFilePath, 'webview', true, false)
+        }
     }
 )
 
@@ -665,7 +668,8 @@ export const generateFix = Commands.declare(
             issue: CodeScanIssue | IssueItem | undefined,
             filePath: string,
             source: Component,
-            refresh: boolean = false
+            refresh: boolean = false,
+            shouldOpenSecurityIssuePanel: boolean = true
         ) => {
             const targetIssue: CodeScanIssue | undefined = issue instanceof IssueItem ? issue.issue : issue
             const targetFilePath: string = issue instanceof IssueItem ? issue.filePath : filePath
@@ -679,11 +683,13 @@ export const generateFix = Commands.declare(
             }
             await telemetry.codewhisperer_codeScanIssueGenerateFix.run(async () => {
                 try {
-                    await vscode.commands
-                        .executeCommand('aws.amazonq.openSecurityIssuePanel', targetIssue, targetFilePath)
-                        .then(undefined, (e) => {
-                            getLogger().error('Failed to open security issue panel: %s', e.message)
-                        })
+                    if (shouldOpenSecurityIssuePanel) {
+                        await vscode.commands
+                            .executeCommand('aws.amazonq.openSecurityIssuePanel', targetIssue, targetFilePath)
+                            .then(undefined, (e) => {
+                                getLogger().error('Failed to open security issue panel: %s', e.message)
+                            })
+                    }
                     await updateSecurityIssueWebview({
                         isGenerateFixLoading: true,
                         // eslint-disable-next-line unicorn/no-null
