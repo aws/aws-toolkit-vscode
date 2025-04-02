@@ -39,9 +39,9 @@ import { LspController } from '../../../../amazonq/lsp/lspController'
 import { extractCodeBlockLanguage } from '../../../../shared/markdown'
 import { extractAuthFollowUp } from '../../../../amazonq/util/authUtils'
 import { helpMessage } from '../../../../amazonq/webview/ui/texts/constants'
-import { ChatItemButton, ChatItemFormItem, MynahUIDataModel } from '@aws/mynah-ui'
+import { ChatItemButton, ChatItemFormItem, MynahIconsType, MynahUIDataModel } from '@aws/mynah-ui'
 import { ChatHistoryManager } from '../../../storages/chatHistory'
-import { ToolUtils } from '../../../tools/toolUtils'
+import { ToolType, ToolUtils } from '../../../tools/toolUtils'
 import { ChatStream } from '../../../tools/chatStream'
 
 export type StaticTextResponseType = 'quick-action-help' | 'onboarding-help' | 'transform' | 'help'
@@ -217,13 +217,7 @@ export class Messenger {
                         if ('type' in tool) {
                             const requiresAcceptance = ToolUtils.requiresAcceptance(tool)
 
-                            const chatStream = new ChatStream(
-                                this,
-                                tabID,
-                                triggerID,
-                                toolUse.toolUseId,
-                                requiresAcceptance
-                            )
+                            const chatStream = new ChatStream(this, tabID, triggerID, toolUse, requiresAcceptance)
                             ToolUtils.queueDescription(tool, chatStream)
 
                             if (!requiresAcceptance) {
@@ -432,15 +426,16 @@ export class Messenger {
         message: string,
         tabID: string,
         triggerID: string,
-        toolUseId: string | undefined,
+        toolUse: ToolUse | undefined,
         requiresAcceptance = false
     ) {
         const buttons: ChatItemButton[] = []
         if (requiresAcceptance) {
             buttons.push({
+                icon: 'play' as MynahIconsType,
                 id: 'confirm-tool-use',
-                text: 'Confirm',
-                position: 'outside',
+                status: 'clear',
+                text: 'Run',
             })
         }
 
@@ -453,12 +448,25 @@ export class Messenger {
                     followUpsHeader: undefined,
                     relatedSuggestions: undefined,
                     triggerID,
-                    messageID: toolUseId ?? `tool-output`,
+                    messageID: toolUse?.toolUseId ?? `tool-output`,
                     userIntent: undefined,
                     codeBlockLanguage: undefined,
                     contextList: undefined,
                     canBeVoted: false,
-                    buttons,
+                    buttons: toolUse?.name === ToolType.ExecuteBash ? undefined : buttons,
+                    fullWidth: true,
+                    header:
+                        toolUse?.name === ToolType.ExecuteBash
+                            ? {
+                                  icon: 'code-block' as MynahIconsType,
+                                  body: 'Terminal command',
+                                  buttons: buttons,
+                              }
+                            : undefined,
+                    codeBlockActions:
+                        // eslint-disable-next-line unicorn/no-null
+                        toolUse?.name === ToolType.ExecuteBash ? { 'insert-to-cursor': null, copy: null } : undefined,
+                    padding: toolUse?.name === ToolType.ExecuteBash ? true : false,
                 },
                 tabID
             )

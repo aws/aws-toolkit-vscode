@@ -6,6 +6,7 @@
 import { Writable } from 'stream'
 import { getLogger } from '../../shared/logger/logger'
 import { Messenger } from '../controllers/chat/messenger/messenger'
+import { ToolUse } from '@amzn/codewhisperer-streaming'
 
 /**
  * A writable stream that feeds each chunk/line to the chat UI.
@@ -18,7 +19,7 @@ export class ChatStream extends Writable {
         private readonly messenger: Messenger,
         private readonly tabID: string,
         private readonly triggerID: string,
-        private readonly toolUseId: string | undefined,
+        private readonly toolUse: ToolUse | undefined,
         private readonly requiresAcceptance = false,
         private readonly logger = getLogger('chatStream')
     ) {
@@ -35,19 +36,20 @@ export class ChatStream extends Writable {
             this.accumulatedLogs,
             this.tabID,
             this.triggerID,
-            this.toolUseId,
+            this.toolUse,
             this.requiresAcceptance
         )
         callback()
     }
 
     override _final(callback: (error?: Error | null) => void): void {
+        this.logger.info(`this.accumulatedLogs: ${this.accumulatedLogs}`)
         if (this.accumulatedLogs.trim().length > 0) {
             this.messenger.sendPartialToolLog(
                 this.accumulatedLogs,
                 this.tabID,
                 this.triggerID,
-                this.toolUseId,
+                this.toolUse,
                 this.requiresAcceptance
             )
         }

@@ -38,6 +38,7 @@ export class UIMessageListener {
             case 'clear':
             case 'transform':
             case 'chat-prompt':
+                // listen here
                 this.processChatMessage(msg)
                 break
             case 'new-tab-was-created':
@@ -249,6 +250,7 @@ export class UIMessageListener {
         })
     }
 
+    // na yue create someting similar -> web view to mynah
     private processChatMessage(msg: any) {
         this.chatControllerMessagePublishers.processPromptChatMessage.publish({
             message: msg.chatMessage,

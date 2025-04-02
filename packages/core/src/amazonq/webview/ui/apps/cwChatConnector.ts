@@ -109,7 +109,16 @@ export class Connector extends BaseConnector {
                 title: messageData.title,
                 buttons: messageData.buttons ?? undefined,
                 fileList: messageData.fileList ?? undefined,
+                header: messageData.header ?? undefined,
+                padding: messageData.padding ?? false,
+                fullWidth: messageData.fullWidth ?? undefined,
+                codeBlockActions: messageData.codeBlockActions ?? undefined,
             }
+
+            // eslint-disable-next-line aws-toolkits/no-console-log
+            console.log('messageData', messageData)
+            // eslint-disable-next-line aws-toolkits/no-console-log
+            console.log('answer', answer)
 
             if (messageData.relatedSuggestions !== undefined) {
                 answer.relatedContent = {

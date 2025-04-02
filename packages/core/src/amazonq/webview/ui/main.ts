@@ -353,6 +353,11 @@ export const createMynahUI = (
                     ...(item.fileList !== undefined ? { fileList: item.fileList } : {}),
                     ...(item.header !== undefined ? { header: item.header } : { header: undefined }),
                     ...(item.buttons !== undefined ? { buttons: item.buttons } : { buttons: undefined }),
+                    ...(item.fullWidth !== undefined ? { fullWidth: item.fullWidth } : { fullWidth: undefined }),
+                    ...(item.padding !== undefined ? { padding: item.padding } : { padding: undefined }),
+                    ...(item.codeBlockActions !== undefined
+                        ? { codeBlockActions: item.codeBlockActions }
+                        : { codeBlockActions: undefined }),
                 })
                 if (
                     item.messageId !== undefined &&
