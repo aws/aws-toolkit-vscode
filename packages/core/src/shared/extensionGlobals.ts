@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ExtensionContext, OutputChannel, Uri } from 'vscode'
+import { ExtensionContext, OutputChannel } from 'vscode'
 import { LoginManager } from '../auth/deprecated/loginManager'
 import { AwsResourceManager } from '../dynamicResources/awsResourceManager'
 import { AWSClientBuilder } from './awsClientBuilder'
@@ -153,7 +153,6 @@ export function initialize(context: ExtensionContext, isWeb: boolean = false): T
         // eslint-disable-next-line aws-toolkits/no-banned-usages
         globalState: new GlobalState(context.globalState),
         manifestPaths: {} as ToolkitGlobals['manifestPaths'],
-        visualizationResourcePaths: {} as ToolkitGlobals['visualizationResourcePaths'],
         isWeb,
     })
     void setContext('aws.isWebExtHost', isWeb)
@@ -221,16 +220,6 @@ export interface ToolkitGlobals {
      * Keep in mind that this clock's `Date` constructor will be different than the global one when mocked.
      */
     readonly clock: Clock
-
-    visualizationResourcePaths: {
-        localWebviewScriptsPath: Uri
-        webviewBodyScript: Uri
-        visualizationLibraryCachePath: Uri
-        visualizationLibraryScript: Uri
-        visualizationLibraryCSS: Uri
-        stateMachineCustomThemePath: Uri
-        stateMachineCustomThemeCSS: Uri
-    }
 
     readonly manifestPaths: {
         endpoints: string

@@ -8,7 +8,6 @@ import globals from '../shared/extensionGlobals'
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
-import { join } from 'path'
 import * as vscode from 'vscode'
 import { AwsContext } from '../shared/awsContext'
 import { createStateMachineFromTemplate } from './commands/createStateMachineFromTemplate'
@@ -16,7 +15,6 @@ import { publishStateMachine } from './commands/publishStateMachine'
 import { Commands } from '../shared/vscode/commands2'
 
 import { ASL_FORMATS, YAML_ASL, JSON_ASL } from './constants/aslFormats'
-import { AslVisualizationCDKManager } from './commands/visualizeStateMachine/aslVisualizationCDKManager'
 import { renderCdkStateMachineGraph } from './commands/visualizeStateMachine/renderStateMachineGraphCDK'
 import { ToolkitError } from '../shared/errors'
 import { telemetry } from '../shared/telemetry/telemetry'
@@ -34,8 +32,6 @@ export async function activate(
     awsContext: AwsContext,
     outputChannel: vscode.OutputChannel
 ): Promise<void> {
-    globals.visualizationResourcePaths = initalizeWebviewPaths(extensionContext)
-
     await registerStepFunctionCommands(extensionContext, awsContext, outputChannel)
     initializeCodeLens(extensionContext)
 
@@ -88,11 +84,9 @@ async function registerStepFunctionCommands(
     awsContext: AwsContext,
     outputChannel: vscode.OutputChannel
 ): Promise<void> {
-    const cdkVisualizationManager = new AslVisualizationCDKManager(extensionContext)
-
     extensionContext.subscriptions.push(
         previewStateMachineCommand.register(),
-        renderCdkStateMachineGraph.register(cdkVisualizationManager),
+        renderCdkStateMachineGraph.register(),
         Commands.register('aws.stepfunctions.createStateMachineFromTemplate', async () => {
             try {
                 await createStateMachineFromTemplate(extensionContext)
@@ -105,29 +99,6 @@ async function registerStepFunctionCommands(
             await publishStateMachine(awsContext, outputChannel, region)
         })
     )
-}
-
-export function initalizeWebviewPaths(
-    context: vscode.ExtensionContext
-): (typeof globals)['visualizationResourcePaths'] {
-    // Location for script in body of webview that handles input from user
-    // and calls the code to render state machine graph
-
-    // Locations for script and css that render the state machine
-    const visualizationLibraryCache = join(context.globalStorageUri.fsPath, 'visualization')
-
-    return {
-        localWebviewScriptsPath: vscode.Uri.file(context.asAbsolutePath(join('resources', 'js'))),
-        webviewBodyScript: vscode.Uri.file(context.asAbsolutePath(join('resources', 'js', 'graphStateMachine.js'))),
-        visualizationLibraryCachePath: vscode.Uri.file(visualizationLibraryCache),
-        visualizationLibraryScript: vscode.Uri.file(join(visualizationLibraryCache, 'graph.js')),
-        visualizationLibraryCSS: vscode.Uri.file(join(visualizationLibraryCache, 'graph.css')),
-        // Locations for an additional stylesheet to add Light/Dark/High-Contrast theme support
-        stateMachineCustomThemePath: vscode.Uri.file(context.asAbsolutePath(join('resources', 'css'))),
-        stateMachineCustomThemeCSS: vscode.Uri.file(
-            context.asAbsolutePath(join('resources', 'css', 'stateMachineRender.css'))
-        ),
-    }
 }
 
 async function startLspServer(extensionContext: vscode.ExtensionContext) {

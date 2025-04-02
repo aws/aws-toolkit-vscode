@@ -27,8 +27,6 @@ describe('eslint', function () {
                 '**/types/*.d.ts',
                 '--ignore-pattern',
                 '**/src/testFixtures/**',
-                '--ignore-pattern',
-                '**/resources/js/graphStateMachine.js',
                 '--ext',
                 '.ts',
                 '../amazonq',

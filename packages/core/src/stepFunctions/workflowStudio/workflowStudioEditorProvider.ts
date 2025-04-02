@@ -15,6 +15,7 @@ import { getTabSizeSetting } from '../../shared/utilities/editorUtilities'
 import { WorkflowStudioEditor } from './workflowStudioEditor'
 import { i18n } from '../../shared/i18n-helper'
 import { isInvalidJsonFile, isInvalidYamlFile } from '../utils'
+import { WorkflowMode } from './types'
 
 const isLocalDev = false
 const localhost = 'http://127.0.0.1:3002'
@@ -116,7 +117,7 @@ export class WorkflowStudioEditorProvider implements vscode.CustomTextEditorProv
      * Gets the webview content for Workflow Studio.
      * @private
      */
-    private getWebviewContent = async () => {
+    private getWebviewContent = async (mode: WorkflowMode) => {
         const htmlFileSplit = this.webviewHtml.split('<head>')
 
         // Set asset source to CDN
@@ -131,7 +132,8 @@ export class WorkflowStudioEditorProvider implements vscode.CustomTextEditorProv
         const tabSizeTag = `<meta name='tab-size' content='${getTabSizeSetting()}'>`
         const darkModeTag = `<meta name='dark-mode' content='${isDarkMode}'>`
 
-        return `${htmlFileSplit[0]} <head> ${baseTag} ${localeTag} ${darkModeTag} ${tabSizeTag} ${htmlFileSplit[1]}`
+        const modeTag = `<meta name="workflow-mode" content="${mode}" />`
+        return `${htmlFileSplit[0]} <head> ${baseTag} ${localeTag} ${darkModeTag} ${tabSizeTag} ${modeTag} ${htmlFileSplit[1]}`
     }
 
     /**
@@ -146,6 +148,9 @@ export class WorkflowStudioEditorProvider implements vscode.CustomTextEditorProv
         webviewPanel: vscode.WebviewPanel,
         _token: vscode.CancellationToken
     ): Promise<void> {
+        const uriSearchParams = new URLSearchParams(document.uri.query)
+        const stateMachineName = uriSearchParams.get('statemachineName') || ''
+        const workflowMode = (uriSearchParams.get('workflowMode') as WorkflowMode) || WorkflowMode.Editable
         await telemetry.stepfunctions_openWorkflowStudio.run(async () => {
             const reopenWithDefaultEditor = async () => {
                 await vscode.commands.executeCommand('vscode.openWith', document.uri, 'default')
@@ -195,7 +200,9 @@ export class WorkflowStudioEditorProvider implements vscode.CustomTextEditorProv
                         document,
                         webviewPanel,
                         fileId,
-                        this.getWebviewContent
+                        () => this.getWebviewContent(workflowMode),
+                        workflowMode,
+                        stateMachineName
                     )
                     this.handleNewVisualization(document.uri.fsPath, newVisualization)
                 } catch (err) {
