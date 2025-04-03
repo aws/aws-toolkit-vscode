@@ -14,6 +14,7 @@ import { ConnectionMetadata } from '@aws/language-server-runtimes/protocol'
 import { Settings, oidcClientName, createServerOptions, globals, Experiments, Commands } from 'aws-core-vscode/shared'
 import { activate } from './chat/activation'
 import { AmazonQResourcePaths } from './lspInstaller'
+import { CustomizationService } from '../app/inline/customizationService'
 
 const localize = nls.loadMessageBundle()
 
@@ -106,6 +107,11 @@ export async function startLanguageServer(
         if (Experiments.instance.get('amazonqLSPInline', false)) {
             const inlineManager = new InlineCompletionManager(client)
             inlineManager.registerInlineCompletion()
+            const customizationService = new CustomizationService(client)
+            customizationService.registerCustomization()
+            if (AuthUtil.instance.isValidEnterpriseSsoInUse()) {
+                await customizationService.notifyNewCustomizations()
+            }
             toDispose.push(
                 inlineManager,
                 Commands.register({ id: 'aws.amazonq.invokeInlineCompletion', autoconnect: true }, async () => {
