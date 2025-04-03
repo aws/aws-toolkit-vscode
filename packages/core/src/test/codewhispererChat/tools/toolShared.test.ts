@@ -64,28 +64,28 @@ describe('ToolUtils', function () {
     describe('requiresAcceptance', function () {
         it('returns false for FsRead tool', function () {
             const tool: Tool = { type: ToolType.FsRead, tool: mockFsRead as unknown as FsRead }
-            assert.strictEqual(ToolUtils.requiresAcceptance(tool), false)
+            assert.strictEqual(ToolUtils.requiresAcceptance(tool).requiresAcceptance, false)
         })
 
         it('returns true for FsWrite tool', function () {
             const tool: Tool = { type: ToolType.FsWrite, tool: mockFsWrite as unknown as FsWrite }
-            assert.strictEqual(ToolUtils.requiresAcceptance(tool), true)
+            assert.strictEqual(ToolUtils.requiresAcceptance(tool).requiresAcceptance, true)
         })
 
         it('delegates to the tool for ExecuteBash', function () {
-            mockExecuteBash.requiresAcceptance.returns(true)
+            mockExecuteBash.requiresAcceptance.returns({ requiresAcceptance: true })
             const tool: Tool = { type: ToolType.ExecuteBash, tool: mockExecuteBash as unknown as ExecuteBash }
-            assert.strictEqual(ToolUtils.requiresAcceptance(tool), true)
+            assert.strictEqual(ToolUtils.requiresAcceptance(tool).requiresAcceptance, true)
 
-            mockExecuteBash.requiresAcceptance.returns(false)
-            assert.strictEqual(ToolUtils.requiresAcceptance(tool), false)
+            mockExecuteBash.requiresAcceptance.returns({ requiresAcceptance: false })
+            assert.strictEqual(ToolUtils.requiresAcceptance(tool).requiresAcceptance, false)
 
             assert(mockExecuteBash.requiresAcceptance.calledTwice)
         })
 
         it('returns false for ListDirectory tool', function () {
             const tool: Tool = { type: ToolType.ListDirectory, tool: mockListDirectory as unknown as ListDirectory }
-            assert.strictEqual(ToolUtils.requiresAcceptance(tool), false)
+            assert.strictEqual(ToolUtils.requiresAcceptance(tool).requiresAcceptance, false)
         })
     })
 

@@ -14,18 +14,18 @@ import { Range } from 'semver'
 import { getLogger } from '../logger/logger'
 import type { Logger, LogTopic } from '../logger/logger'
 
-export abstract class BaseLspInstaller<T extends ResourcePaths = ResourcePaths> {
+export abstract class BaseLspInstaller<T extends ResourcePaths = ResourcePaths, Config extends LspConfig = LspConfig> {
     private logger: Logger
 
     constructor(
-        protected config: LspConfig,
+        protected config: Config,
         loggerName: Extract<LogTopic, 'amazonqLsp' | 'amazonqWorkspaceLsp'>
     ) {
         this.logger = getLogger(loggerName)
     }
 
     async resolve(): Promise<LspResolution<T>> {
-        const { id, manifestUrl, supportedVersions, path } = this.config
+        const { id, manifestUrl, supportedVersions, path, suppressPromptPrefix } = this.config
         if (path) {
             const overrideMsg = `Using language server override location: ${path}`
             this.logger.info(overrideMsg)
@@ -38,7 +38,7 @@ export abstract class BaseLspInstaller<T extends ResourcePaths = ResourcePaths> 
             }
         }
 
-        const manifest = await new ManifestResolver(manifestUrl, id).resolve()
+        const manifest = await new ManifestResolver(manifestUrl, id, suppressPromptPrefix).resolve()
         const installationResult = await new LanguageServerResolver(
             manifest,
             id,

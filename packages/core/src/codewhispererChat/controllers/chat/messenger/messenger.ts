@@ -45,6 +45,7 @@ import { ToolType, ToolUtils } from '../../../tools/toolUtils'
 import { ChatStream } from '../../../tools/chatStream'
 import { getWorkspaceForFile } from '../../../../shared/utilities/workspaceUtils'
 import path from 'path'
+import { CommandValidation } from '../../../tools/executeBash'
 
 export type StaticTextResponseType = 'quick-action-help' | 'onboarding-help' | 'transform' | 'help'
 
@@ -220,11 +221,12 @@ export class Messenger {
                             if (tool.type === ToolType.FsWrite) {
                                 session.setShowDiffOnFileWrite(true)
                             }
-                            const requiresAcceptance = ToolUtils.requiresAcceptance(tool)
-                            const chatStream = new ChatStream(this, tabID, triggerID, toolUse, requiresAcceptance)
+                            const validation = ToolUtils.requiresAcceptance(tool)
+
+                            const chatStream = new ChatStream(this, tabID, triggerID, toolUse, validation)
                             await ToolUtils.queueDescription(tool, chatStream)
 
-                            if (!requiresAcceptance) {
+                            if (!validation.requiresAcceptance) {
                                 // Need separate id for read tool and safe bash command execution as 'confirm-tool-use' id is required to change button status from `Confirm` to `Confirmed` state in cwChatConnector.ts which will impact generic tool execution.
                                 this.dispatcher.sendCustomFormActionMessage(
                                     new CustomFormActionMessage(tabID, {
@@ -432,16 +434,20 @@ export class Messenger {
         tabID: string,
         triggerID: string,
         toolUse: ToolUse | undefined,
-        requiresAcceptance = false
+        validation: CommandValidation
     ) {
         const buttons: ChatItemButton[] = []
         let fileList: ChatItemContent['fileList'] = undefined
-        if (requiresAcceptance && toolUse?.name === ToolType.ExecuteBash) {
+        if (validation.requiresAcceptance && toolUse?.name === ToolType.ExecuteBash) {
             buttons.push({
                 id: 'confirm-tool-use',
                 text: 'Confirm',
                 status: 'info',
             })
+
+            if (validation.warning) {
+                message = validation.warning + message
+            }
         } else if (toolUse?.name === ToolType.FsWrite) {
             const absoluteFilePath = (toolUse?.input as any).path
             const projectPath = getWorkspaceForFile(absoluteFilePath)
@@ -480,7 +486,7 @@ export class Messenger {
         this.dispatcher.sendChatMessage(
             new ChatMessage(
                 {
-                    message,
+                    message: message,
                     messageType: 'answer-part',
                     followUps: undefined,
                     followUpsHeader: undefined,

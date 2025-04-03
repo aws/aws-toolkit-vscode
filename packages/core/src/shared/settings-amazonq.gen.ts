@@ -18,7 +18,9 @@ export const amazonqSettings = {
         "amazonQWelcomePage": {},
         "amazonQSessionConfigurationMessage": {},
         "minIdeVersion": {},
-        "ssoCacheError": {}
+        "ssoCacheError": {},
+        "amazonQLspManifestMessage": {},
+        "amazonQWorkspaceLspManifestMessage": {}
     },
     "amazonQ.showCodeWithReferences": {},
     "amazonQ.allowFeatureDevelopmentToRunCodeAndTests": {},
