@@ -295,9 +295,9 @@ export class Connector extends BaseConnector {
         ) {
             return
         }
+
         // Can not assign body as "undefined" or "null" because both of these values will be overriden at main.ts in onChatAnswerUpdated
         // TODO: Refactor in next PR if necessary.
-
         const currentChatItem = this.getCurrentChatItem(tabId, messageId)
         const answer: ChatItem = {
             type: ChatItemType.ANSWER,

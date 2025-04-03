@@ -69,10 +69,10 @@ export class FsWrite {
         }
     }
 
-    private generateSmartDiff(oldStr: string, newStr: string): string {
+    private showStrReplacePreview(oldStr: string, newStr: string): string {
         // Split both strings into arrays of lines
-        const oldLines = oldStr.split('\n')
-        const newLines = newStr.split('\n')
+        const oldStrLines = oldStr.split('\n')
+        const newStrLines = newStr.split('\n')
         let result = ''
 
         // If strings are identical, return empty string
@@ -80,27 +80,30 @@ export class FsWrite {
             return result
         }
 
-        let i = 0 // Index for oldLines
-        let j = 0 // Index for newLines
-
+        let oldLineIndex = 0
+        let newLineIndex = 0
         // Loop through both arrays until we've processed all lines
-        while (i < oldLines.length || j < newLines.length) {
-            if (i < oldLines.length && j < newLines.length && oldLines[i] === newLines[j]) {
+        while (oldLineIndex < oldStrLines.length || newLineIndex < newStrLines.length) {
+            if (
+                oldLineIndex < oldStrLines.length &&
+                newLineIndex < newStrLines.length &&
+                oldStrLines[oldLineIndex] === newStrLines[newLineIndex]
+            ) {
                 // Line is unchanged - prefix with space
-                result += ` ${oldLines[i]}\n`
-                i++
-                j++
+                result += ` ${oldStrLines[oldLineIndex]}\n`
+                oldLineIndex++
+                newLineIndex++
             } else {
                 // Line is different
-                if (i < oldLines.length) {
+                if (oldLineIndex < oldStrLines.length) {
                     // Remove line - prefix with minus
-                    result += `-${oldLines[i]}\n`
-                    i++
+                    result += `- ${oldStrLines[oldLineIndex]}\n`
+                    oldLineIndex++
                 }
-                if (j < newLines.length) {
+                if (newLineIndex < newStrLines.length) {
                     // Add line - prefix with plus
-                    result += `+${newLines[j]}\n`
-                    j++
+                    result += `+ ${newStrLines[newLineIndex]}\n`
+                    newLineIndex++
                 }
             }
         }
@@ -108,7 +111,7 @@ export class FsWrite {
         return result
     }
 
-    private async getInsertContext(path: string, insertLine: number, newStr: string): Promise<string> {
+    private async showInsertPreview(path: string, insertLine: number, newStr: string): Promise<string> {
         const fileContent = await fs.readFileText(path)
         const lines = fileContent.split('\n')
         const startLine = Math.max(0, insertLine - 2)
@@ -117,22 +120,22 @@ export class FsWrite {
         const contextLines: string[] = []
 
         // Add lines before insertion point
-        for (let i = startLine; i < insertLine; i++) {
-            contextLines.push(` ${lines[i]}`)
+        for (let index = startLine; index < insertLine; index++) {
+            contextLines.push(` ${lines[index]}`)
         }
 
         // Add the new line with a '+' prefix
-        contextLines.push(`+${newStr}`)
+        contextLines.push(`+ ${newStr}`)
 
         // Add lines after insertion point
-        for (let i = insertLine; i < endLine; i++) {
-            contextLines.push(` ${lines[i]}`)
+        for (let index = insertLine; index < endLine; index++) {
+            contextLines.push(` ${lines[index]}`)
         }
 
         return contextLines.join('\n')
     }
 
-    private async handleAppendContent(sanitizedPath: string, newStr: string) {
+    private async showAppendPreview(sanitizedPath: string, newStr: string) {
         const fileContent = await fs.readFileText(sanitizedPath)
         const needsNewline = fileContent.length !== 0 && !fileContent.endsWith('\n')
 
@@ -141,21 +144,14 @@ export class FsWrite {
             contentToAppend = '\n' + contentToAppend
         }
 
-        // Get the last 3 lines from existing content
+        // Get the last 3 lines from existing content for better UX
         const lines = fileContent.split('\n')
-        const last3Lines = lines.slice(-3)
+        const linesForContext = lines.slice(-3)
 
-        // Format the output with the last 3 lines and new content
-        // const formattedOutput = [
-        //     ...last3Lines,
-        //     `+ ${contentToAppend.trim()}`, // Add '+' prefix to new content
-        // ].join('\n')
-
-        return `${last3Lines.join('\n')}\n+ ${contentToAppend.trim()}` // [last3Lines, contentToAppend.trim()] // `${last3Lines.join('\n')}\n+ ${contentToAppend.trim()}`
+        return `${linesForContext.join('\n')}\n+ ${contentToAppend.trim()}`
     }
 
     public async queueDescription(updates: Writable): Promise<void> {
-        // const fileName = path.basename(this.params.path)
         switch (this.params.command) {
             case 'create':
                 updates.write(`\`\`\`diff-typescript
@@ -164,18 +160,18 @@ ${'+' + this.params.fileText?.replace(/\n/g, '\n+')}
                 break
             case 'strReplace':
                 updates.write(`\`\`\`diff-typescript
-${this.generateSmartDiff(this.params.oldStr, this.params.newStr)}
+${this.showStrReplacePreview(this.params.oldStr, this.params.newStr)}
 \`\`\`
 `)
                 break
             case 'insert':
                 updates.write(`\`\`\`diff-typescript
-${await this.getInsertContext(this.params.path, this.params.insertLine, this.params.newStr)}
+${await this.showInsertPreview(this.params.path, this.params.insertLine, this.params.newStr)}
 \`\`\``)
                 break
             case 'append':
                 updates.write(`\`\`\`diff-typescript
-${await this.handleAppendContent(this.params.path, this.params.newStr)}
+${await this.showAppendPreview(this.params.path, this.params.newStr)}
 \`\`\``)
                 break
         }
@@ -242,29 +238,20 @@ ${await this.handleAppendContent(this.params.path, this.params.newStr)}
         await fs.writeFile(sanitizedPath, newContent)
     }
 
-    private async getLineToInsert(
-        sanitizedPath: string,
-        insertLine: number,
-        newStr: string
-    ): Promise<[number, string]> {
+    private async handleInsert(params: InsertParams, sanitizedPath: string): Promise<void> {
         const fileContent = await fs.readFileText(sanitizedPath)
         const lines = fileContent.split('\n')
 
         const numLines = lines.length
-        const insertLineInFile = Math.max(0, Math.min(insertLine, numLines))
+        const insertLine = Math.max(0, Math.min(params.insertLine, numLines))
 
         let newContent: string
-        if (insertLineInFile === 0) {
-            newContent = newStr + '\n' + fileContent
+        if (insertLine === 0) {
+            newContent = params.newStr + '\n' + fileContent
         } else {
-            newContent = [...lines.slice(0, insertLineInFile), newStr, ...lines.slice(insertLineInFile)].join('\n')
+            newContent = [...lines.slice(0, insertLine), params.newStr, ...lines.slice(insertLine)].join('\n')
         }
 
-        return [insertLineInFile, newContent]
-    }
-
-    private async handleInsert(params: InsertParams, sanitizedPath: string): Promise<void> {
-        const [, newContent] = await this.getLineToInsert(sanitizedPath, params.insertLine, params.newStr)
         await fs.writeFile(sanitizedPath, newContent)
     }
 
