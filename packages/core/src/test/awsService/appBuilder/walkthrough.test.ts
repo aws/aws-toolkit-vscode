@@ -166,82 +166,93 @@ describe('AppBuilder Walkthrough', function () {
         const prevInfo = 'random text'
         assert.ok(workspaceUri)
 
-        before(async function () {
-            await fs.delete(vscode.Uri.joinPath(workspaceUri, 'template.yaml'), { force: true })
-        })
-
-        beforeEach(async function () {
-            await fs.writeFile(vscode.Uri.joinPath(workspaceUri, 'template.yaml'), prevInfo)
-        })
-
-        afterEach(async function () {
-            await fs.delete(vscode.Uri.joinPath(workspaceUri, 'template.yaml'), { force: true })
-        })
-
-        it('open existing template', async function () {
-            // Given no template exist
-            await fs.delete(vscode.Uri.joinPath(workspaceUri, 'template.yaml'), { force: true })
-            // When
-            await genWalkthroughProject('CustomTemplate', workspaceUri, undefined)
-            // Then nothing should be created
-            assert.equal(await fs.exists(vscode.Uri.joinPath(workspaceUri, 'template.yaml')), false)
-        })
-
-        it('build an app with appcomposer overwrite', async function () {
-            getTestWindow().onDidShowMessage((message) => {
-                message.selectItem('Yes')
+        describe('start without existing template', async () => {
+            beforeEach(async () => {
+                await fs.delete(vscode.Uri.joinPath(workspaceUri, 'template.yaml'), { force: true })
             })
-            // When
-            await genWalkthroughProject('Visual', workspaceUri, undefined)
-            // Then
-            assert.notEqual(await fs.readFileText(vscode.Uri.joinPath(workspaceUri, 'template.yaml')), prevInfo)
-        })
 
-        it('build an app with appcomposer no overwrite', async function () {
-            // Given
-            getTestWindow().onDidShowMessage((message) => {
-                message.selectItem('No')
-            })
-            // When
-            try {
+            it('open existing template', async function () {
                 // When
-                await genWalkthroughProject('Visual', workspaceUri, undefined)
-                assert.fail('A file named template.yaml already exists in this path.')
-            } catch (e) {
-                assert.equal((e as Error).message, 'A file named template.yaml already exists in this path.')
-            }
-            // Then
-            assert.equal(await fs.readFileText(vscode.Uri.joinPath(workspaceUri, 'template.yaml')), prevInfo)
+                await genWalkthroughProject('CustomTemplate', workspaceUri, undefined)
+                // Then nothing should be created
+                assert.ok(!(await fs.exists(vscode.Uri.joinPath(workspaceUri, 'template.yaml'))))
+            })
         })
 
-        it('download serverlessland proj', async function () {
-            // Given
-            // select overwrite
-            getTestWindow().onDidShowMessage((message) => {
-                message.selectItem('Yes')
+        describe('start with an existing template', async () => {
+            beforeEach(async () => {
+                await fs.writeFile(vscode.Uri.joinPath(workspaceUri, 'template.yaml'), prevInfo)
             })
-            // When
-            await genWalkthroughProject('API', workspaceUri, 'python')
-            // Then template should be overwritten
-            assert.equal(await fs.exists(vscode.Uri.joinPath(workspaceUri, 'template.yaml')), true)
-            assert.notEqual(await fs.readFileText(vscode.Uri.joinPath(workspaceUri, 'template.yaml')), prevInfo)
-        })
 
-        it('download serverlessland proj no overwrite', async function () {
-            // Given existing template.yaml
-            // select do not overwrite
-            getTestWindow().onDidShowMessage((message) => {
-                message.selectItem('No')
+            afterEach(async function () {
+                await fs.delete(vscode.Uri.joinPath(workspaceUri, 'template.yaml'), { force: true })
             })
-            try {
-                // When
-                await genWalkthroughProject('S3', workspaceUri, 'python')
-                assert.fail('A file named template.yaml already exists in this path.')
-            } catch (e) {
-                assert.equal((e as Error).message, 'A file named template.yaml already exists in this path.')
-            }
-            // Then no overwrite happens
-            assert.equal(await fs.readFileText(vscode.Uri.joinPath(workspaceUri, 'template.yaml')), prevInfo)
+
+            describe('override existing template', async () => {
+                beforeEach(() => {
+                    getTestWindow().onDidShowMessage((message) => {
+                        assert.strictEqual(
+                            message.message,
+                            'template.yaml already exist in the selected directory, overwrite?'
+                        )
+                        message.selectItem('Yes')
+                    })
+                })
+
+                it('build an app with appcomposer', async function () {
+                    // When
+                    await genWalkthroughProject('Visual', workspaceUri, undefined)
+                    // Then
+                    assert.notEqual(await fs.readFileText(vscode.Uri.joinPath(workspaceUri, 'template.yaml')), prevInfo)
+                })
+
+                it('download serverlessland proj', async function () {
+                    // When
+                    await genWalkthroughProject('API', workspaceUri, 'python')
+                    // Then template should be overwritten
+                    assert.equal(await fs.exists(vscode.Uri.joinPath(workspaceUri, 'template.yaml')), true)
+                    assert.notEqual(await fs.readFileText(vscode.Uri.joinPath(workspaceUri, 'template.yaml')), prevInfo)
+                })
+            })
+
+            describe('without override existing template', async () => {
+                beforeEach(() => {
+                    // Given existing template.yaml
+                    // select do not overwrite
+                    getTestWindow().onDidShowMessage((message) => {
+                        assert.strictEqual(
+                            message.message,
+                            'template.yaml already exist in the selected directory, overwrite?'
+                        )
+                        message.selectItem('No')
+                    })
+                })
+
+                it('build an app with appcomposer', async function () {
+                    // When
+                    try {
+                        // When
+                        await genWalkthroughProject('Visual', workspaceUri, undefined)
+                        assert.fail('Expect failure due to template.yaml already exists in this path, but see success.')
+                    } catch (e) {
+                        assert.equal((e as Error).message, 'A file named template.yaml already exists in this path.')
+                    }
+                    // Then
+                    assert.equal(await fs.readFileText(vscode.Uri.joinPath(workspaceUri, 'template.yaml')), prevInfo)
+                })
+
+                it('download serverlessland proj', async function () {
+                    try {
+                        // When
+                        await genWalkthroughProject('S3', workspaceUri, 'python')
+                        assert.fail('Expect failure due to template.yaml already exists in this path, but see success.')
+                    } catch (e) {
+                        assert.equal((e as Error).message, 'A file named template.yaml already exists in this path.')
+                    }
+                    // Then no overwrite happens
+                    assert.equal(await fs.readFileText(vscode.Uri.joinPath(workspaceUri, 'template.yaml')), prevInfo)
+                })
+            })
         })
     })
 
