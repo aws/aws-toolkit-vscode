@@ -587,6 +587,9 @@ export const buildSucceededChatMessage = 'I was able to build your project and w
 export const buildSucceededNotification =
     'Amazon Q was able to build your project and will start transforming your code soon.'
 
+export const buildLocallyChatMessage =
+    'I will build your project on this machine throughout the transformation process.'
+
 export const absolutePathDetectedMessage = (numPaths: number, buildFile: string, listOfPaths: string) =>
     `I detected ${numPaths} potential absolute file path(s) in your ${buildFile} file: **${listOfPaths}**. Absolute file paths might cause issues when I build your code. Any errors will show up in the build log.`
 
@@ -598,6 +601,9 @@ export const invalidMetadataFileUnsupportedSourceDB =
 
 export const invalidMetadataFileUnsupportedTargetDB =
     'I can only convert SQL for migrations to Aurora PostgreSQL or Amazon RDS for PostgreSQL target databases. The provided .sct file indicates another target database for this migration.'
+
+export const invalidYamlFileMissingKey =
+    'Your YAML file is not formatted correctly. Make sure that the .yaml file you upload follows the format of the sample file provided.'
 
 export const invalidMetadataFileErrorParsing =
     "It looks like the .sct file you provided isn't valid. Make sure that you've uploaded the .zip file you retrieved from your schema conversion in AWS DMS."
@@ -654,6 +660,12 @@ export const jobCancelledChatMessage =
     'If you want to start another transformation, choose **Start a new transformation**.'
 
 export const jobCancelledNotification = 'You cancelled the transformation.'
+
+export const continueWithoutHilMessage = 'I will continue transforming your code without upgrading this dependency.'
+
+export const enterJavaHomePlaceholder = 'Enter the path to your Java installation'
+
+export const openNewTabPlaceholder = 'Open a new tab to chat with Q'
 
 export const diffMessage = (multipleDiffs: boolean) => {
     return multipleDiffs
@@ -756,7 +768,7 @@ export const cleanInstallErrorChatMessage = `Sorry, I couldn\'t run the Maven cl
 
 export const cleanInstallErrorNotification = `Amazon Q could not run the Maven clean install command to build your project. For more information, see the [Amazon Q documentation](${codeTransformTroubleshootMvnFailure}).`
 
-export const enterJavaHomeChatMessage = 'Enter the path to JDK '
+export const enterJavaHomeChatMessage = 'Enter the path to JDK'
 
 export const projectPromptChatMessage =
     'I can upgrade your Java project. To start the transformation, I need some information from you. Choose the project you want to upgrade and the target code version to upgrade to. Then, choose Confirm.'

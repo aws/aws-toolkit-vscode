@@ -192,6 +192,8 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                 return '<p><span class="spinner status-PENDING"> ↻ </span></p>'
             case 'COMPLETED':
                 return '<p><span class="status-COMPLETED"> ✓ </span></p>'
+            case 'AWAITING_CLIENT_ACTION':
+                return '<p><span class="spinner status-PENDING"> ↻ </span></p>'
             case 'FAILED':
             default:
                 return '<p><span class="status-FAILED"> 𐔧 </span></p>'
@@ -325,7 +327,7 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
             jobPlanProgress['generatePlan'] === StepProgress.Succeeded &&
             transformByQState.isRunning()
         ) {
-            planSteps = await getTransformationSteps(transformByQState.getJobId(), false)
+            planSteps = await getTransformationSteps(transformByQState.getJobId())
             transformByQState.setPlanSteps(planSteps)
         }
         let progressHtml
@@ -347,6 +349,8 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                 CodeWhispererConstants.uploadingCodeStepMessage,
                 activeStepId === 0
             )
+            // TO-DO: remove this step entirely since we do entirely client-side builds
+            // TO-DO: do we still show the "Building in Java 17/21 environment" progress update?
             const buildMarkup =
                 activeStepId >= 1 && transformByQState.getTransformationType() !== TransformationType.SQL_CONVERSION // for SQL conversions, don't show buildCode step
                     ? simpleStep(
