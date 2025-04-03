@@ -19,6 +19,15 @@ describe('ListDirectory Tool', () => {
         await assert.rejects(listDirectory.validate(), /Path cannot be empty/i, 'Expected an error about empty path')
     })
 
+    it('throws if maxDepth is negative', async () => {
+        const listDirectory = new ListDirectory({ path: '~', maxDepth: -1 })
+        await assert.rejects(
+            listDirectory.validate(),
+            /MaxDepth cannot be negative/i,
+            'Expected an error about negative maxDepth'
+        )
+    })
+
     it('lists directory contents', async () => {
         await testFolder.mkdir('subfolder')
         await testFolder.write('fileA.txt', 'fileA content')

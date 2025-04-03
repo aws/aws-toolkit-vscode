@@ -29,6 +29,9 @@ export class ListDirectory {
         if (!this.fsPath || this.fsPath.trim().length === 0) {
             throw new Error('Path cannot be empty.')
         }
+        if (this.maxDepth !== undefined && this.maxDepth < 0) {
+            throw new Error('MaxDepth cannot be negative.')
+        }
 
         const sanitized = sanitizePath(this.fsPath)
         this.fsPath = sanitized
