@@ -50,6 +50,13 @@ module.exports = (env, argv) => {
             new webpack.IgnorePlugin({
                 resourceRegExp: /ps-list/, // matches the path in the require() statement
             }),
+            /**
+             * HACK: the glob module breaks Web mode if imported, BUT we still dynamically import this module for non web mode
+             * environments. The following allows compilation to pass by never bundling the module in the final output for web mode.
+             */
+            new webpack.IgnorePlugin({
+                resourceRegExp: /glob/, // matches the path in the require() statement
+            }),
         ],
         resolve: {
             extensions: ['.ts', '.js'],
@@ -76,6 +83,10 @@ module.exports = (env, argv) => {
                 child_process: false, // Reason for error: 'TypeError: The "original" argument must be of type Function'
                 async_hooks: false,
                 net: false,
+
+                // codewhisperer chat imports jsdom which doesn't run in web mode
+                vm: false,
+                tls: false,
             },
         },
         optimization: {

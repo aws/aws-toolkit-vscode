@@ -20,7 +20,8 @@ export const amazonqSettings = {
         "minIdeVersion": {},
         "ssoCacheError": {},
         "amazonQLspManifestMessage": {},
-        "amazonQWorkspaceLspManifestMessage": {}
+        "amazonQWorkspaceLspManifestMessage": {},
+        "amazonQChatDisclaimerAcknowledged": {}
     },
     "amazonQ.showCodeWithReferences": {},
     "amazonQ.allowFeatureDevelopmentToRunCodeAndTests": {},
