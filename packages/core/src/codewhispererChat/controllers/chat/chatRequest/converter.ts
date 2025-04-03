@@ -6,7 +6,6 @@
 import { ConversationState, CursorState, DocumentSymbol, SymbolType, TextDocument } from '@amzn/codewhisperer-streaming'
 import { AdditionalContentEntryAddition, ChatTriggerType, RelevantTextDocumentAddition, TriggerPayload } from '../model'
 import { undefinedIfEmpty } from '../../../../shared/utilities/textUtilities'
-import { tools } from '../../../constants'
 import { getLogger } from '../../../../shared/logger/logger'
 import vscode from 'vscode'
 
@@ -164,7 +163,7 @@ export function triggerPayloadToChatRequest(triggerPayload: TriggerPayload): { c
                             workspaceFolders: vscode.workspace.workspaceFolders?.map(({ uri }) => uri.fsPath) ?? [],
                         },
                         additionalContext: triggerPayload.additionalContents,
-                        tools,
+                        tools: triggerPayload.tools,
                         ...(triggerPayload.toolResults !== undefined &&
                             triggerPayload.toolResults !== null && { toolResults: triggerPayload.toolResults }),
                     },

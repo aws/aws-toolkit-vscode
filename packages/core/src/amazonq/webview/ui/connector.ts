@@ -97,6 +97,7 @@ export interface ConnectorProps {
     onUpdateAuthentication: (featureDevEnabled: boolean, authenticatingTabIDs: string[]) => void
     onNewTab: (tabType: TabType) => void
     onFileActionClick: (tabID: string, messageId: string, filePath: string, actionName: string) => void
+    onPromptInputOptionChange: (tabId: string, optionsValues: Record<string, string>, eventId?: string) => void
     handleCommand: (chatPrompt: ChatPrompt, tabId: string) => void
     sendStaticMessages: (tabID: string, messages: ChatItem[]) => void
     onContextCommandDataReceived: (message: MynahUIDataModel['contextCommands']) => void
@@ -613,6 +614,14 @@ export class Connector {
                 break
             case 'cwc':
                 this.cwChatConnector.onFileClick(tabID, filePath, messageId)
+                break
+        }
+    }
+
+    onPromptInputOptionChange = (tabId: string, optionsValues: Record<string, string>): void => {
+        switch (this.tabsStorage.getTab(tabId)?.type) {
+            case 'cwc':
+                this.cwChatConnector.onPromptInputOptionChange(tabId, optionsValues)
                 break
         }
     }

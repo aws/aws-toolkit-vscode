@@ -9,6 +9,7 @@ import {
     ChatMessage,
     Origin,
     RelevantTextDocument,
+    Tool,
     ToolResult,
     UserIntent,
 } from '@amzn/codewhisperer-streaming'
@@ -161,6 +162,13 @@ export interface FileClick {
     filePath: string
 }
 
+export interface PromptInputOptionChange {
+    command: string
+    tabID: string
+    messageId: string
+    optionsValues: Record<string, string>
+}
+
 export interface ChatItemVotedMessage {
     tabID: string
     command: string
@@ -206,6 +214,7 @@ export interface TriggerPayload {
     chatHistory?: ChatMessage[]
     toolResults?: ToolResult[]
     origin?: Origin
+    tools?: Tool[]
 }
 
 export type ContextLengths = {

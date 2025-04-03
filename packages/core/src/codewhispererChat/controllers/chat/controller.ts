@@ -32,6 +32,7 @@ import {
     DocumentReference,
     FileClick,
     RelevantTextDocumentAddition,
+    PromptInputOptionChange,
 } from './model'
 import {
     AppToWebViewMessageDispatcher,
@@ -85,6 +86,7 @@ import {
     tools,
     workspaceChunkMaxSize,
     defaultContextLengths,
+    noWriteTools,
 } from '../../constants'
 import { ChatSession } from '../../clients/chat/v0/chat'
 import { amazonQTabSuffix } from '../../../shared/constants'
@@ -118,6 +120,7 @@ export interface ChatControllerMessagePublishers {
     readonly processCustomFormAction: MessagePublisher<CustomFormActionMessage>
     readonly processContextSelected: MessagePublisher<ContextSelectedMessage>
     readonly processFileClick: MessagePublisher<FileClick>
+    readonly processPromptInputOptionChange: MessagePublisher<PromptInputOptionChange>
 }
 
 export interface ChatControllerMessageListeners {
@@ -143,6 +146,7 @@ export interface ChatControllerMessageListeners {
     readonly processCustomFormAction: MessageListener<CustomFormActionMessage>
     readonly processContextSelected: MessageListener<ContextSelectedMessage>
     readonly processFileClick: MessageListener<FileClick>
+    readonly processPromptInputOptionChange: MessageListener<PromptInputOptionChange>
 }
 
 export class ChatController {
@@ -277,6 +281,9 @@ export class ChatController {
         })
         this.chatControllerMessageListeners.processFileClick.onMessage((data) => {
             return this.processFileClickMessage(data)
+        })
+        this.chatControllerMessageListeners.processPromptInputOptionChange.onMessage((data) => {
+            return this.processPromptInputOptionChange(data)
         })
     }
 
@@ -760,6 +767,17 @@ export class ChatController {
             this.handlePromptCreate(message.tabID)
         }
     }
+
+    private async processPromptInputOptionChange(message: PromptInputOptionChange) {
+        const promptTypeValue = message.optionsValues['prompt-type']
+        // TODO: display message: You turned off pair programmer mode. Q will not include code diffs or run commands in the chat.
+        if (promptTypeValue === 'pair-programming-on') {
+            this.chatHistoryStorage.setTabAvailableTools(message.tabID, tools)
+        } else {
+            this.chatHistoryStorage.setTabAvailableTools(message.tabID, noWriteTools)
+        }
+    }
+
     private async processFileClickMessage(message: FileClick) {
         const session = this.sessionStorage.getSession(message.tabID)
         // Check if user clicked on filePath in the contextList or in the fileListTree and perform the functionality accordingly.
@@ -1326,6 +1344,7 @@ export class ChatController {
 
         triggerPayload.contextLengths.userInputContextLength = triggerPayload.message.length
         triggerPayload.contextLengths.focusFileContextLength = triggerPayload.fileText.length
+        triggerPayload.tools = this.chatHistoryStorage.getTabAvailableTools(tabID)
 
         const chatHistory = this.chatHistoryStorage.getTabHistory(tabID)
         const newUserMessage = {
@@ -1334,7 +1353,7 @@ export class ChatController {
                 userIntent: triggerPayload.userIntent,
                 ...(triggerPayload.origin && { origin: triggerPayload.origin }),
                 userInputMessageContext: {
-                    tools: tools,
+                    tools: triggerPayload.tools,
                     ...(triggerPayload.toolResults && { toolResults: triggerPayload.toolResults }),
                 },
             },

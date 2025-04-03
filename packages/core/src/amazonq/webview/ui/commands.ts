@@ -25,6 +25,7 @@ type MessageCommand =
     | 'help'
     | 'chat-item-voted'
     | 'chat-item-feedback'
+    | 'prompt-input-option-change'
     | 'link-was-clicked'
     | 'onboarding-page-interaction'
     | 'source-link-click'
