@@ -1,3 +1,14 @@
+## 1.54.0 2025-04-03
+
+- **Bug Fix** Amazon Q chat: `@prompts` not added to context
+- **Feature** Amazon Q chat: View and search chat history
+- **Feature** SageMaker Unified Studio: Disable Sign out
+- **Feature** SageMaker Unified Studio: Update Q Chat Introduction message
+- **Feature** /review: automatically generate fix without clicking Generate Fix button
+- **Feature** Amazon Q chat: Automatically persist chats between IDE sessions
+- **Feature** Save user command execution logs to plugin output.
+- **Feature** Amazon Q chat: Code blocks in chat messages have a max-height of 21 lines and can be scrolled inside
+
 ## 1.53.0 2025-03-28
 
 - **Bug Fix** Amazon Q Chat: Choosing a nested subfolder for `/doc` on Windows results in `The folder you chose did not contain any source files` error
