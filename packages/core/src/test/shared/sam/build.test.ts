@@ -280,8 +280,6 @@ describe('SAM runBuild', () => {
     let mockChildProcessClass: sinon.SinonStub
     let mockSamBuildChildProcess: sinon.SinonStub
 
-    let spyRunInterminal: sinon.SinonSpy
-
     let registry: CloudFormationTemplateRegistry
 
     // Dependency clients
@@ -295,8 +293,6 @@ describe('SAM runBuild', () => {
         // Create template.yaml in temporary test folder and add to registery
         templateFile = vscode.Uri.file(await testFolder.write('template.yaml', validTemplateData))
         await registry.addItem(templateFile)
-
-        spyRunInterminal = sandbox.spy(ProcessTerminalUtils, 'runInTerminal')
 
         mockGetSpawnEnv = sandbox.stub(ResolveEnvModule, 'getSpawnEnv').callsFake(
             sandbox.stub().resolves({
@@ -312,6 +308,8 @@ describe('SAM runBuild', () => {
     })
 
     describe(':) path', () => {
+        let spyRunInterminal: sinon.SinonSpy
+
         beforeEach(() => {
             mockGetSamCliPath = sandbox
                 .stub(SamUtilsModule, 'getSamCliPathAndVersion')
@@ -329,6 +327,7 @@ describe('SAM runBuild', () => {
                     }),
                 },
             })
+            spyRunInterminal = sandbox.spy(ProcessTerminalUtils, 'runInTerminal')
             mockChildProcessClass = sandbox.stub(ProcessUtilsModule, 'ChildProcess').returns(mockSamBuildChildProcess)
         })
 
@@ -337,10 +336,11 @@ describe('SAM runBuild', () => {
         })
 
         const verifyCorrectDependencyCall = () => {
-            assert(mockGetSamCliPath.calledOnce)
-            assert(mockChildProcessClass.calledOnce)
-            assert(mockGetSpawnEnv.calledOnce)
-            assert(spyRunInterminal.calledOnce)
+            // Prefer count comparison for debugging flakiness
+            assert.strictEqual(mockGetSamCliPath.callCount, 1)
+            assert.strictEqual(mockChildProcessClass.callCount, 1)
+            assert.strictEqual(mockGetSpawnEnv.callCount, 1)
+            assert.strictEqual(spyRunInterminal.callCount, 1)
             assert.deepEqual(spyRunInterminal.getCall(0).args, [mockSamBuildChildProcess, 'build'])
         }
 
@@ -398,7 +398,8 @@ describe('SAM runBuild', () => {
                 .build()
 
             // Invoke sync command from command palette
-            await runBuild()
+            // Instead of await runBuild(), prefer this to avoid flakiness due to race condition
+            await delayedRunBuild()
 
             assert.deepEqual(mockChildProcessClass.getCall(0).args, [
                 'sam-cli-path',
@@ -433,7 +434,8 @@ describe('SAM runBuild', () => {
                 projectRoot: projectRoot,
             }
 
-            await runBuild(new AppNode(expectedSamAppLocation))
+            // Instead of await runBuild(), prefer this to avoid flakiness due to race condition
+            await delayedRunBuild(expectedSamAppLocation)
 
             getTestWindow()
                 .getFirstMessage()
@@ -509,7 +511,8 @@ describe('SAM runBuild', () => {
                 })
                 .build()
 
-            await runBuild()
+            // Instead of await runBuild(), prefer this to avoid flakiness due to race condition
+            await delayedRunBuild()
 
             assert.deepEqual(mockChildProcessClass.getCall(0).args, [
                 'sam-cli-path',
@@ -605,14 +608,14 @@ async function runInParallel(samLocation: SamAppLocation): Promise<[SamBuildResu
 }
 
 // We add a small delay to avoid the unlikely but possible race condition.
-async function delayedRunBuild(samLocation: SamAppLocation): Promise<SamBuildResult> {
+async function delayedRunBuild(samLocation?: SamAppLocation): Promise<SamBuildResult> {
     return new Promise(async (resolve, reject) => {
         // Add a small delay before returning the build promise
         setTimeout(() => {
             // Do nothing, just let the delay pass
         }, 20)
 
-        const buildPromise = runBuild(new AppNode(samLocation))
+        const buildPromise = samLocation ? runBuild(new AppNode(samLocation)) : runBuild()
         buildPromise.then(resolve).catch(reject)
     })
 }
