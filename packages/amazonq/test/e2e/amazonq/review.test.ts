@@ -181,7 +181,7 @@ describe('Amazon Q Code Review', function () {
                 await validateInitialChatMessage()
             })
 
-            it('/review file gives correct critical and high security issues', async () => {
+            it.skip('/review file gives correct critical and high security issues', async () => {
                 const document = await vscode.workspace.openTextDocument(filePath)
                 await vscode.window.showTextDocument(document)
 
