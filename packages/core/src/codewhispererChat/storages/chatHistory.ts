@@ -188,6 +188,37 @@ export class ChatHistoryManager {
                         return newUserMessage
                     }
                 }
+            } else {
+                if (
+                    newUserMessage.userInputMessage?.userInputMessageContext?.toolResults &&
+                    newUserMessage.userInputMessage?.userInputMessageContext?.toolResults.length > 0
+                ) {
+                    // correct toolUse section of lastAssistantResponse in case of empty toolUse for user message with tool Results.
+                    const toolResults = newUserMessage.userInputMessage.userInputMessageContext.toolResults
+                    const updatedToolUses = toolResults.map((toolResult) => ({
+                        toolUseId: toolResult.toolUseId,
+                        name: lastHistoryMessage.assistantResponseMessage.toolUses?.find(
+                            (tu) => tu.toolUseId === toolResult.toolUseId
+                        )?.name,
+                        input: lastHistoryMessage.assistantResponseMessage.toolUses?.find(
+                            (tu) => tu.toolUseId === toolResult.toolUseId
+                        )?.input,
+                    }))
+
+                    // Create a new assistant response message with updated toolUses
+                    const updatedAssistantResponseMessage = {
+                        ...lastHistoryMessage.assistantResponseMessage,
+                        toolUses: updatedToolUses,
+                    }
+
+                    // Create a new chat message with the updated assistant response
+                    const updatedChatMessage: ChatMessage = {
+                        assistantResponseMessage: updatedAssistantResponseMessage,
+                    }
+
+                    // Replace the last message in history
+                    this.history[this.history.length - 1] = updatedChatMessage
+                }
             }
         }
 
@@ -216,59 +247,6 @@ export class ChatHistoryManager {
         }
     }
 
-    /**
-     * Checks if the latest message in history is an Assistant Message.
-     * If it is and doesn't have toolUse, it will be removed.
-     * If it has toolUse, an assistantResponse message with cancelled tool status will be added.
-     */
-    public checkLatestAssistantMessage(): void {
-        if (this.history.length === 0) {
-            return
-        }
-
-        const lastMessage = this.history[this.history.length - 1]
-
-        if (lastMessage.assistantResponseMessage) {
-            const toolUses = lastMessage.assistantResponseMessage.toolUses
-
-            if (!toolUses || toolUses.length === 0) {
-                // If there are no tool uses, remove the assistant message
-                this.logger.debug('Removing assistant message without tool uses')
-                this.history.pop()
-            } else {
-                // If there are tool uses, add cancelled tool results
-                const toolResults = toolUses.map((toolUse) => ({
-                    toolUseId: toolUse.toolUseId,
-                    content: [
-                        {
-                            type: 'Text',
-                            text: 'Tool use was cancelled by the user',
-                        },
-                    ],
-                    status: ToolResultStatus.ERROR,
-                }))
-
-                // Create a new user message with cancelled tool results
-                const userInputMessageContext: UserInputMessageContext = {
-                    shellState: undefined,
-                    envState: undefined,
-                    toolResults: toolResults,
-                    tools: this.tools.length === 0 ? undefined : [...this.tools],
-                }
-
-                const userMessage: ChatMessage = {
-                    userInputMessage: {
-                        content: '',
-                        userInputMessageContext: userInputMessageContext,
-                    },
-                }
-
-                this.history.push(this.formatChatHistoryMessage(userMessage))
-                this.logger.debug('Added user message with cancelled tool results')
-            }
-        }
-    }
-
     private formatChatHistoryMessage(message: ChatMessage): ChatMessage {
         if (message.userInputMessage !== undefined) {
             return {
@@ -282,5 +260,19 @@ export class ChatHistoryManager {
             }
         }
         return message
+    }
+
+    public clearRecentHistory(): void {
+        if (this.history.length === 0) {
+            return
+        }
+
+        const lastHistoryMessage = this.history[this.history.length - 1]
+
+        if (lastHistoryMessage.userInputMessage?.userInputMessageContext) {
+            this.history.pop()
+        } else if (lastHistoryMessage.assistantResponseMessage) {
+            this.history.splice(-2)
+        }
     }
 }
