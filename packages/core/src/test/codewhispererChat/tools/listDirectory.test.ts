@@ -42,7 +42,7 @@ describe('ListDirectory Tool', () => {
         await testFolder.write('fileA.txt', 'fileA content')
         await testFolder.write(path.join('subfolder', 'fileB.md'), '# fileB')
 
-        const listDirectory = new ListDirectory({ path: testFolder.path, maxDepth: -1 })
+        const listDirectory = new ListDirectory({ path: testFolder.path })
         await listDirectory.validate()
         const result = await listDirectory.invoke(process.stdout)
 

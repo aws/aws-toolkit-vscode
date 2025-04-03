@@ -89,10 +89,10 @@
                 },
                 "maxDepth": {
                     "type": "integer",
-                    "description": "Maximum depth to traverse when listing directories. Use `0` to list only the specified directory, `1` to include immediate subdirectories, etc. Use `-1` for unlimited depth (to list all subdirectories recursively)."
+                    "description": "Maximum depth to traverse when listing directories. Use `0` to list only the specified directory, `1` to include immediate subdirectories, etc. If it's not provided, it will list all subdirectories recursively."
                 }
             },
-            "required": ["path", "maxDepth"]
+            "required": ["path"]
         }
     }
 }

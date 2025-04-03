@@ -693,15 +693,16 @@ export function formatListing(name: string, fileType: vscode.FileType, fullPath:
  * You can either pass a custom callback or rely on the default `formatListing`.
  *
  * @param dirUri The folder to begin traversing
- * @param maxDepth Maximum depth to descend (0 => just this folder, -1 => unlimited depth)
+ * @param maxDepth Maximum depth to descend (0 => just this folder, if it's missing -> recursively)
  * @param customFormatCallback Optional. If given, it will override the default line-formatting
  */
 export async function readDirectoryRecursively(
     dirUri: vscode.Uri,
-    maxDepth: number,
+    maxDepth?: number,
     customFormatCallback?: (name: string, fileType: vscode.FileType, fullPath: string) => string
 ): Promise<string[]> {
     const logger = getLogger()
+    maxDepth = maxDepth ?? -1
     const depthDescription = maxDepth < 0 ? 'unlimited' : maxDepth
     logger.info(`Reading directory: ${dirUri.fsPath} to max depth: ${depthDescription}`)
 

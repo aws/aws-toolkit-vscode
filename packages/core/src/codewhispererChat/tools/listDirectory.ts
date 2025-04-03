@@ -12,12 +12,12 @@ import path from 'path'
 
 export interface ListDirectoryParams {
     path: string
-    maxDepth: number
+    maxDepth?: number
 }
 
 export class ListDirectory {
     private fsPath: string
-    private maxDepth: number
+    private maxDepth?: number
     private readonly logger = getLogger('listDirectory')
 
     constructor(params: ListDirectoryParams) {
@@ -47,10 +47,13 @@ export class ListDirectory {
 
     public queueDescription(updates: Writable): void {
         const fileName = path.basename(this.fsPath)
-        if (this.maxDepth === -1) {
+        if (this.maxDepth === undefined) {
             updates.write(`Listing directory recursively: ${fileName}`)
+        } else if (this.maxDepth === 0) {
+            updates.write(`Listing directory: ${fileName}`)
         } else {
-            updates.write(`Listing directory: ${fileName} with a depth of ${this.maxDepth}`)
+            const level = this.maxDepth > 1 ? 'levels' : 'level'
+            updates.write(`Listing directory: ${fileName} limited to ${this.maxDepth} subfolder ${level}`)
         }
         updates.end()
     }
