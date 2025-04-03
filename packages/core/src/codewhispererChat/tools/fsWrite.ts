@@ -69,6 +69,7 @@ export class FsWrite {
         }
     }
 
+    // TODO:  Refactor the fsWrite.ts file "queueDescription" method to use existing diffLines and diff library to get the diff preview. or reuse existing diff view logic in cwchat. This will be part of next PR.
     private showStrReplacePreview(oldStr: string, newStr: string): string {
         // Split both strings into arrays of lines
         const oldStrLines = oldStr.split('\n')

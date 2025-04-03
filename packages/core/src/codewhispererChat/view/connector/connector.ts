@@ -206,6 +206,17 @@ export class ContextSelectedMessage extends UiMessage {
     }
 }
 
+export type ChatItemHeader =
+    | (ChatItemContent & {
+          icon?: MynahIcons | MynahIconsType
+          status?: {
+              status?: Status
+              icon?: MynahIcons | MynahIconsType
+              text?: string
+          }
+      })
+    | null
+
 export interface ChatMessageProps {
     readonly message: string | undefined
     readonly messageType: ChatMessageType
@@ -222,16 +233,7 @@ export interface ChatMessageProps {
     readonly buttons?: ChatItemButton[]
     readonly fileList?: ChatItemContent['fileList']
     readonly canBeVoted?: boolean
-    readonly header?:
-        | (ChatItemContent & {
-              icon?: MynahIcons | MynahIconsType
-              status?: {
-                  status?: Status
-                  icon?: MynahIcons | MynahIconsType
-                  text?: string
-              }
-          })
-        | null
+    readonly header?: ChatItemHeader
     readonly fullWidth?: boolean
     readonly padding?: boolean
     readonly codeBlockActions?: CodeBlockActions | null
@@ -253,16 +255,7 @@ export class ChatMessage extends UiMessage {
     readonly title?: string
     readonly buttons?: ChatItemButton[]
     readonly fileList?: ChatItemContent['fileList']
-    readonly header?:
-        | (ChatItemContent & {
-              icon?: MynahIcons | MynahIconsType
-              status?: {
-                  status?: Status
-                  icon?: MynahIcons | MynahIconsType
-                  text?: string
-              }
-          })
-        | null
+    readonly header?: ChatItemHeader
     readonly fullWidth?: boolean
     readonly padding?: boolean
     readonly codeBlockActions?: CodeBlockActions | null

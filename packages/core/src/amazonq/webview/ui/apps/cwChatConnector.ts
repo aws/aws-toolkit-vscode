@@ -303,7 +303,7 @@ export class Connector extends BaseConnector {
             type: ChatItemType.ANSWER,
             messageId: messageId,
             buttons: [],
-            body: ' ',
+            body: undefined,
             header: currentChatItem?.header ? { ...currentChatItem.header } : {},
         }
         switch (action.id) {
@@ -315,6 +315,7 @@ export class Connector extends BaseConnector {
                         status: 'success',
                     }
                     answer.header.buttons = []
+                    answer.body = ' '
                 }
                 break
             case 'reject-code-diff':
@@ -325,6 +326,7 @@ export class Connector extends BaseConnector {
                         status: 'error',
                     }
                     answer.header.buttons = []
+                    answer.body = ' '
                 }
                 break
             case 'confirm-tool-use':
@@ -342,8 +344,6 @@ export class Connector extends BaseConnector {
             default:
                 break
         }
-        // eslint-disable-next-line aws-toolkits/no-console-log
-        console.log(`[onCustomFormAction]: ${answer.body}`)
 
         if (currentChatItem && answer.messageId) {
             const updatedItem = { ...currentChatItem, ...answer }
