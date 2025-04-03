@@ -127,6 +127,10 @@
                         "amazonQWorkspaceLspManifestMessage": {
                             "type": "boolean",
                             "default": false
+                        },
+                        "amazonQChatDisclaimerAcknowledged": {
+                            "type": "boolean",
+                            "default": false
                         }
                     },
                     "additionalProperties": false

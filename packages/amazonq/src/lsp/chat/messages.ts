@@ -10,6 +10,7 @@ import {
     CHAT_OPTIONS,
     COPY_TO_CLIPBOARD,
     AuthFollowUpType,
+    DISCLAIMER_ACKNOWLEDGED,
 } from '@aws/chat-client-ui-types'
 import {
     ChatResult,
@@ -27,6 +28,7 @@ import { Disposable, LanguageClient, Position, State, TextDocumentIdentifier } f
 import * as jose from 'jose'
 import { AmazonQChatViewProvider } from './webviewProvider'
 import { AuthUtil } from 'aws-core-vscode/codewhisperer'
+import { AmazonQPromptSettings } from 'aws-core-vscode/shared'
 
 export function registerLanguageServerEventListener(languageClient: LanguageClient, provider: AmazonQChatViewProvider) {
     languageClient.onDidChangeState(({ oldState, newState }) => {
@@ -104,6 +106,10 @@ export function registerMessageListeners(
                         )
                     }
                 }
+                break
+            }
+            case DISCLAIMER_ACKNOWLEDGED: {
+                void AmazonQPromptSettings.instance.update('amazonQChatDisclaimerAcknowledged', true)
                 break
             }
             case chatRequestType.method: {
