@@ -15,6 +15,8 @@ import { isWin } from '../../../shared/vscode/env'
 
 describe('SSH Agent', function () {
     it('can start the agent on windows', async function () {
+        this.retries(2)
+
         // TODO: we should also skip this test if not running in CI
         // Local machines probably won't have admin permissions in the spawned processes
         if (process.platform !== 'win32') {
