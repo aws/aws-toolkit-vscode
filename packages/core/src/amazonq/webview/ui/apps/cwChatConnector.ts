@@ -154,6 +154,28 @@ export class Connector extends BaseConnector {
         }
     }
 
+    private processToolMessage = async (messageData: any): Promise<void> => {
+        if (this.onChatAnswerUpdated === undefined) {
+            return
+        }
+        const answer: CWCChatItem = {
+            type: messageData.messageType,
+            messageId: messageData.messageID ?? messageData.triggerID,
+            body: messageData.message,
+            followUp: messageData.followUps,
+            canBeVoted: messageData.canBeVoted ?? false,
+            codeReference: messageData.codeReference,
+            userIntent: messageData.contextList,
+            codeBlockLanguage: messageData.codeBlockLanguage,
+            contextList: messageData.contextList,
+            title: messageData.title,
+            buttons: messageData.buttons,
+            fileList: messageData.fileList,
+        }
+        this.onChatAnswerUpdated(messageData.tabID, answer)
+        return
+    }
+
     processContextCommandData(messageData: any) {
         if (messageData.data) {
             this.onContextCommandDataReceived(messageData.data)
@@ -196,6 +218,11 @@ export class Connector extends BaseConnector {
     handleMessageReceive = async (messageData: any): Promise<void> => {
         if (messageData.type === 'chatMessage') {
             await this.processChatMessage(messageData)
+            return
+        }
+
+        if (messageData.type === 'toolMessage') {
+            await this.processToolMessage(messageData)
             return
         }
 

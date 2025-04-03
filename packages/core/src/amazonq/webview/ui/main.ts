@@ -331,6 +331,7 @@ export const createMynahUI = (
                     ...(item.followUp !== undefined ? { followUp: item.followUp } : {}),
                     ...(item.footer !== undefined ? { footer: item.footer } : {}),
                     ...(item.canBeVoted !== undefined ? { canBeVoted: item.canBeVoted } : {}),
+                    ...(item.fileList !== undefined ? { fileList: item.fileList } : {}),
                 })
             } else {
                 mynahUI.updateLastChatAnswer(tabID, {

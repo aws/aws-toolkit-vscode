@@ -14,6 +14,7 @@ import {
     OpenSettingsMessage,
     QuickActionMessage,
     ShowCustomFormMessage,
+    ToolMessage,
 } from '../../../view/connector/connector'
 import { EditorContextCommandType } from '../../../commands/registerCommands'
 import { ChatResponseStream as qdevChatResponseStream } from '@amzn/amazon-q-developer-streaming-client'
@@ -221,10 +222,34 @@ export class Messenger {
                             if (tool.type === ToolType.FsWrite) {
                                 session.setShowDiffOnFileWrite(true)
                             }
+                            if (
+                                tool.type === ToolType.FsWrite ||
+                                tool.type === ToolType.ExecuteBash ||
+                                eventCounts.has('assistantResponseEvent')
+                            ) {
+                                // FsWrite and ExecuteBash should never replace older messages
+                                // If the current stream also has assistantResponseEvent then reset this as well.
+                                session.setMessageIdToUpdate(undefined)
+                            }
                             const validation = ToolUtils.requiresAcceptance(tool)
 
-                            const chatStream = new ChatStream(this, tabID, triggerID, toolUse, validation)
+                            const chatStream = new ChatStream(
+                                this,
+                                tabID,
+                                triggerID,
+                                toolUse,
+                                validation,
+                                session.messageIdToUpdate
+                            )
                             ToolUtils.queueDescription(tool, chatStream)
+
+                            if (
+                                session.messageIdToUpdate === undefined &&
+                                (tool.type === ToolType.FsRead || tool.type === ToolType.ListDirectory)
+                            ) {
+                                // Store the first messageId in a chain of tool uses
+                                session.setMessageIdToUpdate(toolUse.toolUseId)
+                            }
 
                             if (!validation.requiresAcceptance) {
                                 // Need separate id for read tool and safe bash command execution as 'confirm-tool-use' id is required to change button status from `Confirm` to `Confirmed` state in cwChatConnector.ts which will impact generic tool execution.
@@ -429,12 +454,33 @@ export class Messenger {
         )
     }
 
+    public sendInitialToolMessage(tabID: string, triggerID: string, toolUseId: string | undefined) {
+        this.dispatcher.sendChatMessage(
+            new ChatMessage(
+                {
+                    message: '',
+                    messageType: 'answer',
+                    followUps: undefined,
+                    followUpsHeader: undefined,
+                    relatedSuggestions: undefined,
+                    triggerID,
+                    messageID: toolUseId ?? 'toolUse',
+                    userIntent: undefined,
+                    codeBlockLanguage: undefined,
+                    contextList: undefined,
+                },
+                tabID
+            )
+        )
+    }
+
     public sendPartialToolLog(
         message: string,
         tabID: string,
         triggerID: string,
         toolUse: ToolUse | undefined,
-        validation: CommandValidation
+        validation: CommandValidation,
+        messageIdToUpdate: string | undefined
     ) {
         const buttons: ChatItemButton[] = []
         let fileList: ChatItemContent['fileList'] = undefined
@@ -474,8 +520,8 @@ export class Messenger {
             })
         }
 
-        this.dispatcher.sendChatMessage(
-            new ChatMessage(
+        this.dispatcher.sendToolMessage(
+            new ToolMessage(
                 {
                     message: message,
                     messageType: 'answer-part',
@@ -483,7 +529,7 @@ export class Messenger {
                     followUpsHeader: undefined,
                     relatedSuggestions: undefined,
                     triggerID,
-                    messageID: toolUse?.toolUseId ?? `tool-output`,
+                    messageID: messageIdToUpdate ?? toolUse?.toolUseId ?? '',
                     userIntent: undefined,
                     codeBlockLanguage: undefined,
                     contextList: undefined,
