@@ -1,0 +1,38 @@
+{
+	"date": "2025-04-03",
+	"version": "1.54.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q chat: `@prompts` not added to context"
+		},
+		{
+			"type": "Feature",
+			"description": "Amazon Q chat: View and search chat history"
+		},
+		{
+			"type": "Feature",
+			"description": "SageMaker Unified Studio: Disable Sign out"
+		},
+		{
+			"type": "Feature",
+			"description": "SageMaker Unified Studio: Update Q Chat Introduction message"
+		},
+		{
+			"type": "Feature",
+			"description": "/review: automatically generate fix without clicking Generate Fix button"
+		},
+		{
+			"type": "Feature",
+			"description": "Amazon Q chat: Automatically persist chats between IDE sessions"
+		},
+		{
+			"type": "Feature",
+			"description": "Save user command execution logs to plugin output."
+		},
+		{
+			"type": "Feature",
+			"description": "Amazon Q chat: Code blocks in chat messages have a max-height of 21 lines and can be scrolled inside"
+		}
+	]
+}

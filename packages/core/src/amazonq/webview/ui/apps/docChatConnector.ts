@@ -23,7 +23,6 @@ export interface ConnectorProps extends BaseConnectorProps {
     onUpdatePromptProgress: (tabID: string, progressField: ProgressField) => void
     onChatInputEnabled: (tabID: string, enabled: boolean) => void
     onUpdateAuthentication: (featureDevEnabled: boolean, authenticatingTabIDs: string[]) => void
-    onNewTab: (tabType: TabType) => void
 }
 
 export class Connector extends BaseConnector {
@@ -32,7 +31,6 @@ export class Connector extends BaseConnector {
     private readonly updatePlaceholder
     private readonly chatInputEnabled
     private readonly onUpdateAuthentication
-    private readonly onNewTab
     private readonly updatePromptProgress
 
     override getTabType(): TabType {
@@ -46,7 +44,6 @@ export class Connector extends BaseConnector {
         this.updatePlaceholder = props.onUpdatePlaceholder
         this.chatInputEnabled = props.onChatInputEnabled
         this.onUpdateAuthentication = props.onUpdateAuthentication
-        this.onNewTab = props.onNewTab
         this.updatePromptProgress = props.onUpdatePromptProgress
     }
 
