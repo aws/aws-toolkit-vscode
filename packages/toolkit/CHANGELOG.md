@@ -1,3 +1,7 @@
+## 3.53.0 2025-04-03
+
+- **Feature** Step Functions: Use WorkflowStudio to render StateMachine Graph in CDK applications
+
 ## 3.52.0 2025-03-28
 
 - **Bug Fix** SAM build: prevent running multiple build processes for the same template
