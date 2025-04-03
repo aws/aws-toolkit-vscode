@@ -1,0 +1,10 @@
+{
+	"date": "2025-04-03",
+	"version": "3.53.0",
+	"entries": [
+		{
+			"type": "Feature",
+			"description": "Step Functions: Use WorkflowStudio to render StateMachine Graph in CDK applications"
+		}
+	]
+}
