@@ -332,15 +332,16 @@ describe('SAM runBuild', () => {
         })
 
         afterEach(() => {
+            spyRunInterminal.resetHistory()
             sandbox.restore()
         })
 
         const verifyCorrectDependencyCall = () => {
             // Prefer count comparison for debugging flakiness
-            assert.strictEqual(mockGetSamCliPath.callCount, 1)
-            assert.strictEqual(mockChildProcessClass.callCount, 1)
-            assert.strictEqual(mockGetSpawnEnv.callCount, 1)
-            assert.strictEqual(spyRunInterminal.callCount, 1)
+            assert.strictEqual(1, mockGetSamCliPath.callCount, 'GetSamCliPath')
+            assert.strictEqual(1, mockChildProcessClass.callCount, 'ChildProcessClass')
+            assert.strictEqual(1, mockGetSpawnEnv.callCount, 'GetSpawnEnv')
+            assert.strictEqual(1, spyRunInterminal.callCount, 'RunInterminal')
             assert.deepEqual(spyRunInterminal.getCall(0).args, [mockSamBuildChildProcess, 'build'])
         }
 
@@ -527,6 +528,7 @@ describe('SAM runBuild', () => {
                     },
                 },
             ])
+
             verifyCorrectDependencyCall()
             prompterTester.assertCallAll()
         })
