@@ -34,6 +34,7 @@ export class Connector extends BaseConnector {
     private readonly onContextCommandDataReceived
     private readonly onShowCustomForm
     private readonly onChatAnswerUpdated
+    private chatItems: Map<string, Map<string, ChatItem>> = new Map() // tabId -> messageId -> ChatItem
 
     override getTabType(): TabType {
         return 'cwc'
@@ -122,6 +123,10 @@ export class Connector extends BaseConnector {
                     content: messageData.relatedSuggestions,
                 }
             }
+
+            if (answer.messageId) {
+                this.storeChatItem(messageData.tabID, answer.messageId, answer)
+            }
             this.onChatAnswerReceived(messageData.tabID, answer, messageData)
 
             // Exit the function if we received an answer from AI
@@ -161,6 +166,17 @@ export class Connector extends BaseConnector {
 
             return
         }
+    }
+
+    private storeChatItem(tabId: string, messageId: string, item: ChatItem): void {
+        if (!this.chatItems.has(tabId)) {
+            this.chatItems.set(tabId, new Map())
+        }
+        this.chatItems.get(tabId)?.set(messageId, { ...item })
+    }
+
+    private getCurrentChatItem(tabId: string, messageId: string): ChatItem | undefined {
+        return this.chatItems.get(tabId)?.get(messageId)
     }
 
     processContextCommandData(messageData: any) {
@@ -281,11 +297,14 @@ export class Connector extends BaseConnector {
         }
         // Can not assign body as "undefined" or "null" because both of these values will be overriden at main.ts in onChatAnswerUpdated
         // TODO: Refactor in next PR if necessary.
+
+        const currentChatItem = this.getCurrentChatItem(tabId, messageId)
         const answer: ChatItem = {
             type: ChatItemType.ANSWER,
             messageId: messageId,
             buttons: [],
             body: ' ',
+            header: currentChatItem?.header ? { ...currentChatItem.header } : {},
         }
         switch (action.id) {
             case 'accept-code-diff':
@@ -295,6 +314,7 @@ export class Connector extends BaseConnector {
                         text: 'Accepted',
                         status: 'success',
                     }
+                    answer.header.buttons = []
                 }
                 break
             case 'reject-code-diff':
@@ -304,6 +324,7 @@ export class Connector extends BaseConnector {
                         text: 'Rejected',
                         status: 'error',
                     }
+                    answer.header.buttons = []
                 }
                 break
             case 'confirm-tool-use':
@@ -321,6 +342,14 @@ export class Connector extends BaseConnector {
             default:
                 break
         }
+        // eslint-disable-next-line aws-toolkits/no-console-log
+        console.log(`[onCustomFormAction]: ${answer.body}`)
+
+        if (currentChatItem && answer.messageId) {
+            const updatedItem = { ...currentChatItem, ...answer }
+            this.storeChatItem(tabId, answer.messageId, updatedItem)
+        }
+
         this.onChatAnswerUpdated(tabId, answer)
     }
 
