@@ -47,6 +47,7 @@ import { ChatStream } from '../../../tools/chatStream'
 import { getWorkspaceForFile } from '../../../../shared/utilities/workspaceUtils'
 import path from 'path'
 import { CommandValidation } from '../../../tools/executeBash'
+import { extractErrorInfo } from '../../../../shared/utilities/messageUtil'
 
 export type StaticTextResponseType = 'quick-action-help' | 'onboarding-help' | 'transform' | 'help'
 
@@ -326,26 +327,21 @@ export class Messenger {
             { timeout: 60000, truthy: true }
         )
             .catch((error: any) => {
-                let errorMessage = 'Error reading chat stream.'
-                let statusCode = undefined
-                let requestID = undefined
-
-                if (error instanceof CodeWhispererStreamingServiceException) {
-                    errorMessage = error.message
-                    statusCode = getHttpStatusCode(error) ?? 0
-                    requestID = getRequestId(error)
-                }
-
+                const errorInfo = extractErrorInfo(error)
                 this.showChatExceptionMessage(
-                    { errorMessage, statusCode: statusCode?.toString(), sessionID: undefined },
+                    {
+                        errorMessage: errorInfo.errorMessage,
+                        statusCode: errorInfo.statusCode?.toString(),
+                        sessionID: undefined,
+                    },
                     tabID,
-                    requestID
+                    errorInfo.requestId
                 )
-                getLogger().error(`error: ${errorMessage} tabID: ${tabID} requestID: ${requestID}`)
+                getLogger().error(`error: ${errorInfo.errorMessage} tabID: ${tabID} requestID: ${errorInfo.requestId}`)
 
                 followUps = []
                 relatedSuggestions = []
-                this.telemetryHelper.recordMessageResponseError(triggerPayload, tabID, statusCode ?? 0)
+                this.telemetryHelper.recordMessageResponseError(triggerPayload, tabID, errorInfo.statusCode ?? 0)
             })
             .finally(async () => {
                 if (

@@ -39,6 +39,7 @@ import { keys } from '../../../../shared/utilities/tsUtils'
 import { cancellingProgressField, testGenCompletedField } from '../../../models/constants'
 import { testGenState } from '../../../../codewhisperer/models/model'
 import { TelemetryHelper } from '../../../../codewhisperer/util/telemetryHelper'
+import { extractErrorInfo } from '../../../../shared/utilities/messageUtil'
 
 export type UnrecoverableErrorType = 'no-project-found' | 'no-open-file-found' | 'invalid-file-type'
 
@@ -249,26 +250,19 @@ export class Messenger {
             { timeout: 60000, truthy: true }
         )
             .catch((error: any) => {
-                let errorMessage = 'Error reading chat stream.'
-                let statusCode = undefined
-                let requestID = undefined
-                if (error instanceof CodeWhispererStreamingServiceException) {
-                    errorMessage = error.message
-                    statusCode = getHttpStatusCode(error) ?? 0
-                    requestID = getRequestId(error)
-                }
+                const errorInfo = extractErrorInfo(error)
                 let message = 'This error is reported to the team automatically. Please try sending your message again.'
-                if (errorMessage !== undefined) {
-                    message += `\n\nDetails: ${errorMessage}`
+                if (errorInfo.errorMessage !== undefined) {
+                    message += `\n\nDetails: ${errorInfo.errorMessage}`
                 }
 
-                if (statusCode !== undefined) {
-                    message += `\n\nStatus Code: ${statusCode}`
+                if (errorInfo.statusCode !== undefined) {
+                    message += `\n\nStatus Code: ${errorInfo.statusCode}`
                 }
 
-                if (requestID !== undefined) {
-                    messageId = requestID
-                    message += `\n\nRequest ID: ${requestID}`
+                if (errorInfo.requestId !== undefined) {
+                    messageId = errorInfo.requestId
+                    message += `\n\nRequest ID: ${errorInfo.requestId}`
                 }
                 this.sendMessage(message.trim(), tabID, 'answer')
             })
