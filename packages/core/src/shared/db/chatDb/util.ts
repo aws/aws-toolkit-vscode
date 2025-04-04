@@ -61,7 +61,7 @@ export type Message = {
  * Converts Message to CodeWhisperer Streaming ChatMessage
  */
 export function messageToChatMessage(msg: Message): ChatMessage {
-    return msg.type.toString() === 'answer'
+    return msg.type === ('answer' as ChatItemType)
         ? {
               assistantResponseMessage: {
                   messageId: msg.messageId,
