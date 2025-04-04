@@ -1426,7 +1426,9 @@ export class ChatController {
             }
             this.telemetryHelper.recordEnterFocusConversation(triggerEvent.tabID)
             this.telemetryHelper.recordStartConversation(triggerEvent, triggerPayload)
-            chatHistory.appendUserMessage(fixedHistoryMessage)
+            if (request.conversationState.currentMessage) {
+                chatHistory.appendUserMessage(request.conversationState.currentMessage)
+            }
 
             getLogger().info(
                 `response to tab: ${tabID} conversationID: ${session.sessionIdentifier} requestID: ${
