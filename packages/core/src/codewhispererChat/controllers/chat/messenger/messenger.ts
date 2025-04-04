@@ -438,12 +438,21 @@ export class Messenger {
     ) {
         const buttons: ChatItemButton[] = []
         let fileList: ChatItemContent['fileList'] = undefined
-        if (validation.requiresAcceptance && toolUse?.name === ToolType.ExecuteBash) {
-            buttons.push({
-                id: 'confirm-tool-use',
-                text: 'Confirm',
-                status: 'info',
-            })
+        let shellCommandHeader = undefined
+        if (toolUse?.name === ToolType.ExecuteBash && message.startsWith('```shell')) {
+            if (validation.requiresAcceptance) {
+                buttons.push({
+                    id: 'run-shell-command',
+                    text: 'Run',
+                    icon: 'play' as MynahIconsType,
+                })
+            }
+
+            shellCommandHeader = {
+                body: 'shell',
+                icon: 'code-block' as MynahIconsType,
+                buttons: buttons,
+            }
 
             if (validation.warning) {
                 message = validation.warning + message
@@ -497,16 +506,23 @@ export class Messenger {
                     codeBlockLanguage: undefined,
                     contextList: undefined,
                     canBeVoted: false,
-                    buttons: toolUse?.name === ToolType.FsWrite ? undefined : buttons,
-                    fullWidth: toolUse?.name === ToolType.FsWrite,
+                    buttons:
+                        toolUse?.name === ToolType.FsWrite || toolUse?.name === ToolType.ExecuteBash
+                            ? undefined
+                            : buttons,
+                    fullWidth: toolUse?.name === ToolType.FsWrite || toolUse?.name === ToolType.ExecuteBash,
                     padding: !(toolUse?.name === ToolType.FsWrite),
                     header:
                         toolUse?.name === ToolType.FsWrite
                             ? { icon: 'code-block' as MynahIconsType, buttons: buttons, fileList: fileList }
-                            : undefined,
+                            : toolUse?.name === ToolType.ExecuteBash
+                              ? shellCommandHeader
+                              : undefined,
                     codeBlockActions:
                         // eslint-disable-next-line unicorn/no-null, prettier/prettier
-                        toolUse?.name === ToolType.FsWrite ? { 'insert-to-cursor': null, copy: null } : undefined,
+                        toolUse?.name === ToolType.FsWrite || toolUse?.name === ToolType.ExecuteBash
+                            ? { 'insert-to-cursor': null, copy: null }
+                            : undefined,
                 },
                 tabID
             )
