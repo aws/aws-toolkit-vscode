@@ -2,15 +2,7 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import {
-    ChatMessage,
-    Tool,
-    ToolResult,
-    ToolResultStatus,
-    ToolUse,
-    UserInputMessage,
-    UserInputMessageContext,
-} from '@amzn/codewhisperer-streaming'
+import { ChatMessage, Tool, ToolResult, ToolResultStatus, ToolUse } from '@amzn/codewhisperer-streaming'
 import { randomUUID } from '../../shared/crypto'
 import { getLogger } from '../../shared/logger/logger'
 import { tools } from '../constants'
