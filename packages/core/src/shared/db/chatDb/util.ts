@@ -7,6 +7,7 @@ import path from 'path'
 
 import { TabType } from '../../../amazonq/webview/ui/storages/tabsStorage'
 import {
+    ChatItem,
     ChatItemButton,
     ChatItemType,
     DetailedListItem,
@@ -78,6 +79,18 @@ export function messageToChatMessage(msg: Message): ChatMessage {
                   userInputMessageContext: msg.userInputMessageContext || {},
               },
           }
+}
+
+/**
+ * Converts Message to MynahUI Chat Item
+ */
+export function messageToChatItem(msg: Message): ChatItem {
+    return {
+        body: msg.body,
+        type: msg.type as ChatItemType,
+        codeReference: msg.codeReference,
+        relatedContent: msg.relatedContent && msg.relatedContent?.content.length > 0 ? msg.relatedContent : undefined,
+    }
 }
 
 /**
