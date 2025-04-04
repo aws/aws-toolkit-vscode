@@ -6,12 +6,30 @@
 import vscode, { env, version } from 'vscode'
 import * as nls from 'vscode-nls'
 import * as crypto from 'crypto'
-import { LanguageClient, LanguageClientOptions } from 'vscode-languageclient'
+import { LanguageClient, LanguageClientOptions, RequestType } from 'vscode-languageclient'
 import { InlineCompletionManager } from '../app/inline/completion'
 import { AmazonQLspAuth, encryptionKey, notificationTypes } from './auth'
 import { AuthUtil } from 'aws-core-vscode/codewhisperer'
-import { ConnectionMetadata } from '@aws/language-server-runtimes/protocol'
-import { Settings, oidcClientName, createServerOptions, globals, Experiments, Commands } from 'aws-core-vscode/shared'
+import {
+    ConnectionMetadata,
+    CreateFilesParams,
+    DeleteFilesParams,
+    DidChangeWorkspaceFoldersParams,
+    DidSaveTextDocumentParams,
+    GetConfigurationFromServerParams,
+    RenameFilesParams,
+    ResponseMessage,
+    WorkspaceFolder,
+} from '@aws/language-server-runtimes/protocol'
+import {
+    Settings,
+    oidcClientName,
+    createServerOptions,
+    globals,
+    Experiments,
+    Commands,
+    oneSecond,
+} from 'aws-core-vscode/shared'
 import { activate } from './chat/activation'
 import { AmazonQResourcePaths } from './lspInstaller'
 
@@ -121,7 +139,7 @@ export async function startLanguageServer(
             activate(client, encryptionKey, resourcePaths.ui)
         }
 
-        const refreshInterval = auth.startTokenRefreshInterval()
+        const refreshInterval = auth.startTokenRefreshInterval(10 * oneSecond)
 
         toDispose.push(
             AuthUtil.instance.auth.onDidChangeActiveConnection(async () => {
@@ -129,6 +147,61 @@ export async function startLanguageServer(
             }),
             AuthUtil.instance.auth.onDidDeleteConnection(async () => {
                 client.sendNotification(notificationTypes.deleteBearerToken.method)
+            }),
+            vscode.commands.registerCommand('aws.amazonq.getWorkspaceId', async () => {
+                const requestType = new RequestType<GetConfigurationFromServerParams, ResponseMessage, Error>(
+                    'aws/getConfigurationFromServer'
+                )
+                const workspaceIdResp = await client.sendRequest(requestType.method, {
+                    section: 'aws.q.workspaceContext',
+                })
+                return workspaceIdResp
+            }),
+            vscode.workspace.onDidCreateFiles((e) => {
+                client.sendNotification('workspace/didCreateFiles', {
+                    files: e.files.map((it) => {
+                        return { uri: it.fsPath }
+                    }),
+                } as CreateFilesParams)
+            }),
+            vscode.workspace.onDidDeleteFiles((e) => {
+                client.sendNotification('workspace/didDeleteFiles', {
+                    files: e.files.map((it) => {
+                        return { uri: it.fsPath }
+                    }),
+                } as DeleteFilesParams)
+            }),
+            vscode.workspace.onDidRenameFiles((e) => {
+                client.sendNotification('workspace/didRenameFiles', {
+                    files: e.files.map((it) => {
+                        return { oldUri: it.oldUri.fsPath, newUri: it.newUri.fsPath }
+                    }),
+                } as RenameFilesParams)
+            }),
+            vscode.workspace.onDidSaveTextDocument((e) => {
+                client.sendNotification('workspace/didSaveTextDocument', {
+                    textDocument: {
+                        uri: e.uri.fsPath,
+                    },
+                } as DidSaveTextDocumentParams)
+            }),
+            vscode.workspace.onDidChangeWorkspaceFolders((e) => {
+                client.sendNotification('workspace/didChangeWorkspaceFolder', {
+                    event: {
+                        added: e.added.map((it) => {
+                            return {
+                                name: it.name,
+                                uri: it.uri.fsPath,
+                            } as WorkspaceFolder
+                        }),
+                        removed: e.removed.map((it) => {
+                            return {
+                                name: it.name,
+                                uri: it.uri.fsPath,
+                            } as WorkspaceFolder
+                        }),
+                    },
+                } as DidChangeWorkspaceFoldersParams)
             }),
             { dispose: () => clearInterval(refreshInterval) }
         )
