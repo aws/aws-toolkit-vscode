@@ -188,37 +188,6 @@ export class ChatHistoryManager {
                         return newUserMessage
                     }
                 }
-            } else {
-                if (
-                    newUserMessage.userInputMessage?.userInputMessageContext?.toolResults &&
-                    newUserMessage.userInputMessage?.userInputMessageContext?.toolResults.length > 0
-                ) {
-                    // correct toolUse section of lastAssistantResponse in case of empty toolUse for user message with tool Results.
-                    const toolResults = newUserMessage.userInputMessage.userInputMessageContext.toolResults
-                    const updatedToolUses = toolResults.map((toolResult) => ({
-                        toolUseId: toolResult.toolUseId,
-                        name: lastHistoryMessage.assistantResponseMessage.toolUses?.find(
-                            (tu) => tu.toolUseId === toolResult.toolUseId
-                        )?.name,
-                        input: lastHistoryMessage.assistantResponseMessage.toolUses?.find(
-                            (tu) => tu.toolUseId === toolResult.toolUseId
-                        )?.input,
-                    }))
-
-                    // Create a new assistant response message with updated toolUses
-                    const updatedAssistantResponseMessage = {
-                        ...lastHistoryMessage.assistantResponseMessage,
-                        toolUses: updatedToolUses,
-                    }
-
-                    // Create a new chat message with the updated assistant response
-                    const updatedChatMessage: ChatMessage = {
-                        assistantResponseMessage: updatedAssistantResponseMessage,
-                    }
-
-                    // Replace the last message in history
-                    this.history[this.history.length - 1] = updatedChatMessage
-                }
             }
         }
 

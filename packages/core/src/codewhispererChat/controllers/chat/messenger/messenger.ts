@@ -295,7 +295,7 @@ export class Messenger {
                 }
                 return true
             },
-            { timeout: 60000, truthy: true }
+            { timeout: 600000, truthy: true }
         )
             .catch((error: any) => {
                 let errorMessage = 'Error reading chat stream.'
