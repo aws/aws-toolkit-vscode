@@ -4,7 +4,6 @@
  */
 import {
     ChatMessage,
-    Tool,
     ToolResult,
     ToolResultStatus,
     UserInputMessage,
@@ -12,7 +11,8 @@ import {
 } from '@amzn/codewhisperer-streaming'
 import { randomUUID } from '../../shared/crypto'
 import { getLogger } from '../../shared/logger/logger'
-import { tools } from '../constants'
+import { tools, noWriteTools } from '../constants'
+import { ChatSessionStorage } from './chatSession'
 
 // Maximum number of messages to keep in history
 const MaxConversationHistoryLength = 100
@@ -27,12 +27,12 @@ export class ChatHistoryManager {
     private history: ChatMessage[] = []
     private logger = getLogger()
     private lastUserMessage?: ChatMessage
-    private tools: Tool[] = []
+    private sessionStorage: ChatSessionStorage
 
     constructor(tabId?: string) {
         this.conversationId = randomUUID()
         this.tabId = tabId ?? randomUUID()
-        this.tools = tools
+        this.sessionStorage = new ChatSessionStorage()
     }
 
     /**
@@ -44,10 +44,6 @@ export class ChatHistoryManager {
 
     public setConversationId(conversationId: string) {
         this.conversationId = conversationId
-    }
-
-    public setTools(tools: Tool[]) {
-        this.tools = tools
     }
 
     /**
@@ -182,11 +178,14 @@ export class ChatHistoryManager {
                             status: ToolResultStatus.ERROR,
                         }))
 
+                        const session = this.sessionStorage.getSession(this.tabId)
+                        const availableTools = session.pairProgrammingModeOn ? tools : noWriteTools
+
                         newUserMessage.userInputMessage.userInputMessageContext = {
                             shellState: undefined,
                             envState: undefined,
                             toolResults: toolResults,
-                            tools: this.tools.length === 0 ? undefined : [...this.tools],
+                            tools: availableTools.length === 0 ? undefined : [...availableTools],
                         }
 
                         return newUserMessage
@@ -203,11 +202,14 @@ export class ChatHistoryManager {
      * Adds tool results to the conversation.
      */
     addToolResults(toolResults: ToolResult[]): void {
+        const session = this.sessionStorage.getSession(this.tabId)
+        const availableTools = session.pairProgrammingModeOn ? tools : noWriteTools
+
         const userInputMessageContext: UserInputMessageContext = {
             shellState: undefined,
             envState: undefined,
             toolResults: toolResults,
-            tools: this.tools.length === 0 ? undefined : [...this.tools],
+            tools: availableTools.length === 0 ? undefined : [...availableTools],
         }
 
         const msg: UserInputMessage = {
@@ -252,12 +254,15 @@ export class ChatHistoryManager {
                     status: ToolResultStatus.ERROR,
                 }))
 
+                const session = this.sessionStorage.getSession(this.tabId)
+                const availableTools = session.pairProgrammingModeOn ? tools : noWriteTools
+
                 // Create a new user message with cancelled tool results
                 const userInputMessageContext: UserInputMessageContext = {
                     shellState: undefined,
                     envState: undefined,
                     toolResults: toolResults,
-                    tools: this.tools.length === 0 ? undefined : [...this.tools],
+                    tools: availableTools.length === 0 ? undefined : [...availableTools],
                 }
 
                 const userMessage: ChatMessage = {

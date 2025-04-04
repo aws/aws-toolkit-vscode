@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Tool } from '@amzn/codewhisperer-streaming'
 import { ChatHistoryManager } from './chatHistory'
 
 /**
@@ -40,9 +39,5 @@ export class ChatHistoryStorage {
      */
     public deleteHistory(tabId: string) {
         this.histories.delete(tabId)
-    }
-
-    public setTools(tabId: string, tools: Tool[]) {
-        this.histories.get(tabId)?.setTools(tools)
     }
 }

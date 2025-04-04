@@ -785,10 +785,8 @@ export class ChatController {
         const promptTypeValue = message.optionsValues['prompt-type']
         // TODO: display message: You turned off pair programmer mode. Q will not include code diffs or run commands in the chat.
         if (promptTypeValue === 'pair-programming-on') {
-            this.chatHistoryStorage.setTools(message.tabID, tools)
             session.setPairProgrammingModeOn(true)
         } else {
-            this.chatHistoryStorage.setTools(message.tabID, noWriteTools)
             session.setPairProgrammingModeOn(false)
         }
     }
