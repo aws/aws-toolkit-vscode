@@ -13,7 +13,7 @@ import * as vscode from 'vscode'
 import { Messenger } from './messenger/messenger'
 import { Database } from '../../../shared/db/chatDb/chatDb'
 import { TabBarButtonClick, SaveChatMessage } from './model'
-import { Conversation, Tab } from '../../../shared/db/chatDb/util'
+import { Conversation, messageToChatItem, Tab } from '../../../shared/db/chatDb/util'
 import { DetailedListItemGroup, MynahIconsType } from '@aws/mynah-ui'
 
 export class TabBarController {
@@ -87,7 +87,9 @@ export class TabBarController {
             this.messenger.sendRestoreTabMessage(
                 selectedTab.historyId,
                 selectedTab.tabType,
-                selectedTab.conversations.flatMap((conv: Conversation) => conv.messages),
+                selectedTab.conversations.flatMap((conv: Conversation) =>
+                    conv.messages.map((message) => messageToChatItem(message))
+                ),
                 exportTab
             )
         }
