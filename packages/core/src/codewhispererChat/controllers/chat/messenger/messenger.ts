@@ -498,7 +498,6 @@ export class Messenger {
                     contextList: undefined,
                     canBeVoted: false,
                     buttons: toolUse?.name === ToolType.FsWrite ? undefined : buttons,
-                    fileList: undefined,
                     fullWidth: toolUse?.name === ToolType.FsWrite,
                     padding: !(toolUse?.name === ToolType.FsWrite),
                     header:

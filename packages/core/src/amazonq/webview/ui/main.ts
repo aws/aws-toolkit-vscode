@@ -331,7 +331,7 @@ export const createMynahUI = (
                     ...(item.followUp !== undefined ? { followUp: item.followUp } : {}),
                     ...(item.footer !== undefined ? { footer: item.footer } : {}),
                     ...(item.canBeVoted !== undefined ? { canBeVoted: item.canBeVoted } : {}),
-                    ...(item.header !== undefined ? { header: item.header } : { header: undefined }),
+                    ...(item.header !== undefined ? { header: item.header } : {}),
                 })
             } else {
                 mynahUI.updateLastChatAnswer(tabID, {
@@ -340,7 +340,7 @@ export const createMynahUI = (
                     ...(item.followUp !== undefined ? { followUp: item.followUp } : {}),
                     ...(item.footer !== undefined ? { footer: item.footer } : {}),
                     ...(item.canBeVoted !== undefined ? { canBeVoted: item.canBeVoted } : {}),
-                    ...(item.header !== undefined ? { header: item.header } : { header: undefined }),
+                    ...(item.header !== undefined ? { header: item.header } : {}),
                 })
             }
         },
@@ -354,13 +354,11 @@ export const createMynahUI = (
                     ...(item.relatedContent !== undefined ? { relatedContent: item.relatedContent } : {}),
                     ...(item.followUp !== undefined ? { followUp: item.followUp } : {}),
                     ...(item.fileList !== undefined ? { fileList: item.fileList } : {}),
-                    ...(item.header !== undefined ? { header: item.header } : { header: undefined }),
-                    ...(item.buttons !== undefined ? { buttons: item.buttons } : { buttons: undefined }),
-                    ...(item.fullWidth !== undefined ? { fullWidth: item.fullWidth } : { fullWidth: undefined }),
-                    ...(item.padding !== undefined ? { padding: item.padding } : { padding: undefined }),
-                    ...(item.codeBlockActions !== undefined
-                        ? { codeBlockActions: item.codeBlockActions }
-                        : { codeBlockActions: undefined }),
+                    ...(item.header !== undefined ? { header: item.header } : {}),
+                    ...(item.buttons !== undefined ? { buttons: item.buttons } : {}),
+                    ...(item.fullWidth !== undefined ? { fullWidth: item.fullWidth } : {}),
+                    ...(item.padding !== undefined ? { padding: item.padding } : {}),
+                    ...(item.codeBlockActions !== undefined ? { codeBlockActions: item.codeBlockActions } : {}),
                 })
                 if (
                     item.messageId !== undefined &&
