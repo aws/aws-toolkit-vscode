@@ -2,14 +2,7 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import {
-    ChatMessage,
-    Tool,
-    ToolResult,
-    ToolResultStatus,
-    UserInputMessage,
-    UserInputMessageContext,
-} from '@amzn/codewhisperer-streaming'
+import { ChatMessage, Tool, ToolResult, ToolResultStatus, ToolUse } from '@amzn/codewhisperer-streaming'
 import { randomUUID } from '../../shared/crypto'
 import { getLogger } from '../../shared/logger/logger'
 import { tools } from '../constants'
@@ -105,168 +98,99 @@ export class ChatHistoryManager {
      *    message is set without tool results, then the user message will have cancelled tool results.
      */
     public fixHistory(newUserMessage: ChatMessage): ChatMessage {
-        // Trim the conversation history if it exceeds the maximum length
-        if (this.history.length > MaxConversationHistoryLength) {
-            // Find the second oldest user message without tool results
-            let indexToTrim: number | undefined
+        this.trimConversationHistory()
+        this.ensureLastMessageFromAssistant()
+        return this.handleToolUses(newUserMessage)
+    }
 
-            for (let i = 1; i < this.history.length; i++) {
-                const message = this.history[i]
-                if (message.userInputMessage) {
-                    const userMessage = message.userInputMessage
-                    const ctx = userMessage.userInputMessageContext
-                    const hasNoToolResults = ctx && (!ctx.toolResults || ctx.toolResults.length === 0)
-                    if (hasNoToolResults && userMessage.content !== '') {
-                        indexToTrim = i
-                        break
-                    }
-                }
-            }
-            if (indexToTrim !== undefined) {
-                this.logger.debug(`Removing the first ${indexToTrim} elements in the history`)
-                this.history.splice(0, indexToTrim)
-            } else {
-                this.logger.debug('No valid starting user message found in the history, clearing')
-                this.history = []
-            }
+    private trimConversationHistory(): void {
+        if (this.history.length <= MaxConversationHistoryLength) {
+            return
         }
 
-        // Ensure the last message is from the assistant
+        const indexToTrim = this.findIndexToTrim()
+        if (indexToTrim !== undefined) {
+            this.logger.debug(`Removing the first ${indexToTrim} elements in the history`)
+            this.history.splice(0, indexToTrim)
+        } else {
+            this.logger.debug('No valid starting user message found in the history, clearing')
+            this.history = []
+        }
+    }
+
+    private findIndexToTrim(): number | undefined {
+        for (let i = 1; i < this.history.length; i++) {
+            const message = this.history[i]
+            if (this.isValidUserMessageWithoutToolResults(message)) {
+                return i
+            }
+        }
+        return undefined
+    }
+
+    private isValidUserMessageWithoutToolResults(message: ChatMessage): boolean {
+        if (!message.userInputMessage) {
+            return false
+        }
+        const ctx = message.userInputMessage.userInputMessageContext
+        return Boolean(
+            ctx && (!ctx.toolResults || ctx.toolResults.length === 0) && message.userInputMessage.content !== ''
+        )
+    }
+
+    private ensureLastMessageFromAssistant(): void {
         if (this.history.length > 0 && this.history[this.history.length - 1].userInputMessage !== undefined) {
             this.logger.debug('Last message in history is from the user, dropping')
             this.history.pop()
         }
+    }
 
-        // If the last message from the assistant contains tool uses, ensure the next user message contains tool results
-
+    private handleToolUses(newUserMessage: ChatMessage): ChatMessage {
         const lastHistoryMessage = this.history[this.history.length - 1]
+        if (!lastHistoryMessage || !lastHistoryMessage.assistantResponseMessage || !newUserMessage) {
+            return newUserMessage
+        }
 
-        if (
-            lastHistoryMessage &&
-            (lastHistoryMessage.assistantResponseMessage ||
-                lastHistoryMessage.assistantResponseMessage !== undefined) &&
-            newUserMessage
-        ) {
-            const toolUses = lastHistoryMessage.assistantResponseMessage.toolUses
+        const toolUses = lastHistoryMessage.assistantResponseMessage.toolUses
+        if (!toolUses || toolUses.length === 0) {
+            return newUserMessage
+        }
 
-            if (toolUses && toolUses.length > 0) {
-                if (newUserMessage.userInputMessage) {
-                    if (newUserMessage.userInputMessage.userInputMessageContext) {
-                        const ctx = newUserMessage.userInputMessage.userInputMessageContext
+        return this.addToolResultsToUserMessage(newUserMessage, toolUses)
+    }
 
-                        if (!ctx.toolResults || ctx.toolResults.length === 0) {
-                            ctx.toolResults = toolUses.map((toolUse) => ({
-                                toolUseId: toolUse.toolUseId,
-                                content: [
-                                    {
-                                        type: 'Text',
-                                        text: 'Tool use was cancelled by the user',
-                                    },
-                                ],
-                                status: ToolResultStatus.ERROR,
-                            }))
-                        }
-                    } else {
-                        const toolResults = toolUses.map((toolUse) => ({
-                            toolUseId: toolUse.toolUseId,
-                            content: [
-                                {
-                                    type: 'Text',
-                                    text: 'Tool use was cancelled by the user',
-                                },
-                            ],
-                            status: ToolResultStatus.ERROR,
-                        }))
+    private addToolResultsToUserMessage(newUserMessage: ChatMessage, toolUses: ToolUse[]): ChatMessage {
+        if (!newUserMessage.userInputMessage) {
+            return newUserMessage
+        }
 
-                        newUserMessage.userInputMessage.userInputMessageContext = {
-                            shellState: undefined,
-                            envState: undefined,
-                            toolResults: toolResults,
-                            tools: this.tools.length === 0 ? undefined : [...this.tools],
-                        }
+        const toolResults = this.createToolResults(toolUses)
 
-                        return newUserMessage
-                    }
-                }
+        if (newUserMessage.userInputMessage.userInputMessageContext) {
+            newUserMessage.userInputMessage.userInputMessageContext.toolResults = toolResults
+        } else {
+            newUserMessage.userInputMessage.userInputMessageContext = {
+                shellState: undefined,
+                envState: undefined,
+                toolResults: toolResults,
+                tools: this.tools.length === 0 ? undefined : [...this.tools],
             }
         }
 
-        // Always return the message to fix the TypeScript error
         return newUserMessage
     }
 
-    /**
-     * Adds tool results to the conversation.
-     */
-    addToolResults(toolResults: ToolResult[]): void {
-        const userInputMessageContext: UserInputMessageContext = {
-            shellState: undefined,
-            envState: undefined,
-            toolResults: toolResults,
-            tools: this.tools.length === 0 ? undefined : [...this.tools],
-        }
-
-        const msg: UserInputMessage = {
-            content: '',
-            userInputMessageContext: userInputMessageContext,
-        }
-
-        if (this.lastUserMessage?.userInputMessage) {
-            this.lastUserMessage.userInputMessage = msg
-        }
-    }
-
-    /**
-     * Checks if the latest message in history is an Assistant Message.
-     * If it is and doesn't have toolUse, it will be removed.
-     * If it has toolUse, an assistantResponse message with cancelled tool status will be added.
-     */
-    public checkLatestAssistantMessage(): void {
-        if (this.history.length === 0) {
-            return
-        }
-
-        const lastMessage = this.history[this.history.length - 1]
-
-        if (lastMessage.assistantResponseMessage) {
-            const toolUses = lastMessage.assistantResponseMessage.toolUses
-
-            if (!toolUses || toolUses.length === 0) {
-                // If there are no tool uses, remove the assistant message
-                this.logger.debug('Removing assistant message without tool uses')
-                this.history.pop()
-            } else {
-                // If there are tool uses, add cancelled tool results
-                const toolResults = toolUses.map((toolUse) => ({
-                    toolUseId: toolUse.toolUseId,
-                    content: [
-                        {
-                            type: 'Text',
-                            text: 'Tool use was cancelled by the user',
-                        },
-                    ],
-                    status: ToolResultStatus.ERROR,
-                }))
-
-                // Create a new user message with cancelled tool results
-                const userInputMessageContext: UserInputMessageContext = {
-                    shellState: undefined,
-                    envState: undefined,
-                    toolResults: toolResults,
-                    tools: this.tools.length === 0 ? undefined : [...this.tools],
-                }
-
-                const userMessage: ChatMessage = {
-                    userInputMessage: {
-                        content: '',
-                        userInputMessageContext: userInputMessageContext,
-                    },
-                }
-
-                this.history.push(this.formatChatHistoryMessage(userMessage))
-                this.logger.debug('Added user message with cancelled tool results')
-            }
-        }
+    private createToolResults(toolUses: ToolUse[]): ToolResult[] {
+        return toolUses.map((toolUse) => ({
+            toolUseId: toolUse.toolUseId,
+            content: [
+                {
+                    type: 'Text',
+                    text: 'Tool use was cancelled by the user',
+                },
+            ],
+            status: ToolResultStatus.ERROR,
+        }))
     }
 
     private formatChatHistoryMessage(message: ChatMessage): ChatMessage {
@@ -282,5 +206,19 @@ export class ChatHistoryManager {
             }
         }
         return message
+    }
+
+    public clearRecentHistory(): void {
+        if (this.history.length === 0) {
+            return
+        }
+
+        const lastHistoryMessage = this.history[this.history.length - 1]
+
+        if (lastHistoryMessage.userInputMessage?.userInputMessageContext) {
+            this.history.pop()
+        } else if (lastHistoryMessage.assistantResponseMessage) {
+            this.history.splice(-2)
+        }
     }
 }

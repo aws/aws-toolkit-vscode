@@ -375,6 +375,7 @@ export class ChatController {
     private async processStopResponseMessage(message: StopResponseMessage) {
         const session = this.sessionStorage.getSession(message.tabID)
         session.tokenSource.cancel()
+        this.chatHistoryStorage.getTabHistory(message.tabID).clearRecentHistory()
     }
 
     private async processTriggerTabIDReceived(message: TriggerTabIDReceived) {
@@ -721,6 +722,8 @@ export class ChatController {
                 const session = this.sessionStorage.getSession(tabID)
                 const toolUse = session.toolUse
                 if (!toolUse || !toolUse.input) {
+                    // Turn off AgentLoop flag if there's no tool use
+                    this.sessionStorage.setAgentLoopInProgress(tabID, false)
                     return
                 }
                 session.setToolUse(undefined)
@@ -794,7 +797,6 @@ export class ChatController {
                         customization: getSelectedCustomization(),
                         toolResults: toolResults,
                         origin: Origin.IDE,
-                        chatHistory: this.chatHistoryStorage.getTabHistory(tabID).getHistory(),
                         context: session.context ?? [],
                         relevantTextDocuments: [],
                         additionalContents: [],
@@ -985,10 +987,16 @@ export class ChatController {
             errorMessage = e.message
         }
 
+        // Turn off AgentLoop flag in case of exception
+        if (tabID) {
+            this.sessionStorage.setAgentLoopInProgress(tabID, false)
+        }
+
         this.messenger.sendErrorMessage(errorMessage, tabID, requestID)
         getLogger().error(`error: ${errorMessage} tabID: ${tabID} requestID: ${requestID}`)
 
         this.sessionStorage.deleteSession(tabID)
+        this.chatHistoryStorage.getTabHistory(tabID).clearRecentHistory()
     }
 
     private async processContextMenuCommand(command: EditorContextCommand) {
@@ -1148,7 +1156,6 @@ export class ChatController {
                     codeQuery: lastTriggerEvent.context?.focusAreaContext?.names,
                     userIntent: message.userIntent,
                     customization: getSelectedCustomization(),
-                    chatHistory: this.chatHistoryStorage.getTabHistory(message.tabID).getHistory(),
                     contextLengths: {
                         ...defaultContextLengths,
                     },
@@ -1197,7 +1204,6 @@ export class ChatController {
                         codeQuery: context?.focusAreaContext?.names,
                         userIntent: undefined,
                         customization: getSelectedCustomization(),
-                        chatHistory: this.chatHistoryStorage.getTabHistory(message.tabID).getHistory(),
                         origin: Origin.IDE,
                         context: message.context ?? [],
                         relevantTextDocuments: [],
@@ -1379,6 +1385,16 @@ export class ChatController {
         }
 
         const tabID = triggerEvent.tabID
+        if (this.sessionStorage.isAgentLoopInProgress(tabID)) {
+            // If a response is already in progress, stop it first
+            const stopResponseMessage: StopResponseMessage = {
+                tabID: tabID,
+            }
+            await this.processStopResponseMessage(stopResponseMessage)
+        }
+
+        // Ensure AgentLoop flag is set to true during response generation
+        this.sessionStorage.setAgentLoopInProgress(tabID, true)
 
         const credentialsState = await AuthUtil.instance.getChatAuthState()
 
@@ -1442,6 +1458,7 @@ export class ChatController {
         if (fixedHistoryMessage.userInputMessage?.userInputMessageContext) {
             triggerPayload.toolResults = fixedHistoryMessage.userInputMessage.userInputMessageContext.toolResults
         }
+        triggerPayload.chatHistory = chatHistory.getHistory()
         const request = triggerPayloadToChatRequest(triggerPayload)
         const conversationId = chatHistory.getConversationId() || randomUUID()
         chatHistory.setConversationId(conversationId)
@@ -1496,7 +1513,9 @@ export class ChatController {
             }
             this.telemetryHelper.recordEnterFocusConversation(triggerEvent.tabID)
             this.telemetryHelper.recordStartConversation(triggerEvent, triggerPayload)
-            chatHistory.appendUserMessage(fixedHistoryMessage)
+            if (request.conversationState.currentMessage) {
+                chatHistory.appendUserMessage(request.conversationState.currentMessage)
+            }
 
             getLogger().info(
                 `response to tab: ${tabID} conversationID: ${session.sessionIdentifier} requestID: ${
@@ -1504,8 +1523,13 @@ export class ChatController {
                 } metadata: ${inspect(response.$metadata, { depth: 12 })}`
             )
             await this.messenger.sendAIResponse(response, session, tabID, triggerID, triggerPayload, chatHistory)
+
+            // Turn off AgentLoop flag after sending the AI response
+            this.sessionStorage.setAgentLoopInProgress(tabID, false)
         } catch (e: any) {
             this.telemetryHelper.recordMessageResponseError(triggerPayload, tabID, getHttpStatusCode(e) ?? 0)
+            // Turn off AgentLoop flag in case of exception
+            this.sessionStorage.setAgentLoopInProgress(tabID, false)
             // clears session, record telemetry before this call
             this.processException(e, tabID)
         }
