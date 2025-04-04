@@ -224,6 +224,27 @@ export async function addEofNewline(editor: vscode.TextEditor) {
     }
 }
 
+/**
+ * Determines the language identifier for a file at the specified path.
+ * This function attempts to open the file as a VS Code document to retrieve its language ID.
+ *
+ * @param {string} filePath - The absolute or relative path to the file whose language should be determined.
+ * @returns {Promise<string | undefined>} A promise that resolves to the language identifier of the file,
+ *                                        or undefined if the file cannot be opened or the language cannot be determined.
+ * @example
+ * // Get language for a JavaScript file
+ * const language = await getLanguageForFilePath('/path/to/file.js');
+ * // language will be 'javascript'
+ */
+export async function getLanguageForFilePath(filePath: string): Promise<string | undefined> {
+    try {
+        const document = await vscode.workspace.openTextDocument(filePath)
+        return document.languageId
+    } catch (err) {
+        return
+    }
+}
+
 class ReadonlyTextDocumentProvider implements vscode.TextDocumentContentProvider {
     private content = ''
 
