@@ -8,6 +8,9 @@ import { getLogger } from '../../shared/logger/logger'
 import vscode from 'vscode'
 import { fs } from '../../shared/fs/fs'
 import { Writable } from 'stream'
+import { Change, diffLines } from 'diff'
+import { getDiffMarkdown } from '../../shared/utilities/diffUtils'
+import { getLanguageForFilePath } from '../../shared/utilities/textDocumentUtilities'
 
 interface BaseParams {
     path: string
@@ -69,114 +72,40 @@ export class FsWrite {
         }
     }
 
-    // TODO:  Refactor the fsWrite.ts file "queueDescription" method to use existing diffLines and diff library to get the diff preview. or reuse existing diff view logic in cwchat. This will be part of next PR.
-    private showStrReplacePreview(oldStr: string, newStr: string): string {
-        // Split both strings into arrays of lines
-        const oldStrLines = oldStr.split('\n')
-        const newStrLines = newStr.split('\n')
-        let result = ''
-
-        // If strings are identical, return empty string
-        if (oldStr === newStr) {
-            return result
-        }
-
-        let oldLineIndex = 0
-        let newLineIndex = 0
-        // Loop through both arrays until we've processed all lines
-        while (oldLineIndex < oldStrLines.length || newLineIndex < newStrLines.length) {
-            if (
-                oldLineIndex < oldStrLines.length &&
-                newLineIndex < newStrLines.length &&
-                oldStrLines[oldLineIndex] === newStrLines[newLineIndex]
-            ) {
-                // Line is unchanged - prefix with space
-                result += ` ${oldStrLines[oldLineIndex]}\n`
-                oldLineIndex++
-                newLineIndex++
-            } else {
-                // Line is different
-                if (oldLineIndex < oldStrLines.length) {
-                    // Remove line - prefix with minus
-                    result += `- ${oldStrLines[oldLineIndex]}\n`
-                    oldLineIndex++
-                }
-                if (newLineIndex < newStrLines.length) {
-                    // Add line - prefix with plus
-                    result += `+ ${newStrLines[newLineIndex]}\n`
-                    newLineIndex++
-                }
-            }
-        }
-
-        return result
-    }
-
-    private async showInsertPreview(path: string, insertLine: number, newStr: string): Promise<string> {
-        const fileContent = await fs.readFileText(path)
-        const lines = fileContent.split('\n')
-        const startLine = Math.max(0, insertLine - 2)
-        const endLine = Math.min(lines.length, insertLine + 3)
-
-        const contextLines: string[] = []
-
-        // Add lines before insertion point
-        for (let index = startLine; index < insertLine; index++) {
-            contextLines.push(` ${lines[index]}`)
-        }
-
-        // Add the new line with a '+' prefix
-        contextLines.push(`+ ${newStr}`)
-
-        // Add lines after insertion point
-        for (let index = insertLine; index < endLine; index++) {
-            contextLines.push(` ${lines[index]}`)
-        }
-
-        return contextLines.join('\n')
-    }
-
-    private async showAppendPreview(sanitizedPath: string, newStr: string) {
-        const fileContent = await fs.readFileText(sanitizedPath)
-        const needsNewline = fileContent.length !== 0 && !fileContent.endsWith('\n')
-
-        let contentToAppend = newStr
-        if (needsNewline) {
-            contentToAppend = '\n' + contentToAppend
-        }
-
-        // Get the last 3 lines from existing content for better UX
-        const lines = fileContent.split('\n')
-        const linesForContext = lines.slice(-3)
-
-        return `${linesForContext.join('\n')}\n+ ${contentToAppend.trim()}`
-    }
-
     public async queueDescription(updates: Writable): Promise<void> {
+        const sanitizedPath = sanitizePath(this.params.path)
+        const changes = await this.getDiffChanges()
+        const language = await getLanguageForFilePath(sanitizedPath)
+
+        const diff = getDiffMarkdown(changes, language)
+        updates.write(diff)
+        updates.end()
+    }
+
+    public async getDiffChanges(): Promise<Change[]> {
+        const sanitizedPath = sanitizePath(this.params.path)
+        let newContent
+        let oldContent
+        try {
+            oldContent = await fs.readFileText(sanitizedPath)
+        } catch (err) {
+            oldContent = ''
+        }
         switch (this.params.command) {
             case 'create':
-                updates.write(`\`\`\`diff-typescript
-${'+' + this.params.fileText?.replace(/\n/g, '\n+')}
-                    `)
+                newContent = this.getCreateCommandText(this.params)
                 break
             case 'strReplace':
-                updates.write(`\`\`\`diff-typescript
-${this.showStrReplacePreview(this.params.oldStr, this.params.newStr)}
-\`\`\`
-`)
+                newContent = await this.getStrReplaceContent(this.params, sanitizedPath)
                 break
             case 'insert':
-                updates.write(`\`\`\`diff-typescript
-${await this.showInsertPreview(this.params.path, this.params.insertLine, this.params.newStr)}
-\`\`\``)
+                newContent = await this.getInsertContent(this.params, sanitizedPath)
                 break
             case 'append':
-                updates.write(`\`\`\`diff-typescript
-${await this.showAppendPreview(this.params.path, this.params.newStr)}
-\`\`\``)
+                newContent = await this.getAppendContent(this.params, sanitizedPath)
                 break
         }
-        updates.end()
+        return diffLines(oldContent, newContent)
     }
 
     public async validate(): Promise<void> {
@@ -224,6 +153,11 @@ ${await this.showAppendPreview(this.params.path, this.params.newStr)}
     }
 
     private async handleStrReplace(params: StrReplaceParams, sanitizedPath: string): Promise<void> {
+        const newContent = await this.getStrReplaceContent(params, sanitizedPath)
+        await fs.writeFile(sanitizedPath, newContent)
+    }
+
+    private async getStrReplaceContent(params: StrReplaceParams, sanitizedPath: string): Promise<string> {
         const fileContent = await fs.readFileText(sanitizedPath)
 
         const matches = [...fileContent.matchAll(new RegExp(this.escapeRegExp(params.oldStr), 'g'))]
@@ -235,11 +169,15 @@ ${await this.showAppendPreview(this.params.path, this.params.newStr)}
             throw new Error(`${matches.length} occurrences of oldStr were found when only 1 is expected`)
         }
 
-        const newContent = fileContent.replace(params.oldStr, params.newStr)
-        await fs.writeFile(sanitizedPath, newContent)
+        return fileContent.replace(params.oldStr, params.newStr)
     }
 
     private async handleInsert(params: InsertParams, sanitizedPath: string): Promise<void> {
+        const newContent = await this.getInsertContent(params, sanitizedPath)
+        await fs.writeFile(sanitizedPath, newContent)
+    }
+
+    private async getInsertContent(params: InsertParams, sanitizedPath: string): Promise<string> {
         const fileContent = await fs.readFileText(sanitizedPath)
         const lines = fileContent.split('\n')
 
@@ -252,11 +190,15 @@ ${await this.showAppendPreview(this.params.path, this.params.newStr)}
         } else {
             newContent = [...lines.slice(0, insertLine), params.newStr, ...lines.slice(insertLine)].join('\n')
         }
-
-        await fs.writeFile(sanitizedPath, newContent)
+        return newContent
     }
 
     private async handleAppend(params: AppendParams, sanitizedPath: string): Promise<void> {
+        const newContent = await this.getAppendContent(params, sanitizedPath)
+        await fs.writeFile(sanitizedPath, newContent)
+    }
+
+    private async getAppendContent(params: AppendParams, sanitizedPath: string): Promise<string> {
         const fileContent = await fs.readFileText(sanitizedPath)
         const needsNewline = fileContent.length !== 0 && !fileContent.endsWith('\n')
 
@@ -265,8 +207,7 @@ ${await this.showAppendPreview(this.params.path, this.params.newStr)}
             contentToAppend = '\n' + contentToAppend
         }
 
-        const newContent = fileContent + contentToAppend
-        await fs.writeFile(sanitizedPath, newContent)
+        return fileContent + contentToAppend
     }
 
     private getCreateCommandText(params: CreateParams): string {

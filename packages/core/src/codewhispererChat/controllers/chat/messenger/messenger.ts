@@ -44,9 +44,10 @@ import { ChatItemButton, ChatItemContent, ChatItemFormItem, MynahIconsType, Myna
 import { ChatHistoryManager } from '../../../storages/chatHistory'
 import { ToolType, ToolUtils } from '../../../tools/toolUtils'
 import { ChatStream } from '../../../tools/chatStream'
-import { getWorkspaceForFile } from '../../../../shared/utilities/workspaceUtils'
 import path from 'path'
 import { CommandValidation } from '../../../tools/executeBash'
+import { Change } from 'diff'
+import { FsWriteParams } from '../../../tools/fsWrite'
 
 export type StaticTextResponseType = 'quick-action-help' | 'onboarding-help' | 'transform' | 'help'
 
@@ -219,8 +220,10 @@ export class Messenger {
 
                         const tool = ToolUtils.tryFromToolUse(toolUse)
                         if ('type' in tool) {
+                            let changeList: Change[] | undefined = undefined
                             if (tool.type === ToolType.FsWrite) {
                                 session.setShowDiffOnFileWrite(true)
+                                changeList = await tool.tool.getDiffChanges()
                             }
                             if (
                                 tool.type === ToolType.FsWrite ||
@@ -239,7 +242,8 @@ export class Messenger {
                                 triggerID,
                                 toolUse,
                                 validation,
-                                session.messageIdToUpdate
+                                session.messageIdToUpdate,
+                                changeList
                             )
                             await ToolUtils.queueDescription(tool, chatStream)
 
@@ -480,7 +484,8 @@ export class Messenger {
         triggerID: string,
         toolUse: ToolUse | undefined,
         validation: CommandValidation,
-        messageIdToUpdate: string | undefined
+        messageIdToUpdate: string | undefined,
+        changeList?: Change[]
     ) {
         const buttons: ChatItemButton[] = []
         let fileList: ChatItemContent['fileList'] = undefined
@@ -495,24 +500,29 @@ export class Messenger {
                 message = validation.warning + message
             }
         } else if (toolUse?.name === ToolType.FsWrite) {
-            const absoluteFilePath = (toolUse?.input as any).path
-            const projectPath = getWorkspaceForFile(absoluteFilePath)
-            const relativePath = projectPath ? path.relative(projectPath, absoluteFilePath) : absoluteFilePath
+            const input = toolUse.input as unknown as FsWriteParams
+            const fileName = path.basename(input.path)
+            const changes = changeList?.reduce(
+                (acc, { count = 0, added, removed }) => {
+                    if (added) {
+                        acc.added += count
+                    } else if (removed) {
+                        acc.deleted += count
+                    }
+                    return acc
+                },
+                { added: 0, deleted: 0 }
+            )
             // FileList
             fileList = {
                 fileTreeTitle: '',
                 hideFileCount: true,
-                filePaths: [relativePath],
+                filePaths: [fileName],
                 details: {
-                    [relativePath]: {
+                    [fileName]: {
                         // eslint-disable-next-line unicorn/no-null
                         icon: null,
-                        label: 'Created',
-                        changes: {
-                            added: 36,
-                            deleted: 0,
-                            total: 36,
-                        },
+                        changes: changes,
                     },
                 },
             }
