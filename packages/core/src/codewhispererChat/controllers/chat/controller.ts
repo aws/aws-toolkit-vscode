@@ -769,12 +769,15 @@ export class ChatController {
     }
 
     private async processPromptInputOptionChange(message: PromptInputOptionChange) {
+        const session = this.sessionStorage.getSession(message.tabID)
         const promptTypeValue = message.optionsValues['prompt-type']
         // TODO: display message: You turned off pair programmer mode. Q will not include code diffs or run commands in the chat.
         if (promptTypeValue === 'pair-programming-on') {
-            this.chatHistoryStorage.setTabAvailableTools(message.tabID, tools)
+            this.chatHistoryStorage.setTools(message.tabID, tools)
+            session.setPairProgrammingModeOn(true)
         } else {
-            this.chatHistoryStorage.setTabAvailableTools(message.tabID, noWriteTools)
+            this.chatHistoryStorage.setTools(message.tabID, noWriteTools)
+            session.setPairProgrammingModeOn(false)
         }
     }
 
@@ -1344,7 +1347,7 @@ export class ChatController {
 
         triggerPayload.contextLengths.userInputContextLength = triggerPayload.message.length
         triggerPayload.contextLengths.focusFileContextLength = triggerPayload.fileText.length
-        triggerPayload.tools = this.chatHistoryStorage.getTabAvailableTools(tabID)
+        triggerPayload.pairProgrammingModeOn = session.pairProgrammingModeOn
 
         const chatHistory = this.chatHistoryStorage.getTabHistory(tabID)
         const newUserMessage = {
@@ -1353,7 +1356,7 @@ export class ChatController {
                 userIntent: triggerPayload.userIntent,
                 ...(triggerPayload.origin && { origin: triggerPayload.origin }),
                 userInputMessageContext: {
-                    tools: triggerPayload.tools,
+                    tools: session.pairProgrammingModeOn ? tools : noWriteTools,
                     ...(triggerPayload.toolResults && { toolResults: triggerPayload.toolResults }),
                 },
             },

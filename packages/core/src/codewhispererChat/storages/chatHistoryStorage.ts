@@ -42,11 +42,7 @@ export class ChatHistoryStorage {
         this.histories.delete(tabId)
     }
 
-    public getTabAvailableTools(tabId: string) {
-        return this.histories.get(tabId)?.getTools()
-    }
-
-    public setTabAvailableTools(tabId: string, tools: Tool[]) {
+    public setTools(tabId: string, tools: Tool[]) {
         this.histories.get(tabId)?.setTools(tools)
     }
 }

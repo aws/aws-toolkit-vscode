@@ -27,6 +27,7 @@ export class ChatSession {
     private _toolUse: ToolUse | undefined
     private _showDiffOnFileWrite: boolean = false
     private _context: PromptMessage['context']
+    private _pairProgrammingModeOn: boolean = true
 
     contexts: Map<string, { first: number; second: number }[]> = new Map()
     // TODO: doesn't handle the edge case when two files share the same relativePath string but from different root
@@ -34,6 +35,14 @@ export class ChatSession {
     relativePathToWorkspaceRoot: Map<string, string> = new Map()
     public get sessionIdentifier(): string | undefined {
         return this.sessionId
+    }
+
+    public get pairProgrammingModeOn(): boolean {
+        return this._pairProgrammingModeOn
+    }
+
+    public setPairProgrammingModeOn(pairProgrammingModeOn: boolean) {
+        this._pairProgrammingModeOn = pairProgrammingModeOn
     }
 
     public get toolUse(): ToolUse | undefined {

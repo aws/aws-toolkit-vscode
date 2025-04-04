@@ -9,7 +9,6 @@ import {
     ChatMessage,
     Origin,
     RelevantTextDocument,
-    Tool,
     ToolResult,
     UserIntent,
 } from '@amzn/codewhisperer-streaming'
@@ -214,7 +213,7 @@ export interface TriggerPayload {
     chatHistory?: ChatMessage[]
     toolResults?: ToolResult[]
     origin?: Origin
-    tools?: Tool[]
+    pairProgrammingModeOn?: boolean
 }
 
 export type ContextLengths = {

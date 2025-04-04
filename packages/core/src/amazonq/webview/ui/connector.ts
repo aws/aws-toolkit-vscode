@@ -620,6 +620,7 @@ export class Connector {
 
     onPromptInputOptionChange = (tabId: string, optionsValues: Record<string, string>): void => {
         switch (this.tabsStorage.getTab(tabId)?.type) {
+            case 'unknown':
             case 'cwc':
                 this.cwChatConnector.onPromptInputOptionChange(tabId, optionsValues)
                 break

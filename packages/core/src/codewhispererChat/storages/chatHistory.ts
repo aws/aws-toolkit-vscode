@@ -46,10 +46,6 @@ export class ChatHistoryManager {
         this.conversationId = conversationId
     }
 
-    public getTools(): Tool[] {
-        return this.tools
-    }
-
     public setTools(tools: Tool[]) {
         this.tools = tools
     }
