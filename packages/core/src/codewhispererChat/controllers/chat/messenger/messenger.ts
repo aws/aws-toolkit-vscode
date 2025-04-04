@@ -262,10 +262,8 @@ export class Messenger {
                         } else {
                             // TODO: Handle the error
                         }
-                    } else if (cwChatEvent.toolUseEvent?.stop === undefined) {
-                        if (toolUseInput !== '') {
-                            this.sendInitalStream(tabID, triggerID, undefined)
-                        }
+                    } else if (cwChatEvent.toolUseEvent?.stop === undefined && toolUseInput !== '') {
+                        this.sendInitalStream(tabID, triggerID, undefined)
                     }
 
                     if (
