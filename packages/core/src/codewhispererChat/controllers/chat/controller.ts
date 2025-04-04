@@ -638,6 +638,70 @@ export class ChatController {
         telemetry.ui_click.emit({ elementId: 'amazonq_createSavedPrompt' })
     }
 
+    private async processUnavailableToolUseMessage(message: CustomFormActionMessage) {
+        const tabID = message.tabID
+        if (!tabID) {
+            return
+        }
+        this.editorContextExtractor
+            .extractContextForTrigger('ChatMessage')
+            .then(async (context) => {
+                const triggerID = randomUUID()
+                this.triggerEventsStorage.addTriggerEvent({
+                    id: triggerID,
+                    tabID: message.tabID,
+                    message: undefined,
+                    type: 'chat_message',
+                    context,
+                })
+                const session = this.sessionStorage.getSession(tabID)
+                const toolUse = session.toolUse
+                if (!toolUse || !toolUse.input) {
+                    return
+                }
+                session.setToolUse(undefined)
+
+                const toolResults: ToolResult[] = []
+
+                toolResults.push({
+                    content: [{ text: 'This tool is not an available tool in this mode' }],
+                    toolUseId: toolUse.toolUseId,
+                    status: ToolResultStatus.ERROR,
+                })
+
+                await this.generateResponse(
+                    {
+                        message: '',
+                        trigger: ChatTriggerType.ChatMessage,
+                        query: undefined,
+                        codeSelection: context?.focusAreaContext?.selectionInsideExtendedCodeBlock,
+                        fileText: context?.focusAreaContext?.extendedCodeBlock ?? '',
+                        fileLanguage: context?.activeFileContext?.fileLanguage,
+                        filePath: context?.activeFileContext?.filePath,
+                        matchPolicy: context?.activeFileContext?.matchPolicy,
+                        codeQuery: context?.focusAreaContext?.names,
+                        userIntent: undefined,
+                        customization: getSelectedCustomization(),
+                        toolResults: toolResults,
+                        origin: Origin.IDE,
+                        chatHistory: this.chatHistoryStorage.getTabHistory(tabID).getHistory(),
+                        context: session.context ?? [],
+                        relevantTextDocuments: [],
+                        additionalContents: [],
+                        documentReferences: [],
+                        useRelevantDocuments: false,
+                        contextLengths: {
+                            ...defaultContextLengths,
+                        },
+                    },
+                    triggerID
+                )
+            })
+            .catch((e) => {
+                this.processException(e, tabID)
+            })
+    }
+
     private async processToolUseMessage(message: CustomFormActionMessage) {
         const tabID = message.tabID
         if (!tabID) {
@@ -768,6 +832,9 @@ export class ChatController {
                 break
             case 'reject-code-diff':
                 await this.closeDiffView()
+                break
+            case 'tool-unavailable':
+                await this.processUnavailableToolUseMessage(message)
                 break
             default:
                 getLogger().warn(`Unhandled action: ${message.action.id}`)

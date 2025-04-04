@@ -47,6 +47,7 @@ import { ChatStream } from '../../../tools/chatStream'
 import { getWorkspaceForFile } from '../../../../shared/utilities/workspaceUtils'
 import path from 'path'
 import { CommandValidation } from '../../../tools/executeBash'
+import { noWriteTools, tools } from '../../../constants'
 
 export type StaticTextResponseType = 'quick-action-help' | 'onboarding-help' | 'transform' | 'help'
 
@@ -216,6 +217,18 @@ export class Messenger {
                         toolUse.toolUseId = cwChatEvent.toolUseEvent.toolUseId ?? ''
                         toolUse.name = cwChatEvent.toolUseEvent.name ?? ''
                         session.setToolUse(toolUse)
+
+                        const availableToolsNames = (session.pairProgrammingModeOn ? tools : noWriteTools).map(
+                            (item) => item.toolSpecification?.name
+                        )
+                        if (!availableToolsNames.includes(toolUse.name)) {
+                            this.dispatcher.sendCustomFormActionMessage(
+                                new CustomFormActionMessage(tabID, {
+                                    id: 'tool-unavailable',
+                                })
+                            )
+                            return
+                        }
 
                         const tool = ToolUtils.tryFromToolUse(toolUse)
                         if ('type' in tool) {
