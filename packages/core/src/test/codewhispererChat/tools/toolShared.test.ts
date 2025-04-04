@@ -156,30 +156,31 @@ describe('ToolUtils', function () {
     })
 
     describe('queueDescription', function () {
+        // TODO: Adding "void" to the following tests for the current implementation but in the next followup PR I will fix this issue.
         it('delegates to FsRead tool queueDescription method', function () {
             const tool: Tool = { type: ToolType.FsRead, tool: mockFsRead as unknown as FsRead }
-            ToolUtils.queueDescription(tool, mockWritable as unknown as Writable)
+            void ToolUtils.queueDescription(tool, mockWritable as unknown as Writable)
 
             assert(mockFsRead.queueDescription.calledOnceWith(mockWritable))
         })
 
         it('delegates to FsWrite tool queueDescription method', function () {
             const tool: Tool = { type: ToolType.FsWrite, tool: mockFsWrite as unknown as FsWrite }
-            ToolUtils.queueDescription(tool, mockWritable as unknown as Writable)
+            void ToolUtils.queueDescription(tool, mockWritable as unknown as Writable)
 
             assert(mockFsWrite.queueDescription.calledOnceWith(mockWritable))
         })
 
         it('delegates to ExecuteBash tool queueDescription method', function () {
             const tool: Tool = { type: ToolType.ExecuteBash, tool: mockExecuteBash as unknown as ExecuteBash }
-            ToolUtils.queueDescription(tool, mockWritable as unknown as Writable)
+            void ToolUtils.queueDescription(tool, mockWritable as unknown as Writable)
 
             assert(mockExecuteBash.queueDescription.calledOnceWith(mockWritable))
         })
 
         it('delegates to ListDirectory tool queueDescription method', function () {
             const tool: Tool = { type: ToolType.ListDirectory, tool: mockListDirectory as unknown as ListDirectory }
-            ToolUtils.queueDescription(tool, mockWritable as unknown as Writable)
+            void ToolUtils.queueDescription(tool, mockWritable as unknown as Writable)
 
             assert(mockListDirectory.queueDescription.calledOnceWith(mockWritable))
         })

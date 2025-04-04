@@ -8,7 +8,6 @@ import { getLogger } from '../../shared/logger/logger'
 import vscode from 'vscode'
 import { fs } from '../../shared/fs/fs'
 import { Writable } from 'stream'
-import path from 'path'
 
 interface BaseParams {
     path: string
@@ -70,11 +69,113 @@ export class FsWrite {
         }
     }
 
-    public queueDescription(updates: Writable): void {
-        const fileName = path.basename(this.params.path)
-        updates.write(
-            `Please see the generated code below for \`${fileName}\`. Click on the file to review the changes in the code editor and select Accept or Reject.`
-        )
+    // TODO:  Refactor the fsWrite.ts file "queueDescription" method to use existing diffLines and diff library to get the diff preview. or reuse existing diff view logic in cwchat. This will be part of next PR.
+    private showStrReplacePreview(oldStr: string, newStr: string): string {
+        // Split both strings into arrays of lines
+        const oldStrLines = oldStr.split('\n')
+        const newStrLines = newStr.split('\n')
+        let result = ''
+
+        // If strings are identical, return empty string
+        if (oldStr === newStr) {
+            return result
+        }
+
+        let oldLineIndex = 0
+        let newLineIndex = 0
+        // Loop through both arrays until we've processed all lines
+        while (oldLineIndex < oldStrLines.length || newLineIndex < newStrLines.length) {
+            if (
+                oldLineIndex < oldStrLines.length &&
+                newLineIndex < newStrLines.length &&
+                oldStrLines[oldLineIndex] === newStrLines[newLineIndex]
+            ) {
+                // Line is unchanged - prefix with space
+                result += ` ${oldStrLines[oldLineIndex]}\n`
+                oldLineIndex++
+                newLineIndex++
+            } else {
+                // Line is different
+                if (oldLineIndex < oldStrLines.length) {
+                    // Remove line - prefix with minus
+                    result += `- ${oldStrLines[oldLineIndex]}\n`
+                    oldLineIndex++
+                }
+                if (newLineIndex < newStrLines.length) {
+                    // Add line - prefix with plus
+                    result += `+ ${newStrLines[newLineIndex]}\n`
+                    newLineIndex++
+                }
+            }
+        }
+
+        return result
+    }
+
+    private async showInsertPreview(path: string, insertLine: number, newStr: string): Promise<string> {
+        const fileContent = await fs.readFileText(path)
+        const lines = fileContent.split('\n')
+        const startLine = Math.max(0, insertLine - 2)
+        const endLine = Math.min(lines.length, insertLine + 3)
+
+        const contextLines: string[] = []
+
+        // Add lines before insertion point
+        for (let index = startLine; index < insertLine; index++) {
+            contextLines.push(` ${lines[index]}`)
+        }
+
+        // Add the new line with a '+' prefix
+        contextLines.push(`+ ${newStr}`)
+
+        // Add lines after insertion point
+        for (let index = insertLine; index < endLine; index++) {
+            contextLines.push(` ${lines[index]}`)
+        }
+
+        return contextLines.join('\n')
+    }
+
+    private async showAppendPreview(sanitizedPath: string, newStr: string) {
+        const fileContent = await fs.readFileText(sanitizedPath)
+        const needsNewline = fileContent.length !== 0 && !fileContent.endsWith('\n')
+
+        let contentToAppend = newStr
+        if (needsNewline) {
+            contentToAppend = '\n' + contentToAppend
+        }
+
+        // Get the last 3 lines from existing content for better UX
+        const lines = fileContent.split('\n')
+        const linesForContext = lines.slice(-3)
+
+        return `${linesForContext.join('\n')}\n+ ${contentToAppend.trim()}`
+    }
+
+    public async queueDescription(updates: Writable): Promise<void> {
+        switch (this.params.command) {
+            case 'create':
+                updates.write(`\`\`\`diff-typescript
+${'+' + this.params.fileText?.replace(/\n/g, '\n+')}
+                    `)
+                break
+            case 'strReplace':
+                updates.write(`\`\`\`diff-typescript
+${this.showStrReplacePreview(this.params.oldStr, this.params.newStr)}
+\`\`\`
+`)
+                break
+            case 'insert':
+                updates.write(`\`\`\`diff-typescript
+${await this.showInsertPreview(this.params.path, this.params.insertLine, this.params.newStr)}
+\`\`\``)
+                break
+            case 'append':
+                updates.write(`\`\`\`diff-typescript
+${await this.showAppendPreview(this.params.path, this.params.newStr)}
+\`\`\``)
+                break
+        }
         updates.end()
     }
 
