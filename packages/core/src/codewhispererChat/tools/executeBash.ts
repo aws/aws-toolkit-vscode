@@ -208,7 +208,7 @@ export class ExecuteBash {
 
     public queueDescription(updates: Writable): void {
         updates.write(`I will run the following shell command:\n`)
-        updates.write('```bash\n' + this.command + '\n```')
+        updates.write('```shell\n' + this.command + '\n```')
         updates.end()
     }
 }
