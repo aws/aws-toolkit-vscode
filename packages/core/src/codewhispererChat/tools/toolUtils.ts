@@ -5,7 +5,7 @@
 import { Writable } from 'stream'
 import { FsRead, FsReadParams } from './fsRead'
 import { FsWrite, FsWriteParams } from './fsWrite'
-import { ExecuteBash, ExecuteBashParams } from './executeBash'
+import { CommandValidation, ExecuteBash, ExecuteBashParams } from './executeBash'
 import { ToolResult, ToolResultContentBlock, ToolResultStatus, ToolUse } from '@amzn/codewhisperer-streaming'
 import { InvokeOutput } from './toolShared'
 import { ListDirectory, ListDirectoryParams } from './listDirectory'
@@ -37,16 +37,16 @@ export class ToolUtils {
         }
     }
 
-    static requiresAcceptance(tool: Tool) {
+    static requiresAcceptance(tool: Tool): CommandValidation {
         switch (tool.type) {
             case ToolType.FsRead:
-                return false
+                return { requiresAcceptance: false }
             case ToolType.FsWrite:
-                return true
+                return { requiresAcceptance: true }
             case ToolType.ExecuteBash:
                 return tool.tool.requiresAcceptance()
             case ToolType.ListDirectory:
-                return false
+                return { requiresAcceptance: false }
         }
     }
 
@@ -63,13 +63,13 @@ export class ToolUtils {
         }
     }
 
-    static queueDescription(tool: Tool, updates: Writable): void {
+    static async queueDescription(tool: Tool, updates: Writable): Promise<void> {
         switch (tool.type) {
             case ToolType.FsRead:
                 tool.tool.queueDescription(updates)
                 break
             case ToolType.FsWrite:
-                tool.tool.queueDescription(updates)
+                await tool.tool.queueDescription(updates)
                 break
             case ToolType.ExecuteBash:
                 tool.tool.queueDescription(updates)

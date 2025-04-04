@@ -7,6 +7,7 @@ import { Writable } from 'stream'
 import { getLogger } from '../../shared/logger/logger'
 import { Messenger } from '../controllers/chat/messenger/messenger'
 import { ToolUse } from '@amzn/codewhisperer-streaming'
+import { CommandValidation } from './executeBash'
 
 /**
  * A writable stream that feeds each chunk/line to the chat UI.
@@ -20,12 +21,17 @@ export class ChatStream extends Writable {
         private readonly tabID: string,
         private readonly triggerID: string,
         private readonly toolUse: ToolUse | undefined,
-        private readonly requiresAcceptance = false,
+        private readonly validation: CommandValidation,
+        private readonly messageIdToUpdate: string | undefined,
         private readonly logger = getLogger('chatStream')
     ) {
         super()
         this.logger.debug(`ChatStream created for tabID: ${tabID}, triggerID: ${triggerID}`)
-        this.messenger.sendInitalStream(tabID, triggerID, undefined)
+        if (!messageIdToUpdate) {
+            // If messageIdToUpdate is undefined, we need to first create an empty message
+            // with messageId so it can be updated later
+            this.messenger.sendInitialToolMessage(tabID, triggerID, toolUse?.toolUseId)
+        }
     }
 
     override _write(chunk: Buffer, encoding: BufferEncoding, callback: (error?: Error | null) => void): void {
@@ -37,21 +43,13 @@ export class ChatStream extends Writable {
             this.tabID,
             this.triggerID,
             this.toolUse,
-            this.requiresAcceptance
+            this.validation,
+            this.messageIdToUpdate
         )
         callback()
     }
 
     override _final(callback: (error?: Error | null) => void): void {
-        if (this.accumulatedLogs.trim().length > 0) {
-            this.messenger.sendPartialToolLog(
-                this.accumulatedLogs,
-                this.tabID,
-                this.triggerID,
-                this.toolUse,
-                this.requiresAcceptance
-            )
-        }
         callback()
     }
 }

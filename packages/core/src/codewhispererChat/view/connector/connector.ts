@@ -7,7 +7,17 @@ import { Timestamp } from 'aws-sdk/clients/apigateway'
 import { MessagePublisher } from '../../../amazonq/messages/messagePublisher'
 import { EditorContextCommandType } from '../../commands/registerCommands'
 import { AuthFollowUpType } from '../../../amazonq/auth/model'
-import { ChatItemButton, ChatItemContent, ChatItemFormItem, MynahUIDataModel, QuickActionCommand } from '@aws/mynah-ui'
+import {
+    ChatItemButton,
+    ChatItemContent,
+    ChatItemFormItem,
+    CodeBlockActions,
+    MynahIcons,
+    MynahIconsType,
+    MynahUIDataModel,
+    QuickActionCommand,
+    Status,
+} from '@aws/mynah-ui'
 import { DocumentReference } from '../../controllers/chat/model'
 
 class UiMessage {
@@ -196,6 +206,17 @@ export class ContextSelectedMessage extends UiMessage {
     }
 }
 
+export type ChatItemHeader =
+    | (ChatItemContent & {
+          icon?: MynahIcons | MynahIconsType
+          status?: {
+              status?: Status
+              icon?: MynahIcons | MynahIconsType
+              text?: string
+          }
+      })
+    | null
+
 export interface ChatMessageProps {
     readonly message: string | undefined
     readonly messageType: ChatMessageType
@@ -212,6 +233,10 @@ export interface ChatMessageProps {
     readonly buttons?: ChatItemButton[]
     readonly fileList?: ChatItemContent['fileList']
     readonly canBeVoted?: boolean
+    readonly header?: ChatItemHeader
+    readonly fullWidth?: boolean
+    readonly padding?: boolean
+    readonly codeBlockActions?: CodeBlockActions | null
 }
 
 export class ChatMessage extends UiMessage {
@@ -230,6 +255,10 @@ export class ChatMessage extends UiMessage {
     readonly title?: string
     readonly buttons?: ChatItemButton[]
     readonly fileList?: ChatItemContent['fileList']
+    readonly header?: ChatItemHeader
+    readonly fullWidth?: boolean
+    readonly padding?: boolean
+    readonly codeBlockActions?: CodeBlockActions | null
     readonly canBeVoted?: boolean = false
     override type = 'chatMessage'
 
@@ -250,7 +279,15 @@ export class ChatMessage extends UiMessage {
         this.buttons = props.buttons
         this.fileList = props.fileList
         this.canBeVoted = props.canBeVoted
+        this.header = props.header
+        this.fullWidth = props.fullWidth
+        this.padding = props.padding
+        this.codeBlockActions = props.codeBlockActions
     }
+}
+
+export class ToolMessage extends ChatMessage {
+    override type = 'toolMessage'
 }
 
 export interface FollowUp {
@@ -304,6 +341,10 @@ export class AppToWebViewMessageDispatcher {
     }
 
     public sendChatMessage(message: ChatMessage) {
+        this.appsToWebViewMessagePublisher.publish(message)
+    }
+
+    public sendToolMessage(message: ToolMessage) {
         this.appsToWebViewMessagePublisher.publish(message)
     }
 

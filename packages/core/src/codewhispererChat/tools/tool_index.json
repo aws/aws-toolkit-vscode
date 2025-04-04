@@ -1,7 +1,7 @@
 {
     "fsRead": {
         "name": "fsRead",
-        "description": "A tool for reading a file. \n* This tool returns the contents of a file, and the optional `readRange` determines what range of lines will be read from the specified file.",
+        "description": "A tool for reading a file.\n * This tool returns the contents of a file, and the optional `readRange` determines what range of lines will be read from the specified file.",
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -10,7 +10,7 @@
                     "type": "string"
                 },
                 "readRange": {
-                    "description": "Optional parameter when reading files.\n* If none is given, the full file is shown. If provided, the file will be shown in the indicated line number range, e.g. [11, 12] will show lines 11 and 12. Indexing at 1 to start. Setting `[startLine, -1]` shows all lines from `startLine` to the end of the file.",
+                    "description": "Optional parameter when reading files.\n * If none is given, the full file is shown. If provided, the file will be shown in the indicated line number range, e.g. [11, 12] will show lines 11 and 12. Indexing at 1 to start. Setting `[startLine, -1]` shows all lines from `startLine` to the end of the file.",
                     "items": {
                         "type": "integer"
                     },
@@ -75,7 +75,7 @@
     },
     "listDirectory": {
         "name": "listDirectory",
-        "description": "List the contents of a directory.\n * Use this tool for discovery, before using more targeted tools like fsRead.\n *Useful to try to understand the file structure before diving deeper into specific files.\n *Can be used to explore the codebase.\n *Results clearly distinguish between files, directories or symlinks with [FILE], [DIR] and [LINK] prefixes.",
+        "description": "List the contents of a directory and its subdirectories.\n * Use this tool for discovery, before using more targeted tools like fsRead.\n *Useful to try to understand the file structure before diving deeper into specific files.\n *Can be used to explore the codebase.\n *Results clearly distinguish between files, directories or symlinks with [FILE], [DIR] and [LINK] prefixes.",
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -86,6 +86,10 @@
                 "path": {
                     "type": "string",
                     "description": "Absolute path to a directory, e.g., `/repo`."
+                },
+                "maxDepth": {
+                    "type": "integer",
+                    "description": "Maximum depth to traverse when listing directories. Use `0` to list only the specified directory, `1` to include immediate subdirectories, etc. If it's not provided, it will list all subdirectories recursively."
                 }
             },
             "required": ["path"]

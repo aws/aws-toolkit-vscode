@@ -15,16 +15,24 @@ describe('ListDirectory Tool', () => {
     })
 
     it('throws if path is empty', async () => {
-        const listDirectory = new ListDirectory({ path: '' })
+        const listDirectory = new ListDirectory({ path: '', maxDepth: 0 })
         await assert.rejects(listDirectory.validate(), /Path cannot be empty/i, 'Expected an error about empty path')
+    })
+
+    it('throws if maxDepth is negative', async () => {
+        const listDirectory = new ListDirectory({ path: '~', maxDepth: -1 })
+        await assert.rejects(
+            listDirectory.validate(),
+            /MaxDepth cannot be negative/i,
+            'Expected an error about negative maxDepth'
+        )
     })
 
     it('lists directory contents', async () => {
         await testFolder.mkdir('subfolder')
         await testFolder.write('fileA.txt', 'fileA content')
-        await testFolder.write(path.join('subfolder', 'fileB.md'), '# fileB')
 
-        const listDirectory = new ListDirectory({ path: testFolder.path })
+        const listDirectory = new ListDirectory({ path: testFolder.path, maxDepth: 0 })
         await listDirectory.validate()
         const result = await listDirectory.invoke(process.stdout)
 
@@ -38,9 +46,30 @@ describe('ListDirectory Tool', () => {
         assert.ok(hasSubfolder, 'Should list the subfolder in the directory output')
     })
 
+    it('lists directory contents recursively', async () => {
+        await testFolder.mkdir('subfolder')
+        await testFolder.write('fileA.txt', 'fileA content')
+        await testFolder.write(path.join('subfolder', 'fileB.md'), '# fileB')
+
+        const listDirectory = new ListDirectory({ path: testFolder.path })
+        await listDirectory.validate()
+        const result = await listDirectory.invoke(process.stdout)
+
+        const lines = result.output.content.split('\n')
+        const hasFileA = lines.some((line: string | string[]) => line.includes('[FILE] ') && line.includes('fileA.txt'))
+        const hasSubfolder = lines.some(
+            (line: string | string[]) => line.includes('[DIR] ') && line.includes('subfolder')
+        )
+        const hasFileB = lines.some((line: string | string[]) => line.includes('[FILE] ') && line.includes('fileB.md'))
+
+        assert.ok(hasFileA, 'Should list fileA.txt in the directory output')
+        assert.ok(hasSubfolder, 'Should list the subfolder in the directory output')
+        assert.ok(hasFileB, 'Should list fileB.md in the subfolder in the directory output')
+    })
+
     it('throws error if path does not exist', async () => {
         const missingPath = path.join(testFolder.path, 'no_such_file.txt')
-        const listDirectory = new ListDirectory({ path: missingPath })
+        const listDirectory = new ListDirectory({ path: missingPath, maxDepth: 0 })
 
         await assert.rejects(
             listDirectory.validate(),
@@ -50,7 +79,7 @@ describe('ListDirectory Tool', () => {
     })
 
     it('expands ~ path', async () => {
-        const listDirectory = new ListDirectory({ path: '~' })
+        const listDirectory = new ListDirectory({ path: '~', maxDepth: 0 })
         await listDirectory.validate()
         const result = await listDirectory.invoke(process.stdout)
 

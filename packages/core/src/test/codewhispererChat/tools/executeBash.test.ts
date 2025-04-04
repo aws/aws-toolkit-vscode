@@ -5,7 +5,7 @@
 
 import { strict as assert } from 'assert'
 import sinon from 'sinon'
-import { ExecuteBash } from '../../../codewhispererChat/tools/executeBash'
+import { destructiveCommandWarningMessage, ExecuteBash } from '../../../codewhispererChat/tools/executeBash'
 import { ChildProcess } from '../../../shared/utilities/processUtils'
 
 describe('ExecuteBash Tool', () => {
@@ -44,13 +44,18 @@ describe('ExecuteBash Tool', () => {
 
     it('set requiresAcceptance=true if the command has dangerous patterns', () => {
         const execBash = new ExecuteBash({ command: 'ls && rm -rf /' })
-        const needsAcceptance = execBash.requiresAcceptance()
+        const needsAcceptance = execBash.requiresAcceptance().requiresAcceptance
         assert.equal(needsAcceptance, true, 'Should require acceptance for dangerous pattern')
+        assert.equal(
+            execBash.requiresAcceptance().warning,
+            destructiveCommandWarningMessage,
+            'Warning message should match the destructiveCommandWarningMessage'
+        )
     })
 
     it('set requiresAcceptance=false if it is a read-only command', () => {
         const execBash = new ExecuteBash({ command: 'cat file.txt' })
-        const needsAcceptance = execBash.requiresAcceptance()
+        const needsAcceptance = execBash.requiresAcceptance().requiresAcceptance
         assert.equal(needsAcceptance, false, 'Read-only command should not require acceptance')
     })
 
