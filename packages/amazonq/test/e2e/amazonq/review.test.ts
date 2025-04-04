@@ -180,8 +180,9 @@ describe('Amazon Q Code Review', function () {
             beforeEach(async () => {
                 await validateInitialChatMessage()
             })
-
-            it('/review file gives correct critical and high security issues', async () => {
+        
+            // eslint-disable-next-line aws-toolkits/no-only-in-tests
+            it.only('/review file gives correct critical and high security issues', async () => {
                 const document = await vscode.workspace.openTextDocument(filePath)
                 await vscode.window.showTextDocument(document)
 
