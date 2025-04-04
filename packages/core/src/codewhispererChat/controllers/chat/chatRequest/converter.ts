@@ -3,18 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import {
-    ConversationState,
-    CursorState,
-    DocumentSymbol,
-    SymbolType,
-    TextDocument,
-    ChatMessage,
-} from '@amzn/codewhisperer-streaming'
+import { ConversationState, CursorState, DocumentSymbol, SymbolType, TextDocument } from '@amzn/codewhisperer-streaming'
 import { AdditionalContentEntryAddition, ChatTriggerType, RelevantTextDocumentAddition, TriggerPayload } from '../model'
 import { undefinedIfEmpty } from '../../../../shared/utilities/textUtilities'
-import { ChatItemType } from '../../../../amazonq/commons/model'
 import { getLogger } from '../../../../shared/logger/logger'
+import { messageToChatMessage } from '../../../../shared/db/chatDb/util'
 
 const fqnNameSizeDownLimit = 1
 const fqnNameSizeUpLimit = 256
@@ -158,19 +151,7 @@ export function triggerPayloadToChatRequest(triggerPayload: TriggerPayload): { c
     const history =
         triggerPayload.history &&
         triggerPayload.history.length > 0 &&
-        (triggerPayload.history.map((chat) =>
-            chat.type === ('answer' as ChatItemType)
-                ? {
-                      assistantResponseMessage: {
-                          content: chat.body,
-                      },
-                  }
-                : {
-                      userInputMessage: {
-                          content: chat.body,
-                      },
-                  }
-        ) as ChatMessage[])
+        triggerPayload.history.map((chat) => messageToChatMessage(chat))
 
     return {
         conversationState: {

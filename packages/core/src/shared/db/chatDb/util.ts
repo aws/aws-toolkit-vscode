@@ -6,7 +6,16 @@ import fs from '../../fs/fs'
 import path from 'path'
 
 import { TabType } from '../../../amazonq/webview/ui/storages/tabsStorage'
-import { ChatItem, ChatItemButton, DetailedListItem, DetailedListItemGroup, MynahIconsType } from '@aws/mynah-ui'
+import {
+    ChatItemButton,
+    ChatItemType,
+    DetailedListItem,
+    DetailedListItemGroup,
+    MynahIconsType,
+    ReferenceTrackerInformation,
+    SourceLink,
+} from '@aws/mynah-ui'
+import { ChatMessage, Origin, ToolUse, UserInputMessageContext, UserIntent } from '@amzn/codewhisperer-streaming'
 
 export const TabCollection = 'tabs'
 
@@ -24,13 +33,51 @@ export type Tab = {
 export type Conversation = {
     conversationId: string
     clientType: ClientType
-    messages: ChatItem[]
+    messages: Message[]
 }
 
 export enum ClientType {
     VSCode = 'IDE-VSCode',
     JetBrains = 'IDE_JetBrains',
     CLI = 'CLI',
+}
+
+export type Message = {
+    body: string
+    type: ChatItemType
+    codeReference?: ReferenceTrackerInformation[]
+    relatedContent?: {
+        title?: string
+        content: SourceLink[]
+    }
+    messageId?: string
+    userIntent?: UserIntent
+    origin?: Origin
+    userInputMessageContext?: UserInputMessageContext
+    toolUses?: ToolUse[]
+}
+
+/**
+ * Converts Message to CodeWhisperer Streaming ChatMessage
+ */
+export function messageToChatMessage(msg: Message): ChatMessage {
+    return msg.type.toString() === 'answer'
+        ? {
+              assistantResponseMessage: {
+                  messageId: msg.messageId,
+                  content: msg.body,
+                  references: msg.codeReference || [],
+                  toolUses: msg.toolUses || [],
+              },
+          }
+        : {
+              userInputMessage: {
+                  content: msg.body,
+                  userIntent: msg.userIntent,
+                  origin: msg.origin || 'IDE',
+                  userInputMessageContext: msg.userInputMessageContext || {},
+              },
+          }
 }
 
 /**
@@ -107,7 +154,7 @@ export class FileSystemAdapter implements LokiPersistenceAdapter {
 export function updateOrCreateConversation(
     conversations: Conversation[],
     conversationId: string,
-    newMessage: ChatItem
+    newMessage: Message
 ): Conversation[] {
     const existingConversation = conversations.find((conv) => conv.conversationId === conversationId)
 

@@ -10,7 +10,8 @@ import { Selection } from 'vscode'
 import { TabOpenType } from '../../../amazonq/webview/ui/storages/tabsStorage'
 import { CodeReference } from '../../view/connector/connector'
 import { Customization } from '../../../codewhisperer/client/codewhispereruserclient'
-import { ChatItem, QuickActionCommand } from '@aws/mynah-ui'
+import { QuickActionCommand } from '@aws/mynah-ui'
+import { Message } from '../../../shared/db/chatDb/util'
 
 export interface TriggerTabIDReceived {
     tabID: string
@@ -206,7 +207,7 @@ export interface TriggerPayload {
     traceId?: string
     contextLengths: ContextLengths
     workspaceRulesCount?: number
-    history?: ChatItem[]
+    history?: Message[]
 }
 
 export type ContextLengths = {
