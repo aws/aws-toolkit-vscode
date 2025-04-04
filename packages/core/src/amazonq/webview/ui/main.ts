@@ -332,6 +332,11 @@ export const createMynahUI = (
                     ...(item.footer !== undefined ? { footer: item.footer } : {}),
                     ...(item.canBeVoted !== undefined ? { canBeVoted: item.canBeVoted } : {}),
                     ...(item.fileList !== undefined ? { fileList: item.fileList } : {}),
+                    ...(item.header !== undefined ? { header: item.header } : {}),
+                    ...(item.buttons !== undefined ? { buttons: item.buttons } : {}),
+                    ...(item.fullWidth !== undefined ? { fullWidth: item.fullWidth } : {}),
+                    ...(item.padding !== undefined ? { padding: item.padding } : {}),
+                    ...(item.codeBlockActions !== undefined ? { codeBlockActions: item.codeBlockActions } : {}),
                 })
             } else {
                 mynahUI.updateLastChatAnswer(tabID, {
@@ -340,6 +345,11 @@ export const createMynahUI = (
                     ...(item.followUp !== undefined ? { followUp: item.followUp } : {}),
                     ...(item.footer !== undefined ? { footer: item.footer } : {}),
                     ...(item.canBeVoted !== undefined ? { canBeVoted: item.canBeVoted } : {}),
+                    ...(item.header !== undefined ? { header: item.header } : {}),
+                    ...(item.buttons !== undefined ? { buttons: item.buttons } : {}),
+                    ...(item.fullWidth !== undefined ? { fullWidth: item.fullWidth } : {}),
+                    ...(item.padding !== undefined ? { padding: item.padding } : {}),
+                    ...(item.codeBlockActions !== undefined ? { codeBlockActions: item.codeBlockActions } : {}),
                 })
             }
         },
@@ -353,8 +363,11 @@ export const createMynahUI = (
                     ...(item.relatedContent !== undefined ? { relatedContent: item.relatedContent } : {}),
                     ...(item.followUp !== undefined ? { followUp: item.followUp } : {}),
                     ...(item.fileList !== undefined ? { fileList: item.fileList } : {}),
-                    ...(item.header !== undefined ? { header: item.header } : { header: undefined }),
-                    ...(item.buttons !== undefined ? { buttons: item.buttons } : { buttons: undefined }),
+                    ...(item.header !== undefined ? { header: item.header } : {}),
+                    ...(item.buttons !== undefined ? { buttons: item.buttons } : {}),
+                    ...(item.fullWidth !== undefined ? { fullWidth: item.fullWidth } : {}),
+                    ...(item.padding !== undefined ? { padding: item.padding } : {}),
+                    ...(item.codeBlockActions !== undefined ? { codeBlockActions: item.codeBlockActions } : {}),
                 })
                 if (
                     item.messageId !== undefined &&

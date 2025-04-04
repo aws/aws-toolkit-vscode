@@ -40,12 +40,12 @@ import { LspController } from '../../../../amazonq/lsp/lspController'
 import { extractCodeBlockLanguage } from '../../../../shared/markdown'
 import { extractAuthFollowUp } from '../../../../amazonq/util/authUtils'
 import { helpMessage } from '../../../../amazonq/webview/ui/texts/constants'
-import { ChatItemButton, ChatItemContent, ChatItemFormItem, MynahUIDataModel } from '@aws/mynah-ui'
+import { ChatItemButton, ChatItemContent, ChatItemFormItem, MynahIconsType, MynahUIDataModel } from '@aws/mynah-ui'
 import { ChatHistoryManager } from '../../../storages/chatHistory'
 import { ToolType, ToolUtils } from '../../../tools/toolUtils'
 import { ChatStream } from '../../../tools/chatStream'
-import path from 'path'
 import { getWorkspaceForFile } from '../../../../shared/utilities/workspaceUtils'
+import path from 'path'
 import { CommandValidation } from '../../../tools/executeBash'
 
 export type StaticTextResponseType = 'quick-action-help' | 'onboarding-help' | 'transform' | 'help'
@@ -241,7 +241,7 @@ export class Messenger {
                                 validation,
                                 session.messageIdToUpdate
                             )
-                            ToolUtils.queueDescription(tool, chatStream)
+                            await ToolUtils.queueDescription(tool, chatStream)
 
                             if (
                                 session.messageIdToUpdate === undefined &&
@@ -488,7 +488,6 @@ export class Messenger {
             buttons.push({
                 id: 'confirm-tool-use',
                 text: 'Confirm',
-                position: 'outside',
                 status: 'info',
             })
 
@@ -496,27 +495,37 @@ export class Messenger {
                 message = validation.warning + message
             }
         } else if (toolUse?.name === ToolType.FsWrite) {
-            // FileList
             const absoluteFilePath = (toolUse?.input as any).path
             const projectPath = getWorkspaceForFile(absoluteFilePath)
             const relativePath = projectPath ? path.relative(projectPath, absoluteFilePath) : absoluteFilePath
+            // FileList
             fileList = {
-                fileTreeTitle: 'Code suggestions',
-                rootFolderTitle: path.basename(projectPath ?? 'Default'),
+                fileTreeTitle: '',
+                hideFileCount: true,
                 filePaths: [relativePath],
+                details: {
+                    [relativePath]: {
+                        // eslint-disable-next-line unicorn/no-null
+                        icon: null,
+                        label: 'Created',
+                        changes: {
+                            added: 36,
+                            deleted: 0,
+                            total: 36,
+                        },
+                    },
+                },
             }
             // Buttons
             buttons.push({
                 id: 'reject-code-diff',
-                text: 'Reject',
-                position: 'outside',
-                status: 'error',
+                status: 'clear',
+                icon: 'cancel' as MynahIconsType,
             })
             buttons.push({
                 id: 'accept-code-diff',
-                text: 'Accept',
-                position: 'outside',
-                status: 'success',
+                status: 'clear',
+                icon: 'ok' as MynahIconsType,
             })
         }
 
@@ -534,8 +543,16 @@ export class Messenger {
                     codeBlockLanguage: undefined,
                     contextList: undefined,
                     canBeVoted: false,
-                    buttons,
-                    fileList,
+                    buttons: toolUse?.name === ToolType.FsWrite ? undefined : buttons,
+                    fullWidth: toolUse?.name === ToolType.FsWrite,
+                    padding: !(toolUse?.name === ToolType.FsWrite),
+                    header:
+                        toolUse?.name === ToolType.FsWrite
+                            ? { icon: 'code-block' as MynahIconsType, buttons: buttons, fileList: fileList }
+                            : undefined,
+                    codeBlockActions:
+                        // eslint-disable-next-line unicorn/no-null, prettier/prettier
+                        toolUse?.name === ToolType.FsWrite ? { 'insert-to-cursor': null, copy: null } : undefined,
                 },
                 tabID
             )

@@ -8,6 +8,7 @@ import {
     ChatItemButton,
     ChatItemFormItem,
     ChatItemType,
+    MynahIconsType,
     MynahUIDataModel,
     QuickActionCommand,
 } from '@aws/mynah-ui'
@@ -33,6 +34,7 @@ export class Connector extends BaseConnector {
     private readonly onContextCommandDataReceived
     private readonly onShowCustomForm
     private readonly onChatAnswerUpdated
+    private chatItems: Map<string, Map<string, ChatItem>> = new Map() // tabId -> messageId -> ChatItem
 
     override getTabType(): TabType {
         return 'cwc'
@@ -109,6 +111,10 @@ export class Connector extends BaseConnector {
                 title: messageData.title,
                 buttons: messageData.buttons ?? undefined,
                 fileList: messageData.fileList ?? undefined,
+                header: messageData.header ?? undefined,
+                padding: messageData.padding ?? undefined,
+                fullWidth: messageData.fullWidth ?? undefined,
+                codeBlockActions: messageData.codeBlockActions ?? undefined,
             }
 
             if (messageData.relatedSuggestions !== undefined) {
@@ -116,6 +122,10 @@ export class Connector extends BaseConnector {
                     title: 'Sources',
                     content: messageData.relatedSuggestions,
                 }
+            }
+
+            if (answer.messageId) {
+                this.storeChatItem(messageData.tabID, answer.messageId, answer)
             }
             this.onChatAnswerReceived(messageData.tabID, answer, messageData)
 
@@ -147,6 +157,10 @@ export class Connector extends BaseConnector {
                         : undefined,
                 buttons: messageData.buttons ?? undefined,
                 canBeVoted: messageData.canBeVoted ?? false,
+                header: messageData.header ?? undefined,
+                padding: messageData.padding ?? undefined,
+                fullWidth: messageData.fullWidth ?? undefined,
+                codeBlockActions: messageData.codeBlockActions ?? undefined,
             }
             this.onChatAnswerReceived(messageData.tabID, answer, messageData)
 
@@ -171,9 +185,27 @@ export class Connector extends BaseConnector {
             title: messageData.title,
             buttons: messageData.buttons,
             fileList: messageData.fileList,
+            header: messageData.header ?? undefined,
+            padding: messageData.padding ?? undefined,
+            fullWidth: messageData.fullWidth ?? undefined,
+            codeBlockActions: messageData.codeBlockActions ?? undefined,
+        }
+        if (answer.messageId) {
+            this.storeChatItem(messageData.tabID, answer.messageId, answer)
         }
         this.onChatAnswerUpdated(messageData.tabID, answer)
         return
+    }
+
+    private storeChatItem(tabId: string, messageId: string, item: ChatItem): void {
+        if (!this.chatItems.has(tabId)) {
+            this.chatItems.set(tabId, new Map())
+        }
+        this.chatItems.get(tabId)?.set(messageId, { ...item })
+    }
+
+    private getCurrentChatItem(tabId: string, messageId: string): ChatItem | undefined {
+        return this.chatItems.get(tabId)?.get(messageId)
     }
 
     processContextCommandData(messageData: any) {
@@ -297,35 +329,39 @@ export class Connector extends BaseConnector {
         ) {
             return
         }
+
+        // Can not assign body as "undefined" or "null" because both of these values will be overriden at main.ts in onChatAnswerUpdated
+        // TODO: Refactor in next PR if necessary.
+        const currentChatItem = this.getCurrentChatItem(tabId, messageId)
         const answer: ChatItem = {
             type: ChatItemType.ANSWER,
             messageId: messageId,
             buttons: [],
+            body: undefined,
+            header: currentChatItem?.header ? { ...currentChatItem.header } : {},
         }
         switch (action.id) {
             case 'accept-code-diff':
-                answer.buttons = [
-                    {
-                        keepCardAfterClick: true,
-                        text: 'Accepted code',
-                        id: 'accepted-code-diff',
+                if (answer.header) {
+                    answer.header.status = {
+                        icon: 'ok' as MynahIconsType,
+                        text: 'Accepted',
                         status: 'success',
-                        position: 'outside',
-                        disabled: true,
-                    },
-                ]
+                    }
+                    answer.header.buttons = []
+                    answer.body = ' '
+                }
                 break
             case 'reject-code-diff':
-                answer.buttons = [
-                    {
-                        keepCardAfterClick: true,
-                        text: 'Rejected code',
-                        id: 'rejected-code-diff',
+                if (answer.header) {
+                    answer.header.status = {
+                        icon: 'cancel' as MynahIconsType,
+                        text: 'Rejected',
                         status: 'error',
-                        position: 'outside',
-                        disabled: true,
-                    },
-                ]
+                    }
+                    answer.header.buttons = []
+                    answer.body = ' '
+                }
                 break
             case 'confirm-tool-use':
                 answer.buttons = [
@@ -342,6 +378,12 @@ export class Connector extends BaseConnector {
             default:
                 break
         }
+
+        if (currentChatItem && answer.messageId) {
+            const updatedItem = { ...currentChatItem, ...answer }
+            this.storeChatItem(tabId, answer.messageId, updatedItem)
+        }
+
         this.onChatAnswerUpdated(tabId, answer)
     }
 
