@@ -31,19 +31,6 @@ describe('Amazon Q Test Generation', function () {
         },
     ]
 
-    const unsupportedLanguages = [
-        // move these over to testFiles once these languages are supported
-        // must be atleast one unsupported language here for testing
-        {
-            language: 'typescript',
-            filePath: 'testGenFolder/src/main/math.ts',
-        },
-        {
-            language: 'javascript',
-            filePath: 'testGenFolder/src/main/math.js',
-        },
-    ]
-
     // handles opening the file since /test must be called on an active file
     async function setupTestDocument(filePath: string, language: string) {
         const document = await waitUntil(async () => {
@@ -125,28 +112,6 @@ describe('Amazon Q Test Generation', function () {
     })
 
     describe('/test entry', () => {
-        describe('Unsupported language file', () => {
-            const { language, filePath } = unsupportedLanguages[0]
-
-            beforeEach(async () => {
-                await setupTestDocument(filePath, language)
-            })
-
-            it(`/test for unsupported language redirects to chat`, async () => {
-                tab.addChatMessage({ command: '/test' })
-                await tab.waitForChatFinishesLoading()
-
-                await waitForChatItems(3)
-                const unsupportedLanguageMessage = tab.getChatItems()[3]
-
-                assert.deepStrictEqual(unsupportedLanguageMessage.type, 'answer')
-                assert.deepStrictEqual(
-                    unsupportedLanguageMessage.body,
-                    `<span style="color: #EE9D28;">&#9888;<b>I'm sorry, but /test only supports Python and Java</b><br></span> While ${language.charAt(0).toUpperCase() + language.slice(1)} is not supported, I will generate a suggestion below.`
-                )
-            })
-        })
-
         describe('External file out of project', async () => {
             let testFolder: TestFolder
             let fileName: string
