@@ -7,7 +7,7 @@ import { Writable } from 'stream'
 import { getLogger } from '../../shared/logger/logger'
 import { Messenger } from '../controllers/chat/messenger/messenger'
 import { ToolUse } from '@amzn/codewhisperer-streaming'
-import { CommandValidation } from './executeBash'
+import { CommandValidation } from './toolShared'
 import { Change } from 'diff'
 
 /**

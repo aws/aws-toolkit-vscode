@@ -21,6 +21,11 @@ export interface InvokeOutput {
     }
 }
 
+export interface CommandValidation {
+    requiresAcceptance: boolean
+    warning?: string
+}
+
 export function sanitizePath(inputPath: string): string {
     let sanitized = inputPath.trim()
 
