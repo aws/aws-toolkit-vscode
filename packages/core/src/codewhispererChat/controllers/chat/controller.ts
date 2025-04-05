@@ -85,7 +85,6 @@ import {
     additionalContentInnerContextLimit,
     workspaceChunkMaxSize,
     defaultContextLengths,
-    noWriteTools,
 } from '../../constants'
 import { ChatSession } from '../../clients/chat/v0/chat'
 import { amazonQTabSuffix } from '../../../shared/constants'
