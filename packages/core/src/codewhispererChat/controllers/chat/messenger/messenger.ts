@@ -20,7 +20,6 @@ import { EditorContextCommandType } from '../../../commands/registerCommands'
 import { ChatResponseStream as qdevChatResponseStream } from '@amzn/amazon-q-developer-streaming-client'
 import {
     ChatResponseStream as cwChatResponseStream,
-    CodeWhispererStreamingServiceException,
     SupplementaryWebLink,
     ToolUse,
 } from '@amzn/codewhisperer-streaming'
@@ -29,7 +28,7 @@ import { ChatSession } from '../../../clients/chat/v0/chat'
 import { ChatException } from './model'
 import { CWCTelemetryHelper } from '../telemetryHelper'
 import { ChatPromptCommandType, DocumentReference, TriggerPayload } from '../model'
-import { getHttpStatusCode, getRequestId, ToolkitError } from '../../../../shared/errors'
+import { ToolkitError } from '../../../../shared/errors'
 import { keys } from '../../../../shared/utilities/tsUtils'
 import { getLogger } from '../../../../shared/logger/logger'
 import { FeatureAuthState } from '../../../../codewhisperer/util/authUtil'
@@ -46,6 +45,7 @@ import { ToolType, ToolUtils } from '../../../tools/toolUtils'
 import { ChatStream } from '../../../tools/chatStream'
 import path from 'path'
 import { CommandValidation } from '../../../tools/executeBash'
+import { extractErrorInfo } from '../../../../shared/utilities/messageUtil'
 import { noWriteTools, tools } from '../../../constants'
 import { Change } from 'diff'
 import { FsWriteParams } from '../../../tools/fsWrite'
@@ -279,6 +279,9 @@ export class Messenger {
                         } else {
                             // TODO: Handle the error
                         }
+                    } else if (cwChatEvent.toolUseEvent?.stop === undefined && toolUseInput !== '') {
+                        // This is for the case when writing tool is executed. The toolUseEvent is non stop but in toolUseInput is not empty. In this case we need show user the current spinner UI.
+                        this.sendInitalStream(tabID, triggerID, undefined)
                     }
 
                     if (
@@ -340,26 +343,21 @@ export class Messenger {
             { timeout: 600000, truthy: true }
         )
             .catch((error: any) => {
-                let errorMessage = 'Error reading chat stream.'
-                let statusCode = undefined
-                let requestID = undefined
-
-                if (error instanceof CodeWhispererStreamingServiceException) {
-                    errorMessage = error.message
-                    statusCode = getHttpStatusCode(error) ?? 0
-                    requestID = getRequestId(error)
-                }
-
+                const errorInfo = extractErrorInfo(error)
                 this.showChatExceptionMessage(
-                    { errorMessage, statusCode: statusCode?.toString(), sessionID: undefined },
+                    {
+                        errorMessage: errorInfo.errorMessage,
+                        statusCode: errorInfo.statusCode?.toString(),
+                        sessionID: undefined,
+                    },
                     tabID,
-                    requestID
+                    errorInfo.requestId
                 )
-                getLogger().error(`error: ${errorMessage} tabID: ${tabID} requestID: ${requestID}`)
+                getLogger().error(`error: ${errorInfo.errorMessage} tabID: ${tabID} requestID: ${errorInfo.requestId}`)
 
                 followUps = []
                 relatedSuggestions = []
-                this.telemetryHelper.recordMessageResponseError(triggerPayload, tabID, statusCode ?? 0)
+                this.telemetryHelper.recordMessageResponseError(triggerPayload, tabID, errorInfo.statusCode ?? 0)
             })
             .finally(async () => {
                 if (
