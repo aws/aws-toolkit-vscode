@@ -32,6 +32,7 @@ import {
     DocumentReference,
     FileClick,
     RelevantTextDocumentAddition,
+    PromptInputOptionChange,
 } from './model'
 import {
     AppToWebViewMessageDispatcher,
@@ -117,6 +118,7 @@ export interface ChatControllerMessagePublishers {
     readonly processCustomFormAction: MessagePublisher<CustomFormActionMessage>
     readonly processContextSelected: MessagePublisher<ContextSelectedMessage>
     readonly processFileClick: MessagePublisher<FileClick>
+    readonly processPromptInputOptionChange: MessagePublisher<PromptInputOptionChange>
 }
 
 export interface ChatControllerMessageListeners {
@@ -142,6 +144,7 @@ export interface ChatControllerMessageListeners {
     readonly processCustomFormAction: MessageListener<CustomFormActionMessage>
     readonly processContextSelected: MessageListener<ContextSelectedMessage>
     readonly processFileClick: MessageListener<FileClick>
+    readonly processPromptInputOptionChange: MessageListener<PromptInputOptionChange>
 }
 
 export class ChatController {
@@ -276,6 +279,9 @@ export class ChatController {
         })
         this.chatControllerMessageListeners.processFileClick.onMessage((data) => {
             return this.processFileClickMessage(data)
+        })
+        this.chatControllerMessageListeners.processPromptInputOptionChange.onMessage((data) => {
+            return this.processPromptInputOptionChange(data)
         })
     }
 
@@ -631,6 +637,69 @@ export class ChatController {
         telemetry.ui_click.emit({ elementId: 'amazonq_createSavedPrompt' })
     }
 
+    private async processUnavailableToolUseMessage(message: CustomFormActionMessage) {
+        const tabID = message.tabID
+        if (!tabID) {
+            return
+        }
+        this.editorContextExtractor
+            .extractContextForTrigger('ChatMessage')
+            .then(async (context) => {
+                const triggerID = randomUUID()
+                this.triggerEventsStorage.addTriggerEvent({
+                    id: triggerID,
+                    tabID: message.tabID,
+                    message: undefined,
+                    type: 'chat_message',
+                    context,
+                })
+                const session = this.sessionStorage.getSession(tabID)
+                const toolUse = session.toolUse
+                if (!toolUse || !toolUse.input) {
+                    return
+                }
+                session.setToolUse(undefined)
+
+                const toolResults: ToolResult[] = []
+
+                toolResults.push({
+                    content: [{ text: 'This tool is not an available tool in this mode' }],
+                    toolUseId: toolUse.toolUseId,
+                    status: ToolResultStatus.ERROR,
+                })
+
+                await this.generateResponse(
+                    {
+                        message: '',
+                        trigger: ChatTriggerType.ChatMessage,
+                        query: undefined,
+                        codeSelection: context?.focusAreaContext?.selectionInsideExtendedCodeBlock,
+                        fileText: context?.focusAreaContext?.extendedCodeBlock ?? '',
+                        fileLanguage: context?.activeFileContext?.fileLanguage,
+                        filePath: context?.activeFileContext?.filePath,
+                        matchPolicy: context?.activeFileContext?.matchPolicy,
+                        codeQuery: context?.focusAreaContext?.names,
+                        userIntent: undefined,
+                        customization: getSelectedCustomization(),
+                        toolResults: toolResults,
+                        origin: Origin.IDE,
+                        context: session.context ?? [],
+                        relevantTextDocuments: [],
+                        additionalContents: [],
+                        documentReferences: [],
+                        useRelevantDocuments: false,
+                        contextLengths: {
+                            ...defaultContextLengths,
+                        },
+                    },
+                    triggerID
+                )
+            })
+            .catch((e) => {
+                this.processException(e, tabID)
+            })
+    }
+
     private async processToolUseMessage(message: CustomFormActionMessage) {
         const tabID = message.tabID
         if (!tabID) {
@@ -763,6 +832,9 @@ export class ChatController {
             case 'reject-code-diff':
                 await this.closeDiffView()
                 break
+            case 'tool-unavailable':
+                await this.processUnavailableToolUseMessage(message)
+                break
             default:
                 getLogger().warn(`Unhandled action: ${message.action.id}`)
         }
@@ -773,6 +845,18 @@ export class ChatController {
             this.handlePromptCreate(message.tabID)
         }
     }
+
+    private async processPromptInputOptionChange(message: PromptInputOptionChange) {
+        const session = this.sessionStorage.getSession(message.tabID)
+        const promptTypeValue = message.optionsValues['prompt-type']
+        // TODO: display message: You turned off pair programmer mode. Q will not include code diffs or run commands in the chat.
+        if (promptTypeValue === 'pair-programming-on') {
+            session.setPairProgrammingModeOn(true)
+        } else {
+            session.setPairProgrammingModeOn(false)
+        }
+    }
+
     private async processFileClickMessage(message: FileClick) {
         const session = this.sessionStorage.getSession(message.tabID)
         // Check if user clicked on filePath in the contextList or in the fileListTree and perform the functionality accordingly.
@@ -1353,6 +1437,7 @@ export class ChatController {
 
         triggerPayload.contextLengths.userInputContextLength = triggerPayload.message.length
         triggerPayload.contextLengths.focusFileContextLength = triggerPayload.fileText.length
+        triggerPayload.pairProgrammingModeOn = session.pairProgrammingModeOn
 
         const request = triggerPayloadToChatRequest(triggerPayload)
 

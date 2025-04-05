@@ -30,6 +30,11 @@ export const tools: Tool[] = Object.entries(toolsJson).map(([, toolSpec]) => ({
         inputSchema: { json: toolSpec.inputSchema },
     },
 }))
+
+export const noWriteTools: Tool[] = tools.filter(
+    (tool) => !['fsWrite', 'executeBash'].includes(tool.toolSpecification?.name || '')
+)
+
 export const defaultContextLengths: ContextLengths = {
     additionalContextLengths: {
         fileContextLength: 0,

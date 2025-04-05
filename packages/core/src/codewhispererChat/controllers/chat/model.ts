@@ -160,6 +160,13 @@ export interface FileClick {
     filePath: string
 }
 
+export interface PromptInputOptionChange {
+    command: string
+    tabID: string
+    messageId: string
+    optionsValues: Record<string, string>
+}
+
 export interface ChatItemVotedMessage {
     tabID: string
     command: string
@@ -204,6 +211,7 @@ export interface TriggerPayload {
     workspaceRulesCount?: number
     toolResults?: ToolResult[]
     origin?: Origin
+    pairProgrammingModeOn?: boolean
 }
 
 export type ContextLengths = {
