@@ -82,7 +82,6 @@ import {
     createSavedPromptCommandId,
     aditionalContentNameLimit,
     additionalContentInnerContextLimit,
-    tools,
     workspaceChunkMaxSize,
     defaultContextLengths,
 } from '../../constants'
@@ -1355,24 +1354,15 @@ export class ChatController {
         triggerPayload.contextLengths.userInputContextLength = triggerPayload.message.length
         triggerPayload.contextLengths.focusFileContextLength = triggerPayload.fileText.length
 
-        const chatHistory = this.chatHistoryStorage.getTabHistory(tabID)
-        const newUserMessage = {
-            userInputMessage: {
-                content: triggerPayload.message,
-                userIntent: triggerPayload.userIntent,
-                ...(triggerPayload.origin && { origin: triggerPayload.origin }),
-                userInputMessageContext: {
-                    tools: tools,
-                    ...(triggerPayload.toolResults && { toolResults: triggerPayload.toolResults }),
-                },
-            },
-        }
-        const fixedHistoryMessage = chatHistory.fixHistory(newUserMessage)
-        if (fixedHistoryMessage.userInputMessage?.userInputMessageContext) {
-            triggerPayload.toolResults = fixedHistoryMessage.userInputMessage.userInputMessageContext.toolResults
-        }
-        triggerPayload.chatHistory = chatHistory.getHistory()
         const request = triggerPayloadToChatRequest(triggerPayload)
+
+        const chatHistory = this.chatHistoryStorage.getTabHistory(tabID)
+        const currentMessage = request.conversationState.currentMessage
+        if (currentMessage) {
+            chatHistory.fixHistory(currentMessage)
+        }
+        request.conversationState.history = chatHistory.getHistory()
+
         const conversationId = chatHistory.getConversationId() || randomUUID()
         chatHistory.setConversationId(conversationId)
         request.conversationState.conversationId = conversationId
@@ -1426,8 +1416,8 @@ export class ChatController {
             }
             this.telemetryHelper.recordEnterFocusConversation(triggerEvent.tabID)
             this.telemetryHelper.recordStartConversation(triggerEvent, triggerPayload)
-            if (request.conversationState.currentMessage) {
-                chatHistory.appendUserMessage(request.conversationState.currentMessage)
+            if (currentMessage) {
+                chatHistory.appendUserMessage(currentMessage)
             }
 
             getLogger().info(
