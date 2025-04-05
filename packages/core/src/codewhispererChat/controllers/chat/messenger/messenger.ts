@@ -50,7 +50,12 @@ import { noWriteTools, tools } from '../../../constants'
 import { Change } from 'diff'
 import { FsWriteParams } from '../../../tools/fsWrite'
 
-export type StaticTextResponseType = 'quick-action-help' | 'onboarding-help' | 'transform' | 'help'
+export type StaticTextResponseType =
+    | 'quick-action-help'
+    | 'onboarding-help'
+    | 'transform'
+    | 'help'
+    | 'reject-shell-command'
 
 export type MessengerResponseType = {
     $metadata: { requestId?: string; httpStatusCode?: number }
@@ -269,12 +274,20 @@ export class Messenger {
                             }
 
                             if (!validation.requiresAcceptance) {
-                                // Need separate id for read tool and safe bash command execution as 'confirm-tool-use' id is required to change button status from `Confirm` to `Confirmed` state in cwChatConnector.ts which will impact generic tool execution.
-                                this.dispatcher.sendCustomFormActionMessage(
-                                    new CustomFormActionMessage(tabID, {
-                                        id: 'generic-tool-execution',
-                                    })
-                                )
+                                // Need separate id for read tool and safe bash command execution as 'run-shell-command' id is required to state in cwChatConnector.ts which will impact generic tool execution.
+                                if (tool.type === ToolType.ExecuteBash) {
+                                    this.dispatcher.sendCustomFormActionMessage(
+                                        new CustomFormActionMessage(tabID, {
+                                            id: 'run-shell-command',
+                                        })
+                                    )
+                                } else {
+                                    this.dispatcher.sendCustomFormActionMessage(
+                                        new CustomFormActionMessage(tabID, {
+                                            id: 'generic-tool-execution',
+                                        })
+                                    )
+                                }
                             }
                         } else {
                             // TODO: Handle the error
@@ -500,12 +513,28 @@ export class Messenger {
     ) {
         const buttons: ChatItemButton[] = []
         let fileList: ChatItemContent['fileList'] = undefined
-        if (validation.requiresAcceptance && toolUse?.name === ToolType.ExecuteBash) {
-            buttons.push({
-                id: 'confirm-tool-use',
-                text: 'Confirm',
-                status: 'info',
-            })
+        let shellCommandHeader = undefined
+        if (toolUse?.name === ToolType.ExecuteBash && message.startsWith('```shell')) {
+            if (validation.requiresAcceptance) {
+                buttons.push({
+                    id: 'run-shell-command',
+                    text: 'Run',
+                    status: 'main',
+                    icon: 'play' as MynahIconsType,
+                })
+                buttons.push({
+                    id: 'reject-shell-command',
+                    text: 'Reject',
+                    status: 'clear',
+                    icon: 'cancel' as MynahIconsType,
+                })
+            }
+
+            shellCommandHeader = {
+                icon: 'code-block' as MynahIconsType,
+                body: 'shell',
+                buttons: buttons,
+            }
 
             if (validation.warning) {
                 message = validation.warning + message
@@ -564,16 +593,23 @@ export class Messenger {
                     codeBlockLanguage: undefined,
                     contextList: undefined,
                     canBeVoted: false,
-                    buttons: toolUse?.name === ToolType.FsWrite ? undefined : buttons,
-                    fullWidth: toolUse?.name === ToolType.FsWrite,
-                    padding: !(toolUse?.name === ToolType.FsWrite),
+                    buttons:
+                        toolUse?.name === ToolType.FsWrite || toolUse?.name === ToolType.ExecuteBash
+                            ? undefined
+                            : buttons,
+                    fullWidth: toolUse?.name === ToolType.FsWrite || toolUse?.name === ToolType.ExecuteBash,
+                    padding: !(toolUse?.name === ToolType.FsWrite || toolUse?.name === ToolType.ExecuteBash),
                     header:
                         toolUse?.name === ToolType.FsWrite
                             ? { icon: 'code-block' as MynahIconsType, buttons: buttons, fileList: fileList }
-                            : undefined,
+                            : toolUse?.name === ToolType.ExecuteBash
+                              ? shellCommandHeader
+                              : undefined,
                     codeBlockActions:
                         // eslint-disable-next-line unicorn/no-null, prettier/prettier
-                        toolUse?.name === ToolType.FsWrite ? { 'insert-to-cursor': null, copy: null } : undefined,
+                        toolUse?.name === ToolType.FsWrite || toolUse?.name === ToolType.ExecuteBash
+                            ? { 'insert-to-cursor': null, copy: null }
+                            : undefined,
                 },
                 tabID
             )
@@ -624,6 +660,10 @@ export class Messenger {
                     },
                 ]
                 followUpsHeader = 'Try Examples:'
+                break
+            case 'reject-shell-command':
+                // need to update the string later
+                message = 'The shell command execution rejected. Abort.'
                 break
         }
 
