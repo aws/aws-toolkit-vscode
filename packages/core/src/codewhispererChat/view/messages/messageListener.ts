@@ -89,6 +89,9 @@ export class UIMessageListener {
                     getLogger().error('chatItemFeedback failed: %s', (e as Error).message)
                 })
                 break
+            case 'prompt-input-option-change':
+                this.promptInputOptionChange(msg)
+                break
             case 'ui-focus':
                 this.processUIFocus(msg)
                 break
@@ -291,6 +294,15 @@ export class UIMessageListener {
             tabID: msg.tabID,
             command: msg.command,
             filePath: msg.filePath,
+        })
+    }
+
+    private promptInputOptionChange(msg: any) {
+        this.chatControllerMessagePublishers.processPromptInputOptionChange.publish({
+            messageId: msg.messageId,
+            tabID: msg.tabID,
+            command: msg.command,
+            optionsValues: msg.optionsValues,
         })
     }
 }

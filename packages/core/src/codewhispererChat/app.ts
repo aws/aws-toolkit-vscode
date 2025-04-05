@@ -28,6 +28,7 @@ import {
     AcceptDiff,
     QuickCommandGroupActionClick,
     FileClick,
+    PromptInputOptionChange,
 } from './controllers/chat/model'
 import { EditorContextCommand, registerCommands } from './commands/registerCommands'
 import { ContextSelectedMessage, CustomFormActionMessage } from './view/connector/connector'
@@ -56,6 +57,7 @@ export function init(appContext: AmazonQAppInitContext) {
         processCustomFormAction: new EventEmitter<CustomFormActionMessage>(),
         processContextSelected: new EventEmitter<ContextSelectedMessage>(),
         processFileClick: new EventEmitter<FileClick>(),
+        processPromptInputOptionChange: new EventEmitter<PromptInputOptionChange>(),
     }
 
     const cwChatControllerMessageListeners = {
@@ -117,6 +119,9 @@ export function init(appContext: AmazonQAppInitContext) {
             cwChatControllerEventEmitters.processContextSelected
         ),
         processFileClick: new MessageListener<FileClick>(cwChatControllerEventEmitters.processFileClick),
+        processPromptInputOptionChange: new MessageListener<PromptInputOptionChange>(
+            cwChatControllerEventEmitters.processPromptInputOptionChange
+        ),
     }
 
     const cwChatControllerMessagePublishers = {
@@ -180,6 +185,9 @@ export function init(appContext: AmazonQAppInitContext) {
             cwChatControllerEventEmitters.processContextSelected
         ),
         processFileClick: new MessagePublisher<FileClick>(cwChatControllerEventEmitters.processFileClick),
+        processPromptInputOptionChange: new MessagePublisher<PromptInputOptionChange>(
+            cwChatControllerEventEmitters.processPromptInputOptionChange
+        ),
     }
 
     new CwChatController(

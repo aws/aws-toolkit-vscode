@@ -46,6 +46,7 @@ import { ToolType, ToolUtils } from '../../../tools/toolUtils'
 import { ChatStream } from '../../../tools/chatStream'
 import path from 'path'
 import { CommandValidation } from '../../../tools/executeBash'
+import { noWriteTools, tools } from '../../../constants'
 import { Change } from 'diff'
 import { FsWriteParams } from '../../../tools/fsWrite'
 
@@ -217,6 +218,18 @@ export class Messenger {
                         toolUse.toolUseId = cwChatEvent.toolUseEvent.toolUseId ?? ''
                         toolUse.name = cwChatEvent.toolUseEvent.name ?? ''
                         session.setToolUse(toolUse)
+
+                        const availableToolsNames = (session.pairProgrammingModeOn ? tools : noWriteTools).map(
+                            (item) => item.toolSpecification?.name
+                        )
+                        if (!availableToolsNames.includes(toolUse.name)) {
+                            this.dispatcher.sendCustomFormActionMessage(
+                                new CustomFormActionMessage(tabID, {
+                                    id: 'tool-unavailable',
+                                })
+                            )
+                            return
+                        }
 
                         const tool = ToolUtils.tryFromToolUse(toolUse)
                         if ('type' in tool) {

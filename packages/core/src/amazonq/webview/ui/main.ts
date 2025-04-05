@@ -239,6 +239,7 @@ export const createMynahUI = (
             }
         },
         onFileActionClick: (tabID: string, messageId: string, filePath: string, actionName: string): void => {},
+        onPromptInputOptionChange: (tabId: string, optionsValues: Record<string, string>, eventId?: string): void => {},
         onQuickHandlerCommand: (tabID: string, command?: string, eventId?: string) => {
             tabsStorage.updateTabLastCommand(tabID, command)
             if (command === 'aws.awsq.transform') {
@@ -939,6 +940,9 @@ export const createMynahUI = (
         },
         onFileActionClick: async (tabID: string, messageId: string, filePath: string, actionName: string) => {
             connector.onFileActionClick(tabID, messageId, filePath, actionName)
+        },
+        onPromptInputOptionChange: (tabId, optionsValues) => {
+            connector.onPromptInputOptionChange(tabId, optionsValues)
         },
         onFileClick: connector.onFileClick,
         tabs: {
