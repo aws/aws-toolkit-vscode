@@ -287,10 +287,6 @@ export class ChatMessage extends UiMessage {
     }
 }
 
-export class ToolMessage extends ChatMessage {
-    override type = 'toolMessage'
-}
-
 export interface FollowUp {
     readonly type: string
     readonly pillText: string
@@ -342,10 +338,6 @@ export class AppToWebViewMessageDispatcher {
     }
 
     public sendChatMessage(message: ChatMessage) {
-        this.appsToWebViewMessagePublisher.publish(message)
-    }
-
-    public sendToolMessage(message: ToolMessage) {
         this.appsToWebViewMessagePublisher.publish(message)
     }
 
