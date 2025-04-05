@@ -6,7 +6,6 @@
 import * as vscode from 'vscode'
 import {
     AdditionalContentEntry,
-    ChatMessage,
     Origin,
     RelevantTextDocument,
     ToolResult,
@@ -203,7 +202,6 @@ export interface TriggerPayload {
     traceId?: string
     contextLengths: ContextLengths
     workspaceRulesCount?: number
-    chatHistory?: ChatMessage[]
     toolResults?: ToolResult[]
     origin?: Origin
 }

@@ -175,7 +175,6 @@ export function triggerPayloadToChatRequest(triggerPayload: TriggerPayload): { c
             },
             chatTriggerType,
             customizationArn: customizationArn,
-            history: triggerPayload.chatHistory,
         },
     }
 }
