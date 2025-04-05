@@ -23,17 +23,12 @@ export class ChatStream extends Writable {
         private readonly triggerID: string,
         private readonly toolUse: ToolUse | undefined,
         private readonly validation: CommandValidation,
-        private readonly messageIdToUpdate: string | undefined,
         private readonly changeList?: Change[],
         private readonly logger = getLogger('chatStream')
     ) {
         super()
         this.logger.debug(`ChatStream created for tabID: ${tabID}, triggerID: ${triggerID}`)
-        if (!messageIdToUpdate) {
-            // If messageIdToUpdate is undefined, we need to first create an empty message
-            // with messageId so it can be updated later
-            this.messenger.sendInitialToolMessage(tabID, triggerID, toolUse?.toolUseId)
-        }
+        this.messenger.sendInitalStream(tabID, triggerID, undefined)
     }
 
     override _write(chunk: Buffer, encoding: BufferEncoding, callback: (error?: Error | null) => void): void {
@@ -46,7 +41,6 @@ export class ChatStream extends Writable {
             this.triggerID,
             this.toolUse,
             this.validation,
-            this.messageIdToUpdate,
             this.changeList
         )
         callback()

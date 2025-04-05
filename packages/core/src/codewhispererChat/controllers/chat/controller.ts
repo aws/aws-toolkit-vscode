@@ -716,6 +716,7 @@ export class ChatController {
                     type: 'chat_message',
                     context,
                 })
+                this.messenger.sendAsyncEventProgress(tabID, true, '')
                 const session = this.sessionStorage.getSession(tabID)
                 const toolUse = session.toolUse
                 if (!toolUse || !toolUse.input) {
@@ -734,16 +735,9 @@ export class ChatController {
                     try {
                         await ToolUtils.validate(tool)
 
-                        const chatStream = new ChatStream(
-                            this.messenger,
-                            tabID,
-                            triggerID,
-                            // Pass in a different toolUseId so that the output does not overwrite
-                            // any previous messages
-                            { ...toolUse, toolUseId: `${toolUse.toolUseId}-output` },
-                            { requiresAcceptance: false },
-                            undefined
-                        )
+                        const chatStream = new ChatStream(this.messenger, tabID, triggerID, toolUse, {
+                            requiresAcceptance: false,
+                        })
                         const output = await ToolUtils.invoke(tool, chatStream)
                         if (output.output.content.length > maxToolOutputCharacterLength) {
                             throw Error(
@@ -1184,6 +1178,8 @@ export class ChatController {
                     type: 'chat_message',
                     context,
                 })
+
+                this.messenger.sendAsyncEventProgress(message.tabID, true, '')
 
                 // Save the context for the agentic loop
                 session.setContext(message.context)

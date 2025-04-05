@@ -27,6 +27,13 @@ export interface ConnectorProps extends BaseConnectorProps {
         description?: string
     ) => void
     onChatAnswerUpdated?: (tabID: string, message: ChatItem) => void
+    onAsyncEventProgress: (
+        tabID: string,
+        inProgress: boolean,
+        message: string,
+        messageId: string | undefined,
+        enableStopAction: boolean
+    ) => void
 }
 
 export class Connector extends BaseConnector {
@@ -34,6 +41,7 @@ export class Connector extends BaseConnector {
     private readonly onContextCommandDataReceived
     private readonly onShowCustomForm
     private readonly onChatAnswerUpdated
+    private readonly onAsyncEventProgress
     private chatItems: Map<string, Map<string, ChatItem>> = new Map() // tabId -> messageId -> ChatItem
 
     override getTabType(): TabType {
@@ -46,6 +54,7 @@ export class Connector extends BaseConnector {
         this.onContextCommandDataReceived = props.onContextCommandDataReceived
         this.onShowCustomForm = props.onShowCustomForm
         this.onChatAnswerUpdated = props.onChatAnswerUpdated
+        this.onAsyncEventProgress = props.onAsyncEventProgress
     }
 
     onSourceLinkClick = (tabID: string, messageId: string, link: string): void => {
@@ -274,6 +283,18 @@ export class Connector extends BaseConnector {
 
         if (messageData.type === 'customFormActionMessage') {
             this.onCustomFormAction(messageData.tabID, messageData.messageId, messageData.action)
+            return
+        }
+
+        if (messageData.type === 'asyncEventProgressMessage') {
+            const enableStopAction = true
+            this.onAsyncEventProgress(
+                messageData.tabID,
+                messageData.inProgress,
+                messageData.message ?? undefined,
+                messageData.messageId ?? undefined,
+                enableStopAction
+            )
             return
         }
         // For other message types, call the base class handleMessageReceive

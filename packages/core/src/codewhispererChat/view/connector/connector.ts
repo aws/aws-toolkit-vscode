@@ -19,6 +19,7 @@ import {
     Status,
 } from '@aws/mynah-ui'
 import { DocumentReference } from '../../controllers/chat/model'
+import { AsyncEventProgressMessage } from '../../../amazonq/commons/connector/connectorMessages'
 
 class UiMessage {
     readonly time: number = Date.now()
@@ -373,6 +374,10 @@ export class AppToWebViewMessageDispatcher {
     }
 
     public sendCustomFormActionMessage(message: CustomFormActionMessage) {
+        this.appsToWebViewMessagePublisher.publish(message)
+    }
+
+    public sendAsyncEventProgress(message: AsyncEventProgressMessage) {
         this.appsToWebViewMessagePublisher.publish(message)
     }
 }
