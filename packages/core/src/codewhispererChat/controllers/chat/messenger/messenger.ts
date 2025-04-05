@@ -20,7 +20,6 @@ import { EditorContextCommandType } from '../../../commands/registerCommands'
 import { ChatResponseStream as qdevChatResponseStream } from '@amzn/amazon-q-developer-streaming-client'
 import {
     ChatResponseStream as cwChatResponseStream,
-    CodeWhispererStreamingServiceException,
     SupplementaryWebLink,
     ToolUse,
 } from '@amzn/codewhisperer-streaming'
@@ -29,7 +28,7 @@ import { ChatSession } from '../../../clients/chat/v0/chat'
 import { ChatException } from './model'
 import { CWCTelemetryHelper } from '../telemetryHelper'
 import { ChatPromptCommandType, DocumentReference, TriggerPayload } from '../model'
-import { getHttpStatusCode, getRequestId, ToolkitError } from '../../../../shared/errors'
+import { ToolkitError } from '../../../../shared/errors'
 import { keys } from '../../../../shared/utilities/tsUtils'
 import { getLogger } from '../../../../shared/logger/logger'
 import { FeatureAuthState } from '../../../../codewhisperer/util/authUtil'

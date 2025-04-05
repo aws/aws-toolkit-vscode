@@ -27,13 +27,10 @@ import { ChatItemType } from '../../../../amazonq/commons/model'
 import { ChatItemAction, ChatItemButton, ProgressField } from '@aws/mynah-ui'
 import * as CodeWhispererConstants from '../../../../codewhisperer/models/constants'
 import { TriggerPayload } from '../../../../codewhispererChat/controllers/chat/model'
-import {
-    CodeWhispererStreamingServiceException,
-    GenerateAssistantResponseCommandOutput,
-} from '@amzn/codewhisperer-streaming'
+import { GenerateAssistantResponseCommandOutput } from '@amzn/codewhisperer-streaming'
 import { Session } from '../../session/session'
 import { CodeReference } from '../../../../amazonq/webview/ui/apps/amazonqCommonsConnector'
-import { getHttpStatusCode, getRequestId, getTelemetryReasonDesc, ToolkitError } from '../../../../shared/errors'
+import { getTelemetryReasonDesc, ToolkitError } from '../../../../shared/errors'
 import { sleep, waitUntil } from '../../../../shared/utilities/timeoutUtils'
 import { keys } from '../../../../shared/utilities/tsUtils'
 import { cancellingProgressField, testGenCompletedField } from '../../../models/constants'
