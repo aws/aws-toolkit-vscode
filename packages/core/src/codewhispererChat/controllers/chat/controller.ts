@@ -684,7 +684,6 @@ export class ChatController {
                         customization: getSelectedCustomization(),
                         toolResults: toolResults,
                         origin: Origin.IDE,
-                        chatHistory: this.chatHistoryStorage.getTabHistory(tabID).getHistory(),
                         context: session.context ?? [],
                         relevantTextDocuments: [],
                         additionalContents: [],
@@ -1447,7 +1446,6 @@ export class ChatController {
         const currentMessage = request.conversationState.currentMessage
         if (currentMessage) {
             chatHistory.fixHistory(currentMessage)
-
         }
         request.conversationState.history = chatHistory.getHistory()
 
