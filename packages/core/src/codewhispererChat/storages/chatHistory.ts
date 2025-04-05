@@ -2,10 +2,9 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import { ChatMessage, Tool, ToolResult, ToolResultStatus, ToolUse } from '@amzn/codewhisperer-streaming'
+import { ChatMessage, ToolResult, ToolResultStatus, ToolUse } from '@amzn/codewhisperer-streaming'
 import { randomUUID } from '../../shared/crypto'
 import { getLogger } from '../../shared/logger/logger'
-import { tools } from '../constants'
 
 // Maximum number of messages to keep in history
 const MaxConversationHistoryLength = 100
@@ -20,12 +19,10 @@ export class ChatHistoryManager {
     private history: ChatMessage[] = []
     private logger = getLogger()
     private lastUserMessage?: ChatMessage
-    private tools: Tool[] = []
 
     constructor(tabId?: string) {
         this.conversationId = randomUUID()
         this.tabId = tabId ?? randomUUID()
-        this.tools = tools
     }
 
     /**
@@ -97,10 +94,10 @@ export class ChatHistoryManager {
      * 4. If the last message is from the assistant and it contains tool uses, and a next user
      *    message is set without tool results, then the user message will have cancelled tool results.
      */
-    public fixHistory(newUserMessage: ChatMessage): ChatMessage {
+    public fixHistory(newUserMessage: ChatMessage): void {
         this.trimConversationHistory()
         this.ensureLastMessageFromAssistant()
-        return this.handleToolUses(newUserMessage)
+        this.ensureCurrentMessageIsValid(newUserMessage)
     }
 
     private trimConversationHistory(): void {
@@ -145,42 +142,27 @@ export class ChatHistoryManager {
         }
     }
 
-    private handleToolUses(newUserMessage: ChatMessage): ChatMessage {
+    private ensureCurrentMessageIsValid(newUserMessage: ChatMessage): void {
         const lastHistoryMessage = this.history[this.history.length - 1]
-        if (!lastHistoryMessage || !lastHistoryMessage.assistantResponseMessage || !newUserMessage) {
-            return newUserMessage
+        if (!lastHistoryMessage) {
+            return
         }
 
-        const toolUses = lastHistoryMessage.assistantResponseMessage.toolUses
-        if (!toolUses || toolUses.length === 0) {
-            return newUserMessage
-        }
+        if (lastHistoryMessage.assistantResponseMessage?.toolUses?.length) {
+            const toolResults = newUserMessage.userInputMessage?.userInputMessageContext?.toolResults
+            if (!toolResults || toolResults.length === 0) {
+                const abandonedToolResults = this.createAbandonedToolResults(
+                    lastHistoryMessage.assistantResponseMessage.toolUses
+                )
 
-        return this.addToolResultsToUserMessage(newUserMessage, toolUses)
-    }
-
-    private addToolResultsToUserMessage(newUserMessage: ChatMessage, toolUses: ToolUse[]): ChatMessage {
-        if (!newUserMessage.userInputMessage) {
-            return newUserMessage
-        }
-
-        const toolResults = this.createToolResults(toolUses)
-
-        if (newUserMessage.userInputMessage.userInputMessageContext) {
-            newUserMessage.userInputMessage.userInputMessageContext.toolResults = toolResults
-        } else {
-            newUserMessage.userInputMessage.userInputMessageContext = {
-                shellState: undefined,
-                envState: undefined,
-                toolResults: toolResults,
-                tools: this.tools.length === 0 ? undefined : [...this.tools],
+                if (newUserMessage.userInputMessage?.userInputMessageContext) {
+                    newUserMessage.userInputMessage.userInputMessageContext.toolResults = abandonedToolResults
+                }
             }
         }
-
-        return newUserMessage
     }
 
-    private createToolResults(toolUses: ToolUse[]): ToolResult[] {
+    private createAbandonedToolResults(toolUses: ToolUse[]): ToolResult[] {
         return toolUses.map((toolUse) => ({
             toolUseId: toolUse.toolUseId,
             content: [
