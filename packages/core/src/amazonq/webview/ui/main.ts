@@ -287,12 +287,13 @@ export const createMynahUI = (
             inProgress: boolean,
             message: string | undefined,
             messageId: string | undefined = undefined,
-            enableStopAction: boolean = false
+            enableStopAction: boolean = false,
+            isPromptInputDisabled: boolean = true
         ) => {
             if (inProgress) {
                 mynahUI.updateStore(tabID, {
                     loadingChat: true,
-                    promptInputDisabledState: true,
+                    promptInputDisabledState: isPromptInputDisabled,
                     cancelButtonWhenLoading: enableStopAction,
                 })
 
