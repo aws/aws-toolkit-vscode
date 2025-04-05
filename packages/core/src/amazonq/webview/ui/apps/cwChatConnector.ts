@@ -8,6 +8,7 @@ import {
     ChatItemButton,
     ChatItemFormItem,
     ChatItemType,
+    MynahIcons,
     MynahIconsType,
     MynahUIDataModel,
     QuickActionCommand,
@@ -325,7 +326,7 @@ export class Connector extends BaseConnector {
 
         if (
             !this.onChatAnswerUpdated ||
-            !['accept-code-diff', 'reject-code-diff', 'confirm-tool-use'].includes(action.id)
+            !['accept-code-diff', 'reject-code-diff', 'confirm-tool-use', 'run-shell-command'].includes(action.id)
         ) {
             return
         }
@@ -374,6 +375,17 @@ export class Connector extends BaseConnector {
                         disabled: true,
                     },
                 ]
+                break
+            case 'run-shell-command':
+                answer.header = {
+                    body: 'shell',
+                    icon: 'code-block' as MynahIconsType,
+                    status: {
+                        icon: MynahIcons.OK,
+                        text: 'Accepted',
+                        status: 'success',
+                    },
+                }
                 break
             default:
                 break
