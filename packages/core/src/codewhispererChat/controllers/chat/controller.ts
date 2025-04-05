@@ -761,6 +761,7 @@ export class ChatController {
                 await this.processToolUseMessage(message)
                 break
             case 'reject-code-diff':
+            case 'reject-tool-use':
                 await this.closeDiffView()
                 break
             default:

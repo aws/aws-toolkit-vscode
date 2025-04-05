@@ -6,7 +6,8 @@ import * as vscode from 'vscode'
 import { getLogger } from '../../shared/logger/logger'
 import { readDirectoryRecursively } from '../../shared/utilities/workspaceUtils'
 import fs from '../../shared/fs/fs'
-import { InvokeOutput, OutputKind, sanitizePath } from './toolShared'
+import { CommandValidation, InvokeOutput, OutputKind, sanitizePath } from './toolShared'
+import { isInDirectory } from '../../shared/filesystemUtilities'
 import { Writable } from 'stream'
 import path from 'path'
 
@@ -59,6 +60,24 @@ export class ListDirectory {
             updates.write(`Listing directory: ${fileName} limited to ${this.maxDepth} subfolder ${level}`)
         }
         updates.end()
+    }
+
+    public requiresAcceptance(): CommandValidation {
+        // Check if the path is within any of the workspace folders
+        const workspaceFolders = vscode.workspace.workspaceFolders
+
+        if (!workspaceFolders || workspaceFolders.length === 0) {
+            return { requiresAcceptance: true }
+        }
+
+        // Check if the path is within any workspace folder
+        const isInWorkspace = workspaceFolders.some((folder) => isInDirectory(folder.uri.fsPath, this.fsPath))
+
+        if (!isInWorkspace) {
+            return { requiresAcceptance: true }
+        }
+
+        return { requiresAcceptance: false }
     }
 
     public async invoke(updates?: Writable): Promise<InvokeOutput> {

@@ -6,12 +6,22 @@ import assert from 'assert'
 import { ListDirectory } from '../../../codewhispererChat/tools/listDirectory'
 import { TestFolder } from '../../testUtil'
 import path from 'path'
+import * as vscode from 'vscode'
+import * as sinon from 'sinon'
 
 describe('ListDirectory Tool', () => {
     let testFolder: TestFolder
+    let workspaceFoldersStub: sinon.SinonStub
 
     before(async () => {
         testFolder = await TestFolder.create()
+        // Initialize the stub
+        workspaceFoldersStub = sinon.stub(vscode.workspace, 'workspaceFolders')
+    })
+
+    after(() => {
+        // Restore the stub after tests
+        workspaceFoldersStub.restore()
     })
 
     it('throws if path is empty', async () => {
@@ -85,5 +95,49 @@ describe('ListDirectory Tool', () => {
 
         assert.strictEqual(result.output.kind, 'text')
         assert.ok(result.output.content.length > 0)
+    })
+
+    it('set requiresAcceptance=true if path is outside workspace', () => {
+        // Mock empty workspace folders
+        workspaceFoldersStub.value([])
+
+        const listDirectory = new ListDirectory({ path: '/some/outside/path' })
+        const validation = listDirectory.requiresAcceptance()
+
+        assert.strictEqual(validation.requiresAcceptance, true, 'Should require acceptance for path outside workspace')
+    })
+
+    it('set requiresAcceptance=true if path is not within any workspace folder', () => {
+        // Mock workspace folders that don't contain the target path
+        workspaceFoldersStub.value([
+            { uri: { fsPath: '/workspace/folder1' } },
+            { uri: { fsPath: '/workspace/folder2' } },
+        ])
+
+        const listDirectory = new ListDirectory({ path: '/some/outside/path' })
+        const validation = listDirectory.requiresAcceptance()
+
+        assert.strictEqual(
+            validation.requiresAcceptance,
+            true,
+            'Should require acceptance for path outside workspace folders'
+        )
+    })
+
+    it('set requiresAcceptance=false if path is within a workspace folder', () => {
+        // Mock workspace folders with one containing the target path
+        const workspacePath = '/workspace/folder1'
+        const targetPath = `${workspacePath}/subfolder`
+
+        workspaceFoldersStub.value([{ uri: { fsPath: workspacePath } }, { uri: { fsPath: '/workspace/folder2' } }])
+
+        const listDirectory = new ListDirectory({ path: targetPath })
+        const validation = listDirectory.requiresAcceptance()
+
+        assert.strictEqual(
+            validation.requiresAcceptance,
+            false,
+            'Should not require acceptance for path within workspace folder'
+        )
     })
 })

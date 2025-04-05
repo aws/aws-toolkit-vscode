@@ -7,7 +7,7 @@ import { Writable } from 'stream'
 import { getLogger } from '../../shared/logger/logger'
 import { fs } from '../../shared/fs/fs'
 import { ChildProcess, ChildProcessOptions } from '../../shared/utilities/processUtils'
-import { InvokeOutput, OutputKind, sanitizePath } from './toolShared'
+import { CommandValidation, InvokeOutput, OutputKind, sanitizePath } from './toolShared'
 import { split } from 'shlex'
 
 export enum CommandCategory {
@@ -124,11 +124,6 @@ export const highRiskCommandWarningMessage = '⚠️ WARNING: High risk command 
 export interface ExecuteBashParams {
     command: string
     cwd?: string
-}
-
-export interface CommandValidation {
-    requiresAcceptance: boolean
-    warning?: string
 }
 
 export class ExecuteBash {

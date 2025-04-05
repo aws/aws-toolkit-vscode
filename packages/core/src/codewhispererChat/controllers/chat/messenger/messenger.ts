@@ -45,7 +45,7 @@ import { ChatHistoryManager } from '../../../storages/chatHistory'
 import { ToolType, ToolUtils } from '../../../tools/toolUtils'
 import { ChatStream } from '../../../tools/chatStream'
 import path from 'path'
-import { CommandValidation } from '../../../tools/executeBash'
+import { CommandValidation } from '../../../tools/toolShared'
 import { Change } from 'diff'
 import { FsWriteParams } from '../../../tools/fsWrite'
 
@@ -499,6 +499,17 @@ export class Messenger {
             if (validation.warning) {
                 message = validation.warning + message
             }
+        } else if (validation.requiresAcceptance && toolUse?.name === ToolType.ListDirectory) {
+            buttons.push({
+                id: 'reject-tool-use',
+                text: 'Reject',
+                status: 'info',
+            })
+            buttons.push({
+                id: 'confirm-tool-use',
+                text: 'Confirm',
+                status: 'info',
+            })
         } else if (toolUse?.name === ToolType.FsWrite) {
             const input = toolUse.input as unknown as FsWriteParams
             const fileName = path.basename(input.path)

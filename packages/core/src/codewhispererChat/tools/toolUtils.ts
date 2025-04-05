@@ -5,10 +5,11 @@
 import { Writable } from 'stream'
 import { FsRead, FsReadParams } from './fsRead'
 import { FsWrite, FsWriteParams } from './fsWrite'
-import { CommandValidation, ExecuteBash, ExecuteBashParams } from './executeBash'
+import { ExecuteBash, ExecuteBashParams } from './executeBash'
 import { ToolResult, ToolResultContentBlock, ToolResultStatus, ToolUse } from '@amzn/codewhisperer-streaming'
 import { InvokeOutput } from './toolShared'
 import { ListDirectory, ListDirectoryParams } from './listDirectory'
+import { CommandValidation } from './toolShared'
 
 export enum ToolType {
     FsRead = 'fsRead',
@@ -46,7 +47,7 @@ export class ToolUtils {
             case ToolType.ExecuteBash:
                 return tool.tool.requiresAcceptance()
             case ToolType.ListDirectory:
-                return { requiresAcceptance: false }
+                return tool.tool.requiresAcceptance()
         }
     }
 
