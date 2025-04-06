@@ -27,6 +27,13 @@ export interface ConnectorProps extends BaseConnectorProps {
         description?: string
     ) => void
     onChatAnswerUpdated?: (tabID: string, message: ChatItem) => void
+    onAsyncEventProgress: (
+        tabID: string,
+        inProgress: boolean,
+        message: string,
+        messageId: string | undefined,
+        enableStopAction: boolean
+    ) => void
 }
 
 export class Connector extends BaseConnector {
@@ -34,6 +41,7 @@ export class Connector extends BaseConnector {
     private readonly onContextCommandDataReceived
     private readonly onShowCustomForm
     private readonly onChatAnswerUpdated
+    private readonly onAsyncEventProgress
     private chatItems: Map<string, Map<string, ChatItem>> = new Map() // tabId -> messageId -> ChatItem
 
     override getTabType(): TabType {
@@ -46,6 +54,7 @@ export class Connector extends BaseConnector {
         this.onContextCommandDataReceived = props.onContextCommandDataReceived
         this.onShowCustomForm = props.onShowCustomForm
         this.onChatAnswerUpdated = props.onChatAnswerUpdated
+        this.onAsyncEventProgress = props.onAsyncEventProgress
     }
 
     onSourceLinkClick = (tabID: string, messageId: string, link: string): void => {
@@ -168,35 +177,6 @@ export class Connector extends BaseConnector {
         }
     }
 
-    private processToolMessage = async (messageData: any): Promise<void> => {
-        if (this.onChatAnswerUpdated === undefined) {
-            return
-        }
-        const answer: CWCChatItem = {
-            type: messageData.messageType,
-            messageId: messageData.messageID ?? messageData.triggerID,
-            body: messageData.message,
-            followUp: messageData.followUps,
-            canBeVoted: messageData.canBeVoted ?? false,
-            codeReference: messageData.codeReference,
-            userIntent: messageData.contextList,
-            codeBlockLanguage: messageData.codeBlockLanguage,
-            contextList: messageData.contextList,
-            title: messageData.title,
-            buttons: messageData.buttons,
-            fileList: messageData.fileList,
-            header: messageData.header ?? undefined,
-            padding: messageData.padding ?? undefined,
-            fullWidth: messageData.fullWidth ?? undefined,
-            codeBlockActions: messageData.codeBlockActions ?? undefined,
-        }
-        if (answer.messageId) {
-            this.storeChatItem(messageData.tabID, answer.messageId, answer)
-        }
-        this.onChatAnswerUpdated(messageData.tabID, answer)
-        return
-    }
-
     private storeChatItem(tabId: string, messageId: string, item: ChatItem): void {
         if (!this.chatItems.has(tabId)) {
             this.chatItems.set(tabId, new Map())
@@ -253,11 +233,6 @@ export class Connector extends BaseConnector {
             return
         }
 
-        if (messageData.type === 'toolMessage') {
-            await this.processToolMessage(messageData)
-            return
-        }
-
         if (messageData.type === 'editorContextCommandMessage') {
             await this.processEditorContextCommandMessage(messageData)
             return
@@ -274,6 +249,18 @@ export class Connector extends BaseConnector {
 
         if (messageData.type === 'customFormActionMessage') {
             this.onCustomFormAction(messageData.tabID, messageData.messageId, messageData.action)
+            return
+        }
+
+        if (messageData.type === 'asyncEventProgressMessage') {
+            const enableStopAction = true
+            this.onAsyncEventProgress(
+                messageData.tabID,
+                messageData.inProgress,
+                messageData.message ?? undefined,
+                messageData.messageId ?? undefined,
+                enableStopAction
+            )
             return
         }
         // For other message types, call the base class handleMessageReceive

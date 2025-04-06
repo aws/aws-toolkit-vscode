@@ -22,14 +22,12 @@ export class ChatSession {
      * _readFiles = list of files read from the project to gather context before generating response.
      * _showDiffOnFileWrite = Controls whether to show diff view (true) or file context view (false) to the user
      * _context = Additional context to be passed to the LLM for generating the response
-     * _messageIdToUpdate = messageId of a chat message to be updated, used for reducing consecutive tool messages
      */
     private _readFiles: string[] = []
     private _toolUse: ToolUse | undefined
     private _showDiffOnFileWrite: boolean = false
     private _context: PromptMessage['context']
     private _pairProgrammingModeOn: boolean = true
-    private _messageIdToUpdate: string | undefined
 
     contexts: Map<string, { first: number; second: number }[]> = new Map()
     // TODO: doesn't handle the edge case when two files share the same relativePath string but from different root
@@ -61,14 +59,6 @@ export class ChatSession {
 
     public setContext(context: PromptMessage['context']) {
         this._context = context
-    }
-
-    public get messageIdToUpdate(): string | undefined {
-        return this._messageIdToUpdate
-    }
-
-    public setMessageIdToUpdate(messageId: string | undefined) {
-        this._messageIdToUpdate = messageId
     }
 
     public tokenSource!: vscode.CancellationTokenSource

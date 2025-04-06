@@ -19,6 +19,7 @@ import {
     Status,
 } from '@aws/mynah-ui'
 import { DocumentReference } from '../../controllers/chat/model'
+import { AsyncEventProgressMessage } from '../../../amazonq/commons/connector/connectorMessages'
 
 class UiMessage {
     readonly time: number = Date.now()
@@ -286,10 +287,6 @@ export class ChatMessage extends UiMessage {
     }
 }
 
-export class ToolMessage extends ChatMessage {
-    override type = 'toolMessage'
-}
-
 export interface FollowUp {
     readonly type: string
     readonly pillText: string
@@ -344,10 +341,6 @@ export class AppToWebViewMessageDispatcher {
         this.appsToWebViewMessagePublisher.publish(message)
     }
 
-    public sendToolMessage(message: ToolMessage) {
-        this.appsToWebViewMessagePublisher.publish(message)
-    }
-
     public sendEditorContextCommandMessage(message: EditorContextCommandMessage) {
         this.appsToWebViewMessagePublisher.publish(message)
     }
@@ -373,6 +366,10 @@ export class AppToWebViewMessageDispatcher {
     }
 
     public sendCustomFormActionMessage(message: CustomFormActionMessage) {
+        this.appsToWebViewMessagePublisher.publish(message)
+    }
+
+    public sendAsyncEventProgress(message: AsyncEventProgressMessage) {
         this.appsToWebViewMessagePublisher.publish(message)
     }
 }
