@@ -812,19 +812,34 @@ export class ChatController {
         }
     }
 
+    private async rejectShellCommand(message: CustomFormActionMessage) {
+        const triggerId = randomUUID()
+        this.triggerEventsStorage.addTriggerEvent({
+            id: triggerId,
+            tabID: message.tabID,
+            message: undefined,
+            type: 'chat_message',
+            context: undefined,
+        })
+        await this.generateStaticTextResponse('reject-shell-command', triggerId)
+    }
+
     private async processCustomFormAction(message: CustomFormActionMessage) {
         switch (message.action.id) {
             case 'submit-create-prompt':
                 await this.handleCreatePrompt(message)
                 break
             case 'accept-code-diff':
-            case 'confirm-tool-use':
+            case 'run-shell-command':
             case 'generic-tool-execution':
                 await this.closeDiffView()
                 await this.processToolUseMessage(message)
                 break
             case 'reject-code-diff':
                 await this.closeDiffView()
+                break
+            case 'reject-shell-command':
+                await this.rejectShellCommand(message)
                 break
             case 'tool-unavailable':
                 await this.processUnavailableToolUseMessage(message)
