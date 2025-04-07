@@ -48,7 +48,6 @@ export * from './lsp/config'
 export * as WorkspaceLspInstaller from './lsp/workspaceInstaller'
 export * as secondaryAuth from '../auth/secondaryAuth'
 export * as authConnection from '../auth/connection'
-export * as disclaimer from './util/disclaimer'
 import { FeatureContext } from '../shared/featureConfig'
 
 /**

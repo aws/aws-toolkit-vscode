@@ -109,7 +109,7 @@ export function registerMessageListeners(
                 break
             }
             case DISCLAIMER_ACKNOWLEDGED: {
-                void AmazonQPromptSettings.instance.update('amazonQChatDisclaimerAcknowledged', true)
+                void AmazonQPromptSettings.instance.disablePrompt('amazonQChatDisclaimer')
                 break
             }
             case chatRequestType.method: {

@@ -9,7 +9,7 @@ import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import { FeatureConfigProvider, FeatureContext } from '../../../shared/featureConfig'
 import globals from '../../../shared/extensionGlobals'
 import { isSageMaker } from '../../../shared/extensionUtilities'
-import { disclaimerAcknowledged } from '../../util/disclaimer'
+import { AmazonQPromptSettings } from '../../../shared/settings'
 
 export class WebViewContentGenerator {
     private async generateFeatureConfigsData(): Promise<string> {
@@ -83,7 +83,7 @@ export class WebViewContentGenerator {
         const isSMUS = isSageMaker('SMUS')
 
         const disabledCommandsString = isSM ? `['/dev', '/transform', '/test', '/review', '/doc']` : '[]'
-        const enableDisclaimer = await disclaimerAcknowledged()
+        const disclaimerAcknowledged = !AmazonQPromptSettings.instance.isPromptEnabled('amazonQChatDisclaimer')
         const welcomeLoadCount = globals.globalState.tryGet('aws.amazonq.welcomeChatShowCount', Number, 0)
 
         return `
@@ -93,7 +93,7 @@ export class WebViewContentGenerator {
             const init = () => {
                 createMynahUI(acquireVsCodeApi(), ${
                     (await AuthUtil.instance.getChatAuthState()).amazonQ === 'connected'
-                },${featureConfigsString},${welcomeLoadCount},${enableDisclaimer},${disabledCommandsString},${isSMUS},${isSM});
+                },${featureConfigsString},${welcomeLoadCount},${disclaimerAcknowledged},${disabledCommandsString},${isSMUS},${isSM});
             }
         </script>
         `

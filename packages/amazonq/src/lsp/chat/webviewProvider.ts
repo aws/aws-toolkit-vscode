@@ -14,8 +14,7 @@ import {
 } from 'vscode'
 import { QuickActionCommandGroup } from '@aws/mynah-ui'
 import * as path from 'path'
-import { LanguageServerResolver } from 'aws-core-vscode/shared'
-import { disclaimer } from 'aws-core-vscode/amazonq'
+import { AmazonQPromptSettings, LanguageServerResolver } from 'aws-core-vscode/shared'
 
 export class AmazonQChatViewProvider implements WebviewViewProvider {
     public static readonly viewType = 'aws.amazonq.AmazonQChatView'
@@ -65,7 +64,7 @@ export class AmazonQChatViewProvider implements WebviewViewProvider {
     }
 
     private async getWebviewContent(mynahUIPath: string) {
-        const disclaimerAcknowledged = await disclaimer.disclaimerAcknowledged()
+        const disclaimerAcknowledged = AmazonQPromptSettings.instance.isPromptEnabled('amazonQChatDisclaimer')
         return `
         <!DOCTYPE html>
         <html lang="en">

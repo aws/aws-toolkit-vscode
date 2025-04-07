@@ -662,6 +662,15 @@ export class AmazonQPromptSettings
 {
     public isPromptEnabled(promptName: amazonQPromptName): boolean {
         try {
+            // Legacy migration for old globalState settings:
+            if (promptName === 'amazonQChatDisclaimer') {
+                const acknowledged = globals.globalState.tryGet('aws.amazonq.disclaimerAcknowledged', Boolean, false)
+                if (acknowledged) {
+                    void this.update(promptName, true)
+                    globals.globalState.tryUpdate('aws.amazonq.disclaimerAcknowledged', undefined)
+                }
+            }
+
             return !this._getOrThrow(promptName, false)
         } catch (e) {
             this._log('prompt check for "%s" failed: %s', promptName, (e as Error).message)

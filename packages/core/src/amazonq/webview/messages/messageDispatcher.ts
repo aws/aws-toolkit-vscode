@@ -78,7 +78,7 @@ export function dispatchWebViewMessagesToApps(
                 return
             }
             case 'disclaimer-acknowledged': {
-                void AmazonQPromptSettings.instance.update('amazonQChatDisclaimerAcknowledged', true)
+                void AmazonQPromptSettings.instance.disablePrompt('amazonQChatDisclaimer')
                 return
             }
             case 'update-welcome-count': {

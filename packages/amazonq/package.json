@@ -128,7 +128,7 @@
                             "type": "boolean",
                             "default": false
                         },
-                        "amazonQChatDisclaimerAcknowledged": {
+                        "amazonQChatDisclaimer": {
                             "type": "boolean",
                             "default": false
                         }
