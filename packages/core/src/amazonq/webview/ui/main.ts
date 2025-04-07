@@ -49,7 +49,8 @@ export const createMynahUI = (
     welcomeCount: number,
     disclaimerAcknowledged: boolean,
     disabledCommands?: string[],
-    isSMUS?: boolean
+    isSMUS?: boolean,
+    isSM?: boolean
 ) => {
     let disclaimerCardActive = !disclaimerAcknowledged
     // eslint-disable-next-line prefer-const
@@ -84,7 +85,10 @@ export const createMynahUI = (
     })
 
     const showWelcomePage = () => {
-        return welcomeCount < welcomeCountThreshold
+        /*
+         * skip Agent Capability welcome page for SageMaker cases (SMAI and SMUS) since the commands are not supported
+         */
+        return welcomeCount < welcomeCountThreshold && !isSM
     }
 
     const updateWelcomeCount = () => {
