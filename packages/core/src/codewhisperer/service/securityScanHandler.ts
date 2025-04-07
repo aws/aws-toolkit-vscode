@@ -268,10 +268,12 @@ export async function createScanJob(
     getLogger().info(
         `Amazon Q Code Review requestId: ${resp.$response.requestId} and Amazon Q Code Review jobId: ${resp.jobId}`
     )
-    // eslint-disable-next-line aws-toolkits/no-console-log
-    console.log(
-        `Amazon Q Code Review requestId: ${resp.$response.requestId} and Amazon Q Code Review jobId: ${resp.jobId}`
-    )
+    if (scope !== CodeWhispererConstants.CodeAnalysisScope.FILE_AUTO) {
+        // eslint-disable-next-line aws-toolkits/no-console-log
+        console.log(
+            `Amazon Q Code Review requestId: ${resp.$response.requestId} and Amazon Q Code Review jobId: ${resp.jobId}`
+        )
+    }
     TelemetryHelper.instance.sendCodeScanEvent(languageId, resp.$response.requestId)
     return resp
 }
