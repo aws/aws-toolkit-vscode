@@ -240,49 +240,56 @@ export class Messenger {
                         toolUse.input = JSON.parse(toolUseInput)
                         toolUse.toolUseId = cwChatEvent.toolUseEvent.toolUseId ?? ''
                         toolUse.name = cwChatEvent.toolUseEvent.name ?? ''
-                        session.setToolUse(toolUse)
 
-                        const availableToolsNames = (session.pairProgrammingModeOn ? tools : noWriteTools).map(
-                            (item) => item.toolSpecification?.name
-                        )
-                        if (!availableToolsNames.includes(toolUse.name)) {
-                            this.dispatcher.sendCustomFormActionMessage(
-                                new CustomFormActionMessage(tabID, {
-                                    id: 'tool-unavailable',
-                                })
+                        let toolError = undefined
+                        try {
+                            const availableToolsNames = (session.pairProgrammingModeOn ? tools : noWriteTools).map(
+                                (item) => item.toolSpecification?.name
                             )
-                            return
-                        }
-
-                        const tool = ToolUtils.tryFromToolUse(toolUse)
-                        if ('type' in tool) {
-                            let changeList: Change[] | undefined = undefined
-                            if (tool.type === ToolType.FsWrite) {
-                                session.setShowDiffOnFileWrite(true)
-                                changeList = await tool.tool.getDiffChanges()
+                            if (!availableToolsNames.includes(toolUse.name)) {
+                                throw new Error(`Tool ${toolUse.name} is not available in the current mode`)
                             }
-                            const validation = ToolUtils.requiresAcceptance(tool)
-                            const chatStream = new ChatStream(this, tabID, triggerID, toolUse, validation, changeList)
-                            await ToolUtils.queueDescription(tool, chatStream)
-
-                            if (!validation.requiresAcceptance) {
-                                // Need separate id for read tool and safe bash command execution as 'run-shell-command' id is required to state in cwChatConnector.ts which will impact generic tool execution.
-                                if (tool.type === ToolType.ExecuteBash) {
-                                    this.dispatcher.sendCustomFormActionMessage(
-                                        new CustomFormActionMessage(tabID, {
-                                            id: 'run-shell-command',
-                                        })
-                                    )
-                                } else {
-                                    this.dispatcher.sendCustomFormActionMessage(
-                                        new CustomFormActionMessage(tabID, {
-                                            id: 'generic-tool-execution',
-                                        })
-                                    )
+                            const tool = ToolUtils.tryFromToolUse(toolUse)
+                            if ('type' in tool) {
+                                let changeList: Change[] | undefined = undefined
+                                if (tool.type === ToolType.FsWrite) {
+                                    session.setShowDiffOnFileWrite(true)
+                                    changeList = await tool.tool.getDiffChanges()
                                 }
+                                const validation = ToolUtils.requiresAcceptance(tool)
+                                const chatStream = new ChatStream(
+                                    this,
+                                    tabID,
+                                    triggerID,
+                                    toolUse,
+                                    validation,
+                                    changeList
+                                )
+                                await ToolUtils.queueDescription(tool, chatStream)
+
+                                if (!validation.requiresAcceptance) {
+                                    // Need separate id for read tool and safe bash command execution as 'run-shell-command' id is required to state in cwChatConnector.ts which will impact generic tool execution.
+                                    if (tool.type === ToolType.ExecuteBash) {
+                                        this.dispatcher.sendCustomFormActionMessage(
+                                            new CustomFormActionMessage(tabID, {
+                                                id: 'run-shell-command',
+                                            })
+                                        )
+                                    } else {
+                                        this.dispatcher.sendCustomFormActionMessage(
+                                            new CustomFormActionMessage(tabID, {
+                                                id: 'generic-tool-execution',
+                                            })
+                                        )
+                                    }
+                                }
+                            } else {
+                                toolError = new Error('Tool not found')
                             }
-                        } else {
-                            // TODO: Handle the error
+                        } catch (error: any) {
+                            toolError = error
+                        } finally {
+                            session.setToolUseWithError({ toolUse, error: toolError })
                         }
                     } else if (cwChatEvent.toolUseEvent?.stop === undefined && toolUseInput !== '') {
                         // This is for the case when writing tool is executed. The toolUseEvent is non stop but in toolUseInput is not empty. In this case we need show user the current spinner UI.

@@ -16,6 +16,11 @@ import { createQDeveloperStreamingClient } from '../../../../shared/clients/qDev
 import { UserWrittenCodeTracker } from '../../../../codewhisperer/tracker/userWrittenCodeTracker'
 import { PromptMessage } from '../../../controllers/chat/model'
 
+export type ToolUseWithError = {
+    toolUse: ToolUse
+    error: Error | undefined
+}
+
 export class ChatSession {
     private sessionId?: string
     /**
@@ -24,7 +29,7 @@ export class ChatSession {
      * _context = Additional context to be passed to the LLM for generating the response
      */
     private _readFiles: string[] = []
-    private _toolUse: ToolUse | undefined
+    private _toolUseWithError: ToolUseWithError | undefined
     private _showDiffOnFileWrite: boolean = false
     private _context: PromptMessage['context']
     private _pairProgrammingModeOn: boolean = true
@@ -49,12 +54,12 @@ export class ChatSession {
         this._pairProgrammingModeOn = pairProgrammingModeOn
     }
 
-    public get toolUse(): ToolUse | undefined {
-        return this._toolUse
+    public get toolUseWithError(): ToolUseWithError | undefined {
+        return this._toolUseWithError
     }
 
-    public setToolUse(toolUse: ToolUse | undefined) {
-        this._toolUse = toolUse
+    public setToolUseWithError(toolUseWithError: ToolUseWithError | undefined) {
+        this._toolUseWithError = toolUseWithError
     }
 
     public get context(): PromptMessage['context'] {

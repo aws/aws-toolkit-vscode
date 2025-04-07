@@ -13,7 +13,7 @@ export interface MessageErrorInfo {
 }
 
 export function extractErrorInfo(error: any): MessageErrorInfo {
-    let errorMessage = 'Error reading chat stream.'
+    let errorMessage = 'Error reading chat response stream: ' + error.message
     let statusCode = undefined
     let requestId = undefined
 
