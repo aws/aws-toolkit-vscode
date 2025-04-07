@@ -81,7 +81,7 @@ export class ChatHistoryManager {
      */
     public pushAssistantMessage(newMessage: ChatMessage): void {
         if (newMessage !== undefined && this.lastUserMessage === undefined) {
-            this.logger.warn('Assistant response should always come after user input message')
+            this.logger.warn('first assistant response should always come after user input message')
             return
         }
         // check if last message in histroy is assistant message and now replace it in that case
