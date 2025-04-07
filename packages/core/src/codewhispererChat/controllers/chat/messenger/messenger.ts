@@ -11,9 +11,15 @@ import {
     CodeReference,
     ContextCommandData,
     EditorContextCommandMessage,
+    ExportChatMessage,
     OpenSettingsMessage,
+    OpenDetailedListMessage,
     QuickActionMessage,
+    RestoreTabMessage,
     ShowCustomFormMessage,
+    UpdateDetailedListMessage,
+    CloseDetailedListMessage,
+    SelectTabMessage,
 } from '../../../view/connector/connector'
 import { EditorContextCommandType } from '../../../commands/registerCommands'
 import { ChatResponseStream as qdevChatResponseStream } from '@amzn/amazon-q-developer-streaming-client'
@@ -38,7 +44,9 @@ import { LspController } from '../../../../amazonq/lsp/lspController'
 import { extractCodeBlockLanguage } from '../../../../shared/markdown'
 import { extractAuthFollowUp } from '../../../../amazonq/util/authUtils'
 import { helpMessage } from '../../../../amazonq/webview/ui/texts/constants'
-import { ChatItemButton, ChatItemFormItem, MynahUIDataModel } from '@aws/mynah-ui'
+import { ChatItem, ChatItemButton, ChatItemFormItem, DetailedList, MynahUIDataModel } from '@aws/mynah-ui'
+import { Database } from '../../../../shared/db/chatDb/chatDb'
+import { TabType } from '../../../../amazonq/webview/ui/storages/tabsStorage'
 
 export type StaticTextResponseType = 'quick-action-help' | 'onboarding-help' | 'transform' | 'help'
 
@@ -48,6 +56,8 @@ export type MessengerResponseType = {
 }
 
 export class Messenger {
+    chatHistoryDb = Database.getInstance()
+
     public constructor(
         private readonly dispatcher: AppToWebViewMessageDispatcher,
         private readonly telemetryHelper: CWCTelemetryHelper
@@ -272,6 +282,14 @@ export class Messenger {
                 this.telemetryHelper.recordMessageResponseError(triggerPayload, tabID, statusCode ?? 0)
             })
             .finally(async () => {
+                if (session.sessionIdentifier) {
+                    this.chatHistoryDb.addMessage(tabID, 'cwc', session.sessionIdentifier, {
+                        body: message,
+                        type: 'answer' as any,
+                        codeReference: codeReference as any,
+                        relatedContent: { title: 'Sources', content: relatedSuggestions as any },
+                    })
+                }
                 if (
                     triggerPayload.relevantTextDocuments &&
                     triggerPayload.relevantTextDocuments.length > 0 &&
@@ -510,6 +528,30 @@ export class Messenger {
 
     public sendOpenSettingsMessage(triggerId: string, tabID: string) {
         this.dispatcher.sendOpenSettingsMessage(new OpenSettingsMessage(tabID))
+    }
+
+    public sendRestoreTabMessage(historyId: string, tabType: TabType, chats: ChatItem[], exportTab?: boolean) {
+        this.dispatcher.sendRestoreTabMessage(new RestoreTabMessage(historyId, tabType, chats, exportTab))
+    }
+
+    public sendOpenDetailedListMessage(tabId: string, listType: string, data: DetailedList) {
+        this.dispatcher.sendOpenDetailedListMessage(new OpenDetailedListMessage(tabId, listType, data))
+    }
+
+    public sendUpdateDetailedListMessage(listType: string, data: DetailedList) {
+        this.dispatcher.sendUpdateDetailedListMessage(new UpdateDetailedListMessage(listType, data))
+    }
+
+    public sendCloseDetailedListMessage(listType: string) {
+        this.dispatcher.sendCloseDetailedListMessage(new CloseDetailedListMessage(listType))
+    }
+
+    public sendSerializeTabMessage(tabId: string, uri: string, format: 'html' | 'markdown') {
+        this.dispatcher.sendSerializeTabMessage(new ExportChatMessage(tabId, format, uri))
+    }
+
+    public sendSelectTabMessage(tabId: string, eventID?: string) {
+        this.dispatcher.sendSelectTabMessage(new SelectTabMessage(tabId, eventID))
     }
 
     public sendContextCommandData(contextCommands: MynahUIDataModel['contextCommands']) {

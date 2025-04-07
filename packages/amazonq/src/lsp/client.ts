@@ -11,7 +11,7 @@ import { InlineCompletionManager } from '../app/inline/completion'
 import { AmazonQLspAuth, encryptionKey, notificationTypes } from './auth'
 import { AuthUtil } from 'aws-core-vscode/codewhisperer'
 import { ConnectionMetadata } from '@aws/language-server-runtimes/protocol'
-import { Settings, oidcClientName, createServerOptions, globals, Experiments, getLogger } from 'aws-core-vscode/shared'
+import { Settings, oidcClientName, createServerOptions, globals, Experiments, Commands } from 'aws-core-vscode/shared'
 import { activate } from './chat/activation'
 import { AmazonQResourcePaths } from './lspInstaller'
 
@@ -93,14 +93,7 @@ export async function startLanguageServer(
     const auth = new AmazonQLspAuth(client)
 
     return client.onReady().then(async () => {
-        await auth.init()
-        const inlineManager = new InlineCompletionManager(client)
-        inlineManager.registerInlineCompletion()
-        if (Experiments.instance.get('amazonqChatLSP', false)) {
-            activate(client, encryptionKey, resourcePaths.mynahUI)
-        }
-
-        // Request handler for when the server wants to know about the clients auth connnection
+        // Request handler for when the server wants to know about the clients auth connnection. Must be registered before the initial auth init call
         client.onRequest<ConnectionMetadata, Error>(notificationTypes.getConnectionMetadata.method, () => {
             return {
                 sso: {
@@ -108,25 +101,36 @@ export async function startLanguageServer(
                 },
             }
         })
+        await auth.refreshConnection()
 
-        // Temporary code for pen test. Will be removed when we switch to the real flare auth
-        const authInterval = setInterval(async () => {
-            try {
-                await auth.init()
-            } catch (e) {
-                getLogger('amazonqLsp').error('Unable to update bearer token: %s', (e as Error).message)
-                clearInterval(authInterval)
-            }
-        }, 300000) // every 5 minutes
+        if (Experiments.instance.get('amazonqLSPInline', false)) {
+            const inlineManager = new InlineCompletionManager(client)
+            inlineManager.registerInlineCompletion()
+            toDispose.push(
+                inlineManager,
+                Commands.register({ id: 'aws.amazonq.invokeInlineCompletion', autoconnect: true }, async () => {
+                    await vscode.commands.executeCommand('editor.action.inlineSuggest.trigger')
+                }),
+                vscode.workspace.onDidCloseTextDocument(async () => {
+                    await vscode.commands.executeCommand('aws.amazonq.rejectCodeSuggestion')
+                })
+            )
+        }
+
+        if (Experiments.instance.get('amazonqChatLSP', false)) {
+            activate(client, encryptionKey, resourcePaths.ui)
+        }
+
+        const refreshInterval = auth.startTokenRefreshInterval()
 
         toDispose.push(
             AuthUtil.instance.auth.onDidChangeActiveConnection(async () => {
-                await auth.init()
+                await auth.refreshConnection()
             }),
             AuthUtil.instance.auth.onDidDeleteConnection(async () => {
                 client.sendNotification(notificationTypes.deleteBearerToken.method)
             }),
-            inlineManager
+            { dispose: () => clearInterval(refreshInterval) }
         )
     })
 }

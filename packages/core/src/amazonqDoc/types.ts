@@ -55,6 +55,18 @@ export interface SessionStateAction extends FeatureDevSessionStateAction {
     folderPath?: string
 }
 
+export enum MetricDataOperationName {
+    StartDocGeneration = 'StartDocGeneration',
+    EndDocGeneration = 'EndDocGeneration',
+}
+
+export enum MetricDataResult {
+    Success = 'Success',
+    Fault = 'Fault',
+    Error = 'Error',
+    LlmFailure = 'LLMFailure',
+}
+
 export {
     LLMResponseType,
     SessionStorage,

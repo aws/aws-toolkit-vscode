@@ -280,6 +280,22 @@
             ],
             "documentation": "<p>Lists the findings from a particular code analysis job.</p>"
         },
+        "ListEvents": {
+            "name": "ListEvents",
+            "http": {
+                "method": "POST",
+                "requestUri": "/"
+            },
+            "input": { "shape": "ListEventsRequest" },
+            "output": { "shape": "ListEventsResponse" },
+            "errors": [
+                { "shape": "ThrottlingException" },
+                { "shape": "InternalServerException" },
+                { "shape": "ValidationException" },
+                { "shape": "AccessDeniedException" }
+            ],
+            "documentation": "<p>List events for agent activity</p>"
+        },
         "ListFeatureEvaluations": {
             "name": "ListFeatureEvaluations",
             "http": {
@@ -689,7 +705,9 @@
                 "acceptedLineCount": { "shape": "Integer" },
                 "acceptedSnippetHasReference": { "shape": "Boolean" },
                 "hasProjectLevelContext": { "shape": "Boolean" },
-                "userIntent": { "shape": "UserIntent" }
+                "userIntent": { "shape": "UserIntent" },
+                "addedIdeDiagnostics": { "shape": "IdeDiagnosticList" },
+                "removedIdeDiagnostics": { "shape": "IdeDiagnosticList" }
             }
         },
         "ChatInteractWithMessageEventInteractionTargetString": {
@@ -736,6 +754,11 @@
                 "modificationPercentage": { "shape": "Double" },
                 "hasProjectLevelContext": { "shape": "Boolean" }
             }
+        },
+        "ClientId": {
+            "type": "string",
+            "max": 255,
+            "min": 1
         },
         "CodeAnalysisFindingsSchema": {
             "type": "string",
@@ -1074,7 +1097,8 @@
         "CreateWorkspaceRequestWorkspaceRootString": {
             "type": "string",
             "max": 1024,
-            "min": 1
+            "min": 1,
+            "sensitive": true
         },
         "CreateWorkspaceResponse": {
             "type": "structure",
@@ -1389,6 +1413,10 @@
                 "useRelevantDocuments": {
                     "shape": "Boolean",
                     "documentation": "<p>Whether service should use relevant document in prompt</p>"
+                },
+                "workspaceFolders": {
+                    "shape": "WorkspaceFolderList",
+                    "documentation": "<p>Represents IDE provided list of workspace folders</p>"
                 }
             },
             "documentation": "<p>Represents the state of an Editor</p>"
@@ -1470,6 +1498,42 @@
             "type": "string",
             "max": 2048,
             "min": 0
+        },
+        "Event": {
+            "type": "structure",
+            "required": ["eventId", "generationId", "eventTimestamp", "eventType", "eventBlob"],
+            "members": {
+                "eventId": { "shape": "UUID" },
+                "generationId": { "shape": "UUID" },
+                "eventTimestamp": { "shape": "SyntheticTimestamp_date_time" },
+                "eventType": { "shape": "EventType" },
+                "eventBlob": { "shape": "EventBlob" }
+            }
+        },
+        "EventBlob": {
+            "type": "blob",
+            "max": 400000,
+            "min": 1,
+            "sensitive": true
+        },
+        "EventList": {
+            "type": "list",
+            "member": { "shape": "Event" },
+            "max": 10,
+            "min": 1
+        },
+        "EventType": {
+            "type": "string",
+            "max": 100,
+            "min": 1
+        },
+        "ExternalIdentityDetails": {
+            "type": "structure",
+            "members": {
+                "issuerUrl": { "shape": "IssuerUrl" },
+                "clientId": { "shape": "ClientId" },
+                "scimEndpoint": { "shape": "String" }
+            }
         },
         "FeatureDevCodeAcceptanceEvent": {
             "type": "structure",
@@ -1616,7 +1680,8 @@
                 "TASK_ASSIST",
                 "TRANSFORMATIONS",
                 "CHAT_CUSTOMIZATION",
-                "TRANSFORMATIONS_WEBAPP"
+                "TRANSFORMATIONS_WEBAPP",
+                "FEATURE_DEVELOPMENT"
             ],
             "max": 64,
             "min": 1
@@ -1794,6 +1859,46 @@
             "max": 64,
             "min": 1
         },
+        "IdeDiagnostic": {
+            "type": "structure",
+            "required": ["ideDiagnosticType"],
+            "members": {
+                "range": {
+                    "shape": "Range",
+                    "documentation": "<p>The range at which the message applies.</p>"
+                },
+                "source": {
+                    "shape": "IdeDiagnosticSourceString",
+                    "documentation": "<p>A human-readable string describing the source of the diagnostic</p>"
+                },
+                "severity": {
+                    "shape": "DiagnosticSeverity",
+                    "documentation": "<p>Diagnostic Error type</p>"
+                },
+                "ideDiagnosticType": {
+                    "shape": "IdeDiagnosticType",
+                    "documentation": "<p>Type of the diagnostic</p>"
+                }
+            },
+            "documentation": "<p>Structure to represent metadata about a Diagnostic from user local IDE</p>"
+        },
+        "IdeDiagnosticList": {
+            "type": "list",
+            "member": { "shape": "IdeDiagnostic" },
+            "documentation": "<p>List of IDE Diagnostics</p>",
+            "max": 1024,
+            "min": 0
+        },
+        "IdeDiagnosticSourceString": {
+            "type": "string",
+            "max": 1024,
+            "min": 0,
+            "sensitive": true
+        },
+        "IdeDiagnosticType": {
+            "type": "string",
+            "enum": ["SYNTAX_ERROR", "TYPE_ERROR", "REFERENCE_ERROR", "BEST_PRACTICE", "SECURITY", "OTHER"]
+        },
         "IdempotencyToken": {
             "type": "string",
             "max": 256,
@@ -1802,9 +1907,43 @@
         "IdentityDetails": {
             "type": "structure",
             "members": {
-                "ssoIdentityDetails": { "shape": "SSOIdentityDetails" }
+                "ssoIdentityDetails": { "shape": "SSOIdentityDetails" },
+                "externalIdentityDetails": { "shape": "ExternalIdentityDetails" }
             },
             "union": true
+        },
+        "ImageBlock": {
+            "type": "structure",
+            "required": ["format", "source"],
+            "members": {
+                "format": { "shape": "ImageFormat" },
+                "source": { "shape": "ImageSource" }
+            },
+            "documentation": "<p>Represents the image source itself and the format of the image.</p>"
+        },
+        "ImageBlocks": {
+            "type": "list",
+            "member": { "shape": "ImageBlock" },
+            "max": 10,
+            "min": 0
+        },
+        "ImageFormat": {
+            "type": "string",
+            "enum": ["png", "jpeg", "gif", "webp"]
+        },
+        "ImageSource": {
+            "type": "structure",
+            "members": {
+                "bytes": { "shape": "ImageSourceBytesBlob" }
+            },
+            "documentation": "<p>Image bytes limited to ~10MB considering overhead of base64 encoding</p>",
+            "sensitive": true,
+            "union": true
+        },
+        "ImageSourceBytesBlob": {
+            "type": "blob",
+            "max": 1500000,
+            "min": 1
         },
         "Import": {
             "type": "structure",
@@ -1872,6 +2011,11 @@
             "exception": true,
             "fault": true,
             "retryable": { "throttling": false }
+        },
+        "IssuerUrl": {
+            "type": "string",
+            "max": 255,
+            "min": 1
         },
         "LineRangeList": {
             "type": "list",
@@ -1943,6 +2087,30 @@
                 "codeAnalysisFindings": { "shape": "SensitiveString" }
             }
         },
+        "ListEventsRequest": {
+            "type": "structure",
+            "required": ["conversationId"],
+            "members": {
+                "conversationId": { "shape": "UUID" },
+                "maxResults": { "shape": "ListEventsRequestMaxResultsInteger" },
+                "nextToken": { "shape": "NextToken" }
+            }
+        },
+        "ListEventsRequestMaxResultsInteger": {
+            "type": "integer",
+            "box": true,
+            "max": 50,
+            "min": 1
+        },
+        "ListEventsResponse": {
+            "type": "structure",
+            "required": ["conversationId", "events"],
+            "members": {
+                "conversationId": { "shape": "UUID" },
+                "events": { "shape": "EventList" },
+                "nextToken": { "shape": "NextToken" }
+            }
+        },
         "ListFeatureEvaluationsRequest": {
             "type": "structure",
             "required": ["userContext"],
@@ -1971,7 +2139,8 @@
         "ListWorkspaceMetadataRequestWorkspaceRootString": {
             "type": "string",
             "max": 1024,
-            "min": 1
+            "min": 1,
+            "sensitive": true
         },
         "ListWorkspaceMetadataResponse": {
             "type": "structure",
@@ -2013,6 +2182,11 @@
             "max": 128,
             "min": 1,
             "pattern": "[-a-zA-Z0-9._]*"
+        },
+        "NextToken": {
+            "type": "string",
+            "max": 1000,
+            "min": 0
         },
         "Notifications": {
             "type": "list",
@@ -2141,6 +2315,7 @@
                 "arn": { "shape": "ProfileArn" },
                 "identityDetails": { "shape": "IdentityDetails" },
                 "profileName": { "shape": "ProfileName" },
+                "description": { "shape": "ProfileDescription" },
                 "referenceTrackerConfiguration": { "shape": "ReferenceTrackerConfiguration" },
                 "kmsKeyArn": { "shape": "ResourceArn" },
                 "activeFunctionalities": { "shape": "ActiveFunctionalityList" },
@@ -2158,6 +2333,12 @@
             "max": 950,
             "min": 0,
             "pattern": "arn:aws:codewhisperer:[-.a-z0-9]{1,63}:\\d{12}:profile/([a-zA-Z0-9]){12}"
+        },
+        "ProfileDescription": {
+            "type": "string",
+            "max": 256,
+            "min": 1,
+            "pattern": "[\\sa-zA-Z0-9_-]*"
         },
         "ProfileList": {
             "type": "list",
@@ -2673,7 +2854,8 @@
                     "shape": "StartTestGenerationRequestClientTokenString",
                     "idempotencyToken": true
                 },
-                "profileArn": { "shape": "ProfileArn" }
+                "profileArn": { "shape": "ProfileArn" },
+                "referenceTrackerConfiguration": { "shape": "ReferenceTrackerConfiguration" }
             },
             "documentation": "<p>Structure to represent test generation request.</p>"
         },
@@ -2832,6 +3014,10 @@
         "SymbolType": {
             "type": "string",
             "enum": ["DECLARATION", "USAGE"]
+        },
+        "SyntheticTimestamp_date_time": {
+            "type": "timestamp",
+            "timestampFormat": "iso8601"
         },
         "TargetCode": {
             "type": "structure",
@@ -3222,7 +3408,7 @@
         },
         "ToolResultContentBlockTextString": {
             "type": "string",
-            "max": 30720,
+            "max": 800000,
             "min": 0,
             "sensitive": true
         },
@@ -3558,13 +3744,17 @@
                 "origin": {
                     "shape": "Origin",
                     "documentation": "<p>User Input Origin.</p>"
+                },
+                "images": {
+                    "shape": "ImageBlocks",
+                    "documentation": "<p>Images associated with the Chat Message.</p>"
                 }
             },
             "documentation": "<p>Structure to represent a chat input message from User.</p>"
         },
         "UserInputMessageContentString": {
             "type": "string",
-            "max": 160000,
+            "max": 600000,
             "min": 0,
             "sensitive": true
         },
@@ -3688,7 +3878,9 @@
                 "generatedLine": { "shape": "PrimitiveInteger" },
                 "numberOfRecommendations": { "shape": "PrimitiveInteger" },
                 "perceivedLatencyMilliseconds": { "shape": "Double" },
-                "acceptedCharacterCount": { "shape": "PrimitiveInteger" }
+                "acceptedCharacterCount": { "shape": "PrimitiveInteger" },
+                "addedIdeDiagnostics": { "shape": "IdeDiagnosticList" },
+                "removedIdeDiagnostics": { "shape": "IdeDiagnosticList" }
             }
         },
         "ValidationException": {
@@ -3721,6 +3913,18 @@
                 "relativePath": { "shape": "SensitiveString" },
                 "programmingLanguage": { "shape": "ProgrammingLanguage" }
             }
+        },
+        "WorkspaceFolderList": {
+            "type": "list",
+            "member": { "shape": "WorkspaceFolderListMemberString" },
+            "max": 100,
+            "min": 0
+        },
+        "WorkspaceFolderListMemberString": {
+            "type": "string",
+            "max": 4096,
+            "min": 1,
+            "sensitive": true
         },
         "WorkspaceList": {
             "type": "list",

@@ -11,6 +11,7 @@ import { TabOpenType } from '../../../amazonq/webview/ui/storages/tabsStorage'
 import { CodeReference } from '../../view/connector/connector'
 import { Customization } from '../../../codewhisperer/client/codewhispereruserclient'
 import { QuickActionCommand } from '@aws/mynah-ui'
+import { Message } from '../../../shared/db/chatDb/util'
 import { RegionProfile } from '../../../codewhisperer/models/model'
 
 export interface TriggerTabIDReceived {
@@ -142,6 +143,16 @@ export interface FooterInfoLinkClick {
     link: string
 }
 
+export interface TabBarButtonClick {
+    tabID: string
+    buttonId: string
+}
+
+export interface SaveChatMessage {
+    serializedChat: string
+    uri: string
+}
+
 export interface QuickCommandGroupActionClick {
     command: string
     actionId: string
@@ -198,6 +209,7 @@ export interface TriggerPayload {
     traceId?: string
     contextLengths: ContextLengths
     workspaceRulesCount?: number
+    history?: Message[]
 }
 
 export type ContextLengths = {

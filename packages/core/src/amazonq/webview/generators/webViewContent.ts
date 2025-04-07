@@ -84,6 +84,7 @@ export class WebViewContentGenerator {
         const disclaimerAcknowledged = globals.globalState.tryGet('aws.amazonq.disclaimerAcknowledged', Boolean, false)
 
         const welcomeLoadCount = globals.globalState.tryGet('aws.amazonq.welcomeChatShowCount', Number, 0)
+        const isSMUS = isSageMaker('SMUS')
 
         // only show profile card when the two conditions
         //  1. profile count >= 2
@@ -108,7 +109,8 @@ export class WebViewContentGenerator {
                     ${welcomeLoadCount},
                     ${disclaimerAcknowledged},
                     ${regionProfileString},
-                    ${disabledCommandsString}
+                    ${disabledCommandsString},
+                    ${isSMUS}
                 );
             }
         </script>

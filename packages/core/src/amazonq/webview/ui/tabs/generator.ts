@@ -7,7 +7,7 @@ import { ChatItem, ChatItemType, MynahUIDataModel, QuickActionCommandGroup } fro
 import { TabType } from '../storages/tabsStorage'
 import { FollowUpGenerator } from '../followUps/generator'
 import { QuickActionGenerator } from '../quickActions/generator'
-import { TabTypeDataMap } from './constants'
+import { qChatIntroMessageForSMUS, TabTypeDataMap } from './constants'
 import { agentWalkthroughDataModel } from '../walkthrough/agent'
 import { FeatureContext } from '../../../../shared/featureConfig'
 import { RegionProfile } from '../../../../codewhisperer/models/model'
@@ -43,7 +43,12 @@ export class TabDataGenerator {
         this.regionProfile = props.regionProfile
     }
 
-    public getTabData(tabType: TabType, needWelcomeMessages: boolean, taskName?: string): MynahUIDataModel {
+    public getTabData(
+        tabType: TabType,
+        needWelcomeMessages: boolean,
+        taskName?: string,
+        isSMUS?: boolean
+    ): MynahUIDataModel {
         if (tabType === 'agentWalkthrough') {
             return agentWalkthroughDataModel
         }
@@ -74,7 +79,7 @@ export class TabDataGenerator {
                       ...(regionProfileCard ? [regionProfileCard] : []),
                       {
                           type: ChatItemType.ANSWER,
-                          body: TabTypeDataMap[tabType].welcome,
+                          body: isSMUS ? qChatIntroMessageForSMUS : TabTypeDataMap[tabType].welcome,
                       },
                       {
                           type: ChatItemType.ANSWER,
