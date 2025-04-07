@@ -1,7 +1,7 @@
 <template>
     <div v-show="doShow" id="profile-selector-container" :data-app="app">
         <!-- Icon -->
-        <div id="icon-container">
+        <div id="icon-container" class="bottomMargin">
             <svg
                 v-if="app === 'AMAZONQ'"
                 width="71"
@@ -45,16 +45,19 @@
             </svg>
         </div>
 
-        <div class="text-container">
-            <div id="title">Choose a Q Developer profile</div>
-            <div class="description">
+        <template v-if="isFirstLoading">
+            <div class="header bottomMargin">Authenticating in browser...</div>
+            <button class="continue-button">Cancel</button>
+        </template>
+
+        <template v-else>
+            <div class="header">Choose a Q Developer profile</div>
+            <div class="subHeader bottomMargin topMargin">
                 Your administrator has given you access to Q from multiple profiles. Choose the profile that meets your
                 current working needs. You can change your profile at any time.
             </div>
-        </div>
 
-        <div id="content-container">
-            <div class="options">
+            <div class="bottomMargin">
                 <!-- TODO: should use profile.arn as item-id but not idx, which will require more work to refactor auth flow code path -->
                 <SelectableItem
                     v-for="(profile, idx) in availableRegionProfiles"
@@ -65,30 +68,31 @@
                     :item-sub-title="`${profile.region}`"
                     :item-text="`Account: ${profile.description}`"
                     :isSelected="selectedRegionProfileIndex === idx"
-                    :class="['option', { selected: selectedRegionProfileIndex === idx }]"
+                    :class="['selectable-item', { selected: selectedRegionProfileIndex === idx }]"
                 ></SelectableItem>
             </div>
 
-            <div v-if="errorMessage" id="error-message">
+            <div v-if="errorMessage" id="error-message" class="bottomMargin">
                 We couldn't load your Q Developer profiles. Please try again.
             </div>
 
             <div>
                 <template v-if="errorMessage">
-                    <button id="reload" class="continue-button" v-on:click="listAvailableProfiles">Try again</button>
-                    <button id="signout" v-on:click="signout">Sign Out</button>
+                    <button id="reload" class="continue-button" v-on:click="retryLoadProfiles">Try again</button>
+                    <button id="signout" class="topMargin" v-on:click="signout">Sign Out</button>
                 </template>
                 <template v-else>
                     <button
                         class="continue-button"
                         id="profile-selection-continue-button"
                         v-on:click="onClickContinue()"
+                        :disabled="isRetryLoading"
                     >
-                        Continue
+                        {{ isRetryLoading ? 'Refreshing' : 'Continue' }}
                     </button>
                 </template>
             </div>
-        </div>
+        </template>
     </div>
 </template>
 <script lang="ts">
@@ -119,6 +123,8 @@ export default defineComponent({
             doShow: false,
             availableRegionProfiles: [] as RegionProfile[],
             selectedRegionProfileIndex: 0,
+            isFirstLoading: false,
+            isRetryLoading: false,
         }
     },
     props: {
@@ -134,8 +140,8 @@ export default defineComponent({
     async created() {
         this.doShow = true
     },
-    async beforeMount() {
-        await this.listAvailableProfiles()
+    async mounted() {
+        this.firstTimeLoadProfiles()
     },
     methods: {
         toggleItemSelection(itemId: number) {
@@ -152,6 +158,18 @@ export default defineComponent({
         async signout() {
             client.emitUiClick('auth_signout')
             await client.signout()
+        },
+        // hack to have 2 different flag because we want to render differently for 2 paths
+        async retryLoadProfiles() {
+            this.isRetryLoading = true
+            await this.listAvailableProfiles()
+            this.isRetryLoading = false
+        },
+        firstTimeLoadProfiles() {
+            this.isFirstLoading = true
+            this.listAvailableProfiles().then(() => {
+                this.isFirstLoading = false
+            })
         },
         async listAvailableProfiles() {
             this.errorMessage = ''
@@ -190,23 +208,85 @@ export function getReadyElementId() {
     margin: auto;
     position: absolute;
     top: var(--auth-container-top);
-    width: 90vw;
-    max-width: 400px;
-}
-
-#content-container {
-    display: flex;
-    flex-direction: column;
-    /* All items are centered vertically */
-    justify-content: space-between;
-    /** The overall height of the container, then spacing is automatic between child elements */
-    /* height: 7rem; */
-    align-items: center;
-}
-
-#content-container > * {
-    width: 100%;
     max-width: 260px;
+    width: 90vw;
+}
+
+.selectable-item {
+    margin-bottom: 5px;
+    /* margin-top: 10px; */
+    cursor: pointer;
+    width: 100%;
+}
+
+.header {
+    font-size: var(--font-size-base);
+    font-weight: bold;
+}
+
+.vscode-dark .header {
+    color: white;
+}
+.vscode-light .header {
+    color: black;
+}
+
+.title {
+    margin-bottom: 3px;
+    margin-top: 3px;
+    font-size: var(--font-size-base);
+    font-weight: 500;
+}
+.vscode-dark .title {
+    color: white;
+}
+.vscode-light .title {
+    color: black;
+}
+
+.subHeader {
+    font-size: var(--font-size-sm);
+}
+.continue-button {
+    background-color: var(--vscode-button-background);
+    color: white;
+    width: 100%;
+    height: 30px;
+    border: none;
+    border-radius: 4px;
+    font-weight: bold;
+    margin-bottom: 3px;
+    margin-top: 3px;
+    cursor: pointer;
+    font-size: var(--font-size-base);
+}
+
+.continue-button:disabled {
+    background-color: var(--vscode-input-background);
+    color: #6f6f6f;
+    cursor: not-allowed;
+}
+
+body.vscode-high-contrast:not(body.vscode-high-contrast-light) .continue-button {
+    background-color: white;
+    color: var(--vscode-input-background);
+}
+
+body.vscode-high-contrast:not(body.vscode-high-contrast-light) .continue-button:disabled {
+    background-color: #6f6f6f;
+    color: var(--vscode-input-background);
+}
+
+body.vscode-high-contrast-light .continue-button {
+    background-color: var(--vscode-button-background);
+    color: white;
+}
+
+.bottomMargin {
+    margin-bottom: 12px;
+}
+.topMargin {
+    margin-top: 6px;
 }
 
 #icon-container {
@@ -216,48 +296,9 @@ export function getReadyElementId() {
     align-items: center;
 }
 
-.text-container {
-    display: flex;
-    flex-direction: column;
-    margin-bottom: 1rem;
-    margin-left: 2rem;
-    margin-top: 1rem;
-}
-
-#title {
-    font-weight: bold;
-    margin-bottom: 1.5px;
-}
-
-.description {
-    margin-top: 0.5rem;
-    font-weight: normal;
-}
-
 #error-message {
     text-align: center;
     font-size: var(--font-size-base);
-}
-
-body.vscode-high-contrast-light .continue-button {
-    background-color: var(--vscode-button-background);
-    color: white;
-}
-
-body.vscode-high-contrast-light .continue-button:disabled {
-    background-color: #6f6f6f;
-    color: var(--vscode-input-background);
-}
-
-.options {
-    text-align: center;
-    align-items: center;
-}
-
-.option {
-    width: 100%;
-    margin-bottom: 7px;
-    cursor: pointer;
 }
 
 button#signout {
@@ -266,6 +307,9 @@ button#signout {
     border: none;
     background: none;
     user-select: none;
-    margin-top: 0.5rem;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 </style>
