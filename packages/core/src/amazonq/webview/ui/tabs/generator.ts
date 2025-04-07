@@ -72,23 +72,26 @@ export class TabDataGenerator {
                       },
                   ]
                 : [],
-            promptInputOptions: [
-                {
-                    type: 'toggle',
-                    id: 'prompt-type',
-                    value: 'ask',
-                    options: [
-                        {
-                            value: 'pair-programming-on',
-                            icon: 'code-block', // TODO: correct icons
-                        },
-                        {
-                            value: 'pair-programming-off',
-                            icon: 'chat', // TODO: correct icons
-                        },
-                    ],
-                },
-            ],
+            promptInputOptions:
+                tabType === 'cwc'
+                    ? [
+                          {
+                              type: 'toggle',
+                              id: 'prompt-type',
+                              value: 'ask',
+                              options: [
+                                  {
+                                      value: 'pair-programming-on',
+                                      icon: 'code-block', // TODO: correct icons
+                                  },
+                                  {
+                                      value: 'pair-programming-off',
+                                      icon: 'chat', // TODO: correct icons
+                                  },
+                              ],
+                          },
+                      ]
+                    : [],
         }
         return tabData
     }
