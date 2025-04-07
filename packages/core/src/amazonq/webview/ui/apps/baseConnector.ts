@@ -226,6 +226,15 @@ export abstract class BaseConnector {
         })
     }
 
+    onPromptInputOptionChange = (tabId: string, optionsValues: Record<string, string>): void => {
+        this.sendMessageToExtension({
+            command: 'prompt-input-option-change',
+            optionsValues,
+            tabType: this.getTabType(),
+            tabID: tabId,
+        })
+    }
+
     requestGenerativeAIAnswer = (tabID: string, messageId: string, payload: ChatPayload): Promise<any> => {
         /**
          * When a user presses "enter" send an event that indicates

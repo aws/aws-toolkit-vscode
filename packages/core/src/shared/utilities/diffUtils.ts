@@ -149,3 +149,31 @@ export function getDiffCharsAndLines(
         addedLines,
     }
 }
+
+/**
+ * Converts diff changes into a markdown-formatted string with syntax highlighting.
+ * This function takes an array of diff changes and formats them as a markdown code block
+ * with diff syntax, optionally including language-specific syntax highlighting.
+ *
+ * @param {Change[]} changes - An array of diff Change objects containing added, removed, or unchanged content
+ * @param {string} [language] - Optional language identifier for syntax highlighting in the markdown output
+ * @returns {string} A markdown-formatted string representing the diff with proper syntax highlighting
+ * @example
+ * // Generate diff markdown for JavaScript changes
+ * const diffChanges = diffLines(originalCode, newCode);
+ * const markdown = getDiffMarkdown(diffChanges, 'javascript');
+ * // Result will be a markdown code block with diff syntax and JavaScript highlighting
+ */
+export function getDiffMarkdown(changes: Change[], language?: string): string {
+    return ['```diff' + (language ? `-${language}` : ''), ...changes.flatMap(formatDiffPart), '```'].join('\n')
+}
+
+function formatDiffPart(part: Change) {
+    const prefix = part.added ? '+' : part.removed ? '-' : ' '
+    const lines = part.value.split('\n')
+
+    if (lines.length > 0 && lines[lines.length - 1] === '') {
+        lines.pop()
+    }
+    return lines.map((line) => `${prefix}${line}`)
+}

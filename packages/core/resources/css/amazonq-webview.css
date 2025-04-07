@@ -15,3 +15,7 @@ body.vscode-high-contrast:not(.vscode-high-contrast-light) {
     --mynah-color-highlight: rgba(0, 137, 255, 0.2);
     --mynah-color-highlight-text: rgba(0, 137, 255, 1);
 }
+
+body .mynah-card-body h1 {
+    --mynah-line-height: 1.5rem;
+}

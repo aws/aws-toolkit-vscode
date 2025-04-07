@@ -32,6 +32,7 @@ import {
     DocumentReference,
     FileClick,
     RelevantTextDocumentAddition,
+    PromptInputOptionChange,
     TabBarButtonClick,
     SaveChatMessage,
 } from './model'
@@ -50,7 +51,12 @@ import { EditorContextCommand } from '../../commands/registerCommands'
 import { PromptsGenerator } from './prompts/promptsGenerator'
 import { TriggerEventsStorage } from '../../storages/triggerEvents'
 import { SendMessageRequest } from '@amzn/amazon-q-developer-streaming-client'
-import { CodeWhispererStreamingServiceException } from '@amzn/codewhisperer-streaming'
+import {
+    CodeWhispererStreamingServiceException,
+    Origin,
+    ToolResult,
+    ToolResultStatus,
+} from '@amzn/codewhisperer-streaming'
 import { UserIntentRecognizer } from './userIntent/userIntentRecognizer'
 import { CWCTelemetryHelper, recordTelemetryChatRunCommand } from './telemetryHelper'
 import { CodeWhispererTracker } from '../../../codewhisperer/tracker/codewhispererTracker'
@@ -86,6 +92,13 @@ import {
     defaultContextLengths,
 } from '../../constants'
 import { ChatSession } from '../../clients/chat/v0/chat'
+import { amazonQTabSuffix } from '../../../shared/constants'
+import { maxToolOutputCharacterLength, OutputKind } from '../../tools/toolShared'
+import { ToolUtils, Tool, ToolType } from '../../tools/toolUtils'
+import { ChatStream } from '../../tools/chatStream'
+import { ChatHistoryStorage } from '../../storages/chatHistoryStorage'
+import { FsWrite, FsWriteParams } from '../../tools/fsWrite'
+import { tempDirPath } from '../../../shared/filesystemUtilities'
 import { Database } from '../../../shared/db/chatDb/chatDb'
 import { TabBarController } from './tabBarController'
 
@@ -112,6 +125,7 @@ export interface ChatControllerMessagePublishers {
     readonly processCustomFormAction: MessagePublisher<CustomFormActionMessage>
     readonly processContextSelected: MessagePublisher<ContextSelectedMessage>
     readonly processFileClick: MessagePublisher<FileClick>
+    readonly processPromptInputOptionChange: MessagePublisher<PromptInputOptionChange>
     readonly processTabBarButtonClick: MessagePublisher<TabBarButtonClick>
     readonly processSaveChat: MessagePublisher<SaveChatMessage>
     readonly processDetailedListFilterChangeMessage: MessagePublisher<DetailedListFilterChangeMessage>
@@ -142,6 +156,7 @@ export interface ChatControllerMessageListeners {
     readonly processCustomFormAction: MessageListener<CustomFormActionMessage>
     readonly processContextSelected: MessageListener<ContextSelectedMessage>
     readonly processFileClick: MessageListener<FileClick>
+    readonly processPromptInputOptionChange: MessageListener<PromptInputOptionChange>
     readonly processTabBarButtonClick: MessageListener<TabBarButtonClick>
     readonly processSaveChat: MessageListener<SaveChatMessage>
     readonly processDetailedListFilterChangeMessage: MessageListener<DetailedListFilterChangeMessage>
@@ -160,6 +175,7 @@ export class ChatController {
     private readonly userIntentRecognizer: UserIntentRecognizer
     private readonly telemetryHelper: CWCTelemetryHelper
     private userPromptsWatcher: vscode.FileSystemWatcher | undefined
+    private readonly chatHistoryStorage: ChatHistoryStorage
     private chatHistoryDb = Database.getInstance()
 
     public constructor(
@@ -178,6 +194,7 @@ export class ChatController {
         this.editorContentController = new EditorContentController()
         this.promptGenerator = new PromptsGenerator()
         this.userIntentRecognizer = new UserIntentRecognizer()
+        this.chatHistoryStorage = new ChatHistoryStorage()
         this.tabBarController = new TabBarController(this.messenger)
 
         onDidChangeAmazonQVisibility((visible) => {
@@ -283,6 +300,9 @@ export class ChatController {
         this.chatControllerMessageListeners.processFileClick.onMessage((data) => {
             return this.processFileClickMessage(data)
         })
+        this.chatControllerMessageListeners.processPromptInputOptionChange.onMessage((data) => {
+            return this.processPromptInputOptionChange(data)
+        })
         this.chatControllerMessageListeners.processTabBarButtonClick.onMessage((data) => {
             return this.tabBarController.processTabBarButtonClick(data)
         })
@@ -327,7 +347,20 @@ export class ChatController {
     }
 
     private processResponseBodyLinkClick(click: ResponseBodyLinkClickMessage) {
-        this.openLinkInExternalBrowser(click)
+        const uri = vscode.Uri.parse(click.link)
+        if (uri.scheme === 'file') {
+            void this.openFile(uri.fsPath)
+        } else {
+            this.openLinkInExternalBrowser(click)
+        }
+    }
+
+    private async openFile(absolutePath: string) {
+        const fileExists = await fs.existsFile(absolutePath)
+        if (fileExists) {
+            const document = await vscode.workspace.openTextDocument(absolutePath)
+            await vscode.window.showTextDocument(document)
+        }
     }
 
     private processSourceLinkClick(click: SourceLinkClickMessage) {
@@ -375,6 +408,7 @@ export class ChatController {
     private async processStopResponseMessage(message: StopResponseMessage) {
         const session = this.sessionStorage.getSession(message.tabID)
         session.tokenSource.cancel()
+        this.chatHistoryStorage.getTabHistory(message.tabID).clearRecentHistory()
     }
 
     private async processTriggerTabIDReceived(message: TriggerTabIDReceived) {
@@ -431,6 +465,7 @@ export class ChatController {
 
     private async processTabCloseMessage(message: TabClosedMessage) {
         this.sessionStorage.deleteSession(message.tabID)
+        this.chatHistoryStorage.deleteHistory(message.tabID)
         this.triggerEventsStorage.removeTabEvents(message.tabID)
         // this.telemetryHelper.recordCloseChat(message.tabID)
         this.chatHistoryDb.updateTabOpenState(message.tabID, false)
@@ -627,21 +662,227 @@ export class ChatController {
             this.handlePromptCreate(message.tabID)
         }
     }
+    private async handleCreatePrompt(message: CustomFormActionMessage) {
+        const userPromptsDirectory = getUserPromptsDirectory()
+        const title = message.action.formItemValues?.['prompt-name'] ?? 'default'
+        const newFilePath = path.join(userPromptsDirectory, `${title}${promptFileExtension}`)
+
+        await fs.writeFile(newFilePath, new Uint8Array(Buffer.from('')))
+        const newFileDoc = await vscode.workspace.openTextDocument(newFilePath)
+        await vscode.window.showTextDocument(newFileDoc)
+
+        telemetry.ui_click.emit({ elementId: 'amazonq_createSavedPrompt' })
+    }
+
+    private async processUnavailableToolUseMessage(message: CustomFormActionMessage) {
+        const tabID = message.tabID
+        if (!tabID) {
+            return
+        }
+        this.editorContextExtractor
+            .extractContextForTrigger('ChatMessage')
+            .then(async (context) => {
+                const triggerID = randomUUID()
+                this.triggerEventsStorage.addTriggerEvent({
+                    id: triggerID,
+                    tabID: message.tabID,
+                    message: undefined,
+                    type: 'chat_message',
+                    context,
+                })
+                const session = this.sessionStorage.getSession(tabID)
+                const toolUse = session.toolUse
+                if (!toolUse || !toolUse.input) {
+                    return
+                }
+                session.setToolUse(undefined)
+
+                const toolResults: ToolResult[] = []
+
+                toolResults.push({
+                    content: [{ text: 'This tool is not an available tool in this mode' }],
+                    toolUseId: toolUse.toolUseId,
+                    status: ToolResultStatus.ERROR,
+                })
+
+                await this.generateResponse(
+                    {
+                        message: '',
+                        trigger: ChatTriggerType.ChatMessage,
+                        query: undefined,
+                        codeSelection: context?.focusAreaContext?.selectionInsideExtendedCodeBlock,
+                        fileText: context?.focusAreaContext?.extendedCodeBlock ?? '',
+                        fileLanguage: context?.activeFileContext?.fileLanguage,
+                        filePath: context?.activeFileContext?.filePath,
+                        matchPolicy: context?.activeFileContext?.matchPolicy,
+                        codeQuery: context?.focusAreaContext?.names,
+                        userIntent: undefined,
+                        customization: getSelectedCustomization(),
+                        toolResults: toolResults,
+                        origin: Origin.IDE,
+                        context: session.context ?? [],
+                        relevantTextDocuments: [],
+                        additionalContents: [],
+                        documentReferences: [],
+                        useRelevantDocuments: false,
+                        contextLengths: {
+                            ...defaultContextLengths,
+                        },
+                    },
+                    triggerID
+                )
+            })
+            .catch((e) => {
+                this.processException(e, tabID)
+            })
+    }
+
+    private async processToolUseMessage(message: CustomFormActionMessage) {
+        const tabID = message.tabID
+        if (!tabID) {
+            return
+        }
+        this.editorContextExtractor
+            .extractContextForTrigger('ChatMessage')
+            .then(async (context) => {
+                const triggerID = randomUUID()
+                this.triggerEventsStorage.addTriggerEvent({
+                    id: triggerID,
+                    tabID: message.tabID,
+                    message: undefined,
+                    type: 'chat_message',
+                    context,
+                })
+                this.messenger.sendAsyncEventProgress(tabID, true, '')
+                const session = this.sessionStorage.getSession(tabID)
+                const toolUse = session.toolUse
+                if (!toolUse || !toolUse.input) {
+                    // Turn off AgentLoop flag if there's no tool use
+                    this.sessionStorage.setAgentLoopInProgress(tabID, false)
+                    return
+                }
+                session.setToolUse(undefined)
+
+                const toolResults: ToolResult[] = []
+
+                const result = ToolUtils.tryFromToolUse(toolUse)
+                if ('type' in result) {
+                    const tool: Tool = result
+
+                    try {
+                        await ToolUtils.validate(tool)
+
+                        const chatStream = new ChatStream(this.messenger, tabID, triggerID, toolUse, {
+                            requiresAcceptance: false,
+                        })
+                        const output = await ToolUtils.invoke(tool, chatStream)
+                        if (output.output.content.length > maxToolOutputCharacterLength) {
+                            throw Error(
+                                `Tool output exceeds maximum character limit of ${maxToolOutputCharacterLength}`
+                            )
+                        }
+
+                        toolResults.push({
+                            content: [
+                                output.output.kind === OutputKind.Text
+                                    ? { text: output.output.content }
+                                    : { json: output.output.content },
+                            ],
+                            toolUseId: toolUse.toolUseId,
+                            status: ToolResultStatus.SUCCESS,
+                        })
+                    } catch (e: any) {
+                        toolResults.push({
+                            content: [{ text: e.message }],
+                            toolUseId: toolUse.toolUseId,
+                            status: ToolResultStatus.ERROR,
+                        })
+                    }
+                } else {
+                    const toolResult: ToolResult = result
+                    toolResults.push(toolResult)
+                }
+
+                if (toolUse.name === ToolType.FsWrite) {
+                    await vscode.commands.executeCommand(
+                        'vscode.open',
+                        vscode.Uri.file((toolUse.input as unknown as FsWriteParams).path)
+                    )
+                }
+
+                await this.generateResponse(
+                    {
+                        message: '',
+                        trigger: ChatTriggerType.ChatMessage,
+                        query: undefined,
+                        codeSelection: context?.focusAreaContext?.selectionInsideExtendedCodeBlock,
+                        fileText: context?.focusAreaContext?.extendedCodeBlock ?? '',
+                        fileLanguage: context?.activeFileContext?.fileLanguage,
+                        filePath: context?.activeFileContext?.filePath,
+                        matchPolicy: context?.activeFileContext?.matchPolicy,
+                        codeQuery: context?.focusAreaContext?.names,
+                        userIntent: undefined,
+                        customization: getSelectedCustomization(),
+                        toolResults: toolResults,
+                        origin: Origin.IDE,
+                        context: session.context ?? [],
+                        relevantTextDocuments: [],
+                        additionalContents: [],
+                        documentReferences: [],
+                        useRelevantDocuments: false,
+                        contextLengths: {
+                            ...defaultContextLengths,
+                        },
+                    },
+                    triggerID
+                )
+            })
+            .catch((e) => {
+                this.processException(e, tabID)
+            })
+    }
+
+    private async closeDiffView() {
+        // Close the diff view if User reject the generated code changes.
+        if (vscode.window.tabGroups.activeTabGroup.activeTab?.label.includes(amazonQTabSuffix)) {
+            await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
+        }
+    }
+
+    private async rejectShellCommand(message: CustomFormActionMessage) {
+        const triggerId = randomUUID()
+        this.triggerEventsStorage.addTriggerEvent({
+            id: triggerId,
+            tabID: message.tabID,
+            message: undefined,
+            type: 'chat_message',
+            context: undefined,
+        })
+        await this.generateStaticTextResponse('reject-shell-command', triggerId)
+    }
 
     private async processCustomFormAction(message: CustomFormActionMessage) {
-        if (message.action.id === 'submit-create-prompt') {
-            const userPromptsDirectory = getUserPromptsDirectory()
-
-            const title = message.action.formItemValues?.['prompt-name']
-            const newFilePath = path.join(
-                userPromptsDirectory,
-                title ? `${title}${promptFileExtension}` : `default${promptFileExtension}`
-            )
-            const newFileContent = new Uint8Array(Buffer.from(''))
-            await fs.writeFile(newFilePath, newFileContent)
-            const newFileDoc = await vscode.workspace.openTextDocument(newFilePath)
-            await vscode.window.showTextDocument(newFileDoc)
-            telemetry.ui_click.emit({ elementId: 'amazonq_createSavedPrompt' })
+        switch (message.action.id) {
+            case 'submit-create-prompt':
+                await this.handleCreatePrompt(message)
+                break
+            case 'accept-code-diff':
+            case 'run-shell-command':
+            case 'generic-tool-execution':
+                await this.closeDiffView()
+                await this.processToolUseMessage(message)
+                break
+            case 'reject-code-diff':
+                await this.closeDiffView()
+                break
+            case 'reject-shell-command':
+                await this.rejectShellCommand(message)
+                break
+            case 'tool-unavailable':
+                await this.processUnavailableToolUseMessage(message)
+                break
+            default:
+                getLogger().warn(`Unhandled action: ${message.action.id}`)
         }
     }
 
@@ -650,57 +891,127 @@ export class ChatController {
             this.handlePromptCreate(message.tabID)
         }
     }
+
+    private async processPromptInputOptionChange(message: PromptInputOptionChange) {
+        const session = this.sessionStorage.getSession(message.tabID)
+        const promptTypeValue = message.optionsValues['prompt-type']
+        // TODO: display message: You turned off pair programmer mode. Q will not include code diffs or run commands in the chat.
+        if (promptTypeValue === 'pair-programming-on') {
+            session.setPairProgrammingModeOn(true)
+        } else {
+            session.setPairProgrammingModeOn(false)
+        }
+    }
+
     private async processFileClickMessage(message: FileClick) {
         const session = this.sessionStorage.getSession(message.tabID)
-        const lineRanges = session.contexts.get(message.filePath)
-
-        if (!lineRanges) {
-            return
-        }
-
-        // Check if clicked file is in a different workspace root
-        const projectRoot =
-            session.relativePathToWorkspaceRoot.get(message.filePath) || workspace.workspaceFolders?.[0]?.uri.fsPath
-        if (!projectRoot) {
-            return
-        }
-        let absoluteFilePath = path.join(projectRoot, message.filePath)
-
-        // Handle clicking on a user prompt outside the workspace
-        if (message.filePath.endsWith(promptFileExtension)) {
+        // Check if user clicked on filePath in the contextList or in the fileListTree and perform the functionality accordingly.
+        if (session.showDiffOnFileWrite) {
             try {
-                await vscode.workspace.fs.stat(vscode.Uri.file(absoluteFilePath))
-            } catch {
-                absoluteFilePath = path.join(getUserPromptsDirectory(), message.filePath)
-            }
-        }
+                // Create a temporary file path to show the diff view
+                const pathToArchiveDir = path.join(tempDirPath, 'q-chat')
+                const archivePathExists = await fs.existsDir(pathToArchiveDir)
+                if (archivePathExists) {
+                    await fs.delete(pathToArchiveDir, { recursive: true })
+                }
+                await fs.mkdir(pathToArchiveDir)
+                const resultArtifactsDir = path.join(pathToArchiveDir, 'resultArtifacts')
+                await fs.mkdir(resultArtifactsDir)
+                const tempFilePath = path.join(
+                    resultArtifactsDir,
+                    `temp-${path.basename((session.toolUse?.input as unknown as FsWriteParams).path)}`
+                )
 
-        try {
-            // Open the file in VSCode
-            const document = await workspace.openTextDocument(absoluteFilePath)
-            const editor = await window.showTextDocument(document, ViewColumn.Active)
+                // If we have existing filePath copy file content from existing file to temporary file.
+                const filePath = (session.toolUse?.input as any).path ?? message.filePath
+                const fileExists = await fs.existsFile(filePath)
+                if (fileExists) {
+                    const fileContent = await fs.readFileText(filePath)
+                    await fs.writeFile(tempFilePath, fileContent)
+                }
 
-            // Create multiple selections based on line ranges
-            const selections: Selection[] = lineRanges
-                .filter(({ first, second }) => first !== -1 && second !== -1)
-                .map(({ first, second }) => {
-                    const startPosition = new Position(first - 1, 0) // Convert 1-based to 0-based
-                    const endPosition = new Position(second - 1, document.lineAt(second - 1).range.end.character)
-                    return new Selection(
-                        startPosition.line,
-                        startPosition.character,
-                        endPosition.line,
-                        endPosition.character
+                // Create a deep clone of the toolUse object and pass this toolUse to FsWrite tool execution to get the modified temporary file.
+                const clonedToolUse = structuredClone(session.toolUse)
+                if (!clonedToolUse) {
+                    return
+                }
+                const input = clonedToolUse.input as unknown as FsWriteParams
+                input.path = tempFilePath
+
+                const fsWrite = new FsWrite(input)
+                await fsWrite.invoke()
+
+                // Check if fileExists=false, If yes, return instead of showing broken diff experience.
+                if (!tempFilePath) {
+                    void vscode.window.showInformationMessage(
+                        'Generated code changes have been reviewed and processed.'
                     )
-                })
-
-            // Apply multiple selections to the editor
-            if (selections.length > 0) {
-                editor.selection = selections[0] // Set the first selection as active
-                editor.selections = selections // Apply multiple selections
-                editor.revealRange(selections[0], vscode.TextEditorRevealType.InCenter)
+                    return
+                }
+                const leftUri = fileExists ? vscode.Uri.file(filePath) : vscode.Uri.from({ scheme: 'untitled' })
+                const rightUri = vscode.Uri.file(tempFilePath ?? filePath)
+                const fileName = path.basename(filePath)
+                await vscode.commands.executeCommand(
+                    'vscode.diff',
+                    leftUri,
+                    rightUri,
+                    `${fileName} ${amazonQTabSuffix}`
+                )
+            } catch (error) {
+                getLogger().error(`Unexpected error in diff view generation: ${error}`)
+                void vscode.window.showErrorMessage(`Failed to open diff view.`)
             }
-        } catch (error) {}
+        } else {
+            const lineRanges = session.contexts.get(message.filePath)
+
+            if (!lineRanges) {
+                return
+            }
+
+            // Check if clicked file is in a different workspace root
+            const projectRoot =
+                session.relativePathToWorkspaceRoot.get(message.filePath) || workspace.workspaceFolders?.[0]?.uri.fsPath
+            if (!projectRoot) {
+                return
+            }
+            let absoluteFilePath = path.join(projectRoot, message.filePath)
+
+            // Handle clicking on a user prompt outside the workspace
+            if (message.filePath.endsWith(promptFileExtension)) {
+                try {
+                    await vscode.workspace.fs.stat(vscode.Uri.file(absoluteFilePath))
+                } catch {
+                    absoluteFilePath = path.join(getUserPromptsDirectory(), message.filePath)
+                }
+            }
+
+            try {
+                // Open the file in VSCode
+                const document = await workspace.openTextDocument(absoluteFilePath)
+                const editor = await window.showTextDocument(document, ViewColumn.Active)
+
+                // Create multiple selections based on line ranges
+                const selections: Selection[] = lineRanges
+                    .filter(({ first, second }) => first !== -1 && second !== -1)
+                    .map(({ first, second }) => {
+                        const startPosition = new Position(first - 1, 0) // Convert 1-based to 0-based
+                        const endPosition = new Position(second - 1, document.lineAt(second - 1).range.end.character)
+                        return new Selection(
+                            startPosition.line,
+                            startPosition.character,
+                            endPosition.line,
+                            endPosition.character
+                        )
+                    })
+
+                // Apply multiple selections to the editor
+                if (selections.length > 0) {
+                    editor.selection = selections[0] // Set the first selection as active
+                    editor.selections = selections // Apply multiple selections
+                    editor.revealRange(selections[0], vscode.TextEditorRevealType.InCenter)
+                }
+            } catch (error) {}
+        }
     }
 
     private processException(e: any, tabID: string) {
@@ -719,10 +1030,16 @@ export class ChatController {
             errorMessage = e.message
         }
 
+        // Turn off AgentLoop flag in case of exception
+        if (tabID) {
+            this.sessionStorage.setAgentLoopInProgress(tabID, false)
+        }
+
         this.messenger.sendErrorMessage(errorMessage, tabID, requestID)
         getLogger().error(`error: ${errorMessage} tabID: ${tabID} requestID: ${requestID}`)
 
         this.sessionStorage.deleteSession(tabID)
+        this.chatHistoryStorage.getTabHistory(tabID).clearRecentHistory()
     }
 
     private async processContextMenuCommand(command: EditorContextCommand) {
@@ -843,6 +1160,7 @@ export class ChatController {
         switch (message.command) {
             case 'clear':
                 this.sessionStorage.deleteSession(message.tabID)
+                this.chatHistoryStorage.getTabHistory(message.tabID).clear()
                 this.triggerEventsStorage.removeTabEvents(message.tabID)
                 recordTelemetryChatRunCommand('clear')
                 this.chatHistoryDb.clearTab(message.tabID)
@@ -899,9 +1217,12 @@ export class ChatController {
     }
 
     private async processPromptMessageAsNewThread(message: PromptMessage) {
+        const session = this.sessionStorage.getSession(message.tabID)
+        session.clearListOfReadFiles()
+        session.setShowDiffOnFileWrite(false)
         this.editorContextExtractor
             .extractContextForTrigger('ChatMessage')
-            .then((context) => {
+            .then(async (context) => {
                 const triggerID = randomUUID()
                 this.triggerEventsStorage.addTriggerEvent({
                     id: triggerID,
@@ -910,7 +1231,13 @@ export class ChatController {
                     type: 'chat_message',
                     context,
                 })
-                return this.generateResponse(
+
+                this.messenger.sendAsyncEventProgress(message.tabID, true, '')
+
+                // Save the context for the agentic loop
+                session.setContext(message.context)
+
+                await this.generateResponse(
                     {
                         message: message.message ?? '',
                         trigger: ChatTriggerType.ChatMessage,
@@ -921,8 +1248,9 @@ export class ChatController {
                         filePath: context?.activeFileContext?.filePath,
                         matchPolicy: context?.activeFileContext?.matchPolicy,
                         codeQuery: context?.focusAreaContext?.names,
-                        userIntent: this.userIntentRecognizer.getFromPromptChatMessage(message),
+                        userIntent: undefined,
                         customization: getSelectedCustomization(),
+                        origin: Origin.IDE,
                         context: message.context ?? [],
                         relevantTextDocuments: [],
                         additionalContents: [],
@@ -1103,6 +1431,16 @@ export class ChatController {
         }
 
         const tabID = triggerEvent.tabID
+        if (this.sessionStorage.isAgentLoopInProgress(tabID)) {
+            // If a response is already in progress, stop it first
+            const stopResponseMessage: StopResponseMessage = {
+                tabID: tabID,
+            }
+            await this.processStopResponseMessage(stopResponseMessage)
+        }
+
+        // Ensure AgentLoop flag is set to true during response generation
+        this.sessionStorage.setAgentLoopInProgress(tabID, true)
 
         const credentialsState = await AuthUtil.instance.getChatAuthState()
 
@@ -1152,7 +1490,21 @@ export class ChatController {
 
         triggerPayload.contextLengths.userInputContextLength = triggerPayload.message.length
         triggerPayload.contextLengths.focusFileContextLength = triggerPayload.fileText.length
+        triggerPayload.pairProgrammingModeOn = session.pairProgrammingModeOn
+
         const request = triggerPayloadToChatRequest(triggerPayload)
+
+        const chatHistory = this.chatHistoryStorage.getTabHistory(tabID)
+        const currentMessage = request.conversationState.currentMessage
+        if (currentMessage) {
+            chatHistory.fixHistory(currentMessage)
+        }
+        request.conversationState.history = chatHistory.getHistory()
+
+        const conversationId = chatHistory.getConversationId() || randomUUID()
+        chatHistory.setConversationId(conversationId)
+        request.conversationState.conversationId = conversationId
+
         triggerPayload.documentReferences = this.mergeRelevantTextDocuments(triggerPayload.relevantTextDocuments)
 
         // Update context transparency after it's truncated dynamically to show users only the context sent.
@@ -1202,6 +1554,9 @@ export class ChatController {
             }
             this.telemetryHelper.recordEnterFocusConversation(triggerEvent.tabID)
             this.telemetryHelper.recordStartConversation(triggerEvent, triggerPayload)
+            if (currentMessage) {
+                chatHistory.appendUserMessage(currentMessage)
+            }
             if (session.sessionIdentifier) {
                 this.chatHistoryDb.addMessage(tabID, 'cwc', session.sessionIdentifier, {
                     body: triggerPayload.message,
@@ -1214,9 +1569,14 @@ export class ChatController {
                     response.$metadata.requestId
                 } metadata: ${inspect(response.$metadata, { depth: 12 })}`
             )
-            await this.messenger.sendAIResponse(response, session, tabID, triggerID, triggerPayload)
+            await this.messenger.sendAIResponse(response, session, tabID, triggerID, triggerPayload, chatHistory)
+
+            // Turn off AgentLoop flag after sending the AI response
+            this.sessionStorage.setAgentLoopInProgress(tabID, false)
         } catch (e: any) {
             this.telemetryHelper.recordMessageResponseError(triggerPayload, tabID, getHttpStatusCode(e) ?? 0)
+            // Turn off AgentLoop flag in case of exception
+            this.sessionStorage.setAgentLoopInProgress(tabID, false)
             // clears session, record telemetry before this call
             this.processException(e, tabID)
         }

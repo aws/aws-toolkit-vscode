@@ -671,3 +671,81 @@ export async function findStringInDirectory(searchStr: string, dirPath: string) 
     })
     return spawnResult
 }
+
+/**
+ * Returns a prefix for a directory ('[DIR]'), symlink ('[LINK]'), or file ('[FILE]').
+ */
+export function formatListing(name: string, fileType: vscode.FileType, fullPath: string): string {
+    let typeChar = '[FILE]'
+    if (fileType === vscode.FileType.Directory) {
+        typeChar = '[DIR]'
+    } else if (fileType === vscode.FileType.SymbolicLink) {
+        typeChar = '[LINK]'
+    }
+    return `${typeChar} ${fullPath}`
+}
+
+/**
+ * Recursively lists directories using a BFS approach, returning lines like:
+ * d /absolute/path/to/folder
+ * - /absolute/path/to/file.txt
+ *
+ * You can either pass a custom callback or rely on the default `formatListing`.
+ *
+ * @param dirUri The folder to begin traversing
+ * @param maxDepth Maximum depth to descend (0 => just this folder, if it's missing => recursively)
+ * @param customFormatCallback Optional. If given, it will override the default line-formatting
+ */
+export async function readDirectoryRecursively(
+    dirUri: vscode.Uri,
+    maxDepth?: number,
+    customFormatCallback?: (name: string, fileType: vscode.FileType, fullPath: string) => string
+): Promise<string[]> {
+    const logger = getLogger()
+    const depthDescription = maxDepth === undefined ? 'unlimited' : maxDepth
+    logger.info(`Reading directory: ${dirUri.fsPath} to max depth: ${depthDescription}`)
+
+    const queue: Array<{ uri: vscode.Uri; depth: number }> = [{ uri: dirUri, depth: 0 }]
+    const results: string[] = []
+
+    const formatter = customFormatCallback ?? formatListing
+
+    while (queue.length > 0) {
+        const { uri, depth } = queue.shift()!
+        if (maxDepth !== undefined && depth > maxDepth) {
+            logger.info(`Skipping directory: ${uri.fsPath} (depth ${depth} > max ${maxDepth})`)
+            continue
+        }
+
+        let entries: [string, vscode.FileType][]
+        try {
+            entries = await fs.readdir(uri)
+        } catch (err) {
+            logger.error(`Cannot read directory: ${uri.fsPath} (${err})`)
+            results.push(`Cannot read directory: ${uri.fsPath} (${err})`)
+            continue
+        }
+
+        for (const [name, fileType] of entries) {
+            const childUri = vscode.Uri.joinPath(uri, name)
+            results.push(formatter(name, fileType, childUri.fsPath))
+
+            if (fileType === vscode.FileType.Directory && (maxDepth === undefined || depth < maxDepth)) {
+                queue.push({ uri: childUri, depth: depth + 1 })
+            }
+        }
+    }
+
+    return results
+}
+
+export function getWorkspacePaths() {
+    const workspaceFolders = vscode.workspace.workspaceFolders
+    return workspaceFolders?.map((folder) => folder.uri.fsPath) ?? []
+}
+
+export function getWorkspaceForFile(filepath: string) {
+    const fileUri = vscode.Uri.file(filepath)
+    const workspaceFolder = vscode.workspace.getWorkspaceFolder(fileUri)
+    return workspaceFolder?.uri.fsPath
+}

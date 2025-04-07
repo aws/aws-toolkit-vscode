@@ -252,6 +252,7 @@ export const createMynahUI = (
             return ''
         },
         onFileActionClick: (tabID: string, messageId: string, filePath: string, actionName: string): void => {},
+        onPromptInputOptionChange: (tabId: string, optionsValues: Record<string, string>, eventId?: string): void => {},
         onQuickHandlerCommand: (tabID: string, command?: string, eventId?: string) => {
             tabsStorage.updateTabLastCommand(tabID, command)
             if (command === 'aws.awsq.transform') {
@@ -344,6 +345,12 @@ export const createMynahUI = (
                     ...(item.followUp !== undefined ? { followUp: item.followUp } : {}),
                     ...(item.footer !== undefined ? { footer: item.footer } : {}),
                     ...(item.canBeVoted !== undefined ? { canBeVoted: item.canBeVoted } : {}),
+                    ...(item.fileList !== undefined ? { fileList: item.fileList } : {}),
+                    ...(item.header !== undefined ? { header: item.header } : {}),
+                    ...(item.buttons !== undefined ? { buttons: item.buttons } : {}),
+                    ...(item.fullWidth !== undefined ? { fullWidth: item.fullWidth } : {}),
+                    ...(item.padding !== undefined ? { padding: item.padding } : {}),
+                    ...(item.codeBlockActions !== undefined ? { codeBlockActions: item.codeBlockActions } : {}),
                 })
             } else {
                 mynahUI.updateLastChatAnswer(tabID, {
@@ -352,6 +359,11 @@ export const createMynahUI = (
                     ...(item.followUp !== undefined ? { followUp: item.followUp } : {}),
                     ...(item.footer !== undefined ? { footer: item.footer } : {}),
                     ...(item.canBeVoted !== undefined ? { canBeVoted: item.canBeVoted } : {}),
+                    ...(item.header !== undefined ? { header: item.header } : {}),
+                    ...(item.buttons !== undefined ? { buttons: item.buttons } : {}),
+                    ...(item.fullWidth !== undefined ? { fullWidth: item.fullWidth } : {}),
+                    ...(item.padding !== undefined ? { padding: item.padding } : {}),
+                    ...(item.codeBlockActions !== undefined ? { codeBlockActions: item.codeBlockActions } : {}),
                 })
             }
         },
@@ -365,7 +377,11 @@ export const createMynahUI = (
                     ...(item.relatedContent !== undefined ? { relatedContent: item.relatedContent } : {}),
                     ...(item.followUp !== undefined ? { followUp: item.followUp } : {}),
                     ...(item.fileList !== undefined ? { fileList: item.fileList } : {}),
-                    ...(item.header !== undefined ? { header: item.header } : { header: undefined }),
+                    ...(item.header !== undefined ? { header: item.header } : {}),
+                    ...(item.buttons !== undefined ? { buttons: item.buttons } : {}),
+                    ...(item.fullWidth !== undefined ? { fullWidth: item.fullWidth } : {}),
+                    ...(item.padding !== undefined ? { padding: item.padding } : {}),
+                    ...(item.codeBlockActions !== undefined ? { codeBlockActions: item.codeBlockActions } : {}),
                 })
                 if (
                     item.messageId !== undefined &&
@@ -388,7 +404,7 @@ export const createMynahUI = (
                     fileList: {
                         fileTreeTitle: '',
                         filePaths: item.contextList.map((file) => file.relativeFilePath),
-                        rootFolderTitle: 'Context',
+                        rootFolderTitle: item.title,
                         flatList: true,
                         collapsed: true,
                         hideFileCount: true,
@@ -941,6 +957,9 @@ export const createMynahUI = (
         },
         onFileActionClick: async (tabID: string, messageId: string, filePath: string, actionName: string) => {
             connector.onFileActionClick(tabID, messageId, filePath, actionName)
+        },
+        onPromptInputOptionChange: (tabId, optionsValues) => {
+            connector.onPromptInputOptionChange(tabId, optionsValues)
         },
         onFileClick: connector.onFileClick,
         tabs: {

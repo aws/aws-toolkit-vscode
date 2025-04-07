@@ -7,6 +7,8 @@ import { ConversationState, CursorState, DocumentSymbol, SymbolType, TextDocumen
 import { AdditionalContentEntryAddition, ChatTriggerType, RelevantTextDocumentAddition, TriggerPayload } from '../model'
 import { undefinedIfEmpty } from '../../../../shared/utilities/textUtilities'
 import { getLogger } from '../../../../shared/logger/logger'
+import vscode from 'vscode'
+import { noWriteTools, tools } from '../../../constants'
 import { messageToChatMessage } from '../../../../shared/db/chatDb/util'
 
 const fqnNameSizeDownLimit = 1
@@ -164,10 +166,16 @@ export function triggerPayloadToChatRequest(triggerPayload: TriggerPayload): { c
                             cursorState,
                             relevantDocuments: triggerPayload.relevantTextDocuments,
                             useRelevantDocuments: triggerPayload.useRelevantDocuments,
+                            workspaceFolders: vscode.workspace.workspaceFolders?.map(({ uri }) => uri.fsPath) ?? [],
                         },
                         additionalContext: triggerPayload.additionalContents,
+                        tools: triggerPayload.pairProgrammingModeOn ? tools : noWriteTools,
+                        ...(triggerPayload.toolResults !== undefined &&
+                            triggerPayload.toolResults !== null && { toolResults: triggerPayload.toolResults }),
                     },
                     userIntent: triggerPayload.userIntent,
+                    ...(triggerPayload.origin !== undefined &&
+                        triggerPayload.origin !== null && { origin: triggerPayload.origin }),
                 },
             },
             chatTriggerType,

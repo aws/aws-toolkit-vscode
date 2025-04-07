@@ -16,6 +16,11 @@ export type LogTopic =
     | 'amazonqLsp'
     | 'chat'
     | 'stepfunctions'
+    | 'fsRead'
+    | 'fsWrite'
+    | 'executeBash'
+    | 'listDirectory'
+    | 'chatStream'
     | 'unknown'
 
 class ErrorLog {

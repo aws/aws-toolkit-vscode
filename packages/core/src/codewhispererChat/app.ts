@@ -28,6 +28,7 @@ import {
     AcceptDiff,
     QuickCommandGroupActionClick,
     FileClick,
+    PromptInputOptionChange,
     TabBarButtonClick,
     SaveChatMessage,
 } from './controllers/chat/model'
@@ -64,6 +65,7 @@ export function init(appContext: AmazonQAppInitContext) {
         processCustomFormAction: new EventEmitter<CustomFormActionMessage>(),
         processContextSelected: new EventEmitter<ContextSelectedMessage>(),
         processFileClick: new EventEmitter<FileClick>(),
+        processPromptInputOptionChange: new EventEmitter<PromptInputOptionChange>(),
         processTabBarButtonClick: new EventEmitter<TabBarButtonClick>(),
         processSaveChat: new EventEmitter<SaveChatMessage>(),
         processDetailedListFilterChangeMessage: new EventEmitter<DetailedListFilterChangeMessage>(),
@@ -130,6 +132,9 @@ export function init(appContext: AmazonQAppInitContext) {
             cwChatControllerEventEmitters.processContextSelected
         ),
         processFileClick: new MessageListener<FileClick>(cwChatControllerEventEmitters.processFileClick),
+        processPromptInputOptionChange: new MessageListener<PromptInputOptionChange>(
+            cwChatControllerEventEmitters.processPromptInputOptionChange
+        ),
         processTabBarButtonClick: new MessageListener<TabBarButtonClick>(
             cwChatControllerEventEmitters.processTabBarButtonClick
         ),
@@ -206,6 +211,9 @@ export function init(appContext: AmazonQAppInitContext) {
             cwChatControllerEventEmitters.processContextSelected
         ),
         processFileClick: new MessagePublisher<FileClick>(cwChatControllerEventEmitters.processFileClick),
+        processPromptInputOptionChange: new MessagePublisher<PromptInputOptionChange>(
+            cwChatControllerEventEmitters.processPromptInputOptionChange
+        ),
         processTabBarButtonClick: new MessagePublisher<TabBarButtonClick>(
             cwChatControllerEventEmitters.processTabBarButtonClick
         ),

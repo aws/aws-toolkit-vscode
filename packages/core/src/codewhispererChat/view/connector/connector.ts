@@ -10,13 +10,19 @@ import { AuthFollowUpType } from '../../../amazonq/auth/model'
 import {
     ChatItem,
     ChatItemButton,
+    ChatItemContent,
     ChatItemFormItem,
+    CodeBlockActions,
     DetailedList,
     DetailedListItem,
+    MynahIcons,
+    MynahIconsType,
     MynahUIDataModel,
     QuickActionCommand,
+    Status,
 } from '@aws/mynah-ui'
 import { DocumentReference } from '../../controllers/chat/model'
+import { AsyncEventProgressMessage } from '../../../amazonq/commons/connector/connectorMessages'
 import { TabType } from '../../../amazonq/webview/ui/storages/tabsStorage'
 
 class UiMessage {
@@ -315,6 +321,17 @@ export class ContextSelectedMessage extends UiMessage {
     }
 }
 
+export type ChatItemHeader =
+    | (ChatItemContent & {
+          icon?: MynahIcons | MynahIconsType
+          status?: {
+              status?: Status
+              icon?: MynahIcons | MynahIconsType
+              text?: string
+          }
+      })
+    | null
+
 export interface ChatMessageProps {
     readonly message: string | undefined
     readonly messageType: ChatMessageType
@@ -327,6 +344,14 @@ export interface ChatMessageProps {
     readonly userIntent: string | undefined
     readonly codeBlockLanguage: string | undefined
     readonly contextList: DocumentReference[] | undefined
+    readonly title?: string
+    readonly buttons?: ChatItemButton[]
+    readonly fileList?: ChatItemContent['fileList']
+    readonly canBeVoted?: boolean
+    readonly header?: ChatItemHeader
+    readonly fullWidth?: boolean
+    readonly padding?: boolean
+    readonly codeBlockActions?: CodeBlockActions | null
 }
 
 export class ChatMessage extends UiMessage {
@@ -342,6 +367,14 @@ export class ChatMessage extends UiMessage {
     readonly userIntent: string | undefined
     readonly codeBlockLanguage: string | undefined
     readonly contextList: DocumentReference[] | undefined
+    readonly title?: string
+    readonly buttons?: ChatItemButton[]
+    readonly fileList?: ChatItemContent['fileList']
+    readonly header?: ChatItemHeader
+    readonly fullWidth?: boolean
+    readonly padding?: boolean
+    readonly codeBlockActions?: CodeBlockActions | null
+    readonly canBeVoted?: boolean = false
     override type = 'chatMessage'
 
     constructor(props: ChatMessageProps, tabID: string) {
@@ -357,6 +390,14 @@ export class ChatMessage extends UiMessage {
         this.userIntent = props.userIntent
         this.codeBlockLanguage = props.codeBlockLanguage
         this.contextList = props.contextList
+        this.title = props.title
+        this.buttons = props.buttons
+        this.fileList = props.fileList
+        this.canBeVoted = props.canBeVoted
+        this.header = props.header
+        this.fullWidth = props.fullWidth
+        this.padding = props.padding
+        this.codeBlockActions = props.codeBlockActions
     }
 }
 
@@ -459,6 +500,14 @@ export class AppToWebViewMessageDispatcher {
     }
 
     public sendShowCustomFormMessage(message: ShowCustomFormMessage) {
+        this.appsToWebViewMessagePublisher.publish(message)
+    }
+
+    public sendCustomFormActionMessage(message: CustomFormActionMessage) {
+        this.appsToWebViewMessagePublisher.publish(message)
+    }
+
+    public sendAsyncEventProgress(message: AsyncEventProgressMessage) {
         this.appsToWebViewMessagePublisher.publish(message)
     }
 }

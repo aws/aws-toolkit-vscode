@@ -4,7 +4,13 @@
  */
 
 import * as vscode from 'vscode'
-import { AdditionalContentEntry, RelevantTextDocument, UserIntent } from '@amzn/codewhisperer-streaming'
+import {
+    AdditionalContentEntry,
+    Origin,
+    RelevantTextDocument,
+    ToolResult,
+    UserIntent,
+} from '@amzn/codewhisperer-streaming'
 import { MatchPolicy, CodeQuery } from '../../clients/chat/v0/model'
 import { Selection } from 'vscode'
 import { TabOpenType } from '../../../amazonq/webview/ui/storages/tabsStorage'
@@ -165,6 +171,13 @@ export interface FileClick {
     filePath: string
 }
 
+export interface PromptInputOptionChange {
+    command: string
+    tabID: string
+    messageId: string
+    optionsValues: Record<string, string>
+}
+
 export interface ChatItemVotedMessage {
     tabID: string
     command: string
@@ -207,6 +220,9 @@ export interface TriggerPayload {
     traceId?: string
     contextLengths: ContextLengths
     workspaceRulesCount?: number
+    toolResults?: ToolResult[]
+    origin?: Origin
+    pairProgrammingModeOn?: boolean
     history?: Message[]
 }
 

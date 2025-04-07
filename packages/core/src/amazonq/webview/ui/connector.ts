@@ -65,6 +65,7 @@ export interface CWCChatItem extends ChatItem {
     userIntent?: UserIntent
     codeBlockLanguage?: string
     contextList?: Context[]
+    title?: string
 }
 
 export interface Context {
@@ -98,6 +99,7 @@ export interface ConnectorProps {
     onUpdateAuthentication: (featureDevEnabled: boolean, authenticatingTabIDs: string[]) => void
     onNewTab: (tabType: TabType, chats?: ChatItem[]) => string | undefined
     onFileActionClick: (tabID: string, messageId: string, filePath: string, actionName: string) => void
+    onPromptInputOptionChange: (tabId: string, optionsValues: Record<string, string>, eventId?: string) => void
     handleCommand: (chatPrompt: ChatPrompt, tabId: string) => void
     sendStaticMessages: (tabID: string, messages: ChatItem[]) => void
     onContextCommandDataReceived: (message: MynahUIDataModel['contextCommands']) => void
@@ -627,6 +629,15 @@ export class Connector {
         }
     }
 
+    onPromptInputOptionChange = (tabId: string, optionsValues: Record<string, string>): void => {
+        switch (this.tabsStorage.getTab(tabId)?.type) {
+            case 'unknown':
+            case 'cwc':
+                this.cwChatConnector.onPromptInputOptionChange(tabId, optionsValues)
+                break
+        }
+    }
+
     sendFeedback = (tabId: string, feedbackPayload: FeedbackPayload): void | undefined => {
         switch (this.tabsStorage.getTab(tabId)?.type) {
             case 'featuredev':
@@ -732,7 +743,7 @@ export class Connector {
                         tabType: 'cwc',
                     })
                 } else {
-                    this.cwChatConnector.onCustomFormAction(tabId, action)
+                    this.cwChatConnector.onCustomFormAction(tabId, messageId ?? '', action)
                 }
                 break
             case 'agentWalkthrough': {

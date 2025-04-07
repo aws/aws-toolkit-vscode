@@ -9,6 +9,7 @@ import {
     AuthNeededException,
     CodeReference,
     ContextCommandData,
+    CustomFormActionMessage,
     EditorContextCommandMessage,
     ExportChatMessage,
     OpenSettingsMessage,
@@ -24,15 +25,15 @@ import { EditorContextCommandType } from '../../../commands/registerCommands'
 import { ChatResponseStream as qdevChatResponseStream } from '@amzn/amazon-q-developer-streaming-client'
 import {
     ChatResponseStream as cwChatResponseStream,
-    CodeWhispererStreamingServiceException,
     SupplementaryWebLink,
+    ToolUse,
 } from '@amzn/codewhisperer-streaming'
 import { ChatMessage, ErrorMessage, FollowUp, Suggestion } from '../../../view/connector/connector'
 import { ChatSession } from '../../../clients/chat/v0/chat'
 import { ChatException } from './model'
 import { CWCTelemetryHelper } from '../telemetryHelper'
 import { ChatPromptCommandType, DocumentReference, TriggerPayload } from '../model'
-import { getHttpStatusCode, getRequestId, ToolkitError } from '../../../../shared/errors'
+import { ToolkitError } from '../../../../shared/errors'
 import { keys } from '../../../../shared/utilities/tsUtils'
 import { getLogger } from '../../../../shared/logger/logger'
 import { FeatureAuthState } from '../../../../codewhisperer/util/authUtil'
@@ -43,11 +44,34 @@ import { LspController } from '../../../../amazonq/lsp/lspController'
 import { extractCodeBlockLanguage } from '../../../../shared/markdown'
 import { extractAuthFollowUp } from '../../../../amazonq/util/authUtils'
 import { helpMessage } from '../../../../amazonq/webview/ui/texts/constants'
-import { ChatItem, ChatItemButton, ChatItemFormItem, DetailedList, MynahUIDataModel } from '@aws/mynah-ui'
+import {
+    ChatItem,
+    ChatItemButton,
+    ChatItemContent,
+    ChatItemFormItem,
+    MynahIconsType,
+    DetailedList,
+    MynahUIDataModel,
+} from '@aws/mynah-ui'
 import { Database } from '../../../../shared/db/chatDb/chatDb'
 import { TabType } from '../../../../amazonq/webview/ui/storages/tabsStorage'
+import { ChatHistoryManager } from '../../../storages/chatHistory'
+import { ToolType, ToolUtils } from '../../../tools/toolUtils'
+import { ChatStream } from '../../../tools/chatStream'
+import path from 'path'
+import { CommandValidation } from '../../../tools/executeBash'
+import { extractErrorInfo } from '../../../../shared/utilities/messageUtil'
+import { noWriteTools, tools } from '../../../constants'
+import { Change } from 'diff'
+import { FsWriteParams } from '../../../tools/fsWrite'
+import { AsyncEventProgressMessage } from '../../../../amazonq/commons/connector/connectorMessages'
 
-export type StaticTextResponseType = 'quick-action-help' | 'onboarding-help' | 'transform' | 'help'
+export type StaticTextResponseType =
+    | 'quick-action-help'
+    | 'onboarding-help'
+    | 'transform'
+    | 'help'
+    | 'reject-shell-command'
 
 export type MessengerResponseType = {
     $metadata: { requestId?: string; httpStatusCode?: number }
@@ -94,6 +118,10 @@ export class Messenger {
                     userIntent: undefined,
                     codeBlockLanguage: undefined,
                     contextList: mergedRelevantDocuments,
+                    title: 'Context',
+                    buttons: undefined,
+                    fileList: undefined,
+                    canBeVoted: false,
                 },
                 tabID
             )
@@ -131,7 +159,8 @@ export class Messenger {
         session: ChatSession,
         tabID: string,
         triggerID: string,
-        triggerPayload: TriggerPayload
+        triggerPayload: TriggerPayload,
+        chatHistoryManager: ChatHistoryManager
     ) {
         let message = ''
         const messageID = response.$metadata.requestId ?? ''
@@ -139,6 +168,8 @@ export class Messenger {
         let followUps: FollowUp[] = []
         let relatedSuggestions: Suggestion[] = []
         let codeBlockLanguage: string = 'plaintext'
+        let toolUseInput = ''
+        const toolUse: ToolUse = { toolUseId: undefined, name: undefined, input: undefined }
 
         if (response.message === undefined) {
             throw new ToolkitError(
@@ -166,7 +197,7 @@ export class Messenger {
         })
 
         const eventCounts = new Map<string, number>()
-        waitUntil(
+        await waitUntil(
             async () => {
                 for await (const chatEvent of response.message!) {
                     for (const key of keys(chatEvent)) {
@@ -194,6 +225,68 @@ export class Messenger {
                                 information: `Reference code under **${reference.licenseName}** license from repository \`${reference.repository}\``,
                             })),
                         ]
+                    }
+
+                    const cwChatEvent: cwChatResponseStream = chatEvent
+                    if (
+                        cwChatEvent.toolUseEvent?.input !== undefined &&
+                        cwChatEvent.toolUseEvent.input.length > 0 &&
+                        !cwChatEvent.toolUseEvent.stop
+                    ) {
+                        toolUseInput += cwChatEvent.toolUseEvent.input
+                    }
+
+                    if (cwChatEvent.toolUseEvent?.stop) {
+                        toolUse.input = JSON.parse(toolUseInput)
+                        toolUse.toolUseId = cwChatEvent.toolUseEvent.toolUseId ?? ''
+                        toolUse.name = cwChatEvent.toolUseEvent.name ?? ''
+                        session.setToolUse(toolUse)
+
+                        const availableToolsNames = (session.pairProgrammingModeOn ? tools : noWriteTools).map(
+                            (item) => item.toolSpecification?.name
+                        )
+                        if (!availableToolsNames.includes(toolUse.name)) {
+                            this.dispatcher.sendCustomFormActionMessage(
+                                new CustomFormActionMessage(tabID, {
+                                    id: 'tool-unavailable',
+                                })
+                            )
+                            return
+                        }
+
+                        const tool = ToolUtils.tryFromToolUse(toolUse)
+                        if ('type' in tool) {
+                            let changeList: Change[] | undefined = undefined
+                            if (tool.type === ToolType.FsWrite) {
+                                session.setShowDiffOnFileWrite(true)
+                                changeList = await tool.tool.getDiffChanges()
+                            }
+                            const validation = ToolUtils.requiresAcceptance(tool)
+                            const chatStream = new ChatStream(this, tabID, triggerID, toolUse, validation, changeList)
+                            await ToolUtils.queueDescription(tool, chatStream)
+
+                            if (!validation.requiresAcceptance) {
+                                // Need separate id for read tool and safe bash command execution as 'run-shell-command' id is required to state in cwChatConnector.ts which will impact generic tool execution.
+                                if (tool.type === ToolType.ExecuteBash) {
+                                    this.dispatcher.sendCustomFormActionMessage(
+                                        new CustomFormActionMessage(tabID, {
+                                            id: 'run-shell-command',
+                                        })
+                                    )
+                                } else {
+                                    this.dispatcher.sendCustomFormActionMessage(
+                                        new CustomFormActionMessage(tabID, {
+                                            id: 'generic-tool-execution',
+                                        })
+                                    )
+                                }
+                            }
+                        } else {
+                            // TODO: Handle the error
+                        }
+                    } else if (cwChatEvent.toolUseEvent?.stop === undefined && toolUseInput !== '') {
+                        // This is for the case when writing tool is executed. The toolUseEvent is non stop but in toolUseInput is not empty. In this case we need show user the current spinner UI.
+                        this.sendInitalStream(tabID, triggerID, undefined)
                     }
 
                     if (
@@ -252,29 +345,24 @@ export class Messenger {
                 }
                 return true
             },
-            { timeout: 60000, truthy: true }
+            { timeout: 600000, truthy: true }
         )
             .catch((error: any) => {
-                let errorMessage = 'Error reading chat stream.'
-                let statusCode = undefined
-                let requestID = undefined
-
-                if (error instanceof CodeWhispererStreamingServiceException) {
-                    errorMessage = error.message
-                    statusCode = getHttpStatusCode(error) ?? 0
-                    requestID = getRequestId(error)
-                }
-
+                const errorInfo = extractErrorInfo(error)
                 this.showChatExceptionMessage(
-                    { errorMessage, statusCode: statusCode?.toString(), sessionID: undefined },
+                    {
+                        errorMessage: errorInfo.errorMessage,
+                        statusCode: errorInfo.statusCode?.toString(),
+                        sessionID: undefined,
+                    },
                     tabID,
-                    requestID
+                    errorInfo.requestId
                 )
-                getLogger().error(`error: ${errorMessage} tabID: ${tabID} requestID: ${requestID}`)
+                getLogger().error(`error: ${errorInfo.errorMessage} tabID: ${tabID} requestID: ${errorInfo.requestId}`)
 
                 followUps = []
                 relatedSuggestions = []
-                this.telemetryHelper.recordMessageResponseError(triggerPayload, tabID, statusCode ?? 0)
+                this.telemetryHelper.recordMessageResponseError(triggerPayload, tabID, errorInfo.statusCode ?? 0)
             })
             .finally(async () => {
                 if (session.sessionIdentifier) {
@@ -349,6 +437,17 @@ export class Messenger {
                     )
                 )
 
+                chatHistoryManager.pushAssistantMessage({
+                    assistantResponseMessage: {
+                        messageId: messageID,
+                        content: message,
+                        references: codeReference,
+                        ...(toolUse &&
+                            toolUse.input !== undefined &&
+                            toolUse.input !== '' && { toolUses: [{ ...toolUse }] }),
+                    },
+                })
+
                 getLogger().info(
                     `All events received. requestId=%s counts=%s`,
                     response.$metadata.requestId,
@@ -380,6 +479,119 @@ export class Messenger {
             },
             tabID,
             requestID
+        )
+    }
+
+    public sendPartialToolLog(
+        message: string,
+        tabID: string,
+        triggerID: string,
+        toolUse: ToolUse | undefined,
+        validation: CommandValidation,
+        changeList?: Change[]
+    ) {
+        const buttons: ChatItemButton[] = []
+        let fileList: ChatItemContent['fileList'] = undefined
+        let shellCommandHeader = undefined
+        if (toolUse?.name === ToolType.ExecuteBash && message.startsWith('```shell')) {
+            if (validation.requiresAcceptance) {
+                buttons.push({
+                    id: 'run-shell-command',
+                    text: 'Run',
+                    status: 'main',
+                    icon: 'play' as MynahIconsType,
+                })
+                buttons.push({
+                    id: 'reject-shell-command',
+                    text: 'Reject',
+                    status: 'clear',
+                    icon: 'cancel' as MynahIconsType,
+                })
+            }
+
+            shellCommandHeader = {
+                icon: 'code-block' as MynahIconsType,
+                body: 'shell',
+                buttons: buttons,
+            }
+
+            if (validation.warning) {
+                message = validation.warning + message
+            }
+        } else if (toolUse?.name === ToolType.FsWrite) {
+            const input = toolUse.input as unknown as FsWriteParams
+            const fileName = path.basename(input.path)
+            const changes = changeList?.reduce(
+                (acc, { count = 0, added, removed }) => {
+                    if (added) {
+                        acc.added += count
+                    } else if (removed) {
+                        acc.deleted += count
+                    }
+                    return acc
+                },
+                { added: 0, deleted: 0 }
+            )
+            // FileList
+            fileList = {
+                fileTreeTitle: '',
+                hideFileCount: true,
+                filePaths: [fileName],
+                details: {
+                    [fileName]: {
+                        // eslint-disable-next-line unicorn/no-null
+                        icon: null,
+                        changes: changes,
+                    },
+                },
+            }
+            // Buttons
+            buttons.push({
+                id: 'reject-code-diff',
+                status: 'clear',
+                icon: 'cancel' as MynahIconsType,
+            })
+            buttons.push({
+                id: 'accept-code-diff',
+                status: 'clear',
+                icon: 'ok' as MynahIconsType,
+            })
+        }
+
+        this.dispatcher.sendChatMessage(
+            new ChatMessage(
+                {
+                    message: message,
+                    messageType: 'answer-part',
+                    followUps: undefined,
+                    followUpsHeader: undefined,
+                    relatedSuggestions: undefined,
+                    triggerID,
+                    messageID: toolUse?.toolUseId ?? '',
+                    userIntent: undefined,
+                    codeBlockLanguage: undefined,
+                    contextList: undefined,
+                    canBeVoted: false,
+                    buttons:
+                        toolUse?.name === ToolType.FsWrite || toolUse?.name === ToolType.ExecuteBash
+                            ? undefined
+                            : buttons,
+                    fullWidth: toolUse?.name === ToolType.FsWrite || toolUse?.name === ToolType.ExecuteBash,
+                    padding: !(toolUse?.name === ToolType.FsWrite || toolUse?.name === ToolType.ExecuteBash),
+                    header:
+                        toolUse?.name === ToolType.FsWrite
+                            ? { icon: 'code-block' as MynahIconsType, buttons: buttons, fileList: fileList }
+                            : toolUse?.name === ToolType.ExecuteBash
+                              ? shellCommandHeader
+                              : undefined,
+                    codeBlockActions:
+                        // eslint-disable-next-line unicorn/no-null, prettier/prettier
+                        toolUse?.name === ToolType.FsWrite || toolUse?.name === ToolType.ExecuteBash
+                            ? { 'insert-to-cursor': null, copy: null }
+                            : undefined,
+                },
+                tabID
+            )
         )
     }
 
@@ -428,6 +640,10 @@ export class Messenger {
                 ]
                 followUpsHeader = 'Try Examples:'
                 break
+            case 'reject-shell-command':
+                // need to update the string later
+                message = 'The shell command execution rejected. Abort.'
+                break
         }
 
         this.dispatcher.sendChatMessage(
@@ -443,6 +659,7 @@ export class Messenger {
                     userIntent: undefined,
                     codeBlockLanguage: undefined,
                     contextList: undefined,
+                    title: undefined,
                 },
                 tabID
             )
@@ -563,5 +780,9 @@ export class Messenger {
         this.dispatcher.sendShowCustomFormMessage(
             new ShowCustomFormMessage(tabID, formItems, buttons, title, description)
         )
+    }
+
+    public sendAsyncEventProgress(tabID: string, inProgress: boolean, message: string | undefined) {
+        this.dispatcher.sendAsyncEventProgress(new AsyncEventProgressMessage(tabID, 'CWChat', inProgress, message))
     }
 }
