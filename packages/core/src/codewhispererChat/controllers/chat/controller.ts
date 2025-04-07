@@ -675,69 +675,6 @@ export class ChatController {
         telemetry.ui_click.emit({ elementId: 'amazonq_createSavedPrompt' })
     }
 
-    private async processUnavailableToolUseMessage(message: CustomFormActionMessage) {
-        const tabID = message.tabID
-        if (!tabID) {
-            return
-        }
-        this.editorContextExtractor
-            .extractContextForTrigger('ChatMessage')
-            .then(async (context) => {
-                const triggerID = randomUUID()
-                this.triggerEventsStorage.addTriggerEvent({
-                    id: triggerID,
-                    tabID: message.tabID,
-                    message: undefined,
-                    type: 'chat_message',
-                    context,
-                })
-                const session = this.sessionStorage.getSession(tabID)
-                const toolUse = session.toolUse
-                if (!toolUse || !toolUse.input) {
-                    return
-                }
-                session.setToolUse(undefined)
-
-                const toolResults: ToolResult[] = []
-
-                toolResults.push({
-                    content: [{ text: 'This tool is not an available tool in this mode' }],
-                    toolUseId: toolUse.toolUseId,
-                    status: ToolResultStatus.ERROR,
-                })
-
-                await this.generateResponse(
-                    {
-                        message: '',
-                        trigger: ChatTriggerType.ChatMessage,
-                        query: undefined,
-                        codeSelection: context?.focusAreaContext?.selectionInsideExtendedCodeBlock,
-                        fileText: context?.focusAreaContext?.extendedCodeBlock ?? '',
-                        fileLanguage: context?.activeFileContext?.fileLanguage,
-                        filePath: context?.activeFileContext?.filePath,
-                        matchPolicy: context?.activeFileContext?.matchPolicy,
-                        codeQuery: context?.focusAreaContext?.names,
-                        userIntent: undefined,
-                        customization: getSelectedCustomization(),
-                        toolResults: toolResults,
-                        origin: Origin.IDE,
-                        context: session.context ?? [],
-                        relevantTextDocuments: [],
-                        additionalContents: [],
-                        documentReferences: [],
-                        useRelevantDocuments: false,
-                        contextLengths: {
-                            ...defaultContextLengths,
-                        },
-                    },
-                    triggerID
-                )
-            })
-            .catch((e) => {
-                this.processException(e, tabID)
-            })
-    }
-
     private async processToolUseMessage(message: CustomFormActionMessage) {
         const tabID = message.tabID
         if (!tabID) {
@@ -756,59 +693,69 @@ export class ChatController {
                 })
                 this.messenger.sendAsyncEventProgress(tabID, true, '')
                 const session = this.sessionStorage.getSession(tabID)
-                const toolUse = session.toolUse
-                if (!toolUse || !toolUse.input) {
+                const toolUseWithError = session.toolUseWithError
+                if (!toolUseWithError || !toolUseWithError.toolUse || !toolUseWithError.toolUse.input) {
                     // Turn off AgentLoop flag if there's no tool use
                     this.sessionStorage.setAgentLoopInProgress(tabID, false)
                     return
                 }
-                session.setToolUse(undefined)
+                session.setToolUseWithError(undefined)
 
+                const toolUse = toolUseWithError.toolUse
+                const toolUseError = toolUseWithError.error
                 const toolResults: ToolResult[] = []
 
-                const result = ToolUtils.tryFromToolUse(toolUse)
-                if ('type' in result) {
-                    const tool: Tool = result
-
-                    try {
-                        await ToolUtils.validate(tool)
-
-                        const chatStream = new ChatStream(this.messenger, tabID, triggerID, toolUse, {
-                            requiresAcceptance: false,
-                        })
-                        const output = await ToolUtils.invoke(tool, chatStream)
-                        if (output.output.content.length > maxToolOutputCharacterLength) {
-                            throw Error(
-                                `Tool output exceeds maximum character limit of ${maxToolOutputCharacterLength}`
-                            )
-                        }
-
-                        toolResults.push({
-                            content: [
-                                output.output.kind === OutputKind.Text
-                                    ? { text: output.output.content }
-                                    : { json: output.output.content },
-                            ],
-                            toolUseId: toolUse.toolUseId,
-                            status: ToolResultStatus.SUCCESS,
-                        })
-                    } catch (e: any) {
-                        toolResults.push({
-                            content: [{ text: e.message }],
-                            toolUseId: toolUse.toolUseId,
-                            status: ToolResultStatus.ERROR,
-                        })
-                    }
+                if (toolUseError) {
+                    toolResults.push({
+                        content: [{ text: toolUseError.message }],
+                        toolUseId: toolUse.toolUseId,
+                        status: ToolResultStatus.ERROR,
+                    })
                 } else {
-                    const toolResult: ToolResult = result
-                    toolResults.push(toolResult)
-                }
+                    const result = ToolUtils.tryFromToolUse(toolUse)
+                    if ('type' in result) {
+                        const tool: Tool = result
 
-                if (toolUse.name === ToolType.FsWrite) {
-                    await vscode.commands.executeCommand(
-                        'vscode.open',
-                        vscode.Uri.file((toolUse.input as unknown as FsWriteParams).path)
-                    )
+                        try {
+                            await ToolUtils.validate(tool)
+
+                            const chatStream = new ChatStream(this.messenger, tabID, triggerID, toolUse, {
+                                requiresAcceptance: false,
+                            })
+                            const output = await ToolUtils.invoke(tool, chatStream)
+                            if (output.output.content.length > maxToolOutputCharacterLength) {
+                                throw Error(
+                                    `Tool output exceeds maximum character limit of ${maxToolOutputCharacterLength}`
+                                )
+                            }
+
+                            toolResults.push({
+                                content: [
+                                    output.output.kind === OutputKind.Text
+                                        ? { text: output.output.content }
+                                        : { json: output.output.content },
+                                ],
+                                toolUseId: toolUse.toolUseId,
+                                status: ToolResultStatus.SUCCESS,
+                            })
+                        } catch (e: any) {
+                            toolResults.push({
+                                content: [{ text: e.message }],
+                                toolUseId: toolUse.toolUseId,
+                                status: ToolResultStatus.ERROR,
+                            })
+                        }
+                    } else {
+                        const toolResult: ToolResult = result
+                        toolResults.push(toolResult)
+                    }
+
+                    if (toolUse.name === ToolType.FsWrite) {
+                        await vscode.commands.executeCommand(
+                            'vscode.open',
+                            vscode.Uri.file((toolUse.input as unknown as FsWriteParams).path)
+                        )
+                    }
                 }
 
                 await this.generateResponse(
@@ -879,9 +826,6 @@ export class ChatController {
             case 'reject-shell-command':
                 await this.rejectShellCommand(message)
                 break
-            case 'tool-unavailable':
-                await this.processUnavailableToolUseMessage(message)
-                break
             default:
                 getLogger().warn(`Unhandled action: ${message.action.id}`)
         }
@@ -920,11 +864,11 @@ export class ChatController {
                 await fs.mkdir(resultArtifactsDir)
                 const tempFilePath = path.join(
                     resultArtifactsDir,
-                    `temp-${path.basename((session.toolUse?.input as unknown as FsWriteParams).path)}`
+                    `temp-${path.basename((session.toolUseWithError?.toolUse.input as unknown as FsWriteParams).path)}`
                 )
 
                 // If we have existing filePath copy file content from existing file to temporary file.
-                const filePath = (session.toolUse?.input as any).path ?? message.filePath
+                const filePath = (session.toolUseWithError?.toolUse.input as any).path ?? message.filePath
                 const fileExists = await fs.existsFile(filePath)
                 if (fileExists) {
                     const fileContent = await fs.readFileText(filePath)
@@ -932,7 +876,7 @@ export class ChatController {
                 }
 
                 // Create a deep clone of the toolUse object and pass this toolUse to FsWrite tool execution to get the modified temporary file.
-                const clonedToolUse = structuredClone(session.toolUse)
+                const clonedToolUse = structuredClone(session.toolUseWithError?.toolUse)
                 if (!clonedToolUse) {
                     return
                 }
