@@ -235,36 +235,37 @@ export class RegionProfileManager {
             return
         }
         // cross-validation
-        let profiles: RegionProfile[] = []
-        try {
-            profiles = await this.listRegionProfile()
-        } catch (e) {
-            telemetry.amazonq_profileState.emit({
-                source: 'reload',
-                amazonQProfileRegion: 'not-set',
-                reason: (e as Error).message,
-                result: 'Failed',
+        this.listRegionProfile()
+            .then(async (profiles) => {
+                const r = profiles.find((it) => it.arn === previousSelected.arn)
+                if (!r) {
+                    telemetry.amazonq_profileState.emit({
+                        source: 'reload',
+                        amazonQProfileRegion: 'not-set',
+                        reason: 'profile could not be selected',
+                        result: 'Failed',
+                    })
+
+                    await this.invalidateProfile(previousSelected.arn)
+                    RegionProfileManager.logger.warn(
+                        `invlaidating ${previousSelected.name} profile, arn=${previousSelected.arn}`
+                    )
+                }
+            })
+            .catch((e) => {
+                telemetry.amazonq_profileState.emit({
+                    source: 'reload',
+                    amazonQProfileRegion: 'not-set',
+                    reason: (e as Error).message,
+                    result: 'Failed',
+                })
             })
 
-            return
-        }
-
-        const r = profiles.find((it) => it.arn === previousSelected)
-        if (!r) {
-            telemetry.amazonq_profileState.emit({
-                source: 'reload',
-                amazonQProfileRegion: 'not-set',
-                reason: 'profile could not be selected',
-                result: 'Failed',
-            })
-            return
-        }
-
-        await this.switchRegionProfile(r, 'reload')
+        await this.switchRegionProfile(previousSelected, 'reload')
     }
 
-    private loadPersistedRegionProfle(): { [label: string]: string } {
-        const previousPersistedState = globals.globalState.tryGet<{ [label: string]: string }>(
+    private loadPersistedRegionProfle(): { [label: string]: RegionProfile } {
+        const previousPersistedState = globals.globalState.tryGet<{ [label: string]: RegionProfile }>(
             'aws.amazonq.regionProfiles',
             Object,
             {}
@@ -282,13 +283,13 @@ export class RegionProfileManager {
         }
 
         // persist connectionId to profileArn
-        const previousPersistedState = globals.globalState.tryGet<{ [label: string]: string }>(
+        const previousPersistedState = globals.globalState.tryGet<{ [label: string]: RegionProfile }>(
             'aws.amazonq.regionProfiles',
             Object,
             {}
         )
 
-        previousPersistedState[conn.id] = this.activeRegionProfile.arn
+        previousPersistedState[conn.id] = this.activeRegionProfile
         await globals.globalState.update('aws.amazonq.regionProfiles', previousPersistedState)
     }
 
@@ -337,7 +338,7 @@ export class RegionProfileManager {
 
             const profiles = this.loadPersistedRegionProfle()
             const updatedProfiles = Object.fromEntries(
-                Object.entries(profiles).filter(([connId, profileArn]) => profileArn !== arn)
+                Object.entries(profiles).filter(([connId, profile]) => profile.arn !== arn)
             )
             await globals.globalState.update('aws.amazonq.regionProfiles', updatedProfiles)
         }

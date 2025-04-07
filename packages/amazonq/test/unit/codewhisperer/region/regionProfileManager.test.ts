@@ -173,13 +173,13 @@ describe('RegionProfileManager', function () {
 
             await sut.persistSelectRegionProfile()
 
-            const state = globals.globalState.tryGet<{ [label: string]: string }>(
+            const state = globals.globalState.tryGet<{ [label: string]: RegionProfile }>(
                 'aws.amazonq.regionProfiles',
                 Object,
                 {}
             )
 
-            assert.strictEqual(state[conn.id], profileFoo.arn)
+            assert.strictEqual(state[conn.id], profileFoo)
         })
 
         it(`restoreRegionProfile`, async function () {
@@ -191,7 +191,7 @@ describe('RegionProfileManager', function () {
             }
 
             const state = {} as any
-            state[conn.id] = profileFoo.arn
+            state[conn.id] = profileFoo
 
             await globals.globalState.update('aws.amazonq.regionProfiles', state)
 
@@ -212,19 +212,19 @@ describe('RegionProfileManager', function () {
                 fail('connection should not be undefined')
             }
             await sut.persistSelectRegionProfile()
-            const state = globals.globalState.tryGet<{ [label: string]: string }>(
+            const state = globals.globalState.tryGet<{ [label: string]: RegionProfile }>(
                 'aws.amazonq.regionProfiles',
                 Object,
                 {}
             )
-            assert.strictEqual(state[conn.id], profileFoo.arn)
+            assert.strictEqual(state[conn.id], profileFoo)
 
             // subject to test
             await sut.invalidateProfile(profileFoo.arn)
 
             // assertion
             assert.strictEqual(sut.activeRegionProfile, undefined)
-            const actualGlobalState = globals.globalState.tryGet<{ [label: string]: string }>(
+            const actualGlobalState = globals.globalState.tryGet<{ [label: string]: RegionProfile }>(
                 'aws.amazonq.regionProfiles',
                 Object,
                 {}
