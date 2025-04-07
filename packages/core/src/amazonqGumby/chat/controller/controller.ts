@@ -145,6 +145,10 @@ export class GumbyController {
         this.chatControllerMessageListeners.errorThrown.event((data) => {
             return this.handleError(data)
         })
+
+        AuthUtil.instance.regionProfileManager.onDidChangeRegionProfile(() => {
+            this.sessionStorage.removeActiveTab()
+        })
     }
 
     private async tabOpened(message: any) {

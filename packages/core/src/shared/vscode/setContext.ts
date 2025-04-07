@@ -19,6 +19,7 @@ export type contextKey =
     | 'aws.amazonq.showLoginView'
     | 'aws.amazonq.security.noMatches'
     | 'aws.amazonq.notifications.show'
+    | 'aws.amazonq.connectedSsoIdc'
     | 'aws.codecatalyst.connected'
     | 'aws.codewhisperer.connected'
     | 'aws.codewhisperer.connectionExpired'

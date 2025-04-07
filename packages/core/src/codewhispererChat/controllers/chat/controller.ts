@@ -161,6 +161,7 @@ export class ChatController {
     private readonly telemetryHelper: CWCTelemetryHelper
     private userPromptsWatcher: vscode.FileSystemWatcher | undefined
     private chatHistoryDb = Database.getInstance()
+    private cancelTokenSource: vscode.CancellationTokenSource = new vscode.CancellationTokenSource()
 
     public constructor(
         private readonly chatControllerMessageListeners: ChatControllerMessageListeners,
@@ -186,6 +187,10 @@ export class ChatController {
             } else {
                 this.telemetryHelper.recordCloseChat()
             }
+        })
+
+        AuthUtil.instance.regionProfileManager.onDidChangeRegionProfile(() => {
+            this.cancelTokenSource.cancel()
         })
 
         this.chatControllerMessageListeners.processPromptChatMessage.onMessage((data) => {
@@ -297,6 +302,9 @@ export class ChatController {
         })
         this.chatControllerMessageListeners.processDetailedListItemSelectMessage.onMessage((data) => {
             return this.tabBarController.processItemSelectMessage(data)
+        })
+        AuthUtil.instance.regionProfileManager.onDidChangeRegionProfile(() => {
+            this.sessionStorage.deleteAllSessions()
         })
     }
 
@@ -796,6 +804,7 @@ export class ChatController {
                         codeQuery: context?.focusAreaContext?.names,
                         userIntent: this.userIntentRecognizer.getFromContextMenuCommand(command),
                         customization: getSelectedCustomization(),
+                        profile: AuthUtil.instance.regionProfileManager.activeRegionProfile,
                         additionalContents: [],
                         relevantTextDocuments: [],
                         documentReferences: [],
@@ -882,6 +891,7 @@ export class ChatController {
                     codeQuery: lastTriggerEvent.context?.focusAreaContext?.names,
                     userIntent: message.userIntent,
                     customization: getSelectedCustomization(),
+                    profile: AuthUtil.instance.regionProfileManager.activeRegionProfile,
                     contextLengths: {
                         ...defaultContextLengths,
                     },
@@ -923,6 +933,7 @@ export class ChatController {
                         codeQuery: context?.focusAreaContext?.names,
                         userIntent: this.userIntentRecognizer.getFromPromptChatMessage(message),
                         customization: getSelectedCustomization(),
+                        profile: AuthUtil.instance.regionProfileManager.activeRegionProfile,
                         context: message.context ?? [],
                         relevantTextDocuments: [],
                         additionalContents: [],
@@ -1184,6 +1195,7 @@ export class ChatController {
         )
         let response: MessengerResponseType | undefined = undefined
         session.createNewTokenSource()
+        // TODO: onProfileChanged, abort previous response?
         try {
             this.messenger.sendInitalStream(tabID, triggerID, triggerPayload.documentReferences)
             this.telemetryHelper.setConversationStreamStartTime(tabID)
@@ -1214,7 +1226,15 @@ export class ChatController {
                     response.$metadata.requestId
                 } metadata: ${inspect(response.$metadata, { depth: 12 })}`
             )
-            await this.messenger.sendAIResponse(response, session, tabID, triggerID, triggerPayload)
+            this.cancelTokenSource = new vscode.CancellationTokenSource()
+            await this.messenger.sendAIResponse(
+                response,
+                session,
+                tabID,
+                triggerID,
+                triggerPayload,
+                this.cancelTokenSource.token
+            )
         } catch (e: any) {
             this.telemetryHelper.recordMessageResponseError(triggerPayload, tabID, getHttpStatusCode(e) ?? 0)
             // clears session, record telemetry before this call
