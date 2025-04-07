@@ -367,7 +367,7 @@ export class ChildProcess {
                     if (typeof rejectOnErrorCode === 'function') {
                         reject(rejectOnErrorCode(code))
                     } else {
-                        reject(new Error(`Command exited with non-zero code: ${code}`))
+                        reject(new Error(`Command exited with non-zero code (${code}): ${this.toString()}`))
                     }
                 }
                 if (options.waitForStreams === false) {
