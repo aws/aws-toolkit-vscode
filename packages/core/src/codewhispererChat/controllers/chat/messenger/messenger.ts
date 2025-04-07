@@ -284,9 +284,7 @@ export class Messenger {
                         } else {
                             // TODO: Handle the error
                         }
-                    } else if (cwChatEvent.toolUseEvent?.stop === undefined && toolUseInput !== '') {
-                        // This is for the case when writing tool is executed. The toolUseEvent is non stop but in toolUseInput is not empty. In this case we need show user the current spinner UI.
-                        this.sendInitalStream(tabID, triggerID, undefined)
+                        // TODO: Add a spinner component for fsWrite, previous implementation is causing lag in mynah UX.
                     }
 
                     if (
