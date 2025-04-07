@@ -5,12 +5,13 @@
 import Loki from 'lokijs'
 import * as vscode from 'vscode'
 import { TabType } from '../../../amazonq/webview/ui/storages/tabsStorage'
-import { ChatItem, ChatItemType, DetailedListItemGroup } from '@aws/mynah-ui'
+import { ChatItemType, DetailedListItemGroup } from '@aws/mynah-ui'
 import {
     ClientType,
     Conversation,
     FileSystemAdapter,
     groupTabsByDate,
+    Message,
     Tab,
     TabCollection,
     updateOrCreateConversation,
@@ -171,7 +172,7 @@ export class Database {
             const tabs = tabCollection.find()
             const filteredTabs = tabs.filter((tab: Tab) => {
                 return tab.conversations.some((conversation: Conversation) => {
-                    return conversation.messages.some((message: ChatItem) => {
+                    return conversation.messages.some((message: Message) => {
                         return message.body?.toLowerCase().includes(searchTermLower)
                     })
                 })
@@ -225,7 +226,7 @@ export class Database {
         }
     }
 
-    addMessage(tabId: string, tabType: TabType, conversationId: string, chatItem: ChatItem) {
+    addMessage(tabId: string, tabType: TabType, conversationId: string, message: Message) {
         if (this.initialized) {
             const tabCollection = this.db.getCollection<Tab>(TabCollection)
 
@@ -238,9 +239,9 @@ export class Database {
 
             const tabData = historyId ? tabCollection.findOne({ historyId }) : undefined
             const tabTitle =
-                (chatItem.type === ('prompt' as ChatItemType) ? chatItem.body : tabData?.title) || 'Amazon Q Chat'
+                (message.type === ('prompt' as ChatItemType) ? message.body : tabData?.title) || 'Amazon Q Chat'
             if (tabData) {
-                tabData.conversations = updateOrCreateConversation(tabData.conversations, conversationId, chatItem)
+                tabData.conversations = updateOrCreateConversation(tabData.conversations, conversationId, message)
                 tabData.updatedAt = new Date()
                 tabData.title = tabTitle
                 tabCollection.update(tabData)
@@ -251,7 +252,7 @@ export class Database {
                     isOpen: true,
                     tabType: tabType,
                     title: tabTitle,
-                    conversations: [{ conversationId, clientType: ClientType.VSCode, messages: [chatItem] }],
+                    conversations: [{ conversationId, clientType: ClientType.VSCode, messages: [message] }],
                 })
             }
         }
