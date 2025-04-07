@@ -587,7 +587,7 @@ export class Messenger {
                     codeBlockActions:
                         // eslint-disable-next-line unicorn/no-null, prettier/prettier
                         toolUse?.name === ToolType.FsWrite || toolUse?.name === ToolType.ExecuteBash
-                            ? { 'insert-to-cursor': null, copy: null }
+                            ? { 'insert-to-cursor': undefined, copy: undefined }
                             : undefined,
                 },
                 tabID
