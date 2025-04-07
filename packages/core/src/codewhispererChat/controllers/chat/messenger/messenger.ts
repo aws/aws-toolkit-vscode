@@ -20,6 +20,7 @@ import {
     UpdateDetailedListMessage,
     CloseDetailedListMessage,
     SelectTabMessage,
+    ChatItemHeader,
 } from '../../../view/connector/connector'
 import { EditorContextCommandType } from '../../../commands/registerCommands'
 import { ChatResponseStream as qdevChatResponseStream } from '@amzn/amazon-q-developer-streaming-client'
@@ -65,6 +66,8 @@ import { noWriteTools, tools } from '../../../constants'
 import { Change } from 'diff'
 import { FsWriteParams } from '../../../tools/fsWrite'
 import { AsyncEventProgressMessage } from '../../../../amazonq/commons/connector/connectorMessages'
+import { localize } from '../../../../shared/utilities/vsCodeUtils'
+import { getDiffLinesFromChanges } from '../../../../shared/utilities/diffUtils'
 
 export type StaticTextResponseType =
     | 'quick-action-help'
@@ -496,49 +499,44 @@ export class Messenger {
         changeList?: Change[]
     ) {
         const buttons: ChatItemButton[] = []
-        let fileList: ChatItemContent['fileList'] = undefined
-        let shellCommandHeader = undefined
+        let header: ChatItemHeader | undefined = undefined
+        let fullWidth: boolean | undefined = undefined
+        let padding: boolean | undefined = undefined
+        let codeBlockActions: ChatItemContent['codeBlockActions'] = undefined
         if (toolUse?.name === ToolType.ExecuteBash && message.startsWith('```shell')) {
             if (validation.requiresAcceptance) {
-                buttons.push({
-                    id: 'run-shell-command',
-                    text: 'Run',
-                    status: 'main',
-                    icon: 'play' as MynahIconsType,
-                })
-                buttons.push({
-                    id: 'reject-shell-command',
-                    text: 'Reject',
-                    status: 'clear',
-                    icon: 'cancel' as MynahIconsType,
-                })
+                const buttons: ChatItemButton[] = [
+                    {
+                        id: 'run-shell-command',
+                        text: localize('AWS.amazonq.executeBash.run', 'Run'),
+                        status: 'main',
+                        icon: 'play' as MynahIconsType,
+                    },
+                    {
+                        id: 'reject-shell-command',
+                        text: localize('AWS.amazonq.executeBash.reject', 'Reject'),
+                        status: 'clear',
+                        icon: 'cancel' as MynahIconsType,
+                    },
+                ]
+                header = {
+                    icon: 'code-block' as MynahIconsType,
+                    body: 'shell',
+                    buttons,
+                }
             }
-
-            shellCommandHeader = {
-                icon: 'code-block' as MynahIconsType,
-                body: 'shell',
-                buttons: buttons,
-            }
-
             if (validation.warning) {
                 message = validation.warning + message
             }
+            fullWidth = true
+            padding = false
+            // eslint-disable-next-line unicorn/no-null
+            codeBlockActions = { 'insert-to-cursor': null, copy: null }
         } else if (toolUse?.name === ToolType.FsWrite) {
             const input = toolUse.input as unknown as FsWriteParams
             const fileName = path.basename(input.path)
-            const changes = changeList?.reduce(
-                (acc, { count = 0, added, removed }) => {
-                    if (added) {
-                        acc.added += count
-                    } else if (removed) {
-                        acc.deleted += count
-                    }
-                    return acc
-                },
-                { added: 0, deleted: 0 }
-            )
-            // FileList
-            fileList = {
+            const changes = getDiffLinesFromChanges(changeList)
+            const fileList: ChatItemContent['fileList'] = {
                 fileTreeTitle: '',
                 hideFileCount: true,
                 filePaths: [fileName],
@@ -550,17 +548,27 @@ export class Messenger {
                     },
                 },
             }
-            // Buttons
-            buttons.push({
-                id: 'reject-code-diff',
-                status: 'clear',
-                icon: 'cancel' as MynahIconsType,
-            })
-            buttons.push({
-                id: 'accept-code-diff',
-                status: 'clear',
-                icon: 'ok' as MynahIconsType,
-            })
+            const buttons: ChatItemButton[] = [
+                {
+                    id: 'reject-code-diff',
+                    status: 'clear',
+                    icon: 'cancel' as MynahIconsType,
+                },
+                {
+                    id: 'accept-code-diff',
+                    status: 'clear',
+                    icon: 'ok' as MynahIconsType,
+                },
+            ]
+            header = {
+                icon: 'code-block' as MynahIconsType,
+                buttons,
+                fileList,
+            }
+            fullWidth = true
+            padding = false
+            // eslint-disable-next-line unicorn/no-null
+            codeBlockActions = { 'insert-to-cursor': null, copy: null }
         }
 
         this.dispatcher.sendChatMessage(
@@ -577,23 +585,11 @@ export class Messenger {
                     codeBlockLanguage: undefined,
                     contextList: undefined,
                     canBeVoted: false,
-                    buttons:
-                        toolUse?.name === ToolType.FsWrite || toolUse?.name === ToolType.ExecuteBash
-                            ? undefined
-                            : buttons,
-                    fullWidth: toolUse?.name === ToolType.FsWrite || toolUse?.name === ToolType.ExecuteBash,
-                    padding: !(toolUse?.name === ToolType.FsWrite || toolUse?.name === ToolType.ExecuteBash),
-                    header:
-                        toolUse?.name === ToolType.FsWrite
-                            ? { icon: 'code-block' as MynahIconsType, buttons: buttons, fileList: fileList }
-                            : toolUse?.name === ToolType.ExecuteBash
-                              ? shellCommandHeader
-                              : undefined,
-                    codeBlockActions:
-                        // eslint-disable-next-line unicorn/no-null, prettier/prettier
-                        toolUse?.name === ToolType.FsWrite || toolUse?.name === ToolType.ExecuteBash
-                            ? { 'insert-to-cursor': undefined, copy: undefined }
-                            : undefined,
+                    buttons,
+                    fullWidth,
+                    padding,
+                    header,
+                    codeBlockActions,
                 },
                 tabID
             )

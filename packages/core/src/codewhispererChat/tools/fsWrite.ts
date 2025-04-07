@@ -9,8 +9,6 @@ import vscode from 'vscode'
 import { fs } from '../../shared/fs/fs'
 import { Writable } from 'stream'
 import { Change, diffLines } from 'diff'
-import { getDiffMarkdown } from '../../shared/utilities/diffUtils'
-import { getLanguageForFilePath } from '../../shared/utilities/textDocumentUtilities'
 
 interface BaseParams {
     path: string
@@ -40,6 +38,12 @@ export interface AppendParams extends BaseParams {
 }
 
 export type FsWriteParams = CreateParams | StrReplaceParams | InsertParams | AppendParams
+
+export interface FsWriteBackup {
+    filePath: string
+    content: string
+    isNew: boolean
+}
 
 export class FsWrite {
     private readonly logger = getLogger('fsWrite')
@@ -73,24 +77,14 @@ export class FsWrite {
     }
 
     public async queueDescription(updates: Writable): Promise<void> {
-        const sanitizedPath = sanitizePath(this.params.path)
-        const changes = await this.getDiffChanges()
-        const language = await getLanguageForFilePath(sanitizedPath)
-
-        const diff = getDiffMarkdown(changes, language)
-        updates.write(diff)
+        // Write an empty string because FsWrite should only show a chat message with header
+        updates.write(' ')
         updates.end()
     }
 
     public async getDiffChanges(): Promise<Change[]> {
-        const sanitizedPath = sanitizePath(this.params.path)
         let newContent
-        let oldContent
-        try {
-            oldContent = await fs.readFileText(sanitizedPath)
-        } catch (err) {
-            oldContent = ''
-        }
+        const { filePath: sanitizedPath, content: oldContent } = await this.getBackup()
         switch (this.params.command) {
             case 'create':
                 newContent = this.getCreateCommandText(this.params)
@@ -106,6 +100,20 @@ export class FsWrite {
                 break
         }
         return diffLines(oldContent, newContent)
+    }
+
+    public async getBackup(): Promise<FsWriteBackup> {
+        const sanitizedPath = sanitizePath(this.params.path)
+        let oldContent
+        let isNew
+        try {
+            oldContent = await fs.readFileText(sanitizedPath)
+            isNew = false
+        } catch (err) {
+            oldContent = ''
+            isNew = true
+        }
+        return { filePath: sanitizedPath, content: oldContent, isNew }
     }
 
     public async validate(): Promise<void> {
