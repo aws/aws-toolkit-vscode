@@ -32,7 +32,8 @@ export interface ConnectorProps extends BaseConnectorProps {
         inProgress: boolean,
         message: string,
         messageId: string | undefined,
-        enableStopAction: boolean
+        enableStopAction: boolean,
+        isPromptInputDisabled: boolean
     ) => void
 }
 
@@ -259,7 +260,8 @@ export class Connector extends BaseConnector {
                 messageData.inProgress,
                 messageData.message ?? undefined,
                 messageData.messageId ?? undefined,
-                enableStopAction
+                enableStopAction,
+                false
             )
             return
         }

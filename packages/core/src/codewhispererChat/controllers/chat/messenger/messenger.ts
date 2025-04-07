@@ -785,4 +785,28 @@ export class Messenger {
     public sendAsyncEventProgress(tabID: string, inProgress: boolean, message: string | undefined) {
         this.dispatcher.sendAsyncEventProgress(new AsyncEventProgressMessage(tabID, 'CWChat', inProgress, message))
     }
+
+    public sendEmptyMessage(
+        tabID: string,
+        triggerId: string,
+        mergedRelevantDocuments: DocumentReference[] | undefined
+    ) {
+        this.dispatcher.sendChatMessage(
+            new ChatMessage(
+                {
+                    message: '',
+                    messageType: 'answer',
+                    followUps: undefined,
+                    followUpsHeader: undefined,
+                    relatedSuggestions: undefined,
+                    triggerID: triggerId,
+                    messageID: '',
+                    userIntent: undefined,
+                    codeBlockLanguage: undefined,
+                    contextList: undefined,
+                },
+                tabID
+            )
+        )
+    }
 }

@@ -408,6 +408,7 @@ export class ChatController {
     private async processStopResponseMessage(message: StopResponseMessage) {
         const session = this.sessionStorage.getSession(message.tabID)
         session.tokenSource.cancel()
+        this.messenger.sendEmptyMessage(message.tabID, '', undefined)
         this.chatHistoryStorage.getTabHistory(message.tabID).clearRecentHistory()
     }
 

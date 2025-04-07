@@ -80,8 +80,13 @@ export class ChatHistoryManager {
      * Push an assistant message to the history
      */
     public pushAssistantMessage(newMessage: ChatMessage): void {
-        if (newMessage !== undefined && this.lastUserMessage !== undefined) {
-            this.logger.warn('last Message should not be defined when pushing an assistant message')
+        if (newMessage !== undefined && this.lastUserMessage === undefined) {
+            this.logger.warn('first assistant response should always come after user input message')
+            return
+        }
+        // check if last message in histroy is assistant message and now replace it in that case
+        if (this.history.length > 0 && this.history.at(-1)?.assistantResponseMessage) {
+            this.history.pop()
         }
         this.history.push(newMessage)
     }
@@ -101,6 +106,18 @@ export class ChatHistoryManager {
     }
 
     private trimConversationHistory(): void {
+        // make sure the UseInputMessage is the first stored message
+        if (this.history.length === 1 && this.history[0].assistantResponseMessage) {
+            this.history = []
+        }
+
+        if (
+            this.history.at(-1)?.assistantResponseMessage?.content === '' &&
+            this.history.at(-1)?.assistantResponseMessage?.toolUses === undefined
+        ) {
+            this.clearRecentHistory()
+        }
+
         if (this.history.length <= MaxConversationHistoryLength) {
             return
         }
