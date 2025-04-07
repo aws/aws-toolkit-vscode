@@ -28,6 +28,10 @@ export class ChatSession {
     private _showDiffOnFileWrite: boolean = false
     private _context: PromptMessage['context']
     private _pairProgrammingModeOn: boolean = true
+    /**
+     * True if messages from local history have been sent to session.
+     */
+    localHistoryHydrated: boolean = false
 
     contexts: Map<string, { first: number; second: number }[]> = new Map()
     // TODO: doesn't handle the edge case when two files share the same relativePath string but from different root

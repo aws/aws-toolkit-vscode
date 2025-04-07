@@ -33,11 +33,16 @@ import {
     FileClick,
     RelevantTextDocumentAddition,
     PromptInputOptionChange,
+    TabBarButtonClick,
+    SaveChatMessage,
 } from './model'
 import {
     AppToWebViewMessageDispatcher,
     ContextSelectedMessage,
     CustomFormActionMessage,
+    DetailedListActionClickMessage,
+    DetailedListFilterChangeMessage,
+    DetailedListItemSelectMessage,
 } from '../../view/connector/connector'
 import { MessagePublisher } from '../../../amazonq/messages/messagePublisher'
 import { MessageListener } from '../../../amazonq/messages/messageListener'
@@ -94,6 +99,8 @@ import { ChatStream } from '../../tools/chatStream'
 import { ChatHistoryStorage } from '../../storages/chatHistoryStorage'
 import { FsWrite, FsWriteParams } from '../../tools/fsWrite'
 import { tempDirPath } from '../../../shared/filesystemUtilities'
+import { Database } from '../../../shared/db/chatDb/chatDb'
+import { TabBarController } from './tabBarController'
 
 export interface ChatControllerMessagePublishers {
     readonly processPromptChatMessage: MessagePublisher<PromptMessage>
@@ -119,6 +126,11 @@ export interface ChatControllerMessagePublishers {
     readonly processContextSelected: MessagePublisher<ContextSelectedMessage>
     readonly processFileClick: MessagePublisher<FileClick>
     readonly processPromptInputOptionChange: MessagePublisher<PromptInputOptionChange>
+    readonly processTabBarButtonClick: MessagePublisher<TabBarButtonClick>
+    readonly processSaveChat: MessagePublisher<SaveChatMessage>
+    readonly processDetailedListFilterChangeMessage: MessagePublisher<DetailedListFilterChangeMessage>
+    readonly processDetailedListItemSelectMessage: MessagePublisher<DetailedListItemSelectMessage>
+    readonly processDetailedListActionClickMessage: MessagePublisher<DetailedListActionClickMessage>
 }
 
 export interface ChatControllerMessageListeners {
@@ -145,6 +157,11 @@ export interface ChatControllerMessageListeners {
     readonly processContextSelected: MessageListener<ContextSelectedMessage>
     readonly processFileClick: MessageListener<FileClick>
     readonly processPromptInputOptionChange: MessageListener<PromptInputOptionChange>
+    readonly processTabBarButtonClick: MessageListener<TabBarButtonClick>
+    readonly processSaveChat: MessageListener<SaveChatMessage>
+    readonly processDetailedListFilterChangeMessage: MessageListener<DetailedListFilterChangeMessage>
+    readonly processDetailedListItemSelectMessage: MessageListener<DetailedListItemSelectMessage>
+    readonly processDetailedListActionClickMessage: MessageListener<DetailedListActionClickMessage>
 }
 
 export class ChatController {
@@ -153,11 +170,13 @@ export class ChatController {
     private readonly messenger: Messenger
     private readonly editorContextExtractor: EditorContextExtractor
     private readonly editorContentController: EditorContentController
+    private readonly tabBarController: TabBarController
     private readonly promptGenerator: PromptsGenerator
     private readonly userIntentRecognizer: UserIntentRecognizer
     private readonly telemetryHelper: CWCTelemetryHelper
     private userPromptsWatcher: vscode.FileSystemWatcher | undefined
     private readonly chatHistoryStorage: ChatHistoryStorage
+    private chatHistoryDb = Database.getInstance()
 
     public constructor(
         private readonly chatControllerMessageListeners: ChatControllerMessageListeners,
@@ -176,6 +195,7 @@ export class ChatController {
         this.promptGenerator = new PromptsGenerator()
         this.userIntentRecognizer = new UserIntentRecognizer()
         this.chatHistoryStorage = new ChatHistoryStorage()
+        this.tabBarController = new TabBarController(this.messenger)
 
         onDidChangeAmazonQVisibility((visible) => {
             if (visible) {
@@ -282,6 +302,21 @@ export class ChatController {
         })
         this.chatControllerMessageListeners.processPromptInputOptionChange.onMessage((data) => {
             return this.processPromptInputOptionChange(data)
+        })
+        this.chatControllerMessageListeners.processTabBarButtonClick.onMessage((data) => {
+            return this.tabBarController.processTabBarButtonClick(data)
+        })
+        this.chatControllerMessageListeners.processSaveChat.onMessage((data) => {
+            return this.tabBarController.processSaveChat(data)
+        })
+        this.chatControllerMessageListeners.processDetailedListActionClickMessage.onMessage((data) => {
+            return this.tabBarController.processActionClickMessage(data)
+        })
+        this.chatControllerMessageListeners.processDetailedListFilterChangeMessage.onMessage((data) => {
+            return this.tabBarController.processFilterChangeMessage(data)
+        })
+        this.chatControllerMessageListeners.processDetailedListItemSelectMessage.onMessage((data) => {
+            return this.tabBarController.processItemSelectMessage(data)
         })
     }
 
@@ -433,6 +468,7 @@ export class ChatController {
         this.chatHistoryStorage.deleteHistory(message.tabID)
         this.triggerEventsStorage.removeTabEvents(message.tabID)
         // this.telemetryHelper.recordCloseChat(message.tabID)
+        this.chatHistoryDb.updateTabOpenState(message.tabID, false)
     }
 
     private async processTabChangedMessage(message: TabChangedMessage) {
@@ -455,6 +491,7 @@ export class ChatController {
 
     private async processContextCommandUpdateMessage() {
         // when UI is ready, refresh the context commands
+        this.tabBarController.loadChats()
         this.registerUserPromptsWatcher()
         const contextCommand: MynahUIDataModel['contextCommands'] = [
             {
@@ -1126,6 +1163,7 @@ export class ChatController {
                 this.chatHistoryStorage.getTabHistory(message.tabID).clear()
                 this.triggerEventsStorage.removeTabEvents(message.tabID)
                 recordTelemetryChatRunCommand('clear')
+                this.chatHistoryDb.clearTab(message.tabID)
                 return
             default:
                 this.processQuickActionCommand(message)
@@ -1414,6 +1452,10 @@ export class ChatController {
         }
 
         const session = this.sessionStorage.getSession(tabID)
+        if (!session.localHistoryHydrated) {
+            triggerPayload.history = this.chatHistoryDb.getMessages(triggerEvent.tabID, 10)
+            session.localHistoryHydrated = true
+        }
         await this.resolveContextCommandPayload(triggerPayload, session)
         triggerPayload.useRelevantDocuments = triggerPayload.context.some(
             (context) => typeof context !== 'string' && context.command === '@workspace'
@@ -1514,6 +1556,12 @@ export class ChatController {
             this.telemetryHelper.recordStartConversation(triggerEvent, triggerPayload)
             if (currentMessage) {
                 chatHistory.appendUserMessage(currentMessage)
+            }
+            if (session.sessionIdentifier) {
+                this.chatHistoryDb.addMessage(tabID, 'cwc', session.sessionIdentifier, {
+                    body: triggerPayload.message,
+                    type: 'prompt' as any,
+                })
             }
 
             getLogger().info(

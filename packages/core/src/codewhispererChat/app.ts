@@ -29,9 +29,17 @@ import {
     QuickCommandGroupActionClick,
     FileClick,
     PromptInputOptionChange,
+    TabBarButtonClick,
+    SaveChatMessage,
 } from './controllers/chat/model'
 import { EditorContextCommand, registerCommands } from './commands/registerCommands'
-import { ContextSelectedMessage, CustomFormActionMessage } from './view/connector/connector'
+import {
+    ContextSelectedMessage,
+    CustomFormActionMessage,
+    DetailedListActionClickMessage,
+    DetailedListFilterChangeMessage,
+    DetailedListItemSelectMessage,
+} from './view/connector/connector'
 
 export function init(appContext: AmazonQAppInitContext) {
     const cwChatControllerEventEmitters = {
@@ -58,6 +66,11 @@ export function init(appContext: AmazonQAppInitContext) {
         processContextSelected: new EventEmitter<ContextSelectedMessage>(),
         processFileClick: new EventEmitter<FileClick>(),
         processPromptInputOptionChange: new EventEmitter<PromptInputOptionChange>(),
+        processTabBarButtonClick: new EventEmitter<TabBarButtonClick>(),
+        processSaveChat: new EventEmitter<SaveChatMessage>(),
+        processDetailedListFilterChangeMessage: new EventEmitter<DetailedListFilterChangeMessage>(),
+        processDetailedListItemSelectMessage: new EventEmitter<DetailedListItemSelectMessage>(),
+        processDetailedListActionClickMessage: new EventEmitter<DetailedListActionClickMessage>(),
     }
 
     const cwChatControllerMessageListeners = {
@@ -121,6 +134,19 @@ export function init(appContext: AmazonQAppInitContext) {
         processFileClick: new MessageListener<FileClick>(cwChatControllerEventEmitters.processFileClick),
         processPromptInputOptionChange: new MessageListener<PromptInputOptionChange>(
             cwChatControllerEventEmitters.processPromptInputOptionChange
+        ),
+        processTabBarButtonClick: new MessageListener<TabBarButtonClick>(
+            cwChatControllerEventEmitters.processTabBarButtonClick
+        ),
+        processSaveChat: new MessageListener<SaveChatMessage>(cwChatControllerEventEmitters.processSaveChat),
+        processDetailedListFilterChangeMessage: new MessageListener<DetailedListFilterChangeMessage>(
+            cwChatControllerEventEmitters.processDetailedListFilterChangeMessage
+        ),
+        processDetailedListItemSelectMessage: new MessageListener<DetailedListItemSelectMessage>(
+            cwChatControllerEventEmitters.processDetailedListItemSelectMessage
+        ),
+        processDetailedListActionClickMessage: new MessageListener<DetailedListActionClickMessage>(
+            cwChatControllerEventEmitters.processDetailedListActionClickMessage
         ),
     }
 
@@ -187,6 +213,19 @@ export function init(appContext: AmazonQAppInitContext) {
         processFileClick: new MessagePublisher<FileClick>(cwChatControllerEventEmitters.processFileClick),
         processPromptInputOptionChange: new MessagePublisher<PromptInputOptionChange>(
             cwChatControllerEventEmitters.processPromptInputOptionChange
+        ),
+        processTabBarButtonClick: new MessagePublisher<TabBarButtonClick>(
+            cwChatControllerEventEmitters.processTabBarButtonClick
+        ),
+        processSaveChat: new MessagePublisher<SaveChatMessage>(cwChatControllerEventEmitters.processSaveChat),
+        processDetailedListActionClickMessage: new MessagePublisher<DetailedListActionClickMessage>(
+            cwChatControllerEventEmitters.processDetailedListActionClickMessage
+        ),
+        processDetailedListFilterChangeMessage: new MessagePublisher<DetailedListFilterChangeMessage>(
+            cwChatControllerEventEmitters.processDetailedListFilterChangeMessage
+        ),
+        processDetailedListItemSelectMessage: new MessagePublisher<DetailedListItemSelectMessage>(
+            cwChatControllerEventEmitters.processDetailedListItemSelectMessage
         ),
     }
 

@@ -34,6 +34,7 @@ import { welcomeScreenTabData } from './walkthrough/welcome'
 import { agentWalkthroughDataModel } from './walkthrough/agent'
 import { createClickTelemetry, createOpenAgentTelemetry } from './telemetry/actions'
 import { disclaimerAcknowledgeButtonId, disclaimerCard } from './texts/disclaimer'
+import { DetailedListSheetProps } from '@aws/mynah-ui/dist/components/detailed-list/detailed-list-sheet'
 
 /**
  * The number of welcome chat tabs that can be opened before the NEXT one will become
@@ -237,6 +238,18 @@ export const createMynahUI = (
                     }
                 }
             }
+        },
+        onOpenDetailedList: (data: DetailedListSheetProps) => {
+            return mynahUI.openDetailedList(data)
+        },
+        onSelectTab: (tabID: string, eventID: string) => {
+            mynahUI.selectTab(tabID, eventID || '')
+        },
+        onExportChat: (tabID: string, format: 'markdown' | 'html'): string => {
+            if (tabID) {
+                return mynahUI.serializeChat(tabID, format)
+            }
+            return ''
         },
         onFileActionClick: (tabID: string, messageId: string, filePath: string, actionName: string): void => {},
         onPromptInputOptionChange: (tabId: string, optionsValues: Record<string, string>, eventId?: string): void => {},
@@ -549,18 +562,21 @@ export const createMynahUI = (
                 promptInputPlaceholder: newPlaceholder,
             })
         },
-        onNewTab(tabType: TabType) {
+        onNewTab(tabType: TabType, chats?: ChatItem[]) {
             const newTabID = mynahUI.updateStore('', {})
             if (!newTabID) {
                 return
             }
-
             tabsStorage.updateTabTypeFromUnknown(newTabID, tabType)
             connector.onKnownTabOpen(newTabID)
             connector.onUpdateTabType(newTabID)
 
-            mynahUI.updateStore(newTabID, tabDataGenerator.getTabData(tabType, true))
+            mynahUI.updateStore(newTabID, {
+                ...tabDataGenerator.getTabData(tabType, true),
+                ...(chats ? { chatItems: chats } : {}),
+            })
             featureConfigs = tryNewMap(featureConfigsSerialized)
+            return newTabID
         },
         onOpenSettingsMessage(tabId: string) {
             mynahUI.addChatItem(tabId, {
@@ -730,6 +746,7 @@ export const createMynahUI = (
         },
         onQuickCommandGroupActionClick: connector.onQuickCommandGroupActionClick,
         onContextSelected: connector.onContextSelected,
+        onTabBarButtonClick: connector.onTabBarButtonClick,
         onVote: connector.onChatItemVoted,
         onInBodyButtonClicked: (tabId, messageId, action, eventId) => {
             switch (action.id) {
@@ -965,6 +982,19 @@ export const createMynahUI = (
             maxTabs: 10,
             feedbackOptions: feedbackOptions,
             texts: uiComponentsTexts,
+            tabBarButtons: [
+                {
+                    id: 'history_sheet',
+                    icon: MynahIcons.COMMENT,
+                    description: 'View chat history',
+                },
+                /* Temporarily hide export chat button from tab bar
+                {
+                    id: 'export_chat',
+                    icon: MynahIcons.EXTERNAL,
+                    description: 'Export chat',
+                }, */
+            ],
         },
     })
 
