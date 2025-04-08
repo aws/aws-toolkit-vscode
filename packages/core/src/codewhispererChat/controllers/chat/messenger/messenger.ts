@@ -379,6 +379,11 @@ export class Messenger {
                         type: 'answer' as any,
                         codeReference: codeReference as any,
                         relatedContent: { title: 'Sources', content: relatedSuggestions as any },
+                        messageId: messageID,
+                        toolUses:
+                            toolUse && toolUse.input !== undefined && toolUse.input !== ''
+                                ? [{ ...toolUse }]
+                                : undefined,
                     })
                 }
                 if (

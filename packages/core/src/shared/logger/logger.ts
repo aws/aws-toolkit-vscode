@@ -21,6 +21,7 @@ export type LogTopic =
     | 'executeBash'
     | 'listDirectory'
     | 'chatStream'
+    | 'chatHistoryDb'
     | 'unknown'
 
 class ErrorLog {
