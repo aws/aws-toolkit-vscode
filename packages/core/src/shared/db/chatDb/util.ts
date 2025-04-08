@@ -142,7 +142,7 @@ export class FileSystemAdapter implements LokiPersistenceAdapter {
             await this.ensureDirectory()
             const filename = path.join(this.directory, dbname)
 
-            await fs.writeFile(filename, dbstring, 'utf8')
+            await fs.writeFile(filename, dbstring, { mode: 0o600, encoding: 'utf8' })
             callback(undefined)
         } catch (err: any) {
             callback(err)

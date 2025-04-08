@@ -638,7 +638,7 @@ export class ChatController {
                 title ? `${title}${promptFileExtension}` : `default${promptFileExtension}`
             )
             const newFileContent = new Uint8Array(Buffer.from(''))
-            await fs.writeFile(newFilePath, newFileContent)
+            await fs.writeFile(newFilePath, newFileContent, { mode: 0o600 })
             const newFileDoc = await vscode.workspace.openTextDocument(newFilePath)
             await vscode.window.showTextDocument(newFileDoc)
             telemetry.ui_click.emit({ elementId: 'amazonq_createSavedPrompt' })
