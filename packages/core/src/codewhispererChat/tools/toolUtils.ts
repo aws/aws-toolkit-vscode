@@ -9,12 +9,14 @@ import { CommandValidation, ExecuteBash, ExecuteBashParams } from './executeBash
 import { ToolResult, ToolResultContentBlock, ToolResultStatus, ToolUse } from '@amzn/codewhisperer-streaming'
 import { InvokeOutput, maxToolResponseSize } from './toolShared'
 import { ListDirectory, ListDirectoryParams } from './listDirectory'
+import { GrepSearch, GrepSearchParams } from './grepSearch'
 
 export enum ToolType {
     FsRead = 'fsRead',
     FsWrite = 'fsWrite',
     ExecuteBash = 'executeBash',
     ListDirectory = 'listDirectory',
+    GrepSearch = 'grepSearch',
 }
 
 export type Tool =
@@ -22,6 +24,7 @@ export type Tool =
     | { type: ToolType.FsWrite; tool: FsWrite }
     | { type: ToolType.ExecuteBash; tool: ExecuteBash }
     | { type: ToolType.ListDirectory; tool: ListDirectory }
+    | { type: ToolType.GrepSearch; tool: GrepSearch }
 
 export class ToolUtils {
     static displayName(tool: Tool): string {
@@ -34,6 +37,8 @@ export class ToolUtils {
                 return 'Execute shell command'
             case ToolType.ListDirectory:
                 return 'List directory from filesystem'
+            case ToolType.GrepSearch:
+                return 'Run Fast text-based regex search'
         }
     }
 
@@ -47,6 +52,8 @@ export class ToolUtils {
                 return tool.tool.requiresAcceptance()
             case ToolType.ListDirectory:
                 return { requiresAcceptance: false }
+            case ToolType.GrepSearch:
+                return { requiresAcceptance: false }
         }
     }
 
@@ -59,6 +66,8 @@ export class ToolUtils {
             case ToolType.ExecuteBash:
                 return tool.tool.invoke(updates ?? undefined)
             case ToolType.ListDirectory:
+                return tool.tool.invoke(updates)
+            case ToolType.GrepSearch:
                 return tool.tool.invoke(updates)
         }
     }
@@ -83,6 +92,9 @@ export class ToolUtils {
             case ToolType.ListDirectory:
                 tool.tool.queueDescription(updates)
                 break
+            case ToolType.GrepSearch:
+                tool.tool.queueDescription(updates)
+                break
         }
     }
 
@@ -95,6 +107,8 @@ export class ToolUtils {
             case ToolType.ExecuteBash:
                 return tool.tool.validate()
             case ToolType.ListDirectory:
+                return tool.tool.validate()
+            case ToolType.GrepSearch:
                 return tool.tool.validate()
         }
     }
@@ -132,6 +146,11 @@ export class ToolUtils {
                     return {
                         type: ToolType.ListDirectory,
                         tool: new ListDirectory(value.input as unknown as ListDirectoryParams),
+                    }
+                case ToolType.GrepSearch:
+                    return {
+                        type: ToolType.GrepSearch,
+                        tool: new GrepSearch(value.input as unknown as GrepSearchParams),
                     }
                 default:
                     return {
