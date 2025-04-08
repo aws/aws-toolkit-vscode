@@ -147,6 +147,9 @@ export async function activateAmazonQCommon(context: vscode.ExtensionContext, is
     // Hide the Amazon Q tree in toolkit explorer
     await setContext('aws.toolkit.amazonq.dismissed', true)
 
+    // set context var to check if its SageMaker AI or not
+    await setContext('aws.isSageMaker', isSageMaker())
+
     // set context var to check if its SageMaker Unified Studio or not
     await setContext('aws.isSageMakerUnifiedStudio', isSageMaker('SMUS'))
 
