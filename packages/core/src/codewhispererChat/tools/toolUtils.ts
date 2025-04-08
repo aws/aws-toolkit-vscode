@@ -7,7 +7,7 @@ import { FsRead, FsReadParams } from './fsRead'
 import { FsWrite, FsWriteParams } from './fsWrite'
 import { CommandValidation, ExecuteBash, ExecuteBashParams } from './executeBash'
 import { ToolResult, ToolResultContentBlock, ToolResultStatus, ToolUse } from '@amzn/codewhisperer-streaming'
-import { InvokeOutput } from './toolShared'
+import { InvokeOutput, maxToolResponseSize } from './toolShared'
 import { ListDirectory, ListDirectoryParams } from './listDirectory'
 
 export enum ToolType {
@@ -60,6 +60,12 @@ export class ToolUtils {
                 return tool.tool.invoke(updates ?? undefined)
             case ToolType.ListDirectory:
                 return tool.tool.invoke(updates)
+        }
+    }
+
+    static validateOutput(output: InvokeOutput): void {
+        if (output.output.content.length > maxToolResponseSize) {
+            throw Error(`Tool output exceeds maximum character limit of ${maxToolResponseSize}`)
         }
     }
 

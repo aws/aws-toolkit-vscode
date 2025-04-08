@@ -54,20 +54,6 @@ describe('FsRead Tool', () => {
         )
     })
 
-    it('throws error if content exceeds 30KB', async function () {
-        const bigContent = 'x'.repeat(35_000)
-        const bigFilePath = await testFolder.write('bigFile.txt', bigContent)
-
-        const fsRead = new FsRead({ path: bigFilePath })
-        await fsRead.validate()
-
-        await assert.rejects(
-            fsRead.invoke(process.stdout),
-            /This tool only supports reading \d+ bytes at a time/i,
-            'Expected a size-limit error'
-        )
-    })
-
     it('invalid line range', async () => {
         const filePath = await testFolder.write('rangeTest.txt', '1\n2\n3')
         const fsRead = new FsRead({ path: filePath, readRange: [3, 2] })

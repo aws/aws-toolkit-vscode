@@ -93,7 +93,7 @@ import {
 } from '../../constants'
 import { ChatSession } from '../../clients/chat/v0/chat'
 import { amazonQTabSuffix } from '../../../shared/constants'
-import { maxToolOutputCharacterLength, OutputKind } from '../../tools/toolShared'
+import { OutputKind } from '../../tools/toolShared'
 import { ToolUtils, Tool, ToolType } from '../../tools/toolUtils'
 import { ChatStream } from '../../tools/chatStream'
 import { ChatHistoryStorage } from '../../storages/chatHistoryStorage'
@@ -723,11 +723,7 @@ export class ChatController {
                                 requiresAcceptance: false,
                             })
                             const output = await ToolUtils.invoke(tool, chatStream)
-                            if (output.output.content.length > maxToolOutputCharacterLength) {
-                                throw Error(
-                                    `Tool output exceeds maximum character limit of ${maxToolOutputCharacterLength}`
-                                )
-                            }
+                            ToolUtils.validateOutput(output)
 
                             toolResults.push({
                                 content: [
