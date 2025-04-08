@@ -1115,3 +1115,13 @@ export function hasVendedIamCredentials(isC9?: boolean, isSM?: boolean) {
     isSM ??= isSageMaker()
     return isSM || isC9
 }
+
+/**
+ * Returns true if credentials are provided by the metadata files in environment (ex. for IAM via ~/.aws/ and in a future case with SSO, from /cache or /sso)
+ * @param isSMUS boolean if SageMaker Unified Studio is host
+ * @returns boolean if SMUS
+ */
+export function hasVendedCredentialsFromMetadata(isSMUS?: boolean) {
+    isSMUS ??= isSageMaker('SMUS')
+    return isSMUS
+}
