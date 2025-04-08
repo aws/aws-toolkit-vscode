@@ -434,6 +434,7 @@
                 },
                 {
                     "command": "aws.amazonq.generateUnitTests",
+                    "when": "!aws.isSageMaker",
                     "group": "cw_chat@5"
                 },
                 {
@@ -469,6 +470,7 @@
                 },
                 {
                     "command": "aws.amazonq.exploreAgents",
+                    "when": "!aws.isSageMaker",
                     "group": "1_help@2"
                 },
                 {
@@ -523,7 +525,7 @@
                 "command": "aws.amazonq.security.scan-statusbar",
                 "title": "%AWS.command.amazonq.security.scan%",
                 "category": "%AWS.amazonq.title%",
-                "enablement": "aws.codewhisperer.connected"
+                "enablement": "aws.codewhisperer.connected && !aws.isSageMaker"
             },
             {
                 "command": "aws.amazonq.refactorCode",
@@ -553,7 +555,7 @@
                 "command": "aws.amazonq.generateUnitTests",
                 "title": "%AWS.command.amazonq.generateUnitTests%",
                 "category": "%AWS.amazonq.title%",
-                "enablement": "aws.codewhisperer.connected"
+                "enablement": "aws.codewhisperer.connected && !aws.isSageMaker"
             },
             {
                 "command": "aws.amazonq.reconnect",
@@ -757,7 +759,7 @@
                 "command": "aws.amazonq.exploreAgents",
                 "title": "%AWS.amazonq.exploreAgents%",
                 "category": "%AWS.amazonq.title%",
-                "enablement": "aws.codewhisperer.connected"
+                "enablement": "aws.codewhisperer.connected && !aws.isSageMaker"
             },
             {
                 "command": "aws.amazonq.walkthrough.show",
