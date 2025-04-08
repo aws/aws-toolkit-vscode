@@ -7,6 +7,7 @@ import { ConfiguredRetryStrategy } from '@smithy/util-retry'
 import { getCodewhispererConfig } from '../../codewhisperer/client/codewhisperer'
 import { AuthUtil } from '../../codewhisperer/util/authUtil'
 import { getUserAgent } from '../telemetry/util'
+import { defaultStreamingResponseTimeoutInMs } from '../../codewhispererChat/constants'
 
 // Create a client for featureDev streaming based off of aws sdk v3
 export async function createCodeWhispererChatStreamingClient(): Promise<CodeWhispererStreaming> {
@@ -17,6 +18,10 @@ export async function createCodeWhispererChatStreamingClient(): Promise<CodeWhis
         endpoint: cwsprConfig.endpoint,
         token: { token: bearerToken },
         customUserAgent: getUserAgent(),
+        requestHandler: {
+            timeoutInMs: defaultStreamingResponseTimeoutInMs,
+            connectionTimeout: defaultStreamingResponseTimeoutInMs,
+        },
         retryStrategy: new ConfiguredRetryStrategy(1, (attempt: number) => 500 + attempt ** 10),
     })
     return streamingClient
