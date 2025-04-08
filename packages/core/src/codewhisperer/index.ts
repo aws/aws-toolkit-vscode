@@ -99,8 +99,17 @@ export * as diagnosticsProvider from './service/diagnosticsProvider'
 export * from './ui/codeWhispererNodes'
 export { SecurityScanError, SecurityScanTimedOutError } from '../codewhisperer/models/errors'
 export * as CodeWhispererConstants from '../codewhisperer/models/constants'
-export { getSelectedCustomization, setSelectedCustomization, baseCustomization } from './util/customizationUtil'
+export {
+    getSelectedCustomization,
+    setSelectedCustomization,
+    baseCustomization,
+    notifyNewCustomizations,
+} from './util/customizationUtil'
 export { Container } from './service/serviceContainer'
 export * from './util/gitUtil'
 export * from './ui/prompters'
 export { UserWrittenCodeTracker } from './tracker/userWrittenCodeTracker'
+export { DataQuickPickItem, showQuickPick } from '../shared/ui/pickerPrompter'
+export { createCommonButtons } from '../shared/ui/buttons'
+export { showMessageWithUrl } from '../shared/utilities/messages'
+export { localize } from '../shared/utilities/vsCodeUtils'
