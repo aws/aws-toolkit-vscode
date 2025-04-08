@@ -7,6 +7,41 @@ html {
     overflow: hidden;
     margin: 0;
     padding: 0;
+
+    --mynah-sizing-base: 0.2rem;
+    --mynah-sizing-half: calc(var(--mynah-sizing-base) / 2);
+    --mynah-sizing-1: var(--mynah-sizing-base);
+    --mynah-sizing-2: calc(var(--mynah-sizing-base) * 2);
+    --mynah-sizing-3: calc(var(--mynah-sizing-base) * 3);
+    --mynah-sizing-4: calc(var(--mynah-sizing-base) * 4);
+    --mynah-sizing-5: calc(var(--mynah-sizing-base) * 5);
+    --mynah-sizing-6: calc(var(--mynah-sizing-base) * 6);
+    --mynah-sizing-7: calc(var(--mynah-sizing-base) * 7);
+    --mynah-sizing-8: calc(var(--mynah-sizing-base) * 8);
+    --mynah-sizing-9: calc(var(--mynah-sizing-base) * 9);
+    --mynah-sizing-10: calc(var(--mynah-sizing-base) * 10);
+    --mynah-sizing-11: calc(var(--mynah-sizing-base) * 11);
+    --mynah-sizing-12: calc(var(--mynah-sizing-base) * 12);
+    --mynah-sizing-13: calc(var(--mynah-sizing-base) * 13);
+    --mynah-sizing-14: calc(var(--mynah-sizing-base) * 14);
+    --mynah-sizing-15: calc(var(--mynah-sizing-base) * 15);
+    --mynah-sizing-16: calc(var(--mynah-sizing-base) * 16);
+    --mynah-sizing-17: calc(var(--mynah-sizing-base) * 17);
+    --mynah-sizing-18: calc(var(--mynah-sizing-base) * 18);
+    --mynah-chat-wrapper-spacing: var(--mynah-sizing-2);
+
+    --mynah-font-size-xxsmall: 0.75rem;
+    --mynah-font-size-xsmall: 0.85rem;
+    --mynah-font-size-small: 0.95rem;
+    --mynah-font-size-medium: 1rem;
+    --mynah-font-size-large: 1.125rem;
+    --mynah-line-height: 1.1rem;
+    --mynah-syntax-code-line-height: 1.1rem;
+
+    --mynah-card-radius: var(--mynah-sizing-2);
+    --mynah-input-radius: var(--mynah-sizing-1);
+    --mynah-card-radius-corner: 0;
+    --mynah-button-radius: var(--mynah-sizing-1);
 }
 
 body.vscode-dark,
@@ -18,4 +53,8 @@ body.vscode-high-contrast:not(.vscode-high-contrast-light) {
 
 body .mynah-card-body h1 {
     --mynah-line-height: 1.5rem;
+}
+
+div.mynah-card.padding-large {
+    padding: var(--mynah-sizing-4) var(--mynah-sizing-3);
 }
