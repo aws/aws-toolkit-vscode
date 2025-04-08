@@ -188,7 +188,7 @@ export async function startSecurityScan(
         const uploadStartTime = performance.now()
         const scanName = randomUUID()
         try {
-            artifactMap = await getPresignedUrlAndUpload(client, zipMetadata, scope, scanName)
+            artifactMap = await getPresignedUrlAndUpload(client, zipMetadata, scope, scanName, profile)
         } finally {
             await zipUtil.removeTmpFiles(zipMetadata, scope)
             codeScanTelemetryEntry.artifactsUploadDuration = performance.now() - uploadStartTime
