@@ -155,6 +155,30 @@ describe('ToolUtils', function () {
         })
     })
 
+    describe('validateOutput', function () {
+        it('does not throw error if output is within size limit', function () {
+            const output: InvokeOutput = {
+                output: {
+                    kind: OutputKind.Text,
+                    content: 'a'.repeat(700_000),
+                },
+            }
+            assert.doesNotThrow(() => ToolUtils.validateOutput(output))
+        })
+        it('throws error if output exceeds max size', function () {
+            const output: InvokeOutput = {
+                output: {
+                    kind: OutputKind.Text,
+                    content: 'a'.repeat(900_000), // 900,000 characters
+                },
+            }
+            assert.throws(() => ToolUtils.validateOutput(output), {
+                name: 'Error',
+                message: 'Tool output exceeds maximum character limit of 800000',
+            })
+        })
+    })
+
     describe('queueDescription', function () {
         // TODO: Adding "void" to the following tests for the current implementation but in the next followup PR I will fix this issue.
         it('delegates to FsRead tool queueDescription method', function () {

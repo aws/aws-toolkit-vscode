@@ -6,8 +6,7 @@
 import path from 'path'
 import fs from '../../shared/fs/fs'
 
-export const maxToolResponseSize = 30720 // 30KB
-export const maxToolOutputCharacterLength = 800_000
+export const maxToolResponseSize = 800_000
 
 export enum OutputKind {
     Text = 'text',

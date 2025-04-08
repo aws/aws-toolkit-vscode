@@ -5,7 +5,7 @@
 import * as vscode from 'vscode'
 import { getLogger } from '../../shared/logger/logger'
 import fs from '../../shared/fs/fs'
-import { InvokeOutput, maxToolResponseSize, OutputKind, sanitizePath } from './toolShared'
+import { InvokeOutput, OutputKind, sanitizePath } from './toolShared'
 import { Writable } from 'stream'
 import path from 'path'
 
@@ -89,7 +89,7 @@ export class FsRead {
     private handleFileRange(fullText: string): InvokeOutput {
         if (!this.readRange || this.readRange.length === 0) {
             this.logger.info('No range provided. returning entire file.')
-            return this.createOutput(this.enforceMaxSize(fullText))
+            return this.createOutput(fullText)
         }
 
         const lines = fullText.split('\n')
@@ -101,7 +101,7 @@ export class FsRead {
 
         this.logger.info(`Reading file: ${this.fsPath}, lines ${start + 1}-${end + 1}`)
         const slice = lines.slice(start, end + 1).join('\n')
-        return this.createOutput(this.enforceMaxSize(slice))
+        return this.createOutput(slice)
     }
 
     private parseLineRange(lineCount: number, range: number[]): [number, number] {
@@ -119,17 +119,6 @@ export class FsRead {
         const finalStart = Math.max(0, Math.min(lineCount - 1, convert(startIdx)))
         const finalEnd = Math.max(0, Math.min(lineCount - 1, convert(endIdx)))
         return [finalStart, finalEnd]
-    }
-
-    private enforceMaxSize(content: string): string {
-        const byteCount = Buffer.byteLength(content, 'utf8')
-        if (byteCount > maxToolResponseSize) {
-            throw new Error(
-                `This tool only supports reading ${maxToolResponseSize} bytes at a time.
-                You tried to read ${byteCount} bytes. Try executing with fewer lines specified.`
-            )
-        }
-        return content
     }
 
     private createOutput(content: string): InvokeOutput {
