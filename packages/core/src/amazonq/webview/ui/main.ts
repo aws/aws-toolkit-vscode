@@ -51,7 +51,8 @@ export const createMynahUI = (
     disclaimerAcknowledged: boolean,
     regionProfile: RegionProfile | undefined,
     disabledCommands?: string[],
-    isSMUS?: boolean
+    isSMUS?: boolean,
+    isSM?: boolean
 ) => {
     let disclaimerCardActive = !disclaimerAcknowledged
     // eslint-disable-next-line prefer-const
@@ -86,7 +87,10 @@ export const createMynahUI = (
     })
 
     const showWelcomePage = () => {
-        return welcomeCount < welcomeCountThreshold
+        /*
+         * skip Agent Capability welcome page for SageMaker cases (SMAI and SMUS) since the commands are not supported
+         */
+        return welcomeCount < welcomeCountThreshold && !isSM
     }
 
     const updateWelcomeCount = () => {
@@ -970,15 +974,14 @@ export const createMynahUI = (
             tabBarButtons: [
                 {
                     id: 'history_sheet',
-                    icon: MynahIcons.COMMENT,
+                    icon: MynahIcons.HISTORY,
                     description: 'View chat history',
                 },
-                /* Temporarily hide export chat button from tab bar
                 {
                     id: 'export_chat',
                     icon: MynahIcons.EXTERNAL,
                     description: 'Export chat',
-                }, */
+                },
             ],
         },
     })

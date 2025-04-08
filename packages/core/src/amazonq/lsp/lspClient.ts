@@ -188,7 +188,7 @@ export class LspClient {
                 GetContextCommandPromptRequestType,
                 await this.encrypt(request)
             )
-            return resp
+            return resp || []
         } catch (e) {
             getLogger().error(`LspClient: getContextCommandPrompt error: ${e}`)
             throw e

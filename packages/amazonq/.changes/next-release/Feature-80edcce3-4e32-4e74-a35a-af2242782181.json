@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "SageMaker: Disable the unsupported agentic commands and welcome prompt"
+}
