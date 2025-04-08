@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Amazon Q Chat: Set owner-only permissions for chat history and saved prompt files"
+}

@@ -15,6 +15,7 @@ import { isClickTelemetry, isOpenAgentTelemetry } from '../ui/telemetry/actions'
 import globals from '../../../shared/extensionGlobals'
 import { openUrl } from '../../../shared/utilities/vsCodeUtils'
 import { DefaultAmazonQAppInitContext } from '../../apps/initContext'
+import { AmazonQPromptSettings } from '../../../shared/settings'
 
 const qChatModuleName = 'amazonqChat'
 
@@ -77,7 +78,7 @@ export function dispatchWebViewMessagesToApps(
                 return
             }
             case 'disclaimer-acknowledged': {
-                globals.globalState.tryUpdate('aws.amazonq.disclaimerAcknowledged', true)
+                void AmazonQPromptSettings.instance.disablePrompt('amazonQChatDisclaimer')
                 return
             }
             case 'update-welcome-count': {
