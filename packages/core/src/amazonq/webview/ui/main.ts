@@ -973,12 +973,11 @@ export const createMynahUI = (
                     icon: MynahIcons.HISTORY,
                     description: 'View chat history',
                 },
-                /* Temporarily hide export chat button from tab bar
                 {
                     id: 'export_chat',
                     icon: MynahIcons.EXTERNAL,
                     description: 'Export chat',
-                }, */
+                },
             ],
         },
     })
