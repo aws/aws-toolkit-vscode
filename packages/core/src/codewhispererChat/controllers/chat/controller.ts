@@ -803,6 +803,18 @@ export class ChatController {
             type: 'chat_message',
             context: undefined,
         })
+
+        const session = this.sessionStorage.getSession(message.tabID!)
+        const currentToolUse = session.toolUseWithError?.toolUse
+        if (currentToolUse && currentToolUse.name === ToolType.ExecuteBash) {
+            session.toolUseWithError.error = new Error('Tool use was rejected by the user.')
+        } else {
+            getLogger().error(
+                `toolUse name: ${currentToolUse!.name} of toolUseWithError in the stored session doesn't match when click shell command reject button.`
+            )
+            return
+        }
+
         await this.generateStaticTextResponse('reject-shell-command', triggerId)
     }
 
@@ -824,6 +836,7 @@ export class ChatController {
                 break
             case 'reject-shell-command':
                 await this.rejectShellCommand(message)
+                await this.processToolUseMessage(message)
                 break
             default:
                 getLogger().warn(`Unhandled action: ${message.action.id}`)
