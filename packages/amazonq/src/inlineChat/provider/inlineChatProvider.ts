@@ -25,6 +25,7 @@ import { codeWhispererClient } from 'aws-core-vscode/codewhisperer'
 import type { InlineChatEvent } from 'aws-core-vscode/codewhisperer'
 import { InlineTask } from '../controller/inlineTask'
 import { extractAuthFollowUp } from 'aws-core-vscode/amazonq'
+import { defaultContextLengths } from 'aws-core-vscode/codewhispererChat'
 
 export class InlineChatProvider {
     private readonly editorContextExtractor: EditorContextExtractor
@@ -71,24 +72,7 @@ export class InlineChatProvider {
                         additionalContents: [],
                         documentReferences: [],
                         useRelevantDocuments: false,
-                        contextLengths: {
-                            additionalContextLengths: {
-                                fileContextLength: 0,
-                                promptContextLength: 0,
-                                ruleContextLength: 0,
-                            },
-                            truncatedAdditionalContextLengths: {
-                                fileContextLength: 0,
-                                promptContextLength: 0,
-                                ruleContextLength: 0,
-                            },
-                            workspaceContextLength: 0,
-                            truncatedWorkspaceContextLength: 0,
-                            userInputContextLength: 0,
-                            truncatedUserInputContextLength: 0,
-                            focusFileContextLength: 0,
-                            truncatedFocusFileContextLength: 0,
-                        },
+                        contextLengths: defaultContextLengths,
                     },
                     triggerID
                 )
