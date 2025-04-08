@@ -42,7 +42,7 @@ export class ToolUtils {
             case ToolType.FsRead:
                 return { requiresAcceptance: false }
             case ToolType.FsWrite:
-                return { requiresAcceptance: true }
+                return { requiresAcceptance: false }
             case ToolType.ExecuteBash:
                 return tool.tool.requiresAcceptance()
             case ToolType.ListDirectory:

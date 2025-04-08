@@ -151,6 +151,31 @@ export function getDiffCharsAndLines(
 }
 
 /**
+ * Calculates the number of added and deleted lines from a set of changes.
+ *
+ * @param {Change[] | undefined} changes - An array of diff Change objects containing added, removed, or unchanged content
+ * @returns {Object} An object containing the number of added and deleted lines
+ * @example
+ * // Calculate the number of added and deleted lines from diff changes
+ * const diffChanges = diffLines(originalCode, newCode);
+ * const lineDiffs = getDiffLinesFromChanges(diffChanges);
+ * // Result will be an object with added and deleted line counts
+ */
+export function getDiffLinesFromChanges(changes: Change[] | undefined) {
+    return changes?.reduce(
+        (acc, { count = 0, added, removed }) => {
+            if (added) {
+                acc.added += count
+            } else if (removed) {
+                acc.deleted += count
+            }
+            return acc
+        },
+        { added: 0, deleted: 0 }
+    )
+}
+
+/**
  * Converts diff changes into a markdown-formatted string with syntax highlighting.
  * This function takes an array of diff changes and formats them as a markdown code block
  * with diff syntax, optionally including language-specific syntax highlighting.

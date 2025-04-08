@@ -15,6 +15,7 @@ import { createCodeWhispererChatStreamingClient } from '../../../../shared/clien
 import { createQDeveloperStreamingClient } from '../../../../shared/clients/qDeveloperChatClient'
 import { UserWrittenCodeTracker } from '../../../../codewhisperer/tracker/userWrittenCodeTracker'
 import { PromptMessage } from '../../../controllers/chat/model'
+import { FsWriteBackup } from '../../../../codewhispererChat/tools/fsWrite'
 
 export type ToolUseWithError = {
     toolUse: ToolUse
@@ -33,6 +34,7 @@ export class ChatSession {
     private _showDiffOnFileWrite: boolean = false
     private _context: PromptMessage['context']
     private _pairProgrammingModeOn: boolean = true
+    private _fsWriteBackups: Map<string, FsWriteBackup> = new Map()
     /**
      * True if messages from local history have been sent to session.
      */
@@ -68,6 +70,14 @@ export class ChatSession {
 
     public setContext(context: PromptMessage['context']) {
         this._context = context
+    }
+
+    public get fsWriteBackups(): Map<string, FsWriteBackup> {
+        return this._fsWriteBackups
+    }
+
+    public setFsWriteBackup(toolUseId: string, backup: FsWriteBackup) {
+        this._fsWriteBackups.set(toolUseId, backup)
     }
 
     public tokenSource!: vscode.CancellationTokenSource

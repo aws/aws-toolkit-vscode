@@ -67,9 +67,9 @@ describe('ToolUtils', function () {
             assert.strictEqual(ToolUtils.requiresAcceptance(tool).requiresAcceptance, false)
         })
 
-        it('returns true for FsWrite tool', function () {
+        it('returns false for FsWrite tool', function () {
             const tool: Tool = { type: ToolType.FsWrite, tool: mockFsWrite as unknown as FsWrite }
-            assert.strictEqual(ToolUtils.requiresAcceptance(tool).requiresAcceptance, true)
+            assert.strictEqual(ToolUtils.requiresAcceptance(tool).requiresAcceptance, false)
         })
 
         it('delegates to the tool for ExecuteBash', function () {

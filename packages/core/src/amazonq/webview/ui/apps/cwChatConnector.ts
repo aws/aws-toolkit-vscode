@@ -185,7 +185,10 @@ export class Connector extends BaseConnector {
         this.chatItems.get(tabId)?.set(messageId, { ...item })
     }
 
-    private getCurrentChatItem(tabId: string, messageId: string): ChatItem | undefined {
+    private getCurrentChatItem(tabId: string, messageId: string | undefined): ChatItem | undefined {
+        if (!messageId) {
+            return
+        }
         return this.chatItems.get(tabId)?.get(messageId)
     }
 
@@ -293,7 +296,7 @@ export class Connector extends BaseConnector {
 
     onCustomFormAction(
         tabId: string,
-        messageId: string,
+        messageId: string | undefined,
         action: {
             id: string
             text?: string | undefined
@@ -302,6 +305,10 @@ export class Connector extends BaseConnector {
     ) {
         if (action === undefined) {
             return
+        }
+
+        if (messageId?.startsWith('tooluse_')) {
+            action.formItemValues = { ...action.formItemValues, toolUseId: messageId }
         }
 
         this.sendMessageToExtension({
