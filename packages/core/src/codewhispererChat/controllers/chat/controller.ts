@@ -613,13 +613,7 @@ export class ChatController {
                         id: contextCommandItem.id,
                         icon: 'folder' as MynahIconsType,
                     })
-                }
-                // TODO: Remove the limit of 25k once the performance issue of mynahUI in webview is fixed.
-                else if (
-                    contextCommandItem.symbol &&
-                    symbolsCmd.children &&
-                    symbolsCmd.children[0].commands.length < 25_000
-                ) {
+                } else if (contextCommandItem.symbol && symbolsCmd.children) {
                     symbolsCmd.children?.[0].commands.push({
                         command: contextCommandItem.symbol.name,
                         description: `${contextCommandItem.symbol.kind}, ${path.join(wsFolderName, contextCommandItem.relativePath)}, L${contextCommandItem.symbol.range.start.line}-${contextCommandItem.symbol.range.end.line}`,
@@ -665,13 +659,16 @@ export class ChatController {
     }
     private async handleCreatePrompt(message: CustomFormActionMessage) {
         const userPromptsDirectory = getUserPromptsDirectory()
-        const title = message.action.formItemValues?.['prompt-name'] ?? 'default'
-        const newFilePath = path.join(userPromptsDirectory, `${title}${promptFileExtension}`)
 
-        await fs.writeFile(newFilePath, new Uint8Array(Buffer.from('')))
+        const title = message.action.formItemValues?.['prompt-name']
+        const newFilePath = path.join(
+            userPromptsDirectory,
+            title ? `${title}${promptFileExtension}` : `default${promptFileExtension}`
+        )
+        const newFileContent = new Uint8Array(Buffer.from(''))
+        await fs.writeFile(newFilePath, newFileContent, { mode: 0o600 })
         const newFileDoc = await vscode.workspace.openTextDocument(newFilePath)
         await vscode.window.showTextDocument(newFileDoc)
-
         telemetry.ui_click.emit({ elementId: 'amazonq_createSavedPrompt' })
     }
 
