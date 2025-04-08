@@ -192,7 +192,8 @@ export class ExecuteBash {
                                 Array.from(dangerousPatterns).some((pattern) => arg.includes(pattern))
                             )
                         ) {
-                            return { requiresAcceptance: true, warning: highRiskCommandWarningMessage }
+                            // put the mutation message for dangerous pattern command for now, will update as long as finalized with appsec team
+                            return { requiresAcceptance: true, warning: mutateCommandWarningMessage }
                         }
                         continue
                     default:
