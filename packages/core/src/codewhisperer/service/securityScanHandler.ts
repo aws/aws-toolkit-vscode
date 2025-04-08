@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+/* eslint-disable aws-toolkits/no-console-log */
+
 import { DefaultCodeWhispererClient } from '../client/codewhisperer'
 import { getLogger } from '../../shared/logger/logger'
 import * as vscode from 'vscode'
@@ -152,6 +154,29 @@ export function mapToAggregatedList(
     scope: CodeWhispererConstants.CodeAnalysisScope
 ) {
     const codeScanIssues: RawCodeScanIssue[] = JSON.parse(json)
+    // print out each codeScanIssues and its details (each field of rawCodeScanIssue)
+    console.log(`Found ${codeScanIssues.length} code scan issues`)
+    for (const [index, issue] of codeScanIssues.entries()) {
+        console.log(`Issue #${index + 1}:`)
+        console.log(`  filePath: ${issue.filePath}`)
+        console.log(`  title: ${issue.title}`)
+        // eslint-disable-next-line aws-toolkits/no-json-stringify-in-log
+        console.log(`  description: ${JSON.stringify(issue.description)}`)
+        console.log(`  detectorId: ${issue.detectorId}`)
+        console.log(`  detectorName: ${issue.detectorName}`)
+        console.log(`  findingId: ${issue.findingId}`)
+        console.log(`  ruleId: ${issue.ruleId}`)
+        console.log(`  startLine: ${issue.startLine}`)
+        console.log(`  endLine: ${issue.endLine}`)
+        console.log(`  severity: ${issue.severity}`)
+        // eslint-disable-next-line aws-toolkits/no-json-stringify-in-log
+        console.log(`  relatedVulnerabilities: ${JSON.stringify(issue.relatedVulnerabilities)}`)
+        // eslint-disable-next-line aws-toolkits/no-json-stringify-in-log
+        console.log(`  remediation: ${JSON.stringify(issue.remediation)}`)
+        // eslint-disable-next-line aws-toolkits/no-json-stringify-in-log
+        console.log(`  codeSnippet: ${JSON.stringify(issue.codeSnippet)}`)
+    }
+
     const filteredIssues = codeScanIssues.filter((issue) => {
         if (
             (scope === CodeWhispererConstants.CodeAnalysisScope.FILE_AUTO ||
