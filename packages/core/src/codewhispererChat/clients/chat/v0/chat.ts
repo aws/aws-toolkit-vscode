@@ -21,6 +21,8 @@ export type ToolUseWithError = {
     toolUse: ToolUse
     error: Error | undefined
 }
+import { getLogger } from '../../../../shared/logger/logger'
+import { randomUUID } from '../../../../shared/crypto'
 
 export class ChatSession {
     private sessionId?: string
@@ -141,6 +143,10 @@ export class ChatSession {
         }
 
         this.sessionId = response.conversationId
+        if (this.sessionId?.length === 0) {
+            getLogger().debug(`Session ID: ${this.sessionId} is empty. Generating random UUID`)
+            this.sessionId = randomUUID()
+        }
 
         UserWrittenCodeTracker.instance.onQFeatureInvoked()
 

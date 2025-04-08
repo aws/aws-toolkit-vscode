@@ -1497,13 +1497,15 @@ export class ChatController {
             }
             this.telemetryHelper.recordEnterFocusConversation(triggerEvent.tabID)
             this.telemetryHelper.recordStartConversation(triggerEvent, triggerPayload)
-            if (currentMessage) {
+
+            if (currentMessage && session.sessionIdentifier) {
                 chatHistory.appendUserMessage(currentMessage)
-            }
-            if (session.sessionIdentifier) {
                 this.chatHistoryDb.addMessage(tabID, 'cwc', session.sessionIdentifier, {
                     body: triggerPayload.message,
                     type: 'prompt' as any,
+                    userIntent: currentMessage.userInputMessage?.userIntent,
+                    origin: currentMessage.userInputMessage?.origin,
+                    userInputMessageContext: currentMessage.userInputMessage?.userInputMessageContext,
                 })
             }
 
