@@ -53,3 +53,5 @@ export const defaultContextLengths: ContextLengths = {
     focusFileContextLength: 0,
     truncatedFocusFileContextLength: 0,
 }
+
+export const defaultStreamingResponseTimeoutInMs = 180_000
