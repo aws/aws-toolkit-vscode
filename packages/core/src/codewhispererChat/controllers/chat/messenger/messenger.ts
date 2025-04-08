@@ -103,11 +103,7 @@ export class Messenger {
         )
     }
 
-    public sendInitalStream(
-        tabID: string,
-        triggerID: string,
-        mergedRelevantDocuments: DocumentReference[] | undefined
-    ) {
+    public sendInitalStream(tabID: string, triggerID: string) {
         this.dispatcher.sendChatMessage(
             new ChatMessage(
                 {
@@ -120,8 +116,7 @@ export class Messenger {
                     messageID: '',
                     userIntent: undefined,
                     codeBlockLanguage: undefined,
-                    contextList: mergedRelevantDocuments,
-                    title: 'Context',
+                    contextList: undefined,
                     buttons: undefined,
                     fileList: undefined,
                     canBeVoted: false,
@@ -130,6 +125,36 @@ export class Messenger {
             )
         )
     }
+
+    public sendContextMessage(
+        tabID: string,
+        triggerID: string,
+        mergedRelevantDocuments: DocumentReference[] | undefined
+    ) {
+        this.dispatcher.sendChatMessage(
+            new ChatMessage(
+                {
+                    message: '',
+                    messageType: 'answer',
+                    followUps: undefined,
+                    followUpsHeader: undefined,
+                    relatedSuggestions: undefined,
+                    triggerID,
+                    messageID: '',
+                    userIntent: undefined,
+                    codeBlockLanguage: undefined,
+                    contextList: mergedRelevantDocuments,
+                    title: 'Context',
+                    buttons: undefined,
+                    fileList: undefined,
+                    canBeVoted: false,
+                    padding: false,
+                },
+                tabID
+            )
+        )
+    }
+
     /**
      * Tries to calculate the total number of code blocks.
      * NOTES:
@@ -455,6 +480,11 @@ export class Messenger {
                             toolUse.input !== '' && { toolUses: [{ ...toolUse }] }),
                     },
                 })
+                const agenticLoopEnded = !eventCounts.has('toolUseEvent')
+                if (agenticLoopEnded) {
+                    // Reset context for the next request
+                    session.setContext(undefined)
+                }
 
                 getLogger().info(
                     `All events received. requestId=%s counts=%s`,

@@ -28,7 +28,7 @@ export class ChatStream extends Writable {
     ) {
         super()
         this.logger.debug(`ChatStream created for tabID: ${tabID}, triggerID: ${triggerID}`)
-        this.messenger.sendInitalStream(tabID, triggerID, undefined)
+        this.messenger.sendInitalStream(tabID, triggerID)
     }
 
     override _write(chunk: Buffer, encoding: BufferEncoding, callback: (error?: Error | null) => void): void {

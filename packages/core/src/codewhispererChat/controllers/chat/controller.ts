@@ -1177,9 +1177,6 @@ export class ChatController {
 
                 this.messenger.sendAsyncEventProgress(message.tabID, true, '')
 
-                // Save the context for the agentic loop
-                session.setContext(message.context)
-
                 await this.generateResponse(
                     {
                         message: message.message ?? '',
@@ -1480,7 +1477,12 @@ export class ChatController {
         let response: MessengerResponseType | undefined = undefined
         session.createNewTokenSource()
         try {
-            this.messenger.sendInitalStream(tabID, triggerID, triggerPayload.documentReferences)
+            if (!session.context) {
+                // Only show context for the first message in the loop
+                this.messenger.sendContextMessage(tabID, triggerID, triggerPayload.documentReferences)
+                session.setContext(triggerPayload.context)
+            }
+            this.messenger.sendInitalStream(tabID, triggerID)
             this.telemetryHelper.setConversationStreamStartTime(tabID)
             if (isSsoConnection(AuthUtil.instance.conn)) {
                 const { $metadata, generateAssistantResponseResponse } = await session.chatSso(request)
