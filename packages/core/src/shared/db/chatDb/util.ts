@@ -142,7 +142,7 @@ export class FileSystemAdapter implements LokiPersistenceAdapter {
             await this.ensureDirectory()
             const filename = path.join(this.directory, dbname)
 
-            await fs.writeFile(filename, dbstring, 'utf8')
+            await fs.writeFile(filename, dbstring, { mode: 0o600, encoding: 'utf8' })
             callback(undefined)
         } catch (err: any) {
             callback(err)
@@ -251,12 +251,11 @@ export function groupTabsByDate(tabs: Tab[]): DetailedListItemGroup[] {
 }
 
 const getConversationActions = (historyId: string): ChatItemButton[] => [
-    /* Temporarily hide export chat button from tab bar
     {
         text: 'Export',
         icon: 'external' as MynahIconsType,
         id: historyId,
-    }, */
+    },
     {
         text: 'Delete',
         icon: 'trash' as MynahIconsType,

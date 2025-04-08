@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { InlineCompletionItemWithReferences } from '@aws/language-server-runtimes-types/inlineCompletionWithReferences'
+import { InlineCompletionItemWithReferences } from '@aws/language-server-runtimes-types'
 
 // TODO: add more needed data to the session interface
 interface CodeWhispererSession {
