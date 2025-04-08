@@ -106,7 +106,6 @@ export const commandCategories = new Map<string, CommandCategory>([
 export const maxBashToolResponseSize: number = 1024 * 1024 // 1MB
 export const lineCount: number = 1024
 export const destructiveCommandWarningMessage = '⚠️ WARNING: Destructive command detected:\n\n'
-export const highRiskCommandWarningMessage = '⚠️ WARNING: High risk command detected:\n\n'
 export const mutateCommandWarningMessage = 'Mutation command:\n\n'
 
 export interface ExecuteBashParams {
