@@ -970,7 +970,7 @@ export const createMynahUI = (
             tabBarButtons: [
                 {
                     id: 'history_sheet',
-                    icon: MynahIcons.COMMENT,
+                    icon: MynahIcons.HISTORY,
                     description: 'View chat history',
                 },
                 /* Temporarily hide export chat button from tab bar
