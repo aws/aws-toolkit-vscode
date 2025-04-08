@@ -175,7 +175,7 @@ export function isCloud9(flavor: 'classic' | 'codecatalyst' | 'any' = 'any'): bo
  * @param appName to identify the proper SM instance
  * @returns true if the current system is SageMaker(SMAI or SMUS)
  */
-export function isSageMaker(appName: string = 'SMAI'): boolean {
+export function isSageMaker(appName: 'SMAI' | 'SMUS' = 'SMAI'): boolean {
     switch (appName) {
         case 'SMAI':
             return vscode.env.appName === sageMakerAppname

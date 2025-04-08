@@ -10,6 +10,11 @@ const qChatIntroMessage = `Hi, I'm Amazon Q. I can answer your software developm
   Ask me to explain, debug, or optimize your code.
   You can enter \`/\` to see a list of quick actions. Use \`@\` to add saved prompts, files, folders, or your entire workspace as context.`
 
+/**
+ * The below intro message is for SageMaker Unified Studio(SMUS) customers only.
+ * With upcoming release of SMUS, only Q Free Tier is being supported hence the requirement to show this messaging to customers.
+ * Once Pro Tier is supported with SMUS, the below message will be removed and is only added for the interim
+ */
 export const qChatIntroMessageForSMUS = `Hi, I'm Amazon Q. I can answer your software development questions.\n\
   Ask me to explain, debug, or optimize your code.\n\
   You can enter \`/\` to see a list of quick actions. Use \`@\` to add saved prompts, files, folders, or your entire workspace as context.

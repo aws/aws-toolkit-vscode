@@ -10,6 +10,7 @@ import { FeatureConfigProvider, FeatureContext } from '../../../shared/featureCo
 import globals from '../../../shared/extensionGlobals'
 import { isSageMaker } from '../../../shared/extensionUtilities'
 import { RegionProfile } from '../../../codewhisperer/models/model'
+import { AmazonQPromptSettings } from '../../../shared/settings'
 
 export class WebViewContentGenerator {
     private async generateFeatureConfigsData(): Promise<string> {
@@ -79,12 +80,12 @@ export class WebViewContentGenerator {
 
         // Fetch featureConfigs and use it within the script
         const featureConfigsString = await this.generateFeatureConfigsData()
-
-        const disabledCommandsString = isSageMaker() ? `['/dev', '/transform']` : '[]'
-        const disclaimerAcknowledged = globals.globalState.tryGet('aws.amazonq.disclaimerAcknowledged', Boolean, false)
-
-        const welcomeLoadCount = globals.globalState.tryGet('aws.amazonq.welcomeChatShowCount', Number, 0)
+        const isSM = isSageMaker('SMAI')
         const isSMUS = isSageMaker('SMUS')
+
+        const disabledCommandsString = isSM ? `['/dev', '/transform', '/test', '/review', '/doc']` : '[]'
+        const disclaimerAcknowledged = !AmazonQPromptSettings.instance.isPromptEnabled('amazonQChatDisclaimer')
+        const welcomeLoadCount = globals.globalState.tryGet('aws.amazonq.welcomeChatShowCount', Number, 0)
 
         // only show profile card when the two conditions
         //  1. profile count >= 2
@@ -110,7 +111,8 @@ export class WebViewContentGenerator {
                     ${disclaimerAcknowledged},
                     ${regionProfileString},
                     ${disabledCommandsString},
-                    ${isSMUS}
+                    ${isSMUS},
+                    ${isSM}
                 );
             }
         </script>

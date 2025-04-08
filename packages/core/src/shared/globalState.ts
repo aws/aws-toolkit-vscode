@@ -35,7 +35,7 @@ export type globalKey =
     | 'aws.amazonq.codescan.groupingStrategy'
     | 'aws.amazonq.notifications'
     | 'aws.amazonq.welcomeChatShowCount'
-    | 'aws.amazonq.disclaimerAcknowledged'
+    | 'aws.amazonq.disclaimerAcknowledged' // Legacy, use `AmazonQPromptSettings` instead.
     | 'aws.notifications'
     | 'aws.notifications.dev' // keys to store notifications for testing
     | 'aws.downloadPath'
