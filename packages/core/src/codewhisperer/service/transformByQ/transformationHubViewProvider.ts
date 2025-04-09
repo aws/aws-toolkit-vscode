@@ -328,9 +328,16 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
             jobPlanProgress['generatePlan'] === StepProgress.Succeeded &&
             transformByQState.isRunning()
         ) {
-            const profile = AuthUtil.instance.regionProfileManager.activeRegionProfile
-            planSteps = await getTransformationSteps(transformByQState.getJobId(), profile)
-            transformByQState.setPlanSteps(planSteps)
+            try {
+                planSteps = await getTransformationSteps(transformByQState.getJobId(), AuthUtil.instance.regionProfileManager.activeRegionProfile)
+                transformByQState.setPlanSteps(planSteps)
+            } catch (e: any) {
+                // no-op; re-use current plan steps and try again in next polling cycle
+                getLogger().error(
+                    `CodeTransformation: failed to get plan steps to show updates in transformation hub, continuing transformation; error = %O`,
+                    e
+                )
+            }
         }
         let progressHtml
         // for each step that has succeeded, increment activeStepId by 1
@@ -351,8 +358,6 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                 CodeWhispererConstants.uploadingCodeStepMessage,
                 activeStepId === 0
             )
-            // TO-DO: remove this step entirely since we do entirely client-side builds
-            // TO-DO: do we still show the "Building in Java 17/21 environment" progress update?
             const buildMarkup =
                 activeStepId >= 1 && transformByQState.getTransformationType() !== TransformationType.SQL_CONVERSION // for SQL conversions, don't show buildCode step
                     ? simpleStep(

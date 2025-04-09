@@ -43,6 +43,7 @@ import {
     validateSQLMetadataFile,
     createLocalBuildUploadZip,
     validateYamlFile,
+    extractOriginalProjectSources,
 } from '../../../codewhisperer/service/transformByQ/transformFileHandler'
 import { uploadArtifactToS3 } from '../../../codewhisperer/indexNode'
 import request from '../../../shared/request'
@@ -299,8 +300,9 @@ dependencyManagement:
         const tempFilePath = path.join(tempDir, tempFileName)
         await toFile('', tempFilePath)
         transformByQState.setProjectPath(tempDir)
-        await setMaven()
-        assert.strictEqual(transformByQState.getMavenName(), '.\\mvnw.cmd')
+        setMaven()
+        // mavenName should always be 'mvn'
+        assert.strictEqual(transformByQState.getMavenName(), 'mvn')
     })
 
     it(`WHEN local build zip created THEN zip contains all expected files and no unexpected files`, async function () {
@@ -317,6 +319,36 @@ dependencyManagement:
         assert.strictEqual(manifest.exitCode, 0)
         assert.strictEqual(manifest.commandLogFileName, 'clientBuildLogs.log')
         assert.strictEqual(zip.getEntries().length, 2) // expecting only manifest.json and clientBuildLogs.log
+    })
+
+    it('WHEN extractOriginalProjectSources THEN only source files are extracted to destination', async function () {
+        const tempDir = (await TestFolder.create()).path
+        const destinationPath = path.join(tempDir, 'originalCopy_jobId_artifactId')
+        await fs.mkdir(destinationPath)
+
+        const zip = new AdmZip()
+        const testFiles = [
+            { path: 'sources/file1.java', content: 'test content 1' },
+            { path: 'sources/dir/file2.java', content: 'test content 2' },
+            { path: 'dependencies/file3.jar', content: 'should not extract' },
+            { path: 'manifest.json', content: '{"version": "1.0"}' },
+        ]
+
+        for (const file of testFiles) {
+            zip.addFile(file.path, Buffer.from(file.content))
+        }
+
+        const zipPath = path.join(tempDir, 'test.zip')
+        zip.writeZip(zipPath)
+
+        transformByQState.setPayloadFilePath(zipPath)
+
+        await extractOriginalProjectSources(destinationPath)
+
+        const extractedFiles = getFilesRecursively(destinationPath, false)
+        assert.strictEqual(extractedFiles.length, 2)
+        assert(extractedFiles.includes(path.join(destinationPath, 'sources', 'file1.java')))
+        assert(extractedFiles.includes(path.join(destinationPath, 'sources', 'dir', 'file2.java')))
     })
 
     it(`WHEN zip created THEN manifest.json contains test-compile custom build command`, async function () {

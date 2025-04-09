@@ -753,7 +753,8 @@ export async function postTransformationJob() {
     }
 
     if (transformByQState.getPayloadFilePath() !== '') {
-        fs.rmSync(transformByQState.getPayloadFilePath(), { recursive: true, force: true }) // delete ZIP if it exists
+        // delete original upload ZIP at very end of transformation
+        fs.rmSync(transformByQState.getPayloadFilePath(), { recursive: true, force: true })
     }
 
     // attempt download for user

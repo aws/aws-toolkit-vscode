@@ -42,8 +42,8 @@ import { MetadataResult } from '../../../shared/telemetry/telemetryClient'
 import request from '../../../shared/request'
 import { JobStoppedError, ZipExceedsSizeLimitError } from '../../../amazonqGumby/errors'
 import {
-    copyDirectory,
     createLocalBuildUploadZip,
+    extractOriginalProjectSources,
     loadManifestFile,
     writeAndShowBuildLogs,
 } from './transformFileHandler'
@@ -260,7 +260,8 @@ export async function uploadPayload(
  */
 const mavenExcludedExtensions = ['.repositories', '.sha1']
 
-const sourceExcludedExtensions = ['.DS_Store']
+// exclude .DS_Store (not relevant) and Maven executables (can cause permissions issues when building if user has not ran 'chmod')
+const sourceExcludedExtensions = ['.DS_Store', 'mvnw', 'mvnw.cmd']
 
 /**
  * Determines if the specified file path corresponds to a Maven metadata file
@@ -740,8 +741,14 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
 
 async function attemptLocalBuild() {
     const jobId = transformByQState.getJobId()
-    const artifactId = await getClientInstructionArtifactId(jobId)
-    getLogger().info(`CodeTransformation: found artifactId = ${artifactId}`)
+    let artifactId
+    try {
+        artifactId = await getClientInstructionArtifactId(jobId)
+        getLogger().info(`CodeTransformation: found artifactId = ${artifactId}`)
+    } catch (e: any) {
+        // don't throw error so that we can try to get progress updates again in next polling cycle
+        getLogger().error(`CodeTransformation: failed to get client instruction artifact ID = %O`, e)
+    }
     if (artifactId) {
         const clientInstructionsPath = await downloadClientInstructions(jobId, artifactId)
         getLogger().info(
@@ -764,7 +771,7 @@ async function getClientInstructionArtifactId(jobId: string) {
 
 async function downloadClientInstructions(jobId: string, artifactId: string) {
     const exportDestination = `downloadClientInstructions_${jobId}_${artifactId}`
-    const exportZipPath = path.join(os.tmpdir(), `${exportDestination}.zip`)
+    const exportZipPath = path.join(os.tmpdir(), exportDestination)
 
     const exportContext: ExportContext = {
         transformationExportContext: {
@@ -780,34 +787,30 @@ async function downloadClientInstructions(jobId: string, artifactId: string) {
 }
 
 async function processClientInstructions(jobId: string, clientInstructionsPath: any, artifactId: string) {
-    const sourcePath = transformByQState.getProjectPath()
-    const destinationPath = path.join(os.tmpdir(), jobId, artifactId, 'originalCopy')
-    await copyDirectory(sourcePath, destinationPath)
+    const destinationPath = path.join(os.tmpdir(), `originalCopy_${jobId}_${artifactId}`)
+    await extractOriginalProjectSources(destinationPath)
     getLogger().info(`CodeTransformation: copied project to ${destinationPath}`)
     const diffModel = new DiffModel()
-    diffModel.parseDiff(clientInstructionsPath, destinationPath, undefined, 1, true)
+    diffModel.parseDiff(clientInstructionsPath, path.join(destinationPath, 'sources'), undefined, 1, true)
     // show user the diff.patch
     const doc = await vscode.workspace.openTextDocument(clientInstructionsPath)
     await vscode.window.showTextDocument(doc, { viewColumn: vscode.ViewColumn.One })
     await runClientSideBuild(transformByQState.getProjectCopyFilePath(), artifactId)
 }
 
-export async function runClientSideBuild(projectPath: string, clientInstructionArtifactId: string) {
-    // baseCommand will be one of: '.\mvnw.cmd', './mvnw', 'mvn'
+export async function runClientSideBuild(projectCopyPath: string, clientInstructionArtifactId: string) {
     const baseCommand = transformByQState.getMavenName()
-    const args = ['clean']
+    const args = []
     if (transformByQState.getCustomBuildCommand() === CodeWhispererConstants.skipUnitTestsBuildCommand) {
         args.push('test-compile')
     } else {
         args.push('test')
     }
-    // TO-DO / QUESTION: why not use the build command from the downloaded manifest?
-    transformByQState.appendToBuildLog(`Running ${baseCommand} ${args}`)
     const environment = { ...process.env, JAVA_HOME: transformByQState.getTargetJavaHome() }
 
     const argString = args.join(' ')
     const spawnResult = spawnSync(baseCommand, args, {
-        cwd: projectPath,
+        cwd: projectCopyPath,
         shell: true,
         encoding: 'utf-8',
         env: environment,
@@ -818,11 +821,11 @@ export async function runClientSideBuild(projectPath: string, clientInstructionA
     transformByQState.appendToBuildLog(buildLogs)
     await writeAndShowBuildLogs()
 
-    const baseDir = path.join(
+    const uploadZipBaseDir = path.join(
         os.tmpdir(),
         `clientInstructionsResult_${transformByQState.getJobId()}_${clientInstructionArtifactId}`
     )
-    const zipPath = await createLocalBuildUploadZip(baseDir, spawnResult.status, spawnResult.stdout)
+    const uploadZipPath = await createLocalBuildUploadZip(uploadZipBaseDir, spawnResult.status, spawnResult.stdout)
 
     // upload build results
     const uploadContext: UploadContext = {
@@ -831,14 +834,16 @@ export async function runClientSideBuild(projectPath: string, clientInstructionA
             uploadArtifactType: 'ClientBuildResult',
         },
     }
-    getLogger().info(`CodeTransformation: uploading client build results at ${zipPath} and resuming job now`)
-    await uploadPayload(zipPath, uploadContext)
+    getLogger().info(`CodeTransformation: uploading client build results at ${uploadZipPath} and resuming job now`)
+    await uploadPayload(uploadZipPath, AuthUtil.instance.regionProfileManager.activeRegionProfile, uploadContext)
     await resumeTransformationJob(transformByQState.getJobId(), 'COMPLETED')
     try {
-        await fs.delete(transformByQState.getProjectCopyFilePath(), { recursive: true })
+        await fs.delete(projectCopyPath, { recursive: true })
+        await fs.delete(uploadZipBaseDir, { recursive: true })
+        // TODO: do we need to delete the downloaded client instructions and uploadZipPath? they can help in debugging
     } catch {
         getLogger().error(
-            `CodeTransformation: failed to delete project copy at ${transformByQState.getProjectCopyFilePath()} after client-side build`
+            `CodeTransformation: failed to delete project copy and uploadZipBaseDir after client-side build`
         )
     }
 }
