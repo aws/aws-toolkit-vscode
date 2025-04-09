@@ -158,6 +158,8 @@ export function mapToAggregatedList(
     scope: CodeWhispererConstants.CodeAnalysisScope
 ) {
     const codeScanIssues: RawCodeScanIssue[] = JSON.parse(json)
+    // eslint-disable-next-line aws-toolkits/no-console-log
+    console.log(codeScanIssues)
     const filteredIssues = codeScanIssues.filter((issue) => {
         if (
             (scope === CodeWhispererConstants.CodeAnalysisScope.FILE_AUTO ||

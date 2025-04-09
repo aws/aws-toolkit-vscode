@@ -252,6 +252,11 @@ export class ZipUtil {
                 scope,
             })
         }
+        // if (scope === CodeWhispererConstants.CodeAnalysisScope.PROJECT) {
+        //     const fakeGitDiff = `diff --git a/packages/core/dist/src/testFixtures/workspaceFolder/QCAFolder/RLinker.java b/packages/core/dist/src/testFixtures/workspaceFolder/QCAFolder/RLinker.java\nindex 0012ec738..76f05d7bb 100644\n--- a/packages/core/dist/src/testFixtures/workspaceFolder/QCAFolder/RLinker.java\n+++ b/packages/core/dist/src/testFixtures/workspaceFolder/QCAFolder/RLinker.java\n@@ -1,1 +1,1 @@ export aaa\n+ asdf\n- zxcv`
+        //     gitDiffContent += fakeGitDiff
+        // }
+
         if (gitDiffContent) {
             zip.writeString(gitDiffContent, ZipConstants.codeDiffFilePath)
         }
