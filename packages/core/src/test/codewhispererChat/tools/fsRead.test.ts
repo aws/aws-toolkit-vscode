@@ -6,12 +6,18 @@ import assert from 'assert'
 import { FsRead } from '../../../codewhispererChat/tools/fsRead'
 import { TestFolder } from '../../testUtil'
 import path from 'path'
+import sinon from 'sinon'
+import * as vscode from 'vscode'
 
 describe('FsRead Tool', () => {
     let testFolder: TestFolder
 
     before(async () => {
         testFolder = await TestFolder.create()
+    })
+
+    afterEach(() => {
+        sinon.restore()
     })
 
     it('throws if path is empty', async () => {
@@ -54,6 +60,20 @@ describe('FsRead Tool', () => {
         )
     })
 
+    it('throws error if content exceeds 30KB', async function () {
+        const bigContent = 'x'.repeat(35_000)
+        const bigFilePath = await testFolder.write('bigFile.txt', bigContent)
+
+        const fsRead = new FsRead({ path: bigFilePath })
+        await fsRead.validate()
+
+        await assert.rejects(
+            fsRead.invoke(process.stdout),
+            /This tool only supports reading \d+ bytes at a time/i,
+            'Expected a size-limit error'
+        )
+    })
+
     it('invalid line range', async () => {
         const filePath = await testFolder.write('rangeTest.txt', '1\n2\n3')
         const fsRead = new FsRead({ path: filePath, readRange: [3, 2] })
@@ -62,5 +82,33 @@ describe('FsRead Tool', () => {
         const result = await fsRead.invoke(process.stdout)
         assert.strictEqual(result.output.kind, 'text')
         assert.strictEqual(result.output.content, '')
+    })
+
+    it('should require acceptance if fsPath is outside the workspace', () => {
+        const workspaceStub = sinon
+            .stub(vscode.workspace, 'workspaceFolders')
+            .value([{ uri: { fsPath: '/workspace/folder' } } as any])
+        const fsRead = new FsRead({ path: '/not/in/workspace/file.txt' })
+        const result = fsRead.requiresAcceptance()
+        assert.equal(
+            result.requiresAcceptance,
+            true,
+            'Expected requiresAcceptance to be true for a path outside the workspace'
+        )
+        workspaceStub.restore()
+    })
+
+    it('should not require acceptance if fsPath is inside the workspace', () => {
+        const workspaceStub = sinon
+            .stub(vscode.workspace, 'workspaceFolders')
+            .value([{ uri: { fsPath: '/workspace/folder' } } as any])
+        const fsRead = new FsRead({ path: '/workspace/folder/file.txt' })
+        const result = fsRead.requiresAcceptance()
+        assert.equal(
+            result.requiresAcceptance,
+            false,
+            'Expected requiresAcceptance to be false for a path inside the workspace'
+        )
+        workspaceStub.restore()
     })
 })

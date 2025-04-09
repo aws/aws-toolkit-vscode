@@ -9,6 +9,9 @@ import { fs } from '../../shared/fs/fs'
 import { ChildProcess, ChildProcessOptions } from '../../shared/utilities/processUtils'
 import { InvokeOutput, OutputKind, sanitizePath } from './toolShared'
 import { split } from 'shlex'
+import path from 'path'
+import * as vscode from 'vscode'
+import { isInDirectory } from '../../shared/filesystemUtilities'
 
 export enum CommandCategory {
     ReadOnly,
@@ -191,6 +194,27 @@ export class ExecuteBash {
                         return { requiresAcceptance: true }
                 }
             }
+            for (const cmdArgs of allCommands) {
+                for (const arg of cmdArgs) {
+                    if (this.looksLikePath(arg)) {
+                        // If not absolute, resolve using workingDirectory if available.
+                        let fullPath = arg
+                        if (!path.isAbsolute(arg) && this.workingDirectory) {
+                            fullPath = path.join(this.workingDirectory, arg)
+                        }
+                        const workspaceFolders = vscode.workspace.workspaceFolders
+                        if (!workspaceFolders || workspaceFolders.length === 0) {
+                            return { requiresAcceptance: true }
+                        }
+                        const isInWorkspace = workspaceFolders.some((folder) =>
+                            isInDirectory(folder.uri.fsPath, fullPath)
+                        )
+                        if (!isInWorkspace) {
+                            return { requiresAcceptance: true }
+                        }
+                    }
+                }
+            }
             return { requiresAcceptance: false }
         } catch (error) {
             this.logger.warn(`Error while checking acceptance: ${(error as Error).message}`)
@@ -305,5 +329,9 @@ export class ExecuteBash {
     public queueDescription(updates: Writable): void {
         updates.write('```shell\n' + this.command + '\n```')
         updates.end()
+    }
+
+    private looksLikePath(arg: string): boolean {
+        return arg.startsWith('/') || arg.startsWith('./') || arg.startsWith('../')
     }
 }

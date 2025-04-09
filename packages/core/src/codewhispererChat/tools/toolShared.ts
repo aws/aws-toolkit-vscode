@@ -32,3 +32,8 @@ export function sanitizePath(inputPath: string): string {
     }
     return sanitized
 }
+
+export interface CommandValidation {
+    requiresAcceptance: boolean
+    warning?: string
+}

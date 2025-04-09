@@ -596,6 +596,37 @@ export class Messenger {
             }
             fullWidth = true
             padding = false
+            // eslint-disable-next-line unicorn/no-null
+            codeBlockActions = { 'insert-to-cursor': null, copy: null }
+        } else if (toolUse?.name === ToolType.ListDirectory || toolUse?.name === ToolType.FsRead) {
+            if (validation.requiresAcceptance) {
+                const buttons: ChatItemButton[] = [
+                    {
+                        id: 'confirm-tool-use',
+                        text: localize(`AWS.amazonq.${toolUse?.name}.run`, 'Run'),
+                        status: 'main',
+                        icon: 'play' as MynahIconsType,
+                    },
+                    {
+                        id: 'reject-tool-use',
+                        text: localize(`AWS.amazonq.${toolUse?.name}.reject`, 'Reject'),
+                        status: 'clear',
+                        icon: 'cancel' as MynahIconsType,
+                    },
+                ]
+                header = {
+                    icon: 'shell' as MynahIconsType,
+                    body: 'shell',
+                    buttons,
+                }
+            }
+            if (validation.warning) {
+                message = validation.warning + message
+            }
+            fullWidth = true
+            padding = false
+            // eslint-disable-next-line unicorn/no-null
+            codeBlockActions = { 'insert-to-cursor': null, copy: null }
         }
 
         this.dispatcher.sendChatMessage(
