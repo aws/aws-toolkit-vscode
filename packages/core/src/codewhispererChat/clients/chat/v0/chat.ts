@@ -33,6 +33,7 @@ export class ChatSession {
      * _messageIdToUpdate = messageId of a chat message to be updated, used for reducing consecutive tool messages
      */
     private _readFiles: DocumentReference[] = []
+    private _readFolders: DocumentReference[] = []
     private _toolUseWithError: ToolUseWithError | undefined
     private _showDiffOnFileWrite: boolean = false
     private _context: PromptMessage['context']
@@ -43,6 +44,7 @@ export class ChatSession {
      */
     localHistoryHydrated: boolean = false
     private _messageIdToUpdate: string | undefined
+    private _messageIdToUpdateListDirectory: string | undefined
 
     contexts: Map<string, { first: number; second: number }[]> = new Map()
     // TODO: doesn't handle the edge case when two files share the same relativePath string but from different root
@@ -57,6 +59,14 @@ export class ChatSession {
 
     public setMessageIdToUpdate(messageId: string | undefined) {
         this._messageIdToUpdate = messageId
+    }
+
+    public get messageIdToUpdateListDirectory(): string | undefined {
+        return this._messageIdToUpdateListDirectory
+    }
+
+    public setMessageIdToUpdateListDirectory(messageId: string | undefined) {
+        this._messageIdToUpdateListDirectory = messageId
     }
 
     public get pairProgrammingModeOn(): boolean {
@@ -107,6 +117,9 @@ export class ChatSession {
     public get readFiles(): DocumentReference[] {
         return this._readFiles
     }
+    public get readFolders(): DocumentReference[] {
+        return this._readFolders
+    }
     public get showDiffOnFileWrite(): boolean {
         return this._showDiffOnFileWrite
     }
@@ -118,6 +131,12 @@ export class ChatSession {
     }
     public clearListOfReadFiles() {
         this._readFiles = []
+    }
+    public setReadFolders(folder: DocumentReference) {
+        this._readFolders.push(folder)
+    }
+    public clearListOfReadFolders() {
+        this._readFolders = []
     }
     async chatIam(chatRequest: SendMessageRequest): Promise<SendMessageCommandOutput> {
         const client = await createQDeveloperStreamingClient()
