@@ -840,7 +840,8 @@ export async function runClientSideBuild(projectCopyPath: string, clientInstruct
     try {
         await fs.delete(projectCopyPath, { recursive: true })
         await fs.delete(uploadZipBaseDir, { recursive: true })
-        // TODO: do we need to delete the downloaded client instructions and uploadZipPath? they can help in debugging
+        // TODO: do we need to delete the downloaded client instructions and uploadZipPath?
+        // Check with AppSec, but they can help in debugging
     } catch {
         getLogger().error(
             `CodeTransformation: failed to delete project copy and uploadZipBaseDir after client-side build`
