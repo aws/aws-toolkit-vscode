@@ -54,6 +54,9 @@
             <div class="subHeader bottomMargin topMargin">
                 Your administrator has given you access to Q from multiple profiles. Choose the profile that meets your
                 current working needs. You can change your profile at any time.
+                <a href="https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/subscribe-understanding-profile.html"
+                    >More info.</a
+                >
             </div>
 
             <div class="bottomMargin">
