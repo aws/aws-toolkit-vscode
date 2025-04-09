@@ -46,8 +46,7 @@
         </div>
 
         <template v-if="isFirstLoading">
-            <div class="header bottomMargin">Authenticating in browser...</div>
-            <button class="continue-button">Cancel</button>
+            <div class="header bottomMargin">Fetching Q Developer profiles...this may take a minute.</div>
         </template>
 
         <template v-else>
