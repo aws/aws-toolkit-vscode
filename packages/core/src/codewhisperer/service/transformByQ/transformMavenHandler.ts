@@ -104,7 +104,7 @@ function copyProjectDependencies(dependenciesFolder: FolderInfo, modulePath: str
 }
 
 export async function prepareProjectDependencies(dependenciesFolder: FolderInfo, rootPomPath: string) {
-    await setMaven()
+    setMaven()
     getLogger().info('CodeTransformation: running Maven copy-dependencies')
     // pause to give chat time to update
     await sleep(100)
