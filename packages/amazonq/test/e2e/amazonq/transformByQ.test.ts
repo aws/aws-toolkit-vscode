@@ -418,7 +418,7 @@ describe('Amazon Q Code Transformation', function () {
 
         it('WHEN transforming a Java 8 project E2E THEN job is successful', async function () {
             transformByQState.setTransformationType(TransformationType.LANGUAGE_UPGRADE)
-            await setMaven()
+            setMaven()
             await startTransformByQ.processLanguageUpgradeTransformFormInput(tempDir, JDKVersion.JDK8, JDKVersion.JDK17)
             await startTransformByQ.startTransformByQ()
             assert.strictEqual(transformByQState.getPolledJobStatus(), 'COMPLETED')
