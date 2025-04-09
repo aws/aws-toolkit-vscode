@@ -4,6 +4,7 @@
  */
 
 import * as sinon from 'sinon'
+import * as vscode from 'vscode'
 import { LanguageClient } from 'vscode-languageclient'
 import { AuthUtil } from 'aws-core-vscode/codewhisperer'
 import { registerMessageListeners } from '../../../../../src/lsp/chat/messages'
@@ -124,6 +125,45 @@ describe('registerMessageListeners', () => {
                 stubToReject: deleteConnectionStub,
                 errorMessage: 'Failed to authenticate',
             })
+        })
+    })
+
+    describe('COPY_TO_CLIPBOARD', () => {
+        const testCode = 'test'
+        const copyMessage = {
+            command: 'copyToClipboard',
+            params: {
+                code: testCode,
+            },
+        }
+        let writeTextStub: sinon.SinonStub
+
+        beforeEach(() => {
+            writeTextStub = sinon.stub()
+            sandbox.stub(vscode.env, 'clipboard').value({
+                writeText: writeTextStub,
+            })
+        })
+
+        it('successfully copies code to clipboard', async () => {
+            writeTextStub.resolves()
+
+            await messageHandler(copyMessage)
+
+            sinon.assert.calledWith(writeTextStub, testCode)
+        })
+
+        it('handles clipboard copy failure', async () => {
+            const errorMessage = 'Failed to copy'
+            writeTextStub.rejects(new Error(errorMessage))
+
+            await messageHandler(copyMessage)
+
+            sinon.assert.calledOnce(errorStub)
+            sinon.assert.calledWith(
+                errorStub,
+                sinon.match(`[VSCode Client] Failed to copy to clipboard: ${errorMessage}`)
+            )
         })
     })
 })
