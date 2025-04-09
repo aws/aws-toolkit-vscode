@@ -16,7 +16,6 @@ export enum CommandCategory {
     Destructive,
 }
 
-export const dangerousPatterns = new Set(['<(', '$(', '`'])
 export const splitOperators = new Set(['|', '&&', '||', '>'])
 export const splitOperatorsArray = Array.from(splitOperators)
 export const commandCategories = new Map<string, CommandCategory>([
@@ -187,14 +186,6 @@ export class ExecuteBash {
                     case CommandCategory.Mutate:
                         return { requiresAcceptance: true, warning: mutateCommandWarningMessage }
                     case CommandCategory.ReadOnly:
-                        if (
-                            cmdArgs.some((arg) =>
-                                Array.from(dangerousPatterns).some((pattern) => arg.includes(pattern))
-                            )
-                        ) {
-                            // put the mutation message for dangerous pattern command for now, will update as long as finalized with appsec team
-                            return { requiresAcceptance: true, warning: mutateCommandWarningMessage }
-                        }
                         continue
                     default:
                         return { requiresAcceptance: true }
