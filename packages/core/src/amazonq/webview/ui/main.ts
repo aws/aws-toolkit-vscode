@@ -691,6 +691,7 @@ export const createMynahUI = (
         onTabChange: connector.onTabChange,
         // TODO: update mynah-ui this type doesn't seem correct https://github.com/aws/mynah-ui/blob/3777a39eb534a91fd6b99d6cf421ce78ee5c7526/src/main.ts#L372
         onStopChatResponse: (tabID: string) => {
+            console.log('stop response started')
             mynahUI.updateStore(tabID, {
                 loadingChat: false,
                 promptInputDisabledState: false,
@@ -701,6 +702,12 @@ export const createMynahUI = (
             if ((prompt.prompt ?? '') === '' && (prompt.command ?? '') === '') {
                 return
             }
+
+            mynahUI.updateStore(tabID, {
+                loadingChat: false,
+                promptInputDisabledState: false,
+            })
+            connector.onStopChatResponse(tabID)
 
             const tabType = tabsStorage.getTab(tabID)?.type
             if (tabType === 'featuredev') {
@@ -735,6 +742,8 @@ export const createMynahUI = (
                 }
                 return
             }
+
+            console.log('prompt entered: ', prompt)
 
             /**
              * Update the tab title if coming from the welcome page

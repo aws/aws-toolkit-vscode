@@ -257,13 +257,12 @@ export class Connector extends BaseConnector {
         }
 
         if (messageData.type === 'asyncEventProgressMessage') {
-            const enableStopAction = true
             this.onAsyncEventProgress(
                 messageData.tabID,
                 messageData.inProgress,
                 messageData.message ?? undefined,
                 messageData.messageId ?? undefined,
-                enableStopAction,
+                messageData.inProgress,
                 false
             )
             return

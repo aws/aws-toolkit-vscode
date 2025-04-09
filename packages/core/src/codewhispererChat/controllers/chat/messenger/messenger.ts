@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { waitUntil } from '../../../../shared/utilities/timeoutUtils'
 import {
     AppToWebViewMessageDispatcher,
     AuthNeededException,
@@ -68,6 +67,9 @@ import { FsWriteParams } from '../../../tools/fsWrite'
 import { AsyncEventProgressMessage } from '../../../../amazonq/commons/connector/connectorMessages'
 import { localize } from '../../../../shared/utilities/vsCodeUtils'
 import { getDiffLinesFromChanges } from '../../../../shared/utilities/diffUtils'
+import { CancellationToken } from 'vscode'
+import { ConversationTracker } from '../../../storages/conversationTracker'
+import { waitUntilWithCancellation } from '../../../../shared/utilities/timeoutUtils'
 
 export type StaticTextResponseType =
     | 'quick-action-help'
@@ -104,6 +106,12 @@ export class Messenger {
     }
 
     public sendInitalStream(tabID: string, triggerID: string) {
+        // Check if the conversation has been cancelled
+        if (ConversationTracker.getInstance().isTriggerCancelled(triggerID)) {
+            getLogger().debug(`Initial stream sending cancelled for tabID: ${tabID}, triggerID: ${triggerID}`)
+            return
+        }
+
         this.dispatcher.sendChatMessage(
             new ChatMessage(
                 {
@@ -131,6 +139,12 @@ export class Messenger {
         triggerID: string,
         mergedRelevantDocuments: DocumentReference[] | undefined
     ) {
+        // Check if the conversation has been cancelled
+        if (ConversationTracker.getInstance().isTriggerCancelled(triggerID)) {
+            getLogger().debug(`Context message sending cancelled for tabID: ${tabID}, triggerID: ${triggerID}`)
+            return
+        }
+
         this.dispatcher.sendChatMessage(
             new ChatMessage(
                 {
@@ -198,6 +212,7 @@ export class Messenger {
         let codeBlockLanguage: string = 'plaintext'
         let toolUseInput = ''
         const toolUse: ToolUse = { toolUseId: undefined, name: undefined, input: undefined }
+        const conversationTracker = ConversationTracker.getInstance()
 
         if (response.message === undefined) {
             throw new ToolkitError(
@@ -225,7 +240,7 @@ export class Messenger {
         })
 
         const eventCounts = new Map<string, number>()
-        await waitUntil(
+        await waitUntilWithCancellation(
             async () => {
                 for await (const chatEvent of response.message!) {
                     for (const key of keys(chatEvent)) {
@@ -299,15 +314,23 @@ export class Messenger {
                                     // Need separate id for read tool and safe bash command execution as 'run-shell-command' id is required to state in cwChatConnector.ts which will impact generic tool execution.
                                     if (tool.type === ToolType.ExecuteBash) {
                                         this.dispatcher.sendCustomFormActionMessage(
-                                            new CustomFormActionMessage(tabID, {
-                                                id: 'run-shell-command',
-                                            })
+                                            new CustomFormActionMessage(
+                                                tabID,
+                                                {
+                                                    id: 'run-shell-command',
+                                                },
+                                                triggerID
+                                            )
                                         )
                                     } else {
                                         this.dispatcher.sendCustomFormActionMessage(
-                                            new CustomFormActionMessage(tabID, {
-                                                id: 'generic-tool-execution',
-                                            })
+                                            new CustomFormActionMessage(
+                                                tabID,
+                                                {
+                                                    id: 'generic-tool-execution',
+                                                },
+                                                triggerID
+                                            )
                                         )
                                     }
                                 }
@@ -378,7 +401,12 @@ export class Messenger {
                 }
                 return true
             },
-            { timeout: 600000, truthy: true }
+            {
+                timeout: 600000,
+                interval: 500,
+                truthy: true,
+                cancellationToken: conversationTracker.getTokenForTrigger(triggerID) ?? session.tokenSource.token,
+            }
         )
             .catch((error: any) => {
                 const errorInfo = extractErrorInfo(error)
@@ -485,10 +513,12 @@ export class Messenger {
                             toolUse.input !== '' && { toolUses: [{ ...toolUse }] }),
                     },
                 })
-                const agenticLoopEnded = !eventCounts.has('toolUseEvent')
-                if (agenticLoopEnded) {
-                    // Reset context for the next request
+                if (!eventCounts.has('toolUseEvent')) {
+                    session.setAgenticLoopInProgress(false)
                     session.setContext(undefined)
+
+                    // Mark the trigger as completed when the agentic loop ends
+                    conversationTracker.markTriggerCompleted(triggerID)
                 }
 
                 getLogger().info(
@@ -531,8 +561,15 @@ export class Messenger {
         triggerID: string,
         toolUse: ToolUse | undefined,
         validation: CommandValidation,
-        changeList?: Change[]
+        changeList?: Change[],
+        cancellationToken?: CancellationToken
     ) {
+        // Check if the conversation has been cancelled before sending any tool logs
+        if (ConversationTracker.getInstance().isTriggerCancelled(triggerID)) {
+            getLogger().debug(`Tool log sending cancelled for tabID: ${tabID}, triggerID: ${triggerID}`)
+            return
+        }
+
         const buttons: ChatItemButton[] = []
         let header: ChatItemHeader | undefined = undefined
         let fullWidth: boolean | undefined = undefined
@@ -642,6 +679,12 @@ export class Messenger {
     ])
 
     public sendStaticTextResponse(type: StaticTextResponseType, triggerID: string, tabID: string) {
+        // Check if the conversation has been cancelled
+        if (ConversationTracker.getInstance().isTriggerCancelled(triggerID)) {
+            getLogger().debug(`Static text response sending cancelled for tabID: ${tabID}, triggerID: ${triggerID}`)
+            return
+        }
+
         let message
         let followUps
         let followUpsHeader

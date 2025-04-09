@@ -37,6 +37,8 @@ export class ChatSession {
     private _context: PromptMessage['context']
     private _pairProgrammingModeOn: boolean = true
     private _fsWriteBackups: Map<string, FsWriteBackup> = new Map()
+    private _agenticLoopInProgress: boolean = false
+
     /**
      * True if messages from local history have been sent to session.
      */
@@ -48,6 +50,33 @@ export class ChatSession {
     relativePathToWorkspaceRoot: Map<string, string> = new Map()
     public get sessionIdentifier(): string | undefined {
         return this.sessionId
+    }
+
+    public get agenticLoopInProgress(): boolean {
+        return this._agenticLoopInProgress
+    }
+
+    public setAgenticLoopInProgress(value: boolean) {
+        // When setting agenticLoop to false (ending the loop), dispose the current token source
+        if (this._agenticLoopInProgress === true && value === false) {
+            this.disposeTokenSource()
+            // Create a new token source for future operations
+            this.createNewTokenSource()
+        }
+        this._agenticLoopInProgress = value
+    }
+
+    /**
+     * Safely disposes the current token source if it exists
+     */
+    disposeTokenSource() {
+        if (this.tokenSource) {
+            try {
+                this.tokenSource.dispose()
+            } catch (error) {
+                // Ignore errors during disposal
+            }
+        }
     }
 
     public get pairProgrammingModeOn(): boolean {
