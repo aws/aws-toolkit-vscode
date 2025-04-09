@@ -15,15 +15,13 @@ import { setMaven, writeAndShowBuildLogs } from './transformFileHandler'
 import { throwIfCancelled } from './transformApiHandler'
 import { sleep } from '../../../shared/utilities/timeoutUtils'
 
-// run 'install' with either 'mvnw.cmd', './mvnw', or 'mvn' (if wrapper exists, we use that, otherwise we use regular 'mvn')
 function installProjectDependencies(dependenciesFolder: FolderInfo, modulePath: string) {
     telemetry.codeTransform_localBuildProject.run(() => {
         telemetry.record({ codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId() })
 
-        // baseCommand will be one of: '.\mvnw.cmd', './mvnw', 'mvn'
+        // will always be 'mvn'
         const baseCommand = transformByQState.getMavenName()
 
-        // Note: IntelliJ runs 'clean' separately from 'install'. Evaluate benefits (if any) of this.
         const args = [`-Dmaven.repo.local=${dependenciesFolder.path}`, 'clean', 'install', '-q']
 
         transformByQState.appendToBuildLog(`Running ${baseCommand} ${args.join(' ')}`)
@@ -47,14 +45,7 @@ function installProjectDependencies(dependenciesFolder: FolderInfo, modulePath: 
             maxBuffer: CodeWhispererConstants.maxBufferSize,
         })
 
-        let mavenBuildCommand = transformByQState.getMavenName()
-        // slashes not allowed in telemetry
-        if (mavenBuildCommand === './mvnw') {
-            mavenBuildCommand = 'mvnw'
-        } else if (mavenBuildCommand === '.\\mvnw.cmd') {
-            mavenBuildCommand = 'mvnw.cmd'
-        }
-
+        const mavenBuildCommand = transformByQState.getMavenName()
         telemetry.record({ codeTransformBuildCommand: mavenBuildCommand as CodeTransformBuildCommand })
 
         if (spawnResult.status !== 0) {
@@ -73,7 +64,6 @@ function installProjectDependencies(dependenciesFolder: FolderInfo, modulePath: 
 }
 
 function copyProjectDependencies(dependenciesFolder: FolderInfo, modulePath: string) {
-    // baseCommand will be one of: '.\mvnw.cmd', './mvnw', 'mvn'
     const baseCommand = transformByQState.getMavenName()
 
     const args = [
@@ -142,7 +132,7 @@ export async function prepareProjectDependencies(dependenciesFolder: FolderInfo,
 }
 
 export async function getVersionData() {
-    const baseCommand = transformByQState.getMavenName() // will be one of: 'mvnw.cmd', './mvnw', 'mvn'
+    const baseCommand = transformByQState.getMavenName()
     const projectPath = transformByQState.getProjectPath()
     const args = ['-v']
     const spawnResult = spawnSync(baseCommand, args, { cwd: projectPath, shell: true, encoding: 'utf-8' })
@@ -172,12 +162,9 @@ export async function getVersionData() {
     return [localMavenVersion, localJavaVersion]
 }
 
-// run maven 'versions:dependency-updates-aggregate-report' with either 'mvnw.cmd', './mvnw', or 'mvn' (if wrapper exists, we use that, otherwise we use regular 'mvn')
 export function runMavenDependencyUpdateCommands(dependenciesFolder: FolderInfo) {
-    // baseCommand will be one of: '.\mvnw.cmd', './mvnw', 'mvn'
-    const baseCommand = transformByQState.getMavenName() // will be one of: 'mvnw.cmd', './mvnw', 'mvn'
+    const baseCommand = transformByQState.getMavenName()
 
-    // Note: IntelliJ runs 'clean' separately from 'install'. Evaluate benefits (if any) of this.
     const args = [
         'versions:dependency-updates-aggregate-report',
         `-DoutputDirectory=${dependenciesFolder.path}`,

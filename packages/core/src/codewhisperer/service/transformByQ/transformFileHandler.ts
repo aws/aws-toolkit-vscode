@@ -16,7 +16,6 @@ import globals from '../../../shared/extensionGlobals'
 import { ChatSessionManager } from '../../../amazonqGumby/chat/storages/chatSession'
 import { AbsolutePathDetectedError } from '../../../amazonqGumby/errors'
 import { getLogger } from '../../../shared/logger/logger'
-import { isWin } from '../../../shared/vscode/env'
 import AdmZip from 'adm-zip'
 
 export function getDependenciesFolderInfo(): FolderInfo {
@@ -28,7 +27,6 @@ export function getDependenciesFolderInfo(): FolderInfo {
     }
 }
 
-// TO-DO: what happens when intermediate build logs are massive from downloading dependencies? exlude those lines?
 export async function writeAndShowBuildLogs() {
     const logFilePath = path.join(os.tmpdir(), 'build-logs.txt')
     writeFileSync(logFilePath, transformByQState.getBuildLog())
@@ -48,42 +46,18 @@ export async function loadManifestFile(directory: string) {
     return manifest
 }
 
-export async function copyDirectory(sourcePath: string, destinationPath: string) {
-    await fs.mkdir(destinationPath)
-    const files = await fs.readdir(sourcePath)
-
-    for (const file of files) {
-        const sourceFilePath = path.join(sourcePath, file[0])
-        const destinationFilePath = path.join(destinationPath, file[0])
-        if (file[1] === vscode.FileType.Directory) {
-            // if the item is a directory, recursively copy it
-            const destinationFilePath = path.join(destinationPath, path.relative(sourcePath, sourceFilePath))
-            await copyDirectory(sourceFilePath, destinationFilePath)
-        } else {
-            // if the item is a file, copy its contents
-            try {
-                await fs.copy(sourceFilePath, destinationFilePath)
-            } catch (err: any) {
-                getLogger().error(
-                    `CodeTransformation: error copying file ${sourceFilePath} to ${destinationFilePath}: ${err}`
-                )
-            }
-        }
-    }
-}
-
 export async function createLocalBuildUploadZip(baseDir: string, exitCode: number | null, stdout: string) {
     const manifestFilePath = path.join(baseDir, 'manifest.json')
     const buildResultsManifest = {
         capability: 'CLIENT_SIDE_BUILD',
         exitCode: exitCode,
-        commandLogFileName: 'clientBuildLogs.log',
+        commandLogFileName: 'build-output.log',
     }
     const formattedManifest = JSON.stringify(buildResultsManifest)
-    await fs.writeFile(manifestFilePath, formattedManifest, 'utf8')
+    await fs.writeFile(manifestFilePath, formattedManifest)
 
-    const buildLogsFilePath = path.join(baseDir, 'clientBuildLogs.log')
-    await fs.writeFile(buildLogsFilePath, stdout, 'utf8')
+    const buildLogsFilePath = path.join(baseDir, 'build-output.log')
+    await fs.writeFile(buildLogsFilePath, stdout)
 
     const zip = new AdmZip()
     zip.addLocalFile(buildLogsFilePath)
@@ -93,6 +67,17 @@ export async function createLocalBuildUploadZip(baseDir: string, exitCode: numbe
     zip.writeZip(zipPath)
     getLogger().info(`CodeTransformation: created local build upload zip at ${zipPath}`)
     return zipPath
+}
+
+// extract the 'sources' directory of the upload ZIP so that we can apply the diff.patch to a copy of the source code
+export async function extractOriginalProjectSources(destinationPath: string) {
+    const zip = new AdmZip(transformByQState.getPayloadFilePath())
+    const zipEntries = zip.getEntries()
+    for (const zipEntry of zipEntries) {
+        if (zipEntry.entryName.startsWith('sources')) {
+            zip.extractEntryTo(zipEntry, destinationPath, true, true)
+        }
+    }
 }
 
 export async function checkBuildSystem(projectPath: string) {
@@ -193,20 +178,10 @@ export async function validateSQLMetadataFile(fileContents: string, message: any
     return true
 }
 
-export async function setMaven() {
-    let mavenWrapperExecutableName = isWin() ? 'mvnw.cmd' : 'mvnw'
-    const mavenWrapperExecutablePath = path.join(transformByQState.getProjectPath(), mavenWrapperExecutableName)
-    if (existsSync(mavenWrapperExecutablePath)) {
-        if (mavenWrapperExecutableName === 'mvnw') {
-            mavenWrapperExecutableName = './mvnw' // add the './' for non-Windows
-        } else if (mavenWrapperExecutableName === 'mvnw.cmd') {
-            mavenWrapperExecutableName = '.\\mvnw.cmd' // add the '.\' for Windows
-        }
-        transformByQState.setMavenName(mavenWrapperExecutableName)
-    } else {
-        transformByQState.setMavenName('mvn')
-    }
-    getLogger().info(`CodeTransformation: using Maven ${transformByQState.getMavenName()}`)
+export function setMaven() {
+    // for now, just use regular Maven since the Maven executables can
+    // cause permissions issues when building if user has not ran 'chmod'
+    transformByQState.setMavenName('mvn')
 }
 
 export async function openBuildLogFile() {

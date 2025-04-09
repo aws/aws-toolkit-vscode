@@ -181,9 +181,8 @@ export class DiffModel {
 
         const changedFiles = parsePatch(diffContents)
         getLogger().info('CodeTransformation: parsed patch file successfully')
-        // path to the directory containing copy of the changed files in the transformed project
-        // if doing intermediate client-side build, pathToWorkspace is the already-copied project directory
-        // otherwise, we are at the very end of the transformation and need to copy the project to show the changes
+        // if doing intermediate client-side build, pathToWorkspace is the path to the unzipped project's 'sources' directory (re-using upload ZIP)
+        // otherwise, we are at the very end of the transformation and need to copy the changed files in the project to show the diff(s)
         const pathToTmpSrcDir = isIntermediateBuild ? pathToWorkspace : this.copyProject(pathToWorkspace, changedFiles)
         transformByQState.setProjectCopyFilePath(pathToTmpSrcDir)
 
