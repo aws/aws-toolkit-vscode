@@ -7,7 +7,6 @@ import { commandPalette } from '../../codewhisperer/commands/types'
 import { CodeScanIssue } from '../../codewhisperer/models/model'
 import { Commands, VsCodeCommandArg, placeholder } from '../../shared/vscode/commands2'
 import { ChatControllerMessagePublishers } from '../controllers/chat/controller'
-import vscode from 'vscode'
 
 /**
  * Opens the Amazon Q panel, showing the correct View that should
@@ -25,8 +24,8 @@ export const focusAmazonQPanel = Commands.declare(
          * So when we try to focus the following Views, only one will show depending
          * on the context.
          */
-        await vscode.commands.executeCommand('aws.amazonq.AmazonQChatView.focus')
-        await vscode.commands.executeCommand('aws.amazonq.AmazonCommonAuth.focus')
+        await Commands.tryExecute('aws.amazonq.AmazonQChatView.focus')
+        await Commands.tryExecute('aws.amazonq.AmazonCommonAuth.focus')
     }
 )
 
