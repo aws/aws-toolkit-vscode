@@ -611,14 +611,11 @@ export class Messenger {
                 },
             ]
             header = {
-                icon: 'code-block' as MynahIconsType,
                 buttons,
                 fileList,
             }
             fullWidth = true
             padding = false
-            // eslint-disable-next-line unicorn/no-null
-            codeBlockActions = { 'insert-to-cursor': null, copy: null }
         }
 
         this.dispatcher.sendChatMessage(
