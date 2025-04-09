@@ -1,0 +1,14 @@
+{
+	"date": "2025-04-09",
+	"version": "1.56.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Improve status message while loading Amazon Q Profiles during login"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "\"failed to run command\" error"
+		}
+	]
+}
