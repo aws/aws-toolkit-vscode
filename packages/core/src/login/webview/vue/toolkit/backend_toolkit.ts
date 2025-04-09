@@ -21,6 +21,8 @@ import { CodeCatalystAuthenticationProvider } from '../../../../codecatalyst/aut
 import { AuthError, AuthFlowState } from '../types'
 import { setContext } from '../../../../shared/vscode/setContext'
 import { builderIdStartUrl } from '../../../../auth/sso/constants'
+import { RegionProfile } from '../../../../codewhisperer/models/model'
+import { ProfileSwitchIntent } from '../../../../codewhisperer/region/regionProfileManager'
 
 export class ToolkitLoginWebview extends CommonAuthWebview {
     public override id: string = 'aws.toolkit.AmazonCommonAuth'
@@ -175,5 +177,13 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
     async quitLoginScreen() {
         await setContext('aws.explorer.showAuthView', false)
         await this.showResourceExplorer()
+    }
+
+    override listRegionProfiles(): Promise<RegionProfile[] | string> {
+        throw new Error('Method not implemented')
+    }
+
+    override selectRegionProfile(profile: RegionProfile, source: ProfileSwitchIntent): Promise<void> {
+        throw new Error('Method not implemented')
     }
 }

@@ -35,6 +35,7 @@ import { agentWalkthroughDataModel } from './walkthrough/agent'
 import { createClickTelemetry, createOpenAgentTelemetry } from './telemetry/actions'
 import { disclaimerAcknowledgeButtonId, disclaimerCard } from './texts/disclaimer'
 import { DetailedListSheetProps } from '@aws/mynah-ui/dist/components/detailed-list/detailed-list-sheet'
+import { RegionProfile } from '../../../codewhisperer/models/model'
 
 /**
  * The number of welcome chat tabs that can be opened before the NEXT one will become
@@ -48,6 +49,7 @@ export const createMynahUI = (
     featureConfigsSerialized: [string, FeatureContext][],
     welcomeCount: number,
     disclaimerAcknowledged: boolean,
+    regionProfile: RegionProfile | undefined,
     disabledCommands?: string[],
     isSMUS?: boolean,
     isSM?: boolean
@@ -128,6 +130,7 @@ export const createMynahUI = (
         isDocEnabled,
         disabledCommands,
         commandHighlight: highlightCommand,
+        regionProfile,
     })
 
     // eslint-disable-next-line prefer-const
@@ -212,6 +215,7 @@ export const createMynahUI = (
                 isDocEnabled,
                 disabledCommands,
                 commandHighlight: highlightCommand,
+                regionProfile,
             })
 
             featureConfigs = tryNewMap(featureConfigsSerialized)

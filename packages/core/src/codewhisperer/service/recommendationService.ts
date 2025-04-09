@@ -15,6 +15,7 @@ import { ClassifierTrigger } from './classifierTrigger'
 import { DefaultCodeWhispererClient } from '../client/codewhisperer'
 import { randomUUID } from '../../shared/crypto'
 import { TelemetryHelper } from '../util/telemetryHelper'
+import { AuthUtil } from '../util/authUtil'
 
 export interface SuggestionActionEvent {
     readonly editor: vscode.TextEditor | undefined
@@ -66,6 +67,11 @@ export class RecommendationService {
         autoTriggerType?: CodewhispererAutomatedTriggerType,
         event?: vscode.TextDocumentChangeEvent
     ) {
+        // TODO: should move all downstream auth check(inlineCompletionService, recommendationHandler etc) to here(upstream) instead of spreading everywhere
+        if (AuthUtil.instance.isConnected() && AuthUtil.instance.requireProfileSelection()) {
+            return
+        }
+
         if (this._isRunning) {
             return
         }

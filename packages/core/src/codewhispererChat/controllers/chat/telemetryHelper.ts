@@ -375,6 +375,7 @@ export class CWCTelemetryHelper {
                         customizationArn: undefinedIfEmpty(getSelectedCustomization().arn),
                     },
                 },
+                profileArn: AuthUtil.instance.regionProfileManager.activeRegionProfile?.arn,
             })
             .then()
             .catch(logSendTelemetryEventFailure)
@@ -577,6 +578,7 @@ export class CWCTelemetryHelper {
                         customizationArn: undefinedIfEmpty(getSelectedCustomization().arn),
                     },
                 },
+                profileArn: AuthUtil.instance.regionProfileManager.activeRegionProfile?.arn,
             })
             .then()
             .catch(logSendTelemetryEventFailure)

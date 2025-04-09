@@ -114,6 +114,9 @@ export class DocController {
         this.chatControllerMessageListeners.openDiff.event(async (data) => {
             return await this.openDiff(data)
         })
+        AuthUtil.instance.regionProfileManager.onDidChangeRegionProfile(() => {
+            this.sessionStorage.deleteAllSessions()
+        })
     }
 
     /** Prompts user to choose a folder in current workspace for README creation/update.
