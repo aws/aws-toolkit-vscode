@@ -33,7 +33,7 @@ import { ChatMessage, ErrorMessage, FollowUp, Suggestion } from '../../../view/c
 import { ChatSession } from '../../../clients/chat/v0/chat'
 import { ChatException } from './model'
 import { CWCTelemetryHelper } from '../telemetryHelper'
-import { ChatPromptCommandType, DocumentReference, TriggerPayload } from '../model'
+import { AgenticChatInteractionType, ChatPromptCommandType, DocumentReference, TriggerPayload } from '../model'
 import { ToolkitError } from '../../../../shared/errors'
 import { keys } from '../../../../shared/utilities/tsUtils'
 import { getLogger } from '../../../../shared/logger/logger'
@@ -305,6 +305,20 @@ export class Messenger {
                                             })
                                         )
                                     }
+                                } else {
+                                    if (tool.type === ToolType.ExecuteBash) {
+                                        this.telemetryHelper.recordInteractionWithAgenticChat(
+                                            AgenticChatInteractionType.GeneratedCommand,
+                                            { tabID }
+                                        )
+                                    }
+                                }
+
+                                if (tool.type === ToolType.FsWrite) {
+                                    this.telemetryHelper.recordInteractionWithAgenticChat(
+                                        AgenticChatInteractionType.GeneratedDiff,
+                                        { tabID }
+                                    )
                                 }
                             } else {
                                 toolError = new Error('Tool not found')
@@ -495,7 +509,7 @@ export class Messenger {
                 this.telemetryHelper.setResponseStreamTotalTime(tabID)
 
                 const responseCode = response?.$metadata.httpStatusCode ?? 0
-                this.telemetryHelper.recordAddMessage(triggerPayload, {
+                const promptAnswer = {
                     followUpCount: followUps.length,
                     suggestionCount: relatedSuggestions.length,
                     tabID: tabID,
@@ -504,7 +518,13 @@ export class Messenger {
                     responseCode,
                     codeReferenceCount: codeReference.length,
                     totalNumberOfCodeBlocksInResponse: await this.countTotalNumberOfCodeBlocks(message),
-                })
+                }
+
+                this.telemetryHelper.recordAddMessage(triggerPayload, promptAnswer)
+
+                if (message.length) {
+                    this.telemetryHelper.recordMessageReceived(triggerPayload, promptAnswer)
+                }
             })
     }
 

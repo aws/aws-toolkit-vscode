@@ -30,6 +30,9 @@ import {
     TriggerPayload,
     AdditionalContextLengths,
     AdditionalContextInfo,
+    StopResponseMessage,
+    AgenticChatInteractionType,
+    AcceptResponseMessage,
 } from './model'
 import { TriggerEvent, TriggerEventsStorage } from '../../storages/triggerEvents'
 import globals from '../../../shared/extensionGlobals'
@@ -44,6 +47,7 @@ import { undefinedIfEmpty } from '../../../shared/utilities/textUtilities'
 import { AdditionalContextPrompt } from '../../../amazonq/lsp/types'
 import { getUserPromptsDirectory, promptFileExtension } from '../../constants'
 import { isInDirectory } from '../../../shared/filesystemUtilities'
+import { CustomFormActionMessage } from '../../view/connector/connector'
 
 export function logSendTelemetryEventFailure(error: any) {
     let requestId: string | undefined
@@ -211,6 +215,37 @@ export class CWCTelemetryHelper {
 
     private recordFeedbackResult(feedbackResult: Result) {
         telemetry.feedback_result.emit({ result: feedbackResult })
+    }
+
+    public recordInteractionWithAgenticChat(
+        interactionType: AgenticChatInteractionType,
+        message: AcceptResponseMessage | CustomFormActionMessage | StopResponseMessage
+    ) {
+        telemetry.amazonq_interactWithAgenticChat.emit({
+            cwsprAgenticChatInteractionType: interactionType,
+            result: 'Succeeded',
+            cwsprChatConversationId: this.getConversationId(message.tabID ?? '') ?? '',
+            cwsprChatConversationType: 'Chat',
+            credentialStartUrl: AuthUtil.instance.startUrl,
+        })
+    }
+
+    public recordMessageReceived(triggerPayload: TriggerPayload, message: PromptAnswer) {
+        telemetry.amazonq_messageReceived.emit({
+            result: 'Succeeded',
+            cwsprChatConversationId: this.getConversationId(message.tabID) ?? '',
+            cwsprChatMessageId: message.messageID,
+            cwsprChatTimeToFirstChunk: this.getResponseStreamTimeToFirstChunk(message.tabID),
+            cwsprChatTimeBetweenChunks: JSON.stringify(
+                this.getTimeBetweenChunks(message.tabID, this.responseStreamTimeForChunks)
+            ),
+            cwsprChatRequestLength: triggerPayload.message.length,
+            cwsprChatResponseLength: message.messageLength,
+            cwsprChatConversationType: 'Chat',
+            cwsprChatResponseCode: message.responseCode,
+            cwsprChatFullResponseLatency: this.responseStreamTotalTime.get(message.tabID) ?? 0,
+            credentialStartUrl: AuthUtil.instance.startUrl,
+        })
     }
 
     public recordInteractWithMessage(
