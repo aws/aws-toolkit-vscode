@@ -392,7 +392,7 @@ export class Connector extends BaseConnector {
                 break
             case 'run-shell-command':
                 answer.header = {
-                    icon: 'code-block' as MynahIconsType,
+                    icon: 'shell' as MynahIconsType,
                     body: 'shell',
                     status: {
                         icon: 'ok' as MynahIconsType,
@@ -403,7 +403,7 @@ export class Connector extends BaseConnector {
                 break
             case 'reject-shell-command':
                 answer.header = {
-                    icon: 'code-block' as MynahIconsType,
+                    icon: 'shell' as MynahIconsType,
                     body: 'shell',
                     status: {
                         icon: 'cancel' as MynahIconsType,

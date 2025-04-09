@@ -821,10 +821,7 @@ export class ChatController {
             getLogger().error(
                 `toolUse name: ${currentToolUse!.name} of toolUseWithError in the stored session doesn't match when click shell command reject button.`
             )
-            return
         }
-
-        await this.generateStaticTextResponse('reject-shell-command', triggerId)
     }
 
     private async processCustomFormAction(message: CustomFormActionMessage) {

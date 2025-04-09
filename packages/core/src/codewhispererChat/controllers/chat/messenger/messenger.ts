@@ -72,12 +72,7 @@ import { localize } from '../../../../shared/utilities/vsCodeUtils'
 import { getDiffLinesFromChanges } from '../../../../shared/utilities/diffUtils'
 import { FsReadParams } from '../../../tools/fsRead'
 
-export type StaticTextResponseType =
-    | 'quick-action-help'
-    | 'onboarding-help'
-    | 'transform'
-    | 'help'
-    | 'reject-shell-command'
+export type StaticTextResponseType = 'quick-action-help' | 'onboarding-help' | 'transform' | 'help'
 
 export type MessengerResponseType = {
     $metadata: { requestId?: string; httpStatusCode?: number }
@@ -605,7 +600,7 @@ export class Messenger {
                     },
                 ]
                 header = {
-                    icon: 'code-block' as MynahIconsType,
+                    icon: 'shell' as MynahIconsType,
                     body: 'shell',
                     buttons,
                 }
@@ -752,10 +747,6 @@ export class Messenger {
                     },
                 ]
                 followUpsHeader = 'Try Examples:'
-                break
-            case 'reject-shell-command':
-                // need to update the string later
-                message = 'The shell command execution rejected. Abort.'
                 break
         }
 
