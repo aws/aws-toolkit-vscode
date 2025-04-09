@@ -720,7 +720,7 @@ export class ChatController {
                                 this.messenger,
                                 tabID,
                                 triggerID,
-                                { ...toolUse, toolUseId: `${toolUse.toolUseId}-output` },
+                                toolUse,
                                 session,
                                 undefined,
                                 false,

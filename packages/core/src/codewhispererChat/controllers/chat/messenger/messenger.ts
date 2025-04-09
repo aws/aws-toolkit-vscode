@@ -670,7 +670,10 @@ export class Messenger {
                         fullWidth: false,
                         padding: true,
                         codeBlockActions: undefined,
-                        title: 'Reading Files',
+                        title:
+                            session.readFiles.length > 1
+                                ? `Files Read ${session.readFiles.length} files`
+                                : `File Read 1 file`,
                     },
                     tabID
                 )
