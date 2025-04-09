@@ -742,6 +742,20 @@ export class Messenger {
     }
 
     private showChatExceptionMessage(e: ChatException, tabID: string, requestID: string | undefined) {
+        const title = 'An error occurred while processing your request.'
+        // TODO: once the server sends the correct exception back, fix this
+        if (e.statusCode && e.statusCode === '500') {
+            // Send throttling message
+            this.dispatcher.sendErrorMessage(
+                new ErrorMessage(
+                    title,
+                    'We are experiencing heavy traffic, please try again shortly.'.trimEnd().trimStart(),
+                    tabID
+                )
+            )
+            return
+        }
+
         let message = 'This error is reported to the team automatically. We will attempt to fix it as soon as possible.'
         if (e.errorMessage !== undefined) {
             message += `\n\nDetails: ${e.errorMessage}`
@@ -757,9 +771,7 @@ export class Messenger {
             message += `\n\nRequest ID: ${requestID}`
         }
 
-        this.dispatcher.sendErrorMessage(
-            new ErrorMessage('An error occurred while processing your request.', message.trimEnd().trimStart(), tabID)
-        )
+        this.dispatcher.sendErrorMessage(new ErrorMessage(title, message.trimEnd().trimStart(), tabID))
     }
 
     public sendOpenSettingsMessage(triggerId: string, tabID: string) {
