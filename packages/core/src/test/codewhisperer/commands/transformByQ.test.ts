@@ -317,8 +317,8 @@ dependencyManagement:
         const manifest = JSON.parse(manifestText)
         assert.strictEqual(manifest.capability, 'CLIENT_SIDE_BUILD')
         assert.strictEqual(manifest.exitCode, 0)
-        assert.strictEqual(manifest.commandLogFileName, 'clientBuildLogs.log')
-        assert.strictEqual(zip.getEntries().length, 2) // expecting only manifest.json and clientBuildLogs.log
+        assert.strictEqual(manifest.commandLogFileName, 'build-output.log')
+        assert.strictEqual(zip.getEntries().length, 2) // expecting only manifest.json and build-output.log
     })
 
     it('WHEN extractOriginalProjectSources THEN only source files are extracted to destination', async function () {
