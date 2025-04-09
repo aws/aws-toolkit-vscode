@@ -203,6 +203,9 @@ export class FeatureDevController {
         this.chatControllerMessageListeners.storeCodeResultMessageId.event(async (data) => {
             return await this.storeCodeResultMessageId(data)
         })
+        AuthUtil.instance.regionProfileManager.onDidChangeRegionProfile(() => {
+            this.sessionStorage.deleteAllSessions()
+        })
     }
 
     private async processChatItemVotedMessage(tabId: string, vote: string) {

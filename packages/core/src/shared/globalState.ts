@@ -48,6 +48,7 @@ export type globalKey =
     | 'aws.toolkit.lsp.versions'
     | 'aws.toolkit.lsp.manifest'
     | 'aws.amazonq.customization.overrideV2'
+    | 'aws.amazonq.regionProfiles'
     // Deprecated/legacy names. New keys should start with "aws.".
     | '#sessionCreationDates' // Legacy name from `ssoAccessTokenProvider.ts`.
     | 'CODECATALYST_RECONNECT'

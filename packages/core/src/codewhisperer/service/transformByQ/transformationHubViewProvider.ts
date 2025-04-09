@@ -23,6 +23,7 @@ import {
 import { startInterval } from '../../commands/startTransformByQ'
 import { CodeTransformTelemetryState } from '../../../amazonqGumby/telemetry/codeTransformTelemetryState'
 import { convertToTimeString } from '../../../shared/datetime'
+import { AuthUtil } from '../../util/authUtil'
 
 export class TransformationHubViewProvider implements vscode.WebviewViewProvider {
     public static readonly viewType = 'aws.amazonq.transformationHub'
@@ -325,7 +326,8 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
             jobPlanProgress['generatePlan'] === StepProgress.Succeeded &&
             transformByQState.isRunning()
         ) {
-            planSteps = await getTransformationSteps(transformByQState.getJobId(), false)
+            const profile = AuthUtil.instance.regionProfileManager.activeRegionProfile
+            planSteps = await getTransformationSteps(transformByQState.getJobId(), false, profile)
             transformByQState.setPlanSteps(planSteps)
         }
         let progressHtml

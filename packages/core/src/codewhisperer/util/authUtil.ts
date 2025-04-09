@@ -45,7 +45,7 @@ import { asStringifiedStack } from '../../shared/telemetry/spans'
 import { withTelemetryContext } from '../../shared/telemetry/util'
 import { focusAmazonQPanel } from '../../codewhispererChat/commands/registerCommands'
 import { throttle } from 'lodash'
-
+import { RegionProfileManager } from '../region/regionProfileManager'
 /** Backwards compatibility for connections w pre-chat scopes */
 export const codeWhispererCoreScopes = [...scopesCodeWhispererCore]
 export const codeWhispererChatScopes = [...codeWhispererCoreScopes, ...scopesCodeWhispererChat]
@@ -105,7 +105,10 @@ export class AuthUtil {
     )
     public readonly restore = () => this.secondaryAuth.restoreConnection()
 
-    public constructor(public readonly auth = Auth.instance) {}
+    public constructor(
+        public readonly auth = Auth.instance,
+        public readonly regionProfileManager = new RegionProfileManager(() => this.conn)
+    ) {}
 
     public initCodeWhispererHooks = once(() => {
         this.auth.onDidChangeConnectionState(async (e) => {
@@ -121,6 +124,7 @@ export class AuthUtil {
             getLogger().info(`codewhisperer: active connection changed`)
             if (this.isValidEnterpriseSsoInUse()) {
                 void vscode.commands.executeCommand('aws.amazonq.notifyNewCustomizations')
+                await this.regionProfileManager.restoreProfileSelection()
             }
             vsCodeState.isFreeTierLimitReached = false
             await Promise.all([
@@ -135,14 +139,26 @@ export class AuthUtil {
             if (this.isValidEnterpriseSsoInUse() || (this.isBuilderIdInUse() && !this.isConnectionExpired())) {
                 await showAmazonQWalkthroughOnce()
             }
+
+            if (!this.isConnected()) {
+                await this.regionProfileManager.invalidateProfile(this.regionProfileManager.activeRegionProfile?.arn)
+            }
+        })
+
+        this.regionProfileManager.onDidChangeRegionProfile(async () => {
+            await this.setVscodeContextProps()
         })
     })
 
     public async setVscodeContextProps() {
-        await setContext('aws.codewhisperer.connected', this.isConnected())
-        const doShowAmazonQLoginView = !this.isConnected() || this.isConnectionExpired()
+        // if users are "pending profile selection", they're not fully connected and require profile selection for Q usage
+        // requireProfileSelection() always returns false for builderID users
+        await setContext('aws.codewhisperer.connected', this.isConnected() && !this.requireProfileSelection())
+        const doShowAmazonQLoginView =
+            !this.isConnected() || this.isConnectionExpired() || this.requireProfileSelection()
         await setContext('aws.amazonq.showLoginView', doShowAmazonQLoginView)
         await setContext('aws.codewhisperer.connectionExpired', this.isConnectionExpired())
+        await setContext('aws.amazonq.connectedSsoIdc', isIdcSsoConnection(this.conn))
     }
 
     public reformatStartUrl(startUrl: string | undefined) {
@@ -291,6 +307,13 @@ export class AuthUtil {
         }
 
         return connectionExpired
+    }
+
+    requireProfileSelection(): boolean {
+        if (isBuilderIdConnection(this.conn)) {
+            return false
+        }
+        return isIdcSsoConnection(this.conn) && this.regionProfileManager.activeRegionProfile === undefined
     }
 
     private logConnection() {
@@ -458,12 +481,23 @@ export class AuthUtil {
         }
 
         if (isBuilderIdConnection(conn) || isIdcSsoConnection(conn) || isSageMaker()) {
+            // TODO: refactor
             if (isValidCodeWhispererCoreConnection(conn)) {
-                state[Features.codewhispererCore] = AuthStates.connected
+                if (this.requireProfileSelection()) {
+                    state[Features.codewhispererCore] = AuthStates.pendingProfileSelection
+                } else {
+                    state[Features.codewhispererCore] = AuthStates.connected
+                }
             }
             if (isValidAmazonQConnection(conn)) {
-                for (const v of Object.values(Features)) {
-                    state[v as Feature] = AuthStates.connected
+                if (this.requireProfileSelection()) {
+                    for (const v of Object.values(Features)) {
+                        state[v as Feature] = AuthStates.pendingProfileSelection
+                    }
+                } else {
+                    for (const v of Object.values(Features)) {
+                        state[v as Feature] = AuthStates.connected
+                    }
                 }
             }
         }
@@ -532,6 +566,7 @@ export const AuthStates = {
      * but fetching/refreshing the token resulted in a network error.
      */
     connectedWithNetworkError: 'connectedWithNetworkError',
+    pendingProfileSelection: 'pendingProfileSelection',
 } as const
 const Features = {
     codewhispererCore: 'codewhispererCore',

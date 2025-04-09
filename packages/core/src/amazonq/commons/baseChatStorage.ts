@@ -35,4 +35,8 @@ export abstract class BaseChatSessionStorage<T extends { isAuthenticating: boole
     public deleteSession(tabID: string) {
         this.sessions.delete(tabID)
     }
+
+    public deleteAllSessions() {
+        this.sessions.clear()
+    }
 }

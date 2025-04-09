@@ -31,7 +31,10 @@ export const supportedLanguagesList = [
 
 export const filePathSizeLimit = 4_000
 
-export function triggerPayloadToChatRequest(triggerPayload: TriggerPayload): { conversationState: ConversationState } {
+export function triggerPayloadToChatRequest(triggerPayload: TriggerPayload): {
+    conversationState: ConversationState
+    profileArn?: string
+} {
     // Flexible truncation logic
     const remainingPayloadSize = 100_000
 
@@ -174,6 +177,7 @@ export function triggerPayloadToChatRequest(triggerPayload: TriggerPayload): { c
             customizationArn: customizationArn,
             history: history || undefined,
         },
+        profileArn: triggerPayload.profile?.arn,
     }
 }
 

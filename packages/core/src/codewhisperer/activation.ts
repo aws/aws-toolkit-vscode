@@ -53,6 +53,7 @@ import {
     focusIssue,
     showExploreAgentsView,
     showCodeIssueGroupingQuickPick,
+    selectRegionProfileCommand,
 } from './commands/basicCommands'
 import { ReferenceLogViewProvider } from './service/referenceLogViewProvider'
 import { ReferenceHoverProvider } from './service/referenceHoverProvider'
@@ -296,6 +297,7 @@ export async function activate(context: ExtContext): Promise<void> {
         selectCustomizationPrompt.register(),
         // notify new customizations
         notifyNewCustomizationsCmd.register(),
+        selectRegionProfileCommand.register(),
         /**
          * On recommendation acceptance
          */

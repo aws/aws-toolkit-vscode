@@ -362,6 +362,11 @@
                     "group": "1_amazonQ@1"
                 },
                 {
+                    "command": "aws.amazonq.selectRegionProfile",
+                    "when": "view == aws.amazonq.AmazonQChatView && aws.amazonq.connectedSsoIdc == true",
+                    "group": "1_amazonQ@1"
+                },
+                {
                     "command": "aws.amazonq.signout",
                     "when": "(view == aws.amazonq.AmazonQChatView) && aws.codewhisperer.connected && !aws.isSageMakerUnifiedStudio",
                     "group": "2_amazonQ@4"
@@ -570,6 +575,12 @@
             {
                 "command": "aws.amazonq.openReferencePanel",
                 "title": "%AWS.command.codewhisperer.openReferencePanel%",
+                "category": "%AWS.amazonq.title%",
+                "enablement": "aws.codewhisperer.connected"
+            },
+            {
+                "command": "aws.amazonq.selectRegionProfile",
+                "title": "Change Profile",
                 "category": "%AWS.amazonq.title%",
                 "enablement": "aws.codewhisperer.connected"
             },
