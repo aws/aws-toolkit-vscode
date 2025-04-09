@@ -68,6 +68,9 @@ export function init(appContext: AmazonQAppInitContext) {
     AuthUtil.instance.secondaryAuth.onDidChangeActiveConnection(() => {
         return debouncedEvent()
     })
+    AuthUtil.instance.regionProfileManager.onDidChangeRegionProfile(() => {
+        return debouncedEvent()
+    })
     testGenState.setChatControllers(testChatControllerEventEmitters)
     // TODO: Add testGen provider for creating new files after test generation if they does not exist
 }

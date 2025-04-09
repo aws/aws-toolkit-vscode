@@ -29,6 +29,7 @@ export const AuthFlowStates = {
     REAUTHNEEDED: 'REAUTHNEEDED',
     /**  Reauthentication is currently in progress */
     REAUTHENTICATING: 'REAUTHENTICATING',
+    PENDING_PROFILE_SELECTION: 'PENDING_PROFILE_SELECTION',
 } as const
 export type AuthFlowState = (typeof AuthFlowStates)[keyof typeof AuthFlowStates]
 

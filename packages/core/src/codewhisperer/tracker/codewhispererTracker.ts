@@ -161,6 +161,7 @@ export class CodeWhispererTracker {
                                 ),
                             },
                         },
+                        profileArn: AuthUtil.instance.regionProfileManager.activeRegionProfile?.arn,
                     })
                     .then()
                     .catch((error) => {
