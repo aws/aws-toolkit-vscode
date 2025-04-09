@@ -1,3 +1,7 @@
+## 3.54.0 2025-04-09
+
+- Miscellaneous non-user-facing changes
+
 ## 3.53.0 2025-04-03
 
 - **Feature** Step Functions: Use WorkflowStudio to render StateMachine Graph in CDK applications
