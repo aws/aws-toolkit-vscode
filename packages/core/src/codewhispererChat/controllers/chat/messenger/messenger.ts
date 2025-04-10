@@ -879,4 +879,24 @@ export class Messenger {
             )
         )
     }
+
+    public sendDirectiveMessage(tabID: string, triggerID: string, message: string) {
+        this.dispatcher.sendChatMessage(
+            new ChatMessage(
+                {
+                    message,
+                    messageType: 'directive',
+                    followUps: undefined,
+                    followUpsHeader: undefined,
+                    relatedSuggestions: undefined,
+                    triggerID,
+                    messageID: '',
+                    userIntent: undefined,
+                    codeBlockLanguage: undefined,
+                    contextList: undefined,
+                },
+                tabID
+            )
+        )
+    }
 }
