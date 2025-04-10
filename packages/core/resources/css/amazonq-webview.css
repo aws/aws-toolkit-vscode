@@ -116,8 +116,19 @@ body.vscode-high-contrast:not(.vscode-high-contrast-light) {
 
 body .mynah-card-body h1 {
     --mynah-line-height: 1.5rem;
+    font-size: 1.25em;
+}
+
+body .mynah-card-body h2,
+body .mynah-card-body h3,
+body .mynah-card-body h4 {
+    font-size: 1em;
 }
 
 div.mynah-card.padding-large {
     padding: var(--mynah-sizing-4) var(--mynah-sizing-3);
+}
+
+div.mynah-chat-items-container .mynah-chat-item-card.no-padding > .mynah-card {
+    padding: 0;
 }
