@@ -34,7 +34,7 @@ import { ChatMessage, ErrorMessage, FollowUp, Suggestion } from '../../../view/c
 import { ChatSession } from '../../../clients/chat/v0/chat'
 import { ChatException } from './model'
 import { CWCTelemetryHelper } from '../telemetryHelper'
-import { ChatPromptCommandType, DocumentReference, TriggerPayload } from '../model'
+import { AgenticChatInteractionType, ChatPromptCommandType, DocumentReference, TriggerPayload } from '../model'
 import { ToolkitError } from '../../../../shared/errors'
 import { keys } from '../../../../shared/utilities/tsUtils'
 import { getLogger } from '../../../../shared/logger/logger'
@@ -321,6 +321,20 @@ export class Messenger {
                                             })
                                         )
                                     }
+                                } else {
+                                    if (tool.type === ToolType.ExecuteBash) {
+                                        this.telemetryHelper.recordInteractionWithAgenticChat(
+                                            AgenticChatInteractionType.GeneratedCommand,
+                                            { tabID }
+                                        )
+                                    }
+                                }
+
+                                if (tool.type === ToolType.FsWrite) {
+                                    this.telemetryHelper.recordInteractionWithAgenticChat(
+                                        AgenticChatInteractionType.GeneratedDiff,
+                                        { tabID }
+                                    )
                                 }
                             } else {
                                 throw new Error('Tool not found')
