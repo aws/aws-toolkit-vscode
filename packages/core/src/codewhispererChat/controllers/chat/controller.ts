@@ -776,7 +776,7 @@ export class ChatController {
                         toolResults: toolResults,
                         profile: AuthUtil.instance.regionProfileManager.activeRegionProfile,
                         origin: Origin.IDE,
-                        context: [],
+                        context: session.context ?? [],
                         relevantTextDocuments: [],
                         additionalContents: [],
                         documentReferences: [],

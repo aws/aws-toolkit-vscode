@@ -257,11 +257,7 @@ export class Messenger {
                     }
 
                     const cwChatEvent: cwChatResponseStream = chatEvent
-                    if (
-                        cwChatEvent.toolUseEvent?.input !== undefined &&
-                        cwChatEvent.toolUseEvent.input.length > 0 &&
-                        !cwChatEvent.toolUseEvent.stop
-                    ) {
+                    if (cwChatEvent.toolUseEvent?.input !== undefined && cwChatEvent.toolUseEvent.input.length > 0) {
                         toolUseInput += cwChatEvent.toolUseEvent.input
                     }
 
