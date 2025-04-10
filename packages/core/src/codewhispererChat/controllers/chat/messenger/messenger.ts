@@ -518,9 +518,7 @@ export class Messenger {
                         messageId: messageID,
                         content: message,
                         references: codeReference,
-                        ...(toolUse &&
-                            toolUse.input !== undefined &&
-                            toolUse.input !== '' && { toolUses: [{ ...toolUse }] }),
+                        ...(toolUse && { toolUses: [{ ...toolUse }] }),
                     },
                 })
 
