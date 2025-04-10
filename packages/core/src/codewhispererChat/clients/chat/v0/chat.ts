@@ -14,7 +14,7 @@ import { ToolkitError } from '../../../../shared/errors'
 import { createCodeWhispererChatStreamingClient } from '../../../../shared/clients/codewhispererChatClient'
 import { createQDeveloperStreamingClient } from '../../../../shared/clients/qDeveloperChatClient'
 import { UserWrittenCodeTracker } from '../../../../codewhisperer/tracker/userWrittenCodeTracker'
-import { PromptMessage } from '../../../controllers/chat/model'
+import { DocumentReference, PromptMessage } from '../../../controllers/chat/model'
 import { FsWriteBackup } from '../../../../codewhispererChat/tools/fsWrite'
 
 export type ToolUseWithError = {
@@ -30,8 +30,10 @@ export class ChatSession {
      * _readFiles = list of files read from the project to gather context before generating response.
      * _showDiffOnFileWrite = Controls whether to show diff view (true) or file context view (false) to the user
      * _context = Additional context to be passed to the LLM for generating the response
+     * _messageIdToUpdate = messageId of a chat message to be updated, used for reducing consecutive tool messages
      */
-    private _readFiles: string[] = []
+    private _readFiles: DocumentReference[] = []
+    private _readFolders: DocumentReference[] = []
     private _toolUseWithError: ToolUseWithError | undefined
     private _showDiffOnFileWrite: boolean = false
     private _context: PromptMessage['context']
@@ -41,6 +43,8 @@ export class ChatSession {
      * True if messages from local history have been sent to session.
      */
     localHistoryHydrated: boolean = false
+    private _messageIdToUpdate: string | undefined
+    private _messageIdToUpdateListDirectory: string | undefined
 
     contexts: Map<string, { first: number; second: number }[]> = new Map()
     // TODO: doesn't handle the edge case when two files share the same relativePath string but from different root
@@ -48,6 +52,21 @@ export class ChatSession {
     relativePathToWorkspaceRoot: Map<string, string> = new Map()
     public get sessionIdentifier(): string | undefined {
         return this.sessionId
+    }
+    public get messageIdToUpdate(): string | undefined {
+        return this._messageIdToUpdate
+    }
+
+    public setMessageIdToUpdate(messageId: string | undefined) {
+        this._messageIdToUpdate = messageId
+    }
+
+    public get messageIdToUpdateListDirectory(): string | undefined {
+        return this._messageIdToUpdateListDirectory
+    }
+
+    public setMessageIdToUpdateListDirectory(messageId: string | undefined) {
+        this._messageIdToUpdateListDirectory = messageId
     }
 
     public get pairProgrammingModeOn(): boolean {
@@ -95,8 +114,11 @@ export class ChatSession {
     public setSessionID(id?: string) {
         this.sessionId = id
     }
-    public get readFiles(): string[] {
+    public get readFiles(): DocumentReference[] {
         return this._readFiles
+    }
+    public get readFolders(): DocumentReference[] {
+        return this._readFolders
     }
     public get showDiffOnFileWrite(): boolean {
         return this._showDiffOnFileWrite
@@ -104,11 +126,17 @@ export class ChatSession {
     public setShowDiffOnFileWrite(value: boolean) {
         this._showDiffOnFileWrite = value
     }
-    public addToReadFiles(filePath: string) {
+    public addToReadFiles(filePath: DocumentReference) {
         this._readFiles.push(filePath)
     }
     public clearListOfReadFiles() {
         this._readFiles = []
+    }
+    public setReadFolders(folder: DocumentReference) {
+        this._readFolders.push(folder)
+    }
+    public clearListOfReadFolders() {
+        this._readFolders = []
     }
     async chatIam(chatRequest: SendMessageRequest): Promise<SendMessageCommandOutput> {
         const client = await createQDeveloperStreamingClient()

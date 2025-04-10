@@ -21,6 +21,7 @@ import {
     CloseDetailedListMessage,
     SelectTabMessage,
     ChatItemHeader,
+    ToolMessage,
 } from '../../../view/connector/connector'
 import { EditorContextCommandType } from '../../../commands/registerCommands'
 import { ChatResponseStream as qdevChatResponseStream } from '@amzn/amazon-q-developer-streaming-client'
@@ -68,6 +69,8 @@ import { FsWriteParams } from '../../../tools/fsWrite'
 import { AsyncEventProgressMessage } from '../../../../amazonq/commons/connector/connectorMessages'
 import { localize } from '../../../../shared/utilities/vsCodeUtils'
 import { getDiffLinesFromChanges } from '../../../../shared/utilities/diffUtils'
+import { FsReadParams } from '../../../tools/fsRead'
+import { ListDirectoryParams } from '../../../tools/listDirectory'
 
 export type StaticTextResponseType = 'quick-action-help' | 'onboarding-help' | 'transform' | 'help'
 
@@ -279,16 +282,51 @@ export class Messenger {
                                     session.setShowDiffOnFileWrite(true)
                                     changeList = await tool.tool.getDiffChanges()
                                 }
+                                if (tool.type === ToolType.FsRead) {
+                                    const input = toolUse.input as unknown as FsReadParams
+                                    // Check if this file path is already in the readFiles list
+                                    const isFileAlreadyRead = session.readFiles.some(
+                                        (file) => file.relativeFilePath === input.path
+                                    )
+                                    if (!isFileAlreadyRead) {
+                                        session.addToReadFiles({
+                                            relativeFilePath: input?.path,
+                                            lineRanges: [{ first: -1, second: -1 }],
+                                        })
+                                    }
+                                } else if (tool.type === ToolType.ListDirectory) {
+                                    const input = toolUse.input as unknown as ListDirectoryParams
+                                    session.setReadFolders({
+                                        relativeFilePath: input?.path,
+                                        lineRanges: [{ first: -1, second: -1 }],
+                                    })
+                                }
                                 const validation = ToolUtils.requiresAcceptance(tool)
                                 const chatStream = new ChatStream(
                                     this,
                                     tabID,
                                     triggerID,
                                     toolUse,
+                                    session,
+                                    tool.type === ToolType.FsRead
+                                        ? session.messageIdToUpdate
+                                        : session.messageIdToUpdateListDirectory,
+                                    true,
                                     validation,
                                     changeList
                                 )
                                 await ToolUtils.queueDescription(tool, chatStream)
+                                if (session.messageIdToUpdate === undefined && tool.type === ToolType.FsRead) {
+                                    // Store the first messageId in a chain of tool uses
+                                    session.setMessageIdToUpdate(toolUse.toolUseId)
+                                }
+
+                                if (
+                                    session.messageIdToUpdateListDirectory === undefined &&
+                                    tool.type === ToolType.ListDirectory
+                                ) {
+                                    session.setMessageIdToUpdateListDirectory(toolUse.toolUseId)
+                                }
 
                                 if (!validation.requiresAcceptance) {
                                     // Need separate id for read tool and safe bash command execution as 'run-shell-command' id is required to state in cwChatConnector.ts which will impact generic tool execution.
@@ -508,6 +546,26 @@ export class Messenger {
             })
     }
 
+    public sendInitialToolMessage(tabID: string, triggerID: string, toolUseId: string | undefined) {
+        this.dispatcher.sendChatMessage(
+            new ChatMessage(
+                {
+                    message: '',
+                    messageType: 'answer',
+                    followUps: undefined,
+                    followUpsHeader: undefined,
+                    relatedSuggestions: undefined,
+                    triggerID,
+                    messageID: toolUseId ?? 'toolUse',
+                    userIntent: undefined,
+                    codeBlockLanguage: undefined,
+                    contextList: undefined,
+                },
+                tabID
+            )
+        )
+    }
+
     public sendErrorMessage(errorMessage: string | undefined, tabID: string, requestID: string | undefined) {
         this.showChatExceptionMessage(
             {
@@ -520,37 +578,85 @@ export class Messenger {
         )
     }
 
+    private sendReadAndListDirToolMessage(
+        toolUse: ToolUse,
+        session: ChatSession,
+        tabID: string,
+        triggerID: string,
+        messageIdToUpdate?: string
+    ) {
+        const contextList = toolUse.name === ToolType.ListDirectory ? session.readFolders : session.readFiles
+        const isFileRead = toolUse.name === ToolType.FsRead
+        const items = isFileRead ? session.readFiles : session.readFolders
+        const itemCount = items.length
+
+        const title =
+            itemCount < 1
+                ? 'Gathering context'
+                : isFileRead
+                  ? `${itemCount} file${itemCount > 1 ? 's' : ''} read`
+                  : `${itemCount} ${itemCount === 1 ? 'directory' : 'directories'} listed`
+
+        this.dispatcher.sendToolMessage(
+            new ToolMessage(
+                {
+                    message: '',
+                    messageType: 'answer-part',
+                    followUps: undefined,
+                    followUpsHeader: undefined,
+                    relatedSuggestions: undefined,
+                    triggerID,
+                    messageID: messageIdToUpdate ?? toolUse?.toolUseId ?? '',
+                    userIntent: undefined,
+                    codeBlockLanguage: undefined,
+                    contextList,
+                    canBeVoted: false,
+                    buttons: undefined,
+                    fullWidth: false,
+                    padding: false,
+                    codeBlockActions: undefined,
+                    rootFolderTitle: title,
+                },
+                tabID
+            )
+        )
+    }
+
     public sendPartialToolLog(
         message: string,
         tabID: string,
         triggerID: string,
         toolUse: ToolUse | undefined,
+        session: ChatSession,
+        messageIdToUpdate: string | undefined,
         validation: CommandValidation,
         changeList?: Change[]
     ) {
+        // Handle read tool and list directory messages
+        if (toolUse?.name === ToolType.FsRead || toolUse?.name === ToolType.ListDirectory) {
+            return this.sendReadAndListDirToolMessage(toolUse, session, tabID, triggerID, messageIdToUpdate)
+        }
+
+        // Handle file write tool, execute bash tool and bash command output log messages
         const buttons: ChatItemButton[] = []
         let header: ChatItemHeader | undefined = undefined
-        let fullWidth: boolean | undefined = undefined
-        let padding: boolean | undefined = undefined
-        let codeBlockActions: ChatItemContent['codeBlockActions'] = undefined
         if (toolUse?.name === ToolType.ExecuteBash && message.startsWith('```shell')) {
             if (validation.requiresAcceptance) {
                 const buttons: ChatItemButton[] = [
-                    {
-                        id: 'run-shell-command',
-                        text: localize('AWS.amazonq.executeBash.run', 'Run'),
-                        status: 'main',
-                        icon: 'play' as MynahIconsType,
-                    },
                     {
                         id: 'reject-shell-command',
                         text: localize('AWS.amazonq.executeBash.reject', 'Reject'),
                         status: 'clear',
                         icon: 'cancel' as MynahIconsType,
                     },
+                    {
+                        id: 'run-shell-command',
+                        text: localize('AWS.amazonq.executeBash.run', 'Run'),
+                        status: 'clear',
+                        icon: 'play' as MynahIconsType,
+                    },
                 ]
                 header = {
-                    icon: 'shell' as MynahIconsType,
                     body: 'shell',
                     buttons,
                 }
@@ -558,10 +664,6 @@ export class Messenger {
             if (validation.warning) {
                 message = validation.warning + message
             }
-            fullWidth = true
-            padding = false
-            // eslint-disable-next-line unicorn/no-null
-            codeBlockActions = { 'insert-to-cursor': null, copy: null }
         } else if (toolUse?.name === ToolType.FsWrite) {
             const input = toolUse.input as unknown as FsWriteParams
             const fileName = path.basename(input.path)
@@ -594,8 +696,6 @@ export class Messenger {
                 buttons,
                 fileList,
             }
-            fullWidth = true
-            padding = false
         }
 
         this.dispatcher.sendChatMessage(
@@ -611,12 +711,14 @@ export class Messenger {
                     userIntent: undefined,
                     codeBlockLanguage: undefined,
                     contextList: undefined,
+                    title: undefined,
                     canBeVoted: false,
                     buttons,
-                    fullWidth,
-                    padding,
+                    fullWidth: true,
+                    padding: false,
                     header,
-                    codeBlockActions,
+                    // eslint-disable-next-line unicorn/no-null
+                    codeBlockActions: { 'insert-to-cursor': null, copy: null },
                 },
                 tabID
             )
