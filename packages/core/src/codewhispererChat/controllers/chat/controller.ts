@@ -97,7 +97,6 @@ import { OutputKind } from '../../tools/toolShared'
 import { ToolUtils, Tool, ToolType } from '../../tools/toolUtils'
 import { ChatStream } from '../../tools/chatStream'
 import { ChatHistoryStorage } from '../../storages/chatHistoryStorage'
-import { FsWriteParams } from '../../tools/fsWrite'
 import { tempDirPath } from '../../../shared/filesystemUtilities'
 import { Database } from '../../../shared/db/chatDb/chatDb'
 import { TabBarController } from './tabBarController'
@@ -746,13 +745,6 @@ export class ChatController {
                         const toolResult: ToolResult = result
                         toolResults.push(toolResult)
                     }
-
-                    if (toolUse.name === ToolType.FsWrite) {
-                        await vscode.commands.executeCommand(
-                            'vscode.open',
-                            vscode.Uri.file((toolUse.input as unknown as FsWriteParams).path)
-                        )
-                    }
                 }
 
                 await this.generateResponse(
@@ -787,10 +779,25 @@ export class ChatController {
             })
     }
 
-    private async closeDiffView() {
-        // Close the diff view if User reject the generated code changes.
+    private async closeDiffView(message: CustomFormActionMessage) {
+        // Close the diff view if User rejected or accepted the generated code changes.
         if (vscode.window.tabGroups.activeTabGroup.activeTab?.label.includes(amazonQTabSuffix)) {
             await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
+        }
+        // clean up temp file
+        const tabID = message.tabID
+        const toolUseId = message.action.formItemValues?.toolUseId
+        if (!tabID || !toolUseId) {
+            return
+        }
+
+        const session = this.sessionStorage.getSession(tabID)
+        const { filePath } = session.fsWriteBackups.get(toolUseId) ?? {}
+        if (filePath) {
+            const tempFilePath = await this.getTempFilePath(filePath)
+            if (await fs.existsFile(tempFilePath)) {
+                await fs.delete(tempFilePath)
+            }
         }
     }
 
@@ -825,11 +832,11 @@ export class ChatController {
                 await this.processToolUseMessage(message)
                 break
             case 'accept-code-diff':
-                await this.closeDiffView()
+                await this.closeDiffView(message)
                 break
             case 'reject-code-diff':
                 await this.restoreBackup(message)
-                await this.closeDiffView()
+                await this.closeDiffView(message)
                 break
             case 'reject-shell-command':
                 await this.rejectShellCommand(message)
@@ -873,6 +880,21 @@ export class ChatController {
         }
     }
 
+    private async getTempFilePath(filePath: string) {
+        // Create a temporary file path to show the diff view
+        const pathToArchiveDir = path.join(tempDirPath, 'q-chat')
+        const archivePathExists = await fs.existsDir(pathToArchiveDir)
+        if (!archivePathExists) {
+            await fs.mkdir(pathToArchiveDir)
+        }
+        const resultArtifactsDir = path.join(pathToArchiveDir, 'resultArtifacts')
+        const resultArtifactsDirExists = await fs.existsDir(resultArtifactsDir)
+        if (!resultArtifactsDirExists) {
+            await fs.mkdir(resultArtifactsDir)
+        }
+        return path.join(resultArtifactsDir, `temp-${path.basename(filePath)}`)
+    }
+
     private async processFileClickMessage(message: FileClick) {
         const session = this.sessionStorage.getSession(message.tabID)
         // Check if user clicked on filePath in the contextList or in the fileListTree and perform the functionality accordingly.
@@ -884,18 +906,7 @@ export class ChatController {
             }
 
             try {
-                // Create a temporary file path to show the diff view
-                // TODO: Use amazonQDiffScheme for temp file
-                const pathToArchiveDir = path.join(tempDirPath, 'q-chat')
-                const archivePathExists = await fs.existsDir(pathToArchiveDir)
-                if (archivePathExists) {
-                    await fs.delete(pathToArchiveDir, { recursive: true })
-                }
-                await fs.mkdir(pathToArchiveDir)
-                const resultArtifactsDir = path.join(pathToArchiveDir, 'resultArtifacts')
-                await fs.mkdir(resultArtifactsDir)
-
-                const tempFilePath = path.join(resultArtifactsDir, `temp-${path.basename(filePath)}`)
+                const tempFilePath = await this.getTempFilePath(filePath)
                 await fs.writeFile(tempFilePath, content)
 
                 const leftUri = vscode.Uri.file(tempFilePath)
@@ -1484,7 +1495,7 @@ export class ChatController {
         let response: MessengerResponseType | undefined = undefined
         session.createNewTokenSource()
         try {
-            if (!session.context) {
+            if (!session.context && triggerPayload.context.length) {
                 // Only show context for the first message in the loop
                 this.messenger.sendContextMessage(tabID, triggerID, triggerPayload.documentReferences)
                 session.setContext(triggerPayload.context)

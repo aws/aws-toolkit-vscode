@@ -130,7 +130,7 @@ export class Messenger {
             new ChatMessage(
                 {
                     message: '',
-                    messageType: 'answer',
+                    messageType: 'answer-stream',
                     followUps: undefined,
                     followUpsHeader: undefined,
                     relatedSuggestions: undefined,
@@ -139,7 +139,8 @@ export class Messenger {
                     userIntent: undefined,
                     codeBlockLanguage: undefined,
                     contextList: mergedRelevantDocuments,
-                    title: 'Context',
+                    title: '',
+                    rootFolderTitle: 'Context',
                     buttons: undefined,
                     fileList: undefined,
                     canBeVoted: false,
@@ -452,11 +453,16 @@ export class Messenger {
                     )
                 }
 
+                const agenticLoopEnded = !eventCounts.has('toolUseEvent')
+                if (agenticLoopEnded) {
+                    // Reset context for the next request
+                    session.setContext(undefined)
+                }
                 this.dispatcher.sendChatMessage(
                     new ChatMessage(
                         {
                             message: undefined,
-                            messageType: 'answer',
+                            messageType: agenticLoopEnded ? 'answer' : 'answer-stream',
                             followUps: followUps,
                             followUpsHeader: undefined,
                             relatedSuggestions: undefined,
@@ -480,11 +486,6 @@ export class Messenger {
                             toolUse.input !== '' && { toolUses: [{ ...toolUse }] }),
                     },
                 })
-                const agenticLoopEnded = !eventCounts.has('toolUseEvent')
-                if (agenticLoopEnded) {
-                    // Reset context for the next request
-                    session.setContext(undefined)
-                }
 
                 getLogger().info(
                     `All events received. requestId=%s counts=%s`,
@@ -591,14 +592,11 @@ export class Messenger {
                 },
             ]
             header = {
-                icon: 'code-block' as MynahIconsType,
                 buttons,
                 fileList,
             }
             fullWidth = true
             padding = false
-            // eslint-disable-next-line unicorn/no-null
-            codeBlockActions = { 'insert-to-cursor': null, copy: null }
         }
 
         this.dispatcher.sendChatMessage(
@@ -745,6 +743,20 @@ export class Messenger {
     }
 
     private showChatExceptionMessage(e: ChatException, tabID: string, requestID: string | undefined) {
+        const title = 'An error occurred while processing your request.'
+        // TODO: once the server sends the correct exception back, fix this
+        if (e.statusCode && e.statusCode === '500') {
+            // Send throttling message
+            this.dispatcher.sendErrorMessage(
+                new ErrorMessage(
+                    title,
+                    'We are experiencing heavy traffic, please try again shortly.'.trimEnd().trimStart(),
+                    tabID
+                )
+            )
+            return
+        }
+
         let message = 'This error is reported to the team automatically. We will attempt to fix it as soon as possible.'
         if (e.errorMessage !== undefined) {
             message += `\n\nDetails: ${e.errorMessage}`
@@ -760,9 +772,7 @@ export class Messenger {
             message += `\n\nRequest ID: ${requestID}`
         }
 
-        this.dispatcher.sendErrorMessage(
-            new ErrorMessage('An error occurred while processing your request.', message.trimEnd().trimStart(), tabID)
-        )
+        this.dispatcher.sendErrorMessage(new ErrorMessage(title, message.trimEnd().trimStart(), tabID))
     }
 
     public sendOpenSettingsMessage(triggerId: string, tabID: string) {

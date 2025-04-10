@@ -54,7 +54,7 @@
         "@vscode/test-electron": "^2.3.8",
         "@vscode/test-web": "^0.0.65",
         "@vscode/vsce": "^2.19.0",
-        "eslint": "^8.56.0",
+        "eslint": "^8.57.0",
         "eslint-config-prettier": "^9.1.0",
         "eslint-plugin-aws-toolkits": "file:plugins/eslint-plugin-aws-toolkits",
         "eslint-plugin-header": "^3.1.1",
