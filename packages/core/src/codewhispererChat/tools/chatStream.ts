@@ -4,7 +4,6 @@
  */
 
 import { Writable } from 'stream'
-import { getLogger } from '../../shared/logger/logger'
 import { Messenger } from '../controllers/chat/messenger/messenger'
 import { ToolUse } from '@amzn/codewhisperer-streaming'
 import { CommandValidation } from './executeBash'
@@ -24,25 +23,21 @@ export class ChatStream extends Writable {
         private readonly triggerID: string,
         private readonly toolUse: ToolUse | undefined,
         private readonly validation: CommandValidation,
-        private readonly changeList?: Change[],
-        private readonly logger = getLogger('chatStream')
+        private readonly changeList?: Change[]
     ) {
         super()
-        this.logger.debug(`ChatStream created for tabID: ${tabID}, triggerID: ${triggerID}`)
         this.messenger.sendInitalStream(tabID, triggerID)
     }
 
     override _write(chunk: Buffer, encoding: BufferEncoding, callback: (error?: Error | null) => void): void {
         // Check if the conversation has been cancelled
         if (ConversationTracker.getInstance().isTriggerCancelled(this.triggerID)) {
-            this.logger.debug(`ChatStream skipping chunk due to cancellation for triggerID: ${this.triggerID}`)
             callback()
             return
         }
 
         const text = chunk.toString()
         this.accumulatedLogs += text
-        this.logger.debug(`ChatStream received chunk: ${text}`)
         this.messenger.sendPartialToolLog(
             this.accumulatedLogs,
             this.tabID,
