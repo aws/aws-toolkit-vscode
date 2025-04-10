@@ -252,7 +252,7 @@ export class Connector extends BaseConnector {
         }
 
         if (messageData.type === 'customFormActionMessage') {
-            this.onCustomFormAction(messageData.tabID, messageData.messageId, messageData.action)
+            this.onCustomFormAction(messageData.tabID, messageData.messageId, messageData.action, messageData.triggerId)
             return
         }
 
@@ -300,7 +300,8 @@ export class Connector extends BaseConnector {
             id: string
             text?: string | undefined
             formItemValues?: Record<string, string> | undefined
-        }
+        },
+        triggerId: string
     ) {
         if (action === undefined) {
             return
@@ -316,6 +317,7 @@ export class Connector extends BaseConnector {
             formSelectedValues: action.formItemValues,
             tabType: this.getTabType(),
             tabID: tabId,
+            triggerId: triggerId,
         })
 
         if (

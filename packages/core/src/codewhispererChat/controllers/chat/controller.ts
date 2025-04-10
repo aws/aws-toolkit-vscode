@@ -102,7 +102,6 @@ import { FsWriteParams } from '../../tools/fsWrite'
 import { tempDirPath } from '../../../shared/filesystemUtilities'
 import { Database } from '../../../shared/db/chatDb/chatDb'
 import { TabBarController } from './tabBarController'
-import { sleep } from '../../../shared'
 
 export interface ChatControllerMessagePublishers {
     readonly processPromptChatMessage: MessagePublisher<PromptMessage>
@@ -409,22 +408,19 @@ export class ChatController {
 
     private async processStopResponseMessage(message: StopResponseMessage) {
         const session = this.sessionStorage.getSession(message.tabID)
-        const wasInAgenticLoop = session.agenticLoopInProgress
         session.tokenSource.cancel()
         console.log('process stop has been triggered')
         session.setAgenticLoopInProgress(false)
         session.setToolUseWithError(undefined)
 
-        // Mark any active triggers as completed when stopping the response
+        // Mark any active triggers as cancelled when stopping the response
         const triggerEvents = this.triggerEventsStorage.getTriggerEventsByTabID(message.tabID)
         if (triggerEvents && triggerEvents.length > 0) {
             const conversationTracker = ConversationTracker.getInstance()
             triggerEvents.forEach((event) => {
-                conversationTracker.markTriggerCompleted(event.id)
+                conversationTracker.cancelTrigger(event.id)
             })
         }
-
-        wasInAgenticLoop && (await sleep(1000))
 
         this.messenger.sendEmptyMessage(message.tabID, '', undefined)
         // this.chatHistoryStorage.getTabHistory(message.tabID).clearRecentHistory()
@@ -705,7 +701,14 @@ export class ChatController {
         this.editorContextExtractor
             .extractContextForTrigger('ChatMessage')
             .then(async (context) => {
-                const triggerID = message.triggerId ?? randomUUID()
+                console.log('message in controller for tool use:', message)
+                const triggerID = message.triggerId
+
+                // Check if this trigger has already been cancelled
+                if (this.isTriggerCancelled(triggerID)) {
+                    return
+                }
+
                 this.triggerEventsStorage.addTriggerEvent({
                     id: triggerID,
                     tabID: message.tabID,
@@ -717,7 +720,7 @@ export class ChatController {
                 const session = this.sessionStorage.getSession(tabID)
 
                 // Check if the session has been cancelled before proceeding
-                if (session.tokenSource.token.isCancellationRequested) {
+                if (this.isTriggerCancelled(triggerID)) {
                     getLogger().debug(`Tool execution cancelled for tabID: ${tabID}`)
                     return
                 }
@@ -758,8 +761,7 @@ export class ChatController {
                                 toolUse,
                                 { requiresAcceptance: false },
                                 undefined,
-                                undefined,
-                                cancellationToken
+                                undefined
                             )
 
                             if (tool.type === ToolType.FsWrite && toolUse.toolUseId) {
@@ -768,7 +770,7 @@ export class ChatController {
                             }
 
                             // Check again if cancelled before invoking the tool
-                            if (cancellationToken.isCancellationRequested) {
+                            if (this.isTriggerCancelled(triggerID)) {
                                 getLogger().debug(`Tool execution cancelled before invoke for tabID: ${tabID}`)
                                 return
                             }
@@ -1249,7 +1251,6 @@ export class ChatController {
                 // Register the trigger ID with the token for cancellation tracking
                 const conversationTracker = ConversationTracker.getInstance()
                 conversationTracker.registerTrigger(triggerID, session.tokenSource, message.tabID)
-                console.log('conversation tracker:', conversationTracker.getTokenForTrigger(triggerID))
 
                 this.triggerEventsStorage.addTriggerEvent({
                     id: triggerID,
@@ -1556,6 +1557,9 @@ export class ChatController {
             this.messenger.sendInitalStream(tabID, triggerID)
             this.messenger.sendAsyncEventProgress(tabID, true, '')
             this.telemetryHelper.setConversationStreamStartTime(tabID)
+            if (this.isTriggerCancelled(triggerID)) {
+                return
+            }
             if (isSsoConnection(AuthUtil.instance.conn)) {
                 const { $metadata, generateAssistantResponseResponse } = await session.chatSso(request)
                 response = {
@@ -1572,7 +1576,7 @@ export class ChatController {
             this.telemetryHelper.recordEnterFocusConversation(triggerEvent.tabID)
             this.telemetryHelper.recordStartConversation(triggerEvent, triggerPayload)
 
-            if (currentMessage && session.sessionIdentifier) {
+            if (currentMessage && session.sessionIdentifier && !this.isTriggerCancelled(triggerID)) {
                 chatHistory.appendUserMessage(currentMessage)
                 this.chatHistoryDb.addMessage(tabID, 'cwc', session.sessionIdentifier, {
                     body: triggerPayload.message,
@@ -1588,6 +1592,9 @@ export class ChatController {
                     response.$metadata.requestId
                 } metadata: ${inspect(response.$metadata, { depth: 12 })}`
             )
+            if (this.isTriggerCancelled(triggerID)) {
+                return
+            }
             await this.messenger.sendAIResponse(response, session, tabID, triggerID, triggerPayload, chatHistory)
         } catch (e: any) {
             this.telemetryHelper.recordMessageResponseError(triggerPayload, tabID, getHttpStatusCode(e) ?? 0)
@@ -1632,5 +1639,18 @@ export class ChatController {
 
             return { relativeFilePath: filePath, lineRanges: mergedRanges }
         })
+    }
+
+    /**
+     * Check if a trigger has been cancelled and should not proceed
+     * @param triggerId The trigger ID to check
+     * @returns true if the trigger is cancelled and should not proceed
+     */
+    private isTriggerCancelled(triggerId: string): boolean {
+        if (!triggerId) {
+            return false
+        }
+        const conversationTracker = ConversationTracker.getInstance()
+        return conversationTracker.isTriggerCancelled(triggerId)
     }
 }

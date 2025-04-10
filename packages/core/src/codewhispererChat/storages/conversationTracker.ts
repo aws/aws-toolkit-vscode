@@ -108,7 +108,7 @@ export class ConversationTracker {
      */
     public isTriggerCancelled(triggerID: string): boolean {
         if (!triggerID) {
-            return false
+            return true
         }
 
         const tokenSource = this.triggerToToken.get(triggerID)

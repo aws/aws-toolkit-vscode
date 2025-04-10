@@ -67,7 +67,6 @@ import { FsWriteParams } from '../../../tools/fsWrite'
 import { AsyncEventProgressMessage } from '../../../../amazonq/commons/connector/connectorMessages'
 import { localize } from '../../../../shared/utilities/vsCodeUtils'
 import { getDiffLinesFromChanges } from '../../../../shared/utilities/diffUtils'
-import { CancellationToken } from 'vscode'
 import { ConversationTracker } from '../../../storages/conversationTracker'
 import { waitUntilWithCancellation } from '../../../../shared/utilities/timeoutUtils'
 
@@ -107,7 +106,7 @@ export class Messenger {
 
     public sendInitalStream(tabID: string, triggerID: string) {
         // Check if the conversation has been cancelled
-        if (ConversationTracker.getInstance().isTriggerCancelled(triggerID)) {
+        if (this.isTriggerCancelled(triggerID)) {
             getLogger().debug(`Initial stream sending cancelled for tabID: ${tabID}, triggerID: ${triggerID}`)
             return
         }
@@ -140,7 +139,7 @@ export class Messenger {
         mergedRelevantDocuments: DocumentReference[] | undefined
     ) {
         // Check if the conversation has been cancelled
-        if (ConversationTracker.getInstance().isTriggerCancelled(triggerID)) {
+        if (this.isTriggerCancelled(triggerID)) {
             getLogger().debug(`Context message sending cancelled for tabID: ${tabID}, triggerID: ${triggerID}`)
             return
         }
@@ -280,6 +279,9 @@ export class Messenger {
                     }
 
                     if (cwChatEvent.toolUseEvent?.stop) {
+                        if (this.isTriggerCancelled(triggerID)) {
+                            return
+                        }
                         toolUse.input = JSON.parse(toolUseInput)
                         toolUse.toolUseId = cwChatEvent.toolUseEvent.toolUseId ?? ''
                         toolUse.name = cwChatEvent.toolUseEvent.name ?? ''
@@ -313,6 +315,9 @@ export class Messenger {
                                 if (!validation.requiresAcceptance) {
                                     // Need separate id for read tool and safe bash command execution as 'run-shell-command' id is required to state in cwChatConnector.ts which will impact generic tool execution.
                                     if (tool.type === ToolType.ExecuteBash) {
+                                        if (this.isTriggerCancelled(triggerID)) {
+                                            return
+                                        }
                                         this.dispatcher.sendCustomFormActionMessage(
                                             new CustomFormActionMessage(
                                                 tabID,
@@ -323,6 +328,9 @@ export class Messenger {
                                             )
                                         )
                                     } else {
+                                        if (this.isTriggerCancelled(triggerID)) {
+                                            return
+                                        }
                                         this.dispatcher.sendCustomFormActionMessage(
                                             new CustomFormActionMessage(
                                                 tabID,
@@ -353,6 +361,11 @@ export class Messenger {
                         if (codeBlockLanguage === 'plaintext') {
                             codeBlockLanguage = extractCodeBlockLanguage(message)
                         }
+                        // Check if this trigger has been cancelled
+                        if (this.isTriggerCancelled(triggerID)) {
+                            return
+                        }
+
                         this.dispatcher.sendChatMessage(
                             new ChatMessage(
                                 {
@@ -485,6 +498,11 @@ export class Messenger {
                     )
                 }
 
+                // Check if this trigger has been cancelled before sending final message
+                if (this.isTriggerCancelled(triggerID)) {
+                    return
+                }
+
                 this.dispatcher.sendChatMessage(
                     new ChatMessage(
                         {
@@ -503,16 +521,18 @@ export class Messenger {
                     )
                 )
 
-                chatHistoryManager.pushAssistantMessage({
-                    assistantResponseMessage: {
-                        messageId: messageID,
-                        content: message,
-                        references: codeReference,
-                        ...(toolUse &&
-                            toolUse.input !== undefined &&
-                            toolUse.input !== '' && { toolUses: [{ ...toolUse }] }),
-                    },
-                })
+                if (!this.isTriggerCancelled(triggerID)) {
+                    chatHistoryManager.pushAssistantMessage({
+                        assistantResponseMessage: {
+                            messageId: messageID,
+                            content: message,
+                            references: codeReference,
+                            ...(toolUse &&
+                                toolUse.input !== undefined &&
+                                toolUse.input !== '' && { toolUses: [{ ...toolUse }] }),
+                        },
+                    })
+                }
                 if (!eventCounts.has('toolUseEvent')) {
                     session.setAgenticLoopInProgress(false)
                     session.setContext(undefined)
@@ -561,11 +581,10 @@ export class Messenger {
         triggerID: string,
         toolUse: ToolUse | undefined,
         validation: CommandValidation,
-        changeList?: Change[],
-        cancellationToken?: CancellationToken
+        changeList?: Change[]
     ) {
         // Check if the conversation has been cancelled before sending any tool logs
-        if (ConversationTracker.getInstance().isTriggerCancelled(triggerID)) {
+        if (this.isTriggerCancelled(triggerID)) {
             getLogger().debug(`Tool log sending cancelled for tabID: ${tabID}, triggerID: ${triggerID}`)
             return
         }
@@ -605,6 +624,9 @@ export class Messenger {
             // eslint-disable-next-line unicorn/no-null
             codeBlockActions = { 'insert-to-cursor': null, copy: null }
         } else if (toolUse?.name === ToolType.FsWrite) {
+            if (this.isTriggerCancelled(triggerID)) {
+                return
+            }
             const input = toolUse.input as unknown as FsWriteParams
             const fileName = path.basename(input.path)
             const changes = getDiffLinesFromChanges(changeList)
@@ -641,6 +663,10 @@ export class Messenger {
             padding = false
             // eslint-disable-next-line unicorn/no-null
             codeBlockActions = { 'insert-to-cursor': null, copy: null }
+        }
+
+        if (this.isTriggerCancelled(triggerID)) {
+            return
         }
 
         this.dispatcher.sendChatMessage(
@@ -680,7 +706,7 @@ export class Messenger {
 
     public sendStaticTextResponse(type: StaticTextResponseType, triggerID: string, tabID: string) {
         // Check if the conversation has been cancelled
-        if (ConversationTracker.getInstance().isTriggerCancelled(triggerID)) {
+        if (this.isTriggerCancelled(triggerID)) {
             getLogger().debug(`Static text response sending cancelled for tabID: ${tabID}, triggerID: ${triggerID}`)
             return
         }
@@ -887,5 +913,19 @@ export class Messenger {
                 tabID
             )
         )
+    }
+
+    /**
+     * Check if a trigger has been cancelled and should not proceed
+     * @param triggerId The trigger ID to check
+     * @returns true if the trigger is cancelled and should not proceed
+     */
+    private isTriggerCancelled(triggerId: string): boolean {
+        if (!triggerId) {
+            return false
+        }
+
+        const conversationTracker = ConversationTracker.getInstance()
+        return conversationTracker.isTriggerCancelled(triggerId)
     }
 }

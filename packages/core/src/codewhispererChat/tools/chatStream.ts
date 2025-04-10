@@ -9,7 +9,6 @@ import { Messenger } from '../controllers/chat/messenger/messenger'
 import { ToolUse } from '@amzn/codewhisperer-streaming'
 import { CommandValidation } from './executeBash'
 import { Change } from 'diff'
-import * as vscode from 'vscode'
 import { ConversationTracker } from '../storages/conversationTracker'
 
 /**
@@ -18,7 +17,6 @@ import { ConversationTracker } from '../storages/conversationTracker'
  */
 export class ChatStream extends Writable {
     private accumulatedLogs = ''
-    private isCancelled = false
 
     public constructor(
         private readonly messenger: Messenger,
@@ -27,25 +25,16 @@ export class ChatStream extends Writable {
         private readonly toolUse: ToolUse | undefined,
         private readonly validation: CommandValidation,
         private readonly changeList?: Change[],
-        private readonly logger = getLogger('chatStream'),
-        private readonly cancellationToken?: vscode.CancellationToken
+        private readonly logger = getLogger('chatStream')
     ) {
         super()
         this.logger.debug(`ChatStream created for tabID: ${tabID}, triggerID: ${triggerID}`)
         this.messenger.sendInitalStream(tabID, triggerID)
-
-        // Subscribe to cancellation token if provided
-        if (cancellationToken) {
-            cancellationToken.onCancellationRequested(() => {
-                this.isCancelled = true
-                this.logger.debug(`ChatStream cancelled for tabID: ${tabID}, triggerID: ${triggerID}`)
-            })
-        }
     }
 
     override _write(chunk: Buffer, encoding: BufferEncoding, callback: (error?: Error | null) => void): void {
         // Check if the conversation has been cancelled
-        if (this.isCancelled || ConversationTracker.getInstance().isTriggerCancelled(this.triggerID)) {
+        if (ConversationTracker.getInstance().isTriggerCancelled(this.triggerID)) {
             this.logger.debug(`ChatStream skipping chunk due to cancellation for triggerID: ${this.triggerID}`)
             callback()
             return
@@ -60,17 +49,9 @@ export class ChatStream extends Writable {
             this.triggerID,
             this.toolUse,
             this.validation,
-            this.changeList,
-            this.cancellationToken
+            this.changeList
         )
         callback()
-    }
-
-    /**
-     * Explicitly cancel the stream to stop processing further chunks
-     */
-    public cancel(): void {
-        this.isCancelled = true
     }
 
     override _final(callback: (error?: Error | null) => void): void {
