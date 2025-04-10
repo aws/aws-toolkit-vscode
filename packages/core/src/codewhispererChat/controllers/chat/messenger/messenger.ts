@@ -22,7 +22,6 @@ import {
     CloseDetailedListMessage,
     SelectTabMessage,
     ChatItemHeader,
-    ToolMessage,
 } from '../../../view/connector/connector'
 import { EditorContextCommandType } from '../../../commands/registerCommands'
 import { ChatResponseStream as qdevChatResponseStream } from '@amzn/amazon-q-developer-streaming-client'
@@ -35,7 +34,7 @@ import { ChatMessage, ErrorMessage, FollowUp, Suggestion } from '../../../view/c
 import { ChatSession } from '../../../clients/chat/v0/chat'
 import { ChatException } from './model'
 import { CWCTelemetryHelper } from '../telemetryHelper'
-import { ChatPromptCommandType, DocumentReference, TriggerPayload } from '../model'
+import { AgenticChatInteractionType, ChatPromptCommandType, DocumentReference, TriggerPayload } from '../model'
 import { ToolkitError } from '../../../../shared/errors'
 import { keys } from '../../../../shared/utilities/tsUtils'
 import { getLogger } from '../../../../shared/logger/logger'
@@ -70,8 +69,6 @@ import { FsWriteParams } from '../../../tools/fsWrite'
 import { AsyncEventProgressMessage } from '../../../../amazonq/commons/connector/connectorMessages'
 import { localize } from '../../../../shared/utilities/vsCodeUtils'
 import { getDiffLinesFromChanges } from '../../../../shared/utilities/diffUtils'
-import { FsReadParams } from '../../../tools/fsRead'
-import { ListDirectoryParams } from '../../../tools/listDirectory'
 
 export type StaticTextResponseType = 'quick-action-help' | 'onboarding-help' | 'transform' | 'help'
 
@@ -260,11 +257,7 @@ export class Messenger {
                     }
 
                     const cwChatEvent: cwChatResponseStream = chatEvent
-                    if (
-                        cwChatEvent.toolUseEvent?.input !== undefined &&
-                        cwChatEvent.toolUseEvent.input.length > 0 &&
-                        !cwChatEvent.toolUseEvent.stop
-                    ) {
+                    if (cwChatEvent.toolUseEvent?.input !== undefined && cwChatEvent.toolUseEvent.input.length > 0) {
                         toolUseInput += cwChatEvent.toolUseEvent.input
                     }
 
@@ -272,7 +265,16 @@ export class Messenger {
                         toolUse.toolUseId = cwChatEvent.toolUseEvent.toolUseId ?? ''
                         toolUse.name = cwChatEvent.toolUseEvent.name ?? ''
                         try {
-                            toolUse.input = JSON.parse(toolUseInput)
+                            try {
+                                toolUse.input = JSON.parse(toolUseInput)
+                            } catch (error: any) {
+                                getLogger().error(`JSON parse error for toolUseInput: ${toolUseInput}`)
+                                // set toolUse.input to the raw value
+                                toolUse.input = toolUseInput
+                                error.message = `Tool input has invalid JSON format: ${error.message}`
+                                // throw it out to allow the error to be handled in the catch block
+                                throw error
+                            }
                             const availableToolsNames = (session.pairProgrammingModeOn ? tools : noWriteTools).map(
                                 (item) => item.toolSpecification?.name
                             )
@@ -329,22 +331,10 @@ export class Messenger {
                                     changeList
                                 )
                                 await ToolUtils.queueDescription(tool, chatStream)
-                                if (session.messageIdToUpdate === undefined && tool.type === ToolType.FsRead) {
-                                    // Store the first messageId in a chain of tool uses
-                                    session.setMessageIdToUpdate(toolUse.toolUseId)
-                                }
-
-                                if (
-                                    session.messageIdToUpdateListDirectory === undefined &&
-                                    tool.type === ToolType.ListDirectory
-                                ) {
-                                    session.setMessageIdToUpdateListDirectory(toolUse.toolUseId)
-                                }
                                 getLogger().debug(
                                     `SetToolUseWithError: ${toolUse.name}:${toolUse.toolUseId} with no error`
                                 )
                                 session.setToolUseWithError({ toolUse, error: undefined })
-
                                 if (!validation.requiresAcceptance) {
                                     // Need separate id for read tool and safe bash command execution as 'run-shell-command' id is required to state in cwChatConnector.ts which will impact generic tool execution.
                                     if (tool.type === ToolType.ExecuteBash) {
@@ -360,6 +350,20 @@ export class Messenger {
                                             })
                                         )
                                     }
+                                } else {
+                                    if (tool.type === ToolType.ExecuteBash) {
+                                        this.telemetryHelper.recordInteractionWithAgenticChat(
+                                            AgenticChatInteractionType.GeneratedCommand,
+                                            { tabID }
+                                        )
+                                    }
+                                }
+
+                                if (tool.type === ToolType.FsWrite) {
+                                    this.telemetryHelper.recordInteractionWithAgenticChat(
+                                        AgenticChatInteractionType.GeneratedDiff,
+                                        { tabID }
+                                    )
                                 }
                             } else {
                                 throw new Error('Tool not found')
@@ -570,26 +574,6 @@ export class Messenger {
             })
     }
 
-    public sendInitialToolMessage(tabID: string, triggerID: string, toolUseId: string | undefined) {
-        this.dispatcher.sendChatMessage(
-            new ChatMessage(
-                {
-                    message: '',
-                    messageType: 'answer',
-                    followUps: undefined,
-                    followUpsHeader: undefined,
-                    relatedSuggestions: undefined,
-                    triggerID,
-                    messageID: toolUseId ?? 'toolUse',
-                    userIntent: undefined,
-                    codeBlockLanguage: undefined,
-                    contextList: undefined,
-                },
-                tabID
-            )
-        )
-    }
-
     public sendErrorMessage(
         errorMessage: string | undefined,
         tabID: string,
@@ -607,66 +591,14 @@ export class Messenger {
         )
     }
 
-    private sendReadAndListDirToolMessage(
-        toolUse: ToolUse,
-        session: ChatSession,
-        tabID: string,
-        triggerID: string,
-        messageIdToUpdate?: string
-    ) {
-        const contextList = toolUse.name === ToolType.ListDirectory ? session.readFolders : session.readFiles
-        const isFileRead = toolUse.name === ToolType.FsRead
-        const items = isFileRead ? session.readFiles : session.readFolders
-        const itemCount = items.length
-
-        const title =
-            itemCount < 1
-                ? 'Gathering context'
-                : isFileRead
-                  ? `${itemCount} file${itemCount > 1 ? 's' : ''} read`
-                  : `${itemCount} ${itemCount === 1 ? 'directory' : 'directories'} listed`
-
-        this.dispatcher.sendToolMessage(
-            new ToolMessage(
-                {
-                    message: '',
-                    messageType: 'answer-part',
-                    followUps: undefined,
-                    followUpsHeader: undefined,
-                    relatedSuggestions: undefined,
-                    triggerID,
-                    messageID: messageIdToUpdate ?? toolUse?.toolUseId ?? '',
-                    userIntent: undefined,
-                    codeBlockLanguage: undefined,
-                    contextList,
-                    canBeVoted: false,
-                    buttons: undefined,
-                    fullWidth: false,
-                    padding: false,
-                    codeBlockActions: undefined,
-                    rootFolderTitle: title,
-                },
-                tabID
-            )
-        )
-    }
-
     public sendPartialToolLog(
         message: string,
         tabID: string,
         triggerID: string,
         toolUse: ToolUse | undefined,
-        session: ChatSession,
-        messageIdToUpdate: string | undefined,
         validation: CommandValidation,
         changeList?: Change[]
     ) {
-        // Handle read tool and list directory messages
-        if (toolUse?.name === ToolType.FsRead || toolUse?.name === ToolType.ListDirectory) {
-            return this.sendReadAndListDirToolMessage(toolUse, session, tabID, triggerID, messageIdToUpdate)
-        }
-
-        // Handle file write tool, execute bash tool and bash command output log messages
         const buttons: ChatItemButton[] = []
         let header: ChatItemHeader | undefined = undefined
         if (toolUse?.name === ToolType.ExecuteBash && message.startsWith('```shell')) {

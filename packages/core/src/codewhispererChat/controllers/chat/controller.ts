@@ -35,6 +35,7 @@ import {
     PromptInputOptionChange,
     TabBarButtonClick,
     SaveChatMessage,
+    AgenticChatInteractionType,
 } from './model'
 import {
     AppToWebViewMessageDispatcher,
@@ -417,6 +418,7 @@ export class ChatController {
         session.tokenSource.cancel()
         this.messenger.sendEmptyMessage(message.tabID, '', undefined)
         this.chatHistoryStorage.getTabHistory(message.tabID).clearRecentHistory()
+        this.telemetryHelper.recordInteractionWithAgenticChat(AgenticChatInteractionType.StopChat, message)
     }
 
     private async processTriggerTabIDReceived(message: TriggerTabIDReceived) {
@@ -784,7 +786,7 @@ export class ChatController {
                         toolResults: toolResults,
                         profile: AuthUtil.instance.regionProfileManager.activeRegionProfile,
                         origin: Origin.IDE,
-                        context: [],
+                        context: session.context ?? [],
                         relevantTextDocuments: [],
                         additionalContents: [],
                         documentReferences: [],
@@ -852,6 +854,12 @@ export class ChatController {
             case 'run-shell-command':
             case 'generic-tool-execution':
                 await this.processToolUseMessage(message)
+                if (message.action.id === 'run-shell-command' && message.action.text === 'Run') {
+                    this.telemetryHelper.recordInteractionWithAgenticChat(
+                        AgenticChatInteractionType.RunCommand,
+                        message
+                    )
+                }
                 break
             case 'accept-code-diff':
                 await this.closeDiffView(message)
@@ -859,6 +867,7 @@ export class ChatController {
             case 'reject-code-diff':
                 await this.restoreBackup(message)
                 await this.closeDiffView(message)
+                this.telemetryHelper.recordInteractionWithAgenticChat(AgenticChatInteractionType.RejectDiff, message)
                 break
             case 'reject-shell-command':
                 await this.rejectShellCommand(message)
@@ -1206,7 +1215,6 @@ export class ChatController {
     private async processPromptMessageAsNewThread(message: PromptMessage) {
         const session = this.sessionStorage.getSession(message.tabID)
         session.clearListOfReadFiles()
-        session.clearListOfReadFolders()
         session.setShowDiffOnFileWrite(false)
         this.editorContextExtractor
             .extractContextForTrigger('ChatMessage')
