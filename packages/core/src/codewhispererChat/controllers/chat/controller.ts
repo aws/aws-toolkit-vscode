@@ -1614,11 +1614,10 @@ export class ChatController {
                     response.$metadata.requestId
                 } metadata: ${inspect(response.$metadata, { depth: 12 })}`
             )
-          
             if (this.isTriggerCancelled(triggerID)) {
                 return
             }
-          
+
             await this.messenger.sendAIResponse(
                 response,
                 session,
@@ -1628,7 +1627,6 @@ export class ChatController {
                 chatHistory,
                 this.cancelTokenSource.token
             )
-
         } catch (e: any) {
             this.telemetryHelper.recordMessageResponseError(triggerPayload, tabID, getHttpStatusCode(e) ?? 0)
             // clears session, record telemetry before this call
