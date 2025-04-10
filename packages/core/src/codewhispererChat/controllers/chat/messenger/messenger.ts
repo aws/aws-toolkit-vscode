@@ -950,7 +950,7 @@ export class Messenger {
             )
         )
     }
-  
+
     public sendDirectiveMessage(tabID: string, triggerID: string, message: string) {
         this.dispatcher.sendChatMessage(
             new ChatMessage(
@@ -970,8 +970,8 @@ export class Messenger {
             )
         )
     }
-  
-  /**
+
+    /**
      * Check if a trigger has been cancelled and should not proceed
      * @param triggerId The trigger ID to check
      * @returns true if the trigger is cancelled and should not proceed

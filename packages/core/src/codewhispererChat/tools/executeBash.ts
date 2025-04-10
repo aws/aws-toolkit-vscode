@@ -266,7 +266,7 @@ export class ExecuteBash {
                 collect: false,
                 waitForStreams: true,
                 onStdout: async (chunk: string) => {
-                  if (cancellationToken?.isCancellationRequested) {
+                    if (cancellationToken?.isCancellationRequested) {
                         this.logger.debug('Bash command execution cancelled during stderr processing')
                         return
                     }
@@ -281,7 +281,7 @@ export class ExecuteBash {
                     processQueue()
                 },
                 onStderr: async (chunk: string) => {
-                  if (cancellationToken?.isCancellationRequested) {
+                    if (cancellationToken?.isCancellationRequested) {
                         this.logger.debug('Bash command execution cancelled during stderr processing')
                         return
                     }
