@@ -176,6 +176,7 @@ export class ChatController {
     private userPromptsWatcher: vscode.FileSystemWatcher | undefined
     private readonly chatHistoryStorage: ChatHistoryStorage
     private chatHistoryDb = Database.getInstance()
+    private cancelTokenSource: vscode.CancellationTokenSource = new vscode.CancellationTokenSource()
 
     public constructor(
         private readonly chatControllerMessageListeners: ChatControllerMessageListeners,
@@ -202,6 +203,10 @@ export class ChatController {
             } else {
                 this.telemetryHelper.recordCloseChat()
             }
+        })
+
+        AuthUtil.instance.regionProfileManager.onDidChangeRegionProfile(() => {
+            this.cancelTokenSource.cancel()
         })
 
         this.chatControllerMessageListeners.processPromptChatMessage.onMessage((data) => {
@@ -316,6 +321,9 @@ export class ChatController {
         })
         this.chatControllerMessageListeners.processDetailedListItemSelectMessage.onMessage((data) => {
             return this.tabBarController.processItemSelectMessage(data)
+        })
+        AuthUtil.instance.regionProfileManager.onDidChangeRegionProfile(() => {
+            this.sessionStorage.deleteAllSessions()
         })
     }
 
@@ -770,6 +778,7 @@ export class ChatController {
                         userIntent: undefined,
                         customization: getSelectedCustomization(),
                         toolResults: toolResults,
+                        profile: AuthUtil.instance.regionProfileManager.activeRegionProfile,
                         origin: Origin.IDE,
                         context: session.context ?? [],
                         relevantTextDocuments: [],
@@ -1083,6 +1092,7 @@ export class ChatController {
                         codeQuery: context?.focusAreaContext?.names,
                         userIntent: this.userIntentRecognizer.getFromContextMenuCommand(command),
                         customization: getSelectedCustomization(),
+                        profile: AuthUtil.instance.regionProfileManager.activeRegionProfile,
                         additionalContents: [],
                         relevantTextDocuments: [],
                         documentReferences: [],
@@ -1170,6 +1180,7 @@ export class ChatController {
                     codeQuery: lastTriggerEvent.context?.focusAreaContext?.names,
                     userIntent: message.userIntent,
                     customization: getSelectedCustomization(),
+                    profile: AuthUtil.instance.regionProfileManager.activeRegionProfile,
                     contextLengths: {
                         ...defaultContextLengths,
                     },
@@ -1219,6 +1230,7 @@ export class ChatController {
                         userIntent: undefined,
                         customization: getSelectedCustomization(),
                         origin: Origin.IDE,
+                        profile: AuthUtil.instance.regionProfileManager.activeRegionProfile,
                         context: message.context ?? [],
                         relevantTextDocuments: [],
                         additionalContents: [],
@@ -1504,6 +1516,7 @@ export class ChatController {
         )
         let response: MessengerResponseType | undefined = undefined
         session.createNewTokenSource()
+        // TODO: onProfileChanged, abort previous response?
         try {
             if (!session.context && triggerPayload.context.length) {
                 // Only show context for the first message in the loop
@@ -1544,7 +1557,17 @@ export class ChatController {
                     response.$metadata.requestId
                 } metadata: ${inspect(response.$metadata, { depth: 12 })}`
             )
-            await this.messenger.sendAIResponse(response, session, tabID, triggerID, triggerPayload, chatHistory)
+
+            this.cancelTokenSource = new vscode.CancellationTokenSource()
+            await this.messenger.sendAIResponse(
+                response,
+                session,
+                tabID,
+                triggerID,
+                triggerPayload,
+                chatHistory,
+                this.cancelTokenSource.token
+            )
 
             // Turn off AgentLoop flag after sending the AI response
             this.sessionStorage.setAgentLoopInProgress(tabID, false)

@@ -202,6 +202,10 @@ export class TestController {
                     return this.openDiff(data)
             }
         })
+
+        AuthUtil.instance.regionProfileManager.onDidChangeRegionProfile(() => {
+            this.sessionStorage.removeActiveTab()
+        })
     }
 
     /**
@@ -928,6 +932,7 @@ export class TestController {
                 codeQuery: undefined,
                 userIntent: UserIntent.GENERATE_UNIT_TESTS,
                 customization: getSelectedCustomization(),
+                profile: AuthUtil.instance.regionProfileManager.activeRegionProfile,
                 context: [],
                 relevantTextDocuments: [],
                 additionalContents: [],

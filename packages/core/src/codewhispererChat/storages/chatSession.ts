@@ -43,4 +43,8 @@ export class ChatSessionStorage {
     public setAgentLoopInProgress(tabID: string, inProgress: boolean): void {
         this.agentLoopInProgress.set(tabID, inProgress)
     }
+
+    public deleteAllSessions() {
+        this.sessions.clear()
+    }
 }

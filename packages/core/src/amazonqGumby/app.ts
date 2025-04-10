@@ -67,6 +67,9 @@ export function init(appContext: AmazonQAppInitContext) {
     AuthUtil.instance.secondaryAuth.onDidChangeActiveConnection(() => {
         return debouncedEvent()
     })
+    AuthUtil.instance.regionProfileManager.onDidChangeRegionProfile(() => {
+        return debouncedEvent()
+    })
 
     showTransformationHub.register()
 

@@ -18,6 +18,7 @@ import {
     signoutCodeWhisperer,
     showIntroduction,
     toggleCodeScans,
+    selectRegionProfileCommand,
 } from '../commands/basicCommands'
 import { CodeWhispererCommandDeclarations } from '../commands/gettingStartedPageCommands'
 import { CodeScansState, codeScanState } from '../models/model'
@@ -135,6 +136,23 @@ export function createSelectCustomization(): DataQuickPickItem<'selectCustomizat
         description: description,
         onClick: () => selectCustomizationPrompt.execute(placeholder, cwQuickPickSource),
     } as DataQuickPickItem<'selectCustomization'>
+}
+
+export function createSelectRegionProfileNode(): DataQuickPickItem<'selectRegionProfile'> {
+    const selectedRegionProfile = AuthUtil.instance.regionProfileManager.activeRegionProfile
+
+    const label = 'Change Profile'
+    const icon = getIcon('vscode-arrow-swap')
+    const description = selectedRegionProfile ? `Current profile: ${selectedRegionProfile.name}` : ''
+
+    return {
+        data: 'selectRegionProfile',
+        label: codicon`${icon} ${label}`,
+        onClick: async () => {
+            await selectRegionProfileCommand.execute(placeholder, cwQuickPickSource)
+        },
+        description: description,
+    }
 }
 
 /* Opens the Learn CodeWhisperer Page */
