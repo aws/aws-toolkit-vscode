@@ -17,7 +17,7 @@ export class ConversationTracker {
     private tabToTriggers = new Map<string, string[]>()
 
     // Maximum number of triggers to keep per tab
-    private readonly MAX_TRIGGERS_PER_TAB = 5
+    private readonly maxTriggersPerTab = 5
 
     // Singleton instance
     private static instance: ConversationTracker
@@ -129,10 +129,10 @@ export class ConversationTracker {
      */
     private cleanupTabTriggers(tabID: string): void {
         const triggers = this.tabToTriggers.get(tabID)
-        if (!triggers || triggers.length <= this.MAX_TRIGGERS_PER_TAB) {
+        if (!triggers || triggers.length <= this.maxTriggersPerTab) {
             return
         }
-        triggers.splice(this.MAX_TRIGGERS_PER_TAB)
+        triggers.splice(this.maxTriggersPerTab)
     }
 
     /**

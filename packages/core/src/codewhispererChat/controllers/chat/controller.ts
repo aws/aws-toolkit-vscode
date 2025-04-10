@@ -415,9 +415,9 @@ export class ChatController {
         const triggerEvents = this.triggerEventsStorage.getTriggerEventsByTabID(message.tabID)
         if (triggerEvents && triggerEvents.length > 0) {
             const conversationTracker = ConversationTracker.getInstance()
-            triggerEvents.forEach((event) => {
+            for (const event of triggerEvents) {
                 conversationTracker.cancelTrigger(event.id)
-            })
+            }
         }
 
         this.messenger.sendEmptyMessage(message.tabID, '', undefined)
@@ -1049,9 +1049,9 @@ export class ChatController {
             const triggerEvents = this.triggerEventsStorage.getTriggerEventsByTabID(tabID)
             if (triggerEvents && triggerEvents.length > 0) {
                 const conversationTracker = ConversationTracker.getInstance()
-                triggerEvents.forEach((event) => {
-                    conversationTracker.markTriggerCompleted(event.id)
-                })
+                for (const event of triggerEvents) {
+                    conversationTracker.cancelTrigger(event.id)
+                }
             }
         }
 
