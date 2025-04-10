@@ -698,7 +698,10 @@ export class ChatController {
                 this.messenger.sendAsyncEventProgress(tabID, true, '')
                 const session = this.sessionStorage.getSession(tabID)
                 const toolUseWithError = session.toolUseWithError
-                if (!toolUseWithError || !toolUseWithError.toolUse || !toolUseWithError.toolUse.input) {
+                getLogger().debug(
+                    `processToolUseMessage: ${toolUseWithError?.toolUse.name}:${toolUseWithError?.toolUse.toolUseId} with error: ${toolUseWithError?.error}`
+                )
+                if (!toolUseWithError || !toolUseWithError.toolUse) {
                     // Turn off AgentLoop flag if there's no tool use
                     this.sessionStorage.setAgentLoopInProgress(tabID, false)
                     return
@@ -780,7 +783,7 @@ export class ChatController {
                         toolResults: toolResults,
                         profile: AuthUtil.instance.regionProfileManager.activeRegionProfile,
                         origin: Origin.IDE,
-                        context: session.context ?? [],
+                        context: [],
                         relevantTextDocuments: [],
                         additionalContents: [],
                         documentReferences: [],
@@ -996,6 +999,7 @@ export class ChatController {
     private processException(e: any, tabID: string) {
         let errorMessage = ''
         let requestID = undefined
+        let statusCode = undefined
         const defaultMessage = 'Failed to get response'
         if (typeof e === 'string') {
             errorMessage = e.toUpperCase()
@@ -1005,6 +1009,7 @@ export class ChatController {
         } else if (e instanceof CodeWhispererStreamingServiceException) {
             errorMessage = e.message
             requestID = e.$metadata.requestId
+            statusCode = e.$metadata.httpStatusCode
         } else if (e instanceof Error) {
             errorMessage = e.message
         }
@@ -1014,11 +1019,11 @@ export class ChatController {
             this.sessionStorage.setAgentLoopInProgress(tabID, false)
         }
 
-        this.messenger.sendErrorMessage(errorMessage, tabID, requestID)
+        this.messenger.sendErrorMessage(errorMessage, tabID, requestID, statusCode)
         getLogger().error(`error: ${errorMessage} tabID: ${tabID} requestID: ${requestID}`)
 
         this.sessionStorage.deleteSession(tabID)
-        this.chatHistoryStorage.getTabHistory(tabID).clearRecentHistory()
+        this.chatHistoryStorage.getTabHistory(tabID).clear()
     }
 
     private async processContextMenuCommand(command: EditorContextCommand) {

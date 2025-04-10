@@ -6,8 +6,8 @@ import { ChatMessage, ToolResult, ToolResultStatus, ToolUse } from '@amzn/codewh
 import { randomUUID } from '../../shared/crypto'
 import { getLogger } from '../../shared/logger/logger'
 
-// Maximum number of messages to keep in history
-const MaxConversationHistoryLength = 100
+// Maximum number of characters to keep in history
+const MaxConversationHistoryCharacters = 600_000
 
 /**
  * ChatHistoryManager handles the storage and manipulation of chat history
@@ -70,9 +70,6 @@ export class ChatHistoryManager {
      */
     public appendUserMessage(newMessage: ChatMessage): void {
         this.lastUserMessage = newMessage
-        if (!newMessage.userInputMessage?.content || newMessage.userInputMessage?.content.trim() === '') {
-            this.logger.warn('input must not be empty when adding new messages')
-        }
         this.history.push(this.formatChatHistoryMessage(this.lastUserMessage))
     }
 
@@ -118,22 +115,69 @@ export class ChatHistoryManager {
             this.clearRecentHistory()
         }
 
-        if (this.history.length <= MaxConversationHistoryLength) {
-            return
-        }
-
-        const indexToTrim = this.findIndexToTrim()
-        if (indexToTrim !== undefined) {
-            this.logger.debug(`Removing the first ${indexToTrim} elements in the history`)
-            this.history.splice(0, indexToTrim)
-        } else {
-            this.logger.debug('No valid starting user message found in the history, clearing')
-            this.history = []
+        // Check if we need to trim based on character count
+        const totalCharacters = this.calculateHistoryCharacterCount()
+        if (totalCharacters > MaxConversationHistoryCharacters) {
+            this.logger.debug(
+                `History size (${totalCharacters} chars) exceeds limit of ${MaxConversationHistoryCharacters} chars`
+            )
+            // Keep removing messages from the beginning until we're under the limit
+            do {
+                // Find the next valid user message to start from
+                const indexToTrim = this.findIndexToTrim()
+                if (indexToTrim !== undefined && indexToTrim > 0) {
+                    this.logger.debug(
+                        `Removing the first ${indexToTrim} elements in the history due to character count limit`
+                    )
+                    this.history.splice(0, indexToTrim)
+                } else {
+                    // If we can't find a valid starting point, reset it
+                    this.logger.debug('Could not find a valid point to trim, reset history to reduce character count')
+                    this.history = []
+                }
+            } while (
+                this.calculateHistoryCharacterCount() > MaxConversationHistoryCharacters &&
+                this.history.length > 2
+            )
         }
     }
 
+    private calculateHistoryCharacterCount(): number {
+        let count = 0
+        for (const message of this.history) {
+            // Count characters in user messages
+            if (message.userInputMessage?.content) {
+                count += message.userInputMessage.content.length
+            }
+
+            // Count characters in assistant messages
+            if (message.assistantResponseMessage?.content) {
+                count += message.assistantResponseMessage.content.length
+            }
+
+            try {
+                // Count characters in tool uses and results
+                if (message.assistantResponseMessage?.toolUses) {
+                    for (const toolUse of message.assistantResponseMessage.toolUses) {
+                        count += JSON.stringify(toolUse).length
+                    }
+                }
+
+                if (message.userInputMessage?.userInputMessageContext?.toolResults) {
+                    for (const toolResult of message.userInputMessage.userInputMessageContext.toolResults) {
+                        count += JSON.stringify(toolResult).length
+                    }
+                }
+            } catch (error: any) {
+                this.logger.error(`Error calculating character count for tool uses/results: ${error.message}`)
+            }
+        }
+        this.logger.debug(`Current history characters: ${count}`)
+        return count
+    }
+
     private findIndexToTrim(): number | undefined {
-        for (let i = 1; i < this.history.length; i++) {
+        for (let i = 2; i < this.history.length; i++) {
             const message = this.history[i]
             if (this.isValidUserMessageWithoutToolResults(message)) {
                 return i
@@ -162,6 +206,12 @@ export class ChatHistoryManager {
     private ensureCurrentMessageIsValid(newUserMessage: ChatMessage): void {
         const lastHistoryMessage = this.history[this.history.length - 1]
         if (!lastHistoryMessage) {
+            if (newUserMessage.userInputMessage?.userInputMessageContext?.toolResults) {
+                this.logger.debug('No history message found, but new user message has tool results.')
+                newUserMessage.userInputMessage.userInputMessageContext.toolResults = undefined
+                // tool results are empty, so content must not be empty
+                newUserMessage.userInputMessage.content = 'Conversation history was too large, so it was cleared.'
+            }
             return
         }
 
@@ -198,8 +248,8 @@ export class ChatHistoryManager {
                 userInputMessage: {
                     ...message.userInputMessage,
                     userInputMessageContext: {
-                        ...message.userInputMessage.userInputMessageContext,
-                        tools: undefined,
+                        // Only keep toolResults in history
+                        toolResults: message.userInputMessage.userInputMessageContext?.toolResults,
                     },
                 },
             }
