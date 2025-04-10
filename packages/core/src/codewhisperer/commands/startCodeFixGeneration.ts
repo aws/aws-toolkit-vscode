@@ -19,6 +19,7 @@ import path from 'path'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { tempDirPath } from '../../shared/filesystemUtilities'
 import { CodeWhispererSettings } from '../util/codewhispererSettings'
+import { AuthUtil } from '../util/authUtil'
 
 export async function startCodeFixGeneration(
     client: DefaultCodeWhispererClient,
@@ -26,6 +27,7 @@ export async function startCodeFixGeneration(
     filePath: string,
     codeFixName: string
 ) {
+    const profile = AuthUtil.instance.regionProfileManager.activeRegionProfile
     /**
      * Step 0: Initial code fix telemetry
      */
@@ -53,7 +55,7 @@ export async function startCodeFixGeneration(
          */
         let artifactMap: ArtifactMap = {}
         try {
-            artifactMap = await getPresignedUrlAndUpload(client, zipFilePath, codeFixName)
+            artifactMap = await getPresignedUrlAndUpload(client, zipFilePath, codeFixName, profile)
         } finally {
             await fs.delete(zipFilePath)
         }
@@ -76,7 +78,8 @@ export async function startCodeFixGeneration(
                     : 'BLOCK',
             },
             codeFixName,
-            issue.ruleId
+            issue.ruleId,
+            profile
         )
         if (codeFixJob.status === 'Failed') {
             throw new CreateCodeFixError()
@@ -89,7 +92,7 @@ export async function startCodeFixGeneration(
          * Step 4: Polling mechanism on code fix job status
          */
         throwIfCancelled()
-        const jobStatus = await pollCodeFixJobStatus(client, String(codeFixJob.jobId))
+        const jobStatus = await pollCodeFixJobStatus(client, String(codeFixJob.jobId), profile)
         if (jobStatus === 'Failed') {
             getLogger().verbose(`Code fix generation failed.`)
             throw new CreateCodeFixError()
@@ -101,7 +104,7 @@ export async function startCodeFixGeneration(
         throwIfCancelled()
         getLogger().verbose(`Code fix job succeeded and start processing result.`)
 
-        const { suggestedFix } = await getCodeFixJob(client, String(codeFixJob.jobId))
+        const { suggestedFix } = await getCodeFixJob(client, String(codeFixJob.jobId), profile)
         // eslint-disable-next-line aws-toolkits/no-json-stringify-in-log
         getLogger().verbose(`Suggested fix: ${JSON.stringify(suggestedFix)}`)
         return { suggestedFix, jobId }

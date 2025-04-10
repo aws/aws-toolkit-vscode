@@ -42,7 +42,7 @@ import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import { AuthController } from '../../../amazonq/auth/controller'
 import { getLogger } from '../../../shared/logger/logger'
 import { submitFeedback } from '../../../feedback/vue/submitFeedback'
-import { placeholder } from '../../../shared/vscode/commands2'
+import { Commands, placeholder } from '../../../shared/vscode/commands2'
 import { EditorContentController } from '../../../amazonq/commons/controllers/contentController'
 import { openUrl } from '../../../shared/utilities/vsCodeUtils'
 import { checkForDevFile, getPathsFromZipFilePath } from '../../../amazonq/util/files'
@@ -202,6 +202,9 @@ export class FeatureDevController {
         })
         this.chatControllerMessageListeners.storeCodeResultMessageId.event(async (data) => {
             return await this.storeCodeResultMessageId(data)
+        })
+        AuthUtil.instance.regionProfileManager.onDidChangeRegionProfile(() => {
+            this.sessionStorage.deleteAllSessions()
         })
     }
 
@@ -576,7 +579,7 @@ export class FeatureDevController {
                         open
                     )
                     if (resp === open) {
-                        await vscode.commands.executeCommand('aws.amazonq.AmazonQChatView.focus')
+                        await Commands.tryExecute('aws.amazonq.AmazonQChatView.focus')
                         // TODO add focusing on the specific tab once that's implemented
                     }
                 }

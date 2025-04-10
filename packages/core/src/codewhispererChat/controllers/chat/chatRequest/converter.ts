@@ -33,7 +33,10 @@ export const supportedLanguagesList = [
 
 export const filePathSizeLimit = 4_000
 
-export function triggerPayloadToChatRequest(triggerPayload: TriggerPayload): { conversationState: ConversationState } {
+export function triggerPayloadToChatRequest(triggerPayload: TriggerPayload): {
+    conversationState: ConversationState
+    profileArn?: string
+} {
     // Flexible truncation logic
     const remainingPayloadSize = 100_000
 
@@ -145,6 +148,12 @@ export function triggerPayloadToChatRequest(triggerPayload: TriggerPayload): { c
                 },
             }
         }
+
+        if (document.relativeFilePath === 'amazonwebservices.amazon-q-vscode.Amazon Q Logs') {
+            getLogger().debug('Active file is Amazon Q Logs, filter it out in the chat request')
+            document = undefined
+            cursorState = undefined
+        }
     }
 
     // service will throw validation exception if string is empty
@@ -182,6 +191,7 @@ export function triggerPayloadToChatRequest(triggerPayload: TriggerPayload): { c
             customizationArn: customizationArn,
             history: history || undefined,
         },
+        profileArn: triggerPayload.profile?.arn,
     }
 }
 

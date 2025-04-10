@@ -1,0 +1,38 @@
+{
+	"date": "2025-04-09",
+	"version": "1.55.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q Chat: Update chat history icon"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q Chat: chat occasionally freezes and displays gray screen"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q Chat: Set owner-only permissions for chat history and saved prompt files"
+		},
+		{
+			"type": "Feature",
+			"description": "`/test` generates tests in all languages, not only Java/Python"
+		},
+		{
+			"type": "Feature",
+			"description": "Amazon Q chat: Click export icon to save chat transcript in Markdown or HTML"
+		},
+		{
+			"type": "Feature",
+			"description": "SageMaker: Disable the unsupported agentic commands and welcome prompt"
+		},
+		{
+			"type": "Feature",
+			"description": "Amazon Q Chat: Add `@code` context for PHP, Ruby, Scala, Shell, and Swift projects"
+		},
+		{
+			"type": "Feature",
+			"description": "Enterprise users can choose their preferred Amazon Q profile to improve personalization and workflow across different business regions"
+		}
+	]
+}

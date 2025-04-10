@@ -177,6 +177,7 @@ export class ChatController {
     private userPromptsWatcher: vscode.FileSystemWatcher | undefined
     private readonly chatHistoryStorage: ChatHistoryStorage
     private chatHistoryDb = Database.getInstance()
+    private cancelTokenSource: vscode.CancellationTokenSource = new vscode.CancellationTokenSource()
 
     public constructor(
         private readonly chatControllerMessageListeners: ChatControllerMessageListeners,
@@ -203,6 +204,10 @@ export class ChatController {
             } else {
                 this.telemetryHelper.recordCloseChat()
             }
+        })
+
+        AuthUtil.instance.regionProfileManager.onDidChangeRegionProfile(() => {
+            this.cancelTokenSource.cancel()
         })
 
         this.chatControllerMessageListeners.processPromptChatMessage.onMessage((data) => {
@@ -317,6 +322,9 @@ export class ChatController {
         })
         this.chatControllerMessageListeners.processDetailedListItemSelectMessage.onMessage((data) => {
             return this.tabBarController.processItemSelectMessage(data)
+        })
+        AuthUtil.instance.regionProfileManager.onDidChangeRegionProfile(() => {
+            this.sessionStorage.deleteAllSessions()
         })
     }
 
@@ -723,7 +731,8 @@ export class ChatController {
                 }
 
                 const toolUseWithError = session.toolUseWithError
-                if (!toolUseWithError || !toolUseWithError.toolUse || !toolUseWithError.toolUse.input) {
+                if (!toolUseWithError || !toolUseWithError.toolUse) {
+                    session.setAgenticLoopInProgress(false)
                     return
                 }
                 session.setToolUseWithError(undefined)
@@ -810,8 +819,9 @@ export class ChatController {
                         userIntent: undefined,
                         customization: getSelectedCustomization(),
                         toolResults: toolResults,
+                        profile: AuthUtil.instance.regionProfileManager.activeRegionProfile,
                         origin: Origin.IDE,
-                        context: session.context ?? [],
+                        context: [],
                         relevantTextDocuments: [],
                         additionalContents: [],
                         documentReferences: [],
@@ -1027,6 +1037,7 @@ export class ChatController {
     private processException(e: any, tabID: string) {
         let errorMessage = ''
         let requestID = undefined
+        let statusCode = undefined
         const defaultMessage = 'Failed to get response'
         if (typeof e === 'string') {
             errorMessage = e.toUpperCase()
@@ -1036,6 +1047,7 @@ export class ChatController {
         } else if (e instanceof CodeWhispererStreamingServiceException) {
             errorMessage = e.message
             requestID = e.$metadata.requestId
+            statusCode = e.$metadata.httpStatusCode
         } else if (e instanceof Error) {
             errorMessage = e.message
         }
@@ -1055,11 +1067,11 @@ export class ChatController {
             }
         }
 
-        this.messenger.sendErrorMessage(errorMessage, tabID, requestID)
+        this.messenger.sendErrorMessage(errorMessage, tabID, requestID, statusCode)
         getLogger().error(`error: ${errorMessage} tabID: ${tabID} requestID: ${requestID}`)
 
         this.sessionStorage.deleteSession(tabID)
-        this.chatHistoryStorage.getTabHistory(tabID).clearRecentHistory()
+        this.chatHistoryStorage.getTabHistory(tabID).clear()
     }
 
     private async processContextMenuCommand(command: EditorContextCommand) {
@@ -1133,6 +1145,7 @@ export class ChatController {
                         codeQuery: context?.focusAreaContext?.names,
                         userIntent: this.userIntentRecognizer.getFromContextMenuCommand(command),
                         customization: getSelectedCustomization(),
+                        profile: AuthUtil.instance.regionProfileManager.activeRegionProfile,
                         additionalContents: [],
                         relevantTextDocuments: [],
                         documentReferences: [],
@@ -1220,6 +1233,7 @@ export class ChatController {
                     codeQuery: lastTriggerEvent.context?.focusAreaContext?.names,
                     userIntent: message.userIntent,
                     customization: getSelectedCustomization(),
+                    profile: AuthUtil.instance.regionProfileManager.activeRegionProfile,
                     contextLengths: {
                         ...defaultContextLengths,
                     },
@@ -1279,6 +1293,7 @@ export class ChatController {
                         userIntent: undefined,
                         customization: getSelectedCustomization(),
                         origin: Origin.IDE,
+                        profile: AuthUtil.instance.regionProfileManager.activeRegionProfile,
                         context: message.context ?? [],
                         relevantTextDocuments: [],
                         additionalContents: [],
@@ -1554,6 +1569,7 @@ export class ChatController {
         )
         let response: MessengerResponseType | undefined = undefined
         session.createNewTokenSource()
+        // TODO: onProfileChanged, abort previous response?
         try {
             if (!session.context && triggerPayload.context.length) {
                 // Only show context for the first message in the loop
@@ -1598,10 +1614,21 @@ export class ChatController {
                     response.$metadata.requestId
                 } metadata: ${inspect(response.$metadata, { depth: 12 })}`
             )
+          
             if (this.isTriggerCancelled(triggerID)) {
                 return
             }
-            await this.messenger.sendAIResponse(response, session, tabID, triggerID, triggerPayload, chatHistory)
+          
+            await this.messenger.sendAIResponse(
+                response,
+                session,
+                tabID,
+                triggerID,
+                triggerPayload,
+                chatHistory,
+                this.cancelTokenSource.token
+            )
+
         } catch (e: any) {
             this.telemetryHelper.recordMessageResponseError(triggerPayload, tabID, getHttpStatusCode(e) ?? 0)
             // clears session, record telemetry before this call

@@ -233,7 +233,11 @@ describe('transformByQ', function () {
         }
         sinon.stub(codeWhisperer.codeWhispererClient, 'codeModernizerGetCodeTransformation').resolves(mockJobResponse)
         transformByQState.setToSucceeded()
-        const status = await pollTransformationJob('dummyId', CodeWhispererConstants.validStatesForCheckingDownloadUrl)
+        const status = await pollTransformationJob(
+            'dummyId',
+            CodeWhispererConstants.validStatesForCheckingDownloadUrl,
+            undefined
+        )
         assert.strictEqual(status, 'COMPLETED')
     })
 

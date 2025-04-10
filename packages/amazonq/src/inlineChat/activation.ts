@@ -3,10 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as vscode from 'vscode'
-import { InlineChatController } from '../inlineChat/controller/inlineChatController'
-import { registerInlineCommands } from '../inlineChat/command/registerInlineCommands'
+import { InlineChatController } from './controller/inlineChatController'
+import { registerInlineCommands } from './command/registerInlineCommands'
 
-export function init(context: vscode.ExtensionContext) {
+export function activate(context: vscode.ExtensionContext) {
     const inlineChatController = new InlineChatController(context)
     registerInlineCommands(context, inlineChatController)
 }

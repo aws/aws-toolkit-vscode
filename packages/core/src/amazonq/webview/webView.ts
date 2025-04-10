@@ -20,6 +20,7 @@ import { MessageListener } from '../messages/messageListener'
 import { MessagePublisher } from '../messages/messagePublisher'
 import { TabType } from './ui/storages/tabsStorage'
 import { amazonqMark } from '../../shared/performance/marks'
+import { AuthUtil } from '../../codewhisperer/util/authUtil'
 
 export class AmazonQChatViewProvider implements WebviewViewProvider {
     public static readonly viewType = 'aws.amazonq.AmazonQChatView'
@@ -35,6 +36,15 @@ export class AmazonQChatViewProvider implements WebviewViewProvider {
     ) {
         registerAssetsHttpsFileSystem(extensionContext)
         this.webViewContentGenerator = new WebViewContentGenerator()
+
+        AuthUtil.instance.regionProfileManager.onDidChangeRegionProfile(async () => {
+            if (this.webView) {
+                this.webView.html = await this.webViewContentGenerator.generate(
+                    this.extensionContext.extensionUri,
+                    this.webView
+                )
+            }
+        })
     }
 
     public async resolveWebviewView(
@@ -63,6 +73,7 @@ export class AmazonQChatViewProvider implements WebviewViewProvider {
             webviewView.webview
         )
 
+        this.webView = webviewView.webview
         performance.mark(amazonqMark.open)
     }
 }
