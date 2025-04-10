@@ -759,7 +759,7 @@ export class ChatController {
                             const chatStream = new ChatStream(this.messenger, tabID, triggerID, toolUse, {
                                 requiresAcceptance: false,
                             })
-                            
+
                             if (tool.type === ToolType.FsWrite && toolUse.toolUseId) {
                                 const backup = await tool.tool.getBackup()
                                 session.setFsWriteBackup(toolUse.toolUseId, backup)
@@ -771,7 +771,11 @@ export class ChatController {
                                 return
                             }
 
-                            const output = await ToolUtils.invoke(tool, chatStream, cancellationToken)
+                            const output = await ToolUtils.invoke(
+                                tool,
+                                chatStream,
+                                ConversationTracker.getInstance().getTokenForTrigger(triggerID)
+                            )
                             ToolUtils.validateOutput(output)
 
                             toolResults.push({

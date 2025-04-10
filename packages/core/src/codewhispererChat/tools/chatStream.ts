@@ -10,7 +10,6 @@ import { ToolUse } from '@amzn/codewhisperer-streaming'
 import { CommandValidation } from './executeBash'
 import { Change } from 'diff'
 import { ConversationTracker } from '../storages/conversationTracker'
-import { ChatSession } from '../clients/chat/v0/chat'
 
 /**
  * A writable stream that feeds each chunk/line to the chat UI.
