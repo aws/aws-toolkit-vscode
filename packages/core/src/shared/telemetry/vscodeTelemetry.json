@@ -228,12 +228,6 @@
             "name": "executedCount",
             "type": "int",
             "description": "The number of executed operations"
-        },
-        {
-            "name": "cwsprAgenticChatInteractionType",
-            "type": "string",
-            "allowedValues": ["RejectDiff", "GeneratedDiff", "RunCommand", "GeneratedCommand", "StopChat"],
-            "description": "Type of interaction with agentic chat messages"
         }
     ],
     "metrics": [
@@ -557,25 +551,6 @@
         {
             "name": "amazonq_closeChat",
             "description": "When chat panel is closed"
-        },
-        {
-            "name": "amazonq_interactWithAgenticChat",
-            "description": "When a user interacts with a message in the agentic chat",
-            "metadata": [
-                {
-                    "type": "cwsprAgenticChatInteractionType"
-                },
-                {
-                    "type": "cwsprChatConversationId"
-                },
-                {
-                    "type": "cwsprChatConversationType"
-                },
-                {
-                    "type": "credentialStartUrl",
-                    "required": false
-                }
-            ]
         },
         {
             "name": "amazonq_startConversation",
