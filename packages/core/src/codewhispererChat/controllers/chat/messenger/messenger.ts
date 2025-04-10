@@ -57,7 +57,6 @@ import {
 } from '@aws/mynah-ui'
 import { Database } from '../../../../shared/db/chatDb/chatDb'
 import { TabType } from '../../../../amazonq/webview/ui/storages/tabsStorage'
-import { ChatHistoryManager } from '../../../storages/chatHistory'
 import { ToolType, ToolUtils } from '../../../tools/toolUtils'
 import { ChatStream } from '../../../tools/chatStream'
 import path from 'path'
@@ -185,7 +184,6 @@ export class Messenger {
         tabID: string,
         triggerID: string,
         triggerPayload: TriggerPayload,
-        chatHistoryManager: ChatHistoryManager,
         cancelToken: vscode.CancellationToken
     ) {
         let message = ''
@@ -507,17 +505,6 @@ export class Messenger {
                         tabID
                     )
                 )
-
-                chatHistoryManager.pushAssistantMessage({
-                    assistantResponseMessage: {
-                        messageId: messageID,
-                        content: message,
-                        references: codeReference,
-                        ...(toolUse &&
-                            toolUse.input !== undefined &&
-                            toolUse.input !== '' && { toolUses: [{ ...toolUse }] }),
-                    },
-                })
 
                 getLogger().info(
                     `All events received. requestId=%s counts=%s`,
