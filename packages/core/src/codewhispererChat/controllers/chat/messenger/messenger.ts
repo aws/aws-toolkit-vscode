@@ -281,7 +281,7 @@ export class Messenger {
                         let toolError = undefined
                         try {
                             if (this.isTriggerCancelled(triggerID)) {
-                              return
+                                return
                             }
                             toolUse.toolUseId = cwChatEvent.toolUseEvent.toolUseId ?? ''
                             toolUse.name = cwChatEvent.toolUseEvent.name ?? ''
@@ -530,17 +530,25 @@ export class Messenger {
                         )
                     )
                 }
-          
+
                 // Check if this trigger has been cancelled before sending final message
                 if (this.isTriggerCancelled(triggerID)) {
                     return
                 }
-          
+
+                if (!eventCounts.has('toolUseEvent')) {
+                    session.setAgenticLoopInProgress(false)
+                    session.setContext(undefined)
+
+                    // Mark the trigger as completed when the agentic loop ends
+                    conversationTracker.markTriggerCompleted(triggerID)
+                }
+
                 this.dispatcher.sendChatMessage(
                     new ChatMessage(
                         {
                             message: undefined,
-                            messageType: agenticLoopEnded ? 'answer' : 'answer-stream',
+                            messageType: !session.agenticLoopInProgress ? 'answer' : 'answer-stream',
                             followUps: followUps,
                             followUpsHeader: undefined,
                             relatedSuggestions: undefined,
@@ -565,13 +573,6 @@ export class Messenger {
                                 toolUse.input !== '' && { toolUses: [{ ...toolUse }] }),
                         },
                     })
-                }
-                if (!eventCounts.has('toolUseEvent')) {
-                    session.setAgenticLoopInProgress(false)
-                    session.setContext(undefined)
-
-                    // Mark the trigger as completed when the agentic loop ends
-                    conversationTracker.markTriggerCompleted(triggerID)
                 }
 
                 getLogger().info(
@@ -687,7 +688,7 @@ export class Messenger {
             getLogger().debug(`Tool log sending cancelled for tabID: ${tabID}, triggerID: ${triggerID}`)
             return
         }
-          
+
         // Handle read tool and list directory messages
         if (toolUse?.name === ToolType.FsRead || toolUse?.name === ToolType.ListDirectory) {
             return this.sendReadAndListDirToolMessage(toolUse, session, tabID, triggerID, messageIdToUpdate)

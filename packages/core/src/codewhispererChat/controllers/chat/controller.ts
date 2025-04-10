@@ -408,7 +408,6 @@ export class ChatController {
     private async processStopResponseMessage(message: StopResponseMessage) {
         const session = this.sessionStorage.getSession(message.tabID)
         session.tokenSource.cancel()
-        console.log('process stop has been triggered')
         session.setAgenticLoopInProgress(false)
         session.setToolUseWithError(undefined)
 
@@ -700,7 +699,6 @@ export class ChatController {
         this.editorContextExtractor
             .extractContextForTrigger('ChatMessage')
             .then(async (context) => {
-                console.log('message in controller for tool use:', message)
                 const triggerID = message.triggerId
 
                 // Check if this trigger has already been cancelled
@@ -726,7 +724,6 @@ export class ChatController {
 
                 const toolUseWithError = session.toolUseWithError
                 if (!toolUseWithError || !toolUseWithError.toolUse || !toolUseWithError.toolUse.input) {
-                    // Turn off AgentLoop flag if there's no tool use
                     return
                 }
                 session.setToolUseWithError(undefined)
@@ -762,7 +759,7 @@ export class ChatController {
                                     requiresAcceptance: false,
                                 }
                             )
-                            
+
                             if (tool.type === ToolType.FsWrite && toolUse.toolUseId) {
                                 const backup = await tool.tool.getBackup()
                                 session.setFsWriteBackup(toolUse.toolUseId, backup)

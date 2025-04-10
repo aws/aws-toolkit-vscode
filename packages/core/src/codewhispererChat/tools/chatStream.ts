@@ -4,6 +4,7 @@
  */
 
 import { Writable } from 'stream'
+import { getLogger } from '../../shared/logger/logger'
 import { Messenger } from '../controllers/chat/messenger/messenger'
 import { ToolUse } from '@amzn/codewhisperer-streaming'
 import { CommandValidation } from './executeBash'
@@ -28,7 +29,8 @@ export class ChatStream extends Writable {
         // emitEvent decides to show the streaming message or read/list directory tool message to the user.
         private readonly emitEvent: boolean,
         private readonly validation: CommandValidation,
-        private readonly changeList?: Change[]
+        private readonly changeList?: Change[],
+        private readonly logger = getLogger('chatStream')
     ) {
         super()
         this.logger.debug(
@@ -52,6 +54,7 @@ export class ChatStream extends Writable {
 
         const text = chunk.toString()
         this.accumulatedLogs += text
+        this.logger.debug(`ChatStream received chunk: ${text}, emitEvent to mynahUI: ${this.emitEvent}`)
         this.messenger.sendPartialToolLog(
             this.accumulatedLogs,
             this.tabID,
