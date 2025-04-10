@@ -7,6 +7,7 @@ import { strict as assert } from 'assert'
 import sinon from 'sinon'
 import { destructiveCommandWarningMessage, ExecuteBash } from '../../../codewhispererChat/tools/executeBash'
 import { ChildProcess } from '../../../shared/utilities/processUtils'
+import * as vscode from 'vscode'
 
 describe('ExecuteBash Tool', () => {
     let runStub: sinon.SinonStub
@@ -113,5 +114,56 @@ describe('ExecuteBash Tool', () => {
         assert.strictEqual(out.stderr, '')
 
         assert.strictEqual(invokeStub.callCount, 1)
+    })
+
+    it('requires acceptance if the command references an absolute file path outside the workspace', () => {
+        // Stub workspace folders to simulate a workspace at '/workspace/folder'
+        const workspaceStub = sinon
+            .stub(vscode.workspace, 'workspaceFolders')
+            .value([{ uri: { fsPath: '/workspace/folder' } } as any])
+        // Command references an absolute path outside the workspace
+        const execBash = new ExecuteBash({ command: 'cat /not/in/workspace/file.txt', cwd: '/workspace/folder' })
+        const result = execBash.requiresAcceptance()
+
+        assert.equal(
+            result.requiresAcceptance,
+            true,
+            'Should require acceptance for an absolute path outside of workspace'
+        )
+        workspaceStub.restore()
+    })
+
+    it('does NOT require acceptance if the command references a relative file path inside the workspace', () => {
+        // Stub workspace folders to simulate a workspace at '/workspace/folder'
+        const workspaceStub = sinon
+            .stub(vscode.workspace, 'workspaceFolders')
+            .value([{ uri: { fsPath: '/workspace/folder' } } as any])
+
+        // Command references a relative path that resolves within the workspace
+        const execBash = new ExecuteBash({ command: 'cat ./file.txt', cwd: '/workspace/folder' })
+        const result = execBash.requiresAcceptance()
+
+        assert.equal(result.requiresAcceptance, false, 'Relative path inside workspace should not require acceptance')
+
+        workspaceStub.restore()
+    })
+
+    it('does NOT require acceptance if there is no path-like token in the command', () => {
+        // Stub workspace folders (even though they are not used in this case)
+        const workspaceStub = sinon
+            .stub(vscode.workspace, 'workspaceFolders')
+            .value([{ uri: { fsPath: '/workspace/folder' } } as any])
+
+        // Command with tokens that do not look like file paths
+        const execBash = new ExecuteBash({ command: 'echo hello world', cwd: '/workspace/folder' })
+        const result = execBash.requiresAcceptance()
+
+        assert.equal(
+            result.requiresAcceptance,
+            false,
+            'A command without any path-like token should not require acceptance'
+        )
+
+        workspaceStub.restore()
     })
 })

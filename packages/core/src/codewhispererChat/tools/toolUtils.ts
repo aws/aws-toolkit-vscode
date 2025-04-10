@@ -45,15 +45,19 @@ export class ToolUtils {
     static requiresAcceptance(tool: Tool): CommandValidation {
         switch (tool.type) {
             case ToolType.FsRead:
-                return { requiresAcceptance: false }
+                return tool.tool.requiresAcceptance()
             case ToolType.FsWrite:
                 return { requiresAcceptance: false }
             case ToolType.ExecuteBash:
                 return tool.tool.requiresAcceptance()
             case ToolType.ListDirectory:
+<<<<<<< HEAD
                 return { requiresAcceptance: false }
             case ToolType.GrepSearch:
                 return { requiresAcceptance: false }
+=======
+                return tool.tool.requiresAcceptance()
+>>>>>>> 4e0659cbc (feat(chat): Add validation to fileRead, ListDir and ExecBash tools (#7008))
         }
     }
 
