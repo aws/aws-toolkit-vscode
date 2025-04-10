@@ -443,7 +443,7 @@ export const createMynahUI = (
             }
 
             if (item.contextList !== undefined && item.contextList.length > 0) {
-                item.header = createFileListHeader(item.contextList, item.title)
+                item.header = createFileListHeader(item.contextList, item.rootFolderTitle)
             }
 
             if (

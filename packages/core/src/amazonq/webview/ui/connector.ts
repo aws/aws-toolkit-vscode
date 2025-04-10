@@ -66,6 +66,7 @@ export interface CWCChatItem extends ChatItem {
     codeBlockLanguage?: string
     contextList?: Context[]
     title?: string
+    rootFolderTitle?: string
 }
 
 export interface Context {

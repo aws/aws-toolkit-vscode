@@ -125,6 +125,7 @@ export class Connector extends BaseConnector {
                 padding: messageData.padding ?? undefined,
                 fullWidth: messageData.fullWidth ?? undefined,
                 codeBlockActions: messageData.codeBlockActions ?? undefined,
+                rootFolderTitle: messageData.rootFolderTitle ?? undefined,
             }
 
             if (messageData.relatedSuggestions !== undefined) {
@@ -288,14 +289,15 @@ export class Connector extends BaseConnector {
         }
 
         if (messageData.type === 'asyncEventProgressMessage') {
-            const enableStopAction = true
+            const enableStopAction = false
+            const isPromptInputDisabled = true
             this.onAsyncEventProgress(
                 messageData.tabID,
                 messageData.inProgress,
                 messageData.message ?? undefined,
                 messageData.messageId ?? undefined,
                 enableStopAction,
-                false
+                isPromptInputDisabled
             )
             return
         }

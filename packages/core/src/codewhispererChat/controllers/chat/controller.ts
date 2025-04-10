@@ -1505,7 +1505,7 @@ export class ChatController {
         let response: MessengerResponseType | undefined = undefined
         session.createNewTokenSource()
         try {
-            if (!session.context) {
+            if (!session.context && triggerPayload.context.length) {
                 // Only show context for the first message in the loop
                 this.messenger.sendContextMessage(tabID, triggerID, triggerPayload.documentReferences)
                 session.setContext(triggerPayload.context)
