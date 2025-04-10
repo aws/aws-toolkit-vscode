@@ -272,8 +272,8 @@ export class Messenger {
                                 toolUse.input = JSON.parse(toolUseInput)
                             } catch (error: any) {
                                 getLogger().error(`JSON parse error for toolUseInput: ${toolUseInput}`)
-                                // set toolUse.input to the raw value
-                                toolUse.input = toolUseInput
+                                // set toolUse.input to be empty valid json object
+                                toolUse.input = {}
                                 error.message = `Tool input has invalid JSON format: ${error.message}`
                                 // throw it out to allow the error to be handled in the catch block
                                 throw error
@@ -986,6 +986,26 @@ export class Messenger {
                     followUpsHeader: undefined,
                     relatedSuggestions: undefined,
                     triggerID: triggerId,
+                    messageID: '',
+                    userIntent: undefined,
+                    codeBlockLanguage: undefined,
+                    contextList: undefined,
+                },
+                tabID
+            )
+        )
+    }
+
+    public sendDirectiveMessage(tabID: string, triggerID: string, message: string) {
+        this.dispatcher.sendChatMessage(
+            new ChatMessage(
+                {
+                    message,
+                    messageType: 'directive',
+                    followUps: undefined,
+                    followUpsHeader: undefined,
+                    relatedSuggestions: undefined,
+                    triggerID,
                     messageID: '',
                     userIntent: undefined,
                     codeBlockLanguage: undefined,

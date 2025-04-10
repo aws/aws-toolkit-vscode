@@ -10,6 +10,7 @@ import { ToolUse } from '@amzn/codewhisperer-streaming'
 import { CommandValidation } from './executeBash'
 import { Change } from 'diff'
 import { ChatSession } from '../clients/chat/v0/chat'
+import { i18n } from '../../shared/i18n-helper'
 
 /**
  * A writable stream that feeds each chunk/line to the chat UI.
@@ -38,6 +39,13 @@ export class ChatStream extends Writable {
         )
         if (!emitEvent) {
             return
+        }
+        if (validation.requiresAcceptance) {
+            this.messenger.sendDirectiveMessage(
+                tabID,
+                triggerID,
+                i18n('AWS.amazonq.chat.directive.runCommandToProceed')
+            )
         }
         // For FsRead and ListDirectory tools If messageIdToUpdate is undefined, we need to first create an empty message with messageId so it can be updated later
         if (isReadorList && !messageIdToUpdate) {

@@ -113,7 +113,7 @@ export class SearchView extends UiMessage {
     override type = 'drawNewSearchViewState'
 }
 
-export type ChatMessageType = 'answer-stream' | 'answer-part' | 'answer'
+export type ChatMessageType = 'answer-stream' | 'answer-part' | 'answer' | 'directive'
 
 export interface CodeReference {
     licenseName?: string

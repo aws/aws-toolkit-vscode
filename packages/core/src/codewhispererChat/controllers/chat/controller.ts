@@ -903,10 +903,19 @@ export class ChatController {
     private async processPromptInputOptionChange(message: PromptInputOptionChange) {
         const session = this.sessionStorage.getSession(message.tabID)
         const promptTypeValue = message.optionsValues['prompt-type']
-        // TODO: display message: You turned off pair programmer mode. Q will not include code diffs or run commands in the chat.
         if (promptTypeValue === 'pair-programming-on') {
             session.setPairProgrammingModeOn(true)
+            this.messenger.sendDirectiveMessage(
+                message.tabID,
+                promptTypeValue,
+                i18n('AWS.amazonq.chat.directive.pairProgrammingModeOn')
+            )
         } else {
+            this.messenger.sendDirectiveMessage(
+                message.tabID,
+                promptTypeValue,
+                i18n('AWS.amazonq.chat.directive.pairProgrammingModeOff')
+            )
             session.setPairProgrammingModeOn(false)
         }
     }
