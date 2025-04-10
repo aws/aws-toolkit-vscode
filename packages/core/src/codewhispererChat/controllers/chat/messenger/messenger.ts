@@ -70,8 +70,6 @@ import { localize } from '../../../../shared/utilities/vsCodeUtils'
 import { getDiffLinesFromChanges } from '../../../../shared/utilities/diffUtils'
 import { ConversationTracker } from '../../../storages/conversationTracker'
 import { waitUntilWithCancellation } from '../../../../shared/utilities/timeoutUtils'
-import { FsReadParams } from '../../../tools/fsRead'
-import { ListDirectoryParams } from '../../../tools/listDirectory'
 
 export type StaticTextResponseType = 'quick-action-help' | 'onboarding-help' | 'transform' | 'help'
 
