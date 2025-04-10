@@ -272,7 +272,16 @@ export class Messenger {
                         toolUse.toolUseId = cwChatEvent.toolUseEvent.toolUseId ?? ''
                         toolUse.name = cwChatEvent.toolUseEvent.name ?? ''
                         try {
-                            toolUse.input = JSON.parse(toolUseInput)
+                            try {
+                                toolUse.input = JSON.parse(toolUseInput)
+                            } catch (error: any) {
+                                getLogger().error(`JSON parse error for toolUseInput: ${toolUseInput}`)
+                                // set toolUse.input to the raw value
+                                toolUse.input = toolUseInput
+                                error.message = `Tool input has invalid JSON format: ${error.message}`
+                                // throw it out to allow the error to be handled in the catch block
+                                throw error
+                            }
                             const availableToolsNames = (session.pairProgrammingModeOn ? tools : noWriteTools).map(
                                 (item) => item.toolSpecification?.name
                             )
