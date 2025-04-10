@@ -4,7 +4,6 @@
  */
 
 import * as vscode from 'vscode'
-import { waitUntil } from '../../../../shared/utilities/timeoutUtils'
 import {
     AppToWebViewMessageDispatcher,
     AuthNeededException,
@@ -394,9 +393,13 @@ export class Messenger {
                             session.setToolUseWithError({ toolUse, error })
                             // trigger processToolUseMessage to handle the error
                             this.dispatcher.sendCustomFormActionMessage(
-                                new CustomFormActionMessage(tabID, {
-                                    id: 'generic-tool-execution',
-                                })
+                                new CustomFormActionMessage(
+                                    tabID,
+                                    {
+                                        id: 'generic-tool-execution',
+                                    },
+                                    triggerID
+                                )
                             )
                         }
                         // TODO: Add a spinner component for fsWrite, previous implementation is causing lag in mynah UX.
