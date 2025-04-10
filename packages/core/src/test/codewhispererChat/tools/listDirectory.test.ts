@@ -6,12 +6,18 @@ import assert from 'assert'
 import { ListDirectory } from '../../../codewhispererChat/tools/listDirectory'
 import { TestFolder } from '../../testUtil'
 import path from 'path'
+import * as vscode from 'vscode'
+import sinon from 'sinon'
 
 describe('ListDirectory Tool', () => {
     let testFolder: TestFolder
 
     before(async () => {
         testFolder = await TestFolder.create()
+    })
+
+    afterEach(() => {
+        sinon.restore()
     })
 
     it('throws if path is empty', async () => {
@@ -85,5 +91,33 @@ describe('ListDirectory Tool', () => {
 
         assert.strictEqual(result.output.kind, 'text')
         assert.ok(result.output.content.length > 0)
+    })
+
+    it('should require acceptance if fsPath is outside the workspace', () => {
+        const workspaceStub = sinon
+            .stub(vscode.workspace, 'workspaceFolders')
+            .value([{ uri: { fsPath: '/workspace/folder' } } as any])
+        const listDir = new ListDirectory({ path: '/not/in/workspace/dir', maxDepth: 0 })
+        const result = listDir.requiresAcceptance()
+        assert.equal(
+            result.requiresAcceptance,
+            true,
+            'Expected requiresAcceptance to be true for a path outside the workspace'
+        )
+        workspaceStub.restore()
+    })
+
+    it('should not require acceptance if fsPath is inside the workspace', () => {
+        const workspaceStub = sinon
+            .stub(vscode.workspace, 'workspaceFolders')
+            .value([{ uri: { fsPath: '/workspace/folder' } } as any])
+        const listDir = new ListDirectory({ path: '/workspace/folder/mydir', maxDepth: 0 })
+        const result = listDir.requiresAcceptance()
+        assert.equal(
+            result.requiresAcceptance,
+            false,
+            'Expected requiresAcceptance to be false for a path inside the workspace'
+        )
+        workspaceStub.restore()
     })
 })
