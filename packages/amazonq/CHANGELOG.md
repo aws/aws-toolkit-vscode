@@ -1,3 +1,8 @@
+## 1.57.0 2025-04-10
+
+- **Bug Fix** Fix bug where generate fix does not work
+- **Bug Fix** Fix bug where review shows 0 findings
+
 ## 1.56.0 2025-04-09
 
 - **Bug Fix** Improve status message while loading Amazon Q Profiles during login
