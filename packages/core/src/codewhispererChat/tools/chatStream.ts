@@ -9,6 +9,7 @@ import { Messenger } from '../controllers/chat/messenger/messenger'
 import { ToolUse } from '@amzn/codewhisperer-streaming'
 import { CommandValidation } from './executeBash'
 import { Change } from 'diff'
+import { ChatSession } from '../clients/chat/v0/chat'
 
 /**
  * A writable stream that feeds each chunk/line to the chat UI.
@@ -22,6 +23,10 @@ export class ChatStream extends Writable {
         private readonly tabID: string,
         private readonly triggerID: string,
         private readonly toolUse: ToolUse | undefined,
+        private readonly session: ChatSession,
+        private readonly messageIdToUpdate: string | undefined,
+        // emitEvent decides to show the streaming message or read/list directory tool message to the user.
+        private readonly emitEvent: boolean,
         private readonly validation: CommandValidation,
         private readonly isReadorList: boolean,
         private readonly changeList?: Change[],
@@ -53,6 +58,8 @@ export class ChatStream extends Writable {
             this.tabID,
             this.triggerID,
             this.toolUse,
+            this.session,
+            this.messageIdToUpdate,
             this.validation,
             this.changeList
         )

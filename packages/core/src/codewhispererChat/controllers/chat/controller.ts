@@ -1215,6 +1215,7 @@ export class ChatController {
     private async processPromptMessageAsNewThread(message: PromptMessage) {
         const session = this.sessionStorage.getSession(message.tabID)
         session.clearListOfReadFiles()
+        session.clearListOfReadFolders()
         session.setShowDiffOnFileWrite(false)
         this.editorContextExtractor
             .extractContextForTrigger('ChatMessage')
