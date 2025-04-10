@@ -78,7 +78,8 @@ export async function startCodeFixGeneration(
                     : 'BLOCK',
             },
             codeFixName,
-            issue.ruleId
+            issue.ruleId,
+            profile
         )
         if (codeFixJob.status === 'Failed') {
             throw new CreateCodeFixError()
