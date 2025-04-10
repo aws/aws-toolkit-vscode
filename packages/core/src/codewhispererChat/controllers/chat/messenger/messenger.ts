@@ -264,10 +264,9 @@ export class Messenger {
                     }
 
                     if (cwChatEvent.toolUseEvent?.stop) {
-                        let toolError = undefined
+                        toolUse.toolUseId = cwChatEvent.toolUseEvent.toolUseId ?? ''
+                        toolUse.name = cwChatEvent.toolUseEvent.name ?? ''
                         try {
-                            toolUse.toolUseId = cwChatEvent.toolUseEvent.toolUseId ?? ''
-                            toolUse.name = cwChatEvent.toolUseEvent.name ?? ''
                             toolUse.input = JSON.parse(toolUseInput)
                             const availableToolsNames = (session.pairProgrammingModeOn ? tools : noWriteTools).map(
                                 (item) => item.toolSpecification?.name
@@ -327,6 +326,10 @@ export class Messenger {
                                 ) {
                                     session.setMessageIdToUpdateListDirectory(toolUse.toolUseId)
                                 }
+                                getLogger().debug(
+                                    `SetToolUseWithError: ${toolUse.name}:${toolUse.toolUseId} with no error`
+                                )
+                                session.setToolUseWithError({ toolUse, error: undefined })
 
                                 if (!validation.requiresAcceptance) {
                                     // Need separate id for read tool and safe bash command execution as 'run-shell-command' id is required to state in cwChatConnector.ts which will impact generic tool execution.
@@ -345,12 +348,19 @@ export class Messenger {
                                     }
                                 }
                             } else {
-                                toolError = new Error('Tool not found')
+                                throw new Error('Tool not found')
                             }
                         } catch (error: any) {
-                            toolError = error
-                        } finally {
-                            session.setToolUseWithError({ toolUse, error: toolError })
+                            getLogger().error(
+                                `toolUseId: ${toolUse.toolUseId}, toolUseName: ${toolUse.name}, error: ${error}`
+                            )
+                            session.setToolUseWithError({ toolUse, error })
+                            // trigger processToolUseMessage to handle the error
+                            this.dispatcher.sendCustomFormActionMessage(
+                                new CustomFormActionMessage(tabID, {
+                                    id: 'generic-tool-execution',
+                                })
+                            )
                         }
                         // TODO: Add a spinner component for fsWrite, previous implementation is causing lag in mynah UX.
                     }
@@ -566,12 +576,17 @@ export class Messenger {
         )
     }
 
-    public sendErrorMessage(errorMessage: string | undefined, tabID: string, requestID: string | undefined) {
+    public sendErrorMessage(
+        errorMessage: string | undefined,
+        tabID: string,
+        requestID: string | undefined,
+        statusCode?: number
+    ) {
         this.showChatExceptionMessage(
             {
                 errorMessage: errorMessage,
                 sessionID: undefined,
-                statusCode: undefined,
+                statusCode: statusCode?.toString(),
             },
             tabID,
             requestID

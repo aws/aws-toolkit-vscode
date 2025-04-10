@@ -145,6 +145,12 @@ export function triggerPayloadToChatRequest(triggerPayload: TriggerPayload): { c
                 },
             }
         }
+
+        if (document.relativeFilePath === 'amazonwebservices.amazon-q-vscode.Amazon Q Logs') {
+            getLogger().debug('Active file is Amazon Q Logs, filter it out in the chat request')
+            document = undefined
+            cursorState = undefined
+        }
     }
 
     // service will throw validation exception if string is empty
