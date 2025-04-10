@@ -125,6 +125,7 @@ export class Connector extends BaseConnector {
                 padding: messageData.padding ?? undefined,
                 fullWidth: messageData.fullWidth ?? undefined,
                 codeBlockActions: messageData.codeBlockActions ?? undefined,
+                rootFolderTitle: messageData.rootFolderTitle ?? undefined,
             }
 
             if (messageData.relatedSuggestions !== undefined) {
@@ -176,6 +177,33 @@ export class Connector extends BaseConnector {
 
             return
         }
+    }
+
+    private processToolMessage = async (messageData: any): Promise<void> => {
+        if (this.onChatAnswerUpdated === undefined) {
+            return
+        }
+        const answer: CWCChatItem = {
+            type: messageData.messageType,
+            messageId: messageData.messageID ?? messageData.triggerID,
+            body: messageData.message,
+            followUp: messageData.followUps,
+            canBeVoted: messageData.canBeVoted ?? false,
+            codeReference: messageData.codeReference,
+            userIntent: messageData.contextList,
+            codeBlockLanguage: messageData.codeBlockLanguage,
+            contextList: messageData.contextList,
+            title: messageData.title,
+            buttons: messageData.buttons,
+            fileList: messageData.fileList,
+            header: messageData.header ?? undefined,
+            padding: messageData.padding ?? undefined,
+            fullWidth: messageData.fullWidth ?? undefined,
+            codeBlockActions: messageData.codeBlockActions ?? undefined,
+            rootFolderTitle: messageData.rootFolderTitle,
+        }
+        this.onChatAnswerUpdated(messageData.tabID, answer)
+        return
     }
 
     private storeChatItem(tabId: string, messageId: string, item: ChatItem): void {
@@ -237,6 +265,11 @@ export class Connector extends BaseConnector {
             return
         }
 
+        if (messageData.type === 'toolMessage') {
+            await this.processToolMessage(messageData)
+            return
+        }
+
         if (messageData.type === 'editorContextCommandMessage') {
             await this.processEditorContextCommandMessage(messageData)
             return
@@ -257,13 +290,14 @@ export class Connector extends BaseConnector {
         }
 
         if (messageData.type === 'asyncEventProgressMessage') {
+            const isPromptInputDisabled = true
             this.onAsyncEventProgress(
                 messageData.tabID,
                 messageData.inProgress,
                 messageData.message ?? undefined,
                 messageData.messageId ?? undefined,
                 messageData.inProgress,
-                false
+                isPromptInputDisabled
             )
             return
         }
@@ -362,7 +396,6 @@ export class Connector extends BaseConnector {
                 break
             case 'run-shell-command':
                 answer.header = {
-                    icon: 'code-block' as MynahIconsType,
                     body: 'shell',
                     status: {
                         icon: 'ok' as MynahIconsType,
@@ -373,7 +406,6 @@ export class Connector extends BaseConnector {
                 break
             case 'reject-shell-command':
                 answer.header = {
-                    icon: 'code-block' as MynahIconsType,
                     body: 'shell',
                     status: {
                         icon: 'cancel' as MynahIconsType,

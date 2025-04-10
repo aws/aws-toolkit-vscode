@@ -13,11 +13,10 @@ import * as vscode from 'vscode'
 
 export enum CommandCategory {
     ReadOnly,
-    HighRisk,
+    Mutate,
     Destructive,
 }
 
-export const dangerousPatterns = new Set(['<(', '$(', '`'])
 export const splitOperators = new Set(['|', '&&', '||', '>'])
 export const splitOperatorsArray = Array.from(splitOperators)
 export const commandCategories = new Map<string, CommandCategory>([
@@ -48,45 +47,37 @@ export const commandCategories = new Map<string, CommandCategory>([
     ['netstat', CommandCategory.ReadOnly],
     ['ss', CommandCategory.ReadOnly],
     ['dig', CommandCategory.ReadOnly],
-    ['grep', CommandCategory.ReadOnly],
     ['wc', CommandCategory.ReadOnly],
     ['sort', CommandCategory.ReadOnly],
     ['diff', CommandCategory.ReadOnly],
     ['head', CommandCategory.ReadOnly],
     ['tail', CommandCategory.ReadOnly],
 
-    // HighRisk commands
-    ['chmod', CommandCategory.HighRisk],
-    ['chown', CommandCategory.HighRisk],
-    ['mv', CommandCategory.HighRisk],
-    ['cp', CommandCategory.HighRisk],
-    ['ln', CommandCategory.HighRisk],
-    ['mount', CommandCategory.HighRisk],
-    ['umount', CommandCategory.HighRisk],
-    ['kill', CommandCategory.HighRisk],
-    ['killall', CommandCategory.HighRisk],
-    ['pkill', CommandCategory.HighRisk],
-    ['iptables', CommandCategory.HighRisk],
-    ['route', CommandCategory.HighRisk],
-    ['systemctl', CommandCategory.HighRisk],
-    ['service', CommandCategory.HighRisk],
-    ['crontab', CommandCategory.HighRisk],
-    ['at', CommandCategory.HighRisk],
-    ['tar', CommandCategory.HighRisk],
-    ['awk', CommandCategory.HighRisk],
-    ['sed', CommandCategory.HighRisk],
-    ['wget', CommandCategory.HighRisk],
-    ['curl', CommandCategory.HighRisk],
-    ['nc', CommandCategory.HighRisk],
-    ['ssh', CommandCategory.HighRisk],
-    ['scp', CommandCategory.HighRisk],
-    ['ftp', CommandCategory.HighRisk],
-    ['sftp', CommandCategory.HighRisk],
-    ['rsync', CommandCategory.HighRisk],
-    ['chroot', CommandCategory.HighRisk],
-    ['lsof', CommandCategory.HighRisk],
-    ['strace', CommandCategory.HighRisk],
-    ['gdb', CommandCategory.HighRisk],
+    // Mutable commands
+    ['chmod', CommandCategory.Mutate],
+    ['curl', CommandCategory.Mutate],
+    ['mount', CommandCategory.Mutate],
+    ['umount', CommandCategory.Mutate],
+    ['systemctl', CommandCategory.Mutate],
+    ['service', CommandCategory.Mutate],
+    ['crontab', CommandCategory.Mutate],
+    ['at', CommandCategory.Mutate],
+    ['nc', CommandCategory.Mutate],
+    ['ssh', CommandCategory.Mutate],
+    ['scp', CommandCategory.Mutate],
+    ['ftp', CommandCategory.Mutate],
+    ['sftp', CommandCategory.Mutate],
+    ['rsync', CommandCategory.Mutate],
+    ['chroot', CommandCategory.Mutate],
+    ['strace', CommandCategory.Mutate],
+    ['gdb', CommandCategory.Mutate],
+    ['apt', CommandCategory.Mutate],
+    ['yum', CommandCategory.Mutate],
+    ['dnf', CommandCategory.Mutate],
+    ['pacman', CommandCategory.Mutate],
+    ['exec', CommandCategory.Mutate],
+    ['eval', CommandCategory.Mutate],
+    ['xargs', CommandCategory.Mutate],
 
     // Destructive commands
     ['rm', CommandCategory.Destructive],
@@ -105,22 +96,17 @@ export const commandCategories = new Map<string, CommandCategory>([
     ['insmod', CommandCategory.Destructive],
     ['rmmod', CommandCategory.Destructive],
     ['modprobe', CommandCategory.Destructive],
-    ['apt', CommandCategory.Destructive],
-    ['yum', CommandCategory.Destructive],
-    ['dnf', CommandCategory.Destructive],
-    ['pacman', CommandCategory.Destructive],
-    ['perl', CommandCategory.Destructive],
-    ['python', CommandCategory.Destructive],
-    ['bash', CommandCategory.Destructive],
-    ['sh', CommandCategory.Destructive],
-    ['exec', CommandCategory.Destructive],
-    ['eval', CommandCategory.Destructive],
-    ['xargs', CommandCategory.Destructive],
+    ['kill', CommandCategory.Destructive],
+    ['killall', CommandCategory.Destructive],
+    ['pkill', CommandCategory.Destructive],
+    ['iptables', CommandCategory.Destructive],
+    ['route', CommandCategory.Destructive],
+    ['chown', CommandCategory.Destructive],
 ])
 export const maxBashToolResponseSize: number = 1024 * 1024 // 1MB
 export const lineCount: number = 1024
 export const destructiveCommandWarningMessage = '⚠️ WARNING: Destructive command detected:\n\n'
-export const highRiskCommandWarningMessage = '⚠️ WARNING: High risk command detected:\n\n'
+export const mutateCommandWarningMessage = 'Mutation command:\n\n'
 
 export interface ExecuteBashParams {
     command: string
@@ -199,22 +185,12 @@ export class ExecuteBash {
                 switch (category) {
                     case CommandCategory.Destructive:
                         return { requiresAcceptance: true, warning: destructiveCommandWarningMessage }
-                    case CommandCategory.HighRisk:
-                        return {
-                            requiresAcceptance: true,
-                            warning: highRiskCommandWarningMessage,
-                        }
+                    case CommandCategory.Mutate:
+                        return { requiresAcceptance: true, warning: mutateCommandWarningMessage }
                     case CommandCategory.ReadOnly:
-                        if (
-                            cmdArgs.some((arg) =>
-                                Array.from(dangerousPatterns).some((pattern) => arg.includes(pattern))
-                            )
-                        ) {
-                            return { requiresAcceptance: true, warning: highRiskCommandWarningMessage }
-                        }
                         continue
                     default:
-                        return { requiresAcceptance: true, warning: highRiskCommandWarningMessage }
+                        return { requiresAcceptance: true }
                 }
             }
             return { requiresAcceptance: false }

@@ -20,6 +20,7 @@ import {
     CloseDetailedListMessage,
     SelectTabMessage,
     ChatItemHeader,
+    ToolMessage,
 } from '../../../view/connector/connector'
 import { EditorContextCommandType } from '../../../commands/registerCommands'
 import { ChatResponseStream as qdevChatResponseStream } from '@amzn/amazon-q-developer-streaming-client'
@@ -69,13 +70,10 @@ import { localize } from '../../../../shared/utilities/vsCodeUtils'
 import { getDiffLinesFromChanges } from '../../../../shared/utilities/diffUtils'
 import { ConversationTracker } from '../../../storages/conversationTracker'
 import { waitUntilWithCancellation } from '../../../../shared/utilities/timeoutUtils'
+import { FsReadParams } from '../../../tools/fsRead'
+import { ListDirectoryParams } from '../../../tools/listDirectory'
 
-export type StaticTextResponseType =
-    | 'quick-action-help'
-    | 'onboarding-help'
-    | 'transform'
-    | 'help'
-    | 'reject-shell-command'
+export type StaticTextResponseType = 'quick-action-help' | 'onboarding-help' | 'transform' | 'help'
 
 export type MessengerResponseType = {
     $metadata: { requestId?: string; httpStatusCode?: number }
@@ -148,7 +146,7 @@ export class Messenger {
             new ChatMessage(
                 {
                     message: '',
-                    messageType: 'answer',
+                    messageType: 'answer-stream',
                     followUps: undefined,
                     followUpsHeader: undefined,
                     relatedSuggestions: undefined,
@@ -157,7 +155,8 @@ export class Messenger {
                     userIntent: undefined,
                     codeBlockLanguage: undefined,
                     contextList: mergedRelevantDocuments,
-                    title: 'Context',
+                    title: '',
+                    rootFolderTitle: 'Context',
                     buttons: undefined,
                     fileList: undefined,
                     canBeVoted: false,
@@ -279,15 +278,14 @@ export class Messenger {
                     }
 
                     if (cwChatEvent.toolUseEvent?.stop) {
-                        if (this.isTriggerCancelled(triggerID)) {
-                            return
-                        }
-                        toolUse.input = JSON.parse(toolUseInput)
-                        toolUse.toolUseId = cwChatEvent.toolUseEvent.toolUseId ?? ''
-                        toolUse.name = cwChatEvent.toolUseEvent.name ?? ''
-
                         let toolError = undefined
                         try {
+                            if (this.isTriggerCancelled(triggerID)) {
+                              return
+                            }
+                            toolUse.toolUseId = cwChatEvent.toolUseEvent.toolUseId ?? ''
+                            toolUse.name = cwChatEvent.toolUseEvent.name ?? ''
+                            toolUse.input = JSON.parse(toolUseInput)
                             const availableToolsNames = (session.pairProgrammingModeOn ? tools : noWriteTools).map(
                                 (item) => item.toolSpecification?.name
                             )
@@ -301,16 +299,51 @@ export class Messenger {
                                     session.setShowDiffOnFileWrite(true)
                                     changeList = await tool.tool.getDiffChanges()
                                 }
+                                if (tool.type === ToolType.FsRead) {
+                                    const input = toolUse.input as unknown as FsReadParams
+                                    // Check if this file path is already in the readFiles list
+                                    const isFileAlreadyRead = session.readFiles.some(
+                                        (file) => file.relativeFilePath === input.path
+                                    )
+                                    if (!isFileAlreadyRead) {
+                                        session.addToReadFiles({
+                                            relativeFilePath: input?.path,
+                                            lineRanges: [{ first: -1, second: -1 }],
+                                        })
+                                    }
+                                } else if (tool.type === ToolType.ListDirectory) {
+                                    const input = toolUse.input as unknown as ListDirectoryParams
+                                    session.setReadFolders({
+                                        relativeFilePath: input?.path,
+                                        lineRanges: [{ first: -1, second: -1 }],
+                                    })
+                                }
                                 const validation = ToolUtils.requiresAcceptance(tool)
                                 const chatStream = new ChatStream(
                                     this,
                                     tabID,
                                     triggerID,
                                     toolUse,
+                                    session,
+                                    tool.type === ToolType.FsRead
+                                        ? session.messageIdToUpdate
+                                        : session.messageIdToUpdateListDirectory,
+                                    true,
                                     validation,
                                     changeList
                                 )
                                 await ToolUtils.queueDescription(tool, chatStream)
+                                if (session.messageIdToUpdate === undefined && tool.type === ToolType.FsRead) {
+                                    // Store the first messageId in a chain of tool uses
+                                    session.setMessageIdToUpdate(toolUse.toolUseId)
+                                }
+
+                                if (
+                                    session.messageIdToUpdateListDirectory === undefined &&
+                                    tool.type === ToolType.ListDirectory
+                                ) {
+                                    session.setMessageIdToUpdateListDirectory(toolUse.toolUseId)
+                                }
 
                                 if (!validation.requiresAcceptance) {
                                     // Need separate id for read tool and safe bash command execution as 'run-shell-command' id is required to state in cwChatConnector.ts which will impact generic tool execution.
@@ -497,17 +530,17 @@ export class Messenger {
                         )
                     )
                 }
-
+          
                 // Check if this trigger has been cancelled before sending final message
                 if (this.isTriggerCancelled(triggerID)) {
                     return
                 }
-
+          
                 this.dispatcher.sendChatMessage(
                     new ChatMessage(
                         {
                             message: undefined,
-                            messageType: 'answer',
+                            messageType: agenticLoopEnded ? 'answer' : 'answer-stream',
                             followUps: followUps,
                             followUpsHeader: undefined,
                             relatedSuggestions: undefined,
@@ -563,6 +596,26 @@ export class Messenger {
             })
     }
 
+    public sendInitialToolMessage(tabID: string, triggerID: string, toolUseId: string | undefined) {
+        this.dispatcher.sendChatMessage(
+            new ChatMessage(
+                {
+                    message: '',
+                    messageType: 'answer',
+                    followUps: undefined,
+                    followUpsHeader: undefined,
+                    relatedSuggestions: undefined,
+                    triggerID,
+                    messageID: toolUseId ?? 'toolUse',
+                    userIntent: undefined,
+                    codeBlockLanguage: undefined,
+                    contextList: undefined,
+                },
+                tabID
+            )
+        )
+    }
+
     public sendErrorMessage(errorMessage: string | undefined, tabID: string, requestID: string | undefined) {
         this.showChatExceptionMessage(
             {
@@ -575,11 +628,57 @@ export class Messenger {
         )
     }
 
+    private sendReadAndListDirToolMessage(
+        toolUse: ToolUse,
+        session: ChatSession,
+        tabID: string,
+        triggerID: string,
+        messageIdToUpdate?: string
+    ) {
+        const contextList = toolUse.name === ToolType.ListDirectory ? session.readFolders : session.readFiles
+        const isFileRead = toolUse.name === ToolType.FsRead
+        const items = isFileRead ? session.readFiles : session.readFolders
+        const itemCount = items.length
+
+        const title =
+            itemCount < 1
+                ? 'Gathering context'
+                : isFileRead
+                  ? `${itemCount} file${itemCount > 1 ? 's' : ''} read`
+                  : `${itemCount} ${itemCount === 1 ? 'directory' : 'directories'} listed`
+
+        this.dispatcher.sendToolMessage(
+            new ToolMessage(
+                {
+                    message: '',
+                    messageType: 'answer-part',
+                    followUps: undefined,
+                    followUpsHeader: undefined,
+                    relatedSuggestions: undefined,
+                    triggerID,
+                    messageID: messageIdToUpdate ?? toolUse?.toolUseId ?? '',
+                    userIntent: undefined,
+                    codeBlockLanguage: undefined,
+                    contextList,
+                    canBeVoted: false,
+                    buttons: undefined,
+                    fullWidth: false,
+                    padding: false,
+                    codeBlockActions: undefined,
+                    rootFolderTitle: title,
+                },
+                tabID
+            )
+        )
+    }
+
     public sendPartialToolLog(
         message: string,
         tabID: string,
         triggerID: string,
         toolUse: ToolUse | undefined,
+        session: ChatSession,
+        messageIdToUpdate: string | undefined,
         validation: CommandValidation,
         changeList?: Change[]
     ) {
@@ -588,30 +687,32 @@ export class Messenger {
             getLogger().debug(`Tool log sending cancelled for tabID: ${tabID}, triggerID: ${triggerID}`)
             return
         }
+          
+        // Handle read tool and list directory messages
+        if (toolUse?.name === ToolType.FsRead || toolUse?.name === ToolType.ListDirectory) {
+            return this.sendReadAndListDirToolMessage(toolUse, session, tabID, triggerID, messageIdToUpdate)
+        }
 
+        // Handle file write tool, execute bash tool and bash command output log messages
         const buttons: ChatItemButton[] = []
         let header: ChatItemHeader | undefined = undefined
-        let fullWidth: boolean | undefined = undefined
-        let padding: boolean | undefined = undefined
-        let codeBlockActions: ChatItemContent['codeBlockActions'] = undefined
         if (toolUse?.name === ToolType.ExecuteBash && message.startsWith('```shell')) {
             if (validation.requiresAcceptance) {
                 const buttons: ChatItemButton[] = [
-                    {
-                        id: 'run-shell-command',
-                        text: localize('AWS.amazonq.executeBash.run', 'Run'),
-                        status: 'main',
-                        icon: 'play' as MynahIconsType,
-                    },
                     {
                         id: 'reject-shell-command',
                         text: localize('AWS.amazonq.executeBash.reject', 'Reject'),
                         status: 'clear',
                         icon: 'cancel' as MynahIconsType,
                     },
+                    {
+                        id: 'run-shell-command',
+                        text: localize('AWS.amazonq.executeBash.run', 'Run'),
+                        status: 'clear',
+                        icon: 'play' as MynahIconsType,
+                    },
                 ]
                 header = {
-                    icon: 'code-block' as MynahIconsType,
                     body: 'shell',
                     buttons,
                 }
@@ -619,10 +720,6 @@ export class Messenger {
             if (validation.warning) {
                 message = validation.warning + message
             }
-            fullWidth = true
-            padding = false
-            // eslint-disable-next-line unicorn/no-null
-            codeBlockActions = { 'insert-to-cursor': null, copy: null }
         } else if (toolUse?.name === ToolType.FsWrite) {
             if (this.isTriggerCancelled(triggerID)) {
                 return
@@ -655,14 +752,9 @@ export class Messenger {
                 },
             ]
             header = {
-                icon: 'code-block' as MynahIconsType,
                 buttons,
                 fileList,
             }
-            fullWidth = true
-            padding = false
-            // eslint-disable-next-line unicorn/no-null
-            codeBlockActions = { 'insert-to-cursor': null, copy: null }
         }
 
         if (this.isTriggerCancelled(triggerID)) {
@@ -682,12 +774,14 @@ export class Messenger {
                     userIntent: undefined,
                     codeBlockLanguage: undefined,
                     contextList: undefined,
+                    title: undefined,
                     canBeVoted: false,
                     buttons,
-                    fullWidth,
-                    padding,
+                    fullWidth: true,
+                    padding: false,
                     header,
-                    codeBlockActions,
+                    // eslint-disable-next-line unicorn/no-null
+                    codeBlockActions: { 'insert-to-cursor': null, copy: null },
                 },
                 tabID
             )
@@ -744,10 +838,6 @@ export class Messenger {
                     },
                 ]
                 followUpsHeader = 'Try Examples:'
-                break
-            case 'reject-shell-command':
-                // need to update the string later
-                message = 'The shell command execution rejected. Abort.'
                 break
         }
 
@@ -823,6 +913,20 @@ export class Messenger {
     }
 
     private showChatExceptionMessage(e: ChatException, tabID: string, requestID: string | undefined) {
+        const title = 'An error occurred while processing your request.'
+        // TODO: once the server sends the correct exception back, fix this
+        if (e.statusCode && e.statusCode === '500') {
+            // Send throttling message
+            this.dispatcher.sendErrorMessage(
+                new ErrorMessage(
+                    title,
+                    'We are experiencing heavy traffic, please try again shortly.'.trimEnd().trimStart(),
+                    tabID
+                )
+            )
+            return
+        }
+
         let message = 'This error is reported to the team automatically. We will attempt to fix it as soon as possible.'
         if (e.errorMessage !== undefined) {
             message += `\n\nDetails: ${e.errorMessage}`
@@ -838,9 +942,7 @@ export class Messenger {
             message += `\n\nRequest ID: ${requestID}`
         }
 
-        this.dispatcher.sendErrorMessage(
-            new ErrorMessage('An error occurred while processing your request.', message.trimEnd().trimStart(), tabID)
-        )
+        this.dispatcher.sendErrorMessage(new ErrorMessage(title, message.trimEnd().trimStart(), tabID))
     }
 
     public sendOpenSettingsMessage(triggerId: string, tabID: string) {

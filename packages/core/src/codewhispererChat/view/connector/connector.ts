@@ -355,6 +355,7 @@ export interface ChatMessageProps {
     readonly fullWidth?: boolean
     readonly padding?: boolean
     readonly codeBlockActions?: CodeBlockActions | null
+    readonly rootFolderTitle?: string
 }
 
 export class ChatMessage extends UiMessage {
@@ -378,6 +379,7 @@ export class ChatMessage extends UiMessage {
     readonly padding?: boolean
     readonly codeBlockActions?: CodeBlockActions | null
     readonly canBeVoted?: boolean = false
+    readonly rootFolderTitle?: string
     override type = 'chatMessage'
 
     constructor(props: ChatMessageProps, tabID: string) {
@@ -401,7 +403,12 @@ export class ChatMessage extends UiMessage {
         this.fullWidth = props.fullWidth
         this.padding = props.padding
         this.codeBlockActions = props.codeBlockActions
+        this.rootFolderTitle = props.rootFolderTitle
     }
+}
+
+export class ToolMessage extends ChatMessage {
+    override type = 'toolMessage'
 }
 
 export interface FollowUp {
@@ -455,6 +462,10 @@ export class AppToWebViewMessageDispatcher {
     }
 
     public sendChatMessage(message: ChatMessage) {
+        this.appsToWebViewMessagePublisher.publish(message)
+    }
+
+    public sendToolMessage(message: ToolMessage) {
         this.appsToWebViewMessagePublisher.publish(message)
     }
 

@@ -78,7 +78,8 @@ export class TabDataGenerator {
                           {
                               type: 'toggle',
                               id: 'prompt-type',
-                              value: 'ask',
+                              value: 'pair-programming-on',
+                              tooltip: 'Pair programmar on',
                               options: [
                                   {
                                       value: 'pair-programming-on',

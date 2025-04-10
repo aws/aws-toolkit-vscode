@@ -66,6 +66,7 @@ export interface CWCChatItem extends ChatItem {
     codeBlockLanguage?: string
     contextList?: Context[]
     title?: string
+    rootFolderTitle?: string
 }
 
 export interface Context {
@@ -77,7 +78,7 @@ export interface ConnectorProps {
     sendMessageToExtension: (message: ExtensionMessage) => void
     onMessageReceived?: (tabID: string, messageData: any, needToShowAPIDocsTab: boolean) => void
     onRunTestMessageReceived?: (tabID: string, showRunTestMessage: boolean) => void
-    onChatAnswerUpdated?: (tabID: string, message: ChatItem) => void
+    onChatAnswerUpdated?: (tabID: string, message: CWCChatItem) => void
     onChatAnswerReceived?: (tabID: string, message: ChatItem, messageData: any) => void
     onWelcomeFollowUpClicked: (tabID: string, welcomeFollowUpType: WelcomeFollowupType) => void
     onAsyncEventProgress: (tabID: string, inProgress: boolean, message: string | undefined) => void
