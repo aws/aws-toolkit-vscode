@@ -21,7 +21,7 @@ export interface GrepSearchParams {
 }
 
 export class GrepSearch {
-    private fsPath: string | undefined
+    private path: string
     private query: string
     private caseSensitive: boolean
     private excludePattern?: string
@@ -29,7 +29,7 @@ export class GrepSearch {
     private readonly logger = getLogger('grepSearch')
 
     constructor(params: GrepSearchParams) {
-        this.fsPath = params.path
+        this.path = this.getSearchDirectory(params.path)
         this.query = params.query
         this.caseSensitive = params.caseSensitive ?? false
         this.excludePattern = params.excludePattern
@@ -41,61 +41,58 @@ export class GrepSearch {
             throw new Error('Grep search query cannot be empty.')
         }
 
-        // Handle optional path parameter
-        if (!this.fsPath || this.fsPath.trim().length === 0) {
-            // Use current workspace folder as default if path is not provided
-            const workspaceFolders = vscode.workspace.workspaceFolders
-            if (!workspaceFolders || workspaceFolders.length === 0) {
-                throw new Error('Path cannot be empty and no workspace folder is available.')
-            }
-            this.fsPath = workspaceFolders[0].uri.fsPath
-            this.logger.debug(`Using default workspace folder: ${this.fsPath}`)
+        if (this.path.trim().length === 0) {
+            throw new Error('Path cannot be empty and no workspace folder is available.')
         }
 
-        const sanitized = sanitizePath(this.fsPath)
-        this.fsPath = sanitized
+        const sanitized = sanitizePath(this.path)
+        this.path = sanitized
 
-        const pathUri = vscode.Uri.file(this.fsPath)
+        const pathUri = vscode.Uri.file(this.path)
         let pathExists: boolean
         try {
             pathExists = await fs.existsDir(pathUri)
             if (!pathExists) {
-                throw new Error(`Path: "${this.fsPath}" does not exist or cannot be accessed.`)
+                throw new Error(`Path: "${this.path}" does not exist or cannot be accessed.`)
             }
         } catch (err) {
-            throw new Error(`Path: "${this.fsPath}" does not exist or cannot be accessed. (${err})`)
+            throw new Error(`Path: "${this.path}" does not exist or cannot be accessed. (${err})`)
         }
     }
 
     public queueDescription(updates: Writable): void {
-        const searchDirectory = this.getSearchDirectory(this.fsPath)
-        updates.write(`Grepping for "${this.query}" in directory: ${searchDirectory}`)
+        updates.write(`Grepping for "${this.query}" in directory: ${this.path}`)
         updates.end()
     }
 
     public async invoke(updates?: Writable): Promise<InvokeOutput> {
-        const searchDirectory = this.getSearchDirectory(this.fsPath)
         try {
             const results = await this.executeRipgrep(updates)
             return this.createOutput(results)
         } catch (error: any) {
-            this.logger.error(`Failed to search in "${searchDirectory}": ${error.message || error}`)
-            throw new Error(`Failed to search in "${searchDirectory}": ${error.message || error}`)
+            this.logger.error(`Failed to search in "${this.path}": ${error.message || error}`)
+            throw new Error(`Failed to search in "${this.path}": ${error.message || error}`)
         }
     }
 
-    private getSearchDirectory(fsPath?: string): string {
-        const workspaceFolders = vscode.workspace.workspaceFolders
-        const searchLocation = fsPath
-            ? fsPath
-            : !workspaceFolders || workspaceFolders.length === 0
-              ? ''
-              : workspaceFolders[0].uri.fsPath
+    private getSearchDirectory(path?: string): string {
+        let searchLocation = ''
+        if (path && path.trim().length !== 0) {
+            searchLocation = path
+        } else {
+            // Handle optional path parameter
+            // Use current workspace folder as default if path is not provided
+            const workspaceFolders = vscode.workspace.workspaceFolders
+            this.logger.info(`Using default workspace folder: ${workspaceFolders?.length}`)
+            if (workspaceFolders && workspaceFolders.length !== 0) {
+                searchLocation = workspaceFolders[0].uri.fsPath
+                this.logger.debug(`Using default workspace folder: ${searchLocation}`)
+            }
+        }
         return searchLocation
     }
 
     private async executeRipgrep(updates?: Writable): Promise<string> {
-        const searchDirectory = this.getSearchDirectory(this.fsPath)
         return new Promise(async (resolve, reject) => {
             const args: string[] = []
 
@@ -129,7 +126,7 @@ export class GrepSearch {
             }
 
             // Add search pattern and path
-            args.push(this.query, searchDirectory)
+            args.push(this.query, this.path)
 
             this.logger.debug(`Executing ripgrep with args: ${args.join(' ')}`)
 
@@ -171,36 +168,63 @@ export class GrepSearch {
      * 1. Remove matched content (keep only file:line)
      * 2. Add file URLs for clickable links
      */
+    /**
+     * Process ripgrep output to:
+     * 1. Group results by file
+     * 2. Format as collapsible sections
+     * 3. Add file URLs for clickable links
+     */
     private processRipgrepOutput(output: string): string {
         if (!output || output.trim() === '') {
             return 'No matches found.'
         }
 
         const lines = output.split('\n')
-        const processedLines = lines
-            .map((line) => {
-                if (!line || line.trim() === '') {
-                    return ''
-                }
 
-                // Extract file path and line number
-                const parts = line.split(':')
-                if (parts.length < 2) {
-                    return line
-                }
+        // Group by file path
+        const fileGroups: Record<string, string[]> = {}
 
-                const filePath = parts[0]
-                const lineNumber = parts[1]
+        for (const line of lines) {
+            if (!line || line.trim() === '') {
+                continue
+            }
 
+            // Extract file path and line number
+            const parts = line.split(':')
+            if (parts.length < 2) {
+                continue
+            }
+
+            const filePath = parts[0]
+            const lineNumber = parts[1]
+            // Don't include match content
+
+            if (!fileGroups[filePath]) {
+                fileGroups[filePath] = []
+            }
+
+            // Create a clickable link with line number only
+            fileGroups[filePath].push(`- [Line ${lineNumber}](${vscode.Uri.file(filePath).toString()}:${lineNumber})`)
+        }
+
+        // Sort files by match count (most matches first)
+        const sortedFiles = Object.entries(fileGroups).sort((a, b) => b[1].length - a[1].length)
+
+        // Format as collapsible sections
+        const processedOutput = sortedFiles
+            .map(([filePath, matches]) => {
                 const fileName = path.basename(filePath)
-                const fileUri = vscode.Uri.file(filePath)
+                const matchCount = matches.length
 
-                // Format as a markdown link
-                return `[${fileName}:${lineNumber}](${fileUri}:${lineNumber})`
+                return `<details>
+    <summary><strong>${fileName} (${matchCount})</strong></summary>
+
+${matches.join('\n')}
+</details>`
             })
-            .filter(Boolean)
+            .join('\n\n')
 
-        return processedLines.join('\n')
+        return processedOutput
     }
 
     private createOutput(content: string): InvokeOutput {
