@@ -9,6 +9,7 @@ import { Messenger } from '../controllers/chat/messenger/messenger'
 import { ToolUse } from '@amzn/codewhisperer-streaming'
 import { CommandValidation } from './executeBash'
 import { Change } from 'diff'
+import { i18n } from '../../shared/i18n-helper'
 
 /**
  * A writable stream that feeds each chunk/line to the chat UI.
@@ -28,6 +29,13 @@ export class ChatStream extends Writable {
     ) {
         super()
         this.logger.debug(`ChatStream created for tabID: ${tabID}, triggerID: ${triggerID}`)
+        if (validation.requiresAcceptance) {
+            this.messenger.sendDirectiveMessage(
+                tabID,
+                triggerID,
+                i18n('AWS.amazonq.chat.directive.runCommandToProceed')
+            )
+        }
         this.messenger.sendInitalStream(tabID, triggerID)
     }
 
