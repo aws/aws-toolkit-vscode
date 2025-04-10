@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as vscode from 'vscode'
 import {
     AppToWebViewMessageDispatcher,
     AuthNeededException,
@@ -69,7 +68,7 @@ import { AsyncEventProgressMessage } from '../../../../amazonq/commons/connector
 import { localize } from '../../../../shared/utilities/vsCodeUtils'
 import { getDiffLinesFromChanges } from '../../../../shared/utilities/diffUtils'
 import { ConversationTracker } from '../../../storages/conversationTracker'
-import { waitUntilWithCancellation } from '../../../../shared/utilities/timeoutUtils'
+import { waitTimeout, Timeout } from '../../../../shared/utilities/timeoutUtils'
 
 export type StaticTextResponseType = 'quick-action-help' | 'onboarding-help' | 'transform' | 'help'
 
@@ -198,8 +197,7 @@ export class Messenger {
         tabID: string,
         triggerID: string,
         triggerPayload: TriggerPayload,
-        chatHistoryManager: ChatHistoryManager,
-        cancelToken: vscode.CancellationToken
+        chatHistoryManager: ChatHistoryManager
     ) {
         let message = ''
         const messageID = response.$metadata.requestId ?? ''
@@ -237,12 +235,15 @@ export class Messenger {
         })
 
         const eventCounts = new Map<string, number>()
-        await waitUntilWithCancellation(
+        const timeout = new Timeout(600000) // 10 minutes timeout
+
+        await waitTimeout(
             async () => {
                 for await (const chatEvent of response.message!) {
-                    if (cancelToken.isCancellationRequested) {
+                    if (this.isTriggerCancelled(triggerID)) {
                         return
                     }
+
                     for (const key of keys(chatEvent)) {
                         if ((chatEvent[key] as any) !== undefined) {
                             eventCounts.set(key, (eventCounts.get(key) ?? 0) + 1)
@@ -446,11 +447,14 @@ export class Messenger {
                 }
                 return true
             },
+            timeout,
             {
-                timeout: 600000,
-                interval: 500,
-                truthy: true,
-                cancellationToken: conversationTracker.getTokenForTrigger(triggerID) ?? session.tokenSource.token,
+                onCancel: () => {
+                    if (this.isTriggerCancelled(triggerID)) {
+                        return true
+                    }
+                    return false
+                },
             }
         )
             .catch((error: any) => {

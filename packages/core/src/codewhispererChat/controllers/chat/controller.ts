@@ -1619,15 +1619,7 @@ export class ChatController {
                 return
             }
 
-            await this.messenger.sendAIResponse(
-                response,
-                session,
-                tabID,
-                triggerID,
-                triggerPayload,
-                chatHistory,
-                this.cancelTokenSource.token
-            )
+            await this.messenger.sendAIResponse(response, session, tabID, triggerID, triggerPayload, chatHistory)
         } catch (e: any) {
             this.telemetryHelper.recordMessageResponseError(triggerPayload, tabID, getHttpStatusCode(e) ?? 0)
             // clears session, record telemetry before this call
