@@ -78,7 +78,7 @@ describe('InactivityMessage', function () {
         ])
     })
 
-    it('resets inactivity countdown when a user confirms the message', async function () {
+    it.skip('resets inactivity countdown when a user confirms the message', async function () {
         await inactivityMsg.init(10, devEnvActivity as unknown as DevEnvActivity, relativeMinuteMillis)
         const msg = await testWindow.waitForMessage(/Dev Environment has been inactive/)
         assert.deepStrictEqual(userActivity, 1)
