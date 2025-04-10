@@ -23,24 +23,17 @@ import { indent } from '../../shared/utilities/textUtilities'
 import { getClientId, getOptOutPreference, getOperatingSystem } from '../../shared/telemetry/util'
 import { extensionVersion, getServiceEnvVarConfig } from '../../shared/vscode/env'
 import { DevSettings } from '../../shared/settings'
+import { CodeWhispererConfig } from '../models/model'
 
 const keepAliveHeader = 'keep-alive-codewhisperer'
-export interface CodeWhispererConfig {
-    readonly region: string
-    readonly endpoint: string
-}
-
-export const defaultServiceConfig: CodeWhispererConfig = {
-    region: 'us-east-1',
-    endpoint: 'https://codewhisperer.us-east-1.amazonaws.com/',
-}
 
 export function getCodewhispererConfig(): CodeWhispererConfig {
+    const clientConfig = AuthUtil.instance.regionProfileManager.clientConfig
     return {
-        ...DevSettings.instance.getServiceConfig('codewhispererService', defaultServiceConfig),
+        ...DevSettings.instance.getServiceConfig('codewhispererService', clientConfig),
 
         // Environment variable overrides
-        ...getServiceEnvVarConfig('codewhisperer', Object.keys(defaultServiceConfig)),
+        ...getServiceEnvVarConfig('codewhisperer', Object.keys(clientConfig)),
     }
 }
 
@@ -209,13 +202,15 @@ export class DefaultCodeWhispererClient {
     }
 
     public async listCodeScanFindings(
-        request: ListCodeScanFindingsRequest
+        request: ListCodeScanFindingsRequest,
+        profileArn: string | undefined
     ): Promise<PromiseResult<ListCodeScanFindingsResponse, AWSError>> {
         if (this.isBearerTokenAuth()) {
             const req = {
                 jobId: request.jobId,
                 nextToken: request.nextToken,
                 codeAnalysisFindingsSchema: 'codeanalysis/findings/1.0',
+                profileArn: profileArn,
             } as CodeWhispererUserClient.ListCodeAnalysisFindingsRequest
             return (await this.createUserSdkClient()).listCodeAnalysisFindings(req).promise()
         }
@@ -226,9 +221,10 @@ export class DefaultCodeWhispererClient {
 
     public async listAvailableCustomizations(): Promise<ListAvailableCustomizationsResponse[]> {
         const client = await this.createUserSdkClient()
+        const profile = AuthUtil.instance.regionProfileManager.activeRegionProfile
         const requester = async (request: CodeWhispererUserClient.ListAvailableCustomizationsRequest) =>
             client.listAvailableCustomizations(request).promise()
-        return pageableToCollection(requester, {}, 'nextToken')
+        return pageableToCollection(requester, { profileArn: profile?.arn }, 'nextToken')
             .promise()
             .then((resps) => {
                 let logStr = 'amazonq: listAvailableCustomizations API request:'

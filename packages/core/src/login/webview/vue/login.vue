@@ -603,7 +603,7 @@ export function getReadyElementId() {
 }
 </script>
 
-<style>
+<style scoped>
 @import './base.css';
 
 .selectable-item {
