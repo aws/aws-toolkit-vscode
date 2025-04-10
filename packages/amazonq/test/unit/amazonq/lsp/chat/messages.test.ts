@@ -4,7 +4,6 @@
  */
 
 import * as sinon from 'sinon'
-import * as vscode from 'vscode'
 import { LanguageClient } from 'vscode-languageclient'
 import { AuthUtil } from 'aws-core-vscode/codewhisperer'
 import { registerMessageListeners } from '../../../../../src/lsp/chat/messages'
