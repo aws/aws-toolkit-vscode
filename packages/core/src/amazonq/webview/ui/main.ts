@@ -101,15 +101,15 @@ export const createMynahUI = (
     /**
      * Creates a file list header from context list
      * @param contextList List of file contexts
-     * @param title Title for the root folder
+     * @param rootFolderTitle Title for the root folder
      * @returns Header object with file list
      */
-    const createFileListHeader = (contextList: any[], title?: string) => {
+    const createFileListHeader = (contextList: any[], rootFolderTitle?: string) => {
         return {
             fileList: {
                 fileTreeTitle: '',
                 filePaths: contextList.map((file) => file.relativeFilePath),
-                rootFolderTitle: title,
+                rootFolderTitle: rootFolderTitle,
                 flatList: true,
                 collapsed: true,
                 hideFileCount: true,
@@ -380,7 +380,7 @@ export const createMynahUI = (
         onChatAnswerUpdated: (tabID: string, item: CWCChatItem) => {
             if (item.messageId !== undefined) {
                 if (item.contextList !== undefined && item.contextList.length > 0) {
-                    item.header = createFileListHeader(item.contextList, item.title)
+                    item.header = createFileListHeader(item.contextList, item.rootFolderTitle)
                 }
                 mynahUI.updateChatAnswerWithMessageId(tabID, item.messageId, {
                     ...(item.body !== undefined ? { body: item.body } : {}),

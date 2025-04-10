@@ -200,6 +200,7 @@ export class Connector extends BaseConnector {
             padding: messageData.padding ?? undefined,
             fullWidth: messageData.fullWidth ?? undefined,
             codeBlockActions: messageData.codeBlockActions ?? undefined,
+            rootFolderTitle: messageData.rootFolderTitle,
         }
         this.onChatAnswerUpdated(messageData.tabID, answer)
         return

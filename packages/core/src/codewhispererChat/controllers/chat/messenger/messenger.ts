@@ -622,7 +622,7 @@ export class Messenger {
                     fullWidth: false,
                     padding: false,
                     codeBlockActions: undefined,
-                    title,
+                    rootFolderTitle: title,
                 },
                 tabID
             )
