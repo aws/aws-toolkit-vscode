@@ -199,6 +199,18 @@ export enum ChatTriggerType {
     InlineChatMessage = 'InlineChatMessage',
 }
 
+export enum AgenticChatInteractionType {
+    RejectDiff = 'RejectDiff',
+    GeneratedDiff = 'GeneratedDiff',
+    RunCommand = 'RunCommand',
+    GeneratedCommand = 'GeneratedCommand',
+    StopChat = 'StopChat',
+}
+
+export interface AcceptResponseMessage {
+    tabID: string
+}
+
 export interface TriggerPayload {
     readonly query: string | undefined
     readonly codeSelection: Selection | undefined

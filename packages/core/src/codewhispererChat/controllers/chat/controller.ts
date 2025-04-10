@@ -36,6 +36,7 @@ import {
     PromptInputOptionChange,
     TabBarButtonClick,
     SaveChatMessage,
+    AgenticChatInteractionType,
 } from './model'
 import {
     AppToWebViewMessageDispatcher,
@@ -429,7 +430,7 @@ export class ChatController {
         }
 
         this.messenger.sendEmptyMessage(message.tabID, '', undefined)
-        // this.chatHistoryStorage.getTabHistory(message.tabID).clearRecentHistory()
+        this.telemetryHelper.recordInteractionWithAgenticChat(AgenticChatInteractionType.StopChat, message)
     }
 
     private async processTriggerTabIDReceived(message: TriggerTabIDReceived) {
@@ -755,20 +756,10 @@ export class ChatController {
                         try {
                             await ToolUtils.validate(tool)
 
-                            const cancellationToken = session.tokenSource.token
-                            const chatStream = new ChatStream(
-                                this.messenger,
-                                tabID,
-                                triggerID,
-                                toolUse,
-                                session,
-                                undefined,
-                                false,
-                                {
-                                    requiresAcceptance: false,
-                                }
-                            )
-
+                            const chatStream = new ChatStream(this.messenger, tabID, triggerID, toolUse, {
+                                requiresAcceptance: false,
+                            })
+                            
                             if (tool.type === ToolType.FsWrite && toolUse.toolUseId) {
                                 const backup = await tool.tool.getBackup()
                                 session.setFsWriteBackup(toolUse.toolUseId, backup)
@@ -821,7 +812,7 @@ export class ChatController {
                         toolResults: toolResults,
                         profile: AuthUtil.instance.regionProfileManager.activeRegionProfile,
                         origin: Origin.IDE,
-                        context: [],
+                        context: session.context ?? [],
                         relevantTextDocuments: [],
                         additionalContents: [],
                         documentReferences: [],
@@ -889,6 +880,12 @@ export class ChatController {
             case 'run-shell-command':
             case 'generic-tool-execution':
                 await this.processToolUseMessage(message)
+                if (message.action.id === 'run-shell-command' && message.action.text === 'Run') {
+                    this.telemetryHelper.recordInteractionWithAgenticChat(
+                        AgenticChatInteractionType.RunCommand,
+                        message
+                    )
+                }
                 break
             case 'accept-code-diff':
                 await this.closeDiffView(message)
@@ -896,6 +893,7 @@ export class ChatController {
             case 'reject-code-diff':
                 await this.restoreBackup(message)
                 await this.closeDiffView(message)
+                this.telemetryHelper.recordInteractionWithAgenticChat(AgenticChatInteractionType.RejectDiff, message)
                 break
             case 'reject-shell-command':
                 await this.rejectShellCommand(message)
@@ -1261,7 +1259,6 @@ export class ChatController {
         session.createNewTokenSource()
         session.setAgenticLoopInProgress(true)
         session.clearListOfReadFiles()
-        session.clearListOfReadFolders()
         session.setShowDiffOnFileWrite(false)
         this.editorContextExtractor
             .extractContextForTrigger('ChatMessage')
