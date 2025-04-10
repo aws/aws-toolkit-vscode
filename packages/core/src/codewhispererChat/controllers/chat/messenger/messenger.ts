@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as vscode from 'vscode'
 import { waitUntil } from '../../../../shared/utilities/timeoutUtils'
 import {
     AppToWebViewMessageDispatcher,
@@ -90,7 +91,7 @@ export class Messenger {
                     followUpsHeader: undefined,
                     relatedSuggestions: undefined,
                     triggerID,
-                    messageID: '',
+                    messageID: triggerID,
                     userIntent: undefined,
                     codeBlockLanguage: undefined,
                     contextList: mergedRelevantDocuments,
@@ -131,7 +132,8 @@ export class Messenger {
         session: ChatSession,
         tabID: string,
         triggerID: string,
-        triggerPayload: TriggerPayload
+        triggerPayload: TriggerPayload,
+        cancelToken: vscode.CancellationToken
     ) {
         let message = ''
         const messageID = response.$metadata.requestId ?? ''
@@ -169,6 +171,9 @@ export class Messenger {
         waitUntil(
             async () => {
                 for await (const chatEvent of response.message!) {
+                    if (cancelToken.isCancellationRequested) {
+                        return
+                    }
                     for (const key of keys(chatEvent)) {
                         if ((chatEvent[key] as any) !== undefined) {
                             eventCounts.set(key, (eventCounts.get(key) ?? 0) + 1)

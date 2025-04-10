@@ -1,6 +1,21 @@
 {
     "types": [
         {
+            "name": "amazonQProfileRegion",
+            "type": "string",
+            "description": "Region of the Q Profile associated with a metric\n- \"n/a\" if metric is not associated with a profile or region.\n- \"not-set\" if metric is associated with a profile, but profile is unknown."
+        },
+        {
+            "name": "ssoRegion",
+            "type": "string",
+            "description": "Region of the current SSO connection. Typically associated with credentialStartUrl\n- \"n/a\" if metric is not associated with a region.\n- \"not-set\" if metric is associated with a region, but region is unknown."
+        },
+        {
+            "name": "profileCount",
+            "type": "int",
+            "description": "The number of profiles that were available to choose from"
+        },
+        {
             "name": "amazonGenerateApproachLatency",
             "type": "double",
             "description": "The time it takes to generate approach response"
@@ -231,6 +246,31 @@
         }
     ],
     "metrics": [
+        {
+            "name": "amazonq_didSelectProfile",
+            "description": "Emitted after the user's Q Profile has been set, whether the user was prompted with a dialog, or a profile was automatically assigned after signing in.",
+            "metadata": [
+                { "type": "source" },
+                { "type": "amazonQProfileRegion" },
+                { "type": "result" },
+                { "type": "ssoRegion", "required": false },
+                { "type": "credentialStartUrl", "required": false },
+                { "type": "profileCount", "required": false }
+            ],
+            "passive": true
+        },
+        {
+            "name": "amazonq_profileState",
+            "description": "Indicates a change in the user's Q Profile state",
+            "metadata": [
+                { "type": "source" },
+                { "type": "amazonQProfileRegion" },
+                { "type": "result" },
+                { "type": "ssoRegion", "required": false },
+                { "type": "credentialStartUrl", "required": false }
+            ],
+            "passive": true
+        },
         {
             "name": "ide_fileSystem",
             "description": "File System event on execution",

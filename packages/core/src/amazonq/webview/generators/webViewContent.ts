@@ -9,6 +9,8 @@ import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import { FeatureConfigProvider, FeatureContext } from '../../../shared/featureConfig'
 import globals from '../../../shared/extensionGlobals'
 import { isSageMaker } from '../../../shared/extensionUtilities'
+import { RegionProfile } from '../../../codewhisperer/models/model'
+import { AmazonQPromptSettings } from '../../../shared/settings'
 
 export class WebViewContentGenerator {
     private async generateFeatureConfigsData(): Promise<string> {
@@ -78,21 +80,40 @@ export class WebViewContentGenerator {
 
         // Fetch featureConfigs and use it within the script
         const featureConfigsString = await this.generateFeatureConfigsData()
-
-        const disabledCommandsString = isSageMaker() ? `['/dev', '/transform']` : '[]'
-        const disclaimerAcknowledged = globals.globalState.tryGet('aws.amazonq.disclaimerAcknowledged', Boolean, false)
-
-        const welcomeLoadCount = globals.globalState.tryGet('aws.amazonq.welcomeChatShowCount', Number, 0)
+        const isSM = isSageMaker('SMAI')
         const isSMUS = isSageMaker('SMUS')
+
+        const disabledCommandsString = isSM ? `['/dev', '/transform', '/test', '/review', '/doc']` : '[]'
+        const disclaimerAcknowledged = !AmazonQPromptSettings.instance.isPromptEnabled('amazonQChatDisclaimer')
+        const welcomeLoadCount = globals.globalState.tryGet('aws.amazonq.welcomeChatShowCount', Number, 0)
+
+        // only show profile card when the two conditions
+        //  1. profile count >= 2
+        //  2. not default (fallback) which has empty arn
+        let regionProfile: RegionProfile | undefined = AuthUtil.instance.regionProfileManager.activeRegionProfile
+        if (AuthUtil.instance.regionProfileManager.profiles.length === 1) {
+            regionProfile = undefined
+        }
+
+        const regionProfileString: string = JSON.stringify(regionProfile)
+        const authState = (await AuthUtil.instance.getChatAuthState()).amazonQ
 
         return `
         <script type="text/javascript" src="${javascriptEntrypoint.toString()}" defer onload="init()"></script>
         ${cssLinks}
         <script type="text/javascript">
             const init = () => {
-                createMynahUI(acquireVsCodeApi(), ${
-                    (await AuthUtil.instance.getChatAuthState()).amazonQ === 'connected'
-                },${featureConfigsString},${welcomeLoadCount},${disclaimerAcknowledged},${disabledCommandsString},${isSMUS});
+                createMynahUI(
+                    acquireVsCodeApi(), 
+                    ${authState === 'connected'},
+                    ${featureConfigsString},
+                    ${welcomeLoadCount},
+                    ${disclaimerAcknowledged},
+                    ${regionProfileString},
+                    ${disabledCommandsString},
+                    ${isSMUS},
+                    ${isSM}
+                );
             }
         </script>
         `

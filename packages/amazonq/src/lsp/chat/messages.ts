@@ -10,6 +10,7 @@ import {
     CHAT_OPTIONS,
     COPY_TO_CLIPBOARD,
     AuthFollowUpType,
+    DISCLAIMER_ACKNOWLEDGED,
 } from '@aws/chat-client-ui-types'
 import {
     ChatResult,
@@ -22,11 +23,12 @@ import {
     insertToCursorPositionNotificationType,
 } from '@aws/language-server-runtimes/protocol'
 import { v4 as uuidv4 } from 'uuid'
-import { window } from 'vscode'
+import * as vscode from 'vscode'
 import { Disposable, LanguageClient, Position, State, TextDocumentIdentifier } from 'vscode-languageclient'
 import * as jose from 'jose'
 import { AmazonQChatViewProvider } from './webviewProvider'
 import { AuthUtil } from 'aws-core-vscode/codewhisperer'
+import { AmazonQPromptSettings, messages } from 'aws-core-vscode/shared'
 
 export function registerLanguageServerEventListener(languageClient: LanguageClient, provider: AmazonQChatViewProvider) {
     languageClient.onDidChangeState(({ oldState, newState }) => {
@@ -60,11 +62,15 @@ export function registerMessageListeners(
 
         switch (message.command) {
             case COPY_TO_CLIPBOARD:
-                // TODO see what we need to hook this up
                 languageClient.info('[VSCode Client] Copy to clipboard event received')
+                try {
+                    await messages.copyToClipboard(message.params.code)
+                } catch (e) {
+                    languageClient.error(`[VSCode Client] Failed to copy to clipboard: ${(e as Error).message}`)
+                }
                 break
             case INSERT_TO_CURSOR_POSITION: {
-                const editor = window.activeTextEditor
+                const editor = vscode.window.activeTextEditor
                 let textDocument: TextDocumentIdentifier | undefined = undefined
                 let cursorPosition: Position | undefined = undefined
                 if (editor) {
@@ -106,6 +112,10 @@ export function registerMessageListeners(
                 }
                 break
             }
+            case DISCLAIMER_ACKNOWLEDGED: {
+                void AmazonQPromptSettings.instance.disablePrompt('amazonQChatDisclaimer')
+                break
+            }
             case chatRequestType.method: {
                 const partialResultToken = uuidv4()
                 const chatDisposable = languageClient.onProgress(chatRequestType, partialResultToken, (partialResult) =>
@@ -113,8 +123,8 @@ export function registerMessageListeners(
                 )
 
                 const editor =
-                    window.activeTextEditor ||
-                    window.visibleTextEditors.find((editor) => editor.document.languageId !== 'Log')
+                    vscode.window.activeTextEditor ||
+                    vscode.window.visibleTextEditors.find((editor) => editor.document.languageId !== 'Log')
                 if (editor) {
                     message.params.cursorPosition = [editor.selection.active]
                     message.params.textDocument = { uri: editor.document.uri.toString() }

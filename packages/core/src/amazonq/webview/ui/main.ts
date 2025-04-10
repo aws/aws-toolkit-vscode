@@ -35,6 +35,7 @@ import { agentWalkthroughDataModel } from './walkthrough/agent'
 import { createClickTelemetry, createOpenAgentTelemetry } from './telemetry/actions'
 import { disclaimerAcknowledgeButtonId, disclaimerCard } from './texts/disclaimer'
 import { DetailedListSheetProps } from '@aws/mynah-ui/dist/components/detailed-list/detailed-list-sheet'
+import { RegionProfile } from '../../../codewhisperer/models/model'
 
 /**
  * The number of welcome chat tabs that can be opened before the NEXT one will become
@@ -48,8 +49,10 @@ export const createMynahUI = (
     featureConfigsSerialized: [string, FeatureContext][],
     welcomeCount: number,
     disclaimerAcknowledged: boolean,
+    regionProfile: RegionProfile | undefined,
     disabledCommands?: string[],
-    isSMUS?: boolean
+    isSMUS?: boolean,
+    isSM?: boolean
 ) => {
     let disclaimerCardActive = !disclaimerAcknowledged
     // eslint-disable-next-line prefer-const
@@ -84,7 +87,10 @@ export const createMynahUI = (
     })
 
     const showWelcomePage = () => {
-        return welcomeCount < welcomeCountThreshold
+        /*
+         * skip Agent Capability welcome page for SageMaker cases (SMAI and SMUS) since the commands are not supported
+         */
+        return welcomeCount < welcomeCountThreshold && !isSM
     }
 
     const updateWelcomeCount = () => {
@@ -124,6 +130,7 @@ export const createMynahUI = (
         isDocEnabled,
         disabledCommands,
         commandHighlight: highlightCommand,
+        regionProfile,
     })
 
     // eslint-disable-next-line prefer-const
@@ -208,6 +215,7 @@ export const createMynahUI = (
                 isDocEnabled,
                 disabledCommands,
                 commandHighlight: highlightCommand,
+                regionProfile,
             })
 
             featureConfigs = tryNewMap(featureConfigsSerialized)
@@ -966,15 +974,14 @@ export const createMynahUI = (
             tabBarButtons: [
                 {
                     id: 'history_sheet',
-                    icon: MynahIcons.COMMENT,
+                    icon: MynahIcons.HISTORY,
                     description: 'View chat history',
                 },
-                /* Temporarily hide export chat button from tab bar
                 {
                     id: 'export_chat',
                     icon: MynahIcons.EXTERNAL,
                     description: 'Export chat',
-                }, */
+                },
             ],
         },
     })

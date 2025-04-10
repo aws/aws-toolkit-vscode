@@ -59,7 +59,12 @@
             </svg>
         </div>
         <div class="text">
-            <div class="title">{{ itemTitle }}</div>
+            <div class="title">
+                {{ itemTitle }}
+                <template v-if="itemSubTitle">
+                    - <i>{{ itemSubTitle }}</i>
+                </template>
+            </div>
             <div class="p" v-if="itemText" :title="itemText">{{ itemText }}</div>
         </div>
     </div>
@@ -75,6 +80,7 @@ export default defineComponent({
         itemId: Number,
         itemText: String,
         itemTitle: String,
+        itemSubTitle: String,
         itemType: Number,
         isSelected: Boolean,
         isHovering: Boolean,
@@ -83,6 +89,7 @@ export default defineComponent({
         return {
             itemId: this.itemId,
             itemTitle: this.itemTitle,
+            itemSubTitle: this.itemSubTitle,
             itemText: this.itemText,
             isSelected: this.isSelected,
             isHovering: false,
@@ -158,6 +165,13 @@ body.vscode-high-contrast-light .item-container-base.focussed:before {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    margin-bottom: 0.2rem;
+}
+
+.p {
+    font-weight: var(--font-size-base);
+    margin-top: 0.2rem;
+    text-align: justify;
 }
 
 .text {

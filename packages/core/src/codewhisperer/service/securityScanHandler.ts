@@ -13,6 +13,7 @@ import {
     codeScanState,
     CodeScanStoppedError,
     onDemandFileScanState,
+    RegionProfile,
 } from '../models/model'
 import { sleep } from '../../shared/utilities/timeoutUtils'
 import * as codewhispererClient from '../client/codewhisperer'
@@ -50,13 +51,19 @@ export async function listScanResults(
     codeScanFindingsSchema: string,
     projectPaths: string[],
     scope: CodeWhispererConstants.CodeAnalysisScope,
-    editor: vscode.TextEditor | undefined
+    editor: vscode.TextEditor | undefined,
+    profile?: RegionProfile
 ) {
     const logger = getLoggerForScope(scope)
     const codeScanIssueMap: Map<string, RawCodeScanIssue[]> = new Map()
     const aggregatedCodeScanIssueList: AggregatedCodeScanIssue[] = []
-    const requester = (request: codewhispererClient.ListCodeScanFindingsRequest) => client.listCodeScanFindings(request)
-    const request: codewhispererClient.ListCodeScanFindingsRequest = { jobId, codeScanFindingsSchema }
+    const requester = (request: codewhispererClient.ListCodeScanFindingsRequest) =>
+        client.listCodeScanFindings(request, profile?.arn)
+    const request: codewhispererClient.ListCodeScanFindingsRequest = {
+        jobId,
+        codeAnalysisFindingsSchema: codeScanFindingsSchema,
+        profileArn: profile?.arn,
+    }
     const collection = pageableToCollection(requester, request, 'nextToken')
     const issues = await collection
         .flatten()
@@ -203,7 +210,8 @@ export async function pollScanJobStatus(
     client: DefaultCodeWhispererClient,
     jobId: string,
     scope: CodeWhispererConstants.CodeAnalysisScope,
-    codeScanStartTime: number
+    codeScanStartTime: number,
+    profile?: RegionProfile
 ) {
     const pollingStartTime = performance.now()
     // We don't expect to get results immediately, so sleep for some time initially to not make unnecessary calls
@@ -216,6 +224,7 @@ export async function pollScanJobStatus(
         throwIfCancelled(scope, codeScanStartTime)
         const req: codewhispererClient.GetCodeScanRequest = {
             jobId: jobId,
+            profileArn: profile?.arn,
         }
         const resp = await client.getCodeScan(req)
         logger.verbose(`GetCodeScanRequest requestId: ${resp.$response.requestId}`)
@@ -242,7 +251,8 @@ export async function createScanJob(
     artifactMap: codewhispererClient.ArtifactMap,
     languageId: string,
     scope: CodeWhispererConstants.CodeAnalysisScope,
-    scanName: string
+    scanName: string,
+    profile?: RegionProfile
 ) {
     const logger = getLoggerForScope(scope)
     logger.verbose(`Creating scan job...`)
@@ -254,6 +264,7 @@ export async function createScanJob(
         },
         scope: codeAnalysisScope,
         codeScanName: scanName,
+        profileArn: profile?.arn,
     }
     const resp = await client.createCodeScan(req).catch((err) => {
         getLogger().error(`Failed creating scan job. Request id: ${err.requestId}`)
@@ -276,7 +287,8 @@ export async function getPresignedUrlAndUpload(
     client: DefaultCodeWhispererClient,
     zipMetadata: ZipMetadata,
     scope: CodeWhispererConstants.CodeAnalysisScope,
-    scanName: string
+    scanName: string,
+    profile?: RegionProfile
 ) {
     const artifactMap = await telemetry.amazonq_createUpload.run(async (span) => {
         const logger = getLoggerForScope(scope)
@@ -299,6 +311,7 @@ export async function getPresignedUrlAndUpload(
                     codeScanName: scanName,
                 },
             },
+            profileArn: profile?.arn,
         }
         logger.verbose(`Prepare for uploading src context...`)
         const srcResp = await client.createUploadUrl(srcReq).catch((err) => {

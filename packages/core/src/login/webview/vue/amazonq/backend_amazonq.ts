@@ -22,6 +22,11 @@ import { AuthError, AuthFlowState, userCancelled } from '../types'
 import { ToolkitError } from '../../../../shared/errors'
 import { withTelemetryContext } from '../../../../shared/telemetry/util'
 import { builderIdStartUrl } from '../../../../auth/sso/constants'
+import { RegionProfile } from '../../../../codewhisperer/models/model'
+import { randomUUID } from '../../../../shared/crypto'
+import globals from '../../../../shared/extensionGlobals'
+import { telemetry } from '../../../../shared/telemetry/telemetry'
+import { ProfileSwitchIntent } from '../../../../codewhisperer/region/regionProfileManager'
 
 const className = 'AmazonQLoginWebview'
 export class AmazonQLoginWebview extends CommonAuthWebview {
@@ -157,6 +162,16 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
         if (featureAuthStates.amazonQ === 'expired') {
             this.authState = this.isReauthenticating ? 'REAUTHENTICATING' : 'REAUTHNEEDED'
             return
+        } else if (featureAuthStates.amazonQ === 'pendingProfileSelection') {
+            this.authState = 'PENDING_PROFILE_SELECTION'
+            // possible that user starts with "profile selection" state therefore the timeout for auth flow should be disposed otherwise will emit failure
+            this.loadMetadata?.loadTimeout?.dispose()
+            this.loadMetadata = {
+                traceId: randomUUID(),
+                loadTimeout: undefined,
+                start: globals.clock.Date.now(),
+            }
+            return
         }
         this.authState = 'LOGIN'
     }
@@ -202,10 +217,37 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
     /** If users are unauthenticated in Q/CW, we should always display the auth screen. */
     async quitLoginScreen() {}
 
+    /**
+     * The purpose of returning Error.message is to notify vue frontend that API call fails and to render corresponding error message to users
+     * @returns ProfileList when API call succeeds, otherwise Error.message
+     */
+    override async listRegionProfiles(): Promise<RegionProfile[] | string> {
+        try {
+            return await AuthUtil.instance.regionProfileManager.listRegionProfile()
+        } catch (e) {
+            const conn = AuthUtil.instance.conn as SsoConnection | undefined
+            telemetry.amazonq_didSelectProfile.emit({
+                source: 'auth',
+                amazonQProfileRegion: AuthUtil.instance.regionProfileManager.activeRegionProfile?.region ?? 'not-set',
+                ssoRegion: conn?.ssoRegion,
+                result: 'Failed',
+                credentialStartUrl: conn?.startUrl,
+                reason: (e as Error).message,
+            })
+
+            return (e as Error).message
+        }
+    }
+
+    override selectRegionProfile(profile: RegionProfile, source: ProfileSwitchIntent) {
+        return AuthUtil.instance.regionProfileManager.switchRegionProfile(profile, source)
+    }
+
     private setupConnectionEventEmitter(): void {
         // allows the frontend to listen to Amazon Q auth events from the backend
         const codeWhispererConnectionChanged = createThrottle(() => this.onActiveConnectionModified.fire())
         AuthUtil.instance.secondaryAuth.onDidChangeActiveConnection(codeWhispererConnectionChanged)
+        AuthUtil.instance.regionProfileManager.onDidChangeRegionProfile(codeWhispererConnectionChanged)
 
         /**
          * Multiple events can be received in rapid succession and if

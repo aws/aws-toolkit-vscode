@@ -145,6 +145,7 @@ export class CodeWhispererCodeCoverageTracker {
                         timestamp: new Date(Date.now()),
                     },
                 },
+                profileArn: AuthUtil.instance.regionProfileManager.activeRegionProfile?.arn,
             })
             .then()
             .catch((error) => {

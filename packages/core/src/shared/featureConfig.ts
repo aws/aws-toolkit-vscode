@@ -105,6 +105,7 @@ export class FeatureConfigProvider {
     }
 
     public async listFeatureEvaluations(): Promise<ListFeatureEvaluationsResponse> {
+        const profile = AuthUtil.instance.regionProfileManager.activeRegionProfile
         const request: ListFeatureEvaluationsRequest = {
             userContext: {
                 ideCategory: 'VSCODE',
@@ -113,6 +114,7 @@ export class FeatureConfigProvider {
                 clientId: getClientId(globals.globalState),
                 ideVersion: extensionVersion,
             },
+            profileArn: profile?.arn,
         }
         return (await client.createUserSdkClient()).listFeatureEvaluations(request).promise()
     }

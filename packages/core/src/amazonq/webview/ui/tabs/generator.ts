@@ -3,13 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ChatItemType, MynahUIDataModel, QuickActionCommandGroup } from '@aws/mynah-ui'
+import { ChatItem, ChatItemType, MynahUIDataModel, QuickActionCommandGroup } from '@aws/mynah-ui'
 import { TabType } from '../storages/tabsStorage'
 import { FollowUpGenerator } from '../followUps/generator'
 import { QuickActionGenerator } from '../quickActions/generator'
 import { qChatIntroMessageForSMUS, TabTypeDataMap } from './constants'
 import { agentWalkthroughDataModel } from '../walkthrough/agent'
 import { FeatureContext } from '../../../../shared/featureConfig'
+import { RegionProfile } from '../../../../codewhisperer/models/model'
 
 export interface TabDataGeneratorProps {
     isFeatureDevEnabled: boolean
@@ -19,12 +20,14 @@ export interface TabDataGeneratorProps {
     isDocEnabled: boolean
     disabledCommands?: string[]
     commandHighlight?: FeatureContext
+    regionProfile?: RegionProfile
 }
 
 export class TabDataGenerator {
     private followUpsGenerator: FollowUpGenerator
     public quickActionsGenerator: QuickActionGenerator
     private highlightCommand?: FeatureContext
+    private regionProfile?: RegionProfile
 
     constructor(props: TabDataGeneratorProps) {
         this.followUpsGenerator = new FollowUpGenerator()
@@ -37,6 +40,7 @@ export class TabDataGenerator {
             disableCommands: props.disabledCommands,
         })
         this.highlightCommand = props.commandHighlight
+        this.regionProfile = props.regionProfile
     }
 
     public getTabData(
@@ -53,6 +57,16 @@ export class TabDataGenerator {
             return {}
         }
 
+        const regionProfileCard: ChatItem | undefined =
+            this.regionProfile === undefined
+                ? undefined
+                : {
+                      type: ChatItemType.ANSWER,
+                      body: `You are using the ${this.regionProfile?.name} profile for this chat period`,
+                      status: 'info',
+                      messageId: 'regionProfile',
+                  }
+
         const tabData: MynahUIDataModel = {
             tabTitle: taskName ?? TabTypeDataMap[tabType].title,
             promptInputInfo:
@@ -62,6 +76,7 @@ export class TabDataGenerator {
             contextCommands: this.getContextCommands(tabType),
             chatItems: needWelcomeMessages
                 ? [
+                      ...(regionProfileCard ? [regionProfileCard] : []),
                       {
                           type: ChatItemType.ANSWER,
                           body: isSMUS ? qChatIntroMessageForSMUS : TabTypeDataMap[tabType].welcome,
@@ -71,7 +86,7 @@ export class TabDataGenerator {
                           followUp: this.followUpsGenerator.generateWelcomeBlockForTab(tabType),
                       },
                   ]
-                : [],
+                : [...(regionProfileCard ? [regionProfileCard] : [])],
         }
         return tabData
     }

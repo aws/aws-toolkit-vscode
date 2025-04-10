@@ -12,9 +12,9 @@ import {
     WebviewViewResolveContext,
     Uri,
 } from 'vscode'
-import { LanguageServerResolver } from 'aws-core-vscode/shared'
 import { QuickActionCommandGroup } from '@aws/mynah-ui'
 import * as path from 'path'
+import { AmazonQPromptSettings, LanguageServerResolver } from 'aws-core-vscode/shared'
 
 export class AmazonQChatViewProvider implements WebviewViewProvider {
     public static readonly viewType = 'aws.amazonq.AmazonQChatView'
@@ -43,7 +43,11 @@ export class AmazonQChatViewProvider implements WebviewViewProvider {
 
     constructor(private readonly mynahUIPath: string) {}
 
-    public resolveWebviewView(webviewView: WebviewView, context: WebviewViewResolveContext, _token: CancellationToken) {
+    public async resolveWebviewView(
+        webviewView: WebviewView,
+        context: WebviewViewResolveContext,
+        _token: CancellationToken
+    ) {
         this.webview = webviewView.webview
 
         const lspDir = Uri.parse(LanguageServerResolver.defaultDir)
@@ -54,12 +58,13 @@ export class AmazonQChatViewProvider implements WebviewViewProvider {
         }
 
         const uiPath = webviewView.webview.asWebviewUri(Uri.parse(this.mynahUIPath)).toString()
-        webviewView.webview.html = this.getWebviewContent(uiPath)
+        webviewView.webview.html = await this.getWebviewContent(uiPath)
 
         this.onDidResolveWebviewEmitter.fire()
     }
 
-    private getWebviewContent(mynahUIPath: string) {
+    private async getWebviewContent(mynahUIPath: string) {
+        const disclaimerAcknowledged = AmazonQPromptSettings.instance.isPromptEnabled('amazonQChatDisclaimer')
         return `
         <!DOCTYPE html>
         <html lang="en">
@@ -84,7 +89,7 @@ export class AmazonQChatViewProvider implements WebviewViewProvider {
             <script type="text/javascript" src="${mynahUIPath.toString()}" defer onload="init()"></script>
             <script type="text/javascript">
                 const init = () => {
-                    amazonQChat.createChat(acquireVsCodeApi(), { disclaimerAcknowledged: false, quickActionCommands: ${JSON.stringify(this.quickActionCommands)}});
+                    amazonQChat.createChat(acquireVsCodeApi(), { disclaimerAcknowledged: ${disclaimerAcknowledged}, quickActionCommands: ${JSON.stringify(this.quickActionCommands)}});
                 }
             </script>
         </body>

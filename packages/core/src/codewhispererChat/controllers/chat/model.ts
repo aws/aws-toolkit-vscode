@@ -12,6 +12,7 @@ import { CodeReference } from '../../view/connector/connector'
 import { Customization } from '../../../codewhisperer/client/codewhispereruserclient'
 import { QuickActionCommand } from '@aws/mynah-ui'
 import { Message } from '../../../shared/db/chatDb/util'
+import { RegionProfile } from '../../../codewhisperer/models/model'
 
 export interface TriggerTabIDReceived {
     tabID: string
@@ -197,7 +198,8 @@ export interface TriggerPayload {
     readonly codeQuery: CodeQuery | undefined
     readonly userIntent: UserIntent | undefined
     readonly customization: Customization
-    context: string[] | QuickActionCommand[]
+    readonly profile: RegionProfile | undefined
+    readonly context: string[] | QuickActionCommand[]
     relevantTextDocuments: RelevantTextDocumentAddition[]
     additionalContents: AdditionalContentEntryAddition[]
     // a reference to all documents used in chat payload
