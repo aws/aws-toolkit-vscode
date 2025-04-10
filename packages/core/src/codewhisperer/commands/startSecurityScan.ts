@@ -108,7 +108,6 @@ export async function startSecurityScan(
     zipUtil: ZipUtil = new ZipUtil(),
     scanUuid?: string
 ) {
-    const profile = AuthUtil.instance.regionProfileManager.activeRegionProfile
     const logger = getLoggerForScope(scope)
     /**
      * Step 0: Initial Code Scan telemetry
@@ -188,7 +187,7 @@ export async function startSecurityScan(
         const uploadStartTime = performance.now()
         const scanName = randomUUID()
         try {
-            artifactMap = await getPresignedUrlAndUpload(client, zipMetadata, scope, scanName, profile)
+            artifactMap = await getPresignedUrlAndUpload(client, zipMetadata, scope, scanName)
         } finally {
             await zipUtil.removeTmpFiles(zipMetadata, scope)
             codeScanTelemetryEntry.artifactsUploadDuration = performance.now() - uploadStartTime
@@ -213,8 +212,7 @@ export async function startSecurityScan(
             artifactMap,
             codeScanTelemetryEntry.codewhispererLanguage,
             scope,
-            scanName,
-            profile
+            scanName
         )
         if (scanJob.status === 'Failed') {
             logger.verbose(`${scanJob.errorMessage}`)
@@ -237,8 +235,7 @@ export async function startSecurityScan(
                 scanUuid,
             })
         }
-        // pass profile
-        const jobStatus = await pollScanJobStatus(client, scanJob.jobId, scope, codeScanStartTime, profile)
+        const jobStatus = await pollScanJobStatus(client, scanJob.jobId, scope, codeScanStartTime)
         if (jobStatus === 'Failed') {
             logger.verbose(`Security scan failed.`)
             throw new CodeScanJobFailedError()
@@ -264,8 +261,7 @@ export async function startSecurityScan(
             CodeWhispererConstants.codeScanFindingsSchema,
             projectPaths,
             scope,
-            editor,
-            profile
+            editor
         )
         for (const issue of securityRecommendationCollection
             .flatMap(({ issues }) => issues)
