@@ -261,12 +261,11 @@ export class Messenger {
                     }
 
                     if (cwChatEvent.toolUseEvent?.stop) {
-                        toolUse.input = JSON.parse(toolUseInput)
-                        toolUse.toolUseId = cwChatEvent.toolUseEvent.toolUseId ?? ''
-                        toolUse.name = cwChatEvent.toolUseEvent.name ?? ''
-
                         let toolError = undefined
                         try {
+                            toolUse.toolUseId = cwChatEvent.toolUseEvent.toolUseId ?? ''
+                            toolUse.name = cwChatEvent.toolUseEvent.name ?? ''
+                            toolUse.input = JSON.parse(toolUseInput)
                             const availableToolsNames = (session.pairProgrammingModeOn ? tools : noWriteTools).map(
                                 (item) => item.toolSpecification?.name
                             )
