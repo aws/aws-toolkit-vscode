@@ -202,13 +202,15 @@ export class DefaultCodeWhispererClient {
     }
 
     public async listCodeScanFindings(
-        request: ListCodeScanFindingsRequest
+        request: ListCodeScanFindingsRequest,
+        profileArn: string | undefined
     ): Promise<PromiseResult<ListCodeScanFindingsResponse, AWSError>> {
         if (this.isBearerTokenAuth()) {
             const req = {
                 jobId: request.jobId,
                 nextToken: request.nextToken,
                 codeAnalysisFindingsSchema: 'codeanalysis/findings/1.0',
+                profileArn: profileArn,
             } as CodeWhispererUserClient.ListCodeAnalysisFindingsRequest
             return (await this.createUserSdkClient()).listCodeAnalysisFindings(req).promise()
         }
