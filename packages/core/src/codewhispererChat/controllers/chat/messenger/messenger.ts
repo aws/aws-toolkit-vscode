@@ -571,12 +571,14 @@ export class Messenger {
         if (toolUse?.name === ToolType.ExecuteBash && message.startsWith('```shell')) {
             if (validation.requiresAcceptance) {
                 const buttons: ChatItemButton[] = [
-                    {
-                        id: 'reject-shell-command',
-                        text: localize('AWS.amazonq.executeBash.reject', 'Reject'),
-                        status: 'clear',
-                        icon: 'cancel' as MynahIconsType,
-                    },
+                    // Comment out the reject button for now for the internal release
+                    // TODO: based on the feedback, we can decide to add it back or remove it.
+                    // {
+                    //     id: 'reject-shell-command',
+                    //     text: localize('AWS.amazonq.executeBash.reject', 'Reject'),
+                    //     status: 'clear',
+                    //     icon: 'cancel' as MynahIconsType,
+                    // },
                     {
                         id: 'run-shell-command',
                         text: localize('AWS.amazonq.executeBash.run', 'Run'),
