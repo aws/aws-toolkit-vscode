@@ -100,41 +100,6 @@ export const createMynahUI = (
         welcomeCount += 1
     }
 
-    /**
-     * Creates a file list header from context list
-     * @param contextList List of file contexts
-     * @param rootFolderTitle Title for the root folder
-     * @returns Header object with file list
-     */
-    const createFileListHeader = (contextList: any[], rootFolderTitle?: string) => {
-        return {
-            fileList: {
-                fileTreeTitle: '',
-                filePaths: contextList.map((file) => file.relativeFilePath),
-                rootFolderTitle: rootFolderTitle,
-                flatList: true,
-                collapsed: true,
-                hideFileCount: true,
-                details: Object.fromEntries(
-                    contextList.map((file) => [
-                        file.relativeFilePath,
-                        {
-                            label: file.lineRanges
-                                .map((range: { first: number; second: number }) =>
-                                    range.first === -1 || range.second === -1
-                                        ? ''
-                                        : `line ${range.first} - ${range.second}`
-                                )
-                                .join(', '),
-                            description: file.relativeFilePath,
-                            clickable: true,
-                        },
-                    ])
-                ),
-            },
-        }
-    }
-
     // Adding the first tab as CWC tab
     tabsStorage.addTab({
         id: 'tab-1',
@@ -381,11 +346,8 @@ export const createMynahUI = (
         sendMessageToExtension: (message) => {
             ideApi.postMessage(message)
         },
-        onChatAnswerUpdated: (tabID: string, item: CWCChatItem) => {
+        onChatAnswerUpdated: (tabID: string, item: ChatItem) => {
             if (item.messageId !== undefined) {
-                if (item.contextList !== undefined && item.contextList.length > 0) {
-                    item.header = createFileListHeader(item.contextList, item.rootFolderTitle)
-                }
                 mynahUI.updateChatAnswerWithMessageId(tabID, item.messageId, {
                     ...(item.body !== undefined ? { body: item.body } : {}),
                     ...(item.buttons !== undefined ? { buttons: item.buttons } : {}),
@@ -447,7 +409,32 @@ export const createMynahUI = (
             }
 
             if (item.contextList !== undefined && item.contextList.length > 0) {
-                item.header = createFileListHeader(item.contextList, item.rootFolderTitle)
+                item.header = {
+                    fileList: {
+                        fileTreeTitle: '',
+                        filePaths: item.contextList.map((file) => file.relativeFilePath),
+                        rootFolderTitle: item.rootFolderTitle,
+                        flatList: true,
+                        collapsed: true,
+                        hideFileCount: true,
+                        details: Object.fromEntries(
+                            item.contextList.map((file) => [
+                                file.relativeFilePath,
+                                {
+                                    label: file.lineRanges
+                                        .map((range) =>
+                                            range.first === -1 || range.second === -1
+                                                ? ''
+                                                : `line ${range.first} - ${range.second}`
+                                        )
+                                        .join(', '),
+                                    description: file.relativeFilePath,
+                                    clickable: true,
+                                },
+                            ])
+                        ),
+                    },
+                }
             }
 
             if (
