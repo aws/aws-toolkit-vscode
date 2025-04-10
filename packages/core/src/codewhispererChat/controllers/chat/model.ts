@@ -201,7 +201,7 @@ export enum ChatTriggerType {
 export enum AgenticChatInteractionType {
     RejectDiff = 'RejectDiff',
     GeneratedDiff = 'GeneratedDiff',
-    AcceptCommand = 'AcceptCommand',
+    RunCommand = 'RunCommand',
     GeneratedCommand = 'GeneratedCommand',
     StopChat = 'StopChat',
 }

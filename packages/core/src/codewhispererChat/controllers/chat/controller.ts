@@ -834,7 +834,7 @@ export class ChatController {
                 await this.processToolUseMessage(message)
                 if (message.action.id === 'run-shell-command') {
                     this.telemetryHelper.recordInteractionWithAgenticChat(
-                        AgenticChatInteractionType.AcceptCommand,
+                        AgenticChatInteractionType.RunCommand,
                         message
                     )
                 }

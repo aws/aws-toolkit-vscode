@@ -232,7 +232,7 @@
         {
             "name": "cwsprAgenticChatInteractionType",
             "type": "string",
-            "allowedValues": ["RejectDiff", "GeneratedDiff", "AcceptCommand", "GeneratedCommand", "StopChat"],
+            "allowedValues": ["RejectDiff", "GeneratedDiff", "RunCommand", "GeneratedCommand", "StopChat"],
             "description": "Type of interaction with agentic chat messages"
         }
     ],
@@ -570,43 +570,6 @@
                 },
                 {
                     "type": "cwsprChatConversationType"
-                },
-                {
-                    "type": "credentialStartUrl",
-                    "required": false
-                }
-            ]
-        },
-        {
-            "name": "amazonq_messageReceived",
-            "description": "When a user receives a message",
-            "metadata": [
-                {
-                    "type": "cwsprChatConversationId"
-                },
-                {
-                    "type": "cwsprChatConversationType"
-                },
-                {
-                    "type": "cwsprChatFullResponseLatency"
-                },
-                {
-                    "type": "cwsprChatMessageId"
-                },
-                {
-                    "type": "cwsprChatRequestLength"
-                },
-                {
-                    "type": "cwsprChatResponseCode"
-                },
-                {
-                    "type": "cwsprChatResponseLength"
-                },
-                {
-                    "type": "cwsprChatTimeBetweenChunks"
-                },
-                {
-                    "type": "cwsprChatTimeToFirstChunk"
                 },
                 {
                     "type": "credentialStartUrl",

@@ -509,7 +509,7 @@ export class Messenger {
                 this.telemetryHelper.setResponseStreamTotalTime(tabID)
 
                 const responseCode = response?.$metadata.httpStatusCode ?? 0
-                const promptAnswer = {
+                this.telemetryHelper.recordAddMessage(triggerPayload, {
                     followUpCount: followUps.length,
                     suggestionCount: relatedSuggestions.length,
                     tabID: tabID,
@@ -518,13 +518,7 @@ export class Messenger {
                     responseCode,
                     codeReferenceCount: codeReference.length,
                     totalNumberOfCodeBlocksInResponse: await this.countTotalNumberOfCodeBlocks(message),
-                }
-
-                this.telemetryHelper.recordAddMessage(triggerPayload, promptAnswer)
-
-                if (message.length) {
-                    this.telemetryHelper.recordMessageReceived(triggerPayload, promptAnswer)
-                }
+                })
             })
     }
 
