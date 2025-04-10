@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as vscode from 'vscode'
 import { waitUntil } from '../../../../shared/utilities/timeoutUtils'
 import {
     AppToWebViewMessageDispatcher,
@@ -284,23 +283,18 @@ export class Messenger {
                                     session.setShowDiffOnFileWrite(true)
                                     changeList = await tool.tool.getDiffChanges()
                                 }
-
-                                let lineCount = 0
                                 if (tool.type === ToolType.FsRead) {
                                     const input = toolUse.input as unknown as FsReadParams
-                                    if (input?.path) {
-                                        // Calculate the number of lines in input?.path
-                                        const fileUri = vscode.Uri.file(input?.path)
-                                        const fileContent = await vscode.workspace.fs.readFile(fileUri)
-                                        const fileContentString = new TextDecoder().decode(fileContent)
-                                        lineCount = fileContentString.split('\n').length
+                                    // Check if this file path is already in the readFiles list
+                                    const isFileAlreadyRead = session.readFiles.some(
+                                        (file) => file.relativeFilePath === input.path
+                                    )
+                                    if (!isFileAlreadyRead) {
+                                        session.addToReadFiles({
+                                            relativeFilePath: input?.path,
+                                            lineRanges: [{ first: -1, second: -1 }],
+                                        })
                                     }
-                                    const [start, end] = input?.readRange ?? [0, lineCount - 1]
-
-                                    session.addToReadFiles({
-                                        relativeFilePath: input?.path,
-                                        lineRanges: [{ first: start, second: end }],
-                                    })
                                 } else if (tool.type === ToolType.ListDirectory) {
                                     const input = toolUse.input as unknown as ListDirectoryParams
                                     session.setReadFolders({
