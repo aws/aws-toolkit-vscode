@@ -33,6 +33,8 @@ describe('ToolUtils', function () {
         mockWritable = {
             write: sandbox.stub(),
         } as unknown as sinon.SinonStubbedInstance<Writable>
+        ;(mockFsRead.requiresAcceptance as sinon.SinonStub).returns({ requiresAcceptance: false })
+        ;(mockListDirectory.requiresAcceptance as sinon.SinonStub).returns({ requiresAcceptance: false })
     })
 
     afterEach(function () {
