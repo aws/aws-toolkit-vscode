@@ -5,8 +5,9 @@
 import * as vscode from 'vscode'
 import { getLogger } from '../../shared/logger/logger'
 import fs from '../../shared/fs/fs'
-import { InvokeOutput, OutputKind, sanitizePath } from './toolShared'
 import { Writable } from 'stream'
+import { InvokeOutput, OutputKind, sanitizePath, CommandValidation } from './toolShared'
+import { isInDirectory } from '../../shared/filesystemUtilities'
 
 export interface FsReadParams {
     path: string
@@ -49,6 +50,18 @@ export class FsRead {
     public queueDescription(updates: Writable): void {
         updates.write('')
         updates.end()
+    }
+
+    public requiresAcceptance(): CommandValidation {
+        const workspaceFolders = vscode.workspace.workspaceFolders
+        if (!workspaceFolders || workspaceFolders.length === 0) {
+            return { requiresAcceptance: true }
+        }
+        const isInWorkspace = workspaceFolders.some((folder) => isInDirectory(folder.uri.fsPath, this.fsPath))
+        if (!isInWorkspace) {
+            return { requiresAcceptance: true }
+        }
+        return { requiresAcceptance: false }
     }
 
     public async invoke(updates?: Writable): Promise<InvokeOutput> {

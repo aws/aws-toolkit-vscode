@@ -693,13 +693,13 @@ export class Messenger {
                 const buttons: ChatItemButton[] = [
                     {
                         id: 'reject-shell-command',
-                        text: localize('AWS.amazonq.executeBash.reject', 'Reject'),
+                        text: localize('AWS.generic.reject', 'Reject'),
                         status: 'clear',
                         icon: 'cancel' as MynahIconsType,
                     },
                     {
                         id: 'run-shell-command',
-                        text: localize('AWS.amazonq.executeBash.run', 'Run'),
+                        text: localize('AWS.generic.run', 'Run'),
                         status: 'clear',
                         icon: 'play' as MynahIconsType,
                     },
@@ -743,6 +743,28 @@ export class Messenger {
             header = {
                 buttons,
                 fileList,
+            }
+        } else if (toolUse?.name === ToolType.ListDirectory || toolUse?.name === ToolType.FsRead) {
+            if (validation.requiresAcceptance) {
+                const buttons: ChatItemButton[] = [
+                    {
+                        id: 'confirm-tool-use',
+                        text: localize('AWS.generic.run', 'Run'),
+                        status: 'main',
+                        icon: 'play' as MynahIconsType,
+                    },
+                    {
+                        id: 'reject-tool-use',
+                        text: localize('AWS.generic.reject', 'Reject'),
+                        status: 'clear',
+                        icon: 'cancel' as MynahIconsType,
+                    },
+                ]
+                header = {
+                    icon: 'shell' as MynahIconsType,
+                    body: 'shell',
+                    buttons,
+                }
             }
         }
 
