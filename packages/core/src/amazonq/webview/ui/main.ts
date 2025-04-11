@@ -719,6 +719,13 @@ export const createMynahUI = (
                 return
             }
 
+            // For new user prompt stopping chat with UI changes
+            mynahUI.updateStore(tabID, {
+                loadingChat: false,
+                promptInputDisabledState: false,
+            })
+            connector.onStopChatResponse(tabID)
+
             const tabType = tabsStorage.getTab(tabID)?.type
             if (tabType === 'featuredev') {
                 mynahUI.addChatItem(tabID, {
