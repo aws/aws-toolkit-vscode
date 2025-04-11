@@ -787,7 +787,7 @@ export class ChatController {
                                 chatStream,
                                 ConversationTracker.getInstance().getTokenForTrigger(triggerID)
                             )
-                            ToolUtils.validateOutput(output)
+                            ToolUtils.validateOutput(output, tool.type)
 
                             let status: ToolResultStatus = ToolResultStatus.SUCCESS
                             if (output.output.success === false) {
