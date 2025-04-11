@@ -147,16 +147,16 @@ export class GrepSearch {
                 const result = await rg.run()
                 this.logger.info(`Executing ripgrep with exitCode: ${result.exitCode}`)
                 // Process the output to format with file URLs and remove matched content
-                const processedOutput = this.processRipgrepOutput(result.stdout)
+                const { sanitizedOutput, totalMatchCount } = this.processRipgrepOutput(result.stdout)
 
                 // If updates is provided, write the processed output
                 if (updates) {
-                    updates.write('\n\nGreped Results:\n\n')
-                    updates.write(processedOutput)
+                    updates.write(`\n\n${totalMatchCount} matches found:\n\n`)
+                    updates.write(sanitizedOutput)
                 }
 
-                this.logger.info(`Processed ripgrep result: ${processedOutput}`)
-                resolve(processedOutput)
+                this.logger.info(`Processed ripgrep result: ${totalMatchCount} matches found`)
+                resolve(sanitizedOutput)
             } catch (err) {
                 reject(err)
             }
@@ -165,24 +165,21 @@ export class GrepSearch {
 
     /**
      * Process ripgrep output to:
-     * 1. Remove matched content (keep only file:line)
-     * 2. Add file URLs for clickable links
-     */
-    /**
-     * Process ripgrep output to:
      * 1. Group results by file
      * 2. Format as collapsible sections
      * 3. Add file URLs for clickable links
+     * @returns An object containing the processed output and total match count
      */
-    private processRipgrepOutput(output: string): string {
+    private processRipgrepOutput(output: string): { sanitizedOutput: string; totalMatchCount: number } {
         if (!output || output.trim() === '') {
-            return 'No matches found.'
+            return { sanitizedOutput: 'No matches found.', totalMatchCount: 0 }
         }
 
         const lines = output.split('\n')
 
         // Group by file path
         const fileGroups: Record<string, string[]> = {}
+        let totalMatchCount = 0
 
         for (const line of lines) {
             if (!line || line.trim() === '') {
@@ -203,28 +200,32 @@ export class GrepSearch {
                 fileGroups[filePath] = []
             }
 
-            // Create a clickable link with line number only
-            fileGroups[filePath].push(`- [Line ${lineNumber}](${vscode.Uri.file(filePath).toString()}:${lineNumber})`)
+            // Create a clickable link with line number using VS Code's Uri.with() method
+            const uri = vscode.Uri.file(filePath)
+            // Use the with() method to add the line number as a fragment
+            const uriWithLine = uri.with({ fragment: `L${lineNumber}` })
+            fileGroups[filePath].push(`- [Line ${lineNumber}](${uriWithLine.toString(true)})`)
+            totalMatchCount++
         }
 
         // Sort files by match count (most matches first)
         const sortedFiles = Object.entries(fileGroups).sort((a, b) => b[1].length - a[1].length)
 
         // Format as collapsible sections
-        const processedOutput = sortedFiles
+        const sanitizedOutput = sortedFiles
             .map(([filePath, matches]) => {
                 const fileName = path.basename(filePath)
                 const matchCount = matches.length
 
                 return `<details>
-    <summary><strong>${fileName} (${matchCount})</strong></summary>
+    <summary><strong>${fileName} - match count: ${matchCount}</strong></summary>
 
 ${matches.join('\n')}
 </details>`
             })
             .join('\n\n')
 
-        return processedOutput
+        return { sanitizedOutput, totalMatchCount }
     }
 
     private createOutput(content: string): InvokeOutput {
