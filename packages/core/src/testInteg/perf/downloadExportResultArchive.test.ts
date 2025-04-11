@@ -11,12 +11,14 @@ import { fs, getRandomString } from '../../shared'
 import { createTestWorkspace } from '../../test/testUtil'
 import { getEqualOSTestOptions, performanceTest } from '../../shared/performance/performance'
 import { downloadExportResultArchive } from '../../shared/utilities/download'
+import { RegionProfile } from '../../codewhisperer'
 
 interface SetupResult {
     workspace: WorkspaceFolder
     exportCommandInput: ExportResultArchiveCommandInput
     writeFileStub: sinon.SinonStub
     cwStreaming: any
+    profile: RegionProfile
 }
 
 interface FakeCommandOutput {
@@ -42,7 +44,8 @@ async function setup(pieces: number, pieceSize: number): Promise<SetupResult> {
     const cwStreaming = { exportResultArchive: () => generateCommandOutput(pieces, pieceSize) }
 
     const writeFileStub = sinon.stub(fs, 'writeFile')
-    return { workspace, exportCommandInput, writeFileStub, cwStreaming }
+    const profile: RegionProfile = { name: 'foo', region: 'us-east-1', arn: 'foo-arn', description: '' }
+    return { workspace, exportCommandInput, writeFileStub, cwStreaming, profile }
 }
 
 function perfTest(pieces: number, pieceSize: number, label: string) {
@@ -56,11 +59,18 @@ function perfTest(pieces: number, pieceSize: number, label: string) {
         function () {
             return {
                 setup: async () => await setup(pieces, pieceSize),
-                execute: async ({ workspace, cwStreaming, exportCommandInput, writeFileStub }: SetupResult) => {
+                execute: async ({
+                    workspace,
+                    cwStreaming,
+                    exportCommandInput,
+                    writeFileStub,
+                    profile,
+                }: SetupResult) => {
                     await downloadExportResultArchive(
                         cwStreaming,
                         exportCommandInput,
-                        path.join(workspace.uri.fsPath, 'result')
+                        path.join(workspace.uri.fsPath, 'result'),
+                        profile
                     )
                 },
                 verify: async (setup: SetupResult) => {
