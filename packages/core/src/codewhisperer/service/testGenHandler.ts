@@ -36,6 +36,7 @@ import { randomUUID } from '../../shared/crypto'
 import { sleep } from '../../shared/utilities/timeoutUtils'
 import { tempDirPath } from '../../shared/filesystemUtilities'
 import fs from '../../shared/fs/fs'
+import { AuthUtil } from '../util/authUtil'
 
 // TODO: Get TestFileName and Framework and to error message
 export function throwIfCancelled() {
@@ -45,7 +46,7 @@ export function throwIfCancelled() {
     }
 }
 
-export async function getPresignedUrlAndUploadTestGen(zipMetadata: ZipMetadata) {
+export async function getPresignedUrlAndUploadTestGen(zipMetadata: ZipMetadata, profile: RegionProfile | undefined) {
     const logger = getLogger()
     if (zipMetadata.zipFilePath === '') {
         getLogger().error('Failed to create valid source zip')
@@ -55,6 +56,7 @@ export async function getPresignedUrlAndUploadTestGen(zipMetadata: ZipMetadata) 
         contentMd5: getMd5(zipMetadata.zipFilePath),
         artifactType: 'SourceCode',
         uploadIntent: CodeWhispererConstants.testGenUploadIntent,
+        profileArn: profile?.arn,
     }
     logger.verbose(`Prepare for uploading src context...`)
     const srcResp = await codeWhisperer.codeWhispererClient.createUploadUrl(srcReq).catch((err) => {
@@ -310,7 +312,8 @@ export async function downloadResultArchive(
                     },
                 },
             },
-            pathToArchive
+            pathToArchive,
+            AuthUtil.instance.regionProfileManager.activeRegionProfile
         )
     } catch (e: any) {
         downloadErrorMessage = (e as Error).message
