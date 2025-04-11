@@ -1,0 +1,22 @@
+{
+	"date": "2025-04-11",
+	"version": "1.58.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "inline chat activates properly when using 'aws.experiments.amazonqChatLSP' feature flag"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q Chat: code blocks in responses flicker, switching tabs during answer streaming makes expand button disappear"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q Chat: tab bar buttons disappear when closing non-active tab"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Amazon Q Chat: chat history list does not truncate markdown"
+		}
+	]
+}

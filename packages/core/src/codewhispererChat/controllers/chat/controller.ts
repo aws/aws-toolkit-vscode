@@ -98,10 +98,10 @@ import { amazonQTabSuffix } from '../../../shared/constants'
 import { OutputKind } from '../../tools/toolShared'
 import { ToolUtils, Tool, ToolType } from '../../tools/toolUtils'
 import { ChatStream } from '../../tools/chatStream'
-import { ChatHistoryStorage } from '../../storages/chatHistoryStorage'
 import { tempDirPath } from '../../../shared/filesystemUtilities'
 import { Database } from '../../../shared/db/chatDb/chatDb'
 import { TabBarController } from './tabBarController'
+import { messageToChatMessage } from '../../../shared/db/chatDb/util'
 
 export interface ChatControllerMessagePublishers {
     readonly processPromptChatMessage: MessagePublisher<PromptMessage>
@@ -176,7 +176,6 @@ export class ChatController {
     private readonly userIntentRecognizer: UserIntentRecognizer
     private readonly telemetryHelper: CWCTelemetryHelper
     private userPromptsWatcher: vscode.FileSystemWatcher | undefined
-    private readonly chatHistoryStorage: ChatHistoryStorage
     private chatHistoryDb = Database.getInstance()
     private cancelTokenSource: vscode.CancellationTokenSource = new vscode.CancellationTokenSource()
 
@@ -196,7 +195,6 @@ export class ChatController {
         this.editorContentController = new EditorContentController()
         this.promptGenerator = new PromptsGenerator()
         this.userIntentRecognizer = new UserIntentRecognizer()
-        this.chatHistoryStorage = new ChatHistoryStorage()
         this.tabBarController = new TabBarController(this.messenger)
 
         onDidChangeAmazonQVisibility((visible) => {
@@ -494,7 +492,6 @@ export class ChatController {
         conversationTracker.clearTabTriggers(message.tabID)
 
         this.sessionStorage.deleteSession(message.tabID)
-        this.chatHistoryStorage.deleteHistory(message.tabID)
         this.triggerEventsStorage.removeTabEvents(message.tabID)
         // this.telemetryHelper.recordCloseChat(message.tabID)
         this.chatHistoryDb.updateTabOpenState(message.tabID, false)
@@ -756,10 +753,19 @@ export class ChatController {
                         try {
                             await ToolUtils.validate(tool)
 
-                            const chatStream = new ChatStream(this.messenger, tabID, triggerID, toolUse, {
-                                requiresAcceptance: false,
-                            })
-
+                            const chatStream = new ChatStream(
+                                this.messenger,
+                                tabID,
+                                triggerID,
+                                toolUse,
+                                session,
+                                undefined,
+                                false,
+                                {
+                                    requiresAcceptance: false,
+                                },
+                                false
+                            )
                             if (tool.type === ToolType.FsWrite && toolUse.toolUseId) {
                                 const backup = await tool.tool.getBackup()
                                 session.setFsWriteBackup(toolUse.toolUseId, backup)
@@ -1089,7 +1095,7 @@ export class ChatController {
         getLogger().error(`error: ${errorMessage} tabID: ${tabID} requestID: ${requestID}`)
 
         this.sessionStorage.deleteSession(tabID)
-        this.chatHistoryStorage.getTabHistory(tabID).clear()
+        this.chatHistoryDb.clearTab(tabID)
     }
 
     private async processContextMenuCommand(command: EditorContextCommand) {
@@ -1211,7 +1217,6 @@ export class ChatController {
         switch (message.command) {
             case 'clear':
                 this.sessionStorage.deleteSession(message.tabID)
-                this.chatHistoryStorage.getTabHistory(message.tabID).clear()
                 this.triggerEventsStorage.removeTabEvents(message.tabID)
                 recordTelemetryChatRunCommand('clear')
                 this.chatHistoryDb.clearTab(message.tabID)
@@ -1279,6 +1284,7 @@ export class ChatController {
         session.createNewTokenSource()
         session.setAgenticLoopInProgress(true)
         session.clearListOfReadFiles()
+        session.clearListOfReadFolders()
         session.setShowDiffOnFileWrite(false)
         this.editorContextExtractor
             .extractContextForTrigger('ChatMessage')
@@ -1502,10 +1508,6 @@ export class ChatController {
         }
 
         const session = this.sessionStorage.getSession(tabID)
-        if (!session.localHistoryHydrated) {
-            triggerPayload.history = this.chatHistoryDb.getMessages(triggerEvent.tabID, 10)
-            session.localHistoryHydrated = true
-        }
         await this.resolveContextCommandPayload(triggerPayload, session)
         triggerPayload.useRelevantDocuments = triggerPayload.context.some(
             (context) => typeof context !== 'string' && context.command === '@workspace'
@@ -1544,16 +1546,14 @@ export class ChatController {
 
         const request = triggerPayloadToChatRequest(triggerPayload)
 
-        const chatHistory = this.chatHistoryStorage.getTabHistory(tabID)
         const currentMessage = request.conversationState.currentMessage
         if (currentMessage) {
-            chatHistory.fixHistory(currentMessage)
+            this.chatHistoryDb.fixHistory(tabID, currentMessage)
         }
-        request.conversationState.history = chatHistory.getHistory()
-
-        const conversationId = chatHistory.getConversationId() || randomUUID()
-        chatHistory.setConversationId(conversationId)
-        request.conversationState.conversationId = conversationId
+        request.conversationState.history = this.chatHistoryDb
+            .getMessages(tabID)
+            .map((chat) => messageToChatMessage(chat))
+        request.conversationState.conversationId = session.sessionIdentifier
 
         triggerPayload.documentReferences = this.mergeRelevantTextDocuments(triggerPayload.relevantTextDocuments)
 
@@ -1616,7 +1616,6 @@ export class ChatController {
             this.telemetryHelper.recordStartConversation(triggerEvent, triggerPayload)
 
             if (currentMessage && session.sessionIdentifier && !this.isTriggerCancelled(triggerID)) {
-                chatHistory.appendUserMessage(currentMessage)
                 this.chatHistoryDb.addMessage(tabID, 'cwc', session.sessionIdentifier, {
                     body: triggerPayload.message,
                     type: 'prompt' as any,
@@ -1631,11 +1630,20 @@ export class ChatController {
                     response.$metadata.requestId
                 } metadata: ${inspect(response.$metadata, { depth: 12 })}`
             )
+
             if (this.isTriggerCancelled(triggerID)) {
                 return
             }
 
-            await this.messenger.sendAIResponse(response, session, tabID, triggerID, triggerPayload, chatHistory)
+            this.cancelTokenSource = new vscode.CancellationTokenSource()
+            await this.messenger.sendAIResponse(
+                response,
+                session,
+                tabID,
+                triggerID,
+                triggerPayload,
+                this.cancelTokenSource.token
+            )
         } catch (e: any) {
             this.telemetryHelper.recordMessageResponseError(triggerPayload, tabID, getHttpStatusCode(e) ?? 0)
             // clears session, record telemetry before this call
