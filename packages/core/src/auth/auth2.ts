@@ -37,12 +37,7 @@ import { getLogger } from '../shared/logger/logger'
 import { ToolkitError } from '../shared/errors'
 import { useDeviceFlow } from './sso/ssoAccessTokenProvider'
 
-export const AuthStates = {
-    NOT_CONNECTED: 'notConnected',
-    CONNECTED: 'connected',
-    EXPIRED: 'expired',
-} as const
-export type AuthState = (typeof AuthStates)[keyof typeof AuthStates]
+export type AuthState = 'notConnected' | 'connected' | 'expired'
 
 export type AuthStateEvent = { id: string; state: AuthState | 'refreshed' }
 
@@ -161,7 +156,7 @@ export class SsoLogin implements BaseLogin {
 
     // Cached information from the identity server for easy reference
     private ssoTokenId: string | undefined
-    private connectionState: AuthState = AuthStates.NOT_CONNECTED
+    private connectionState: AuthState = 'connected'
     private _data: { startUrl: string; region: string } | undefined
 
     private cancellationToken: CancellationTokenSource | undefined
@@ -183,7 +178,7 @@ export class SsoLogin implements BaseLogin {
     }
 
     async reauthenticate() {
-        if (this.connectionState === AuthStates.NOT_CONNECTED) {
+        if (this.connectionState === 'notConnected') {
             throw new ToolkitError('Cannot reauthenticate when not connected.')
         }
         return this._getSsoToken(true)
@@ -193,7 +188,7 @@ export class SsoLogin implements BaseLogin {
         if (this.ssoTokenId) {
             await this.lspAuth.invalidateSsoToken(this.ssoTokenId)
         }
-        this.updateConnectionState(AuthStates.NOT_CONNECTED)
+        this.updateConnectionState('notConnected')
         this._data = undefined
         // TODO: DeleteProfile api in Identity Service (this doesn't exist yet)
     }
@@ -236,8 +231,8 @@ export class SsoLogin implements BaseLogin {
     }
 
     /**
-     * Returns a decrypted access token and a payload to send to the `updateCredentials` API provided by
-     * the Amazon Q LSP.
+     * Returns both the decrypted access token and the payload to send to the `updateCredentials` LSP API
+     * with encrypted token
      */
     async getToken() {
         const response = await this._getSsoToken(false)
@@ -249,7 +244,7 @@ export class SsoLogin implements BaseLogin {
     }
 
     /**
-     * Returns the response from `getToken` LSP API and sets the connection state based on the errors/result
+     * Returns the response from `getSsoToken` LSP API and sets the connection state based on the errors/result
      * of the call.
      */
     private async _getSsoToken(login: boolean) {
@@ -277,10 +272,10 @@ export class SsoLogin implements BaseLogin {
                 case AwsErrorCodes.E_SSO_SESSION_NOT_FOUND:
                 case AwsErrorCodes.E_PROFILE_NOT_FOUND:
                 case AwsErrorCodes.E_INVALID_SSO_TOKEN:
-                    this.updateConnectionState(AuthStates.NOT_CONNECTED)
+                    this.updateConnectionState('notConnected')
                     break
                 case AwsErrorCodes.E_CANNOT_REFRESH_SSO_TOKEN:
-                    this.updateConnectionState(AuthStates.EXPIRED)
+                    this.updateConnectionState('expired')
                     break
                 // TODO: implement when identity server emits E_NETWORK_ERROR, E_FILESYSTEM_ERROR
                 // case AwsErrorCodes.E_NETWORK_ERROR:
@@ -298,7 +293,7 @@ export class SsoLogin implements BaseLogin {
         }
 
         this.ssoTokenId = response.ssoToken.id
-        this.updateConnectionState(AuthStates.CONNECTED)
+        this.updateConnectionState('connected')
         return response
     }
 
@@ -320,7 +315,7 @@ export class SsoLogin implements BaseLogin {
     private ssoTokenChangedHandler(params: SsoTokenChangedParams) {
         if (params.ssoTokenId === this.ssoTokenId) {
             if (params.kind === SsoTokenChangedKind.Expired) {
-                this.updateConnectionState(AuthStates.EXPIRED)
+                this.updateConnectionState('expired')
                 return
             } else if (params.kind === SsoTokenChangedKind.Refreshed) {
                 this.eventEmitter.fire({ id: this.profileName, state: 'refreshed' })
