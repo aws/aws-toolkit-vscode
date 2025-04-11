@@ -568,7 +568,7 @@ export function isPresent<T>(value: T | undefined): value is T {
 }
 
 export class CircularBuffer {
-    private buffer = new Map<number, boolean>()
+    private buffer = new Set<number>()
     private maxSize: number
 
     constructor(size: number) {
@@ -577,12 +577,12 @@ export class CircularBuffer {
 
     add(value: number): void {
         if (this.buffer.size >= this.maxSize) {
-            // Map iterates its keys in insertion-order.
-            // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map
+            // Set iterates its keys in insertion-order.
+            // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Set
             const firstKey = this.buffer.keys().next().value
             this.buffer.delete(firstKey)
         }
-        this.buffer.set(value, true)
+        this.buffer.add(value)
     }
 
     contains(value: number): boolean {
