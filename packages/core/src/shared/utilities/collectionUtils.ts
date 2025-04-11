@@ -588,4 +588,8 @@ export class CircularBuffer {
     contains(value: number): boolean {
         return this.buffer.has(value)
     }
+
+    clear(): void {
+        this.buffer.clear()
+    }
 }
