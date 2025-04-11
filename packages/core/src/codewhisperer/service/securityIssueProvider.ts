@@ -48,10 +48,11 @@ export class SecurityIssueProvider {
                     .filter((issue) => {
                         const range = new vscode.Range(
                             issue.startLine,
-                            event.document.lineAt(issue.startLine)?.range.start.character ?? 0,
-                            issue.endLine,
-                            event.document.lineAt(issue.endLine - 1)?.range.end.character ?? 0
+                            0,
+                            issue.startLine === issue.endLine ? issue.endLine + 1 : issue.endLine,
+                            0
                         )
+
                         const intersection = changedRange.intersection(range)
                         return !(intersection && (/\S/.test(changedText) || changedText === ''))
                     })
