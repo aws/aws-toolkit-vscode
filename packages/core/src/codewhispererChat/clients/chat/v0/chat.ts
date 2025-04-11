@@ -17,7 +17,7 @@ import { UserWrittenCodeTracker } from '../../../../codewhisperer/tracker/userWr
 import { DocumentReference, PromptMessage } from '../../../controllers/chat/model'
 import { FsWriteBackup } from '../../../../codewhispererChat/tools/fsWrite'
 import { randomUUID } from '../../../../shared/crypto'
-import { getLogger } from '../../../../shared/logger'
+import { getLogger } from '../../../../shared/logger/logger'
 
 export type ToolUseWithError = {
     toolUse: ToolUse

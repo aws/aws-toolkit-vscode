@@ -5,7 +5,7 @@
 
 import globals from '../extensionGlobals'
 import { CancellationToken, EventEmitter, Event } from 'vscode'
-import { getLogger } from '../logger'
+import { getLogger } from '../logger/logger'
 
 export const timeoutExpiredMessage = 'Timeout token expired'
 export const timeoutCancelledMessage = 'Timeout token cancelled'
