@@ -714,12 +714,17 @@ export class ChatController {
                 const toolUseError = toolUseWithError.error
                 const toolResults: ToolResult[] = []
 
+                let response = ''
                 if (toolUseError) {
                     toolResults.push({
                         content: [{ text: toolUseError.message }],
                         toolUseId: toolUse.toolUseId,
                         status: ToolResultStatus.ERROR,
                     })
+                    if (toolUseError instanceof SyntaxError) {
+                        response =
+                            "Your toolUse input isn't valid. Please check the syntax and make sure the input is complete. If the input is large, break it down into multiple tool uses with smaller input."
+                    }
                 } else {
                     const result = ToolUtils.tryFromToolUse(toolUse)
                     if ('type' in result) {
@@ -772,7 +777,7 @@ export class ChatController {
 
                 await this.generateResponse(
                     {
-                        message: '',
+                        message: response,
                         trigger: ChatTriggerType.ChatMessage,
                         query: undefined,
                         codeSelection: context?.focusAreaContext?.selectionInsideExtendedCodeBlock,
