@@ -289,17 +289,7 @@ export abstract class SsoAccessTokenProvider {
         profile: Pick<SsoProfile, 'startUrl' | 'region' | 'scopes' | 'identifier'>,
         cache = getCache(),
         oidc: OidcClient = OidcClient.create(profile.region),
-        reAuthState?: ReAuthState,
-        useDeviceFlow: () => boolean = () => {
-            /**
-             * Device code flow is neccessary when:
-             * 1. We are in a workspace connected through ssh (codecatalyst, etc)
-             * 2. We are connected to a remote backend through the web browser (code server, openshift dev spaces)
-             *
-             * Since we are unable to serve the final authorization page
-             */
-            return getExtRuntimeContext().extensionHost === 'remote'
-        }
+        reAuthState?: ReAuthState
     ) {
         if (DevSettings.instance.get('webAuth', false) && getExtRuntimeContext().extensionHost === 'webworker') {
             return new WebAuthorization(profile, cache, oidc, reAuthState)
@@ -398,6 +388,17 @@ async function pollForTokenWithProgress<T extends { requestId?: string }>(
 function getSessionDuration(id: string) {
     const creationDate = globals.globalState.getSsoSessionCreationDate(id)
     return creationDate !== undefined ? globals.clock.Date.now() - creationDate : undefined
+}
+
+export function useDeviceFlow(): boolean {
+    /**
+     * Device code flow is neccessary when:
+     * 1. We are in a workspace connected through ssh (codecatalyst, etc)
+     * 2. We are connected to a remote backend through the web browser (code server, openshift dev spaces)
+     *
+     * Since we are unable to serve the final authorization page
+     */
+    return getExtRuntimeContext().extensionHost === 'remote'
 }
 
 /**
