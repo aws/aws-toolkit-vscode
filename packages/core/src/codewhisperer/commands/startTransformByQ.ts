@@ -269,7 +269,7 @@ export async function preTransformationUploadCode() {
             })
 
             transformByQState.setPayloadFilePath(payloadFilePath)
-            uploadId = await uploadPayload(payloadFilePath)
+            uploadId = await uploadPayload(payloadFilePath, AuthUtil.instance.regionProfileManager.activeRegionProfile)
             telemetry.record({ codeTransformJobId: uploadId }) // uploadId is re-used as jobId
         })
     } catch (err) {
@@ -457,7 +457,7 @@ export async function finishHumanInTheLoop(selectedDependency?: string) {
             }),
         })
 
-        await uploadPayload(uploadResult.tempFilePath, {
+        await uploadPayload(uploadResult.tempFilePath, profile, {
             transformationUploadContext: {
                 jobId,
                 uploadArtifactType: 'Dependencies',

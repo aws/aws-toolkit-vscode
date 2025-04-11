@@ -252,6 +252,7 @@ export class DefaultCodeWhispererClient {
                 clientId: getClientId(globals.globalState),
                 ideVersion: extensionVersion,
             },
+            profileArn: AuthUtil.instance.regionProfileManager.activeRegionProfile?.arn,
         }
         if (!AuthUtil.instance.isValidEnterpriseSsoInUse() && !globals.telemetry.telemetryEnabled) {
             return
