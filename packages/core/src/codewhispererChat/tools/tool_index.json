@@ -26,6 +26,10 @@
         "inputSchema": {
             "type": "object",
             "properties": {
+                "explanation": {
+                    "description": "One sentence explanation as to why this tool is being used, and how it contributes to the goal.",
+                    "type": "string"
+                },
                 "command": {
                     "type": "string",
                     "enum": ["create", "strReplace", "insert", "append"],

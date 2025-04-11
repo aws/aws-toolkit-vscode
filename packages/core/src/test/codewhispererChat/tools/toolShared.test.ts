@@ -162,7 +162,7 @@ describe('ToolUtils', function () {
             const output: InvokeOutput = {
                 output: {
                     kind: OutputKind.Text,
-                    content: 'a'.repeat(700_000),
+                    content: 'a'.repeat(150_000),
                 },
             }
             assert.doesNotThrow(() => ToolUtils.validateOutput(output))
@@ -171,12 +171,12 @@ describe('ToolUtils', function () {
             const output: InvokeOutput = {
                 output: {
                     kind: OutputKind.Text,
-                    content: 'a'.repeat(900_000), // 900,000 characters
+                    content: 'a'.repeat(200_001), // 200,001 characters
                 },
             }
             assert.throws(() => ToolUtils.validateOutput(output), {
                 name: 'Error',
-                message: 'Tool output exceeds maximum character limit of 800000',
+                message: 'Tool output exceeds maximum character limit of 200000',
             })
         })
     })
