@@ -728,9 +728,19 @@ export class ChatController {
                         try {
                             await ToolUtils.validate(tool)
 
-                            const chatStream = new ChatStream(this.messenger, tabID, triggerID, toolUse, {
-                                requiresAcceptance: false,
-                            })
+                            const chatStream = new ChatStream(
+                                this.messenger,
+                                tabID,
+                                triggerID,
+                                toolUse,
+                                session,
+                                undefined,
+                                false,
+                                {
+                                    requiresAcceptance: false,
+                                },
+                                false
+                            )
                             if (tool.type === ToolType.FsWrite && toolUse.toolUseId) {
                                 const backup = await tool.tool.getBackup()
                                 session.setFsWriteBackup(toolUse.toolUseId, backup)
@@ -1221,6 +1231,7 @@ export class ChatController {
     private async processPromptMessageAsNewThread(message: PromptMessage) {
         const session = this.sessionStorage.getSession(message.tabID)
         session.clearListOfReadFiles()
+        session.clearListOfReadFolders()
         session.setShowDiffOnFileWrite(false)
         this.editorContextExtractor
             .extractContextForTrigger('ChatMessage')
