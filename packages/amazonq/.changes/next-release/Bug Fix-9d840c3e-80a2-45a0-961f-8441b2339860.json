@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Amazon Q Chat: code blocks in responses flicker, switching tabs during answer streaming makes expand button disappear"
-}
