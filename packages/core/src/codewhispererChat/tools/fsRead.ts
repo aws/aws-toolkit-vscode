@@ -6,7 +6,7 @@ import * as vscode from 'vscode'
 import { getLogger } from '../../shared/logger/logger'
 import fs from '../../shared/fs/fs'
 import { Writable } from 'stream'
-import { InvokeOutput, OutputKind, sanitizePath, CommandValidation } from './toolShared'
+import { InvokeOutput, OutputKind, sanitizePath, CommandValidation, fsReadToolResponseSize } from './toolShared'
 import { isInDirectory } from '../../shared/filesystemUtilities'
 
 export interface FsReadParams {
@@ -118,11 +118,24 @@ export class FsRead {
     }
 
     private createOutput(content: string): InvokeOutput {
+        if (content.length > fsReadToolResponseSize) {
+            this.logger.info(
+                `The file is too large, truncating output to the first ${fsReadToolResponseSize} characters.`
+            )
+            content = this.truncateContent(content)
+        }
         return {
             output: {
                 kind: OutputKind.Text,
                 content: content,
             },
         }
+    }
+
+    private truncateContent(content: string): string {
+        if (content.length > fsReadToolResponseSize) {
+            return content.substring(0, fsReadToolResponseSize)
+        }
+        return content
     }
 }

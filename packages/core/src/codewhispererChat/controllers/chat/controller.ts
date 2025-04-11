@@ -746,7 +746,7 @@ export class ChatController {
                                 session.setFsWriteBackup(toolUse.toolUseId, backup)
                             }
                             const output = await ToolUtils.invoke(tool, chatStream)
-                            ToolUtils.validateOutput(output)
+                            ToolUtils.validateOutput(output, tool.type)
 
                             toolResults.push({
                                 content: [

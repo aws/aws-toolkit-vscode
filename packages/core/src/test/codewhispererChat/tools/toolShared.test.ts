@@ -6,7 +6,14 @@
 import assert from 'assert'
 import * as sinon from 'sinon'
 import { Writable } from 'stream'
-import { sanitizePath, OutputKind, InvokeOutput } from '../../../codewhispererChat/tools/toolShared'
+import {
+    sanitizePath,
+    OutputKind,
+    InvokeOutput,
+    listDirectoryToolResponseSize,
+    fsReadToolResponseSize,
+    defaultMaxToolResponseSize,
+} from '../../../codewhispererChat/tools/toolShared'
 import { ToolUtils, Tool, ToolType } from '../../../codewhispererChat/tools/toolUtils'
 import { FsRead } from '../../../codewhispererChat/tools/fsRead'
 import { FsWrite } from '../../../codewhispererChat/tools/fsWrite'
@@ -158,25 +165,67 @@ describe('ToolUtils', function () {
     })
 
     describe('validateOutput', function () {
-        it('does not throw error if output is within size limit', function () {
+        it('does not throw error if output is within size limit for fsRead', function () {
             const output: InvokeOutput = {
                 output: {
                     kind: OutputKind.Text,
-                    content: 'a'.repeat(150_000),
+                    content: 'a'.repeat(fsReadToolResponseSize - 1),
                 },
             }
-            assert.doesNotThrow(() => ToolUtils.validateOutput(output))
+            assert.doesNotThrow(() => ToolUtils.validateOutput(output, ToolType.FsRead))
         })
-        it('throws error if output exceeds max size', function () {
+        it('throws error if output exceeds max size for fsRead', function () {
             const output: InvokeOutput = {
                 output: {
                     kind: OutputKind.Text,
-                    content: 'a'.repeat(200_001), // 200,001 characters
+                    content: 'a'.repeat(fsReadToolResponseSize + 1),
                 },
             }
-            assert.throws(() => ToolUtils.validateOutput(output), {
+            assert.throws(() => ToolUtils.validateOutput(output, ToolType.FsRead), {
                 name: 'Error',
-                message: 'Tool output exceeds maximum character limit of 200000',
+                message: `fsRead output exceeds maximum character limit of ${fsReadToolResponseSize}`,
+            })
+        })
+        it('does not throw error if output is within size limit for listDirectory', function () {
+            const output: InvokeOutput = {
+                output: {
+                    kind: OutputKind.Text,
+                    content: 'a'.repeat(listDirectoryToolResponseSize - 1),
+                },
+            }
+            assert.doesNotThrow(() => ToolUtils.validateOutput(output, ToolType.ListDirectory))
+        })
+        it('throws error if output exceeds max size for listDirectory', function () {
+            const output: InvokeOutput = {
+                output: {
+                    kind: OutputKind.Text,
+                    content: 'a'.repeat(listDirectoryToolResponseSize + 1),
+                },
+            }
+            assert.throws(() => ToolUtils.validateOutput(output, ToolType.ListDirectory), {
+                name: 'Error',
+                message: `listDirectory output exceeds maximum character limit of ${listDirectoryToolResponseSize}`,
+            })
+        })
+        it('does not throw error if output is within size limit for fsWrite', function () {
+            const output: InvokeOutput = {
+                output: {
+                    kind: OutputKind.Text,
+                    content: 'a'.repeat(defaultMaxToolResponseSize - 1),
+                },
+            }
+            assert.doesNotThrow(() => ToolUtils.validateOutput(output, ToolType.FsWrite))
+        })
+        it('does not throw error if output is within size limit for fsWrite', function () {
+            const output: InvokeOutput = {
+                output: {
+                    kind: OutputKind.Text,
+                    content: 'a'.repeat(defaultMaxToolResponseSize + 1),
+                },
+            }
+            assert.throws(() => ToolUtils.validateOutput(output, ToolType.FsWrite), {
+                name: 'Error',
+                message: `fsWrite output exceeds maximum character limit of ${defaultMaxToolResponseSize}`,
             })
         })
     })

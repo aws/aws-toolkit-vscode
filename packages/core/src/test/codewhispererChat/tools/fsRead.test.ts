@@ -8,6 +8,7 @@ import { TestFolder } from '../../testUtil'
 import path from 'path'
 import * as vscode from 'vscode'
 import sinon from 'sinon'
+import { fsReadToolResponseSize } from '../../../codewhispererChat/tools/toolShared'
 
 describe('FsRead Tool', () => {
     let testFolder: TestFolder
@@ -35,6 +36,20 @@ describe('FsRead Tool', () => {
 
         assert.strictEqual(result.output.kind, 'text', 'Output kind should be "text"')
         assert.strictEqual(result.output.content, fileContent, 'File content should match exactly')
+    })
+
+    it('truncate output if too large', async () => {
+        const fileContent = 'A'.repeat(fsReadToolResponseSize + 10)
+        const filePath = await testFolder.write('largeFile.txt', fileContent)
+        const fsRead = new FsRead({ path: filePath })
+        await fsRead.validate()
+        const result = await fsRead.invoke(process.stdout)
+        assert.strictEqual(result.output.kind, 'text', 'Output kind should be "text"')
+        assert.strictEqual(
+            result.output.content.length,
+            fsReadToolResponseSize,
+            'Output should be truncated to the max size'
+        )
     })
 
     it('reads partial lines of a file', async () => {
