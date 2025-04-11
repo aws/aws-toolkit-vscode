@@ -14,6 +14,7 @@ import {
     fsReadToolResponseSize,
 } from './toolShared'
 import { ListDirectory, ListDirectoryParams } from './listDirectory'
+import * as vscode from 'vscode'
 
 export enum ToolType {
     FsRead = 'fsRead',
@@ -55,14 +56,23 @@ export class ToolUtils {
         }
     }
 
-    static async invoke(tool: Tool, updates?: Writable): Promise<InvokeOutput> {
+    static async invoke(
+        tool: Tool,
+        updates?: Writable,
+        cancellationToken?: vscode.CancellationToken
+    ): Promise<InvokeOutput> {
+        // Check if cancelled before executing
+        if (cancellationToken?.isCancellationRequested) {
+            throw new Error('Tool execution cancelled')
+        }
+
         switch (tool.type) {
             case ToolType.FsRead:
                 return tool.tool.invoke(updates)
             case ToolType.FsWrite:
                 return tool.tool.invoke(updates)
             case ToolType.ExecuteBash:
-                return tool.tool.invoke(updates ?? undefined)
+                return tool.tool.invoke(updates ?? undefined, cancellationToken)
             case ToolType.ListDirectory:
                 return tool.tool.invoke(updates)
         }

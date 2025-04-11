@@ -285,19 +285,18 @@ export class Connector extends BaseConnector {
         }
 
         if (messageData.type === 'customFormActionMessage') {
-            this.onCustomFormAction(messageData.tabID, messageData.messageId, messageData.action)
+            this.onCustomFormAction(messageData.tabID, messageData.messageId, messageData.action, messageData.triggerId)
             return
         }
 
         if (messageData.type === 'asyncEventProgressMessage') {
-            const enableStopAction = false
             const isPromptInputDisabled = true
             this.onAsyncEventProgress(
                 messageData.tabID,
                 messageData.inProgress,
                 messageData.message ?? undefined,
                 messageData.messageId ?? undefined,
-                enableStopAction,
+                messageData.inProgress,
                 isPromptInputDisabled
             )
             return
@@ -335,7 +334,8 @@ export class Connector extends BaseConnector {
             id: string
             text?: string | undefined
             formItemValues?: Record<string, string> | undefined
-        }
+        },
+        triggerId: string
     ) {
         if (action === undefined) {
             return
@@ -351,6 +351,7 @@ export class Connector extends BaseConnector {
             formSelectedValues: action.formItemValues,
             tabType: this.getTabType(),
             tabID: tabId,
+            triggerId: triggerId,
         })
 
         if (
