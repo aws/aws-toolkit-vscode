@@ -46,7 +46,6 @@ export class SecurityIssueProvider {
                 ...group,
                 issues: group.issues
                     .filter((issue) => {
-                        // event document is the new document after deleting lines, but issue.startLine and endLines are not
                         let range
                         if (issue.startLine === issue.endLine) {
                             range = new vscode.Range(issue.startLine, 0, issue.endLine + 1, 0)
