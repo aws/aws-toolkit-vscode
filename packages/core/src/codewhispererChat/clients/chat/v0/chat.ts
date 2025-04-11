@@ -16,16 +16,15 @@ import { createQDeveloperStreamingClient } from '../../../../shared/clients/qDev
 import { UserWrittenCodeTracker } from '../../../../codewhisperer/tracker/userWrittenCodeTracker'
 import { DocumentReference, PromptMessage } from '../../../controllers/chat/model'
 import { FsWriteBackup } from '../../../../codewhispererChat/tools/fsWrite'
+import { randomUUID } from '../../../../shared/crypto'
 
 export type ToolUseWithError = {
     toolUse: ToolUse
     error: Error | undefined
 }
-import { getLogger } from '../../../../shared/logger/logger'
-import { randomUUID } from '../../../../shared/crypto'
 
 export class ChatSession {
-    private sessionId?: string
+    private sessionId: string
     /**
      * _readFiles = list of files read from the project to gather context before generating response.
      * _showDiffOnFileWrite = Controls whether to show diff view (true) or file context view (false) to the user
@@ -50,7 +49,7 @@ export class ChatSession {
     // TODO: doesn't handle the edge case when two files share the same relativePath string but from different root
     // e.g. root_a/file1 vs root_b/file1
     relativePathToWorkspaceRoot: Map<string, string> = new Map()
-    public get sessionIdentifier(): string | undefined {
+    public get sessionIdentifier(): string {
         return this.sessionId
     }
     public get messageIdToUpdate(): string | undefined {
@@ -105,13 +104,14 @@ export class ChatSession {
 
     constructor() {
         this.createNewTokenSource()
+        this.sessionId = randomUUID()
     }
 
     createNewTokenSource() {
         this.tokenSource = new vscode.CancellationTokenSource()
     }
 
-    public setSessionID(id?: string) {
+    public setSessionID(id: string) {
         this.sessionId = id
     }
     public get readFiles(): DocumentReference[] {
@@ -148,14 +148,6 @@ export class ChatSession {
             )
         }
 
-        const responseStream = response.sendMessageResponse
-        for await (const event of responseStream) {
-            if ('messageMetadataEvent' in event) {
-                this.sessionId = event.messageMetadataEvent?.conversationId
-                break
-            }
-        }
-
         UserWrittenCodeTracker.instance.onQFeatureInvoked()
         return response
     }
@@ -168,12 +160,6 @@ export class ChatSession {
             throw new ToolkitError(
                 `Empty chat response. Session id: ${this.sessionId} Request ID: ${response.$metadata.requestId}`
             )
-        }
-
-        this.sessionId = response.conversationId
-        if (this.sessionId?.length === 0) {
-            getLogger().debug(`Session ID: ${this.sessionId} is empty. Generating random UUID`)
-            this.sessionId = randomUUID()
         }
 
         UserWrittenCodeTracker.instance.onQFeatureInvoked()
