@@ -55,6 +55,8 @@ import {
     MynahIconsType,
     DetailedList,
     MynahUIDataModel,
+    MynahIcons,
+    Status,
 } from '@aws/mynah-ui'
 import { Database } from '../../../../shared/db/chatDb/chatDb'
 import { TabType } from '../../../../amazonq/webview/ui/storages/tabsStorage'
@@ -734,14 +736,23 @@ export class Messenger {
                     status: 'clear',
                     icon: 'cancel' as MynahIconsType,
                 },
-                {
-                    id: 'accept-code-diff',
-                    status: 'clear',
-                    icon: 'ok' as MynahIconsType,
-                },
             ]
+            const status: {
+                icon?: MynahIcons | MynahIconsType
+                status?: {
+                    status?: Status
+                    icon?: MynahIcons | MynahIconsType
+                    text?: string
+                }
+            } = {
+                status: {
+                    text: 'Accepted',
+                    status: 'success',
+                },
+            }
             header = {
                 buttons,
+                ...status,
                 fileList,
             }
         } else if (toolUse?.name === ToolType.ListDirectory || toolUse?.name === ToolType.FsRead) {
@@ -750,7 +761,7 @@ export class Messenger {
                     {
                         id: 'confirm-tool-use',
                         text: localize('AWS.generic.run', 'Run'),
-                        status: 'main',
+                        status: 'clear',
                         icon: 'play' as MynahIconsType,
                     },
                     {
@@ -761,7 +772,6 @@ export class Messenger {
                     },
                 ]
                 header = {
-                    icon: 'shell' as MynahIconsType,
                     body: 'shell',
                     buttons,
                 }

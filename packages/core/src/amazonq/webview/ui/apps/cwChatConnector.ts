@@ -401,45 +401,43 @@ export class Connector extends BaseConnector {
                 }
                 break
             case 'run-shell-command':
-                answer.header = {
-                    body: 'shell',
-                    status: {
+                if (answer.header) {
+                    answer.header.status = {
                         icon: 'ok' as MynahIconsType,
                         text: 'Accepted',
                         status: 'success',
-                    },
+                    }
+                    answer.header.buttons = []
                 }
                 break
             case 'reject-shell-command':
-                answer.header = {
-                    body: 'shell',
-                    status: {
+                if (answer.header) {
+                    answer.header.status = {
                         icon: 'cancel' as MynahIconsType,
                         text: 'Rejected',
                         status: 'error',
-                    },
+                    }
+                    answer.header.buttons = []
                 }
                 break
             case 'confirm-tool-use':
-                answer.header = {
-                    icon: 'shell' as MynahIconsType,
-                    body: 'shell',
-                    status: {
+                if (answer.header) {
+                    answer.header.status = {
                         icon: 'ok' as MynahIconsType,
                         text: 'Accepted',
                         status: 'success',
-                    },
+                    }
+                    answer.header.buttons = []
                 }
                 break
             case 'reject-tool-use':
-                answer.header = {
-                    icon: 'shell' as MynahIconsType,
-                    body: 'shell',
-                    status: {
+                if (answer.header) {
+                    answer.header.status = {
                         icon: 'cancel' as MynahIconsType,
                         text: 'Rejected',
                         status: 'error',
-                    },
+                    }
+                    answer.header.buttons = []
                 }
                 break
             default:
