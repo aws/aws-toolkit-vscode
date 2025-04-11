@@ -200,8 +200,7 @@ export class Messenger {
         session: ChatSession,
         tabID: string,
         triggerID: string,
-        triggerPayload: TriggerPayload,
-        cancelToken: vscode.CancellationToken
+        triggerPayload: TriggerPayload
     ) {
         let message = ''
         const messageID = response.$metadata.requestId ?? ''
@@ -519,7 +518,7 @@ export class Messenger {
                 this.telemetryHelper.recordMessageResponseError(triggerPayload, tabID, errorInfo.statusCode ?? 0)
             })
             .finally(async () => {
-                if (session.sessionIdentifier) {
+                if (session.sessionIdentifier && !this.isTriggerCancelled(triggerID)) {
                     this.chatHistoryDb.addMessage(tabID, 'cwc', session.sessionIdentifier, {
                         body: message,
                         type: 'answer' as any,
@@ -724,7 +723,7 @@ export class Messenger {
         if (this.isTriggerCancelled(triggerID)) {
             return
         }
-          
+
         // Handle read tool and list directory messages
         if (toolUse?.name === ToolType.FsRead || toolUse?.name === ToolType.ListDirectory) {
             return this.sendReadAndListDirToolMessage(toolUse, session, tabID, triggerID, messageIdToUpdate)

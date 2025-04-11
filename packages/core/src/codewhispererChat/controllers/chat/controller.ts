@@ -1635,15 +1635,7 @@ export class ChatController {
                 return
             }
 
-            this.cancelTokenSource = new vscode.CancellationTokenSource()
-            await this.messenger.sendAIResponse(
-                response,
-                session,
-                tabID,
-                triggerID,
-                triggerPayload,
-                this.cancelTokenSource.token
-            )
+            await this.messenger.sendAIResponse(response, session, tabID, triggerID, triggerPayload)
         } catch (e: any) {
             this.telemetryHelper.recordMessageResponseError(triggerPayload, tabID, getHttpStatusCode(e) ?? 0)
             // clears session, record telemetry before this call
