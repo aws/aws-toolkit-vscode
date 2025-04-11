@@ -41,13 +41,13 @@ export class ToolUtils {
     static requiresAcceptance(tool: Tool): CommandValidation {
         switch (tool.type) {
             case ToolType.FsRead:
-                return { requiresAcceptance: false }
+                return tool.tool.requiresAcceptance()
             case ToolType.FsWrite:
                 return { requiresAcceptance: false }
             case ToolType.ExecuteBash:
                 return tool.tool.requiresAcceptance()
             case ToolType.ListDirectory:
-                return { requiresAcceptance: false }
+                return tool.tool.requiresAcceptance()
         }
     }
 

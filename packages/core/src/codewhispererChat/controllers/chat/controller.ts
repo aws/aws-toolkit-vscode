@@ -867,7 +867,12 @@ export class ChatController {
 
         const session = this.sessionStorage.getSession(message.tabID!)
         const currentToolUse = session.toolUseWithError?.toolUse
-        if (currentToolUse && currentToolUse.name === ToolType.ExecuteBash) {
+        if (
+            currentToolUse &&
+            (currentToolUse.name === ToolType.ExecuteBash ||
+                currentToolUse.name === ToolType.FsRead ||
+                currentToolUse.name === ToolType.ListDirectory)
+        ) {
             session.toolUseWithError.error = new Error('Tool use was rejected by the user.')
         } else {
             getLogger().error(
@@ -883,6 +888,7 @@ export class ChatController {
                 break
             case 'run-shell-command':
             case 'generic-tool-execution':
+            case 'confirm-tool-use':
                 await this.processToolUseMessage(message)
                 if (message.action.id === 'run-shell-command' && message.action.text === 'Run') {
                     this.telemetryHelper.recordInteractionWithAgenticChat(
@@ -900,6 +906,7 @@ export class ChatController {
                 this.telemetryHelper.recordInteractionWithAgenticChat(AgenticChatInteractionType.RejectDiff, message)
                 break
             case 'reject-shell-command':
+            case 'reject-tool-use':
                 await this.rejectShellCommand(message)
                 await this.processToolUseMessage(message)
                 break

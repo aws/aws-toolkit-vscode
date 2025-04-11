@@ -6,12 +6,18 @@ import assert from 'assert'
 import { FsRead } from '../../../codewhispererChat/tools/fsRead'
 import { TestFolder } from '../../testUtil'
 import path from 'path'
+import * as vscode from 'vscode'
+import sinon from 'sinon'
 
 describe('FsRead Tool', () => {
     let testFolder: TestFolder
 
     before(async () => {
         testFolder = await TestFolder.create()
+    })
+
+    afterEach(() => {
+        sinon.restore()
     })
 
     it('throws if path is empty', async () => {
@@ -62,5 +68,33 @@ describe('FsRead Tool', () => {
         const result = await fsRead.invoke(process.stdout)
         assert.strictEqual(result.output.kind, 'text')
         assert.strictEqual(result.output.content, '')
+    })
+
+    it('should require acceptance if fsPath is outside the workspace', () => {
+        const workspaceStub = sinon
+            .stub(vscode.workspace, 'workspaceFolders')
+            .value([{ uri: { fsPath: '/workspace/folder' } } as any])
+        const fsRead = new FsRead({ path: '/not/in/workspace/file.txt' })
+        const result = fsRead.requiresAcceptance()
+        assert.equal(
+            result.requiresAcceptance,
+            true,
+            'Expected requiresAcceptance to be true for a path outside the workspace'
+        )
+        workspaceStub.restore()
+    })
+
+    it('should not require acceptance if fsPath is inside the workspace', () => {
+        const workspaceStub = sinon
+            .stub(vscode.workspace, 'workspaceFolders')
+            .value([{ uri: { fsPath: '/workspace/folder' } } as any])
+        const fsRead = new FsRead({ path: '/workspace/folder/file.txt' })
+        const result = fsRead.requiresAcceptance()
+        assert.equal(
+            result.requiresAcceptance,
+            false,
+            'Expected requiresAcceptance to be false for a path inside the workspace'
+        )
+        workspaceStub.restore()
     })
 })
