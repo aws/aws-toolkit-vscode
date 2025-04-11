@@ -74,7 +74,7 @@ export class ChatSession {
             try {
                 this.tokenSource.dispose()
             } catch (error) {
-                // Ignore errors during disposal
+                getLogger().debug(`Error disposing token source: ${error}`)
             }
         }
     }

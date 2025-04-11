@@ -346,8 +346,11 @@ export async function waitUntil<T>(fn: () => Promise<T>, options: WaitUntilOptio
  * @param opt.onExpire Callback for when the promise expired. The callback can return a value
  * @param opt.onCancel Callback for when the promise was cancelled. The callback can return a value
  * @param opt.completeTimeout Automatically completes the Timeout upon resolution (default: true)
+ * @param opt.cancellationCondition Function that returns boolean, checked periodically for cancellation
+ * @param opt.cancellationCheckInterval Interval in ms to check cancellation condition (default: 100)
+ * @param opt.onCancellationConditionMet Callback for when the cancellation condition is met. The callback can return a value
  *
- * @returns A Promise that returns if successful, or rejects when the Timeout was cancelled or expired.
+ * @returns A Promise that returns if successful, or returns the result of the appropriate callback when cancelled, expired, or cancellation condition is met.
  */
 export async function waitTimeout<T, R = void, B extends boolean = true>(
     promise: Promise<T> | (() => Promise<T>),
@@ -357,13 +360,64 @@ export async function waitTimeout<T, R = void, B extends boolean = true>(
         onExpire?: () => R
         onCancel?: () => R
         completeTimeout?: boolean
+        cancellationCondition?: () => boolean
+        cancellationCheckInterval?: number
+        onCancellationConditionMet?: () => R
     } = {}
 ): Promise<T | R | (true extends typeof opt.allowUndefined ? undefined : never)> {
-    if (typeof promise === 'function') {
-        promise = promise()
+    // Ensure we have a promise, not a function
+    const actualPromise: Promise<T> = typeof promise === 'function' ? promise() : promise
+
+    // Create a promise that will check for cancellation periodically
+    const cancellationMonitor = async (): Promise<T | R | undefined> => {
+        // If there's a cancellation condition, set up periodic checking
+        if (opt.cancellationCondition) {
+            const checkInterval = opt.cancellationCheckInterval ?? 100 // Default to checking every 100ms
+
+            // Create a promise that resolves when cancellation condition is met
+            const cancellationPromise = new Promise<void>((resolve) => {
+                const intervalId = globals.clock.setInterval(() => {
+                    try {
+                        // The cancellation condition is a function reference that needs to be called
+                        if (opt.cancellationCondition && opt.cancellationCondition()) {
+                            globals.clock.clearInterval(intervalId)
+                            resolve()
+                        }
+                    } catch (err) {
+                        // If there's an error checking the condition, just continue
+                        console.error('Error checking cancellation condition:', err)
+                    }
+                }, checkInterval)
+
+                // We need to clean up the interval when the main promise completes
+                actualPromise
+                    .finally(() => {
+                        globals.clock.clearInterval(intervalId)
+                    })
+                    .catch(() => {
+                        /* Ignore any errors */
+                    })
+            })
+
+            // Race the cancellation check against the main promise
+            const winner = await Promise.race([actualPromise, cancellationPromise.then(() => 'CANCELLED' as const)])
+
+            // If cancellation won the race
+            if (winner === 'CANCELLED') {
+                if (opt.onCancellationConditionMet) {
+                    return opt.onCancellationConditionMet()
+                }
+                return undefined
+            }
+
+            return winner
+        }
+
+        // If no cancellation condition, just return the original promise
+        return actualPromise
     }
 
-    const result = await Promise.race([promise, timeout.promisify()])
+    const result = await Promise.race([cancellationMonitor(), timeout.promisify()])
         .catch((e) => (e instanceof Error ? e : new Error(`unknown error: ${e}`)))
         .finally(() => {
             if ((opt.completeTimeout ?? true) === true) {

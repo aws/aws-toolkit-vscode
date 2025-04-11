@@ -449,12 +449,7 @@ export class Messenger {
             },
             timeout,
             {
-                onCancel: () => {
-                    if (this.isTriggerCancelled(triggerID)) {
-                        return true
-                    }
-                    return false
-                },
+                cancellationCondition: () => this.isTriggerCancelled(triggerID),
             }
         )
             .catch((error: any) => {
