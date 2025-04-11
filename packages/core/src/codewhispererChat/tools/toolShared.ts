@@ -19,6 +19,7 @@ export interface InvokeOutput {
     output: {
         kind: OutputKind
         content: string | any
+        success?: boolean
     }
 }
 

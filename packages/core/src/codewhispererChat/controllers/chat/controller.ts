@@ -753,6 +753,11 @@ export class ChatController {
                             const output = await ToolUtils.invoke(tool, chatStream)
                             ToolUtils.validateOutput(output, tool.type)
 
+                            let status: ToolResultStatus = ToolResultStatus.SUCCESS
+                            if (output.output.success === false) {
+                                status = ToolResultStatus.ERROR
+                            }
+
                             toolResults.push({
                                 content: [
                                     output.output.kind === OutputKind.Text
@@ -760,7 +765,7 @@ export class ChatController {
                                         : { json: output.output.content },
                                 ],
                                 toolUseId: toolUse.toolUseId,
-                                status: ToolResultStatus.SUCCESS,
+                                status,
                             })
                         } catch (e: any) {
                             toolResults.push({

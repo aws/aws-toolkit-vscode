@@ -311,6 +311,7 @@ export class ExecuteBash {
                 const exitStatus = result.exitCode ?? 0
                 const stdout = stdoutBuffer.join('\n')
                 const stderr = stderrBuffer.join('\n')
+                const success = exitStatus === 0 && !stderr
                 const [stdoutTrunc, stdoutSuffix] = ExecuteBash.truncateSafelyWithSuffix(
                     stdout,
                     maxBashToolResponseSize / 3
@@ -330,6 +331,7 @@ export class ExecuteBash {
                     output: {
                         kind: OutputKind.Json,
                         content: outputJson,
+                        success,
                     },
                 })
             } catch (err: any) {
