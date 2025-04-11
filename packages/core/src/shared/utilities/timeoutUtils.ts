@@ -5,6 +5,7 @@
 
 import globals from '../extensionGlobals'
 import { CancellationToken, EventEmitter, Event } from 'vscode'
+import { getLogger } from '../logger'
 
 export const timeoutExpiredMessage = 'Timeout token expired'
 export const timeoutCancelledMessage = 'Timeout token cancelled'
@@ -385,7 +386,7 @@ export async function waitTimeout<T, R = void, B extends boolean = true>(
                         }
                     } catch (err) {
                         // If there's an error checking the condition, just continue
-                        console.error('Error checking cancellation condition:', err)
+                        getLogger().debug(`Error disposing token source: ${err}`)
                     }
                 }, checkInterval)
 

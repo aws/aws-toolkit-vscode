@@ -66,9 +66,9 @@ describe('ConversationTracker', () => {
             const tokenSource = new vscode.CancellationTokenSource()
 
             // @ts-ignore: Testing with invalid parameters
-            tracker.registerTrigger(null, tokenSource)
+            tracker.registerTrigger(undefined, tokenSource)
             // @ts-ignore: Testing with invalid parameters
-            tracker.registerTrigger('trigger1', null)
+            tracker.registerTrigger('trigger1', undefined)
 
             // @ts-ignore: Accessing private property for testing
             assert.strictEqual(tracker.triggerToToken.size, 0)
@@ -108,7 +108,7 @@ describe('ConversationTracker', () => {
 
             tracker.registerTrigger('trigger1', tokenSource)
             // @ts-ignore: Testing with invalid parameter
-            tracker.markTriggerCompleted(null)
+            tracker.markTriggerCompleted(undefined)
 
             assert.strictEqual(disposeSpy.called, false)
             // @ts-ignore: Accessing private property for testing
@@ -135,7 +135,7 @@ describe('ConversationTracker', () => {
 
         it('should return false if triggerID is missing', () => {
             // @ts-ignore: Testing with invalid parameter
-            const result = tracker.cancelTrigger(null)
+            const result = tracker.cancelTrigger(undefined)
             assert.strictEqual(result, false)
         })
     })
@@ -164,7 +164,7 @@ describe('ConversationTracker', () => {
 
         it('should return 0 if tabID is missing', () => {
             // @ts-ignore: Testing with invalid parameter
-            const result = tracker.cancelTabTriggers(null)
+            const result = tracker.cancelTabTriggers(undefined)
             assert.strictEqual(result, 0)
         })
     })
@@ -196,7 +196,7 @@ describe('ConversationTracker', () => {
 
         it('should return true if triggerID is missing', () => {
             // @ts-ignore: Testing with invalid parameter
-            const result = tracker.isTriggerCancelled(null)
+            const result = tracker.isTriggerCancelled(undefined)
             assert.strictEqual(result, true)
         })
     })
@@ -248,7 +248,7 @@ describe('ConversationTracker', () => {
 
         it('should return 0 if tabID is missing', () => {
             // @ts-ignore: Testing with invalid parameter
-            const result = tracker.clearTabTriggers(null)
+            const result = tracker.clearTabTriggers(undefined)
             assert.strictEqual(result, 0)
         })
     })
