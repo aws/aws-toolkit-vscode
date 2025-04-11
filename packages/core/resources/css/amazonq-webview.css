@@ -128,7 +128,3 @@ body .mynah-card-body h4 {
 div.mynah-card.padding-large {
     padding: var(--mynah-sizing-4) var(--mynah-sizing-3);
 }
-
-div.mynah-chat-items-container .mynah-chat-item-card.no-padding > .mynah-card {
-    padding: 0;
-}
