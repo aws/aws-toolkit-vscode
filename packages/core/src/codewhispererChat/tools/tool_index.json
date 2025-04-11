@@ -10,7 +10,7 @@
                     "type": "string"
                 },
                 "readRange": {
-                    "description": "Optional parameter when reading files.\n * If none is given, the full file is shown. If provided, the file will be shown in the indicated line number range, e.g. [11, 12] will show lines 11 and 12. Indexing at 1 to start. Setting `[startLine, -1]` shows all lines from `startLine` to the end of the file.",
+                    "description": "Optional parameter when reading files.\n * If none is given, the full file is shown. If provided, the file will be shown in the indicated line number range, e.g. [11, 12] will show lines 11 and 12. Indexing at 1 to start. Setting `[startLine, -1]` shows all lines from `startLine` to the end of the file. If the whole file is too large, try reading 4000 lines at once, for example: after reading [1, 4000], read [4000, 8000] next and repeat.",
                     "items": {
                         "type": "integer"
                     },
@@ -26,6 +26,10 @@
         "inputSchema": {
             "type": "object",
             "properties": {
+                "explanation": {
+                    "description": "One sentence explanation as to why this tool is being used, and how it contributes to the goal.",
+                    "type": "string"
+                },
                 "command": {
                     "type": "string",
                     "enum": ["create", "strReplace", "insert", "append"],
