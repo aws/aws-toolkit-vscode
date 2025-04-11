@@ -51,6 +51,7 @@ import { encodeHTML } from '../../../shared/utilities/textUtilities'
 import { convertToTimeString } from '../../../shared/datetime'
 import { getAuthType } from '../../../auth/utils'
 import { UserWrittenCodeTracker } from '../../tracker/userWrittenCodeTracker'
+import { AuthUtil } from '../../util/authUtil'
 
 export function getSha256(buffer: Buffer) {
     const hasher = crypto.createHash('sha256')
@@ -759,7 +760,8 @@ export async function downloadResultArchive(
                 exportId: jobId,
                 exportIntent: ExportIntent.TRANSFORMATION,
             },
-            pathToArchive
+            pathToArchive,
+            AuthUtil.instance.regionProfileManager.activeRegionProfile
         )
     } catch (e: any) {
         getLogger().error(`CodeTransformation: ExportResultArchive error = %O`, e)

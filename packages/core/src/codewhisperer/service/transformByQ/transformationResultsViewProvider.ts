@@ -27,6 +27,7 @@ import { ChatSessionManager } from '../../../amazonqGumby/chat/storages/chatSess
 import { setContext } from '../../../shared/vscode/setContext'
 import * as codeWhisperer from '../../client/codewhisperer'
 import { UserWrittenCodeTracker } from '../../tracker/userWrittenCodeTracker'
+import { AuthUtil } from '../../util/authUtil'
 
 export abstract class ProposedChangeNode {
     abstract readonly resourcePath: string
@@ -403,7 +404,8 @@ export class ProposedTransformationExplorer {
                             exportId: transformByQState.getJobId(),
                             exportIntent: ExportIntent.TRANSFORMATION,
                         },
-                        pathToArchive
+                        pathToArchive,
+                        AuthUtil.instance.regionProfileManager.activeRegionProfile
                     )
 
                     getLogger().info('CodeTransformation: downloaded results successfully')
