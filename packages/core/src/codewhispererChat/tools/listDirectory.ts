@@ -10,7 +10,6 @@ import { Writable } from 'stream'
 import path from 'path'
 import { InvokeOutput, OutputKind, sanitizePath, CommandValidation } from './toolShared'
 import { isInDirectory } from '../../shared/filesystemUtilities'
-import { ChatStream } from './chatStream'
 
 export interface ListDirectoryParams {
     path: string
@@ -50,8 +49,8 @@ export class ListDirectory {
         }
     }
 
-    public queueDescription(updates: ChatStream): void {
-        if (updates.validation.requiresAcceptance) {
+    public queueDescription(updates: Writable, requiresAcceptance: boolean): void {
+        if (requiresAcceptance) {
             const fileName = path.basename(this.fsPath)
             if (this.maxDepth === undefined) {
                 updates.write(`Analyzing directories recursively: ${fileName}`)

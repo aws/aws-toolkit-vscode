@@ -9,7 +9,6 @@ import { Writable } from 'stream'
 import { InvokeOutput, OutputKind, sanitizePath, CommandValidation, fsReadToolResponseSize } from './toolShared'
 import { isInDirectory } from '../../shared/filesystemUtilities'
 import path from 'path'
-import { ChatStream } from './chatStream'
 
 export interface FsReadParams {
     path: string
@@ -49,8 +48,8 @@ export class FsRead {
         this.logger.debug(`Validation succeeded for path: ${this.fsPath}`)
     }
 
-    public queueDescription(updates: ChatStream): void {
-        if (updates.validation.requiresAcceptance) {
+    public queueDescription(updates: Writable, requiresAcceptance: boolean): void {
+        if (requiresAcceptance) {
             const fileName = path.basename(this.fsPath)
             const fileUri = vscode.Uri.file(this.fsPath)
             updates.write(`Reading file: [${fileName}](${fileUri}), `)

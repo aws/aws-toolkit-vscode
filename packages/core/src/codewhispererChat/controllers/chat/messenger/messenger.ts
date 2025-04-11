@@ -376,7 +376,11 @@ export class Messenger {
                                     changeList,
                                     explanation
                                 )
-                                await ToolUtils.queueDescription(tool, chatStream)
+                                await ToolUtils.queueDescription(
+                                    tool,
+                                    chatStream,
+                                    chatStream.validation.requiresAcceptance
+                                )
                                 if (session.messageIdToUpdate === undefined && tool.type === ToolType.FsRead) {
                                     // Store the first messageId in a chain of tool uses
                                     session.setMessageIdToUpdate(toolUse.toolUseId)

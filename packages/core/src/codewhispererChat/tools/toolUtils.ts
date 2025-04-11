@@ -15,7 +15,6 @@ import {
     fsReadToolResponseSize,
 } from './toolShared'
 import { ListDirectory, ListDirectoryParams } from './listDirectory'
-import { ChatStream } from './chatStream'
 
 export enum ToolType {
     FsRead = 'fsRead',
@@ -96,10 +95,10 @@ export class ToolUtils {
         }
     }
 
-    static async queueDescription(tool: Tool, updates: ChatStream): Promise<void> {
+    static async queueDescription(tool: Tool, updates: Writable, requiresAcceptance: boolean): Promise<void> {
         switch (tool.type) {
             case ToolType.FsRead:
-                tool.tool.queueDescription(updates)
+                tool.tool.queueDescription(updates, requiresAcceptance)
                 break
             case ToolType.FsWrite:
                 await tool.tool.queueDescription(updates)
@@ -108,7 +107,7 @@ export class ToolUtils {
                 tool.tool.queueDescription(updates)
                 break
             case ToolType.ListDirectory:
-                tool.tool.queueDescription(updates)
+                tool.tool.queueDescription(updates, requiresAcceptance)
                 break
         }
     }
