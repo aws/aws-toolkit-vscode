@@ -46,7 +46,7 @@ export function throwIfCancelled() {
     }
 }
 
-export async function getPresignedUrlAndUploadTestGen(zipMetadata: ZipMetadata) {
+export async function getPresignedUrlAndUploadTestGen(zipMetadata: ZipMetadata, profile: RegionProfile | undefined) {
     const logger = getLogger()
     if (zipMetadata.zipFilePath === '') {
         getLogger().error('Failed to create valid source zip')
@@ -56,6 +56,7 @@ export async function getPresignedUrlAndUploadTestGen(zipMetadata: ZipMetadata) 
         contentMd5: getMd5(zipMetadata.zipFilePath),
         artifactType: 'SourceCode',
         uploadIntent: CodeWhispererConstants.testGenUploadIntent,
+        profileArn: profile?.arn,
     }
     logger.verbose(`Prepare for uploading src context...`)
     const srcResp = await codeWhisperer.codeWhispererClient.createUploadUrl(srcReq).catch((err) => {

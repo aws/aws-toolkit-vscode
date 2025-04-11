@@ -194,7 +194,11 @@ export async function stopJob(jobId: string) {
     }
 }
 
-export async function uploadPayload(payloadFileName: string, uploadContext?: UploadContext) {
+export async function uploadPayload(
+    payloadFileName: string,
+    profile: RegionProfile | undefined,
+    uploadContext?: UploadContext
+) {
     const buffer = Buffer.from(await fs.readFileBytes(payloadFileName))
     const sha256 = getSha256(buffer)
 
@@ -206,6 +210,7 @@ export async function uploadPayload(payloadFileName: string, uploadContext?: Upl
             contentChecksumType: CodeWhispererConstants.contentChecksumType,
             uploadIntent: CodeWhispererConstants.uploadIntent,
             uploadContext,
+            profileArn: profile?.arn,
         })
     } catch (e: any) {
         const errorMessage = `Creating the upload URL failed due to: ${(e as Error).message}`
