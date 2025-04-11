@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "inline chat activates properly when using 'aws.experiments.amazonqChatLSP' feature flag"
-}
