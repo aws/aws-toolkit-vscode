@@ -151,7 +151,7 @@ export class GrepSearch {
 
                 // If updates is provided, write the processed output
                 if (updates) {
-                    updates.write(`\n\n(${totalMatchCount} matches found):\n\n`)
+                    updates.write(`\n\n${totalMatchCount} matches found:\n\n`)
                     updates.write(sanitizedOutput)
                 }
 
