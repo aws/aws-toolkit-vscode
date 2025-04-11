@@ -19,6 +19,7 @@ export type LogTopic =
     | 'fsRead'
     | 'fsWrite'
     | 'executeBash'
+    | 'grepSearch'
     | 'listDirectory'
     | 'chatStream'
     | 'chatHistoryDb'
