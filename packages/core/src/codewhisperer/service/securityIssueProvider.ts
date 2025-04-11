@@ -46,12 +46,12 @@ export class SecurityIssueProvider {
                 ...group,
                 issues: group.issues
                     .filter((issue) => {
-                        let range
-                        if (issue.startLine === issue.endLine) {
-                            range = new vscode.Range(issue.startLine, 0, issue.endLine + 1, 0)
-                        } else {
-                            range = new vscode.Range(issue.startLine, 0, issue.endLine, 0)
-                        }
+                        const range = new vscode.Range(
+                            issue.startLine,
+                            0,
+                            issue.startLine === issue.endLine ? issue.endLine + 1 : issue.endLine,
+                            0
+                        )
 
                         const intersection = changedRange.intersection(range)
                         return !(intersection && (/\S/.test(changedText) || changedText === ''))

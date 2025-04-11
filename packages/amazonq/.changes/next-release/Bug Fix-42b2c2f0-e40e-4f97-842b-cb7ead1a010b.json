@@ -1,4 +1,4 @@
 {
 	"type": "Bug Fix",
-	"description": "fix bug where code fix line number or file was not accurate"
+	"description": "Code fix line number or file is sometimes not accurate"
 }
