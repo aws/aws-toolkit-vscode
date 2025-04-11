@@ -51,6 +51,7 @@ import { encodeHTML } from '../../../shared/utilities/textUtilities'
 import { convertToTimeString } from '../../../shared/datetime'
 import { getAuthType } from '../../../auth/utils'
 import { UserWrittenCodeTracker } from '../../tracker/userWrittenCodeTracker'
+import { AuthUtil } from '../../util/authUtil'
 
 export function getSha256(buffer: Buffer) {
     const hasher = crypto.createHash('sha256')
@@ -193,7 +194,11 @@ export async function stopJob(jobId: string) {
     }
 }
 
-export async function uploadPayload(payloadFileName: string, uploadContext?: UploadContext) {
+export async function uploadPayload(
+    payloadFileName: string,
+    profile: RegionProfile | undefined,
+    uploadContext?: UploadContext
+) {
     const buffer = Buffer.from(await fs.readFileBytes(payloadFileName))
     const sha256 = getSha256(buffer)
 
@@ -205,6 +210,7 @@ export async function uploadPayload(payloadFileName: string, uploadContext?: Upl
             contentChecksumType: CodeWhispererConstants.contentChecksumType,
             uploadIntent: CodeWhispererConstants.uploadIntent,
             uploadContext,
+            profileArn: profile?.arn,
         })
     } catch (e: any) {
         const errorMessage = `Creating the upload URL failed due to: ${(e as Error).message}`
@@ -759,7 +765,8 @@ export async function downloadResultArchive(
                 exportId: jobId,
                 exportIntent: ExportIntent.TRANSFORMATION,
             },
-            pathToArchive
+            pathToArchive,
+            AuthUtil.instance.regionProfileManager.activeRegionProfile
         )
     } catch (e: any) {
         getLogger().error(`CodeTransformation: ExportResultArchive error = %O`, e)
