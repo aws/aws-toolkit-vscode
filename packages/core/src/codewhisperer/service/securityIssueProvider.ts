@@ -46,12 +46,14 @@ export class SecurityIssueProvider {
                 ...group,
                 issues: group.issues
                     .filter((issue) => {
-                        const range = new vscode.Range(
-                            issue.startLine,
-                            event.document.lineAt(issue.startLine)?.range.start.character ?? 0,
-                            issue.endLine,
-                            event.document.lineAt(issue.endLine - 1)?.range.end.character ?? 0
-                        )
+                        // event document is the new document after deleting lines, but issue.startLine and endLines are not
+                        let range
+                        if (issue.startLine === issue.endLine) {
+                            range = new vscode.Range(issue.startLine, 0, issue.endLine + 1, 0)
+                        } else {
+                            range = new vscode.Range(issue.startLine, 0, issue.endLine, 0)
+                        }
+
                         const intersection = changedRange.intersection(range)
                         return !(intersection && (/\S/.test(changedText) || changedText === ''))
                     })
