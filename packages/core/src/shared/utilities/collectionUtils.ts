@@ -566,3 +566,30 @@ export function createCollectionFromPages<T>(...pages: T[]): AsyncCollection<T> 
 export function isPresent<T>(value: T | undefined): value is T {
     return value !== undefined
 }
+
+export class CircularBuffer {
+    private buffer = new Set<number>()
+    private maxSize: number
+
+    constructor(size: number) {
+        this.maxSize = size
+    }
+
+    add(value: number): void {
+        if (this.buffer.size >= this.maxSize) {
+            // Set iterates its keys in insertion-order.
+            // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Set
+            const firstKey = this.buffer.keys().next().value
+            this.buffer.delete(firstKey)
+        }
+        this.buffer.add(value)
+    }
+
+    contains(value: number): boolean {
+        return this.buffer.has(value)
+    }
+
+    clear(): void {
+        this.buffer.clear()
+    }
+}
