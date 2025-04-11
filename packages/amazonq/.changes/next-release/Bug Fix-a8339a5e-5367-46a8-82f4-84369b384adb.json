@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Fix Q agents will fail for /transform /dev /test features if IdC kms key is configured with 400 error"
-}
