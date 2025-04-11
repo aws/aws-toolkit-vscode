@@ -289,10 +289,12 @@ export class Messenger {
                             try {
                                 toolUse.input = JSON.parse(toolUseInput)
                             } catch (error: any) {
-                                getLogger().error(`JSON parse error for toolUseInput: ${toolUseInput}`)
+                                getLogger().error(
+                                    `JSON parse error: ${error.message} for toolUseInput: ${toolUseInput}`
+                                )
                                 // set toolUse.input to be empty valid json object
                                 toolUse.input = {}
-                                error.message = `Tool input has invalid JSON format: ${error.message}`
+                                error.message = `tooluse input is invalid: ${toolUseInput}`
                                 // throw it out to allow the error to be handled in the catch block
                                 throw error
                             }
