@@ -858,23 +858,16 @@ export function getArtifactsFromProgressUpdate(progressUpdate: TransformationPro
     }
 }
 
+// used for client-side build
 export function findDownloadArtifactProgressUpdate(transformationSteps: TransformationSteps) {
-    for (let i = 0; i < transformationSteps.length; i++) {
-        const progressUpdates = transformationSteps[i].progressUpdates
-        if (progressUpdates) {
-            for (let j = 0; j < progressUpdates.length; j++) {
-                if (
-                    progressUpdates[j].status === 'AWAITING_CLIENT_ACTION' &&
-                    progressUpdates[j].downloadArtifacts?.[0]?.downloadArtifactId
-                ) {
-                    return progressUpdates[j]
-                }
-            }
-        }
-    }
-    return undefined
+    return transformationSteps
+        .flatMap((step) => step.progressUpdates ?? [])
+        .find(
+            (update) => update.status === 'AWAITING_CLIENT_ACTION' && update.downloadArtifacts?.[0]?.downloadArtifactId
+        )
 }
 
+// used for HIL
 export function findDownloadArtifactStep(transformationSteps: TransformationSteps) {
     for (let i = 0; i < transformationSteps.length; i++) {
         const progressUpdates = transformationSteps[i].progressUpdates
