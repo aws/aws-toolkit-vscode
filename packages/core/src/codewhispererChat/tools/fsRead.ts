@@ -6,7 +6,6 @@ import * as vscode from 'vscode'
 import { getLogger } from '../../shared/logger/logger'
 import fs from '../../shared/fs/fs'
 import { Writable } from 'stream'
-import path from 'path'
 import { InvokeOutput, OutputKind, sanitizePath, CommandValidation } from './toolShared'
 import { isInDirectory } from '../../shared/filesystemUtilities'
 
@@ -49,23 +48,7 @@ export class FsRead {
     }
 
     public queueDescription(updates: Writable): void {
-        const fileName = path.basename(this.fsPath)
-        const fileUri = vscode.Uri.file(this.fsPath)
-        updates.write(`Reading file: [${fileName}](${fileUri}), `)
-
-        const [start, end] = this.readRange ?? []
-
-        if (start && end) {
-            updates.write(`from line ${start} to ${end}`)
-        } else if (start) {
-            if (start > 0) {
-                updates.write(`from line ${start} to end of file`)
-            } else {
-                updates.write(`${start} line from the end of file to end of file`)
-            }
-        } else {
-            updates.write('all lines')
-        }
+        updates.write('')
         updates.end()
     }
 
