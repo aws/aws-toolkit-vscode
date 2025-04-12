@@ -1,3 +1,8 @@
+## 1.59.0 2025-04-11
+
+- **Bug Fix** Code fix line number or file is sometimes not accurate
+- **Bug Fix** Fix Q agents will fail for /transform /dev /test features if IdC kms key is configured with 400 error
+
 ## 1.58.0 2025-04-11
 
 - **Bug Fix** inline chat activates properly when using 'aws.experiments.amazonqChatLSP' feature flag
