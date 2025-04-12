@@ -955,8 +955,8 @@ export class ChatController {
 
     private async processPromptInputOptionChange(message: PromptInputOptionChange) {
         const session = this.sessionStorage.getSession(message.tabID)
-        const promptTypeValue = message.optionsValues['prompt-type']
-        if (promptTypeValue === 'pair-programming-on') {
+        const promptTypeValue = message.optionsValues['pair-programmer-mode']
+        if (promptTypeValue === 'true') {
             session.setPairProgrammingModeOn(true)
             this.messenger.sendDirectiveMessage(
                 message.tabID,
