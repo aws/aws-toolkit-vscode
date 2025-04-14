@@ -316,7 +316,9 @@ export class Messenger {
                                     const input = toolUse.input as unknown as ExecuteBashParams
                                     if (input.explanation) {
                                         getLogger().debug(
-                                            `Tool explanation: ${input.explanation} for executeBash toolUseId: ${toolUse.toolUseId}`
+                                            'Tool explanation: %s for executeBash toolUseId: %s',
+                                            input.explanation,
+                                            toolUse.toolUseId
                                         )
                                         explanation = input.explanation
                                     }
@@ -324,7 +326,9 @@ export class Messenger {
                                     const input = toolUse.input as unknown as FsWriteParams
                                     if (input.explanation) {
                                         getLogger().debug(
-                                            `Tool explanation: ${input.explanation} for fsWrite toolUseId: ${toolUse.toolUseId}`
+                                            'Tool explanation: %s for fsWrite toolUseId: %s',
+                                            input.explanation,
+                                            toolUse.toolUseId
                                         )
                                         explanation = input.explanation
                                     }
