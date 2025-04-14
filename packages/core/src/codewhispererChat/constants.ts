@@ -55,3 +55,115 @@ export const defaultContextLengths: ContextLengths = {
 }
 
 export const defaultStreamingResponseTimeoutInMs = 180_000
+
+export const ignoredDirectoriesAndFiles = [
+    // Dependency directories
+    'node_modules',
+    '.venv',
+    'venv',
+    'bower_components',
+    'jspm_packages',
+    // Build outputs
+    'dist',
+    'build',
+    'out',
+    'target',
+    '.gradle',
+    '.pytest_cache',
+    '.tox',
+    '__snapshots__',
+    // Compiled files
+    '*.class',
+    '*.o',
+    '*.a',
+    '*.so',
+    '*.pyc',
+    '__pycache__',
+    '*.exe',
+    '*.dll',
+    // Package files
+    '*.jar',
+    '*.gem',
+    '*.vsix',
+    '*.zip',
+    '*.tar.gz',
+    '*.rar',
+    // IDE and editor files
+    '.idea/',
+    '.vscode/',
+    '*.sublime-*',
+    '*.swp',
+    '*.swo',
+    '.project',
+    '.classpath',
+    '*.iml',
+    // Log files
+    '*.log',
+    'logs/',
+    'npm-debug.log*',
+    // Coverage and test reports
+    'coverage/',
+    '.nyc_output/',
+    'test-results/',
+    '.test-reports/',
+    // Cache directories
+    '.cache/',
+    '.sass-cache/',
+    '.eslintcache',
+    '.parcel-cache',
+    // Environment and local configuration
+    '.env',
+    '.env.local',
+    '*.env.*',
+    '*.local.json',
+    '*.local.yml',
+    'config.local.*',
+    '.npmrc',
+    '.yarnrc',
+    '.dockerignore',
+    // OS specific files
+    '.DS_Store',
+    'Thumbs.db',
+    'desktop.ini',
+    // Temporary files
+    'tmp/',
+    'temp/',
+    '*.tmp',
+    '*.bak',
+    '*.bk',
+    // Generated documentation
+    'docs/_build/',
+    'site/',
+    'public/',
+    // Database files
+    '*.sqlite',
+    '*.db',
+    // Secrets and credentials
+    '*.pem',
+    '*.key',
+    'id_rsa',
+    'id_dsa',
+    '*.pfx',
+    '*.p12',
+    'credentials.json',
+    '*_credentials.*',
+    'aws-credentials.*',
+    'secrets.*',
+    // Version Control Directories
+    '.git/',
+    '.svn/',
+    '.hg/',
+    '.bzr/',
+    // Generated Code
+    '*.generated.*',
+    '*.auto.*',
+    '*.g.*',
+    // Cloud Provider Specific
+    '.terraform/',
+    '.serverless/',
+    'cdk.out/',
+    '.aws-sam/',
+    '.amplify/',
+    // Mobile Development
+    'Pods/',
+]

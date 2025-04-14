@@ -14,6 +14,7 @@ import {
     findStringInDirectory,
     getWorkspaceFoldersByPrefixes,
     getWorkspaceRelativePath,
+    shouldIgnoreDirAndFile,
 } from '../../../shared/utilities/workspaceUtils'
 import { getTestWorkspaceFolder } from '../../integrationTestsUtilities'
 import globals from '../../../shared/extensionGlobals'
@@ -588,6 +589,38 @@ describe('workspaceUtils', () => {
                 ] satisfies typeof result,
                 result
             )
+        })
+    })
+
+    describe('shouldIgnoreDirAndFile', function () {
+        it('handles exact matches', function () {
+            assert.strictEqual(shouldIgnoreDirAndFile('node_modules', vscode.FileType.Directory), true)
+            assert.strictEqual(shouldIgnoreDirAndFile('.env', vscode.FileType.File), true)
+            assert.strictEqual(shouldIgnoreDirAndFile('random_file.txt', vscode.FileType.File), false)
+        })
+
+        it('handles directory patterns with trailing slash', function () {
+            assert.strictEqual(shouldIgnoreDirAndFile('.idea', vscode.FileType.Directory), true)
+            assert.strictEqual(shouldIgnoreDirAndFile('logs', vscode.FileType.Directory), true)
+            assert.strictEqual(shouldIgnoreDirAndFile('.idea', vscode.FileType.File), false)
+        })
+
+        it('handles wildcard patterns at the start', function () {
+            assert.strictEqual(shouldIgnoreDirAndFile('example.class', vscode.FileType.File), true)
+            assert.strictEqual(shouldIgnoreDirAndFile('test.log', vscode.FileType.File), true)
+            assert.strictEqual(shouldIgnoreDirAndFile('class.example', vscode.FileType.File), false)
+        })
+
+        it('handles wildcard patterns at the end', function () {
+            assert.strictEqual(shouldIgnoreDirAndFile('npm-debug.log123', vscode.FileType.File), true)
+            assert.strictEqual(shouldIgnoreDirAndFile('npm-debug.txt', vscode.FileType.File), false)
+        })
+
+        it('handles complex wildcard patterns', function () {
+            assert.strictEqual(shouldIgnoreDirAndFile('test.env.local', vscode.FileType.File), true)
+            assert.strictEqual(shouldIgnoreDirAndFile('my_credentials.json', vscode.FileType.File), true)
+            assert.strictEqual(shouldIgnoreDirAndFile('config.local.json', vscode.FileType.File), true)
+            assert.strictEqual(shouldIgnoreDirAndFile('random.txt', vscode.FileType.File), false)
         })
     })
 
