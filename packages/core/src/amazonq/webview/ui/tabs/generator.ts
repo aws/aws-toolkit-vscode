@@ -7,7 +7,7 @@ import { ChatItem, ChatItemType, MynahUIDataModel, QuickActionCommandGroup } fro
 import { TabType } from '../storages/tabsStorage'
 import { FollowUpGenerator } from '../followUps/generator'
 import { QuickActionGenerator } from '../quickActions/generator'
-import { qChatIntroMessageForSMUS, TabTypeDataMap } from './constants'
+import { TabTypeDataMap } from './constants'
 import { agentWalkthroughDataModel } from '../walkthrough/agent'
 import { FeatureContext } from '../../../../shared/featureConfig'
 import { RegionProfile } from '../../../../codewhisperer/models/model'
