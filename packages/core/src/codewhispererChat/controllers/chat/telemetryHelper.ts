@@ -225,7 +225,7 @@ export class CWCTelemetryHelper {
             cwsprAgenticChatInteractionType: interactionType,
             result: 'Succeeded',
             cwsprChatConversationId: this.getConversationId(message.tabID ?? '') ?? '',
-            cwsprChatConversationType: 'Chat',
+            cwsprChatConversationType: 'AgenticChat',
             credentialStartUrl: AuthUtil.instance.startUrl,
         })
     }
@@ -543,7 +543,7 @@ export class CWCTelemetryHelper {
             cwsprChatFullDisplayLatency: fullDisplayLatency,
             cwsprChatRequestLength: triggerPayload.message.length,
             cwsprChatResponseLength: message.messageLength,
-            cwsprChatConversationType: 'Chat',
+            cwsprChatConversationType: triggerPayload.origin ? 'AgenticChat' : 'Chat',
             credentialStartUrl: AuthUtil.instance.startUrl,
             codewhispererCustomizationArn: triggerPayload.customization.arn,
             cwsprChatHasProjectContext: hasProjectLevelContext,
