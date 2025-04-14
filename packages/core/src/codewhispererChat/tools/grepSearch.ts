@@ -138,7 +138,8 @@ export class GrepSearch {
                         this.logger.error(`Ripgrep process exited with code ${code}`)
                         return new Error(`Ripgrep process exited with code ${code}`)
                     }
-                    return new Error(`Ripgrep process exited with code ${code}`)
+                    // For exit codes 0 and 1, don't reject
+                    return false as unknown as Error
                 },
             }
 
