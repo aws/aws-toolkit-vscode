@@ -414,6 +414,11 @@ export class ChatController {
 
     private async processStopResponseMessage(message: StopResponseMessage) {
         const session = this.sessionStorage.getSession(message.tabID)
+
+        if (session.agenticLoopInProgress === true) {
+            this.telemetryHelper.recordInteractionWithAgenticChat(AgenticChatInteractionType.StopChat, message)
+        }
+
         session.tokenSource.cancel()
         session.setAgenticLoopInProgress(false)
         session.setToolUseWithError(undefined)
@@ -428,7 +433,6 @@ export class ChatController {
         }
 
         this.messenger.sendEmptyMessage(message.tabID, '', undefined)
-        this.telemetryHelper.recordInteractionWithAgenticChat(AgenticChatInteractionType.StopChat, message)
     }
 
     private async processTriggerTabIDReceived(message: TriggerTabIDReceived) {
