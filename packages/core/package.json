@@ -392,25 +392,39 @@
                     "fontCharacter": "\\f1dc"
                 }
             },
-            "aws-schemas-registry": {
+            "aws-sagemaker-code-editor": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1dd"
                 }
             },
-            "aws-schemas-schema": {
+            "aws-sagemaker-jupyter-lab": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1de"
                 }
             },
-            "aws-stepfunctions-preview": {
+            "aws-schemas-registry": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1df"
+                }
+            },
+            "aws-schemas-schema": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\f1e0"
+                }
+            },
+            "aws-stepfunctions-preview": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\f1e1"
                 }
             }
         }
@@ -512,6 +526,7 @@
         "@aws-sdk/client-iam": "<3.731.0",
         "@aws-sdk/client-lambda": "<3.731.0",
         "@aws-sdk/client-s3": "<3.731.0",
+        "@aws-sdk/client-sagemaker": "<3.696.0",
         "@aws-sdk/client-ssm": "<3.731.0",
         "@aws-sdk/client-sso": "<3.731.0",
         "@aws-sdk/client-sso-oidc": "<3.731.0",
