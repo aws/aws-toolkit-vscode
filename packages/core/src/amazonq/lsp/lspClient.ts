@@ -235,7 +235,7 @@ async function validateNodeExe(nodePath: string) {
     const r = await proc.run()
     const ok = r.exitCode === 0 && r.stdout.includes('ok')
     if (!ok) {
-        throw new ToolkitError(`amazonqLsp: failed to run node (exitcode=${r.exitCode}): "${resourcePaths.node}"`)
+        throw new ToolkitError(`amazonqLsp: failed to run node (exitcode=${r.exitCode}): "${nodePath}"`)
     }
 }
 
