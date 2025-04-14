@@ -7,7 +7,7 @@ import { ChatItem, ChatItemType, MynahUIDataModel, QuickActionCommandGroup } fro
 import { TabType } from '../storages/tabsStorage'
 import { FollowUpGenerator } from '../followUps/generator'
 import { QuickActionGenerator } from '../quickActions/generator'
-import { TabTypeDataMap } from './constants'
+import { qChatIntroMessageForSMUS, TabTypeDataMap } from './constants'
 import { agentWalkthroughDataModel } from '../walkthrough/agent'
 import { FeatureContext } from '../../../../shared/featureConfig'
 import { RegionProfile } from '../../../../codewhisperer/models/model'
@@ -101,7 +101,7 @@ Enter \`/\` to view quick actions. Use \`@\` to add saved prompts, files, folder
                       ...(regionProfileCard ? [regionProfileCard] : []),
                       {
                           type: ChatItemType.ANSWER,
-                          body: welcomeMessage,
+                          body: isSMUS ? qChatIntroMessageForSMUS : welcomeMessage,
                       },
                       {
                           type: ChatItemType.ANSWER,
