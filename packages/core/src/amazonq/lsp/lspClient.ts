@@ -41,8 +41,8 @@ import globals from '../../shared/extensionGlobals'
 import { ResourcePaths } from '../../shared/lsp/types'
 import { createServerOptions } from '../../shared/lsp/utils/platform'
 import { waitUntil } from '../../shared/utilities/timeoutUtils'
-import { tryRun } from '../../shared/utilities/pathFind'
 import { ToolkitError } from '../../shared/errors'
+import { ChildProcess } from '../../shared/utilities/processUtils'
 
 const localize = nls.loadMessageBundle()
 
@@ -225,6 +225,20 @@ export class LspClient {
         )
     }
 }
+
+/**
+ * Checks that we can actually run the `node` executable and execute code with it.
+ */
+async function validateNodeExe(nodePath: string) {
+    const args = ['-e', 'console.log("ok" + process.version)']
+    const proc = new ChildProcess(nodePath, args, { logging: 'no' })
+    const r = await proc.run()
+    const ok = r.exitCode === 0 && r.stdout.includes('ok')
+    if (!ok) {
+        throw new ToolkitError(`amazonqLsp: failed to run node (exitcode=${r.exitCode}): "${resourcePaths.node}"`)
+    }
+}
+
 /**
  * Activates the language server (assumes the LSP server has already been downloaded):
  * 1. start LSP server running over IPC protocol.
@@ -234,9 +248,7 @@ export async function activate(extensionContext: ExtensionContext, resourcePaths
     LspClient.instance // Tickle the singleton... :/
     const toDispose = extensionContext.subscriptions
 
-    if (await tryRun(resourcePaths.node, ['--version'])) {
-        throw new ToolkitError(`failed to run node: "${resourcePaths.node}"`)
-    }
+    await validateNodeExe(resourcePaths.node)
 
     let rangeFormatting: Disposable | undefined
     // The debug options for the server
