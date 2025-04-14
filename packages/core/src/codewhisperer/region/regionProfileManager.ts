@@ -328,11 +328,11 @@ export class RegionProfileManager {
         }
     }
 
-    requireProfileSelection(): boolean {
+    requireProfileSelection() {
         if (AuthUtil.instance.isBuilderIdConnection()) {
             return false
         }
-        return Boolean(AuthUtil.instance.isIdcConnection() && this.activeRegionProfile === undefined)
+        return AuthUtil.instance.isIdcConnection() && this.activeRegionProfile === undefined
     }
 
     async createQClient(region: string, endpoint: string): Promise<CodeWhispererUserClient> {
