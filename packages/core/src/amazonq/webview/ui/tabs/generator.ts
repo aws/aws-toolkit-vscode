@@ -91,20 +91,11 @@ export class TabDataGenerator {
                 tabType === 'cwc'
                     ? [
                           {
-                              type: 'toggle',
-                              id: 'prompt-type',
-                              value: 'pair-programming-on',
-                              tooltip: 'Pair programmer on',
-                              options: [
-                                  {
-                                      value: 'pair-programming-on',
-                                      icon: 'code-block', // TODO: correct icons
-                                  },
-                                  {
-                                      value: 'pair-programming-off',
-                                      icon: 'chat', // TODO: correct icons
-                                  },
-                              ],
+                              type: 'switch',
+                              id: 'pair-programmer-mode',
+                              tooltip: 'Enable or disable pair programmer mode',
+                              value: 'true',
+                              icon: 'code-block',
                           },
                       ]
                     : [],
