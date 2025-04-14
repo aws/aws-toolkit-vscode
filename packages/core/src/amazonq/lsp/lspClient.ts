@@ -229,13 +229,36 @@ export class LspClient {
 /**
  * Checks that we can actually run the `node` executable and execute code with it.
  */
-async function validateNodeExe(nodePath: string) {
-    const args = ['-e', 'console.log("ok" + process.version)']
-    const proc = new ChildProcess(nodePath, args, { logging: 'no' })
+async function validateNodeExe(nodePath: string, lsp: string, args: string[]) {
+    // Check that we can start `node` by itself.
+    const proc = new ChildProcess(nodePath, ['-e', 'console.log("ok " + process.version)'], { logging: 'no' })
     const r = await proc.run()
     const ok = r.exitCode === 0 && r.stdout.includes('ok')
     if (!ok) {
-        throw new ToolkitError(`amazonqLsp: failed to run node (exitcode=${r.exitCode}): "${nodePath}"`)
+        throw new ToolkitError(`amazonqLsp: failed to run "node -e" (exitcode=${r.exitCode}): "${nodePath}"`)
+    }
+
+    // Check that we can start `node …/lsp.js --stdio …`.
+    const lspProc = new ChildProcess(nodePath, [lsp, ...args], { logging: 'no' })
+    try {
+        // Start asynchronously (it never stops; we need to stop it below).
+        lspProc.run().catch((e) => logger.error('failed to start [%O %O %O]: %s', nodePath, lsp, args, e))
+
+        const ok2 = await waitUntil(
+            async () => {
+                return lspProc.pid !== undefined
+            },
+            {
+                timeout: 5000,
+                interval: 100,
+                truthy: true,
+            }
+        )
+        if (!ok2) {
+            throw new ToolkitError(`amazonqLsp: failed to start (exitcode=${lspProc.exitCode}): [${nodePath} ${lsp} …]`)
+        }
+    } finally {
+        lspProc.stop(true)
     }
 }
 
@@ -248,13 +271,10 @@ export async function activate(extensionContext: ExtensionContext, resourcePaths
     LspClient.instance // Tickle the singleton... :/
     const toDispose = extensionContext.subscriptions
 
-    await validateNodeExe(resourcePaths.node)
-
     let rangeFormatting: Disposable | undefined
     // The debug options for the server
     // --inspect=6009: runs the server in Node's Inspector mode so VS Code can attach to the server for debugging
     const debugOptions = { execArgv: ['--nolazy', '--preserve-symlinks', '--stdio'] }
-
     const workerThreads = CodeWhispererSettings.instance.getIndexWorkerThreads()
     const gpu = CodeWhispererSettings.instance.isLocalIndexGPUEnabled()
 
@@ -287,6 +307,8 @@ export async function activate(extensionContext: ExtensionContext, resourcePaths
     })
 
     const documentSelector = [{ scheme: 'file', language: '*' }]
+
+    await validateNodeExe(resourcePaths.node, resourcePaths.lsp, debugOptions.execArgv)
 
     // Options to control the language client
     const clientOptions: LanguageClientOptions = {
