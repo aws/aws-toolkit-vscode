@@ -32,6 +32,7 @@ export class ChatStream extends Writable {
         private readonly validation: CommandValidation,
         private readonly isReadorList: boolean,
         private readonly changeList?: Change[],
+        private readonly explanation?: string,
         private readonly logger = getLogger('chatStream')
     ) {
         super()
@@ -41,7 +42,10 @@ export class ChatStream extends Writable {
         if (!emitEvent) {
             return
         }
-        if (validation.requiresAcceptance) {
+        if (this.explanation) {
+            this.messenger.sendDirectiveMessage(tabID, triggerID, this.explanation)
+        }
+        if (validation.requiresAcceptance && this.toolUse?.name === 'executeBash') {
             this.messenger.sendDirectiveMessage(
                 tabID,
                 triggerID,

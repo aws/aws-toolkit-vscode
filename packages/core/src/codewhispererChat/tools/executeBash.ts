@@ -113,6 +113,7 @@ export const mutateCommandWarningMessage = 'Mutation command:\n\n'
 export interface ExecuteBashParams {
     command: string
     cwd?: string
+    explanation?: string
 }
 
 export interface CommandValidation {
