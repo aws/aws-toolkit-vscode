@@ -61,7 +61,7 @@ import { TabType } from '../../../../amazonq/webview/ui/storages/tabsStorage'
 import { ToolType, ToolUtils } from '../../../tools/toolUtils'
 import { ChatStream } from '../../../tools/chatStream'
 import path from 'path'
-import { CommandValidation } from '../../../tools/executeBash'
+import { CommandValidation, ExecuteBashParams } from '../../../tools/executeBash'
 import { extractErrorInfo } from '../../../../shared/utilities/messageUtil'
 import { noWriteTools, tools } from '../../../constants'
 import { Change } from 'diff'
@@ -306,12 +306,28 @@ export class Messenger {
                             }
                             const tool = ToolUtils.tryFromToolUse(toolUse)
                             if ('type' in tool) {
+                                let explanation: string | undefined = undefined
                                 let changeList: Change[] | undefined = undefined
                                 let messageIdToUpdate: string | undefined = undefined
                                 const isReadOrList: boolean = [ToolType.FsRead, ToolType.ListDirectory].includes(
                                     tool.type
                                 )
-                                if (tool.type === ToolType.FsWrite) {
+                                if (tool.type === ToolType.ExecuteBash) {
+                                    const input = toolUse.input as unknown as ExecuteBashParams
+                                    if (input.explanation) {
+                                        getLogger().debug(
+                                            `Tool explanation: ${input.explanation} for executeBash toolUseId: ${toolUse.toolUseId}`
+                                        )
+                                        explanation = input.explanation
+                                    }
+                                } else if (tool.type === ToolType.FsWrite) {
+                                    const input = toolUse.input as unknown as FsWriteParams
+                                    if (input.explanation) {
+                                        getLogger().debug(
+                                            `Tool explanation: ${input.explanation} for fsWrite toolUseId: ${toolUse.toolUseId}`
+                                        )
+                                        explanation = input.explanation
+                                    }
                                     session.setShowDiffOnFileWrite(true)
                                     changeList = await tool.tool.getDiffChanges()
                                 }
@@ -353,7 +369,8 @@ export class Messenger {
                                     true,
                                     validation,
                                     isReadOrList,
-                                    changeList
+                                    changeList,
+                                    explanation
                                 )
                                 await ToolUtils.queueDescription(tool, chatStream)
                                 if (session.messageIdToUpdate === undefined && tool.type === ToolType.FsRead) {

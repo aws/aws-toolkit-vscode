@@ -65,6 +65,10 @@
         "inputSchema": {
             "type": "object",
             "properties": {
+                "explanation": {
+                    "description": "One sentence explanation as to why this tool is being used, and how it contributes to the goal.",
+                    "type": "string"
+                },
                 "command": {
                     "type": "string",
                     "description": "Bash command to execute"
@@ -83,10 +87,6 @@
         "inputSchema": {
             "type": "object",
             "properties": {
-                "explanation": {
-                    "description": "One sentence explanation as to why this tool is being used, and how it contributes to the goal.",
-                    "type": "string"
-                },
                 "path": {
                     "type": "string",
                     "description": "Absolute path to a directory, e.g., `/repo`."

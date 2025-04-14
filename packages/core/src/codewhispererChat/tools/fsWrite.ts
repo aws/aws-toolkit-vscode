@@ -12,6 +12,7 @@ import { Change, diffLines } from 'diff'
 
 interface BaseParams {
     path: string
+    explanation?: string
 }
 
 export interface CreateParams extends BaseParams {
