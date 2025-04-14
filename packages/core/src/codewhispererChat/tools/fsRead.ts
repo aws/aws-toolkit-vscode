@@ -8,6 +8,8 @@ import fs from '../../shared/fs/fs'
 import { Writable } from 'stream'
 import { InvokeOutput, OutputKind, sanitizePath, CommandValidation, fsReadToolResponseSize } from './toolShared'
 import { isInDirectory } from '../../shared/filesystemUtilities'
+import path from 'path'
+import { ChatStream } from './chatStream'
 
 export interface FsReadParams {
     path: string
@@ -47,8 +49,28 @@ export class FsRead {
         this.logger.debug(`Validation succeeded for path: ${this.fsPath}`)
     }
 
-    public queueDescription(updates: Writable): void {
-        updates.write('')
+    public queueDescription(updates: ChatStream): void {
+        if (updates.validation.requiresAcceptance) {
+            const fileName = path.basename(this.fsPath)
+            const fileUri = vscode.Uri.file(this.fsPath)
+            updates.write(`Reading file: [${fileName}](${fileUri}), `)
+
+            const [start, end] = this.readRange ?? []
+
+            if (start && end) {
+                updates.write(`from line ${start} to ${end}`)
+            } else if (start) {
+                if (start > 0) {
+                    updates.write(`from line ${start} to end of file`)
+                } else {
+                    updates.write(`${start} line from the end of file to end of file`)
+                }
+            } else {
+                updates.write('all lines')
+            }
+        } else {
+            updates.write('')
+        }
         updates.end()
     }
 

@@ -748,13 +748,17 @@ export class Messenger {
         }
 
         // Handle read tool and list directory messages
-        if (toolUse?.name === ToolType.FsRead || toolUse?.name === ToolType.ListDirectory) {
+        if (
+            (toolUse?.name === ToolType.FsRead || toolUse?.name === ToolType.ListDirectory) &&
+            !validation.requiresAcceptance
+        ) {
             return this.sendReadAndListDirToolMessage(toolUse, session, tabID, triggerID, messageIdToUpdate)
         }
 
         // Handle file write tool, execute bash tool and bash command output log messages
         const buttons: ChatItemButton[] = []
         let header: ChatItemHeader | undefined = undefined
+        let messageID: string = toolUse?.toolUseId ?? ''
         if (toolUse?.name === ToolType.ExecuteBash && message.startsWith('```shell')) {
             if (validation.requiresAcceptance) {
                 const buttons: ChatItemButton[] = [
@@ -825,6 +829,7 @@ export class Messenger {
             }
         } else if (toolUse?.name === ToolType.ListDirectory || toolUse?.name === ToolType.FsRead) {
             if (validation.requiresAcceptance) {
+                messageID = 'toolUse'
                 const buttons: ChatItemButton[] = [
                     {
                         id: 'confirm-tool-use',
@@ -840,7 +845,6 @@ export class Messenger {
                     },
                 ]
                 header = {
-                    body: 'shell',
                     buttons,
                 }
             }
@@ -859,7 +863,7 @@ export class Messenger {
                     followUpsHeader: undefined,
                     relatedSuggestions: undefined,
                     triggerID,
-                    messageID: toolUse?.toolUseId ?? '',
+                    messageID,
                     userIntent: undefined,
                     codeBlockLanguage: undefined,
                     contextList: undefined,

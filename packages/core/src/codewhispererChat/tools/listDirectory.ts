@@ -10,6 +10,7 @@ import { Writable } from 'stream'
 import path from 'path'
 import { InvokeOutput, OutputKind, sanitizePath, CommandValidation } from './toolShared'
 import { isInDirectory } from '../../shared/filesystemUtilities'
+import { ChatStream } from './chatStream'
 
 export interface ListDirectoryParams {
     path: string
@@ -49,16 +50,21 @@ export class ListDirectory {
         }
     }
 
-    public queueDescription(updates: Writable): void {
-        const fileName = path.basename(this.fsPath)
-        if (this.maxDepth === undefined) {
-            updates.write(`Analyzing directories recursively: ${fileName}`)
-        } else if (this.maxDepth === 0) {
-            updates.write(`Analyzing directory: ${fileName}`)
+    public queueDescription(updates: ChatStream): void {
+        if (updates.validation.requiresAcceptance) {
+            const fileName = path.basename(this.fsPath)
+            if (this.maxDepth === undefined) {
+                updates.write(`Analyzing directories recursively: ${fileName}`)
+            } else if (this.maxDepth === 0) {
+                updates.write(`Analyzing directory: ${fileName}`)
+            } else {
+                const level = this.maxDepth > 1 ? 'levels' : 'level'
+                updates.write(`Analyzing directory: ${fileName} limited to ${this.maxDepth} subfolder ${level}`)
+            }
         } else {
-            const level = this.maxDepth > 1 ? 'levels' : 'level'
-            updates.write(`Analyzing directory: ${fileName} limited to ${this.maxDepth} subfolder ${level}`)
+            updates.write('')
         }
+
         updates.end()
     }
 
