@@ -20,6 +20,7 @@ import { TelemetryHelper } from '../util/telemetryHelper'
 import { tempDirPath } from '../../shared/filesystemUtilities'
 import { CodeWhispererSettings } from '../util/codewhispererSettings'
 import { AuthUtil } from '../util/authUtil'
+import { saveDocumentIfDirty } from '../../shared/utilities/textDocumentUtilities'
 
 export async function startCodeFixGeneration(
     client: DefaultCodeWhispererClient,
@@ -44,6 +45,9 @@ export async function startCodeFixGeneration(
          * Step 1: Generate zip
          */
         throwIfCancelled()
+
+        // Save the file if it has unsaved changes to ensure the latest content is included in the zip
+        await saveDocumentIfDirty(filePath)
         const admZip = new AdmZip()
         admZip.addLocalFile(filePath)
 
@@ -78,7 +82,8 @@ export async function startCodeFixGeneration(
                     : 'BLOCK',
             },
             codeFixName,
-            issue.ruleId
+            issue.ruleId,
+            profile
         )
         if (codeFixJob.status === 'Failed') {
             throw new CreateCodeFixError()

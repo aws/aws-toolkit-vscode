@@ -57,7 +57,8 @@ export async function listScanResults(
     const logger = getLoggerForScope(scope)
     const codeScanIssueMap: Map<string, RawCodeScanIssue[]> = new Map()
     const aggregatedCodeScanIssueList: AggregatedCodeScanIssue[] = []
-    const requester = (request: codewhispererClient.ListCodeScanFindingsRequest) => client.listCodeScanFindings(request)
+    const requester = (request: codewhispererClient.ListCodeScanFindingsRequest) =>
+        client.listCodeScanFindings(request, profile?.arn)
     const request: codewhispererClient.ListCodeScanFindingsRequest = {
         jobId,
         codeAnalysisFindingsSchema: codeScanFindingsSchema,

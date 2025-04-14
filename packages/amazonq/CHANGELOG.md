@@ -1,3 +1,20 @@
+## 1.58.0 2025-04-11
+
+- **Bug Fix** inline chat activates properly when using 'aws.experiments.amazonqChatLSP' feature flag
+- **Bug Fix** Amazon Q Chat: code blocks in responses flicker, switching tabs during answer streaming makes expand button disappear
+- **Bug Fix** Amazon Q Chat: tab bar buttons disappear when closing non-active tab
+- **Bug Fix** Amazon Q Chat: chat history list does not truncate markdown
+
+## 1.57.0 2025-04-10
+
+- **Bug Fix** Fix bug where generate fix does not work
+- **Bug Fix** Fix bug where review shows 0 findings
+
+## 1.56.0 2025-04-09
+
+- **Bug Fix** Improve status message while loading Amazon Q Profiles during login
+- **Bug Fix** "failed to run command" error
+
 ## 1.55.0 2025-04-09
 
 - **Bug Fix** Amazon Q Chat: Update chat history icon
