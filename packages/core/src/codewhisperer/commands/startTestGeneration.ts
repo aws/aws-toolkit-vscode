@@ -72,7 +72,7 @@ export async function startTestGenerationProcess(
         let artifactMap: ArtifactMap = {}
         const uploadStartTime = performance.now()
         try {
-            artifactMap = await getPresignedUrlAndUploadTestGen(zipMetadata)
+            artifactMap = await getPresignedUrlAndUploadTestGen(zipMetadata, profile)
         } finally {
             const outputLogPath = path.join(testGenerationLogsDir, 'output.log')
             if (await fs.existsFile(outputLogPath)) {
