@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as vscode from 'vscode'
-import { waitUntil } from '../../../../shared/utilities/timeoutUtils'
 import {
     AppToWebViewMessageDispatcher,
     AuthNeededException,
@@ -63,7 +61,7 @@ import { TabType } from '../../../../amazonq/webview/ui/storages/tabsStorage'
 import { ToolType, ToolUtils } from '../../../tools/toolUtils'
 import { ChatStream } from '../../../tools/chatStream'
 import path from 'path'
-import { CommandValidation } from '../../../tools/executeBash'
+import { CommandValidation, ExecuteBashParams } from '../../../tools/executeBash'
 import { extractErrorInfo } from '../../../../shared/utilities/messageUtil'
 import { noWriteTools, tools } from '../../../constants'
 import { Change } from 'diff'
@@ -71,6 +69,8 @@ import { FsWriteParams } from '../../../tools/fsWrite'
 import { AsyncEventProgressMessage } from '../../../../amazonq/commons/connector/connectorMessages'
 import { localize } from '../../../../shared/utilities/vsCodeUtils'
 import { getDiffLinesFromChanges } from '../../../../shared/utilities/diffUtils'
+import { ConversationTracker } from '../../../storages/conversationTracker'
+import { waitTimeout, Timeout } from '../../../../shared/utilities/timeoutUtils'
 import { FsReadParams } from '../../../tools/fsRead'
 import { ListDirectoryParams } from '../../../tools/listDirectory'
 
@@ -104,6 +104,12 @@ export class Messenger {
     }
 
     public sendInitalStream(tabID: string, triggerID: string) {
+        // Check if the conversation has been cancelled
+        if (this.isTriggerCancelled(triggerID)) {
+            getLogger().debug(`Initial stream sending cancelled for tabID: ${tabID}, triggerID: ${triggerID}`)
+            return
+        }
+
         this.dispatcher.sendChatMessage(
             new ChatMessage(
                 {
@@ -131,6 +137,12 @@ export class Messenger {
         triggerID: string,
         mergedRelevantDocuments: DocumentReference[] | undefined
     ) {
+        // Check if the conversation has been cancelled
+        if (this.isTriggerCancelled(triggerID)) {
+            getLogger().debug(`Context message sending cancelled for tabID: ${tabID}, triggerID: ${triggerID}`)
+            return
+        }
+
         this.dispatcher.sendChatMessage(
             new ChatMessage(
                 {
@@ -188,8 +200,7 @@ export class Messenger {
         session: ChatSession,
         tabID: string,
         triggerID: string,
-        triggerPayload: TriggerPayload,
-        cancelToken: vscode.CancellationToken
+        triggerPayload: TriggerPayload
     ) {
         let message = ''
         const messageID = response.$metadata.requestId ?? ''
@@ -199,6 +210,7 @@ export class Messenger {
         let codeBlockLanguage: string = 'plaintext'
         let toolUseInput = ''
         const toolUse: ToolUse = { toolUseId: undefined, name: undefined, input: undefined }
+        const conversationTracker = ConversationTracker.getInstance()
 
         if (response.message === undefined) {
             throw new ToolkitError(
@@ -226,12 +238,15 @@ export class Messenger {
         })
 
         const eventCounts = new Map<string, number>()
-        await waitUntil(
+        const timeout = new Timeout(600000) // 10 minutes timeout
+
+        await waitTimeout(
             async () => {
                 for await (const chatEvent of response.message!) {
-                    if (cancelToken.isCancellationRequested) {
+                    if (this.isTriggerCancelled(triggerID)) {
                         return
                     }
+
                     for (const key of keys(chatEvent)) {
                         if ((chatEvent[key] as any) !== undefined) {
                             eventCounts.set(key, (eventCounts.get(key) ?? 0) + 1)
@@ -268,13 +283,18 @@ export class Messenger {
                         toolUse.toolUseId = cwChatEvent.toolUseEvent.toolUseId ?? ''
                         toolUse.name = cwChatEvent.toolUseEvent.name ?? ''
                         try {
+                            if (this.isTriggerCancelled(triggerID)) {
+                                return
+                            }
                             try {
                                 toolUse.input = JSON.parse(toolUseInput)
                             } catch (error: any) {
-                                getLogger().error(`JSON parse error for toolUseInput: ${toolUseInput}`)
+                                getLogger().error(
+                                    `JSON parse error: ${error.message} for toolUseInput: ${toolUseInput}`
+                                )
                                 // set toolUse.input to be empty valid json object
                                 toolUse.input = {}
-                                error.message = `Tool input has invalid JSON format: ${error.message}`
+                                error.message = `tooluse input is invalid: ${toolUseInput}`
                                 // throw it out to allow the error to be handled in the catch block
                                 throw error
                             }
@@ -286,12 +306,32 @@ export class Messenger {
                             }
                             const tool = ToolUtils.tryFromToolUse(toolUse)
                             if ('type' in tool) {
+                                let explanation: string | undefined = undefined
                                 let changeList: Change[] | undefined = undefined
                                 let messageIdToUpdate: string | undefined = undefined
                                 const isReadOrList: boolean = [ToolType.FsRead, ToolType.ListDirectory].includes(
                                     tool.type
                                 )
-                                if (tool.type === ToolType.FsWrite) {
+                                if (tool.type === ToolType.ExecuteBash) {
+                                    const input = toolUse.input as unknown as ExecuteBashParams
+                                    if (input.explanation) {
+                                        getLogger().debug(
+                                            'Tool explanation: %s for executeBash toolUseId: %s',
+                                            input.explanation,
+                                            toolUse.toolUseId
+                                        )
+                                        explanation = input.explanation
+                                    }
+                                } else if (tool.type === ToolType.FsWrite) {
+                                    const input = toolUse.input as unknown as FsWriteParams
+                                    if (input.explanation) {
+                                        getLogger().debug(
+                                            'Tool explanation: %s for fsWrite toolUseId: %s',
+                                            input.explanation,
+                                            toolUse.toolUseId
+                                        )
+                                        explanation = input.explanation
+                                    }
                                     session.setShowDiffOnFileWrite(true)
                                     changeList = await tool.tool.getDiffChanges()
                                 }
@@ -333,7 +373,8 @@ export class Messenger {
                                     true,
                                     validation,
                                     isReadOrList,
-                                    changeList
+                                    changeList,
+                                    explanation
                                 )
                                 await ToolUtils.queueDescription(tool, chatStream)
                                 if (session.messageIdToUpdate === undefined && tool.type === ToolType.FsRead) {
@@ -353,16 +394,30 @@ export class Messenger {
                                 if (!validation.requiresAcceptance) {
                                     // Need separate id for read tool and safe bash command execution as 'run-shell-command' id is required to state in cwChatConnector.ts which will impact generic tool execution.
                                     if (tool.type === ToolType.ExecuteBash) {
+                                        if (this.isTriggerCancelled(triggerID)) {
+                                            return
+                                        }
                                         this.dispatcher.sendCustomFormActionMessage(
-                                            new CustomFormActionMessage(tabID, {
-                                                id: 'run-shell-command',
-                                            })
+                                            new CustomFormActionMessage(
+                                                tabID,
+                                                {
+                                                    id: 'run-shell-command',
+                                                },
+                                                triggerID
+                                            )
                                         )
                                     } else {
+                                        if (this.isTriggerCancelled(triggerID)) {
+                                            return
+                                        }
                                         this.dispatcher.sendCustomFormActionMessage(
-                                            new CustomFormActionMessage(tabID, {
-                                                id: 'generic-tool-execution',
-                                            })
+                                            new CustomFormActionMessage(
+                                                tabID,
+                                                {
+                                                    id: 'generic-tool-execution',
+                                                },
+                                                triggerID
+                                            )
                                         )
                                     }
                                 } else {
@@ -390,9 +445,13 @@ export class Messenger {
                             session.setToolUseWithError({ toolUse, error })
                             // trigger processToolUseMessage to handle the error
                             this.dispatcher.sendCustomFormActionMessage(
-                                new CustomFormActionMessage(tabID, {
-                                    id: 'generic-tool-execution',
-                                })
+                                new CustomFormActionMessage(
+                                    tabID,
+                                    {
+                                        id: 'generic-tool-execution',
+                                    },
+                                    triggerID
+                                )
                             )
                         }
                         // TODO: Add a spinner component for fsWrite, previous implementation is causing lag in mynah UX.
@@ -406,6 +465,11 @@ export class Messenger {
                         if (codeBlockLanguage === 'plaintext') {
                             codeBlockLanguage = extractCodeBlockLanguage(message)
                         }
+                        // Check if this trigger has been cancelled
+                        if (this.isTriggerCancelled(triggerID)) {
+                            return
+                        }
+
                         this.dispatcher.sendChatMessage(
                             new ChatMessage(
                                 {
@@ -454,7 +518,10 @@ export class Messenger {
                 }
                 return true
             },
-            { timeout: 600000, truthy: true }
+            timeout,
+            {
+                cancellationCondition: () => this.isTriggerCancelled(triggerID),
+            }
         )
             .catch((error: any) => {
                 const errorInfo = extractErrorInfo(error)
@@ -474,7 +541,7 @@ export class Messenger {
                 this.telemetryHelper.recordMessageResponseError(triggerPayload, tabID, errorInfo.statusCode ?? 0)
             })
             .finally(async () => {
-                if (session.sessionIdentifier) {
+                if (session.sessionIdentifier && !this.isTriggerCancelled(triggerID)) {
                     this.chatHistoryDb.addMessage(tabID, 'cwc', session.sessionIdentifier, {
                         body: message,
                         type: 'answer' as any,
@@ -533,16 +600,24 @@ export class Messenger {
                     )
                 }
 
-                const agenticLoopEnded = !eventCounts.has('toolUseEvent')
-                if (agenticLoopEnded) {
-                    // Reset context for the next request
-                    session.setContext(undefined)
+                // Check if this trigger has been cancelled before sending final message
+                if (this.isTriggerCancelled(triggerID)) {
+                    return
                 }
+
+                if (!eventCounts.has('toolUseEvent')) {
+                    session.setAgenticLoopInProgress(false)
+                    session.setContext(undefined)
+
+                    // Mark the trigger as completed when the agentic loop ends
+                    conversationTracker.markTriggerCompleted(triggerID)
+                }
+
                 this.dispatcher.sendChatMessage(
                     new ChatMessage(
                         {
                             message: undefined,
-                            messageType: agenticLoopEnded ? 'answer' : 'answer-stream',
+                            messageType: !session.agenticLoopInProgress ? 'answer' : 'answer-stream',
                             followUps: followUps,
                             followUpsHeader: undefined,
                             relatedSuggestions: undefined,
@@ -555,7 +630,6 @@ export class Messenger {
                         tabID
                     )
                 )
-
                 getLogger().info(
                     `All events received. requestId=%s counts=%s`,
                     response.$metadata.requestId,
@@ -669,6 +743,10 @@ export class Messenger {
         validation: CommandValidation,
         changeList?: Change[]
     ) {
+        if (this.isTriggerCancelled(triggerID)) {
+            return
+        }
+
         // Handle read tool and list directory messages
         if (toolUse?.name === ToolType.FsRead || toolUse?.name === ToolType.ListDirectory) {
             return this.sendReadAndListDirToolMessage(toolUse, session, tabID, triggerID, messageIdToUpdate)
@@ -702,6 +780,9 @@ export class Messenger {
                 message = validation.warning + message
             }
         } else if (toolUse?.name === ToolType.FsWrite) {
+            if (this.isTriggerCancelled(triggerID)) {
+                return
+            }
             const input = toolUse.input as unknown as FsWriteParams
             const fileName = path.basename(input.path)
             const changes = getDiffLinesFromChanges(changeList)
@@ -765,6 +846,10 @@ export class Messenger {
             }
         }
 
+        if (this.isTriggerCancelled(triggerID)) {
+            return
+        }
+
         this.dispatcher.sendChatMessage(
             new ChatMessage(
                 {
@@ -803,6 +888,12 @@ export class Messenger {
     ])
 
     public sendStaticTextResponse(type: StaticTextResponseType, triggerID: string, tabID: string) {
+        // Check if the conversation has been cancelled
+        if (this.isTriggerCancelled(triggerID)) {
+            getLogger().debug(`Static text response sending cancelled for tabID: ${tabID}, triggerID: ${triggerID}`)
+            return
+        }
+
         let message
         let followUps
         let followUpsHeader
@@ -1033,5 +1124,18 @@ export class Messenger {
                 tabID
             )
         )
+    }
+
+    /**
+     * Check if a trigger has been cancelled and should not proceed
+     * @param triggerId The trigger ID to check
+     * @returns true if the trigger is cancelled and should not proceed
+     */
+    private isTriggerCancelled(triggerId: string): boolean {
+        if (!triggerId) {
+            return false
+        }
+        const conversationTracker = ConversationTracker.getInstance()
+        return conversationTracker.isTriggerCancelled(triggerId)
     }
 }

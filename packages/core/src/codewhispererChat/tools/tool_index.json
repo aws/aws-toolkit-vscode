@@ -1,7 +1,7 @@
 {
     "fsRead": {
         "name": "fsRead",
-        "description": "A tool for reading a file.\n * This tool returns the contents of a file, and the optional `readRange` determines what range of lines will be read from the specified file.",
+        "description": "A tool for reading a file.\n * This tool returns the contents of a file, and the optional `readRange` determines what range of lines will be read from the specified file.\n * If the file exceeds 200K characters, this tool will only read the first 200K characters of the file.",
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -10,7 +10,7 @@
                     "type": "string"
                 },
                 "readRange": {
-                    "description": "Optional parameter when reading files.\n * If none is given, the full file is shown. If provided, the file will be shown in the indicated line number range, e.g. [11, 12] will show lines 11 and 12. Indexing at 1 to start. Setting `[startLine, -1]` shows all lines from `startLine` to the end of the file. If the whole file is too large, try reading 4000 lines at once, for example: after reading [1, 4000], read [4000, 8000] next and repeat. You should read atleast 250 lines per invocation of the tool. In some cases, if reading a range of lines results in too many invocations instead attempt to read 4000 lines.",
+                    "description": "Optional parameter when reading files.\n * If none is given, the full file is shown. If provided, the file will be shown in the indicated line number range, e.g. [11, 12] will show lines 11 and 12. Indexing at 1 to start.\n * Setting `[startLine, -1]` shows all lines from `startLine` to the end of the file.",
                     "items": {
                         "type": "integer"
                     },
@@ -65,6 +65,10 @@
         "inputSchema": {
             "type": "object",
             "properties": {
+                "explanation": {
+                    "description": "One sentence explanation as to why this tool is being used, and how it contributes to the goal.",
+                    "type": "string"
+                },
                 "command": {
                     "type": "string",
                     "description": "Bash command to execute"
@@ -83,10 +87,6 @@
         "inputSchema": {
             "type": "object",
             "properties": {
-                "explanation": {
-                    "description": "One sentence explanation as to why this tool is being used, and how it contributes to the goal.",
-                    "type": "string"
-                },
                 "path": {
                     "type": "string",
                     "description": "Absolute path to a directory, e.g., `/repo`."

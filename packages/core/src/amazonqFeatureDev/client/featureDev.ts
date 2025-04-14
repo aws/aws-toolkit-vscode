@@ -244,11 +244,13 @@ export class FeatureDevClient implements FeatureClient {
     }
 
     public async exportResultArchive(conversationId: string) {
+        const profile = AuthUtil.instance.regionProfileManager.activeRegionProfile
         try {
             const streamingClient = await createCodeWhispererChatStreamingClient()
             const params = {
                 exportId: conversationId,
                 exportIntent: 'TASK_ASSIST',
+                profileArn: profile?.arn,
             } satisfies ExportResultArchiveCommandInput
             getLogger().debug(`Executing exportResultArchive with %O`, params)
             const archiveResponse = await streamingClient.exportResultArchive(params)

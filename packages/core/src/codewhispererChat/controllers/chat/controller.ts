@@ -6,6 +6,7 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import { Event as VSCodeEvent, Uri, workspace, window, ViewColumn, Position, Selection } from 'vscode'
 import { EditorContextExtractor } from '../../editor/context/extractor'
+import { ConversationTracker } from '../../storages/conversationTracker'
 import { ChatSessionStorage } from '../../storages/chatSession'
 import { Messenger, MessengerResponseType, StaticTextResponseType } from './messenger/messenger'
 import {
@@ -413,10 +414,25 @@ export class ChatController {
 
     private async processStopResponseMessage(message: StopResponseMessage) {
         const session = this.sessionStorage.getSession(message.tabID)
+
+        if (session.agenticLoopInProgress === true) {
+            this.telemetryHelper.recordInteractionWithAgenticChat(AgenticChatInteractionType.StopChat, message)
+        }
+
         session.tokenSource.cancel()
+        session.setAgenticLoopInProgress(false)
+        session.setToolUseWithError(undefined)
+
+        // Mark any active triggers as cancelled when stopping the response
+        const triggerEvents = this.triggerEventsStorage.getTriggerEventsByTabID(message.tabID)
+        if (triggerEvents && triggerEvents.length > 0) {
+            const conversationTracker = ConversationTracker.getInstance()
+            for (const event of triggerEvents) {
+                conversationTracker.cancelTrigger(event.id)
+            }
+        }
+
         this.messenger.sendEmptyMessage(message.tabID, '', undefined)
-        this.chatHistoryDb.clearRecentHistory(message.tabID)
-        this.telemetryHelper.recordInteractionWithAgenticChat(AgenticChatInteractionType.StopChat, message)
     }
 
     private async processTriggerTabIDReceived(message: TriggerTabIDReceived) {
@@ -472,6 +488,13 @@ export class ChatController {
     }
 
     private async processTabCloseMessage(message: TabClosedMessage) {
+        // First cancel any active triggers to stop ongoing operations
+        const conversationTracker = ConversationTracker.getInstance()
+        conversationTracker.cancelTabTriggers(message.tabID)
+
+        // Then clear all triggers to release resources
+        conversationTracker.clearTabTriggers(message.tabID)
+
         this.sessionStorage.deleteSession(message.tabID)
         this.triggerEventsStorage.removeTabEvents(message.tabID)
         // this.telemetryHelper.recordCloseChat(message.tabID)
@@ -686,7 +709,13 @@ export class ChatController {
         this.editorContextExtractor
             .extractContextForTrigger('ChatMessage')
             .then(async (context) => {
-                const triggerID = randomUUID()
+                const triggerID = message.triggerId
+
+                // Check if this trigger has already been cancelled
+                if (this.isTriggerCancelled(triggerID)) {
+                    return
+                }
+
                 this.triggerEventsStorage.addTriggerEvent({
                     id: triggerID,
                     tabID: message.tabID,
@@ -696,13 +725,16 @@ export class ChatController {
                 })
                 this.messenger.sendAsyncEventProgress(tabID, true, '')
                 const session = this.sessionStorage.getSession(tabID)
+
+                // Check if the session has been cancelled before proceeding
+                if (this.isTriggerCancelled(triggerID)) {
+                    getLogger().debug(`Tool execution cancelled for tabID: ${tabID}`)
+                    return
+                }
+
                 const toolUseWithError = session.toolUseWithError
-                getLogger().debug(
-                    `processToolUseMessage: ${toolUseWithError?.toolUse.name}:${toolUseWithError?.toolUse.toolUseId} with error: ${toolUseWithError?.error}`
-                )
                 if (!toolUseWithError || !toolUseWithError.toolUse) {
-                    // Turn off AgentLoop flag if there's no tool use
-                    this.sessionStorage.setAgentLoopInProgress(tabID, false)
+                    session.setAgenticLoopInProgress(false)
                     return
                 }
                 session.setToolUseWithError(undefined)
@@ -711,12 +743,17 @@ export class ChatController {
                 const toolUseError = toolUseWithError.error
                 const toolResults: ToolResult[] = []
 
+                let response = ''
                 if (toolUseError) {
                     toolResults.push({
                         content: [{ text: toolUseError.message }],
                         toolUseId: toolUse.toolUseId,
                         status: ToolResultStatus.ERROR,
                     })
+                    if (toolUseError instanceof SyntaxError) {
+                        response =
+                            "Your toolUse input isn't valid. Please check the syntax and make sure the input is complete. If the input is large, break it down into multiple tool uses with smaller input."
+                    }
                 } else {
                     const result = ToolUtils.tryFromToolUse(toolUse)
                     if ('type' in result) {
@@ -742,8 +779,24 @@ export class ChatController {
                                 const backup = await tool.tool.getBackup()
                                 session.setFsWriteBackup(toolUse.toolUseId, backup)
                             }
-                            const output = await ToolUtils.invoke(tool, chatStream)
-                            ToolUtils.validateOutput(output)
+
+                            // Check again if cancelled before invoking the tool
+                            if (this.isTriggerCancelled(triggerID)) {
+                                getLogger().debug(`Tool execution cancelled before invoke for tabID: ${tabID}`)
+                                return
+                            }
+
+                            const output = await ToolUtils.invoke(
+                                tool,
+                                chatStream,
+                                ConversationTracker.getInstance().getTokenForTrigger(triggerID)
+                            )
+                            ToolUtils.validateOutput(output, tool.type)
+
+                            let status: ToolResultStatus = ToolResultStatus.SUCCESS
+                            if (output.output.success === false) {
+                                status = ToolResultStatus.ERROR
+                            }
 
                             toolResults.push({
                                 content: [
@@ -752,7 +805,7 @@ export class ChatController {
                                         : { json: output.output.content },
                                 ],
                                 toolUseId: toolUse.toolUseId,
-                                status: ToolResultStatus.SUCCESS,
+                                status,
                             })
                         } catch (e: any) {
                             toolResults.push({
@@ -769,7 +822,7 @@ export class ChatController {
 
                 await this.generateResponse(
                     {
-                        message: '',
+                        message: response,
                         trigger: ChatTriggerType.ChatMessage,
                         query: undefined,
                         codeSelection: context?.focusAreaContext?.selectionInsideExtendedCodeBlock,
@@ -906,8 +959,8 @@ export class ChatController {
 
     private async processPromptInputOptionChange(message: PromptInputOptionChange) {
         const session = this.sessionStorage.getSession(message.tabID)
-        const promptTypeValue = message.optionsValues['prompt-type']
-        if (promptTypeValue === 'pair-programming-on') {
+        const promptTypeValue = message.optionsValues['pair-programmer-mode']
+        if (promptTypeValue === 'true') {
             session.setPairProgrammingModeOn(true)
             this.messenger.sendDirectiveMessage(
                 message.tabID,
@@ -1039,7 +1092,17 @@ export class ChatController {
 
         // Turn off AgentLoop flag in case of exception
         if (tabID) {
-            this.sessionStorage.setAgentLoopInProgress(tabID, false)
+            const session = this.sessionStorage.getSession(tabID)
+            session.setAgenticLoopInProgress(false)
+
+            // Mark any active triggers as completed when there's an exception
+            const triggerEvents = this.triggerEventsStorage.getTriggerEventsByTabID(tabID)
+            if (triggerEvents && triggerEvents.length > 0) {
+                const conversationTracker = ConversationTracker.getInstance()
+                for (const event of triggerEvents) {
+                    conversationTracker.cancelTrigger(event.id)
+                }
+            }
         }
 
         this.messenger.sendErrorMessage(errorMessage, tabID, requestID, statusCode)
@@ -1226,6 +1289,14 @@ export class ChatController {
 
     private async processPromptMessageAsNewThread(message: PromptMessage) {
         const session = this.sessionStorage.getSession(message.tabID)
+        // If there's an existing conversation, ensure we dispose the previous token
+        if (session.agenticLoopInProgress) {
+            session.disposeTokenSource()
+        }
+
+        // Create a fresh token for this new conversation
+        session.createNewTokenSource()
+        session.setAgenticLoopInProgress(true)
         session.clearListOfReadFiles()
         session.clearListOfReadFolders()
         session.setShowDiffOnFileWrite(false)
@@ -1233,6 +1304,11 @@ export class ChatController {
             .extractContextForTrigger('ChatMessage')
             .then(async (context) => {
                 const triggerID = randomUUID()
+
+                // Register the trigger ID with the token for cancellation tracking
+                const conversationTracker = ConversationTracker.getInstance()
+                conversationTracker.registerTrigger(triggerID, session.tokenSource, message.tabID)
+
                 this.triggerEventsStorage.addTriggerEvent({
                     id: triggerID,
                     tabID: message.tabID,
@@ -1240,9 +1316,6 @@ export class ChatController {
                     type: 'chat_message',
                     context,
                 })
-
-                this.messenger.sendAsyncEventProgress(message.tabID, true, '')
-
                 await this.generateResponse(
                     {
                         message: message.message ?? '',
@@ -1438,16 +1511,6 @@ export class ChatController {
         }
 
         const tabID = triggerEvent.tabID
-        if (this.sessionStorage.isAgentLoopInProgress(tabID)) {
-            // If a response is already in progress, stop it first
-            const stopResponseMessage: StopResponseMessage = {
-                tabID: tabID,
-            }
-            await this.processStopResponseMessage(stopResponseMessage)
-        }
-
-        // Ensure AgentLoop flag is set to true during response generation
-        this.sessionStorage.setAgentLoopInProgress(tabID, true)
 
         const credentialsState = await AuthUtil.instance.getChatAuthState()
 
@@ -1545,7 +1608,11 @@ export class ChatController {
                 session.setContext(triggerPayload.context)
             }
             this.messenger.sendInitalStream(tabID, triggerID)
+            this.messenger.sendAsyncEventProgress(tabID, true, '')
             this.telemetryHelper.setConversationStreamStartTime(tabID)
+            if (this.isTriggerCancelled(triggerID)) {
+                return
+            }
             if (isSsoConnection(AuthUtil.instance.conn)) {
                 const { $metadata, generateAssistantResponseResponse } = await session.chatSso(request)
                 response = {
@@ -1562,7 +1629,7 @@ export class ChatController {
             this.telemetryHelper.recordEnterFocusConversation(triggerEvent.tabID)
             this.telemetryHelper.recordStartConversation(triggerEvent, triggerPayload)
 
-            if (currentMessage && session.sessionIdentifier) {
+            if (currentMessage && session.sessionIdentifier && !this.isTriggerCancelled(triggerID)) {
                 this.chatHistoryDb.addMessage(tabID, 'cwc', session.sessionIdentifier, {
                     body: triggerPayload.message,
                     type: 'prompt' as any,
@@ -1577,22 +1644,14 @@ export class ChatController {
                     response.$metadata.requestId
                 } metadata: ${inspect(response.$metadata, { depth: 12 })}`
             )
-            this.cancelTokenSource = new vscode.CancellationTokenSource()
-            await this.messenger.sendAIResponse(
-                response,
-                session,
-                tabID,
-                triggerID,
-                triggerPayload,
-                this.cancelTokenSource.token
-            )
 
-            // Turn off AgentLoop flag after sending the AI response
-            this.sessionStorage.setAgentLoopInProgress(tabID, false)
+            if (this.isTriggerCancelled(triggerID)) {
+                return
+            }
+
+            await this.messenger.sendAIResponse(response, session, tabID, triggerID, triggerPayload)
         } catch (e: any) {
             this.telemetryHelper.recordMessageResponseError(triggerPayload, tabID, getHttpStatusCode(e) ?? 0)
-            // Turn off AgentLoop flag in case of exception
-            this.sessionStorage.setAgentLoopInProgress(tabID, false)
             // clears session, record telemetry before this call
             this.processException(e, tabID)
         }
@@ -1634,5 +1693,18 @@ export class ChatController {
 
             return { relativeFilePath: filePath, lineRanges: mergedRanges }
         })
+    }
+
+    /**
+     * Check if a trigger has been cancelled and should not proceed
+     * @param triggerId The trigger ID to check
+     * @returns true if the trigger is cancelled and should not proceed
+     */
+    private isTriggerCancelled(triggerId: string): boolean {
+        if (!triggerId) {
+            return false
+        }
+        const conversationTracker = ConversationTracker.getInstance()
+        return conversationTracker.isTriggerCancelled(triggerId)
     }
 }

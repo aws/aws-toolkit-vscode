@@ -113,6 +113,7 @@ export const mutateCommandWarningMessage = 'Mutation command:\n\n'
 export interface ExecuteBashParams {
     command: string
     cwd?: string
+    explanation?: string
 }
 
 export interface CommandValidation {
@@ -132,6 +133,7 @@ export class ExecuteBash {
     private readonly command: string
     private readonly workingDirectory?: string
     private readonly logger = getLogger('executeBash')
+    private childProcess?: ChildProcess
 
     constructor(params: ExecuteBashParams) {
         this.command = params.command
@@ -230,10 +232,17 @@ export class ExecuteBash {
         }
     }
 
-    public async invoke(updates?: Writable): Promise<InvokeOutput> {
+    public async invoke(updates?: Writable, cancellationToken?: vscode.CancellationToken): Promise<InvokeOutput> {
         this.logger.info(`Invoking bash command: "${this.command}" in cwd: "${this.workingDirectory}"`)
 
         return new Promise(async (resolve, reject) => {
+            // Check if cancelled before starting
+            if (cancellationToken?.isCancellationRequested) {
+                this.logger.debug('Bash command execution cancelled before starting')
+                reject(new Error('Command execution cancelled'))
+                return
+            }
+
             this.logger.debug(`Spawning process with command: bash -c "${this.command}" (cwd=${this.workingDirectory})`)
 
             const stdoutBuffer: string[] = []
@@ -281,6 +290,10 @@ export class ExecuteBash {
                 collect: false,
                 waitForStreams: true,
                 onStdout: async (chunk: string) => {
+                    if (cancellationToken?.isCancellationRequested) {
+                        this.logger.debug('Bash command execution cancelled during stderr processing')
+                        return
+                    }
                     const isFirst = getAndSetFirstChunk(false)
                     const timestamp = Date.now()
                     outputQueue.push({
@@ -292,6 +305,10 @@ export class ExecuteBash {
                     processQueue()
                 },
                 onStderr: async (chunk: string) => {
+                    if (cancellationToken?.isCancellationRequested) {
+                        this.logger.debug('Bash command execution cancelled during stderr processing')
+                        return
+                    }
                     const isFirst = getAndSetFirstChunk(false)
                     const timestamp = Date.now()
                     outputQueue.push({
@@ -304,13 +321,30 @@ export class ExecuteBash {
                 },
             }
 
-            const childProcess = new ChildProcess('bash', ['-c', this.command], childProcessOptions)
+            this.childProcess = new ChildProcess('bash', ['-c', this.command], childProcessOptions)
+
+            // Set up cancellation listener
+            if (cancellationToken) {
+                cancellationToken.onCancellationRequested(() => {
+                    this.logger.debug('Cancellation requested, killing child process')
+                    this.childProcess?.stop()
+                })
+            }
 
             try {
-                const result = await childProcess.run()
+                const result = await this.childProcess.run()
+
+                // Check if cancelled after execution
+                if (cancellationToken?.isCancellationRequested) {
+                    this.logger.debug('Bash command execution cancelled after completion')
+                    reject(new Error('Command execution cancelled'))
+                    return
+                }
+
                 const exitStatus = result.exitCode ?? 0
                 const stdout = stdoutBuffer.join('\n')
                 const stderr = stderrBuffer.join('\n')
+                const success = exitStatus === 0 && !stderr
                 const [stdoutTrunc, stdoutSuffix] = ExecuteBash.truncateSafelyWithSuffix(
                     stdout,
                     maxBashToolResponseSize / 3
@@ -330,11 +364,17 @@ export class ExecuteBash {
                     output: {
                         kind: OutputKind.Json,
                         content: outputJson,
+                        success,
                     },
                 })
             } catch (err: any) {
-                this.logger.error(`Failed to execute bash command '${this.command}': ${err.message}`)
-                reject(new Error(`Failed to execute command: ${err.message}`))
+                // Check if this was due to cancellation
+                if (cancellationToken?.isCancellationRequested) {
+                    reject(new Error('Command execution cancelled'))
+                } else {
+                    this.logger.error(`Failed to execute bash command '${this.command}': ${err.message}`)
+                    reject(new Error(`Failed to execute command: ${err.message}`))
+                }
             }
         })
     }

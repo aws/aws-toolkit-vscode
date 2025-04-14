@@ -1,0 +1,14 @@
+{
+	"date": "2025-04-11",
+	"version": "1.59.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Code fix line number or file is sometimes not accurate"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Fix Q agents will fail for /transform /dev /test features if IdC kms key is configured with 400 error"
+		}
+	]
+}

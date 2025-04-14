@@ -9,6 +9,7 @@ import { Messenger } from '../controllers/chat/messenger/messenger'
 import { ToolUse } from '@amzn/codewhisperer-streaming'
 import { CommandValidation } from './executeBash'
 import { Change } from 'diff'
+import { ConversationTracker } from '../storages/conversationTracker'
 import { ChatSession } from '../clients/chat/v0/chat'
 import { i18n } from '../../shared/i18n-helper'
 
@@ -31,6 +32,7 @@ export class ChatStream extends Writable {
         private readonly validation: CommandValidation,
         private readonly isReadorList: boolean,
         private readonly changeList?: Change[],
+        private readonly explanation?: string,
         private readonly logger = getLogger('chatStream')
     ) {
         super()
@@ -40,7 +42,10 @@ export class ChatStream extends Writable {
         if (!emitEvent) {
             return
         }
-        if (validation.requiresAcceptance) {
+        if (this.explanation) {
+            this.messenger.sendDirectiveMessage(tabID, triggerID, this.explanation)
+        }
+        if (validation.requiresAcceptance && this.toolUse?.name === 'executeBash') {
             this.messenger.sendDirectiveMessage(
                 tabID,
                 triggerID,
@@ -56,6 +61,12 @@ export class ChatStream extends Writable {
     }
 
     override _write(chunk: Buffer, encoding: BufferEncoding, callback: (error?: Error | null) => void): void {
+        // Check if the conversation has been cancelled
+        if (ConversationTracker.getInstance().isTriggerCancelled(this.triggerID)) {
+            callback()
+            return
+        }
+
         const text = chunk.toString()
         this.accumulatedLogs += text
         this.logger.debug(
