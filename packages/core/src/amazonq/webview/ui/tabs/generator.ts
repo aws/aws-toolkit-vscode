@@ -58,15 +58,15 @@ export class TabDataGenerator {
         }
         const programmerModeCard: ChatItem | undefined = {
             type: ChatItemType.ANSWER,
-            title: 'Pair Programming Mode',
+            title: 'NEW FEATURE',
             header: {
                 icon: 'code-block',
                 iconStatus: 'primary',
-                body: '## You are now in pair programming mode',
+                body: '## Pair programmer mode',
             },
             fullWidth: true,
             canBeDismissed: true,
-            body: 'In pair programming mode, I can help you write, modify, and debug code. I can access your workspace files and execute commands to assist you with your development tasks.',
+            body: 'Pair code with Amazon Q, your virtual pair programmer that can work alongside you autonomously making real-time code changes on your behalf. \n\n Switch off pair programmer mode to get read-only responses from Q.',
         }
 
         const regionProfileCard: ChatItem | undefined =
@@ -78,6 +78,15 @@ export class TabDataGenerator {
                       status: 'info',
                       messageId: 'regionProfile',
                   }
+
+        const welcomeMessage = `Hi! I'm Amazon Q.
+
+You can ask me to:
+• Create new projects and files
+• Make changes to your codebase
+• Explain how to do things
+
+Enter \`/\` to view quick actions. Use \`@\` to add saved prompts, files, folders, or your entire workspace as context.`
 
         const tabData: MynahUIDataModel = {
             tabTitle: taskName ?? TabTypeDataMap[tabType].title,
@@ -92,7 +101,7 @@ export class TabDataGenerator {
                       ...(regionProfileCard ? [regionProfileCard] : []),
                       {
                           type: ChatItemType.ANSWER,
-                          body: isSMUS ? qChatIntroMessageForSMUS : TabTypeDataMap[tabType].welcome,
+                          body: welcomeMessage,
                       },
                       {
                           type: ChatItemType.ANSWER,
