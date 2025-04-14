@@ -5,8 +5,8 @@
 import * as path from 'path'
 import fs from '../shared/fs/fs'
 import { Tool } from '@amzn/codewhisperer-streaming'
-import toolsJson from '../codewhispererChat/tools/tool_index.json'
 import { ContextLengths } from './controllers/chat/model'
+import { ToolManager } from './tools/toolManager'
 
 export const promptFileExtension = '.md'
 
@@ -24,16 +24,10 @@ export const getUserPromptsDirectory = () => {
 
 export const createSavedPromptCommandId = 'create-saved-prompt'
 
-export const tools: Tool[] = Object.entries(toolsJson).map(([, toolSpec]) => ({
-    toolSpecification: {
-        ...toolSpec,
-        inputSchema: { json: toolSpec.inputSchema },
-    },
-}))
-
-export const noWriteTools: Tool[] = tools.filter(
-    (tool) => !['fsWrite', 'executeBash'].includes(tool.toolSpecification?.name || '')
-)
+// These exports are kept for backward compatibility
+// New code should use ToolManager directly
+export const tools = ToolManager.getInstance().getAllTools()
+export const noWriteTools = ToolManager.getInstance().getNoWriteTools()
 
 export const defaultContextLengths: ContextLengths = {
     additionalContextLengths: {

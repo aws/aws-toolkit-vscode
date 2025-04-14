@@ -111,6 +111,14 @@ export class MCPManager {
     }
 
     /**
+     * Gets all tools except write tools (fsWrite, executeBash)
+     * @returns Array of tools excluding write tools
+     */
+    public getNoWriteTools(): Tool[] {
+        return this.tools.filter((tool) => !['fsWrite', 'executeBash'].includes(tool.toolSpecification?.name || ''))
+    }
+
+    /**
      * Invokes a tool on the appropriate MCP client
      * @param toolName Name of the tool to invoke
      * @param params Parameters to pass to the tool

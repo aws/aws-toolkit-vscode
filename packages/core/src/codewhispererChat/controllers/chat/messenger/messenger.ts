@@ -61,7 +61,7 @@ import { ChatStream } from '../../../tools/chatStream'
 import path from 'path'
 import { CommandValidation, ExecuteBashParams } from '../../../tools/executeBash'
 import { extractErrorInfo } from '../../../../shared/utilities/messageUtil'
-import { noWriteTools, tools } from '../../../constants'
+import { ToolManager } from '../../../tools/toolManager'
 import { Change } from 'diff'
 import { FsWriteParams } from '../../../tools/fsWrite'
 import { AsyncEventProgressMessage } from '../../../../amazonq/commons/connector/connectorMessages'
@@ -296,9 +296,11 @@ export class Messenger {
                                 // throw it out to allow the error to be handled in the catch block
                                 throw error
                             }
-                            const availableToolsNames = (session.pairProgrammingModeOn ? tools : noWriteTools).map(
-                                (item) => item.toolSpecification?.name
-                            )
+                            const availableToolsNames = (
+                                session.pairProgrammingModeOn
+                                    ? ToolManager.getInstance().getAllTools()
+                                    : ToolManager.getInstance().getNoWriteTools()
+                            ).map((item) => item.toolSpecification?.name)
                             if (!availableToolsNames.includes(toolUse.name)) {
                                 throw new Error(`Tool ${toolUse.name} is not available in the current mode`)
                             }
