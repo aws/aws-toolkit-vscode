@@ -14,9 +14,9 @@ import {
     AWSClientBuilderV3,
     AwsClientOptions,
     AwsCommand,
-    emitOnRequest,
+    onDeserialize,
     getServiceId,
-    logOnRequest,
+    logOnFinalize,
     overwriteEndpoint,
     recordErrorTelemetry,
 } from '../../shared/awsClientBuilderV3'
@@ -24,7 +24,6 @@ import { Client } from '@aws-sdk/smithy-client'
 import { DevSettings, extensionVersion } from '../../shared'
 import { assertTelemetry } from '../testUtil'
 import { telemetry } from '../../shared/telemetry'
-import { HttpRequest, HttpResponse } from '@aws-sdk/protocol-http'
 import { assertLogsContain, assertLogsContainAllOf } from '../globalSetup.test'
 import { TestSettings } from '../utilities/testSettingsConfiguration'
 import { CredentialsShim } from '../../auth/deprecated/loginManager'
@@ -33,6 +32,7 @@ import { oneDay } from '../../shared/datetime'
 import { ConfiguredRetryStrategy } from '@smithy/util-retry'
 import { StandardRetryStrategy } from '@smithy/util-retry'
 import { NodeHttpHandler } from '@smithy/node-http-handler'
+import { HttpRequest, HttpResponse } from '@smithy/protocol-http'
 
 describe('AwsClientBuilderV3', function () {
     let builder: AWSClientBuilderV3
@@ -197,39 +197,35 @@ describe('AwsClientBuilderV3', function () {
     })
 
     describe('middlewareStack', function () {
-        let args: { request: { hostname: string; path: string }; input: any }
+        let args: { request: HttpRequest; input: any }
         let context: { clientName?: string; commandName?: string }
-        let response: { response: { statusCode: number }; output: { message: string } }
-        let httpRequestStub: sinon.SinonStub
-        let httpResponseStub: sinon.SinonStub
-
-        before(function () {
-            httpRequestStub = sinon.stub(HttpRequest, 'isInstance')
-            httpResponseStub = sinon.stub(HttpResponse, 'isInstance')
-            httpRequestStub.callsFake(() => true)
-            httpResponseStub.callsFake(() => true)
-        })
+        let output: { response: HttpResponse }
 
         beforeEach(function () {
             args = {
-                request: {
+                request: new HttpRequest({
                     hostname: 'testHost',
                     path: 'testPath',
-                },
-                input: {
-                    testKey: 'testValue',
-                },
+                    headers: {
+                        'x-amzn-RequestId': 'fakeId',
+                        'x-amzn-requestid': 'realId',
+                    },
+                }),
+                input: {},
+            }
+            output = {
+                response: new HttpResponse({
+                    statusCode: 200,
+                    body: 'test body',
+                    headers: {
+                        'x-amzn-RequestId': 'fakeId',
+                        'x-amzn-requestid': 'realId',
+                    },
+                }),
             }
             context = {
-                clientName: 'fooClient',
-            }
-            response = {
-                response: {
-                    statusCode: 200,
-                },
-                output: {
-                    message: 'test output',
-                },
+                clientName: 'foo',
+                commandName: 'bar',
             }
         })
         after(function () {
@@ -237,7 +233,7 @@ describe('AwsClientBuilderV3', function () {
         })
 
         it('logs messages on request', async function () {
-            await logOnRequest((_: any) => _, args as any)
+            await logOnFinalize((_: any) => _, args)
             assertLogsContainAllOf(['testHost', 'testPath'], false, 'debug')
         })
 
@@ -245,19 +241,19 @@ describe('AwsClientBuilderV3', function () {
             const next = (_: any) => {
                 throw new Error('test error')
             }
-            await telemetry.vscode_executeCommand.run(async (span) => {
-                await assert.rejects(emitOnRequest(next, context, args))
+            await telemetry.vscode_executeCommand.run(async (_span) => {
+                await assert.rejects(onDeserialize(next, context, args))
             })
-            assertLogsContain('test error', false, 'error')
+            assertLogsContain('test error', false, 'warn')
             assertTelemetry('vscode_executeCommand', { requestServiceType: 'foo' })
         })
 
         it('does not emit telemetry, but still logs on successes', async function () {
             const next = async (_: any) => {
-                return response
+                return output
             }
-            await telemetry.vscode_executeCommand.run(async (span) => {
-                assert.deepStrictEqual(await emitOnRequest(next, context, args), response)
+            await telemetry.vscode_executeCommand.run(async (_span) => {
+                assert.deepStrictEqual(await onDeserialize(next, context, args), output)
             })
             assertLogsContainAllOf(['testHost', 'testPath'], false, 'debug')
             assert.throws(() => assertTelemetry('vscode_executeCommand', { requestServiceType: 'foo' }))
@@ -281,7 +277,15 @@ describe('AwsClientBuilderV3', function () {
             const newArgs: any = await overwriteEndpoint(next, context, new DevSettings(settings), args)
 
             assert.strictEqual(newArgs.request.hostname, 'testHost')
-            assert.strictEqual(newArgs.request.path, 'testPath')
+            assert.strictEqual(newArgs.request.path, '/testPath')
+        })
+
+        it('logs specific headers in the filter list', async function () {
+            const next = async (args: any) => args
+            await logOnFinalize(next, args)
+
+            assertLogsContain('realId', false, 'debug')
+            assert.throws(() => assertLogsContain('fakeId', false, 'debug'))
         })
     })
 

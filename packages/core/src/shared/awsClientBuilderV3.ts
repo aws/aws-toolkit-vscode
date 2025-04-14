@@ -7,6 +7,10 @@ import { CredentialsShim } from '../auth/deprecated/loginManager'
 import { AwsContext } from './awsContext'
 import {
     AwsCredentialIdentityProvider,
+    BuildHandlerArguments,
+    DeserializeHandlerArguments,
+    DeserializeHandlerOutput,
+    FinalizeHandlerArguments,
     Logger,
     RetryStrategyV2,
     TokenIdentity,
@@ -18,10 +22,8 @@ import {
     BuildHandler,
     BuildMiddleware,
     DeserializeHandler,
-    DeserializeMiddleware,
     Handler,
     FinalizeHandler,
-    FinalizeRequestMiddleware,
     HandlerExecutionContext,
     MetadataBearer,
     MiddlewareStack,
@@ -42,6 +44,7 @@ import { partialClone } from './utilities/collectionUtils'
 import { selectFrom } from './utilities/tsUtils'
 import { once } from './utilities/functionUtils'
 import { isWeb } from './extensionGlobals'
+import { AuthorizationPendingException } from '@aws-sdk/client-sso-oidc'
 
 export type AwsClientConstructor<C> = new (o: AwsClientOptions) => C
 export type AwsCommandConstructor<CommandInput extends object, Command extends AwsCommand<CommandInput, object>> = new (
@@ -175,8 +178,8 @@ export class AWSClientBuilderV3 {
         }
 
         const service = new serviceOptions.serviceClient(opt)
-        service.middlewareStack.add(telemetryMiddleware, { step: 'deserialize' })
-        service.middlewareStack.add(loggingMiddleware, { step: 'finalizeRequest' })
+        service.middlewareStack.add(defaultDeserializeMiddleware, { step: 'deserialize' })
+        service.middlewareStack.add(finalizeLoggingMiddleware, { step: 'finalizeRequest' })
         service.middlewareStack.add(getEndpointMiddleware(serviceOptions.settings), { step: 'build' })
 
         if (keepAlive) {
@@ -211,65 +214,85 @@ export function recordErrorTelemetry(err: Error, serviceName?: string) {
     })
 }
 
-function logAndThrow(e: any, serviceId: string, errorMessageAppend: string): never {
-    if (e instanceof Error) {
-        recordErrorTelemetry(e, serviceId)
-        getLogger().error('API Response %s: %O', errorMessageAppend, e)
-    }
-    throw e
+export function defaultDeserializeMiddleware<Input extends object, Output extends object>(
+    next: DeserializeHandler<Input, Output>,
+    context: HandlerExecutionContext
+) {
+    return async (args: DeserializeHandlerArguments<Input>) => onDeserialize(next, context, args)
 }
 
-const telemetryMiddleware: DeserializeMiddleware<any, any> =
-    (next: DeserializeHandler<any, any>, context: HandlerExecutionContext) => async (args: any) =>
-        emitOnRequest(next, context, args)
-
-const loggingMiddleware: FinalizeRequestMiddleware<any, any> = (next: FinalizeHandler<any, any>) => async (args: any) =>
-    logOnRequest(next, args)
-
-function getEndpointMiddleware(settings: DevSettings = DevSettings.instance): BuildMiddleware<any, any> {
-    return (next: BuildHandler<any, any>, context: HandlerExecutionContext) => async (args: any) =>
-        overwriteEndpoint(next, context, settings, args)
+export function finalizeLoggingMiddleware<Input extends object, Output extends object>(
+    next: FinalizeHandler<Input, Output>
+) {
+    return async (args: FinalizeHandlerArguments<Input>) => logOnFinalize(next, args)
 }
 
-const keepAliveMiddleware: BuildMiddleware<any, any> = (next: BuildHandler<any, any>) => async (args: any) =>
-    addKeepAliveHeader(next, args)
+function getEndpointMiddleware<Input extends object, Output extends object>(
+    settings: DevSettings = DevSettings.instance
+): BuildMiddleware<Input, Output> {
+    return (next: BuildHandler<Input, Output>, context: HandlerExecutionContext) =>
+        async (args: BuildHandlerArguments<Input>) =>
+            overwriteEndpoint(next, context, settings, args)
+}
 
-export async function emitOnRequest(next: DeserializeHandler<any, any>, context: HandlerExecutionContext, args: any) {
-    if (!HttpResponse.isInstance(args.request)) {
+function keepAliveMiddleware<Input extends object, Output extends object>(next: BuildHandler<Input, Output>) {
+    return async (args: BuildHandlerArguments<Input>) => addKeepAliveHeader(next, args)
+}
+
+export async function onDeserialize<Input extends object, Output extends object>(
+    next: DeserializeHandler<Input, Output>,
+    context: HandlerExecutionContext,
+    args: DeserializeHandlerArguments<Input>
+): Promise<DeserializeHandlerOutput<Output>> {
+    const request = args.request
+    if (!HttpRequest.isInstance(request)) {
         return next(args)
     }
+    const { hostname, path } = request
     const serviceId = getServiceId(context as object)
-    const { hostname, path } = args.request
     const logTail = `(${hostname} ${path})`
     try {
         const result = await next(args)
         if (HttpResponse.isInstance(result.response)) {
-            // TODO: omit credentials / sensitive info from the telemetry.
-            const output = partialClone(result.output, 3)
+            const output = partialClone(result.output, 3, ['clientSecret', 'accessToken', 'refreshToken'], '[omitted]')
             getLogger().debug(`API Response %s: %O`, logTail, output)
         }
         return result
-    } catch (e: any) {
-        logAndThrow(e, serviceId, logTail)
+    } catch (e: unknown) {
+        if (e instanceof Error && !(e instanceof AuthorizationPendingException)) {
+            const err = { ...e, name: e.name, mesage: e.message }
+            delete err['stack']
+            recordErrorTelemetry(err, serviceId)
+            getLogger().warn(`API Request %s resulted in error: %O`, logTail, err)
+        }
+        throw e
     }
 }
 
-export async function logOnRequest(next: FinalizeHandler<any, any>, args: any) {
+export function logOnFinalize<Input extends object, Output extends object>(
+    next: FinalizeHandler<Input, Output>,
+    args: FinalizeHandlerArguments<Input>
+) {
     const request = args.request
-    if (HttpRequest.isInstance(args.request)) {
+    if (HttpRequest.isInstance(request)) {
         const { hostname, path } = request
-        // TODO: omit credentials / sensitive info from the logs.
-        const input = partialClone(args.input, 3)
-        getLogger().debug(`API Request (%s %s): %O`, hostname, path, input)
+        const input = partialClone(args.input, 3, ['clientSecret', 'accessToken', 'refreshToken'], '[omitted]')
+        getLogger().debug(
+            `API Request (%s %s):\n headers: %O\n input: %O`,
+            hostname,
+            path,
+            filterRequestHeaders(request),
+            input
+        )
     }
     return next(args)
 }
 
-export function overwriteEndpoint(
-    next: BuildHandler<any, any>,
+export function overwriteEndpoint<Input extends object, Output extends object>(
+    next: BuildHandler<Input, Output>,
     context: HandlerExecutionContext,
     settings: DevSettings,
-    args: any
+    args: BuildHandlerArguments<Input>
 ) {
     const request = args.request
     if (HttpRequest.isInstance(request)) {
@@ -291,10 +314,27 @@ export function overwriteEndpoint(
  * @param args
  * @returns
  */
-export function addKeepAliveHeader(next: BuildHandler<any, any>, args: any) {
+export function addKeepAliveHeader<Input extends object, Output extends object>(
+    next: BuildHandler<Input, Output>,
+    args: BuildHandlerArguments<Input>
+) {
     const request = args.request
     if (HttpRequest.isInstance(request)) {
         request.headers['Connection'] = 'keep-alive'
     }
     return next(args)
+}
+
+function filterRequestHeaders(request: HttpRequest) {
+    const logHeaderNames = [
+        'x-amzn-requestid',
+        'x-amzn-trace-id',
+        'x-amzn-served-from',
+        'x-cache',
+        'x-amz-cf-id',
+        'x-amz-cf-pop',
+        'Connection',
+        'host',
+    ]
+    return Object.fromEntries(Object.entries(request.headers).filter(([k, _]) => logHeaderNames.includes(k)))
 }

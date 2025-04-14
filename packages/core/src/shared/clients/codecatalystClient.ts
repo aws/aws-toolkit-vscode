@@ -98,7 +98,6 @@ import {
 import { SsoConnection } from '../../auth/connection'
 import { DevSettings } from '../settings'
 import { getServiceEnvVarConfig } from '../vscode/env'
-import { AwsCommand, AwsCommandConstructor } from '../awsClientBuilderV3'
 import { ClientWrapper } from './clientWrapper'
 import { ServiceException } from '@aws-sdk/smithy-client'
 import { AccessDeniedException } from '@aws-sdk/client-sso-oidc'
@@ -335,62 +334,11 @@ class CodeCatalystClientInternal extends ClientWrapper<CodeCatalystSDKClient> {
         return { id: this.userDetails.userId, name: this.userDetails.userName }
     }
 
-    private async call<
-        CommandInput extends object,
-        CommandOutput extends object,
-        CommandOptions extends CommandInput,
-        Command extends AwsCommand<CommandInput, CommandOutput>,
-    >(
-        cmd: AwsCommandConstructor<CommandInput, Command>,
-        commandOptions: CommandOptions,
-        silent: true,
-        defaultVal: CommandOutput
-    ): Promise<CommandOutput>
-    private async call<
-        CommandInput extends object,
-        CommandOutput extends object,
-        CommandOptions extends CommandInput,
-        Command extends AwsCommand<CommandInput, CommandOutput>,
-    >(
-        cmd: AwsCommandConstructor<CommandInput, Command>,
-        commandOptions: CommandOptions,
-        silent: false
-    ): Promise<CommandOutput>
-    private async call<
-        CommandInput extends object,
-        CommandOutput extends object,
-        CommandOptions extends CommandInput,
-        Command extends AwsCommand<CommandInput, CommandOutput>,
-    >(
-        cmd: AwsCommandConstructor<CommandInput, Command>,
-        commandOptions: CommandOptions,
-        silent: boolean,
-        defaultVal?: CommandOutput
-    ): Promise<CommandOutput> {
+    protected override async onError(e: Error): Promise<void> {
         const bearerToken = (await this.connection.getToken()).accessToken
-
-        return new Promise<CommandOutput>(async (resolve, reject) => {
-            try {
-                const data = await this.makeRequest<CommandInput, CommandOutput, CommandOptions, Command>(
-                    cmd,
-                    commandOptions
-                )
-                resolve(data)
-            } catch (e) {
-                const error = e as Error
-                if (error instanceof ServiceException && isAccessDeniedError(error)) {
-                    CodeCatalystClientInternal.identityCache.delete(bearerToken)
-                }
-                if (silent && defaultVal !== undefined) {
-                    resolve(defaultVal)
-                } else {
-                    // SDKv3 does not have error codes so we use the name instead (see: https://github.com/aws/aws-sdk-js-v3/issues/759)
-                    reject(
-                        new ToolkitError(`CodeCatalyst: request failed with error`, { cause: error, code: error.name })
-                    )
-                }
-            }
-        })
+        if (e instanceof ServiceException && isAccessDeniedError(e)) {
+            CodeCatalystClientInternal.identityCache.delete(bearerToken)
+        }
 
         function isAccessDeniedError(e: ServiceException): boolean {
             return (
@@ -412,7 +360,7 @@ class CodeCatalystClientInternal extends ClientWrapper<CodeCatalystSDKClient> {
         args: CreateAccessTokenRequest
     ): Promise<RequiredProps<CreateAccessTokenResponse, 'secret'>> {
         try {
-            return await this.call(CreateAccessTokenCommand, args, false)
+            return await this.makeRequest(CreateAccessTokenCommand, args)
         } catch (e) {
             if ((e as Error).name === 'ServiceQuotaExceededException') {
                 throw new ToolkitError('Access token limit exceeded', { cause: e as Error })
@@ -422,7 +370,7 @@ class CodeCatalystClientInternal extends ClientWrapper<CodeCatalystSDKClient> {
     }
 
     public async getSubscription(request: GetSubscriptionRequest): Promise<CodeCatalyst.GetSubscriptionResponse> {
-        return this.call(GetSubscriptionCommand, request, false)
+        return this.makeRequest(GetSubscriptionCommand, request)
     }
 
     /**
@@ -443,7 +391,7 @@ class CodeCatalystClientInternal extends ClientWrapper<CodeCatalystSDKClient> {
             return CodeCatalystClientInternal.identityCache.get(accessToken)!
         }
 
-        const r: VerifySessionCommandOutput = await this.call(VerifySessionCommand, {}, false)
+        const r: VerifySessionCommandOutput = await this.makeRequest(VerifySessionCommand, {})
         assertHasProps(r, 'identity')
 
         CodeCatalystClientInternal.identityCache.set(accessToken, r.identity)
@@ -460,20 +408,20 @@ class CodeCatalystClientInternal extends ClientWrapper<CodeCatalystSDKClient> {
     }
 
     private async getUserDetails(args: GetUserDetailsRequest) {
-        const resp: GetUserDetailsCommandOutput = await this.call(GetUserDetailsCommand, args, false)
+        const resp: GetUserDetailsCommandOutput = await this.makeRequest(GetUserDetailsCommand, args)
         assertHasProps(resp, 'userId', 'userName', 'displayName', 'primaryEmail')
 
         return { ...resp, version: resp.version } as const
     }
 
     public async getSpace(request: GetSpaceRequest): Promise<CodeCatalystOrg> {
-        const resp: GetSpaceCommandOutput = await this.call(GetSpaceCommand, request, false)
+        const resp: GetSpaceCommandOutput = await this.makeRequest(GetSpaceCommand, request)
         assertHasProps(resp, 'name', 'regionName')
         return { ...resp, type: 'org' }
     }
 
     public async getProject(request: RequiredProps<GetProjectRequest, 'spaceName'>): Promise<CodeCatalystProject> {
-        const resp: GetProjectCommandOutput = await this.call(GetProjectCommand, request, false)
+        const resp: GetProjectCommandOutput = await this.makeRequest(GetProjectCommand, request)
         assertHasProps(resp, 'name')
         return { ...resp, type: 'project', org: { name: request.spaceName } }
     }
@@ -483,7 +431,7 @@ class CodeCatalystClientInternal extends ClientWrapper<CodeCatalystSDKClient> {
      */
     public listSpaces(request: ListSpacesRequest = {}): AsyncCollection<CodeCatalystOrg[]> {
         const requester: (request: ListSpacesRequest) => Promise<ListSpacesResponse> = async (request) =>
-            this.call(ListSpacesCommand, request, true, { items: [] })
+            this.makeRequest(ListSpacesCommand, request, { fallbackValue: { items: [] } })
         const collection = pageableToCollection(requester, request, 'nextToken', 'items').filter(isDefined)
         // ts doesn't recognize nested assertion, so we add cast.This is safe because we assert it in the same line.
         return collection.map((summaries) => summaries.filter(hasName).map(toOrg))
@@ -512,7 +460,7 @@ class CodeCatalystClientInternal extends ClientWrapper<CodeCatalystSDKClient> {
         ]
 
         const requester: (request: ListProjectsRequest) => Promise<ListProjectsResponse> = (request) =>
-            this.call(ListProjectsCommand, request, true, { items: [] })
+            this.makeRequest(ListProjectsCommand, request, { fallbackValue: { items: [] } })
 
         const collection = pageableToCollection(requester, request, 'nextToken', 'items')
         return collection.filter(isDefined).map((summaries) => summaries.filter(hasName).map(toProject))
@@ -532,7 +480,7 @@ class CodeCatalystClientInternal extends ClientWrapper<CodeCatalystSDKClient> {
     public listDevEnvironments(proj: CodeCatalystProject): AsyncCollection<DevEnvironment[]> {
         const initRequest = { spaceName: proj.org.name, projectName: proj.name }
         const requester: (request: ListDevEnvironmentsRequest) => Promise<ListDevEnvironmentsResponse> = (request) =>
-            this.call(ListDevEnvironmentsCommand, request, true, { items: [] })
+            this.makeRequest(ListDevEnvironmentsCommand, request, { fallbackValue: { items: [] } })
         const collection = pageableToCollection(requester, initRequest, 'nextToken' as never, 'items').filter(isDefined)
         // ts unable to recognize nested assertion here, so we need to cast. This is safe because we assert it in the same line.
         return collection.map((envs) => {
@@ -552,11 +500,10 @@ class CodeCatalystClientInternal extends ClientWrapper<CodeCatalystSDKClient> {
         thirdParty: boolean = true
     ): AsyncCollection<CodeCatalystRepo[]> {
         const requester = async (r: typeof request) => {
-            const allRepositories: Promise<ListSourceRepositoriesResponse> = this.call(
+            const allRepositories: Promise<ListSourceRepositoriesResponse> = this.makeRequest(
                 ListSourceRepositoriesCommand,
                 r,
-                true,
-                { items: [] }
+                { fallbackValue: { items: [] } }
             )
             let finalRepositories = allRepositories
 
@@ -596,7 +543,7 @@ class CodeCatalystClientInternal extends ClientWrapper<CodeCatalystSDKClient> {
         >
     ): AsyncCollection<CodeCatalystBranch[]> {
         const requester = async (r: typeof request) =>
-            this.call(ListSourceRepositoryBranchesCommand, r, true, { items: [] })
+            this.makeRequest(ListSourceRepositoryBranchesCommand, r, { fallbackValue: { items: [] } })
         const collection = pageableToCollection(requester, request, 'nextToken' as never, 'items')
 
         return collection
@@ -645,17 +592,16 @@ class CodeCatalystClientInternal extends ClientWrapper<CodeCatalystSDKClient> {
     public async createSourceBranch(
         args: CreateSourceRepositoryBranchRequest
     ): Promise<CreateSourceRepositoryBranchResponse> {
-        return this.call(CreateSourceRepositoryBranchCommand, args, false)
+        return this.makeRequest(CreateSourceRepositoryBranchCommand, args)
     }
 
     /**
      * Gets the git source host URL for the given CodeCatalyst or third-party repo.
      */
     public async getRepoCloneUrl(args: GetSourceRepositoryCloneUrlsRequest): Promise<string> {
-        const r: GetSourceRepositoryCloneUrlsResponse = await this.call(
+        const r: GetSourceRepositoryCloneUrlsResponse = await this.makeRequest(
             GetSourceRepositoryCloneUrlsCommand,
-            args,
-            false
+            args
         )
         assertHasProps(r, 'https')
         // The git extension skips over credential providers if the username is included in the authority
@@ -667,7 +613,7 @@ class CodeCatalystClientInternal extends ClientWrapper<CodeCatalystSDKClient> {
         args: RequiredProps<CreateDevEnvironmentRequest, 'projectName' | 'spaceName'>
     ): Promise<DevEnvironment> {
         const request = fixAliasInRequest(args)
-        const response: CreateDevEnvironmentCommandOutput = await this.call(CreateDevEnvironmentCommand, request, false)
+        const response: CreateDevEnvironmentCommandOutput = await this.makeRequest(CreateDevEnvironmentCommand, request)
         assertHasProps(response, 'id')
 
         return this.getDevEnvironment({
@@ -678,13 +624,13 @@ class CodeCatalystClientInternal extends ClientWrapper<CodeCatalystSDKClient> {
     }
 
     public async startDevEnvironment(args: StartDevEnvironmentRequest): Promise<StartDevEnvironmentResponse> {
-        return this.call(StartDevEnvironmentCommand, args, false)
+        return this.makeRequest(StartDevEnvironmentCommand, args)
     }
 
     public async createProject(
         args: RequiredProps<CreateProjectRequest, 'displayName' | 'spaceName'>
     ): Promise<CodeCatalystProject> {
-        await this.call(CreateProjectCommand, args, false)
+        await this.makeRequest(CreateProjectCommand, args)
 
         return { ...args, name: args.displayName, type: 'project', org: { name: args.spaceName } }
     }
@@ -692,7 +638,7 @@ class CodeCatalystClientInternal extends ClientWrapper<CodeCatalystSDKClient> {
     public async startDevEnvironmentSession(
         args: StartDevEnvironmentSessionRequest
     ): Promise<StartDevEnvironmentSessionResponse & { sessionId: string }> {
-        const r: StartDevEnvironmentSessionResponse = await this.call(StartDevEnvironmentSessionCommand, args, false)
+        const r: StartDevEnvironmentSessionResponse = await this.makeRequest(StartDevEnvironmentSessionCommand, args)
         if (!r.sessionId) {
             throw new TypeError('got falsy dev environment "sessionId"')
         }
@@ -700,7 +646,7 @@ class CodeCatalystClientInternal extends ClientWrapper<CodeCatalystSDKClient> {
     }
 
     public async stopDevEnvironment(args: StopDevEnvironmentRequest): Promise<StopDevEnvironmentResponse> {
-        return this.call(StopDevEnvironmentCommand, args, false)
+        return this.makeRequest(StopDevEnvironmentCommand, args)
     }
 
     public async getDevEnvironment(
@@ -710,7 +656,7 @@ class CodeCatalystClientInternal extends ClientWrapper<CodeCatalystSDKClient> {
         delete (a as any).ides
         delete (a as any).repositories
 
-        const r: GetDevEnvironmentResponse = await this.call(GetDevEnvironmentCommand, a, false)
+        const r: GetDevEnvironmentResponse = await this.makeRequest(GetDevEnvironmentCommand, a)
         const summary = { ...args, ...r }
         if (!isValidEnvSummary(summary)) {
             throw new ToolkitError(`GetDevEnvironment failed due to response missing required properties`)
@@ -720,12 +666,12 @@ class CodeCatalystClientInternal extends ClientWrapper<CodeCatalystSDKClient> {
     }
 
     public async deleteDevEnvironment(args: DeleteDevEnvironmentRequest): Promise<DeleteDevEnvironmentResponse> {
-        return this.call(DeleteDevEnvironmentCommand, args, false)
+        return this.makeRequest(DeleteDevEnvironmentCommand, args)
     }
 
     public updateDevEnvironment(args: UpdateDevEnvironmentRequest): Promise<UpdateDevEnvironmentResponse> {
         const request = fixAliasInRequest(args)
-        return this.call(UpdateDevEnvironmentCommand, request, false)
+        return this.makeRequest(UpdateDevEnvironmentCommand, request)
     }
 
     /**
