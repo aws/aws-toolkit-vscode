@@ -62,7 +62,7 @@ const tasks: CopyTask[] = [
     },
     // ripgrep binary
     {
-        target: path.join('../../node_modules', 'vscode-ripgrep', 'bin'),
+        target: path.join('../../node_modules', '@vscode/ripgrep', 'bin'),
         destination: 'bin/',
     },
 ]

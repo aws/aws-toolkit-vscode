@@ -8,7 +8,7 @@ import { sanitizePath, InvokeOutput, OutputKind } from './toolShared'
 import fs from '../../shared/fs/fs'
 import { Writable } from 'stream'
 import { ChildProcess, ChildProcessOptions } from '../../shared/utilities/processUtils'
-import { rgPath } from 'vscode-ripgrep'
+import { rgPath } from '@vscode/ripgrep'
 import path from 'path'
 
 export interface GrepSearchParams {
