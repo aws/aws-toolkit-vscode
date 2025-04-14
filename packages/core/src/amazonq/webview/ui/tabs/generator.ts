@@ -56,6 +56,18 @@ export class TabDataGenerator {
         if (tabType === 'welcome') {
             return {}
         }
+        const programmerModeCard: ChatItem | undefined = {
+            type: ChatItemType.ANSWER,
+            title: 'Pair Programming Mode',
+            header: {
+                icon: 'code-block',
+                iconStatus: 'primary',
+                body: '## You are now in pair programming mode',
+            },
+            fullWidth: true,
+            canBeDismissed: true,
+            body: 'In pair programming mode, I can help you write, modify, and debug code. I can access your workspace files and execute commands to assist you with your development tasks.',
+        }
 
         const regionProfileCard: ChatItem | undefined =
             this.regionProfile === undefined
@@ -76,6 +88,7 @@ export class TabDataGenerator {
             contextCommands: this.getContextCommands(tabType),
             chatItems: needWelcomeMessages
                 ? [
+                      ...(tabType === 'cwc' || tabType === 'unknown' ? [programmerModeCard] : []),
                       ...(regionProfileCard ? [regionProfileCard] : []),
                       {
                           type: ChatItemType.ANSWER,
@@ -88,7 +101,7 @@ export class TabDataGenerator {
                   ]
                 : [...(regionProfileCard ? [regionProfileCard] : [])],
             promptInputOptions:
-                tabType === 'cwc'
+                tabType === 'cwc' || tabType === 'unknown'
                     ? [
                           {
                               type: 'switch',
