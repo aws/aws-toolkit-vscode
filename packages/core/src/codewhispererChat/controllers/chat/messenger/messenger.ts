@@ -833,6 +833,9 @@ export class Messenger {
             }
         } else if (toolUse?.name === ToolType.ListDirectory || toolUse?.name === ToolType.FsRead) {
             if (validation.requiresAcceptance) {
+                /** For Read and List Directory tools
+                 * requiredAcceptance = false, we use messageID = toolID and we keep on updating this messageID
+                 * requiredAcceptance = true, IDE sends messageID != toolID, some default value, as this overlaps with previous message. */
                 messageID = 'toolUse'
                 const buttons: ChatItemButton[] = [
                     {
