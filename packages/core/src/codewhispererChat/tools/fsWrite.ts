@@ -17,8 +17,7 @@ interface BaseParams {
 
 export interface CreateParams extends BaseParams {
     command: 'create'
-    fileText?: string
-    newStr?: string
+    fileText: string
 }
 
 export interface StrReplaceParams extends BaseParams {
@@ -111,6 +110,7 @@ export class FsWrite {
             oldContent = await fs.readFileText(sanitizedPath)
             isNew = false
         } catch (err) {
+            this.logger.warn('old content does not exist, set it to empty string')
             oldContent = ''
             isNew = true
         }
@@ -118,24 +118,42 @@ export class FsWrite {
     }
 
     public async validate(): Promise<void> {
+        if (!this.params.path) {
+            throw new Error('Path must not be empty')
+        }
+        const sanitizedPath = sanitizePath(this.params.path)
         switch (this.params.command) {
-            case 'create':
-                if (!this.params.path) {
-                    throw new Error('Path must not be empty')
+            case 'create': {
+                if (this.params.fileText === undefined) {
+                    throw new Error('fileText must be provided for create command')
+                }
+                const fileExists = await fs.existsFile(sanitizedPath)
+                if (fileExists) {
+                    const oldContent = await fs.readFileText(sanitizedPath)
+                    if (oldContent === this.params.fileText) {
+                        throw new Error('The file already exists with the same content')
+                    }
                 }
                 break
-            case 'strReplace':
-            case 'insert': {
-                const fileExists = await fs.existsFile(this.params.path)
+            }
+            case 'strReplace': {
+                if (this.params.oldStr === this.params.newStr) {
+                    throw new Error('The provided oldStr and newStr are the exact same, this is a no-op')
+                }
+                const fileExists = await fs.existsFile(sanitizedPath)
                 if (!fileExists) {
-                    throw new Error('The provided path must exist in order to replace or insert contents into it')
+                    throw new Error('The provided path must exist in order to replace contents into it')
+                }
+                break
+            }
+            case 'insert': {
+                const fileExists = await fs.existsFile(sanitizedPath)
+                if (!fileExists) {
+                    throw new Error('The provided path must exist in order to insert contents into it')
                 }
                 break
             }
             case 'append':
-                if (!this.params.path) {
-                    throw new Error('Path must not be empty')
-                }
                 if (!this.params.newStr) {
                     throw new Error('Content to append must not be empty')
                 }
@@ -220,15 +238,7 @@ export class FsWrite {
     }
 
     private getCreateCommandText(params: CreateParams): string {
-        if (params.fileText) {
-            return params.fileText
-        }
-        if (params.newStr) {
-            this.logger.warn('Required field `fileText` is missing, use the provided `newStr` instead')
-            return params.newStr
-        }
-        this.logger.warn('No content provided for the create command')
-        return ''
+        return params.fileText
     }
 
     private escapeRegExp(string: string): string {
