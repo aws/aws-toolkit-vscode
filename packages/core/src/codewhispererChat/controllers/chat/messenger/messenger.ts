@@ -53,8 +53,6 @@ import {
     MynahIconsType,
     DetailedList,
     MynahUIDataModel,
-    MynahIcons,
-    Status,
 } from '@aws/mynah-ui'
 import { Database } from '../../../../shared/db/chatDb/chatDb'
 import { TabType } from '../../../../amazonq/webview/ui/storages/tabsStorage'
