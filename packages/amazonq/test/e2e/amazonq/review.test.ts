@@ -192,8 +192,7 @@ describe('Amazon Q Code Review', function () {
         })
 
         describe('review insecure file and then fix file', async () => {
-            // eslint-disable-next-line aws-toolkits/no-only-in-tests
-            it.only('/review file gives correct critical and high security issues, clicks on view details, generate fix, verify diff, apply fix', async () => {
+            it('/review file gives correct critical and high security issues, clicks on view details, generate fix, verify diff, apply fix', async () => {
                 const testFolder = path.join(getWorkspaceFolder(), 'QCAFolder')
                 const fileName = 'ProblematicCode.java'
                 const filePath = path.join(testFolder, fileName)
