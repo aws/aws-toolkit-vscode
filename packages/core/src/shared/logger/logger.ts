@@ -22,6 +22,7 @@ export type LogTopic =
     | 'listDirectory'
     | 'chatStream'
     | 'chatHistoryDb'
+    | 'mcp'
     | 'unknown'
 
 class ErrorLog {

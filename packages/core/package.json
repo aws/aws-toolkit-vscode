@@ -576,7 +576,8 @@
         "winston": "^3.11.0",
         "winston-transport": "^4.6.0",
         "xml2js": "^0.6.1",
-        "yaml-cfn": "^0.3.2"
+        "yaml-cfn": "^0.3.2",
+        "@modelcontextprotocol/sdk": "^1.9.0"
     },
     "overrides": {
         "webfont": {
