@@ -483,7 +483,9 @@ export class Database {
         }
 
         //  Make sure the last stored message is from the assistant (type === 'answer'), else drop
-        if (messages.length > 0 && messages[messages.length - 1].type === ('prompt' as ChatItemType)) {
+        if (messages.length > 0 && messages[messages.length - 1].userInputMessageContext) {
+            // eslint-disable-next-line aws-toolkits/no-console-log
+            console.log('found the last message to be userInputMessage')
             messages.pop()
             this.logger.debug('Dropped trailing user message')
         }
