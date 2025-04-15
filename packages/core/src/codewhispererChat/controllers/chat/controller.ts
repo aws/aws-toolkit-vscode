@@ -928,11 +928,22 @@ export class ChatController {
             case 'reject-shell-command':
             case 'reject-tool-use':
                 await this.rejectShellCommand(message)
-                await this.processToolUseMessage(message)
+                if (message.tabID) {
+                    await this.sendCommandRejectMessage(message.tabID)
+                }
+                if (message.triggerId) {
+                    ConversationTracker.getInstance().markTriggerCompleted(message.triggerId)
+                }
                 break
             default:
                 getLogger().warn(`Unhandled action: ${message.action.id}`)
         }
+    }
+
+    private async sendCommandRejectMessage(tabID: string) {
+        const session = this.sessionStorage.getSession(tabID)
+        session.setAgenticLoopInProgress(false)
+        this.messenger.sendDirectiveMessage(tabID, '', 'Command Rejected')
     }
 
     private async restoreBackup(message: CustomFormActionMessage) {
