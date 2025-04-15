@@ -894,6 +894,8 @@ export class ChatController {
                 currentToolUse.name === ToolType.ListDirectory)
         ) {
             session.toolUseWithError.error = new Error('Tool use was rejected by the user.')
+            session.setToolUseWithError(undefined)
+            this.messenger.sendAsyncEventProgress(message.tabID!, false, undefined)
         } else {
             getLogger().error(
                 `toolUse name: ${currentToolUse!.name} of toolUseWithError in the stored session doesn't match when click shell command reject button.`
