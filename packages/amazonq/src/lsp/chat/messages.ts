@@ -186,13 +186,13 @@ export function registerMessageListeners(
                 break
             }
             case listConversationsRequestType.method:
-                await handleRequest(languageClient, message.params, webview, listConversationsRequestType.method)
+                await resolveChatResponse(listConversationsRequestType.method, message.params, languageClient, webview)
                 break
             case conversationClickRequestType.method:
-                await handleRequest(languageClient, message.params, webview, conversationClickRequestType.method)
+                await resolveChatResponse(conversationClickRequestType.method, message.params, languageClient, webview)
                 break
             case tabBarActionRequestType.method:
-                await handleRequest(languageClient, message.params, webview, tabBarActionRequestType.method)
+                await resolveChatResponse(tabBarActionRequestType.method, message.params, languageClient, webview)
                 break
             case followUpClickNotificationType.method:
                 if (!isValidAuthFollowUpType(message.params.followUp.type)) {
@@ -364,11 +364,11 @@ async function handleCompleteResult<T>(
     disposable.dispose()
 }
 
-async function handleRequest(
-    languageClient: LanguageClient,
+async function resolveChatResponse(
+    requestMethod: string,
     params: any,
-    webview: vscode.Webview | undefined,
-    requestMethod: string
+    languageClient: LanguageClient,
+    webview: vscode.Webview | undefined
 ) {
     const result = await languageClient.sendRequest(requestMethod, params)
     void webview?.postMessage({
