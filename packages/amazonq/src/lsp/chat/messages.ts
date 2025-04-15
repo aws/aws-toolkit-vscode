@@ -11,6 +11,7 @@ import {
     COPY_TO_CLIPBOARD,
     AuthFollowUpType,
     DISCLAIMER_ACKNOWLEDGED,
+    UiMessageResultParams,
 } from '@aws/chat-client-ui-types'
 import {
     ChatResult,
@@ -21,6 +22,10 @@ import {
     QuickActionResult,
     QuickActionParams,
     insertToCursorPositionNotificationType,
+    ErrorCodes,
+    ResponseError,
+    openTabRequestType,
+    getSerializedChatRequestType,
 } from '@aws/language-server-runtimes/protocol'
 import { v4 as uuidv4 } from 'uuid'
 import * as vscode from 'vscode'
@@ -184,6 +189,59 @@ export function registerMessageListeners(
                 break
         }
     }, undefined)
+
+    const registerHandlerWithResponseRouter = (command: string) => {
+        const handler = async (params: any, _: any) => {
+            const mapErrorType = (type: string | undefined): number => {
+                switch (type) {
+                    case 'InvalidRequest':
+                        return ErrorCodes.InvalidRequest
+                    case 'InternalError':
+                        return ErrorCodes.InternalError
+                    case 'UnknownError':
+                    default:
+                        return ErrorCodes.UnknownErrorCode
+                }
+            }
+            const requestId = uuidv4()
+
+            void provider.webview?.postMessage({
+                requestId: requestId,
+                command: command,
+                params: params,
+            })
+            const responsePromise = new Promise<UiMessageResultParams | undefined>((resolve, reject) => {
+                const timeout = setTimeout(() => {
+                    disposable?.dispose()
+                    reject(new Error('Request timed out'))
+                }, 30000)
+
+                const disposable = provider.webview?.onDidReceiveMessage((message: any) => {
+                    if (message.requestId === requestId) {
+                        clearTimeout(timeout)
+                        disposable?.dispose()
+                        resolve(message.params)
+                    }
+                })
+            })
+
+            const result = await responsePromise
+
+            if (result?.success) {
+                return result.result
+            } else {
+                return new ResponseError(
+                    mapErrorType(result?.error.type),
+                    result?.error.message ?? 'No response from client'
+                )
+            }
+        }
+
+        languageClient.onRequest(command, handler)
+    }
+
+    registerHandlerWithResponseRouter(openTabRequestType.method)
+    registerHandlerWithResponseRouter(getSerializedChatRequestType.method)
 }
 
 function isServerEvent(command: string) {
