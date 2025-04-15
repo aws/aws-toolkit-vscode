@@ -252,7 +252,6 @@ export class ZipUtil {
                 scope,
             })
         }
-
         if (gitDiffContent) {
             zip.writeString(gitDiffContent, ZipConstants.codeDiffFilePath)
         }
