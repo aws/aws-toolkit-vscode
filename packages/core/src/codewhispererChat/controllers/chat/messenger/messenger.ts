@@ -53,8 +53,6 @@ import {
     MynahIconsType,
     DetailedList,
     MynahUIDataModel,
-    MynahIcons,
-    Status,
 } from '@aws/mynah-ui'
 import { Database } from '../../../../shared/db/chatDb/chatDb'
 import { TabType } from '../../../../amazonq/webview/ui/storages/tabsStorage'
@@ -376,7 +374,11 @@ export class Messenger {
                                     changeList,
                                     explanation
                                 )
-                                await ToolUtils.queueDescription(tool, chatStream)
+                                await ToolUtils.queueDescription(
+                                    tool,
+                                    chatStream,
+                                    chatStream.validation.requiresAcceptance
+                                )
                                 if (session.messageIdToUpdate === undefined && tool.type === ToolType.FsRead) {
                                     // Store the first messageId in a chain of tool uses
                                     session.setMessageIdToUpdate(toolUse.toolUseId)
@@ -538,7 +540,13 @@ export class Messenger {
 
                 followUps = []
                 relatedSuggestions = []
-                this.telemetryHelper.recordMessageResponseError(triggerPayload, tabID, errorInfo.statusCode ?? 0)
+                this.telemetryHelper.recordMessageResponseError(
+                    triggerPayload,
+                    tabID,
+                    errorInfo.statusCode ?? 0,
+                    errorInfo.requestId,
+                    errorInfo.errorMessage
+                )
             })
             .finally(async () => {
                 if (session.sessionIdentifier && !this.isTriggerCancelled(triggerID)) {
@@ -748,13 +756,17 @@ export class Messenger {
         }
 
         // Handle read tool and list directory messages
-        if (toolUse?.name === ToolType.FsRead || toolUse?.name === ToolType.ListDirectory) {
+        if (
+            (toolUse?.name === ToolType.FsRead || toolUse?.name === ToolType.ListDirectory) &&
+            !validation.requiresAcceptance
+        ) {
             return this.sendReadAndListDirToolMessage(toolUse, session, tabID, triggerID, messageIdToUpdate)
         }
 
         // Handle file write tool, execute bash tool and bash command output log messages
         const buttons: ChatItemButton[] = []
         let header: ChatItemHeader | undefined = undefined
+        let messageID: string = toolUse?.toolUseId ?? ''
         if (toolUse?.name === ToolType.ExecuteBash && message.startsWith('```shell')) {
             if (validation.requiresAcceptance) {
                 const buttons: ChatItemButton[] = [
@@ -802,29 +814,20 @@ export class Messenger {
                 {
                     id: 'reject-code-diff',
                     status: 'clear',
-                    icon: 'cancel' as MynahIconsType,
+                    icon: 'revert' as MynahIconsType,
+                    text: 'Undo',
                 },
             ]
-            const status: {
-                icon?: MynahIcons | MynahIconsType
-                status?: {
-                    status?: Status
-                    icon?: MynahIcons | MynahIconsType
-                    text?: string
-                }
-            } = {
-                status: {
-                    text: 'Accepted',
-                    status: 'success',
-                },
-            }
             header = {
                 buttons,
-                ...status,
                 fileList,
             }
         } else if (toolUse?.name === ToolType.ListDirectory || toolUse?.name === ToolType.FsRead) {
             if (validation.requiresAcceptance) {
+                /** For Read and List Directory tools
+                 * requiredAcceptance = false, we use messageID = toolID and we keep on updating this messageID
+                 * requiredAcceptance = true, IDE sends messageID != toolID, some default value, as this overlaps with previous message. */
+                messageID = 'toolUse'
                 const buttons: ChatItemButton[] = [
                     {
                         id: 'confirm-tool-use',
@@ -840,7 +843,6 @@ export class Messenger {
                     },
                 ]
                 header = {
-                    body: 'shell',
                     buttons,
                 }
             }
@@ -859,7 +861,7 @@ export class Messenger {
                     followUpsHeader: undefined,
                     relatedSuggestions: undefined,
                     triggerID,
-                    messageID: toolUse?.toolUseId ?? '',
+                    messageID,
                     userIntent: undefined,
                     codeBlockLanguage: undefined,
                     contextList: undefined,

@@ -234,30 +234,30 @@ describe('ToolUtils', function () {
         // TODO: Adding "void" to the following tests for the current implementation but in the next followup PR I will fix this issue.
         it('delegates to FsRead tool queueDescription method', function () {
             const tool: Tool = { type: ToolType.FsRead, tool: mockFsRead as unknown as FsRead }
-            void ToolUtils.queueDescription(tool, mockWritable as unknown as Writable)
+            void ToolUtils.queueDescription(tool, mockWritable as unknown as Writable, false)
 
-            assert(mockFsRead.queueDescription.calledOnceWith(mockWritable))
+            assert(mockFsRead.queueDescription.calledOnceWith(mockWritable, false))
         })
 
         it('delegates to FsWrite tool queueDescription method', function () {
             const tool: Tool = { type: ToolType.FsWrite, tool: mockFsWrite as unknown as FsWrite }
-            void ToolUtils.queueDescription(tool, mockWritable as unknown as Writable)
+            void ToolUtils.queueDescription(tool, mockWritable as unknown as Writable, false)
 
             assert(mockFsWrite.queueDescription.calledOnceWith(mockWritable))
         })
 
         it('delegates to ExecuteBash tool queueDescription method', function () {
             const tool: Tool = { type: ToolType.ExecuteBash, tool: mockExecuteBash as unknown as ExecuteBash }
-            void ToolUtils.queueDescription(tool, mockWritable as unknown as Writable)
+            void ToolUtils.queueDescription(tool, mockWritable as unknown as Writable, false)
 
             assert(mockExecuteBash.queueDescription.calledOnceWith(mockWritable))
         })
 
         it('delegates to ListDirectory tool queueDescription method', function () {
             const tool: Tool = { type: ToolType.ListDirectory, tool: mockListDirectory as unknown as ListDirectory }
-            void ToolUtils.queueDescription(tool, mockWritable as unknown as Writable)
+            void ToolUtils.queueDescription(tool, mockWritable as unknown as Writable, false)
 
-            assert(mockListDirectory.queueDescription.calledOnceWith(mockWritable))
+            assert(mockListDirectory.queueDescription.calledOnceWith(mockWritable, false))
         })
     })
 

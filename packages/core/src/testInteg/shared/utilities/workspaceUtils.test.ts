@@ -14,6 +14,7 @@ import {
     findStringInDirectory,
     getWorkspaceFoldersByPrefixes,
     getWorkspaceRelativePath,
+    shouldIgnoreDirAndFile,
 } from '../../../shared/utilities/workspaceUtils'
 import { getTestWorkspaceFolder } from '../../integrationTestsUtilities'
 import globals from '../../../shared/extensionGlobals'
@@ -588,6 +589,13 @@ describe('workspaceUtils', () => {
                 ] satisfies typeof result,
                 result
             )
+        })
+    })
+
+    describe('shouldIgnoreDirAndFile', function () {
+        it('handles exact matches', function () {
+            assert.strictEqual(shouldIgnoreDirAndFile('node_modules', vscode.FileType.Directory), true)
+            assert.strictEqual(shouldIgnoreDirAndFile('random_file.txt', vscode.FileType.File), false)
         })
     })
 

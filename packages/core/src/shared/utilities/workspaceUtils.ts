@@ -20,6 +20,7 @@ import fs from '../fs/fs'
 import { ChildProcess } from './processUtils'
 import { isWin } from '../vscode/env'
 import { maxRepoSizeBytes } from '../../amazonqFeatureDev/constants'
+import { ignoredDirectoriesAndFiles } from '../../codewhispererChat/constants'
 
 type GitIgnoreRelativeAcceptor = {
     folderPath: string
@@ -673,14 +674,14 @@ export async function findStringInDirectory(searchStr: string, dirPath: string) 
 }
 
 /**
- * Returns a prefix for a directory ('[DIR]'), symlink ('[LINK]'), or file ('[FILE]').
+ * Returns a prefix for a directory ('[D]'), symlink ('[L]'), or file ('[F]').
  */
 export function formatListing(name: string, fileType: vscode.FileType, fullPath: string): string {
-    let typeChar = '[FILE]'
+    let typeChar = '[F]'
     if (fileType === vscode.FileType.Directory) {
-        typeChar = '[DIR]'
+        typeChar = '[D]'
     } else if (fileType === vscode.FileType.SymbolicLink) {
-        typeChar = '[LINK]'
+        typeChar = '[L]'
     }
     return `${typeChar} ${fullPath}`
 }
@@ -689,6 +690,7 @@ export function formatListing(name: string, fileType: vscode.FileType, fullPath:
  * Recursively lists directories using a BFS approach, returning lines like:
  * d /absolute/path/to/folder
  * - /absolute/path/to/file.txt
+ * Will filter out directories/files that should be ignored across most programming languages.
  *
  * You can either pass a custom callback or rely on the default `formatListing`.
  *
@@ -727,6 +729,10 @@ export async function readDirectoryRecursively(
         }
 
         for (const [name, fileType] of entries) {
+            if (shouldIgnoreDirAndFile(name, fileType)) {
+                logger.debug(`Ignoring: ${name} in ${uri.fsPath}`)
+                continue
+            }
             const childUri = vscode.Uri.joinPath(uri, name)
             results.push(formatter(name, fileType, childUri.fsPath))
 
@@ -737,6 +743,54 @@ export async function readDirectoryRecursively(
     }
 
     return results
+}
+
+export function shouldIgnoreDirAndFile(name: string, fileType: vscode.FileType): boolean {
+    for (const pattern of ignoredDirectoriesAndFiles) {
+        // Handle exact matches
+        if (name === pattern) {
+            return true
+        }
+        // Handle directory patterns that end with /
+        if (pattern.endsWith('/') && fileType === vscode.FileType.Directory) {
+            const dirName = pattern.slice(0, -1)
+            if (name === dirName) {
+                return true
+            }
+            continue
+        }
+        // Handle patterns with wildcards
+        if (pattern.includes('*')) {
+            // Handle patterns like "*.class" (wildcard at start)
+            if (pattern.startsWith('*') && !pattern.endsWith('*')) {
+                const suffix = pattern.slice(1)
+                if (name.endsWith(suffix)) {
+                    return true
+                }
+            }
+            // Handle patterns like "npm-debug.log*" (wildcard at end)
+            else if (!pattern.startsWith('*') && pattern.endsWith('*')) {
+                const prefix = pattern.slice(0, -1)
+                if (name.startsWith(prefix)) {
+                    return true
+                }
+            }
+            // Handle patterns like "*.env.*" or "*_credentials.*" (wildcards at both ends or middle)
+            else {
+                // Convert glob pattern to regex pattern
+                const regexPattern = pattern
+                    // Escape dots
+                    .replace(/\./g, '\\.')
+                    // Convert * to .*
+                    .replace(/\*/g, '.*')
+                const regex = new RegExp(`^${regexPattern}$`)
+                if (regex.test(name)) {
+                    return true
+                }
+            }
+        }
+    }
+    return false
 }
 
 export function getWorkspacePaths() {
