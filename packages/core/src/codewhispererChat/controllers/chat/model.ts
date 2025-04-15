@@ -238,6 +238,7 @@ export interface TriggerPayload {
     origin?: Origin
     pairProgrammingModeOn?: boolean
     history?: Message[]
+    shouldDisplayMessage?: boolean
 }
 
 export type ContextLengths = {

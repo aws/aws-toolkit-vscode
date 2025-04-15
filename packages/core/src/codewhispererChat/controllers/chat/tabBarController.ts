@@ -88,7 +88,9 @@ export class TabBarController {
                 selectedTab.historyId,
                 selectedTab.tabType,
                 selectedTab.conversations.flatMap((conv: Conversation) =>
-                    conv.messages.map((message) => messageToChatItem(message))
+                    conv.messages
+                        .filter((message) => message.shouldDisplayMessage !== false)
+                        .map((message) => messageToChatItem(message))
                 ),
                 exportTab
             )

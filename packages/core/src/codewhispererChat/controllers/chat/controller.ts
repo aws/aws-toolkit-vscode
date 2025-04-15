@@ -744,6 +744,7 @@ export class ChatController {
                 const toolResults: ToolResult[] = []
 
                 let response = ''
+                let shouldDisplayMessage = true
                 if (toolUseError) {
                     toolResults.push({
                         content: [{ text: toolUseError.message }],
@@ -753,6 +754,7 @@ export class ChatController {
                     if (toolUseError instanceof SyntaxError) {
                         response =
                             "Your toolUse input isn't valid. Please check the syntax and make sure the input is complete. If the input is large, break it down into multiple tool uses with smaller input."
+                        shouldDisplayMessage = false
                     }
                 } else {
                     const result = ToolUtils.tryFromToolUse(toolUse)
@@ -844,6 +846,7 @@ export class ChatController {
                         contextLengths: {
                             ...defaultContextLengths,
                         },
+                        shouldDisplayMessage: shouldDisplayMessage,
                     },
                     triggerID
                 )
@@ -1138,9 +1141,6 @@ export class ChatController {
 
         this.messenger.sendErrorMessage(errorMessage, tabID, requestID, statusCode)
         getLogger().error(`error: ${errorMessage} tabID: ${tabID} requestID: ${requestID}`)
-
-        this.sessionStorage.deleteSession(tabID)
-        this.chatHistoryDb.clearTab(tabID)
     }
 
     private async processContextMenuCommand(command: EditorContextCommand) {
@@ -1317,6 +1317,7 @@ export class ChatController {
             this.processException(e, message.tabID)
         }
     }
+
     private initialCleanUp(session: ChatSession) {
         // Create a fresh token for this new conversation
         session.createNewTokenSource()
@@ -1595,11 +1596,12 @@ export class ChatController {
 
         const currentMessage = request.conversationState.currentMessage
         if (currentMessage) {
-            this.chatHistoryDb.fixHistory(tabID, currentMessage)
+            this.chatHistoryDb.fixHistory(tabID, currentMessage, session.sessionIdentifier)
         }
-        request.conversationState.history = this.chatHistoryDb
-            .getMessages(tabID)
-            .map((chat) => messageToChatMessage(chat))
+        //  Do not include chatHistory for requests going to Mynah
+        request.conversationState.history = request.conversationState.currentMessage?.userInputMessage?.userIntent
+            ? []
+            : this.chatHistoryDb.getMessages(tabID).map((chat) => messageToChatMessage(chat))
         request.conversationState.conversationId = session.sessionIdentifier
 
         triggerPayload.documentReferences = this.mergeRelevantTextDocuments(triggerPayload.relevantTextDocuments)
@@ -1669,6 +1671,7 @@ export class ChatController {
                     userIntent: currentMessage.userInputMessage?.userIntent,
                     origin: currentMessage.userInputMessage?.origin,
                     userInputMessageContext: currentMessage.userInputMessage?.userInputMessageContext,
+                    shouldDisplayMessage: triggerPayload.shouldDisplayMessage ?? true,
                 })
             }
 

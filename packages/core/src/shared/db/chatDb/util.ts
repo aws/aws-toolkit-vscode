@@ -56,6 +56,7 @@ export type Message = {
     origin?: Origin
     userInputMessageContext?: UserInputMessageContext
     toolUses?: ToolUse[]
+    shouldDisplayMessage?: boolean
 }
 
 /**
