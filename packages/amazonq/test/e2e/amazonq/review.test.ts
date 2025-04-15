@@ -290,6 +290,8 @@ describe('Amazon Q Code Review', function () {
                             .flatMap(({ issues }) => issues)
                             .find((i) => i.findingId === issue.findingId)
 
+                        console.log('issue', foundIssue?.fixJobId, foundIssue?.suggestedFixes)
+
                         return foundIssue?.suggestedFixes?.length !== undefined &&
                             foundIssue?.suggestedFixes?.length > 0
                             ? foundIssue
@@ -531,15 +533,11 @@ describe('Amazon Q Code Review', function () {
 
                 try {
                     // Initialize git repository to make RLinker.java appear in git diff
-                    if (isWindows) {
-                        await execPromise('git init', { cwd: fileDir })
-                        await execPromise('git add QCAFolder/RLinker.java', { cwd: fileDir })
-                        await execPromise('git commit -m "Initial commit"', { cwd: fileDir })
-                    } else {
-                        await execPromise('git init', { cwd: fileDir })
-                        await execPromise('git add QCAFolder/RLinker.java', { cwd: fileDir })
-                        await execPromise('git commit -m "Initial commit"', { cwd: fileDir })
-                    }
+                    await execPromise('git init', { cwd: fileDir })
+                    await execPromise('git add QCAFolder/RLinker.java', { cwd: fileDir })
+                    await execPromise('git config user.name "Test"', { cwd: fileDir })
+                    await execPromise('git config user.email "test@example.com"', { cwd: fileDir })
+                    await execPromise('git commit -m "Initial commit"', { cwd: fileDir })
 
                     document = await vscode.workspace.openTextDocument(filePath)
                     await vscode.window.showTextDocument(document)
