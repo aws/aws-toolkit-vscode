@@ -330,6 +330,8 @@ export class Messenger {
                                         )
                                         explanation = input.explanation
                                     }
+                                    // validate the fsWrite tool input before showing the diff view
+                                    await tool.tool.validate()
                                     session.setShowDiffOnFileWrite(true)
                                     changeList = await tool.tool.getDiffChanges()
                                 }
