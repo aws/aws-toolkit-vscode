@@ -63,9 +63,6 @@ export const ignoredDirectoriesAndFiles = [
     'dist',
     'build',
     'out',
-    // IDE and editor directories
-    '.idea/',
-    '.vscode/',
     // OS specific files
     '.DS_Store',
 ]

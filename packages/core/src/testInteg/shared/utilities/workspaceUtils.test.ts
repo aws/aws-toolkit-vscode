@@ -597,12 +597,6 @@ describe('workspaceUtils', () => {
             assert.strictEqual(shouldIgnoreDirAndFile('node_modules', vscode.FileType.Directory), true)
             assert.strictEqual(shouldIgnoreDirAndFile('random_file.txt', vscode.FileType.File), false)
         })
-
-        it('handles directory patterns with trailing slash', function () {
-            assert.strictEqual(shouldIgnoreDirAndFile('.idea', vscode.FileType.Directory), true)
-            assert.strictEqual(shouldIgnoreDirAndFile('logs', vscode.FileType.Directory), true)
-            assert.strictEqual(shouldIgnoreDirAndFile('.idea', vscode.FileType.File), false)
-        })
     })
 
     describe('findStringInDirectory', function () {
