@@ -38,14 +38,6 @@ export async function writeAndShowBuildLogs() {
     return logFilePath
 }
 
-export async function loadManifestFile(directory: string) {
-    const manifestFile = path.join(directory, 'manifest.json')
-    const data = await fs.readFileText(manifestFile)
-    const manifest = JSON.parse(data)
-    getLogger().info(`CodeTransformation: loaded and parsed manifest file from ${manifestFile}`)
-    return manifest
-}
-
 export async function createLocalBuildUploadZip(baseDir: string, exitCode: number | null, stdout: string) {
     const manifestFilePath = path.join(baseDir, 'manifest.json')
     const buildResultsManifest = {

@@ -387,7 +387,11 @@ export class GumbyController {
                 await this.processCustomDependencyVersionFile(message)
                 break
             case ButtonActions.CONTINUE_TRANSFORMATION_FORM:
-                this.messenger.sendMessage('Ok, I will continue without this information.', message.tabID, 'ai-prompt')
+                this.messenger.sendMessage(
+                    CodeWhispererConstants.continueWithoutYamlMessage,
+                    message.tabID,
+                    'ai-prompt'
+                )
                 transformByQState.setCustomDependencyVersionFilePath('')
                 this.promptJavaHome('source', message.tabID)
                 break
@@ -459,7 +463,9 @@ export class GumbyController {
             })
 
             this.messenger.sendOneOrMultipleDiffsMessage(oneOrMultipleDiffsSelection, message.tabID)
-            await this.messenger.sendCustomDependencyVersionMessage(message.tabID)
+            this.promptJavaHome('source', message.tabID)
+            // When custom 1P upgrades ready, delete line above and uncomment line below
+            // await this.messenger.sendCustomDependencyVersionMessage(message.tabID)
         })
     }
 
