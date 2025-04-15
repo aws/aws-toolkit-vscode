@@ -20,6 +20,7 @@ phases:
     pre_build:
         commands:
             - export HOME=/home/codebuild-user
+            - bash buildspec/shared/setup-github-token.sh
             - bash buildspec/shared/linux-pre_build.sh
 
     build:
