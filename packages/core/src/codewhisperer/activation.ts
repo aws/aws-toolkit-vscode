@@ -344,9 +344,9 @@ export async function activate(context: ExtContext): Promise<void> {
         ),
         vscode.commands.registerCommand('aws.amazonq.openEditorAtRange', openEditorAtRange),
         auth.regionProfileManager.onDidChangeRegionProfile(() => {
-            // validate user's still has access to the selected customization
+            // Validate user still has access to the selected customization.
             const selectedCustomization = getSelectedCustomization()
-            // no need to validate base customization which has empty arn
+            // No need to validate base customization which has empty arn
             if (selectedCustomization.arn.length > 0) {
                 getAvailableCustomizationsList()
                     .then(async (customizations) => {
@@ -357,7 +357,8 @@ export async function activate(context: ExtContext): Promise<void> {
                     })
                     .catch((e) => {
                         getLogger().error(
-                            `encounter error while validating selected customization on profile change: ${(e as Error).message}`
+                            `encounter error while validating selected customization on profile change: %s`,
+                            (e as Error).message
                         )
                     })
             }
