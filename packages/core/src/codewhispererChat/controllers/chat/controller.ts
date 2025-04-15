@@ -1286,6 +1286,16 @@ export class ChatController {
             this.processException(e, message.tabID)
         }
     }
+    private sessionCleanUp(session: ChatSession) {
+        // Create a fresh token for this new conversation
+        session.createNewTokenSource()
+        session.setAgenticLoopInProgress(true)
+        session.clearListOfReadFiles()
+        session.clearListOfReadFolders()
+        session.setShowDiffOnFileWrite(false)
+        session.setMessageIdToUpdate(undefined)
+        session.setMessageIdToUpdateListDirectory(undefined)
+    }
 
     private async processPromptMessageAsNewThread(message: PromptMessage) {
         const session = this.sessionStorage.getSession(message.tabID)
@@ -1293,13 +1303,7 @@ export class ChatController {
         if (session.agenticLoopInProgress) {
             session.disposeTokenSource()
         }
-
-        // Create a fresh token for this new conversation
-        session.createNewTokenSource()
-        session.setAgenticLoopInProgress(true)
-        session.clearListOfReadFiles()
-        session.clearListOfReadFolders()
-        session.setShowDiffOnFileWrite(false)
+        this.sessionCleanUp(session)
         this.editorContextExtractor
             .extractContextForTrigger('ChatMessage')
             .then(async (context) => {
