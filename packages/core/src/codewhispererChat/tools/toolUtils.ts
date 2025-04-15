@@ -21,6 +21,7 @@ export enum ToolType {
     FsWrite = 'fsWrite',
     ExecuteBash = 'executeBash',
     ListDirectory = 'listDirectory',
+    MCP = 'MCP',
 }
 
 export type Tool =
@@ -158,16 +159,6 @@ export class ToolUtils {
                     return {
                         type: ToolType.ListDirectory,
                         tool: new ListDirectory(value.input as unknown as ListDirectoryParams),
-                    }
-                default:
-                    return {
-                        toolUseId: value.toolUseId,
-                        content: [
-                            {
-                                type: 'text',
-                                text: `The tool, "${value.name}" is not supported by the client`,
-                            } as ToolResultContentBlock,
-                        ],
                     }
             }
         } catch (error) {

@@ -12,7 +12,6 @@ import * as vscode from 'vscode'
 import { Writable } from 'stream'
 import { InvokeOutput } from './toolShared'
 import { CommandValidation } from './executeBash'
-import { Change } from 'diff'
 
 const logger = getLogger()
 
@@ -111,7 +110,8 @@ export class ToolManager {
      * @returns The display name for the tool
      */
     public displayName(tool: { type: ToolType; tool: any }): string {
-        return ToolUtils.displayName(tool)
+        const result = ToolUtils.displayName(tool)
+        return result
     }
 
     /**
@@ -120,7 +120,12 @@ export class ToolManager {
      * @returns CommandValidation object indicating if acceptance is required
      */
     public requiresAcceptance(tool: { type: ToolType; tool: any }): CommandValidation {
-        return ToolUtils.requiresAcceptance(tool)
+        const result = ToolUtils.requiresAcceptance(tool)
+        // if result is undefined or null then return false
+        if (result === undefined || result === null) {
+            return { requiresAcceptance: false }
+        }
+        return result
     }
 
     /**
@@ -135,7 +140,28 @@ export class ToolManager {
         updates?: Writable,
         cancellationToken?: vscode.CancellationToken
     ): Promise<InvokeOutput> {
-        return ToolUtils.invoke(tool, updates, cancellationToken)
+        let result = await ToolUtils.invoke(tool, updates, cancellationToken)
+
+        // If no result and we have MCP clients available, try to call the tool via MCP
+        if (!result) {
+            try {
+                const name = tool.tool.toolSpecification?.name
+                const args = updates.toolUse.input.query
+                // const mcp1 = this.mcpManager.clients[0]['amzn-mcp'];
+                const mcp = this.mcpManager.amznMcpClient
+
+                result = await mcp.callTool({
+                    name: name,
+                    arguments: args,
+                })
+                // [...this.mcpManager.clients.entries()][0][0]
+                console.log(`MCP tool result: ${result}`)
+            } catch (error) {
+                logger.error(`Failed to call MCP tool: ${error}`)
+            }
+        }
+
+        return result
     }
 
     /**
@@ -144,7 +170,8 @@ export class ToolManager {
      * @param toolType The type of tool
      */
     public validateOutput(output: InvokeOutput, toolType: ToolType): void {
-        ToolUtils.validateOutput(output, toolType)
+        const result = ToolUtils.validateOutput(output, toolType)
+        return result
     }
 
     /**
@@ -158,7 +185,8 @@ export class ToolManager {
         updates: Writable,
         requiresAcceptance: boolean
     ): Promise<void> {
-        return ToolUtils.queueDescription(tool, updates, requiresAcceptance)
+        const result = await ToolUtils.queueDescription(tool, updates, requiresAcceptance)
+        return result
     }
 
     /**
@@ -166,7 +194,8 @@ export class ToolManager {
      * @param tool The tool to validate
      */
     public async validate(tool: { type: ToolType; tool: any }): Promise<void> {
-        return ToolUtils.validate(tool)
+        const result = await ToolUtils.validate(tool)
+        return result
     }
 
     /**
@@ -175,6 +204,16 @@ export class ToolManager {
      * @returns The created tool or a tool result if creation failed
      */
     public tryFromToolUse(value: ToolUse): { type: ToolType; tool: any } | ToolResult {
-        return ToolUtils.tryFromToolUse(value)
+        const result = ToolUtils.tryFromToolUse(value)
+
+        // If result is null or undefined, check the MCP tools array for a matching tool
+        if (result === null || result === undefined) {
+            const mcpTool = this.mcpTools.find((tool) => tool.toolSpecification?.name === value.name)
+            if (mcpTool) {
+                // Return in the format expected by the return type
+                return { type: ToolType.MCP, tool: mcpTool }
+            }
+        }
+        return result
     }
 }

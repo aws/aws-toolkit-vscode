@@ -306,6 +306,8 @@ export class Messenger {
                                 throw new Error(`Tool ${toolUse.name} is not available in the current mode`)
                             }
                             const toolManager = ToolManager.getInstance()
+
+                            //Adi
                             const tool = toolManager.tryFromToolUse(toolUse)
                             if ('type' in tool) {
                                 let explanation: string | undefined = undefined

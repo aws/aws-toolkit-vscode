@@ -757,11 +757,13 @@ export class ChatController {
                     }
                 } else {
                     const toolManager = ToolManager.getInstance()
+                    //Adi
                     const result = toolManager.tryFromToolUse(toolUse)
                     if ('type' in result) {
                         const tool: Tool = result
 
                         try {
+                            //Adi
                             await toolManager.validate(tool)
 
                             const chatStream = new ChatStream(

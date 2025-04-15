@@ -26,11 +26,12 @@ export interface MCPClientConfig {
  * Manages multiple MCP clients and aggregates their tools
  */
 export class MCPManager {
-    private clients: Map<string, Client> = new Map()
+    clients: Map<string, Client> = new Map()
     private transports: Map<string, StdioClientTransport> = new Map()
     private tools: Tool[] = []
     private clientConfigs: MCPClientConfig[]
     private initialized = false
+    public amznMcpClient: Client | undefined
 
     /**
      * Creates a new MCP Manager and initializes all clients
@@ -91,6 +92,7 @@ export class MCPManager {
 
             // Connect client
             await client.connect(transport)
+            this.amznMcpClient = client
 
             // Get tools from client
             const toolsResult = await client.listTools()
