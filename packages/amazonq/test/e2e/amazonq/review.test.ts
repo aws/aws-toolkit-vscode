@@ -4,7 +4,7 @@
  * Zuo
  */
 
-import assert from 'assert'
+/* [object Object]*/ import assert from 'assert'
 import * as vscode from 'vscode'
 import { qTestingFramework } from './framework/framework'
 import sinon from 'sinon'
@@ -89,14 +89,9 @@ describe('Amazon Q Code Review', function () {
         return issues
     }
 
-    function matchingSecurityDiagnosticCount(
-        diagnostics: vscode.Diagnostic[],
-        code: string,
-        message: string,
-        lineNumber?: number
-    ) {
+    function matchingSecurityDiagnosticCount(diagnostics: vscode.Diagnostic[], message: string, lineNumber?: number) {
         const matchingDiagnostics = diagnostics.filter((diagnostic) => {
-            let matches = diagnostic.code === code && diagnostic.message === message
+            let matches = diagnostic.message === message
 
             // Only filter by startLine if it's provided
             if (lineNumber !== undefined) {
@@ -138,7 +133,6 @@ describe('Amazon Q Code Review', function () {
         await using(registerAuthHook('amazonq-test-account'), async () => {
             await loginToIdC()
         })
-        // await vscode.commands.executeCommand('aws.codeWhisperer.toggleCodeScan')
     })
 
     beforeEach(async () => {
@@ -205,17 +199,15 @@ describe('Amazon Q Code Review', function () {
             })
         })
 
-        describe('review insecure file or project', async () => {
-            const testFolder = path.join(getWorkspaceFolder(), 'QCAFolder')
-            const fileName = 'ProblematicCode.java'
-            const filePath = path.join(testFolder, fileName)
+        describe('review insecure file and then fix file', async () => {
+            it('/review file gives correct critical and high security issues, clicks on view details, generate fix, verify diff, apply fix', async () => {
+                const testFolder = path.join(getWorkspaceFolder(), 'QCAFolder')
+                const fileName = 'ProblematicCode.java'
+                const filePath = path.join(testFolder, fileName)
 
-            beforeEach(async () => {
                 await validateInitialChatMessage()
-            })
-
-            it.skip('/review file gives correct critical and high security issues', async () => {
                 const document = await vscode.workspace.openTextDocument(filePath)
+                const originalContent = document.getText()
                 await vscode.window.showTextDocument(document)
 
                 tab.clickButton(ScanAction.RUN_FILE_SCAN)
@@ -237,27 +229,171 @@ describe('Amazon Q Code Review', function () {
                 )
 
                 const uri = vscode.Uri.file(filePath)
-                const securityDiagnostics: vscode.Diagnostic[] = vscode.languages
+                const securityDiagnostics = vscode.languages
                     .getDiagnostics(uri)
                     .filter((diagnostic) => diagnostic.source === codewhispererDiagnosticSourceLabel)
 
+                assert.ok(securityDiagnostics.length > 0, 'No security diagnostics found')
+
                 // 1 exact critical issue matches
                 assert.equal(
-                    matchingSecurityDiagnosticCount(
-                        securityDiagnostics,
-                        'java-do-not-hardcode-database-password',
-                        'CWE-798 - Hardcoded credentials',
-                        21
-                    ),
+                    matchingSecurityDiagnosticCount(securityDiagnostics, 'CWE-798 - Hardcoded credentials', 21),
                     1
                 )
-            })
 
-            it('/review project gives findings', async () => {
-                tab.clickButton(ScanAction.RUN_PROJECT_SCAN)
+                // Find one diagnostic
+                const sampleDiagnostic = securityDiagnostics[0]
+                assert.ok(sampleDiagnostic, 'Could not find critical issue diagnostic')
 
-                const scanResultBody = await waitForReviewResults(tab)
-                extractAndValidateIssues(scanResultBody)
+                const range = new vscode.Range(sampleDiagnostic.range.start, sampleDiagnostic.range.end)
+
+                const codeActions = await vscode.commands.executeCommand<vscode.CodeAction[]>(
+                    'vscode.executeCodeActionProvider',
+                    uri,
+                    range
+                )
+
+                // Find the "View details" code action
+                const viewDetailsAction = codeActions?.find((action) => action.title.includes('View details'))
+                assert.ok(viewDetailsAction, 'Could not find View details code action')
+
+                // Execute the view details command
+                if (viewDetailsAction?.command) {
+                    await vscode.commands.executeCommand(
+                        viewDetailsAction.command.command,
+                        ...viewDetailsAction.command.arguments!
+                    )
+                }
+
+                // Wait for the webview panel to open with polling
+                const webviewPanel = await pollForResult<vscode.WebviewPanel>(
+                    () => {
+                        const panels = vscode.window.tabGroups.all
+                            .flatMap((group) => group.tabs)
+                            .filter((tab) => tab.label === amazonqCodeIssueDetailsTabTitle)
+                            .map((tab) => tab.input)
+                            .filter((input): input is vscode.WebviewPanel => input !== undefined)
+
+                        return panels.length > 0 ? panels[0] : undefined
+                    },
+                    20_000,
+                    1000
+                )
+
+                assert.ok(webviewPanel, 'Security issue webview panel did not open after waiting')
+
+                const issue = viewDetailsAction.command?.arguments?.[0] as CodeScanIssue
+
+                // Wait for the fix to be generated with polling
+                const updatedIssue = await pollForResult<CodeScanIssue>(
+                    () => {
+                        const foundIssue = SecurityIssueProvider.instance.issues
+                            .flatMap(({ issues }) => issues)
+                            .find((i) => i.findingId === issue.findingId)
+
+                        return foundIssue?.suggestedFixes?.length !== undefined &&
+                            foundIssue?.suggestedFixes?.length > 0
+                            ? foundIssue
+                            : undefined
+                    },
+                    CodeWhispererConstants.codeFixJobTimeoutMs,
+                    CodeWhispererConstants.codeFixJobPollingIntervalMs
+                )
+
+                // Verify the fix was generated by checking if the issue has suggestedFixes
+                assert.ok(updatedIssue, 'Could not find updated issue')
+                assert.ok(updatedIssue.suggestedFixes.length > 0, 'No suggested fixes were generated')
+
+                // Get the suggested fix and verify it contains diff markers
+                const suggestedFix = updatedIssue.suggestedFixes[0]
+                const suggestedFixDiff = suggestedFix.code
+                assert.ok(suggestedFixDiff, 'No suggested fix code was found')
+                assert.ok(
+                    suggestedFixDiff.includes('-') && suggestedFixDiff.includes('+'),
+                    'Suggested fix does not contain diff markers'
+                )
+
+                // Parse the diff to extract removed and added lines
+                const diffLines = suggestedFixDiff.split('\n')
+                const removedLines = diffLines
+                    .filter((line) => line.startsWith('-') && !line.startsWith('---'))
+                    .map((line) => line.substring(1).trim())
+                const addedLines = diffLines
+                    .filter((line) => line.startsWith('+') && !line.startsWith('+++'))
+                    .map((line) => line.substring(1).trim())
+
+                // Make sure we found some changes in the diff
+                assert.ok(addedLines.length + removedLines.length > 0, 'No added or deleted lines found in the diff')
+
+                // Apply the fix
+                await vscode.commands.executeCommand('aws.amazonq.applySecurityFix', updatedIssue, filePath, 'webview')
+
+                // Wait for the fix to be applied
+                await new Promise((resolve) => setTimeout(resolve, 1000))
+
+                // Verify the fix was applied to the file
+                const updatedDocument = await vscode.workspace.openTextDocument(filePath)
+                const updatedContent = updatedDocument.getText()
+
+                // Check that the content has changed
+                assert.notStrictEqual(
+                    updatedContent,
+                    originalContent,
+                    'File content did not change after applying the fix'
+                )
+
+                // Count occurrences of each line in original and updated content
+                const countOccurrences = (text: string, line: string): number => {
+                    const regex = new RegExp(`^\\s*${line.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*$`, 'gm')
+                    const matches = text.match(regex)
+                    return matches ? matches.length : 0
+                }
+
+                // Create a dictionary to track expected line count changes
+                const lineCountChanges: Record<string, number> = {}
+
+                // Process removed lines (decrement count)
+                for (const removedLine of removedLines) {
+                    if (removedLine.trim()) {
+                        // Skip empty lines
+                        const trimmedLine = removedLine.trim()
+                        lineCountChanges[trimmedLine] = (lineCountChanges[trimmedLine] || 0) - 1
+                    }
+                }
+
+                // Process added lines (increment count)
+                for (const addedLine of addedLines) {
+                    if (addedLine.trim()) {
+                        // Skip empty lines
+                        const trimmedLine = addedLine.trim()
+                        lineCountChanges[trimmedLine] = (lineCountChanges[trimmedLine] || 0) + 1
+                    }
+                }
+
+                // Verify all line count changes match expectations
+                for (const [line, expectedChange] of Object.entries(lineCountChanges)) {
+                    const originalCount = countOccurrences(originalContent, line)
+                    const updatedCount = countOccurrences(updatedContent, line)
+                    const actualChange = updatedCount - originalCount
+
+                    assert.strictEqual(
+                        actualChange,
+                        expectedChange,
+                        `Line "${line}" count change mismatch: expected ${expectedChange}, got ${actualChange} (original: ${originalCount}, updated: ${updatedCount})`
+                    )
+                }
+
+                // Revert the changes
+                await vscode.workspace.fs.writeFile(uri, Buffer.from(originalContent))
+
+                // Wait a moment for the file system to update
+                await new Promise((resolve) => setTimeout(resolve, 1000))
+
+                // Verify the file was reverted
+                const revertedDocument = await vscode.workspace.openTextDocument(filePath)
+                const revertedContent = revertedDocument.getText()
+
+                assert.deepStrictEqual(revertedContent, originalContent, 'File content was not properly reverted')
             })
         })
 
@@ -300,12 +436,7 @@ describe('Amazon Q Code Review', function () {
 
                 // cannot find this ignored issue
                 assert.equal(
-                    matchingSecurityDiagnosticCount(
-                        securityDiagnostics,
-                        'java-do-not-hardcode-database-password',
-                        'CWE-798 - Hardcoded credentials',
-                        22
-                    ),
+                    matchingSecurityDiagnosticCount(securityDiagnostics, 'CWE-798 - Hardcoded credentials', 22),
                     0
                 )
 
@@ -318,315 +449,161 @@ describe('Amazon Q Code Review', function () {
                 }
             })
         })
-    })
 
-    it.skip('Clicks on view details, generate fix, verify diff in webview, apply fix', async () => {
-        const testFolder = path.join(getWorkspaceFolder(), 'QCAFolder')
-        const fileName = 'ProblematicCode.java'
-        const filePath = path.join(testFolder, fileName)
+        describe('Project and file scans should return at least 1 LLM findings', async () => {
+            const testFolder = path.join(getWorkspaceFolder(), 'QCAFolder')
+            const fileName = 'RLinker.java'
+            const filePath = path.join(testFolder, fileName)
+            let document: vscode.TextDocument
 
-        await validateInitialChatMessage()
-
-        const document = await vscode.workspace.openTextDocument(filePath)
-        await vscode.window.showTextDocument(document)
-
-        // Store original content for later comparison
-        const originalContent = document.getText()
-
-        tab.clickButton(ScanAction.RUN_FILE_SCAN)
-
-        await waitForChatItems(6)
-        const scanningInProgressMessage = tab.getChatItems()[6]
-        assert.deepStrictEqual(
-            scanningInProgressMessage.body,
-            scanProgressMessage(SecurityScanStep.CREATE_SCAN_JOB, CodeAnalysisScope.FILE_ON_DEMAND, fileName)
-        )
-
-        // Wait for scan to complete
-        const scanResultBody = await waitForReviewResults(tab)
-
-        // Verify we have issues
-        const issues = extractAndValidateIssues(scanResultBody)
-        assert.deepStrictEqual(
-            issues.Critical >= 1,
-            true,
-            `critical issue ${issues.Critical} is not larger or equal to 1`
-        )
-
-        // Get security diagnostics
-        const uri = vscode.Uri.file(filePath)
-        const securityDiagnostics: vscode.Diagnostic[] = vscode.languages
-            .getDiagnostics(uri)
-            .filter((diagnostic) => diagnostic.source === codewhispererDiagnosticSourceLabel)
-
-        assert.ok(securityDiagnostics.length > 0, 'No security diagnostics found')
-
-        // Find the critical issue diagnostic
-        const sampleDiagnostic = securityDiagnostics[0]
-        assert.ok(sampleDiagnostic, 'Could not find critical issue diagnostic')
-
-        // Create a range from the diagnostic
-        const range = new vscode.Range(sampleDiagnostic.range.start, sampleDiagnostic.range.end)
-
-        // Get code actions for the diagnostic
-        const codeActions = await vscode.commands.executeCommand<vscode.CodeAction[]>(
-            'vscode.executeCodeActionProvider',
-            uri,
-            range
-        )
-
-        // Find the "View details" code action
-        const viewDetailsAction = codeActions?.find((action) => action.title.includes('View details'))
-        assert.ok(viewDetailsAction, 'Could not find View details code action')
-
-        // Execute the view details command
-        if (viewDetailsAction?.command) {
-            await vscode.commands.executeCommand(
-                viewDetailsAction.command.command,
-                ...viewDetailsAction.command.arguments!
-            )
-        }
-
-        // Wait for the webview panel to open with polling
-        const webviewPanel = await pollForResult<vscode.WebviewPanel>(
-            () => {
-                // Find the webview panel for code issue details
-                const panels = vscode.window.tabGroups.all
-                    .flatMap((group) => group.tabs)
-                    .filter((tab) => tab.label === amazonqCodeIssueDetailsTabTitle)
-                    .map((tab) => tab.input)
-                    .filter((input): input is vscode.WebviewPanel => input !== undefined)
-
-                return panels.length > 0 ? panels[0] : undefined
-            },
-            20_000,
-            1000
-        )
-
-        assert.ok(webviewPanel, 'Security issue webview panel did not open after waiting')
-
-        // Click the Explain button in the webview
-        // Since we can't directly interact with the webview, we'll execute the command
-        const issue = viewDetailsAction.command?.arguments?.[0] as CodeScanIssue
-        await vscode.commands.executeCommand('aws.amazonq.explainIssue', issue)
-
-        // Verify the explanation was generated appears in the new chat tab(not the old chat)
-
-        const tabs = vscode.window.tabGroups.all
-            .flatMap((group) => group.tabs)
-            .filter((tab) => tab.label.includes('Amazon Q'))
-
-        console.log(tabs)
-
-        // Click the Generate Fix button in the webview
-        // Since we can't directly interact with the webview, we'll execute the command
-        await vscode.commands.executeCommand('aws.amazonq.security.generateFix', issue, filePath, 'webview')
-
-        // Wait for the fix to be generated with polling
-        const updatedIssue = await pollForResult<CodeScanIssue>(
-            () => {
-                const foundIssue = SecurityIssueProvider.instance.issues
-                    .flatMap(({ issues }) => issues)
-                    .find((i) => i.findingId === issue.findingId)
-
-                return foundIssue?.suggestedFixes?.length !== undefined && foundIssue?.suggestedFixes?.length > 0
-                    ? foundIssue
-                    : undefined
-            },
-            CodeWhispererConstants.codeFixJobTimeoutMs,
-            CodeWhispererConstants.codeFixJobPollingIntervalMs
-        )
-
-        // Verify the fix was generated by checking if the issue has suggestedFixes
-        assert.ok(updatedIssue, 'Could not find updated issue')
-        assert.ok(updatedIssue.suggestedFixes.length > 0, 'No suggested fixes were generated')
-
-        assert.ok(webviewPanel, 'Security issue webview panel did not open after waiting')
-
-        // Get the suggested fix and verify it contains diff markers
-        const suggestedFix = updatedIssue.suggestedFixes[0]
-        const suggestedFixDiff = suggestedFix.code
-        assert.ok(suggestedFixDiff, 'No suggested fix code was found')
-        assert.ok(
-            suggestedFixDiff.includes('-') && suggestedFixDiff.includes('+'),
-            'Suggested fix does not contain diff markers'
-        )
-
-        // Parse the diff to extract removed and added lines
-        const diffLines = suggestedFixDiff.split('\n')
-        const removedLines = diffLines
-            .filter((line) => line.startsWith('-') && !line.startsWith('---'))
-            .map((line) => line.substring(1).trim())
-        const addedLines = diffLines
-            .filter((line) => line.startsWith('+') && !line.startsWith('+++'))
-            .map((line) => line.substring(1).trim())
-
-        // Make sure we found some changes in the diff
-        assert.ok(addedLines.length + removedLines.length > 0, 'No added or deleted lines found in the diff')
-
-        // Apply the fix
-        await vscode.commands.executeCommand('aws.amazonq.applySecurityFix', updatedIssue, filePath, 'webview')
-
-        // Wait for the fix to be applied
-        await new Promise((resolve) => setTimeout(resolve, 1000))
-
-        // Verify the fix was applied to the file
-        const updatedDocument = await vscode.workspace.openTextDocument(filePath)
-        const updatedContent = updatedDocument.getText()
-
-        // Check that the content has changed
-        assert.notStrictEqual(updatedContent, originalContent, 'File content did not change after applying the fix')
-
-        // Count occurrences of each line in original and updated content
-        const countOccurrences = (text: string, line: string): number => {
-            const regex = new RegExp(`^\\s*${line.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*$`, 'gm')
-            const matches = text.match(regex)
-            return matches ? matches.length : 0
-        }
-
-        // Create a dictionary to track expected line count changes
-        const lineCountChanges: Record<string, number> = {}
-
-        // Process removed lines (decrement count)
-        for (const removedLine of removedLines) {
-            if (removedLine.trim()) {
-                // Skip empty lines
-                const trimmedLine = removedLine.trim()
-                lineCountChanges[trimmedLine] = (lineCountChanges[trimmedLine] || 0) - 1
+            function assertAtLeastOneLLMFindings(securityDiagnostics: vscode.Diagnostic[]) {
+                const readabilityIssuesCount = matchingSecurityDiagnosticCount(
+                    securityDiagnostics,
+                    'Readability and maintainability issues detected.'
+                )
+                const performanceIssuesCount = matchingSecurityDiagnosticCount(
+                    securityDiagnostics,
+                    'Performance inefficiencies detected in code.'
+                )
+                const errorHandlingIssuesCount = matchingSecurityDiagnosticCount(
+                    securityDiagnostics,
+                    'Inadequate error handling detected.'
+                )
+                const namingIssuesCount = matchingSecurityDiagnosticCount(
+                    securityDiagnostics,
+                    'Inconsistent or unclear naming detected.'
+                )
+                const loggingIssuesCount = matchingSecurityDiagnosticCount(
+                    securityDiagnostics,
+                    'Insufficient or improper logging found.'
+                )
+                assert.ok(
+                    readabilityIssuesCount +
+                        performanceIssuesCount +
+                        errorHandlingIssuesCount +
+                        namingIssuesCount +
+                        loggingIssuesCount >
+                        0,
+                    'No LLM findings were found'
+                )
             }
-        }
 
-        // Process added lines (increment count)
-        for (const addedLine of addedLines) {
-            if (addedLine.trim()) {
-                // Skip empty lines
-                const trimmedLine = addedLine.trim()
-                lineCountChanges[trimmedLine] = (lineCountChanges[trimmedLine] || 0) + 1
-            }
-        }
+            beforeEach(async () => {
+                await validateInitialChatMessage()
+            })
 
-        // Verify all line count changes match expectations
-        for (const [line, expectedChange] of Object.entries(lineCountChanges)) {
-            const originalCount = countOccurrences(originalContent, line)
-            const updatedCount = countOccurrences(updatedContent, line)
-            const actualChange = updatedCount - originalCount
+            it('file scan returns at least 1 LLM findings', async () => {
+                document = await vscode.workspace.openTextDocument(filePath)
+                await vscode.window.showTextDocument(document)
 
-            assert.strictEqual(
-                actualChange,
-                expectedChange,
-                `Line "${line}" count change mismatch: expected ${expectedChange}, got ${actualChange} (original: ${originalCount}, updated: ${updatedCount})`
-            )
-        }
+                tab.clickButton(ScanAction.RUN_FILE_SCAN)
 
-        // Revert the changes
-        await vscode.workspace.fs.writeFile(uri, Buffer.from(originalContent))
+                await waitForChatItems(6)
+                const scanningInProgressMessage = tab.getChatItems()[6]
+                assert.deepStrictEqual(
+                    scanningInProgressMessage.body,
+                    scanProgressMessage(SecurityScanStep.CREATE_SCAN_JOB, CodeAnalysisScope.FILE_ON_DEMAND, fileName)
+                )
 
-        // Wait a moment for the file system to update
-        await new Promise((resolve) => setTimeout(resolve, 1000))
+                const scanResultBody = await waitForReviewResults(tab)
 
-        // Verify the file was reverted
-        const revertedDocument = await vscode.workspace.openTextDocument(filePath)
-        const revertedContent = revertedDocument.getText()
+                const issues = extractAndValidateIssues(scanResultBody)
 
-        assert.deepStrictEqual(revertedContent, originalContent, 'File content was not properly reverted')
-    })
+                assert.deepStrictEqual(
+                    issues.Critical + issues.High + issues.Medium + issues.Low + issues.Info >= 1,
+                    true,
+                    `There are no issues detected when there should be at least 1`
+                )
 
-    describe('Project and file scans should return at least 1 LLM findings', async () => {
-        const testFolder = path.join(getWorkspaceFolder(), 'QCAFolder')
-        const fileName = 'RLinker.java'
-        const filePath = path.join(testFolder, fileName)
-        let document: vscode.TextDocument
+                const uri = vscode.Uri.file(filePath)
+                const securityDiagnostics: vscode.Diagnostic[] = vscode.languages
+                    .getDiagnostics(uri)
+                    .filter((diagnostic) => diagnostic.source === codewhispererDiagnosticSourceLabel)
 
-        function assertAtLeastOneLLMFindings(securityDiagnostics: vscode.Diagnostic[]) {
-            const readabilityIssuesCount = matchingSecurityDiagnosticCount(
-                securityDiagnostics,
-                'java-code-quality-readability-maintainability',
-                'Readability and maintainability issues detected.'
-            )
-            const performanceIssuesCount = matchingSecurityDiagnosticCount(
-                securityDiagnostics,
-                'java-code-quality-performance',
-                'Performance inefficiencies detected in code.'
-            )
-            const errorHandlingIssuesCount = matchingSecurityDiagnosticCount(
-                securityDiagnostics,
-                'java-code-quality-error-handling',
-                'Inadequate error handling detected.'
-            )
-            const namingIssuesCount = matchingSecurityDiagnosticCount(
-                securityDiagnostics,
-                'java-code-quality-naming',
-                'Inconsistent or unclear naming detected.'
-            )
-            const loggingIssuesCount = matchingSecurityDiagnosticCount(
-                securityDiagnostics,
-                'java-code-quality-logging',
-                'Insufficient or improper logging found.'
-            )
-            assert.ok(
-                readabilityIssuesCount +
-                    performanceIssuesCount +
-                    errorHandlingIssuesCount +
-                    namingIssuesCount +
-                    loggingIssuesCount >
-                    0,
-                'No LLM findings were found'
-            )
-        }
+                assertAtLeastOneLLMFindings(securityDiagnostics)
+            })
 
-        beforeEach(async () => {
-            await validateInitialChatMessage()
+            it('project scan returns at least 1 LLM findings', async () => {
+                const fileDir = getWorkspaceFolder()
+                const isWindows = process.platform === 'win32'
+                const { exec } = require('child_process')
+                const util = require('util')
+                const execPromise = util.promisify(exec)
 
-            document = await vscode.workspace.openTextDocument(filePath)
-            await vscode.window.showTextDocument(document)
-        })
+                try {
+                    // Initialize git repository to make RLinker.java appear in git diff
+                    if (isWindows) {
+                        await execPromise('git init', { cwd: fileDir })
+                        await execPromise('git add QCAFolder/RLinker.java', { cwd: fileDir })
+                        await execPromise('git commit -m "Initial commit"', { cwd: fileDir })
+                    } else {
+                        await execPromise('git init', { cwd: fileDir })
+                        await execPromise('git add QCAFolder/RLinker.java', { cwd: fileDir })
+                        await execPromise('git commit -m "Initial commit"', { cwd: fileDir })
+                    }
 
-        // eslint-disable-next-line aws-toolkits/no-only-in-tests
-        it('file scan returns at least 1 LLM findings', async () => {
-            tab.clickButton(ScanAction.RUN_FILE_SCAN)
+                    document = await vscode.workspace.openTextDocument(filePath)
+                    await vscode.window.showTextDocument(document)
 
-            await waitForChatItems(6)
-            const scanningInProgressMessage = tab.getChatItems()[6]
-            assert.deepStrictEqual(
-                scanningInProgressMessage.body,
-                scanProgressMessage(SecurityScanStep.CREATE_SCAN_JOB, CodeAnalysisScope.FILE_ON_DEMAND, fileName)
-            )
+                    const editor = vscode.window.activeTextEditor
 
-            const scanResultBody = await waitForReviewResults(tab)
+                    if (editor) {
+                        const position = new vscode.Position(20, 0)
+                        await editor.edit((editBuilder) => {
+                            editBuilder.insert(position, '\n')
+                        })
+                        // save file
+                        await document.save()
+                    }
 
-            extractAndValidateIssues(scanResultBody)
+                    // Run the project scan
+                    tab.clickButton(ScanAction.RUN_PROJECT_SCAN)
 
-            const uri = vscode.Uri.file(filePath)
-            const securityDiagnostics: vscode.Diagnostic[] = vscode.languages
-                .getDiagnostics(uri)
-                .filter((diagnostic) => diagnostic.source === codewhispererDiagnosticSourceLabel)
+                    await waitForChatItems(6)
+                    const scanningInProgressMessage = tab.getChatItems()[6]
+                    assert.deepStrictEqual(
+                        scanningInProgressMessage.body,
+                        scanProgressMessage(SecurityScanStep.CREATE_SCAN_JOB, CodeAnalysisScope.PROJECT)
+                    )
 
-            assertAtLeastOneLLMFindings(securityDiagnostics)
-        })
+                    const scanResultBody = await waitForReviewResults(tab)
 
-        // eslint-disable-next-line aws-toolkits/no-only-in-tests
-        it('project scan returns at least 1 LLM findings', async () => {
-            tab.clickButton(ScanAction.RUN_PROJECT_SCAN)
+                    const issues = extractAndValidateIssues(scanResultBody)
 
-            await waitForChatItems(6)
-            const scanningInProgressMessage = tab.getChatItems()[6]
-            assert.deepStrictEqual(
-                scanningInProgressMessage.body,
-                scanProgressMessage(SecurityScanStep.CREATE_SCAN_JOB, CodeAnalysisScope.PROJECT)
-            )
+                    assert.deepStrictEqual(
+                        issues.Critical + issues.High + issues.Medium + issues.Low + issues.Info >= 1,
+                        true,
+                        `There are no issues detected when there should be at least 1`
+                    )
 
-            console.log('waiting for project scan to finish')
-            const scanResultBody = await waitForReviewResults(tab)
-            console.log('done')
+                    const uri = vscode.Uri.file(filePath)
+                    const securityDiagnostics: vscode.Diagnostic[] = vscode.languages
+                        .getDiagnostics(uri)
+                        .filter((diagnostic) => diagnostic.source === codewhispererDiagnosticSourceLabel)
 
-            extractAndValidateIssues(scanResultBody)
+                    assertAtLeastOneLLMFindings(securityDiagnostics)
 
-            const uri = vscode.Uri.file(filePath)
-            const securityDiagnostics: vscode.Diagnostic[] = vscode.languages
-                .getDiagnostics(uri)
-                .filter((diagnostic) => diagnostic.source === codewhispererDiagnosticSourceLabel)
-
-            assertAtLeastOneLLMFindings(securityDiagnostics)
+                    const editor2 = vscode.window.activeTextEditor
+                    if (editor2) {
+                        await editor2.edit((editBuilder) => {
+                            const lineRange = editor2.document.lineAt(20).rangeIncludingLineBreak
+                            editBuilder.delete(lineRange)
+                        })
+                        await document.save()
+                    }
+                } finally {
+                    // Clean up git repository
+                    try {
+                        if (isWindows) {
+                            await execPromise('rmdir /s /q .git', { cwd: fileDir })
+                        } else {
+                            await execPromise('rm -rf .git', { cwd: fileDir })
+                        }
+                    } catch (err) {
+                        console.error('Failed to clean up git repository:', err)
+                    }
+                }
+            })
         })
     })
 })

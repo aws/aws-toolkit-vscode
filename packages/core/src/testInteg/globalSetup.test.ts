@@ -22,7 +22,7 @@ import { FakeExtensionContext } from '../test/fakeExtensionContext'
 // ASSUMPTION: Tests are not run concurrently
 
 let windowPatch: vscode.Disposable
-const maxTestDuration = 600_000
+const maxTestDuration = 300_000
 const globalSandbox = sinon.createSandbox()
 
 export async function mochaGlobalSetup(extensionId: string) {
