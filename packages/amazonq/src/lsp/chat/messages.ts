@@ -186,13 +186,9 @@ export function registerMessageListeners(
                 break
             }
             case listConversationsRequestType.method:
-                await resolveChatResponse(listConversationsRequestType.method, message.params, languageClient, webview)
-                break
             case conversationClickRequestType.method:
-                await resolveChatResponse(conversationClickRequestType.method, message.params, languageClient, webview)
-                break
             case tabBarActionRequestType.method:
-                await resolveChatResponse(tabBarActionRequestType.method, message.params, languageClient, webview)
+                await resolveChatResponse(message.command, message.params, languageClient, webview)
                 break
             case followUpClickNotificationType.method:
                 if (!isValidAuthFollowUpType(message.params.followUp.type)) {
