@@ -96,8 +96,9 @@ import {
 import { ChatSession } from '../../clients/chat/v0/chat'
 import { amazonQTabSuffix } from '../../../shared/constants'
 import { OutputKind } from '../../tools/toolShared'
-import { ToolUtils, Tool, ToolType } from '../../tools/toolUtils'
+import { Tool, ToolType } from '../../tools/toolUtils'
 import { ChatStream } from '../../tools/chatStream'
+import { ToolManager } from '../../tools/toolManager'
 import { tempDirPath } from '../../../shared/filesystemUtilities'
 import { Database } from '../../../shared/db/chatDb/chatDb'
 import { TabBarController } from './tabBarController'
@@ -755,12 +756,13 @@ export class ChatController {
                             "Your toolUse input isn't valid. Please check the syntax and make sure the input is complete. If the input is large, break it down into multiple tool uses with smaller input."
                     }
                 } else {
-                    const result = ToolUtils.tryFromToolUse(toolUse)
+                    const toolManager = ToolManager.getInstance()
+                    const result = toolManager.tryFromToolUse(toolUse)
                     if ('type' in result) {
                         const tool: Tool = result
 
                         try {
-                            await ToolUtils.validate(tool)
+                            await toolManager.validate(tool)
 
                             const chatStream = new ChatStream(
                                 this.messenger,
@@ -786,12 +788,12 @@ export class ChatController {
                                 return
                             }
 
-                            const output = await ToolUtils.invoke(
+                            const output = await toolManager.invoke(
                                 tool,
                                 chatStream,
                                 ConversationTracker.getInstance().getTokenForTrigger(triggerID)
                             )
-                            ToolUtils.validateOutput(output, tool.type)
+                            toolManager.validateOutput(output, tool.type)
 
                             let status: ToolResultStatus = ToolResultStatus.SUCCESS
                             if (output.output.success === false) {

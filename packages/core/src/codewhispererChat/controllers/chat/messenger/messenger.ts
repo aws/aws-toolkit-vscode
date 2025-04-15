@@ -56,7 +56,8 @@ import {
 } from '@aws/mynah-ui'
 import { Database } from '../../../../shared/db/chatDb/chatDb'
 import { TabType } from '../../../../amazonq/webview/ui/storages/tabsStorage'
-import { ToolType, ToolUtils } from '../../../tools/toolUtils'
+import { ToolType } from '../../../tools/toolUtils'
+import { ToolManager } from '../../../tools/toolManager'
 import { ChatStream } from '../../../tools/chatStream'
 import path from 'path'
 import { CommandValidation, ExecuteBashParams } from '../../../tools/executeBash'
@@ -304,7 +305,8 @@ export class Messenger {
                             if (!availableToolsNames.includes(toolUse.name)) {
                                 throw new Error(`Tool ${toolUse.name} is not available in the current mode`)
                             }
-                            const tool = ToolUtils.tryFromToolUse(toolUse)
+                            const toolManager = ToolManager.getInstance()
+                            const tool = toolManager.tryFromToolUse(toolUse)
                             if ('type' in tool) {
                                 let explanation: string | undefined = undefined
                                 let changeList: Change[] | undefined = undefined
@@ -364,7 +366,7 @@ export class Messenger {
                                         })
                                     }
                                 }
-                                const validation = ToolUtils.requiresAcceptance(tool)
+                                const validation = toolManager.requiresAcceptance(tool)
                                 const chatStream = new ChatStream(
                                     this,
                                     tabID,
@@ -378,7 +380,7 @@ export class Messenger {
                                     changeList,
                                     explanation
                                 )
-                                await ToolUtils.queueDescription(
+                                await toolManager.queueDescription(
                                     tool,
                                     chatStream,
                                     chatStream.validation.requiresAcceptance
