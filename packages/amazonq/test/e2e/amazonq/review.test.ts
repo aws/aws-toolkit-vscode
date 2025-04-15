@@ -24,13 +24,6 @@ import { ScanAction, scanProgressMessage } from '../../../src/app/amazonqScan/mo
 import { CodeScanIssue } from 'aws-core-vscode/codewhisperer'
 import { SecurityIssueProvider } from 'aws-core-vscode/codewhisperer'
 
-/**
- * Generic polling function that waits for a condition to be met
- * @param conditionFn Function that returns the result when condition is met, or undefined when not met
- * @param timeoutMs Maximum time to wait in milliseconds
- * @param intervalMs Polling interval in milliseconds
- * @returns The result from the condition function or undefined if timeout occurs
- */
 async function pollForResult<T>(
     conditionFn: () => T | undefined,
     timeoutMs: number = 60000,
@@ -289,7 +282,7 @@ describe('Amazon Q Code Review', function () {
                         const foundIssue = SecurityIssueProvider.instance.issues
                             .flatMap(({ issues }) => issues)
                             .find((i) => i.findingId === issue.findingId)
-
+                        console.log('original issue', issue.fixJobId, issue.suggestedFixes)
                         console.log('issue', foundIssue?.fixJobId, foundIssue?.suggestedFixes)
 
                         return foundIssue?.suggestedFixes?.length !== undefined &&
