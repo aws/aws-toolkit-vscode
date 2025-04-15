@@ -2,6 +2,7 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
+import * as vscode from 'vscode'
 import { Writable } from 'stream'
 import { FsRead, FsReadParams } from './fsRead'
 import { FsWrite, FsWriteParams } from './fsWrite'
@@ -14,7 +15,6 @@ import {
     fsReadToolResponseSize,
 } from './toolShared'
 import { ListDirectory, ListDirectoryParams } from './listDirectory'
-import * as vscode from 'vscode'
 
 export enum ToolType {
     FsRead = 'fsRead',
@@ -95,10 +95,10 @@ export class ToolUtils {
         }
     }
 
-    static async queueDescription(tool: Tool, updates: Writable): Promise<void> {
+    static async queueDescription(tool: Tool, updates: Writable, requiresAcceptance: boolean): Promise<void> {
         switch (tool.type) {
             case ToolType.FsRead:
-                tool.tool.queueDescription(updates)
+                tool.tool.queueDescription(updates, requiresAcceptance)
                 break
             case ToolType.FsWrite:
                 await tool.tool.queueDescription(updates)
@@ -107,7 +107,7 @@ export class ToolUtils {
                 tool.tool.queueDescription(updates)
                 break
             case ToolType.ListDirectory:
-                tool.tool.queueDescription(updates)
+                tool.tool.queueDescription(updates, requiresAcceptance)
                 break
         }
     }

@@ -376,7 +376,11 @@ export class Messenger {
                                     changeList,
                                     explanation
                                 )
-                                await ToolUtils.queueDescription(tool, chatStream)
+                                await ToolUtils.queueDescription(
+                                    tool,
+                                    chatStream,
+                                    chatStream.validation.requiresAcceptance
+                                )
                                 if (session.messageIdToUpdate === undefined && tool.type === ToolType.FsRead) {
                                     // Store the first messageId in a chain of tool uses
                                     session.setMessageIdToUpdate(toolUse.toolUseId)
@@ -748,13 +752,17 @@ export class Messenger {
         }
 
         // Handle read tool and list directory messages
-        if (toolUse?.name === ToolType.FsRead || toolUse?.name === ToolType.ListDirectory) {
+        if (
+            (toolUse?.name === ToolType.FsRead || toolUse?.name === ToolType.ListDirectory) &&
+            !validation.requiresAcceptance
+        ) {
             return this.sendReadAndListDirToolMessage(toolUse, session, tabID, triggerID, messageIdToUpdate)
         }
 
         // Handle file write tool, execute bash tool and bash command output log messages
         const buttons: ChatItemButton[] = []
         let header: ChatItemHeader | undefined = undefined
+        let messageID: string = toolUse?.toolUseId ?? ''
         if (toolUse?.name === ToolType.ExecuteBash && message.startsWith('```shell')) {
             if (validation.requiresAcceptance) {
                 const buttons: ChatItemButton[] = [
@@ -825,6 +833,10 @@ export class Messenger {
             }
         } else if (toolUse?.name === ToolType.ListDirectory || toolUse?.name === ToolType.FsRead) {
             if (validation.requiresAcceptance) {
+                /** For Read and List Directory tools
+                 * requiredAcceptance = false, we use messageID = toolID and we keep on updating this messageID
+                 * requiredAcceptance = true, IDE sends messageID != toolID, some default value, as this overlaps with previous message. */
+                messageID = 'toolUse'
                 const buttons: ChatItemButton[] = [
                     {
                         id: 'confirm-tool-use',
@@ -840,7 +852,6 @@ export class Messenger {
                     },
                 ]
                 header = {
-                    body: 'shell',
                     buttons,
                 }
             }
@@ -859,7 +870,7 @@ export class Messenger {
                     followUpsHeader: undefined,
                     relatedSuggestions: undefined,
                     triggerID,
-                    messageID: toolUse?.toolUseId ?? '',
+                    messageID,
                     userIntent: undefined,
                     codeBlockLanguage: undefined,
                     contextList: undefined,
