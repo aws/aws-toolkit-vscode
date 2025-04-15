@@ -1651,7 +1651,26 @@ export class ChatController {
 
             await this.messenger.sendAIResponse(response, session, tabID, triggerID, triggerPayload)
         } catch (e: any) {
-            this.telemetryHelper.recordMessageResponseError(triggerPayload, tabID, getHttpStatusCode(e) ?? 0)
+            let errorMessage: string
+            let requestID: string | undefined
+
+            if (e instanceof CodeWhispererStreamingServiceException) {
+                errorMessage = e.message
+                requestID = e.$metadata.requestId
+            } else {
+                errorMessage = 'Error is not CodeWhispererStreamingServiceException. '
+                if (e instanceof Error || e?.message) {
+                    errorMessage += `Error message is: ${e.message}`
+                }
+            }
+
+            this.telemetryHelper.recordMessageResponseError(
+                triggerPayload,
+                tabID,
+                getHttpStatusCode(e) ?? 0,
+                requestID,
+                errorMessage
+            )
             // clears session, record telemetry before this call
             this.processException(e, tabID)
         }

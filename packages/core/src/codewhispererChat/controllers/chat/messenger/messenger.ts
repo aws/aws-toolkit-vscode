@@ -542,7 +542,13 @@ export class Messenger {
 
                 followUps = []
                 relatedSuggestions = []
-                this.telemetryHelper.recordMessageResponseError(triggerPayload, tabID, errorInfo.statusCode ?? 0)
+                this.telemetryHelper.recordMessageResponseError(
+                    triggerPayload,
+                    tabID,
+                    errorInfo.statusCode ?? 0,
+                    errorInfo.requestId,
+                    errorInfo.errorMessage
+                )
             })
             .finally(async () => {
                 if (session.sessionIdentifier && !this.isTriggerCancelled(triggerID)) {

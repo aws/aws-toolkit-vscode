@@ -38,7 +38,7 @@ import { TriggerEvent, TriggerEventsStorage } from '../../storages/triggerEvents
 import globals from '../../../shared/extensionGlobals'
 import { getLogger } from '../../../shared/logger/logger'
 import { codeWhispererClient } from '../../../codewhisperer/client/codewhisperer'
-import { isAwsError } from '../../../shared/errors'
+import { getTelemetryReasonDesc, isAwsError } from '../../../shared/errors'
 import { ChatMessageInteractionType } from '../../../codewhisperer/client/codewhispereruserclient'
 import { supportedLanguagesList } from '../chat/chatRequest/converter'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
@@ -603,7 +603,13 @@ export class CWCTelemetryHelper {
         this.messageStorage.delete(tabID)
     }
 
-    public recordMessageResponseError(triggerPayload: TriggerPayload, tabID: string, responseCode: number) {
+    public recordMessageResponseError(
+        triggerPayload: TriggerPayload,
+        tabID: string,
+        responseCode: number,
+        requestID?: string,
+        errorReason?: string
+    ) {
         const triggerEvent = this.triggerEventsStorage.getLastTriggerEventByTabID(tabID)
 
         telemetry.amazonq_messageResponseError.emit({
@@ -617,8 +623,10 @@ export class CWCTelemetryHelper {
             cwsprChatActiveEditorImportCount: triggerPayload.codeQuery?.fullyQualifiedNames?.used?.length,
             cwsprChatResponseCode: responseCode,
             cwsprChatRequestLength: triggerPayload.message?.length ?? 0,
-            cwsprChatConversationType: 'Chat',
+            cwsprChatConversationType: triggerPayload.origin ? 'AgenticChat' : 'Chat',
             credentialStartUrl: AuthUtil.instance.startUrl,
+            requestId: requestID,
+            reasonDesc: getTelemetryReasonDesc(errorReason),
         })
     }
 
