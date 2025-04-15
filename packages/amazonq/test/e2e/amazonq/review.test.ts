@@ -4,7 +4,7 @@
  * Zuo
  */
 
-/* [object Object]*/ import assert from 'assert'
+import assert from 'assert'
 import * as vscode from 'vscode'
 import { qTestingFramework } from './framework/framework'
 import sinon from 'sinon'
@@ -18,7 +18,6 @@ import {
     SecurityScanStep,
     amazonqCodeIssueDetailsTabTitle,
     CodeWhispererConstants,
-    // codeScanState,
 } from 'aws-core-vscode/codewhisperer'
 import path from 'path'
 import { ScanAction, scanProgressMessage } from '../../../src/app/amazonqScan/models/constants'
