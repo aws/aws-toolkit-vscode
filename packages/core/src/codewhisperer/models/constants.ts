@@ -663,6 +663,11 @@ export const jobCancelledNotification = 'You cancelled the transformation.'
 
 export const continueWithoutHilMessage = 'I will continue transforming your code without upgrading this dependency.'
 
+export const continueWithoutYamlMessage = 'Ok, I will continue without this information.'
+
+export const chooseYamlMessage =
+    'You can optionally upload a YAML file to specify which dependency versions to upgrade to.'
+
 export const enterJavaHomePlaceholder = 'Enter the path to your Java installation'
 
 export const openNewTabPlaceholder = 'Open a new tab to chat with Q'

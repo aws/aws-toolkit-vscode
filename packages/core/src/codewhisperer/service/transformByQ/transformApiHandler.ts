@@ -41,12 +41,7 @@ import { calculateTotalLatency } from '../../../amazonqGumby/telemetry/codeTrans
 import { MetadataResult } from '../../../shared/telemetry/telemetryClient'
 import request from '../../../shared/request'
 import { JobStoppedError, ZipExceedsSizeLimitError } from '../../../amazonqGumby/errors'
-import {
-    createLocalBuildUploadZip,
-    extractOriginalProjectSources,
-    loadManifestFile,
-    writeAndShowBuildLogs,
-} from './transformFileHandler'
+import { createLocalBuildUploadZip, extractOriginalProjectSources, writeAndShowBuildLogs } from './transformFileHandler'
 import { createCodeWhispererChatStreamingClient } from '../../../shared/clients/codewhispererChatClient'
 import { downloadExportResultArchive } from '../../../shared/utilities/download'
 import { ExportContext, ExportIntent, TransformationDownloadArtifactType } from '@amzn/codewhisperer-streaming'
@@ -695,6 +690,9 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
 
             const errorMessage = response.transformationJob.reason
             if (errorMessage !== undefined) {
+                getLogger().error(
+                    `CodeTransformation: GetTransformation returned transformation error reason = ${errorMessage}`
+                )
                 transformByQState.setJobFailureErrorChatMessage(
                     `${CodeWhispererConstants.failedToCompleteJobGenericChatMessage} ${errorMessage}`
                 )
@@ -781,9 +779,7 @@ async function downloadClientInstructions(jobId: string, artifactId: string) {
     }
 
     await downloadAndExtractResultArchive(jobId, exportZipPath, exportContext)
-
-    const clientInstructionsManifest = await loadManifestFile(exportZipPath)
-    return path.join(exportZipPath, clientInstructionsManifest.diffFileName)
+    return path.join(exportZipPath, 'diff.patch')
 }
 
 async function processClientInstructions(jobId: string, clientInstructionsPath: any, artifactId: string) {
