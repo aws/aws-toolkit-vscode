@@ -497,8 +497,7 @@ describe('CodeWhisperer-basicCommands', function () {
             await listCodeWhispererCommands.execute()
         })
 
-        // eslint-disable-next-line aws-toolkits/no-only-in-tests
-        it.only('should not show auto-scans if using builder id', async function () {
+        it('should not show auto-scans if using builder id', async function () {
             sinon.stub(AuthUtil.instance, 'isConnected').returns(true)
             sinon.stub(AuthUtil.instance, 'isBuilderIdInUse').returns(true)
 
