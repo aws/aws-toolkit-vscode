@@ -346,7 +346,7 @@ export async function activate(context: ExtContext): Promise<void> {
         auth.regionProfileManager.onDidChangeRegionProfile(() => {
             // Validate user still has access to the selected customization.
             const selectedCustomization = getSelectedCustomization()
-            // No need to validate base customization which has empty arn
+            // No need to validate base customization which has empty arn.
             if (selectedCustomization.arn.length > 0) {
                 getAvailableCustomizationsList()
                     .then(async (customizations) => {
