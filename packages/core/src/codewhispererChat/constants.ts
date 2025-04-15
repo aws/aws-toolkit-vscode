@@ -55,3 +55,14 @@ export const defaultContextLengths: ContextLengths = {
 }
 
 export const defaultStreamingResponseTimeoutInMs = 180_000
+
+export const ignoredDirectoriesAndFiles = [
+    // Dependency directories
+    'node_modules',
+    // Build outputs
+    'dist',
+    'build',
+    'out',
+    // OS specific files
+    '.DS_Store',
+]
