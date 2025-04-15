@@ -8,9 +8,11 @@ import { LanguageClient } from 'vscode-languageclient'
 import { AmazonQChatViewProvider } from './webviewProvider'
 import { registerCommands } from './commands'
 import { registerLanguageServerEventListener, registerMessageListeners } from './messages'
-import { globals } from 'aws-core-vscode/shared'
+import { getLogger, globals } from 'aws-core-vscode/shared'
+import { activate as registerLegacyChatListeners } from '../../app/chat/activation'
+import { DefaultAmazonQAppInitContext } from 'aws-core-vscode/amazonq'
 
-export function activate(languageClient: LanguageClient, encryptionKey: Buffer, mynahUIPath: string) {
+export async function activate(languageClient: LanguageClient, encryptionKey: Buffer, mynahUIPath: string) {
     const provider = new AmazonQChatViewProvider(mynahUIPath)
 
     globals.context.subscriptions.push(
@@ -29,6 +31,17 @@ export function activate(languageClient: LanguageClient, encryptionKey: Buffer, 
     registerLanguageServerEventListener(languageClient, provider)
 
     provider.onDidResolveWebview(() => {
+        if (provider.webview) {
+            DefaultAmazonQAppInitContext.instance.getAppsToWebViewMessageListener().onMessage((msg) => {
+                provider.webview?.postMessage(msg).then(undefined, (e) => {
+                    getLogger().error('webView.postMessage failed: %s', (e as Error).message)
+                })
+            })
+        }
+
         registerMessageListeners(languageClient, provider, encryptionKey)
     })
+
+    // register event listeners from the legacy agent flow
+    await registerLegacyChatListeners(globals.context)
 }

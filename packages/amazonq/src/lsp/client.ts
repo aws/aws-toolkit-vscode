@@ -118,7 +118,7 @@ export async function startLanguageServer(
         }
 
         if (Experiments.instance.get('amazonqChatLSP', false)) {
-            activate(client, encryptionKey, resourcePaths.ui)
+            await activate(client, encryptionKey, resourcePaths.ui)
         }
 
         const refreshInterval = auth.startTokenRefreshInterval()

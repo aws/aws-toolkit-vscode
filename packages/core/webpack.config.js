@@ -33,6 +33,7 @@ module.exports = (env, argv) => {
             ...baseVueConfig.createVueEntries(),
             // The above `createVueEntries` path pattern match does not catch this:
             'src/amazonq/webview/ui/amazonq-ui': './src/amazonq/webview/ui/main.ts',
+            'src/amazonq/webview/ui/amazonq-ui-connector-adapter': './src/amazonq/webview/ui/connectorAdapter.ts',
         },
     }
 

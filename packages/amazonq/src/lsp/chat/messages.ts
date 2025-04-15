@@ -40,6 +40,7 @@ import * as jose from 'jose'
 import { AmazonQChatViewProvider } from './webviewProvider'
 import { AuthUtil } from 'aws-core-vscode/codewhisperer'
 import { AmazonQPromptSettings, messages } from 'aws-core-vscode/shared'
+import { DefaultAmazonQAppInitContext, messageDispatcher } from 'aws-core-vscode/amazonq'
 
 export function registerLanguageServerEventListener(languageClient: LanguageClient, provider: AmazonQChatViewProvider) {
     languageClient.info(
@@ -72,6 +73,15 @@ export function registerMessageListeners(
 ) {
     provider.webview?.onDidReceiveMessage(async (message) => {
         languageClient.info(`[VSCode Client]  Received ${JSON.stringify(message)} from chat`)
+
+        if ((message.tabType && message.tabType !== 'cwc') || messageDispatcher.isLegacyEvent(message.command)) {
+            // handle the mynah ui -> agent legacy flow
+            messageDispatcher.handleWebviewEvent(
+                message,
+                DefaultAmazonQAppInitContext.instance.getWebViewToAppsMessagePublishers()
+            )
+            return
+        }
 
         const webview = provider.webview
         switch (message.command) {

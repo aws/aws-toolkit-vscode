@@ -13,6 +13,7 @@
         "./web": "./dist/src/extensionWeb.js",
         "./webShared": "./dist/src/extensionWebShared.js",
         "./amazonq": "./dist/src/amazonq/index.js",
+        "./amazonq/node": "./dist/src/amazonq/indexNode.js",
         "./codewhisperer": "./dist/src/codewhisperer/index.js",
         "./codewhisperer/node": "./dist/src/codewhisperer/indexNode.js",
         "./shared": "./dist/src/shared/index.js",
@@ -440,6 +441,7 @@
     },
     "devDependencies": {
         "@aws-sdk/types": "^3.13.1",
+        "@aws/chat-client": "^0.1.4",
         "@aws/chat-client-ui-types": "^0.1.12",
         "@aws/language-server-runtimes": "^0.2.58",
         "@aws/language-server-runtimes-types": "^0.1.13",
