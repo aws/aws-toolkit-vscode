@@ -8,9 +8,10 @@ import { TabDataGenerator } from '../tabs/generator'
 import { Connector } from '../connector'
 import { TabsStorage, TabType } from '../storages/tabsStorage'
 import { uiComponentsTexts } from '../texts/constants'
+import { MynahUIRef } from '../../../commons/types'
 
 export interface QuickActionsHandlerProps {
-    mynahUI: MynahUI
+    mynahUIRef: { mynahUI: MynahUI | undefined }
     connector: Connector
     tabsStorage: TabsStorage
     isFeatureDevEnabled: boolean
@@ -30,7 +31,7 @@ export interface HandleCommandProps {
     taskName?: string
 }
 export class QuickActionHandler {
-    private mynahUI: MynahUI
+    private mynahUIRef: MynahUIRef
     private connector: Connector
     private tabsStorage: TabsStorage
     private tabDataGenerator: TabDataGenerator
@@ -41,7 +42,7 @@ export class QuickActionHandler {
     private isDocEnabled: boolean
 
     constructor(props: QuickActionsHandlerProps) {
-        this.mynahUI = props.mynahUI
+        this.mynahUIRef = props.mynahUIRef
         this.connector = props.connector
         this.tabsStorage = props.tabsStorage
         this.isDocEnabled = props.isDocEnabled
@@ -104,7 +105,7 @@ export class QuickActionHandler {
     }
 
     private handleScanCommand(tabID: string, eventId: string | undefined) {
-        if (!this.isScanEnabled) {
+        if (!this.isScanEnabled || !this.mynahUI) {
             return
         }
         let scanTabId: string | undefined = undefined
@@ -158,7 +159,7 @@ export class QuickActionHandler {
     }
 
     private handleTestCommand(chatPrompt: ChatPrompt, tabID: string, eventId: string | undefined) {
-        if (!this.isTestEnabled) {
+        if (!this.isTestEnabled || !this.mynahUI) {
             return
         }
         const testTabId = this.tabsStorage.getTabs().find((tab) => tab.type === 'testgen')?.id
@@ -207,7 +208,7 @@ export class QuickActionHandler {
     }
 
     private handleCommand(props: HandleCommandProps) {
-        if (!props.isEnabled) {
+        if (!props.isEnabled || !this.mynahUI) {
             return
         }
 
@@ -244,7 +245,7 @@ export class QuickActionHandler {
 
             const addInformationCard = (tabId: string) => {
                 if (props.tabType === 'featuredev') {
-                    this.mynahUI.addChatItem(tabId, {
+                    this.mynahUI?.addChatItem(tabId, {
                         type: ChatItemType.ANSWER,
                         informationCard: {
                             title: 'Feature development',
@@ -286,7 +287,7 @@ export class QuickActionHandler {
     }
 
     private handleGumbyCommand(tabID: string, eventId: string | undefined) {
-        if (!this.isGumbyEnabled) {
+        if (!this.isGumbyEnabled || !this.mynahUI) {
             return
         }
 
@@ -356,5 +357,9 @@ export class QuickActionHandler {
         }
 
         this.connector.help(tabID)
+    }
+
+    private get mynahUI(): MynahUI | undefined {
+        return this.mynahUIRef.mynahUI
     }
 }

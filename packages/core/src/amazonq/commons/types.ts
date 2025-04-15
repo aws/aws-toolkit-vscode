@@ -11,6 +11,7 @@ import { DiffTreeFileInfo } from '../webview/ui/diffTree/types'
 import { Messenger } from './connector/baseMessenger'
 import { FeatureClient } from '../client/client'
 import { TelemetryHelper } from '../util/telemetryHelper'
+import { MynahUI } from '@aws/mynah-ui'
 
 export enum FollowUpTypes {
     // UnitTestGeneration
@@ -164,3 +165,5 @@ export enum MetricDataResult {
     Error = 'Error',
     LlmFailure = 'LLMFailure',
 }
+
+export type MynahUIRef = { mynahUI: MynahUI | undefined }
