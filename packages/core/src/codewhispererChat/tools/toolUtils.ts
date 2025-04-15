@@ -2,7 +2,6 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import * as vscode from 'vscode'
 import { Writable } from 'stream'
 import { FsRead, FsReadParams } from './fsRead'
 import { FsWrite, FsWriteParams } from './fsWrite'
@@ -15,12 +14,17 @@ import {
     fsReadToolResponseSize,
 } from './toolShared'
 import { ListDirectory, ListDirectoryParams } from './listDirectory'
+import { GrepSearch, GrepSearchParams } from './grepSearch'
+import * as vscode from 'vscode'
+import { FileSearch, FileSearchParams } from './fileSearch'
 
 export enum ToolType {
     FsRead = 'fsRead',
     FsWrite = 'fsWrite',
     ExecuteBash = 'executeBash',
     ListDirectory = 'listDirectory',
+    GrepSearch = 'grepSearch',
+    FileSearch = 'fileSearch',
 }
 
 export type Tool =
@@ -28,6 +32,8 @@ export type Tool =
     | { type: ToolType.FsWrite; tool: FsWrite }
     | { type: ToolType.ExecuteBash; tool: ExecuteBash }
     | { type: ToolType.ListDirectory; tool: ListDirectory }
+    | { type: ToolType.GrepSearch; tool: GrepSearch }
+    | { type: ToolType.FileSearch; tool: FileSearch }
 
 export class ToolUtils {
     static displayName(tool: Tool): string {
@@ -40,6 +46,10 @@ export class ToolUtils {
                 return 'Execute shell command'
             case ToolType.ListDirectory:
                 return 'List directory from filesystem'
+            case ToolType.GrepSearch:
+                return 'Run Fast text-based regex search'
+            case ToolType.FileSearch:
+                return `Search for files in a directory`
         }
     }
 
@@ -52,6 +62,10 @@ export class ToolUtils {
             case ToolType.ExecuteBash:
                 return tool.tool.requiresAcceptance()
             case ToolType.ListDirectory:
+                return tool.tool.requiresAcceptance()
+            case ToolType.GrepSearch:
+                return { requiresAcceptance: false }
+            case ToolType.FileSearch:
                 return tool.tool.requiresAcceptance()
         }
     }
@@ -74,6 +88,10 @@ export class ToolUtils {
             case ToolType.ExecuteBash:
                 return tool.tool.invoke(updates ?? undefined, cancellationToken)
             case ToolType.ListDirectory:
+                return tool.tool.invoke(updates)
+            case ToolType.GrepSearch:
+                return tool.tool.invoke(updates)
+            case ToolType.FileSearch:
                 return tool.tool.invoke(updates)
         }
     }
@@ -109,6 +127,12 @@ export class ToolUtils {
             case ToolType.ListDirectory:
                 tool.tool.queueDescription(updates, requiresAcceptance)
                 break
+            case ToolType.GrepSearch:
+                tool.tool.queueDescription(updates)
+                break
+            case ToolType.FileSearch:
+                tool.tool.queueDescription(updates)
+                break
         }
     }
 
@@ -121,6 +145,10 @@ export class ToolUtils {
             case ToolType.ExecuteBash:
                 return tool.tool.validate()
             case ToolType.ListDirectory:
+                return tool.tool.validate()
+            case ToolType.GrepSearch:
+                return tool.tool.validate()
+            case ToolType.FileSearch:
                 return tool.tool.validate()
         }
     }
@@ -158,6 +186,16 @@ export class ToolUtils {
                     return {
                         type: ToolType.ListDirectory,
                         tool: new ListDirectory(value.input as unknown as ListDirectoryParams),
+                    }
+                case ToolType.GrepSearch:
+                    return {
+                        type: ToolType.GrepSearch,
+                        tool: new GrepSearch(value.input as unknown as GrepSearchParams),
+                    }
+                case ToolType.FileSearch:
+                    return {
+                        type: ToolType.FileSearch,
+                        tool: new FileSearch(value.input as unknown as FileSearchParams),
                     }
                 default:
                     return {
