@@ -28,11 +28,6 @@ import { parse } from '@aws-sdk/util-arn-parser'
 import { isAwsError, ToolkitError } from '../../shared/errors'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { localize } from '../../shared/utilities/vsCodeUtils'
-import {
-    getAvailableCustomizationsList,
-    getSelectedCustomization,
-    switchToBaseCustomizationAndNotify,
-} from '../util/customizationUtil'
 
 // TODO: is there a better way to manage all endpoint strings in one place?
 export const defaultServiceConfig: CodeWhispererConfig = {
@@ -41,7 +36,6 @@ export const defaultServiceConfig: CodeWhispererConfig = {
 }
 
 // Hack until we have a single discovery endpoint. We will call each endpoint one by one to fetch profile before then.
-// TODO: update correct endpoint and region
 const endpoints = createConstantMap({
     'us-east-1': 'https://q.us-east-1.amazonaws.com/',
     'eu-central-1': 'https://q.eu-central-1.amazonaws.com/',
@@ -224,24 +218,6 @@ export class RegionProfileManager {
 
         // persist to state
         await this.persistSelectRegionProfile()
-
-        // validate user's still has access to the selected customization
-        const selectedCustomization = getSelectedCustomization()
-        // no need to validate base customization which has empty arn
-        if (selectedCustomization.arn.length > 0) {
-            getAvailableCustomizationsList()
-                .then((customizations) => {
-                    const r = customizations.find((it) => it.arn === selectedCustomization.arn)
-                    if (!r) {
-                        void switchToBaseCustomizationAndNotify().then()
-                    }
-                })
-                .catch((e) => {
-                    RegionProfileManager.logger.error(
-                        `encounter error while validating selected customization on profile change: ${(e as Error).message}`
-                    )
-                })
-        }
     }
 
     restoreProfileSelection = once(async () => {
