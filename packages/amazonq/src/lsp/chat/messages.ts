@@ -26,30 +26,37 @@ import {
     ResponseError,
     openTabRequestType,
     getSerializedChatRequestType,
+    listConversationsRequestType,
+    conversationClickRequestType,
+    ShowSaveFileDialogRequestType,
+    ShowSaveFileDialogParams,
+    LSPErrorCodes,
+    tabBarActionRequestType,
 } from '@aws/language-server-runtimes/protocol'
 import { v4 as uuidv4 } from 'uuid'
 import * as vscode from 'vscode'
-import { Disposable, LanguageClient, Position, State, TextDocumentIdentifier } from 'vscode-languageclient'
+import { Disposable, LanguageClient, Position, TextDocumentIdentifier } from 'vscode-languageclient'
 import * as jose from 'jose'
 import { AmazonQChatViewProvider } from './webviewProvider'
 import { AuthUtil } from 'aws-core-vscode/codewhisperer'
 import { AmazonQPromptSettings, messages } from 'aws-core-vscode/shared'
 
 export function registerLanguageServerEventListener(languageClient: LanguageClient, provider: AmazonQChatViewProvider) {
-    languageClient.onDidChangeState(({ oldState, newState }) => {
-        if (oldState === State.Starting && newState === State.Running) {
-            languageClient.info(
-                'Language client received initializeResult from server:',
-                JSON.stringify(languageClient.initializeResult)
-            )
+    languageClient.info(
+        'Language client received initializeResult from server:',
+        JSON.stringify(languageClient.initializeResult)
+    )
 
-            const chatOptions = languageClient.initializeResult?.awsServerCapabilities?.chatOptions
+    const chatOptions = languageClient.initializeResult?.awsServerCapabilities?.chatOptions
 
-            void provider.webview?.postMessage({
-                command: CHAT_OPTIONS,
-                params: chatOptions,
-            })
-        }
+    // Enable the history feature flag
+    chatOptions.history = true
+
+    provider.onDidResolveWebview(() => {
+        void provider.webview?.postMessage({
+            command: CHAT_OPTIONS,
+            params: chatOptions,
+        })
     })
 
     languageClient.onTelemetry((e) => {
@@ -65,6 +72,7 @@ export function registerMessageListeners(
     provider.webview?.onDidReceiveMessage(async (message) => {
         languageClient.info(`[VSCode Client]  Received ${JSON.stringify(message)} from chat`)
 
+        const webview = provider.webview
         switch (message.command) {
             case COPY_TO_CLIPBOARD:
                 languageClient.info('[VSCode Client] Copy to clipboard event received')
@@ -177,6 +185,15 @@ export function registerMessageListeners(
                 )
                 break
             }
+            case listConversationsRequestType.method:
+                await handleRequest(languageClient, message.params, webview, listConversationsRequestType.method)
+                break
+            case conversationClickRequestType.method:
+                await handleRequest(languageClient, message.params, webview, conversationClickRequestType.method)
+                break
+            case tabBarActionRequestType.method:
+                await handleRequest(languageClient, message.params, webview, tabBarActionRequestType.method)
+                break
             case followUpClickNotificationType.method:
                 if (!isValidAuthFollowUpType(message.params.followUp.type)) {
                     languageClient.sendNotification(followUpClickNotificationType.method, message.params)
@@ -242,6 +259,36 @@ export function registerMessageListeners(
 
     registerHandlerWithResponseRouter(openTabRequestType.method)
     registerHandlerWithResponseRouter(getSerializedChatRequestType.method)
+
+    languageClient.onRequest(ShowSaveFileDialogRequestType.method, async (params: ShowSaveFileDialogParams) => {
+        const filters: Record<string, string[]> = {}
+        const formatMappings = [
+            { format: 'markdown', key: 'Markdown', extensions: ['md'] },
+            { format: 'html', key: 'HTML', extensions: ['html'] },
+        ]
+
+        for (const format of params.supportedFormats ?? []) {
+            const mapping = formatMappings.find((m) => m.format === format)
+            if (mapping) {
+                filters[mapping.key] = mapping.extensions
+            }
+        }
+
+        const saveAtUri = params.defaultUri ? vscode.Uri.parse(params.defaultUri) : vscode.Uri.file('export-chat.md')
+        const targetUri = await vscode.window.showSaveDialog({
+            filters,
+            defaultUri: saveAtUri,
+            title: 'Export',
+        })
+
+        if (!targetUri) {
+            return new ResponseError(LSPErrorCodes.RequestFailed, 'Export failed')
+        }
+
+        return {
+            targetUri: targetUri.toString(),
+        }
+    })
 }
 
 function isServerEvent(command: string) {
@@ -315,4 +362,17 @@ async function handleCompleteResult<T>(
         tabId: tabId,
     })
     disposable.dispose()
+}
+
+async function handleRequest(
+    languageClient: LanguageClient,
+    params: any,
+    webview: vscode.Webview | undefined,
+    requestMethod: string
+) {
+    const result = await languageClient.sendRequest(requestMethod, params)
+    void webview?.postMessage({
+        command: requestMethod,
+        params: result,
+    })
 }
