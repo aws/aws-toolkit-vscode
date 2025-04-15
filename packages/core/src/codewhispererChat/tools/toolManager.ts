@@ -57,26 +57,20 @@ export class ToolManager {
                 command: 'amzn-mcp',
                 args: [],
             },
-            {
-                id: 'anthropic-mcp',
-                command: 'anthropic-mcp',
-                args: ['--model', 'claude-3-opus'],
-            },
+            // {
+            //     id: 'anthropic-mcp',
+            //     command: 'anthropic-mcp',
+            //     args: ['--model', 'claude-3-opus'],
+            // },
             // Add more client configurations as needed
         ]
 
+        // Create MCP manager - it will initialize itself in the constructor
         this.mcpManager = new MCPManager(clientConfigs)
 
-        // Initialize MCP manager asynchronously
-        this.mcpManager
-            .initialize()
-            .then(() => {
-                this.mcpTools = this.mcpManager.getTools()
-                logger.debug(`Initialized MCP Manager with ${this.mcpTools.length} tools`)
-            })
-            .catch((error) => {
-                logger.error(`Failed to initialize MCP Manager: ${error}`)
-            })
+        // Get the initial tools
+        this.mcpTools = this.mcpManager.getTools()
+        logger.debug(`Created MCP Manager with ${this.mcpTools.length} initial tools`)
     }
 
     /**
@@ -84,11 +78,15 @@ export class ToolManager {
      * @returns All tools
      */
     public getAllTools(): Tool[] {
-        // Always get the latest tools from the MCP manager
+        // Get the latest tools from the MCP manager if it exists
+        // The MCP manager is now initialized in its constructor
         if (this.mcpManager) {
             this.mcpTools = this.mcpManager.getTools()
         }
-        return [...this.localTools, ...this.mcpTools]
+
+        const allTools = [...this.localTools, ...this.mcpTools]
+        console.debug(`Total tools available: ${allTools}`)
+        return allTools
     }
 
     /**

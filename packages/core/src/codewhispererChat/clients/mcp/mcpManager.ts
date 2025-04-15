@@ -33,17 +33,23 @@ export class MCPManager {
     private initialized = false
 
     /**
-     * Creates a new MCP Manager
+     * Creates a new MCP Manager and initializes all clients
      * @param clientConfigs Array of MCP client configurations
      */
     constructor(clientConfigs: MCPClientConfig[]) {
         this.clientConfigs = clientConfigs
+
+        // Initialize clients in the constructor
+        this.initializeClients().catch((error) => {
+            logger.error(`Failed to initialize MCP clients in constructor: ${error}`)
+        })
     }
 
     /**
      * Initializes all MCP clients and aggregates their tools
+     * @private
      */
-    public async initialize(): Promise<void> {
+    private async initializeClients(): Promise<void> {
         if (this.initialized) {
             return
         }
@@ -65,13 +71,19 @@ export class MCPManager {
     /**
      * Initializes a single MCP client
      * @param config Client configuration
+     * @private
      */
     private async initializeClient(config: MCPClientConfig): Promise<void> {
         try {
             logger.debug(`Initializing MCP client: ${config.id}`)
 
-            // Create client and transport
-            const client = new Client()
+            // Create client with clientInfo
+            const client = new Client({
+                name: `aws-toolkit-vscode-${config.id}`,
+                version: '1.0.0',
+            })
+
+            // Create transport
             const transport = new StdioClientTransport({
                 command: config.command,
                 args: config.args,
@@ -111,22 +123,15 @@ export class MCPManager {
     }
 
     /**
-     * Gets all tools except write tools (fsWrite, executeBash)
-     * @returns Array of tools excluding write tools
-     */
-    public getNoWriteTools(): Tool[] {
-        return this.tools.filter((tool) => !['fsWrite', 'executeBash'].includes(tool.toolSpecification?.name || ''))
-    }
-
-    /**
      * Invokes a tool on the appropriate MCP client
      * @param toolName Name of the tool to invoke
      * @param params Parameters to pass to the tool
      * @returns Result of the tool invocation
      */
     public async invokeTool(toolName: string, params: any): Promise<any> {
+        // Wait for initialization to complete if needed
         if (!this.initialized) {
-            await this.initialize()
+            await this.initializeClients()
         }
 
         // Find the client that has this tool
