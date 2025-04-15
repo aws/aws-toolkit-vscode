@@ -894,6 +894,8 @@ export class ChatController {
                 currentToolUse.name === ToolType.ListDirectory)
         ) {
             session.toolUseWithError.error = new Error('Tool use was rejected by the user.')
+            session.setToolUseWithError(undefined)
+            this.messenger.sendAsyncEventProgress(message.tabID!, false, undefined)
         } else {
             getLogger().error(
                 `toolUse name: ${currentToolUse!.name} of toolUseWithError in the stored session doesn't match when click shell command reject button.`
@@ -928,11 +930,22 @@ export class ChatController {
             case 'reject-shell-command':
             case 'reject-tool-use':
                 await this.rejectShellCommand(message)
-                await this.processToolUseMessage(message)
+                if (message.tabID) {
+                    await this.sendCommandRejectMessage(message.tabID)
+                }
+                if (message.triggerId) {
+                    ConversationTracker.getInstance().markTriggerCompleted(message.triggerId)
+                }
                 break
             default:
                 getLogger().warn(`Unhandled action: ${message.action.id}`)
         }
+    }
+
+    private async sendCommandRejectMessage(tabID: string) {
+        const session = this.sessionStorage.getSession(tabID)
+        session.setAgenticLoopInProgress(false)
+        this.messenger.sendDirectiveMessage(tabID, '', 'Command Rejected')
     }
 
     private async restoreBackup(message: CustomFormActionMessage) {
