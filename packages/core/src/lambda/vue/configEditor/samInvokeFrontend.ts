@@ -48,6 +48,7 @@ interface SamInvokeVueData {
     showNameInput: boolean
     newTestEventName: string
     resourceData: ResourceData | undefined
+    useDebugger: boolean
 }
 
 function newLaunchConfig(existingConfig?: AwsSamDebuggerConfiguration): AwsSamDebuggerConfigurationLoose {
@@ -112,6 +113,7 @@ function initData() {
     return {
         containerBuild: false,
         skipNewImageCheck: false,
+        useDebugger: true,
         launchConfig: newLaunchConfig(),
         payload: { value: '', errorMsg: '' },
         apiPayload: { value: '', errorMsg: '' },
@@ -170,7 +172,7 @@ export default defineComponent({
 
             const source = this.resourceData?.source
 
-            client.invokeLaunchConfig(config, source).catch((e: Error) => {
+            client.invokeLaunchConfig(config, source, this.useDebugger).catch((e: Error) => {
                 console.error(`invokeLaunchConfig failed: ${e.message}`)
             })
         },

@@ -348,8 +348,14 @@ export class SamInvokeWebview extends VueWebview {
      * Validate and execute the provided launch config.
      * TODO: Post validation failures back to webview?
      * @param config Config to invoke
+     * @param source Source of the invoke request
+     * @param useDebugger Whether to invoke with debugger attached
      */
-    public async invokeLaunchConfig(config: AwsSamDebuggerConfiguration, source?: string): Promise<void> {
+    public async invokeLaunchConfig(
+        config: AwsSamDebuggerConfiguration,
+        source?: string,
+        useDebugger: boolean = true
+    ): Promise<void> {
         const finalConfig = finalizeConfig(
             resolveWorkspaceFolderVariable(undefined, config),
             'Editor-Created Debug Config'
@@ -357,8 +363,10 @@ export class SamInvokeWebview extends VueWebview {
         const targetUri = await this.getUriFromLaunchConfig(finalConfig)
         const folder = targetUri ? vscode.workspace.getWorkspaceFolder(targetUri) : undefined
 
-        // startDebugging on VS Code goes through the whole resolution chain
-        await vscode.debug.startDebugging(folder, finalConfig)
+        // Use the existing startDebugging method with the noDebug option
+        await vscode.debug.startDebugging(folder, finalConfig, {
+            noDebug: !useDebugger,
+        })
     }
     public async getLaunchConfigQuickPickItems(
         launchConfig: LaunchConfiguration,
