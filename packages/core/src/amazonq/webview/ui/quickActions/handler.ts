@@ -103,27 +103,46 @@ export class QuickActionHandler {
         }
     }
 
-    private handleScanCommand(tabID: string, eventId: string | undefined) {
-        if (!this.isScanEnabled) {
+    /**
+     * Common helper method to handle specialized tab commands (scan, test, transform)
+     * @param options Configuration options for the specialized tab
+     */
+    private handleSpecializedTabCommand(options: {
+        tabID: string // Current tab ID
+        eventId?: string // Event ID for tracking
+        isEnabled: boolean // Feature flag
+        tabType: TabType // Type of tab to create/switch to
+        existingTabType: TabType // Type to look for in existing tabs
+        taskName?: string // Optional task name
+        promptText?: string // Optional prompt text
+        onExistingTab: (tabId: string) => void // Callback for existing tab
+        onNewTab: (tabId: string) => void // Callback for new tab
+    }): void {
+        if (!options.isEnabled) {
             return
         }
-        let scanTabId: string | undefined = undefined
 
+        // Check if a tab of this type already exists
+        let existingTabId: string | undefined = undefined
         for (const tab of this.tabsStorage.getTabs()) {
-            if (tab.type === 'review') {
-                scanTabId = tab.id
+            if (tab.type === options.existingTabType) {
+                existingTabId = tab.id
+                break
             }
         }
 
-        if (scanTabId !== undefined) {
-            this.mynahUI.selectTab(scanTabId, eventId || '')
-            this.connector.onTabChange(scanTabId)
-            this.connector.scans(scanTabId)
+        // If tab exists, select it and run the callback
+        if (existingTabId !== undefined) {
+            this.mynahUI.selectTab(existingTabId, options.eventId || '')
+            this.connector.onTabChange(existingTabId)
+            options.onExistingTab(existingTabId)
             return
         }
 
-        let affectedTabId: string | undefined = tabID
-        // if there is no scan tab, open a new one
+        // Otherwise, create a new tab
+        let affectedTabId: string | undefined = options.tabID
+
+        // If current tab is not unknown or welcome, create a new tab
         const currentTabType = this.tabsStorage.getTab(affectedTabId)?.type
         if (currentTabType !== 'unknown' && currentTabType !== 'welcome') {
             affectedTabId = this.mynahUI.updateStore('', {
@@ -131,79 +150,75 @@ export class QuickActionHandler {
             })
         }
 
+        // Handle case where we can't create a new tab
         if (affectedTabId === undefined) {
             this.mynahUI.notify({
                 content: uiComponentsTexts.noMoreTabsTooltip,
                 type: NotificationType.WARNING,
             })
             return
-        } else {
-            this.tabsStorage.updateTabTypeFromUnknown(affectedTabId, 'review')
-            this.connector.onKnownTabOpen(affectedTabId)
-            this.connector.onUpdateTabType(affectedTabId)
-
-            // reset chat history
-            this.mynahUI.updateStore(affectedTabId, {
-                chatItems: [],
-            })
-
-            this.mynahUI.updateStore(affectedTabId, this.tabDataGenerator.getTabData('review', true, undefined)) // creating a new tab and printing some title
-
-            // disable chat prompt
-            this.mynahUI.updateStore(affectedTabId, {
-                loadingChat: true,
-            })
-            this.connector.scans(affectedTabId)
         }
+
+        // Set up the new tab
+        this.tabsStorage.updateTabTypeFromUnknown(affectedTabId, options.tabType)
+        this.connector.onKnownTabOpen(affectedTabId)
+        this.connector.onUpdateTabType(affectedTabId)
+
+        // Reset chat history
+        this.mynahUI.updateStore(affectedTabId, {
+            chatItems: [],
+        })
+
+        // Set tab data
+        const isEmpty = options.promptText === undefined || options.promptText === ''
+        this.mynahUI.updateStore(
+            affectedTabId,
+            this.tabDataGenerator.getTabData(options.tabType, isEmpty, options.taskName)
+        )
+
+        // Disable chat prompt while loading
+        this.mynahUI.updateStore(affectedTabId, {
+            loadingChat: true,
+        })
+
+        // Run the callback for the new tab
+        options.onNewTab(affectedTabId)
+    }
+
+    private handleScanCommand(tabID: string, eventId: string | undefined) {
+        this.handleSpecializedTabCommand({
+            tabID,
+            eventId,
+            isEnabled: this.isScanEnabled,
+            tabType: 'review',
+            existingTabType: 'review',
+            onExistingTab: (tabId) => {
+                this.connector.scans(tabId)
+            },
+            onNewTab: (tabId) => {
+                this.connector.scans(tabId)
+            },
+        })
     }
 
     private handleTestCommand(chatPrompt: ChatPrompt, tabID: string, eventId: string | undefined) {
-        if (!this.isTestEnabled) {
-            return
-        }
-        const testTabId = this.tabsStorage.getTabs().find((tab) => tab.type === 'testgen')?.id
         const realPromptText = chatPrompt.escapedPrompt?.trim() ?? ''
 
-        if (testTabId !== undefined) {
-            this.mynahUI.selectTab(testTabId, eventId || '')
-            this.connector.onTabChange(testTabId)
-            this.connector.startTestGen(testTabId, realPromptText)
-            return
-        }
-
-        let affectedTabId: string | undefined = tabID
-        // if there is no test tab, open a new one
-        const currentTabType = this.tabsStorage.getTab(affectedTabId)?.type
-        if (currentTabType !== 'unknown' && currentTabType !== 'welcome') {
-            affectedTabId = this.mynahUI.updateStore('', {
-                loadingChat: true,
-            })
-        }
-
-        if (affectedTabId === undefined) {
-            this.mynahUI.notify({
-                content: uiComponentsTexts.noMoreTabsTooltip,
-                type: NotificationType.WARNING,
-            })
-            return
-        } else {
-            this.tabsStorage.updateTabTypeFromUnknown(affectedTabId, 'testgen')
-            this.connector.onKnownTabOpen(affectedTabId)
-            this.connector.onUpdateTabType(affectedTabId)
-
-            // reset chat history
-            this.mynahUI.updateStore(affectedTabId, {
-                chatItems: [],
-            })
-
-            // creating a new tab and printing some title
-            this.mynahUI.updateStore(
-                affectedTabId,
-                this.tabDataGenerator.getTabData('testgen', realPromptText === '', 'Q - Test')
-            )
-
-            this.connector.startTestGen(affectedTabId, realPromptText)
-        }
+        this.handleSpecializedTabCommand({
+            tabID,
+            eventId,
+            isEnabled: this.isTestEnabled,
+            tabType: 'testgen',
+            existingTabType: 'testgen',
+            taskName: 'Q - Test',
+            promptText: realPromptText,
+            onExistingTab: (tabId) => {
+                this.connector.startTestGen(tabId, realPromptText)
+            },
+            onNewTab: (tabId) => {
+                this.connector.startTestGen(tabId, realPromptText)
+            },
+        })
     }
 
     private handleCommand(props: HandleCommandProps) {
@@ -285,58 +300,19 @@ export class QuickActionHandler {
     }
 
     private handleGumbyCommand(tabID: string, eventId: string | undefined) {
-        if (!this.isGumbyEnabled) {
-            return
-        }
-
-        let gumbyTabId: string | undefined = undefined
-
-        for (const tab of this.tabsStorage.getTabs()) {
-            if (tab.type === 'gumby') {
-                gumbyTabId = tab.id
-            }
-        }
-
-        if (gumbyTabId !== undefined) {
-            this.mynahUI.selectTab(gumbyTabId, eventId || '')
-            this.connector.onTabChange(gumbyTabId)
-            return
-        }
-
-        let affectedTabId: string | undefined = tabID
-        // if there is no gumby tab, open a new one
-        const currentTabType = this.tabsStorage.getTab(affectedTabId)?.type
-        if (currentTabType !== 'unknown' && currentTabType !== 'welcome') {
-            affectedTabId = this.mynahUI.updateStore('', {
-                loadingChat: true,
-            })
-        }
-
-        if (affectedTabId === undefined) {
-            this.mynahUI.notify({
-                content: uiComponentsTexts.noMoreTabsTooltip,
-                type: NotificationType.WARNING,
-            })
-            return
-        } else {
-            this.tabsStorage.updateTabTypeFromUnknown(affectedTabId, 'gumby')
-            this.connector.onKnownTabOpen(affectedTabId)
-            this.connector.onUpdateTabType(affectedTabId)
-
-            // reset chat history
-            this.mynahUI.updateStore(affectedTabId, {
-                chatItems: [],
-            })
-
-            this.mynahUI.updateStore(affectedTabId, this.tabDataGenerator.getTabData('gumby', true, undefined))
-
-            // disable chat prompt
-            this.mynahUI.updateStore(affectedTabId, {
-                loadingChat: true,
-            })
-
-            this.connector.transform(affectedTabId)
-        }
+        this.handleSpecializedTabCommand({
+            tabID,
+            eventId,
+            isEnabled: this.isGumbyEnabled,
+            tabType: 'gumby',
+            existingTabType: 'gumby',
+            onExistingTab: () => {
+                // Nothing special to do for existing transform tab
+            },
+            onNewTab: (tabId) => {
+                this.connector.transform(tabId)
+            },
+        })
     }
 
     private handleClearCommand(tabID: string) {
