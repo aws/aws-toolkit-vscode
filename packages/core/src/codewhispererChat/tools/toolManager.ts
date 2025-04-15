@@ -146,7 +146,7 @@ export class ToolManager {
         if (!result) {
             try {
                 const name = tool.tool.toolSpecification?.name
-                const args = updates.toolUse.input.query
+                const args = updates.toolUse.input
                 // const mcp1 = this.mcpManager.clients[0]['amzn-mcp'];
                 const mcp = this.mcpManager.amznMcpClient
 
