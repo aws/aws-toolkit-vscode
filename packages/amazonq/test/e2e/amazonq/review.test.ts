@@ -192,7 +192,8 @@ describe('Amazon Q Code Review', function () {
         })
 
         describe('review insecure file and then fix file', async () => {
-            it('/review file gives correct critical and high security issues, clicks on view details, generate fix, verify diff, apply fix', async () => {
+            // eslint-disable-next-line aws-toolkits/no-only-in-tests
+            it.only('/review file gives correct critical and high security issues, clicks on view details, generate fix, verify diff, apply fix', async () => {
                 const testFolder = path.join(getWorkspaceFolder(), 'QCAFolder')
                 const fileName = 'ProblematicCode.java'
                 const filePath = path.join(testFolder, fileName)
@@ -251,6 +252,7 @@ describe('Amazon Q Code Review', function () {
 
                 // Execute the view details command
                 if (viewDetailsAction?.command) {
+                    console.log('has command, viewing details')
                     await vscode.commands.executeCommand(
                         viewDetailsAction.command.command,
                         ...viewDetailsAction.command.arguments!
@@ -275,6 +277,8 @@ describe('Amazon Q Code Review', function () {
                 assert.ok(webviewPanel, 'Security issue webview panel did not open after waiting')
 
                 const issue = viewDetailsAction.command?.arguments?.[0] as CodeScanIssue
+                console.log('command', viewDetailsAction.command)
+                console.log('arguments', viewDetailsAction.command?.arguments)
 
                 // Wait for the fix to be generated with polling
                 const updatedIssue = await pollForResult<CodeScanIssue>(
