@@ -781,25 +781,12 @@ export class Messenger {
                 {
                     id: 'reject-code-diff',
                     status: 'clear',
-                    icon: 'cancel' as MynahIconsType,
+                    icon: 'revert' as MynahIconsType,
+                    text: 'Undo',
                 },
             ]
-            const status: {
-                icon?: MynahIcons | MynahIconsType
-                status?: {
-                    status?: Status
-                    icon?: MynahIcons | MynahIconsType
-                    text?: string
-                }
-            } = {
-                status: {
-                    text: 'Accepted',
-                    status: 'success',
-                },
-            }
             header = {
                 buttons,
-                ...status,
                 fileList,
             }
         } else if (toolUse?.name === ToolType.ListDirectory || toolUse?.name === ToolType.FsRead) {

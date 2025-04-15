@@ -394,7 +394,7 @@ export class Connector extends BaseConnector {
                 if (answer.header) {
                     answer.header.status = {
                         icon: 'cancel' as MynahIconsType,
-                        text: 'Rejected',
+                        text: 'Change discarded',
                         status: 'error',
                     }
                     answer.header.buttons = []
