@@ -471,7 +471,6 @@ export const createMynahUI = (
             ) {
                 mynahUI.updateStore(tabID, {
                     loadingChat: true,
-                    cancelButtonWhenLoading: false,
                     promptInputDisabledState: true,
                 })
 

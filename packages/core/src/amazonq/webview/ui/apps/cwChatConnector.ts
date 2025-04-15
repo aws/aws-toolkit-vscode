@@ -290,7 +290,7 @@ export class Connector extends BaseConnector {
         }
 
         if (messageData.type === 'asyncEventProgressMessage') {
-            const isPromptInputDisabled = true
+            const isPromptInputDisabled = false
             this.onAsyncEventProgress(
                 messageData.tabID,
                 messageData.inProgress,
