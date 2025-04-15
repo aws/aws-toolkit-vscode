@@ -344,7 +344,7 @@ export class QuickActionHandler {
     }
 
     private handleClearCommand(tabID: string) {
-        this.mynahUI.updateStore(tabID, {
+        this.mynahUI?.updateStore(tabID, {
             chatItems: [],
         })
         this.connector.clearChat(tabID)
