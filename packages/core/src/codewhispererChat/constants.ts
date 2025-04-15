@@ -4,7 +4,6 @@
  */
 import * as path from 'path'
 import fs from '../shared/fs/fs'
-import { Tool } from '@amzn/codewhisperer-streaming'
 import { ContextLengths } from './controllers/chat/model'
 import { ToolManager } from './tools/toolManager'
 

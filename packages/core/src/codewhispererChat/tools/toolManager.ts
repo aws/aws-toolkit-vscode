@@ -17,7 +17,7 @@ export class ToolManager {
     private static instance: ToolManager
     private localTools: Tool[] = []
     private mcpTools: Tool[] = []
-    private mcpManager: MCPManager
+    private mcpManager!: MCPManager
 
     private constructor() {
         this.initializeLocalTools()
