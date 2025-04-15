@@ -844,7 +844,9 @@ export class Messenger {
                 ]
                 header = {
                     buttons,
+                    body: message,
                 }
+                message = ''
             }
         }
 
