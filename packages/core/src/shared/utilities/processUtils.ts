@@ -8,6 +8,7 @@ import * as crossSpawn from 'cross-spawn'
 import * as logger from '../logger/logger'
 import { Timeout, CancellationError, waitUntil } from './timeoutUtils'
 import { PollingSet } from './pollingSet'
+import { CircularBuffer } from './collectionUtils'
 
 export interface RunParameterContext {
     /** Reports an error parsed from the stdin/stdout streams. */
@@ -73,6 +74,7 @@ export class ChildProcessTracker {
         cpu: 50,
     }
     static readonly logger = logger.getLogger('childProcess')
+    static readonly loggedPids = new CircularBuffer(1000)
     #processByPid: Map<number, ChildProcess> = new Map<number, ChildProcess>()
     #pids: PollingSet<number>
 
@@ -100,18 +102,25 @@ export class ChildProcessTracker {
 
     private async checkProcessUsage(pid: number): Promise<void> {
         if (!this.#pids.has(pid)) {
-            ChildProcessTracker.logger.warn(`Missing process with id ${pid}`)
+            ChildProcessTracker.logOnce(pid, `Missing process with id ${pid}`)
             return
         }
         const stats = this.getUsage(pid)
         if (stats) {
             ChildProcessTracker.logger.debug(`Process ${pid} usage: %O`, stats)
             if (stats.memory > ChildProcessTracker.thresholds.memory) {
-                ChildProcessTracker.logger.warn(`Process ${pid} exceeded memory threshold: ${stats.memory}`)
+                ChildProcessTracker.logOnce(pid, `Process ${pid} exceeded memory threshold: ${stats.memory}`)
             }
             if (stats.cpu > ChildProcessTracker.thresholds.cpu) {
-                ChildProcessTracker.logger.warn(`Process ${pid} exceeded cpu threshold: ${stats.cpu}`)
+                ChildProcessTracker.logOnce(pid, `Process ${pid} exceeded cpu threshold: ${stats.cpu}`)
             }
+        }
+    }
+
+    public static logOnce(pid: number, msg: string) {
+        if (!ChildProcessTracker.loggedPids.contains(pid)) {
+            ChildProcessTracker.loggedPids.add(pid)
+            ChildProcessTracker.logger.warn(msg)
         }
     }
 
@@ -147,7 +156,7 @@ export class ChildProcessTracker {
             // isWin() leads to circular dependency.
             return process.platform === 'win32' ? getWindowsUsage() : getUnixUsage()
         } catch (e) {
-            ChildProcessTracker.logger.warn(`Failed to get process stats for ${pid}: ${e}`)
+            ChildProcessTracker.logOnce(pid, `Failed to get process stats for ${pid}: ${e}`)
             return { cpu: 0, memory: 0 }
         }
 
@@ -367,7 +376,7 @@ export class ChildProcess {
                     if (typeof rejectOnErrorCode === 'function') {
                         reject(rejectOnErrorCode(code))
                     } else {
-                        reject(new Error(`Command exited with non-zero code: ${code}`))
+                        reject(new Error(`Command exited with non-zero code (${code}): ${this.toString()}`))
                     }
                 }
                 if (options.waitForStreams === false) {

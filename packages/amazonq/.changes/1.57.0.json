@@ -1,0 +1,14 @@
+{
+	"date": "2025-04-10",
+	"version": "1.57.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Fix bug where generate fix does not work"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Fix bug where review shows 0 findings"
+		}
+	]
+}

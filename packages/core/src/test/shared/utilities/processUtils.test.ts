@@ -393,6 +393,10 @@ describe('ChildProcessTracker', function () {
         usageMock = sinon.stub(ChildProcessTracker.prototype, 'getUsage')
     })
 
+    beforeEach(function () {
+        ChildProcessTracker.loggedPids.clear()
+    })
+
     afterEach(function () {
         tracker.clear()
         usageMock.reset()
@@ -463,6 +467,7 @@ describe('ChildProcessTracker', function () {
         await clock.tickAsync(ChildProcessTracker.pollingInterval)
         assertLogsContain('exceeded cpu threshold', false, 'warn')
 
+        ChildProcessTracker.loggedPids.clear()
         usageMock.returns(highMemory)
         await clock.tickAsync(ChildProcessTracker.pollingInterval)
         assertLogsContain('exceeded memory threshold', false, 'warn')

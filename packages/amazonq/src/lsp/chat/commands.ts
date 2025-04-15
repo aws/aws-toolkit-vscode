@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as vscode from 'vscode'
 import { Commands, globals } from 'aws-core-vscode/shared'
 import { window } from 'vscode'
 import { AmazonQChatViewProvider } from './webviewProvider'
@@ -74,6 +73,6 @@ function registerGenericCommand(commandName: string, genericCommand: string, pro
  * Instead, we just create our own as a temporary solution
  */
 async function focusAmazonQPanel() {
-    await vscode.commands.executeCommand('aws.amazonq.AmazonQChatView.focus')
-    await vscode.commands.executeCommand('aws.amazonq.AmazonCommonAuth.focus')
+    await Commands.tryExecute('aws.amazonq.AmazonQChatView.focus')
+    await Commands.tryExecute('aws.amazonq.AmazonCommonAuth.focus')
 }

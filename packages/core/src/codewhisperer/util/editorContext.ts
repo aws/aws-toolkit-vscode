@@ -19,6 +19,7 @@ import { CodeWhispererSupplementalContext } from '../models/model'
 import { getOptOutPreference } from '../../shared/telemetry/util'
 import { indent } from '../../shared/utilities/textUtilities'
 import { isInDirectory } from '../../shared'
+import { AuthUtil } from './authUtil'
 
 let tabSize: number = getTabSizeSetting()
 
@@ -125,6 +126,8 @@ export async function buildListRecommendationRequest(
           })
         : []
 
+    const profile = AuthUtil.instance.regionProfileManager.activeRegionProfile
+
     return {
         request: {
             fileContext: fileContext,
@@ -136,6 +139,7 @@ export async function buildListRecommendationRequest(
             customizationArn: selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
             optOutPreference: getOptOutPreference(),
             workspaceId: await getWorkspaceId(editor),
+            profileArn: profile?.arn,
         },
         supplementalMetadata: supplementalContexts,
     }

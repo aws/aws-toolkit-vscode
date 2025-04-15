@@ -29,9 +29,12 @@ import { extensionVersion } from '../../shared/vscode/env'
 import apiConfig = require('./codewhispererruntime-2022-11-11.json')
 import { UserWrittenCodeTracker } from '../../codewhisperer/tracker/userWrittenCodeTracker'
 import {
+    CreateUploadUrlRequest,
     FeatureDevCodeAcceptanceEvent,
     FeatureDevCodeGenerationEvent,
+    GetTaskAssistCodeGenerationRequest,
     MetricData,
+    StartTaskAssistCodeGenerationRequest,
     TelemetryEvent,
 } from './featuredevproxyclient'
 import { ExportResultArchiveCommandInput } from '@amzn/codewhisperer-streaming'
@@ -77,7 +80,11 @@ export class FeatureDevClient implements FeatureClient {
         try {
             const client = await this.getClient(writeAPIRetryOptions)
             getLogger().debug(`Executing createTaskAssistConversation with {}`)
-            const { conversationId, $response } = await client.createTaskAssistConversation().promise()
+            const { conversationId, $response } = await client
+                .createTaskAssistConversation({
+                    profileArn: AuthUtil.instance.regionProfileManager.activeRegionProfile?.arn,
+                })
+                .promise()
             getLogger().debug(`${featureName}: Created conversation: %O`, {
                 conversationId,
                 requestId: $response.requestId,
@@ -110,7 +117,7 @@ export class FeatureDevClient implements FeatureClient {
     ) {
         try {
             const client = await this.getClient(writeAPIRetryOptions)
-            const params = {
+            const params: CreateUploadUrlRequest = {
                 uploadContext: {
                     taskAssistPlanningUploadContext: {
                         conversationId,
@@ -122,6 +129,7 @@ export class FeatureDevClient implements FeatureClient {
                 artifactType: 'SourceCode',
                 uploadIntent: 'TASK_ASSIST_PLANNING',
                 contentLength,
+                profileArn: AuthUtil.instance.regionProfileManager.activeRegionProfile?.arn,
             }
             getLogger().debug(`Executing createUploadUrl with %O`, omit(params, 'contentChecksum'))
             const response = await client.createUploadUrl(params).promise()
@@ -156,7 +164,7 @@ export class FeatureDevClient implements FeatureClient {
     ) {
         try {
             const client = await this.getClient(writeAPIRetryOptions)
-            const params = {
+            const params: StartTaskAssistCodeGenerationRequest = {
                 codeGenerationId,
                 conversationState: {
                     conversationId,
@@ -170,7 +178,8 @@ export class FeatureDevClient implements FeatureClient {
                     programmingLanguage: { languageName: 'javascript' },
                 },
                 intent,
-            } as FeatureDevProxyClient.Types.StartTaskAssistCodeGenerationRequest
+                profileArn: AuthUtil.instance.regionProfileManager.activeRegionProfile?.arn,
+            }
             if (currentCodeGenerationId) {
                 params.currentCodeGenerationId = currentCodeGenerationId
             }
@@ -210,9 +219,10 @@ export class FeatureDevClient implements FeatureClient {
     public async getCodeGeneration(conversationId: string, codeGenerationId: string) {
         try {
             const client = await this.getClient()
-            const params = {
+            const params: GetTaskAssistCodeGenerationRequest = {
                 codeGenerationId,
                 conversationId,
+                profileArn: AuthUtil.instance.regionProfileManager.activeRegionProfile?.arn,
             }
             getLogger().debug(`Executing getTaskAssistCodeGeneration with %O`, params)
             const response = await client.getTaskAssistCodeGeneration(params).promise()
@@ -234,11 +244,13 @@ export class FeatureDevClient implements FeatureClient {
     }
 
     public async exportResultArchive(conversationId: string) {
+        const profile = AuthUtil.instance.regionProfileManager.activeRegionProfile
         try {
             const streamingClient = await createCodeWhispererChatStreamingClient()
             const params = {
                 exportId: conversationId,
                 exportIntent: 'TASK_ASSIST',
+                profileArn: profile?.arn,
             } satisfies ExportResultArchiveCommandInput
             getLogger().debug(`Executing exportResultArchive with %O`, params)
             const archiveResponse = await streamingClient.exportResultArchive(params)
@@ -347,6 +359,7 @@ export class FeatureDevClient implements FeatureClient {
                     clientId: getClientId(globals.globalState),
                     ideVersion: extensionVersion,
                 },
+                profileArn: AuthUtil.instance.regionProfileManager.activeRegionProfile?.arn,
             }
             const response = await client.sendTelemetryEvent(params).promise()
             getLogger().debug(

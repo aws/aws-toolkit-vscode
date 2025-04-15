@@ -313,6 +313,7 @@ export class Session {
                     clientId: getClientId(globals.globalState),
                     ideVersion: extensionVersion,
                 },
+                profileArn: AuthUtil.instance.regionProfileManager.activeRegionProfile?.arn,
             }
 
             const response = await client.sendTelemetryEvent(params).promise()

@@ -1,3 +1,36 @@
+## 1.59.0 2025-04-11
+
+- **Bug Fix** Code fix line number or file is sometimes not accurate
+- **Bug Fix** Fix Q agents will fail for /transform /dev /test features if IdC kms key is configured with 400 error
+
+## 1.58.0 2025-04-11
+
+- **Bug Fix** inline chat activates properly when using 'aws.experiments.amazonqChatLSP' feature flag
+- **Bug Fix** Amazon Q Chat: code blocks in responses flicker, switching tabs during answer streaming makes expand button disappear
+- **Bug Fix** Amazon Q Chat: tab bar buttons disappear when closing non-active tab
+- **Bug Fix** Amazon Q Chat: chat history list does not truncate markdown
+
+## 1.57.0 2025-04-10
+
+- **Bug Fix** Fix bug where generate fix does not work
+- **Bug Fix** Fix bug where review shows 0 findings
+
+## 1.56.0 2025-04-09
+
+- **Bug Fix** Improve status message while loading Amazon Q Profiles during login
+- **Bug Fix** "failed to run command" error
+
+## 1.55.0 2025-04-09
+
+- **Bug Fix** Amazon Q Chat: Update chat history icon
+- **Bug Fix** Amazon Q Chat: chat occasionally freezes and displays gray screen
+- **Bug Fix** Amazon Q Chat: Set owner-only permissions for chat history and saved prompt files
+- **Feature** `/test` generates tests in all languages, not only Java/Python
+- **Feature** Amazon Q chat: Click export icon to save chat transcript in Markdown or HTML
+- **Feature** SageMaker: Disable the unsupported agentic commands and welcome prompt
+- **Feature** Amazon Q Chat: Add `@code` context for PHP, Ruby, Scala, Shell, and Swift projects
+- **Feature** Enterprise users can choose their preferred Amazon Q profile to improve personalization and workflow across different business regions
+
 ## 1.54.0 2025-04-03
 
 - **Bug Fix** Amazon Q chat: `@prompts` not added to context

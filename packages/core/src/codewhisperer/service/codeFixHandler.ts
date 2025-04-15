@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { CodeWhispererUserClient } from '../indexNode'
+import { CodeWhispererUserClient, RegionProfile } from '../indexNode'
 import * as CodeWhispererConstants from '../models/constants'
 import { codeFixState } from '../models/model'
 import { ArtifactMap, CreateUploadUrlRequest, DefaultCodeWhispererClient } from '../client/codewhisperer'
@@ -22,12 +22,14 @@ import { sleep } from '../../shared/utilities/timeoutUtils'
 export async function getPresignedUrlAndUpload(
     client: DefaultCodeWhispererClient,
     zipFilePath: string,
-    codeFixName: string
+    codeFixName: string,
+    profile: RegionProfile | undefined
 ) {
     const srcReq: CreateUploadUrlRequest = {
         artifactType: 'SourceCode',
         uploadIntent: CodeWhispererConstants.codeFixUploadIntent,
         uploadContext: { codeFixUploadContext: { codeFixName } },
+        profileArn: profile?.arn,
     }
     getLogger().verbose(`Prepare for uploading src context...`)
     const srcResp = await client.createUploadUrl(srcReq).catch((err) => {
@@ -52,7 +54,8 @@ export async function createCodeFixJob(
     description: string,
     referenceTrackerConfiguration: CodeWhispererUserClient.ReferenceTrackerConfiguration,
     codeFixName?: string,
-    ruleId?: string
+    ruleId?: string,
+    profile?: RegionProfile
 ) {
     getLogger().verbose(`Creating code fix job...`)
     const req: CodeWhispererUserClient.StartCodeFixJobRequest = {
@@ -62,6 +65,7 @@ export async function createCodeFixJob(
         ruleId,
         description,
         referenceTrackerConfiguration,
+        profileArn: profile?.arn,
     }
 
     const resp = await client.startCodeFixJob(req).catch((err) => {
@@ -75,7 +79,7 @@ export async function createCodeFixJob(
     return resp
 }
 
-export async function pollCodeFixJobStatus(client: DefaultCodeWhispererClient, jobId: string) {
+export async function pollCodeFixJobStatus(client: DefaultCodeWhispererClient, jobId: string, profile?: RegionProfile) {
     const pollingStartTime = performance.now()
     await sleep(CodeWhispererConstants.codeFixJobPollingDelayMs)
 
@@ -85,6 +89,7 @@ export async function pollCodeFixJobStatus(client: DefaultCodeWhispererClient, j
         throwIfCancelled()
         const req: CodeWhispererUserClient.GetCodeFixJobRequest = {
             jobId,
+            profileArn: profile?.arn,
         }
         const resp = await client.getCodeFixJob(req)
         getLogger().verbose(`GetCodeFixJobRequest requestId: ${resp.$response.requestId}`)
@@ -106,9 +111,10 @@ export async function pollCodeFixJobStatus(client: DefaultCodeWhispererClient, j
     return status
 }
 
-export async function getCodeFixJob(client: DefaultCodeWhispererClient, jobId: string) {
+export async function getCodeFixJob(client: DefaultCodeWhispererClient, jobId: string, profile?: RegionProfile) {
     const req: CodeWhispererUserClient.GetCodeFixJobRequest = {
         jobId,
+        profileArn: profile?.arn,
     }
     const resp = await client.getCodeFixJob(req)
     return resp

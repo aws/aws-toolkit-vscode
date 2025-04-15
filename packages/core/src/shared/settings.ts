@@ -5,7 +5,6 @@
 
 import * as vscode from 'vscode'
 import * as codecatalyst from './clients/codecatalystClient'
-import * as codewhisperer from '../codewhisperer/client/codewhisperer'
 import { getLogger } from './logger/logger'
 import {
     cast,
@@ -23,6 +22,7 @@ import { telemetry } from './telemetry/telemetry'
 import globals from './extensionGlobals'
 import toolkitSettings from './settings-toolkit.gen'
 import amazonQSettings from './settings-amazonq.gen'
+import { CodeWhispererConfig } from '../codewhisperer/models/model'
 
 type Workspace = Pick<typeof vscode.workspace, 'getConfiguration' | 'onDidChangeConfiguration'>
 
@@ -662,6 +662,15 @@ export class AmazonQPromptSettings
 {
     public isPromptEnabled(promptName: amazonQPromptName): boolean {
         try {
+            // Legacy migration for old globalState settings:
+            if (promptName === 'amazonQChatDisclaimer') {
+                const acknowledged = globals.globalState.tryGet('aws.amazonq.disclaimerAcknowledged', Boolean, false)
+                if (acknowledged) {
+                    void this.update(promptName, true)
+                    globals.globalState.tryUpdate('aws.amazonq.disclaimerAcknowledged', undefined)
+                }
+            }
+
             return !this._getOrThrow(promptName, false)
         } catch (e) {
             this._log('prompt check for "%s" failed: %s', promptName, (e as Error).message)
@@ -776,9 +785,9 @@ type AwsDevSetting = keyof ResolvedDevSettings
 type ServiceClients = keyof ServiceTypeMap
 interface ServiceTypeMap {
     codecatalystService: codecatalyst.CodeCatalystConfig
-    codewhispererService: codewhisperer.CodeWhispererConfig
     amazonqLsp: object // type is provided inside of amazon q
     amazonqWorkspaceLsp: object // type is provided inside of amazon q
+    codewhispererService: CodeWhispererConfig
 }
 
 /**

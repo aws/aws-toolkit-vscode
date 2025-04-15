@@ -40,6 +40,7 @@ describe('triggerPayloadToChatRequest', () => {
             userInputContextLength: 0,
             focusFileContextLength: 0,
         },
+        profile: undefined,
         context: [],
         documentReferences: [],
         query: undefined,

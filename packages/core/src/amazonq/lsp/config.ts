@@ -16,7 +16,7 @@ export interface LspConfig {
 
 export const defaultAmazonQWorkspaceLspConfig: LspConfig = {
     manifestUrl: 'https://aws-toolkit-language-servers.amazonaws.com/q-context/manifest.json',
-    supportedVersions: '0.1.46',
+    supportedVersions: '0.1.47',
     id: 'AmazonQ-Workspace', // used across IDEs for identifying global storage/local disk locations. Do not change.
     suppressPromptPrefix: 'amazonQWorkspace',
     path: undefined,

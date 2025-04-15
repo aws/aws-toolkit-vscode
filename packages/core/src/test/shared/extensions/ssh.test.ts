@@ -15,19 +15,22 @@ import { isWin } from '../../../shared/vscode/env'
 
 describe('SSH Agent', function () {
     it('can start the agent on windows', async function () {
+        this.retries(2)
+
         // TODO: we should also skip this test if not running in CI
         // Local machines probably won't have admin permissions in the spawned processes
         if (process.platform !== 'win32') {
             this.skip()
         }
 
-        const runCommand = (command: string) => {
-            const args = ['-Command', command]
-            return new ChildProcess('powershell.exe', args).run({ rejectOnErrorCode: true })
+        async function runCommand(command: string) {
+            const args = ['-NoLogo', '-NonInteractive', '-ExecutionPolicy', 'RemoteSigned', '-Command', command]
+            return await new ChildProcess('pwsh.exe', args).run({ rejectOnErrorCode: true })
         }
 
-        const getStatus = () => {
-            return runCommand('echo (Get-Service ssh-agent).Status').then((o) => o.stdout)
+        async function getStatus() {
+            const c = await runCommand('echo (Get-Service ssh-agent).Status')
+            return c.stdout
         }
 
         await runCommand('Stop-Service ssh-agent')

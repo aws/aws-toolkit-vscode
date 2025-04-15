@@ -19,6 +19,7 @@ import {
     TransformByQStatus,
     TransformationType,
     TransformationCandidateProject,
+    RegionProfile,
 } from '../models/model'
 import {
     createZipManifest,
@@ -80,6 +81,7 @@ import globals from '../../shared/extensionGlobals'
 import { convertDateToTimestamp } from '../../shared/datetime'
 import { findStringInDirectory } from '../../shared/utilities/workspaceUtils'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
+import { AuthUtil } from '../util/authUtil'
 
 export function getFeedbackCommentData() {
     const jobId = transformByQState.getJobId()
@@ -172,6 +174,7 @@ export async function startTransformByQ() {
     await setTransformationToRunningState()
 
     try {
+        const profile = AuthUtil.instance.regionProfileManager.activeRegionProfile
         // Set webview UI to poll for progress
         startInterval()
 
@@ -179,13 +182,13 @@ export async function startTransformByQ() {
         const uploadId = await preTransformationUploadCode()
 
         // step 2: StartJob and store the returned jobId in TransformByQState
-        const jobId = await startTransformationJob(uploadId, transformStartTime)
+        const jobId = await startTransformationJob(uploadId, transformStartTime, profile)
 
         // step 3 (intermediate step): show transformation-plan.md file
         await pollTransformationStatusUntilPlanReady(jobId)
 
         // step 4: poll until artifacts are ready to download
-        await humanInTheLoopRetryLogic(jobId)
+        await humanInTheLoopRetryLogic(jobId, profile)
     } catch (error: any) {
         await transformationJobErrorHandler(error)
     } finally {
@@ -201,16 +204,16 @@ export async function startTransformByQ() {
  *  We only don't want to continue calling pollTransformationStatusUntilComplete if there is no HIL
  *  state ever engaged or we have reached our max amount of HIL retries.
  */
-export async function humanInTheLoopRetryLogic(jobId: string) {
+export async function humanInTheLoopRetryLogic(jobId: string, profile: RegionProfile | undefined) {
     let status = ''
     try {
-        status = await pollTransformationStatusUntilComplete(jobId)
+        status = await pollTransformationStatusUntilComplete(jobId, profile)
         if (status === 'PAUSED') {
             const hilStatusFailure = await initiateHumanInTheLoopPrompt(jobId)
             if (hilStatusFailure) {
                 // We rejected the changes and resumed the job and should
                 // try to resume normal polling asynchronously
-                void humanInTheLoopRetryLogic(jobId)
+                void humanInTheLoopRetryLogic(jobId, profile)
             }
         } else {
             await finalizeTransformByQ(status)
@@ -266,7 +269,7 @@ export async function preTransformationUploadCode() {
             })
 
             transformByQState.setPayloadFilePath(payloadFilePath)
-            uploadId = await uploadPayload(payloadFilePath)
+            uploadId = await uploadPayload(payloadFilePath, AuthUtil.instance.regionProfileManager.activeRegionProfile)
             telemetry.record({ codeTransformJobId: uploadId }) // uploadId is re-used as jobId
         })
     } catch (err) {
@@ -294,9 +297,10 @@ export async function preTransformationUploadCode() {
 
 export async function initiateHumanInTheLoopPrompt(jobId: string) {
     try {
+        const profile = AuthUtil.instance.regionProfileManager.activeRegionProfile
         const humanInTheLoopManager = HumanInTheLoopManager.instance
         // 1) We need to call GetTransformationPlan to get artifactId
-        const transformationSteps = await getTransformationSteps(jobId, false)
+        const transformationSteps = await getTransformationSteps(jobId, false, profile)
         const { transformationStep, progressUpdate } = findDownloadArtifactStep(transformationSteps)
 
         if (!transformationStep || !progressUpdate) {
@@ -418,6 +422,7 @@ export async function finishHumanInTheLoop(selectedDependency?: string) {
     let successfulFeedbackLoop = true
     const jobId = transformByQState.getJobId()
     let hilResult: MetadataResult = MetadataResult.Pass
+    const profile = AuthUtil.instance.regionProfileManager.activeRegionProfile
     try {
         if (!selectedDependency) {
             throw new Error('No dependency selected')
@@ -452,7 +457,7 @@ export async function finishHumanInTheLoop(selectedDependency?: string) {
             }),
         })
 
-        await uploadPayload(uploadResult.tempFilePath, {
+        await uploadPayload(uploadResult.tempFilePath, profile, {
             transformationUploadContext: {
                 jobId,
                 uploadArtifactType: 'Dependencies',
@@ -467,7 +472,7 @@ export async function finishHumanInTheLoop(selectedDependency?: string) {
         // 8) Once code has been uploaded we will restart the job
         await resumeTransformationJob(jobId, 'COMPLETED')
 
-        void humanInTheLoopRetryLogic(jobId)
+        void humanInTheLoopRetryLogic(jobId, profile)
     } catch (err: any) {
         successfulFeedbackLoop = false
         CodeTransformTelemetryState.instance.setCodeTransformMetaDataField({
@@ -478,7 +483,7 @@ export async function finishHumanInTheLoop(selectedDependency?: string) {
         // If anything went wrong in HIL state, we should restart the job
         // with the rejected state
         await terminateHILEarly(jobId)
-        void humanInTheLoopRetryLogic(jobId)
+        void humanInTheLoopRetryLogic(jobId, profile)
     } finally {
         // Always delete the dependency directories
         telemetry.codeTransform_humanInTheLoop.emit({
@@ -495,13 +500,17 @@ export async function finishHumanInTheLoop(selectedDependency?: string) {
     return successfulFeedbackLoop
 }
 
-export async function startTransformationJob(uploadId: string, transformStartTime: number) {
+export async function startTransformationJob(
+    uploadId: string,
+    transformStartTime: number,
+    profile: RegionProfile | undefined
+) {
     let jobId = ''
     try {
         await telemetry.codeTransform_jobStart.run(async () => {
             telemetry.record({ codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId() })
 
-            jobId = await startJob(uploadId)
+            jobId = await startJob(uploadId, profile)
             getLogger().info(`CodeTransformation: jobId: ${jobId}`)
 
             telemetry.record({
@@ -537,9 +546,9 @@ export async function startTransformationJob(uploadId: string, transformStartTim
     return jobId
 }
 
-export async function pollTransformationStatusUntilPlanReady(jobId: string) {
+export async function pollTransformationStatusUntilPlanReady(jobId: string, profile?: RegionProfile) {
     try {
-        await pollTransformationJob(jobId, CodeWhispererConstants.validStatesForPlanGenerated)
+        await pollTransformationJob(jobId, CodeWhispererConstants.validStatesForPlanGenerated, profile)
     } catch (error) {
         getLogger().error(`CodeTransformation: ${CodeWhispererConstants.failedToCompleteJobNotification}`, error)
 
@@ -582,7 +591,7 @@ export async function pollTransformationStatusUntilPlanReady(jobId: string) {
     }
     let plan = undefined
     try {
-        plan = await getTransformationPlan(jobId)
+        plan = await getTransformationPlan(jobId, profile)
     } catch (error) {
         // means API call failed
         getLogger().error(`CodeTransformation: ${CodeWhispererConstants.failedToCompleteJobNotification}`, error)
@@ -606,10 +615,10 @@ export async function pollTransformationStatusUntilPlanReady(jobId: string) {
     throwIfCancelled()
 }
 
-export async function pollTransformationStatusUntilComplete(jobId: string) {
+export async function pollTransformationStatusUntilComplete(jobId: string, profile: RegionProfile | undefined) {
     let status = ''
     try {
-        status = await pollTransformationJob(jobId, CodeWhispererConstants.validStatesForCheckingDownloadUrl)
+        status = await pollTransformationJob(jobId, CodeWhispererConstants.validStatesForCheckingDownloadUrl, profile)
     } catch (error) {
         getLogger().error(`CodeTransformation: ${CodeWhispererConstants.failedToCompleteJobNotification}`, error)
         if (!transformByQState.getJobFailureErrorNotification()) {

@@ -32,6 +32,8 @@ import { DevSettings } from '../../../shared/settings'
 import { AuthSSOServer } from '../../../auth/sso/server'
 import { getLogger } from '../../../shared/logger/logger'
 import { isValidUrl } from '../../../shared/utilities/uriUtils'
+import { RegionProfile } from '../../../codewhisperer/models/model'
+import { ProfileSwitchIntent } from '../../../codewhisperer/region/regionProfileManager'
 
 export abstract class CommonAuthWebview extends VueWebview {
     private readonly className = 'CommonAuthWebview'
@@ -67,7 +69,7 @@ export abstract class CommonAuthWebview extends VueWebview {
      * @param errorMessage IF an error is caught on the frontend, this is the message. It will result in a failure metric.
      *                     Otherwise we assume success.
      */
-    public setUiReady(state: 'login' | 'reauth', errorMessage?: string) {
+    public setUiReady(state: 'login' | 'reauth' | 'selectProfile', errorMessage?: string) {
         if (errorMessage) {
             this.setLoadFailure(state, errorMessage)
         } else {
@@ -205,6 +207,10 @@ export abstract class CommonAuthWebview extends VueWebview {
 
     /** List current connections known by the extension for the purpose of preventing duplicates. */
     abstract listSsoConnections(): Promise<SsoConnection[]>
+
+    abstract listRegionProfiles(): Promise<RegionProfile[] | string>
+
+    abstract selectRegionProfile(profile: RegionProfile, source: ProfileSwitchIntent): Promise<void>
 
     /**
      * Emit stored metric metadata. Does not reset the stored metric metadata, because it
