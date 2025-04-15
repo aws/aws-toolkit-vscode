@@ -166,4 +166,9 @@ export enum MetricDataResult {
     LlmFailure = 'LLMFailure',
 }
 
+/**
+ * Note: Passing a reference around allows us to lazily inject mynah UI into
+ * connectors and handlers. This is done to supported "hybrid chat", which
+ * injects mynah UI _after_ the connector has already been created
+ */
 export type MynahUIRef = { mynahUI: MynahUI | undefined }
