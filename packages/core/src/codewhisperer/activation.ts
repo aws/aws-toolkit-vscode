@@ -349,10 +349,10 @@ export async function activate(context: ExtContext): Promise<void> {
             // no need to validate base customization which has empty arn
             if (selectedCustomization.arn.length > 0) {
                 getAvailableCustomizationsList()
-                    .then((customizations) => {
+                    .then(async (customizations) => {
                         const r = customizations.find((it) => it.arn === selectedCustomization.arn)
                         if (!r) {
-                            void switchToBaseCustomizationAndNotify().then()
+                            await switchToBaseCustomizationAndNotify()
                         }
                     })
                     .catch((e) => {
