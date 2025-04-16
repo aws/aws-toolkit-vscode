@@ -346,35 +346,6 @@ export class Messenger {
         )
     }
 
-    public sendPermissionToBuildMessage(tabID: string) {
-        const message = CodeWhispererConstants.buildLocallyChatMessage
-
-        const buttons: ChatItemButton[] = []
-        buttons.push({
-            keepCardAfterClick: false,
-            text: 'Agree',
-            id: ButtonActions.AGREE_TO_LOCAL_BUILD,
-            position: 'outside',
-        })
-        buttons.push({
-            keepCardAfterClick: false,
-            text: 'No, stop the transformation',
-            id: ButtonActions.CANCEL_TRANSFORMATION_FORM,
-            position: 'outside',
-        })
-
-        this.dispatcher.sendChatMessage(
-            new ChatMessage(
-                {
-                    message,
-                    messageType: 'ai-prompt',
-                    buttons,
-                },
-                tabID
-            )
-        )
-    }
-
     public sendAsyncEventProgress(
         tabID: string,
         inProgress: boolean,

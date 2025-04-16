@@ -395,9 +395,6 @@ export class GumbyController {
                 transformByQState.setCustomDependencyVersionFilePath('')
                 this.promptJavaHome('source', message.tabID)
                 break
-            case ButtonActions.AGREE_TO_LOCAL_BUILD:
-                await this.prepareLanguageUpgradeProject(message) // build project locally right after user agrees to do so
-                break
             case ButtonActions.VIEW_TRANSFORMATION_HUB:
                 await vscode.commands.executeCommand(GumbyCommands.FOCUS_TRANSFORMATION_HUB, CancelActionPositions.Chat)
                 break
@@ -552,25 +549,25 @@ export class GumbyController {
         })
     }
 
-    private async prepareLanguageUpgradeProject(message: any) {
+    private async prepareLanguageUpgradeProject(tabID: string) {
         // build project locally
         try {
             this.sessionStorage.getSession().conversationState = ConversationState.COMPILING
-            this.messenger.sendCompilationInProgress(message.tabID)
+            this.messenger.sendCompilationInProgress(tabID)
             await compileProject()
         } catch (err: any) {
-            this.messenger.sendUnrecoverableErrorResponse('could-not-compile-project', message.tabID)
+            this.messenger.sendUnrecoverableErrorResponse('could-not-compile-project', tabID)
             // reset state to allow "Start a new transformation" button to work
             this.sessionStorage.getSession().conversationState = ConversationState.IDLE
             throw err
         }
 
-        this.messenger.sendCompilationFinished(message.tabID)
+        this.messenger.sendCompilationFinished(tabID)
 
         // since compilation can potentially take a long time, double check auth
         const authState = await AuthUtil.instance.getChatAuthState()
         if (authState.amazonQ !== 'connected') {
-            void this.messenger.sendAuthNeededExceptionMessage(authState, message.tabID)
+            void this.messenger.sendAuthNeededExceptionMessage(authState, tabID)
             this.sessionStorage.getSession().isAuthenticating = true
             return
         }
@@ -578,13 +575,8 @@ export class GumbyController {
         // give user a non-blocking warning if build file appears to contain absolute paths
         await parseBuildFile()
 
-        this.messenger.sendAsyncEventProgress(
-            message.tabID,
-            true,
-            undefined,
-            GumbyNamedMessages.JOB_SUBMISSION_STATUS_MESSAGE
-        )
-        this.messenger.sendJobSubmittedMessage(message.tabID)
+        this.messenger.sendAsyncEventProgress(tabID, true, undefined, GumbyNamedMessages.JOB_SUBMISSION_STATUS_MESSAGE)
+        this.messenger.sendJobSubmittedMessage(tabID)
         this.sessionStorage.getSession().conversationState = ConversationState.JOB_SUBMITTED
         await startTransformByQ()
     }
@@ -705,7 +697,7 @@ export class GumbyController {
                 const pathToJavaHome = extractPath(data.message)
                 if (pathToJavaHome) {
                     transformByQState.setTargetJavaHome(pathToJavaHome)
-                    this.messenger.sendPermissionToBuildMessage(data.tabID)
+                    await this.prepareLanguageUpgradeProject(data.tabID) // build right after we get target JDK path
                 } else {
                     this.messenger.sendUnrecoverableErrorResponse('invalid-java-home', data.tabID)
                 }
