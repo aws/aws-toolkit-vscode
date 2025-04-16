@@ -627,7 +627,11 @@ export class CWCTelemetryHelper {
             cwsprChatActiveEditorImportCount: triggerPayload.codeQuery?.fullyQualifiedNames?.used?.length,
             cwsprChatResponseCode: responseCode,
             cwsprChatRequestLength: triggerPayload.message?.length ?? 0,
-            cwsprChatConversationType: triggerPayload.origin ? 'AgenticChat' : 'Chat',
+            cwsprChatConversationType: triggerPayload.origin
+                ? triggerPayload.toolResults
+                    ? 'AgenticChatWithToolUse'
+                    : 'AgenticChat'
+                : 'Chat',
             credentialStartUrl: AuthUtil.instance.startUrl,
             requestId: requestID,
             reasonDesc: getTelemetryReasonDesc(errorReason),
