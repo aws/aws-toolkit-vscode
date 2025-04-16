@@ -8,7 +8,7 @@ env:
         AWS_TOOLKIT_TEST_USER_DIR: '/tmp/'
         # needed or else webpack will cause it to run out of memory
         NODE_OPTIONS: '--max-old-space-size=8192'
-        GITHUB_TOKEN: $GITHUB_READONLY_TOKEN
+        # VSCODE_RIPGREP_TOKEN will be set in pre_build phase
 
 phases:
     install:
@@ -21,6 +21,9 @@ phases:
     pre_build:
         commands:
             - export HOME=/home/codebuild-user
+            # Set up VSCODE_RIPGREP_TOKEN for GitHub API access
+            - export VSCODE_RIPGREP_TOKEN=${GITHUB_READONLY_TOKEN}
+            - echo "Setting up VSCODE_RIPGREP_TOKEN for GitHub API access"
             - bash buildspec/shared/linux-pre_build.sh
 
     build:
