@@ -115,11 +115,11 @@ export async function activateAmazonQCommon(context: vscode.ExtensionContext, is
 
     await initializeAuth(globals.loginManager)
 
-    await activateAmazonqLsp(context)
-
     const extContext = {
         extensionContext: context,
     }
+
+    await activateAmazonqLsp(context)
 
     // This contains every lsp agnostic things (auth, security scan, code scan)
     await activateCodeWhisperer(extContext as ExtContext)
