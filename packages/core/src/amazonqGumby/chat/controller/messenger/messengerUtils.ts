@@ -22,7 +22,6 @@ export enum ButtonActions {
     SELECT_SQL_CONVERSION_METADATA_FILE = 'gumbySQLConversionMetadataTransformFormConfirm',
     SELECT_CUSTOM_DEPENDENCY_VERSION_FILE = 'gumbyCustomDependencyVersionTransformFormConfirm',
     CONTINUE_TRANSFORMATION_FORM = 'gumbyTransformFormContinue',
-    AGREE_TO_LOCAL_BUILD = 'gumbyAgreeToLocalBuild',
     CONFIRM_DEPENDENCY_FORM = 'gumbyTransformDependencyFormConfirm',
     CANCEL_DEPENDENCY_FORM = 'gumbyTransformDependencyFormCancel',
     CONFIRM_JAVA_HOME_FORM = 'gumbyJavaHomeFormConfirm',
