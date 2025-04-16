@@ -210,6 +210,7 @@ export class WebviewUIHandler {
                     isScanEnabled: this.isScanEnabled,
                     isTestEnabled: this.isTestEnabled,
                     isDocEnabled: this.isDocEnabled,
+                    hybridChat,
                     disabledCommands,
                 })
 
@@ -659,8 +660,11 @@ export class WebviewUIHandler {
             },
             onTabAdd: (tabID: string) => {
                 if (hybridChat) {
-                    // hybrid chat doesn't support the welcome page
-                    this.connector?.onTabAdd(tabID)
+                    /**
+                     * hybrid chat doesn't support the welcome page
+                     * tabs are already added by the quick action handler
+                     * so theres nothing we have to do here
+                     */
                     return
                 }
                 /**
@@ -1038,6 +1042,7 @@ export class WebviewUIHandler {
             isScanEnabled: this.isScanEnabled,
             isTestEnabled: this.isTestEnabled,
             isDocEnabled: this.isDocEnabled,
+            hybridChat,
         })
         this.textMessageHandler = new TextMessageHandler({
             mynahUIRef: this.mynahUIRef,
