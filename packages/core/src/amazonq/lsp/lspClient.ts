@@ -47,7 +47,7 @@ import { ChildProcess } from '../../shared/utilities/processUtils'
 const localize = nls.loadMessageBundle()
 
 const key = crypto.randomBytes(32)
-const logger = getLogger('amazonqLsp')
+const logger = getLogger('amazonqLsp.lspClient')
 
 /**
  * LspClient manages the API call between VS Code extension and LSP server
@@ -83,7 +83,7 @@ export class LspClient {
             const resp = await this.client?.sendRequest(BuildIndexRequestType, encryptedRequest)
             return resp
         } catch (e) {
-            logger.error(`LspClient: buildIndex error: ${e}`)
+            logger.error(`buildIndex error: ${e}`)
             return undefined
         }
     }
@@ -98,7 +98,7 @@ export class LspClient {
             const resp = await this.client?.sendRequest(QueryVectorIndexRequestType, encryptedRequest)
             return resp
         } catch (e) {
-            logger.error(`LspClient: queryVectorIndex error: ${e}`)
+            logger.error(`queryVectorIndex error: ${e}`)
             return []
         }
     }
@@ -114,7 +114,7 @@ export class LspClient {
             const resp: any = await this.client?.sendRequest(QueryInlineProjectContextRequestType, encrypted)
             return resp
         } catch (e) {
-            logger.error(`LspClient: queryInlineProjectContext error: ${e}`)
+            logger.error(`queryInlineProjectContext error: ${e}`)
             throw e
         }
     }
@@ -135,7 +135,7 @@ export class LspClient {
             const resp = await this.client?.sendRequest(UpdateIndexV2RequestType, encryptedRequest)
             return resp
         } catch (e) {
-            logger.error(`LspClient: updateIndex error: ${e}`)
+            logger.error(`updateIndex error: ${e}`)
             return undefined
         }
     }
@@ -147,7 +147,7 @@ export class LspClient {
             const resp: any = await this.client?.sendRequest(QueryRepomapIndexRequestType, await this.encrypt(request))
             return resp
         } catch (e) {
-            logger.error(`LspClient: QueryRepomapIndex error: ${e}`)
+            logger.error(`QueryRepomapIndex error: ${e}`)
             throw e
         }
     }
@@ -160,7 +160,7 @@ export class LspClient {
             )
             return resp
         } catch (e) {
-            logger.error(`LspClient: queryInlineProjectContext error: ${e}`)
+            logger.error(`queryInlineProjectContext error: ${e}`)
             throw e
         }
     }
@@ -177,7 +177,7 @@ export class LspClient {
             )
             return resp
         } catch (e) {
-            logger.error(`LspClient: getContextCommandItems error: ${e}`)
+            logger.error(`getContextCommandItems error: ${e}`)
             throw e
         }
     }
@@ -193,7 +193,7 @@ export class LspClient {
             )
             return resp || []
         } catch (e) {
-            logger.error(`LspClient: getContextCommandPrompt error: ${e}`)
+            logger.error(`getContextCommandPrompt error: ${e}`)
             throw e
         }
     }
@@ -207,7 +207,7 @@ export class LspClient {
             )
             return resp
         } catch (e) {
-            logger.error(`LspClient: getIndexSequenceNumber error: ${e}`)
+            logger.error(`getIndexSequenceNumber error: ${e}`)
             throw e
         }
     }
@@ -235,9 +235,9 @@ async function validateNodeExe(nodePath: string, lsp: string, args: string[]) {
     const r = await proc.run()
     const ok = r.exitCode === 0 && r.stdout.includes('ok')
     if (!ok) {
-        const msg = `amazonqLsp: failed to run basic "node -e" test (exitcode=${r.exitCode}): ${proc}`
+        const msg = `failed to run basic "node -e" test (exitcode=${r.exitCode}): ${proc}`
         logger.error(msg)
-        throw new ToolkitError(msg)
+        throw new ToolkitError(`amazonqLsp: ${msg}`)
     }
 
     // Check that we can start `node …/lsp.js --stdio …`.
@@ -416,7 +416,7 @@ export async function activate(extensionContext: ExtensionContext, resourcePaths
             toDispose.push(disposableFunc)
         },
         (reason) => {
-            logger.error('LspClient.instance.client.onReady() failed: %O', reason)
+            logger.error('client.onReady() failed: %O', reason)
         }
     )
 }
