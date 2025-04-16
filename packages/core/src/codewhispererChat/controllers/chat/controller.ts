@@ -854,7 +854,7 @@ export class ChatController {
     }
 
     private async closeDiffView(message: CustomFormActionMessage) {
-        // Close the diff view if User rejected or accepted the generated code changes.
+        // Close the diff view if User rejected the generated code changes or asked a different question.
         if (vscode.window.tabGroups.activeTabGroup.activeTab?.label.includes(amazonQTabSuffix)) {
             await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
         }
@@ -918,9 +918,6 @@ export class ChatController {
                         message
                     )
                 }
-                break
-            case 'accept-code-diff':
-                await this.closeDiffView(message)
                 break
             case 'reject-code-diff':
                 await this.restoreBackup(message)
@@ -1006,7 +1003,26 @@ export class ChatController {
     }
 
     private async processFileClickMessage(message: FileClick) {
+        /**
+         * This function is used for 3 useCases
+         * 1. Read files/folders for Agentic chat
+         * 2. Read files in workspace context: Project falcon
+         * 3. Open code diff for generated files in Agentic chat.
+         */
         const session = this.sessionStorage.getSession(message.tabID)
+
+        if (session.getMessageOperation(message.messageId)?.type === 'read') {
+            try {
+                await vscode.commands.executeCommand('vscode.open', vscode.Uri.file(message.filePath))
+            } catch {
+                void vscode.window.showInformationMessage(
+                    `Sorry, Amazon Q failed to open the file: ${path.basename(message.filePath)}`
+                )
+            }
+        } else if (session.getMessageOperation(message.messageId)?.type === 'listDir') {
+            void vscode.window.showInformationMessage(`Analyzed the directory: ${message.filePath}`)
+        }
+
         // Check if user clicked on filePath in the contextList or in the fileListTree and perform the functionality accordingly.
         if (session.showDiffOnFileWrite) {
             const toolUseId = message.messageId
@@ -1030,7 +1046,9 @@ export class ChatController {
                 )
             } catch (error) {
                 getLogger().error(`Unexpected error in diff view generation: ${error}`)
-                void vscode.window.showErrorMessage(`Failed to open diff view.`)
+                void vscode.window.showErrorMessage(
+                    `Sorry, Amazon Q failed to open the diff view for ${path.basename(message.filePath)}`
+                )
             }
         } else {
             const lineRanges = session.contexts.get(message.filePath)
@@ -1303,8 +1321,6 @@ export class ChatController {
         // Create a fresh token for this new conversation
         session.createNewTokenSource()
         session.setAgenticLoopInProgress(true)
-        session.clearListOfReadFiles()
-        session.clearListOfReadFolders()
         session.setShowDiffOnFileWrite(false)
         session.setMessageIdToUpdate(undefined)
         session.setMessageIdToUpdateListDirectory(undefined)

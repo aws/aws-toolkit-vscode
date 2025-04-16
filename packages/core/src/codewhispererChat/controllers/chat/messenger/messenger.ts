@@ -56,7 +56,7 @@ import {
 } from '@aws/mynah-ui'
 import { Database } from '../../../../shared/db/chatDb/chatDb'
 import { TabType } from '../../../../amazonq/webview/ui/storages/tabsStorage'
-import { ToolType, ToolUtils } from '../../../tools/toolUtils'
+import { Tool, ToolType, ToolUtils } from '../../../tools/toolUtils'
 import { ChatStream } from '../../../tools/chatStream'
 import path from 'path'
 import { CommandValidation, ExecuteBashParams } from '../../../tools/executeBash'
@@ -191,6 +191,29 @@ export class Messenger {
         const codeBlocks = document.querySelectorAll('pre > code')
 
         return codeBlocks.length
+    }
+
+    public handleFileReadOrListOperation = (session: ChatSession, toolUse: ToolUse, tool: Tool) => {
+        const messageIdToUpdate =
+            tool.type === ToolType.FsRead ? session.messageIdToUpdate : session.messageIdToUpdateListDirectory
+        const messageId = messageIdToUpdate ?? toolUse?.toolUseId ?? ''
+        const operationType = tool.type === ToolType.FsRead ? 'read' : 'listDir'
+        const input = toolUse.input as unknown as FsReadParams | ListDirectoryParams
+        const existingPaths = session.getFilePathsByMessageId(messageId)
+
+        // Check if path already exists in the list
+        const isPathAlreadyProcessed = existingPaths.some((path) => path.relativeFilePath === input.path)
+
+        if (!isPathAlreadyProcessed) {
+            session.addMessageOperation(messageId, operationType, [
+                ...existingPaths,
+                {
+                    relativeFilePath: input.path,
+                    lineRanges: [{ first: -1, second: -1 }],
+                },
+            ])
+        }
+        return messageIdToUpdate
     }
 
     public async sendAIResponse(
@@ -335,32 +358,8 @@ export class Messenger {
                                     session.setShowDiffOnFileWrite(true)
                                     changeList = await tool.tool.getDiffChanges()
                                 }
-                                if (tool.type === ToolType.FsRead) {
-                                    messageIdToUpdate = session.messageIdToUpdate
-                                    const input = toolUse.input as unknown as FsReadParams
-                                    // Check if this file path is already in the readFiles list
-                                    const isFileAlreadyRead = session.readFiles.some(
-                                        (file) => file.relativeFilePath === input.path
-                                    )
-                                    if (!isFileAlreadyRead) {
-                                        session.addToReadFiles({
-                                            relativeFilePath: input?.path,
-                                            lineRanges: [{ first: -1, second: -1 }],
-                                        })
-                                    }
-                                } else if (tool.type === ToolType.ListDirectory) {
-                                    messageIdToUpdate = session.messageIdToUpdateListDirectory
-                                    const input = toolUse.input as unknown as ListDirectoryParams
-                                    // Check if this folder is already in the readFolders list
-                                    const isFolderAlreadyRead = session.readFolders.some(
-                                        (folder) => folder.relativeFilePath === input.path
-                                    )
-                                    if (!isFolderAlreadyRead) {
-                                        session.setReadFolders({
-                                            relativeFilePath: input?.path,
-                                            lineRanges: [{ first: -1, second: -1 }],
-                                        })
-                                    }
+                                if (isReadOrList) {
+                                    messageIdToUpdate = this.handleFileReadOrListOperation(session, toolUse, tool)
                                 }
                                 const validation = ToolUtils.requiresAcceptance(tool)
                                 const chatStream = new ChatStream(
@@ -381,14 +380,11 @@ export class Messenger {
                                     chatStream,
                                     chatStream.validation.requiresAcceptance
                                 )
-                                if (session.messageIdToUpdate === undefined && tool.type === ToolType.FsRead) {
+                                if (!session.messageIdToUpdate && tool.type === ToolType.FsRead) {
                                     // Store the first messageId in a chain of tool uses
                                     session.setMessageIdToUpdate(toolUse.toolUseId)
                                 }
-                                if (
-                                    session.messageIdToUpdateListDirectory === undefined &&
-                                    tool.type === ToolType.ListDirectory
-                                ) {
+                                if (!session.messageIdToUpdateListDirectory && tool.type === ToolType.ListDirectory) {
                                     session.setMessageIdToUpdateListDirectory(toolUse.toolUseId)
                                 }
                                 getLogger().debug(
@@ -706,10 +702,10 @@ export class Messenger {
         triggerID: string,
         messageIdToUpdate?: string
     ) {
-        const contextList = toolUse.name === ToolType.ListDirectory ? session.readFolders : session.readFiles
+        const messageID = messageIdToUpdate ?? toolUse?.toolUseId ?? ''
+        const contextList = messageIdToUpdate || toolUse?.toolUseId ? session.getFilePathsByMessageId(messageID) : []
         const isFileRead = toolUse.name === ToolType.FsRead
-        const items = isFileRead ? session.readFiles : session.readFolders
-        const itemCount = items.length
+        const itemCount = contextList.length
 
         const title =
             itemCount < 1
@@ -727,7 +723,7 @@ export class Messenger {
                     followUpsHeader: undefined,
                     relatedSuggestions: undefined,
                     triggerID,
-                    messageID: messageIdToUpdate ?? toolUse?.toolUseId ?? '',
+                    messageID,
                     userIntent: undefined,
                     codeBlockLanguage: undefined,
                     contextList,
