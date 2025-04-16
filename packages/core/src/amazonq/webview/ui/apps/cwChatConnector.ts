@@ -357,7 +357,6 @@ export class Connector extends BaseConnector {
         if (
             !this.onChatAnswerUpdated ||
             ![
-                'accept-code-diff',
                 'reject-code-diff',
                 'run-shell-command',
                 'reject-shell-command',
@@ -379,17 +378,6 @@ export class Connector extends BaseConnector {
             header: currentChatItem?.header ? { ...currentChatItem.header } : {},
         }
         switch (action.id) {
-            case 'accept-code-diff':
-                if (answer.header) {
-                    answer.header.status = {
-                        icon: 'ok' as MynahIconsType,
-                        text: 'Accepted',
-                        status: 'success',
-                    }
-                    answer.header.buttons = []
-                    answer.body = ' '
-                }
-                break
             case 'reject-code-diff':
                 if (answer.header) {
                     answer.header.status = {

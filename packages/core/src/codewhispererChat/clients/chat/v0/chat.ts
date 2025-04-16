@@ -24,22 +24,28 @@ export type ToolUseWithError = {
     error: Error | undefined
 }
 
+type OperationType = 'read' | 'write' | 'listDir'
+
+interface FileOperation {
+    type: OperationType
+    filePaths: DocumentReference[]
+}
+
 export class ChatSession {
     private sessionId: string
     /**
-     * _readFiles = list of files read from the project to gather context before generating response.
      * _showDiffOnFileWrite = Controls whether to show diff view (true) or file context view (false) to the user
      * _context = Additional context to be passed to the LLM for generating the response
      * _messageIdToUpdate = messageId of a chat message to be updated, used for reducing consecutive tool messages
+     * _messageOperations = Maps messageId to filePaths which helps to open the read files and to open the code diff accordingly.
      */
-    private _readFiles: DocumentReference[] = []
-    private _readFolders: DocumentReference[] = []
     private _toolUseWithError: ToolUseWithError | undefined
     private _showDiffOnFileWrite: boolean = false
     private _context: PromptMessage['context']
     private _pairProgrammingModeOn: boolean = true
     private _fsWriteBackups: Map<string, FsWriteBackup> = new Map()
     private _agenticLoopInProgress: boolean = false
+    private _messageOperations: Map<string, FileOperation> = new Map()
 
     /**
      * True if messages from local history have been sent to session.
@@ -144,29 +150,11 @@ export class ChatSession {
     public setSessionID(id: string) {
         this.sessionId = id
     }
-    public get readFiles(): DocumentReference[] {
-        return this._readFiles
-    }
-    public get readFolders(): DocumentReference[] {
-        return this._readFolders
-    }
     public get showDiffOnFileWrite(): boolean {
         return this._showDiffOnFileWrite
     }
     public setShowDiffOnFileWrite(value: boolean) {
         this._showDiffOnFileWrite = value
-    }
-    public addToReadFiles(filePath: DocumentReference) {
-        this._readFiles.push(filePath)
-    }
-    public clearListOfReadFiles() {
-        this._readFiles = []
-    }
-    public setReadFolders(folder: DocumentReference) {
-        this._readFolders.push(folder)
-    }
-    public clearListOfReadFolders() {
-        this._readFolders = []
     }
     async chatIam(chatRequest: SendMessageRequest): Promise<SendMessageCommandOutput> {
         const client = await createQDeveloperStreamingClient()
@@ -195,5 +183,42 @@ export class ChatSession {
         UserWrittenCodeTracker.instance.onQFeatureInvoked()
 
         return response
+    }
+
+    /**
+     * Adds a file operation for a specific message
+     * @param messageId The ID of the message
+     * @param type The type of operation ('read' or 'listDir' or 'write')
+     * @param filePaths Array of DocumentReference involved in the operation
+     */
+    public addMessageOperation(messageId: string, type: OperationType, filePaths: DocumentReference[]) {
+        this._messageOperations.set(messageId, { type, filePaths })
+    }
+
+    /**
+     * Gets the file operation details for a specific message
+     * @param messageId The ID of the message
+     * @returns The file operation details or undefined if not found
+     */
+    public getMessageOperation(messageId: string): FileOperation | undefined {
+        return this._messageOperations.get(messageId)
+    }
+
+    /**
+     * Gets all file paths along with line ranges associated with a message
+     * @param messageId The ID of the message
+     * @returns Array of DocumentReference or empty array if message ID not found
+     */
+    public getFilePathsByMessageId(messageId: string): DocumentReference[] {
+        return this._messageOperations.get(messageId)?.filePaths || []
+    }
+
+    /**
+     * Gets the operation type for a specific message
+     * @param messageId The ID of the message
+     * @returns The operation type or undefined if message ID not found
+     */
+    public getOperationTypeByMessageId(messageId: string): OperationType | undefined {
+        return this._messageOperations.get(messageId)?.type
     }
 }

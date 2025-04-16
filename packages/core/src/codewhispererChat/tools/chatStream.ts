@@ -37,7 +37,7 @@ export class ChatStream extends Writable {
     ) {
         super()
         this.logger.debug(
-            `ChatStream created for tabID: ${tabID}, triggerID: ${triggerID}, readFiles: ${session.readFiles}, emitEvent to mynahUI: ${emitEvent}`
+            `ChatStream created for tabID: ${tabID}, triggerID: ${triggerID}, emitEvent to mynahUI: ${emitEvent}`
         )
         if (!emitEvent) {
             return
