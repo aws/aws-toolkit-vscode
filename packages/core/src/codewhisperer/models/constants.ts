@@ -806,6 +806,7 @@ export const skipUnitTestsFormTitle = 'Choose to skip unit tests'
 
 export const selectiveTransformationFormTitle = 'Choose how to receive proposed changes'
 
+// TO-DO: get text from Allie for this
 export const skipUnitTestsFormMessage =
     'I will build your project using `mvn clean test` by default. If you would like me to build your project without running unit tests, I will use `mvn clean test-compile`.'
 

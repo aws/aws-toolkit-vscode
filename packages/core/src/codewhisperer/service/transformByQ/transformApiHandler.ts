@@ -828,17 +828,13 @@ export async function runClientSideBuild(projectCopyPath: string, clientInstruct
         },
     }
     getLogger().info(`CodeTransformation: uploading client build results at ${uploadZipPath} and resuming job now`)
-    await uploadPayload(uploadZipPath, AuthUtil.instance.regionProfileManager.activeRegionProfile, uploadContext)
-    await resumeTransformationJob(transformByQState.getJobId(), 'COMPLETED')
     try {
+        await uploadPayload(uploadZipPath, AuthUtil.instance.regionProfileManager.activeRegionProfile, uploadContext)
+        await resumeTransformationJob(transformByQState.getJobId(), 'COMPLETED')
+    } finally {
         await fs.delete(projectCopyPath, { recursive: true })
         await fs.delete(uploadZipBaseDir, { recursive: true })
-        // TODO: do we need to delete the downloaded client instructions and uploadZipPath?
-        // Check with AppSec, but they can help in debugging
-    } catch {
-        getLogger().error(
-            `CodeTransformation: failed to delete project copy and uploadZipBaseDir after client-side build`
-        )
+        getLogger().info(`CodeTransformation: Just deleted project copy and uploadZipBaseDir after client-side build`)
     }
 }
 
