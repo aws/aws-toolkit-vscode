@@ -229,7 +229,7 @@ export class GlobalState implements vscode.Memento {
     }
 
     /**
-     * Get the codewhisperer customerization. If legacy (map of customizations) store the
+     * Get the codewhisperer customization. If legacy (map of customizations) store the
      * customization with label of profile name
      *
      * @param profileName name of profile, only used in case legacy customization is found
@@ -244,6 +244,32 @@ export class GlobalState implements vscode.Memento {
             const selectedCustomization = result[profileName]
             this.tryUpdate('CODEWHISPERER_SELECTED_CUSTOMIZATION', selectedCustomization)
             return selectedCustomization
+        } else {
+            return result
+        }
+    }
+
+    /**
+     * Get the codewhisperer persisted customizations. If legacy (map of customizations) store the
+     * customizations with label of profile name
+     *
+     * @param profileName name of profile, only used in case legacy customization is found
+     * @returns array of codewhisperer persisted customizations, or empty array if not found.
+     * If legacy, return the codewhisperer persisted customizations for the auth profile name
+     */
+    getCodewhispererPersistedCCustomization(profileName: string): Customization[] {
+        const result = this.tryGet<Customization[]>('CODEWHISPERER_PERSISTED_CUSTOMIZATIONS', Array, [])
+
+        // Legacy migration for old customization map of type { [label: string]: Customization[] }
+        if (result.length === 0) {
+            const customizations = this.tryGet<{ [label: string]: Customization[] }>(
+                'CODEWHISPERER_PERSISTED_CUSTOMIZATIONS',
+                Object,
+                {}
+            )
+            const persistedCustomizationsArray = customizations[profileName] || []
+            this.tryUpdate('CODEWHISPERER_PERSISTED_CUSTOMIZATIONS', persistedCustomizationsArray)
+            return persistedCustomizationsArray
         } else {
             return result
         }

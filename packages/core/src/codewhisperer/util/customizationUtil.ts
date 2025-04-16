@@ -139,25 +139,15 @@ export const getPersistedCustomizations = (): Customization[] => {
     if (!AuthUtil.instance.isIdcConnection()) {
         return []
     }
-    const persistedCustomizationsObj = globals.globalState.tryGet<{ [label: string]: Customization[] }>(
-        'CODEWHISPERER_PERSISTED_CUSTOMIZATIONS',
-        Object,
-        {}
-    )
-    return persistedCustomizationsObj[AuthUtil.instance.profileName] || []
+    return globals.globalState.getCodewhispererPersistedCustomization(AuthUtil.instance.profileName)
 }
 
 export const setPersistedCustomizations = async (customizations: Customization[]) => {
     if (!AuthUtil.instance.isIdcConnection()) {
         return
     }
-    const persistedCustomizationsObj = globals.globalState.tryGet<{ [label: string]: Customization[] }>(
-        'CODEWHISPERER_PERSISTED_CUSTOMIZATIONS',
-        Object,
-        {}
-    )
-    persistedCustomizationsObj[AuthUtil.instance.profileName] = customizations
-    await globals.globalState.update('CODEWHISPERER_PERSISTED_CUSTOMIZATIONS', persistedCustomizationsObj)
+
+    await globals.globalState.update('CODEWHISPERER_PERSISTED_CUSTOMIZATIONS', customizations)
 }
 
 export const getNewCustomizationsAvailable = () => {
