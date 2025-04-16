@@ -240,7 +240,7 @@ describe('RegionProfileManager', function () {
             assert.deepStrictEqual(sut.activeRegionProfile, profileFoo)
             const conn = authUtil.conn as SsoConnection
 
-            const client = await sut.createQClient('eu-central-1', 'https://amazon.com/', conn)
+            const client = await sut._createQClient('eu-central-1', 'https://amazon.com/', conn)
 
             assert.deepStrictEqual(client.config.region, 'eu-central-1')
             assert.deepStrictEqual(client.endpoint.href, 'https://amazon.com/')

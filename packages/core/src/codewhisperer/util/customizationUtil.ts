@@ -17,7 +17,7 @@ import { getLogger } from '../../shared/logger/logger'
 import { showMessageWithUrl } from '../../shared/utilities/messages'
 import { parse } from '@aws-sdk/util-arn-parser'
 import { Commands } from '../../shared/vscode/commands2'
-import { vsCodeState } from '../models/model'
+import { RegionProfile, vsCodeState } from '../models/model'
 
 /**
  *
@@ -224,7 +224,6 @@ const createCustomizationItems = async () => {
     if (availableCustomizations.length === 0) {
         items.push(createBaseCustomizationItem())
 
-        // TODO: finalize the url string with documentation
         void showMessageWithUrl(
             localize(
                 'AWS.codewhisperer.customization.noCustomizations.description',
@@ -284,7 +283,7 @@ const createBaseCustomizationItem = () => {
 }
 
 const createCustomizationItem = (
-    customization: Customization,
+    customization: Customization & { profile: RegionProfile },
     persistedArns: (ResourceArn | undefined)[],
     shouldPrefixAccountId: boolean
 ) => {
@@ -293,8 +292,8 @@ const createCustomizationItem = (
         ? shouldPrefixAccountId
             ? accountId
                 ? `${customization.name} (${accountId})`
-                : `${customization.name}`
-            : customization.name
+                : `${customization.name} (${customization.profile.name})`
+            : `${customization.name} (${customization.profile.name})`
         : 'unknown'
 
     const isNewCustomization = !persistedArns.includes(customization.arn)
@@ -303,6 +302,10 @@ const createCustomizationItem = (
     return {
         label: label,
         onClick: async () => {
+            const profile = AuthUtil.instance.regionProfileManager.activeRegionProfile
+            if (profile && customization.profile.arn !== profile.arn) {
+                await AuthUtil.instance.regionProfileManager.switchRegionProfile(customization.profile, 'customization')
+            }
             await selectCustomization(customization)
         },
         detail:
@@ -333,13 +336,24 @@ export const selectCustomization = async (customization: Customization) => {
     )
 }
 
+// should collect all customizations across different profiles and if users select the customization, we also change the profile if needed if the customization is accessible from a different profile
 export const getAvailableCustomizationsList = async () => {
-    const items: Customization[] = []
-    const response = await codeWhispererClient.listAvailableCustomizations()
-    for (const customizations of response.map(
-        (listAvailableCustomizationsResponse) => listAvailableCustomizationsResponse.customizations
-    )) {
-        items.push(...customizations)
+    const items: (Customization & { profile: RegionProfile })[] = []
+    // TODO: try catch listProfile
+    const profiles = await AuthUtil.instance.regionProfileManager.listRegionProfile()
+
+    for (const profile of profiles) {
+        const response = await codeWhispererClient.listAvailableCustomizations(profile)
+        for (const customizations of response.map(
+            (listAvailableCustomizationsResponse) => listAvailableCustomizationsResponse.customizations
+        )) {
+            for (const c of customizations) {
+                items.push({
+                    ...c,
+                    profile: profile,
+                })
+            }
+        }
     }
 
     return items

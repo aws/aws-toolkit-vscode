@@ -23,7 +23,7 @@ import { indent } from '../../shared/utilities/textUtilities'
 import { getClientId, getOptOutPreference, getOperatingSystem } from '../../shared/telemetry/util'
 import { extensionVersion, getServiceEnvVarConfig } from '../../shared/vscode/env'
 import { DevSettings } from '../../shared/settings'
-import { CodeWhispererConfig } from '../models/model'
+import { CodeWhispererConfig, RegionProfile } from '../models/model'
 
 const keepAliveHeader = 'keep-alive-codewhisperer'
 
@@ -219,9 +219,8 @@ export class DefaultCodeWhispererClient {
             .promise()
     }
 
-    public async listAvailableCustomizations(): Promise<ListAvailableCustomizationsResponse[]> {
-        const client = await this.createUserSdkClient()
-        const profile = AuthUtil.instance.regionProfileManager.activeRegionProfile
+    public async listAvailableCustomizations(profile: RegionProfile): Promise<ListAvailableCustomizationsResponse[]> {
+        const client = await AuthUtil.instance.regionProfileManager.createQClient(profile)
         const requester = async (request: CodeWhispererUserClient.ListAvailableCustomizationsRequest) =>
             client.listAvailableCustomizations(request).promise()
         return pageableToCollection(requester, { profileArn: profile?.arn }, 'nextToken')

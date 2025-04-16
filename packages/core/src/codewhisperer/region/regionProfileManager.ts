@@ -47,7 +47,7 @@ const endpoints = createConstantMap({
  * 'update' -> plugin auto select the profile on users' behalf as there is only 1 profile
  * 'reload' -> on plugin restart, plugin will try to reload previous selected profile
  */
-export type ProfileSwitchIntent = 'user' | 'auth' | 'update' | 'reload'
+export type ProfileSwitchIntent = 'user' | 'auth' | 'update' | 'reload' | 'customization'
 
 export class RegionProfileManager {
     private static logger = getLogger()
@@ -112,7 +112,7 @@ export class RegionProfileManager {
         }
         const availableProfiles: RegionProfile[] = []
         for (const [region, endpoint] of endpoints.entries()) {
-            const client = await this.createQClient(region, endpoint, conn as SsoConnection)
+            const client = await this._createQClient(region, endpoint, conn as SsoConnection)
             const requester = async (request: CodeWhispererUserClient.ListAvailableProfilesRequest) =>
                 client.listAvailableProfiles(request).promise()
             const request: CodeWhispererUserClient.ListAvailableProfilesRequest = {}
@@ -162,7 +162,8 @@ export class RegionProfileManager {
         const ssoConn = this.connectionProvider() as SsoConnection
 
         // only prompt to users when users switch from A profile to B profile
-        if (this.activeRegionProfile !== undefined && regionProfile !== undefined) {
+        // TODO: should we ask if it's a customization switch?
+        if (source !== 'customization' && this.activeRegionProfile !== undefined && regionProfile !== undefined) {
             const response = await showConfirmationMessage({
                 prompt: localize(
                     'AWS.amazonq.profile.confirmation',
@@ -343,7 +344,20 @@ export class RegionProfileManager {
         }
     }
 
-    async createQClient(region: string, endpoint: string, conn: SsoConnection): Promise<CodeWhispererUserClient> {
+    // TODO: overload?
+    async createQClient(profile: RegionProfile): Promise<CodeWhispererUserClient> {
+        const conn = this.connectionProvider()
+        if (conn === undefined || !isSsoConnection(conn)) {
+            throw new Error('No valid SSO connection')
+        }
+        const endpoint = endpoints.get(profile.region)
+        if (!endpoint) {
+            throw new Error(`trying to initiatize Q client with unrecognizable region ${profile.region}`)
+        }
+        return this._createQClient(profile.region, endpoint, conn)
+    }
+
+    async _createQClient(region: string, endpoint: string, conn: SsoConnection): Promise<CodeWhispererUserClient> {
         const token = (await conn.getToken()).accessToken
         const serviceOption: ServiceOptions = {
             apiConfig: userApiConfig,
