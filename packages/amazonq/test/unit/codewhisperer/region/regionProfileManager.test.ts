@@ -65,7 +65,7 @@ describe('RegionProfileManager', function () {
             const mockClient = {
                 listAvailableProfiles: listProfilesStub,
             }
-            const createClientStub = sinon.stub(sut, 'createQClient').resolves(mockClient)
+            const createClientStub = sinon.stub(sut, '_createQClient').resolves(mockClient)
 
             const r = await sut.listRegionProfile()
 
