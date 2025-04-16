@@ -816,7 +816,7 @@ export class Messenger {
                 {
                     id: 'reject-code-diff',
                     status: 'clear',
-                    icon: 'revert' as MynahIconsType,
+                    icon: 'undo' as MynahIconsType,
                     text: 'Undo',
                 },
             ]
@@ -860,7 +860,7 @@ export class Messenger {
             new ChatMessage(
                 {
                     message: message,
-                    messageType: 'answer-part',
+                    messageType: toolUse?.name === ToolType.FsWrite ? 'answer' : 'answer-part',
                     followUps: undefined,
                     followUpsHeader: undefined,
                     relatedSuggestions: undefined,
