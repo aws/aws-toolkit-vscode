@@ -441,8 +441,8 @@
     "devDependencies": {
         "@aws-sdk/types": "^3.13.1",
         "@aws/chat-client-ui-types": "^0.1.12",
-        "@aws/language-server-runtimes": "^0.2.49",
-        "@aws/language-server-runtimes-types": "^0.1.10",
+        "@aws/language-server-runtimes": "^0.2.58",
+        "@aws/language-server-runtimes-types": "^0.1.13",
         "@cspotcode/source-map-support": "^0.8.1",
         "@sinonjs/fake-timers": "^10.0.2",
         "@types/adm-zip": "^0.4.34",
