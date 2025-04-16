@@ -47,25 +47,40 @@ export class LanguageServerResolver {
 
             const serverResolvers: StageResolver<LspResult>[] = [
                 {
+                    // 1: Use the current local ("cached") LSP server bundle, if any.
                     resolve: async () => await this.getLocalServer(cacheDirectory, latestVersion, targetContents),
                     telemetryMetadata: { id: this.lsName, languageServerLocation: 'cache' },
                 },
                 {
+                    // 2: Download the latest LSP server bundle.
                     resolve: async () => await this.fetchRemoteServer(cacheDirectory, latestVersion, targetContents),
                     telemetryMetadata: { id: this.lsName, languageServerLocation: 'remote' },
                 },
                 {
+                    // 3: If the download fails, try an older, cached version.
                     resolve: async () => await this.getFallbackServer(latestVersion),
                     telemetryMetadata: { id: this.lsName, languageServerLocation: 'fallback' },
                 },
             ]
 
-            return await tryStageResolvers('getServer', serverResolvers, getServerVersion)
+            /**
+             * Example:
+             * ```
+             * LspResult {
+             *   assetDirectory = "<cachedir>/aws/toolkits/language-servers/AmazonQ/3.3.0"
+             *   location = 'cache'
+             *   version = '3.3.0'
+             * }
+             * ```
+             */
+            const resolved = await tryStageResolvers('getServer', serverResolvers, getServerVersion)
+            return resolved
         } finally {
             logger.info(`Finished setting up LSP server`)
         }
     }
 
+    /** Finds an older, cached version of the LSP server bundle. */
     private async getFallbackServer(latestVersion: LspVersion): Promise<LspResult> {
         const fallbackDirectory = await this.getFallbackDir(latestVersion.serverVersion)
         if (!fallbackDirectory) {
@@ -96,6 +111,7 @@ export class LanguageServerResolver {
         return timeout
     }
 
+    /** Downloads the latest LSP server bundle. */
     private async fetchRemoteServer(
         cacheDirectory: string,
         latestVersion: LspVersion,
@@ -117,6 +133,7 @@ export class LanguageServerResolver {
         }
     }
 
+    /** Gets the current local ("cached") LSP server bundle. */
     private async getLocalServer(
         cacheDirectory: string,
         latestVersion: LspVersion,
@@ -417,13 +434,17 @@ export class LanguageServerResolver {
         return version.targets.find((x) => x.arch === arch && x.platform === platform)
     }
 
-    // lazy calls to `getApplicationSupportFolder()` to avoid failure on windows.
-    public static get defaultDir() {
+    /**
+     * Gets platform-specific "cache" dir ("$LOCALAPPDATA/aws/…" or "~/.cache/aws/…").
+     *
+     * Lazy-calls `getCacheDir()` to avoid failure on Windows.
+     */
+    public static defaultDir() {
         return path.join(fs.getCacheDir(), `aws/toolkits/language-servers`)
     }
 
     defaultDownloadFolder() {
-        return path.join(LanguageServerResolver.defaultDir, `${this.lsName}`)
+        return path.join(LanguageServerResolver.defaultDir(), `${this.lsName}`)
     }
 
     private getDownloadDirectory(version: string) {
