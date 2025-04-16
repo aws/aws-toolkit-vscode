@@ -39,15 +39,13 @@ import { fs } from '../../shared/fs/fs'
 import { getLogger } from '../../shared/logger/logger'
 import globals from '../../shared/extensionGlobals'
 import { ResourcePaths } from '../../shared/lsp/types'
-import { createServerOptions } from '../../shared/lsp/utils/platform'
+import { createServerOptions, validateNodeExe } from '../../shared/lsp/utils/platform'
 import { waitUntil } from '../../shared/utilities/timeoutUtils'
-import { ToolkitError } from '../../shared/errors'
-import { ChildProcess } from '../../shared/utilities/processUtils'
 
 const localize = nls.loadMessageBundle()
 
 const key = crypto.randomBytes(32)
-const logger = getLogger('amazonqLsp.lspClient')
+const logger = getLogger('amazonqWorkspaceLsp')
 
 /**
  * LspClient manages the API call between VS Code extension and LSP server
@@ -227,53 +225,6 @@ export class LspClient {
 }
 
 /**
- * Checks that we can actually run the `node` executable and execute code with it.
- */
-async function validateNodeExe(nodePath: string, lsp: string, args: string[]) {
-    // Check that we can start `node` by itself.
-    const proc = new ChildProcess(nodePath, ['-e', 'console.log("ok " + process.version)'], { logging: 'no' })
-    const r = await proc.run()
-    const ok = r.exitCode === 0 && r.stdout.includes('ok')
-    if (!ok) {
-        const msg = `failed to run basic "node -e" test (exitcode=${r.exitCode}): ${proc.toString(false, true)}`
-        logger.error(msg)
-        throw new ToolkitError(`amazonqLsp: ${msg}`)
-    }
-
-    // Check that we can start `node …/lsp.js --stdio …`.
-    const lspProc = new ChildProcess(nodePath, [lsp, ...args], { logging: 'no' })
-    try {
-        // Start asynchronously (it never stops; we need to stop it below).
-        lspProc.run().catch((e) => logger.error('failed to run: %s', lspProc.toString(false, true)))
-
-        const ok2 =
-            !lspProc.stopped &&
-            (await waitUntil(
-                async () => {
-                    return lspProc.pid() !== undefined
-                },
-                {
-                    timeout: 5000,
-                    interval: 100,
-                    truthy: true,
-                }
-            ))
-        const selfExit = await waitUntil(async () => lspProc.stopped, {
-            timeout: 500,
-            interval: 100,
-            truthy: true,
-        })
-        if (!ok2 || selfExit) {
-            throw new ToolkitError(
-                `amazonqLsp: failed to run (exitcode=${lspProc.exitCode()}): ${lspProc.toString(false, true)}`
-            )
-        }
-    } finally {
-        lspProc.stop(true)
-    }
-}
-
-/**
  * Activates the language server (assumes the LSP server has already been downloaded):
  * 1. start LSP server running over IPC protocol.
  * 2. create a output channel named Amazon Q Language Server.
@@ -312,7 +263,7 @@ export async function activate(extensionContext: ExtensionContext, resourcePaths
 
     const documentSelector = [{ scheme: 'file', language: '*' }]
 
-    await validateNodeExe(resourcePaths.node, resourcePaths.lsp, debugOptions.execArgv)
+    await validateNodeExe(resourcePaths.node, resourcePaths.lsp, debugOptions.execArgv, logger)
 
     // Options to control the language client
     const clientOptions: LanguageClientOptions = {

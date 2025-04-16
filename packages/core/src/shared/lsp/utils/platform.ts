@@ -4,7 +4,9 @@
  */
 
 import { ToolkitError } from '../../errors'
+import { Logger } from '../../logger/logger'
 import { ChildProcess } from '../../utilities/processUtils'
+import { waitUntil } from '../../utilities/timeoutUtils'
 import { isDebugInstance } from '../../vscode/env'
 
 export function getNodeExecutableName(): string {
@@ -22,6 +24,53 @@ function getEncryptionInit(key: Buffer): string {
         key: key.toString('base64'),
     }
     return JSON.stringify(request) + '\n'
+}
+
+/**
+ * Checks that we can actually run the `node` executable and execute code with it.
+ */
+export async function validateNodeExe(nodePath: string, lsp: string, args: string[], logger: Logger) {
+    // Check that we can start `node` by itself.
+    const proc = new ChildProcess(nodePath, ['-e', 'console.log("ok " + process.version)'], { logging: 'no' })
+    const r = await proc.run()
+    const ok = r.exitCode === 0 && r.stdout.includes('ok')
+    if (!ok) {
+        const msg = `failed to run basic "node -e" test (exitcode=${r.exitCode}): ${proc.toString(false, true)}`
+        logger.error(msg)
+        throw new ToolkitError(`amazonqLsp: ${msg}`)
+    }
+
+    // Check that we can start `node …/lsp.js --stdio …`.
+    const lspProc = new ChildProcess(nodePath, [lsp, ...args], { logging: 'no' })
+    try {
+        // Start asynchronously (it never stops; we need to stop it below).
+        lspProc.run().catch((e) => logger.error('failed to run: %s', lspProc.toString(false, true)))
+
+        const ok2 =
+            !lspProc.stopped &&
+            (await waitUntil(
+                async () => {
+                    return lspProc.pid() !== undefined
+                },
+                {
+                    timeout: 5000,
+                    interval: 100,
+                    truthy: true,
+                }
+            ))
+        const selfExit = await waitUntil(async () => lspProc.stopped, {
+            timeout: 500,
+            interval: 100,
+            truthy: true,
+        })
+        if (!ok2 || selfExit) {
+            throw new ToolkitError(
+                `amazonqLsp: failed to run (exitcode=${lspProc.exitCode()}): ${lspProc.toString(false, true)}`
+            )
+        }
+    } finally {
+        lspProc.stop(true)
+    }
 }
 
 export function createServerOptions({
