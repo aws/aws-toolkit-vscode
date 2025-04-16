@@ -53,7 +53,7 @@ async function activateAmazonQNode(context: vscode.ExtensionContext) {
         extensionContext: context,
     }
 
-    if (!Experiments.instance.get('amazonqChatLSP', false)) {
+    if (!Experiments.instance.get('amazonqChatLSP', true)) {
         const appInitContext = DefaultAmazonQAppInitContext.instance
         const provider = new AmazonQChatViewProvider(
             context,

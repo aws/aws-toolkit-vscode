@@ -117,7 +117,7 @@ export async function startLanguageServer(
             )
         }
 
-        if (Experiments.instance.get('amazonqChatLSP', false)) {
+        if (Experiments.instance.get('amazonqChatLSP', true)) {
             await activate(client, encryptionKey, resourcePaths.ui)
         }
 
