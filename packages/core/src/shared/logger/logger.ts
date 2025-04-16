@@ -14,6 +14,7 @@ export type LogTopic =
     | 'lsp'
     | 'amazonqWorkspaceLsp'
     | 'amazonqLsp'
+    | 'amazonqLsp.lspClient'
     | 'chat'
     | 'stepfunctions'
     | 'unknown'
