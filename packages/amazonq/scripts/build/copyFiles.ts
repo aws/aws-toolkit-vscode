@@ -60,6 +60,11 @@ const tasks: CopyTask[] = [
         target: path.join('../../node_modules', 'web-tree-sitter', 'tree-sitter.wasm'),
         destination: path.join('src', 'tree-sitter.wasm'),
     },
+    // ripgrep binary
+    {
+        target: path.join('../../node_modules', '@vscode/ripgrep', 'bin'),
+        destination: 'bin/',
+    },
 ]
 
 function copy(task: CopyTask): void {
