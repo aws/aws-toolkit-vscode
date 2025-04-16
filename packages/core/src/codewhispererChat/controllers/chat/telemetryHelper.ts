@@ -543,7 +543,11 @@ export class CWCTelemetryHelper {
             cwsprChatFullDisplayLatency: fullDisplayLatency,
             cwsprChatRequestLength: triggerPayload.message.length,
             cwsprChatResponseLength: message.messageLength,
-            cwsprChatConversationType: triggerPayload.origin ? 'AgenticChat' : 'Chat',
+            cwsprChatConversationType: triggerPayload.origin
+                ? triggerPayload.toolResults
+                    ? 'AgenticChatWithToolUse'
+                    : 'AgenticChat'
+                : 'Chat',
             credentialStartUrl: AuthUtil.instance.startUrl,
             codewhispererCustomizationArn: triggerPayload.customization.arn,
             cwsprChatHasProjectContext: hasProjectLevelContext,
