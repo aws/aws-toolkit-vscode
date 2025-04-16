@@ -1317,7 +1317,7 @@ export class ChatController {
             this.processException(e, message.tabID)
         }
     }
-    private sessionCleanUp(session: ChatSession) {
+    private initialCleanUp(session: ChatSession) {
         // Create a fresh token for this new conversation
         session.createNewTokenSource()
         session.setAgenticLoopInProgress(true)
@@ -1332,7 +1332,7 @@ export class ChatController {
         if (session.agenticLoopInProgress) {
             session.disposeTokenSource()
         }
-        this.sessionCleanUp(session)
+        this.initialCleanUp(session)
         this.editorContextExtractor
             .extractContextForTrigger('ChatMessage')
             .then(async (context) => {

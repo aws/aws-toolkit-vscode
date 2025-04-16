@@ -37,6 +37,7 @@ export class ChatSession {
      * _showDiffOnFileWrite = Controls whether to show diff view (true) or file context view (false) to the user
      * _context = Additional context to be passed to the LLM for generating the response
      * _messageIdToUpdate = messageId of a chat message to be updated, used for reducing consecutive tool messages
+     * _messageOperations = Maps messageId to filePaths which helps to open the read files and to open the code diff accordingly.
      */
     private _toolUseWithError: ToolUseWithError | undefined
     private _showDiffOnFileWrite: boolean = false
@@ -187,7 +188,7 @@ export class ChatSession {
     /**
      * Adds a file operation for a specific message
      * @param messageId The ID of the message
-     * @param type The type of operation ('read' or 'write')
+     * @param type The type of operation ('read' or 'listDir' or 'write')
      * @param filePaths Array of DocumentReference involved in the operation
      */
     public addMessageOperation(messageId: string, type: OperationType, filePaths: DocumentReference[]) {
@@ -219,20 +220,5 @@ export class ChatSession {
      */
     public getOperationTypeByMessageId(messageId: string): OperationType | undefined {
         return this._messageOperations.get(messageId)?.type
-    }
-
-    /**
-     * Clears the operation for a specific message
-     * @param messageId The ID of the message
-     */
-    public clearMessageOperation(messageId: string) {
-        this._messageOperations.delete(messageId)
-    }
-
-    /**
-     * Clears all message operations
-     */
-    public clearAllMessageOperations() {
-        this._messageOperations.clear()
     }
 }
