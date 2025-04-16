@@ -71,7 +71,7 @@ async function activateAmazonQNode(context: vscode.ExtensionContext) {
         // this is registered inside of lsp/chat/activation.ts when the chat experiment is enabled
         await activateCWChat(context)
     }
-    void activateAgents()
+    activateAgents()
     await activateTransformationHub(extContext as ExtContext)
     activateInlineChat(context)
 
