@@ -191,8 +191,6 @@ describe('GrepSearch', () => {
             await grepSearch.invoke(mockUpdates)
 
             // eslint-disable-next-line @typescript-eslint/unbound-method
-            sinon.assert.calledWith(mockUpdates.write as sinon.SinonSpy, '\n\n5 matches found:\n\n')
-            // eslint-disable-next-line @typescript-eslint/unbound-method
             sinon.assert.calledWith(mockUpdates.write as sinon.SinonSpy, 'processed-results')
         })
 
@@ -248,23 +246,20 @@ describe('GrepSearch', () => {
 
             assert.strictEqual(totalMatchCount, 3)
 
-            // Check that output contains details tags
-            assert.ok(sanitizedOutput.includes('<details>'))
-            assert.ok(sanitizedOutput.includes('</details>'))
+            // Check that output contains the title
+            assert.ok(sanitizedOutput.includes('## Grepped result'))
 
-            // Check that output contains file names
-            assert.ok(sanitizedOutput.includes('file1.ts - match count: (2)'))
-            assert.ok(sanitizedOutput.includes('file2.ts - match count: (1)'))
-
-            // Check that output contains line numbers as links
-            assert.ok(sanitizedOutput.includes('[Line 10]'))
-            assert.ok(sanitizedOutput.includes('[Line 20]'))
-            assert.ok(sanitizedOutput.includes('[Line 5]'))
+            // Check that output contains file names as links
+            assert.ok(sanitizedOutput.includes('[file1.ts]'))
+            assert.ok(sanitizedOutput.includes('[file2.ts]'))
 
             // Check that files are sorted by match count (most matches first)
             const file1Index = sanitizedOutput.indexOf('file1.ts')
             const file2Index = sanitizedOutput.indexOf('file2.ts')
             assert.ok(file1Index < file2Index, 'Files should be sorted by match count')
+
+            // Check that output contains search query in the URL
+            assert.ok(sanitizedOutput.includes('search=test-query'))
         })
 
         it('should handle malformed output lines', () => {
