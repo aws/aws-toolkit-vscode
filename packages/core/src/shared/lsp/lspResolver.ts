@@ -73,7 +73,7 @@ export class LanguageServerResolver {
          * ```
          */
         const resolved = await tryStageResolvers('getServer', serverResolvers, getServerVersion)
-        logger.info('Finished updating "%s" LSP server: %O', this.lsName, resolved.assetDirectory)
+        logger.info('Finished preparing "%s" LSP server: %O', this.lsName, resolved.assetDirectory)
         return resolved
     }
 
@@ -144,11 +144,7 @@ export class LanguageServerResolver {
             }
         } else {
             // Delete the cached directory since it's invalid
-            if (await fs.existsDir(cacheDirectory)) {
-                await fs.delete(cacheDirectory, {
-                    recursive: true,
-                })
-            }
+            await fs.delete(cacheDirectory, { force: true, recursive: true })
             throw new ToolkitError('Failed to retrieve server from cache', { code: 'InvalidCache' })
         }
     }
