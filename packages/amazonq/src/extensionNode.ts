@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import { activateAmazonQCommon, amazonQContextPrefix, deactivateCommon } from './extension'
 import { DefaultAmazonQAppInitContext, AmazonQChatViewProvider } from 'aws-core-vscode/amazonq'
-import { activate as activateQGumby } from 'aws-core-vscode/amazonqGumby'
+import { activate as activateTransformationHub } from 'aws-core-vscode/amazonqGumby'
 import {
     ExtContext,
     globals,
@@ -30,7 +30,7 @@ import { beta } from 'aws-core-vscode/dev'
 import { activate as activateNotifications, NotificationsController } from 'aws-core-vscode/notifications'
 import { AuthState, AuthUtil } from 'aws-core-vscode/codewhisperer'
 import { telemetry, AuthUserState } from 'aws-core-vscode/telemetry'
-import { registerAgents } from './app/chat/node/registerAgents'
+import { activateAgents } from './app/chat/node/activateAgents'
 
 export async function activate(context: vscode.ExtensionContext) {
     // IMPORTANT: No other code should be added to this function. Place it in one of the following 2 functions where appropriate.
@@ -71,8 +71,8 @@ async function activateAmazonQNode(context: vscode.ExtensionContext) {
         // this is registered inside of lsp/chat/activation.ts when the chat experiment is enabled
         await activateCWChat(context)
     }
-    void registerAgents()
-    await activateQGumby(extContext as ExtContext)
+    void activateAgents()
+    await activateTransformationHub(extContext as ExtContext)
     activateInlineChat(context)
 
     const authProvider = new CommonAuthViewProvider(

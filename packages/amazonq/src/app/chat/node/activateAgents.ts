@@ -7,7 +7,7 @@ import * as amazonqNode from 'aws-core-vscode/amazonq/node'
 import { scanChatAppInit } from '../../amazonqScan'
 import { DefaultAmazonQAppInitContext } from 'aws-core-vscode/amazonq'
 
-export function registerAgents() {
+export function activateAgents() {
     const appInitContext = DefaultAmazonQAppInitContext.instance
 
     amazonqNode.cwChatAppInit(appInitContext)

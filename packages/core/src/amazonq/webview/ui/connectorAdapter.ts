@@ -66,7 +66,7 @@ export class HybridChatAdapter implements ChatClientAdapter {
         }
 
         // eslint-disable-next-line aws-toolkits/no-console-log
-        console.error('unknown message')
+        console.error('unknown message: ', message.data)
     }
 
     isSupportedQuickAction(command: string): boolean {
