@@ -7,6 +7,7 @@ import * as vscode from 'vscode'
 import { getLogger } from './logger/logger'
 import * as redshift from '../awsService/redshift/models/models'
 import { TypeConstructor, cast } from './utilities/typeConstructors'
+import { Customization } from '../codewhisperer/client/codewhispereruserclient'
 
 type ToolId = 'codecatalyst' | 'codewhisperer' | 'testId'
 export type ToolIdStateKey = `${ToolId}.savedConnectionId`
@@ -225,6 +226,27 @@ export class GlobalState implements vscode.Memento {
             }
         )
         return all?.[warehouseArn]
+    }
+
+    /**
+     * Get the codewhisperer customerization. If legacy (map of customizations) store the
+     * customization with label of profile name
+     *
+     * @param profileName name of profile, only used in case legacy customization is found
+     * @returns codewhisperer customization, or undefined if not found.
+     * If legacy, return the codewhisperer customization for the auth profile name
+     */
+    getCodewhispererCustomization(profileName: string): Customization | undefined {
+        const result = this.tryGet('CODEWHISPERER_SELECTED_CUSTOMIZATION', Object, undefined)
+
+        // Legacy migration for old customization map of type { [label: string]: Customization[] }
+        if (typeof result === 'object' && Object.values(result).every(Array.isArray)) {
+            const selectedCustomization = result[profileName]
+            this.tryUpdate('CODEWHISPERER_SELECTED_CUSTOMIZATION', selectedCustomization)
+            return selectedCustomization
+        } else {
+            return result
+        }
     }
 
     /**

@@ -98,10 +98,7 @@ export const getSelectedCustomization = (): Customization => {
         return baseCustomization
     }
 
-    const selectedCustomization = globals.globalState.tryGet<Customization>(
-        'CODEWHISPERER_SELECTED_CUSTOMIZATION',
-        Object
-    )
+    const selectedCustomization = globals.globalState.getCodewhispererCustomization(AuthUtil.instance.profileName)
 
     if (selectedCustomization && selectedCustomization.name !== '') {
         return selectedCustomization
