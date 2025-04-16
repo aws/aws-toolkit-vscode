@@ -11,6 +11,13 @@ _SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Include common functions.
 . "${_SCRIPT_DIR}/common.sh"
 
+# Set up GitHub token for vscode-ripgrep to avoid rate limiting
+if [ -n "$GITHUB_TOKEN" ]; then
+    echo "GITHUB_TOKEN is set. vscode-ripgrep will use this for GitHub API authentication."
+else
+    echo "WARNING: GITHUB_TOKEN is not set. GitHub API requests may be rate-limited."
+fi
+
 # If present, log into CodeArtifact. Provides a fallback in case NPM is down.
 # Should only affect tests run through Toolkits-hosted CodeBuild.
 if [ "$TOOLKITS_CODEARTIFACT_DOMAIN" ] && [ "$TOOLKITS_CODEARTIFACT_REPO" ] && [ "$TOOLKITS_ACCOUNT_ID" ]; then
