@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as path from 'path'
-import { UserIntent } from '@amzn/codewhisperer-streaming'
+import { ToolUse, UserIntent } from '@amzn/codewhisperer-streaming'
 import {
     AmazonqAddMessage,
     AmazonqInteractWithMessage,
@@ -215,6 +215,17 @@ export class CWCTelemetryHelper {
 
     private recordFeedbackResult(feedbackResult: Result) {
         telemetry.feedback_result.emit({ result: feedbackResult })
+    }
+
+    public recordToolUseSuggested(toolUse: ToolUse, messageId: string) {
+        telemetry.amazonq_toolUseSuggested.emit({
+            result: 'Succeeded',
+            cwsprChatConversationId: messageId,
+            cwsprChatConversationType: 'AgenticChatWithToolUse',
+            credentialStartUrl: AuthUtil.instance.startUrl,
+            cwsprToolName: toolUse.name ?? '',
+            cwsprToolUseId: toolUse.toolUseId ?? '',
+        })
     }
 
     public recordInteractionWithAgenticChat(

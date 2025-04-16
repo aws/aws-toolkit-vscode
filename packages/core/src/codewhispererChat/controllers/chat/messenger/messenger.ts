@@ -435,6 +435,8 @@ export class Messenger {
                                         { tabID }
                                     )
                                 }
+
+                                this.telemetryHelper.recordToolUseSuggested(toolUse, messageID)
                             } else {
                                 throw new Error('Tool not found')
                             }
