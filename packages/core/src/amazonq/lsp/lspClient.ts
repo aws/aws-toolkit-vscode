@@ -235,27 +235,36 @@ async function validateNodeExe(nodePath: string, lsp: string, args: string[]) {
     const r = await proc.run()
     const ok = r.exitCode === 0 && r.stdout.includes('ok')
     if (!ok) {
-        throw new ToolkitError(`amazonqLsp: failed to run "node -e" (exitcode=${r.exitCode}): "${nodePath}"`)
+        const msg = `amazonqLsp: failed to run basic "node -e" test (exitcode=${r.exitCode}): ${proc}`
+        logger.error(msg)
+        throw new ToolkitError(msg)
     }
 
     // Check that we can start `node …/lsp.js --stdio …`.
     const lspProc = new ChildProcess(nodePath, [lsp, ...args], { logging: 'no' })
     try {
         // Start asynchronously (it never stops; we need to stop it below).
-        lspProc.run().catch((e) => logger.error('failed to start [%O %O %O]: %s', nodePath, lsp, args, e))
+        lspProc.run().catch((e) => logger.error('failed to run: %s', lspProc))
 
-        const ok2 = await waitUntil(
-            async () => {
-                return lspProc.pid !== undefined
-            },
-            {
-                timeout: 5000,
-                interval: 100,
-                truthy: true,
-            }
-        )
-        if (!ok2) {
-            throw new ToolkitError(`amazonqLsp: failed to start (exitcode=${lspProc.exitCode}): [${nodePath} ${lsp} …]`)
+        const ok2 =
+            !lspProc.stopped &&
+            (await waitUntil(
+                async () => {
+                    return lspProc.pid() !== undefined
+                },
+                {
+                    timeout: 5000,
+                    interval: 100,
+                    truthy: true,
+                }
+            ))
+        const selfExit = await waitUntil(async () => lspProc.stopped, {
+            timeout: 500,
+            interval: 100,
+            truthy: true,
+        })
+        if (!ok2 || selfExit) {
+            throw new ToolkitError(`amazonqLsp: failed to run (exitcode=${lspProc.exitCode()}): ${lspProc}`)
         }
     } finally {
         lspProc.stop(true)
