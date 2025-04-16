@@ -40,44 +40,41 @@ export class LanguageServerResolver {
                 languageServerVersion: result.version,
             }
         }
-        try {
-            const latestVersion = this.latestCompatibleLspVersion()
-            const targetContents = this.getLSPTargetContents(latestVersion)
-            const cacheDirectory = this.getDownloadDirectory(latestVersion.serverVersion)
+        const latestVersion = this.latestCompatibleLspVersion()
+        const targetContents = this.getLSPTargetContents(latestVersion)
+        const cacheDirectory = this.getDownloadDirectory(latestVersion.serverVersion)
 
-            const serverResolvers: StageResolver<LspResult>[] = [
-                {
-                    // 1: Use the current local ("cached") LSP server bundle, if any.
-                    resolve: async () => await this.getLocalServer(cacheDirectory, latestVersion, targetContents),
-                    telemetryMetadata: { id: this.lsName, languageServerLocation: 'cache' },
-                },
-                {
-                    // 2: Download the latest LSP server bundle.
-                    resolve: async () => await this.fetchRemoteServer(cacheDirectory, latestVersion, targetContents),
-                    telemetryMetadata: { id: this.lsName, languageServerLocation: 'remote' },
-                },
-                {
-                    // 3: If the download fails, try an older, cached version.
-                    resolve: async () => await this.getFallbackServer(latestVersion),
-                    telemetryMetadata: { id: this.lsName, languageServerLocation: 'fallback' },
-                },
-            ]
+        const serverResolvers: StageResolver<LspResult>[] = [
+            {
+                // 1: Use the current local ("cached") LSP server bundle, if any.
+                resolve: async () => await this.getLocalServer(cacheDirectory, latestVersion, targetContents),
+                telemetryMetadata: { id: this.lsName, languageServerLocation: 'cache' },
+            },
+            {
+                // 2: Download the latest LSP server bundle.
+                resolve: async () => await this.fetchRemoteServer(cacheDirectory, latestVersion, targetContents),
+                telemetryMetadata: { id: this.lsName, languageServerLocation: 'remote' },
+            },
+            {
+                // 3: If the download fails, try an older, cached version.
+                resolve: async () => await this.getFallbackServer(latestVersion),
+                telemetryMetadata: { id: this.lsName, languageServerLocation: 'fallback' },
+            },
+        ]
 
-            /**
-             * Example:
-             * ```
-             * LspResult {
-             *   assetDirectory = "<cachedir>/aws/toolkits/language-servers/AmazonQ/3.3.0"
-             *   location = 'cache'
-             *   version = '3.3.0'
-             * }
-             * ```
-             */
-            const resolved = await tryStageResolvers('getServer', serverResolvers, getServerVersion)
-            return resolved
-        } finally {
-            logger.info(`Finished setting up LSP server`)
-        }
+        /**
+         * Example:
+         * ```
+         * LspResult {
+         *   assetDirectory = "<cachedir>/aws/toolkits/language-servers/AmazonQ/3.3.0"
+         *   location = 'cache'
+         *   version = '3.3.0'
+         * }
+         * ```
+         */
+        const resolved = await tryStageResolvers('getServer', serverResolvers, getServerVersion)
+        logger.info('Finished updating "%s" LSP server: %O', this.lsName, resolved.assetDirectory)
+        return resolved
     }
 
     /** Finds an older, cached version of the LSP server bundle. */
