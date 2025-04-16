@@ -62,11 +62,11 @@ export class TabDataGenerator {
             header: {
                 icon: 'code-block',
                 iconStatus: 'primary',
-                body: '## Pair programmer mode',
+                body: '## Pair Programmer',
             },
             fullWidth: true,
             canBeDismissed: true,
-            body: 'Pair code with Amazon Q, your virtual pair programmer that can work alongside you autonomously making real-time code changes on your behalf. \n\n Switch off pair programmer mode to get read-only responses from Q.',
+            body: 'Amazon Q Developer chat can now write code and run shell commands on your behalf. Disable Pair Programmer if you prefer a read-only experience.',
         }
 
         const regionProfileCard: ChatItem | undefined =
@@ -115,7 +115,7 @@ Enter \`/\` to view quick actions. Use \`@\` to add saved prompts, files, folder
                           {
                               type: 'switch',
                               id: 'pair-programmer-mode',
-                              tooltip: 'Enable or disable pair programmer mode',
+                              tooltip: 'Enable or disable Pair Programmer',
                               value: 'true',
                               icon: 'code-block',
                           },
