@@ -15,7 +15,7 @@ import * as jose from 'jose'
 
 import { Disposable, ExtensionContext } from 'vscode'
 
-import { LanguageClient, LanguageClientOptions, ServerOptions, TransportKind } from 'vscode-languageclient'
+import { LanguageClient, LanguageClientOptions } from 'vscode-languageclient'
 import {
     BuildIndexRequestPayload,
     BuildIndexRequestType,
@@ -235,7 +235,7 @@ async function validateNodeExe(nodePath: string, lsp: string, args: string[]) {
     const r = await proc.run()
     const ok = r.exitCode === 0 && r.stdout.includes('ok')
     if (!ok) {
-        const msg = `failed to run basic "node -e" test (exitcode=${r.exitCode}): ${proc}`
+        const msg = `failed to run basic "node -e" test (exitcode=${r.exitCode}): ${proc.toString(false, true)}`
         logger.error(msg)
         throw new ToolkitError(`amazonqLsp: ${msg}`)
     }
@@ -244,7 +244,7 @@ async function validateNodeExe(nodePath: string, lsp: string, args: string[]) {
     const lspProc = new ChildProcess(nodePath, [lsp, ...args], { logging: 'no' })
     try {
         // Start asynchronously (it never stops; we need to stop it below).
-        lspProc.run().catch((e) => logger.error('failed to run: %s', lspProc))
+        lspProc.run().catch((e) => logger.error('failed to run: %s', lspProc.toString(false, true)))
 
         const ok2 =
             !lspProc.stopped &&
@@ -264,7 +264,9 @@ async function validateNodeExe(nodePath: string, lsp: string, args: string[]) {
             truthy: true,
         })
         if (!ok2 || selfExit) {
-            throw new ToolkitError(`amazonqLsp: failed to run (exitcode=${lspProc.exitCode()}): ${lspProc}`)
+            throw new ToolkitError(
+                `amazonqLsp: failed to run (exitcode=${lspProc.exitCode()}): ${lspProc.toString(false, true)}`
+            )
         }
     } finally {
         lspProc.stop(true)
@@ -300,18 +302,11 @@ export async function activate(extensionContext: ExtensionContext, resourcePaths
 
     const serverModule = resourcePaths.lsp
 
-    // If the extension is launch in debug mode the debug server options are use
-    // Otherwise the run options are used
-    let serverOptions: ServerOptions = {
-        run: { module: serverModule, transport: TransportKind.ipc },
-        debug: { module: serverModule, transport: TransportKind.ipc, options: debugOptions },
-    }
-
-    // TODO(jmkeyes): this overwrites the above...?
-    serverOptions = createServerOptions({
+    const serverOptions = createServerOptions({
         encryptionKey: key,
         executable: resourcePaths.node,
         serverModule,
+        // TODO(jmkeyes): we always use the debug options...?
         execArgv: debugOptions.execArgv,
     })
 

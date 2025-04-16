@@ -6,7 +6,7 @@
 import vscode from 'vscode'
 import { startLanguageServer } from './client'
 import { AmazonQLspInstaller } from './lspInstaller'
-import { lspSetupStage, ToolkitError } from 'aws-core-vscode/shared'
+import { lspSetupStage, ToolkitError, messages } from 'aws-core-vscode/shared'
 
 export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
     try {
@@ -16,6 +16,6 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
         })
     } catch (err) {
         const e = err as ToolkitError
-        void vscode.window.showInformationMessage(`Unable to launch amazonq language server: ${e.message}`)
+        void messages.showViewLogsMessage(`Failed to launch Amazon Q language server: ${e.message}`)
     }
 }
