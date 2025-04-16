@@ -13,7 +13,7 @@ env:
         # followed by Error: Could not delete obsolete instance handle Error: ENOENT: no such file or directory, unlink <path>
         AWS_TOOLKIT_TEST_CACHE_DIR: '/tmp/.vscode-test/'
         AWS_TOOLKIT_TEST_USER_DIR: '/tmp/.vscode-test/user-data/'
-        GITHUB_TOKEN: ${GITHUB_READONLY_TOKEN}
+        GITHUB_TOKEN: $GITHUB_READONLY_TOKEN
 
 phases:
     install:

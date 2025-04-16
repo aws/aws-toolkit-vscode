@@ -8,7 +8,7 @@ env:
         AWS_TOOLKIT_TEST_USER_DIR: '/tmp/'
         # needed or else webpack will cause it to run out of memory
         NODE_OPTIONS: '--max-old-space-size=8192'
-        GITHUB_TOKEN: ${GITHUB_READONLY_TOKEN}
+        GITHUB_TOKEN: $GITHUB_READONLY_TOKEN
 
 phases:
     install:
