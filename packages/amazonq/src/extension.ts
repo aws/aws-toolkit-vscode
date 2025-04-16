@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { AuthUtils, CredentialsStore, LoginManager, initializeAuth } from 'aws-core-vscode/auth'
+import { CredentialsStore, LoginManager, authUtils, initializeAuth } from 'aws-core-vscode/auth'
 import { activate as activateCodeWhisperer, shutdown as shutdownCodeWhisperer } from 'aws-core-vscode/codewhisperer'
 import { makeEndpointsProvider, registerGenericCommands } from 'aws-core-vscode'
 import { CommonAuthWebview } from 'aws-core-vscode/login'
@@ -33,6 +33,7 @@ import {
     maybeShowMinVscodeWarning,
     Experiments,
     isSageMaker,
+    Commands,
 } from 'aws-core-vscode/shared'
 import { ExtStartUpSources } from 'aws-core-vscode/telemetry'
 import { VSCODE_EXTENSION_ID } from 'aws-core-vscode/utils'
@@ -114,14 +115,14 @@ export async function activateAmazonQCommon(context: vscode.ExtensionContext, is
 
     await initializeAuth(globals.loginManager)
 
+    await activateAmazonqLsp(context)
+
     const extContext = {
         extensionContext: context,
     }
+
     // This contains every lsp agnostic things (auth, security scan, code scan)
     await activateCodeWhisperer(extContext as ExtContext)
-    if (Experiments.instance.get('amazonqLSP', false)) {
-        await activateAmazonqLsp(context)
-    }
 
     if (!Experiments.instance.get('amazonqLSPInline', false)) {
         await activateInlineCompletion()
@@ -129,6 +130,10 @@ export async function activateAmazonQCommon(context: vscode.ExtensionContext, is
 
     // Generic extension commands
     registerGenericCommands(context, amazonQContextPrefix)
+
+    // Create status bar and reference log UI elements
+    void Commands.tryExecute('aws.amazonq.refreshStatusBar')
+    void Commands.tryExecute('aws.amazonq.updateReferenceLog')
 
     // Amazon Q specific commands
     registerCommands(context)
@@ -156,7 +161,7 @@ export async function activateAmazonQCommon(context: vscode.ExtensionContext, is
     // reload webviews
     await vscode.commands.executeCommand('workbench.action.webview.reloadWebviewAction')
 
-    if (AuthUtils.ExtensionUse.instance.isFirstUse()) {
+    if (authUtils.ExtensionUse.instance.isFirstUse()) {
         // Give time for the extension to finish initializing.
         globals.clock.setTimeout(async () => {
             CommonAuthWebview.authSource = ExtStartUpSources.firstStartUp
@@ -166,7 +171,7 @@ export async function activateAmazonQCommon(context: vscode.ExtensionContext, is
 
     context.subscriptions.push(
         Experiments.instance.onDidChange(async (event) => {
-            if (event.key === 'amazonqLSP' || event.key === 'amazonqChatLSP' || event.key === 'amazonqLSPInline') {
+            if (event.key === 'amazonqChatLSP' || event.key === 'amazonqLSPInline') {
                 await vscode.window
                     .showInformationMessage(
                         'Amazon Q LSP setting has changed. Reload VS Code for the changes to take effect.',

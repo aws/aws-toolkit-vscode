@@ -31,11 +31,26 @@ import {
     bearerCredentialsDeleteNotificationType,
     bearerCredentialsUpdateRequestType,
     SsoTokenChangedKind,
+    RequestType,
+    ResponseMessage,
+    NotificationType,
+    ConnectionMetadata,
+    getConnectionMetadataRequestType,
 } from '@aws/language-server-runtimes/protocol'
 import { LanguageClient } from 'vscode-languageclient'
 import { getLogger } from '../shared/logger/logger'
 import { ToolkitError } from '../shared/errors'
 import { useDeviceFlow } from './sso/ssoAccessTokenProvider'
+
+export const notificationTypes = {
+    updateBearerToken: new RequestType<UpdateCredentialsParams, ResponseMessage, Error>(
+        bearerCredentialsUpdateRequestType.method
+    ),
+    deleteBearerToken: new NotificationType(bearerCredentialsDeleteNotificationType.method),
+    getConnectionMetadata: new RequestType<undefined, ConnectionMetadata, Error>(
+        getConnectionMetadataRequestType.method
+    ),
+}
 
 export type AuthState = 'notConnected' | 'connected' | 'expired'
 
@@ -193,6 +208,10 @@ export class SsoLogin implements BaseLogin {
         // TODO: DeleteProfile api in Identity Service (this doesn't exist yet)
     }
 
+    async getProfile() {
+        return await this.lspAuth.getProfile(this.profileName)
+    }
+
     async updateProfile(opts: { startUrl: string; region: string; scopes: string[] }) {
         await this.lspAuth.updateProfile(this.profileName, opts.startUrl, opts.region, opts.scopes)
         this._data = {
@@ -205,7 +224,7 @@ export class SsoLogin implements BaseLogin {
      * Restore the connection state and connection details to memory, if they exist.
      */
     async restore() {
-        const sessionData = await this.lspAuth.getProfile(this.profileName)
+        const sessionData = await this.getProfile()
         const ssoSession = sessionData?.ssoSession?.settings
         if (ssoSession?.sso_region && ssoSession?.sso_start_url) {
             this._data = {
