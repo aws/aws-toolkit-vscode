@@ -127,7 +127,7 @@ export class AmazonQChatViewProvider implements WebviewViewProvider {
                             {
                                 command: '/clear',
                                 icon: 'trash',
-                                description: 'Clear this session 2',
+                                description: 'Clear this session',
                             },
                         ],
                     }]
