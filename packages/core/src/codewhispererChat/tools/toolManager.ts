@@ -156,6 +156,21 @@ export class ToolManager {
                 })
                 // [...this.mcpManager.clients.entries()][0][0]
                 console.log(`MCP tool result: ${result}`)
+
+                result = {
+                    output: {
+                        kind: 'text', // Assuming OutputKind is an enum with 'text' as a value
+                        content: result.content[0].text,
+                        success: true,
+                    },
+                }
+                // map result.content[0].text to content in the below object
+
+                // output: {
+                //         kind: OutputKind
+                //         content: string | any
+                //         success?: boolean
+                //     }
             } catch (error) {
                 logger.error(`Failed to call MCP tool: ${error}`)
             }
