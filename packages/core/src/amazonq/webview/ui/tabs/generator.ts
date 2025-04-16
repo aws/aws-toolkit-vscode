@@ -62,7 +62,7 @@ export class TabDataGenerator {
             header: {
                 icon: 'code-block',
                 iconStatus: 'primary',
-                body: '## Pair programmer',
+                body: '## Pair Programmer',
             },
             fullWidth: true,
             canBeDismissed: true,
@@ -115,7 +115,7 @@ Enter \`/\` to view quick actions. Use \`@\` to add saved prompts, files, folder
                           {
                               type: 'switch',
                               id: 'pair-programmer-mode',
-                              tooltip: 'Enable or disable pair programmer',
+                              tooltip: 'Enable or disable Pair Programmer',
                               value: 'true',
                               icon: 'code-block',
                           },
