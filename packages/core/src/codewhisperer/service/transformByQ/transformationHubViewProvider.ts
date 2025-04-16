@@ -329,7 +329,10 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
             transformByQState.isRunning()
         ) {
             try {
-                planSteps = await getTransformationSteps(transformByQState.getJobId(), AuthUtil.instance.regionProfileManager.activeRegionProfile)
+                planSteps = await getTransformationSteps(
+                    transformByQState.getJobId(),
+                    AuthUtil.instance.regionProfileManager.activeRegionProfile
+                )
                 transformByQState.setPlanSteps(planSteps)
             } catch (e: any) {
                 // no-op; re-use current plan steps and try again in next polling cycle

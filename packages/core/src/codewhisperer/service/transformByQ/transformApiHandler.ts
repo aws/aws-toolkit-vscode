@@ -645,10 +645,7 @@ export async function getTransformationPlan(jobId: string, profile: RegionProfil
     }
 }
 
-export async function getTransformationSteps(
-    jobId: string,
-    profile: RegionProfile | undefined
-) {
+export async function getTransformationSteps(jobId: string, profile: RegionProfile | undefined) {
     try {
         const response = await codeWhisperer.codeWhispererClient.codeModernizerGetCodeTransformationPlan({
             transformationJobId: jobId,
@@ -901,7 +898,12 @@ export async function downloadResultArchive(jobId: string, pathToArchive: string
                   exportId: jobId,
                   exportIntent: ExportIntent.TRANSFORMATION,
               }
-        await downloadExportResultArchive(cwStreamingClient, args, pathToArchive, AuthUtil.instance.regionProfileManager.activeRegionProfile)
+        await downloadExportResultArchive(
+            cwStreamingClient,
+            args,
+            pathToArchive,
+            AuthUtil.instance.regionProfileManager.activeRegionProfile
+        )
     } catch (e: any) {
         getLogger().error(`CodeTransformation: ExportResultArchive error = %O`, e)
         throw e
