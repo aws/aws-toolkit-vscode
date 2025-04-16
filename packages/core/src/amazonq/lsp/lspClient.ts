@@ -41,10 +41,13 @@ import globals from '../../shared/extensionGlobals'
 import { ResourcePaths } from '../../shared/lsp/types'
 import { createServerOptions } from '../../shared/lsp/utils/platform'
 import { waitUntil } from '../../shared/utilities/timeoutUtils'
+import { ToolkitError } from '../../shared/errors'
+import { ChildProcess } from '../../shared/utilities/processUtils'
 
 const localize = nls.loadMessageBundle()
 
 const key = crypto.randomBytes(32)
+const logger = getLogger('amazonqLsp.lspClient')
 
 /**
  * LspClient manages the API call between VS Code extension and LSP server
@@ -80,7 +83,7 @@ export class LspClient {
             const resp = await this.client?.sendRequest(BuildIndexRequestType, encryptedRequest)
             return resp
         } catch (e) {
-            getLogger().error(`LspClient: buildIndex error: ${e}`)
+            logger.error(`buildIndex error: ${e}`)
             return undefined
         }
     }
@@ -95,7 +98,7 @@ export class LspClient {
             const resp = await this.client?.sendRequest(QueryVectorIndexRequestType, encryptedRequest)
             return resp
         } catch (e) {
-            getLogger().error(`LspClient: queryVectorIndex error: ${e}`)
+            logger.error(`queryVectorIndex error: ${e}`)
             return []
         }
     }
@@ -111,7 +114,7 @@ export class LspClient {
             const resp: any = await this.client?.sendRequest(QueryInlineProjectContextRequestType, encrypted)
             return resp
         } catch (e) {
-            getLogger().error(`LspClient: queryInlineProjectContext error: ${e}`)
+            logger.error(`queryInlineProjectContext error: ${e}`)
             throw e
         }
     }
@@ -132,7 +135,7 @@ export class LspClient {
             const resp = await this.client?.sendRequest(UpdateIndexV2RequestType, encryptedRequest)
             return resp
         } catch (e) {
-            getLogger().error(`LspClient: updateIndex error: ${e}`)
+            logger.error(`updateIndex error: ${e}`)
             return undefined
         }
     }
@@ -144,7 +147,7 @@ export class LspClient {
             const resp: any = await this.client?.sendRequest(QueryRepomapIndexRequestType, await this.encrypt(request))
             return resp
         } catch (e) {
-            getLogger().error(`LspClient: QueryRepomapIndex error: ${e}`)
+            logger.error(`QueryRepomapIndex error: ${e}`)
             throw e
         }
     }
@@ -157,7 +160,7 @@ export class LspClient {
             )
             return resp
         } catch (e) {
-            getLogger().error(`LspClient: queryInlineProjectContext error: ${e}`)
+            logger.error(`queryInlineProjectContext error: ${e}`)
             throw e
         }
     }
@@ -174,7 +177,7 @@ export class LspClient {
             )
             return resp
         } catch (e) {
-            getLogger().error(`LspClient: getContextCommandItems error: ${e}`)
+            logger.error(`getContextCommandItems error: ${e}`)
             throw e
         }
     }
@@ -190,7 +193,7 @@ export class LspClient {
             )
             return resp || []
         } catch (e) {
-            getLogger().error(`LspClient: getContextCommandPrompt error: ${e}`)
+            logger.error(`getContextCommandPrompt error: ${e}`)
             throw e
         }
     }
@@ -204,7 +207,7 @@ export class LspClient {
             )
             return resp
         } catch (e) {
-            getLogger().error(`LspClient: getIndexSequenceNumber error: ${e}`)
+            logger.error(`getIndexSequenceNumber error: ${e}`)
             throw e
         }
     }
@@ -222,20 +225,65 @@ export class LspClient {
         )
     }
 }
+
 /**
- * Activates the language server, this will start LSP server running over IPC protocol.
- * It will create a output channel named Amazon Q Language Server.
- * This function assumes the LSP server has already been downloaded.
+ * Checks that we can actually run the `node` executable and execute code with it.
+ */
+async function validateNodeExe(nodePath: string, lsp: string, args: string[]) {
+    // Check that we can start `node` by itself.
+    const proc = new ChildProcess(nodePath, ['-e', 'console.log("ok " + process.version)'], { logging: 'no' })
+    const r = await proc.run()
+    const ok = r.exitCode === 0 && r.stdout.includes('ok')
+    if (!ok) {
+        const msg = `failed to run basic "node -e" test (exitcode=${r.exitCode}): ${proc}`
+        logger.error(msg)
+        throw new ToolkitError(`amazonqLsp: ${msg}`)
+    }
+
+    // Check that we can start `node …/lsp.js --stdio …`.
+    const lspProc = new ChildProcess(nodePath, [lsp, ...args], { logging: 'no' })
+    try {
+        // Start asynchronously (it never stops; we need to stop it below).
+        lspProc.run().catch((e) => logger.error('failed to run: %s', lspProc))
+
+        const ok2 =
+            !lspProc.stopped &&
+            (await waitUntil(
+                async () => {
+                    return lspProc.pid() !== undefined
+                },
+                {
+                    timeout: 5000,
+                    interval: 100,
+                    truthy: true,
+                }
+            ))
+        const selfExit = await waitUntil(async () => lspProc.stopped, {
+            timeout: 500,
+            interval: 100,
+            truthy: true,
+        })
+        if (!ok2 || selfExit) {
+            throw new ToolkitError(`amazonqLsp: failed to run (exitcode=${lspProc.exitCode()}): ${lspProc}`)
+        }
+    } finally {
+        lspProc.stop(true)
+    }
+}
+
+/**
+ * Activates the language server (assumes the LSP server has already been downloaded):
+ * 1. start LSP server running over IPC protocol.
+ * 2. create a output channel named Amazon Q Language Server.
  */
 export async function activate(extensionContext: ExtensionContext, resourcePaths: ResourcePaths) {
-    LspClient.instance
+    LspClient.instance // Tickle the singleton... :/
     const toDispose = extensionContext.subscriptions
 
     let rangeFormatting: Disposable | undefined
     // The debug options for the server
     // --inspect=6009: runs the server in Node's Inspector mode so VS Code can attach to the server for debugging
     const debugOptions = { execArgv: ['--nolazy', '--preserve-symlinks', '--stdio'] }
-
     const workerThreads = CodeWhispererSettings.instance.getIndexWorkerThreads()
     const gpu = CodeWhispererSettings.instance.isLocalIndexGPUEnabled()
 
@@ -259,6 +307,7 @@ export async function activate(extensionContext: ExtensionContext, resourcePaths
         debug: { module: serverModule, transport: TransportKind.ipc, options: debugOptions },
     }
 
+    // TODO(jmkeyes): this overwrites the above...?
     serverOptions = createServerOptions({
         encryptionKey: key,
         executable: resourcePaths.node,
@@ -267,6 +316,8 @@ export async function activate(extensionContext: ExtensionContext, resourcePaths
     })
 
     const documentSelector = [{ scheme: 'file', language: '*' }]
+
+    await validateNodeExe(resourcePaths.node, resourcePaths.lsp, debugOptions.execArgv)
 
     // Options to control the language client
     const clientOptions: LanguageClientOptions = {
@@ -359,10 +410,15 @@ export async function activate(extensionContext: ExtensionContext, resourcePaths
         })
     )
 
-    return LspClient.instance.client.onReady().then(() => {
-        const disposableFunc = { dispose: () => rangeFormatting?.dispose() as void }
-        toDispose.push(disposableFunc)
-    })
+    return LspClient.instance.client.onReady().then(
+        () => {
+            const disposableFunc = { dispose: () => rangeFormatting?.dispose() as void }
+            toDispose.push(disposableFunc)
+        },
+        (reason) => {
+            logger.error('client.onReady() failed: %O', reason)
+        }
+    )
 }
 
 export async function deactivate(): Promise<any> {

@@ -4,8 +4,8 @@
  */
 import * as sinon from 'sinon'
 import assert from 'assert'
-import { globals } from 'aws-core-vscode/shared'
-import { LspClient } from 'aws-core-vscode/amazonq'
+import { globals, getNodeExecutableName } from 'aws-core-vscode/shared'
+import { LspClient, lspClient as lspClientModule } from 'aws-core-vscode/amazonq'
 
 describe('Amazon Q LSP client', function () {
     let lspClient: LspClient
@@ -48,6 +48,22 @@ describe('Amazon Q LSP client', function () {
         const sample = 'hello'
         const encryptedSample = await lspClient.encrypt(sample)
         assert.ok(!encryptedSample.includes('hello'))
+    })
+
+    it('validates node executable + lsp bundle', async () => {
+        await assert.rejects(async () => {
+            await lspClientModule.activate(globals.context, {
+                // Mimic the `LspResolution<ResourcePaths>` type.
+                node: 'node.bogus.exe',
+                lsp: 'fake/lsp.js',
+            })
+        }, /.*failed to run basic .*node.*exitcode.*node\.bogus\.exe.*/)
+        await assert.rejects(async () => {
+            await lspClientModule.activate(globals.context, {
+                node: getNodeExecutableName(),
+                lsp: 'fake/lsp.js',
+            })
+        }, /.*failed to run .*exitcode.*node.*lsp\.js/)
     })
 
     afterEach(() => {
