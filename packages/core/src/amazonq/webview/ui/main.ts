@@ -66,6 +66,7 @@ export const createMynahUI = (
         disabledCommands,
         isSMUS,
         isSM,
+        hybridChat: false,
     })
 
     return {
@@ -120,6 +121,7 @@ export class WebviewUIHandler {
         disabledCommands,
         isSMUS,
         isSM,
+        hybridChat,
     }: {
         postMessage: any
         mynahUIRef: { mynahUI: MynahUI | undefined }
@@ -131,6 +133,7 @@ export class WebviewUIHandler {
         disabledCommands?: string[]
         isSMUS?: boolean
         isSM?: boolean
+        hybridChat?: boolean
     }) {
         this.postMessage = postMessage
         this.welcomeCount = welcomeCount
@@ -642,8 +645,24 @@ export class WebviewUIHandler {
         })
 
         this.mynahUIProps = {
-            onReady: this.connector.uiReady,
+            onReady: () => {
+                // the legacy event flow adds events listeners to the window, we want to avoid these in the lsp flow, since those
+                // are handled by the flare chat-client
+                if (hybridChat && this.connector) {
+                    this.connector.isUIReady = true
+                    postMessage({
+                        command: 'ui-is-ready',
+                    })
+                    return
+                }
+                this.connector?.uiReady()
+            },
             onTabAdd: (tabID: string) => {
+                if (hybridChat) {
+                    // hybrid chat doesn't support the welcome page
+                    this.connector?.onTabAdd(tabID)
+                    return
+                }
                 /**
                  * If the next tab opening will cross the welcome count threshold then
                  * update the next tabs defaults
@@ -989,7 +1008,13 @@ export class WebviewUIHandler {
             },
         }
 
-        this.mynahUIRef = { mynahUI: new MynahUI(this.mynahUIProps) }
+        if (!hybridChat) {
+            /**
+             * when in hybrid chat the reference gets resolved later so we
+             * don't need to create mynah UI
+             */
+            this.mynahUIRef = { mynahUI: new MynahUI(this.mynahUIProps) }
+        }
 
         /**
          * Update the welcome count if we've initially shown
