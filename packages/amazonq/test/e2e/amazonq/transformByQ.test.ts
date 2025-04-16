@@ -150,6 +150,8 @@ describe('Amazon Q Code Transformation', function () {
                 waitIntervalInMs: 1000,
             })
 
+            // Add this back when custom 1P upgrades support is ready
+            /*
             const customDependencyVersionPrompt = tab.getChatItems().pop()
             assert.strictEqual(
                 customDependencyVersionPrompt?.body?.includes('You can optionally upload a YAML file'),
@@ -162,13 +164,15 @@ describe('Amazon Q Code Transformation', function () {
                 waitTimeoutInMs: 5000,
                 waitIntervalInMs: 1000,
             })
+            */
 
             const sourceJdkPathPrompt = tab.getChatItems().pop()
             assert.strictEqual(sourceJdkPathPrompt?.body?.includes('Enter the path to JDK 8'), true)
 
             tab.addChatMessage({ prompt: '/dummy/path/to/jdk8' })
+
             // 2 additional chat messages get sent after JDK path submitted; wait for both of them
-            await tab.waitForEvent(() => tab.getChatItems().length > 15, {
+            await tab.waitForEvent(() => tab.getChatItems().length > 13, {
                 waitTimeoutInMs: 5000,
                 waitIntervalInMs: 1000,
             })
@@ -190,7 +194,7 @@ describe('Amazon Q Code Transformation', function () {
                 text: 'View summary',
             })
 
-            await tab.waitForEvent(() => tab.getChatItems().length > 16, {
+            await tab.waitForEvent(() => tab.getChatItems().length > 14, {
                 waitTimeoutInMs: 5000,
                 waitIntervalInMs: 1000,
             })
