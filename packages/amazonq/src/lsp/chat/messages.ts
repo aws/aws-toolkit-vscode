@@ -49,8 +49,9 @@ export function registerLanguageServerEventListener(languageClient: LanguageClie
 
     const chatOptions = languageClient.initializeResult?.awsServerCapabilities?.chatOptions
 
-    // Enable the history feature flag
+    // Enable the history/export feature flags
     chatOptions.history = true
+    chatOptions.export = true
 
     provider.onDidResolveWebview(() => {
         void provider.webview?.postMessage({
