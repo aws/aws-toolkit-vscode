@@ -13,12 +13,12 @@ import fs from '../../../shared/fs/fs'
 import * as workspaceUtils from '../../../shared/utilities/workspaceUtils'
 import * as filesystemUtilities from '../../../shared/filesystemUtilities'
 
-describe('FileSearch', () => {
+describe('FileSearch', function () {
     let sandbox: sinon.SinonSandbox
     let mockUpdates: Writable
     const mockWorkspacePath = '/mock/workspace'
 
-    beforeEach(() => {
+    beforeEach(function () {
         sandbox = sinon.createSandbox()
 
         // Create a mock Writable stream for updates
@@ -57,12 +57,12 @@ describe('FileSearch', () => {
         sandbox.stub(filesystemUtilities, 'isInDirectory').returns(true)
     })
 
-    afterEach(() => {
+    afterEach(function () {
         sandbox.restore()
     })
 
-    describe('constructor', () => {
-        it('should initialize with provided values', () => {
+    describe('constructor', function () {
+        it('should initialize with provided values', function () {
             const params: FileSearchParams = {
                 path: '/test/path',
                 pattern: '.*\\.ts$',
@@ -79,7 +79,7 @@ describe('FileSearch', () => {
             assert.strictEqual((fileSearch as any).pattern.flags, '')
         })
 
-        it('should initialize with case insensitive pattern by default', () => {
+        it('should initialize with case insensitive pattern by default', function () {
             const params: FileSearchParams = {
                 path: '/test/path',
                 pattern: '.*\\.ts$',
@@ -91,18 +91,18 @@ describe('FileSearch', () => {
         })
     })
 
-    describe('validate', () => {
-        it('should throw an error if path is empty', async () => {
+    describe('validate', function () {
+        it('should throw an error if path is empty', async function () {
             const fileSearch = new FileSearch({ path: '', pattern: '.*\\.ts$' })
             await assert.rejects(async () => await fileSearch.validate(), /Path cannot be empty/)
         })
 
-        it('should throw an error if path is only whitespace', async () => {
+        it('should throw an error if path is only whitespace', async function () {
             const fileSearch = new FileSearch({ path: '   ', pattern: '.*\\.ts$' })
             await assert.rejects(async () => await fileSearch.validate(), /Path cannot be empty/)
         })
 
-        it('should throw an error if maxDepth is negative', async () => {
+        it('should throw an error if maxDepth is negative', async function () {
             const fileSearch = new FileSearch({
                 path: '/test/path',
                 pattern: '.*\\.ts$',
@@ -111,7 +111,7 @@ describe('FileSearch', () => {
             await assert.rejects(async () => await fileSearch.validate(), /MaxDepth cannot be negative/)
         })
 
-        it('should throw an error if path does not exist', async () => {
+        it('should throw an error if path does not exist', async function () {
             sandbox.restore()
             sandbox = sinon.createSandbox()
             sandbox.stub(fs, 'existsDir').resolves(false)
@@ -127,7 +127,7 @@ describe('FileSearch', () => {
             )
         })
 
-        it('should pass validation with valid path and pattern', async () => {
+        it('should pass validation with valid path and pattern', async function () {
             const fileSearch = new FileSearch({
                 path: '/valid/path',
                 pattern: '.*\\.ts$',
@@ -136,8 +136,8 @@ describe('FileSearch', () => {
         })
     })
 
-    describe('queueDescription', () => {
-        it('should write description for recursive search', () => {
+    describe('queueDescription', function () {
+        it('should write description for recursive search', function () {
             const fileSearch = new FileSearch({
                 path: '/test/path',
                 pattern: '.*\\.ts$',
@@ -155,7 +155,7 @@ describe('FileSearch', () => {
             sinon.assert.calledOnce(mockUpdates.end as sinon.SinonSpy)
         })
 
-        it('should write description for current directory only', () => {
+        it('should write description for current directory only', function () {
             const fileSearch = new FileSearch({
                 path: '/test/path',
                 pattern: '.*\\.ts$',
@@ -172,7 +172,7 @@ describe('FileSearch', () => {
             )
         })
 
-        it('should write description for limited depth search', () => {
+        it('should write description for limited depth search', function () {
             const fileSearch = new FileSearch({
                 path: '/test/path',
                 pattern: '.*\\.ts$',
@@ -189,7 +189,7 @@ describe('FileSearch', () => {
             )
         })
 
-        it('should use plural form for multiple levels', () => {
+        it('should use plural form for multiple levels', function () {
             const fileSearch = new FileSearch({
                 path: '/test/path',
                 pattern: '.*\\.ts$',
@@ -207,8 +207,8 @@ describe('FileSearch', () => {
         })
     })
 
-    describe('requiresAcceptance', () => {
-        it('should require acceptance when no workspace folders exist', () => {
+    describe('requiresAcceptance', function () {
+        it('should require acceptance when no workspace folders exist', function () {
             sandbox.restore()
             sandbox = sinon.createSandbox()
             sandbox.stub(vscode.workspace, 'workspaceFolders').value(undefined)
@@ -222,7 +222,7 @@ describe('FileSearch', () => {
             assert.strictEqual(result.requiresAcceptance, true)
         })
 
-        it('should require acceptance when path is outside workspace', () => {
+        it('should require acceptance when path is outside workspace', function () {
             sandbox.restore()
             sandbox = sinon.createSandbox()
             sandbox.stub(vscode.workspace, 'workspaceFolders').value([
@@ -243,7 +243,7 @@ describe('FileSearch', () => {
             assert.strictEqual(result.requiresAcceptance, true)
         })
 
-        it('should not require acceptance when path is inside workspace', () => {
+        it('should not require acceptance when path is inside workspace', function () {
             const fileSearch = new FileSearch({
                 path: '/mock/workspace/subfolder',
                 pattern: '.*\\.ts$',
@@ -254,10 +254,10 @@ describe('FileSearch', () => {
         })
     })
 
-    describe('invoke', () => {
+    describe('invoke', function () {
         let fileSearch: FileSearch
 
-        beforeEach(async () => {
+        beforeEach(async function () {
             fileSearch = new FileSearch({
                 path: '/test/path',
                 pattern: '.*\\.ts$',
@@ -265,7 +265,7 @@ describe('FileSearch', () => {
             await fileSearch.validate()
         })
 
-        it('should filter files by regex pattern', async () => {
+        it('should filter files by regex pattern', async function () {
             const result = await fileSearch.invoke()
 
             // Should only include .ts files
@@ -277,7 +277,7 @@ describe('FileSearch', () => {
             })
         })
 
-        it('should handle case sensitivity correctly', async () => {
+        it('should handle case sensitivity correctly', async function () {
             // Create a case-sensitive search for .TS (uppercase)
             fileSearch = new FileSearch({
                 path: '/test/path',
@@ -296,7 +296,7 @@ describe('FileSearch', () => {
             })
         })
 
-        it('should throw an error if file search fails', async () => {
+        it('should throw an error if file search fails', async function () {
             sandbox.restore()
             sandbox = sinon.createSandbox()
             // Make readDirectoryRecursively throw an error
@@ -315,8 +315,8 @@ describe('FileSearch', () => {
         })
     })
 
-    describe('createOutput', () => {
-        it('should create output with content', () => {
+    describe('createOutput', function () {
+        it('should create output with content', function () {
             const fileSearch = new FileSearch({
                 path: '/test/path',
                 pattern: '.*\\.ts$',
@@ -332,7 +332,7 @@ describe('FileSearch', () => {
             })
         })
 
-        it('should create output with empty content', () => {
+        it('should create output with empty content', function () {
             const fileSearch = new FileSearch({
                 path: '/test/path',
                 pattern: '.*\\.ts$',

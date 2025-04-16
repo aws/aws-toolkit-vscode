@@ -12,12 +12,12 @@ import { Writable } from 'stream'
 import { OutputKind } from '../../../codewhispererChat/tools/toolShared'
 import fs from '../../../shared/fs/fs'
 
-describe('GrepSearch', () => {
+describe('GrepSearch', function () {
     let sandbox: sinon.SinonSandbox
     let mockUpdates: Writable
     const mockWorkspacePath = '/mock/workspace'
 
-    beforeEach(() => {
+    beforeEach(function () {
         sandbox = sinon.createSandbox()
 
         // Create a mock Writable stream for updates
@@ -42,12 +42,12 @@ describe('GrepSearch', () => {
         sandbox.stub(fs, 'existsDir').resolves(true)
     })
 
-    afterEach(() => {
+    afterEach(function () {
         sandbox.restore()
     })
 
-    describe('constructor', () => {
-        it('should initialize with default values', () => {
+    describe('constructor', function () {
+        it('should initialize with default values', function () {
             const params: GrepSearchParams = {
                 query: 'test-query',
             }
@@ -60,7 +60,7 @@ describe('GrepSearch', () => {
             assert.strictEqual((grepSearch as any).path, mockWorkspacePath)
         })
 
-        it('should initialize with provided values', () => {
+        it('should initialize with provided values', function () {
             const params: GrepSearchParams = {
                 query: 'test-query',
                 caseSensitive: true,
@@ -79,8 +79,8 @@ describe('GrepSearch', () => {
         })
     })
 
-    describe('getSearchDirectory', () => {
-        it('should use provided path when available', () => {
+    describe('getSearchDirectory', function () {
+        it('should use provided path when available', function () {
             const grepSearch = new GrepSearch({
                 query: 'test-query',
                 path: '/custom/path',
@@ -90,7 +90,7 @@ describe('GrepSearch', () => {
             assert.strictEqual(result, '/custom/path')
         })
 
-        it('should use workspace folder when path is not provided', () => {
+        it('should use workspace folder when path is not provided', function () {
             const grepSearch = new GrepSearch({
                 query: 'test-query',
             })
@@ -100,19 +100,19 @@ describe('GrepSearch', () => {
         })
     })
 
-    describe('validate', () => {
-        it('should throw an error if query is empty', async () => {
+    describe('validate', function () {
+        it('should throw an error if query is empty', async function () {
             const grepSearch = new GrepSearch({ query: '' })
             await assert.rejects(async () => await grepSearch.validate(), /Grep search query cannot be empty/)
         })
 
-        it('should throw an error if query is only whitespace', async () => {
+        it('should throw an error if query is only whitespace', async function () {
             const grepSearch = new GrepSearch({ query: '   ' })
 
             await assert.rejects(async () => await grepSearch.validate(), /Grep search query cannot be empty/)
         })
 
-        it('should throw an error if path does not exist', async () => {
+        it('should throw an error if path does not exist', async function () {
             sandbox.restore()
             sandbox = sinon.createSandbox()
             sandbox.stub(fs, 'existsDir').resolves(false)
@@ -128,7 +128,7 @@ describe('GrepSearch', () => {
             )
         })
 
-        it('should pass validation with valid query and path', async () => {
+        it('should pass validation with valid query and path', async function () {
             const grepSearch = new GrepSearch({
                 query: 'test-query',
                 path: '/valid/path',
@@ -137,8 +137,8 @@ describe('GrepSearch', () => {
         })
     })
 
-    describe('queueDescription', () => {
-        it('should write description to updates stream', () => {
+    describe('queueDescription', function () {
+        it('should write description to updates stream', function () {
             const grepSearch = new GrepSearch({
                 query: 'test-query',
                 path: '/test/path',
@@ -157,9 +157,10 @@ describe('GrepSearch', () => {
         })
     })
 
-    describe('invoke', () => {
+    describe('invoke', function () {
         let grepSearch: GrepSearch
-        beforeEach(async () => {
+
+        beforeEach(async function () {
             grepSearch = new GrepSearch({
                 query: 'test-query',
                 path: '/test/path',
@@ -177,7 +178,7 @@ describe('GrepSearch', () => {
             })
         })
 
-        it('should execute ripgrep and return results', async () => {
+        it('should execute ripgrep and return results', async function () {
             const result = await grepSearch.invoke()
             assert.deepStrictEqual(result, {
                 output: {
@@ -187,14 +188,14 @@ describe('GrepSearch', () => {
             })
         })
 
-        it('should write updates to the provided stream', async () => {
+        it('should write updates to the provided stream', async function () {
             await grepSearch.invoke(mockUpdates)
 
             // eslint-disable-next-line @typescript-eslint/unbound-method
             sinon.assert.calledWith(mockUpdates.write as sinon.SinonSpy, 'processed-results')
         })
 
-        it('should throw an error if ripgrep execution fails', async () => {
+        it('should throw an error if ripgrep execution fails', async function () {
             sandbox.restore()
             sandbox = sinon.createSandbox()
             // Make ChildProcess.run throw an error
@@ -207,8 +208,8 @@ describe('GrepSearch', () => {
         })
     })
 
-    describe('createOutput', () => {
-        it('should create output with content', () => {
+    describe('createOutput', function () {
+        it('should create output with content', function () {
             const grepSearch = new GrepSearch({
                 query: 'test-query',
             })
@@ -223,7 +224,7 @@ describe('GrepSearch', () => {
             })
         })
 
-        it('should create output with default message when content is empty', () => {
+        it('should create output with default message when content is empty', function () {
             const grepSearch = new GrepSearch({
                 query: 'test-query',
             })
