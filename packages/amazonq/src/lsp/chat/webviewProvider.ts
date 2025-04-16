@@ -30,6 +30,9 @@ export class AmazonQChatViewProvider implements WebviewViewProvider {
 
     webview: Webview | undefined
 
+    connectorAdapterPath?: string
+    uiPath?: string
+
     constructor(private readonly mynahUIPath: string) {}
 
     public async resolveWebviewView(
@@ -49,20 +52,22 @@ export class AmazonQChatViewProvider implements WebviewViewProvider {
 
         const source = 'vue/src/amazonq/webview/ui/amazonq-ui-connector-adapter.js' // Sent to dist/vue folder in webpack.
         const serverHostname = process.env.WEBPACK_DEVELOPER_SERVER
-        const connectorAdapterPath =
+
+        this.connectorAdapterPath =
             serverHostname !== undefined
                 ? Uri.parse(serverHostname)
                       .with({ path: `/${source}` })
                       .toString()
                 : webviewView.webview.asWebviewUri(Uri.parse(path.join(dist.fsPath, source))).toString()
-        const uiPath = webviewView.webview.asWebviewUri(Uri.parse(this.mynahUIPath)).toString()
-        webviewView.webview.html = await this.getWebviewContent(uiPath, connectorAdapterPath)
+        this.uiPath = webviewView.webview.asWebviewUri(Uri.parse(this.mynahUIPath)).toString()
+
+        webviewView.webview.html = await this.getWebviewContent()
 
         this.onDidResolveWebviewEmitter.fire()
         performance.mark(amazonqMark.open)
     }
 
-    private async getWebviewContent(mynahUIPath: string, hybridChatConnector: string) {
+    private async getWebviewContent() {
         const featureConfigData = await featureConfig.getFeatureConfigs()
 
         const isSM = isSageMaker('SMAI')
@@ -110,8 +115,8 @@ export class AmazonQChatViewProvider implements WebviewViewProvider {
             </style>
         </head>
         <body>
-            <script type="text/javascript" src="${mynahUIPath.toString()}" defer onload="init()"></script>
-            <script type="text/javascript" src="${hybridChatConnector.toString()}"></script>
+            <script type="text/javascript" src="${this.uiPath?.toString()}" defer onload="init()"></script>
+            <script type="text/javascript" src="${this.connectorAdapterPath?.toString()}"></script>
             <script type="text/javascript">
                 const init = () => {
                     const vscodeApi = acquireVsCodeApi()
@@ -136,5 +141,12 @@ export class AmazonQChatViewProvider implements WebviewViewProvider {
             </script>
         </body>
         </html>`
+    }
+
+    async refreshWebview() {
+        if (this.webview) {
+            // refresh the webview when the profile changes
+            this.webview.html = await this.getWebviewContent()
+        }
     }
 }
