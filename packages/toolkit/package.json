@@ -249,7 +249,7 @@
                         },
                         "amazonqLSP": {
                             "type": "boolean",
-                            "default": false
+                            "default": true
                         },
                         "amazonqLSPInline": {
                             "type": "boolean",
@@ -257,7 +257,7 @@
                         },
                         "amazonqChatLSP": {
                             "type": "boolean",
-                            "default": false
+                            "default": true
                         }
                     },
                     "additionalProperties": false
