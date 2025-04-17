@@ -92,7 +92,6 @@ import {
     additionalContentInnerContextLimit,
     workspaceChunkMaxSize,
     defaultContextLengths,
-    globalMcpConfigPath,
 } from '../../constants'
 import { ChatSession } from '../../clients/chat/v0/chat'
 import { amazonQTabSuffix } from '../../../shared/constants'
@@ -103,7 +102,6 @@ import { tempDirPath } from '../../../shared/filesystemUtilities'
 import { Database } from '../../../shared/db/chatDb/chatDb'
 import { TabBarController } from './tabBarController'
 import { messageToChatMessage } from '../../../shared/db/chatDb/util'
-import { McpManager } from '../../tools/mcp/mcpManager'
 
 export interface ChatControllerMessagePublishers {
     readonly processPromptChatMessage: MessagePublisher<PromptMessage>
@@ -198,17 +196,6 @@ export class ChatController {
         this.promptGenerator = new PromptsGenerator()
         this.userIntentRecognizer = new UserIntentRecognizer()
         this.tabBarController = new TabBarController(this.messenger)
-
-        // todo: move to activate function?
-        // McpManager.initMcpManager(globalMcpConfigPath)
-        //     .then((manager) => {
-        //         if (manager) {
-        //             globals.mcpManager = manager
-        //         }
-        //     })
-        //     .catch((err) => {
-        //         getLogger().error(`Failed to initialize MCP manager in controller: ${err}`)
-        //     })
 
         onDidChangeAmazonQVisibility((visible) => {
             if (visible) {

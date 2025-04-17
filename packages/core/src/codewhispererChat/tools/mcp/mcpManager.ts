@@ -19,17 +19,18 @@ export interface McpToolDefinition {
 }
 
 export class McpManager {
+    static #instance: McpManager | undefined
     private mcpServers: Record<string, MCPServerConfig> = {}
     private clients: Map<string, Client> = new Map() // key: serverName, val: MCP client
     private mcpTools: McpToolDefinition[] = []
 
     private constructor(private readonly configPath: string) {}
 
-    public static async create(configPath: string): Promise<McpManager> {
-        const instance = new McpManager(configPath)
-        await instance.loadConfig()
-        await instance.initAllServers()
-        return instance
+    public static get instance(): McpManager {
+        if (!McpManager.#instance) {
+            throw new Error('McpManager not initialized—call initMcpManager() first')
+        }
+        return McpManager.#instance
     }
 
     public async loadConfig(): Promise<void> {
@@ -45,6 +46,7 @@ export class McpManager {
     }
 
     public async initAllServers(): Promise<void> {
+        this.mcpTools = []
         for (const [serverName, serverConfig] of Object.entries(this.mcpServers)) {
             if (serverConfig.disabled) {
                 getLogger().info(`MCP server [${serverName}] is disabled, skipping.`)
@@ -107,8 +109,13 @@ export class McpManager {
 
     public static async initMcpManager(configPath: string): Promise<McpManager | undefined> {
         try {
-            const manager = await McpManager.create(configPath)
-            const discovered = manager.getAllMcpTools()
+            if (!McpManager.#instance) {
+                const mgr = new McpManager(configPath)
+                McpManager.#instance = mgr
+            }
+            await McpManager.#instance.loadConfig()
+            await McpManager.#instance.initAllServers()
+            const discovered = McpManager.#instance.getAllMcpTools()
             const builtInNames = new Set<string>(Object.values(ToolType))
             const discoveredNames = new Set(discovered.map((d) => d.toolName))
 
@@ -142,7 +149,7 @@ export class McpManager {
                 }
             }
             getLogger().info(`MCP: successfully discovered ${discovered.length} new tools.`)
-            return manager
+            return McpManager.instance
         } catch (err) {
             getLogger().error(`Failed to init MCP manager: ${(err as Error).message}`)
             return undefined

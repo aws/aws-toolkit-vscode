@@ -15,8 +15,6 @@ import { Database } from '../../../shared/db/chatDb/chatDb'
 import { TabBarButtonClick, SaveChatMessage } from './model'
 import { Conversation, messageToChatItem, Tab } from '../../../shared/db/chatDb/util'
 import { DetailedListItemGroup, MynahIconsType } from '@aws/mynah-ui'
-import path from 'path'
-import { UserWrittenCodeTracker } from '../../../codewhisperer/tracker/userWrittenCodeTracker'
 import { globalMcpConfigPath } from '../../constants'
 
 export class TabBarController {
