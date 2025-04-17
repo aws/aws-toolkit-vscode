@@ -92,7 +92,7 @@ import {
     additionalContentInnerContextLimit,
     workspaceChunkMaxSize,
     defaultContextLengths,
-    tools,
+    globalMcpConfigPath,
 } from '../../constants'
 import { ChatSession } from '../../clients/chat/v0/chat'
 import { amazonQTabSuffix } from '../../../shared/constants'
@@ -180,7 +180,6 @@ export class ChatController {
     private userPromptsWatcher: vscode.FileSystemWatcher | undefined
     private chatHistoryDb = Database.getInstance()
     private cancelTokenSource: vscode.CancellationTokenSource = new vscode.CancellationTokenSource()
-    private mcpManager: McpManager | undefined
 
     public constructor(
         private readonly chatControllerMessageListeners: ChatControllerMessageListeners,
@@ -200,27 +199,16 @@ export class ChatController {
         this.userIntentRecognizer = new UserIntentRecognizer()
         this.tabBarController = new TabBarController(this.messenger)
 
-        // MCP intitialzation
-        const mcpConfigPath = path.join(process.env.HOME ?? '', '.aws', 'amazonq', 'mcp.json')
-        McpManager.create(mcpConfigPath)
-            .then((manager) => {
-                this.mcpManager = manager
-                ToolUtils.mcpManager = manager
-                const discovered = manager.getAllMcpTools()
-                for (const def of discovered) {
-                    tools.push({
-                        toolSpecification: {
-                            name: def.toolName,
-                            description: def.description,
-                            inputSchema: { json: def.inputSchema },
-                        },
-                    })
-                }
-                getLogger().info(`MCP: successfully discovered ${discovered.length} new tools.`)
-            })
-            .catch((err) => {
-                getLogger().error(`Failed to init MCP manager: ${err}`)
-            })
+        // todo: move to activate function?
+        // McpManager.initMcpManager(globalMcpConfigPath)
+        //     .then((manager) => {
+        //         if (manager) {
+        //             globals.mcpManager = manager
+        //         }
+        //     })
+        //     .catch((err) => {
+        //         getLogger().error(`Failed to initialize MCP manager in controller: ${err}`)
+        //     })
 
         onDidChangeAmazonQVisibility((visible) => {
             if (visible) {

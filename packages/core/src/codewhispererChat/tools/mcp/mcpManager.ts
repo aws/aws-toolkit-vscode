@@ -8,6 +8,8 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import fs from '../../../shared/fs/fs'
 import { getLogger } from '../../../shared/logger/logger'
+import { tools } from '../../constants'
+import { ToolType } from '../toolUtils'
 
 export interface McpToolDefinition {
     serverName: string
@@ -21,7 +23,7 @@ export class McpManager {
     private clients: Map<string, Client> = new Map() // key: serverName, val: MCP client
     private mcpTools: McpToolDefinition[] = []
 
-    private constructor(private configPath: string) {}
+    private constructor(private readonly configPath: string) {}
 
     public static async create(configPath: string): Promise<McpManager> {
         const instance = new McpManager(configPath)
@@ -79,6 +81,7 @@ export class McpManager {
                 getLogger().info(`Found MCP tool [${toolDef.toolName}] from server [${serverName}]`)
             }
         } catch (err) {
+            // Log the error for this server but allow the initialization of others to continue.
             getLogger().error(`Failed to init server [${serverName}]: ${(err as Error).message}`)
         }
     }
@@ -101,4 +104,53 @@ export class McpManager {
     public findTool(toolName: string): McpToolDefinition | undefined {
         return this.mcpTools.find((t) => t.toolName === toolName)
     }
+
+    public static async initMcpManager(configPath: string): Promise<McpManager | undefined> {
+        try {
+            const manager = await McpManager.create(configPath)
+            const discovered = manager.getAllMcpTools()
+            const builtInNames = new Set<string>(Object.values(ToolType))
+            const discoveredNames = new Set(discovered.map((d) => d.toolName))
+
+            for (const def of discovered) {
+                const spec = {
+                    toolSpecification: {
+                        name: def.toolName,
+                        description: def.description,
+                        inputSchema: { json: def.inputSchema },
+                    },
+                }
+                const idx = tools.findIndex((t) => t.toolSpecification!.name === def.toolName)
+                if (idx >= 0) {
+                    // replace existing entry
+                    tools[idx] = spec
+                } else {
+                    // append new entry
+                    tools.push(spec)
+                }
+            }
+
+            // Prune stale _dynamic_ tools (leave built‑ins intact)
+            for (let i = tools.length - 1; i >= 0; --i) {
+                const name = tools[i].toolSpecification!.name
+                if (!name || builtInNames.has(name)) {
+                    continue
+                }
+                // if it wasn’t rediscovered in new MCP config, remove it
+                if (!discoveredNames.has(name)) {
+                    tools.splice(i, 1)
+                }
+            }
+            getLogger().info(`MCP: successfully discovered ${discovered.length} new tools.`)
+            return manager
+        } catch (err) {
+            getLogger().error(`Failed to init MCP manager: ${(err as Error).message}`)
+            return undefined
+        }
+    }
+
+    // public async dispose(): Promise<void> {
+    //     this.clients.clear()
+    //     this.mcpTools = []
+    // }
 }

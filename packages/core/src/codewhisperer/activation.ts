@@ -90,6 +90,10 @@ import { SecurityIssueTreeViewProvider } from './service/securityIssueTreeViewPr
 import { setContext } from '../shared/vscode/setContext'
 import { syncSecurityIssueWebview } from './views/securityIssue/securityIssueWebview'
 import { detectCommentAboveLine } from '../shared/utilities/commentUtils'
+import { globalMcpConfigPath } from '../codewhispererChat/constants'
+import { McpManager } from '../codewhispererChat/tools/mcp/mcpManager'
+import globals from '../shared/extensionGlobals'
+import { ToolUtils } from '../codewhispererChat/tools/toolUtils'
 
 let localize: nls.LocalizeFunc
 
@@ -373,6 +377,8 @@ export async function activate(context: ExtContext): Promise<void> {
 
     setSubscriptionsForCodeIssues()
 
+    setSubscriptionsForMcp()
+
     function shouldRunAutoScan(editor: vscode.TextEditor | undefined, isScansEnabled?: boolean) {
         return (
             (isScansEnabled ?? CodeScansState.instance.isScansEnabled()) &&
@@ -498,6 +504,32 @@ export async function activate(context: ExtContext): Promise<void> {
                 treeDataProvider: SecurityIssueTreeViewProvider.instance,
             })
         )
+    }
+
+    function setSubscriptionsForMcp() {
+        let lastMcpContent: string | undefined
+        const updateLastContent = (document: vscode.TextDocument) => {
+            lastMcpContent = document.getText()
+        }
+        const mcpOpenListener = vscode.workspace.onDidOpenTextDocument((document: vscode.TextDocument) => {
+            if (document.uri.fsPath === globalMcpConfigPath) {
+                updateLastContent(document)
+            }
+        })
+        context.extensionContext.subscriptions.push(mcpOpenListener)
+        const mcpSaveListener = vscode.workspace.onDidSaveTextDocument(async (doc) => {
+            if (doc.uri.fsPath === globalMcpConfigPath) {
+                const newContent = doc.getText()
+                if (lastMcpContent === undefined || newContent !== lastMcpContent) {
+                    const manager = await McpManager.initMcpManager(globalMcpConfigPath)
+                    if (manager) {
+                        globals.mcpManager = manager
+                    }
+                    lastMcpContent = newContent
+                }
+            }
+        })
+        context.extensionContext.subscriptions.push(mcpSaveListener)
     }
 }
 

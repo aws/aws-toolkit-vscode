@@ -66,3 +66,5 @@ export const ignoredDirectoriesAndFiles = [
     // OS specific files
     '.DS_Store',
 ]
+
+export const globalMcpConfigPath = path.join(process.env.HOME ?? '', '.aws', 'amazonq', 'mcp.json')

@@ -20,6 +20,7 @@ import { GlobalState } from './globalState'
 import { setContext } from './vscode/setContext'
 import { getLogger } from './logger/logger'
 import { AWSClientBuilderV3 } from './awsClientBuilderV3'
+import { McpManager } from '../codewhispererChat/tools/mcp/mcpManager'
 
 type Clock = Pick<
     typeof globalThis,
@@ -227,4 +228,5 @@ export interface ToolkitGlobals {
     }
     /** If this extension is running in Web mode (the browser), compared to running on the desktop (node) */
     isWeb: boolean
+    mcpManager?: McpManager
 }

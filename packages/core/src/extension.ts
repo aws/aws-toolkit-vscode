@@ -55,6 +55,8 @@ import { setupUninstallHandler } from './shared/handleUninstall'
 import { maybeShowMinVscodeWarning } from './shared/extensionStartup'
 import { getLogger } from './shared/logger/logger'
 import { setContext } from './shared/vscode/setContext'
+import { McpManager } from './codewhispererChat/tools/mcp/mcpManager'
+import { globalMcpConfigPath } from './codewhispererChat/constants'
 
 disableAwsSdkWarning()
 
@@ -115,6 +117,12 @@ export async function activateCommon(
         join('resources', 'vs-lambda-sample-request-manifest.xml')
     )
     globals.regionProvider = RegionProvider.fromEndpointsProvider(makeEndpointsProvider())
+
+    /**
+     * MCP client initialization
+     */
+    const mgr = await McpManager.initMcpManager(globalMcpConfigPath)
+    globals.mcpManager = mgr
 
     // telemetry
     await activateTelemetry(context, globals.awsContext, Settings.instance, 'AWS Toolkit For VS Code')
