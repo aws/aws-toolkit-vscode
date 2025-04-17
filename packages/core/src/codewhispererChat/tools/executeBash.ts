@@ -114,6 +114,7 @@ export interface ExecuteBashParams {
     command: string
     cwd?: string
     explanation?: string
+    triggerId?: string
 }
 
 export interface CommandValidation {
@@ -134,10 +135,22 @@ export class ExecuteBash {
     private readonly workingDirectory?: string
     private readonly logger = getLogger('executeBash')
     private childProcess?: ChildProcess
+    // Make triggerId writable so it can be set after construction
+    private _triggerId?: string
 
     constructor(params: ExecuteBashParams) {
         this.command = params.command
         this.workingDirectory = params.cwd ? sanitizePath(params.cwd) : fs.getUserHomeDir()
+        this._triggerId = params.triggerId
+    }
+
+    // Getter and setter for triggerId
+    get triggerId(): string | undefined {
+        return this._triggerId
+    }
+
+    set triggerId(id: string | undefined) {
+        this._triggerId = id
     }
 
     public async validate(): Promise<void> {
@@ -232,18 +245,60 @@ export class ExecuteBash {
         }
     }
 
-    public async invoke(updates?: Writable, cancellationToken?: vscode.CancellationToken): Promise<InvokeOutput> {
+    /**
+     * Check if the trigger has been cancelled using ConversationTracker
+     */
+    private isTriggerCancelled(): boolean {
+        // console.log('trigger cancellation check is happening')
+        if (!this.triggerId) {
+            return false
+        }
+
+        // Import here to avoid circular dependency
+        const { ConversationTracker } = require('../storages/conversationTracker')
+        const cancellationtracker = ConversationTracker.getInstance()
+        // console.log('trigger cancellation status:', cancellationtracker.getTokenForTrigger(this.triggerId))
+        // console.log('concealltion status:', cancellationtracker.isTriggerCancelled(this.triggerId))
+        return cancellationtracker.isTriggerCancelled(this.triggerId)
+    }
+
+    public async invoke(updates?: Writable): Promise<InvokeOutput> {
         this.logger.info(`Invoking bash command: "${this.command}" in cwd: "${this.workingDirectory}"`)
 
         return new Promise(async (resolve, reject) => {
-            // Check if cancelled before starting
-            if (cancellationToken?.isCancellationRequested) {
+            // Check if cancelled before starting using triggerId
+            if (this.isTriggerCancelled()) {
                 this.logger.debug('Bash command execution cancelled before starting')
                 reject(new Error('Command execution cancelled'))
                 return
             }
 
-            this.logger.debug(`Spawning process with command: bash -c "${this.command}" (cwd=${this.workingDirectory})`)
+            // Modify the command to make it more cancellable by using process groups
+            // This ensures that when we kill the parent process, all child processes are also terminated
+            // The trap ensures cleanup on SIGTERM/SIGINT
+            const modifiedCommand = `
+exec bash -c "
+  # Create a new process group
+  set -m
+  
+  # Set up trap to kill the entire process group on exit
+  trap 'exit' TERM INT
+  
+  # Run the actual command in background
+  ${this.command} &
+  
+  # Store the PID
+  CMD_PID=\\$!
+  
+  # Wait for the command to finish
+  wait \\$CMD_PID
+  exit \\$?
+"
+`
+
+            this.logger.debug(
+                `Spawning process with modified command for better cancellation support (cwd=${this.workingDirectory})`
+            )
 
             const stdoutBuffer: string[] = []
             const stderrBuffer: string[] = []
@@ -282,16 +337,41 @@ export class ExecuteBash {
                 }
             }
 
+            // Setup a periodic check for trigger cancellation
+            let checkCancellationInterval: NodeJS.Timeout | undefined
+            if (this.triggerId) {
+                checkCancellationInterval = setInterval(() => {
+                    if (this.isTriggerCancelled()) {
+                        this.logger.debug('Trigger cancellation detected, killing child process')
+                        this.childProcess?.stop(false, 'SIGTERM')
+
+                        // After a short delay, force kill with SIGKILL if still running
+                        setTimeout(() => {
+                            if (this.childProcess && !this.childProcess.stopped) {
+                                this.logger.debug('Process still running after SIGTERM, sending SIGKILL')
+                                this.childProcess.stop(true, 'SIGKILL')
+                            }
+                        }, 500)
+
+                        if (checkCancellationInterval) {
+                            clearInterval(checkCancellationInterval)
+                        }
+                    }
+                }, 100) // Check every 100ms
+            }
+
             const childProcessOptions: ChildProcessOptions = {
                 spawnOptions: {
                     cwd: this.workingDirectory,
                     stdio: ['pipe', 'pipe', 'pipe'],
+                    // Set detached to true to create a new process group
+                    detached: true,
                 },
                 collect: false,
                 waitForStreams: true,
                 onStdout: async (chunk: string) => {
-                    if (cancellationToken?.isCancellationRequested) {
-                        this.logger.debug('Bash command execution cancelled during stderr processing')
+                    if (this.isTriggerCancelled()) {
+                        this.logger.debug('Bash command execution cancelled during stdout processing')
                         return
                     }
                     const isFirst = getAndSetFirstChunk(false)
@@ -305,7 +385,7 @@ export class ExecuteBash {
                     processQueue()
                 },
                 onStderr: async (chunk: string) => {
-                    if (cancellationToken?.isCancellationRequested) {
+                    if (this.isTriggerCancelled()) {
                         this.logger.debug('Bash command execution cancelled during stderr processing')
                         return
                     }
@@ -321,21 +401,19 @@ export class ExecuteBash {
                 },
             }
 
-            this.childProcess = new ChildProcess('bash', ['-c', this.command], childProcessOptions)
-
-            // Set up cancellation listener
-            if (cancellationToken) {
-                cancellationToken.onCancellationRequested(() => {
-                    this.logger.debug('Cancellation requested, killing child process')
-                    this.childProcess?.stop()
-                })
-            }
+            // Use bash directly with the modified command
+            this.childProcess = new ChildProcess('bash', ['-c', modifiedCommand], childProcessOptions)
 
             try {
                 const result = await this.childProcess.run()
 
+                // Clean up the interval if it exists
+                if (checkCancellationInterval) {
+                    clearInterval(checkCancellationInterval)
+                }
+
                 // Check if cancelled after execution
-                if (cancellationToken?.isCancellationRequested) {
+                if (this.isTriggerCancelled()) {
                     this.logger.debug('Bash command execution cancelled after completion')
                     reject(new Error('Command execution cancelled'))
                     return
@@ -368,8 +446,13 @@ export class ExecuteBash {
                     },
                 })
             } catch (err: any) {
+                // Clean up the interval if it exists
+                if (checkCancellationInterval) {
+                    clearInterval(checkCancellationInterval)
+                }
+
                 // Check if this was due to cancellation
-                if (cancellationToken?.isCancellationRequested) {
+                if (this.isTriggerCancelled()) {
                     reject(new Error('Command execution cancelled'))
                 } else {
                     this.logger.error(`Failed to execute bash command '${this.command}': ${err.message}`)

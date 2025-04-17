@@ -709,6 +709,7 @@ export class ChatController {
         this.editorContextExtractor
             .extractContextForTrigger('ChatMessage')
             .then(async (context) => {
+                console.log('message for tool action:', message)
                 const triggerID = message.triggerId
 
                 // Check if this trigger has already been cancelled
@@ -786,11 +787,7 @@ export class ChatController {
                                 return
                             }
 
-                            const output = await ToolUtils.invoke(
-                                tool,
-                                chatStream,
-                                ConversationTracker.getInstance().getTokenForTrigger(triggerID)
-                            )
+                            const output = await ToolUtils.invoke(tool, chatStream, triggerID)
                             ToolUtils.validateOutput(output, tool.type)
 
                             let status: ToolResultStatus = ToolResultStatus.SUCCESS
@@ -1632,7 +1629,7 @@ export class ChatController {
             })}`
         )
         let response: MessengerResponseType | undefined = undefined
-        session.createNewTokenSource()
+        // session.createNewTokenSource()
         // TODO: onProfileChanged, abort previous response?
         try {
             if (!session.context && triggerPayload.context.length) {
