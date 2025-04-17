@@ -64,7 +64,7 @@ export class AmazonQChatViewProvider implements WebviewViewProvider {
     }
 
     private async getWebviewContent(mynahUIPath: string) {
-        const disclaimerAcknowledged = AmazonQPromptSettings.instance.isPromptEnabled('amazonQChatDisclaimer')
+        const disclaimerAcknowledged = !AmazonQPromptSettings.instance.isPromptEnabled('amazonQChatDisclaimer')
         return `
         <!DOCTYPE html>
         <html lang="en">
