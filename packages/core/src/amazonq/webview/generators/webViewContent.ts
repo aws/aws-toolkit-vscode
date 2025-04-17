@@ -8,7 +8,6 @@ import { Uri, Webview } from 'vscode'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import globals from '../../../shared/extensionGlobals'
 import { isSageMaker } from '../../../shared/extensionUtilities'
-import { RegionProfile } from '../../../codewhisperer/models/model'
 import { AmazonQPromptSettings } from '../../../shared/settings'
 import { getFeatureConfigs, serialize } from './featureConfig'
 
@@ -65,10 +64,10 @@ export class WebViewContentGenerator {
         // only show profile card when the two conditions
         //  1. profile count >= 2
         //  2. not default (fallback) which has empty arn
-        let regionProfile: RegionProfile | undefined = AuthUtil.instance.regionProfileManager.activeRegionProfile
-        if (AuthUtil.instance.regionProfileManager.profiles.length === 1) {
-            regionProfile = undefined
-        }
+        const regionProfile =
+            AuthUtil.instance.regionProfileManager.profiles.length === 1
+                ? undefined
+                : AuthUtil.instance.regionProfileManager.activeRegionProfile
 
         const regionProfileString: string = JSON.stringify(regionProfile)
         const authState = (await AuthUtil.instance.getChatAuthState()).amazonQ
@@ -79,7 +78,7 @@ export class WebViewContentGenerator {
         <script type="text/javascript">
             const init = () => {
                 createMynahUI(
-                    acquireVsCodeApi(), 
+                    acquireVsCodeApi(),
                     ${authState === 'connected'},
                     ${featureConfigsString},
                     ${welcomeLoadCount},
