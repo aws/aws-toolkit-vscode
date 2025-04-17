@@ -39,7 +39,7 @@ export class AmazonQChatViewProvider implements WebviewViewProvider {
     ) {
         this.webview = webviewView.webview
 
-        const lspDir = Uri.parse(LanguageServerResolver.defaultDir)
+        const lspDir = Uri.parse(LanguageServerResolver.defaultDir())
         const dist = Uri.joinPath(globals.context.extensionUri, 'dist')
         webviewView.webview.options = {
             enableScripts: true,
@@ -68,7 +68,7 @@ export class AmazonQChatViewProvider implements WebviewViewProvider {
         const isSM = isSageMaker('SMAI')
         const isSMUS = isSageMaker('SMUS')
         const disabledCommands = isSM ? `['/dev', '/transform', '/test', '/review', '/doc']` : '[]'
-        const disclaimerAcknowledged = AmazonQPromptSettings.instance.isPromptEnabled('amazonQChatDisclaimer')
+        const disclaimerAcknowledged = !AmazonQPromptSettings.instance.isPromptEnabled('amazonQChatDisclaimer')
         const welcomeCount = globals.globalState.tryGet('aws.amazonq.welcomeChatShowCount', Number, 0)
 
         // only show profile card when the two conditions
