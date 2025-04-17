@@ -98,7 +98,7 @@ export const getSelectedCustomization = (): Customization => {
         return baseCustomization
     }
 
-    const selectedCustomization = globals.globalState.getCodewhispererCustomization(AuthUtil.instance.profileName)
+    const selectedCustomization = globals.globalState.getAmazonQCustomization(AuthUtil.instance.profileName)
 
     if (selectedCustomization && selectedCustomization.name !== '') {
         return selectedCustomization
@@ -139,7 +139,7 @@ export const getPersistedCustomizations = (): Customization[] => {
     if (!AuthUtil.instance.isIdcConnection()) {
         return []
     }
-    return globals.globalState.getCodewhispererPersistedCustomization(AuthUtil.instance.profileName)
+    return globals.globalState.getAmazonQCachedCustomization(AuthUtil.instance.profileName)
 }
 
 export const setPersistedCustomizations = async (customizations: Customization[]) => {
