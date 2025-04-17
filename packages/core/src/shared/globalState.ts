@@ -7,6 +7,7 @@ import * as vscode from 'vscode'
 import { getLogger } from './logger/logger'
 import * as redshift from '../awsService/redshift/models/models'
 import { TypeConstructor, cast } from './utilities/typeConstructors'
+import { Customization } from '../codewhisperer/client/codewhispereruserclient'
 
 type ToolId = 'codecatalyst' | 'codewhisperer' | 'testId'
 export type ToolIdStateKey = `${ToolId}.savedConnectionId`
@@ -225,6 +226,53 @@ export class GlobalState implements vscode.Memento {
             }
         )
         return all?.[warehouseArn]
+    }
+
+    /**
+     * Get the Amazon Q customization. If legacy (map of customizations) store the
+     * customization with label of profile name
+     *
+     * @param profileName name of profile, only used in case legacy customization is found
+     * @returns Amazon Q customization, or undefined if not found.
+     * If legacy, return the Amazon Q customization for the auth profile name
+     */
+    getAmazonQCustomization(profileName: string): Customization | undefined {
+        const result = this.tryGet('CODEWHISPERER_SELECTED_CUSTOMIZATION', Object, undefined)
+
+        // Legacy migration for old customization map of type { [label: string]: Customization[] }
+        if (typeof result === 'object' && Object.values(result).every(Array.isArray)) {
+            const selectedCustomization = result[profileName]
+            this.tryUpdate('CODEWHISPERER_SELECTED_CUSTOMIZATION', selectedCustomization)
+            return selectedCustomization
+        } else {
+            return result
+        }
+    }
+
+    /**
+     * Get the Amazon Q cached customizations. If legacy (map of customizations) store the
+     * customizations with label of profile name
+     *
+     * @param profileName name of profile, only used in case legacy customization is found
+     * @returns array of Amazon Q cached customizations, or empty array if not found.
+     * If legacy, return the Amazon Q persisted customizations for the auth profile name
+     */
+    getAmazonQCachedCustomization(profileName: string): Customization[] {
+        const result = this.tryGet<Customization[]>('CODEWHISPERER_PERSISTED_CUSTOMIZATIONS', Array, [])
+
+        // Legacy migration for old customization map of type { [label: string]: Customization[] }
+        if (result.length === 0) {
+            const customizations = this.tryGet<{ [label: string]: Customization[] }>(
+                'CODEWHISPERER_PERSISTED_CUSTOMIZATIONS',
+                Object,
+                {}
+            )
+            const cachedCustomizationsArray = customizations[profileName] || []
+            this.tryUpdate('CODEWHISPERER_PERSISTED_CUSTOMIZATIONS', cachedCustomizationsArray)
+            return cachedCustomizationsArray
+        } else {
+            return result
+        }
     }
 
     /**
