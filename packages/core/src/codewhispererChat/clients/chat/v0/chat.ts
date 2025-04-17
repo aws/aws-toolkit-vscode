@@ -46,6 +46,8 @@ export class ChatSession {
     private _fsWriteBackups: Map<string, FsWriteBackup> = new Map()
     private _agenticLoopInProgress: boolean = false
     private _messageOperations: Map<string, FileOperation> = new Map()
+    private _fsWriteGroupsForUndoAll: Map<string, Set<string>> = new Map()
+    private _currentFsWriteIdForUndoAll: string | undefined
 
     /**
      * True if messages from local history have been sent to session.
@@ -220,5 +222,41 @@ export class ChatSession {
      */
     public getOperationTypeByMessageId(messageId: string): OperationType | undefined {
         return this._messageOperations.get(messageId)?.type
+    }
+
+    /**
+     * Gets the fsWrite groups for undo all operations
+     * @returns Map where key is the first fsWriteId in a group and value is a Set of all fsWriteIds in that group
+     */
+    public get fsWriteGroupsForUndoAll(): Map<string, Set<string>> {
+        return this._fsWriteGroupsForUndoAll
+    }
+
+    /**
+     * Adds a single fsWriteId to a group for undo all operations
+     * @param groupId The first fsWriteId in the group (used as key)
+     * @param fsWriteId A single fsWriteId to add to the group
+     */
+    public addToFsWriteGroupForUndoAll(groupId: string, fsWriteId: string): void {
+        if (!this._fsWriteGroupsForUndoAll.has(groupId)) {
+            this._fsWriteGroupsForUndoAll.set(groupId, new Set<string>())
+        }
+        this._fsWriteGroupsForUndoAll.get(groupId)?.add(fsWriteId)
+    }
+
+    /**
+     * Gets the current fsWriteId for undo all operations
+     * @returns The first fsWriteId in the current undo all group, or undefined if not set
+     */
+    public get currentFsWriteIdForUndoAll(): string | undefined {
+        return this._currentFsWriteIdForUndoAll
+    }
+
+    /**
+     * Sets the current fsWriteId for undo all operations
+     * @param fsWriteId The first fsWriteId in the current undo all group
+     */
+    public setCurrentFsWriteIdForUndoAll(fsWriteId: string | undefined): void {
+        this._currentFsWriteIdForUndoAll = fsWriteId
     }
 }

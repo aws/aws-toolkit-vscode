@@ -778,6 +778,18 @@ export class ChatController {
                             if (tool.type === ToolType.FsWrite && toolUse.toolUseId) {
                                 const backup = await tool.tool.getBackup()
                                 session.setFsWriteBackup(toolUse.toolUseId, backup)
+
+                                if (session.currentFsWriteIdForUndoAll === undefined) {
+                                    session.setCurrentFsWriteIdForUndoAll(toolUse.toolUseId)
+                                    session.addToFsWriteGroupForUndoAll(toolUse.toolUseId, toolUse.toolUseId)
+                                } else {
+                                    session.addToFsWriteGroupForUndoAll(
+                                        session.currentFsWriteIdForUndoAll,
+                                        toolUse.toolUseId
+                                    )
+                                }
+                            } else {
+                                session.setCurrentFsWriteIdForUndoAll(undefined)
                             }
 
                             // Check again if cancelled before invoking the tool
@@ -934,9 +946,34 @@ export class ChatController {
                     ConversationTracker.getInstance().markTriggerCompleted(message.triggerId)
                 }
                 break
+            case 'undo-all':
+                await this.undoAllFileChanges(message)
+                break
             default:
                 getLogger().warn(`Unhandled action: ${message.action.id}`)
         }
+    }
+
+    private async undoAllFileChanges(message: CustomFormActionMessage) {
+        const tabID = message.tabID
+        // UndoAll button chat messageId is expected to have the /undoAll suffix
+        const toolUseIdWithSuffix = message.action.formItemValues?.toolUseId
+        const toolUseId = toolUseIdWithSuffix?.split('/').shift()
+        if (!tabID || !toolUseId) {
+            return
+        }
+
+        const session = this.sessionStorage.getSession(tabID)
+        const fsWriteIdSet = session.fsWriteGroupsForUndoAll.get(toolUseId)
+        if (!fsWriteIdSet) {
+            return
+        }
+
+        for (const fsWriteId of [...fsWriteIdSet].reverse()) {
+            this.messenger.sendCustomFormActionMessage(tabID, 'reject-code-diff', message.triggerId, fsWriteId)
+        }
+
+        session.fsWriteGroupsForUndoAll.delete(toolUseId)
     }
 
     private async sendCommandRejectMessage(tabID: string) {

@@ -457,6 +457,7 @@
     "AWS.amazonq.opensettings:": "Open settings",
     "AWS.amazonq.executeBash.run": "Run",
     "AWS.amazonq.executeBash.reject": "Reject",
+    "AWS.amazonq.fsWrite.undoAll": "Undo all changes",
     "AWS.amazonq.chat.directive.pairProgrammingModeOn": "You are using **pair programming**: Q can now list files, preview code diffs and allow you to run shell commands.",
     "AWS.amazonq.chat.directive.pairProgrammingModeOff": "You turned off **pair programming**. Q will not include code diffs or run commands in the chat.",
     "AWS.amazonq.chat.directive.permission.readAndList": "I need permission to read files and list directories outside the workspace.",

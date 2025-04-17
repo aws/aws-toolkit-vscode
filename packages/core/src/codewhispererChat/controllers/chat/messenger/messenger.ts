@@ -71,6 +71,7 @@ import { ConversationTracker } from '../../../storages/conversationTracker'
 import { waitTimeout, Timeout } from '../../../../shared/utilities/timeoutUtils'
 import { FsReadParams } from '../../../tools/fsRead'
 import { ListDirectoryParams } from '../../../tools/listDirectory'
+import { i18n } from '../../../../shared/i18n-helper'
 
 export type StaticTextResponseType = 'quick-action-help' | 'onboarding-help' | 'transform' | 'help'
 
@@ -327,6 +328,10 @@ export class Messenger {
                             }
                             const tool = ToolUtils.tryFromToolUse(toolUse)
                             if ('type' in tool) {
+                                if (tool.type !== ToolType.FsWrite) {
+                                    this.showUndoAllIfRequired(session, tabID, triggerID)
+                                }
+
                                 let explanation: string | undefined = undefined
                                 let changeList: Change[] | undefined = undefined
                                 let messageIdToUpdate: string | undefined = undefined
@@ -397,28 +402,12 @@ export class Messenger {
                                         if (this.isTriggerCancelled(triggerID)) {
                                             return
                                         }
-                                        this.dispatcher.sendCustomFormActionMessage(
-                                            new CustomFormActionMessage(
-                                                tabID,
-                                                {
-                                                    id: 'run-shell-command',
-                                                },
-                                                triggerID
-                                            )
-                                        )
+                                        this.sendCustomFormActionMessage(tabID, 'run-shell-command', triggerID)
                                     } else {
                                         if (this.isTriggerCancelled(triggerID)) {
                                             return
                                         }
-                                        this.dispatcher.sendCustomFormActionMessage(
-                                            new CustomFormActionMessage(
-                                                tabID,
-                                                {
-                                                    id: 'generic-tool-execution',
-                                                },
-                                                triggerID
-                                            )
-                                        )
+                                        this.sendCustomFormActionMessage(tabID, 'generic-tool-execution', triggerID)
                                     }
                                 } else {
                                     if (tool.type === ToolType.ExecuteBash) {
@@ -444,15 +433,7 @@ export class Messenger {
                             )
                             session.setToolUseWithError({ toolUse, error })
                             // trigger processToolUseMessage to handle the error
-                            this.dispatcher.sendCustomFormActionMessage(
-                                new CustomFormActionMessage(
-                                    tabID,
-                                    {
-                                        id: 'generic-tool-execution',
-                                    },
-                                    triggerID
-                                )
-                            )
+                            this.sendCustomFormActionMessage(tabID, 'generic-tool-execution', triggerID)
                         }
                         // TODO: Add a spinner component for fsWrite, previous implementation is causing lag in mynah UX.
                     }
@@ -469,6 +450,8 @@ export class Messenger {
                         if (this.isTriggerCancelled(triggerID)) {
                             return
                         }
+
+                        this.showUndoAllIfRequired(session, tabID, triggerID, true)
 
                         this.dispatcher.sendChatMessage(
                             new ChatMessage(
@@ -1139,5 +1122,59 @@ export class Messenger {
         }
         const conversationTracker = ConversationTracker.getInstance()
         return conversationTracker.isTriggerCancelled(triggerId)
+    }
+
+    private showUndoAllIfRequired(
+        session: ChatSession,
+        tabID: string,
+        triggerID: string,
+        shouldSendInitialStream = false
+    ) {
+        if (session.currentFsWriteIdForUndoAll === undefined) {
+            return
+        }
+        const fsWriteGroup = session.fsWriteGroupsForUndoAll.get(session.currentFsWriteIdForUndoAll)
+        if (!fsWriteGroup || fsWriteGroup.size <= 1) {
+            return
+        }
+
+        this.dispatcher.sendChatMessage(
+            new ChatMessage(
+                {
+                    message: '',
+                    messageType: 'answer',
+                    followUps: undefined,
+                    followUpsHeader: undefined,
+                    relatedSuggestions: undefined,
+                    triggerID,
+                    // Add a suffix to avoid collision with the actual tool messageId
+                    messageID: `${session.currentFsWriteIdForUndoAll}/undoAll`,
+                    userIntent: undefined,
+                    codeBlockLanguage: undefined,
+                    contextList: undefined,
+                    buttons: [
+                        {
+                            id: 'undo-all',
+                            text: i18n('AWS.amazonq.fsWrite.undoAll'),
+                            icon: 'revert',
+                            position: 'outside',
+                            status: 'clear',
+                            keepCardAfterClick: false,
+                        },
+                    ],
+                },
+                tabID
+            )
+        )
+        session.setCurrentFsWriteIdForUndoAll(undefined)
+        if (shouldSendInitialStream) {
+            this.sendInitalStream(tabID, triggerID)
+        }
+    }
+
+    public sendCustomFormActionMessage(tabID: string, actionID: string, triggerID: string, messageID?: string) {
+        this.dispatcher.sendCustomFormActionMessage(
+            new CustomFormActionMessage(tabID, { id: actionID }, triggerID, messageID)
+        )
     }
 }
