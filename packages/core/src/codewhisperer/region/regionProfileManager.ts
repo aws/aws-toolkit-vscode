@@ -49,10 +49,15 @@ const endpoints = createConstantMap({
  */
 export type ProfileSwitchIntent = 'user' | 'auth' | 'update' | 'reload' | 'customization'
 
+export type ProfileChangedEvent = {
+    profile: RegionProfile | undefined
+    intent: ProfileSwitchIntent
+}
+
 export class RegionProfileManager {
     private static logger = getLogger()
     private _activeRegionProfile: RegionProfile | undefined
-    private _onDidChangeRegionProfile = new vscode.EventEmitter<RegionProfile | undefined>()
+    private _onDidChangeRegionProfile = new vscode.EventEmitter<ProfileChangedEvent>()
     public readonly onDidChangeRegionProfile = this._onDidChangeRegionProfile.event
 
     // Store the last API results (for UI propuse) so we don't need to call service again if doesn't require "latest" result
@@ -205,13 +210,16 @@ export class RegionProfileManager {
             })
         }
 
-        await this._switchRegionProfile(regionProfile)
+        await this._switchRegionProfile(regionProfile, source)
     }
 
-    private async _switchRegionProfile(regionProfile: RegionProfile | undefined) {
+    private async _switchRegionProfile(regionProfile: RegionProfile | undefined, source: ProfileSwitchIntent) {
         this._activeRegionProfile = regionProfile
 
-        this._onDidChangeRegionProfile.fire(regionProfile)
+        this._onDidChangeRegionProfile.fire({
+            profile: regionProfile,
+            intent: source,
+        })
         // dont show if it's a default (fallback)
         if (regionProfile && this.profiles.length > 1) {
             void vscode.window.showInformationMessage(`You are using the ${regionProfile.name} profile for Q.`).then()
