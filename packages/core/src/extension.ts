@@ -121,8 +121,8 @@ export async function activateCommon(
     /**
      * MCP client initialization
      */
-    const mgr = await McpManager.initMcpManager(globalMcpConfigPath)
-    globals.mcpManager = mgr
+    // const mgr = await McpManager.initMcpManager(globalMcpConfigPath)
+    // globals.mcpManager = mgr
 
     // telemetry
     await activateTelemetry(context, globals.awsContext, Settings.instance, 'AWS Toolkit For VS Code')

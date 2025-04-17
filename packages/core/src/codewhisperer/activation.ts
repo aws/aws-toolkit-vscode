@@ -377,6 +377,11 @@ export async function activate(context: ExtContext): Promise<void> {
 
     setSubscriptionsForCodeIssues()
 
+    /**
+     * MCP client initialization
+     */
+    const mgr = await McpManager.initMcpManager(globalMcpConfigPath)
+    globals.mcpManager = mgr
     setSubscriptionsForMcp()
 
     function shouldRunAutoScan(editor: vscode.TextEditor | undefined, isScansEnabled?: boolean) {
