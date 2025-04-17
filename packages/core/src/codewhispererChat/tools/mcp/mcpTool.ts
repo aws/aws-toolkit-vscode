@@ -6,6 +6,7 @@ import { Writable } from 'stream'
 import { getLogger } from '../../../shared/logger/logger'
 import { ToolUtils } from '../toolUtils'
 import { CommandValidation, InvokeOutput, OutputKind } from '../toolShared'
+import globals from '../../../shared/extensionGlobals'
 
 export interface McpToolParams {
     serverName: string
@@ -38,7 +39,8 @@ export class McpTool {
 
     public async invoke(updates?: Writable): Promise<InvokeOutput> {
         try {
-            const result = await ToolUtils.mcpManager!.callTool(this.serverName, this.toolName, this.input)
+            const mcpManager = globals.mcpManager
+            const result = await mcpManager?.callTool(this.serverName, this.toolName, this.input)
             const content = typeof result === 'object' ? JSON.stringify(result) : String(result)
 
             return {

@@ -15,6 +15,9 @@ import { Database } from '../../../shared/db/chatDb/chatDb'
 import { TabBarButtonClick, SaveChatMessage } from './model'
 import { Conversation, messageToChatItem, Tab } from '../../../shared/db/chatDb/util'
 import { DetailedListItemGroup, MynahIconsType } from '@aws/mynah-ui'
+import path from 'path'
+import { UserWrittenCodeTracker } from '../../../codewhisperer/tracker/userWrittenCodeTracker'
+import { globalMcpConfigPath } from '../../constants'
 
 export class TabBarController {
     private readonly messenger: Messenger
@@ -146,10 +149,28 @@ export class TabBarController {
             case 'history_sheet':
                 await this.historyButtonClicked(message)
                 break
+            case 'mcp_configuration':
+                await this.mcpButtonClicked(message)
+                break
             case 'export_chat':
                 await this.exportChatButtonClicked(message)
                 break
         }
+    }
+    private async mcpButtonClicked(message: TabBarButtonClick) {
+        let fileExists = false
+        try {
+            await fs.stat(globalMcpConfigPath)
+            fileExists = true
+        } catch (error) {
+            fileExists = false
+        }
+        if (!fileExists) {
+            const defaultContent = JSON.stringify({ mcpServers: {} }, undefined, 2)
+            await fs.writeFile(globalMcpConfigPath, defaultContent, { encoding: 'utf8' })
+        }
+        const document = await vscode.workspace.openTextDocument(globalMcpConfigPath)
+        await vscode.window.showTextDocument(document, { preview: false })
     }
 
     private async exportChatButtonClicked(message: TabBarButtonClick) {
