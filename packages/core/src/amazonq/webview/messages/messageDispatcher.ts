@@ -96,7 +96,7 @@ export function handleWebviewEvent(msg: any, webViewToAppsMessagePublishers: Map
             return
         }
         case 'disclaimer-acknowledged': {
-            void AmazonQPromptSettings.instance.disablePrompt('amazonQChatDisclaimer')
+            void AmazonQPromptSettings.instance.update('amazonQChatDisclaimer', true)
             return
         }
         case 'update-welcome-count': {
