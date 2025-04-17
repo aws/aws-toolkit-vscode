@@ -29,11 +29,14 @@ import {
     Experiments,
     Commands,
     oneSecond,
+    validateNodeExe,
+    getLogger,
 } from 'aws-core-vscode/shared'
 import { activate } from './chat/activation'
 import { AmazonQResourcePaths } from './lspInstaller'
 
 const localize = nls.loadMessageBundle()
+const logger = getLogger('amazonqLsp.lspClient')
 
 export async function startLanguageServer(
     extensionContext: vscode.ExtensionContext,
@@ -43,23 +46,26 @@ export async function startLanguageServer(
 
     const serverModule = resourcePaths.lsp
 
+    const argv = [
+        '--nolazy',
+        '--preserve-symlinks',
+        '--stdio',
+        '--pre-init-encryption',
+        '--set-credentials-encryption-key',
+    ]
     const serverOptions = createServerOptions({
         encryptionKey,
         executable: resourcePaths.node,
         serverModule,
-        execArgv: [
-            '--nolazy',
-            '--preserve-symlinks',
-            '--stdio',
-            '--pre-init-encryption',
-            '--set-credentials-encryption-key',
-        ],
+        execArgv: argv,
     })
 
     const documentSelector = [{ scheme: 'file', language: '*' }]
 
     const clientId = 'amazonq'
     const traceServerEnabled = Settings.instance.isSet(`${clientId}.trace.server`)
+
+    await validateNodeExe(resourcePaths.node, resourcePaths.lsp, argv, logger)
 
     // Options to control the language client
     const clientOptions: LanguageClientOptions = {

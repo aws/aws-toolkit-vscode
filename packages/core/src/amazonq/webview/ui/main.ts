@@ -57,7 +57,7 @@ export const createMynahUI = (
 ) => {
     const handler = new WebviewUIHandler({
         postMessage: ideApi.postMessage,
-        mynahUI: undefined,
+        mynahUIRef: { mynahUI: undefined },
         enableAgents: amazonQEnabled,
         featureConfigsSerialized,
         welcomeCount,
@@ -85,8 +85,7 @@ export class WebviewUIHandler {
 
     tabsStorage: TabsStorage
 
-    _mynahUI?: MynahUI
-    mynahUIProps?: MynahUIProps
+    mynahUIProps: MynahUIProps
     connector?: Connector
     tabDataGenerator?: TabDataGenerator
 
@@ -108,9 +107,11 @@ export class WebviewUIHandler {
 
     savedContextCommands: MynahUIDataModel['contextCommands']
 
+    mynahUIRef: { mynahUI: MynahUI | undefined }
+
     constructor({
         postMessage,
-        mynahUI,
+        mynahUIRef,
         enableAgents,
         featureConfigsSerialized,
         welcomeCount,
@@ -121,7 +122,7 @@ export class WebviewUIHandler {
         isSM,
     }: {
         postMessage: any
-        mynahUI: MynahUI | undefined
+        mynahUIRef: { mynahUI: MynahUI | undefined }
         enableAgents: boolean
         featureConfigsSerialized: [string, FeatureContext][]
         welcomeCount: number
@@ -136,6 +137,7 @@ export class WebviewUIHandler {
         this.disclaimerCardActive = !disclaimerAcknowledged
         this.isSMUS = isSMUS ?? false
         this.isSM = isSM ?? false
+        this.mynahUIRef = mynahUIRef
 
         this.responseMetadata = new Map<string, string[]>()
 
@@ -197,7 +199,7 @@ export class WebviewUIHandler {
                 this.isDocEnabled = isAmazonQEnabled
 
                 this.quickActionHandler = new QuickActionHandler({
-                    mynahUI: this.mynahUI!,
+                    mynahUIRef: this.mynahUIRef,
                     connector: this.connector!,
                     tabsStorage: this.tabsStorage,
                     isFeatureDevEnabled: this.isFeatureDevEnabled,
@@ -639,7 +641,7 @@ export class WebviewUIHandler {
             },
         })
 
-        this.mynahUI = new MynahUI({
+        this.mynahUIProps = {
             onReady: this.connector.uiReady,
             onTabAdd: (tabID: string) => {
                 /**
@@ -648,7 +650,7 @@ export class WebviewUIHandler {
                  */
                 if (welcomeCount + 1 >= welcomeCountThreshold) {
                     this.tabsStorage.updateTabTypeFromUnknown(tabID, 'cwc')
-                    mynahUI?.updateTabDefaults({
+                    this.mynahUI?.updateTabDefaults({
                         store: {
                             ...this.tabDataGenerator?.getTabData('cwc', true, undefined, this.isSMUS),
                             tabHeaderDetails: void 0,
@@ -985,7 +987,9 @@ export class WebviewUIHandler {
                     },
                 ],
             },
-        })
+        }
+
+        this.mynahUIRef = { mynahUI: new MynahUI(this.mynahUIProps) }
 
         /**
          * Update the welcome count if we've initially shown
@@ -996,12 +1000,12 @@ export class WebviewUIHandler {
         }
 
         this.followUpsInteractionHandler = new FollowUpInteractionHandler({
-            mynahUI: this.mynahUI,
+            mynahUIRef: this.mynahUIRef,
             connector: this.connector,
             tabsStorage: this.tabsStorage,
         })
         this.quickActionHandler = new QuickActionHandler({
-            mynahUI: this.mynahUI,
+            mynahUIRef: this.mynahUIRef,
             connector: this.connector,
             tabsStorage: this.tabsStorage,
             isFeatureDevEnabled: this.isFeatureDevEnabled,
@@ -1011,12 +1015,12 @@ export class WebviewUIHandler {
             isDocEnabled: this.isDocEnabled,
         })
         this.textMessageHandler = new TextMessageHandler({
-            mynahUI: this.mynahUI,
+            mynahUIRef: this.mynahUIRef,
             connector: this.connector,
             tabsStorage: this.tabsStorage,
         })
         this.messageController = new MessageController({
-            mynahUI: this.mynahUI,
+            mynahUIRef: this.mynahUIRef,
             connector: this.connector,
             tabsStorage: this.tabsStorage,
             isFeatureDevEnabled: this.isFeatureDevEnabled,
@@ -1078,45 +1082,7 @@ export class WebviewUIHandler {
         return {}
     }
 
-    set mynahUI(mynahUI: MynahUI | undefined) {
-        this._mynahUI = mynahUI
-
-        this.followUpsInteractionHandler = new FollowUpInteractionHandler({
-            mynahUI: this.mynahUI!,
-            connector: this.connector!,
-            tabsStorage: this.tabsStorage,
-        })
-
-        this.quickActionHandler = new QuickActionHandler({
-            mynahUI: this.mynahUI!,
-            connector: this.connector!,
-            tabsStorage: this.tabsStorage,
-            isFeatureDevEnabled: this.isFeatureDevEnabled,
-            isGumbyEnabled: this.isGumbyEnabled,
-            isScanEnabled: this.isScanEnabled,
-            isTestEnabled: this.isTestEnabled,
-            isDocEnabled: this.isDocEnabled,
-        })
-
-        this.textMessageHandler = new TextMessageHandler({
-            mynahUI: this.mynahUI!,
-            connector: this.connector!,
-            tabsStorage: this.tabsStorage,
-        })
-
-        this.messageController = new MessageController({
-            mynahUI: this.mynahUI!,
-            connector: this.connector!,
-            tabsStorage: this.tabsStorage,
-            isFeatureDevEnabled: this.isFeatureDevEnabled,
-            isGumbyEnabled: this.isGumbyEnabled,
-            isScanEnabled: this.isScanEnabled,
-            isTestEnabled: this.isTestEnabled,
-            isDocEnabled: this.isDocEnabled,
-        })
-    }
-
     get mynahUI(): MynahUI | undefined {
-        return this._mynahUI
+        return this.mynahUIRef.mynahUI
     }
 }
