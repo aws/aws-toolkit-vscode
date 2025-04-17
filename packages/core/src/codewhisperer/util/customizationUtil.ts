@@ -50,6 +50,31 @@ export class CustomizationProvider {
     }
 }
 
+export const onProfileChangedListener: (profile: RegionProfile | undefined) => any = async (myProfile) => {
+    const logger = getLogger()
+    // TODO: To check how do we do we handle it when user signs out.
+    if (!myProfile) {
+        await setSelectedCustomization(baseCustomization)
+        return
+    }
+
+    // Validate user still has access to the selected customization.
+    const selectedCustomization = getSelectedCustomization()
+    // No need to validate base customization which has empty arn.
+    if (selectedCustomization.arn.length > 0) {
+        const customizationProvider = await CustomizationProvider.init(myProfile)
+        const customizations = await customizationProvider.listAvailableCustomizations()
+
+        const r = customizations.find((it) => it.arn === selectedCustomization.arn)
+        if (!r) {
+            logger.debug(
+                `profile ${myProfile.name} doesnt have access to customization ${selectedCustomization.name} but has access to ${customizations.map((it) => it.name)}`
+            )
+            await switchToBaseCustomizationAndNotify()
+        }
+    }
+}
+
 /**
  *
  * @param availableCustomizations
@@ -313,6 +338,10 @@ const createBaseCustomizationItem = () => {
     } as DataQuickPickItem<string>
 }
 
+/**
+ * When users click "select customizations", we're showing ALL customizations across different profiles.
+ * Thus If users select the customization, we also change the profile if the customization is accessible from a different profile.
+ */
 const createCustomizationItem = (
     customization: Customization & { profile: RegionProfile },
     persistedArns: (ResourceArn | undefined)[],
@@ -367,7 +396,7 @@ export const selectCustomization = async (customization: Customization) => {
     )
 }
 
-// Should collect all customizations across different profiles and if users select the customization, we also change the profile if needed if the customization is accessible from a different profile.
+// Return all customizations across different profiles and associate the customization with the source profile
 export const getAvailableCustomizationsList = async () => {
     const items: (Customization & { profile: RegionProfile })[] = []
     const profiles: RegionProfile[] = []
