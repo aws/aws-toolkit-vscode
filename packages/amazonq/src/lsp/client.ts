@@ -72,6 +72,9 @@ export async function startLanguageServer(
                     clientId: crypto.randomUUID(),
                 },
                 awsClientCapabilities: {
+                    q: {
+                        developerProfiles: true,
+                    },
                     window: {
                         notifications: true,
                         showSaveFileDialog: true,
