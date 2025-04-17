@@ -54,6 +54,7 @@ import {
     MynahIconsType,
     DetailedList,
     MynahUIDataModel,
+    CodeBlockActions,
 } from '@aws/mynah-ui'
 import { Database } from '../../../../shared/db/chatDb/chatDb'
 import { TabType } from '../../../../amazonq/webview/ui/storages/tabsStorage'
@@ -477,7 +478,11 @@ export class Messenger {
                         if (this.isTriggerCancelled(triggerID)) {
                             return
                         }
-
+                        let codeBlockActions: CodeBlockActions | null = {}
+                        if (session.pairProgrammingModeOn) {
+                            // eslint-disable-next-line unicorn/no-null
+                            codeBlockActions = { 'insert-to-cursor': null }
+                        }
                         this.dispatcher.sendChatMessage(
                             new ChatMessage(
                                 {
@@ -492,6 +497,7 @@ export class Messenger {
                                     userIntent: triggerPayload.userIntent,
                                     codeBlockLanguage: codeBlockLanguage,
                                     contextList: undefined,
+                                    codeBlockActions,
                                 },
                                 tabID
                             )

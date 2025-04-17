@@ -207,16 +207,14 @@ export const createMynahUI = (
                 },
             }
         }
-        if (
-            tab?.type === 'cwc' &&
-            messageData.codeBlockActions['insert-to-cursor'] === null &&
-            messageData.codeBlockActions['copy'] === null
-        ) {
-            return {
+        if (tab?.type === 'cwc' && messageData.codeBlockActions['insert-to-cursor'] === null) {
+            const actions: Record<string, undefined> = {
                 'insert-to-cursor': undefined,
-                // eslint-disable-next-line prettier/prettier
-                copy: undefined,
             }
+            if (messageData.codeBlockActions['copy'] === null) {
+                actions.copy = undefined
+            }
+            return actions
         }
         // Show only "Copy" option for codeblocks in Q Test Tab
         if (tab?.type === 'testgen') {
