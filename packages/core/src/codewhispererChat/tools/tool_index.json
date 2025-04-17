@@ -32,7 +32,7 @@
                 },
                 "command": {
                     "type": "string",
-                    "enum": ["create", "strReplace", "insert", "append"],
+                    "enum": ["create", "insert", "append"],
                     "description": "The commands to run. Allowed options are: `create`, `strReplace`, `insert`, `append`."
                 },
                 "fileText": {
