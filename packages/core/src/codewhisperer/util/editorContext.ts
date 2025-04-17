@@ -25,19 +25,95 @@ import { predictionTracker } from '../nextEditPrediction/activation'
 
 let tabSize: number = getTabSizeSetting()
 
+const languageCommentChars: Record<string, string> = {
+    python: '# ',
+    java: '// ',
+}
+
+export function extractSingleCellContext(cell: vscode.NotebookCell, referenceLanguage?: string): string {
+    // Extract the text verbatim if the cell is code and the cell has the same language.
+    // Otherwise, add the correct comment string for the refeference language
+    const cellText = cell.document.getText()
+    if (
+        cell.kind === vscode.NotebookCellKind.Markup ||
+        (runtimeLanguageContext.normalizeLanguage(cell.document.languageId) ?? cell.document.languageId) !==
+            referenceLanguage
+    ) {
+        const commentPrefix = (referenceLanguage && languageCommentChars[referenceLanguage]) ?? ''
+        if (commentPrefix === '') {
+            return cellText
+        }
+        return cell.document
+            .getText()
+            .split('\n')
+            .map((line) => `${commentPrefix}${line}`)
+            .join('\n')
+    }
+    return cellText
+}
+
+export function extractPrefixCellsContext(
+    cells: vscode.NotebookCell[],
+    maxLength: number,
+    referenceLanguage: string
+): string {
+    const output: string[] = []
+    for (let i = cells.length - 1; i >= 0; i--) {
+        let cellText = addNewlineIfMissing(extractSingleCellContext(cells[i], referenceLanguage))
+        if (cellText.length > 0) {
+            if (cellText.length >= maxLength) {
+                output.unshift(cellText.substring(cellText.length - maxLength))
+                break
+            }
+            output.unshift(cellText)
+            maxLength -= cellText.length
+        }
+    }
+    return output.join('')
+}
+
+export function extractSuffixCellsContext(
+    cells: vscode.NotebookCell[],
+    maxLength: number,
+    referenceLanguage: string
+): string {
+    const output: string[] = []
+    for (let i = 0; i < cells.length; i++) {
+        let cellText = addNewlineIfMissing(extractSingleCellContext(cells[i], referenceLanguage))
+        if (cellText.length > 0) {
+            if (!cellText.endsWith('\n')) {
+                cellText += '\n'
+            }
+            if (cellText.length >= maxLength) {
+                output.push(cellText.substring(0, maxLength))
+                break
+            }
+            output.push(cellText)
+            maxLength -= cellText.length
+        }
+    }
+    return output.join('')
+}
+
+export function addNewlineIfMissing(text: string): string {
+    if (text.length > 0 && !text.endsWith('\n')) {
+        text += '\n'
+    }
+    return text
+}
+
 export function extractContextForCodeWhisperer(editor: vscode.TextEditor): codewhispererClient.FileContext {
     const document = editor.document
     const curPos = editor.selection.active
     const offset = document.offsetAt(curPos)
 
-    const caretLeftFileContext = editor.document.getText(
+    let caretLeftFileContext = editor.document.getText(
         new vscode.Range(
             document.positionAt(offset - CodeWhispererConstants.charactersLimit),
             document.positionAt(offset)
         )
     )
-
-    const caretRightFileContext = editor.document.getText(
+    let caretRightFileContext = editor.document.getText(
         new vscode.Range(
             document.positionAt(offset),
             document.positionAt(offset + CodeWhispererConstants.charactersLimit)
@@ -48,6 +124,42 @@ export function extractContextForCodeWhisperer(editor: vscode.TextEditor): codew
         languageName =
             runtimeLanguageContext.normalizeLanguage(editor.document.languageId) ?? editor.document.languageId
     }
+    if (editor.document.uri.scheme === 'vscode-notebook-cell') {
+        // For notebook cells, first find the existing notebook with a cell that matches the current editor.
+        const notebook = vscode.workspace.notebookDocuments.find(
+            (nb) =>
+                nb.notebookType === 'jupyter-notebook' &&
+                nb.getCells().some((cell) => cell.document === editor.document)
+        )
+        if (notebook) {
+            const allCells = notebook.getCells()
+            const cellIndex = allCells.findIndex((cell) => cell.document === editor.document)
+
+            // Extract text from prior cells if there is enough room in left file context
+            if (caretLeftFileContext.length < CodeWhispererConstants.charactersLimit - 1) {
+                const leftCellsText = extractPrefixCellsContext(
+                    allCells.slice(0, cellIndex),
+                    CodeWhispererConstants.charactersLimit - (caretLeftFileContext.length + 1),
+                    languageName
+                )
+                if (leftCellsText.length > 0) {
+                    caretLeftFileContext = addNewlineIfMissing(leftCellsText) + caretLeftFileContext
+                }
+            }
+            // Extract text from subsequent cells if there is enough room in right file context
+            if (caretRightFileContext.length < CodeWhispererConstants.charactersLimit - 1) {
+                const rightCellsText = extractSuffixCellsContext(
+                    allCells.slice(cellIndex + 1),
+                    CodeWhispererConstants.charactersLimit - (caretRightFileContext.length + 1),
+                    languageName
+                )
+                if (rightCellsText.length > 0) {
+                    caretRightFileContext = addNewlineIfMissing(caretRightFileContext) + rightCellsText
+                }
+            }
+        }
+    }
+
     return {
         filename: getFileRelativePath(editor),
         programmingLanguage: {
