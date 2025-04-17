@@ -87,6 +87,9 @@ export async function startLanguageServer(
                     window: {
                         notifications: true,
                     },
+                    q: {
+                        developerProfiles: true,
+                    },
                 },
             },
             credentials: {
