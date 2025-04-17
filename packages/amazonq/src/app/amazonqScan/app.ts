@@ -19,6 +19,7 @@ import { Messenger } from './chat/controller/messenger/messenger'
 import { UIMessageListener } from './chat/views/actions/uiMessageListener'
 import { debounce } from 'lodash'
 import { Commands, placeholder } from 'aws-core-vscode/shared'
+import { auth2 } from 'aws-core-vscode/auth'
 
 export function init(appContext: AmazonQAppInitContext) {
     const scanChatControllerEventEmitters: ScanChatControllerEventEmitters = {
@@ -52,7 +53,7 @@ export function init(appContext: AmazonQAppInitContext) {
     appContext.registerWebViewToAppMessagePublisher(new MessagePublisher<any>(scanChatUIInputEventEmitter), 'review')
 
     const debouncedEvent = debounce(async () => {
-        const authenticated = (await AuthUtil.instance.getChatAuthState()).amazonQ === 'connected'
+        const authenticated = AuthUtil.instance.getAuthState() === 'connected'
         let authenticatingSessionID = ''
 
         if (authenticated) {
@@ -67,7 +68,7 @@ export function init(appContext: AmazonQAppInitContext) {
         messenger.sendAuthenticationUpdate(authenticated, [authenticatingSessionID])
     }, 500)
 
-    AuthUtil.instance.secondaryAuth.onDidChangeActiveConnection(() => {
+    AuthUtil.instance.onDidChangeConnectionState((e: auth2.AuthStateEvent) => {
         return debouncedEvent()
     })
     AuthUtil.instance.regionProfileManager.onDidChangeRegionProfile(() => {

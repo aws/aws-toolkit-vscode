@@ -47,7 +47,7 @@ describe('recommendationHandler', function () {
             mockClient.listRecommendations.resolves({})
             mockClient.generateRecommendations.resolves({})
             RecommendationHandler.instance.clearRecommendations()
-            sinon.stub(AuthUtil.instance, 'startUrl').value(testStartUrl)
+            sinon.stub(AuthUtil.instance.connection!, 'startUrl').value(testStartUrl)
         })
 
         afterEach(function () {

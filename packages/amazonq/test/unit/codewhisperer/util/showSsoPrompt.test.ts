@@ -20,7 +20,7 @@ describe('showConnectionPrompt', function () {
     })
 
     it('can select connect to AwsBuilderId', async function () {
-        const authUtilSpy = sinon.stub(AuthUtil.instance, 'connectToAwsBuilderId')
+        const authUtilSpy = sinon.stub(AuthUtil.instance, 'isBuilderIdConnection')
 
         getTestWindow().onDidShowQuickPick(async (picker) => {
             await picker.untilReady()
@@ -35,7 +35,7 @@ describe('showConnectionPrompt', function () {
     })
 
     it('connectToAwsBuilderId logs that AWS ID sign in was selected', async function () {
-        sinon.stub(AuthUtil.instance, 'connectToAwsBuilderId').resolves()
+        sinon.stub(AuthUtil.instance, 'isBuilderIdConnection').resolves()
         sinon.stub(vscode.commands, 'executeCommand')
 
         await awsIdSignIn()

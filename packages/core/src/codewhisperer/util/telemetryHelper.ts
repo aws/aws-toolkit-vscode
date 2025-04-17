@@ -98,7 +98,7 @@ export class TelemetryHelper {
             artifactsUploadDuration: artifactsUploadDuration,
             buildPayloadBytes: buildPayloadBytes,
             buildZipFileBytes: buildZipFileBytes,
-            credentialStartUrl: AuthUtil.instance.startUrl,
+            credentialStartUrl: AuthUtil.instance.connection?.startUrl,
             acceptedCharactersCount: acceptedCharactersCount,
             acceptedCount: acceptedCount,
             acceptedLinesCount: acceptedLinesCount,
@@ -143,7 +143,7 @@ export class TelemetryHelper {
             codewhispererSupplementalContextLength: supplementalContextMetadata?.contentsLength,
             codewhispererSupplementalContextTimeout: supplementalContextMetadata?.isProcessTimeout,
             codewhispererTriggerType: session.triggerType,
-            credentialStartUrl: AuthUtil.instance.startUrl,
+            credentialStartUrl: AuthUtil.instance.connection?.startUrl,
             duration: duration || 0,
             reason: reason ? reason.substring(0, 200) : undefined,
             result,
@@ -193,7 +193,7 @@ export class TelemetryHelper {
             codewhispererTimeToFirstRecommendation: session.timeToFirstRecommendation,
             codewhispererTriggerType: session.triggerType,
             codewhispererTypeaheadLength: this.typeAheadLength,
-            credentialStartUrl: AuthUtil.instance.startUrl,
+            credentialStartUrl: AuthUtil.instance.connection?.startUrl,
             traceId: this.traceId,
         })
 
@@ -280,7 +280,7 @@ export class TelemetryHelper {
                 codewhispererSupplementalContextLength: supplementalContextMetadata?.contentsLength,
                 codewhispererSupplementalContextTimeout: supplementalContextMetadata?.isProcessTimeout,
                 codewhispererTriggerType: session.triggerType,
-                credentialStartUrl: AuthUtil.instance.startUrl,
+                credentialStartUrl: AuthUtil.instance.connection?.startUrl,
                 traceId: this.traceId,
             }
             events.push(event)
@@ -645,7 +645,7 @@ export class TelemetryHelper {
             codewhispererRequestId: this._firstResponseRequestId,
             codewhispererSessionId: session.sessionId,
             codewhispererTriggerType: session.triggerType,
-            credentialStartUrl: AuthUtil.instance.startUrl,
+            credentialStartUrl: AuthUtil.instance.connection?.startUrl,
         })
     }
     public sendCodeScanEvent(languageId: string, jobId: string) {

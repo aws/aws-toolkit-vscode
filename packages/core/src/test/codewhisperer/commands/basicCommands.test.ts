@@ -409,8 +409,8 @@ describe('CodeWhisperer-basicCommands', function () {
 
         it('includes the "source" in the command execution metric', async function () {
             tryRegister(focusAmazonQPanel)
-            sinon.stub(AuthUtil.instance.secondaryAuth, 'deleteConnection')
-            targetCommand = testCommand(signoutCodeWhisperer, AuthUtil.instance)
+            sinon.stub(AuthUtil.instance, 'logout')
+            targetCommand = testCommand(signoutCodeWhisperer)
             await targetCommand.execute(placeholder, cwQuickPickSource)
             assertTelemetry('vscode_executeCommand', [
                 { source: cwQuickPickSource, command: focusAmazonQPanel.id },
@@ -475,7 +475,7 @@ describe('CodeWhisperer-basicCommands', function () {
         it('also shows customizations when connected to valid sso', async function () {
             sinon.stub(AuthUtil.instance, 'isConnectionExpired').returns(false)
             sinon.stub(AuthUtil.instance, 'isConnected').returns(true)
-            sinon.stub(AuthUtil.instance, 'isValidEnterpriseSsoInUse').returns(true)
+            sinon.stub(AuthUtil.instance, 'isIdcConnection').returns(true)
             sinon.stub(AuthUtil.instance, 'isCustomizationFeatureEnabled').value(true)
             await CodeScansState.instance.setScansEnabled(false)
 
@@ -499,7 +499,7 @@ describe('CodeWhisperer-basicCommands', function () {
 
         it('should not show auto-scans if using builder id', async function () {
             sinon.stub(AuthUtil.instance, 'isConnected').returns(true)
-            sinon.stub(AuthUtil.instance, 'isBuilderIdInUse').returns(true)
+            sinon.stub(AuthUtil.instance, 'isBuilderIdConnection').returns(true)
 
             getTestWindow().onDidShowQuickPick(async (e) => {
                 e.assertItems([

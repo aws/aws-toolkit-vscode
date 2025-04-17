@@ -24,6 +24,8 @@ import {
     MetricData,
 } from '../../amazonqFeatureDev/client/featuredevproxyclient'
 import { FollowUpTypes } from '../../amazonq/commons/types'
+import { AuthUtil } from '../../codewhisperer/util/authUtil'
+import { LanguageClientAuth } from '../../auth/auth2'
 
 export function createMessenger(sandbox: sinon.SinonSandbox): DocMessenger {
     return new DocMessenger(
@@ -102,7 +104,17 @@ export async function sessionWriteFile(session: Session, uri: vscode.Uri, encode
     })
 }
 
+export function createMockAuthUtil(sandbox: sinon.SinonSandbox) {
+    const mockLspAuth: Partial<LanguageClientAuth> = {
+        registerSsoTokenChangedHandler: sinon.stub().resolves(),
+    }
+    AuthUtil.create(mockLspAuth as LanguageClientAuth)
+    sandbox.stub(AuthUtil.instance.regionProfileManager, 'onDidChangeRegionProfile').resolves()
+    sandbox.stub(AuthUtil.instance, 'getAuthState').returns('connected')
+}
+
 export async function createController(sandbox: sinon.SinonSandbox): Promise<ControllerSetup> {
+    createMockAuthUtil(sandbox)
     const messenger = createMessenger(sandbox)
 
     // Create a new workspace root

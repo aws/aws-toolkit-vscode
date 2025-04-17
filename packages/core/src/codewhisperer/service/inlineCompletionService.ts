@@ -166,7 +166,7 @@ export class InlineCompletionService {
 
     /** Updates the status bar to represent the latest CW state */
     refreshStatusBar() {
-        if (AuthUtil.instance.isConnectionValid()) {
+        if (AuthUtil.instance.isConnected()) {
             return this.setState('ok')
         } else if (AuthUtil.instance.isConnectionExpired()) {
             return this.setState('expired')

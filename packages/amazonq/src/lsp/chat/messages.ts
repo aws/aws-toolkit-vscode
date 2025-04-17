@@ -117,7 +117,7 @@ export function registerMessageListeners(
 
                 if (fullAuthTypes.includes(authType)) {
                     try {
-                        await AuthUtil.instance.secondaryAuth.deleteConnection()
+                        await AuthUtil.instance.logout()
                     } catch (e) {
                         languageClient.error(
                             `[VSCode Client] Failed to authenticate after AUTH_FOLLOW_UP_CLICKED: ${(e as Error).message}`

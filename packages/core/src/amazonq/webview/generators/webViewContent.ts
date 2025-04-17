@@ -95,7 +95,7 @@ export class WebViewContentGenerator {
                 : AuthUtil.instance.regionProfileManager.activeRegionProfile
 
         const regionProfileString: string = JSON.stringify(regionProfile)
-        const authState = (await AuthUtil.instance.getChatAuthState()).amazonQ
+        const authState = AuthUtil.instance.getAuthState()
 
         return `
         <script type="text/javascript" src="${javascriptEntrypoint.toString()}" defer onload="init()"></script>

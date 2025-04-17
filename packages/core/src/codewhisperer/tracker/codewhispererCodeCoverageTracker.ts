@@ -128,7 +128,7 @@ export class CodeWhispererCodeCoverageTracker {
             codewhispererPercentage: percentage ? percentage : 0,
             successCount: this._serviceInvocationCount,
             codewhispererCustomizationArn: selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
-            credentialStartUrl: AuthUtil.instance.startUrl,
+            credentialStartUrl: AuthUtil.instance.connection?.startUrl,
         })
 
         client
