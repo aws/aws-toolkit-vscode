@@ -24,6 +24,8 @@ import { ChatMessage, ToolResultStatus } from '@amzn/codewhisperer-streaming'
 
 // Maximum number of characters to keep in history
 const MaxConversationHistoryCharacters = 600_000
+// Maximum number of messages to keep in history
+const MaxConversationHistoryMessages = 250
 
 /**
  * A singleton database class that manages chat history persistence using LokiJS.
@@ -144,18 +146,6 @@ export class Database {
         return undefined
     }
 
-    getActiveConversation(historyId: string): Conversation | undefined {
-        const tabCollection = this.db.getCollection<Tab>(TabCollection)
-        const tabData = tabCollection.findOne({ historyId })
-
-        if (!tabData?.conversations.length) {
-            this.logger.debug('No active conversations found')
-            return undefined
-        }
-
-        return tabData.conversations[0]
-    }
-
     clearTab(tabId: string) {
         if (this.initialized) {
             const tabCollection = this.db.getCollection<Tab>(TabCollection)
@@ -167,34 +157,6 @@ export class Database {
             }
             this.historyIdMapping.delete(tabId)
             this.logger.debug(`Removed tabId=${tabId} from historyIdMapping`)
-        }
-    }
-
-    //  Removes the most recent message(s) from the chat history for a given tab
-    clearRecentHistory(tabId: string): void {
-        if (this.initialized) {
-            const historyId = this.historyIdMapping.get(tabId)
-            this.logger.info(`Clearing recent history: tabId=${tabId}, historyId=${historyId || 'undefined'}`)
-            if (historyId) {
-                const tabCollection = this.db.getCollection<Tab>(TabCollection)
-                const tabData = tabCollection.findOne({ historyId })
-                if (tabData) {
-                    const activeConversation = tabData.conversations[0]
-                    const allMessages = this.getMessages(tabId)
-                    const lastMessage = allMessages[allMessages.length - 1]
-                    this.logger.debug(`Last message type: ${lastMessage.type}`)
-
-                    if (lastMessage.type === ('prompt' as ChatItemType)) {
-                        allMessages.pop()
-                        this.logger.info(`Removed last user message`)
-                    } else {
-                        allMessages.splice(-2)
-                        this.logger.info(`Removed last assistant message and user message`)
-                    }
-                    activeConversation.messages = allMessages
-                    tabCollection.update(tabData)
-                }
-            }
         }
     }
 
@@ -348,13 +310,14 @@ export class Database {
 
     /**
      * Fixes the history to maintain the following invariants:
-     * 1. The history character length is <= MAX_CONVERSATION_HISTORY_CHARACTERS. Oldest messages are dropped.
-     * 2. The first message is from the user. Oldest messages are dropped if needed.
-     * 3. The last message is from the assistant. The last message is dropped if it is from the user.
-     * 4. If the last message is from the assistant and it contains tool uses, and a next user
+     * 1. The history contains at most MaxConversationHistoryMessages messages. Oldest messages are dropped.
+     * 2. The history character length is <= MaxConversationHistoryCharacters. Oldest messages are dropped.
+     * 3. The first message is from the user. Oldest messages are dropped if needed.
+     * 4. The last message is from the assistant. The last message is dropped if it is from the user.
+     * 5. If the last message is from the assistant and it contains tool uses, and a next user
      *    message is set without tool results, then the user message will have cancelled tool results.
      */
-    fixHistory(tabId: string, newUserMessage: ChatMessage): void {
+    fixHistory(tabId: string, newUserMessage: ChatMessage, conversationId: string): void {
         if (!this.initialized) {
             return
         }
@@ -371,9 +334,11 @@ export class Database {
             return
         }
 
-        const activeConversation = tabData.conversations[0]
-        let allMessages = activeConversation.messages
+        let allMessages = tabData.conversations.flatMap((conversation: Conversation) => conversation.messages)
         this.logger.info(`Found ${allMessages.length} messages in conversation`)
+
+        //  Make sure we don't exceed MaxConversationHistoryMessages
+        allMessages = this.trimHistoryToMaxLength(allMessages)
 
         //  Drop empty assistant partial if it’s the last message
         this.handleEmptyAssistantMessage(allMessages)
@@ -387,9 +352,31 @@ export class Database {
         //  If the last message is from the assistant and it contains tool uses, and a next user message is set without tool results, then the user message will have cancelled tool results.
         this.handleToolUses(allMessages, newUserMessage)
 
-        activeConversation.messages = allMessages
+        tabData.conversations = [
+            {
+                conversationId: conversationId,
+                clientType: ClientType.VSCode,
+                messages: allMessages,
+            },
+        ]
+        tabData.updatedAt = new Date()
         tabCollection.update(tabData)
         this.logger.info(`Updated tab data in collection`)
+    }
+
+    private trimHistoryToMaxLength(messages: Message[]): Message[] {
+        while (messages.length > MaxConversationHistoryMessages) {
+            // Find the next valid user message to start from
+            const indexToTrim = this.findIndexToTrim(messages)
+            if (indexToTrim !== undefined && indexToTrim > 0) {
+                this.logger.debug(`Removing the first ${indexToTrim} elements to maintain valid history length`)
+                messages.splice(0, indexToTrim)
+            } else {
+                this.logger.debug('Could not find a valid point to trim, reset history to reduce history size')
+                return []
+            }
+        }
+        return messages
     }
 
     private handleEmptyAssistantMessage(messages: Message[]): void {

@@ -560,6 +560,7 @@ export class Messenger {
                             toolUse && toolUse.input !== undefined && toolUse.input !== ''
                                 ? [{ ...toolUse }]
                                 : undefined,
+                        shouldDisplayMessage: triggerPayload.shouldDisplayMessage ?? true,
                     })
                 }
                 if (
