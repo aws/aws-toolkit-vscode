@@ -276,6 +276,7 @@ export class CustomFormActionMessage extends UiMessage {
         formItemValues?: Record<string, string> | undefined
     }
     readonly triggerId: string
+    readonly messageId?: string
 
     constructor(
         tabID: string,
@@ -284,11 +285,13 @@ export class CustomFormActionMessage extends UiMessage {
             text?: string | undefined
             formItemValues?: Record<string, string> | undefined
         },
-        triggerId: string
+        triggerId: string,
+        messageId?: string
     ) {
         super(tabID)
         this.action = action
         this.triggerId = triggerId
+        this.messageId = messageId
     }
 }
 
