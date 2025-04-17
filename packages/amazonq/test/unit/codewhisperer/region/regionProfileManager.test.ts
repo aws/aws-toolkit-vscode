@@ -7,7 +7,7 @@ import * as sinon from 'sinon'
 import assert, { fail } from 'assert'
 import { AuthUtil, RegionProfile, RegionProfileManager, defaultServiceConfig } from 'aws-core-vscode/codewhisperer'
 import { globals } from 'aws-core-vscode/shared'
-import { builderIdStartUrl } from 'aws-core-vscode/auth'
+import { constants } from 'aws-core-vscode/auth'
 
 const enterpriseSsoStartUrl = 'https://enterprise.awsapps.com/start'
 const region = 'us-east-1'
@@ -24,7 +24,7 @@ describe('RegionProfileManager', function () {
 
     async function setupConnection(type: 'builderId' | 'idc') {
         if (type === 'builderId') {
-            await AuthUtil.instance.login(builderIdStartUrl, region)
+            await AuthUtil.instance.login(constants.builderIdStartUrl, region)
             assert.ok(AuthUtil.instance.isSsoSession())
             assert.ok(AuthUtil.instance.isBuilderIdConnection())
         } else if (type === 'idc') {
