@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Previous and subsequent cells are used as context for completion in a Jupyter notebook"
+}
