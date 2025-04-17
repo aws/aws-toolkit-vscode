@@ -16,7 +16,7 @@ import {
 } from './toolShared'
 import { ListDirectory, ListDirectoryParams } from './listDirectory'
 import { McpTool } from './mcp/mcpTool'
-import globals from '../../shared/extensionGlobals'
+import { McpManager } from './mcp/mcpManager'
 
 export enum ToolType {
     FsRead = 'fsRead',
@@ -60,7 +60,7 @@ export class ToolUtils {
             case ToolType.ListDirectory:
                 return tool.tool.requiresAcceptance()
             case ToolType.Mcp:
-                return { requiresAcceptance: false }
+                return { requiresAcceptance: true }
         }
     }
 
@@ -170,8 +170,7 @@ export class ToolUtils {
                         tool: new ListDirectory(value.input as unknown as ListDirectoryParams),
                     }
                 default: {
-                    const mcpMgr = globals.mcpManager
-                    const mcpToolDef = mcpMgr?.findTool(value.name as string)
+                    const mcpToolDef = McpManager.instance.findTool(value.name as string)
                     if (mcpToolDef) {
                         return {
                             type: ToolType.Mcp,

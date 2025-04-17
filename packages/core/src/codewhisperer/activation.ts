@@ -92,8 +92,6 @@ import { syncSecurityIssueWebview } from './views/securityIssue/securityIssueWeb
 import { detectCommentAboveLine } from '../shared/utilities/commentUtils'
 import { globalMcpConfigPath } from '../codewhispererChat/constants'
 import { McpManager } from '../codewhispererChat/tools/mcp/mcpManager'
-import globals from '../shared/extensionGlobals'
-import { ToolUtils } from '../codewhispererChat/tools/toolUtils'
 
 let localize: nls.LocalizeFunc
 
@@ -380,8 +378,7 @@ export async function activate(context: ExtContext): Promise<void> {
     /**
      * MCP client initialization
      */
-    const mgr = await McpManager.initMcpManager(globalMcpConfigPath)
-    globals.mcpManager = mgr
+    await McpManager.initMcpManager(globalMcpConfigPath)
     setSubscriptionsForMcp()
 
     function shouldRunAutoScan(editor: vscode.TextEditor | undefined, isScansEnabled?: boolean) {
@@ -526,10 +523,7 @@ export async function activate(context: ExtContext): Promise<void> {
             if (doc.uri.fsPath === globalMcpConfigPath) {
                 const newContent = doc.getText()
                 if (lastMcpContent === undefined || newContent !== lastMcpContent) {
-                    const manager = await McpManager.initMcpManager(globalMcpConfigPath)
-                    if (manager) {
-                        globals.mcpManager = manager
-                    }
+                    await McpManager.initMcpManager(globalMcpConfigPath)
                     lastMcpContent = newContent
                 }
             }
