@@ -9,7 +9,6 @@ import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import fs from '../../../shared/fs/fs'
 import { getLogger } from '../../../shared/logger/logger'
 import { tools } from '../../constants'
-import { ToolType } from '../toolUtils'
 
 export interface McpToolDefinition {
     serverName: string
@@ -116,7 +115,7 @@ export class McpManager {
             await McpManager.#instance.loadConfig()
             await McpManager.#instance.initAllServers()
             const discovered = McpManager.#instance.getAllMcpTools()
-            const builtInNames = new Set<string>(Object.values(ToolType))
+            const builtInToolNames = new Set<string>(['fsRead', 'fsWrite', 'executeBash', 'listDirectory'])
             const discoveredNames = new Set(discovered.map((d) => d.toolName))
 
             for (const def of discovered) {
@@ -140,7 +139,7 @@ export class McpManager {
             // Prune stale _dynamic_ tools (leave built‑ins intact)
             for (let i = tools.length - 1; i >= 0; --i) {
                 const name = tools[i].toolSpecification!.name
-                if (!name || builtInNames.has(name)) {
+                if (!name || builtInToolNames.has(name)) {
                     continue
                 }
                 // if it wasn’t rediscovered in new MCP config, remove it

@@ -14,8 +14,7 @@ import {
     fsReadToolResponseSize,
 } from './toolShared'
 import { ListDirectory, ListDirectoryParams } from './listDirectory'
-import { McpTool } from './mcp/mcpTool'
-import { McpManager } from './mcp/mcpManager'
+import type { McpTool } from './mcp/mcpTool'
 
 export enum ToolType {
     FsRead = 'fsRead',
@@ -164,6 +163,8 @@ export class ToolUtils {
                         tool: new ListDirectory(value.input as unknown as ListDirectoryParams),
                     }
                 default: {
+                    const { McpManager } = require('./mcp/mcpManager')
+                    const { McpTool } = require('./mcp/mcpTool')
                     const mcpToolDef = McpManager.instance.findTool(value.name as string)
                     if (mcpToolDef) {
                         return {
