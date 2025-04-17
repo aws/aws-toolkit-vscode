@@ -806,9 +806,8 @@ export const skipUnitTestsFormTitle = 'Choose to skip unit tests'
 
 export const selectiveTransformationFormTitle = 'Choose how to receive proposed changes'
 
-// TO-DO: get text from Allie for this
 export const skipUnitTestsFormMessage =
-    'I will build your project using `mvn clean test` by default. If you would like me to build your project without running unit tests, I will use `mvn clean test-compile`.'
+    'I will build generated code in your local environment, not on the server side. For information on how I scan code to reduce security risks associated with building the code in your local environment, see the [Amazon Q Developer documentation](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/code-transformation.html#java-local-builds).\n\nI will build your project using `mvn clean test` by default. If you would like me to build your project without running unit tests, I will use `mvn clean test-compile`.'
 
 export const runUnitTestsMessage = 'Run unit tests'
 
