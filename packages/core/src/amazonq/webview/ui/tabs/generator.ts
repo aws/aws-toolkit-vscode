@@ -115,7 +115,8 @@ Enter \`/\` to view quick actions. Use \`@\` to add saved prompts, files, folder
                           {
                               type: 'switch',
                               id: 'pair-programmer-mode',
-                              tooltip: 'Enable or disable Pair Programmer',
+                              tooltip: 'Turn off for read only responses',
+                              alternateTooltip: 'Turn on to allow Q to run commands and generate code diffs',
                               value: 'true',
                               icon: 'code-block',
                           },
