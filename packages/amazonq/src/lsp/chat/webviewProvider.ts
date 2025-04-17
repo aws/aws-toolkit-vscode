@@ -116,21 +116,7 @@ export class AmazonQChatViewProvider implements WebviewViewProvider {
                 const init = () => {
                     const vscodeApi = acquireVsCodeApi()
                     const hybridChatConnector = new HybridChatAdapter(${(await AuthUtil.instance.getChatAuthState()).amazonQ === 'connected'},${featureConfigData},${welcomeCount},${disclaimerAcknowledged},${regionProfileString},${disabledCommands},${isSMUS},${isSM},vscodeApi.postMessage)
-                    const commands = [hybridChatConnector.initialQuickActions[0], {
-                        groupName: 'Quick Actions',
-                        commands: [
-                            {
-                                command: '/help',
-                                icon: 'help',
-                                description: 'Learn more about Amazon Q',
-                            },
-                            {
-                                command: '/clear',
-                                icon: 'trash',
-                                description: 'Clear this session',
-                            },
-                        ],
-                    }]
+                    const commands = [hybridChatConnector.initialQuickActions[0]]
                     amazonQChat.createChat(vscodeApi, {disclaimerAcknowledged: ${disclaimerAcknowledged}, quickActionCommands: commands}, hybridChatConnector);
                 }
             </script>

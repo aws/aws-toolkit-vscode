@@ -61,6 +61,7 @@ export async function startLanguageServer(
                 awsClientCapabilities: {
                     window: {
                         notifications: true,
+                        showSaveFileDialog: true,
                     },
                 },
             },

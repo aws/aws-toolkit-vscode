@@ -50,9 +50,10 @@ export function registerLanguageServerEventListener(languageClient: LanguageClie
 
     const chatOptions = languageClient.initializeResult?.awsServerCapabilities?.chatOptions
 
-    // Enable the history/export feature flags
-    chatOptions.history = true
-    chatOptions.export = true
+    // overide the quick action commands provided by flare server initialization, which doesn't provide the group header
+    if (chatOptions?.quickActions?.quickActionsCommandGroups?.[0]) {
+        chatOptions.quickActions.quickActionsCommandGroups[0].groupName = 'Quick Actions'
+    }
 
     provider.onDidResolveWebview(() => {
         void provider.webview?.postMessage({
