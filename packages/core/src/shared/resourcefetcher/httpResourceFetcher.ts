@@ -68,9 +68,9 @@ export class HttpResourceFetcher implements ResourceFetcher<Response> {
         if (response.status === 304) {
             // Explanation: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/If-None-Match
             contents = undefined
-            this.logger.verbose(`E-Tag, ${eTagResponse}, matched. No content downloaded from: ${this.url}`)
+            this.logger.verbose(`E-Tag matched (${eTagResponse}). Download skipped: ${this.url}`)
         } else {
-            this.logger.verbose(`No E-Tag match. Downloaded content from: ${this.logText()}`)
+            this.logger.verbose(`E-Tag not matched. Downloaded: ${this.logText()}`)
         }
 
         return { content: contents, eTag: eTagResponse }
