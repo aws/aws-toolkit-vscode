@@ -18,7 +18,7 @@ import { checkLeftContextKeywordsForJson } from './commonUtil'
 import { CodeWhispererSupplementalContext } from '../models/model'
 import { getOptOutPreference } from '../../shared/telemetry/util'
 import { indent } from '../../shared/utilities/textUtilities'
-import { isInDirectory } from '../../shared'
+import { isInDirectory } from '../../shared/filesystemUtilities'
 import { AuthUtil } from './authUtil'
 
 let tabSize: number = getTabSizeSetting()
