@@ -43,7 +43,7 @@ import { registerCommands } from './commands'
 import { focusAmazonQPanel } from 'aws-core-vscode/codewhispererChat'
 import { activate as activateAmazonqLsp } from './lsp/activation'
 import { activate as activateInlineCompletion } from './app/inline/activation'
-import { isAmazonInternalOs } from '../../core/dist/src/shared/vscode/env'
+import { isAmazonInternalOs } from 'aws-core-vscode/shared'
 
 export const amazonQContextPrefix = 'amazonq'
 
