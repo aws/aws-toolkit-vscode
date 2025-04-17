@@ -61,7 +61,8 @@ export function createMynahUI(
     amazonQEnabled: boolean,
     featureConfigsSerialized: [string, FeatureContext][],
     welcomeCount: number,
-    disabledCommands?: string[]
+    disabledCommands?: string[],
+    dismissedCards?: boolean
 ) {
     if (typeof window !== 'undefined') {
         const mynahUI = require('./webview/ui/main')

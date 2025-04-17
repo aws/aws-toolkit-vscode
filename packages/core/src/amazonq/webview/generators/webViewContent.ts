@@ -86,6 +86,7 @@ export class WebViewContentGenerator {
         const disabledCommandsString = isSM ? `['/dev', '/transform', '/test', '/review', '/doc']` : '[]'
         const disclaimerAcknowledged = !AmazonQPromptSettings.instance.isPromptEnabled('amazonQChatDisclaimer')
         const welcomeLoadCount = globals.globalState.tryGet('aws.amazonq.welcomeChatShowCount', Number, 0)
+        const dismissedCards = globals.globalState.tryGet('aws.amazonq.dismissedCards', Boolean, false)
 
         // only show profile card when the two conditions
         //  1. profile count >= 2
@@ -112,7 +113,8 @@ export class WebViewContentGenerator {
                     ${regionProfileString},
                     ${disabledCommandsString},
                     ${isSMUS},
-                    ${isSM}
+                    ${isSM},
+                    ${dismissedCards}
                 );
             }
         </script>

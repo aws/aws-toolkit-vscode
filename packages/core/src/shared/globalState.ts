@@ -77,6 +77,7 @@ export type globalKey =
     | 'aws.toolkit.lambda.walkthroughSelected'
     | 'aws.toolkit.lambda.walkthroughCompleted'
     | 'aws.toolkit.appComposer.templateToOpenOnStart'
+    | 'aws.amazonq.dismissedCards'
 
 /**
  * Extension-local (not visible to other vscode extensions) shared state which persists after IDE

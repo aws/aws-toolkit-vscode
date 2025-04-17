@@ -86,6 +86,14 @@ export function dispatchWebViewMessagesToApps(
                 void globals.globalState.tryUpdate('aws.amazonq.welcomeChatShowCount', currentLoadCount + 1)
                 return
             }
+            case 'message-dismissed': {
+                // eslint-disable-next-line aws-toolkits/no-console-log
+                console.log('message-dismissed', msg)
+                if (msg.messageId === 'programmerModeCardId') {
+                    void globals.globalState.tryUpdate('aws.amazonq.dismissedCards', true)
+                }
+                return
+            }
         }
 
         if (msg.type === 'error') {
