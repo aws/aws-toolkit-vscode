@@ -230,7 +230,7 @@ export class CWCTelemetryHelper {
                 })
             })
         } catch (e: any) {
-            getLogger().info('Unable to record amazonq_toolUseSuggested telemetry')
+            getLogger().error('Unable to record amazonq_toolUseSuggested telemetry')
         }
     }
 
@@ -249,7 +249,7 @@ export class CWCTelemetryHelper {
                 })
             })
         } catch (e: any) {
-            getLogger().info('Unable to record amazonq_interactWithAgenticChat telemetry')
+            getLogger().error('Unable to record amazonq_interactWithAgenticChat telemetry')
         }
     }
 
