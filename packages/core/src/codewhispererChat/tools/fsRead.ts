@@ -139,23 +139,29 @@ export class FsRead {
     }
 
     private createOutput(content: string): InvokeOutput {
+        let truncated = false
         if (content.length > fsReadToolResponseSize) {
+            truncated = true
             this.logger.info(
                 `The file is too large, truncating output to the first ${fsReadToolResponseSize} characters.`
             )
             content = this.truncateContent(content)
         }
+        const outputJson = {
+            content: content,
+            truncated: truncated,
+        }
         return {
             output: {
-                kind: OutputKind.Text,
-                content: content,
+                kind: OutputKind.Json,
+                content: outputJson,
             },
         }
     }
 
     private truncateContent(content: string): string {
         if (content.length > fsReadToolResponseSize) {
-            return content.substring(0, fsReadToolResponseSize)
+            return content.substring(0, fsReadToolResponseSize - 3) + '...'
         }
         return content
     }
