@@ -11,8 +11,8 @@ export interface ExtendedAmazonQLSPConfig extends LspConfig {
 }
 
 export const defaultAmazonQLspConfig: ExtendedAmazonQLSPConfig = {
-    manifestUrl: 'https://aws-toolkit-language-servers.amazonaws.com/codewhisperer/0/manifest.json',
-    supportedVersions: '^3.1.1',
+    manifestUrl: 'https://aws-toolkit-language-servers.amazonaws.com/remoteWorkspaceContext/0/manifest.json',
+    supportedVersions: '^1.0.0',
     id: 'AmazonQ', // used across IDEs for identifying global storage/local disk locations. Do not change.
     suppressPromptPrefix: 'amazonQ',
     path: undefined,
