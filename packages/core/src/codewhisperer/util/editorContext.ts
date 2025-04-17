@@ -18,6 +18,7 @@ import { checkLeftContextKeywordsForJson } from './commonUtil'
 import { CodeWhispererSupplementalContext } from '../models/model'
 import { getOptOutPreference } from '../../shared/telemetry/util'
 import { indent } from '../../shared/utilities/textUtilities'
+import { isInDirectory } from '../../shared'
 import { AuthUtil } from './authUtil'
 
 let tabSize: number = getTabSizeSetting()
@@ -83,6 +84,22 @@ export function getFileRelativePath(editor: vscode.TextEditor): string {
     return relativePath.substring(0, CodeWhispererConstants.filenameCharsLimit)
 }
 
+async function getWorkspaceId(editor: vscode.TextEditor): Promise<string | undefined> {
+    try {
+        const workspaceIds: { workspaces: { workspaceRoot: string; workspaceId: string }[] } =
+            await vscode.commands.executeCommand('aws.amazonq.getWorkspaceId')
+        for (const item of workspaceIds.workspaces) {
+            const path = vscode.Uri.parse(item.workspaceRoot).fsPath
+            if (isInDirectory(path, editor.document.uri.fsPath)) {
+                return item.workspaceId
+            }
+        }
+    } catch (err) {
+        getLogger().warn(`No workspace id found ${err}`)
+    }
+    return undefined
+}
+
 export async function buildListRecommendationRequest(
     editor: vscode.TextEditor,
     nextToken: string,
@@ -121,6 +138,7 @@ export async function buildListRecommendationRequest(
             supplementalContexts: supplementalContext,
             customizationArn: selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
             optOutPreference: getOptOutPreference(),
+            workspaceId: await getWorkspaceId(editor),
             profileArn: profile?.arn,
         },
         supplementalMetadata: supplementalContexts,
