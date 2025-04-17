@@ -148,6 +148,26 @@ export async function startLanguageServer(
 
         const refreshInterval = auth.startTokenRefreshInterval(10 * oneSecond)
 
+        const sendProfileToLsp = async () => {
+            try {
+                const result = await client.sendRequest(updateConfigurationRequestType.method, {
+                    section: 'aws.q',
+                    settings: {
+                        profileArn: AuthUtil.instance.regionProfileManager.activeRegionProfile?.arn,
+                    },
+                })
+                client.info(
+                    `Client: Updated Amazon Q Profile ${AuthUtil.instance.regionProfileManager.activeRegionProfile?.arn} to Amazon Q LSP`,
+                    result
+                )
+            } catch (err) {
+                console.log('Error when setting Q Developer Profile to Amazon Q LSP', err)
+            }
+        }
+
+        // send profile to lsp once.
+        void sendProfileToLsp()
+
         toDispose.push(
             AuthUtil.instance.auth.onDidChangeActiveConnection(async () => {
                 await auth.refreshConnection()
@@ -155,19 +175,7 @@ export async function startLanguageServer(
             AuthUtil.instance.auth.onDidDeleteConnection(async () => {
                 client.sendNotification(notificationTypes.deleteBearerToken.method)
             }),
-            AuthUtil.instance.regionProfileManager.onDidChangeRegionProfile(async () => {
-                try {
-                    const result = await client.sendRequest(updateConfigurationRequestType.method, {
-                        section: 'aws.q',
-                        settings: {
-                            profileArn: AuthUtil.instance.regionProfileManager.activeRegionProfile?.arn,
-                        },
-                    })
-                    client.info(`Client: Updated Amazon Q Profile to Amazon Q LSP`, result)
-                } catch (err) {
-                    console.log('Error when setting Q Developer Profile to Amazon Q LSP', err)
-                }
-            }),
+            AuthUtil.instance.regionProfileManager.onDidChangeRegionProfile(sendProfileToLsp),
             vscode.commands.registerCommand('aws.amazonq.getWorkspaceId', async () => {
                 const requestType = new RequestType<GetConfigurationFromServerParams, ResponseMessage, Error>(
                     'aws/getConfigurationFromServer'
