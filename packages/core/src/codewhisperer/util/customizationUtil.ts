@@ -10,14 +10,45 @@ import { AuthUtil } from './authUtil'
 import * as vscode from 'vscode'
 import { createCommonButtons } from '../../shared/ui/buttons'
 import { DataQuickPickItem, showQuickPick } from '../../shared/ui/pickerPrompter'
-import { codeWhispererClient } from '../client/codewhisperer'
-import { Customization, ResourceArn } from '../client/codewhispereruserclient'
+import CodeWhispererUserClient, { Customization, ResourceArn } from '../client/codewhispereruserclient'
 import { codicon, getIcon } from '../../shared/icons'
 import { getLogger } from '../../shared/logger/logger'
 import { showMessageWithUrl } from '../../shared/utilities/messages'
 import { parse } from '@aws-sdk/util-arn-parser'
 import { Commands } from '../../shared/vscode/commands2'
 import { RegionProfile, vsCodeState } from '../models/model'
+import { pageableToCollection } from '../../shared/utilities/collectionUtils'
+import { isAwsError } from '../../shared/errors'
+
+export class CustomizationProvider {
+    constructor(
+        private readonly client: CodeWhispererUserClient,
+        private readonly profile: RegionProfile
+    ) {}
+
+    async listAvailableCustomizations(): Promise<Customization[]> {
+        const requester = async (request: CodeWhispererUserClient.ListAvailableCustomizationsRequest) =>
+            this.client.listAvailableCustomizations(request).promise()
+
+        try {
+            const request = { profileArn: this.profile.arn }
+            const customizations = await pageableToCollection(requester, request, 'nextToken', 'customizations')
+                .flatten()
+                .promise()
+
+            return customizations
+        } catch (e) {
+            const logMsg = isAwsError(e) ? `requestId=${e.requestId}; message=${e.message}` : (e as Error).message
+            getLogger().error(`failed to listAvailableCustomizations: ${logMsg}`)
+            return []
+        }
+    }
+
+    static async init(profile: RegionProfile): Promise<CustomizationProvider> {
+        const client = await AuthUtil.instance.regionProfileManager.createQClient(profile)
+        return new CustomizationProvider(client, profile)
+    }
+}
 
 /**
  *
@@ -336,23 +367,27 @@ export const selectCustomization = async (customization: Customization) => {
     )
 }
 
-// should collect all customizations across different profiles and if users select the customization, we also change the profile if needed if the customization is accessible from a different profile
+// Should collect all customizations across different profiles and if users select the customization, we also change the profile if needed if the customization is accessible from a different profile.
 export const getAvailableCustomizationsList = async () => {
     const items: (Customization & { profile: RegionProfile })[] = []
-    // TODO: try catch listProfile
-    const profiles = await AuthUtil.instance.regionProfileManager.listRegionProfile()
+    const profiles: RegionProfile[] = []
+    try {
+        const r = await AuthUtil.instance.regionProfileManager.listRegionProfile()
+        profiles.push(...r)
+    } catch (e) {
+        getLogger().error(`Failed to list customizations because listAvailableProfiles failed %s`, (e as Error).message)
+        return []
+    }
 
     for (const profile of profiles) {
-        const response = await codeWhispererClient.listAvailableCustomizations(profile)
-        for (const customizations of response.map(
-            (listAvailableCustomizationsResponse) => listAvailableCustomizationsResponse.customizations
-        )) {
-            for (const c of customizations) {
-                items.push({
-                    ...c,
-                    profile: profile,
-                })
-            }
+        const provider = await CustomizationProvider.init(profile)
+        const customizations = await provider.listAvailableCustomizations()
+
+        for (const c of customizations) {
+            items.push({
+                ...c,
+                profile: profile,
+            })
         }
     }
 
