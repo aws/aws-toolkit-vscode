@@ -21,7 +21,7 @@ import { parse } from '@aws-sdk/util-arn-parser'
 import { isAwsError, ToolkitError } from '../../shared/errors'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { localize } from '../../shared/utilities/vsCodeUtils'
-import { AuthUtil } from '../util/authUtil'
+import { IAuthProvider } from '../util/authUtil'
 
 // TODO: is there a better way to manage all endpoint strings in one place?
 export const defaultServiceConfig: CodeWhispererConfig = {
@@ -48,24 +48,25 @@ export class RegionProfileManager {
     private _activeRegionProfile: RegionProfile | undefined
     private _onDidChangeRegionProfile = new vscode.EventEmitter<RegionProfile | undefined>()
     public readonly onDidChangeRegionProfile = this._onDidChangeRegionProfile.event
-
     // Store the last API results (for UI propuse) so we don't need to call service again if doesn't require "latest" result
     private _profiles: RegionProfile[] = []
 
+    constructor(private readonly authProvider: IAuthProvider) {}
+
     get activeRegionProfile() {
-        if (AuthUtil.instance.isBuilderIdConnection()) {
+        if (this.authProvider.isBuilderIdConnection()) {
             return undefined
         }
         return this._activeRegionProfile
     }
 
     get clientConfig(): CodeWhispererConfig {
-        if (!AuthUtil.instance.isConnected()) {
+        if (!this.authProvider.isConnected()) {
             throw new ToolkitError('trying to get client configuration without credential')
         }
 
         // builder id should simply use default IAD
-        if (AuthUtil.instance.isBuilderIdConnection()) {
+        if (this.authProvider.isBuilderIdConnection()) {
             return defaultServiceConfig
         }
 
@@ -93,12 +94,10 @@ export class RegionProfileManager {
         return this._profiles
     }
 
-    constructor() {}
-
     async listRegionProfiles(): Promise<RegionProfile[]> {
         this._profiles = []
 
-        if (!AuthUtil.instance.isConnected() || !AuthUtil.instance.isSsoSession()) {
+        if (!this.authProvider.isConnected() || !this.authProvider.isSsoSession()) {
             return []
         }
         const availableProfiles: RegionProfile[] = []
@@ -140,7 +139,7 @@ export class RegionProfileManager {
     }
 
     async switchRegionProfile(regionProfile: RegionProfile | undefined, source: ProfileSwitchIntent) {
-        if (!AuthUtil.instance.isConnected() || !AuthUtil.instance.isIdcConnection()) {
+        if (!this.authProvider.isConnected() || !this.authProvider.isIdcConnection()) {
             return
         }
 
@@ -165,9 +164,9 @@ export class RegionProfileManager {
                 telemetry.amazonq_didSelectProfile.emit({
                     source: source,
                     amazonQProfileRegion: this.activeRegionProfile?.region ?? 'not-set',
-                    ssoRegion: AuthUtil.instance.connection?.region,
+                    ssoRegion: this.authProvider.connection?.region,
                     result: 'Cancelled',
-                    credentialStartUrl: AuthUtil.instance.connection?.startUrl,
+                    credentialStartUrl: this.authProvider.connection?.startUrl,
                     profileCount: this.profiles.length,
                 })
                 return
@@ -184,9 +183,9 @@ export class RegionProfileManager {
             telemetry.amazonq_didSelectProfile.emit({
                 source: source,
                 amazonQProfileRegion: regionProfile?.region ?? 'not-set',
-                ssoRegion: AuthUtil.instance.connection?.region,
+                ssoRegion: this.authProvider.connection?.region,
                 result: 'Succeeded',
-                credentialStartUrl: AuthUtil.instance.connection?.startUrl,
+                credentialStartUrl: this.authProvider.connection?.startUrl,
                 profileCount: this.profiles.length,
             })
         }
@@ -208,14 +207,14 @@ export class RegionProfileManager {
     }
 
     restoreProfileSelection = once(async () => {
-        if (AuthUtil.instance.isConnected()) {
+        if (this.authProvider.isConnected()) {
             await this.restoreRegionProfile()
         }
     })
 
-    // Note: should be called after [AuthUtil.instance.conn] returns non null
+    // Note: should be called after [this.authProvider.isConnected()] returns non null
     async restoreRegionProfile() {
-        const previousSelected = this.loadPersistedRegionProfle()[AuthUtil.instance.profileName] || undefined
+        const previousSelected = this.loadPersistedRegionProfle()[this.authProvider.profileName] || undefined
         if (!previousSelected) {
             return
         }
@@ -261,7 +260,7 @@ export class RegionProfileManager {
 
     async persistSelectRegionProfile() {
         // default has empty arn and shouldn't be persisted because it's just a fallback
-        if (!AuthUtil.instance.isConnected() || this.activeRegionProfile === undefined) {
+        if (!this.authProvider.isConnected() || this.activeRegionProfile === undefined) {
             return
         }
 
@@ -272,7 +271,7 @@ export class RegionProfileManager {
             {}
         )
 
-        previousPersistedState[AuthUtil.instance.profileName] = this.activeRegionProfile
+        previousPersistedState[this.authProvider.profileName] = this.activeRegionProfile
         await globals.globalState.update('aws.amazonq.regionProfiles', previousPersistedState)
     }
 
@@ -327,15 +326,15 @@ export class RegionProfileManager {
         }
     }
 
-    requireProfileSelection() {
-        if (AuthUtil.instance.isBuilderIdConnection()) {
+    requireProfileSelection(): boolean {
+        if (this.authProvider.isBuilderIdConnection()) {
             return false
         }
-        return AuthUtil.instance.isIdcConnection() && this.activeRegionProfile === undefined
+        return this.authProvider.isIdcConnection() && this.activeRegionProfile === undefined
     }
 
     async createQClient(region: string, endpoint: string): Promise<CodeWhispererUserClient> {
-        const token = await AuthUtil.instance.getToken()
+        const token = await this.authProvider.getToken()
         const serviceOption: ServiceOptions = {
             apiConfig: userApiConfig,
             region: region,

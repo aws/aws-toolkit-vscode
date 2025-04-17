@@ -29,11 +29,22 @@ export const codeWhispererCoreScopes = [...scopesCodeWhispererCore]
 export const codeWhispererChatScopes = [...codeWhispererCoreScopes, ...scopesCodeWhispererChat]
 export const amazonQScopes = [...codeWhispererChatScopes, ...scopesGumby, ...scopesFeatureDev]
 
+/** AuthProvider interface for the auth functionality needed by RegionProfileManager  */
+export interface IAuthProvider {
+    isConnected(): boolean
+    isBuilderIdConnection(): boolean
+    isIdcConnection(): boolean
+    isSsoSession(): boolean
+    getToken(): Promise<string>
+    readonly profileName: string
+    readonly connection?: { region: string; startUrl: string }
+}
+
 /**
  * Handles authentication within Amazon Q.
  * Amazon Q only supports a single connection at a time.
  */
-export class AuthUtil {
+export class AuthUtil implements IAuthProvider {
     public readonly profileName = VSCODE_EXTENSION_ID.amazonq
     public readonly regionProfileManager: RegionProfileManager
 
@@ -56,7 +67,7 @@ export class AuthUtil {
         this.session = new SsoLogin(this.profileName, this.lspAuth)
         this.onDidChangeConnectionState((e: AuthStateEvent) => this.stateChangeHandler(e))
 
-        this.regionProfileManager = new RegionProfileManager()
+        this.regionProfileManager = new RegionProfileManager(this)
         this.regionProfileManager.onDidChangeRegionProfile(async () => {
             await this.setVscodeContextProps()
         })

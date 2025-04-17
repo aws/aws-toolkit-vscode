@@ -247,10 +247,6 @@
                             "type": "boolean",
                             "default": false
                         },
-                        "amazonqLSP": {
-                            "type": "boolean",
-                            "default": false
-                        },
                         "amazonqLSPInline": {
                             "type": "boolean",
                             "default": false

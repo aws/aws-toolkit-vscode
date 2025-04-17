@@ -48,7 +48,6 @@ sequenceDiagram
 3. Enable the lsp experiment:
     ```
     "aws.experiments": {
-      "amazonqLSP": true,
       "amazonqLSPInline": true, // optional: enables inline completion from flare
       "amazonqLSPChat": true // optional: enables chat from flare
     }
