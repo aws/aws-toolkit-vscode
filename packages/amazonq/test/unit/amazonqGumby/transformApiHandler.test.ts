@@ -131,27 +131,16 @@ describe('Amazon Q Transform - transformApiHandler tests', function () {
         it('will return undefined if step status is NOT AWAITING_CLIENT_ACTION', function () {
             const transformationStepsFixture: TransformationStep[] = [
                 {
-                    id: 'dummy-id',
-                    name: 'Step name',
-                    description: 'Step description',
+                    id: 'random-id',
+                    name: 'not-awaiting-client-action step name',
+                    description: 'not-awaiting-client-action step description',
                     status: 'TRANSFORMING',
                     progressUpdates: [
                         {
-                            name: 'Progress update name',
+                            name: 'some progress update name',
                             status: 'SOMETHING-BESIDES-AWAITING_CLIENT_ACTION',
-                            description: 'Progress update description',
-                            startTime: new Date(),
-                            endTime: new Date(),
-                            downloadArtifacts: [
-                                {
-                                    downloadArtifactId: 'some-download-artifact-id',
-                                    downloadArtifactType: 'some-download-artifact-type',
-                                },
-                            ],
                         },
                     ],
-                    startTime: new Date(),
-                    endTime: new Date(),
                 },
             ]
             const progressUpdate = findDownloadArtifactProgressUpdate(transformationStepsFixture)
