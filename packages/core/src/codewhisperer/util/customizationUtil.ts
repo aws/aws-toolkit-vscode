@@ -52,6 +52,7 @@ export class CustomizationProvider {
 }
 
 export const onProfileChangedListener: (event: ProfileChangedEvent) => any = async (event) => {
+    // Skip because customization means the following validation has been done
     if (event.intent === 'customization') {
         return
     }
