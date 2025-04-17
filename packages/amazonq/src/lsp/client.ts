@@ -164,7 +164,7 @@ export async function startLanguageServer(
                     result
                 )
             } catch (err) {
-                console.log('Error when setting Q Developer Profile to Amazon Q LSP', err)
+                client.error('Error when setting Q Developer Profile to Amazon Q LSP', err)
             }
         }
 
