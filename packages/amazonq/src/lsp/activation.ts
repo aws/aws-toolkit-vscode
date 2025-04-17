@@ -20,6 +20,6 @@ export async function activate(ctx: vscode.ExtensionContext) {
         await AuthUtil.instance.restore()
     } catch (err) {
         const e = err as ToolkitError
-        void vscode.window.showInformationMessage(`Unable to launch amazonq language server: ${e.message}`)
+        void messages.showViewLogsMessage(`Failed to launch Amazon Q language server: ${e.message}`)
     }
 }

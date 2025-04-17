@@ -52,12 +52,23 @@ export abstract class BaseLspInstaller<T extends ResourcePaths = ResourcePaths, 
         await this.postInstall(assetDirectory)
 
         const deletedVersions = await cleanLspDownloads(manifest.versions, nodePath.dirname(assetDirectory))
-        this.logger.debug(`cleaning old LSP versions deleted ${deletedVersions.length} versions`)
+        if (deletedVersions.length > 0) {
+            this.logger.debug(`cleaning old LSP versions: deleted ${deletedVersions.length} versions`)
+        }
 
-        return {
+        const r = {
             ...installationResult,
+            // Example:
+            // ```
+            // resourcePaths = {
+            //     lsp = '<cachedir>/aws/toolkits/language-servers/AmazonQ/3.3.0/servers/aws-lsp-codewhisperer.js'
+            //     node = '<cachedir>/aws/toolkits/language-servers/AmazonQ/3.3.0/servers/node'
+            //     ui = '<cachedir>/aws/toolkits/language-servers/AmazonQ/3.3.0/clients/amazonq-ui.js'
+            // }
+            // ```
             resourcePaths: this.resourcePaths(assetDirectory),
         }
+        return r
     }
 
     protected abstract postInstall(assetDirectory: string): Promise<void>
