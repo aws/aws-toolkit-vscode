@@ -32,6 +32,11 @@ import {
     ShowSaveFileDialogParams,
     LSPErrorCodes,
     tabBarActionRequestType,
+    ShowDocumentParams,
+    ShowDocumentResult,
+    ShowDocumentRequest,
+    contextCommandsNotificationType,
+    ContextCommandParams,
 } from '@aws/language-server-runtimes/protocol'
 import { v4 as uuidv4 } from 'uuid'
 import * as vscode from 'vscode'
@@ -285,6 +290,23 @@ export function registerMessageListeners(
         return {
             targetUri: targetUri.toString(),
         }
+    })
+
+    languageClient.onRequest<ShowDocumentParams, ShowDocumentResult>(
+        ShowDocumentRequest.method,
+        async (params: ShowDocumentParams): Promise<ShowDocumentParams | ResponseError<ShowDocumentResult>> => {
+            const uri = vscode.Uri.parse(params.uri)
+            const doc = await vscode.workspace.openTextDocument(uri)
+            await vscode.window.showTextDocument(doc, { preview: false })
+            return params
+        }
+    )
+
+    languageClient.onNotification(contextCommandsNotificationType.method, (params: ContextCommandParams) => {
+        void provider.webview?.postMessage({
+            command: contextCommandsNotificationType.method,
+            params: params,
+        })
     })
 }
 

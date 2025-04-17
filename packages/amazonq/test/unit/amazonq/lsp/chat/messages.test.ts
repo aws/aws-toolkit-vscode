@@ -27,6 +27,7 @@ describe('registerMessageListeners', () => {
             error: errorStub,
             sendNotification: sandbox.stub(),
             onRequest: sandbox.stub(),
+            onNotification: sandbox.stub(),
         } as unknown as LanguageClient
 
         provider = {
