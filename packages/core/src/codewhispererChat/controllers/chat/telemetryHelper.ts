@@ -218,27 +218,39 @@ export class CWCTelemetryHelper {
     }
 
     public recordToolUseSuggested(toolUse: ToolUse, messageId: string) {
-        telemetry.amazonq_toolUseSuggested.emit({
-            result: 'Succeeded',
-            cwsprChatConversationId: messageId,
-            cwsprChatConversationType: 'AgenticChatWithToolUse',
-            credentialStartUrl: AuthUtil.instance.startUrl,
-            cwsprToolName: toolUse.name ?? '',
-            cwsprToolUseId: toolUse.toolUseId ?? '',
-        })
+        try {
+            telemetry.amazonq_toolUseSuggested.run((span) => {
+                span.record({
+                    result: 'Succeeded',
+                    cwsprChatConversationId: messageId,
+                    cwsprChatConversationType: 'AgenticChatWithToolUse',
+                    credentialStartUrl: AuthUtil.instance.startUrl,
+                    cwsprToolName: toolUse.name ?? '',
+                    cwsprToolUseId: toolUse.toolUseId ?? '',
+                })
+            })
+        } catch (e: any) {
+            getLogger().error('Unable to record amazonq_toolUseSuggested telemetry')
+        }
     }
 
     public recordInteractionWithAgenticChat(
         interactionType: AgenticChatInteractionType,
         message: AcceptResponseMessage | CustomFormActionMessage | StopResponseMessage
     ) {
-        telemetry.amazonq_interactWithAgenticChat.emit({
-            cwsprAgenticChatInteractionType: interactionType,
-            result: 'Succeeded',
-            cwsprChatConversationId: this.getConversationId(message.tabID ?? '') ?? '',
-            cwsprChatConversationType: 'AgenticChat',
-            credentialStartUrl: AuthUtil.instance.startUrl,
-        })
+        try {
+            telemetry.amazonq_interactWithAgenticChat.run((span) => {
+                span.record({
+                    cwsprAgenticChatInteractionType: interactionType,
+                    result: 'Succeeded',
+                    cwsprChatConversationId: this.getConversationId(message.tabID ?? '') ?? '',
+                    cwsprChatConversationType: 'AgenticChat',
+                    credentialStartUrl: AuthUtil.instance.startUrl,
+                })
+            })
+        } catch (e: any) {
+            getLogger().error('Unable to record amazonq_interactWithAgenticChat telemetry')
+        }
     }
 
     public recordInteractWithMessage(
