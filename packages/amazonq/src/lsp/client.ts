@@ -19,6 +19,7 @@ import {
     GetConfigurationFromServerParams,
     RenameFilesParams,
     ResponseMessage,
+    updateConfigurationRequestType,
     WorkspaceFolder,
 } from '@aws/language-server-runtimes/protocol'
 import {
@@ -153,6 +154,19 @@ export async function startLanguageServer(
             }),
             AuthUtil.instance.auth.onDidDeleteConnection(async () => {
                 client.sendNotification(notificationTypes.deleteBearerToken.method)
+            }),
+            AuthUtil.instance.regionProfileManager.onDidChangeRegionProfile(async () => {
+                try {
+                    const result = await client.sendRequest(updateConfigurationRequestType.method, {
+                        section: 'aws.q',
+                        settings: {
+                            profileArn: AuthUtil.instance.regionProfileManager.activeRegionProfile?.arn,
+                        },
+                    })
+                    client.info(`Client: Updated Amazon Q Profile to Amazon Q LSP`, result)
+                } catch (err) {
+                    console.log('Error when setting Q Developer Profile to Amazon Q LSP', err)
+                }
             }),
             vscode.commands.registerCommand('aws.amazonq.getWorkspaceId', async () => {
                 const requestType = new RequestType<GetConfigurationFromServerParams, ResponseMessage, Error>(
