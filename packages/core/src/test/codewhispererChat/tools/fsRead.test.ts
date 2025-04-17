@@ -34,8 +34,8 @@ describe('FsRead Tool', () => {
         await fsRead.validate()
         const result = await fsRead.invoke(process.stdout)
 
-        assert.strictEqual(result.output.kind, 'text', 'Output kind should be "text"')
-        assert.strictEqual(result.output.content, fileContent, 'File content should match exactly')
+        assert.strictEqual(result.output.kind, 'json', 'Output kind should be "json"')
+        assert.strictEqual(result.output.content.content, fileContent, 'File content should match exactly')
     })
 
     it('truncate output if too large', async () => {
@@ -44,12 +44,13 @@ describe('FsRead Tool', () => {
         const fsRead = new FsRead({ path: filePath })
         await fsRead.validate()
         const result = await fsRead.invoke(process.stdout)
-        assert.strictEqual(result.output.kind, 'text', 'Output kind should be "text"')
+        assert.strictEqual(result.output.kind, 'json', 'Output kind should be "json"')
         assert.strictEqual(
-            result.output.content.length,
+            result.output.content.content.length,
             fsReadToolResponseSize,
             'Output should be truncated to the max size'
         )
+        assert.ok(result.output.content.truncated, 'Output should be truncated to the max size')
     })
 
     it('reads partial lines of a file', async () => {
@@ -60,8 +61,8 @@ describe('FsRead Tool', () => {
         await fsRead.validate()
         const result = await fsRead.invoke(process.stdout)
 
-        assert.strictEqual(result.output.kind, 'text')
-        assert.strictEqual(result.output.content, 'B\nC\nD')
+        assert.strictEqual(result.output.kind, 'json')
+        assert.strictEqual(result.output.content.content, 'B\nC\nD')
     })
 
     it('throws error if path does not exist', async () => {
@@ -81,8 +82,8 @@ describe('FsRead Tool', () => {
 
         await fsRead.validate()
         const result = await fsRead.invoke(process.stdout)
-        assert.strictEqual(result.output.kind, 'text')
-        assert.strictEqual(result.output.content, '')
+        assert.strictEqual(result.output.kind, 'json')
+        assert.strictEqual(result.output.content.content, '')
     })
 
     it('should require acceptance if fsPath is outside the workspace', () => {
