@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { AuthUtils, CredentialsStore, LoginManager, initializeAuth } from 'aws-core-vscode/auth'
+import { Auth, AuthUtils, CredentialsStore, LoginManager, initializeAuth } from 'aws-core-vscode/auth'
 import { activate as activateCodeWhisperer, shutdown as shutdownCodeWhisperer } from 'aws-core-vscode/codewhisperer'
 import { makeEndpointsProvider, registerGenericCommands } from 'aws-core-vscode'
 import { CommonAuthWebview } from 'aws-core-vscode/login'
@@ -119,10 +119,10 @@ export async function activateAmazonQCommon(context: vscode.ExtensionContext, is
     }
     // This contains every lsp agnostic things (auth, security scan, code scan)
     await activateCodeWhisperer(extContext as ExtContext)
-    if (Experiments.instance.get('amazonqLSP', false)) {
+    if (Experiments.instance.get('amazonqLSP', false) || Auth.instance.isInternalAmazonUser()) {
+        // start the Amazon Q LSP for internal users first
         await activateAmazonqLsp(context)
     }
-
     if (!Experiments.instance.get('amazonqLSPInline', false)) {
         await activateInlineCompletion()
     }
