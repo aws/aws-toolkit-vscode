@@ -57,6 +57,7 @@ export type Message = {
     userInputMessageContext?: UserInputMessageContext
     toolUses?: ToolUse[]
     shouldDisplayMessage?: boolean
+    characterCount?: number
 }
 
 /**

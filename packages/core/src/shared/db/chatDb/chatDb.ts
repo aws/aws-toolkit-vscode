@@ -21,6 +21,7 @@ import path from 'path'
 import { fs } from '../../fs/fs'
 import { getLogger } from '../../logger/logger'
 import { ChatMessage, ToolResultStatus } from '@amzn/codewhisperer-streaming'
+import { CWCTelemetryHelper } from '../../../codewhispererChat/controllers/chat/telemetryHelper'
 
 // Maximum number of characters to keep in history
 const MaxConversationHistoryCharacters = 600_000
@@ -275,6 +276,7 @@ export class Database {
                     ? message.body
                     : tabData?.title || 'Amazon Q Chat'
             message = this.formatChatHistoryMessage(message)
+            message.characterCount = this.calculateMessageCharacterCount(message)
             if (tabData) {
                 this.logger.info(`Found existing tab data, updating conversations`)
                 tabData.conversations = updateOrCreateConversation(tabData.conversations, conversationId, message)
@@ -292,6 +294,7 @@ export class Database {
                     conversations: [{ conversationId, clientType: ClientType.VSCode, messages: [message] }],
                 })
             }
+            CWCTelemetryHelper.instance.record_TODO(tabId, conversationId, message)
         }
     }
 
@@ -419,31 +422,35 @@ export class Database {
     private calculateCharacterCount(allMessages: Message[]): number {
         let count = 0
         for (const message of allMessages) {
-            // Count characters of all message text
-            count += message.body.length
-
-            // Count characters in tool uses
-            if (message.toolUses) {
-                try {
-                    for (const toolUse of message.toolUses) {
-                        count += JSON.stringify(toolUse).length
-                    }
-                } catch (e) {
-                    this.logger.error(`Error counting toolUses: ${String(e)}`)
-                }
-            }
-            // Count characters in tool results
-            if (message.userInputMessageContext?.toolResults) {
-                try {
-                    for (const toolResul of message.userInputMessageContext.toolResults) {
-                        count += JSON.stringify(toolResul).length
-                    }
-                } catch (e) {
-                    this.logger.error(`Error counting toolResults: ${String(e)}`)
-                }
-            }
+            count += message.characterCount ?? 0
         }
         this.logger.debug(`Current history characters: ${count}`)
+        return count
+    }
+
+    private calculateMessageCharacterCount(message: Message): number {
+        let count = message.body.length
+
+        // Count characters in tool uses
+        if (message.toolUses) {
+            try {
+                for (const toolUse of message.toolUses) {
+                    count += JSON.stringify(toolUse).length
+                }
+            } catch (e) {
+                this.logger.error(`Error counting toolUses: ${String(e)}`)
+            }
+        }
+        // Count characters in tool results
+        if (message.userInputMessageContext?.toolResults) {
+            try {
+                for (const toolResul of message.userInputMessageContext.toolResults) {
+                    count += JSON.stringify(toolResul).length
+                }
+            } catch (e) {
+                this.logger.error(`Error counting toolResults: ${String(e)}`)
+            }
+        }
         return count
     }
 
