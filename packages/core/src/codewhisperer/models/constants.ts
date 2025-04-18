@@ -599,6 +599,9 @@ export const invalidMetadataFileUnsupportedSourceDB =
 export const invalidMetadataFileUnsupportedTargetDB =
     'I can only convert SQL for migrations to Aurora PostgreSQL or Amazon RDS for PostgreSQL target databases. The provided .sct file indicates another target database for this migration.'
 
+export const invalidYamlFileMissingKey =
+    'Your YAML file is not formatted correctly. Make sure that the .yaml file you upload follows the format of the sample file provided.'
+
 export const invalidMetadataFileErrorParsing =
     "It looks like the .sct file you provided isn't valid. Make sure that you've uploaded the .zip file you retrieved from your schema conversion in AWS DMS."
 
@@ -654,6 +657,17 @@ export const jobCancelledChatMessage =
     'If you want to start another transformation, choose **Start a new transformation**.'
 
 export const jobCancelledNotification = 'You cancelled the transformation.'
+
+export const continueWithoutHilMessage = 'I will continue transforming your code without upgrading this dependency.'
+
+export const continueWithoutYamlMessage = 'Ok, I will continue without this information.'
+
+export const chooseYamlMessage =
+    'You can optionally upload a YAML file to specify which dependency versions to upgrade to.'
+
+export const enterJavaHomePlaceholder = 'Enter the path to your Java installation'
+
+export const openNewTabPlaceholder = 'Open a new tab to chat with Q'
 
 export const diffMessage = (multipleDiffs: boolean) => {
     return multipleDiffs
@@ -756,7 +770,7 @@ export const cleanInstallErrorChatMessage = `Sorry, I couldn\'t run the Maven cl
 
 export const cleanInstallErrorNotification = `Amazon Q could not run the Maven clean install command to build your project. For more information, see the [Amazon Q documentation](${codeTransformTroubleshootMvnFailure}).`
 
-export const enterJavaHomeChatMessage = 'Enter the path to JDK '
+export const enterJavaHomeChatMessage = 'Enter the path to JDK'
 
 export const projectPromptChatMessage =
     'I can upgrade your Java project. To start the transformation, I need some information from you. Choose the project you want to upgrade and the target code version to upgrade to. Then, choose Confirm.'
@@ -793,7 +807,7 @@ export const skipUnitTestsFormTitle = 'Choose to skip unit tests'
 export const selectiveTransformationFormTitle = 'Choose how to receive proposed changes'
 
 export const skipUnitTestsFormMessage =
-    'I will build your project using `mvn clean test` by default. If you would like me to build your project without running unit tests, I will use `mvn clean test-compile`.'
+    'I will build generated code in your local environment, not on the server side. For information on how I scan code to reduce security risks associated with building the code in your local environment, see the [Amazon Q Developer documentation](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/code-transformation.html#java-local-builds).\n\nI will build your project using `mvn clean test` by default. If you would like me to build your project without running unit tests, I will use `mvn clean test-compile`.'
 
 export const runUnitTestsMessage = 'Run unit tests'
 

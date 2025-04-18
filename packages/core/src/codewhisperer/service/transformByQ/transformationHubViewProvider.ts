@@ -193,6 +193,8 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                 return '<p><span class="spinner status-PENDING"> ↻ </span></p>'
             case 'COMPLETED':
                 return '<p><span class="status-COMPLETED"> ✓ </span></p>'
+            case 'AWAITING_CLIENT_ACTION':
+                return '<p><span class="spinner status-PENDING"> ↻ </span></p>'
             case 'FAILED':
             default:
                 return '<p><span class="status-FAILED"> 𐔧 </span></p>'
@@ -326,9 +328,19 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
             jobPlanProgress['generatePlan'] === StepProgress.Succeeded &&
             transformByQState.isRunning()
         ) {
-            const profile = AuthUtil.instance.regionProfileManager.activeRegionProfile
-            planSteps = await getTransformationSteps(transformByQState.getJobId(), false, profile)
-            transformByQState.setPlanSteps(planSteps)
+            try {
+                planSteps = await getTransformationSteps(
+                    transformByQState.getJobId(),
+                    AuthUtil.instance.regionProfileManager.activeRegionProfile
+                )
+                transformByQState.setPlanSteps(planSteps)
+            } catch (e: any) {
+                // no-op; re-use current plan steps and try again in next polling cycle
+                getLogger().error(
+                    `CodeTransformation: failed to get plan steps to show updates in transformation hub, continuing transformation; error = %O`,
+                    e
+                )
+            }
         }
         let progressHtml
         // for each step that has succeeded, increment activeStepId by 1

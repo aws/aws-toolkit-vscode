@@ -16,7 +16,7 @@ import globals from '../../../shared/extensionGlobals'
 import { ChatSessionManager } from '../../../amazonqGumby/chat/storages/chatSession'
 import { AbsolutePathDetectedError } from '../../../amazonqGumby/errors'
 import { getLogger } from '../../../shared/logger/logger'
-import { isWin } from '../../../shared/vscode/env'
+import AdmZip from 'adm-zip'
 
 export function getDependenciesFolderInfo(): FolderInfo {
     const dependencyFolderName = `${CodeWhispererConstants.dependencyFolderName}${globals.clock.Date.now()}`
@@ -27,10 +27,49 @@ export function getDependenciesFolderInfo(): FolderInfo {
     }
 }
 
-export async function writeLogs() {
+export async function writeAndShowBuildLogs() {
     const logFilePath = path.join(os.tmpdir(), 'build-logs.txt')
-    writeFileSync(logFilePath, transformByQState.getErrorLog())
+    writeFileSync(logFilePath, transformByQState.getBuildLog())
+    const doc = await vscode.workspace.openTextDocument(logFilePath)
+    if (!transformByQState.getBuildLog().includes('clean install succeeded')) {
+        // only show the log if the build failed
+        await vscode.window.showTextDocument(doc, { viewColumn: vscode.ViewColumn.Two })
+    }
     return logFilePath
+}
+
+export async function createLocalBuildUploadZip(baseDir: string, exitCode: number | null, stdout: string) {
+    const manifestFilePath = path.join(baseDir, 'manifest.json')
+    const buildResultsManifest = {
+        capability: 'CLIENT_SIDE_BUILD',
+        exitCode: exitCode,
+        commandLogFileName: 'build-output.log',
+    }
+    const formattedManifest = JSON.stringify(buildResultsManifest)
+    await fs.writeFile(manifestFilePath, formattedManifest)
+
+    const buildLogsFilePath = path.join(baseDir, 'build-output.log')
+    await fs.writeFile(buildLogsFilePath, stdout)
+
+    const zip = new AdmZip()
+    zip.addLocalFile(buildLogsFilePath)
+    zip.addLocalFile(manifestFilePath)
+
+    const zipPath = `${baseDir}.zip`
+    zip.writeZip(zipPath)
+    getLogger().info(`CodeTransformation: created local build upload zip at ${zipPath}`)
+    return zipPath
+}
+
+// extract the 'sources' directory of the upload ZIP so that we can apply the diff.patch to a copy of the source code
+export async function extractOriginalProjectSources(destinationPath: string) {
+    const zip = new AdmZip(transformByQState.getPayloadFilePath())
+    const zipEntries = zip.getEntries()
+    for (const zipEntry of zipEntries) {
+        if (zipEntry.entryName.startsWith('sources')) {
+            zip.extractEntryTo(zipEntry, destinationPath, true, true)
+        }
+    }
 }
 
 export async function checkBuildSystem(projectPath: string) {
@@ -76,6 +115,18 @@ export async function parseBuildFile() {
     return undefined
 }
 
+export async function validateYamlFile(fileContents: string, message: any) {
+    const requiredKeys = ['dependencyManagement:', 'identifier:', 'targetVersion:']
+    for (const key of requiredKeys) {
+        if (!fileContents.includes(key)) {
+            getLogger().info(`CodeTransformation: missing yaml key: ${key}`)
+            transformByQState.getChatMessenger()?.sendUnrecoverableErrorResponse('missing-yaml-key', message.tabID)
+            return false
+        }
+    }
+    return true
+}
+
 export async function validateSQLMetadataFile(fileContents: string, message: any) {
     try {
         const sctData = await xml2js.parseStringPromise(fileContents)
@@ -119,20 +170,10 @@ export async function validateSQLMetadataFile(fileContents: string, message: any
     return true
 }
 
-export async function setMaven() {
-    let mavenWrapperExecutableName = isWin() ? 'mvnw.cmd' : 'mvnw'
-    const mavenWrapperExecutablePath = path.join(transformByQState.getProjectPath(), mavenWrapperExecutableName)
-    if (existsSync(mavenWrapperExecutablePath)) {
-        if (mavenWrapperExecutableName === 'mvnw') {
-            mavenWrapperExecutableName = './mvnw' // add the './' for non-Windows
-        } else if (mavenWrapperExecutableName === 'mvnw.cmd') {
-            mavenWrapperExecutableName = '.\\mvnw.cmd' // add the '.\' for Windows
-        }
-        transformByQState.setMavenName(mavenWrapperExecutableName)
-    } else {
-        transformByQState.setMavenName('mvn')
-    }
-    getLogger().info(`CodeTransformation: using Maven ${transformByQState.getMavenName()}`)
+export function setMaven() {
+    // for now, just use regular Maven since the Maven executables can
+    // cause permissions issues when building if user has not ran 'chmod'
+    transformByQState.setMavenName('mvn')
 }
 
 export async function openBuildLogFile() {
