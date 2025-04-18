@@ -518,7 +518,6 @@ export class AppToWebViewMessageDispatcher {
     }
 
     public sendCustomFormActionMessage(message: CustomFormActionMessage) {
-        console.log('sendCustomFormActionMessage', message)
         this.appsToWebViewMessagePublisher.publish(message)
     }
 

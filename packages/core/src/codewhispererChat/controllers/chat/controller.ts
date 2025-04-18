@@ -709,9 +709,7 @@ export class ChatController {
         this.editorContextExtractor
             .extractContextForTrigger('ChatMessage')
             .then(async (context) => {
-                console.log('message for tool action:', message)
                 const triggerID = message.triggerId
-
                 // Check if this trigger has already been cancelled
                 if (this.isTriggerCancelled(triggerID)) {
                     return

@@ -249,7 +249,6 @@ export class ExecuteBash {
      * Check if the trigger has been cancelled using ConversationTracker
      */
     private isTriggerCancelled(): boolean {
-        // console.log('trigger cancellation check is happening')
         if (!this.triggerId) {
             return false
         }
@@ -257,8 +256,6 @@ export class ExecuteBash {
         // Import here to avoid circular dependency
         const { ConversationTracker } = require('../storages/conversationTracker')
         const cancellationtracker = ConversationTracker.getInstance()
-        // console.log('trigger cancellation status:', cancellationtracker.getTokenForTrigger(this.triggerId))
-        // console.log('concealltion status:', cancellationtracker.isTriggerCancelled(this.triggerId))
         return cancellationtracker.isTriggerCancelled(this.triggerId)
     }
 
@@ -275,24 +272,26 @@ export class ExecuteBash {
 
             // Modify the command to make it more cancellable by using process groups
             // This ensures that when we kill the parent process, all child processes are also terminated
-            // The trap ensures cleanup on SIGTERM/SIGINT
+            // The trap ensures cleanup on SIGTERM/SIGINT and sends SIGTERM to the child process group
             const modifiedCommand = `
 exec bash -c "
   # Create a new process group
   set -m
   
   # Set up trap to kill the entire process group on exit
-  trap 'exit' TERM INT
+  trap 'kill -TERM -\\$CMD_PID 2>/dev/null || true; exit' TERM INT
   
   # Run the actual command in background
-  ${this.command} &
+  # Use '()' to create a subshell which becomes the process group leader
+  (${this.command}) &
   
   # Store the PID
   CMD_PID=\\$!
   
   # Wait for the command to finish
   wait \\$CMD_PID
-  exit \\$?
+  exit_code=\\$?
+  exit \\$exit_code
 "
 `
 
@@ -343,13 +342,40 @@ exec bash -c "
                 checkCancellationInterval = setInterval(() => {
                     if (this.isTriggerCancelled()) {
                         this.logger.debug('Trigger cancellation detected, killing child process')
-                        this.childProcess?.stop(false, 'SIGTERM')
+
+                        // First try to kill the entire process group
+                        if (this.childProcess && this.childProcess.pid) {
+                            try {
+                                // On Unix systems, negative PID kills the process group
+                                this.logger.debug(`Sending SIGTERM to process group -${this.childProcess.pid}`)
+                                process.kill(-this.childProcess.pid, 'SIGTERM')
+                            } catch (err) {
+                                this.logger.debug(`Failed to kill process group: ${err}`)
+                                // Fall back to regular process termination
+                                this.childProcess?.stop(false, 'SIGTERM')
+                            }
+                        } else {
+                            this.childProcess?.stop(false, 'SIGTERM')
+                        }
 
                         // After a short delay, force kill with SIGKILL if still running
                         setTimeout(() => {
                             if (this.childProcess && !this.childProcess.stopped) {
                                 this.logger.debug('Process still running after SIGTERM, sending SIGKILL')
-                                this.childProcess.stop(true, 'SIGKILL')
+
+                                // Try to kill the process group with SIGKILL
+                                if (this.childProcess.pid) {
+                                    try {
+                                        this.logger.debug(`Sending SIGKILL to process group -${this.childProcess.pid}`)
+                                        process.kill(-this.childProcess.pid, 'SIGKILL')
+                                    } catch (err) {
+                                        this.logger.debug(`Failed to kill process group with SIGKILL: ${err}`)
+                                        // Fall back to regular process termination
+                                        this.childProcess.stop(true, 'SIGKILL')
+                                    }
+                                } else {
+                                    this.childProcess.stop(true, 'SIGKILL')
+                                }
                             }
                         }, 500)
 
@@ -365,7 +391,11 @@ exec bash -c "
                     cwd: this.workingDirectory,
                     stdio: ['pipe', 'pipe', 'pipe'],
                     // Set detached to true to create a new process group
+                    // This allows us to kill the entire process group later
                     detached: true,
+                    // On Windows, we need to create a new process group
+                    // On Unix, we need to create a new session
+                    ...(process.platform === 'win32' ? { windowsVerbatimArguments: true } : {}),
                 },
                 collect: false,
                 waitForStreams: true,

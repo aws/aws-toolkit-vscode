@@ -744,7 +744,6 @@ export class Connector {
                         tabType: 'cwc',
                     })
                 } else {
-                    console.log('messageId:', messageId, 'event Id:', eventId)
                     this.cwChatConnector.onCustomFormAction(tabId, messageId ?? '', action, messageId ?? '')
                 }
                 break

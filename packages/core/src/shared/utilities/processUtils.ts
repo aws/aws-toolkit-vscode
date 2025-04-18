@@ -426,13 +426,38 @@ export class ChildProcess {
         const command = this.#command
         const pid = this.pid()
         if (!this.stopped) {
-            child.kill(signal)
+            // Try to kill the process group if possible (Unix systems only)
+            if (process.platform !== 'win32' && child.pid && child.spawnargs && child.spawnfile) {
+                try {
+                    // On Unix systems, negative PID kills the process group
+                    this.#log.debug(`Attempting to kill process group -${child.pid} with ${signal || 'SIGTERM'}`)
+                    process.kill(-child.pid, signal || 'SIGTERM')
+                } catch (err) {
+                    this.#log.debug(`Failed to kill process group: ${err}, falling back to regular kill`)
+                    child.kill(signal)
+                }
+            } else {
+                child.kill(signal)
+            }
 
             if (force === true) {
                 waitUntil(async () => this.stopped, { timeout: ChildProcess.stopTimeout, interval: 200, truthy: true })
                     .then((stopped) => {
                         if (!stopped) {
-                            child.kill('SIGKILL')
+                            // Try to kill the process group with SIGKILL if possible
+                            if (process.platform !== 'win32' && child.pid) {
+                                try {
+                                    this.#log.debug(`Attempting to kill process group -${child.pid} with SIGKILL`)
+                                    process.kill(-child.pid, 'SIGKILL')
+                                } catch (err) {
+                                    this.#log.debug(
+                                        `Failed to kill process group with SIGKILL: ${err}, falling back to regular kill`
+                                    )
+                                    child.kill('SIGKILL')
+                                }
+                            } else {
+                                child.kill('SIGKILL')
+                            }
                         }
                     })
                     .catch((e) => {

@@ -14,7 +14,6 @@ import {
     fsReadToolResponseSize,
 } from './toolShared'
 import { ListDirectory, ListDirectoryParams } from './listDirectory'
-import { ConversationTracker } from '../storages/conversationTracker'
 
 export enum ToolType {
     FsRead = 'fsRead',
@@ -65,8 +64,7 @@ export class ToolUtils {
             case ToolType.ExecuteBash:
                 // If triggerId is provided, update the tool's triggerId
                 if (triggerId) {
-                    ;(tool.tool as ExecuteBash).triggerId =
-                        ConversationTracker.getInstance().getTriggerIdForToolUseId(triggerId)
+                    ;(tool.tool as ExecuteBash).triggerId = triggerId
                 }
                 return tool.tool.invoke(updates)
             case ToolType.ListDirectory:
