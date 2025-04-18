@@ -214,78 +214,41 @@ describe('editorContext', function () {
     })
 
     describe('extractPrefixCellsContext', function () {
-        it('Should extract content from cells in reverse order up to maxLength', function () {
+        it('Should extract content from cells in reverse order up to maxLength from prefix cells', function () {
             const mockCells = [
                 createNotebookCell(createMockDocument('First cell content')),
                 createNotebookCell(createMockDocument('Second cell content')),
                 createNotebookCell(createMockDocument('Third cell content')),
             ]
 
-            const result = EditorContext.extractPrefixCellsContext(mockCells, 100, 'python')
+            const result = EditorContext.extractCellsSliceContext(mockCells, 100, 'python', false)
             assert.strictEqual(result, 'First cell content\nSecond cell content\nThird cell content\n')
         })
 
-        it('Should respect maxLength parameter', function () {
+        it('Should extract content from cells in reverse order up to maxLength from suffix cells', function () {
+            const mockCells = [
+                createNotebookCell(createMockDocument('First cell content')),
+                createNotebookCell(createMockDocument('Second cell content')),
+                createNotebookCell(createMockDocument('Third cell content')),
+            ]
+
+            const result = EditorContext.extractCellsSliceContext(mockCells, 100, 'python', true)
+            assert.strictEqual(result, 'First cell content\nSecond cell content\nThird cell content\n')
+        })
+
+        it('Should respect maxLength parameter from prefix cells', function () {
             const mockCells = [
                 createNotebookCell(createMockDocument('First')),
                 createNotebookCell(createMockDocument('Second')),
                 createNotebookCell(createMockDocument('Third')),
                 createNotebookCell(createMockDocument('Fourth')),
             ]
-
-            const result = EditorContext.extractPrefixCellsContext(mockCells, 15, 'python')
+            // Should only include part of second cell and the last two cells
+            const result = EditorContext.extractCellsSliceContext(mockCells, 15, 'python', false)
             assert.strictEqual(result, 'd\nThird\nFourth\n')
         })
 
-        it('Should handle empty cells array', function () {
-            const result = EditorContext.extractPrefixCellsContext([], 100, '')
-            assert.strictEqual(result, '')
-        })
-
-        it('Should add python comments to markdown cells', function () {
-            const mockCells = [
-                createNotebookCell(createMockDocument('# Heading\nThis is markdown'), vscode.NotebookCellKind.Markup),
-                createNotebookCell(createMockDocument('def example():\n    return "test"')),
-            ]
-            const result = EditorContext.extractPrefixCellsContext(mockCells, 100, 'python')
-            assert.strictEqual(result, '# # Heading\n# This is markdown\ndef example():\n    return "test"\n')
-        })
-
-        it('Should add java comments to markdown and python cells when language is java', function () {
-            const mockCells = [
-                createNotebookCell(createMockDocument('# Heading\nThis is markdown'), vscode.NotebookCellKind.Markup),
-                createNotebookCell(createMockDocument('def example():\n    return "test"')),
-            ]
-            const result = EditorContext.extractPrefixCellsContext(mockCells, 100, 'java')
-            assert.strictEqual(result, '// # Heading\n// This is markdown\n// def example():\n//     return "test"\n')
-        })
-
-        it('Should handle code cells with different languages', function () {
-            const mockCells = [
-                createNotebookCell(
-                    createMockDocument('println(1 + 1);', 'somefile.ipynb', 'java'),
-                    vscode.NotebookCellKind.Code
-                ),
-                createNotebookCell(createMockDocument('def example():\n    return "test"')),
-            ]
-            const result = EditorContext.extractPrefixCellsContext(mockCells, 100, 'python')
-            assert.strictEqual(result, '# println(1 + 1);\ndef example():\n    return "test"\n')
-        })
-    })
-
-    describe('extractSuffixCellsContext', function () {
-        it('Should extract content from cells in order up to maxLength', function () {
-            const mockCells = [
-                createNotebookCell(createMockDocument('First cell content')),
-                createNotebookCell(createMockDocument('Second cell content')),
-                createNotebookCell(createMockDocument('Third cell content')),
-            ]
-
-            const result = EditorContext.extractSuffixCellsContext(mockCells, 100, 'python')
-            assert.strictEqual(result, 'First cell content\nSecond cell content\nThird cell content\n')
-        })
-
-        it('Should respect maxLength parameter', function () {
+        it('Should respect maxLength parameter from suffix cells', function () {
             const mockCells = [
                 createNotebookCell(createMockDocument('First')),
                 createNotebookCell(createMockDocument('Second')),
@@ -294,39 +257,59 @@ describe('editorContext', function () {
             ]
 
             // Should only include first cell and part of second cell
-            const result = EditorContext.extractSuffixCellsContext(mockCells, 15, 'plaintext')
+            const result = EditorContext.extractCellsSliceContext(mockCells, 15, 'python', true)
             assert.strictEqual(result, 'First\nSecond\nTh')
         })
 
-        it('Should handle empty cells array', function () {
-            const result = EditorContext.extractSuffixCellsContext([], 100, 'plaintext')
+        it('Should handle empty cells array from prefix cells', function () {
+            const result = EditorContext.extractCellsSliceContext([], 100, 'python', false)
             assert.strictEqual(result, '')
         })
 
-        it('Should add python comments to markdown cells', function () {
+        it('Should handle empty cells array from suffix cells', function () {
+            const result = EditorContext.extractCellsSliceContext([], 100, 'python', true)
+            assert.strictEqual(result, '')
+        })
+
+        it('Should add python comments to markdown prefix cells', function () {
             const mockCells = [
                 createNotebookCell(createMockDocument('# Heading\nThis is markdown'), vscode.NotebookCellKind.Markup),
                 createNotebookCell(createMockDocument('def example():\n    return "test"')),
             ]
-
-            const result = EditorContext.extractSuffixCellsContext(mockCells, 100, 'python')
+            const result = EditorContext.extractCellsSliceContext(mockCells, 100, 'python', false)
             assert.strictEqual(result, '# # Heading\n# This is markdown\ndef example():\n    return "test"\n')
         })
 
-        it('Should add java comments to markdown cells', function () {
+        it('Should add python comments to markdown suffix cells', function () {
             const mockCells = [
                 createNotebookCell(createMockDocument('# Heading\nThis is markdown'), vscode.NotebookCellKind.Markup),
-                createNotebookCell(
-                    createMockDocument('println(1 + 1);', 'somefile.ipynb', 'java'),
-                    vscode.NotebookCellKind.Code
-                ),
+                createNotebookCell(createMockDocument('def example():\n    return "test"')),
             ]
 
-            const result = EditorContext.extractSuffixCellsContext(mockCells, 100, 'java')
+            const result = EditorContext.extractCellsSliceContext(mockCells, 100, 'python', true)
+            assert.strictEqual(result, '# # Heading\n# This is markdown\ndef example():\n    return "test"\n')
+        })
+
+        it('Should add java comments to markdown and python prefix cells when language is java', function () {
+            const mockCells = [
+                createNotebookCell(createMockDocument('# Heading\nThis is markdown'), vscode.NotebookCellKind.Markup),
+                createNotebookCell(createMockDocument('def example():\n    return "test"')),
+            ]
+            const result = EditorContext.extractCellsSliceContext(mockCells, 100, 'java', false)
+            assert.strictEqual(result, '// # Heading\n// This is markdown\n// def example():\n//     return "test"\n')
+        })
+
+        it('Should add java comments to markdown and python suffix cells when language is java', function () {
+            const mockCells = [
+                createNotebookCell(createMockDocument('# Heading\nThis is markdown'), vscode.NotebookCellKind.Markup),
+                createNotebookCell(createMockDocument('println(1 + 1);', 'somefile.ipynb', 'java')),
+            ]
+
+            const result = EditorContext.extractCellsSliceContext(mockCells, 100, 'java', true)
             assert.strictEqual(result, '// # Heading\n// This is markdown\nprintln(1 + 1);\n')
         })
 
-        it('Should handle code cells with different languages', function () {
+        it('Should handle code prefix cells with different languages', function () {
             const mockCells = [
                 createNotebookCell(
                     createMockDocument('println(1 + 1);', 'somefile.ipynb', 'java'),
@@ -334,7 +317,19 @@ describe('editorContext', function () {
                 ),
                 createNotebookCell(createMockDocument('def example():\n    return "test"')),
             ]
-            const result = EditorContext.extractSuffixCellsContext(mockCells, 100, 'python')
+            const result = EditorContext.extractCellsSliceContext(mockCells, 100, 'python', false)
+            assert.strictEqual(result, '# println(1 + 1);\ndef example():\n    return "test"\n')
+        })
+
+        it('Should handle code suffix cells with different languages', function () {
+            const mockCells = [
+                createNotebookCell(
+                    createMockDocument('println(1 + 1);', 'somefile.ipynb', 'java'),
+                    vscode.NotebookCellKind.Code
+                ),
+                createNotebookCell(createMockDocument('def example():\n    return "test"')),
+            ]
+            const result = EditorContext.extractCellsSliceContext(mockCells, 100, 'python', true)
             assert.strictEqual(result, '# println(1 + 1);\ndef example():\n    return "test"\n')
         })
     })
