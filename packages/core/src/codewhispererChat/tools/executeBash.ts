@@ -343,22 +343,8 @@ exec bash -c "
                     if (this.isTriggerCancelled()) {
                         this.logger.debug('Trigger cancellation detected, killing child process')
 
-                        // First try to kill the entire process group
-                        if (this.childProcess && this.childProcess.pid) {
-                            try {
-                                // On Unix systems, negative PID kills the process group
-                                const childProcessPid = this.childProcess.pid
-                                const pid = -childProcessPid
-                                this.logger.debug(`Sending SIGTERM to process group ${pid}`)
-                                process.kill(pid, 'SIGTERM')
-                            } catch (err) {
-                                this.logger.debug(`Failed to kill process group: ${err}`)
-                                // Fall back to regular process termination
-                                this.childProcess?.stop(false, 'SIGTERM')
-                            }
-                        } else {
-                            this.childProcess?.stop(false, 'SIGTERM')
-                        }
+                        // Kill the process
+                        this.childProcess?.stop(false, 'SIGTERM')
 
                         // After a short delay, force kill with SIGKILL if still running
                         setTimeout(() => {
@@ -366,20 +352,7 @@ exec bash -c "
                                 this.logger.debug('Process still running after SIGTERM, sending SIGKILL')
 
                                 // Try to kill the process group with SIGKILL
-                                if (this.childProcess.pid) {
-                                    try {
-                                        const childProcessPid = this.childProcess.pid
-                                        const pid = -childProcessPid
-                                        this.logger.debug(`Sending SIGKILL to process group ${pid}`)
-                                        process.kill(pid, 'SIGKILL')
-                                    } catch (err) {
-                                        this.logger.debug(`Failed to kill process group with SIGKILL: ${err}`)
-                                        // Fall back to regular process termination
-                                        this.childProcess.stop(true, 'SIGKILL')
-                                    }
-                                } else {
-                                    this.childProcess.stop(true, 'SIGKILL')
-                                }
+                                this.childProcess.stop(true, 'SIGKILL')
                             }
                         }, 500)
 
