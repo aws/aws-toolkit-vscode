@@ -22,6 +22,7 @@ import {
 } from 'aws-core-vscode/shared'
 import { AuthUtil, RegionProfile } from 'aws-core-vscode/codewhisperer'
 import { featureConfig } from 'aws-core-vscode/amazonq'
+import { getAmazonQLspConfig } from '../config'
 
 export class AmazonQChatViewProvider implements WebviewViewProvider {
     public static readonly viewType = 'aws.amazonq.AmazonQChatView'
@@ -44,10 +45,23 @@ export class AmazonQChatViewProvider implements WebviewViewProvider {
 
         const lspDir = Uri.parse(LanguageServerResolver.defaultDir())
         const dist = Uri.joinPath(globals.context.extensionUri, 'dist')
+
+        const resourcesRoots = [lspDir, dist]
+
+        /**
+         * if the mynah chat client is defined, then make sure to add it to the resource roots, otherwise
+         * it will 401 when trying to load
+         */
+        const mynahUIPath = getAmazonQLspConfig().ui
+        if (process.env.WEBPACK_DEVELOPER_SERVER && mynahUIPath) {
+            const dir = path.dirname(mynahUIPath)
+            resourcesRoots.push(Uri.parse(dir))
+        }
+
         webviewView.webview.options = {
             enableScripts: true,
             enableCommandUris: true,
-            localResourceRoots: [lspDir, dist],
+            localResourceRoots: resourcesRoots,
         }
 
         const source = 'vue/src/amazonq/webview/ui/amazonq-ui-connector-adapter.js' // Sent to dist/vue folder in webpack.
