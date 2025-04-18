@@ -477,6 +477,7 @@ describe('CodeWhisperer-basicCommands', function () {
             sinon.stub(AuthUtil.instance, 'isConnected').returns(true)
             sinon.stub(AuthUtil.instance, 'isIdcConnection').returns(true)
             sinon.stub(AuthUtil.instance, 'isCustomizationFeatureEnabled').value(true)
+            sinon.stub(AuthUtil.instance.regionProfileManager, 'requireProfileSelection').returns(false)
             await CodeScansState.instance.setScansEnabled(false)
 
             getTestWindow().onDidShowQuickPick(async (e) => {
