@@ -36,7 +36,6 @@ describe('RegionProfileManager', function () {
 
     beforeEach(function () {
         regionProfileManager = new RegionProfileManager(AuthUtil.instance)
-        // const authUtilStub = sinon.stub(AuthUtil.instance, 'isIdcConnection').returns(isSso)
     })
 
     afterEach(function () {
@@ -101,6 +100,8 @@ describe('RegionProfileManager', function () {
 
     describe(`client config`, function () {
         it(`no valid credential should throw`, async function () {
+            AuthUtil.instance.logout()
+
             assert.ok(!AuthUtil.instance.isConnected())
 
             assert.throws(() => {

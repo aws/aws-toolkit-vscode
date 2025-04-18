@@ -10,7 +10,7 @@ import { resetCodeWhispererGlobalVariables } from 'aws-core-vscode/test'
 import { assertTelemetryCurried, getTestWindow, getTestLogger } from 'aws-core-vscode/test'
 import { AuthUtil, awsIdSignIn, showCodeWhispererConnectionPrompt } from 'aws-core-vscode/codewhisperer'
 
-describe.only('showConnectionPrompt', function () {
+describe('showConnectionPrompt', function () {
     let isBuilderIdConnection: sinon.SinonStub
 
     beforeEach(async function () {
