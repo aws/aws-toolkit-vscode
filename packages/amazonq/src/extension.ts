@@ -43,6 +43,7 @@ import { registerCommands } from './commands'
 import { focusAmazonQPanel } from 'aws-core-vscode/codewhispererChat'
 import { activate as activateAmazonqLsp } from './lsp/activation'
 import { activate as activateInlineCompletion } from './app/inline/activation'
+import { isAmazonInternalOs } from 'aws-core-vscode/shared'
 
 export const amazonQContextPrefix = 'amazonq'
 
@@ -119,7 +120,10 @@ export async function activateAmazonQCommon(context: vscode.ExtensionContext, is
     }
     // This contains every lsp agnostic things (auth, security scan, code scan)
     await activateCodeWhisperer(extContext as ExtContext)
-    if (Experiments.instance.get('amazonqLSP', false) || Auth.instance.isInternalAmazonUser()) {
+    if (
+        (Experiments.instance.get('amazonqLSP', false) || Auth.instance.isInternalAmazonUser()) &&
+        !isAmazonInternalOs()
+    ) {
         // start the Amazon Q LSP for internal users first
         await activateAmazonqLsp(context)
     }
