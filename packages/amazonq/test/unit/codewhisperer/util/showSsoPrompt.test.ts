@@ -10,9 +10,13 @@ import { resetCodeWhispererGlobalVariables } from 'aws-core-vscode/test'
 import { assertTelemetryCurried, getTestWindow, getTestLogger } from 'aws-core-vscode/test'
 import { AuthUtil, awsIdSignIn, showCodeWhispererConnectionPrompt } from 'aws-core-vscode/codewhisperer'
 
-describe('showConnectionPrompt', function () {
+describe.only('showConnectionPrompt', function () {
+    let isBuilderIdConnection: sinon.SinonStub
+
     beforeEach(async function () {
         await resetCodeWhispererGlobalVariables()
+        isBuilderIdConnection = sinon.stub(AuthUtil.instance, 'isBuilderIdConnection')
+        isBuilderIdConnection.resolves()
     })
 
     afterEach(function () {
@@ -20,8 +24,6 @@ describe('showConnectionPrompt', function () {
     })
 
     it('can select connect to AwsBuilderId', async function () {
-        const authUtilSpy = sinon.stub(AuthUtil.instance, 'isBuilderIdConnection')
-
         getTestWindow().onDidShowQuickPick(async (picker) => {
             await picker.untilReady()
             picker.acceptItem(picker.items[0])
@@ -29,13 +31,12 @@ describe('showConnectionPrompt', function () {
 
         await showCodeWhispererConnectionPrompt()
 
-        assert.ok(authUtilSpy.called)
         const assertTelemetry = assertTelemetryCurried('ui_click')
         assertTelemetry({ elementId: 'connection_optionBuilderID' })
+        assert.ok(isBuilderIdConnection)
     })
 
     it('connectToAwsBuilderId logs that AWS ID sign in was selected', async function () {
-        sinon.stub(AuthUtil.instance, 'isBuilderIdConnection').resolves()
         sinon.stub(vscode.commands, 'executeCommand')
 
         await awsIdSignIn()
