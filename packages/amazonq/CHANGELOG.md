@@ -1,3 +1,7 @@
+## 1.60.0 2025-04-18
+
+- **Bug Fix** Users might be bound to a customization which they dont have access with the selected profile and it causes service throwing 403 when using inline suggestion and chat features
+
 ## 1.59.0 2025-04-11
 
 - **Bug Fix** Code fix line number or file is sometimes not accurate
