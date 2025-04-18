@@ -1005,6 +1005,9 @@ export const createMynahUI = (
             connector.onPromptInputOptionChange(tabId, optionsValues)
         },
         onMessageDismiss: (tabId, messageId) => {
+            if (messageId === 'programmerModeCardId') {
+                tabDataGenerator.dismissedCards = true
+            }
             connector.onMessageDismiss(tabId, messageId)
         },
         onFileClick: connector.onFileClick,

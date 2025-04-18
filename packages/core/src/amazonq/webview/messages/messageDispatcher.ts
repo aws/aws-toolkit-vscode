@@ -87,8 +87,6 @@ export function dispatchWebViewMessagesToApps(
                 return
             }
             case 'message-dismissed': {
-                // eslint-disable-next-line aws-toolkits/no-console-log
-                console.log('message-dismissed', msg)
                 if (msg.messageId === 'programmerModeCardId') {
                     void globals.globalState.tryUpdate('aws.amazonq.dismissedCards', true)
                 }

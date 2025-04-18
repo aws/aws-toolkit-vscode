@@ -28,7 +28,7 @@ export class TabDataGenerator {
     public quickActionsGenerator: QuickActionGenerator
     private highlightCommand?: FeatureContext
     private regionProfile?: RegionProfile
-    private dismissedCards?: boolean
+    public dismissedCards?: boolean
 
     constructor(props: TabDataGeneratorProps) {
         this.followUpsGenerator = new FollowUpGenerator()
@@ -64,8 +64,6 @@ export class TabDataGenerator {
         const programmerModeCardId = 'programmerModeCardId'
 
         const isProgrammerModeCardDismissed = this.dismissedCards
-        // eslint-disable-next-line aws-toolkits/no-console-log
-        console.log('trueOrFalse', isProgrammerModeCardDismissed)
         const programmerModeCard: ChatItem | undefined = !isProgrammerModeCardDismissed
             ? ({
                   type: ChatItemType.ANSWER,
