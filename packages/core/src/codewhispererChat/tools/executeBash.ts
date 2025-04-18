@@ -348,7 +348,8 @@ exec bash -c "
                             try {
                                 // On Unix systems, negative PID kills the process group
                                 this.logger.debug(`Sending SIGTERM to process group -${this.childProcess.pid}`)
-                                process.kill(-this.childProcess.pid, 'SIGTERM')
+                                const pid = -this.childProcess.pid
+                                process.kill(pid, 'SIGTERM')
                             } catch (err) {
                                 this.logger.debug(`Failed to kill process group: ${err}`)
                                 // Fall back to regular process termination
@@ -367,7 +368,8 @@ exec bash -c "
                                 if (this.childProcess.pid) {
                                     try {
                                         this.logger.debug(`Sending SIGKILL to process group -${this.childProcess.pid}`)
-                                        process.kill(-this.childProcess.pid, 'SIGKILL')
+                                        const pid = -this.childProcess.pid
+                                        process.kill(pid, 'SIGKILL')
                                     } catch (err) {
                                         this.logger.debug(`Failed to kill process group with SIGKILL: ${err}`)
                                         // Fall back to regular process termination
@@ -385,7 +387,6 @@ exec bash -c "
 
                         // Return from the function after cancellation
                         reject(new Error('Command execution cancelled'))
-                        console.log('exiting the cancellation')
                         return
                     }
                 }, 100) // Check every 100ms

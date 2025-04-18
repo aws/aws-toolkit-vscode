@@ -787,7 +787,6 @@ export class ChatController {
                             }
 
                             const output = await ToolUtils.invoke(tool, chatStream, triggerID)
-                            console.log('output', output)
                             ToolUtils.validateOutput(output, tool.type)
 
                             let status: ToolResultStatus = ToolResultStatus.SUCCESS
