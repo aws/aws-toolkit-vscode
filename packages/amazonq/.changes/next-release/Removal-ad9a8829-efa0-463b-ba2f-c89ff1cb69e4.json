@@ -1,4 +1,4 @@
 {
-	"type": "Removal",
-	"description": "disable auto-review by default"
+	"type": "bugfix",
+	"description": "/review: disable auto-review by default"
 }
