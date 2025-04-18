@@ -1024,6 +1024,11 @@ export const createMynahUI = (
             texts: uiComponentsTexts,
             tabBarButtons: [
                 {
+                    id: 'mcp_configuration',
+                    icon: MynahIcons.MAGIC,
+                    description: 'MCP configuration',
+                },
+                {
                     id: 'history_sheet',
                     icon: MynahIcons.HISTORY,
                     description: 'View chat history',

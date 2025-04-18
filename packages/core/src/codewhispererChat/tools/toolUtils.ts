@@ -15,12 +15,15 @@ import {
     fsReadToolResponseSize,
 } from './toolShared'
 import { ListDirectory, ListDirectoryParams } from './listDirectory'
+import { McpTool } from './mcp/mcpTool'
+import { McpManager } from './mcp/mcpManager'
 
 export enum ToolType {
     FsRead = 'fsRead',
     FsWrite = 'fsWrite',
     ExecuteBash = 'executeBash',
     ListDirectory = 'listDirectory',
+    Mcp = 'mcp',
 }
 
 export type Tool =
@@ -28,6 +31,7 @@ export type Tool =
     | { type: ToolType.FsWrite; tool: FsWrite }
     | { type: ToolType.ExecuteBash; tool: ExecuteBash }
     | { type: ToolType.ListDirectory; tool: ListDirectory }
+    | { type: ToolType.Mcp; tool: McpTool }
 
 export class ToolUtils {
     static displayName(tool: Tool): string {
@@ -40,6 +44,8 @@ export class ToolUtils {
                 return 'Execute shell command'
             case ToolType.ListDirectory:
                 return 'List directory from filesystem'
+            case ToolType.Mcp:
+                return 'Execute MCP tool'
         }
     }
 
@@ -53,6 +59,8 @@ export class ToolUtils {
                 return tool.tool.requiresAcceptance()
             case ToolType.ListDirectory:
                 return tool.tool.requiresAcceptance()
+            case ToolType.Mcp:
+                return { requiresAcceptance: true }
         }
     }
 
@@ -74,6 +82,8 @@ export class ToolUtils {
             case ToolType.ExecuteBash:
                 return tool.tool.invoke(updates ?? undefined, cancellationToken)
             case ToolType.ListDirectory:
+                return tool.tool.invoke(updates)
+            case ToolType.Mcp:
                 return tool.tool.invoke(updates)
         }
     }
@@ -159,7 +169,18 @@ export class ToolUtils {
                         type: ToolType.ListDirectory,
                         tool: new ListDirectory(value.input as unknown as ListDirectoryParams),
                     }
-                default:
+                default: {
+                    const mcpToolDef = McpManager.instance.findTool(value.name as string)
+                    if (mcpToolDef) {
+                        return {
+                            type: ToolType.Mcp,
+                            tool: new McpTool({
+                                serverName: mcpToolDef.serverName,
+                                toolName: mcpToolDef.toolName,
+                                input: value.input, // pass LLM's JSON input
+                            }),
+                        }
+                    }
                     return {
                         toolUseId: value.toolUseId,
                         content: [
@@ -169,6 +190,7 @@ export class ToolUtils {
                             } as ToolResultContentBlock,
                         ],
                     }
+                }
             }
         } catch (error) {
             return mapErr(error)

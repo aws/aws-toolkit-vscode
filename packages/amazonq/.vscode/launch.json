@@ -13,7 +13,8 @@
             "args": ["--extensionDevelopmentPath=${workspaceFolder}"],
             "env": {
                 "SSMDOCUMENT_LANGUAGESERVER_PORT": "6010",
-                "WEBPACK_DEVELOPER_SERVER": "http://localhost:8080"
+                "WEBPACK_DEVELOPER_SERVER": "http://localhost:8080",
+                "PATH": "/Users/bywang/.toolbox/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
                 // "__AMAZONQLSP_PATH": "${workspaceFolder}/../../../language-servers/app/aws-lsp-codewhisperer-runtimes/out/token-standalone.js",
                 // "__AMAZONQLSP_UI": "${workspaceFolder}/../../../language-servers/chat-client/build/amazonq-ui.js"
             },
