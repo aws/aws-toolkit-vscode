@@ -187,41 +187,6 @@
                     "items": {
                         "type": "string"
                     }
-                },
-                "amazonQ.nextEditPrediction.maxFiles": {
-                    "type": "number",
-                    "default": 15,
-                    "description": "Maximum number of files to track for edit predictions",
-                    "minimum": 1,
-                    "scope": "application"
-                },
-                "amazonQ.nextEditPrediction.maxTotalSizeKb": {
-                    "type": "number",
-                    "default": 50000,
-                    "description": "Maximum total size of snapshots in kilobytes",
-                    "minimum": 10,
-                    "scope": "application"
-                },
-                "amazonQ.nextEditPrediction.maxFileSizeKb": {
-                    "type": "number",
-                    "default": 100,
-                    "description": "Maximum size per file in kilobytes",
-                    "minimum": 5,
-                    "scope": "application"
-                },
-                "amazonQ.nextEditPrediction.debounceIntervalMs": {
-                    "type": "number",
-                    "default": 1000,
-                    "description": "Debounce interval in milliseconds between taking snapshots",
-                    "minimum": 500,
-                    "scope": "application"
-                },
-                "amazonQ.nextEditPrediction.maxAgeMs": {
-                    "type": "number",
-                    "default": 30000,
-                    "description": "Maximum age of snapshots in milliseconds",
-                    "minimum": 5000,
-                    "scope": "application"
                 }
             }
         },

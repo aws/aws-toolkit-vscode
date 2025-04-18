@@ -31,8 +31,7 @@
         "./feedback": "./dist/src/feedback/index.js",
         "./telemetry": "./dist/src/shared/telemetry/index.js",
         "./dev": "./dist/src/dev/index.js",
-        "./notifications": "./dist/src/notifications/index.js",
-        "./nep": "./dist/src/nep/index.js"
+        "./notifications": "./dist/src/notifications/index.js"
     },
     "contributes": {
         "icons": {
