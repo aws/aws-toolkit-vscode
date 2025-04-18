@@ -167,7 +167,6 @@ export class RegionProfileManager {
         const ssoConn = this.connectionProvider() as SsoConnection
 
         // only prompt to users when users switch from A profile to B profile
-        // TODO: should we ask if it's a customization switch?
         if (source !== 'customization' && this.activeRegionProfile !== undefined && regionProfile !== undefined) {
             const response = await showConfirmationMessage({
                 prompt: localize(
