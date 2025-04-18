@@ -22,10 +22,13 @@ import { isAwsError } from '../../shared/errors'
 import { ProfileChangedEvent } from '../region/regionProfileManager'
 
 export class CustomizationProvider {
+    readonly region: string
     constructor(
         private readonly client: CodeWhispererUserClient,
         private readonly profile: RegionProfile
-    ) {}
+    ) {
+        this.region = profile.region
+    }
 
     async listAvailableCustomizations(): Promise<Customization[]> {
         const requester = async (request: CodeWhispererUserClient.ListAvailableCustomizationsRequest) =>
@@ -57,7 +60,6 @@ export const onProfileChangedListener: (event: ProfileChangedEvent) => any = asy
         return
     }
     const logger = getLogger()
-    // TODO: To check how do we do we handle it when user signs out.
     if (!event.profile) {
         await setSelectedCustomization(baseCustomization)
         return
