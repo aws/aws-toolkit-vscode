@@ -189,24 +189,24 @@ export class ExecuteBash {
                 if (cmdArgs.length === 0) {
                     return { requiresAcceptance: true }
                 }
-
+                let hasOutsideWorkspacePath = false
                 // For each command, validate arguments for path safety within workspace
                 for (const arg of cmdArgs) {
                     if (this.looksLikePath(arg)) {
-                        // If not absolute, resolve using workingDirectory if available.
                         let fullPath = arg
                         if (!path.isAbsolute(arg) && this.workingDirectory) {
                             fullPath = path.join(this.workingDirectory, arg)
                         }
                         const workspaceFolders = vscode.workspace.workspaceFolders
                         if (!workspaceFolders || workspaceFolders.length === 0) {
-                            return { requiresAcceptance: true }
+                            hasOutsideWorkspacePath = true
+                            continue
                         }
                         const isInWorkspace = workspaceFolders.some((folder) =>
                             isInDirectory(folder.uri.fsPath, fullPath)
                         )
                         if (!isInWorkspace) {
-                            return { requiresAcceptance: true }
+                            hasOutsideWorkspacePath = true
                         }
                     }
                 }
@@ -220,6 +220,9 @@ export class ExecuteBash {
                     case CommandCategory.Mutate:
                         return { requiresAcceptance: true, warning: mutateCommandWarningMessage }
                     case CommandCategory.ReadOnly:
+                        if (hasOutsideWorkspacePath) {
+                            return { requiresAcceptance: true }
+                        }
                         continue
                     default:
                         return { requiresAcceptance: true }

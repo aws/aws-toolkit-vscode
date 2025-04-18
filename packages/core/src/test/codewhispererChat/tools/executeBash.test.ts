@@ -44,7 +44,7 @@ describe('ExecuteBash Tool', () => {
     })
 
     it('set requiresAcceptance=true if the command has dangerous patterns', () => {
-        const execBash = new ExecuteBash({ command: 'rm -rf /' })
+        const execBash = new ExecuteBash({ command: 'ls && rm -rf /' })
         const needsAcceptance = execBash.requiresAcceptance().requiresAcceptance
         assert.equal(needsAcceptance, true, 'Should require acceptance for dangerous pattern')
         assert.equal(
