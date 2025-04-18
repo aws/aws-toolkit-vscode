@@ -382,6 +382,11 @@ exec bash -c "
                         if (checkCancellationInterval) {
                             clearInterval(checkCancellationInterval)
                         }
+
+                        // Return from the function after cancellation
+                        reject(new Error('Command execution cancelled'))
+                        console.log('exiting the cancellation')
+                        return
                     }
                 }, 100) // Check every 100ms
             }

@@ -787,6 +787,7 @@ export class ChatController {
                             }
 
                             const output = await ToolUtils.invoke(tool, chatStream, triggerID)
+                            console.log('output', output)
                             ToolUtils.validateOutput(output, tool.type)
 
                             let status: ToolResultStatus = ToolResultStatus.SUCCESS
@@ -804,6 +805,10 @@ export class ChatController {
                                 status,
                             })
                         } catch (e: any) {
+                            if (this.isTriggerCancelled(triggerID)) {
+                                getLogger().debug(`Tool execution cancelled before invoke for tabID: ${tabID}`)
+                                return
+                            }
                             toolResults.push({
                                 content: [{ text: e.message }],
                                 toolUseId: toolUse.toolUseId,
@@ -811,6 +816,10 @@ export class ChatController {
                             })
                         }
                     } else {
+                        if (this.isTriggerCancelled(triggerID)) {
+                            getLogger().debug(`Tool execution cancelled before invoke for tabID: ${tabID}`)
+                            return
+                        }
                         const toolResult: ToolResult = result
                         toolResults.push(toolResult)
                     }
