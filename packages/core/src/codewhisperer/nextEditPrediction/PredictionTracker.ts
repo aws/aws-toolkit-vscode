@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import * as path from 'path'
 import fs from '../../shared/fs/fs'
 import { getLogger } from '../../shared/logger/logger'
-import { DiffGenerator } from './diffGenerator'
+import * as diffGenerator from './diffGenerator'
 import * as codewhispererClient from '../client/codewhisperer'
 
 export interface FileTrackerConfig {
@@ -15,8 +15,6 @@ export interface FileTrackerConfig {
     maxFiles: number
     /** Maximum total size in kilobytes (default: 200) */
     maxTotalSizeKb: number
-    /** Maximum size per file in kilobytes */
-    maxFileSizeKb: number
     /** Debounce interval in milliseconds (default: 2000) */
     debounceIntervalMs: number
     /** Maximum age of snapshots in milliseconds (default: 30000) */
@@ -49,7 +47,6 @@ export class PredictionTracker {
         const defaultConfig = {
             maxFiles: 25,
             maxTotalSizeKb: 50000,
-            maxFileSizeKb: 100, // Default max size per file
             debounceIntervalMs: 2000,
             maxAgeMs: 30000, // 30 sec
             maxSupplementalContext: 15, // Default max supplemental contexts
@@ -89,12 +86,6 @@ export class PredictionTracker {
     private async takeSnapshot(filePath: string, previousContent: string): Promise<void> {
         const content = previousContent
         const size = Buffer.byteLength(content, 'utf8')
-
-        // Skip if the file is too large
-        if (size > this.config.maxFileSizeKb * 1024) {
-            getLogger().info(`File ${filePath} exceeds maximum size limit`)
-            return
-        }
 
         const timestamp = Date.now()
         const storageKey = this.generateStorageKey(filePath, timestamp)
@@ -291,7 +282,7 @@ export class PredictionTracker {
             throw new Error('Storage path not available')
         }
 
-        const snapshotsDir = path.join(this.storagePath, 'file-snapshots')
+        const snapshotsDir = path.join(this.storagePath, 'AmazonQ-file-snapshots')
         if (!(await fs.existsDir(snapshotsDir))) {
             await fs.mkdir(snapshotsDir)
         }
@@ -309,7 +300,7 @@ export class PredictionTracker {
             return
         }
 
-        const snapshotsDir = path.join(this.storagePath, 'file-snapshots')
+        const snapshotsDir = path.join(this.storagePath, 'AmazonQ-file-snapshots')
         const filePath = path.join(snapshotsDir, `${snapshot.storageKey}.content`)
 
         if (await fs.exists(filePath)) {
@@ -331,7 +322,7 @@ export class PredictionTracker {
             throw new Error('Storage path not available')
         }
 
-        const snapshotsDir = path.join(this.storagePath, 'file-snapshots')
+        const snapshotsDir = path.join(this.storagePath, 'AmazonQ-file-snapshots')
         const filePath = path.join(snapshotsDir, `${snapshot.storageKey}.content`)
 
         try {
@@ -346,8 +337,6 @@ export class PredictionTracker {
      * Generates unified diffs between adjacent snapshots of a file
      * and between the newest snapshot and the current file content
      *
-     * @param filePath Path to the file for which diffs should be generated
-     * @param currentContent Current content of the file to compare with the latest snapshot
      * @returns Array of SupplementalContext objects containing diffs between snapshots and current content
      */
     public async generatePredictionSupplementalContext(): Promise<codewhispererClient.SupplementalContext[]> {
@@ -357,6 +346,7 @@ export class PredictionTracker {
         }
         const filePath = activeEditor.document.uri.fsPath
         const currentContent = activeEditor.document.getText()
+
         // Get all snapshots for this file
         const snapshots = this.getFileSnapshots(filePath)
 
@@ -364,82 +354,28 @@ export class PredictionTracker {
             return []
         }
 
-        // Sort snapshots by timestamp (oldest first)
-        const sortedSnapshots = [...snapshots].sort((a, b) => a.timestamp - b.timestamp)
-        const supplementalContexts: codewhispererClient.SupplementalContext[] = []
-        const currentTimestamp = Date.now()
-
-        // Generate diffs between adjacent snapshots
-        for (let i = 0; i < sortedSnapshots.length - 1; i++) {
-            const oldSnapshot = sortedSnapshots[i]
-            const newSnapshot = sortedSnapshots[i + 1]
-
+        // Load all snapshot contents
+        const snapshotContents: diffGenerator.SnapshotContent[] = []
+        for (const snapshot of snapshots) {
             try {
-                const oldContent = await this.getSnapshotContent(oldSnapshot)
-                const newContent = await this.getSnapshotContent(newSnapshot)
-
-                const diff = await DiffGenerator.generateUnifiedDiffWithTimestamps(
-                    oldSnapshot.filePath,
-                    newSnapshot.filePath,
-                    oldContent,
-                    newContent,
-                    oldSnapshot.timestamp,
-                    newSnapshot.timestamp
-                )
-
-                supplementalContexts.push({
-                    filePath: oldSnapshot.filePath,
-                    content: diff,
-                    type: 'PreviousEditorState',
-                    metadata: {
-                        previousEditorStateMetadata: {
-                            timeOffset: currentTimestamp - oldSnapshot.timestamp,
-                        },
-                    },
+                const content = await this.getSnapshotContent(snapshot)
+                snapshotContents.push({
+                    filePath: snapshot.filePath,
+                    content,
+                    timestamp: snapshot.timestamp,
                 })
             } catch (err) {
-                getLogger().error(`Failed to generate diff: ${err}`)
+                getLogger().error(`Failed to load snapshot content: ${err}`)
             }
         }
 
-        // Generate diff between the newest snapshot and the current file content
-        if (sortedSnapshots.length > 0) {
-            const newestSnapshot = sortedSnapshots[sortedSnapshots.length - 1]
-
-            try {
-                // Need to temporarily save files to compare
-                const newestContent = await this.getSnapshotContent(newestSnapshot)
-
-                const diff = await DiffGenerator.generateUnifiedDiffWithTimestamps(
-                    newestSnapshot.filePath,
-                    newestSnapshot.filePath,
-                    newestContent,
-                    currentContent,
-                    newestSnapshot.timestamp,
-                    currentTimestamp
-                )
-
-                supplementalContexts.push({
-                    filePath: newestSnapshot.filePath,
-                    content: diff,
-                    type: 'PreviousEditorState',
-                    metadata: {
-                        previousEditorStateMetadata: {
-                            timeOffset: currentTimestamp - newestSnapshot.timestamp,
-                        },
-                    },
-                })
-            } catch (err) {
-                getLogger().error(`Failed to generate diff with current content: ${err}`)
-            }
-        }
-
-        // Limit the number of supplemental contexts based on config
-        if (supplementalContexts.length > this.config.maxSupplementalContext) {
-            return supplementalContexts.slice(-this.config.maxSupplementalContext)
-        }
-
-        return supplementalContexts
+        // Use the diffGenerator module to generate supplemental contexts
+        return diffGenerator.generateDiffContexts(
+            filePath,
+            currentContent,
+            snapshotContents,
+            this.config.maxSupplementalContext
+        )
     }
 
     private async ensureStorageDirectoryExists(): Promise<void> {
@@ -447,7 +383,7 @@ export class PredictionTracker {
             return
         }
 
-        const snapshotsDir = path.join(this.storagePath, 'file-snapshots')
+        const snapshotsDir = path.join(this.storagePath, 'AmazonQ-file-snapshots')
         if (!(await fs.existsDir(snapshotsDir))) {
             await fs.mkdir(snapshotsDir)
         }
@@ -458,7 +394,7 @@ export class PredictionTracker {
             return
         }
 
-        const snapshotsDir = path.join(this.storagePath, 'file-snapshots')
+        const snapshotsDir = path.join(this.storagePath, 'AmazonQ-file-snapshots')
         if (!(await fs.existsDir(snapshotsDir))) {
             return
         }

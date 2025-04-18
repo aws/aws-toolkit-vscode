@@ -54,7 +54,7 @@ export class SnapshotVisualizer {
                     case 'showSnapshot':
                         await this.showSnapshotContent(message.filePath, message.timestamp)
                         break
-                    case 'fireAPI':
+                    case 'generateUdiff':
                         await this.generateDiffs()
                         break
                 }
@@ -266,7 +266,7 @@ export class SnapshotVisualizer {
                 <div class="button-group">
                     <span id="total-count">0 snapshots</span>
                     <button class="btn" id="refresh-btn">Refresh</button>
-                    <button class="btn" id="fire-api-btn">FireAPI</button>
+                    <button class="btn" id="generate-udiff-btn">generateUdiff</button>
                 </div>
             </div>
             
@@ -404,9 +404,9 @@ export class SnapshotVisualizer {
                         vscode.postMessage({ command: 'refresh' });
                     });
                     
-                    // FireAPI button handler
-                    document.getElementById('fire-api-btn').addEventListener('click', () => {
-                        vscode.postMessage({ command: 'fireAPI' });
+                    // generateUdiff button handler
+                    document.getElementById('generate-udiff-btn').addEventListener('click', () => {
+                        vscode.postMessage({ command: 'generateUdiff' });
                     });
                     
                     // Request initial data
