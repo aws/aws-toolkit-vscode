@@ -68,7 +68,6 @@ export function messageToChatMessage(msg: Message): ChatMessage {
               assistantResponseMessage: {
                   messageId: msg.messageId,
                   content: msg.body,
-                  references: msg.codeReference || [],
                   toolUses: msg.toolUses || [],
               },
           }
