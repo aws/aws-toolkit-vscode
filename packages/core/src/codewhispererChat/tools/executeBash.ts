@@ -189,30 +189,33 @@ export class ExecuteBash {
                 if (cmdArgs.length === 0) {
                     return { requiresAcceptance: true }
                 }
+
+                const command = cmdArgs[0]
+                const category = commandCategories.get(command)
                 let hasOutsideWorkspacePath = false
-                // For each command, validate arguments for path safety within workspace
+
                 for (const arg of cmdArgs) {
                     if (this.looksLikePath(arg)) {
                         let fullPath = arg
                         if (!path.isAbsolute(arg) && this.workingDirectory) {
                             fullPath = path.join(this.workingDirectory, arg)
                         }
+
                         const workspaceFolders = vscode.workspace.workspaceFolders
                         if (!workspaceFolders || workspaceFolders.length === 0) {
                             hasOutsideWorkspacePath = true
-                            continue
+                            break
                         }
+
                         const isInWorkspace = workspaceFolders.some((folder) =>
                             isInDirectory(folder.uri.fsPath, fullPath)
                         )
                         if (!isInWorkspace) {
                             hasOutsideWorkspacePath = true
+                            break
                         }
                     }
                 }
-
-                const command = cmdArgs[0]
-                const category = commandCategories.get(command)
 
                 switch (category) {
                     case CommandCategory.Destructive:
@@ -228,6 +231,7 @@ export class ExecuteBash {
                         return { requiresAcceptance: true }
                 }
             }
+
             return { requiresAcceptance: false }
         } catch (error) {
             this.logger.warn(`Error while checking acceptance: ${(error as Error).message}`)
