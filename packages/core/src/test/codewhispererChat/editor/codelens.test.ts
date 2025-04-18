@@ -15,7 +15,7 @@ import { InstalledClock } from '@sinonjs/fake-timers'
 import globals from '../../../shared/extensionGlobals'
 import { focusAmazonQPanel } from '../../../codewhispererChat/commands/registerCommands'
 import sinon from 'sinon'
-import { AuthState, AuthStates, AuthUtil, FeatureAuthState } from '../../../codewhisperer/util/authUtil'
+import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import { inlinehintKey } from '../../../codewhisperer/models/constants'
 import {
     AutotriggerState,
@@ -24,6 +24,7 @@ import {
     PressTabState,
     TryMoreExState,
 } from '../../../codewhisperer/views/lineAnnotationController'
+import { AuthState, LanguageClientAuth } from '../../../auth/auth2'
 
 describe('TryChatCodeLensProvider', () => {
     let instance: TryChatCodeLensProvider
@@ -40,6 +41,10 @@ describe('TryChatCodeLensProvider', () => {
         // that originally would have been registered by the `core` `activate()` at some point
         tryRegister(tryChatCodeLensCommand)
         tryRegister(focusAmazonQPanel)
+        const mockLspAuth: Partial<LanguageClientAuth> = {
+            registerSsoTokenChangedHandler: sinon.stub().resolves(),
+        }
+        AuthUtil.create(mockLspAuth as LanguageClientAuth)
     })
 
     beforeEach(async function () {
@@ -58,7 +63,7 @@ describe('TryChatCodeLensProvider', () => {
     })
 
     function stubConnection(state: AuthState) {
-        return sinon.stub(AuthUtil.instance, 'getChatAuthStateSync').returns({ amazonQ: state } as FeatureAuthState)
+        return sinon.stub(AuthUtil.instance, 'getAuthState').returns(state)
     }
 
     it('keeps returning a code lense until it hits the max times it should show', async function () {
@@ -115,7 +120,9 @@ describe('TryChatCodeLensProvider', () => {
             stub.restore()
         }
 
-        const testStates = Object.values(AuthStates).filter((s) => s !== AuthStates.connected)
+        const testStates = Object.values(['connected', 'notConnected', 'expired'] as AuthState[]).filter(
+            (s) => s !== 'connected'
+        )
         for (const state of testStates) {
             await testConnection(state)
         }

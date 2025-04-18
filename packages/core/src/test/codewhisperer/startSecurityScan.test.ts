@@ -28,8 +28,9 @@ import {
 import * as model from '../../codewhisperer/models/model'
 import * as errors from '../../shared/errors'
 import * as timeoutUtils from '../../shared/utilities/timeoutUtils'
-import { SecurityIssueTreeViewProvider } from '../../codewhisperer'
+import { AuthUtil, SecurityIssueTreeViewProvider } from '../../codewhisperer'
 import { createClient, mockGetCodeScanResponse } from './testUtil'
+import { LanguageClientAuth } from '../../auth/auth2'
 
 let extensionContext: FakeExtensionContext
 let mockSecurityPanelViewProvider: SecurityPanelViewProvider
@@ -40,6 +41,14 @@ let focusStub: sinon.SinonStub
 
 describe('startSecurityScan', function () {
     const workspaceFolder = getTestWorkspaceFolder()
+
+    before(async function () {
+        const mockLspAuth: Partial<LanguageClientAuth> = {
+            registerSsoTokenChangedHandler: sinon.stub().resolves(),
+        }
+        AuthUtil.create(mockLspAuth as LanguageClientAuth)
+    })
+
     beforeEach(async function () {
         extensionContext = await FakeExtensionContext.create()
         mockSecurityPanelViewProvider = new SecurityPanelViewProvider(extensionContext)
@@ -50,9 +59,11 @@ describe('startSecurityScan', function () {
         sinon.stub(timeoutUtils, 'sleep')
         focusStub = sinon.stub(SecurityIssueTreeViewProvider, 'focus')
     })
+
     afterEach(function () {
         sinon.restore()
     })
+
     after(async function () {
         await closeAllEditors()
     })

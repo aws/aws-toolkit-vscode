@@ -14,7 +14,6 @@ import { handleWebviewError } from '../../../webviews/server'
 import { InvalidGrantException } from '@aws-sdk/client-sso-oidc'
 import {
     AwsConnection,
-    Connection,
     hasScopes,
     scopesCodeCatalyst,
     scopesCodeWhispererChat,
@@ -195,8 +194,6 @@ export abstract class CommonAuthWebview extends VueWebview {
      */
     abstract reauthenticateConnection(): Promise<void>
     abstract getReauthError(): Promise<AuthError | undefined>
-
-    abstract getActiveConnection(): Promise<Connection | undefined>
 
     /** Refreshes the current state of the auth flow, determining what you see in the UI */
     abstract refreshAuthState(): Promise<void>

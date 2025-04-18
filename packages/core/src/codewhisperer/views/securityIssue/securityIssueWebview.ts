@@ -135,7 +135,7 @@ export class SecurityIssueWebview extends VueWebview {
             ruleId: this.issue!.ruleId,
             component: 'webview',
             result: 'Succeeded',
-            credentialStartUrl: AuthUtil.instance.startUrl,
+            credentialStartUrl: AuthUtil.instance.connection?.startUrl,
             codeFixAction: fixAction,
         }
     }

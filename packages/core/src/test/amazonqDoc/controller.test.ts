@@ -18,7 +18,6 @@ import {
 } from './utils'
 import { CurrentWsFolders, MetricDataOperationName, MetricDataResult, NewFileInfo } from '../../amazonqDoc/types'
 import { DocCodeGenState, docScheme, Session } from '../../amazonqDoc'
-import { AuthUtil } from '../../codewhisperer'
 import {
     ApiClientError,
     ApiServiceError,
@@ -49,6 +48,7 @@ import {
     WorkspaceEmptyError,
 } from '../../amazonqDoc/errors'
 import { LlmError } from '../../amazonq/errors'
+
 describe('Controller - Doc Generation', () => {
     const firstTabID = '123'
     const firstConversationID = '123'
@@ -176,11 +176,6 @@ describe('Controller - Doc Generation', () => {
             configurable: true,
         })
 
-        sandbox.stub(AuthUtil.instance, 'getChatAuthState').resolves({
-            codewhispererCore: 'connected',
-            codewhispererChat: 'connected',
-            amazonQ: 'connected',
-        })
         sandbox.stub(FileSystem.prototype, 'exists').resolves(false)
         if (isMultiTabs) {
             const secondSession = await createCodeGenState(sandbox, secondTabID, secondConversationID, secondUploadID)

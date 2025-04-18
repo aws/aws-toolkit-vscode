@@ -13,7 +13,6 @@ import { hasVendedIamCredentials } from '../../auth/auth'
 import { CodeWhispererSettings } from '../util/codewhispererSettings'
 import { PromiseResult } from 'aws-sdk/lib/request'
 import { AuthUtil } from '../util/authUtil'
-import { isSsoConnection } from '../../auth/connection'
 import { pageableToCollection } from '../../shared/utilities/collectionUtils'
 import apiConfig = require('./service-2.json')
 import userApiConfig = require('./user-service-2.json')
@@ -86,6 +85,8 @@ export type Imports = CodeWhispererUserClient.Imports
 
 export class DefaultCodeWhispererClient {
     private async createSdkClient(): Promise<CodeWhispererClient> {
+        throw new Error('Do not call this function until IAM is supported by LSP identity server')
+
         const isOptedOut = CodeWhispererSettings.instance.isOptoutEnabled()
         const cwsprConfig = getCodewhispererConfig()
         return (await globals.sdkClientBuilder.createAwsService(
@@ -93,7 +94,7 @@ export class DefaultCodeWhispererClient {
             {
                 apiConfig: apiConfig,
                 region: cwsprConfig.region,
-                credentials: await AuthUtil.instance.getCredentials(),
+                credentials: undefined,
                 endpoint: cwsprConfig.endpoint,
                 onRequestSetup: [
                     (req) => {
@@ -128,7 +129,7 @@ export class DefaultCodeWhispererClient {
     async createUserSdkClient(maxRetries?: number): Promise<CodeWhispererUserClient> {
         const isOptedOut = CodeWhispererSettings.instance.isOptoutEnabled()
         session.setFetchCredentialStart()
-        const bearerToken = await AuthUtil.instance.getBearerToken()
+        const bearerToken = await AuthUtil.instance.getToken()
         session.setSdkApiCallStart()
         const cwsprConfig = getCodewhispererConfig()
         return (await globals.sdkClientBuilder.createAwsService(
@@ -158,7 +159,7 @@ export class DefaultCodeWhispererClient {
     }
 
     private isBearerTokenAuth(): boolean {
-        return isSsoConnection(AuthUtil.instance.conn)
+        return AuthUtil.instance.isConnected() // TODO: Handle IAM credentials
     }
 
     public async generateRecommendations(
@@ -254,7 +255,7 @@ export class DefaultCodeWhispererClient {
             },
             profileArn: AuthUtil.instance.regionProfileManager.activeRegionProfile?.arn,
         }
-        if (!AuthUtil.instance.isValidEnterpriseSsoInUse() && !globals.telemetry.telemetryEnabled) {
+        if (!AuthUtil.instance.isIdcConnection() && !globals.telemetry.telemetryEnabled) {
             return
         }
         const response = await (await this.createUserSdkClient()).sendTelemetryEvent(requestWithCommonFields).promise()

@@ -14,7 +14,6 @@ import * as nls from 'vscode-nls'
 import { codeWhispererClient as client } from '../codewhisperer/client/codewhisperer'
 import { AuthUtil } from '../codewhisperer/util/authUtil'
 import { getLogger } from './logger/logger'
-import { isBuilderIdConnection, isIdcSsoConnection } from '../auth/connection'
 import { CodeWhispererSettings } from '../codewhisperer/util/codewhispererSettings'
 import globals from './extensionGlobals'
 import { getClientId, getOperatingSystem } from './telemetry/util'
@@ -150,9 +149,9 @@ export class FeatureConfigProvider {
             const previousOverride = globals.globalState.tryGet<string>('aws.amazonq.customization.overrideV2', String)
             if (customizationArnOverride !== undefined && customizationArnOverride !== previousOverride) {
                 // Double check if server-side wrongly returns a customizationArn to BID users
-                if (isBuilderIdConnection(AuthUtil.instance.conn)) {
+                if (AuthUtil.instance.isBuilderIdConnection()) {
                     this.featureConfigs.delete(Features.customizationArnOverride)
-                } else if (isIdcSsoConnection(AuthUtil.instance.conn)) {
+                } else if (AuthUtil.instance.isIdcConnection()) {
                     let availableCustomizations: Customization[] = []
                     try {
                         const items: Customization[] = []

@@ -6,7 +6,7 @@
 import vscode from 'vscode'
 import { clientId, encryptionKey, startLanguageServer } from './client'
 import { AmazonQLspInstaller } from './lspInstaller'
-import { lspSetupStage, ToolkitError } from 'aws-core-vscode/shared'
+import { lspSetupStage, ToolkitError, messages } from 'aws-core-vscode/shared'
 import { AuthUtil } from 'aws-core-vscode/codewhisperer'
 import { auth2 } from 'aws-core-vscode/auth'
 

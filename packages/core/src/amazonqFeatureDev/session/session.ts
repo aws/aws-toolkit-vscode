@@ -90,7 +90,10 @@ export class Session {
             this._conversationId = await this.proxyClient.createConversation()
             getLogger().info(logWithConversationId(this.conversationId))
 
-            span.record({ amazonqConversationId: this._conversationId, credentialStartUrl: AuthUtil.instance.startUrl })
+            span.record({
+                amazonqConversationId: this._conversationId,
+                credentialStartUrl: AuthUtil.instance.connection?.startUrl,
+            })
         })
 
         this._state = new FeatureDevPrepareCodeGenState(

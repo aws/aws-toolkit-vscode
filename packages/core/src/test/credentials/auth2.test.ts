@@ -5,7 +5,7 @@
 
 import * as sinon from 'sinon'
 import * as vscode from 'vscode'
-import { LanguageClientAuth, SsoLogin, AuthStates } from '../../auth/auth2'
+import { LanguageClientAuth, SsoLogin } from '../../auth/auth2'
 import { LanguageClient } from 'vscode-languageclient'
 import {
     GetSsoTokenResult,
@@ -221,7 +221,7 @@ describe('SsoLogin', () => {
         fireEventSpy = sinon.spy(eventEmitter, 'fire')
         ssoLogin = new SsoLogin(profileName, lspAuth as any)
         ;(ssoLogin as any).eventEmitter = eventEmitter
-        ;(ssoLogin as any).connectionState = AuthStates.NOT_CONNECTED
+        ;(ssoLogin as any).connectionState = 'notConnected'
     })
 
     afterEach(() => {
@@ -245,7 +245,7 @@ describe('SsoLogin', () => {
                 loginOpts.scopes
             )
             sinon.assert.calledOnce(lspAuth.getSsoToken)
-            sinon.assert.match(ssoLogin.getConnectionState(), AuthStates.CONNECTED)
+            sinon.assert.match(ssoLogin.getConnectionState(), 'connected')
             sinon.assert.match(ssoLogin.data, {
                 startUrl: loginOpts.startUrl,
                 region: loginOpts.region,
@@ -257,7 +257,7 @@ describe('SsoLogin', () => {
 
     describe('reauthenticate', () => {
         it('throws when not connected', async () => {
-            ;(ssoLogin as any).connectionState = AuthStates.NOT_CONNECTED
+            ;(ssoLogin as any).connectionState = 'notConnected'
             try {
                 await ssoLogin.reauthenticate()
                 sinon.assert.fail('Should have thrown an error')
@@ -267,13 +267,13 @@ describe('SsoLogin', () => {
         })
 
         it('returns new SSO token when connected', async () => {
-            ;(ssoLogin as any).connectionState = AuthStates.CONNECTED
+            ;(ssoLogin as any).connectionState = 'connected'
             lspAuth.getSsoToken.resolves(mockGetSsoTokenResponse)
 
             const response = await ssoLogin.reauthenticate()
 
             sinon.assert.calledOnce(lspAuth.getSsoToken)
-            sinon.assert.match(ssoLogin.getConnectionState(), AuthStates.CONNECTED)
+            sinon.assert.match(ssoLogin.getConnectionState(), 'connected')
             sinon.assert.match(response.ssoToken.id, tokenId)
             sinon.assert.match(response.updateCredentialsParams, mockGetSsoTokenResponse.updateCredentialsParams)
         })
@@ -283,12 +283,12 @@ describe('SsoLogin', () => {
         it('invalidates token and updates state', async () => {
             await ssoLogin.logout()
 
-            sinon.assert.match(ssoLogin.getConnectionState(), AuthStates.NOT_CONNECTED)
+            sinon.assert.match(ssoLogin.getConnectionState(), 'notConnected')
             sinon.assert.match(ssoLogin.data, undefined)
         })
 
         it('emits state change event', async () => {
-            ;(ssoLogin as any).connectionState = AuthStates.CONNECTED
+            ;(ssoLogin as any).connectionState = 'connected'
             ;(ssoLogin as any).ssoTokenId = tokenId
             ;(ssoLogin as any)._data = {
                 startUrl: loginOpts.startUrl,
@@ -303,7 +303,7 @@ describe('SsoLogin', () => {
             sinon.assert.calledOnce(fireEventSpy)
             sinon.assert.calledWith(fireEventSpy, {
                 id: profileName,
-                state: AuthStates.NOT_CONNECTED,
+                state: 'notConnected',
             })
         })
     })
@@ -345,7 +345,7 @@ describe('SsoLogin', () => {
                 region: region,
                 startUrl: startUrl,
             })
-            sinon.assert.match(ssoLogin.getConnectionState(), AuthStates.CONNECTED)
+            sinon.assert.match(ssoLogin.getConnectionState(), 'connected')
             sinon.assert.match((ssoLogin as any).ssoTokenId, tokenId)
         })
 
@@ -357,7 +357,7 @@ describe('SsoLogin', () => {
             sinon.assert.calledOnce(lspAuth.getProfile)
             sinon.assert.calledOnce(lspAuth.getSsoToken)
             sinon.assert.match(ssoLogin.data, undefined)
-            sinon.assert.match(ssoLogin.getConnectionState(), AuthStates.NOT_CONNECTED)
+            sinon.assert.match(ssoLogin.getConnectionState(), 'notConnected')
         })
 
         it('emits state change event on successful restore', async () => {
@@ -371,7 +371,7 @@ describe('SsoLogin', () => {
             sinon.assert.calledOnce(fireEventSpy)
             sinon.assert.calledWith(fireEventSpy, {
                 id: profileName,
-                state: AuthStates.CONNECTED,
+                state: 'connected',
             })
         })
     })
@@ -389,7 +389,7 @@ describe('SsoLogin', () => {
 
     describe('_getSsoToken', () => {
         beforeEach(() => {
-            ;(ssoLogin as any).connectionState = AuthStates.CONNECTED
+            ;(ssoLogin as any).connectionState = 'connected'
         })
 
         const testErrorHandling = async (errorCode: string, expectedState: string, shouldEmitEvent: boolean = true) => {
@@ -425,12 +425,12 @@ describe('SsoLogin', () => {
 
         for (const errorCode of notConnectedErrors) {
             it(`handles ${errorCode} error`, async () => {
-                await testErrorHandling(errorCode, AuthStates.NOT_CONNECTED)
+                await testErrorHandling(errorCode, 'notConnected')
             })
         }
 
         it('handles token refresh error', async () => {
-            await testErrorHandling(AwsErrorCodes.E_CANNOT_REFRESH_SSO_TOKEN, AuthStates.EXPIRED)
+            await testErrorHandling(AwsErrorCodes.E_CANNOT_REFRESH_SSO_TOKEN, 'expired')
         })
 
         it('handles unknown errors', async () => {
@@ -456,16 +456,16 @@ describe('SsoLogin', () => {
         })
 
         it('updates state when token is retrieved successfully', async () => {
-            ;(ssoLogin as any).connectionState = AuthStates.NOT_CONNECTED
+            ;(ssoLogin as any).connectionState = 'notConnected'
             lspAuth.getSsoToken.resolves(mockGetSsoTokenResponse)
 
             await (ssoLogin as any)._getSsoToken(true)
 
-            sinon.assert.match(ssoLogin.getConnectionState(), AuthStates.CONNECTED)
+            sinon.assert.match(ssoLogin.getConnectionState(), 'connected')
             sinon.assert.match((ssoLogin as any).ssoTokenId, tokenId)
             sinon.assert.calledWith(fireEventSpy, {
                 id: profileName,
-                state: AuthStates.CONNECTED,
+                state: 'connected',
             })
         })
     })
@@ -476,11 +476,11 @@ describe('SsoLogin', () => {
             ssoLogin.onDidChangeConnectionState(handler)
 
             // Simulate state change
-            ;(ssoLogin as any).updateConnectionState(AuthStates.CONNECTED)
+            ;(ssoLogin as any).updateConnectionState('connected')
 
             sinon.assert.calledWith(handler, {
                 id: profileName,
-                state: AuthStates.CONNECTED,
+                state: 'connected',
             })
         })
     })
@@ -488,7 +488,7 @@ describe('SsoLogin', () => {
     describe('ssoTokenChangedHandler', () => {
         beforeEach(() => {
             ;(ssoLogin as any).ssoTokenId = tokenId
-            ;(ssoLogin as any).connectionState = AuthStates.CONNECTED
+            ;(ssoLogin as any).connectionState = 'connected'
         })
 
         it('updates state when token expires', () => {
@@ -497,11 +497,11 @@ describe('SsoLogin', () => {
                 ssoTokenId: tokenId,
             })
 
-            sinon.assert.match(ssoLogin.getConnectionState(), AuthStates.EXPIRED)
+            sinon.assert.match(ssoLogin.getConnectionState(), 'expired')
             sinon.assert.calledOnce(fireEventSpy)
             sinon.assert.calledWith(fireEventSpy, {
                 id: profileName,
-                state: AuthStates.EXPIRED,
+                state: 'expired',
             })
         })
 

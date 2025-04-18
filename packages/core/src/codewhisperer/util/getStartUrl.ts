@@ -28,9 +28,8 @@ export const getStartUrl = async () => {
 }
 
 export async function connectToEnterpriseSso(startUrl: string, region: Region['id']) {
-    let conn
     try {
-        conn = await AuthUtil.instance.connectToEnterpriseSso(startUrl, region)
+        await AuthUtil.instance.login(startUrl, region)
     } catch (e) {
         throw ToolkitError.chain(e, CodeWhispererConstants.failedToConnectIamIdentityCenter, {
             code: 'FailedToConnect',
@@ -38,6 +37,4 @@ export async function connectToEnterpriseSso(startUrl: string, region: Region['i
     }
     vsCodeState.isFreeTierLimitReached = false
     await Commands.tryExecute('aws.amazonq.enableCodeSuggestions')
-
-    return conn
 }

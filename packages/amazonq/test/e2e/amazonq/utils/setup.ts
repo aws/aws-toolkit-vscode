@@ -5,9 +5,9 @@
 import { AuthUtil } from 'aws-core-vscode/codewhisperer'
 
 export async function loginToIdC() {
-    const authState = await AuthUtil.instance.getChatAuthState()
+    const authState = AuthUtil.instance.getAuthState()
     if (process.env['AWS_TOOLKIT_AUTOMATION'] === 'local') {
-        if (authState.amazonQ !== 'connected') {
+        if (authState !== 'connected') {
             throw new Error('You will need to login manually before running tests.')
         }
         return
@@ -22,5 +22,5 @@ export async function loginToIdC() {
         )
     }
 
-    await AuthUtil.instance.connectToEnterpriseSso(startUrl, region)
+    await AuthUtil.instance.login(startUrl, region)
 }

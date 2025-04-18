@@ -10,7 +10,7 @@ import { getUserAgent } from '../telemetry/util'
 
 // Create a client for featureDev streaming based off of aws sdk v3
 export async function createCodeWhispererChatStreamingClient(): Promise<CodeWhispererStreaming> {
-    const bearerToken = await AuthUtil.instance.getBearerToken()
+    const bearerToken = await AuthUtil.instance.getToken()
     const cwsprConfig = getCodewhispererConfig()
     const streamingClient = new CodeWhispererStreaming({
         region: cwsprConfig.region,

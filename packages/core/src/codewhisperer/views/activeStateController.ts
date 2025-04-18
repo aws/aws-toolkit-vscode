@@ -48,12 +48,7 @@ export class ActiveStateController implements vscode.Disposable {
             subscribeOnce(this.container.lineTracker.onReady)(async (_) => {
                 await this.onReady()
             }),
-            this.container.auth.auth.onDidChangeConnectionState(async (e) => {
-                if (e.state !== 'authenticating') {
-                    await this._refresh(vscode.window.activeTextEditor)
-                }
-            }),
-            this.container.auth.secondaryAuth.onDidChangeActiveConnection(async () => {
+            this.container.auth.onDidChangeConnectionState(async (e) => {
                 await this._refresh(vscode.window.activeTextEditor)
             })
         )
@@ -139,7 +134,7 @@ export class ActiveStateController implements vscode.Disposable {
             return
         }
 
-        if (!this.container.auth.isConnectionValid()) {
+        if (!this.container.auth.isConnected()) {
             this.clear(this._editor)
             return
         }

@@ -135,7 +135,7 @@ export async function startSecurityScan(
         result: 'Succeeded',
         codewhispererCodeScanTotalIssues: 0,
         codewhispererCodeScanIssuesWithFixes: 0,
-        credentialStartUrl: AuthUtil.instance.startUrl,
+        credentialStartUrl: AuthUtil.instance.connection?.startUrl,
         codewhispererCodeScanScope: scope,
         source: initiatedByChat ? 'chat' : 'menu',
     }
