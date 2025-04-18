@@ -102,7 +102,7 @@ export async function fetchSupplementalContextForTest(
 async function generateSupplementalContextFromFocalFile(
     filePath: string,
     strategy: UtgStrategy,
-    cancellationToken: vscode.CancellationToken
+    cancellationToken?: vscode.CancellationToken
 ): Promise<CodeWhispererSupplementalContextItem[]> {
     const fileContent = await fs.readFileText(vscode.Uri.parse(filePath!).fsPath)
 
