@@ -710,6 +710,7 @@ export class ChatController {
             .extractContextForTrigger('ChatMessage')
             .then(async (context) => {
                 const triggerID = message.triggerId
+
                 // Check if this trigger has already been cancelled
                 if (this.isTriggerCancelled(triggerID)) {
                     return
@@ -1627,7 +1628,6 @@ export class ChatController {
             })}`
         )
         let response: MessengerResponseType | undefined = undefined
-        // session.createNewTokenSource()
         // TODO: onProfileChanged, abort previous response?
         try {
             if (!session.context && triggerPayload.context.length) {
