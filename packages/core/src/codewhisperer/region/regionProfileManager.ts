@@ -352,7 +352,6 @@ export class RegionProfileManager {
         }
     }
 
-    // TODO: overload?
     async createQClient(profile: RegionProfile): Promise<CodeWhispererUserClient> {
         const conn = this.connectionProvider()
         if (conn === undefined || !isSsoConnection(conn)) {
