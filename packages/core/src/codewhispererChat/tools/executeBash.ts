@@ -347,7 +347,8 @@ exec bash -c "
                         if (this.childProcess && this.childProcess.pid) {
                             try {
                                 // On Unix systems, negative PID kills the process group
-                                const pid = -this.childProcess.pid
+                                const childProcessPid = this.childProcess.pid
+                                const pid = -childProcessPid
                                 this.logger.debug(`Sending SIGTERM to process group ${pid}`)
                                 process.kill(pid, 'SIGTERM')
                             } catch (err) {
@@ -367,7 +368,8 @@ exec bash -c "
                                 // Try to kill the process group with SIGKILL
                                 if (this.childProcess.pid) {
                                     try {
-                                        const pid = -this.childProcess.pid
+                                        const childProcessPid = this.childProcess.pid
+                                        const pid = -childProcessPid
                                         this.logger.debug(`Sending SIGKILL to process group ${pid}`)
                                         process.kill(pid, 'SIGKILL')
                                     } catch (err) {
