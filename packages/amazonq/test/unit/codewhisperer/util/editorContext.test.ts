@@ -213,7 +213,7 @@ describe('editorContext', function () {
         })
     })
 
-    describe('extractPrefixCellsContext', function () {
+    describe('extractCellsSliceContext', function () {
         it('Should extract content from cells in reverse order up to maxLength from prefix cells', function () {
             const mockCells = [
                 createNotebookCell(createMockDocument('First cell content')),
