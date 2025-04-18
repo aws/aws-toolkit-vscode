@@ -52,45 +52,33 @@ export function extractSingleCellContext(cell: vscode.NotebookCell, referenceLan
     return cellText
 }
 
-export function extractPrefixCellsContext(
+export function extractCellsSliceContext(
     cells: vscode.NotebookCell[],
     maxLength: number,
-    referenceLanguage: string
+    referenceLanguage: string,
+    fromStart: boolean
 ): string {
-    const output: string[] = []
-    for (let i = cells.length - 1; i >= 0; i--) {
-        let cellText = addNewlineIfMissing(extractSingleCellContext(cells[i], referenceLanguage))
-        if (cellText.length > 0) {
-            if (cellText.length >= maxLength) {
-                output.unshift(cellText.substring(cellText.length - maxLength))
-                break
-            }
-            output.unshift(cellText)
-            maxLength -= cellText.length
-        }
+    let output: string[] = []
+    if (!fromStart) {
+        cells = cells.reverse()
     }
-    return output.join('')
-}
-
-export function extractSuffixCellsContext(
-    cells: vscode.NotebookCell[],
-    maxLength: number,
-    referenceLanguage: string
-): string {
-    const output: string[] = []
-    for (let i = 0; i < cells.length; i++) {
-        let cellText = addNewlineIfMissing(extractSingleCellContext(cells[i], referenceLanguage))
+    cells.some((cell) => {
+        let cellText = addNewlineIfMissing(extractSingleCellContext(cell, referenceLanguage))
         if (cellText.length > 0) {
-            if (!cellText.endsWith('\n')) {
-                cellText += '\n'
-            }
             if (cellText.length >= maxLength) {
-                output.push(cellText.substring(0, maxLength))
-                break
+                if (fromStart) {
+                    output.push(cellText.substring(0, maxLength))
+                } else {
+                    output.push(cellText.substring(cellText.length - maxLength))
+                }
+                return true
             }
             output.push(cellText)
             maxLength -= cellText.length
         }
+    })
+    if (!fromStart) {
+        output = output.reverse()
     }
     return output.join('')
 }
@@ -137,10 +125,11 @@ export function extractContextForCodeWhisperer(editor: vscode.TextEditor): codew
 
             // Extract text from prior cells if there is enough room in left file context
             if (caretLeftFileContext.length < CodeWhispererConstants.charactersLimit - 1) {
-                const leftCellsText = extractPrefixCellsContext(
+                const leftCellsText = extractCellsSliceContext(
                     allCells.slice(0, cellIndex),
                     CodeWhispererConstants.charactersLimit - (caretLeftFileContext.length + 1),
-                    languageName
+                    languageName,
+                    true
                 )
                 if (leftCellsText.length > 0) {
                     caretLeftFileContext = addNewlineIfMissing(leftCellsText) + caretLeftFileContext
@@ -148,10 +137,11 @@ export function extractContextForCodeWhisperer(editor: vscode.TextEditor): codew
             }
             // Extract text from subsequent cells if there is enough room in right file context
             if (caretRightFileContext.length < CodeWhispererConstants.charactersLimit - 1) {
-                const rightCellsText = extractSuffixCellsContext(
+                const rightCellsText = extractCellsSliceContext(
                     allCells.slice(cellIndex + 1),
                     CodeWhispererConstants.charactersLimit - (caretRightFileContext.length + 1),
-                    languageName
+                    languageName,
+                    false
                 )
                 if (rightCellsText.length > 0) {
                     caretRightFileContext = addNewlineIfMissing(caretRightFileContext) + rightCellsText
