@@ -49,7 +49,6 @@ describe('CodeWhisperer-customizationUtils', function () {
 
         sinon.stub(AuthUtil.instance, 'isConnectionExpired').returns(false)
         sinon.stub(AuthUtil.instance, 'isConnected').returns(true)
-        sinon.stub(AuthUtil.instance, 'isCustomizationFeatureEnabled').value(true)
         sinon.stub(AuthUtil.instance, 'conn').value(ssoConn)
 
         await resetCodeWhispererGlobalVariables()

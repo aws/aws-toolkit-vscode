@@ -33,10 +33,7 @@ export async function notifyNewCustomizations() {
     let availableCustomizations: Customization[] = []
     try {
         availableCustomizations = await getAvailableCustomizationsList()
-        AuthUtil.instance.isCustomizationFeatureEnabled = true
     } catch (error) {
-        // On receiving any error, we will disable the customization feature
-        AuthUtil.instance.isCustomizationFeatureEnabled = false
         await setSelectedCustomization(baseCustomization)
         getLogger().error(`Failed to fetch customizations: %O`, error)
         return
@@ -94,11 +91,7 @@ export const baseCustomization = {
  * @returns customization selected by users, `baseCustomization` if none is selected
  */
 export const getSelectedCustomization = (): Customization => {
-    if (
-        !AuthUtil.instance.isCustomizationFeatureEnabled ||
-        !AuthUtil.instance.isValidEnterpriseSsoInUse() ||
-        !AuthUtil.instance.conn
-    ) {
+    if (!AuthUtil.instance.isValidEnterpriseSsoInUse() || !AuthUtil.instance.conn) {
         return baseCustomization
     }
 

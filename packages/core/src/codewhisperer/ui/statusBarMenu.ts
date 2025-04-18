@@ -77,9 +77,7 @@ function getAmazonQCodeWhispererNodes() {
 
         // Amazon Q + others
         createSeparator('Other Features'),
-        ...(AuthUtil.instance.isValidEnterpriseSsoInUse() && AuthUtil.instance.isCustomizationFeatureEnabled
-            ? [createSelectCustomization()]
-            : []),
+        ...(AuthUtil.instance.isValidEnterpriseSsoInUse() ? [createSelectCustomization()] : []),
         switchToAmazonQNode(),
     ]
 }

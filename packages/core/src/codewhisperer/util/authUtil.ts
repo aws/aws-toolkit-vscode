@@ -77,25 +77,10 @@ export class AuthUtil {
     protected static readonly logIfChanged = onceChanged((s: string) => getLogger().info(s))
 
     private reauthenticatePromptShown: boolean = false
-    private _isCustomizationFeatureEnabled: boolean = false
 
     // user should only see that screen once.
     // TODO: move to memento
     public hasAlreadySeenMigrationAuthScreen: boolean = false
-
-    public get isCustomizationFeatureEnabled(): boolean {
-        return this._isCustomizationFeatureEnabled
-    }
-
-    // This boolean controls whether the Select Customization node will be visible. A change to this value
-    // means that the old UX was wrong and must refresh the devTool tree.
-    public set isCustomizationFeatureEnabled(value: boolean) {
-        if (this._isCustomizationFeatureEnabled === value) {
-            return
-        }
-        this._isCustomizationFeatureEnabled = value
-        void Commands.tryExecute('aws.amazonq.refreshStatusBar')
-    }
 
     public readonly secondaryAuth = getSecondaryAuth(
         this.auth,
