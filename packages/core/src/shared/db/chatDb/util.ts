@@ -84,13 +84,31 @@ export function messageToChatMessage(msg: Message): ChatMessage {
 /**
  * Converts Message to MynahUI Chat Item
  */
-export function messageToChatItem(msg: Message): ChatItem {
-    return {
-        body: msg.body,
-        type: msg.type as ChatItemType,
-        codeReference: msg.codeReference,
-        relatedContent: msg.relatedContent && msg.relatedContent?.content.length > 0 ? msg.relatedContent : undefined,
+export function messageToChatItem(msg: Message): ChatItem[] {
+    const chatItems: ChatItem[] = [
+        {
+            body: msg.body,
+            type: msg.type as ChatItemType,
+            codeReference: msg.codeReference,
+            relatedContent:
+                msg.relatedContent && msg.relatedContent?.content.length > 0 ? msg.relatedContent : undefined,
+        },
+    ]
+    // Check if there are any toolUses with explanations that should be displayed as directive messages
+    if (msg.toolUses && msg.toolUses.length > 0) {
+        for (const toolUse of msg.toolUses) {
+            if (toolUse.input && typeof toolUse.input === 'object') {
+                const input = toolUse.input as any
+                if (input.explanation) {
+                    chatItems.push({
+                        body: input.explanation,
+                        type: 'directive' as ChatItemType,
+                    })
+                }
+            }
+        }
     }
+    return chatItems
 }
 
 /**
