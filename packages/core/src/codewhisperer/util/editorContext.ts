@@ -18,6 +18,7 @@ import { checkLeftContextKeywordsForJson } from './commonUtil'
 import { CodeWhispererSupplementalContext } from '../models/model'
 import { getOptOutPreference } from '../../shared/telemetry/util'
 import { indent } from '../../shared/utilities/textUtilities'
+import { predictionTracker } from '../nextEditPrediction/activation'
 
 let tabSize: number = getTabSizeSetting()
 
@@ -101,12 +102,44 @@ export async function buildListRecommendationRequest(
 
     logSupplementalContext(supplementalContexts)
 
+    // Get predictionSupplementalContext from PredictionTracker
+    let predictionSupplementalContext: codewhispererClient.SupplementalContext[] = []
+    try {
+        if (predictionTracker) {
+            predictionSupplementalContext = await predictionTracker.generatePredictionSupplementalContext()
+        }
+    } catch (error) {
+        getLogger().error(`Error getting prediction supplemental context: ${error}`)
+    }
+
     const selectedCustomization = getSelectedCustomization()
-    const supplementalContext: codewhispererClient.SupplementalContext[] = supplementalContexts
+    const inlineSupplementalContext: codewhispererClient.SupplementalContext[] = supplementalContexts
         ? supplementalContexts.supplementalContextItems.map((v) => {
               return selectFrom(v, 'content', 'filePath')
           })
         : []
+
+    // Dynamically create editorState from current editor context
+    const editorState = {
+        document: {
+            programmingLanguage: {
+                languageName: fileContext.programmingLanguage.languageName,
+            },
+            relativeFilePath: fileContext.filename,
+            text: editor.document.getText(),
+        },
+        cursorState: {
+            position: {
+                line: editor.selection.active.line,
+                character: editor.selection.active.character,
+            },
+        },
+    }
+
+    const predictionTypes = ['EDITS']
+
+    // Combine inline and prediction supplemental contexts
+    const finalSupplementalContext = inlineSupplementalContext.concat(predictionSupplementalContext)
 
     return {
         request: {
@@ -115,7 +148,10 @@ export async function buildListRecommendationRequest(
             referenceTrackerConfiguration: {
                 recommendationsWithReferences: allowCodeWithReference ? 'ALLOW' : 'BLOCK',
             },
-            supplementalContexts: supplementalContext,
+            supplementalContexts: finalSupplementalContext,
+            editorState: editorState,
+            predictionTypes: predictionTypes,
+            maxResults: CodeWhispererConstants.maxRecommendations,
             customizationArn: selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
             optOutPreference: getOptOutPreference(),
         },
