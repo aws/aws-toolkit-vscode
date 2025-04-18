@@ -200,13 +200,13 @@ export class ExecuteBash {
                         }
                         const workspaceFolders = vscode.workspace.workspaceFolders
                         if (!workspaceFolders || workspaceFolders.length === 0) {
-                            return { requiresAcceptance: true, warning: destructiveCommandWarningMessage }
+                            return { requiresAcceptance: true }
                         }
                         const isInWorkspace = workspaceFolders.some((folder) =>
                             isInDirectory(folder.uri.fsPath, fullPath)
                         )
                         if (!isInWorkspace) {
-                            return { requiresAcceptance: true, warning: destructiveCommandWarningMessage }
+                            return { requiresAcceptance: true }
                         }
                     }
                 }
