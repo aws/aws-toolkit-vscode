@@ -178,6 +178,9 @@ export const createMynahUI = (
     let messageController: MessageController
 
     function getCodeBlockActions(messageData: any) {
+        if (!messageData.codeBlockActions) {
+            return {}
+        }
         // Show ViewDiff and AcceptDiff for allowedCommands in CWC
         const isEnabled = featureConfigs.get('ViewDiffInChat')?.variation === 'TREATMENT'
         const tab = tabsStorage.getTab(messageData?.tabID || '')
@@ -203,6 +206,15 @@ export const createMynahUI = (
                     data: messageData,
                 },
             }
+        }
+        if (tab?.type === 'cwc' && messageData.codeBlockActions['insert-to-cursor'] === null) {
+            const actions: Record<string, undefined> = {
+                'insert-to-cursor': undefined,
+            }
+            if (messageData.codeBlockActions['copy'] === null) {
+                actions.copy = undefined
+            }
+            return actions
         }
         // Show only "Copy" option for codeblocks in Q Test Tab
         if (tab?.type === 'testgen') {

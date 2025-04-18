@@ -52,21 +52,20 @@ export class FsRead {
         if (requiresAcceptance) {
             const fileName = path.basename(this.fsPath)
             const fileUri = vscode.Uri.file(this.fsPath)
-            updates.write(`Reading file: [${fileName}](${fileUri}), `)
-
             const [start, end] = this.readRange ?? []
-
+            let readMessage = ''
             if (start && end) {
-                updates.write(`from line ${start} to ${end}`)
+                readMessage += `from line ${start} to ${end}`
             } else if (start) {
                 if (start > 0) {
-                    updates.write(`from line ${start} to end of file`)
+                    readMessage += `from line ${start} to end of file`
                 } else {
-                    updates.write(`${start} line from the end of file to end of file`)
+                    readMessage += `${start} line from the end of file to end of file`
                 }
             } else {
-                updates.write('all lines')
+                readMessage += 'all lines'
             }
+            updates.write(`Reading file: [${fileName}](${fileUri}), ${readMessage}`)
         } else {
             updates.write('')
         }

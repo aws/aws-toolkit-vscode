@@ -21,6 +21,7 @@ import {
     SelectTabMessage,
     ChatItemHeader,
     ToolMessage,
+    ChatMessageType,
 } from '../../../view/connector/connector'
 import { EditorContextCommandType } from '../../../commands/registerCommands'
 import { ChatResponseStream as qdevChatResponseStream } from '@amzn/amazon-q-developer-streaming-client'
@@ -53,6 +54,7 @@ import {
     MynahIconsType,
     DetailedList,
     MynahUIDataModel,
+    CodeBlockActions,
 } from '@aws/mynah-ui'
 import { Database } from '../../../../shared/db/chatDb/chatDb'
 import { TabType } from '../../../../amazonq/webview/ui/storages/tabsStorage'
@@ -71,6 +73,7 @@ import { ConversationTracker } from '../../../storages/conversationTracker'
 import { waitTimeout, Timeout } from '../../../../shared/utilities/timeoutUtils'
 import { FsReadParams } from '../../../tools/fsRead'
 import { ListDirectoryParams } from '../../../tools/listDirectory'
+import { fs } from '../../../../shared/fs/fs'
 
 export type StaticTextResponseType = 'quick-action-help' | 'onboarding-help' | 'transform' | 'help'
 
@@ -193,12 +196,16 @@ export class Messenger {
         return codeBlocks.length
     }
 
-    public handleFileReadOrListOperation = (session: ChatSession, toolUse: ToolUse, tool: Tool) => {
+    public handleFileReadOrListOperation = async (session: ChatSession, toolUse: ToolUse, tool: Tool) => {
         const messageIdToUpdate =
             tool.type === ToolType.FsRead ? session.messageIdToUpdate : session.messageIdToUpdateListDirectory
         const messageId = messageIdToUpdate ?? toolUse?.toolUseId ?? ''
         const operationType = tool.type === ToolType.FsRead ? 'read' : 'listDir'
         const input = toolUse.input as unknown as FsReadParams | ListDirectoryParams
+        const fileExists = await fs.exists(input.path)
+        if (!fileExists) {
+            return messageIdToUpdate
+        }
         const existingPaths = session.getFilePathsByMessageId(messageId)
 
         // Check if path already exists in the list
@@ -359,7 +366,7 @@ export class Messenger {
                                     changeList = await tool.tool.getDiffChanges()
                                 }
                                 if (isReadOrList) {
-                                    messageIdToUpdate = this.handleFileReadOrListOperation(session, toolUse, tool)
+                                    messageIdToUpdate = await this.handleFileReadOrListOperation(session, toolUse, tool)
                                 }
                                 const validation = ToolUtils.requiresAcceptance(tool)
                                 const chatStream = new ChatStream(
@@ -471,7 +478,11 @@ export class Messenger {
                         if (this.isTriggerCancelled(triggerID)) {
                             return
                         }
-
+                        let codeBlockActions: CodeBlockActions | null = {}
+                        if (session.pairProgrammingModeOn) {
+                            // eslint-disable-next-line unicorn/no-null
+                            codeBlockActions = { 'insert-to-cursor': null }
+                        }
                         this.dispatcher.sendChatMessage(
                             new ChatMessage(
                                 {
@@ -486,6 +497,7 @@ export class Messenger {
                                     userIntent: triggerPayload.userIntent,
                                     codeBlockLanguage: codeBlockLanguage,
                                     contextList: undefined,
+                                    codeBlockActions,
                                 },
                                 tabID
                             )
@@ -768,8 +780,10 @@ export class Messenger {
         const buttons: ChatItemButton[] = []
         let header: ChatItemHeader | undefined = undefined
         let messageID: string = toolUse?.toolUseId ?? ''
+        let messageType: ChatMessageType = 'answer-part'
         if (toolUse?.name === ToolType.ExecuteBash && message.startsWith('```shell')) {
             if (validation.requiresAcceptance) {
+                messageType = 'answer'
                 const buttons: ChatItemButton[] = [
                     {
                         id: 'reject-shell-command',
@@ -796,6 +810,7 @@ export class Messenger {
             if (this.isTriggerCancelled(triggerID)) {
                 return
             }
+            messageType = 'answer'
             const input = toolUse.input as unknown as FsWriteParams
             const fileName = path.basename(input.path)
             const changes = getDiffLinesFromChanges(changeList)
@@ -829,6 +844,7 @@ export class Messenger {
                  * requiredAcceptance = false, we use messageID = toolID and we keep on updating this messageID
                  * requiredAcceptance = true, IDE sends messageID != toolID, some default value, as this overlaps with previous message. */
                 messageID = 'toolUse'
+                messageType = 'answer'
                 const buttons: ChatItemButton[] = [
                     {
                         id: 'confirm-tool-use',
@@ -858,8 +874,8 @@ export class Messenger {
         this.dispatcher.sendChatMessage(
             new ChatMessage(
                 {
-                    message: message,
-                    messageType: toolUse?.name === ToolType.FsWrite ? 'answer' : 'answer-part',
+                    message,
+                    messageType,
                     followUps: undefined,
                     followUpsHeader: undefined,
                     relatedSuggestions: undefined,
