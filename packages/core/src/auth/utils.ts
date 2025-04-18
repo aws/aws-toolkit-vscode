@@ -46,7 +46,7 @@ import { Auth } from './auth'
 import { validateIsNewSsoUrl, validateSsoUrlFormat } from './sso/validation'
 import { getLogger } from '../shared/logger/logger'
 import { AuthFormId } from '../login/webview/vue/types'
-import { AuthUtil } from '../codewhisperer/util/authUtil'
+import { amazonQScopes, AuthUtil } from '../codewhisperer/util/authUtil'
 import { extensionVersion } from '../shared/vscode/env'
 import { CommonAuthWebview } from '../login/webview/vue/backend'
 import { AuthSource } from '../login/webview/util'
@@ -792,6 +792,9 @@ export function getAuthFormIdsFromConnection(conn?: Connection): AuthFormId[] {
 
     if (isValidCodeCatalystConnection(conn)) {
         authIds.push(`${connType}CodeCatalyst`)
+    }
+    if (hasScopes(conn, amazonQScopes)) {
+        authIds.push(`${connType}CodeWhisperer`)
     }
 
     return authIds
