@@ -6,11 +6,11 @@
 import {
     EventEmitter,
     CancellationToken,
-    Webview,
     WebviewView,
     WebviewViewProvider,
     WebviewViewResolveContext,
     Uri,
+    Webview,
 } from 'vscode'
 import * as path from 'path'
 import {
@@ -29,7 +29,8 @@ export class AmazonQChatViewProvider implements WebviewViewProvider {
     private readonly onDidResolveWebviewEmitter = new EventEmitter<void>()
     public readonly onDidResolveWebview = this.onDidResolveWebviewEmitter.event
 
-    webview: Webview | undefined
+    webviewView?: WebviewView
+    webview?: Webview
 
     connectorAdapterPath?: string
     uiPath?: string
@@ -41,8 +42,6 @@ export class AmazonQChatViewProvider implements WebviewViewProvider {
         context: WebviewViewResolveContext,
         _token: CancellationToken
     ) {
-        this.webview = webviewView.webview
-
         const lspDir = Uri.parse(LanguageServerResolver.defaultDir())
         const dist = Uri.joinPath(globals.context.extensionUri, 'dist')
 
@@ -77,7 +76,16 @@ export class AmazonQChatViewProvider implements WebviewViewProvider {
 
         webviewView.webview.html = await this.getWebviewContent()
 
+        this.webviewView = webviewView
+        this.webview = this.webviewView.webview
+
         this.onDidResolveWebviewEmitter.fire()
+        globals.context.subscriptions.push(
+            this.webviewView.onDidDispose(() => {
+                this.webviewView = undefined
+                this.webview = undefined
+            })
+        )
         performance.mark(amazonqMark.open)
     }
 

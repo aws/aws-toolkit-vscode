@@ -15,12 +15,14 @@ import { AuthUtil } from 'aws-core-vscode/codewhisperer'
 import { updateConfigurationRequestType } from '@aws/language-server-runtimes/protocol'
 
 export async function activate(languageClient: LanguageClient, encryptionKey: Buffer, mynahUIPath: string) {
+    const disposables = globals.context.subscriptions
+
     // Make sure we've sent an auth profile to the language server before even initializing the UI
     await updateProfile(languageClient)
 
     const provider = new AmazonQChatViewProvider(mynahUIPath)
 
-    globals.context.subscriptions.push(
+    disposables.push(
         window.registerWebviewViewProvider(AmazonQChatViewProvider.viewType, provider, {
             webviewOptions: {
                 retainContextWhenHidden: true,
@@ -36,12 +38,18 @@ export async function activate(languageClient: LanguageClient, encryptionKey: Bu
     registerLanguageServerEventListener(languageClient, provider)
 
     provider.onDidResolveWebview(() => {
-        if (provider.webview) {
-            DefaultAmazonQAppInitContext.instance.getAppsToWebViewMessageListener().onMessage((msg) => {
-                provider.webview?.postMessage(msg).then(undefined, (e) => {
-                    getLogger().error('webView.postMessage failed: %s', (e as Error).message)
-                })
+        const disposable = DefaultAmazonQAppInitContext.instance.getAppsToWebViewMessageListener().onMessage((msg) => {
+            provider.webview?.postMessage(msg).then(undefined, (e) => {
+                getLogger().error('webView.postMessage failed: %s', (e as Error).message)
             })
+        })
+
+        if (provider.webviewView) {
+            disposables.push(
+                provider.webviewView.onDidDispose(() => {
+                    disposable.dispose()
+                })
+            )
         }
 
         registerMessageListeners(languageClient, provider, encryptionKey)
@@ -50,7 +58,7 @@ export async function activate(languageClient: LanguageClient, encryptionKey: Bu
     // register event listeners from the legacy agent flow
     await registerLegacyChatListeners(globals.context)
 
-    globals.context.subscriptions.push(
+    disposables.push(
         AuthUtil.instance.regionProfileManager.onDidChangeRegionProfile(async () => {
             void updateProfile(languageClient)
             await provider.refreshWebview()
