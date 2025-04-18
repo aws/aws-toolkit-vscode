@@ -92,6 +92,7 @@ import {
     additionalContentInnerContextLimit,
     workspaceChunkMaxSize,
     defaultContextLengths,
+    maxHistoryMessages,
 } from '../../constants'
 import { ChatSession } from '../../clients/chat/v0/chat'
 import { amazonQTabSuffix } from '../../../shared/constants'
@@ -1601,7 +1602,7 @@ export class ChatController {
         //  Do not include chatHistory for requests going to Mynah
         request.conversationState.history = request.conversationState.currentMessage?.userInputMessage?.userIntent
             ? []
-            : this.chatHistoryDb.getMessages(tabID).map((chat) => messageToChatMessage(chat))
+            : this.chatHistoryDb.getMessages(tabID, maxHistoryMessages).map((chat) => messageToChatMessage(chat))
         request.conversationState.conversationId = session.sessionIdentifier
 
         triggerPayload.documentReferences = this.mergeRelevantTextDocuments(triggerPayload.relevantTextDocuments)
