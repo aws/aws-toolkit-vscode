@@ -410,6 +410,41 @@ export class ChildProcess {
     }
 
     /**
+     * Attempts to kill a process group on Unix systems, falling back to regular kill if it fails
+     * @param child The child process to kill
+     * @param signal The signal to send (defaults to SIGTERM)
+     * @param checkSpawnProps Whether to check for child.spawnargs and child.spawnfile (used in first call only)
+     * @returns true if process group kill was attempted, false if regular kill was used
+     */
+    public killProcessGroup(
+        child: proc.ChildProcess,
+        signal: NodeJS.Signals = 'SIGTERM',
+        checkSpawnProps: boolean = false
+    ): boolean {
+        // First call in stop() uses the stricter condition with spawnargs/spawnfile checks
+        // Second call in the force kill uses the less restrictive condition
+        const condition = checkSpawnProps
+            ? process.platform !== 'win32' && child.spawnargs && child.spawnfile
+            : process.platform !== 'win32'
+
+        if (condition && child.pid) {
+            try {
+                // On Unix systems, negative PID kills the process group
+                this.#log.debug(`Attempting to kill process group -${child.pid} with ${signal}`)
+                process.kill(-child.pid, signal)
+                return true
+            } catch (err) {
+                this.#log.debug(`Failed to kill process group with ${signal}: ${err}, falling back to regular kill`)
+                child.kill(signal)
+                return false
+            }
+        } else {
+            child.kill(signal)
+            return false
+        }
+    }
+
+    /**
      * Stops the process.
      *
      * SIGTERM won't kill a terminal process, use SIGHUP instead.
@@ -426,13 +461,17 @@ export class ChildProcess {
         const command = this.#command
         const pid = this.pid()
         if (!this.stopped) {
-            child.kill(signal)
+            // Try to kill the process group if possible (Unix systems only)
+            // First call uses the stricter condition with spawnargs/spawnfile checks
+            this.killProcessGroup(child, signal || 'SIGTERM', true)
 
             if (force === true) {
                 waitUntil(async () => this.stopped, { timeout: ChildProcess.stopTimeout, interval: 200, truthy: true })
                     .then((stopped) => {
                         if (!stopped) {
-                            child.kill('SIGKILL')
+                            // Try to kill the process group with SIGKILL if possible
+                            // Second call uses the less restrictive condition
+                            this.killProcessGroup(child, 'SIGKILL', false)
                         }
                     })
                     .catch((e) => {

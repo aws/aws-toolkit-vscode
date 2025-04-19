@@ -44,6 +44,7 @@ export class Connector extends BaseConnector {
     private readonly onChatAnswerUpdated
     private readonly onAsyncEventProgress
     private chatItems: Map<string, Map<string, ChatItem>> = new Map() // tabId -> messageId -> ChatItem
+    private tabIdToTriggerId: Map<string, string> = new Map() // tabId -> triggerId
 
     override getTabType(): TabType {
         return 'cwc'
@@ -135,6 +136,10 @@ export class Connector extends BaseConnector {
                 }
             }
 
+            if (messageData.tabID && messageData.triggerID && messageData.triggerID !== '') {
+                this.storetriggerId(messageData.tabID, messageData.triggerID)
+            }
+
             if (answer.messageId) {
                 this.storeChatItem(messageData.tabID, answer.messageId, answer)
             }
@@ -211,6 +216,14 @@ export class Connector extends BaseConnector {
             this.chatItems.set(tabId, new Map())
         }
         this.chatItems.get(tabId)?.set(messageId, { ...item })
+    }
+
+    private storetriggerId(tabId: string, triggerId: string): void {
+        this.tabIdToTriggerId.set(tabId, triggerId)
+    }
+
+    private getTriggerId(tabId: string): string | undefined {
+        return this.tabIdToTriggerId.get(tabId)
     }
 
     private getCurrentChatItem(tabId: string, messageId: string | undefined): ChatItem | undefined {
@@ -351,7 +364,7 @@ export class Connector extends BaseConnector {
             formSelectedValues: action.formItemValues,
             tabType: this.getTabType(),
             tabID: tabId,
-            triggerId: triggerId,
+            triggerId: this.getTriggerId(tabId),
         })
 
         if (

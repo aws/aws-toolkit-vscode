@@ -2,7 +2,6 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import * as vscode from 'vscode'
 import { Writable } from 'stream'
 import { FsRead, FsReadParams } from './fsRead'
 import { FsWrite, FsWriteParams } from './fsWrite'
@@ -56,23 +55,18 @@ export class ToolUtils {
         }
     }
 
-    static async invoke(
-        tool: Tool,
-        updates?: Writable,
-        cancellationToken?: vscode.CancellationToken
-    ): Promise<InvokeOutput> {
-        // Check if cancelled before executing
-        if (cancellationToken?.isCancellationRequested) {
-            throw new Error('Tool execution cancelled')
-        }
-
+    static async invoke(tool: Tool, updates?: Writable, triggerId?: string): Promise<InvokeOutput> {
         switch (tool.type) {
             case ToolType.FsRead:
                 return tool.tool.invoke(updates)
             case ToolType.FsWrite:
                 return tool.tool.invoke(updates)
             case ToolType.ExecuteBash:
-                return tool.tool.invoke(updates ?? undefined, cancellationToken)
+                // If triggerId is provided, update the tool's triggerId
+                if (triggerId) {
+                    ;(tool.tool as ExecuteBash).triggerId = triggerId
+                }
+                return tool.tool.invoke(updates)
             case ToolType.ListDirectory:
                 return tool.tool.invoke(updates)
         }
