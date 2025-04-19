@@ -91,9 +91,6 @@ export async function startLanguageServer(
                         notifications: true,
                         showSaveFileDialog: true,
                     },
-                    q: {
-                        developerProfiles: true,
-                    },
                 },
             },
             credentials: {
