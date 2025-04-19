@@ -12,6 +12,7 @@ import { split } from 'shlex'
 import path from 'path'
 import * as vscode from 'vscode'
 import { isInDirectory } from '../../shared/filesystemUtilities'
+import { ConversationTracker } from '../storages/conversationTracker'
 
 export enum CommandCategory {
     ReadOnly,
@@ -252,9 +253,6 @@ export class ExecuteBash {
         if (!this.triggerId) {
             return false
         }
-
-        // Import here to avoid circular dependency
-        const { ConversationTracker } = require('../storages/conversationTracker')
         const cancellationtracker = ConversationTracker.getInstance()
         return cancellationtracker.isTriggerCancelled(this.triggerId)
     }
