@@ -48,6 +48,8 @@ import { AdditionalContextPrompt } from '../../../amazonq/lsp/types'
 import { getUserPromptsDirectory, promptFileExtension } from '../../constants'
 import { isInDirectory } from '../../../shared/filesystemUtilities'
 import { CustomFormActionMessage } from '../../view/connector/connector'
+import { Database } from '../../../shared/db/chatDb/chatDb'
+import { Message } from '../../../shared/db/chatDb/util'
 
 export function logSendTelemetryEventFailure(error: any) {
     let requestId: string | undefined
@@ -215,6 +217,26 @@ export class CWCTelemetryHelper {
 
     private recordFeedbackResult(feedbackResult: Result) {
         telemetry.feedback_result.emit({ result: feedbackResult })
+    }
+
+    public record_TODO(tabId: string, conversationId: string, message: Message) {
+        try {
+            telemetry.amazonq_addMessageHistory.run((span) => {
+                span.record({
+                    result: 'Succeeded',
+                    cwsprChatConversationId: conversationId,
+                    cwsprChatConversationType: 'todo',
+                    cwsprChatHistoryMessageCharacterCount: message.characterCount,
+                    cwsprChatMessageId: message.messageId,
+                    cwsprToolName: 'todo',
+                    cwsprToolUseId: 'todo',
+                    // message.userInputMessageContext?.toolResults
+                    // message.toolUses
+                })
+            })
+        } catch (e: any) {
+            getLogger().error('Unable to record ______ telemetry')
+        }
     }
 
     public recordToolUseSuggested(toolUse: ToolUse, messageId: string) {
