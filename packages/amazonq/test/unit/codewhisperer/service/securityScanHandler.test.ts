@@ -16,6 +16,7 @@ import {
     pollScanJobStatus,
     SecurityScanTimedOutError,
     CodeWhispererConstants,
+    CodeScansState,
 } from 'aws-core-vscode/codewhisperer'
 import { timeoutUtils } from 'aws-core-vscode/shared'
 import assert from 'assert'
@@ -281,6 +282,7 @@ describe('securityScanHandler', function () {
                 shouldAdvanceTime: true,
             })
             sinon.stub(timeoutUtils, 'sleep').resolves()
+            sinon.stub(CodeScansState.instance, 'isScansEnabled').returns(true)
         })
 
         afterEach(function () {
