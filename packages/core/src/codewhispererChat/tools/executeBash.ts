@@ -204,29 +204,32 @@ export class ExecuteBash {
                     return { requiresAcceptance: true }
                 }
 
-                // For each command, validate arguments for path safety within workspace
+                const command = cmdArgs[0]
+                const category = commandCategories.get(command)
+                let hasOutsideWorkspacePath = false
+
                 for (const arg of cmdArgs) {
                     if (this.looksLikePath(arg)) {
-                        // If not absolute, resolve using workingDirectory if available.
                         let fullPath = arg
                         if (!path.isAbsolute(arg) && this.workingDirectory) {
                             fullPath = path.join(this.workingDirectory, arg)
                         }
+
                         const workspaceFolders = vscode.workspace.workspaceFolders
                         if (!workspaceFolders || workspaceFolders.length === 0) {
-                            return { requiresAcceptance: true, warning: destructiveCommandWarningMessage }
+                            hasOutsideWorkspacePath = true
+                            break
                         }
+
                         const isInWorkspace = workspaceFolders.some((folder) =>
                             isInDirectory(folder.uri.fsPath, fullPath)
                         )
                         if (!isInWorkspace) {
-                            return { requiresAcceptance: true, warning: destructiveCommandWarningMessage }
+                            hasOutsideWorkspacePath = true
+                            break
                         }
                     }
                 }
-
-                const command = cmdArgs[0]
-                const category = commandCategories.get(command)
 
                 switch (category) {
                     case CommandCategory.Destructive:
@@ -234,11 +237,15 @@ export class ExecuteBash {
                     case CommandCategory.Mutate:
                         return { requiresAcceptance: true, warning: mutateCommandWarningMessage }
                     case CommandCategory.ReadOnly:
+                        if (hasOutsideWorkspacePath) {
+                            return { requiresAcceptance: true }
+                        }
                         continue
                     default:
                         return { requiresAcceptance: true }
                 }
             }
+
             return { requiresAcceptance: false }
         } catch (error) {
             this.logger.warn(`Error while checking acceptance: ${(error as Error).message}`)

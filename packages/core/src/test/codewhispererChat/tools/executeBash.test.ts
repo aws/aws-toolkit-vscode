@@ -54,6 +54,16 @@ describe('ExecuteBash Tool', () => {
         )
     })
 
+    it('requiresAcceptance=true without destructive warning for read-only command outside workspace', () => {
+        const execBash = new ExecuteBash({
+            command: 'ls /',
+            cwd: '/do/not/exist/dir',
+        })
+        const result = execBash.requiresAcceptance()
+        assert.equal(result.requiresAcceptance, true, 'Should require acceptance due to path outside workspace')
+        assert.equal(result.warning, undefined, 'Should not show destructive warning for read-only command')
+    })
+
     it('set requiresAcceptance=false if it is a read-only command', () => {
         const execBash = new ExecuteBash({ command: 'cat file.txt' })
         const needsAcceptance = execBash.requiresAcceptance().requiresAcceptance
