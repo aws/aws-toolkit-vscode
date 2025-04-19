@@ -362,7 +362,7 @@ exec bash -c "
                         reject(new Error('Command execution cancelled'))
                         return
                     }
-                }, 100) // Check every 100ms
+                }, 500) // Check every 500ms
             }
 
             const childProcessOptions: ChildProcessOptions = {
