@@ -52,5 +52,6 @@ type MessageCommand =
     | 'detailed-list-filter-change'
     | 'detailed-list-item-select'
     | 'detailed-list-action-click'
+    | 'message-dismissed'
 
 export type ExtensionMessage = Record<string, any> & { command: MessageCommand }

@@ -86,6 +86,12 @@ export function dispatchWebViewMessagesToApps(
                 void globals.globalState.tryUpdate('aws.amazonq.welcomeChatShowCount', currentLoadCount + 1)
                 return
             }
+            case 'message-dismissed': {
+                if (msg.messageId === 'programmerModeCardId') {
+                    void globals.globalState.tryUpdate('aws.amazonq.dismissedCards', true)
+                }
+                return
+            }
         }
 
         if (msg.type === 'error') {

@@ -119,6 +119,7 @@ export interface ConnectorProps {
     }
     onSelectTab: (tabID: string, eventID: string) => void
     onExportChat: (tabID: string, format: 'markdown' | 'html') => string
+    onMessageDismiss?: (tabId: string, messageId: string) => void
     tabsStorage: TabsStorage
 }
 
@@ -705,6 +706,15 @@ export class Connector {
                 return this.cwChatConnector.onFormTextualItemKeyPress(tabId, event, formData, itemId, eventId)
         }
         return false
+    }
+
+    onMessageDismiss = (tabId: string, messageId: string): void => {
+        this.sendMessageToExtension({
+            command: 'message-dismissed',
+            tabId: tabId,
+            messageId,
+            tabType: this.tabsStorage.getTab(tabId)?.type,
+        })
     }
 
     onTabBarButtonClick = async (tabId: string, buttonId: string, eventId?: string) => {
