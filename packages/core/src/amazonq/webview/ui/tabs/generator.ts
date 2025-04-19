@@ -51,8 +51,6 @@ export class TabDataGenerator {
         taskName?: string,
         isSMUS?: boolean
     ): MynahUIDataModel {
-        // eslint-disable-next-line aws-toolkits/no-console-log
-        console.log('tabType', tabType)
         if (tabType === 'agentWalkthrough') {
             return agentWalkthroughDataModel
         }
