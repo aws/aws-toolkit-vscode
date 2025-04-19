@@ -26,9 +26,9 @@ sequenceDiagram
 
 ## Language Server Debugging
 
-1. Clone https://github.com/aws/language-servers.git and set it up in the same workspace as this project
+1. Clone https://github.com/aws/language-servers.git and set it up in the same workspace as this project by cmd+shift+p and "add folder to workspace" and selecting the language-servers folder that you just cloned. Your VS code folder structure should look like  below.
 
-    e.g.
+    
 
     ```
     /aws-toolkit-vscode
