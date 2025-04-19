@@ -280,7 +280,7 @@ export class CodeScansState {
         return (this.#instance ??= new this())
     }
 
-    protected constructor(fallback: boolean = true) {
+    protected constructor(fallback: boolean = false) {
         this.#fallback = fallback
     }
 
