@@ -8,17 +8,19 @@ import { LanguageClient } from 'vscode-languageclient'
 import { AmazonQChatViewProvider } from './webviewProvider'
 import { registerCommands } from './commands'
 import { registerLanguageServerEventListener, registerMessageListeners } from './messages'
-import { getLogger, globals } from 'aws-core-vscode/shared'
+import { Commands, getLogger, globals, undefinedIfEmpty } from 'aws-core-vscode/shared'
 import { activate as registerLegacyChatListeners } from '../../app/chat/activation'
 import { DefaultAmazonQAppInitContext } from 'aws-core-vscode/amazonq'
-import { AuthUtil } from 'aws-core-vscode/codewhisperer'
+import { AuthUtil, getSelectedCustomization } from 'aws-core-vscode/codewhisperer'
 import { updateConfigurationRequestType } from '@aws/language-server-runtimes/protocol'
 
 export async function activate(languageClient: LanguageClient, encryptionKey: Buffer, mynahUIPath: string) {
     const disposables = globals.context.subscriptions
 
     // Make sure we've sent an auth profile to the language server before even initializing the UI
-    await updateProfile(languageClient)
+    await updateConfiguration(languageClient, {
+        profileArn: AuthUtil.instance.regionProfileManager.activeRegionProfile?.arn,
+    })
 
     const provider = new AmazonQChatViewProvider(mynahUIPath)
 
@@ -60,18 +62,28 @@ export async function activate(languageClient: LanguageClient, encryptionKey: Bu
 
     disposables.push(
         AuthUtil.instance.regionProfileManager.onDidChangeRegionProfile(async () => {
-            void updateProfile(languageClient)
+            void updateConfiguration(languageClient, {
+                profileArn: AuthUtil.instance.regionProfileManager.activeRegionProfile?.arn,
+            })
             await provider.refreshWebview()
+        }),
+        Commands.register('aws.amazonq.updateCustomizations', () => {
+            void updateConfiguration(languageClient, {
+                customization: undefinedIfEmpty(getSelectedCustomization().arn),
+            })
         })
     )
 }
 
-async function updateProfile(client: LanguageClient) {
+async function updateConfiguration(
+    client: LanguageClient,
+    settings: {
+        [key: string]: string | undefined
+    }
+) {
     // update the profile on the language server
     await client.sendRequest(updateConfigurationRequestType.method, {
         section: 'aws.q',
-        settings: {
-            profileArn: AuthUtil.instance.regionProfileManager.activeRegionProfile?.arn,
-        },
+        settings,
     })
 }

@@ -9,7 +9,6 @@ import * as crypto from 'crypto'
 import { LanguageClient, LanguageClientOptions, RequestType } from 'vscode-languageclient'
 import { InlineCompletionManager } from '../app/inline/completion'
 import { AmazonQLspAuth, encryptionKey, notificationTypes } from './auth'
-import { AuthUtil } from 'aws-core-vscode/codewhisperer'
 import {
     ConnectionMetadata,
     CreateFilesParams,
@@ -22,6 +21,7 @@ import {
     updateConfigurationRequestType,
     WorkspaceFolder,
 } from '@aws/language-server-runtimes/protocol'
+import { AuthUtil, getSelectedCustomization } from 'aws-core-vscode/codewhisperer'
 import {
     Settings,
     oidcClientName,
@@ -32,6 +32,8 @@ import {
     oneSecond,
     validateNodeExe,
     getLogger,
+    undefinedIfEmpty,
+    getOptOutPreference,
 } from 'aws-core-vscode/shared'
 import { activate } from './chat/activation'
 import { AmazonQResourcePaths } from './lspInstaller'
@@ -74,14 +76,33 @@ export async function startLanguageServer(
         documentSelector,
         middleware: {
             workspace: {
+                /**
+                 * Convert VSCode settings format to be compatible with flare's configs
+                 */
                 configuration: async (params, token, next) => {
                     const config = await next(params, token)
                     if (params.items[0].section === 'aws.q') {
+                        const customization = undefinedIfEmpty(getSelectedCustomization().arn)
                         return [
                             {
+                                customization,
+                                optOutTelemetryPreference: getOptOutPreference(),
                                 projectContext: {
-                                    enableLocalIndexing: true,
+                                    // TODO uncomment this when local indexing is in agent chat server manifest
+                                    enableLocalIndexing: false,
                                 },
+                            },
+                        ]
+                    }
+                    if (params.items[0].section === 'aws.codeWhisperer') {
+                        return [
+                            {
+                                includeSuggestionsWithCodeReferences: vscode.workspace
+                                    .getConfiguration()
+                                    .get('amazonQ.showCodeWithReferences'),
+                                shareCodeWhispererContentWithAWS: vscode.workspace
+                                    .getConfiguration()
+                                    .get('amazonQ.shareContentWithAWS'),
                             },
                         ]
                     }
