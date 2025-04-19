@@ -220,6 +220,8 @@ export class RecommendationHandler {
             session.requestContext = await EditorContext.buildGenerateRecommendationRequest(editor as vscode.TextEditor)
         }
         const request = session.requestContext.request
+        // eslint-disable-next-line aws-toolkits/no-json-stringify-in-log
+        getLogger().info(JSON.stringify(request))
         // record preprocessing end time
         TelemetryHelper.instance.setPreprocessEndTime()
 
@@ -329,6 +331,7 @@ export class RecommendationHandler {
                 session.requestIdList.push(requestId)
             }
             getLogger().debug(msg)
+            getLogger().info(`NEP testing: codeWhisper request ${requestId}`)
             if (invocationResult === 'Succeeded') {
                 CodeWhispererCodeCoverageTracker.getTracker(session.language)?.incrementServiceInvocationCount()
                 UserWrittenCodeTracker.instance.onQFeatureInvoked()

@@ -31,7 +31,12 @@ export const amazonqSettings = {
     "amazonQ.workspaceIndexWorkerThreads": {},
     "amazonQ.workspaceIndexUseGPU": {},
     "amazonQ.workspaceIndexMaxSize": {},
-    "amazonQ.ignoredSecurityIssues": {}
+    "amazonQ.ignoredSecurityIssues": {},
+    "amazonQ.nextEditPrediction.maxFiles": {},
+    "amazonQ.nextEditPrediction.maxTotalSizeKb": {},
+    "amazonQ.nextEditPrediction.maxFileSizeKb": {},
+    "amazonQ.nextEditPrediction.debounceIntervalMs": {},
+    "amazonQ.nextEditPrediction.maxAgeMs": {}
 }
 
 export default amazonqSettings
