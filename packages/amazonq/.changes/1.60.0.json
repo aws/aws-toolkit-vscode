@@ -1,0 +1,10 @@
+{
+	"date": "2025-04-18",
+	"version": "1.60.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Users might be bound to a customization which they dont have access with the selected profile and it causes service throwing 403 when using inline suggestion and chat features"
+		}
+	]
+}
