@@ -83,10 +83,15 @@ export async function startLanguageServer(
                     const config = await next(params, token)
                     if (params.items[0].section === 'aws.q') {
                         const customization = undefinedIfEmpty(getSelectedCustomization().arn)
+                        /**
+                         * IMPORTANT: This object is parsed by the following code in the language server, **so
+                         * it must match that expected shape**.
+                         * https://github.com/aws/language-servers/blob/1d2ca018f2248106690438b860d40a7ee67ac728/server/aws-lsp-codewhisperer/src/shared/amazonQServiceManager/configurationUtils.ts#L114
+                         */
                         return [
                             {
                                 customization,
-                                optOutTelemetryPreference: getOptOutPreference(),
+                                optOutTelemetry: getOptOutPreference() === 'OPTOUT',
                                 projectContext: {
                                     // TODO uncomment this when local indexing is in agent chat server manifest
                                     enableLocalIndexing: false,
