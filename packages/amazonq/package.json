@@ -131,6 +131,10 @@
                         "amazonQChatDisclaimer": {
                             "type": "boolean",
                             "default": false
+                        },
+                        "amazonQChatPairProgramming": {
+                            "type": "boolean",
+                            "default": false
                         }
                     },
                     "additionalProperties": false

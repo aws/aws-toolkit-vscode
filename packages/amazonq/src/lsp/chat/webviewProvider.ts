@@ -96,6 +96,8 @@ export class AmazonQChatViewProvider implements WebviewViewProvider {
         const isSMUS = isSageMaker('SMUS')
         const disabledCommands = isSM ? `['/dev', '/transform', '/test', '/review', '/doc']` : '[]'
         const disclaimerAcknowledged = !AmazonQPromptSettings.instance.isPromptEnabled('amazonQChatDisclaimer')
+        const pairProgrammingAcknowledged =
+            !AmazonQPromptSettings.instance.isPromptEnabled('amazonQChatPairProgramming')
         const welcomeCount = globals.globalState.tryGet('aws.amazonq.welcomeChatShowCount', Number, 0)
 
         // only show profile card when the two conditions
@@ -144,7 +146,7 @@ export class AmazonQChatViewProvider implements WebviewViewProvider {
                     const vscodeApi = acquireVsCodeApi()
                     const hybridChatConnector = new HybridChatAdapter(${(await AuthUtil.instance.getChatAuthState()).amazonQ === 'connected'},${featureConfigData},${welcomeCount},${disclaimerAcknowledged},${regionProfileString},${disabledCommands},${isSMUS},${isSM},vscodeApi.postMessage)
                     const commands = [hybridChatConnector.initialQuickActions[0]]
-                    amazonQChat.createChat(vscodeApi, {disclaimerAcknowledged: ${disclaimerAcknowledged}, quickActionCommands: commands}, hybridChatConnector);
+                    amazonQChat.createChat(vscodeApi, {disclaimerAcknowledged: ${disclaimerAcknowledged}, pairProgrammingAcknowledged: ${pairProgrammingAcknowledged}, quickActionCommands: commands}, hybridChatConnector);
                 }
             </script>
         </body>
