@@ -93,8 +93,7 @@ export async function startLanguageServer(
                                 customization,
                                 optOutTelemetry: getOptOutPreference() === 'OPTOUT',
                                 projectContext: {
-                                    // TODO uncomment this when local indexing is in agent chat server manifest
-                                    enableLocalIndexing: false,
+                                    enableLocalIndexing: true,
                                 },
                             },
                         ]
