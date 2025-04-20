@@ -8,17 +8,23 @@ import { LanguageClient } from 'vscode-languageclient'
 import { AmazonQChatViewProvider } from './webviewProvider'
 import { registerCommands } from './commands'
 import { registerLanguageServerEventListener, registerMessageListeners } from './messages'
-import { getLogger, globals } from 'aws-core-vscode/shared'
+import { Commands, getLogger, globals, undefinedIfEmpty } from 'aws-core-vscode/shared'
 import { activate as registerLegacyChatListeners } from '../../app/chat/activation'
 import { DefaultAmazonQAppInitContext } from 'aws-core-vscode/amazonq'
-import { AuthUtil } from 'aws-core-vscode/codewhisperer'
-import { updateConfigurationRequestType } from '@aws/language-server-runtimes/protocol'
+import { AuthUtil, getSelectedCustomization } from 'aws-core-vscode/codewhisperer'
+import {
+    DidChangeConfigurationNotification,
+    updateConfigurationRequestType,
+} from '@aws/language-server-runtimes/protocol'
 
 export async function activate(languageClient: LanguageClient, encryptionKey: Buffer, mynahUIPath: string) {
     const disposables = globals.context.subscriptions
 
     // Make sure we've sent an auth profile to the language server before even initializing the UI
-    await updateProfile(languageClient)
+    await pushConfigUpdate(languageClient, {
+        type: 'profile',
+        profileArn: AuthUtil.instance.regionProfileManager.activeRegionProfile?.arn,
+    })
 
     const provider = new AmazonQChatViewProvider(mynahUIPath)
 
@@ -60,18 +66,48 @@ export async function activate(languageClient: LanguageClient, encryptionKey: Bu
 
     disposables.push(
         AuthUtil.instance.regionProfileManager.onDidChangeRegionProfile(async () => {
-            void updateProfile(languageClient)
+            void pushConfigUpdate(languageClient, {
+                type: 'profile',
+                profileArn: AuthUtil.instance.regionProfileManager.activeRegionProfile?.arn,
+            })
             await provider.refreshWebview()
+        }),
+        Commands.register('aws.amazonq.updateCustomizations', () => {
+            void pushConfigUpdate(languageClient, {
+                type: 'customization',
+                customization: undefinedIfEmpty(getSelectedCustomization().arn),
+            })
         })
     )
 }
 
-async function updateProfile(client: LanguageClient) {
-    // update the profile on the language server
-    await client.sendRequest(updateConfigurationRequestType.method, {
-        section: 'aws.q',
-        settings: {
-            profileArn: AuthUtil.instance.regionProfileManager.activeRegionProfile?.arn,
-        },
-    })
+/**
+ * Push a config value to the language server, effectively updating it with the
+ * latest configuration from the client.
+ *
+ * The issue is we need to push certain configs to different places, since there are
+ * different handlers for specific configs. So this determines the correct place to
+ * push the given config.
+ */
+async function pushConfigUpdate(client: LanguageClient, config: QConfigs) {
+    if (config.type === 'profile') {
+        await client.sendRequest(updateConfigurationRequestType.method, {
+            section: 'aws.q',
+            settings: { profileArn: config.profileArn },
+        })
+    } else if (config.type === 'customization') {
+        client.sendNotification(DidChangeConfigurationNotification.type.method, {
+            section: 'aws.q',
+            settings: { customization: config.customization },
+        })
+    }
 }
+type ProfileConfig = {
+    type: 'profile'
+    profileArn: string | undefined
+}
+type CustomizationConfig = {
+    type: 'customization'
+    customization: string | undefined
+}
+type QConfigs = ProfileConfig | CustomizationConfig

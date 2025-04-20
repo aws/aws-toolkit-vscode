@@ -9,7 +9,6 @@ import * as crypto from 'crypto'
 import { LanguageClient, LanguageClientOptions, RequestType } from 'vscode-languageclient'
 import { InlineCompletionManager } from '../app/inline/completion'
 import { AmazonQLspAuth, encryptionKey, notificationTypes } from './auth'
-import { AuthUtil } from 'aws-core-vscode/codewhisperer'
 import {
     ConnectionMetadata,
     CreateFilesParams,
@@ -22,6 +21,7 @@ import {
     updateConfigurationRequestType,
     WorkspaceFolder,
 } from '@aws/language-server-runtimes/protocol'
+import { AuthUtil, getSelectedCustomization } from 'aws-core-vscode/codewhisperer'
 import {
     Settings,
     oidcClientName,
@@ -32,6 +32,8 @@ import {
     oneSecond,
     validateNodeExe,
     getLogger,
+    undefinedIfEmpty,
+    getOptOutPreference,
 } from 'aws-core-vscode/shared'
 import { activate } from './chat/activation'
 import { AmazonQResourcePaths } from './lspInstaller'
@@ -74,14 +76,37 @@ export async function startLanguageServer(
         documentSelector,
         middleware: {
             workspace: {
+                /**
+                 * Convert VSCode settings format to be compatible with flare's configs
+                 */
                 configuration: async (params, token, next) => {
                     const config = await next(params, token)
                     if (params.items[0].section === 'aws.q') {
+                        const customization = undefinedIfEmpty(getSelectedCustomization().arn)
+                        /**
+                         * IMPORTANT: This object is parsed by the following code in the language server, **so
+                         * it must match that expected shape**.
+                         * https://github.com/aws/language-servers/blob/1d2ca018f2248106690438b860d40a7ee67ac728/server/aws-lsp-codewhisperer/src/shared/amazonQServiceManager/configurationUtils.ts#L114
+                         */
                         return [
                             {
+                                customization,
+                                optOutTelemetry: getOptOutPreference() === 'OPTOUT',
                                 projectContext: {
                                     enableLocalIndexing: true,
                                 },
+                            },
+                        ]
+                    }
+                    if (params.items[0].section === 'aws.codeWhisperer') {
+                        return [
+                            {
+                                includeSuggestionsWithCodeReferences: vscode.workspace
+                                    .getConfiguration()
+                                    .get('amazonQ.showCodeWithReferences'),
+                                shareCodeWhispererContentWithAWS: vscode.workspace
+                                    .getConfiguration()
+                                    .get('amazonQ.shareContentWithAWS'),
                             },
                         ]
                     }
