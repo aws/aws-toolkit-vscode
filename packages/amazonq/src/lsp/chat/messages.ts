@@ -72,6 +72,21 @@ export function registerLanguageServerEventListener(languageClient: LanguageClie
     })
 }
 
+function getCursorState(selection: readonly vscode.Selection[]) {
+    return selection.map((s) => ({
+        range: {
+            start: {
+                line: s.start.line,
+                character: s.start.character,
+            },
+            end: {
+                line: s.end.line,
+                character: s.end.character,
+            },
+        },
+    }))
+}
+
 export function registerMessageListeners(
     languageClient: LanguageClient,
     provider: AmazonQChatViewProvider,
@@ -147,20 +162,21 @@ export function registerMessageListeners(
                 break
             }
             case chatRequestType.method: {
+                const chatParams = { ...message.params } as ChatParams
                 const partialResultToken = uuidv4()
                 const chatDisposable = languageClient.onProgress(chatRequestType, partialResultToken, (partialResult) =>
-                    handlePartialResult<ChatResult>(partialResult, encryptionKey, provider, message.params.tabId)
+                    handlePartialResult<ChatResult>(partialResult, encryptionKey, provider, chatParams.tabId)
                 )
 
                 const editor =
                     vscode.window.activeTextEditor ||
                     vscode.window.visibleTextEditors.find((editor) => editor.document.languageId !== 'Log')
                 if (editor) {
-                    message.params.cursorPosition = [editor.selection.active]
-                    message.params.textDocument = { uri: editor.document.uri.toString() }
+                    chatParams.cursorState = getCursorState(editor.selections)
+                    chatParams.textDocument = { uri: editor.document.uri.toString() }
                 }
 
-                const chatRequest = await encryptRequest<ChatParams>(message.params, encryptionKey)
+                const chatRequest = await encryptRequest<ChatParams>(chatParams, encryptionKey)
                 const chatResult = (await languageClient.sendRequest(chatRequestType.method, {
                     ...chatRequest,
                     partialResultToken,
@@ -169,7 +185,7 @@ export function registerMessageListeners(
                     chatResult,
                     encryptionKey,
                     provider,
-                    message.params.tabId,
+                    chatParams.tabId,
                     chatDisposable
                 )
                 break
