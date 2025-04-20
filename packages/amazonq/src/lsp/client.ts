@@ -72,6 +72,23 @@ export async function startLanguageServer(
     const clientOptions: LanguageClientOptions = {
         // Register the server for json documents
         documentSelector,
+        middleware: {
+            workspace: {
+                configuration: async (params, token, next) => {
+                    const config = await next(params, token)
+                    if (params.items[0].section === 'aws.q') {
+                        return [
+                            {
+                                projectContext: {
+                                    enableLocalIndexing: true,
+                                },
+                            },
+                        ]
+                    }
+                    return config
+                },
+            },
+        },
         initializationOptions: {
             aws: {
                 clientInfo: {
