@@ -12,13 +12,17 @@ import { Commands, getLogger, globals, undefinedIfEmpty } from 'aws-core-vscode/
 import { activate as registerLegacyChatListeners } from '../../app/chat/activation'
 import { DefaultAmazonQAppInitContext } from 'aws-core-vscode/amazonq'
 import { AuthUtil, getSelectedCustomization } from 'aws-core-vscode/codewhisperer'
-import { updateConfigurationRequestType } from '@aws/language-server-runtimes/protocol'
+import {
+    DidChangeConfigurationNotification,
+    updateConfigurationRequestType,
+} from '@aws/language-server-runtimes/protocol'
 
 export async function activate(languageClient: LanguageClient, encryptionKey: Buffer, mynahUIPath: string) {
     const disposables = globals.context.subscriptions
 
     // Make sure we've sent an auth profile to the language server before even initializing the UI
-    await updateConfiguration(languageClient, {
+    await pushConfigUpdate(languageClient, {
+        type: 'profile',
         profileArn: AuthUtil.instance.regionProfileManager.activeRegionProfile?.arn,
     })
 
@@ -62,28 +66,48 @@ export async function activate(languageClient: LanguageClient, encryptionKey: Bu
 
     disposables.push(
         AuthUtil.instance.regionProfileManager.onDidChangeRegionProfile(async () => {
-            void updateConfiguration(languageClient, {
+            void pushConfigUpdate(languageClient, {
+                type: 'profile',
                 profileArn: AuthUtil.instance.regionProfileManager.activeRegionProfile?.arn,
             })
             await provider.refreshWebview()
         }),
         Commands.register('aws.amazonq.updateCustomizations', () => {
-            void updateConfiguration(languageClient, {
+            void pushConfigUpdate(languageClient, {
+                type: 'customization',
                 customization: undefinedIfEmpty(getSelectedCustomization().arn),
             })
         })
     )
 }
 
-async function updateConfiguration(
-    client: LanguageClient,
-    settings: {
-        [key: string]: string | undefined
+/**
+ * Push a config value to the language server, effectively updating it with the
+ * latest configuration from the client.
+ *
+ * The issue is we need to push certain configs to different places, since there are
+ * different handlers for specific configs. So this determines the correct place to
+ * push the given config.
+ */
+async function pushConfigUpdate(client: LanguageClient, config: QConfigs) {
+    if (config.type === 'profile') {
+        await client.sendRequest(updateConfigurationRequestType.method, {
+            section: 'aws.q',
+            settings: { profileArn: config.profileArn },
+        })
+    } else if (config.type === 'customization') {
+        client.sendNotification(DidChangeConfigurationNotification.type.method, {
+            section: 'aws.q',
+            settings: { customization: config.customization },
+        })
     }
-) {
-    // update the profile on the language server
-    await client.sendRequest(updateConfigurationRequestType.method, {
-        section: 'aws.q',
-        settings,
-    })
 }
+type ProfileConfig = {
+    type: 'profile'
+    profileArn: string | undefined
+}
+type CustomizationConfig = {
+    type: 'customization'
+    customization: string | undefined
+}
+type QConfigs = ProfileConfig | CustomizationConfig
