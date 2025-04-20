@@ -11,13 +11,13 @@ import { qChatIntroMessageForSMUS, TabTypeDataMap } from './constants'
 import { agentWalkthroughDataModel } from '../walkthrough/agent'
 import { FeatureContext } from '../../../../shared/featureConfig'
 import { RegionProfile } from '../../../../codewhisperer/models/model'
-
 export interface TabDataGeneratorProps {
     isFeatureDevEnabled: boolean
     isGumbyEnabled: boolean
     isScanEnabled: boolean
     isTestEnabled: boolean
     isDocEnabled: boolean
+    dismissedCards?: boolean
     disabledCommands?: string[]
     commandHighlight?: FeatureContext
     regionProfile?: RegionProfile
@@ -28,6 +28,7 @@ export class TabDataGenerator {
     public quickActionsGenerator: QuickActionGenerator
     private highlightCommand?: FeatureContext
     private regionProfile?: RegionProfile
+    public dismissedCards?: boolean
 
     constructor(props: TabDataGeneratorProps) {
         this.followUpsGenerator = new FollowUpGenerator()
@@ -41,6 +42,7 @@ export class TabDataGenerator {
         })
         this.highlightCommand = props.commandHighlight
         this.regionProfile = props.regionProfile
+        this.dismissedCards = props.dismissedCards
     }
 
     public getTabData(
@@ -56,18 +58,25 @@ export class TabDataGenerator {
         if (tabType === 'welcome') {
             return {}
         }
-        const programmerModeCard: ChatItem | undefined = {
-            type: ChatItemType.ANSWER,
-            title: 'NEW FEATURE',
-            header: {
-                icon: 'code-block',
-                iconStatus: 'primary',
-                body: '## Pair Programmer',
-            },
-            fullWidth: true,
-            canBeDismissed: true,
-            body: 'Amazon Q Developer chat can now write code and run shell commands on your behalf. Disable Pair Programmer if you prefer a read-only experience.',
-        }
+
+        const programmerModeCardId = 'programmerModeCardId'
+
+        const isProgrammerModeCardDismissed = this.dismissedCards
+        const programmerModeCard: ChatItem | undefined = !isProgrammerModeCardDismissed
+            ? ({
+                  type: ChatItemType.ANSWER,
+                  title: 'NEW FEATURE',
+                  messageId: programmerModeCardId,
+                  header: {
+                      icon: 'code-block',
+                      iconStatus: 'primary',
+                      body: '## Pair Programmer',
+                  },
+                  fullWidth: true,
+                  canBeDismissed: true,
+                  body: 'Amazon Q Developer chat can now write code and run shell commands on your behalf. Disable Pair Programmer if you prefer a read-only experience.',
+              } as ChatItem)
+            : undefined
 
         const regionProfileCard: ChatItem | undefined =
             this.regionProfile === undefined
@@ -97,7 +106,11 @@ Enter \`/\` to view quick actions. Use \`@\` to add saved prompts, files, folder
             contextCommands: this.getContextCommands(tabType),
             chatItems: needWelcomeMessages
                 ? [
-                      ...(tabType === 'cwc' || tabType === 'unknown' ? [programmerModeCard] : []),
+                      ...(tabType === 'cwc' || tabType === 'unknown'
+                          ? programmerModeCard
+                              ? [programmerModeCard]
+                              : []
+                          : []),
                       ...(regionProfileCard ? [regionProfileCard] : []),
                       {
                           type: ChatItemType.ANSWER,

@@ -52,7 +52,8 @@ export const createMynahUI = (
     regionProfile: RegionProfile | undefined,
     disabledCommands?: string[],
     isSMUS?: boolean,
-    isSM?: boolean
+    isSM?: boolean,
+    dismissedCards?: boolean
 ) => {
     let disclaimerCardActive = !disclaimerAcknowledged
     // eslint-disable-next-line prefer-const
@@ -166,6 +167,7 @@ export const createMynahUI = (
         disabledCommands,
         commandHighlight: highlightCommand,
         regionProfile,
+        dismissedCards,
     })
 
     // eslint-disable-next-line prefer-const
@@ -263,6 +265,7 @@ export const createMynahUI = (
                 disabledCommands,
                 commandHighlight: highlightCommand,
                 regionProfile,
+                dismissedCards,
             })
 
             featureConfigs = tryNewMap(featureConfigsSerialized)
@@ -1000,6 +1003,12 @@ export const createMynahUI = (
         },
         onPromptInputOptionChange: (tabId, optionsValues) => {
             connector.onPromptInputOptionChange(tabId, optionsValues)
+        },
+        onMessageDismiss: (tabId, messageId) => {
+            if (messageId === 'programmerModeCardId') {
+                tabDataGenerator.dismissedCards = true
+            }
+            connector.onMessageDismiss(tabId, messageId)
         },
         onFileClick: connector.onFileClick,
         tabs: {
