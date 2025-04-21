@@ -40,6 +40,11 @@ export class ChatSession {
     private _pairProgrammingModeOn: boolean = true
     private _fsWriteBackups: Map<string, FsWriteBackup> = new Map()
     private _agenticLoopInProgress: boolean = false
+    private _searchResults: DocumentReference[] = []
+
+    // // Search-related properties
+    // public _lastSearchQuery?: string
+    // public _lastSearchPath?: string
 
     /**
      * True if messages from local history have been sent to session.
@@ -47,11 +52,15 @@ export class ChatSession {
     localHistoryHydrated: boolean = false
     private _messageIdToUpdate: string | undefined
     private _messageIdToUpdateListDirectory: string | undefined
+    private _messageIdToUpdateGrepSearch: string | undefined
 
     contexts: Map<string, { first: number; second: number }[]> = new Map()
     // TODO: doesn't handle the edge case when two files share the same relativePath string but from different root
     // e.g. root_a/file1 vs root_b/file1
     relativePathToWorkspaceRoot: Map<string, string> = new Map()
+
+    // lastSearchQuery: string | undefined
+    // lastSearchPath: string | undefined
     public get sessionIdentifier(): string {
         return this.sessionId
     }
@@ -69,6 +78,14 @@ export class ChatSession {
 
     public setMessageIdToUpdateListDirectory(messageId: string | undefined) {
         this._messageIdToUpdateListDirectory = messageId
+    }
+
+    public get messageIdToUpdateGrepSearch(): string | undefined {
+        return this._messageIdToUpdateGrepSearch
+    }
+
+    public setMessageIdToUpdateGrepSearch(messageId: string | undefined) {
+        this._messageIdToUpdateGrepSearch = messageId
     }
 
     public get agenticLoopInProgress(): boolean {
@@ -147,6 +164,10 @@ export class ChatSession {
     public get readFiles(): DocumentReference[] {
         return this._readFiles
     }
+
+    public get searchResults(): DocumentReference[] {
+        return this._searchResults
+    }
     public get readFolders(): DocumentReference[] {
         return this._readFolders
     }
@@ -159,6 +180,9 @@ export class ChatSession {
     public addToReadFiles(filePath: DocumentReference) {
         this._readFiles.push(filePath)
     }
+    public setSearchResults(searchResults: DocumentReference[]) {
+        this.searchResults.push(...searchResults)
+    }
     public clearListOfReadFiles() {
         this._readFiles = []
     }
@@ -167,6 +191,10 @@ export class ChatSession {
     }
     public clearListOfReadFolders() {
         this._readFolders = []
+    }
+    public clearSearchResults() {
+        this._searchResults = []
+        this._messageIdToUpdateGrepSearch = undefined
     }
     async chatIam(chatRequest: SendMessageRequest): Promise<SendMessageCommandOutput> {
         const client = await createQDeveloperStreamingClient()

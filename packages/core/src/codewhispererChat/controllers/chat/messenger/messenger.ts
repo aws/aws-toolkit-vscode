@@ -71,6 +71,7 @@ import { ConversationTracker } from '../../../storages/conversationTracker'
 import { waitTimeout, Timeout } from '../../../../shared/utilities/timeoutUtils'
 import { FsReadParams } from '../../../tools/fsRead'
 import { ListDirectoryParams } from '../../../tools/listDirectory'
+import { SanitizedRipgrepOutput } from '../../../tools/grepSearch'
 
 export type StaticTextResponseType = 'quick-action-help' | 'onboarding-help' | 'transform' | 'help'
 
@@ -307,7 +308,13 @@ export class Messenger {
                                 let explanation: string | undefined = undefined
                                 let changeList: Change[] | undefined = undefined
                                 let messageIdToUpdate: string | undefined = undefined
-                                const isReadOrList: boolean = [ToolType.FsRead, ToolType.ListDirectory].includes(
+                                // eslint-disable-next-line prettier/prettier
+                                const isReadOrList: boolean = [
+                                    ToolType.FsRead,
+                                    ToolType.ListDirectory,
+                                    ToolType.GrepSearch,
+                                ].includes(
+                                    // eslint-disable-next-line prettier/prettier
                                     tool.type
                                 )
                                 if (tool.type === ToolType.ExecuteBash) {
@@ -390,6 +397,12 @@ export class Messenger {
                                     tool.type === ToolType.ListDirectory
                                 ) {
                                     session.setMessageIdToUpdateListDirectory(toolUse.toolUseId)
+                                }
+                                if (
+                                    session.messageIdToUpdateGrepSearch === undefined &&
+                                    tool.type === ToolType.GrepSearch
+                                ) {
+                                    session.setMessageIdToUpdateGrepSearch(toolUse.toolUseId)
                                 }
                                 getLogger().debug(
                                     `SetToolUseWithError: ${toolUse.name}:${toolUse.toolUseId} with no error`
@@ -743,6 +756,80 @@ export class Messenger {
         )
     }
 
+    private sendGrepSearchToolMessage(
+        message: string,
+        toolUse: ToolUse,
+        session: ChatSession,
+        tabID: string,
+        triggerID: string,
+        messageIdToUpdate?: string
+    ) {
+        getLogger().info(`Grep search update message is: "${message}"`)
+        let searchResults = session.searchResults
+
+        // Check if the message contains grep search results
+        if (message.includes('Found') && message.includes('matches')) {
+            try {
+                // Remove the first line summary if present
+                const jsonStartIndex = message.indexOf('{')
+                if (jsonStartIndex !== -1) {
+                    const jsonString = message.substring(jsonStartIndex)
+
+                    // Parse the JSON string to get the SanitizedRipgrepOutput
+                    const ripgrepOutput: SanitizedRipgrepOutput = JSON.parse(jsonString)
+
+                    // Convert the fileMatches to the format expected by session.searchResults
+                    searchResults = ripgrepOutput.fileMatches.map((file) => ({
+                        relativeFilePath: file.filePath,
+                        // Get line numbers from the matches object
+                        lineRanges: Object.keys(file.matches || {}).map((lineNum) => ({
+                            first: parseInt(lineNum, 10),
+                            second: parseInt(lineNum, 10),
+                        })),
+                    }))
+
+                    // Store the search results in the session for context transparency
+                    session.setSearchResults(searchResults)
+                }
+            } catch (error) {
+                getLogger().error(`Error parsing grep search results: ${error}`)
+            }
+        }
+
+        const contextList = session.searchResults
+
+        const itemCount = contextList.length
+
+        // Create a title based on search results
+        const title =
+            itemCount === 0 ? 'No search results found' : `Found ${itemCount} match${itemCount !== 1 ? 'es' : ''}`
+
+        // Send the tool message with the context list
+        this.dispatcher.sendToolMessage(
+            new ToolMessage(
+                {
+                    message: '',
+                    messageType: 'answer-part',
+                    followUps: undefined,
+                    followUpsHeader: undefined,
+                    relatedSuggestions: undefined,
+                    triggerID,
+                    messageID: messageIdToUpdate ?? toolUse?.toolUseId ?? '',
+                    userIntent: undefined,
+                    codeBlockLanguage: undefined,
+                    contextList,
+                    canBeVoted: false,
+                    buttons: undefined,
+                    fullWidth: false,
+                    padding: false,
+                    codeBlockActions: undefined,
+                    rootFolderTitle: title,
+                },
+                tabID
+            )
+        )
+    }
+
     public sendPartialToolLog(
         message: string,
         tabID: string,
@@ -757,12 +844,18 @@ export class Messenger {
             return
         }
 
-        // Handle read tool and list directory messages
+        // Handle read tool, grep search, and list directory messages
         if (
-            (toolUse?.name === ToolType.FsRead || toolUse?.name === ToolType.ListDirectory) &&
+            (toolUse?.name === ToolType.FsRead ||
+                toolUse?.name === ToolType.ListDirectory ||
+                toolUse?.name === ToolType.GrepSearch) &&
             !validation.requiresAcceptance
         ) {
-            return this.sendReadAndListDirToolMessage(toolUse, session, tabID, triggerID, messageIdToUpdate)
+            if (toolUse?.name === ToolType.GrepSearch) {
+                return this.sendGrepSearchToolMessage(message, toolUse, session, tabID, triggerID, messageIdToUpdate)
+            } else {
+                return this.sendReadAndListDirToolMessage(toolUse, session, tabID, triggerID, messageIdToUpdate)
+            }
         }
 
         // Handle file write tool, execute bash tool and bash command output log messages

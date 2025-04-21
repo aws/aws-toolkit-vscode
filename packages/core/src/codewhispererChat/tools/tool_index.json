@@ -98,5 +98,65 @@
             },
             "required": ["path"]
         }
+    },
+    "grepSearch": {
+        "name": "grepSearch",
+        "description": "Fast text-based regex search that finds exact pattern matches within files or directories, utilizing the ripgrep command for efficient searching.\\nResults will be formatted in the style of ripgrep and can be configured to include line numbers and content.\\nTo avoid overwhelming output, the results are capped at 50 matches.\\nUse the include or exclude patterns to filter the search scope by file type or specific paths.\\n\\nThis is best for finding exact text matches or regex patterns.\\nMore precise than semantic search for finding specific strings or patterns.\\nThis is preferred over semantic search when we know the exact symbol/function name/etc. to search in some set of directories/file types.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "caseSensitive": {
+                    "description": "Whether the search should be case sensitive",
+                    "type": "boolean"
+                },
+                "excludePattern": {
+                    "description": "Glob pattern for files to exclude",
+                    "type": "string"
+                },
+                "explanation": {
+                    "description": "One sentence explanation as to why this tool is being used, and how it contributes to the goal.",
+                    "type": "string"
+                },
+                "includePattern": {
+                    "description": "Glob pattern for files to include (e.g. '*.ts' for TypeScript files)",
+                    "type": "string"
+                },
+                "query": {
+                    "description": "The regex pattern to search for",
+                    "type": "string"
+                },
+                "path": {
+                    "description": "Absolute path to a directory, e.g., `/repo`.",
+                    "type": "string"
+                }
+            },
+            "required": ["query"]
+        }
+    },
+    "fileSearch": {
+        "name": "fileSearch",
+        "description": "Search for files in a directory and its subdirectories that match a regex pattern.\n * This tool returns a list of files that match the specified regex pattern.\n * Use this tool when you need to find files with names matching a specific pattern.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "path": {
+                    "description": "Absolute path to a directory, e.g., `/repo`.",
+                    "type": "string"
+                },
+                "pattern": {
+                    "description": "Regex pattern to match against file names.",
+                    "type": "string"
+                },
+                "maxDepth": {
+                    "description": "Maximum depth to traverse when searching directories. Use `0` to search only the specified directory, `1` to include immediate subdirectories, etc. If it's not provided, it will search all subdirectories recursively.",
+                    "type": "integer"
+                },
+                "caseSensitive": {
+                    "description": "Whether the pattern matching should be case sensitive. Defaults to false.",
+                    "type": "boolean"
+                }
+            },
+            "required": ["path", "pattern"]
+        }
     }
 }

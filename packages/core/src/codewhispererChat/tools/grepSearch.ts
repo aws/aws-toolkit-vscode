@@ -20,6 +20,29 @@ export interface GrepSearchParams {
     explanation?: string
 }
 
+/**
+ * Represents the structured output from ripgrep search results
+ */
+export interface SanitizedRipgrepOutput {
+    /** Total number of matches across all files */
+    totalMatchCount: number
+
+    /** Array of file match details */
+    fileMatches: Array<{
+        /** Full path to the file */
+        filePath: string
+
+        /** Base name of the file */
+        fileName: string
+
+        /** Number of matches in this file */
+        matchCount: number
+
+        /** Record of line numbers to matched content */
+        matches: Record<string, string>
+    }>
+}
+
 export class GrepSearch {
     private path: string
     private query: string
@@ -61,8 +84,23 @@ export class GrepSearch {
     }
 
     public queueDescription(updates: Writable): void {
-        updates.write(`Grepping for "${this.query}" in directory: ${this.path}`)
+        updates.write('')
         updates.end()
+    }
+
+    public requiresAcceptance(): { requiresAcceptance: boolean } {
+        const workspaceFolders = vscode.workspace.workspaceFolders
+        if (!workspaceFolders || workspaceFolders.length === 0) {
+            return { requiresAcceptance: true }
+        }
+
+        // Check if the search path is within the workspace
+        const isInWorkspace = workspaceFolders.some((folder) => this.path.startsWith(folder.uri.fsPath))
+        if (!isInWorkspace) {
+            return { requiresAcceptance: true }
+        }
+
+        return { requiresAcceptance: false }
     }
 
     public async invoke(updates?: Writable): Promise<InvokeOutput> {
@@ -92,7 +130,7 @@ export class GrepSearch {
         return searchLocation
     }
 
-    private async executeRipgrep(updates?: Writable): Promise<string> {
+    private async executeRipgrep(updates?: Writable): Promise<SanitizedRipgrepOutput> {
         return new Promise(async (resolve, reject) => {
             const args: string[] = []
 
@@ -107,6 +145,9 @@ export class GrepSearch {
 
             // Don't use color in output
             args.push('--color', 'never')
+
+            // Limit results to prevent overwhelming output
+            args.push('--max-count', '50')
 
             // Add include/exclude patterns
             if (this.includePattern) {
@@ -147,17 +188,46 @@ export class GrepSearch {
                 const rg = new ChildProcess(rgPath, args, options)
                 const result = await rg.run()
                 this.logger.info(`Executing ripgrep with exitCode: ${result.exitCode}`)
-                // Process the output to format with file URLs and remove matched content
-                const { sanitizedOutput, totalMatchCount } = this.processRipgrepOutput(result.stdout)
+
+                // Process the output to format with file URLs and content previews
+                const sanitizedOutput = this.processRipgrepOutput(result.stdout)
 
                 // If updates is provided, write the processed output
                 if (updates) {
-                    updates.write(sanitizedOutput)
+                    if (sanitizedOutput.totalMatchCount > 0) {
+                        updates.write(`Found total matches: "${sanitizedOutput.totalMatchCount}"  in "${this.path}\n`)
+                        // Ensure matches is properly serialized as a plain object
+                        const serializedOutput = {
+                            ...sanitizedOutput,
+                            fileMatches: sanitizedOutput.fileMatches.map((file) => ({
+                                ...file,
+                                // Ensure matches is a plain object for serialization
+                                matches: { ...file.matches },
+                            })),
+                        }
+                        updates.write(JSON.stringify(serializedOutput, undefined, 2))
+                    } else {
+                        updates.write('No matches found.')
+                    }
                 }
 
-                this.logger.info(`Processed ripgrep result: ${totalMatchCount} matches found`)
                 resolve(sanitizedOutput)
+
+                // // If updates is provided, write the processed output
+                // if (updates) {
+                //     if (totalMatchCount > 0) {
+                //         updates.write(sanitizedOutput)
+                //     } else {
+                //         updates.write('No matches found.')
+                //     }
+                // }
+
+                // this.logger.info(`Processed ripgrep result: ${totalMatchCount} matches found`)
+                // resolve(sanitizedOutput || 'No matches found.')
             } catch (err) {
+                if (updates) {
+                    updates.write(`Error executing search: ${err}`)
+                }
                 reject(err)
             }
         })
@@ -166,80 +236,69 @@ export class GrepSearch {
     /**
      * Process ripgrep output to:
      * 1. Group results by file
-     * 2. Format as collapsible sections
-     * 3. Add file URLs for clickable links
-     * @returns An object containing the processed output and total match count
+     * 2. Return structured match details for each file
      */
-    private processRipgrepOutput(output: string): { sanitizedOutput: string; totalMatchCount: number } {
+    private processRipgrepOutput(output: string): SanitizedRipgrepOutput {
         if (!output || output.trim() === '') {
-            return { sanitizedOutput: 'No matches found.', totalMatchCount: 0 }
+            return {
+                totalMatchCount: 0,
+                fileMatches: [],
+            }
         }
-
         const lines = output.split('\n')
-
         // Group by file path
-        const fileGroups: Record<string, string[]> = {}
+        const fileGroups: Record<string, { lineNumbers: string[]; content: string[] }> = {}
         let totalMatchCount = 0
-
         for (const line of lines) {
             if (!line || line.trim() === '') {
                 continue
             }
-
-            // Extract file path and line number
+            // Extract file path, line number, and content
             const parts = line.split(':')
-            if (parts.length < 2) {
+            if (parts.length < 3) {
                 continue
             }
-
             const filePath = parts[0]
             const lineNumber = parts[1]
-            // Don't include match content
-
+            const content = parts.slice(2).join(':').trim()
             if (!fileGroups[filePath]) {
-                fileGroups[filePath] = []
+                fileGroups[filePath] = { lineNumbers: [], content: [] }
             }
-
-            // Create a clickable link with line number using VS Code's Uri.with() method
-            const uri = vscode.Uri.file(filePath)
-            // Use the with() method to add the line number as a fragment
-            const uriWithLine = uri.with({ fragment: `L${lineNumber}` })
-            fileGroups[filePath].push(`- [Line ${lineNumber}](${uriWithLine.toString(true)})`)
+            fileGroups[filePath].lineNumbers.push(lineNumber)
+            fileGroups[filePath].content.push(content)
             totalMatchCount++
         }
-
         // Sort files by match count (most matches first)
-        const sortedFiles = Object.entries(fileGroups).sort((a, b) => b[1].length - a[1].length)
+        const sortedFiles = Object.entries(fileGroups).sort((a, b) => b[1].lineNumbers.length - a[1].lineNumbers.length)
+        // Create structured file matches
+        const fileMatches = sortedFiles.map(([filePath, data]) => {
+            const fileName = path.basename(filePath)
+            const matchCount = data.lineNumbers.length
+            // Create a regular object instead of a Map for better JSON serialization
+            const matches: Record<string, string> = {}
+            for (const [idx, lineNum] of data.lineNumbers.entries()) {
+                matches[lineNum] = data.content[idx]
+            }
 
-        // Generate a title for the results
-        let sanitizedOutput = `## Grepped result - ${totalMatchCount} matches found: \n\n`
+            return {
+                filePath,
+                fileName,
+                matchCount,
+                matches,
+            }
+        })
 
-        // Format as simple list of files with links to all matches
-        sanitizedOutput += sortedFiles
-            .map(([filePath, _matches]) => {
-                const fileName = path.basename(filePath)
-
-                // Create a URL to show all matches in the file with search term highlighted
-                const uri = vscode.Uri.file(filePath)
-                // Use the query parameter to highlight all matches in the file
-                const uriWithSearch = uri.with({
-                    query: `search=${encodeURIComponent(this.query)}`,
-                })
-                const allMatchesUrl = uriWithSearch.toString(true)
-
-                // Just show the filename with link to all matches
-                return `- [${fileName}](${allMatchesUrl})`
-            })
-            .join('\n')
-
-        return { sanitizedOutput, totalMatchCount }
+        return {
+            totalMatchCount,
+            fileMatches,
+        }
     }
 
-    private createOutput(content: string): InvokeOutput {
+    private createOutput(content: SanitizedRipgrepOutput): InvokeOutput {
         return {
             output: {
-                kind: OutputKind.Text,
-                content: content || 'No matches found.',
+                kind: OutputKind.Json,
+                content: content,
             },
         }
     }
