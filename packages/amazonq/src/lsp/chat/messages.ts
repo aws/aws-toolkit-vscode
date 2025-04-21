@@ -173,10 +173,24 @@ export function registerMessageListeners(
                 break
             }
             case chatRequestType.method: {
-                const chatParams = { ...message.params } as ChatParams
+                const chatParams: ChatParams = { ...message.params }
                 const partialResultToken = uuidv4()
-                const chatDisposable = languageClient.onProgress(chatRequestType, partialResultToken, (partialResult) =>
-                    handlePartialResult<ChatResult>(partialResult, encryptionKey, provider, chatParams.tabId)
+                let lastPartialResult: ChatResult | undefined
+                const chatDisposable = languageClient.onProgress(
+                    chatRequestType,
+                    partialResultToken,
+                    (partialResult) => {
+                        // Store the latest partial result
+                        if (typeof partialResult === 'string' && encryptionKey) {
+                            void decodeRequest<ChatResult>(partialResult, encryptionKey).then(
+                                (decoded) => (lastPartialResult = decoded)
+                            )
+                        } else {
+                            lastPartialResult = partialResult as ChatResult
+                        }
+
+                        void handlePartialResult<ChatResult>(partialResult, encryptionKey, provider, chatParams.tabId)
+                    }
                 )
 
                 const editor =
@@ -188,17 +202,36 @@ export function registerMessageListeners(
                 }
 
                 const chatRequest = await encryptRequest<ChatParams>(chatParams, encryptionKey)
-                const chatResult = (await languageClient.sendRequest(chatRequestType.method, {
-                    ...chatRequest,
-                    partialResultToken,
-                })) as string | ChatResult
-                void handleCompleteResult<ChatResult>(
-                    chatResult,
-                    encryptionKey,
-                    provider,
-                    chatParams.tabId,
-                    chatDisposable
-                )
+                try {
+                    const chatResult = await languageClient.sendRequest<string | ChatResult>(chatRequestType.method, {
+                        ...chatRequest,
+                        partialResultToken,
+                    })
+                    await handleCompleteResult<ChatResult>(
+                        chatResult,
+                        encryptionKey,
+                        provider,
+                        chatParams.tabId,
+                        chatDisposable
+                    )
+                } catch (e) {
+                    languageClient.info(`Error occurred during chat request: ${e}`)
+                    // Use the last partial result if available, append error message
+                    const errorResult: ChatResult = {
+                        ...lastPartialResult,
+                        body: lastPartialResult?.body
+                            ? `${lastPartialResult.body}\n\n ❌ Error: Request failed to complete`
+                            : '❌ An error occurred while processing your request',
+                    }
+
+                    await handleCompleteResult<ChatResult>(
+                        errorResult,
+                        encryptionKey,
+                        provider,
+                        chatParams.tabId,
+                        chatDisposable
+                    )
+                }
                 break
             }
             case quickActionRequestType.method: {
