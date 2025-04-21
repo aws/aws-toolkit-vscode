@@ -351,6 +351,7 @@ export class RegionProfileManager {
         }
     }
 
+    // TODO: Should maintain sdk client in a better way
     async createQClient(profile: RegionProfile): Promise<CodeWhispererUserClient> {
         const conn = this.connectionProvider()
         if (conn === undefined || !isSsoConnection(conn)) {
@@ -363,6 +364,7 @@ export class RegionProfileManager {
         return this._createQClient(profile.region, endpoint, conn)
     }
 
+    // Visible for testing only, do not use this directly, please use createQClient(profile)
     async _createQClient(region: string, endpoint: string, conn: SsoConnection): Promise<CodeWhispererUserClient> {
         const token = (await conn.getToken()).accessToken
         const serviceOption: ServiceOptions = {
