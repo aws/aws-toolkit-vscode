@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import * as path from 'path'
 import fs from '../../shared/fs/fs'
 import { getLogger } from '../../shared/logger/logger'
-import * as diffGenerator from './diffGenerator'
+import * as diffGenerator from './diffContextGenerator'
 import * as codewhispererClient from '../client/codewhisperer'
 
 export interface FileTrackerConfig {
