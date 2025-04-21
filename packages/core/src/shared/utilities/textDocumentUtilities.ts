@@ -119,20 +119,17 @@ export async function applyChanges(doc: vscode.TextDocument, range: vscode.Range
 }
 
 /**
- * Creates a temporary file for diff comparison by cloning the original file
- * and applying the proposed changes within the selected range.
+ * Creates a temporary file for diff comparison by cloning the original file.
+ * This is the base implementation used by other diff-related functions.
  *
  * @param {vscode.Uri} originalFileUri - The URI of the original file.
- * @param {any} message - The message object containing the proposed code changes.
- * @param {vscode.Selection} selection - The selection range in the document where the changes are applied.
- * @returns {Promise<vscode.Uri>} - A promise that resolves to the URI of the temporary file.
+ * @param {string} scheme - The URI scheme to use for the temporary file.
+ * @returns {Promise<{tempFileUri: vscode.Uri, doc: vscode.TextDocument}>} - A promise that resolves to the URI of the temporary file and the document.
  */
-export async function createTempFileForDiff(
+async function createTempFileForDiffBase(
     originalFileUri: vscode.Uri,
-    message: any,
-    selection: vscode.Selection,
     scheme: string
-): Promise<vscode.Uri> {
+): Promise<{ tempFileUri: vscode.Uri; doc: vscode.TextDocument }> {
     const errorCode = 'createTempFile'
     const id = Date.now()
     const languageId = (await vscode.workspace.openTextDocument(originalFileUri)).languageId
@@ -152,7 +149,7 @@ export async function createTempFileForDiff(
         throw ToolkitError.chain(error, 'Failed to write to temp file', { code: errorCode })
     }
 
-    // Apply the proposed changes to the temp file
+    // Open the temp file as a document
     const doc = await vscode.workspace.openTextDocument(tempFileUri.path)
     const languageIdStatus = await vscode.languages.setTextDocumentLanguage(doc, languageId)
     if (languageIdStatus) {
@@ -161,10 +158,57 @@ export async function createTempFileForDiff(
         getLogger().error('Diff: Unable to set languageId for %s to: %s', tempFileUri.fsPath, languageId)
     }
 
+    return { tempFileUri, doc }
+}
+
+/**
+ * Creates a temporary file for diff comparison by cloning the original file
+ * and applying the proposed changes within the selected range.
+ *
+ * @param {vscode.Uri} originalFileUri - The URI of the original file.
+ * @param {any} message - The message object containing the proposed code changes.
+ * @param {vscode.Selection} selection - The selection range in the document where the changes are applied.
+ * @param {string} scheme - The URI scheme to use for the temporary file.
+ * @returns {Promise<vscode.Uri>} - A promise that resolves to the URI of the temporary file.
+ */
+export async function createTempFileForDiff(
+    originalFileUri: vscode.Uri,
+    message: any,
+    selection: vscode.Selection,
+    scheme: string
+): Promise<vscode.Uri> {
+    const { tempFileUri, doc } = await createTempFileForDiffBase(originalFileUri, scheme)
+
     const code = getIndentedCode(message, doc, selection)
     const range = getSelectionFromRange(doc, selection)
 
     await applyChanges(doc, range, code)
+    return tempFileUri
+}
+
+/**
+ * Creates a temporary file for diff comparison by cloning the original file
+ * and replacing the entire content with the provided content.
+ *
+ * @param {vscode.Uri} originalFileUri - The URI of the original file.
+ * @param {string} content - The content to replace the entire document with.
+ * @param {string} scheme - The URI scheme to use for the temporary file.
+ * @returns {Promise<vscode.Uri>} - A promise that resolves to the URI of the temporary file.
+ */
+export async function createTempFileForDiffWithContent(
+    originalFileUri: vscode.Uri,
+    content: string,
+    scheme: string
+): Promise<vscode.Uri> {
+    const { tempFileUri, doc } = await createTempFileForDiffBase(originalFileUri, scheme)
+
+    // Create a range that covers the entire document
+    const entireDocumentRange = new vscode.Range(
+        new vscode.Position(0, 0),
+        new vscode.Position(doc.lineCount - 1, doc.lineAt(doc.lineCount - 1).text.length)
+    )
+
+    await applyChanges(doc, entireDocumentRange, content)
     return tempFileUri
 }
 

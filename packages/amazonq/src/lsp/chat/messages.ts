@@ -39,6 +39,8 @@ import {
     ShowDocumentRequest,
     contextCommandsNotificationType,
     ContextCommandParams,
+    openFileDiffNotificationType,
+    OpenFileDiffParams,
 } from '@aws/language-server-runtimes/protocol'
 import { v4 as uuidv4 } from 'uuid'
 import * as vscode from 'vscode'
@@ -46,8 +48,16 @@ import { Disposable, LanguageClient, Position, TextDocumentIdentifier } from 'vs
 import * as jose from 'jose'
 import { AmazonQChatViewProvider } from './webviewProvider'
 import { AuthUtil } from 'aws-core-vscode/codewhisperer'
-import { AmazonQPromptSettings, messages } from 'aws-core-vscode/shared'
-import { DefaultAmazonQAppInitContext, messageDispatcher } from 'aws-core-vscode/amazonq'
+import {
+    amazonQDiffScheme,
+    AmazonQPromptSettings,
+    messages,
+    textDocumentUtil,
+    amazonQTabSuffix,
+    disposeOnEditorClose,
+} from 'aws-core-vscode/shared'
+import { ContentProvider, DefaultAmazonQAppInitContext, messageDispatcher } from 'aws-core-vscode/amazonq'
+import path from 'path'
 
 export function registerLanguageServerEventListener(languageClient: LanguageClient, provider: AmazonQChatViewProvider) {
     languageClient.info(
@@ -352,6 +362,24 @@ export function registerMessageListeners(
             command: contextCommandsNotificationType.method,
             params: params,
         })
+    })
+
+    languageClient.onNotification(openFileDiffNotificationType.method, async (params: OpenFileDiffParams) => {
+        const uri = vscode.Uri.parse(params.originalFileUri)
+        const tempFileUri = await textDocumentUtil.createTempFileForDiffWithContent(
+            uri,
+            params.fileContent ?? '',
+            amazonQDiffScheme
+        )
+        const contentProvider = new ContentProvider(tempFileUri)
+        const disposable = vscode.workspace.registerTextDocumentContentProvider(amazonQDiffScheme, contentProvider)
+        await vscode.commands.executeCommand(
+            'vscode.diff',
+            uri,
+            tempFileUri,
+            `${path.basename(params.originalFileUri)} ${amazonQTabSuffix}`
+        )
+        disposeOnEditorClose(uri, disposable)
     })
 }
 
