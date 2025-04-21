@@ -295,10 +295,17 @@ export function registerMessageListeners(
     languageClient.onRequest<ShowDocumentParams, ShowDocumentResult>(
         ShowDocumentRequest.method,
         async (params: ShowDocumentParams): Promise<ShowDocumentParams | ResponseError<ShowDocumentResult>> => {
-            const uri = vscode.Uri.parse(params.uri)
-            const doc = await vscode.workspace.openTextDocument(uri)
-            await vscode.window.showTextDocument(doc, { preview: false })
-            return params
+            try {
+                const uri = vscode.Uri.parse(params.uri)
+                const doc = await vscode.workspace.openTextDocument(uri)
+                await vscode.window.showTextDocument(doc, { preview: false })
+                return params
+            } catch (e) {
+                return new ResponseError(
+                    LSPErrorCodes.RequestFailed,
+                    `Failed to open document: ${(e as Error).message}`
+                )
+            }
         }
     )
 
