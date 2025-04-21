@@ -42,6 +42,7 @@ import {
     LINK_CLICK_NOTIFICATION_METHOD,
     LinkClickParams,
     INFO_LINK_CLICK_NOTIFICATION_METHOD,
+    CancellationTokenSource,
 } from '@aws/language-server-runtimes/protocol'
 import { v4 as uuidv4 } from 'uuid'
 import * as vscode from 'vscode'
@@ -108,6 +109,8 @@ export function registerMessageListeners(
             )
             return
         }
+
+        const chatStreamTokens = new Map<string, CancellationTokenSource>() // tab id -> token
 
         const webview = provider.webview
         switch (message.command) {
@@ -181,10 +184,21 @@ export function registerMessageListeners(
                 void openUrl(vscode.Uri.parse(linkParams.link))
                 break
             }
+            case STOP_RESPONSE: {
+                const tabId = (message as StopResponseMessage).tabId
+                const token = chatStreamTokens.get(tabId)
+                token?.cancel()
+                token?.dispose()
+                chatStreamTokens.delete(tabId)
+                break
+            }
             case chatRequestType.method: {
                 const chatParams: ChatParams = { ...message.params }
                 const partialResultToken = uuidv4()
                 let lastPartialResult: ChatResult | undefined
+                const cancellationToken = new CancellationTokenSource()
+                chatStreamTokens.set(message.params.tabId, cancellationToken)
+
                 const chatDisposable = languageClient.onProgress(
                     chatRequestType,
                     partialResultToken,
