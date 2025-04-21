@@ -12,6 +12,8 @@ import {
     AuthFollowUpType,
     DISCLAIMER_ACKNOWLEDGED,
     UiMessageResultParams,
+    CHAT_PROMPT_OPTION_ACKNOWLEDGED,
+    ChatPromptOptionAcknowledgedMessage,
 } from '@aws/chat-client-ui-types'
 import {
     ChatResult,
@@ -159,6 +161,15 @@ export function registerMessageListeners(
             }
             case DISCLAIMER_ACKNOWLEDGED: {
                 void AmazonQPromptSettings.instance.update('amazonQChatDisclaimer', true)
+                break
+            }
+            case CHAT_PROMPT_OPTION_ACKNOWLEDGED: {
+                const acknowledgedMessage = message as ChatPromptOptionAcknowledgedMessage
+                switch (acknowledgedMessage.params.messageId) {
+                    case 'programmerModeCardId': {
+                        void AmazonQPromptSettings.instance.disablePrompt('amazonQChatPairProgramming')
+                    }
+                }
                 break
             }
             case chatRequestType.method: {
