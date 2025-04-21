@@ -39,6 +39,9 @@ import {
     ShowDocumentRequest,
     contextCommandsNotificationType,
     ContextCommandParams,
+    LINK_CLICK_NOTIFICATION_METHOD,
+    LinkClickParams,
+    INFO_LINK_CLICK_NOTIFICATION_METHOD,
 } from '@aws/language-server-runtimes/protocol'
 import { v4 as uuidv4 } from 'uuid'
 import * as vscode from 'vscode'
@@ -46,7 +49,7 @@ import { Disposable, LanguageClient, Position, TextDocumentIdentifier } from 'vs
 import * as jose from 'jose'
 import { AmazonQChatViewProvider } from './webviewProvider'
 import { AuthUtil } from 'aws-core-vscode/codewhisperer'
-import { AmazonQPromptSettings, messages } from 'aws-core-vscode/shared'
+import { AmazonQPromptSettings, messages, openUrl } from 'aws-core-vscode/shared'
 import { DefaultAmazonQAppInitContext, messageDispatcher } from 'aws-core-vscode/amazonq'
 
 export function registerLanguageServerEventListener(languageClient: LanguageClient, provider: AmazonQChatViewProvider) {
@@ -170,6 +173,12 @@ export function registerMessageListeners(
                         void AmazonQPromptSettings.instance.disablePrompt('amazonQChatPairProgramming')
                     }
                 }
+                break
+            }
+            case INFO_LINK_CLICK_NOTIFICATION_METHOD:
+            case LINK_CLICK_NOTIFICATION_METHOD: {
+                const linkParams = message.params as LinkClickParams
+                void openUrl(vscode.Uri.parse(linkParams.link))
                 break
             }
             case chatRequestType.method: {
