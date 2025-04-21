@@ -100,7 +100,7 @@ describe('RegionProfileManager', function () {
 
     describe(`client config`, function () {
         it(`no valid credential should throw`, async function () {
-            AuthUtil.instance.logout()
+            await AuthUtil.instance.logout()
 
             assert.ok(!AuthUtil.instance.isConnected())
 
