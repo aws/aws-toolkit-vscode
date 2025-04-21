@@ -931,3 +931,11 @@ export const testGenExcludePatterns = [
     '**/*.deb',
     '**/*.model',
 ]
+
+export const predictionTrackerDefaultConfig = {
+    maxFiles: 25,
+    maxTotalSizeKb: 50000,
+    debounceIntervalMs: 2000,
+    maxAgeMs: 30000,
+    maxSupplementalContext: 15,
+}

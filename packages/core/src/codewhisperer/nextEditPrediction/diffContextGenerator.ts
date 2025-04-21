@@ -48,9 +48,6 @@ async function generateUnifiedDiffWithTimestamps(
     return patchResult
 }
 
-/**
- * Interface for snapshot content with timestamp
- */
 export interface SnapshotContent {
     filePath: string
     content: string
@@ -82,11 +79,8 @@ export async function generateDiffContexts(
     const supplementalContexts: codewhispererClient.SupplementalContext[] = []
     const currentTimestamp = Date.now()
 
-    // Create a copy of snapshots and reverse it so newest snapshots are processed first
-    const sortedSnapshots = [...snapshotContents].reverse()
-
-    // Generate diffs between each snapshot and the current content
-    for (const snapshot of sortedSnapshots) {
+    for (let i = snapshotContents.length - 1; i >= 0; i--) {
+        const snapshot = snapshotContents[i]
         try {
             const unifiedDiff = await generateUnifiedDiffWithTimestamps(
                 snapshot.filePath,

@@ -9,6 +9,7 @@ import fs from '../../shared/fs/fs'
 import { getLogger } from '../../shared/logger/logger'
 import * as diffGenerator from './diffContextGenerator'
 import * as codewhispererClient from '../client/codewhisperer'
+import { predictionTrackerDefaultConfig } from '../models/constants'
 
 export interface FileTrackerConfig {
     /** Maximum number of files to track (default: 15) */
@@ -43,17 +44,8 @@ export class PredictionTracker {
     constructor(extensionContext: vscode.ExtensionContext, config?: Partial<FileTrackerConfig>) {
         getLogger().debug('Initializing PredictionTracker')
 
-        // Default configuration values
-        const defaultConfig = {
-            maxFiles: 25,
-            maxTotalSizeKb: 50000,
-            debounceIntervalMs: 2000,
-            maxAgeMs: 30000, // 30 sec
-            maxSupplementalContext: 15, // Default max supplemental contexts
-        }
-
         this.config = {
-            ...defaultConfig,
+            ...predictionTrackerDefaultConfig,
             ...config,
         }
 
@@ -62,9 +54,6 @@ export class PredictionTracker {
 
         void this.ensureStorageDirectoryExists()
         void this.loadSnapshotsFromStorage()
-
-        // Schedule periodic cleanup
-        // setInterval(() => this.cleanupOldSnapshots(), this.config.maxAgeMs / 2)
     }
 
     public processEdit(document: vscode.TextDocument, previousContent: string): void {
@@ -112,11 +101,8 @@ export class PredictionTracker {
 
                 fileSnapshots.push(snapshot)
                 this.snapshots.set(filePath, fileSnapshots)
-
-                // Update total size
                 this.totalSize += size
 
-                // Enforce memory limits
                 await this.enforceMemoryLimits()
 
                 // Set a timeout to delete the snapshot after maxAgeMs
@@ -162,14 +148,12 @@ export class PredictionTracker {
                 continue
             }
 
-            // Remove the oldest snapshot
             const removedSnapshot = fileSnapshots.shift()
             if (removedSnapshot) {
                 this.totalSize -= removedSnapshot.size
                 await this.deleteSnapshotFromStorage(removedSnapshot)
             }
 
-            // If no snapshots left for this file, remove the file entry
             if (fileSnapshots.length === 0) {
                 this.snapshots.delete(oldestFile)
             }
