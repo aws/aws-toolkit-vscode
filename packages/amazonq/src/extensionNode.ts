@@ -129,6 +129,11 @@ async function getAuthState(): Promise<Omit<AuthUserState, 'source'>> {
         getLogger().error(`Current Amazon Q connection is not SSO, type is: %s`, currConn?.type)
     }
 
+    // Pending profile selection state means users already log in with Sso service
+    if (authState === 'pendingProfileSelection') {
+        authState = 'connected'
+    }
+
     return {
         authStatus:
             authState === 'connected' || authState === 'expired' || authState === 'connectedWithNetworkError'
