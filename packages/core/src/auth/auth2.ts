@@ -171,7 +171,7 @@ export class SsoLogin implements BaseLogin {
 
     // Cached information from the identity server for easy reference
     private ssoTokenId: string | undefined
-    private connectionState: AuthState = 'connected'
+    private connectionState: AuthState = 'notConnected'
     private _data: { startUrl: string; region: string } | undefined
 
     private cancellationToken: CancellationTokenSource | undefined

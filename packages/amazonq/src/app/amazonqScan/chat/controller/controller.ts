@@ -104,7 +104,7 @@ export class ScanController {
             telemetry.amazonq_feedback.emit({
                 featureId: 'amazonQReview',
                 amazonqConversationId: this.sessionStorage.getSession().scanUuid,
-                credentialStartUrl: AuthUtil.instance.startUrl,
+                credentialStartUrl: AuthUtil.instance.connection?.startUrl,
                 interactionType: data.vote,
             })
         })
@@ -122,8 +122,8 @@ export class ScanController {
         try {
             getLogger().debug(`Q - Review: Session created with id: ${session.tabID}`)
 
-            const authState = await AuthUtil.instance.getChatAuthState()
-            if (authState.amazonQ !== 'connected') {
+            const authState = AuthUtil.instance.getAuthState()
+            if (authState !== 'connected') {
                 void this.messenger.sendAuthNeededExceptionMessage(authState, tabID)
                 session.isAuthenticating = true
                 return
@@ -161,8 +161,8 @@ export class ScanController {
                 return
             }
             // check that the session is authenticated
-            const authState = await AuthUtil.instance.getChatAuthState()
-            if (authState.amazonQ !== 'connected') {
+            const authState = AuthUtil.instance.getAuthState()
+            if (authState !== 'connected') {
                 void this.messenger.sendAuthNeededExceptionMessage(authState, message.tabID)
                 session.isAuthenticating = true
                 return

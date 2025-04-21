@@ -26,7 +26,7 @@ import {
 } from './connectorMessages'
 import { DeletedFileInfo, FollowUpTypes, NewFileInfo } from '../types'
 import { messageWithConversationId } from '../../../amazonqFeatureDev/userFacingText'
-import { FeatureAuthState } from '../../../codewhisperer/util/authUtil'
+import { auth2 } from 'aws-core-vscode/auth'
 
 export class Messenger {
     public constructor(
@@ -191,17 +191,13 @@ export class Messenger {
         )
     }
 
-    public async sendAuthNeededExceptionMessage(credentialState: FeatureAuthState, tabID: string) {
+    public async sendAuthNeededExceptionMessage(credentialState: auth2.AuthState, tabID: string) {
         let authType: AuthFollowUpType = 'full-auth'
         let message = AuthMessageDataMap[authType].message
 
-        switch (credentialState.amazonQ) {
-            case 'disconnected':
+        switch (credentialState) {
+            case 'notConnected':
                 authType = 'full-auth'
-                message = AuthMessageDataMap[authType].message
-                break
-            case 'unsupported':
-                authType = 'use-supported-auth'
                 message = AuthMessageDataMap[authType].message
                 break
             case 'expired':

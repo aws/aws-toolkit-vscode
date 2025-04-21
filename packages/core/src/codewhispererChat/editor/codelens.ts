@@ -8,7 +8,7 @@ import { ToolkitError } from '../../shared/errors'
 import { Commands, placeholder } from '../../shared/vscode/commands2'
 import { platform } from 'os'
 import { focusAmazonQPanel } from '../commands/registerCommands'
-import { AuthStates, AuthUtil } from '../../codewhisperer/util/authUtil'
+import { AuthUtil } from '../../codewhisperer/util/authUtil'
 import { inlinehintKey } from '../../codewhisperer/models/constants'
 import { EndState } from '../../codewhisperer/views/lineAnnotationController'
 
@@ -89,7 +89,7 @@ export class TryChatCodeLensProvider implements vscode.CodeLensProvider {
                 return resolve([])
             }
 
-            if (AuthUtil.instance.getChatAuthStateSync().amazonQ !== AuthStates.connected) {
+            if (AuthUtil.instance.getAuthState() !== 'connected') {
                 return resolve([])
             }
 

@@ -9,7 +9,6 @@ import { getLogger } from '../../../../shared/logger/logger'
 import { CommonAuthWebview } from '../backend'
 import {
     AwsConnection,
-    Connection,
     SsoConnection,
     TelemetryMetadata,
     createSsoProfile,
@@ -154,9 +153,6 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
     }
 
     override reauthenticateConnection(): Promise<undefined> {
-        throw new Error('Method not implemented.')
-    }
-    override getActiveConnection(): Promise<Connection | undefined> {
         throw new Error('Method not implemented.')
     }
 
