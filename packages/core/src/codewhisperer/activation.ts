@@ -72,12 +72,7 @@ import { AuthUtil } from './util/authUtil'
 import { ImportAdderProvider } from './service/importAdderProvider'
 import { TelemetryHelper } from './util/telemetryHelper'
 import { openUrl } from '../shared/utilities/vsCodeUtils'
-import {
-    getAvailableCustomizationsList,
-    getSelectedCustomization,
-    notifyNewCustomizations,
-    switchToBaseCustomizationAndNotify,
-} from './util/customizationUtil'
+import { notifyNewCustomizations, onProfileChangedListener } from './util/customizationUtil'
 import { CodeWhispererCommandBackend, CodeWhispererCommandDeclarations } from './commands/gettingStartedPageCommands'
 import { SecurityIssueHoverProvider } from './service/securityIssueHoverProvider'
 import { SecurityIssueCodeActionProvider } from './service/securityIssueCodeActionProvider'
@@ -343,26 +338,7 @@ export async function activate(context: ExtContext): Promise<void> {
             SecurityIssueCodeActionProvider.instance
         ),
         vscode.commands.registerCommand('aws.amazonq.openEditorAtRange', openEditorAtRange),
-        auth.regionProfileManager.onDidChangeRegionProfile(() => {
-            // Validate user still has access to the selected customization.
-            const selectedCustomization = getSelectedCustomization()
-            // No need to validate base customization which has empty arn.
-            if (selectedCustomization.arn.length > 0) {
-                getAvailableCustomizationsList()
-                    .then(async (customizations) => {
-                        const r = customizations.find((it) => it.arn === selectedCustomization.arn)
-                        if (!r) {
-                            await switchToBaseCustomizationAndNotify()
-                        }
-                    })
-                    .catch((e) => {
-                        getLogger().error(
-                            `encounter error while validating selected customization on profile change: %s`,
-                            (e as Error).message
-                        )
-                    })
-            }
-        })
+        auth.regionProfileManager.onDidChangeRegionProfile(onProfileChangedListener)
     )
 
     // run the auth startup code with context for telemetry
