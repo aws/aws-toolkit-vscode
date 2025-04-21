@@ -27,7 +27,7 @@ export async function activate(context: ExtensionContext) {
 
     const setupLsp = funcUtil.debounce(async () => {
         void amazonq.LspController.instance.trySetupLsp(context, {
-            startUrl: AuthUtil.instance.startUrl,
+            startUrl: AuthUtil.instance.connection?.startUrl,
             maxIndexSize: CodeWhispererSettings.instance.getMaxIndexSize(),
             isVectorIndexEnabled: CodeWhispererSettings.instance.isLocalIndexEnabled(),
         })
@@ -44,8 +44,6 @@ export async function activate(context: ExtensionContext) {
         amazonq.walkthroughSecurityScanExample.register(),
         amazonq.openAmazonQWalkthrough.register(),
         amazonq.listCodeWhispererCommandsWalkthrough.register(),
-        amazonq.focusAmazonQPanel.register(),
-        amazonq.focusAmazonQPanelKeybinding.register(),
         amazonq.tryChatCodeLensCommand.register(),
         vscode.workspace.onDidChangeConfiguration(async (configurationChangeEvent) => {
             if (configurationChangeEvent.affectsConfiguration('amazonQ.workspaceIndex')) {
