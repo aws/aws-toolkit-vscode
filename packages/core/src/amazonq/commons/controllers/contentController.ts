@@ -161,7 +161,7 @@ export class EditorContentController {
         const { filePath, selection } = extractFileAndCodeSelectionFromMessage(message)
 
         try {
-            if (filePath && message?.code?.trim().length > 0 && selection) {
+            if (filePath && message?.code !== undefined && selection) {
                 const originalFileUri = vscode.Uri.file(filePath)
                 const uri = await createTempFileForDiff(originalFileUri, message, selection, scheme)
 
