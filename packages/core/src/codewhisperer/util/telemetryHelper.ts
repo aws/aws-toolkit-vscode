@@ -31,7 +31,7 @@ import { CodeAnalysisScope as CodeAnalysisScopeClientSide } from '../models/cons
 import { Session } from '../../amazonqTest/chat/session/session'
 import { sleep } from '../../shared/utilities/timeoutUtils'
 import { getDiagnosticsDifferences, getDiagnosticsOfCurrentFile, toIdeDiagnostics } from './diagnosticsUtil'
-import { Auth } from '../../auth'
+import { Auth } from '../../auth/auth'
 
 export class TelemetryHelper {
     // Some variables for client component latency
@@ -425,7 +425,7 @@ export class TelemetryHelper {
             e2eLatency = 0.0
         }
 
-        let userTriggerDecisionEvent: CodeWhispererUserClient.UserTriggerDecisionEvent = {
+        const userTriggerDecisionEvent: CodeWhispererUserClient.UserTriggerDecisionEvent = {
             sessionId: sessionId,
             requestId: this.sessionDecisions[0].codewhispererFirstRequestId,
             customizationArn: selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
