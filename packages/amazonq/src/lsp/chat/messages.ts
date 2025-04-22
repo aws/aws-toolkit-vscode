@@ -14,6 +14,8 @@ import {
     UiMessageResultParams,
     CHAT_PROMPT_OPTION_ACKNOWLEDGED,
     ChatPromptOptionAcknowledgedMessage,
+    STOP_CHAT_RESPONSE,
+    StopChatResponseMessage,
 } from '@aws/chat-client-ui-types'
 import {
     ChatResult,
@@ -39,11 +41,14 @@ import {
     ShowDocumentRequest,
     contextCommandsNotificationType,
     ContextCommandParams,
+    openFileDiffNotificationType,
+    OpenFileDiffParams,
     LINK_CLICK_NOTIFICATION_METHOD,
     LinkClickParams,
     INFO_LINK_CLICK_NOTIFICATION_METHOD,
     buttonClickRequestType,
     ButtonClickResult,
+    CancellationTokenSource,
 } from '@aws/language-server-runtimes/protocol'
 import { v4 as uuidv4 } from 'uuid'
 import * as vscode from 'vscode'
@@ -52,7 +57,7 @@ import * as jose from 'jose'
 import { AmazonQChatViewProvider } from './webviewProvider'
 import { AuthUtil } from 'aws-core-vscode/codewhisperer'
 import { AmazonQPromptSettings, messages, openUrl } from 'aws-core-vscode/shared'
-import { DefaultAmazonQAppInitContext, messageDispatcher } from 'aws-core-vscode/amazonq'
+import { DefaultAmazonQAppInitContext, messageDispatcher, EditorContentController } from 'aws-core-vscode/amazonq'
 
 export function registerLanguageServerEventListener(languageClient: LanguageClient, provider: AmazonQChatViewProvider) {
     languageClient.info(
@@ -99,6 +104,7 @@ export function registerMessageListeners(
     provider: AmazonQChatViewProvider,
     encryptionKey: Buffer
 ) {
+    const chatStreamTokens = new Map<string, CancellationTokenSource>() // tab id -> token
     provider.webview?.onDidReceiveMessage(async (message) => {
         languageClient.info(`[VSCode Client]  Received ${JSON.stringify(message)} from chat`)
 
@@ -183,10 +189,21 @@ export function registerMessageListeners(
                 void openUrl(vscode.Uri.parse(linkParams.link))
                 break
             }
+            case STOP_CHAT_RESPONSE: {
+                const tabId = (message as StopChatResponseMessage).params.tabId
+                const token = chatStreamTokens.get(tabId)
+                token?.cancel()
+                token?.dispose()
+                chatStreamTokens.delete(tabId)
+                break
+            }
             case chatRequestType.method: {
                 const chatParams: ChatParams = { ...message.params }
                 const partialResultToken = uuidv4()
                 let lastPartialResult: ChatResult | undefined
+                const cancellationToken = new CancellationTokenSource()
+                chatStreamTokens.set(chatParams.tabId, cancellationToken)
+
                 const chatDisposable = languageClient.onProgress(
                     chatRequestType,
                     partialResultToken,
@@ -214,10 +231,14 @@ export function registerMessageListeners(
 
                 const chatRequest = await encryptRequest<ChatParams>(chatParams, encryptionKey)
                 try {
-                    const chatResult = await languageClient.sendRequest<string | ChatResult>(chatRequestType.method, {
-                        ...chatRequest,
-                        partialResultToken,
-                    })
+                    const chatResult = await languageClient.sendRequest<string | ChatResult>(
+                        chatRequestType.method,
+                        {
+                            ...chatRequest,
+                            partialResultToken,
+                        },
+                        cancellationToken.token
+                    )
                     await handleCompleteResult<ChatResult>(
                         chatResult,
                         encryptionKey,
@@ -242,6 +263,8 @@ export function registerMessageListeners(
                         chatParams.tabId,
                         chatDisposable
                     )
+                } finally {
+                    chatStreamTokens.delete(chatParams.tabId)
                 }
                 break
             }
@@ -406,6 +429,23 @@ export function registerMessageListeners(
         void provider.webview?.postMessage({
             command: contextCommandsNotificationType.method,
             params: params,
+        })
+    })
+
+    languageClient.onNotification(openFileDiffNotificationType.method, async (params: OpenFileDiffParams) => {
+        const edc = new EditorContentController()
+        const uri = params.originalFileUri
+        const doc = await vscode.workspace.openTextDocument(uri)
+        const entireDocumentSelection = new vscode.Selection(
+            new vscode.Position(0, 0),
+            new vscode.Position(doc.lineCount - 1, doc.lineAt(doc.lineCount - 1).text.length)
+        )
+        await edc.viewDiff({
+            context: {
+                activeFileContext: { filePath: params.originalFileUri },
+                focusAreaContext: { selectionInsideExtendedCodeBlock: entireDocumentSelection },
+            },
+            code: params.fileContent,
         })
     })
 }
