@@ -254,11 +254,16 @@ export function registerMessageListeners(
                 } catch (e) {
                     languageClient.info(`Error occurred during chat request: ${e}`)
                     // Use the last partial result if available, append error message
+                    let body = ''
+                    if (!cancellationToken.token.isCancellationRequested) {
+                        body = lastPartialResult?.body
+                            ? `${lastPartialResult.body}\n\n ❌ Error: Request failed to complete`
+                            : '❌ An error occurred while processing your request'
+                    }
+
                     const errorResult: ChatResult = {
                         ...lastPartialResult,
-                        body: lastPartialResult?.body
-                            ? `${lastPartialResult.body}\n\n ❌ Error: Request failed to complete`
-                            : '❌ An error occurred while processing your request',
+                        body,
                     }
 
                     await handleCompleteResult<ChatResult>(
