@@ -14,6 +14,8 @@ import {
     UiMessageResultParams,
     CHAT_PROMPT_OPTION_ACKNOWLEDGED,
     ChatPromptOptionAcknowledgedMessage,
+    STOP_CHAT_RESPONSE,
+    StopChatResponseMessage,
 } from '@aws/chat-client-ui-types'
 import {
     ChatResult,
@@ -44,6 +46,7 @@ import {
     LINK_CLICK_NOTIFICATION_METHOD,
     LinkClickParams,
     INFO_LINK_CLICK_NOTIFICATION_METHOD,
+    CancellationTokenSource,
 } from '@aws/language-server-runtimes/protocol'
 import { v4 as uuidv4 } from 'uuid'
 import * as vscode from 'vscode'
@@ -99,6 +102,7 @@ export function registerMessageListeners(
     provider: AmazonQChatViewProvider,
     encryptionKey: Buffer
 ) {
+    const chatStreamTokens = new Map<string, CancellationTokenSource>() // tab id -> token
     provider.webview?.onDidReceiveMessage(async (message) => {
         languageClient.info(`[VSCode Client]  Received ${JSON.stringify(message)} from chat`)
 
@@ -183,10 +187,21 @@ export function registerMessageListeners(
                 void openUrl(vscode.Uri.parse(linkParams.link))
                 break
             }
+            case STOP_CHAT_RESPONSE: {
+                const tabId = (message as StopChatResponseMessage).params.tabId
+                const token = chatStreamTokens.get(tabId)
+                token?.cancel()
+                token?.dispose()
+                chatStreamTokens.delete(tabId)
+                break
+            }
             case chatRequestType.method: {
                 const chatParams: ChatParams = { ...message.params }
                 const partialResultToken = uuidv4()
                 let lastPartialResult: ChatResult | undefined
+                const cancellationToken = new CancellationTokenSource()
+                chatStreamTokens.set(chatParams.tabId, cancellationToken)
+
                 const chatDisposable = languageClient.onProgress(
                     chatRequestType,
                     partialResultToken,
@@ -214,10 +229,14 @@ export function registerMessageListeners(
 
                 const chatRequest = await encryptRequest<ChatParams>(chatParams, encryptionKey)
                 try {
-                    const chatResult = await languageClient.sendRequest<string | ChatResult>(chatRequestType.method, {
-                        ...chatRequest,
-                        partialResultToken,
-                    })
+                    const chatResult = await languageClient.sendRequest<string | ChatResult>(
+                        chatRequestType.method,
+                        {
+                            ...chatRequest,
+                            partialResultToken,
+                        },
+                        cancellationToken.token
+                    )
                     await handleCompleteResult<ChatResult>(
                         chatResult,
                         encryptionKey,
@@ -242,6 +261,8 @@ export function registerMessageListeners(
                         chatParams.tabId,
                         chatDisposable
                     )
+                } finally {
+                    chatStreamTokens.delete(chatParams.tabId)
                 }
                 break
             }
