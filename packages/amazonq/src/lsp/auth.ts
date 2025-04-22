@@ -86,7 +86,7 @@ export class AmazonQLspAuth {
         this.client.info(`UpdateBearerToken: ${JSON.stringify(request)}`)
     }
 
-    public startTokenRefreshInterval(pollingTime: number = oneMinute) {
+    public startTokenRefreshInterval(pollingTime: number = oneMinute / 2) {
         const interval = setInterval(async () => {
             await this.refreshConnection().catch((e) => {
                 getLogger('amazonqLsp').error('Unable to update bearer token: %s', (e as Error).message)
