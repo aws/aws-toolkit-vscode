@@ -487,7 +487,7 @@ export interface ResetableMemento extends vscode.Memento {
 // at least for anything beyond primitive types.
 const settingsProps = { ...toolkitSettings, ...amazonQSettings }
 
-type SettingsProps = typeof settingsProps
+export type SettingsProps = typeof settingsProps
 
 type Split<T, S extends string> = T extends `${infer L}${S}${infer R}` ? [L, ...Split<R, S>] : [T]
 type Pop<T> = T extends [...infer R, infer _] ? R : never

@@ -16,6 +16,8 @@ import {
     ChatPromptOptionAcknowledgedMessage,
     STOP_CHAT_RESPONSE,
     StopChatResponseMessage,
+    OPEN_SETTINGS,
+    OpenSettingsParams,
 } from '@aws/chat-client-ui-types'
 import {
     ChatResult,
@@ -56,7 +58,14 @@ import { Disposable, LanguageClient, Position, TextDocumentIdentifier } from 'vs
 import * as jose from 'jose'
 import { AmazonQChatViewProvider } from './webviewProvider'
 import { AuthUtil } from 'aws-core-vscode/codewhisperer'
-import { amazonQDiffScheme, AmazonQPromptSettings, messages, openUrl } from 'aws-core-vscode/shared'
+import {
+    amazonQDiffScheme,
+    AmazonQPromptSettings,
+    messages,
+    openSettingsId,
+    openUrl,
+    SettingsProps,
+} from 'aws-core-vscode/shared'
 import { DefaultAmazonQAppInitContext, messageDispatcher, EditorContentController } from 'aws-core-vscode/amazonq'
 import { telemetry, TelemetryBase } from 'aws-core-vscode/telemetry'
 
@@ -186,6 +195,12 @@ export function registerMessageListeners(
                         void AmazonQPromptSettings.instance.disablePrompt('amazonQChatPairProgramming')
                     }
                 }
+                break
+            }
+            case OPEN_SETTINGS: {
+                const params = message.params as OpenSettingsParams
+                const setting = params.settingKey as keyof SettingsProps
+                void openSettingsId(setting)
                 break
             }
             case INFO_LINK_CLICK_NOTIFICATION_METHOD:
