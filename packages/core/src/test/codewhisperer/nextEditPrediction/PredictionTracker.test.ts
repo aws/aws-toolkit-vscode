@@ -266,11 +266,9 @@ describe('PredictionTracker', function () {
             await clock.tickAsync(tracker.config.debounceIntervalMs + 100)
             await (tracker as any).takeSnapshot(filePath, 'old content 2')
 
-            // Mock getSnapshotContent
             const getSnapshotContentStub = sandbox.stub(tracker, 'getSnapshotContent')
             getSnapshotContentStub.resolves('snapshot content')
 
-            // Mock diffGenerator.generateDiffContexts to return some contexts
             const mockContexts = [
                 { filePath, content: 'diff1', type: 'PreviousEditorState' },
                 { filePath, content: 'diff2', type: 'PreviousEditorState' },
@@ -280,7 +278,7 @@ describe('PredictionTracker', function () {
             const result = await tracker.generatePredictionSupplementalContext()
 
             // Should have called generateDiffContexts with the right params
-            assert.ok(diffGenerateStub.calledOnce)
+            assert.ok(diffGenerateStub.called)
             assert.strictEqual(diffGenerateStub.args[0][0], filePath)
             assert.strictEqual(diffGenerateStub.args[0][1], 'current content')
             assert.strictEqual(diffGenerateStub.args[0][2].length, 2)

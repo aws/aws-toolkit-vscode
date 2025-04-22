@@ -39,7 +39,6 @@ export class PredictionTracker {
     readonly config: FileTrackerConfig
     private storageSize: number = 0
     private storagePath?: string
-    private debounceTracker: Set<string> = new Set()
 
     constructor(extensionContext: vscode.ExtensionContext, config?: Partial<FileTrackerConfig>) {
         this.config = {
@@ -427,12 +426,5 @@ export class PredictionTracker {
 
     public getTotalSize() {
         return this.storageSize
-    }
-
-    /**
-     * Disposes of resources used by the tracker
-     */
-    public dispose(): void {
-        this.debounceTracker.clear()
     }
 }
