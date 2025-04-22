@@ -156,9 +156,9 @@ describe('downloadPatternCode', () => {
         })
         try {
             await Promise.all([messagePromise, downloadPatternCode(mockConfig, mockConfig.assetName)])
-            assert.fail('A folder named test-project already exists in this path.')
+            assert.fail('Folder already exists: test-project')
         } catch (e) {
-            assert.strictEqual((e as Error).message, `A folder named ${mockConfig.name} already exists in this path.`)
+            assert.strictEqual((e as Error).message, `Folder already exists: ${mockConfig.name}`)
         }
         assert(getPatternStub.notCalled)
         existsStub.restore()

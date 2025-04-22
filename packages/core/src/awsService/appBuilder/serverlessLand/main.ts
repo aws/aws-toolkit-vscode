@@ -101,7 +101,7 @@ export async function downloadPatternCode(config: CreateServerlessLandWizardForm
             'No'
         )
         if (choice !== 'Yes') {
-            return Promise.reject(new ToolkitError(`A folder named ${config.name} already exists in this path.`))
+            throw new ToolkitError(`Folder already exists: ${config.name}`)
         }
         await vscode.workspace.fs.delete(location)
     }
