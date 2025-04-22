@@ -608,6 +608,7 @@ const registerToolkitApiCallbackOnce = once(() => {
     const auth = Auth.instance
 
     auth.onDidChangeConnectionState(async (e) => {
+        console.log(e)
         if (_toolkitApi && 'declareConnection' in _toolkitApi) {
             const id = e.id
             const conn = await auth.getConnection({ id })

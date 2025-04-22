@@ -28,6 +28,8 @@ import { parse } from '@aws-sdk/util-arn-parser'
 import { isAwsError, ToolkitError } from '../../shared/errors'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { localize } from '../../shared/utilities/vsCodeUtils'
+import { sleep } from '../../shared/utilities/timeoutUtils'
+import { randomInt } from 'crypto'
 
 // TODO: is there a better way to manage all endpoint strings in one place?
 export const defaultServiceConfig: CodeWhispererConfig = {
@@ -116,6 +118,7 @@ export class RegionProfileManager {
             return []
         }
         const availableProfiles: RegionProfile[] = []
+        await sleep(randomInt(1000, 3000))
         for (const [region, endpoint] of endpoints.entries()) {
             const client = await this._createQClient(region, endpoint, conn as SsoConnection)
             const requester = async (request: CodeWhispererUserClient.ListAvailableProfilesRequest) =>
