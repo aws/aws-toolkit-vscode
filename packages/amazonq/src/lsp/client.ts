@@ -93,7 +93,9 @@ export async function startLanguageServer(
                                 customization,
                                 optOutTelemetry: getOptOutPreference() === 'OPTOUT',
                                 projectContext: {
-                                    enableLocalIndexing: true,
+                                    enableLocalIndexing: vscode.workspace
+                                        .getConfiguration()
+                                        .get('amazonQ.workspaceIndex'),
                                 },
                             },
                         ]
