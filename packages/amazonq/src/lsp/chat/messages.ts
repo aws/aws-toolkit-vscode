@@ -306,7 +306,7 @@ export function registerMessageListeners(
                     languageClient.sendNotification(followUpClickNotificationType.method, message.params)
                 }
                 break
-            case buttonClickRequestType.method:
+            case buttonClickRequestType.method: {
                 const buttonResult = await languageClient.sendRequest<ButtonClickResult>(
                     buttonClickRequestType.method,
                     message.params
@@ -317,6 +317,7 @@ export function registerMessageListeners(
                     )
                 }
                 break
+            }
             default:
                 if (isServerEvent(message.command)) {
                     languageClient.sendNotification(message.command, message.params)
