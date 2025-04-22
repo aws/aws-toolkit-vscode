@@ -1,0 +1,14 @@
+{
+	"date": "2025-04-22",
+	"version": "1.61.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Some users not signaled they needed to select a Region Profile to get features working"
+		},
+		{
+			"type": "bugfix",
+			"description": "/review: disable auto-review by default"
+		}
+	]
+}
