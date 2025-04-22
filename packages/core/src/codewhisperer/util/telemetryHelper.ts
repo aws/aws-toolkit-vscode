@@ -448,7 +448,7 @@ export class TelemetryHelper {
             client
                 .sendTelemetryEvent({
                     telemetryEvent: { userTriggerDecisionEvent: userTriggerDecisionEvent },
-                    profileArn: AuthUtil.instance.regionProfileManager.activeRegionProfile?.arn,
+                    profileArn: profile?.arn,
                 })
                 .catch((error) => {
                     const requestId = isAwsError(error) ? error.requestId : undefined
