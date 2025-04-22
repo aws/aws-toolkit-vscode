@@ -48,16 +48,8 @@ import { Disposable, LanguageClient, Position, TextDocumentIdentifier } from 'vs
 import * as jose from 'jose'
 import { AmazonQChatViewProvider } from './webviewProvider'
 import { AuthUtil } from 'aws-core-vscode/codewhisperer'
-import {
-    amazonQDiffScheme,
-    AmazonQPromptSettings,
-    messages,
-    textDocumentUtil,
-    amazonQTabSuffix,
-    disposeOnEditorClose,
-} from 'aws-core-vscode/shared'
-import { ContentProvider, DefaultAmazonQAppInitContext, messageDispatcher } from 'aws-core-vscode/amazonq'
-import path from 'path'
+import { AmazonQPromptSettings, messages } from 'aws-core-vscode/shared'
+import { DefaultAmazonQAppInitContext, messageDispatcher, EditorContentController } from 'aws-core-vscode/amazonq'
 
 export function registerLanguageServerEventListener(languageClient: LanguageClient, provider: AmazonQChatViewProvider) {
     languageClient.info(
@@ -365,21 +357,20 @@ export function registerMessageListeners(
     })
 
     languageClient.onNotification(openFileDiffNotificationType.method, async (params: OpenFileDiffParams) => {
-        const uri = vscode.Uri.parse(params.originalFileUri)
-        const tempFileUri = await textDocumentUtil.createTempFileForDiffWithContent(
-            uri,
-            params.fileContent ?? '',
-            amazonQDiffScheme
+        const edc = new EditorContentController()
+        const uri = params.originalFileUri
+        const doc = await vscode.workspace.openTextDocument(uri)
+        const entireDocumentSelection = new vscode.Selection(
+            new vscode.Position(0, 0),
+            new vscode.Position(doc.lineCount - 1, doc.lineAt(doc.lineCount - 1).text.length)
         )
-        const contentProvider = new ContentProvider(tempFileUri)
-        const disposable = vscode.workspace.registerTextDocumentContentProvider(amazonQDiffScheme, contentProvider)
-        await vscode.commands.executeCommand(
-            'vscode.diff',
-            uri,
-            tempFileUri,
-            `${path.basename(params.originalFileUri)} ${amazonQTabSuffix}`
-        )
-        disposeOnEditorClose(uri, disposable)
+        await edc.viewDiff({
+            context: {
+                activeFileContext: { filePath: params.originalFileUri },
+                focusAreaContext: { selectionInsideExtendedCodeBlock: entireDocumentSelection },
+            },
+            code: params.fileContent,
+        })
     })
 }
 

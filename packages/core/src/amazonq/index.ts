@@ -47,7 +47,7 @@ export * as authConnection from '../auth/connection'
 export * as featureConfig from './webview/generators/featureConfig'
 export * as messageDispatcher from './webview/messages/messageDispatcher'
 import { FeatureContext } from '../shared/featureConfig'
-export { ContentProvider } from './commons/controllers/contentController'
+export { EditorContentController } from './commons/controllers/contentController'
 
 /**
  * main from createMynahUI is a purely browser dependency. Due to this
