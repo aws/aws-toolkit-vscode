@@ -420,14 +420,14 @@ export function registerMessageListeners(
     })
 
     languageClient.onNotification(openFileDiffNotificationType.method, async (params: OpenFileDiffParams) => {
-        const edc = new EditorContentController()
+        const ecc = new EditorContentController()
         const uri = params.originalFileUri
         const doc = await vscode.workspace.openTextDocument(uri)
         const entireDocumentSelection = new vscode.Selection(
             new vscode.Position(0, 0),
             new vscode.Position(doc.lineCount - 1, doc.lineAt(doc.lineCount - 1).text.length)
         )
-        await edc.viewDiff(
+        await ecc.viewDiff(
             {
                 context: {
                     activeFileContext: { filePath: params.originalFileUri },
