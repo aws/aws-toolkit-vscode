@@ -11,16 +11,15 @@ import * as diffGenerator from './diffContextGenerator'
 import * as codewhispererClient from '../client/codewhisperer'
 import { predictionTrackerDefaultConfig } from '../models/constants'
 
+const snapshotDirName = 'AmazonQ-file-snapshots'
+const snapshotFileSuffix = '.nep-snapshot'
+
+// defaul values are stored in codewhisperer/model/constants
 export interface FileTrackerConfig {
-    /** Maximum number of files to track (default: 15) */
     maxFiles: number
-    /** Maximum total size of all snapshots in kilobytes (default: 200) */
     maxStorageSizeKb: number
-    /** Debounce interval in milliseconds (default: 2000) */
     debounceIntervalMs: number
-    /** Maximum age of snapshots in milliseconds (default: 30000) */
     maxAgeMs: number
-    /** Maximum number of supplemental contexts to return (default: 15) */
     maxSupplementalContext: number
 }
 
@@ -38,7 +37,7 @@ export class PredictionTracker {
     private snapshots: Map<string, FileSnapshot[]> = new Map()
     readonly config: FileTrackerConfig
     private storageSize: number = 0
-    private storagePath?: string
+    private storagePath: string
 
     constructor(extensionContext: vscode.ExtensionContext, config?: Partial<FileTrackerConfig>) {
         this.config = {
@@ -46,8 +45,7 @@ export class PredictionTracker {
             ...config,
         }
 
-        // Use workspace storage
-        this.storagePath = extensionContext.storageUri?.fsPath
+        this.storagePath = extensionContext.storageUri?.fsPath as string
 
         void this.ensureStorageDirectoryExists()
         void this.loadSnapshotsFromStorage()
@@ -211,10 +209,6 @@ export class PredictionTracker {
         return Array.from(this.snapshots.keys())
     }
 
-    /**
-     * Gets the total number of snapshots across all files
-     * @returns Total snapshot count
-     */
     public getTotalSnapshotCount(): number {
         let count = 0
         for (const snapshots of this.snapshots.values()) {
@@ -223,23 +217,37 @@ export class PredictionTracker {
         return count
     }
 
+    private getSnapshotsDirectoryPath(): string {
+        return path.join(this.storagePath, snapshotDirName)
+    }
+
+    private getSnapshotFilePath(storageKey: string): string {
+        const snapshotsDir = this.getSnapshotsDirectoryPath()
+        return path.join(snapshotsDir, `${storageKey}${snapshotFileSuffix}`)
+    }
+
     /**
      * Saves snapshot content to Storage
      * @param storageKey The storage key for the snapshot
      * @param content The content to save
      */
     private async saveSnapshotContentToStorage(storageKey: string, content: string): Promise<void> {
-        if (!this.storagePath) {
-            throw new Error('Storage path not available')
-        }
+        const snapshotsDir = this.getSnapshotsDirectoryPath()
 
-        const snapshotsDir = path.join(this.storagePath, 'AmazonQ-file-snapshots')
         if (!(await fs.existsDir(snapshotsDir))) {
             await fs.mkdir(snapshotsDir)
         }
 
-        const filePath = path.join(snapshotsDir, `${storageKey}.nep-snapshot`)
-        await fs.writeFile(filePath, content)
+        const filePath = this.getSnapshotFilePath(storageKey)
+        if (!filePath) {
+            throw new Error('Failed to create snapshot file path')
+        }
+
+        try {
+            await fs.writeFile(filePath, content)
+        } catch (err) {
+            getLogger().error(`Failed to write snapshot to Storage: ${err}`)
+        }
     }
 
     private async deleteSnapshot(snapshot: FileSnapshot): Promise<void> {
@@ -247,18 +255,13 @@ export class PredictionTracker {
             return
         }
 
-        // Update the storage size
         this.storageSize -= snapshot.size
+        const filePath = this.getSnapshotFilePath(snapshot.storageKey)
 
-        const snapshotsDir = path.join(this.storagePath, 'AmazonQ-file-snapshots')
-        const filePath = path.join(snapshotsDir, `${snapshot.storageKey}.nep-snapshot`)
-
-        if (await fs.exists(filePath)) {
-            try {
-                await fs.delete(filePath)
-            } catch (err) {
-                getLogger().error(`Failed to delete snapshot from Storage: ${err}`)
-            }
+        try {
+            await fs.delete(filePath)
+        } catch (err) {
+            getLogger().error(`Failed to delete snapshot from Storage: ${err}`)
         }
     }
 
@@ -268,17 +271,11 @@ export class PredictionTracker {
      * @returns The string content of the snapshot
      */
     public async getSnapshotContent(snapshot: FileSnapshot): Promise<string> {
-        if (!this.storagePath) {
-            throw new Error('Storage path not available')
-        }
-
-        const snapshotsDir = path.join(this.storagePath, 'AmazonQ-file-snapshots')
-        const filePath = path.join(snapshotsDir, `${snapshot.storageKey}.nep-snapshot`)
+        const filePath = this.getSnapshotFilePath(snapshot.storageKey)
 
         try {
             return await fs.readFileText(filePath)
         } catch (err) {
-            getLogger().error(`Failed to read snapshot content from Storage: ${err}`)
             throw new Error(`Failed to read snapshot content: ${err}`)
         }
     }
@@ -307,16 +304,12 @@ export class PredictionTracker {
         // Load all snapshot contents
         const snapshotContents: diffGenerator.SnapshotContent[] = []
         for (const snapshot of snapshots) {
-            try {
-                const content = await this.getSnapshotContent(snapshot)
-                snapshotContents.push({
-                    filePath: snapshot.filePath,
-                    content,
-                    timestamp: snapshot.timestamp,
-                })
-            } catch (err) {
-                getLogger().error(`Failed to load snapshot content: ${err}`)
-            }
+            const content = await this.getSnapshotContent(snapshot)
+            snapshotContents.push({
+                filePath: snapshot.filePath,
+                content,
+                timestamp: snapshot.timestamp,
+            })
         }
 
         // Use the diffGenerator module to generate supplemental contexts
@@ -329,22 +322,15 @@ export class PredictionTracker {
     }
 
     private async ensureStorageDirectoryExists(): Promise<void> {
-        if (!this.storagePath) {
-            return
-        }
+        const snapshotsDir = this.getSnapshotsDirectoryPath()
 
-        const snapshotsDir = path.join(this.storagePath, 'AmazonQ-file-snapshots')
         if (!(await fs.existsDir(snapshotsDir))) {
             await fs.mkdir(snapshotsDir)
         }
     }
 
     private async loadSnapshotsFromStorage(): Promise<void> {
-        if (!this.storagePath) {
-            return
-        }
-
-        const snapshotsDir = path.join(this.storagePath, 'AmazonQ-file-snapshots')
+        const snapshotsDir = this.getSnapshotsDirectoryPath()
         if (!(await fs.existsDir(snapshotsDir))) {
             return
         }
@@ -355,11 +341,11 @@ export class PredictionTracker {
 
             // First, collect all the metadata files
             for (const [filename, fileType] of files) {
-                if (!filename.endsWith('.nep-snapshot') || fileType !== vscode.FileType.File) {
+                if (!filename.endsWith(snapshotFileSuffix) || fileType !== vscode.FileType.File) {
                     continue
                 }
 
-                const storageKey = filename.substring(0, filename.length - '.nep-snapshot'.length)
+                const storageKey = filename.substring(0, filename.length - snapshotFileSuffix.length)
                 const parts = storageKey.split('-')
                 const timestamp = parseInt(parts[parts.length - 1], 10)
                 const originalFilename = parts.slice(0, parts.length - 1).join('-')
@@ -373,7 +359,7 @@ export class PredictionTracker {
 
             // Now process each file that we found
             for (const [storageKey, metadata] of metadataFiles.entries()) {
-                const contentPath = path.join(snapshotsDir, `${storageKey}.nep-snapshot`)
+                const contentPath = this.getSnapshotFilePath(storageKey)
 
                 try {
                     // if original file no longer exists, delete the snapshot

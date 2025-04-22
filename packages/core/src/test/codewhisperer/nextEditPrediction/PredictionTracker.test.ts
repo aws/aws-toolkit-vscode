@@ -198,19 +198,6 @@ describe('PredictionTracker', function () {
             assert.ok(readFileTextStub.calledWith(snapshotPath))
         })
 
-        it('should throw error if storage path not available', async function () {
-            // Clear the storage path
-            const trackerWithoutStorage = new PredictionTracker({ ...mockExtensionContext, storageUri: undefined })
-
-            try {
-                await trackerWithoutStorage.getSnapshotContent(snapshot)
-                assert.fail('Should have thrown an error')
-            } catch (err) {
-                assert.ok(err instanceof Error)
-                assert.strictEqual((err as Error).message, 'Storage path not available')
-            }
-        })
-
         it('should throw error if read fails', async function () {
             // Set up readFileText to throw
             readFileTextStub.rejects(new Error('Read error'))
