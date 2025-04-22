@@ -39,6 +39,8 @@ import {
     ShowDocumentRequest,
     contextCommandsNotificationType,
     ContextCommandParams,
+    openFileDiffNotificationType,
+    OpenFileDiffParams,
     LINK_CLICK_NOTIFICATION_METHOD,
     LinkClickParams,
     INFO_LINK_CLICK_NOTIFICATION_METHOD,
@@ -50,7 +52,7 @@ import * as jose from 'jose'
 import { AmazonQChatViewProvider } from './webviewProvider'
 import { AuthUtil } from 'aws-core-vscode/codewhisperer'
 import { AmazonQPromptSettings, messages, openUrl } from 'aws-core-vscode/shared'
-import { DefaultAmazonQAppInitContext, messageDispatcher } from 'aws-core-vscode/amazonq'
+import { DefaultAmazonQAppInitContext, messageDispatcher, EditorContentController } from 'aws-core-vscode/amazonq'
 
 export function registerLanguageServerEventListener(languageClient: LanguageClient, provider: AmazonQChatViewProvider) {
     languageClient.info(
@@ -393,6 +395,23 @@ export function registerMessageListeners(
         void provider.webview?.postMessage({
             command: contextCommandsNotificationType.method,
             params: params,
+        })
+    })
+
+    languageClient.onNotification(openFileDiffNotificationType.method, async (params: OpenFileDiffParams) => {
+        const edc = new EditorContentController()
+        const uri = params.originalFileUri
+        const doc = await vscode.workspace.openTextDocument(uri)
+        const entireDocumentSelection = new vscode.Selection(
+            new vscode.Position(0, 0),
+            new vscode.Position(doc.lineCount - 1, doc.lineAt(doc.lineCount - 1).text.length)
+        )
+        await edc.viewDiff({
+            context: {
+                activeFileContext: { filePath: params.originalFileUri },
+                focusAreaContext: { selectionInsideExtendedCodeBlock: entireDocumentSelection },
+            },
+            code: params.fileContent,
         })
     })
 }
