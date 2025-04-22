@@ -85,7 +85,14 @@ function getAmazonQCodeWhispererNodes() {
 }
 
 export function getQuickPickItems(): DataQuickPickItem<string>[] {
+    const isUsingEnterpriseSso = AuthUtil.instance.isValidEnterpriseSsoInUse()
+    const regionProfile = AuthUtil.instance.regionProfileManager.activeRegionProfile
+
     const children = [
+        // If the user has signed in but not selected a region, we strongly indicate they need to select
+        // a profile, otherwise features will not work.
+        ...(isUsingEnterpriseSso && !regionProfile ? [createSelectRegionProfileNode(undefined)] : []),
+
         ...getAmazonQCodeWhispererNodes(),
 
         // Generic Nodes
@@ -97,7 +104,7 @@ export function getQuickPickItems(): DataQuickPickItem<string>[] {
         // Add settings and signout
         createSeparator(),
         createSettingsNode(),
-        ...(AuthUtil.instance.isValidEnterpriseSsoInUse() ? [createSelectRegionProfileNode()] : []),
+        ...(isUsingEnterpriseSso && regionProfile ? [createSelectRegionProfileNode(regionProfile)] : []),
         ...(AuthUtil.instance.isConnected() && !hasVendedIamCredentials() && !hasVendedCredentialsFromMetadata()
             ? [createSignout()]
             : []),
