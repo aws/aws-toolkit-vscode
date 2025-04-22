@@ -472,22 +472,8 @@ async function handleCompleteResult<T>(
     tabId: string,
     disposable: Disposable
 ) {
-    const decryptedMessage = (
+    const decryptedMessage =
         typeof result === 'string' && encryptionKey ? await decodeRequest(result, encryptionKey) : result
-    ) as any
-
-    decryptedMessage.additionalMessages[0].buttons = [
-        {
-            id: 'reject-shell-command',
-            text: 'Reject',
-            icon: 'cancel',
-        },
-        {
-            id: 'run-shell-command',
-            text: 'Run',
-            icon: 'play',
-        },
-    ]
     void provider.webview?.postMessage({
         command: chatRequestType.method,
         params: decryptedMessage,
