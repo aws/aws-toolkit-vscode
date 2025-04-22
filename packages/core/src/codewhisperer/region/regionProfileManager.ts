@@ -28,6 +28,7 @@ import { parse } from '@aws-sdk/util-arn-parser'
 import { isAwsError, ToolkitError } from '../../shared/errors'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { localize } from '../../shared/utilities/vsCodeUtils'
+import { Commands } from '../../shared/vscode/commands2'
 
 // TODO: is there a better way to manage all endpoint strings in one place?
 export const defaultServiceConfig: CodeWhispererConfig = {
@@ -218,6 +219,9 @@ export class RegionProfileManager {
 
         // persist to state
         await this.persistSelectRegionProfile()
+
+        // Force status bar to reflect this change in state
+        await Commands.tryExecute('aws.amazonq.refreshStatusBar')
     }
 
     restoreProfileSelection = once(async () => {
