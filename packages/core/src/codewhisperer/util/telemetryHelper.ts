@@ -460,7 +460,7 @@ export class TelemetryHelper {
         if (userTriggerDecisionEvent.suggestionState === 'ACCEPT') {
             // wait 1 seconds for the user installed 3rd party LSP
             // to update its diagnostics.
-            sleep(1000).then(() => {
+            void sleep(1000).then(() => {
                 const diagnosticDiff = getDiagnosticsDifferences(
                     session.diagnosticsBeforeAccept,
                     getDiagnosticsOfCurrentFile()

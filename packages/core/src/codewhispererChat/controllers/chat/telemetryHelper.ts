@@ -389,7 +389,7 @@ export class CWCTelemetryHelper {
         if (interactWithMessageEvent.interactionType === 'INSERT_AT_CURSOR') {
             // wait 1 seconds for the user installed 3rd party LSP
             // to update its diagnostics.
-            sleep(1000).then(() => {
+            void sleep(1000).then(() => {
                 const diagnosticDiff = getDiagnosticsDifferences(
                     this.documentDiagnostics,
                     getDiagnosticsOfCurrentFile()
