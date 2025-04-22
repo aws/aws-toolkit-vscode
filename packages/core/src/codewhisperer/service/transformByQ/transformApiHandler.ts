@@ -14,6 +14,7 @@ import {
     HilZipManifest,
     IHilZipManifestParams,
     jobPlanProgress,
+    RegionProfile,
     sessionJobHistory,
     StepProgress,
     TransformationType,
@@ -50,6 +51,7 @@ import { encodeHTML } from '../../../shared/utilities/textUtilities'
 import { convertToTimeString } from '../../../shared/datetime'
 import { getAuthType } from '../../../auth/utils'
 import { UserWrittenCodeTracker } from '../../tracker/userWrittenCodeTracker'
+import { AuthUtil } from '../../util/authUtil'
 
 export function getSha256(buffer: Buffer) {
     const hasher = crypto.createHash('sha256')
@@ -192,7 +194,11 @@ export async function stopJob(jobId: string) {
     }
 }
 
-export async function uploadPayload(payloadFileName: string, uploadContext?: UploadContext) {
+export async function uploadPayload(
+    payloadFileName: string,
+    profile: RegionProfile | undefined,
+    uploadContext?: UploadContext
+) {
     const buffer = Buffer.from(await fs.readFileBytes(payloadFileName))
     const sha256 = getSha256(buffer)
 
@@ -204,6 +210,7 @@ export async function uploadPayload(payloadFileName: string, uploadContext?: Upl
             contentChecksumType: CodeWhispererConstants.contentChecksumType,
             uploadIntent: CodeWhispererConstants.uploadIntent,
             uploadContext,
+            profileArn: profile?.arn,
         })
     } catch (e: any) {
         const errorMessage = `Creating the upload URL failed due to: ${(e as Error).message}`
@@ -427,7 +434,7 @@ export async function zipCode(
     return { dependenciesCopied: dependenciesCopied, tempFilePath: tempFilePath, fileSize: zipSize } as ZipCodeResult
 }
 
-export async function startJob(uploadId: string) {
+export async function startJob(uploadId: string, profile: RegionProfile | undefined) {
     const sourceLanguageVersion = `JAVA_${transformByQState.getSourceJDKVersion()}`
     const targetLanguageVersion = `JAVA_${transformByQState.getTargetJDKVersion()}`
     try {
@@ -441,6 +448,7 @@ export async function startJob(uploadId: string) {
                 source: { language: sourceLanguageVersion }, // dummy value of JDK8 used for SQL conversions just so that this API can be called
                 target: { language: targetLanguageVersion }, // JAVA_17 or JAVA_21
             },
+            profileArn: profile?.arn,
         })
         getLogger().info('CodeTransformation: called startJob API successfully')
         return response.transformationJobId
@@ -564,11 +572,12 @@ export function getJobStatisticsHtml(jobStatistics: any) {
     return htmlString
 }
 
-export async function getTransformationPlan(jobId: string) {
+export async function getTransformationPlan(jobId: string, profile: RegionProfile | undefined) {
     let response = undefined
     try {
         response = await codeWhisperer.codeWhispererClient.codeModernizerGetCodeTransformationPlan({
             transformationJobId: jobId,
+            profileArn: profile?.arn,
         })
 
         const stepZeroProgressUpdates = response.transformationPlan.transformationSteps[0].progressUpdates
@@ -624,7 +633,11 @@ export async function getTransformationPlan(jobId: string) {
     }
 }
 
-export async function getTransformationSteps(jobId: string, handleThrottleFlag: boolean) {
+export async function getTransformationSteps(
+    jobId: string,
+    handleThrottleFlag: boolean,
+    profile: RegionProfile | undefined
+) {
     try {
         // prevent ThrottlingException
         if (handleThrottleFlag) {
@@ -632,6 +645,7 @@ export async function getTransformationSteps(jobId: string, handleThrottleFlag: 
         }
         const response = await codeWhisperer.codeWhispererClient.codeModernizerGetCodeTransformationPlan({
             transformationJobId: jobId,
+            profileArn: profile?.arn,
         })
         return response.transformationPlan.transformationSteps.slice(1) // skip step 0 (contains supplemental info)
     } catch (e: any) {
@@ -641,13 +655,14 @@ export async function getTransformationSteps(jobId: string, handleThrottleFlag: 
     }
 }
 
-export async function pollTransformationJob(jobId: string, validStates: string[]) {
+export async function pollTransformationJob(jobId: string, validStates: string[], profile: RegionProfile | undefined) {
     let status: string = ''
     while (true) {
         throwIfCancelled()
         try {
             const response = await codeWhisperer.codeWhispererClient.codeModernizerGetCodeTransformation({
                 transformationJobId: jobId,
+                profileArn: profile?.arn,
             })
             status = response.transformationJob.status!
             if (CodeWhispererConstants.validStatesForBuildSucceeded.includes(status)) {
@@ -750,7 +765,8 @@ export async function downloadResultArchive(
                 exportId: jobId,
                 exportIntent: ExportIntent.TRANSFORMATION,
             },
-            pathToArchive
+            pathToArchive,
+            AuthUtil.instance.regionProfileManager.activeRegionProfile
         )
     } catch (e: any) {
         getLogger().error(`CodeTransformation: ExportResultArchive error = %O`, e)

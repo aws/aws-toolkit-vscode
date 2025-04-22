@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { AuthUtils, CredentialsStore, LoginManager, initializeAuth } from 'aws-core-vscode/auth'
+import { Auth, AuthUtils, CredentialsStore, LoginManager, initializeAuth } from 'aws-core-vscode/auth'
 import { activate as activateCodeWhisperer, shutdown as shutdownCodeWhisperer } from 'aws-core-vscode/codewhisperer'
 import { makeEndpointsProvider, registerGenericCommands } from 'aws-core-vscode'
 import { CommonAuthWebview } from 'aws-core-vscode/login'
@@ -32,6 +32,7 @@ import {
     setupUninstallHandler,
     maybeShowMinVscodeWarning,
     Experiments,
+    isSageMaker,
 } from 'aws-core-vscode/shared'
 import { ExtStartUpSources } from 'aws-core-vscode/telemetry'
 import { VSCODE_EXTENSION_ID } from 'aws-core-vscode/utils'
@@ -42,6 +43,7 @@ import { registerCommands } from './commands'
 import { focusAmazonQPanel } from 'aws-core-vscode/codewhispererChat'
 import { activate as activateAmazonqLsp } from './lsp/activation'
 import { activate as activateInlineCompletion } from './app/inline/activation'
+import { isAmazonInternalOs } from 'aws-core-vscode/shared'
 
 export const amazonQContextPrefix = 'amazonq'
 
@@ -118,9 +120,14 @@ export async function activateAmazonQCommon(context: vscode.ExtensionContext, is
     }
     // This contains every lsp agnostic things (auth, security scan, code scan)
     await activateCodeWhisperer(extContext as ExtContext)
-    if (Experiments.instance.get('amazonqLSP', false)) {
+    if (
+        (Experiments.instance.get('amazonqLSP', false) || Auth.instance.isInternalAmazonUser()) &&
+        !isAmazonInternalOs()
+    ) {
+        // start the Amazon Q LSP for internal users first
         await activateAmazonqLsp(context)
-    } else {
+    }
+    if (!Experiments.instance.get('amazonqLSPInline', false)) {
         await activateInlineCompletion()
     }
 
@@ -144,6 +151,12 @@ export async function activateAmazonQCommon(context: vscode.ExtensionContext, is
     // Hide the Amazon Q tree in toolkit explorer
     await setContext('aws.toolkit.amazonq.dismissed', true)
 
+    // set context var to check if its SageMaker AI or not
+    await setContext('aws.isSageMaker', isSageMaker())
+
+    // set context var to check if its SageMaker Unified Studio or not
+    await setContext('aws.isSageMakerUnifiedStudio', isSageMaker('SMUS'))
+
     // reload webviews
     await vscode.commands.executeCommand('workbench.action.webview.reloadWebviewAction')
 
@@ -157,7 +170,7 @@ export async function activateAmazonQCommon(context: vscode.ExtensionContext, is
 
     context.subscriptions.push(
         Experiments.instance.onDidChange(async (event) => {
-            if (event.key === 'amazonqLSP' || event.key === 'amazonqChatLSP') {
+            if (event.key === 'amazonqLSP' || event.key === 'amazonqChatLSP' || event.key === 'amazonqLSPInline') {
                 await vscode.window
                     .showInformationMessage(
                         'Amazon Q LSP setting has changed. Reload VS Code for the changes to take effect.',

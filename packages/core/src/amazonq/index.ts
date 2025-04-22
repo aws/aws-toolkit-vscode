@@ -17,6 +17,7 @@ export {
 } from './onboardingPage/walkthrough'
 export { LspController } from './lsp/lspController'
 export { LspClient } from './lsp/lspClient'
+export * as lspClient from './lsp/lspClient'
 export { api } from './extApi'
 export { AmazonQChatViewProvider } from './webview/webView'
 export { init as cwChatAppInit } from '../codewhispererChat/app'
@@ -46,6 +47,8 @@ export { extractAuthFollowUp } from './util/authUtils'
 export { Messenger } from './commons/connector/baseMessenger'
 export * from './lsp/config'
 export * as WorkspaceLspInstaller from './lsp/workspaceInstaller'
+export * as secondaryAuth from '../auth/secondaryAuth'
+export * as authConnection from '../auth/connection'
 import { FeatureContext } from '../shared/featureConfig'
 
 /**

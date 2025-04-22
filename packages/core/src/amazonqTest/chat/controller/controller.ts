@@ -202,6 +202,10 @@ export class TestController {
                     return this.openDiff(data)
             }
         })
+
+        AuthUtil.instance.regionProfileManager.onDidChangeRegionProfile(() => {
+            this.sessionStorage.removeActiveTab()
+        })
     }
 
     /**
@@ -547,17 +551,12 @@ export class TestController {
                 For Re:Invent 2024 we are supporting only java and python for unit test generation, rest of the languages shows the similar experience as CWC
             */
             if (!['java', 'python'].includes(language) || workspaceFolder === undefined) {
-                let unsupportedMessage: string
-                const unsupportedLanguage = language ? language.charAt(0).toUpperCase() + language.slice(1) : ''
                 if (!workspaceFolder) {
                     // File is outside of workspace
-                    unsupportedMessage = `<span style="color: #EE9D28;">&#9888;<b>I can't generate tests for ${fileName}</b> because the file is outside of workspace scope.<br></span> I can still provide examples, instructions and code suggestions.`
-                } else if (unsupportedLanguage) {
-                    unsupportedMessage = `<span style="color: #EE9D28;">&#9888;<b>I'm sorry, but /test only supports Python and Java</b><br></span> While ${unsupportedLanguage} is not supported, I will generate a suggestion below.`
-                } else {
-                    unsupportedMessage = `<span style="color: #EE9D28;">&#9888;<b>I'm sorry, but /test only supports Python and Java</b><br></span> I will still generate a suggestion below.`
+                    const unsupportedMessage = `<span style="color: #EE9D28;">&#9888;<b>I can't generate tests for ${fileName}</b> because the file is outside of workspace scope.<br></span> I can still provide examples, instructions and code suggestions.`
+                    this.messenger.sendMessage(unsupportedMessage, tabID, 'answer')
                 }
-                this.messenger.sendMessage(unsupportedMessage, tabID, 'answer')
+                // Keeping this metric as is. TODO - Change to true once we support through other feature
                 session.isSupportedLanguage = false
                 await this.onCodeGeneration(
                     session,
@@ -933,6 +932,7 @@ export class TestController {
                 codeQuery: undefined,
                 userIntent: UserIntent.GENERATE_UNIT_TESTS,
                 customization: getSelectedCustomization(),
+                profile: AuthUtil.instance.regionProfileManager.activeRegionProfile,
                 context: [],
                 relevantTextDocuments: [],
                 additionalContents: [],

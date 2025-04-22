@@ -70,6 +70,9 @@ export function init(appContext: AmazonQAppInitContext) {
     AuthUtil.instance.secondaryAuth.onDidChangeActiveConnection(() => {
         return debouncedEvent()
     })
+    AuthUtil.instance.regionProfileManager.onDidChangeRegionProfile(() => {
+        return debouncedEvent()
+    })
 
     Commands.register('aws.amazonq.security.scan-statusbar', async () => {
         if (AuthUtil.instance.isConnectionExpired()) {

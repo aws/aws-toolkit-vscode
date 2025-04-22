@@ -1,3 +1,51 @@
+## 1.60.0 2025-04-18
+
+- **Bug Fix** Users might be bound to a customization which they dont have access with the selected profile and it causes service throwing 403 when using inline suggestion and chat features
+
+## 1.59.0 2025-04-11
+
+- **Bug Fix** Code fix line number or file is sometimes not accurate
+- **Bug Fix** Fix Q agents will fail for /transform /dev /test features if IdC kms key is configured with 400 error
+
+## 1.58.0 2025-04-11
+
+- **Bug Fix** inline chat activates properly when using 'aws.experiments.amazonqChatLSP' feature flag
+- **Bug Fix** Amazon Q Chat: code blocks in responses flicker, switching tabs during answer streaming makes expand button disappear
+- **Bug Fix** Amazon Q Chat: tab bar buttons disappear when closing non-active tab
+- **Bug Fix** Amazon Q Chat: chat history list does not truncate markdown
+
+## 1.57.0 2025-04-10
+
+- **Bug Fix** Fix bug where generate fix does not work
+- **Bug Fix** Fix bug where review shows 0 findings
+
+## 1.56.0 2025-04-09
+
+- **Bug Fix** Improve status message while loading Amazon Q Profiles during login
+- **Bug Fix** "failed to run command" error
+
+## 1.55.0 2025-04-09
+
+- **Bug Fix** Amazon Q Chat: Update chat history icon
+- **Bug Fix** Amazon Q Chat: chat occasionally freezes and displays gray screen
+- **Bug Fix** Amazon Q Chat: Set owner-only permissions for chat history and saved prompt files
+- **Feature** `/test` generates tests in all languages, not only Java/Python
+- **Feature** Amazon Q chat: Click export icon to save chat transcript in Markdown or HTML
+- **Feature** SageMaker: Disable the unsupported agentic commands and welcome prompt
+- **Feature** Amazon Q Chat: Add `@code` context for PHP, Ruby, Scala, Shell, and Swift projects
+- **Feature** Enterprise users can choose their preferred Amazon Q profile to improve personalization and workflow across different business regions
+
+## 1.54.0 2025-04-03
+
+- **Bug Fix** Amazon Q chat: `@prompts` not added to context
+- **Feature** Amazon Q chat: View and search chat history
+- **Feature** SageMaker Unified Studio: Disable Sign out
+- **Feature** SageMaker Unified Studio: Update Q Chat Introduction message
+- **Feature** /review: automatically generate fix without clicking Generate Fix button
+- **Feature** Amazon Q chat: Automatically persist chats between IDE sessions
+- **Feature** Save user command execution logs to plugin output.
+- **Feature** Amazon Q chat: Code blocks in chat messages have a max-height of 21 lines and can be scrolled inside
+
 ## 1.53.0 2025-03-28
 
 - **Bug Fix** Amazon Q Chat: Choosing a nested subfolder for `/doc` on Windows results in `The folder you chose did not contain any source files` error

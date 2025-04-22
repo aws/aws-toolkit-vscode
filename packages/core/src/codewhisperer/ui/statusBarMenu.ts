@@ -21,8 +21,9 @@ import {
     createSignIn,
     switchToAmazonQNode,
     createSecurityScan,
+    createSelectRegionProfileNode,
 } from './codeWhispererNodes'
-import { hasVendedIamCredentials } from '../../auth/auth'
+import { hasVendedIamCredentials, hasVendedCredentialsFromMetadata } from '../../auth/auth'
 import { AuthUtil } from '../util/authUtil'
 import { DataQuickPickItem, createQuickPick } from '../../shared/ui/pickerPrompter'
 import { CodeScansState, CodeSuggestionsState, vsCodeState } from '../models/model'
@@ -40,6 +41,10 @@ function getAmazonQCodeWhispererNodes() {
 
     if (!AuthUtil.instance.isConnected()) {
         return [createSignIn(), createLearnMore()]
+    }
+
+    if (AuthUtil.instance.isConnected() && AuthUtil.instance.requireProfileSelection()) {
+        return []
     }
 
     if (vsCodeState.isFreeTierLimitReached) {
@@ -92,7 +97,10 @@ export function getQuickPickItems(): DataQuickPickItem<string>[] {
         // Add settings and signout
         createSeparator(),
         createSettingsNode(),
-        ...(AuthUtil.instance.isConnected() && !hasVendedIamCredentials() ? [createSignout()] : []),
+        ...(AuthUtil.instance.isValidEnterpriseSsoInUse() ? [createSelectRegionProfileNode()] : []),
+        ...(AuthUtil.instance.isConnected() && !hasVendedIamCredentials() && !hasVendedCredentialsFromMetadata()
+            ? [createSignout()]
+            : []),
     ]
 
     return children

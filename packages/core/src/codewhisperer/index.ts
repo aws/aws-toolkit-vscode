@@ -70,6 +70,7 @@ export { RecommendationService } from './service/recommendationService'
 export { ClassifierTrigger } from './service/classifierTrigger'
 export { DocumentChangedSource, KeyStrokeHandler, DefaultDocumentChangedType } from './service/keyStrokeHandler'
 export { ReferenceLogViewProvider } from './service/referenceLogViewProvider'
+export { ImportAdderProvider } from './service/importAdderProvider'
 export { LicenseUtil } from './util/licenseUtil'
 export { SecurityIssueProvider } from './service/securityIssueProvider'
 export { listScanResults, mapToAggregatedList, pollScanJobStatus } from './service/securityScanHandler'
@@ -99,8 +100,15 @@ export * as diagnosticsProvider from './service/diagnosticsProvider'
 export * from './ui/codeWhispererNodes'
 export { SecurityScanError, SecurityScanTimedOutError } from '../codewhisperer/models/errors'
 export * as CodeWhispererConstants from '../codewhisperer/models/constants'
-export { getSelectedCustomization, setSelectedCustomization, baseCustomization } from './util/customizationUtil'
+export {
+    getSelectedCustomization,
+    setSelectedCustomization,
+    baseCustomization,
+    onProfileChangedListener,
+    CustomizationProvider,
+} from './util/customizationUtil'
 export { Container } from './service/serviceContainer'
 export * from './util/gitUtil'
 export * from './ui/prompters'
 export { UserWrittenCodeTracker } from './tracker/userWrittenCodeTracker'
+export { RegionProfileManager, defaultServiceConfig } from './region/regionProfileManager'

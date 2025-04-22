@@ -55,7 +55,6 @@ import { isRemoteWorkspace } from '../../shared/vscode/env'
 import { isBuilderIdConnection } from '../../auth/connection'
 import globals from '../../shared/extensionGlobals'
 import { getVscodeCliPath } from '../../shared/utilities/pathFind'
-import { setContext } from '../../shared/vscode/setContext'
 import { tryRun } from '../../shared/utilities/pathFind'
 import { IssueItem, SecurityIssueTreeViewProvider } from '../service/securityIssueTreeViewProvider'
 import { SecurityIssueProvider } from '../service/securityIssueProvider'
@@ -69,6 +68,8 @@ import { UserWrittenCodeTracker } from '../tracker/userWrittenCodeTracker'
 import { parsePatch } from 'diff'
 import { createCodeIssueGroupingStrategyPrompter } from '../ui/prompters'
 import { cancel, confirm } from '../../shared/localizedText'
+import { showQuickPick } from '../../shared/ui/pickerPrompter'
+import { i18n } from '../../shared/i18n-helper'
 
 const MessageTimeOut = 5_000
 
@@ -104,8 +105,6 @@ export const enableCodeSuggestions = Commands.declare(
     (context: ExtContext) =>
         async (isAuto: boolean = true) => {
             await CodeSuggestionsState.instance.setSuggestionsEnabled(isAuto)
-            await setContext('aws.codewhisperer.connected', true)
-            await setContext('aws.codewhisperer.connectionExpired', false)
             vsCodeState.isFreeTierLimitReached = false
             await vscode.commands.executeCommand('aws.amazonq.refreshStatusBar')
         }
@@ -248,6 +247,22 @@ export const selectCustomizationPrompt = Commands.declare(
     }
 )
 
+export const selectRegionProfileCommand = Commands.declare(
+    { id: 'aws.amazonq.selectRegionProfile', compositeKey: { 1: 'source' } },
+    () => async (_: VsCodeCommandArg, source: CodeWhispererSource) => {
+        const quickPickItems = AuthUtil.instance.regionProfileManager.generateQuickPickItem()
+
+        await showQuickPick(quickPickItems, {
+            title: localize('AWS.amazonq.profile.quickPick.title', 'Select a Profile'),
+            placeholder: localize(
+                'AWS.amazonq.profile.quickPick.placeholder',
+                'You can choose from the following profiles:'
+            ),
+            recentlyUsed: i18n('AWS.codewhisperer.customization.selected'),
+        })
+    }
+)
+
 export const reconnect = Commands.declare(
     { id: 'aws.amazonq.reconnect', compositeKey: { 1: 'source' } },
     () => async (_: VsCodeCommandArg, source: CodeWhispererSource) => await AuthUtil.instance.reauthenticate()
@@ -372,6 +387,9 @@ export const openSecurityIssuePanel = Commands.declare(
             undefined,
             !!targetIssue.suggestedFixes.length
         )
+        if (targetIssue.suggestedFixes.length === 0) {
+            await generateFix.execute(targetIssue, targetFilePath, 'webview', true, false)
+        }
     }
 )
 
@@ -665,7 +683,8 @@ export const generateFix = Commands.declare(
             issue: CodeScanIssue | IssueItem | undefined,
             filePath: string,
             source: Component,
-            refresh: boolean = false
+            refresh: boolean = false,
+            shouldOpenSecurityIssuePanel: boolean = true
         ) => {
             const targetIssue: CodeScanIssue | undefined = issue instanceof IssueItem ? issue.issue : issue
             const targetFilePath: string = issue instanceof IssueItem ? issue.filePath : filePath
@@ -679,11 +698,13 @@ export const generateFix = Commands.declare(
             }
             await telemetry.codewhisperer_codeScanIssueGenerateFix.run(async () => {
                 try {
-                    await vscode.commands
-                        .executeCommand('aws.amazonq.openSecurityIssuePanel', targetIssue, targetFilePath)
-                        .then(undefined, (e) => {
-                            getLogger().error('Failed to open security issue panel: %s', e.message)
-                        })
+                    if (shouldOpenSecurityIssuePanel) {
+                        await vscode.commands
+                            .executeCommand('aws.amazonq.openSecurityIssuePanel', targetIssue, targetFilePath)
+                            .then(undefined, (e) => {
+                                getLogger().error('Failed to open security issue panel: %s', e.message)
+                            })
+                    }
                     await updateSecurityIssueWebview({
                         isGenerateFixLoading: true,
                         // eslint-disable-next-line unicorn/no-null

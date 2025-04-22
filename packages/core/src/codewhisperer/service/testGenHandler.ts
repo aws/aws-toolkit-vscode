@@ -23,7 +23,7 @@ import {
     TestGenTimedOutError,
 } from '../../amazonqTest/error'
 import { getMd5, uploadArtifactToS3 } from './securityScanHandler'
-import { testGenState, Reference } from '../models/model'
+import { testGenState, Reference, RegionProfile } from '../models/model'
 import { ChatSessionManager } from '../../amazonqTest/chat/storages/chatSession'
 import { createCodeWhispererChatStreamingClient } from '../../shared/clients/codewhispererChatClient'
 import { downloadExportResultArchive } from '../../shared/utilities/download'
@@ -36,6 +36,7 @@ import { randomUUID } from '../../shared/crypto'
 import { sleep } from '../../shared/utilities/timeoutUtils'
 import { tempDirPath } from '../../shared/filesystemUtilities'
 import fs from '../../shared/fs/fs'
+import { AuthUtil } from '../util/authUtil'
 
 // TODO: Get TestFileName and Framework and to error message
 export function throwIfCancelled() {
@@ -45,7 +46,7 @@ export function throwIfCancelled() {
     }
 }
 
-export async function getPresignedUrlAndUploadTestGen(zipMetadata: ZipMetadata) {
+export async function getPresignedUrlAndUploadTestGen(zipMetadata: ZipMetadata, profile: RegionProfile | undefined) {
     const logger = getLogger()
     if (zipMetadata.zipFilePath === '') {
         getLogger().error('Failed to create valid source zip')
@@ -55,6 +56,7 @@ export async function getPresignedUrlAndUploadTestGen(zipMetadata: ZipMetadata) 
         contentMd5: getMd5(zipMetadata.zipFilePath),
         artifactType: 'SourceCode',
         uploadIntent: CodeWhispererConstants.testGenUploadIntent,
+        profileArn: profile?.arn,
     }
     logger.verbose(`Prepare for uploading src context...`)
     const srcResp = await codeWhisperer.codeWhispererClient.createUploadUrl(srcReq).catch((err) => {
@@ -76,7 +78,8 @@ export async function createTestJob(
     artifactMap: codewhispererClient.ArtifactMap,
     relativeTargetPath: TargetCode[],
     userInputPrompt: string,
-    clientToken?: string
+    clientToken?: string,
+    profile?: RegionProfile
 ) {
     const logger = getLogger()
     logger.verbose(`Creating test job and starting startTestGeneration...`)
@@ -96,6 +99,7 @@ export async function createTestJob(
         userInput: userInputPrompt,
         testGenerationJobGroupName: ChatSessionManager.Instance.getSession().testGenerationJobGroupName ?? randomUUID(), // TODO: remove fallback
         clientToken,
+        profileArn: profile?.arn,
     }
     logger.debug('Unit test generation request body: %O', req)
     logger.debug('target code list: %O', req.targetCodeList[0])
@@ -130,7 +134,8 @@ export async function pollTestJobStatus(
     jobId: string,
     jobGroupName: string,
     filePath: string,
-    initialExecution: boolean
+    initialExecution: boolean,
+    profile?: RegionProfile
 ) {
     const session = ChatSessionManager.Instance.getSession()
     const pollingStartTime = performance.now()
@@ -145,6 +150,7 @@ export async function pollTestJobStatus(
         const req: CodeWhispererUserClient.GetTestGenerationRequest = {
             testGenerationJobId: jobId,
             testGenerationJobGroupName: jobGroupName,
+            profileArn: profile?.arn,
         }
         const resp = await codewhispererClient.codeWhispererClient.getTestGeneration(req)
         logger.verbose('pollTestJobStatus request id: %s', resp.$response.requestId)
@@ -306,7 +312,8 @@ export async function downloadResultArchive(
                     },
                 },
             },
-            pathToArchive
+            pathToArchive,
+            AuthUtil.instance.regionProfileManager.activeRegionProfile
         )
     } catch (e: any) {
         downloadErrorMessage = (e as Error).message

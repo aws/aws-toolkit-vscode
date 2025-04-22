@@ -159,11 +159,6 @@ export class Commands {
         id: string,
         ...args: Parameters<T>
     ): Promise<ReturnType<T> | undefined> {
-        const cmd = this.resources.get(id)
-        if (!cmd) {
-            getLogger().debug('command not found: "%s"', id)
-            return undefined
-        }
         return this.commands.executeCommand<ReturnType<T>>(id, ...args)?.then(undefined, (e: Error) => {
             getLogger().warn('command failed (not registered?): "%s"', id)
             return undefined

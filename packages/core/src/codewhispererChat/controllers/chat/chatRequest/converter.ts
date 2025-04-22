@@ -7,6 +7,7 @@ import { ConversationState, CursorState, DocumentSymbol, SymbolType, TextDocumen
 import { AdditionalContentEntryAddition, ChatTriggerType, RelevantTextDocumentAddition, TriggerPayload } from '../model'
 import { undefinedIfEmpty } from '../../../../shared/utilities/textUtilities'
 import { getLogger } from '../../../../shared/logger/logger'
+import { messageToChatMessage } from '../../../../shared/db/chatDb/util'
 
 const fqnNameSizeDownLimit = 1
 const fqnNameSizeUpLimit = 256
@@ -30,7 +31,10 @@ export const supportedLanguagesList = [
 
 export const filePathSizeLimit = 4_000
 
-export function triggerPayloadToChatRequest(triggerPayload: TriggerPayload): { conversationState: ConversationState } {
+export function triggerPayloadToChatRequest(triggerPayload: TriggerPayload): {
+    conversationState: ConversationState
+    profileArn?: string
+} {
     // Flexible truncation logic
     const remainingPayloadSize = 100_000
 
@@ -147,6 +151,10 @@ export function triggerPayloadToChatRequest(triggerPayload: TriggerPayload): { c
     // service will throw validation exception if string is empty
     const customizationArn: string | undefined = undefinedIfEmpty(triggerPayload.customization.arn)
     const chatTriggerType = triggerPayload.trigger === ChatTriggerType.InlineChatMessage ? 'INLINE_CHAT' : 'MANUAL'
+    const history =
+        triggerPayload.history &&
+        triggerPayload.history.length > 0 &&
+        triggerPayload.history.map((chat) => messageToChatMessage(chat))
 
     return {
         conversationState: {
@@ -167,7 +175,9 @@ export function triggerPayloadToChatRequest(triggerPayload: TriggerPayload): { c
             },
             chatTriggerType,
             customizationArn: customizationArn,
+            history: history || undefined,
         },
+        profileArn: triggerPayload.profile?.arn,
     }
 }
 

@@ -21,6 +21,7 @@ import { ChildProcess, spawn } from 'child_process' // eslint-disable-line no-re
 import { BuildStatus } from '../../amazonqTest/chat/session/session'
 import { fs } from '../../shared/fs/fs'
 import { Range } from '../client/codewhispereruserclient'
+import { AuthUtil } from '../indexNode'
 
 // eslint-disable-next-line unicorn/no-null
 let spawnResult: ChildProcess | null = null
@@ -34,6 +35,7 @@ export async function startTestGenerationProcess(
 ) {
     const logger = getLogger()
     const session = ChatSessionManager.Instance.getSession()
+    const profile = AuthUtil.instance.regionProfileManager.activeRegionProfile
     // TODO: Step 0: Initial Test Gen telemetry
     try {
         logger.verbose(`Starting Test Generation `)
@@ -70,7 +72,7 @@ export async function startTestGenerationProcess(
         let artifactMap: ArtifactMap = {}
         const uploadStartTime = performance.now()
         try {
-            artifactMap = await getPresignedUrlAndUploadTestGen(zipMetadata)
+            artifactMap = await getPresignedUrlAndUploadTestGen(zipMetadata, profile)
         } finally {
             const outputLogPath = path.join(testGenerationLogsDir, 'output.log')
             if (await fs.existsFile(outputLogPath)) {
@@ -96,7 +98,9 @@ export async function startTestGenerationProcess(
                     targetLineRangeList: selectionRange ? [selectionRange] : [],
                 },
             ],
-            userInputPrompt
+            userInputPrompt,
+            undefined,
+            profile
         )
         if (!testJob.testGenerationJob) {
             throw Error('Test job not found')
@@ -114,7 +118,8 @@ export async function startTestGenerationProcess(
             testJob.testGenerationJob.testGenerationJobId,
             testJob.testGenerationJob.testGenerationJobGroupName,
             filePath,
-            initialExecution
+            initialExecution,
+            profile
         )
         // TODO: Send status to test summary
         throwIfCancelled()

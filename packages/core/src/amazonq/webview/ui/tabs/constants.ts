@@ -6,6 +6,21 @@ import { TabType } from '../storages/tabsStorage'
 import { QuickActionCommandGroup } from '@aws/mynah-ui'
 import { userGuideURL } from '../texts/constants'
 
+const qChatIntroMessage = `Hi, I'm Amazon Q. I can answer your software development questions.
+  Ask me to explain, debug, or optimize your code.
+  You can enter \`/\` to see a list of quick actions. Use \`@\` to add saved prompts, files, folders, or your entire workspace as context.`
+
+/**
+ * The below intro message is for SageMaker Unified Studio(SMUS) customers only.
+ * With upcoming release of SMUS, only Q Free Tier is being supported hence the requirement to show this messaging to customers.
+ * Once Pro Tier is supported with SMUS, the below message will be removed and is only added for the interim
+ */
+export const qChatIntroMessageForSMUS = `Hi, I'm Amazon Q. I can answer your software development questions.\n\
+  Ask me to explain, debug, or optimize your code.\n\
+  You can enter \`/\` to see a list of quick actions. Use \`@\` to add saved prompts, files, folders, or your entire workspace as context.
+  You are now using Q free tier.\n\
+  `
+
 export type TabTypeData = {
     title: string
     placeholder: string
@@ -26,9 +41,7 @@ export const workspaceCommand: QuickActionCommandGroup = {
 export const commonTabData: TabTypeData = {
     title: 'Chat',
     placeholder: 'Ask a question. Use @ to add context, / for quick actions',
-    welcome: `Hi, I'm Amazon Q. I can answer your software development questions.
-  Ask me to explain, debug, or optimize your code.
-  You can enter \`/\` to see a list of quick actions. Use \`@\` to add saved prompts, files, folders, or your entire workspace as context.`,
+    welcome: qChatIntroMessage,
     contextCommands: [workspaceCommand],
 }
 

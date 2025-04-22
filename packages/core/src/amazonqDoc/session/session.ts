@@ -14,13 +14,14 @@ import { FeatureDevClient } from '../../amazonqFeatureDev/client/featureDev'
 import { TelemetryHelper } from '../../amazonq/util/telemetryHelper'
 import { ConversationNotStartedState } from '../../amazonqFeatureDev/session/sessionState'
 import { logWithConversationId } from '../../amazonqFeatureDev/userFacingText'
-import { ConversationIdNotFoundError } from '../../amazonqFeatureDev/errors'
+import { ConversationIdNotFoundError, IllegalStateError } from '../../amazonqFeatureDev/errors'
 import { referenceLogText } from '../../amazonqFeatureDev/constants'
 import {
     DocInteractionType,
     DocV2AcceptanceEvent,
     DocV2GenerationEvent,
     SendTelemetryEventRequest,
+    MetricData,
 } from '../../codewhisperer/client/codewhispereruserclient'
 import { getClientId, getOperatingSystem, getOptOutPreference } from '../../shared/telemetry/util'
 import { DocMessenger } from '../messenger'
@@ -72,7 +73,7 @@ export class Session {
 
     get state() {
         if (!this._state) {
-            throw new Error("State should be initialized before it's read")
+            throw new IllegalStateError("State should be initialized before it's read")
         }
         return this._state
     }
@@ -269,15 +270,40 @@ export class Session {
         return { leftPath, rightPath, ...diff }
     }
 
+    public async sendDocMetricData(operationName: string, result: string) {
+        const metricData = {
+            metricName: 'Operation',
+            metricValue: 1,
+            timestamp: new Date(),
+            product: 'DocGeneration',
+            dimensions: [
+                {
+                    name: 'operationName',
+                    value: operationName,
+                },
+                {
+                    name: 'result',
+                    value: result,
+                },
+            ],
+        }
+        await this.sendDocTelemetryEvent(metricData, 'metric')
+    }
+
     public async sendDocTelemetryEvent(
-        telemetryEvent: DocV2GenerationEvent | DocV2AcceptanceEvent,
-        eventType: 'generation' | 'acceptance'
+        telemetryEvent: DocV2GenerationEvent | DocV2AcceptanceEvent | MetricData,
+        eventType: 'generation' | 'acceptance' | 'metric'
     ) {
         const client = await this.proxyClient.getClient()
+        const telemetryEventKey = {
+            generation: 'docV2GenerationEvent',
+            acceptance: 'docV2AcceptanceEvent',
+            metric: 'metricData',
+        }[eventType]
         try {
             const params: SendTelemetryEventRequest = {
                 telemetryEvent: {
-                    [eventType === 'generation' ? 'docV2GenerationEvent' : 'docV2AcceptanceEvent']: telemetryEvent,
+                    [telemetryEventKey]: telemetryEvent,
                 },
                 optOutPreference: getOptOutPreference(),
                 userContext: {
@@ -287,17 +313,27 @@ export class Session {
                     clientId: getClientId(globals.globalState),
                     ideVersion: extensionVersion,
                 },
+                profileArn: AuthUtil.instance.regionProfileManager.activeRegionProfile?.arn,
             }
 
             const response = await client.sendTelemetryEvent(params).promise()
-            getLogger().debug(
-                `${featureName}: successfully sent docV2${eventType === 'generation' ? 'GenerationEvent' : 'AcceptanceEvent'}: ConversationId: ${telemetryEvent.conversationId} RequestId: ${response.$response.requestId}`
-            )
+            if (eventType === 'metric') {
+                getLogger().debug(
+                    `${featureName}: successfully sent metricData: RequestId: ${response.$response.requestId}`
+                )
+            } else {
+                getLogger().debug(
+                    `${featureName}: successfully sent docV2${eventType === 'generation' ? 'GenerationEvent' : 'AcceptanceEvent'}: ` +
+                        `ConversationId: ${(telemetryEvent as DocV2GenerationEvent | DocV2AcceptanceEvent).conversationId} ` +
+                        `RequestId: ${response.$response.requestId}`
+                )
+            }
         } catch (e) {
+            const error = e as Error
+            const eventTypeString = eventType === 'metric' ? 'metricData' : `doc ${eventType}`
             getLogger().error(
-                `${featureName}: failed to send doc ${eventType} telemetry: ${(e as Error).name}: ${
-                    (e as Error).message
-                } RequestId: ${(e as any).requestId}`
+                `${featureName}: failed to send ${eventTypeString} telemetry: ${error.name}: ${error.message} ` +
+                    `RequestId: ${(e as any).$response?.requestId}`
             )
         }
     }
@@ -308,7 +344,7 @@ export class Session {
 
     get uploadId() {
         if (!('uploadId' in this.state)) {
-            throw new Error("UploadId has to be initialized before it's read")
+            throw new IllegalStateError("UploadId has to be initialized before it's read")
         }
         return this.state.uploadId
     }

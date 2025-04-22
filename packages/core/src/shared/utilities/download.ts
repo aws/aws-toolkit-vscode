@@ -6,6 +6,7 @@
 import { CodeWhispererStreaming, ExportResultArchiveCommandInput } from '@amzn/codewhisperer-streaming'
 import { ToolkitError } from '../errors'
 import fs from '../fs/fs'
+import { RegionProfile } from '../../codewhisperer/models/model'
 
 /**
  * This class represents the structure of the archive returned by the ExportResultArchive endpoint
@@ -21,9 +22,10 @@ export class ExportResultArchiveStructure {
 export async function downloadExportResultArchive(
     cwStreamingClient: CodeWhispererStreaming,
     exportResultArchiveArgs: ExportResultArchiveCommandInput,
-    toPath: string
+    toPath: string,
+    profile: RegionProfile | undefined
 ) {
-    const result = await cwStreamingClient.exportResultArchive(exportResultArchiveArgs)
+    const result = await cwStreamingClient.exportResultArchive({ ...exportResultArchiveArgs, profileArn: profile?.arn })
 
     const buffer = []
 

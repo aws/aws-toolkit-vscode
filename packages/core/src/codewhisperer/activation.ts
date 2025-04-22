@@ -53,6 +53,7 @@ import {
     focusIssue,
     showExploreAgentsView,
     showCodeIssueGroupingQuickPick,
+    selectRegionProfileCommand,
 } from './commands/basicCommands'
 import { ReferenceLogViewProvider } from './service/referenceLogViewProvider'
 import { ReferenceHoverProvider } from './service/referenceHoverProvider'
@@ -71,7 +72,7 @@ import { AuthUtil } from './util/authUtil'
 import { ImportAdderProvider } from './service/importAdderProvider'
 import { TelemetryHelper } from './util/telemetryHelper'
 import { openUrl } from '../shared/utilities/vsCodeUtils'
-import { notifyNewCustomizations } from './util/customizationUtil'
+import { notifyNewCustomizations, onProfileChangedListener } from './util/customizationUtil'
 import { CodeWhispererCommandBackend, CodeWhispererCommandDeclarations } from './commands/gettingStartedPageCommands'
 import { SecurityIssueHoverProvider } from './service/securityIssueHoverProvider'
 import { SecurityIssueCodeActionProvider } from './service/securityIssueCodeActionProvider'
@@ -296,6 +297,7 @@ export async function activate(context: ExtContext): Promise<void> {
         selectCustomizationPrompt.register(),
         // notify new customizations
         notifyNewCustomizationsCmd.register(),
+        selectRegionProfileCommand.register(),
         /**
          * On recommendation acceptance
          */
@@ -335,7 +337,8 @@ export async function activate(context: ExtContext): Promise<void> {
             [...CodeWhispererConstants.securityScanLanguageIds],
             SecurityIssueCodeActionProvider.instance
         ),
-        vscode.commands.registerCommand('aws.amazonq.openEditorAtRange', openEditorAtRange)
+        vscode.commands.registerCommand('aws.amazonq.openEditorAtRange', openEditorAtRange),
+        auth.regionProfileManager.onDidChangeRegionProfile(onProfileChangedListener)
     )
 
     // run the auth startup code with context for telemetry

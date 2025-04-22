@@ -9,6 +9,9 @@ import {
     AUTH_FOLLOW_UP_CLICKED,
     CHAT_OPTIONS,
     COPY_TO_CLIPBOARD,
+    AuthFollowUpType,
+    DISCLAIMER_ACKNOWLEDGED,
+    UiMessageResultParams,
 } from '@aws/chat-client-ui-types'
 import {
     ChatResult,
@@ -19,28 +22,47 @@ import {
     QuickActionResult,
     QuickActionParams,
     insertToCursorPositionNotificationType,
+    ErrorCodes,
+    ResponseError,
+    openTabRequestType,
+    getSerializedChatRequestType,
+    listConversationsRequestType,
+    conversationClickRequestType,
+    ShowSaveFileDialogRequestType,
+    ShowSaveFileDialogParams,
+    LSPErrorCodes,
+    tabBarActionRequestType,
+    ShowDocumentParams,
+    ShowDocumentResult,
+    ShowDocumentRequest,
+    contextCommandsNotificationType,
+    ContextCommandParams,
 } from '@aws/language-server-runtimes/protocol'
 import { v4 as uuidv4 } from 'uuid'
-import { window } from 'vscode'
-import { Disposable, LanguageClient, Position, State, TextDocumentIdentifier } from 'vscode-languageclient'
+import * as vscode from 'vscode'
+import { Disposable, LanguageClient, Position, TextDocumentIdentifier } from 'vscode-languageclient'
 import * as jose from 'jose'
 import { AmazonQChatViewProvider } from './webviewProvider'
+import { AuthUtil } from 'aws-core-vscode/codewhisperer'
+import { AmazonQPromptSettings, messages } from 'aws-core-vscode/shared'
 
 export function registerLanguageServerEventListener(languageClient: LanguageClient, provider: AmazonQChatViewProvider) {
-    languageClient.onDidChangeState(({ oldState, newState }) => {
-        if (oldState === State.Starting && newState === State.Running) {
-            languageClient.info(
-                'Language client received initializeResult from server:',
-                JSON.stringify(languageClient.initializeResult)
-            )
+    languageClient.info(
+        'Language client received initializeResult from server:',
+        JSON.stringify(languageClient.initializeResult)
+    )
 
-            const chatOptions = languageClient.initializeResult?.awsServerCapabilities?.chatOptions
+    const chatOptions = languageClient.initializeResult?.awsServerCapabilities?.chatOptions
 
-            void provider.webview?.postMessage({
-                command: CHAT_OPTIONS,
-                params: chatOptions,
-            })
-        }
+    // Enable the history/export feature flags
+    chatOptions.history = true
+    chatOptions.export = true
+
+    provider.onDidResolveWebview(() => {
+        void provider.webview?.postMessage({
+            command: CHAT_OPTIONS,
+            params: chatOptions,
+        })
     })
 
     languageClient.onTelemetry((e) => {
@@ -56,13 +78,18 @@ export function registerMessageListeners(
     provider.webview?.onDidReceiveMessage(async (message) => {
         languageClient.info(`[VSCode Client]  Received ${JSON.stringify(message)} from chat`)
 
+        const webview = provider.webview
         switch (message.command) {
             case COPY_TO_CLIPBOARD:
-                // TODO see what we need to hook this up
                 languageClient.info('[VSCode Client] Copy to clipboard event received')
+                try {
+                    await messages.copyToClipboard(message.params.code)
+                } catch (e) {
+                    languageClient.error(`[VSCode Client] Failed to copy to clipboard: ${(e as Error).message}`)
+                }
                 break
             case INSERT_TO_CURSOR_POSITION: {
-                const editor = window.activeTextEditor
+                const editor = vscode.window.activeTextEditor
                 let textDocument: TextDocumentIdentifier | undefined = undefined
                 let cursorPosition: Position | undefined = undefined
                 if (editor) {
@@ -77,10 +104,37 @@ export function registerMessageListeners(
                 })
                 break
             }
-            case AUTH_FOLLOW_UP_CLICKED:
-                // TODO hook this into auth
+            case AUTH_FOLLOW_UP_CLICKED: {
                 languageClient.info('[VSCode Client] AuthFollowUp clicked')
+                const authType = message.params.authFollowupType
+                const reAuthTypes: AuthFollowUpType[] = ['re-auth', 'missing_scopes']
+                const fullAuthTypes: AuthFollowUpType[] = ['full-auth', 'use-supported-auth']
+
+                if (reAuthTypes.includes(authType)) {
+                    try {
+                        await AuthUtil.instance.reauthenticate()
+                    } catch (e) {
+                        languageClient.error(
+                            `[VSCode Client] Failed to re-authenticate after AUTH_FOLLOW_UP_CLICKED: ${(e as Error).message}`
+                        )
+                    }
+                }
+
+                if (fullAuthTypes.includes(authType)) {
+                    try {
+                        await AuthUtil.instance.secondaryAuth.deleteConnection()
+                    } catch (e) {
+                        languageClient.error(
+                            `[VSCode Client] Failed to authenticate after AUTH_FOLLOW_UP_CLICKED: ${(e as Error).message}`
+                        )
+                    }
+                }
                 break
+            }
+            case DISCLAIMER_ACKNOWLEDGED: {
+                void AmazonQPromptSettings.instance.disablePrompt('amazonQChatDisclaimer')
+                break
+            }
             case chatRequestType.method: {
                 const partialResultToken = uuidv4()
                 const chatDisposable = languageClient.onProgress(chatRequestType, partialResultToken, (partialResult) =>
@@ -88,8 +142,8 @@ export function registerMessageListeners(
                 )
 
                 const editor =
-                    window.activeTextEditor ||
-                    window.visibleTextEditors.find((editor) => editor.document.languageId !== 'Log')
+                    vscode.window.activeTextEditor ||
+                    vscode.window.visibleTextEditors.find((editor) => editor.document.languageId !== 'Log')
                 if (editor) {
                     message.params.cursorPosition = [editor.selection.active]
                     message.params.textDocument = { uri: editor.document.uri.toString() }
@@ -137,6 +191,11 @@ export function registerMessageListeners(
                 )
                 break
             }
+            case listConversationsRequestType.method:
+            case conversationClickRequestType.method:
+            case tabBarActionRequestType.method:
+                await resolveChatResponse(message.command, message.params, languageClient, webview)
+                break
             case followUpClickNotificationType.method:
                 if (!isValidAuthFollowUpType(message.params.followUp.type)) {
                     languageClient.sendNotification(followUpClickNotificationType.method, message.params)
@@ -149,6 +208,113 @@ export function registerMessageListeners(
                 break
         }
     }, undefined)
+
+    const registerHandlerWithResponseRouter = (command: string) => {
+        const handler = async (params: any, _: any) => {
+            const mapErrorType = (type: string | undefined): number => {
+                switch (type) {
+                    case 'InvalidRequest':
+                        return ErrorCodes.InvalidRequest
+                    case 'InternalError':
+                        return ErrorCodes.InternalError
+                    case 'UnknownError':
+                    default:
+                        return ErrorCodes.UnknownErrorCode
+                }
+            }
+            const requestId = uuidv4()
+
+            void provider.webview?.postMessage({
+                requestId: requestId,
+                command: command,
+                params: params,
+            })
+            const responsePromise = new Promise<UiMessageResultParams | undefined>((resolve, reject) => {
+                const timeout = setTimeout(() => {
+                    disposable?.dispose()
+                    reject(new Error('Request timed out'))
+                }, 30000)
+
+                const disposable = provider.webview?.onDidReceiveMessage((message: any) => {
+                    if (message.requestId === requestId) {
+                        clearTimeout(timeout)
+                        disposable?.dispose()
+                        resolve(message.params)
+                    }
+                })
+            })
+
+            const result = await responsePromise
+
+            if (result?.success) {
+                return result.result
+            } else {
+                return new ResponseError(
+                    mapErrorType(result?.error.type),
+                    result?.error.message ?? 'No response from client'
+                )
+            }
+        }
+
+        languageClient.onRequest(command, handler)
+    }
+
+    registerHandlerWithResponseRouter(openTabRequestType.method)
+    registerHandlerWithResponseRouter(getSerializedChatRequestType.method)
+
+    languageClient.onRequest(ShowSaveFileDialogRequestType.method, async (params: ShowSaveFileDialogParams) => {
+        const filters: Record<string, string[]> = {}
+        const formatMappings = [
+            { format: 'markdown', key: 'Markdown', extensions: ['md'] },
+            { format: 'html', key: 'HTML', extensions: ['html'] },
+        ]
+
+        for (const format of params.supportedFormats ?? []) {
+            const mapping = formatMappings.find((m) => m.format === format)
+            if (mapping) {
+                filters[mapping.key] = mapping.extensions
+            }
+        }
+
+        const saveAtUri = params.defaultUri ? vscode.Uri.parse(params.defaultUri) : vscode.Uri.file('export-chat.md')
+        const targetUri = await vscode.window.showSaveDialog({
+            filters,
+            defaultUri: saveAtUri,
+            title: 'Export',
+        })
+
+        if (!targetUri) {
+            return new ResponseError(LSPErrorCodes.RequestFailed, 'Export failed')
+        }
+
+        return {
+            targetUri: targetUri.toString(),
+        }
+    })
+
+    languageClient.onRequest<ShowDocumentParams, ShowDocumentResult>(
+        ShowDocumentRequest.method,
+        async (params: ShowDocumentParams): Promise<ShowDocumentParams | ResponseError<ShowDocumentResult>> => {
+            try {
+                const uri = vscode.Uri.parse(params.uri)
+                const doc = await vscode.workspace.openTextDocument(uri)
+                await vscode.window.showTextDocument(doc, { preview: false })
+                return params
+            } catch (e) {
+                return new ResponseError(
+                    LSPErrorCodes.RequestFailed,
+                    `Failed to open document: ${(e as Error).message}`
+                )
+            }
+        }
+    )
+
+    languageClient.onNotification(contextCommandsNotificationType.method, (params: ContextCommandParams) => {
+        void provider.webview?.postMessage({
+            command: contextCommandsNotificationType.method,
+            params: params,
+        })
+    })
 }
 
 function isServerEvent(command: string) {
@@ -222,4 +388,17 @@ async function handleCompleteResult<T>(
         tabId: tabId,
     })
     disposable.dispose()
+}
+
+async function resolveChatResponse(
+    requestMethod: string,
+    params: any,
+    languageClient: LanguageClient,
+    webview: vscode.Webview | undefined
+) {
+    const result = await languageClient.sendRequest(requestMethod, params)
+    void webview?.postMessage({
+        command: requestMethod,
+        params: result,
+    })
 }

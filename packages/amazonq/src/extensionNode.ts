@@ -25,6 +25,7 @@ import { DevOptions } from 'aws-core-vscode/dev'
 import { Auth, AuthUtils, getTelemetryMetadataForConn, isAnySsoConnection } from 'aws-core-vscode/auth'
 import api from './api'
 import { activate as activateCWChat } from './app/chat/activation'
+import { activate as activateInlineChat } from './inlineChat/activation'
 import { beta } from 'aws-core-vscode/dev'
 import { activate as activateNotifications, NotificationsController } from 'aws-core-vscode/notifications'
 import { AuthState, AuthUtil } from 'aws-core-vscode/codewhisperer'
@@ -55,6 +56,7 @@ async function activateAmazonQNode(context: vscode.ExtensionContext) {
         await activateCWChat(context)
         await activateQGumby(extContext as ExtContext)
     }
+    activateInlineChat(context)
 
     const authProvider = new CommonAuthViewProvider(
         context,
@@ -108,6 +110,11 @@ async function getAuthState(): Promise<Omit<AuthUserState, 'source'>> {
     const currConn = AuthUtil.instance.conn
     if (currConn !== undefined && !(isAnySsoConnection(currConn) || isSageMaker())) {
         getLogger().error(`Current Amazon Q connection is not SSO, type is: %s`, currConn?.type)
+    }
+
+    // Pending profile selection state means users already log in with Sso service
+    if (authState === 'pendingProfileSelection') {
+        authState = 'connected'
     }
 
     return {
