@@ -53,6 +53,7 @@ import {
     getDiagnosticsOfCurrentFile,
     toIdeDiagnostics,
 } from '../../../codewhisperer/util/diagnosticsUtil'
+import { Auth } from '../../../auth'
 
 export function logSendTelemetryEventFailure(error: any) {
     let requestId: string | undefined
@@ -374,7 +375,7 @@ export class CWCTelemetryHelper {
         }
         telemetry.amazonq_interactWithMessage.emit({ ...event, ...additionalContextInfo })
 
-        let interactWithMessageEvent: CodeWhispererUserClient.ChatInteractWithMessageEvent = {
+        const interactWithMessageEvent: CodeWhispererUserClient.ChatInteractWithMessageEvent = {
             conversationId: event.cwsprChatConversationId,
             messageId: event.cwsprChatMessageId,
             interactionType: this.getCWClientTelemetryInteractionType(event.cwsprChatInteractionType),
@@ -386,7 +387,7 @@ export class CWCTelemetryHelper {
                 ?.cwsprChatHasProjectContext,
             customizationArn: undefinedIfEmpty(getSelectedCustomization().arn),
         }
-        if (interactWithMessageEvent.interactionType === 'INSERT_AT_CURSOR') {
+        if (interactWithMessageEvent.interactionType === 'INSERT_AT_CURSOR' && Auth.instance.isInternalAmazonUser()) {
             // wait 1 seconds for the user installed 3rd party LSP
             // to update its diagnostics.
             void sleep(1000).then(() => {

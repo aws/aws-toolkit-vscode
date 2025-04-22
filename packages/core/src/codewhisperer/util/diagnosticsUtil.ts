@@ -85,22 +85,23 @@ export function getDiagnosticsType(message: string): string {
     return 'OTHER'
 }
 
+/**
+ * Generates a unique MD5 hash key for a VS Code diagnostic object.
+ *
+ * @param diagnostic - A VS Code Diagnostic object containing information about a code diagnostic
+ * @returns A 32-character hexadecimal MD5 hash string that uniquely identifies the diagnostic
+ *
+ * @description
+ * Creates a deterministic hash by combining the diagnostic's message, severity, code, and source.
+ * This hash can be used as a unique identifier for deduplication or tracking purposes.
+ * Note: range is not in the hashed string because a diagnostic can move and its range can change within the editor
+ */
 function getDiagnosticKey(diagnostic: vscode.Diagnostic): string {
     const jsonStr = JSON.stringify({
         message: diagnostic.message,
         severity: diagnostic.severity,
         code: diagnostic.code,
         source: diagnostic.source,
-        range: {
-            start: {
-                line: diagnostic.range.start.line,
-                character: diagnostic.range.start.character,
-            },
-            end: {
-                line: diagnostic.range.end.line,
-                character: diagnostic.range.end.character,
-            },
-        },
     })
 
     return crypto.createHash('md5').update(jsonStr).digest('hex')

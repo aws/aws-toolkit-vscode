@@ -31,6 +31,7 @@ import { CodeAnalysisScope as CodeAnalysisScopeClientSide } from '../models/cons
 import { Session } from '../../amazonqTest/chat/session/session'
 import { sleep } from '../../shared/utilities/timeoutUtils'
 import { getDiagnosticsDifferences, getDiagnosticsOfCurrentFile, toIdeDiagnostics } from './diagnosticsUtil'
+import { Auth } from '../../auth'
 
 export class TelemetryHelper {
     // Some variables for client component latency
@@ -457,7 +458,7 @@ export class TelemetryHelper {
                     )
                 })
 
-        if (userTriggerDecisionEvent.suggestionState === 'ACCEPT') {
+        if (userTriggerDecisionEvent.suggestionState === 'ACCEPT' && Auth.instance.isInternalAmazonUser()) {
             // wait 1 seconds for the user installed 3rd party LSP
             // to update its diagnostics.
             void sleep(1000).then(() => {
@@ -469,10 +470,10 @@ export class TelemetryHelper {
                 userTriggerDecisionEvent.removedIdeDiagnostics = diagnosticDiff.removed.map((it) =>
                     toIdeDiagnostics(it)
                 )
-                sendEvent()
+                void sendEvent()
             })
         } else {
-            sendEvent()
+            void sendEvent()
         }
     }
 
