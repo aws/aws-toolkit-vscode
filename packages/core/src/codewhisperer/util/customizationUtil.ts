@@ -408,7 +408,7 @@ export const getAvailableCustomizationsList = async () => {
     const items: (Customization & { profile: RegionProfile })[] = []
     const profiles: RegionProfile[] = []
     try {
-        const r = await AuthUtil.instance.regionProfileManager.listRegionProfile()
+        const r = await AuthUtil.instance.regionProfileManager.listRegionProfile(true)
         profiles.push(...r)
     } catch (e) {
         getLogger().error(`Failed to list customizations because listAvailableProfiles failed %s`, (e as Error).message)

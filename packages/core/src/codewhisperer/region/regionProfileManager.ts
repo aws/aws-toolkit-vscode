@@ -28,6 +28,7 @@ import { parse } from '@aws-sdk/util-arn-parser'
 import { isAwsError, ToolkitError } from '../../shared/errors'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { localize } from '../../shared/utilities/vsCodeUtils'
+import { waitUntil } from '../../shared/utilities/timeoutUtils'
 
 // TODO: is there a better way to manage all endpoint strings in one place?
 export const defaultServiceConfig: CodeWhispererConfig = {
@@ -52,6 +53,12 @@ export type ProfileSwitchIntent = 'user' | 'auth' | 'update' | 'reload' | 'custo
 export type ProfileChangedEvent = {
     profile: RegionProfile | undefined
     intent: ProfileSwitchIntent
+}
+
+// Only "valid" state will have non null profiles
+type CachedApiResult = {
+    state: 'pending' | 'valid' | 'stale'
+    profiles: RegionProfile[] | undefined
 }
 
 export class RegionProfileManager {
@@ -108,7 +115,7 @@ export class RegionProfileManager {
 
     constructor(private readonly connectionProvider: () => Connection | undefined) {}
 
-    async listRegionProfile(): Promise<RegionProfile[]> {
+    async listRegionProfile(loadCache: boolean = false): Promise<RegionProfile[]> {
         this._profiles = []
 
         const conn = this.connectionProvider()
@@ -116,6 +123,17 @@ export class RegionProfileManager {
             return []
         }
         const availableProfiles: RegionProfile[] = []
+        if (loadCache) {
+            const cachedValue = this.loadApiResultFromCache()
+            if (cachedValue.state === 'pending') {
+                waitUntil(async function () {})
+            } else if (cachedValue.state === 'valid') {
+                return cachedValue.profiles as RegionProfile[]
+            }
+        }
+
+        await this.cacheApiResult(undefined)
+
         for (const [region, endpoint] of endpoints.entries()) {
             const client = await this._createQClient(region, endpoint, conn as SsoConnection)
             const requester = async (request: CodeWhispererUserClient.ListAvailableProfilesRequest) =>
@@ -148,6 +166,8 @@ export class RegionProfileManager {
 
             RegionProfileManager.logger.info(`available amazonq profiles: ${availableProfiles.length}`)
         }
+
+        await this.cacheApiResult(availableProfiles)
 
         this._profiles = availableProfiles
         return availableProfiles
@@ -298,6 +318,26 @@ export class RegionProfileManager {
 
         previousPersistedState[conn.id] = this.activeRegionProfile
         await globals.globalState.update('aws.amazonq.regionProfiles', previousPersistedState)
+    }
+
+    private async cacheApiResult(r: RegionProfile[] | undefined) {
+        const state = r ? 'valid' : 'pending'
+        const pojo: CachedApiResult = {
+            state: state,
+            profiles: r,
+        }
+        await globals.globalState.update('aws.amazonq.regionProfiles.cachedResult', pojo)
+    }
+
+    // TODO: add timestamp
+    private loadApiResultFromCache(): CachedApiResult {
+        const cachedValue = globals.globalState.tryGet<CachedApiResult>(
+            'aws.amazonq.regionProfiles.cachedResult',
+            Object,
+            { state: 'stale', profiles: undefined }
+        )
+
+        return cachedValue
     }
 
     async generateQuickPickItem(): Promise<DataQuickPickItem<string>[]> {
