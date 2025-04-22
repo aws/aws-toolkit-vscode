@@ -6,12 +6,14 @@ import * as vscode from 'vscode'
 import assert from 'assert'
 import { EditorContentController } from '../../../amazonq/commons/controllers/contentController'
 import { toTextEditor } from '../../testUtil'
+import { CWCTelemetryHelper } from '../../../codewhispererChat/controllers/chat/telemetryHelper'
 
 describe('contentController', () => {
     let controller: EditorContentController
 
     beforeEach(async () => {
         controller = new EditorContentController()
+        CWCTelemetryHelper.instance
     })
 
     describe('insertTextAtCursorPosition', () => {
