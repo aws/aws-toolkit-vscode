@@ -8,6 +8,7 @@ import { PredictionTracker } from './PredictionTracker'
 import { PredictionKeyStrokeHandler } from './PredictionKeyStrokeHandler'
 import { getLogger } from '../../shared/logger/logger'
 import { ExtContext } from '../../shared/extensions'
+import { SnapshotVisualizer } from './SnapshotVisualizer'
 
 export let predictionTracker: PredictionTracker | undefined
 let keyStrokeHandler: PredictionKeyStrokeHandler | undefined
@@ -21,14 +22,10 @@ export function activateNextEditPrediction(context: ExtContext): void {
 
     // Initialize the keystroke handler
     keyStrokeHandler = new PredictionKeyStrokeHandler(predictionTracker)
-
-    // Register for disposal
     context.extensionContext.subscriptions.push(
         vscode.Disposable.from({
             dispose: () => {
-                getLogger().info('Disposing Next Edit Prediction resources')
                 keyStrokeHandler?.dispose()
-                predictionTracker?.dispose()
             },
         })
     )
