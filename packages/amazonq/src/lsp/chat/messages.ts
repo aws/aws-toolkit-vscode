@@ -14,6 +14,8 @@ import {
     UiMessageResultParams,
     CHAT_PROMPT_OPTION_ACKNOWLEDGED,
     ChatPromptOptionAcknowledgedMessage,
+    STOP_CHAT_RESPONSE,
+    StopChatResponseMessage,
 } from '@aws/chat-client-ui-types'
 import {
     ChatResult,
@@ -98,6 +100,7 @@ export function registerMessageListeners(
     provider: AmazonQChatViewProvider,
     encryptionKey: Buffer
 ) {
+    const chatStreamTokens = new Map<string, CancellationTokenSource>() // tab id -> token
     provider.webview?.onDidReceiveMessage(async (message) => {
         languageClient.info(`[VSCode Client]  Received ${JSON.stringify(message)} from chat`)
 
@@ -109,8 +112,6 @@ export function registerMessageListeners(
             )
             return
         }
-
-        const chatStreamTokens = new Map<string, CancellationTokenSource>() // tab id -> token
 
         const webview = provider.webview
         switch (message.command) {
@@ -184,8 +185,8 @@ export function registerMessageListeners(
                 void openUrl(vscode.Uri.parse(linkParams.link))
                 break
             }
-            case STOP_RESPONSE: {
-                const tabId = (message as StopResponseMessage).tabId
+            case STOP_CHAT_RESPONSE: {
+                const tabId = (message as StopChatResponseMessage).params.tabId
                 const token = chatStreamTokens.get(tabId)
                 token?.cancel()
                 token?.dispose()
@@ -226,10 +227,14 @@ export function registerMessageListeners(
 
                 const chatRequest = await encryptRequest<ChatParams>(chatParams, encryptionKey)
                 try {
-                    const chatResult = await languageClient.sendRequest<string | ChatResult>(chatRequestType.method, {
-                        ...chatRequest,
-                        partialResultToken,
-                    })
+                    const chatResult = await languageClient.sendRequest<string | ChatResult>(
+                        chatRequestType.method,
+                        {
+                            ...chatRequest,
+                            partialResultToken,
+                        },
+                        cancellationToken.token
+                    )
                     await handleCompleteResult<ChatResult>(
                         chatResult,
                         encryptionKey,
