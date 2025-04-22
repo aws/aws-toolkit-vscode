@@ -54,6 +54,7 @@ export type ProfileSwitchIntent = 'user' | 'auth' | 'update' | 'reload'
 type CachedApiResult = {
     state: 'pending' | 'valid' | 'stale'
     profiles: RegionProfile[] | undefined
+    timestamp: number
 }
 
 export class RegionProfileManager {
@@ -110,7 +111,7 @@ export class RegionProfileManager {
 
     constructor(private readonly connectionProvider: () => Connection | undefined) {}
 
-    async listRegionProfile(loadCache: boolean = false): Promise<RegionProfile[]> {
+    async listRegionProfile(): Promise<RegionProfile[]> {
         this._profiles = []
 
         const conn = this.connectionProvider()
@@ -118,13 +119,19 @@ export class RegionProfileManager {
             return []
         }
         const availableProfiles: RegionProfile[] = []
-        if (loadCache) {
-            const cachedValue = this.loadApiResultFromCache()
-            if (cachedValue.state === 'pending') {
-                waitUntil(async function () {})
-            } else if (cachedValue.state === 'valid') {
-                return cachedValue.profiles as RegionProfile[]
+        const cachedValue = this.loadApiResultFromCache()
+        if (cachedValue.state === 'pending') {
+            const r = await waitUntil(
+                async () => {
+                    return this.loadApiResultFromCache()
+                },
+                { timeout: 15000, interval: 1000, truthy: false }
+            )
+            if (r && r.state === 'valid') {
+                return r.profiles as RegionProfile[]
             }
+        } else if (cachedValue.state === 'valid') {
+            return cachedValue.profiles as RegionProfile[]
         }
 
         await this.cacheApiResult(undefined)
@@ -317,6 +324,7 @@ export class RegionProfileManager {
         const pojo: CachedApiResult = {
             state: state,
             profiles: r,
+            timestamp: state === 'valid' ? globals.clock.Date.now() : 0,
         }
         await globals.globalState.update('aws.amazonq.regionProfiles.cachedResult', pojo)
     }
@@ -326,8 +334,16 @@ export class RegionProfileManager {
         const cachedValue = globals.globalState.tryGet<CachedApiResult>(
             'aws.amazonq.regionProfiles.cachedResult',
             Object,
-            { state: 'stale', profiles: undefined }
+            { state: 'stale', profiles: undefined, timestamp: 0 }
         )
+
+        const now = globals.clock.Date.now()
+        // Only use cache if the duration has not exceeded 60s
+        if (now - cachedValue.timestamp > 60000) {
+            const s: CachedApiResult = { state: 'stale', profiles: undefined, timestamp: 0 }
+            globals.globalState.update('aws.amazonq.regionProfiles.cachedResult', s).catch((e) => {})
+            return s
+        }
 
         return cachedValue
     }
