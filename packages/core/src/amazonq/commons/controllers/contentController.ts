@@ -156,7 +156,7 @@ export class EditorContentController {
      *
      * @param message the message from Amazon Q chat
      */
-    public async viewDiff(message: any, scheme: string = amazonQDiffScheme) {
+    public async viewDiff(message: any, scheme: string = amazonQDiffScheme, reverseOrder = false) {
         const errorNotification = 'Unable to Open Diff.'
         const { filePath, selection } = extractFileAndCodeSelectionFromMessage(message)
 
@@ -170,8 +170,7 @@ export class EditorContentController {
                 const disposable = vscode.workspace.registerTextDocumentContentProvider(scheme, contentProvider)
                 await vscode.commands.executeCommand(
                     'vscode.diff',
-                    originalFileUri,
-                    uri,
+                    ...(reverseOrder ? [uri, originalFileUri] : [originalFileUri, uri]),
                     `${path.basename(filePath)} ${amazonQTabSuffix}`
                 )
 

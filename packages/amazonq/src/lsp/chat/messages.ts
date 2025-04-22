@@ -54,7 +54,7 @@ import { Disposable, LanguageClient, Position, TextDocumentIdentifier } from 'vs
 import * as jose from 'jose'
 import { AmazonQChatViewProvider } from './webviewProvider'
 import { AuthUtil } from 'aws-core-vscode/codewhisperer'
-import { AmazonQPromptSettings, messages, openUrl } from 'aws-core-vscode/shared'
+import { amazonQDiffScheme, AmazonQPromptSettings, messages, openUrl } from 'aws-core-vscode/shared'
 import { DefaultAmazonQAppInitContext, messageDispatcher, EditorContentController } from 'aws-core-vscode/amazonq'
 
 export function registerLanguageServerEventListener(languageClient: LanguageClient, provider: AmazonQChatViewProvider) {
@@ -427,13 +427,17 @@ export function registerMessageListeners(
             new vscode.Position(0, 0),
             new vscode.Position(doc.lineCount - 1, doc.lineAt(doc.lineCount - 1).text.length)
         )
-        await edc.viewDiff({
-            context: {
-                activeFileContext: { filePath: params.originalFileUri },
-                focusAreaContext: { selectionInsideExtendedCodeBlock: entireDocumentSelection },
+        await edc.viewDiff(
+            {
+                context: {
+                    activeFileContext: { filePath: params.originalFileUri },
+                    focusAreaContext: { selectionInsideExtendedCodeBlock: entireDocumentSelection },
+                },
+                code: params.fileContent,
             },
-            code: params.fileContent,
-        })
+            amazonQDiffScheme,
+            true
+        )
     })
 }
 
