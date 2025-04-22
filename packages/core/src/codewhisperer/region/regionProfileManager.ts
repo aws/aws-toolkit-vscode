@@ -118,7 +118,7 @@ export class RegionProfileManager {
             return []
         }
         const availableProfiles: RegionProfile[] = []
-        await sleep(randomInt(1000, 3000))
+        await sleep(randomInt(0, 6000))
         for (const [region, endpoint] of endpoints.entries()) {
             const client = await this._createQClient(region, endpoint, conn as SsoConnection)
             const requester = async (request: CodeWhispererUserClient.ListAvailableProfilesRequest) =>
