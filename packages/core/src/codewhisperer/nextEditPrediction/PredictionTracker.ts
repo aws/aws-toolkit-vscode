@@ -14,8 +14,8 @@ import { predictionTrackerDefaultConfig } from '../models/constants'
 export interface FileTrackerConfig {
     /** Maximum number of files to track (default: 15) */
     maxFiles: number
-    /** Maximum total size in kilobytes (default: 200) */
-    maxTotalSizeKb: number
+    /** Maximum total size of all snapshots in kilobytes (default: 200) */
+    maxStorageSizeKb: number
     /** Debounce interval in milliseconds (default: 2000) */
     debounceIntervalMs: number
     /** Maximum age of snapshots in milliseconds (default: 30000) */
@@ -37,13 +37,11 @@ export interface FileSnapshot {
 export class PredictionTracker {
     private snapshots: Map<string, FileSnapshot[]> = new Map()
     readonly config: FileTrackerConfig
-    private totalSize: number = 0
+    private storageSize: number = 0
     private storagePath?: string
     private debounceTracker: Set<string> = new Set()
 
     constructor(extensionContext: vscode.ExtensionContext, config?: Partial<FileTrackerConfig>) {
-        getLogger().debug('Initializing PredictionTracker')
-
         this.config = {
             ...predictionTrackerDefaultConfig,
             ...config,
@@ -60,7 +58,7 @@ export class PredictionTracker {
         const filePath = document.uri.fsPath
         getLogger().debug(`Processing edit for file: ${filePath}`)
 
-        if (!this.storagePath || filePath.startsWith('untitled:') || !document.uri.scheme.startsWith('file')) {
+        if (!this.storagePath || !document.uri.scheme.startsWith('file')) {
             return
         }
 
@@ -77,7 +75,7 @@ export class PredictionTracker {
         const size = Buffer.byteLength(content, 'utf8')
 
         const timestamp = Date.now()
-        const storageKey = this.generateStorageKey(filePath, timestamp)
+        const storageKey = `${filePath}-${timestamp}`
 
         const snapshot: FileSnapshot = {
             filePath,
@@ -101,7 +99,7 @@ export class PredictionTracker {
 
                 fileSnapshots.push(snapshot)
                 this.snapshots.set(filePath, fileSnapshots)
-                this.totalSize += size
+                this.storageSize += size
 
                 await this.enforceMemoryLimits()
 
@@ -110,8 +108,7 @@ export class PredictionTracker {
                     const index = fileSnapshots.indexOf(snapshot)
                     if (index !== -1) {
                         fileSnapshots.splice(index, 1)
-                        this.totalSize -= size
-                        await this.deleteSnapshotFromStorage(snapshot)
+                        await this.deleteSnapshot(snapshot)
                         if (fileSnapshots.length === 0) {
                             this.snapshots.delete(filePath)
                         }
@@ -124,19 +121,11 @@ export class PredictionTracker {
     }
 
     /**
-     * Generates a unique storage key for a snapshot
-     */
-    private generateStorageKey(filePath: string, timestamp: number): string {
-        const fileName = path.basename(filePath)
-        return `${fileName}-${timestamp}`
-    }
-
-    /**
      * Enforces memory limits by removing old snapshots if necessary
      */
     private async enforceMemoryLimits(): Promise<void> {
         // Enforce total size limit
-        while (this.totalSize > this.config.maxTotalSizeKb * 1024) {
+        while (this.storageSize > this.config.maxStorageSizeKb * 1024) {
             const oldestFile = this.findOldestFile()
             if (!oldestFile) {
                 break
@@ -150,32 +139,12 @@ export class PredictionTracker {
 
             const removedSnapshot = fileSnapshots.shift()
             if (removedSnapshot) {
-                this.totalSize -= removedSnapshot.size
-                await this.deleteSnapshotFromStorage(removedSnapshot)
+                await this.deleteSnapshot(removedSnapshot)
             }
 
             if (fileSnapshots.length === 0) {
                 this.snapshots.delete(oldestFile)
             }
-        }
-
-        // Enforce max files limit
-        while (this.snapshots.size > this.config.maxFiles) {
-            const oldestFile = this.findOldestFile()
-            if (!oldestFile) {
-                break
-            }
-
-            const fileSnapshots = this.snapshots.get(oldestFile)
-            if (fileSnapshots) {
-                // Subtract all snapshot sizes from the total
-                for (const snapshot of fileSnapshots) {
-                    this.totalSize -= snapshot.size
-                    await this.deleteSnapshotFromStorage(snapshot)
-                }
-            }
-
-            this.snapshots.delete(oldestFile)
         }
     }
 
@@ -213,8 +182,7 @@ export class PredictionTracker {
             const validSnapshots = snapshots.filter((snapshot) => {
                 const isValid = now - snapshot.timestamp <= maxAge
                 if (!isValid) {
-                    this.totalSize -= snapshot.size
-                    void this.deleteSnapshotFromStorage(snapshot)
+                    void this.deleteSnapshot(snapshot)
                 }
                 return isValid
             })
@@ -271,21 +239,20 @@ export class PredictionTracker {
             await fs.mkdir(snapshotsDir)
         }
 
-        const filePath = path.join(snapshotsDir, `${storageKey}.content`)
+        const filePath = path.join(snapshotsDir, `${storageKey}.nep-snapshot`)
         await fs.writeFile(filePath, content)
     }
 
-    /**
-     * Deletes a snapshot content from Storage
-     * @param snapshot The snapshot to delete
-     */
-    private async deleteSnapshotFromStorage(snapshot: FileSnapshot): Promise<void> {
+    private async deleteSnapshot(snapshot: FileSnapshot): Promise<void> {
         if (!this.storagePath) {
             return
         }
 
+        // Update the storage size
+        this.storageSize -= snapshot.size
+
         const snapshotsDir = path.join(this.storagePath, 'AmazonQ-file-snapshots')
-        const filePath = path.join(snapshotsDir, `${snapshot.storageKey}.content`)
+        const filePath = path.join(snapshotsDir, `${snapshot.storageKey}.nep-snapshot`)
 
         if (await fs.exists(filePath)) {
             try {
@@ -307,7 +274,7 @@ export class PredictionTracker {
         }
 
         const snapshotsDir = path.join(this.storagePath, 'AmazonQ-file-snapshots')
-        const filePath = path.join(snapshotsDir, `${snapshot.storageKey}.content`)
+        const filePath = path.join(snapshotsDir, `${snapshot.storageKey}.nep-snapshot`)
 
         try {
             return await fs.readFileText(filePath)
@@ -389,11 +356,11 @@ export class PredictionTracker {
 
             // First, collect all the metadata files
             for (const [filename, fileType] of files) {
-                if (!filename.endsWith('.content') || fileType !== vscode.FileType.File) {
+                if (!filename.endsWith('.nep-snapshot') || fileType !== vscode.FileType.File) {
                     continue
                 }
 
-                const storageKey = filename.substring(0, filename.length - '.content'.length)
+                const storageKey = filename.substring(0, filename.length - '.nep-snapshot'.length)
                 const parts = storageKey.split('-')
                 const timestamp = parseInt(parts[parts.length - 1], 10)
                 const originalFilename = parts.slice(0, parts.length - 1).join('-')
@@ -407,9 +374,10 @@ export class PredictionTracker {
 
             // Now process each file that we found
             for (const [storageKey, metadata] of metadataFiles.entries()) {
-                const contentPath = path.join(snapshotsDir, `${storageKey}.content`)
+                const contentPath = path.join(snapshotsDir, `${storageKey}.nep-snapshot`)
 
                 try {
+                    // if original file no longer exists, delete the snapshot
                     if (!(await fs.exists(metadata.filePath))) {
                         await fs.delete(contentPath)
                         continue
@@ -431,7 +399,7 @@ export class PredictionTracker {
                     const fileSnapshots = this.snapshots.get(metadata.filePath) || []
                     fileSnapshots.push(snapshot)
                     this.snapshots.set(metadata.filePath, fileSnapshots)
-                    this.totalSize += size
+                    this.storageSize += size
                 } catch (err) {
                     // Remove invalid files
                     getLogger().error(`Error processing snapshot file ${storageKey}: ${err}`)
@@ -455,6 +423,10 @@ export class PredictionTracker {
         } catch (err) {
             getLogger().error(`Failed to load snapshots from Storage: ${err}`)
         }
+    }
+
+    public getTotalSize() {
+        return this.storageSize
     }
 
     /**

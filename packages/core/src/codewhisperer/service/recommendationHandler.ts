@@ -220,8 +220,6 @@ export class RecommendationHandler {
             session.requestContext = await EditorContext.buildGenerateRecommendationRequest(editor as vscode.TextEditor)
         }
         const request = session.requestContext.request
-        // eslint-disable-next-line aws-toolkits/no-json-stringify-in-log
-        getLogger().info(JSON.stringify(request))
         // record preprocessing end time
         TelemetryHelper.instance.setPreprocessEndTime()
 
