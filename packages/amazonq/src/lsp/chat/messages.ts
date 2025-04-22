@@ -452,7 +452,7 @@ export function registerMessageListeners(
                     activeFileContext: { filePath: params.originalFileUri },
                     focusAreaContext: { selectionInsideExtendedCodeBlock: entireDocumentSelection },
                 },
-                code: params.fileContent,
+                code: params.fileContent ?? '',
             },
             amazonQDiffScheme,
             true
