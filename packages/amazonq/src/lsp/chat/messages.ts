@@ -58,6 +58,7 @@ import { AmazonQChatViewProvider } from './webviewProvider'
 import { AuthUtil } from 'aws-core-vscode/codewhisperer'
 import { amazonQDiffScheme, AmazonQPromptSettings, messages, openUrl } from 'aws-core-vscode/shared'
 import { DefaultAmazonQAppInitContext, messageDispatcher, EditorContentController } from 'aws-core-vscode/amazonq'
+import { telemetry, TelemetryBase } from 'aws-core-vscode/telemetry'
 
 export function registerLanguageServerEventListener(languageClient: LanguageClient, provider: AmazonQChatViewProvider) {
     languageClient.info(
@@ -80,7 +81,11 @@ export function registerLanguageServerEventListener(languageClient: LanguageClie
     })
 
     languageClient.onTelemetry((e) => {
-        languageClient.info(`[VSCode Client] Received telemetry event from server ${JSON.stringify(e)}`)
+        const telemetryName: string = e.name
+
+        if (telemetryName in telemetry) {
+            telemetry[telemetryName as keyof TelemetryBase].emit(e.data)
+        }
     })
 }
 
