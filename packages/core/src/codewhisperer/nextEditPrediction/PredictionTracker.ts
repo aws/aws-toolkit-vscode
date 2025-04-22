@@ -210,11 +210,7 @@ export class PredictionTracker {
     }
 
     public getTotalSnapshotCount(): number {
-        let count = 0
-        for (const snapshots of this.snapshots.values()) {
-            count += snapshots.length
-        }
-        return count
+        return Array.from(this.snapshots.values()).reduce((count, snapshots) => count + snapshots.length, 0)
     }
 
     private getSnapshotsDirectoryPath(): string {
@@ -232,12 +228,6 @@ export class PredictionTracker {
      * @param content The content to save
      */
     private async saveSnapshotContentToStorage(storageKey: string, content: string): Promise<void> {
-        const snapshotsDir = this.getSnapshotsDirectoryPath()
-
-        if (!(await fs.existsDir(snapshotsDir))) {
-            await fs.mkdir(snapshotsDir)
-        }
-
         const filePath = this.getSnapshotFilePath(storageKey)
         if (!filePath) {
             throw new Error('Failed to create snapshot file path')
@@ -337,9 +327,8 @@ export class PredictionTracker {
 
         try {
             const files = await fs.readdir(snapshotsDir)
-            const metadataFiles = new Map<string, { timestamp: number; filePath: string }>()
 
-            // First, collect all the metadata files
+            // Process each file in a single pass
             for (const [filename, fileType] of files) {
                 if (!filename.endsWith(snapshotFileSuffix) || fileType !== vscode.FileType.File) {
                     continue
@@ -349,41 +338,28 @@ export class PredictionTracker {
                 const parts = storageKey.split('-')
                 const timestamp = parseInt(parts[parts.length - 1], 10)
                 const originalFilename = parts.slice(0, parts.length - 1).join('-')
-
-                // This helps us match the files back to their original source
-                metadataFiles.set(storageKey, {
-                    timestamp,
-                    filePath: originalFilename,
-                })
-            }
-
-            // Now process each file that we found
-            for (const [storageKey, metadata] of metadataFiles.entries()) {
                 const contentPath = this.getSnapshotFilePath(storageKey)
 
                 try {
-                    // if original file no longer exists, delete the snapshot
-                    if (!(await fs.exists(metadata.filePath))) {
+                    // If original file no longer exists, delete the snapshot
+                    if (!(await fs.exists(originalFilename))) {
                         await fs.delete(contentPath)
                         continue
                     }
 
-                    // Calculate size from the content file
                     const stats = await fs.stat(contentPath)
                     const size = stats.size
 
-                    // Create a metadata-only snapshot
                     const snapshot: FileSnapshot = {
-                        filePath: metadata.filePath,
-                        timestamp: metadata.timestamp,
+                        filePath: originalFilename,
+                        timestamp,
                         size,
                         storageKey,
                     }
 
-                    // Add to memory tracking
-                    const fileSnapshots = this.snapshots.get(metadata.filePath) || []
+                    const fileSnapshots = this.snapshots.get(originalFilename) || []
                     fileSnapshots.push(snapshot)
-                    this.snapshots.set(metadata.filePath, fileSnapshots)
+                    this.snapshots.set(originalFilename, fileSnapshots)
                     this.storageSize += size
                 } catch (err) {
                     // Remove invalid files
