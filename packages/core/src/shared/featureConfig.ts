@@ -4,6 +4,7 @@
  */
 
 import {
+    Customization,
     FeatureValue,
     ListFeatureEvaluationsRequest,
     ListFeatureEvaluationsResponse,
@@ -20,7 +21,7 @@ import { getClientId, getOperatingSystem } from './telemetry/util'
 import { extensionVersion } from './vscode/env'
 import { telemetry } from './telemetry/telemetry'
 import { Commands } from './vscode/commands2'
-import { getAvailableCustomizationsList, setSelectedCustomization } from '../codewhisperer/util/customizationUtil'
+import { setSelectedCustomization } from '../codewhisperer/util/customizationUtil'
 
 const localize = nls.loadMessageBundle()
 
@@ -152,7 +153,19 @@ export class FeatureConfigProvider {
                 if (isBuilderIdConnection(AuthUtil.instance.conn)) {
                     this.featureConfigs.delete(Features.customizationArnOverride)
                 } else if (isIdcSsoConnection(AuthUtil.instance.conn)) {
-                    const availableCustomizations = await getAvailableCustomizationsList()
+                    let availableCustomizations: Customization[] = []
+                    try {
+                        const items: Customization[] = []
+                        const response = await client.listAvailableCustomizations()
+                        for (const customizations of response.map(
+                            (listAvailableCustomizationsResponse) => listAvailableCustomizationsResponse.customizations
+                        )) {
+                            items.push(...customizations)
+                        }
+                        availableCustomizations = items
+                    } catch (e) {
+                        getLogger().debug('amazonq: Failed to list available customizations')
+                    }
 
                     // If customizationArn from A/B is not available in listAvailableCustomizations response, don't use this value
                     const targetCustomization = availableCustomizations?.find((c) => c.arn === customizationArnOverride)
@@ -163,16 +176,6 @@ export class FeatureConfigProvider {
                         this.featureConfigs.delete(Features.customizationArnOverride)
                     } else {
                         await setSelectedCustomization(targetCustomization, true)
-                        // note that we should also switch profile if either
-                        // 1. user has not selected a profile yet
-                        // 2. user's selected profile is not the same as the one of customizationOverride
-                        const profile = AuthUtil.instance.regionProfileManager.activeRegionProfile
-                        if (!profile || (profile && profile.arn !== targetCustomization.profile.arn)) {
-                            await AuthUtil.instance.regionProfileManager.switchRegionProfile(
-                                targetCustomization.profile,
-                                'customization'
-                            )
-                        }
                     }
 
                     await vscode.commands.executeCommand('aws.amazonq.refreshStatusBar')
