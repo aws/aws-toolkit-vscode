@@ -42,6 +42,8 @@ import {
     LINK_CLICK_NOTIFICATION_METHOD,
     LinkClickParams,
     INFO_LINK_CLICK_NOTIFICATION_METHOD,
+    buttonClickRequestType,
+    ButtonClickResult,
 } from '@aws/language-server-runtimes/protocol'
 import { v4 as uuidv4 } from 'uuid'
 import * as vscode from 'vscode'
@@ -281,6 +283,17 @@ export function registerMessageListeners(
                     languageClient.sendNotification(followUpClickNotificationType.method, message.params)
                 }
                 break
+            case buttonClickRequestType.method:
+                const buttonResult = await languageClient.sendRequest<ButtonClickResult>(
+                    buttonClickRequestType.method,
+                    message.params
+                )
+                if (!buttonResult.success) {
+                    languageClient.error(
+                        `[VSCode Client] Failed to execute action associated with button with reason: ${buttonResult.failureReason}`
+                    )
+                }
+                break
             default:
                 if (isServerEvent(message.command)) {
                     languageClient.sendNotification(message.command, message.params)
@@ -459,9 +472,22 @@ async function handleCompleteResult<T>(
     tabId: string,
     disposable: Disposable
 ) {
-    const decryptedMessage =
+    const decryptedMessage = (
         typeof result === 'string' && encryptionKey ? await decodeRequest(result, encryptionKey) : result
+    ) as any
 
+    decryptedMessage.additionalMessages[0].buttons = [
+        {
+            id: 'reject-shell-command',
+            text: 'Reject',
+            icon: 'cancel',
+        },
+        {
+            id: 'run-shell-command',
+            text: 'Run',
+            icon: 'play',
+        },
+    ]
     void provider.webview?.postMessage({
         command: chatRequestType.method,
         params: decryptedMessage,
