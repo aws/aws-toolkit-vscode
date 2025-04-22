@@ -53,7 +53,7 @@ import {
     getDiagnosticsOfCurrentFile,
     toIdeDiagnostics,
 } from '../../../codewhisperer/util/diagnosticsUtil'
-import { Auth } from '../../../auth'
+import { Auth } from '../../../auth/auth'
 
 export function logSendTelemetryEventFailure(error: any) {
     let requestId: string | undefined
