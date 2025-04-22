@@ -198,7 +198,7 @@ export function registerMessageListeners(
                 const partialResultToken = uuidv4()
                 let lastPartialResult: ChatResult | undefined
                 const cancellationToken = new CancellationTokenSource()
-                chatStreamTokens.set(message.params.tabId, cancellationToken)
+                chatStreamTokens.set(chatParams.tabId, cancellationToken)
 
                 const chatDisposable = languageClient.onProgress(
                     chatRequestType,
@@ -259,6 +259,8 @@ export function registerMessageListeners(
                         chatParams.tabId,
                         chatDisposable
                     )
+                } finally {
+                    chatStreamTokens.delete(chatParams.tabId)
                 }
                 break
             }
