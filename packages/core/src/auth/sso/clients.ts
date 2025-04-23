@@ -258,7 +258,7 @@ function addLoggingMiddleware(client: SSOOIDCClient) {
                     args.input as unknown as Record<string, unknown>,
                     3,
                     ['clientSecret', 'accessToken', 'refreshToken'],
-                    '[omitted]'
+                    { replacement: '[omitted]' }
                 )
                 getLogger().debug('API request (%s %s): %O', hostname, path, input)
             }
@@ -288,7 +288,7 @@ function addLoggingMiddleware(client: SSOOIDCClient) {
                     result.output as unknown as Record<string, unknown>,
                     3,
                     ['clientSecret', 'accessToken', 'refreshToken'],
-                    '[omitted]'
+                    { replacement: '[omitted]' }
                 )
                 getLogger().debug('API response (%s %s): %O', hostname, path, output)
             }

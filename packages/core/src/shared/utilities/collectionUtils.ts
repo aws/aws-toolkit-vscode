@@ -7,6 +7,7 @@ import { isWeb } from '../extensionGlobals'
 import { inspect as nodeInspect } from 'util'
 import { AsyncCollection, toCollection } from './asyncCollection'
 import { SharedProp, AccumulableKeys, Coalesce, isNonNullable } from './tsUtils'
+import { truncate } from './textUtilities'
 
 export function union<T>(a: Iterable<T>, b: Iterable<T>): Set<T> {
     const result = new Set<T>()
@@ -304,26 +305,36 @@ export function assign<T extends Record<any, any>, U extends Partial<T>>(data: T
  * @param depth
  * @param omitKeys Omit properties matching these names (at any depth).
  * @param replacement Replacement for object whose fields extend beyond `depth`, and properties matching `omitKeys`.
+ * @param maxLength truncates string values that exceed this threshold.
  */
-export function partialClone(obj: any, depth: number = 3, omitKeys: string[] = [], replacement?: any): any {
+export function partialClone(
+    obj: any,
+    depth: number = 3,
+    omitKeys: string[] = [],
+    options?: {
+        replacement?: any
+        maxLength?: number
+    }
+): any {
     // Base case: If input is not an object or has no children, return it.
     if (typeof obj !== 'object' || obj === null || 0 === Object.getOwnPropertyNames(obj).length) {
-        return obj
+        const maxLength = options?.maxLength
+        return typeof obj === 'string' && maxLength !== undefined ? truncate(obj, maxLength, '...') : obj
     }
 
     // Create a new object of the same type as the input object.
     const clonedObj = Array.isArray(obj) ? [] : {}
 
     if (depth === 0) {
-        return replacement ? replacement : clonedObj
+        return options?.replacement ? options.replacement : clonedObj
     }
 
     // Recursively clone properties of the input object
     for (const key in obj) {
         if (omitKeys.includes(key)) {
-            ;(clonedObj as any)[key] = replacement ? replacement : Array.isArray(obj) ? [] : {}
+            ;(clonedObj as any)[key] = options?.replacement ? options.replacement : Array.isArray(obj) ? [] : {}
         } else if (Object.prototype.hasOwnProperty.call(obj, key)) {
-            ;(clonedObj as any)[key] = partialClone(obj[key], depth - 1, omitKeys, replacement)
+            ;(clonedObj as any)[key] = partialClone(obj[key], depth - 1, omitKeys, options)
         }
     }
 

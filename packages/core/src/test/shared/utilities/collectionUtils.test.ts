@@ -710,8 +710,10 @@ describe('CollectionUtils', async function () {
     })
 
     describe('partialClone', function () {
-        it('omits properties by depth', function () {
-            const testObj = {
+        let multipleTypedObj: object
+
+        before(async function () {
+            multipleTypedObj = {
                 a: 34234234234,
                 b: '123456789',
                 c: new Date(2023, 1, 1),
@@ -724,56 +726,69 @@ describe('CollectionUtils', async function () {
                     throw Error()
                 },
             }
+        })
 
-            assert.deepStrictEqual(partialClone(testObj, 1), {
-                ...testObj,
+        it('omits properties by depth', function () {
+            assert.deepStrictEqual(partialClone(multipleTypedObj, 1), {
+                ...multipleTypedObj,
                 d: {},
                 e: {},
             })
-            assert.deepStrictEqual(partialClone(testObj, 0, [], '[replaced]'), '[replaced]')
-            assert.deepStrictEqual(partialClone(testObj, 1, [], '[replaced]'), {
-                ...testObj,
+            assert.deepStrictEqual(partialClone(multipleTypedObj, 0, [], { replacement: '[replaced]' }), '[replaced]')
+            assert.deepStrictEqual(partialClone(multipleTypedObj, 1, [], { replacement: '[replaced]' }), {
+                ...multipleTypedObj,
                 d: '[replaced]',
                 e: '[replaced]',
             })
-            assert.deepStrictEqual(partialClone(testObj, 3), {
-                ...testObj,
+            assert.deepStrictEqual(partialClone(multipleTypedObj, 3), {
+                ...multipleTypedObj,
                 d: { d1: { d2: {} } },
             })
-            assert.deepStrictEqual(partialClone(testObj, 4), testObj)
+            assert.deepStrictEqual(partialClone(multipleTypedObj, 4), multipleTypedObj)
         })
 
         it('omits properties by name', function () {
-            const testObj = {
-                a: 34234234234,
-                b: '123456789',
-                c: new Date(2023, 1, 1),
-                d: { d1: { d2: { d3: 'deep' } } },
+            assert.deepStrictEqual(partialClone(multipleTypedObj, 2, ['c', 'e2'], { replacement: '[replaced]' }), {
+                ...multipleTypedObj,
+                c: '[replaced]',
+                d: { d1: '[replaced]' },
                 e: {
-                    e1: [4, 3, 7],
-                    e2: 'loooooooooo \n nnnnnnnnnnn \n gggggggg \n string',
-                },
-                f: () => {
-                    throw Error()
-                },
-            }
-
-            assert.deepStrictEqual(partialClone(testObj, 2, ['c', 'e2'], '[omitted]'), {
-                ...testObj,
-                c: '[omitted]',
-                d: { d1: '[omitted]' },
-                e: {
-                    e1: '[omitted]',
-                    e2: '[omitted]',
+                    e1: '[replaced]',
+                    e2: '[replaced]',
                 },
             })
-            assert.deepStrictEqual(partialClone(testObj, 3, ['c', 'e2'], '[omitted]'), {
-                ...testObj,
-                c: '[omitted]',
-                d: { d1: { d2: '[omitted]' } },
+            assert.deepStrictEqual(partialClone(multipleTypedObj, 3, ['c', 'e2'], { replacement: '[replaced]' }), {
+                ...multipleTypedObj,
+                c: '[replaced]',
+                d: { d1: { d2: '[replaced]' } },
                 e: {
                     e1: [4, 3, 7],
-                    e2: '[omitted]',
+                    e2: '[replaced]',
+                },
+            })
+        })
+
+        it('truncates properties by maxLength', function () {
+            const testObj = {
+                a: '1',
+                b: '11',
+                c: '11111',
+                d: {
+                    e: {
+                        a: '11111',
+                        b: '11',
+                    },
+                },
+            }
+            assert.deepStrictEqual(partialClone(testObj, 5, [], { maxLength: 2 }), {
+                a: '1',
+                b: '11',
+                c: '11...',
+                d: {
+                    e: {
+                        a: '11...',
+                        b: '11',
+                    },
                 },
             })
         })
