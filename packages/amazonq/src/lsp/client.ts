@@ -6,16 +6,38 @@
 import vscode, { env, version } from 'vscode'
 import * as nls from 'vscode-nls'
 import * as crypto from 'crypto'
-import { LanguageClient, LanguageClientOptions } from 'vscode-languageclient'
+import { LanguageClient, LanguageClientOptions, RequestType } from 'vscode-languageclient'
 import { InlineCompletionManager } from '../app/inline/completion'
 import { AmazonQLspAuth, encryptionKey, notificationTypes } from './auth'
 import { AuthUtil } from 'aws-core-vscode/codewhisperer'
-import { ConnectionMetadata } from '@aws/language-server-runtimes/protocol'
-import { Settings, oidcClientName, createServerOptions, globals, Experiments, Commands } from 'aws-core-vscode/shared'
+import {
+    ConnectionMetadata,
+    CreateFilesParams,
+    DeleteFilesParams,
+    DidChangeWorkspaceFoldersParams,
+    DidSaveTextDocumentParams,
+    GetConfigurationFromServerParams,
+    RenameFilesParams,
+    ResponseMessage,
+    updateConfigurationRequestType,
+    WorkspaceFolder,
+} from '@aws/language-server-runtimes/protocol'
+import {
+    Settings,
+    oidcClientName,
+    createServerOptions,
+    globals,
+    Experiments,
+    Commands,
+    oneSecond,
+    validateNodeExe,
+    getLogger,
+} from 'aws-core-vscode/shared'
 import { activate } from './chat/activation'
 import { AmazonQResourcePaths } from './lspInstaller'
 
 const localize = nls.loadMessageBundle()
+const logger = getLogger('amazonqLsp.lspClient')
 
 export async function startLanguageServer(
     extensionContext: vscode.ExtensionContext,
@@ -25,23 +47,26 @@ export async function startLanguageServer(
 
     const serverModule = resourcePaths.lsp
 
+    const argv = [
+        '--nolazy',
+        '--preserve-symlinks',
+        '--stdio',
+        '--pre-init-encryption',
+        '--set-credentials-encryption-key',
+    ]
     const serverOptions = createServerOptions({
         encryptionKey,
         executable: resourcePaths.node,
         serverModule,
-        execArgv: [
-            '--nolazy',
-            '--preserve-symlinks',
-            '--stdio',
-            '--pre-init-encryption',
-            '--set-credentials-encryption-key',
-        ],
+        execArgv: argv,
     })
 
     const documentSelector = [{ scheme: 'file', language: '*' }]
 
     const clientId = 'amazonq'
     const traceServerEnabled = Settings.instance.isSet(`${clientId}.trace.server`)
+
+    await validateNodeExe(resourcePaths.node, resourcePaths.lsp, argv, logger)
 
     // Options to control the language client
     const clientOptions: LanguageClientOptions = {
@@ -61,6 +86,9 @@ export async function startLanguageServer(
                 awsClientCapabilities: {
                     window: {
                         notifications: true,
+                    },
+                    q: {
+                        developerProfiles: true,
                     },
                 },
             },
@@ -121,7 +149,27 @@ export async function startLanguageServer(
             activate(client, encryptionKey, resourcePaths.ui)
         }
 
-        const refreshInterval = auth.startTokenRefreshInterval()
+        const refreshInterval = auth.startTokenRefreshInterval(10 * oneSecond)
+
+        const sendProfileToLsp = async () => {
+            try {
+                const result = await client.sendRequest(updateConfigurationRequestType.method, {
+                    section: 'aws.q',
+                    settings: {
+                        profileArn: AuthUtil.instance.regionProfileManager.activeRegionProfile?.arn,
+                    },
+                })
+                client.info(
+                    `Client: Updated Amazon Q Profile ${AuthUtil.instance.regionProfileManager.activeRegionProfile?.arn} to Amazon Q LSP`,
+                    result
+                )
+            } catch (err) {
+                client.error('Error when setting Q Developer Profile to Amazon Q LSP', err)
+            }
+        }
+
+        // send profile to lsp once.
+        void sendProfileToLsp()
 
         toDispose.push(
             AuthUtil.instance.auth.onDidChangeActiveConnection(async () => {
@@ -129,6 +177,62 @@ export async function startLanguageServer(
             }),
             AuthUtil.instance.auth.onDidDeleteConnection(async () => {
                 client.sendNotification(notificationTypes.deleteBearerToken.method)
+            }),
+            AuthUtil.instance.regionProfileManager.onDidChangeRegionProfile(sendProfileToLsp),
+            vscode.commands.registerCommand('aws.amazonq.getWorkspaceId', async () => {
+                const requestType = new RequestType<GetConfigurationFromServerParams, ResponseMessage, Error>(
+                    'aws/getConfigurationFromServer'
+                )
+                const workspaceIdResp = await client.sendRequest(requestType.method, {
+                    section: 'aws.q.workspaceContext',
+                })
+                return workspaceIdResp
+            }),
+            vscode.workspace.onDidCreateFiles((e) => {
+                client.sendNotification('workspace/didCreateFiles', {
+                    files: e.files.map((it) => {
+                        return { uri: it.fsPath }
+                    }),
+                } as CreateFilesParams)
+            }),
+            vscode.workspace.onDidDeleteFiles((e) => {
+                client.sendNotification('workspace/didDeleteFiles', {
+                    files: e.files.map((it) => {
+                        return { uri: it.fsPath }
+                    }),
+                } as DeleteFilesParams)
+            }),
+            vscode.workspace.onDidRenameFiles((e) => {
+                client.sendNotification('workspace/didRenameFiles', {
+                    files: e.files.map((it) => {
+                        return { oldUri: it.oldUri.fsPath, newUri: it.newUri.fsPath }
+                    }),
+                } as RenameFilesParams)
+            }),
+            vscode.workspace.onDidSaveTextDocument((e) => {
+                client.sendNotification('workspace/didSaveTextDocument', {
+                    textDocument: {
+                        uri: e.uri.fsPath,
+                    },
+                } as DidSaveTextDocumentParams)
+            }),
+            vscode.workspace.onDidChangeWorkspaceFolders((e) => {
+                client.sendNotification('workspace/didChangeWorkspaceFolder', {
+                    event: {
+                        added: e.added.map((it) => {
+                            return {
+                                name: it.name,
+                                uri: it.uri.fsPath,
+                            } as WorkspaceFolder
+                        }),
+                        removed: e.removed.map((it) => {
+                            return {
+                                name: it.name,
+                                uri: it.uri.fsPath,
+                            } as WorkspaceFolder
+                        }),
+                    },
+                } as DidChangeWorkspaceFoldersParams)
             }),
             { dispose: () => clearInterval(refreshInterval) }
         )

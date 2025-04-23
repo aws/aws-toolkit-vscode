@@ -513,9 +513,10 @@ export class ChildProcess {
      * Gets a string representation of the process invocation.
      *
      * @param noparams Omit parameters in the result (to protect sensitive info).
+     * @param nostatus Omit "(not started)" note.
      */
-    public toString(noparams = false): string {
-        const pid = this.pid() > 0 ? `PID ${this.pid()}:` : '(not started)'
+    public toString(noparams = false, nostatus = false): string {
+        const pid = this.pid() > 0 ? `PID ${this.pid()}:` : nostatus ? '' : '(not started)'
         return `${pid} [${this.#command} ${noparams ? '...' : this.#args.join(' ')}]`
     }
 }

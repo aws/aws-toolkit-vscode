@@ -50,7 +50,7 @@ export class AmazonQChatViewProvider implements WebviewViewProvider {
     ) {
         this.webview = webviewView.webview
 
-        const lspDir = Uri.parse(LanguageServerResolver.defaultDir)
+        const lspDir = Uri.parse(LanguageServerResolver.defaultDir())
         webviewView.webview.options = {
             enableScripts: true,
             enableCommandUris: true,
@@ -64,7 +64,7 @@ export class AmazonQChatViewProvider implements WebviewViewProvider {
     }
 
     private async getWebviewContent(mynahUIPath: string) {
-        const disclaimerAcknowledged = AmazonQPromptSettings.instance.isPromptEnabled('amazonQChatDisclaimer')
+        const disclaimerAcknowledged = !AmazonQPromptSettings.instance.isPromptEnabled('amazonQChatDisclaimer')
         return `
         <!DOCTYPE html>
         <html lang="en">

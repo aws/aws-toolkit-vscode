@@ -28,6 +28,7 @@ import { parse } from '@aws-sdk/util-arn-parser'
 import { isAwsError, ToolkitError } from '../../shared/errors'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { localize } from '../../shared/utilities/vsCodeUtils'
+import { Commands } from '../../shared/vscode/commands2'
 
 // TODO: is there a better way to manage all endpoint strings in one place?
 export const defaultServiceConfig: CodeWhispererConfig = {
@@ -36,7 +37,6 @@ export const defaultServiceConfig: CodeWhispererConfig = {
 }
 
 // Hack until we have a single discovery endpoint. We will call each endpoint one by one to fetch profile before then.
-// TODO: update correct endpoint and region
 const endpoints = createConstantMap({
     'us-east-1': 'https://q.us-east-1.amazonaws.com/',
     'eu-central-1': 'https://q.eu-central-1.amazonaws.com/',
@@ -219,6 +219,9 @@ export class RegionProfileManager {
 
         // persist to state
         await this.persistSelectRegionProfile()
+
+        // Force status bar to reflect this change in state
+        await Commands.tryExecute('aws.amazonq.refreshStatusBar')
     }
 
     restoreProfileSelection = once(async () => {
