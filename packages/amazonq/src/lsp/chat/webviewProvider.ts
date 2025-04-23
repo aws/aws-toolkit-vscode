@@ -80,12 +80,6 @@ export class AmazonQChatViewProvider implements WebviewViewProvider {
         this.webview = this.webviewView.webview
 
         this.onDidResolveWebviewEmitter.fire()
-        globals.context.subscriptions.push(
-            this.webviewView.onDidDispose(() => {
-                this.webviewView = undefined
-                this.webview = undefined
-            })
-        )
         performance.mark(amazonqMark.open)
     }
 
@@ -142,12 +136,31 @@ export class AmazonQChatViewProvider implements WebviewViewProvider {
             <script type="text/javascript" src="${this.uiPath?.toString()}" defer onload="init()"></script>
             <script type="text/javascript" src="${this.connectorAdapterPath?.toString()}"></script>
             <script type="text/javascript">
+                let qChat = undefined
                 const init = () => {
                     const vscodeApi = acquireVsCodeApi()
                     const hybridChatConnector = new HybridChatAdapter(${(await AuthUtil.instance.getChatAuthState()).amazonQ === 'connected'},${featureConfigData},${welcomeCount},${disclaimerAcknowledged},${regionProfileString},${disabledCommands},${isSMUS},${isSM},vscodeApi.postMessage)
                     const commands = [hybridChatConnector.initialQuickActions[0]]
-                    amazonQChat.createChat(vscodeApi, {disclaimerAcknowledged: ${disclaimerAcknowledged}, pairProgrammingAcknowledged: ${pairProgrammingAcknowledged}, quickActionCommands: commands}, hybridChatConnector, ${JSON.stringify(featureConfigData)});
+                    qChat = amazonQChat.createChat(vscodeApi, {disclaimerAcknowledged: ${disclaimerAcknowledged}, pairProgrammingAcknowledged: ${pairProgrammingAcknowledged}, quickActionCommands: commands}, hybridChatConnector, ${JSON.stringify(featureConfigData)});
                 }
+                window.addEventListener('message', (event) => {
+                    /**
+                     * special handler that "simulates" reloading the webview when a profile changes.
+                     * required because chat-client relies on initializedResult from the lsp that
+                     * are only sent once
+                     * 
+                     * References:
+                     *   closing tabs: https://github.com/aws/mynah-ui/blob/de736b52f369ba885cd19f33ac86c6f57b4a3134/docs/USAGE.md#removing-a-tab-programmatically-
+                     *   opening tabs: https://github.com/aws/aws-toolkit-vscode/blob/c22efa03e73b241564c8051c35761eb8620edb83/packages/amazonq/test/e2e/amazonq/framework/framework.ts#L98
+                     */
+                    if (event.data.command === 'reload' && qChat) {
+                        // close all previous tabs
+                        Object.keys(qChat.getAllTabs()).forEach(tabId => qChat.removeTab(tabId, qChat.lastEventId));
+
+                        // open a new "initial" tab
+                        ;(document.querySelectorAll('.mynah-nav-tabs-wrapper > button.mynah-button')[0]).click()
+                    }
+                });
             </script>
         </body>
         </html>`
@@ -155,8 +168,10 @@ export class AmazonQChatViewProvider implements WebviewViewProvider {
 
     async refreshWebview() {
         if (this.webview) {
-            // refresh the webview when the profile changes
-            this.webview.html = await this.getWebviewContent()
+            // post a message to the webview telling it to reload refresh
+            void this.webview?.postMessage({
+                command: 'reload',
+            })
         }
     }
 }
