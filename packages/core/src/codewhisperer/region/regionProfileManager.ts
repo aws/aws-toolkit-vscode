@@ -54,6 +54,7 @@ export type ProfileSwitchIntent = 'user' | 'auth' | 'update' | 'reload'
 type CachedApiResult = {
     // Lock
     isAcquired: boolean
+    // Metadata
     state: 'pending' | 'valid' | 'stale' | 'failure'
     profiles: RegionProfile[] | undefined
     timestamp: number
@@ -122,44 +123,54 @@ export class RegionProfileManager {
             return []
         }
 
-        // WaitUntil we acquire lock
+        // WaitUntil lock is acquired, the API tps is low, server can't afford multiple IDE instances making the calls simultaneiously
         const cached = await waitUntil(
             async () => {
-                const v = await this.tryAcquireLock()
-                RegionProfileManager.logger.info(`try obtaining cache lock %s`, v)
-                if (v) {
-                    return v
+                const lock = await this.tryAcquireLock()
+                RegionProfileManager.logger.info(`try obtaining cache lock %s`, lock)
+                if (lock) {
+                    return lock
                 }
             },
-            { timeout: 15000, interval: 1000, truthy: true }
+            { timeout: 15000, interval: 1500, truthy: true }
         )
 
         RegionProfileManager.logger.info(`obtained cache lock %s`, cached)
-
-        // Explicitly call this to mark cachedApiResult "Pending""
-        // await this.releaeLock(undefined, 'pending')
 
         const availableProfiles: RegionProfile[] = []
         // Load cache and use it directly if it's in "valid" state
         // If it's pending, keep waiting until the ongoing pull finishes its job
 
-        if (cached && cached.state === 'valid') {
-            const now = globals.clock.Date.now()
-            RegionProfileManager.logger.info(`cache hit, duration=${now - cached.timestamp}`)
-            if (cached.profiles && now - cached.timestamp < 30000) {
-                availableProfiles.push(...cached.profiles)
-                await this.releaeLock(cached)
+        const now = globals.clock.Date.now()
+        if (cached && now - cached.timestamp < 60000) {
+            RegionProfileManager.logger.info(
+                `cache hit, duration=%s, previous listAvailableProfile result=%s`,
+                now - cached.timestamp,
+                cached
+            )
+
+            // Release lock so that other ide instances can continue
+            await this.releaeLock(cached)
+
+            if (cached.state === 'valid') {
+                // TODO:
+                if (cached.profiles) {
+                    availableProfiles.push(...cached.profiles)
+                }
+
                 this._profiles = availableProfiles
                 return availableProfiles
+            } else if (cached.state === 'failure') {
+                throw new Error(cached.errorMsg)
+            } else {
+                // TODO: no need here
             }
-        } else if (cached && cached.state === 'failure') {
-            await this.releaeLock(cached)
-            throw new Error(cached.errorMsg)
-        } else {
-            console.log('why is here')
         }
 
-        RegionProfileManager.logger.info(`cache miss, pulling latest from service`)
+        RegionProfileManager.logger.info(
+            `listAvailableProfile cache miss, invoking service API to pull the latest response`
+        )
+
         for (const [region, endpoint] of endpoints.entries()) {
             const client = await this.createQClient(region, endpoint, conn as SsoConnection)
             const requester = async (request: CodeWhispererUserClient.ListAvailableProfilesRequest) =>
@@ -187,6 +198,7 @@ export class RegionProfileManager {
             } catch (e) {
                 const logMsg = isAwsError(e) ? `requestId=${e.requestId}; message=${e.message}` : (e as Error).message
                 RegionProfileManager.logger.error(`failed to listRegionProfile: ${logMsg}`)
+                // Should update cache even for failure path
                 await this.updateCacheWithError(e as Error)
                 throw e
             }
@@ -393,8 +405,15 @@ export class RegionProfileManager {
         return undefined
     }
 
+    // Should reset cache when users signout in case users want to change to a different connection
     async resetCache() {
-        const pojo = { isAcquired: false, state: 'stale', profiles: undefined, timestamp: 0, errorMsg: undefined }
+        const pojo: CachedApiResult = {
+            isAcquired: false,
+            state: 'stale',
+            profiles: undefined,
+            timestamp: 0,
+            errorMsg: undefined,
+        }
         await globals.globalState.update('aws.amazonq.regionProfiles.cachedResult', pojo)
     }
 
