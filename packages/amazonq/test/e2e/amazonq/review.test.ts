@@ -287,7 +287,9 @@ describe('Amazon Q Code Review', function () {
 
                 console.log('command', viewDetailsActionDefined)
                 console.log('arguments', viewDetailsActionDefined.arguments)
-                const issue = viewDetailsActionDefined.arguments?.[0] as CodeScanIssue
+                console.log('arguments[0]', viewDetailsActionDefined.arguments?.[0])
+                const issue = viewDetailsActionDefined.arguments?.[0]
+                console.log('issue', issue)
 
                 // Wait for the fix to be generated with polling
                 const updatedIssue = await waitUntil(
