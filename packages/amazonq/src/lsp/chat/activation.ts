@@ -45,6 +45,14 @@ export async function activate(languageClient: LanguageClient, encryptionKey: Bu
 
     provider.onDidResolveWebview(() => {
         const disposable = DefaultAmazonQAppInitContext.instance.getAppsToWebViewMessageListener().onMessage((msg) => {
+            /**
+             * codewhispers app handler is still registered because the activation flow hasn't been refactored.
+             * We need to explicitly deny events like restoreTabMessage, otherwise they will be forwarded to the frontend
+             *
+             */
+            if (msg.sender === 'CWChat' && ['restoreTabMessage', 'contextCommandData'].includes(msg.type)) {
+                return
+            }
             provider.webview?.postMessage(msg).then(undefined, (e) => {
                 getLogger().error('webView.postMessage failed: %s', (e as Error).message)
             })
