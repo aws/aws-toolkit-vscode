@@ -52,9 +52,10 @@ export type ProfileSwitchIntent = 'user' | 'auth' | 'update' | 'reload'
 
 // Only "valid" state will have non null profiles
 type CachedApiResult = {
-    state: 'pending' | 'valid' | 'stale'
+    state: 'pending' | 'valid' | 'stale' | 'failure'
     profiles: RegionProfile[] | undefined
     timestamp: number
+    errorMsg: string | undefined
 }
 
 export class RegionProfileManager {
@@ -112,6 +113,7 @@ export class RegionProfileManager {
     constructor(private readonly connectionProvider: () => Connection | undefined) {}
 
     async listRegionProfile(): Promise<RegionProfile[]> {
+        console.log(1)
         this._profiles = []
 
         const conn = this.connectionProvider()
@@ -119,21 +121,27 @@ export class RegionProfileManager {
             return []
         }
         const availableProfiles: RegionProfile[] = []
+        // Load cache and use it directly if it's in "valid" state
+        // If it's pending, keep waiting until the ongoing pull finishes its job
         const cachedValue = this.loadApiResultFromCache()
+        RegionProfileManager.logger.debug(`cachedListAvailableProfileResult %s`, cachedValue)
         if (cachedValue.state === 'pending') {
             const r = await waitUntil(
                 async () => {
                     return this.loadApiResultFromCache()
                 },
-                { timeout: 15000, interval: 1000, truthy: false }
+                { timeout: 15000, interval: 1000, truthy: true }
             )
             if (r && r.state === 'valid') {
                 return r.profiles as RegionProfile[]
             }
         } else if (cachedValue.state === 'valid') {
             return cachedValue.profiles as RegionProfile[]
+        } else if (cachedValue.state === 'failure') {
+            throw new Error(cachedValue.errorMsg)
         }
 
+        // Explicitly call this to mark cachedApiResult "Pending""
         await this.cacheApiResult(undefined)
 
         for (const [region, endpoint] of endpoints.entries()) {
@@ -163,12 +171,14 @@ export class RegionProfileManager {
             } catch (e) {
                 const logMsg = isAwsError(e) ? `requestId=${e.requestId}; message=${e.message}` : (e as Error).message
                 RegionProfileManager.logger.error(`failed to listRegionProfile: ${logMsg}`)
+
                 throw e
             }
 
             RegionProfileManager.logger.info(`available amazonq profiles: ${availableProfiles.length}`)
         }
 
+        // Mark cachedApiResult "valid" and save the result
         await this.cacheApiResult(availableProfiles)
 
         this._profiles = availableProfiles
@@ -325,26 +335,27 @@ export class RegionProfileManager {
             state: state,
             profiles: r,
             timestamp: state === 'valid' ? globals.clock.Date.now() : 0,
+            errorMsg: undefined,
         }
         await globals.globalState.update('aws.amazonq.regionProfiles.cachedResult', pojo)
     }
 
-    // TODO: add timestamp
     private loadApiResultFromCache(): CachedApiResult {
         const cachedValue = globals.globalState.tryGet<CachedApiResult>(
             'aws.amazonq.regionProfiles.cachedResult',
             Object,
-            { state: 'stale', profiles: undefined, timestamp: 0 }
+            { state: 'stale', profiles: undefined, timestamp: 0, errorMsg: undefined }
         )
 
         const now = globals.clock.Date.now()
         // Only use cache if the duration has not exceeded 60s
         if (now - cachedValue.timestamp > 60000) {
-            const s: CachedApiResult = { state: 'stale', profiles: undefined, timestamp: 0 }
+            const s: CachedApiResult = { state: 'stale', profiles: undefined, timestamp: 0, errorMsg: undefined }
             globals.globalState.update('aws.amazonq.regionProfiles.cachedResult', s).catch((e) => {})
             return s
         }
 
+        // Otherwise return whatever it is
         return cachedValue
     }
 
