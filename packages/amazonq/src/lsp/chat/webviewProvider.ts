@@ -168,7 +168,7 @@ export class AmazonQChatViewProvider implements WebviewViewProvider {
 
     async refreshWebview() {
         if (this.webview) {
-            // post a message to the webview telling it to reload refresh
+            // post a message to the webview telling it to reload
             void this.webview?.postMessage({
                 command: 'reload',
             })
