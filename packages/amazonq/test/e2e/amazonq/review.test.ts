@@ -21,7 +21,6 @@ import {
 } from 'aws-core-vscode/codewhisperer'
 import path from 'path'
 import { ScanAction, scanProgressMessage } from '../../../src/app/amazonqScan/models/constants'
-import { CodeScanIssue } from 'aws-core-vscode/codewhisperer'
 import { SecurityIssueProvider } from 'aws-core-vscode/codewhisperer'
 import { fs, waitUntil, processUtils } from 'aws-core-vscode/shared'
 
