@@ -52,6 +52,8 @@ export type ProfileSwitchIntent = 'user' | 'auth' | 'update' | 'reload'
 
 // Only "valid" state will have non null profiles
 type CachedApiResult = {
+    // Lock
+    isAcquired: boolean
     state: 'pending' | 'valid' | 'stale' | 'failure'
     profiles: RegionProfile[] | undefined
     timestamp: number
@@ -113,37 +115,51 @@ export class RegionProfileManager {
     constructor(private readonly connectionProvider: () => Connection | undefined) {}
 
     async listRegionProfile(): Promise<RegionProfile[]> {
-        console.log(1)
         this._profiles = []
 
         const conn = this.connectionProvider()
         if (conn === undefined || !isSsoConnection(conn)) {
             return []
         }
+
+        // WaitUntil we acquire lock
+        const cached = await waitUntil(
+            async () => {
+                const v = await this.tryAcquireLock()
+                RegionProfileManager.logger.info(`try obtaining cache lock %s`, v)
+                if (v) {
+                    return v
+                }
+            },
+            { timeout: 15000, interval: 1000, truthy: true }
+        )
+
+        RegionProfileManager.logger.info(`obtained cache lock %s`, cached)
+
+        // Explicitly call this to mark cachedApiResult "Pending""
+        // await this.releaeLock(undefined, 'pending')
+
         const availableProfiles: RegionProfile[] = []
         // Load cache and use it directly if it's in "valid" state
         // If it's pending, keep waiting until the ongoing pull finishes its job
-        const cachedValue = this.loadApiResultFromCache()
-        RegionProfileManager.logger.debug(`cachedListAvailableProfileResult %s`, cachedValue)
-        if (cachedValue.state === 'pending') {
-            const r = await waitUntil(
-                async () => {
-                    return this.loadApiResultFromCache()
-                },
-                { timeout: 15000, interval: 1000, truthy: true }
-            )
-            if (r && r.state === 'valid') {
-                return r.profiles as RegionProfile[]
+
+        if (cached && cached.state === 'valid') {
+            const now = globals.clock.Date.now()
+            RegionProfileManager.logger.info(`cache hit, duration=${now - cached.timestamp}`)
+            if (cached.profiles && now - cached.timestamp < 30000) {
+                availableProfiles.push(...cached.profiles)
+                await this.releaeLock(cached)
+                this._profiles = availableProfiles
+                return availableProfiles
             }
-        } else if (cachedValue.state === 'valid') {
-            return cachedValue.profiles as RegionProfile[]
-        } else if (cachedValue.state === 'failure') {
-            throw new Error(cachedValue.errorMsg)
+        } else if (cached && cached.state === 'failure') {
+            await this.releaeLock(cached)
+            throw new Error(cached.errorMsg)
+        } else {
+            console.log('why is here')
         }
 
-        // Explicitly call this to mark cachedApiResult "Pending""
-        await this.cacheApiResult(undefined)
-
+        RegionProfileManager.logger.info(`cache miss, pulling latest from service`)
         for (const [region, endpoint] of endpoints.entries()) {
             const client = await this.createQClient(region, endpoint, conn as SsoConnection)
             const requester = async (request: CodeWhispererUserClient.ListAvailableProfilesRequest) =>
@@ -171,7 +187,7 @@ export class RegionProfileManager {
             } catch (e) {
                 const logMsg = isAwsError(e) ? `requestId=${e.requestId}; message=${e.message}` : (e as Error).message
                 RegionProfileManager.logger.error(`failed to listRegionProfile: ${logMsg}`)
-
+                await this.updateCacheWithError(e as Error)
                 throw e
             }
 
@@ -179,7 +195,7 @@ export class RegionProfileManager {
         }
 
         // Mark cachedApiResult "valid" and save the result
-        await this.cacheApiResult(availableProfiles)
+        await this.updateCacheWithResult(availableProfiles)
 
         this._profiles = availableProfiles
         return availableProfiles
@@ -329,34 +345,57 @@ export class RegionProfileManager {
         await globals.globalState.update('aws.amazonq.regionProfiles', previousPersistedState)
     }
 
-    private async cacheApiResult(r: RegionProfile[] | undefined) {
-        const state = r ? 'valid' : 'pending'
+    // Acquire lock / update value
+    private async releaeLock(cached: CachedApiResult) {
+        await globals.globalState.update('aws.amazonq.regionProfiles.cachedResult', {
+            ...cached,
+            isAcquired: false,
+        })
+    }
+
+    private async updateCacheWithResult(r: RegionProfile[]) {
         const pojo: CachedApiResult = {
-            state: state,
+            isAcquired: false, // release
+            state: 'valid',
             profiles: r,
-            timestamp: state === 'valid' ? globals.clock.Date.now() : 0,
+            timestamp: globals.clock.Date.now(),
             errorMsg: undefined,
         }
         await globals.globalState.update('aws.amazonq.regionProfiles.cachedResult', pojo)
     }
 
-    private loadApiResultFromCache(): CachedApiResult {
+    private async updateCacheWithError(e: Error) {
+        const pojo: CachedApiResult = {
+            isAcquired: false, // release
+            state: 'failure',
+            profiles: undefined,
+            timestamp: globals.clock.Date.now(),
+            errorMsg: e.message,
+        }
+        await globals.globalState.update('aws.amazonq.regionProfiles.cachedResult', pojo)
+    }
+
+    private async tryAcquireLock(): Promise<CachedApiResult | undefined> {
         const cachedValue = globals.globalState.tryGet<CachedApiResult>(
             'aws.amazonq.regionProfiles.cachedResult',
             Object,
-            { state: 'stale', profiles: undefined, timestamp: 0, errorMsg: undefined }
+            { isAcquired: false, state: 'stale', profiles: undefined, timestamp: 0, errorMsg: undefined }
         )
 
-        const now = globals.clock.Date.now()
-        // Only use cache if the duration has not exceeded 60s
-        if (now - cachedValue.timestamp > 60000) {
-            const s: CachedApiResult = { state: 'stale', profiles: undefined, timestamp: 0, errorMsg: undefined }
-            globals.globalState.update('aws.amazonq.regionProfiles.cachedResult', s).catch((e) => {})
-            return s
-        }
+        if (!cachedValue.isAcquired) {
+            await globals.globalState.update('aws.amazonq.regionProfiles.cachedResult', {
+                ...cachedValue,
+                isAcquired: true,
+            })
 
-        // Otherwise return whatever it is
-        return cachedValue
+            return cachedValue
+        }
+        return undefined
+    }
+
+    async resetCache() {
+        const pojo = { isAcquired: false, state: 'stale', profiles: undefined, timestamp: 0, errorMsg: undefined }
+        await globals.globalState.update('aws.amazonq.regionProfiles.cachedResult', pojo)
     }
 
     async generateQuickPickItem(): Promise<DataQuickPickItem<string>[]> {
