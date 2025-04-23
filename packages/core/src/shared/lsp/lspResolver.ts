@@ -15,9 +15,11 @@ import { lspSetupStage, StageResolver, tryStageResolvers } from './utils/setupSt
 import { HttpResourceFetcher } from '../resourcefetcher/httpResourceFetcher'
 import { showMessageWithCancel } from '../../shared/utilities/messages'
 import { Timeout } from '../utilities/timeoutUtils'
+import { oneMinute } from '../datetime'
 
-// max timeout for downloading remote LSP assets progress, the lowest possible is 3000, bounded by httpResourceFetcher's waitUntil
-const remoteDownloadTimeout = 5000
+// max timeout for downloading remote LSP assets. Some asserts are large (100+ MB) so this needs to be large for slow connections.
+// Since the user can cancel this one we can let it run very long.
+const remoteDownloadTimeout = oneMinute * 30
 
 export class LanguageServerResolver {
     constructor(
