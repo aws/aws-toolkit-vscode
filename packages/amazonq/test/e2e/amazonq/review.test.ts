@@ -228,6 +228,8 @@ describe('Amazon Q Code Review', function () {
                     range
                 )
 
+                console.log('first diag', sampleDiagnostic)
+
                 await new Promise((resolve) => setTimeout(resolve, 1000))
 
                 // Find the "View details" code action
@@ -236,7 +238,8 @@ describe('Amazon Q Code Review', function () {
 
                 // Execute the view details command
                 if (viewDetailsAction?.command) {
-                    console.log('has command, viewing details')
+                    console.log('has command, viewing details', viewDetailsAction.command.command)
+                    console.log('view command args', viewDetailsAction.command.arguments!)
                     await vscode.commands.executeCommand(
                         viewDetailsAction.command.command,
                         ...viewDetailsAction.command.arguments!
@@ -297,8 +300,9 @@ describe('Amazon Q Code Review', function () {
                         const foundIssue = SecurityIssueProvider.instance.issues
                             .flatMap(({ issues }) => issues)
                             .find((i) => i.findingId === issue.findingId)
-                        console.log('original issue', issue, issue.fixJobId, issue.suggestedFixes)
-                        console.log('issue', foundIssue?.fixJobId, foundIssue?.suggestedFixes)
+                        console.log(SecurityIssueProvider.instance.issues)
+                        console.log('original issue', issue, issue.findingId, issue.suggestedFixes)
+                        console.log('issue', foundIssue, foundIssue?.findingId, foundIssue?.suggestedFixes)
 
                         return foundIssue?.suggestedFixes?.length !== undefined &&
                             foundIssue?.suggestedFixes?.length > 0
