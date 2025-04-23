@@ -206,7 +206,7 @@ export class RegionProfileManager {
             RegionProfileManager.logger.info(`available amazonq profiles: ${availableProfiles.length}`)
         }
 
-        // Mark cachedApiResult "valid" and save the result
+        // Update cache and save the result
         await this.updateCacheWithResult(availableProfiles)
 
         this._profiles = availableProfiles
@@ -357,66 +357,6 @@ export class RegionProfileManager {
         await globals.globalState.update('aws.amazonq.regionProfiles', previousPersistedState)
     }
 
-    // Acquire lock / update value
-    private async releaeLock(cached: CachedApiResult) {
-        await globals.globalState.update('aws.amazonq.regionProfiles.cachedResult', {
-            ...cached,
-            isAcquired: false,
-        })
-    }
-
-    private async updateCacheWithResult(r: RegionProfile[]) {
-        const pojo: CachedApiResult = {
-            isAcquired: false, // release
-            state: 'valid',
-            profiles: r,
-            timestamp: globals.clock.Date.now(),
-            errorMsg: undefined,
-        }
-        await globals.globalState.update('aws.amazonq.regionProfiles.cachedResult', pojo)
-    }
-
-    private async updateCacheWithError(e: Error) {
-        const pojo: CachedApiResult = {
-            isAcquired: false, // release
-            state: 'failure',
-            profiles: undefined,
-            timestamp: globals.clock.Date.now(),
-            errorMsg: e.message,
-        }
-        await globals.globalState.update('aws.amazonq.regionProfiles.cachedResult', pojo)
-    }
-
-    private async tryAcquireLock(): Promise<CachedApiResult | undefined> {
-        const cachedValue = globals.globalState.tryGet<CachedApiResult>(
-            'aws.amazonq.regionProfiles.cachedResult',
-            Object,
-            { isAcquired: false, state: 'stale', profiles: undefined, timestamp: 0, errorMsg: undefined }
-        )
-
-        if (!cachedValue.isAcquired) {
-            await globals.globalState.update('aws.amazonq.regionProfiles.cachedResult', {
-                ...cachedValue,
-                isAcquired: true,
-            })
-
-            return cachedValue
-        }
-        return undefined
-    }
-
-    // Should reset cache when users signout in case users want to change to a different connection
-    async resetCache() {
-        const pojo: CachedApiResult = {
-            isAcquired: false,
-            state: 'stale',
-            profiles: undefined,
-            timestamp: 0,
-            errorMsg: undefined,
-        }
-        await globals.globalState.update('aws.amazonq.regionProfiles.cachedResult', pojo)
-    }
-
     async generateQuickPickItem(): Promise<DataQuickPickItem<string>[]> {
         const selected = this.activeRegionProfile
         let profiles: RegionProfile[] = []
@@ -491,5 +431,64 @@ export class RegionProfileManager {
         )) as CodeWhispererUserClient
 
         return c
+    }
+
+    // Should reset cache when users signout in case users want to change to a different connection
+    async resetCache() {
+        const pojo: CachedApiResult = {
+            isAcquired: false,
+            state: 'stale',
+            profiles: undefined,
+            timestamp: 0,
+            errorMsg: undefined,
+        }
+        await globals.globalState.update('aws.amazonq.regionProfiles.cachedResult', pojo)
+    }
+
+    private async tryAcquireLock(): Promise<CachedApiResult | undefined> {
+        const cachedValue = globals.globalState.tryGet<CachedApiResult>(
+            'aws.amazonq.regionProfiles.cachedResult',
+            Object,
+            { isAcquired: false, state: 'stale', profiles: undefined, timestamp: 0, errorMsg: undefined }
+        )
+
+        if (!cachedValue.isAcquired) {
+            await globals.globalState.update('aws.amazonq.regionProfiles.cachedResult', {
+                ...cachedValue,
+                isAcquired: true,
+            })
+
+            return cachedValue
+        }
+        return undefined
+    }
+
+    private async releaeLock(cached: CachedApiResult) {
+        await globals.globalState.update('aws.amazonq.regionProfiles.cachedResult', {
+            ...cached,
+            isAcquired: false,
+        })
+    }
+
+    private async updateCacheWithResult(r: RegionProfile[]) {
+        const pojo: CachedApiResult = {
+            isAcquired: false, // release
+            state: 'valid',
+            profiles: r,
+            timestamp: globals.clock.Date.now(),
+            errorMsg: undefined,
+        }
+        await globals.globalState.update('aws.amazonq.regionProfiles.cachedResult', pojo)
+    }
+
+    private async updateCacheWithError(e: Error) {
+        const pojo: CachedApiResult = {
+            isAcquired: false, // release
+            state: 'failure',
+            profiles: undefined,
+            timestamp: globals.clock.Date.now(),
+            errorMsg: e.message,
+        }
+        await globals.globalState.update('aws.amazonq.regionProfiles.cachedResult', pojo)
     }
 }
