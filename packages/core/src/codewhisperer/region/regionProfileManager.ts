@@ -50,7 +50,6 @@ const endpoints = createConstantMap({
  */
 export type ProfileSwitchIntent = 'user' | 'auth' | 'update' | 'reload'
 
-// Only "valid" state will have non null profiles
 type CachedApiResultWithLock = {
     // Lock
     locked: boolean
@@ -145,9 +144,6 @@ export class RegionProfileManager {
         RegionProfileManager.logger.info(`obtained cache lock %s`, cached)
 
         const availableProfiles: RegionProfile[] = []
-        // Load cache and use it directly if it's in "valid" state
-        // If it's pending, keep waiting until the ongoing pull finishes its job
-
         const now = globals.clock.Date.now()
         if (cached?.result && now - cached.result.timestamp < 60000) {
             RegionProfileManager.logger.info(
