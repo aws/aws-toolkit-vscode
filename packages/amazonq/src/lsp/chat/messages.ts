@@ -82,6 +82,7 @@ export function registerLanguageServerEventListener(languageClient: LanguageClie
         })
     })
 
+    // This passes through metric data from LSP events to Toolkit telemetry with all fields from the LSP server
     languageClient.onTelemetry((e) => {
         const telemetryName: string = e.name
 
