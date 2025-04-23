@@ -24,7 +24,7 @@ import { getTestWindow } from '../..'
 import * as samInvokeBackend from '../../../lambda/vue/configEditor/samInvokeBackend'
 import sinon from 'sinon'
 import * as nls from 'vscode-nls'
-import { assertLogsContain } from '../../../test/globalSetup.test'
+import { assertLogsContain } from '../../globalSetup.test'
 import { createResponse } from '../../testUtil'
 
 const localize = nls.loadMessageBundle()
@@ -228,123 +228,121 @@ describe('SamInvokeWebview', () => {
             assert.strictEqual(result, undefined)
         })
     })
-    describe('Sam Invoke Vue Backend', () => {
-        describe('finalizeConfig', () => {
-            it('prunes configs correctly', () => {
-                const configs: { input: AwsSamDebuggerConfiguration; output: AwsSamDebuggerConfiguration }[] = [
-                    {
-                        input: {
-                            invokeTarget: {
-                                target: 'template',
-                                logicalId: 'foobar',
-                                templatePath: 'template.yaml',
-                            },
-                            name: 'noprune',
-                            type: 'aws-sam',
-                            request: 'direct-invoke',
+    describe('finalizeConfig', () => {
+        it('prunes configs correctly', () => {
+            const configs: { input: AwsSamDebuggerConfiguration; output: AwsSamDebuggerConfiguration }[] = [
+                {
+                    input: {
+                        invokeTarget: {
+                            target: 'template',
+                            logicalId: 'foobar',
+                            templatePath: 'template.yaml',
                         },
-                        output: {
-                            invokeTarget: {
-                                target: 'template',
-                                logicalId: 'foobar',
-                                templatePath: 'template.yaml',
+                        name: 'noprune',
+                        type: 'aws-sam',
+                        request: 'direct-invoke',
+                    },
+                    output: {
+                        invokeTarget: {
+                            target: 'template',
+                            logicalId: 'foobar',
+                            templatePath: 'template.yaml',
+                        },
+                        name: 'noprune',
+                        type: 'aws-sam',
+                        request: 'direct-invoke',
+                    },
+                },
+                {
+                    input: {
+                        invokeTarget: {
+                            target: 'template',
+                            logicalId: 'foobar',
+                            templatePath: 'template.yaml',
+                        },
+                        lambda: {
+                            payload: {
+                                json: {},
                             },
-                            name: 'noprune',
-                            type: 'aws-sam',
-                            request: 'direct-invoke',
+                        },
+                        name: 'prunejson',
+                        type: 'aws-sam',
+                        request: 'direct-invoke',
+                    },
+                    output: {
+                        invokeTarget: {
+                            target: 'template',
+                            logicalId: 'foobar',
+                            templatePath: 'template.yaml',
+                        },
+                        name: 'prunejson',
+                        type: 'aws-sam',
+                        request: 'direct-invoke',
+                    },
+                },
+                {
+                    input: {
+                        invokeTarget: {
+                            target: 'template',
+                            logicalId: 'foobar',
+                            templatePath: 'template.yaml',
+                        },
+                        name: 'prunestr',
+                        type: 'aws-sam',
+                        request: 'direct-invoke',
+                        lambda: {
+                            runtime: '',
                         },
                     },
-                    {
-                        input: {
-                            invokeTarget: {
-                                target: 'template',
-                                logicalId: 'foobar',
-                                templatePath: 'template.yaml',
-                            },
-                            lambda: {
-                                payload: {
-                                    json: {},
-                                },
-                            },
-                            name: 'prunejson',
-                            type: 'aws-sam',
-                            request: 'direct-invoke',
+                    output: {
+                        invokeTarget: {
+                            target: 'template',
+                            logicalId: 'foobar',
+                            templatePath: 'template.yaml',
                         },
-                        output: {
-                            invokeTarget: {
-                                target: 'template',
-                                logicalId: 'foobar',
-                                templatePath: 'template.yaml',
-                            },
-                            name: 'prunejson',
-                            type: 'aws-sam',
-                            request: 'direct-invoke',
+                        name: 'prunestr',
+                        type: 'aws-sam',
+                        request: 'direct-invoke',
+                    },
+                },
+                {
+                    input: {
+                        invokeTarget: {
+                            target: 'template',
+                            logicalId: 'foobar',
+                            templatePath: 'template.yaml',
+                        },
+                        name: 'prunearr',
+                        type: 'aws-sam',
+                        request: 'direct-invoke',
+                        lambda: {
+                            pathMappings: [],
                         },
                     },
-                    {
-                        input: {
-                            invokeTarget: {
-                                target: 'template',
-                                logicalId: 'foobar',
-                                templatePath: 'template.yaml',
-                            },
-                            name: 'prunestr',
-                            type: 'aws-sam',
-                            request: 'direct-invoke',
-                            lambda: {
-                                runtime: '',
-                            },
+                    output: {
+                        invokeTarget: {
+                            target: 'template',
+                            logicalId: 'foobar',
+                            templatePath: 'template.yaml',
                         },
-                        output: {
-                            invokeTarget: {
-                                target: 'template',
-                                logicalId: 'foobar',
-                                templatePath: 'template.yaml',
-                            },
-                            name: 'prunestr',
-                            type: 'aws-sam',
-                            request: 'direct-invoke',
-                        },
+                        name: 'prunearr',
+                        type: 'aws-sam',
+                        request: 'direct-invoke',
                     },
-                    {
-                        input: {
-                            invokeTarget: {
-                                target: 'template',
-                                logicalId: 'foobar',
-                                templatePath: 'template.yaml',
-                            },
-                            name: 'prunearr',
-                            type: 'aws-sam',
-                            request: 'direct-invoke',
-                            lambda: {
-                                pathMappings: [],
-                            },
-                        },
-                        output: {
-                            invokeTarget: {
-                                target: 'template',
-                                logicalId: 'foobar',
-                                templatePath: 'template.yaml',
-                            },
-                            name: 'prunearr',
-                            type: 'aws-sam',
-                            request: 'direct-invoke',
-                        },
-                    },
-                ]
+                },
+            ]
 
-                for (const config of configs) {
-                    assert.deepStrictEqual(
-                        finalizeConfig(config.input, config.input.name),
-                        config.output,
-                        `Test failed for input: ${config.input.name}`
-                    )
-                }
-            })
+            for (const config of configs) {
+                assert.deepStrictEqual(
+                    finalizeConfig(config.input, config.input.name),
+                    config.output,
+                    `Test failed for input: ${config.input.name}`
+                )
+            }
         })
     })
 
-    describe('SamInvokeWebview - getSamLaunchConfigs', function () {
+    describe('getSamLaunchConfigs', function () {
         let workspaceFoldersStub: sinon.SinonStub
         let launchConfigStub: sinon.SinonStub
         let getLaunchConfigQuickPickItemsStub: sinon.SinonStub
@@ -554,14 +552,14 @@ describe('SamInvokeWebview', () => {
             assert.strictEqual(result, undefined)
         })
     })
-    describe('InvokeLocalWebview', function () {
+    describe('invokeLaunchConfig', function () {
         let sandbox: sinon.SinonSandbox
         let mockFolder: vscode.WorkspaceFolder
         let mockUri: vscode.Uri
         let getUriFromLaunchConfigStub: sinon.SinonStub
         let workspaceFoldersStub: sinon.SinonStub
 
-        this.beforeEach(async function () {
+        beforeEach(async function () {
             sandbox = sinon.createSandbox()
             mockFolder = createMockWorkspaceFolder('/mock-path')
             mockUri = mockFolder.uri
@@ -583,6 +581,10 @@ describe('SamInvokeWebview', () => {
             const startDebuggingStub = sandbox.stub(vscode.debug, 'startDebugging').resolves(true)
 
             await samInvokeWebview.invokeLaunchConfig(mockConfig)
+            const messages = getTestWindow().statusBar.messages
+            assert.strictEqual(messages.length, 2)
+            assert.strictEqual(messages[0], 'Remote Invoke Function: testFunction')
+            assert.strictEqual(messages[1], '$(testing-failed-icon) Invoke failed: testFunction')
 
             assert(startDebuggingStub.called)
         })

@@ -48,6 +48,7 @@ interface SamInvokeVueData {
     showNameInput: boolean
     newTestEventName: string
     resourceData: ResourceData | undefined
+    invokeInProgress: boolean
 }
 
 function newLaunchConfig(existingConfig?: AwsSamDebuggerConfiguration): AwsSamDebuggerConfigurationLoose {
@@ -152,6 +153,7 @@ export default defineComponent({
             selectedFile: '',
             selectedFilePath: '',
             resourceData: undefined,
+            invokeInProgress: false,
         }
     },
     methods: {
@@ -168,11 +170,17 @@ export default defineComponent({
                 return // Exit early if config is not available
             }
 
+            this.invokeInProgress = true
             const source = this.resourceData?.source
 
-            client.invokeLaunchConfig(config, source).catch((e: Error) => {
+            try {
+                // Instead of using vscode.window.withProgress directly, delegate to the backend
+                await client.invokeLaunchConfig(config, source)
+            } catch (e: any) {
                 console.error(`invokeLaunchConfig failed: ${e.message}`)
-            })
+            } finally {
+                this.invokeInProgress = false
+            }
         },
         save() {
             const config = this.formatConfig()
