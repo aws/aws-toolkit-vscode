@@ -285,9 +285,9 @@ describe('Amazon Q Code Review', function () {
 
                 assert.ok(viewDetailsActionDefined, 'viewDetailsAction.command was not defined after waiting')
 
+                console.log('command', viewDetailsActionDefined)
+                console.log('arguments', viewDetailsActionDefined.arguments)
                 const issue = viewDetailsActionDefined.arguments?.[0] as CodeScanIssue
-                console.log('command', viewDetailsAction.command)
-                console.log('arguments', viewDetailsAction.command?.arguments)
 
                 // Wait for the fix to be generated with polling
                 const updatedIssue = await waitUntil(
