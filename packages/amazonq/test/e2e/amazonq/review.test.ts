@@ -275,7 +275,7 @@ describe('Amazon Q Code Review', function () {
                     {
                         timeout: 10_000,
                         interval: 500,
-                        truthy: false,
+                        truthy: true,
                     }
                 )
                 await new Promise((resolve) => setTimeout(resolve, 1000))
@@ -303,7 +303,7 @@ describe('Amazon Q Code Review', function () {
                     {
                         timeout: CodeWhispererConstants.codeFixJobTimeoutMs,
                         interval: CodeWhispererConstants.codeFixJobPollingIntervalMs,
-                        truthy: false,
+                        truthy: true,
                     }
                 )
 
