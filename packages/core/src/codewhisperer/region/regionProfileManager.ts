@@ -140,17 +140,7 @@ export class RegionProfileManager {
             return []
         }
 
-        // WaitUntil lock is acquired, the API tps is low, server can't afford multiple IDE instances making the calls simultaneiously
-        const cached = await waitUntil(
-            async () => {
-                const lock = await this.tryAcquireLock()
-                RegionProfileManager.logger.info(`try obtaining cache lock %s`, lock)
-                if (lock) {
-                    return lock
-                }
-            },
-            { timeout: 15000, interval: 1500, truthy: true }
-        )
+        const cached = await this.acquireLock()
 
         RegionProfileManager.logger.info(`obtained cache lock %s`, cached)
 
@@ -459,22 +449,37 @@ export class RegionProfileManager {
         })
     }
 
-    private async tryAcquireLock(): Promise<CachedApiResultWithLock | undefined> {
-        const cachedValue = globals.globalState.tryGet<CachedApiResultWithLock>(
-            'aws.amazonq.regionProfiles.cachedResult',
-            Object,
-            { locked: false, result: undefined }
+    private async acquireLock(): Promise<CachedApiResultWithLock | undefined> {
+        async function _acquireLock() {
+            const cachedValue = globals.globalState.tryGet<CachedApiResultWithLock>(
+                'aws.amazonq.regionProfiles.cachedResult',
+                Object,
+                { locked: false, result: undefined }
+            )
+
+            if (!cachedValue.locked) {
+                await globals.globalState.update('aws.amazonq.regionProfiles.cachedResult', {
+                    ...cachedValue,
+                    isAcquired: true,
+                })
+
+                return cachedValue
+            }
+            return undefined
+        }
+
+        const lock = await waitUntil(
+            async () => {
+                const lock = await _acquireLock()
+                RegionProfileManager.logger.info(`try obtaining cache lock %s`, lock)
+                if (lock) {
+                    return lock
+                }
+            },
+            { timeout: 15000, interval: 1500, truthy: true }
         )
 
-        if (!cachedValue.locked) {
-            await globals.globalState.update('aws.amazonq.regionProfiles.cachedResult', {
-                ...cachedValue,
-                isAcquired: true,
-            })
-
-            return cachedValue
-        }
-        return undefined
+        return lock
     }
 
     private async releaesLock(cached: CachedApiResultWithLock) {
