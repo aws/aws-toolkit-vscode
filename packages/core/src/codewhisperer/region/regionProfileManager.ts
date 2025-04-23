@@ -43,7 +43,7 @@ const endpoints = createConstantMap({
 })
 
 /**
- * 'user' -> users change the profile through Q menu`
+ * 'user' -> users change the profile through Q menu
  * 'auth' -> users change the profile through webview profile selector page
  * 'update' -> plugin auto select the profile on users' behalf as there is only 1 profile
  * 'reload' -> on plugin restart, plugin will try to reload previous selected profile
@@ -53,7 +53,7 @@ export type ProfileSwitchIntent = 'user' | 'auth' | 'update' | 'reload'
 // Only "valid" state will have non null profiles
 type CachedApiResultWithLock = {
     // Lock
-    isAcquired: boolean
+    locked: boolean
     // Metadata
     result: SuccessResult | FailureResult | undefined
 }
@@ -167,7 +167,7 @@ export class RegionProfileManager {
             )
 
             // Release lock so that other ide instances can continue
-            await this.releaeLock(cached)
+            await this.releaesLock(cached)
 
             if (cached.result.type === 'success') {
                 availableProfiles.push(...(cached.result as SuccessResult).profiles)
@@ -463,10 +463,10 @@ export class RegionProfileManager {
         const cachedValue = globals.globalState.tryGet<CachedApiResultWithLock>(
             'aws.amazonq.regionProfiles.cachedResult',
             Object,
-            { isAcquired: false, result: undefined }
+            { locked: false, result: undefined }
         )
 
-        if (!cachedValue.isAcquired) {
+        if (!cachedValue.locked) {
             await globals.globalState.update('aws.amazonq.regionProfiles.cachedResult', {
                 ...cachedValue,
                 isAcquired: true,
@@ -477,7 +477,7 @@ export class RegionProfileManager {
         return undefined
     }
 
-    private async releaeLock(cached: CachedApiResultWithLock) {
+    private async releaesLock(cached: CachedApiResultWithLock) {
         await globals.globalState.update('aws.amazonq.regionProfiles.cachedResult', {
             ...cached,
             isAcquired: false,
@@ -491,7 +491,7 @@ export class RegionProfileManager {
             timestamp: now(),
         }
         const pojo: CachedApiResultWithLock = {
-            isAcquired: false, // release the lock
+            locked: false, // release the lock
             result: result,
         }
         await globals.globalState.update('aws.amazonq.regionProfiles.cachedResult', pojo)
@@ -504,7 +504,7 @@ export class RegionProfileManager {
             timestamp: now(),
         }
         const pojo: CachedApiResultWithLock = {
-            isAcquired: false, // release the lock
+            locked: false, // release the lock
             result: result,
         }
         await globals.globalState.update('aws.amazonq.regionProfiles.cachedResult', pojo)
