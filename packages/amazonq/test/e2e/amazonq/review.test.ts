@@ -23,8 +23,7 @@ import path from 'path'
 import { ScanAction, scanProgressMessage } from '../../../src/app/amazonqScan/models/constants'
 import { CodeScanIssue } from 'aws-core-vscode/codewhisperer'
 import { SecurityIssueProvider } from 'aws-core-vscode/codewhisperer'
-
-import { waitUntil } from 'aws-core-vscode/shared'
+import { fs, waitUntil, processUtils } from 'aws-core-vscode/shared'
 
 function getWorkspaceFolder(): string {
     return vscode.workspace.workspaceFolders![0].uri.fsPath
@@ -387,7 +386,7 @@ describe('Amazon Q Code Review', function () {
                 }
 
                 // Revert the changes
-                await vscode.workspace.fs.writeFile(uri, Buffer.from(originalContent))
+                await fs.writeFile(uri, originalContent)
 
                 // Wait a moment for the file system to update
                 await new Promise((resolve) => setTimeout(resolve, 1000))
@@ -404,11 +403,12 @@ describe('Amazon Q Code Review', function () {
             const testFolder = path.join(getWorkspaceFolder(), 'QCAFolder')
             const fileName = 'ProblematicCode.java'
             const filePath = path.join(testFolder, fileName)
+            let document: vscode.TextDocument
 
             beforeEach(async () => {
                 await validateInitialChatMessage()
 
-                const document = await vscode.workspace.openTextDocument(filePath)
+                document = await vscode.workspace.openTextDocument(filePath)
                 await vscode.window.showTextDocument(document)
 
                 const editor = vscode.window.activeTextEditor
@@ -418,6 +418,7 @@ describe('Amazon Q Code Review', function () {
                     await editor.edit((editBuilder) => {
                         editBuilder.insert(position, '// amazonq-ignore-next-line\n')
                     })
+                    await document.save()
                 }
             })
 
@@ -449,6 +450,7 @@ describe('Amazon Q Code Review', function () {
                         const lineRange = editor.document.lineAt(20).rangeIncludingLineBreak
                         editBuilder.delete(lineRange)
                     })
+                    await document.save()
                 }
             })
         })
@@ -527,19 +529,23 @@ describe('Amazon Q Code Review', function () {
             })
 
             it('project scan returns at least 1 LLM findings', async () => {
-                const fileDir = getWorkspaceFolder()
-                const isWindows = process.platform === 'win32'
-                const { exec } = require('child_process')
-                const util = require('util')
-                const execPromise = util.promisify(exec)
+                const fileDir = path.join(getWorkspaceFolder())
 
                 try {
                     // Initialize git repository to make RLinker.java appear in git diff
-                    await execPromise('git init', { cwd: fileDir })
-                    await execPromise('git add QCAFolder/RLinker.java', { cwd: fileDir })
-                    await execPromise('git config user.name "Test"', { cwd: fileDir })
-                    await execPromise('git config user.email "test@example.com"', { cwd: fileDir })
-                    await execPromise('git commit -m "Initial commit"', { cwd: fileDir })
+                    await processUtils.ChildProcess.run('git', ['init'], { spawnOptions: { cwd: fileDir } })
+                    await processUtils.ChildProcess.run('git', ['add', 'QCAFolder/RLinker.java'], {
+                        spawnOptions: { cwd: fileDir },
+                    })
+                    await processUtils.ChildProcess.run('git', ['config', 'user.name', 'Test'], {
+                        spawnOptions: { cwd: fileDir },
+                    })
+                    await processUtils.ChildProcess.run('git', ['config', 'user.email', 'test@example.com'], {
+                        spawnOptions: { cwd: fileDir },
+                    })
+                    await processUtils.ChildProcess.run('git', ['commit', '-m', 'Initial commit'], {
+                        spawnOptions: { cwd: fileDir },
+                    })
 
                     document = await vscode.workspace.openTextDocument(filePath)
                     await vscode.window.showTextDocument(document)
@@ -592,15 +598,8 @@ describe('Amazon Q Code Review', function () {
                     }
                 } finally {
                     // Clean up git repository
-                    try {
-                        if (isWindows) {
-                            await execPromise('rmdir /s /q .git', { cwd: fileDir })
-                        } else {
-                            await execPromise('rm -rf .git', { cwd: fileDir })
-                        }
-                    } catch (err) {
-                        console.error('Failed to clean up git repository:', err)
-                    }
+                    await fs.delete(path.join(fileDir, '.git'), { recursive: true })
+                    console.log('done runnign test')
                 }
             })
         })
