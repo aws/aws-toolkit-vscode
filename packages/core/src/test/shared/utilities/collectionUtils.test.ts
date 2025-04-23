@@ -780,7 +780,7 @@ describe('CollectionUtils', async function () {
                     },
                 },
             }
-            assert.deepStrictEqual(partialClone(testObj, 5, [], { maxLength: 2 }), {
+            assert.deepStrictEqual(partialClone(testObj, 5, [], { maxStringLength: 2 }), {
                 a: '1',
                 b: '11',
                 c: '11...',
