@@ -4,10 +4,12 @@
  */
 
 import {
+    bearerCredentialsUpdateRequestType,
     ConnectionMetadata,
     NotificationType,
     RequestType,
     ResponseMessage,
+    UpdateCredentialsParams,
 } from '@aws/language-server-runtimes/protocol'
 import * as jose from 'jose'
 import * as crypto from 'crypto'
@@ -81,7 +83,7 @@ export class AmazonQLspAuth {
             token,
         })
 
-        await this.client.sendRequest(notificationTypes.updateBearerToken.method, request)
+        await this.client.sendRequest(bearerCredentialsUpdateRequestType.method, request)
 
         this.client.info(`UpdateBearerToken: ${JSON.stringify(request)}`)
     }
@@ -96,7 +98,7 @@ export class AmazonQLspAuth {
         return interval
     }
 
-    private async createUpdateCredentialsRequest(data: any) {
+    private async createUpdateCredentialsRequest(data: any): Promise<UpdateCredentialsParams> {
         const payload = new TextEncoder().encode(JSON.stringify({ data }))
 
         const jwt = await new jose.CompactEncrypt(payload)
@@ -105,6 +107,11 @@ export class AmazonQLspAuth {
 
         return {
             data: jwt,
+            metadata: {
+                sso: {
+                    startUrl: AuthUtil.instance.auth.startUrl,
+                },
+            },
             encrypted: true,
         }
     }

@@ -10,7 +10,6 @@ import { LanguageClient, LanguageClientOptions, RequestType } from 'vscode-langu
 import { InlineCompletionManager } from '../app/inline/completion'
 import { AmazonQLspAuth, encryptionKey, notificationTypes } from './auth'
 import {
-    ConnectionMetadata,
     CreateFilesParams,
     DeleteFilesParams,
     DidChangeWorkspaceFoldersParams,
@@ -164,14 +163,6 @@ export async function startLanguageServer(
     const auth = new AmazonQLspAuth(client)
 
     return client.onReady().then(async () => {
-        // Request handler for when the server wants to know about the clients auth connnection. Must be registered before the initial auth init call
-        client.onRequest<ConnectionMetadata, Error>(notificationTypes.getConnectionMetadata.method, () => {
-            return {
-                sso: {
-                    startUrl: AuthUtil.instance.auth.startUrl,
-                },
-            }
-        })
         await auth.refreshConnection()
 
         if (Experiments.instance.get('amazonqLSPInline', false)) {
