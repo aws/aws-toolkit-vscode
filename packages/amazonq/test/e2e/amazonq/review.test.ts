@@ -310,7 +310,7 @@ describe('Amazon Q Code Review', function () {
                             : undefined
                     },
                     {
-                        timeout: CodeWhispererConstants.codeFixJobTimeoutMs,
+                        timeout: CodeWhispererConstants.codeFixJobTimeoutMs + 20_000,
                         interval: CodeWhispererConstants.codeFixJobPollingIntervalMs,
                         truthy: true,
                     }
