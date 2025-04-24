@@ -1017,7 +1017,7 @@ export class WebviewUIHandler {
              * when in hybrid chat the reference gets resolved later so we
              * don't need to create mynah UI
              */
-            this.mynahUIRef = { mynahUI: new MynahUI(this.mynahUIProps) }
+            this.mynahUIRef = { mynahUI: new MynahUI({ ...this.mynahUIProps, loadStyles: false }) }
         }
 
         /**
