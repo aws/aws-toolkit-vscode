@@ -72,7 +72,7 @@ export class PredictionTracker {
         const size = Buffer.byteLength(content, 'utf8')
 
         const timestamp = Date.now()
-        const storageKey = `${filePath}-${timestamp}`
+        const storageKey = `${filePath.replace(/\//g, '__')}-${timestamp}`
 
         const snapshot: FileSnapshot = {
             filePath,
@@ -337,7 +337,9 @@ export class PredictionTracker {
                 const storageKey = filename.substring(0, filename.length - snapshotFileSuffix.length)
                 const parts = storageKey.split('-')
                 const timestamp = parseInt(parts[parts.length - 1], 10)
-                const originalFilename = parts.slice(0, parts.length - 1).join('-')
+                // Rejoin to get file path without timestamp
+                const sanitizedFilename = parts.slice(0, parts.length - 1).join('-')
+                const originalFilename = sanitizedFilename.replace(/__/g, '/')
                 const contentPath = this.getSnapshotFilePath(storageKey)
 
                 try {

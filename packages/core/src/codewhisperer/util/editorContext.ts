@@ -156,8 +156,6 @@ export async function buildListRecommendationRequest(
         },
     }
 
-    const predictionTypes = ['EDITS']
-
     // Combine inline and prediction supplemental contexts
     const finalSupplementalContext = inlineSupplementalContext.concat(predictionSupplementalContext)
 
@@ -170,7 +168,6 @@ export async function buildListRecommendationRequest(
             },
             supplementalContexts: finalSupplementalContext,
             editorState: editorState,
-            predictionTypes: predictionTypes,
             maxResults: CodeWhispererConstants.maxRecommendations,
             customizationArn: selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
             optOutPreference: getOptOutPreference(),
