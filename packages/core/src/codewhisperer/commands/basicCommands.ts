@@ -372,6 +372,8 @@ export const openSecurityIssuePanel = Commands.declare(
         const targetFilePath: string = issue instanceof IssueItem ? issue.filePath : filePath
         await showSecurityIssueWebview(context.extensionContext, targetIssue, targetFilePath)
         console.log('in show securityIssueWebview')
+        console.log('targetIssue', targetIssue)
+        console.log('file Path', filePath)
 
         telemetry.codewhisperer_codeScanIssueViewDetails.emit({
             findingId: targetIssue.findingId,
