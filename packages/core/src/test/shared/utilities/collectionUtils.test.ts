@@ -770,26 +770,36 @@ describe('CollectionUtils', async function () {
 
         it('truncates properties by maxLength', function () {
             const testObj = {
-                a: '1',
-                b: '11',
-                c: '11111',
-                d: {
-                    e: {
-                        a: '11111',
-                        b: '11',
+                strValue: '1',
+                boolValue: true,
+                longString: '11111',
+                nestedObj: {
+                    nestedObjAgain: {
+                        longNestedStr: '11111',
+                        shortNestedStr: '11',
                     },
                 },
+                nestedObj2: {
+                    functionValue: (_: unknown) => {},
+                },
+                nestedObj3: {
+                    myArray: ['1', '11111', '1'],
+                },
+                objInArray: [{ shortString: '11', longString: '11111' }],
             }
             assert.deepStrictEqual(partialClone(testObj, 5, [], { maxStringLength: 2 }), {
-                a: '1',
-                b: '11',
-                c: '11...',
-                d: {
-                    e: {
-                        a: '11...',
-                        b: '11',
+                ...testObj,
+                longString: '11...',
+                nestedObj: {
+                    nestedObjAgain: {
+                        longNestedStr: '11...',
+                        shortNestedStr: '11',
                     },
                 },
+                nestedObj3: {
+                    myArray: ['1', '11...', '1'],
+                },
+                objInArray: [{ shortString: '11', longString: '11...' }],
             })
         })
     })

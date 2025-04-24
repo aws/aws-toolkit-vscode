@@ -305,7 +305,7 @@ export function assign<T extends Record<any, any>, U extends Partial<T>>(data: T
  * @param depth
  * @param omitKeys Omit properties matching these names (at any depth).
  * @param replacement Replacement for object whose fields extend beyond `depth`, and properties matching `omitKeys`.
- * @param maxStringLength truncates string values that exceed this threshold.
+ * @param maxStringLength truncates string values that exceed this threshold (includes values in nested arrays)
  */
 export function partialClone(
     obj: any,
@@ -318,8 +318,10 @@ export function partialClone(
 ): any {
     // Base case: If input is not an object or has no children, return it.
     if (typeof obj !== 'object' || obj === null || 0 === Object.getOwnPropertyNames(obj).length) {
-        const maxLength = options?.maxStringLength
-        return typeof obj === 'string' && maxLength !== undefined ? truncate(obj, maxLength, '...') : obj
+        if (typeof obj === 'string' && options?.maxStringLength) {
+            return truncate(obj, options?.maxStringLength, '...')
+        }
+        return obj
     }
 
     // Create a new object of the same type as the input object.
