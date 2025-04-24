@@ -150,7 +150,7 @@ describe('Amazon Q Code Transformation', function () {
                 waitIntervalInMs: 1000,
             })
 
-            // Add this back when custom 1P upgrades support is ready
+            // TO-DO: add this back when releasing CSB
             /*
             const customDependencyVersionPrompt = tab.getChatItems().pop()
             assert.strictEqual(

@@ -117,7 +117,7 @@ export async function compileProject() {
         await prepareProjectDependencies(dependenciesFolder, modulePath)
     } catch (err) {
         // open build-logs.txt file to show user error logs
-        await writeAndShowBuildLogs()
+        await writeAndShowBuildLogs(true)
         throw err
     }
 }

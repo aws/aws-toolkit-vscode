@@ -11,7 +11,7 @@ import { spawnSync } from 'child_process' // eslint-disable-line no-restricted-i
 import { CodeTransformBuildCommand, telemetry } from '../../../shared/telemetry/telemetry'
 import { CodeTransformTelemetryState } from '../../../amazonqGumby/telemetry/codeTransformTelemetryState'
 import { ToolkitError } from '../../../shared/errors'
-import { setMaven, writeAndShowBuildLogs } from './transformFileHandler'
+import { setMaven } from './transformFileHandler'
 import { throwIfCancelled } from './transformApiHandler'
 import { sleep } from '../../../shared/utilities/timeoutUtils'
 
@@ -58,7 +58,7 @@ function installProjectDependencies(dependenciesFolder: FolderInfo, modulePath: 
             )
             throw new ToolkitError(`Maven ${argString} error`, { code: 'MavenExecutionError' })
         } else {
-            transformByQState.appendToBuildLog(`Maven clean install succeeded`)
+            transformByQState.appendToBuildLog(`mvn clean install succeeded`)
         }
     })
 }
@@ -74,8 +74,6 @@ function copyProjectDependencies(dependenciesFolder: FolderInfo, modulePath: str
         '-Dmdep.addParentPoms=true',
         '-q',
     ]
-
-    transformByQState.appendToBuildLog(`Running ${baseCommand} ${args.join(' ')}`)
 
     let environment = process.env
     if (transformByQState.getSourceJavaHome()) {
@@ -93,13 +91,10 @@ function copyProjectDependencies(dependenciesFolder: FolderInfo, modulePath: str
         let errorLog = ''
         errorLog += spawnResult.error ? JSON.stringify(spawnResult.error) : ''
         errorLog += `${spawnResult.stderr}\n${spawnResult.stdout}`
-        transformByQState.appendToBuildLog(`${baseCommand} ${args} failed: \n ${errorLog}`)
         getLogger().info(
             `CodeTransformation: Maven command ${baseCommand} ${args} failed, but still continuing with transformation: ${errorLog}`
         )
         throw new Error('Maven copy-deps error')
-    } else {
-        transformByQState.appendToBuildLog(`Maven dependency:copy-dependencies succeeded`)
     }
 }
 
@@ -122,8 +117,6 @@ export async function prepareProjectDependencies(dependenciesFolder: FolderInfo,
         installProjectDependencies(dependenciesFolder, rootPomPath)
     } catch (err) {
         void vscode.window.showErrorMessage(CodeWhispererConstants.cleanInstallErrorNotification)
-        // open build-logs.txt file to show user error logs
-        await writeAndShowBuildLogs()
         throw err
     }
 

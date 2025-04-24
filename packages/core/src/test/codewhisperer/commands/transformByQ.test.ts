@@ -42,7 +42,7 @@ import {
     parseBuildFile,
     validateSQLMetadataFile,
     createLocalBuildUploadZip,
-    validateYamlFile,
+    validateCustomVersionsFile,
     extractOriginalProjectSources,
 } from '../../../codewhisperer/service/transformByQ/transformFileHandler'
 import { uploadArtifactToS3 } from '../../../codewhisperer/indexNode'
@@ -52,7 +52,7 @@ import * as nodefs from 'fs' // eslint-disable-line no-restricted-imports
 describe('transformByQ', function () {
     let fetchStub: sinon.SinonStub
     let tempDir: string
-    const validYamlFile = `name: "custom-dependency-management"
+    const validCustomVersionsFile = `name: "custom-dependency-management"
 description: "Custom dependency version management for Java migration from JDK 8/11/17 to JDK 17/21"
 dependencyManagement:
   dependencies:
@@ -516,15 +516,15 @@ dependencyManagement:
         assert.strictEqual(expectedWarning, warningMessage)
     })
 
-    it(`WHEN validateYamlFile on fully valid .yaml file THEN passes validation`, async function () {
-        const isValidYaml = await validateYamlFile(validYamlFile, { tabID: 'abc123' })
-        assert.strictEqual(isValidYaml, true)
+    it(`WHEN validateCustomVersionsFile on fully valid .yaml file THEN passes validation`, async function () {
+        const isValidFile = await validateCustomVersionsFile(validCustomVersionsFile)
+        assert.strictEqual(isValidFile, true)
     })
 
-    it(`WHEN validateYamlFile on invalid .yaml file THEN fails validation`, async function () {
-        const invalidYamlFile = validYamlFile.replace('dependencyManagement', 'invalidKey')
-        const isValidYaml = await validateYamlFile(invalidYamlFile, { tabID: 'abc123' })
-        assert.strictEqual(isValidYaml, false)
+    it(`WHEN validateCustomVersionsFile on invalid .yaml file THEN fails validation`, async function () {
+        const invalidFile = validCustomVersionsFile.replace('dependencyManagement', 'invalidKey')
+        const isValidFile = await validateCustomVersionsFile(invalidFile)
+        assert.strictEqual(isValidFile, false)
     })
 
     it(`WHEN validateMetadataFile on fully valid .sct file THEN passes validation`, async function () {

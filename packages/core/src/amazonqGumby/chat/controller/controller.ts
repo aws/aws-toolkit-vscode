@@ -57,7 +57,7 @@ import {
     openBuildLogFile,
     parseBuildFile,
     validateSQLMetadataFile,
-    validateYamlFile,
+    validateCustomVersionsFile,
 } from '../../../codewhisperer/service/transformByQ/transformFileHandler'
 import { getAuthType } from '../../../auth/utils'
 import fs from '../../../shared/fs/fs'
@@ -461,7 +461,7 @@ export class GumbyController {
 
             this.messenger.sendOneOrMultipleDiffsMessage(oneOrMultipleDiffsSelection, message.tabID)
             this.promptJavaHome('source', message.tabID)
-            // When custom 1P upgrades ready, delete line above and uncomment line below
+            // TO-DO: delete line above and uncomment line below when releasing CSB
             // await this.messenger.sendCustomDependencyVersionMessage(message.tabID)
         })
     }
@@ -586,15 +586,17 @@ export class GumbyController {
             canSelectMany: false,
             openLabel: 'Select',
             filters: {
-                '.YAML file': ['yaml'], // Restrict user to only pick a .yaml file
+                'YAML file': ['yaml'], // restrict user to only pick a .yaml file
             },
         })
         if (!fileUri || fileUri.length === 0) {
             return
         }
         const fileContents = await fs.readFileText(fileUri[0].fsPath)
-        const isValidYaml = await validateYamlFile(fileContents, message)
-        if (!isValidYaml) {
+        const isValidFile = await validateCustomVersionsFile(fileContents)
+
+        if (!isValidFile) {
+            this.messenger.sendUnrecoverableErrorResponse('invalid-custom-versions-file', message.tabID)
             return
         }
         this.messenger.sendMessage('Received custom dependency version YAML file.', message.tabID, 'ai-prompt')
@@ -686,7 +688,13 @@ export class GumbyController {
                 const pathToJavaHome = extractPath(data.message)
                 if (pathToJavaHome) {
                     transformByQState.setSourceJavaHome(pathToJavaHome)
-                    this.promptJavaHome('target', data.tabID) // get target JDK path right after saving source JDK path
+                    // if source and target JDK versions are the same, just re-use the source JAVA_HOME and start the build
+                    if (transformByQState.getTargetJDKVersion() === transformByQState.getSourceJDKVersion()) {
+                        transformByQState.setTargetJavaHome(pathToJavaHome)
+                        await this.prepareLanguageUpgradeProject(data.tabID)
+                    } else {
+                        this.promptJavaHome('target', data.tabID)
+                    }
                 } else {
                     this.messenger.sendUnrecoverableErrorResponse('invalid-java-home', data.tabID)
                 }

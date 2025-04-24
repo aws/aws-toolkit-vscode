@@ -685,7 +685,8 @@ export class ZipManifest {
     buildLogs: string = 'build-logs.txt'
     version: string = '1.0'
     hilCapabilities: string[] = ['HIL_1pDependency_VersionUpgrade']
-    transformCapabilities: string[] = ['EXPLAINABILITY_V1', 'CLIENT_SIDE_BUILD']
+    // TO-DO: add 'CLIENT_SIDE_BUILD' here when releasing
+    transformCapabilities: string[] = ['EXPLAINABILITY_V1']
     customBuildCommand: string = 'clean test'
     requestedConversions?: {
         sqlConversion?: {

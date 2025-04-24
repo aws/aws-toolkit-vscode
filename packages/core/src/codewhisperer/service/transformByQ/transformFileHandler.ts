@@ -27,13 +27,14 @@ export function getDependenciesFolderInfo(): FolderInfo {
     }
 }
 
-export async function writeAndShowBuildLogs() {
+export async function writeAndShowBuildLogs(isLocalInstall: boolean = false) {
     const logFilePath = path.join(os.tmpdir(), 'build-logs.txt')
     writeFileSync(logFilePath, transformByQState.getBuildLog())
     const doc = await vscode.workspace.openTextDocument(logFilePath)
     if (!transformByQState.getBuildLog().includes('clean install succeeded')) {
-        // only show the log if the build failed
-        await vscode.window.showTextDocument(doc, { viewColumn: vscode.ViewColumn.Two })
+        // only show the log if the build failed; show it in second column for intermediate builds only
+        const options = isLocalInstall ? undefined : { viewColumn: vscode.ViewColumn.Two }
+        await vscode.window.showTextDocument(doc, options)
     }
     return logFilePath
 }
@@ -115,12 +116,11 @@ export async function parseBuildFile() {
     return undefined
 }
 
-export async function validateYamlFile(fileContents: string, message: any) {
+export async function validateCustomVersionsFile(fileContents: string) {
     const requiredKeys = ['dependencyManagement:', 'identifier:', 'targetVersion:']
     for (const key of requiredKeys) {
         if (!fileContents.includes(key)) {
-            getLogger().info(`CodeTransformation: missing yaml key: ${key}`)
-            transformByQState.getChatMessenger()?.sendUnrecoverableErrorResponse('missing-yaml-key', message.tabID)
+            getLogger().info(`CodeTransformation: .YAML file is missing required key: ${key}`)
             return false
         }
     }

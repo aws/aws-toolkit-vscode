@@ -54,6 +54,7 @@ import { UserWrittenCodeTracker } from '../../tracker/userWrittenCodeTracker'
 import { AuthUtil } from '../../util/authUtil'
 import { DiffModel } from './transformationResultsViewProvider'
 import { spawnSync } from 'child_process' // eslint-disable-line no-restricted-imports
+import { isClientSideBuildEnabled } from '../../../dev/config'
 
 export function getSha256(buffer: Buffer) {
     const hasher = crypto.createHash('sha256')
@@ -395,6 +396,7 @@ export async function zipCode(
             dependenciesCopied = true
         }
 
+        // TO-DO: decide where exactly to put the YAML file / what to name it
         if (transformByQState.getCustomDependencyVersionFilePath() && zipManifest instanceof ZipManifest) {
             zip.addLocalFile(
                 transformByQState.getCustomDependencyVersionFilePath(),
@@ -701,7 +703,9 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
                 break
             }
 
+            // TO-DO: remove isClientSideBuildEnabled when releasing CSB
             if (
+                isClientSideBuildEnabled &&
                 status === 'TRANSFORMING' &&
                 transformByQState.getTransformationType() === TransformationType.LANGUAGE_UPGRADE
             ) {

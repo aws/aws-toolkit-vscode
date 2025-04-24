@@ -50,7 +50,7 @@ export type UnrecoverableErrorType =
     | 'job-start-failed'
     | 'unsupported-source-db'
     | 'unsupported-target-db'
-    | 'missing-yaml-key'
+    | 'invalid-custom-versions-file'
     | 'error-parsing-sct-file'
     | 'invalid-zip-no-sct-file'
     | 'invalid-from-to-jdk'
@@ -462,8 +462,8 @@ export class Messenger {
             case 'unsupported-target-db':
                 message = CodeWhispererConstants.invalidMetadataFileUnsupportedTargetDB
                 break
-            case 'missing-yaml-key':
-                message = CodeWhispererConstants.invalidYamlFileMissingKey
+            case 'invalid-custom-versions-file':
+                message = CodeWhispererConstants.invalidCustomVersionsFileMessage
                 break
             case 'error-parsing-sct-file':
                 message = CodeWhispererConstants.invalidMetadataFileErrorParsing
@@ -647,7 +647,7 @@ ${codeSnippet}
         this.sendInProgressMessage(tabID, message)
     }
 
-    public sendInProgressMessage(tabID: string, message: string, messageName?: string) {
+    public sendInProgressMessage(tabID: string, message: string) {
         this.dispatcher.sendAsyncEventProgress(
             new AsyncEventProgressMessage(tabID, { inProgress: true, message: undefined })
         )
