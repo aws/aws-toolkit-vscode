@@ -61,7 +61,16 @@ export function toIdeDiagnostics(diagnostic: vscode.Diagnostic): IdeDiagnostic {
         ideDiagnosticType: getDiagnosticsType(diagnostic.message),
         severity: severity,
         source: diagnostic.source,
-        range: diagnostic.range,
+        range: {
+            start: {
+                line: diagnostic.range.start.line,
+                character: diagnostic.range.start.character,
+            },
+            end: {
+                line: diagnostic.range.end.line,
+                character: diagnostic.range.end.character,
+            },
+        },
     }
 }
 
