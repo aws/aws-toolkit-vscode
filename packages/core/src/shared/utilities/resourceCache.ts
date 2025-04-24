@@ -26,7 +26,7 @@ function now() {
 export abstract class CachedResource<V> {
     constructor(
         readonly key: globalKey,
-        readonly expiration: number,
+        readonly expirationInMilli: number,
         private readonly defaultValue: Resource<V>
     ) {}
 
@@ -36,7 +36,7 @@ export abstract class CachedResource<V> {
         const resource = await this.readResourceAndLock()
         // if cache is still fresh, return
         if (resource && resource.result) {
-            if (now() - resource.timestamp < this.expiration) {
+            if (now() - resource.timestamp < this.expirationInMilli) {
                 logger.info(`cache hit`)
                 // release the lock
                 await globals.globalState.update(this.key, {
