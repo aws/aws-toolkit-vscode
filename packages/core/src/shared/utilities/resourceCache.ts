@@ -16,7 +16,7 @@ interface Resource<V> {
 
 // GlobalStates schema, which is used for vscode global states deserialization
 // [globals.globalState.tryGet<T>]
-interface GlobalStateSchema<V> {
+export interface GlobalStateSchema<V> {
     resource: Resource<V>
 }
 

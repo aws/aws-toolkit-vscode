@@ -29,7 +29,7 @@ import { isAwsError, ToolkitError } from '../../shared/errors'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { Commands } from '../../shared/vscode/commands2'
-import { CachedResource } from '../../shared/utilities/resourceCache'
+import { CachedResource, GlobalStateSchema } from '../../shared/utilities/resourceCache'
 
 // TODO: is there a better way to manage all endpoint strings in one place?
 export const defaultServiceConfig: CodeWhispererConfig = {
@@ -51,6 +51,10 @@ const endpoints = createConstantMap({
  */
 export type ProfileSwitchIntent = 'user' | 'auth' | 'update' | 'reload'
 
+interface RegionProfileGlobalState extends GlobalStateSchema<RegionProfile> {
+    previousSelection: { [label: string]: RegionProfile }
+}
+
 export class RegionProfileManager {
     private static logger = getLogger()
     private _activeRegionProfile: RegionProfile | undefined
@@ -62,7 +66,7 @@ export class RegionProfileManager {
 
     private readonly cache = new (class extends CachedResource<RegionProfile[]> {
         constructor(private readonly profileProvider: () => Promise<RegionProfile[]>) {
-            super('aws.amazonq.regionProfiles.cache', 60000, {
+            super('aws.amazonq.regionProfiles', 60000, {
                 resource: {
                     locked: false,
                     timestamp: 0,
@@ -293,13 +297,20 @@ export class RegionProfileManager {
     }
 
     private loadPersistedRegionProfle(): { [label: string]: RegionProfile } {
-        const previousPersistedState = globals.globalState.tryGet<{ [label: string]: RegionProfile }>(
+        const previousPersistedState = globals.globalState.tryGet<RegionProfileGlobalState>(
             'aws.amazonq.regionProfiles',
             Object,
-            {}
+            {
+                previousSelection: {},
+                resource: {
+                    locked: false,
+                    result: undefined,
+                    timestamp: 0,
+                },
+            }
         )
 
-        return previousPersistedState
+        return previousPersistedState.previousSelection
     }
 
     async persistSelectRegionProfile() {
@@ -311,13 +322,20 @@ export class RegionProfileManager {
         }
 
         // persist connectionId to profileArn
-        const previousPersistedState = globals.globalState.tryGet<{ [label: string]: RegionProfile }>(
+        const previousPersistedState = globals.globalState.tryGet<RegionProfileGlobalState>(
             'aws.amazonq.regionProfiles',
             Object,
-            {}
+            {
+                previousSelection: {},
+                resource: {
+                    locked: false,
+                    result: undefined,
+                    timestamp: 0,
+                },
+            }
         )
 
-        previousPersistedState[conn.id] = this.activeRegionProfile
+        previousPersistedState.previousSelection[conn.id] = this.activeRegionProfile
         await globals.globalState.update('aws.amazonq.regionProfiles', previousPersistedState)
     }
 
@@ -368,7 +386,23 @@ export class RegionProfileManager {
             const updatedProfiles = Object.fromEntries(
                 Object.entries(profiles).filter(([connId, profile]) => profile.arn !== arn)
             )
-            await globals.globalState.update('aws.amazonq.regionProfiles', updatedProfiles)
+            const previousPersistedState = globals.globalState.tryGet<RegionProfileGlobalState>(
+                'aws.amazonq.regionProfiles',
+                Object,
+                {
+                    previousSelection: {},
+                    resource: {
+                        locked: false,
+                        result: undefined,
+                        timestamp: 0,
+                    },
+                }
+            )
+            const toUpdate: RegionProfileGlobalState = {
+                previousSelection: updatedProfiles,
+                resource: previousPersistedState.resource,
+            }
+            await globals.globalState.update('aws.amazonq.regionProfiles', toUpdate)
         }
     }
 
