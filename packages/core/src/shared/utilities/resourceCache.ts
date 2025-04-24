@@ -97,6 +97,13 @@ export abstract class CachedResource<V> {
         return lock
     }
 
+    async releaseLock() {
+        await globals.globalState.update(this.key, {
+            ...this.readCacheOrDefault(),
+            locked: false,
+        })
+    }
+
     private async updateCache(cache: GlobalStateSchema<any> | undefined, resource: Resource<any>) {
         await globals.globalState.update(this.key, {
             ...(cache ? cache : this.readCacheOrDefault()),
