@@ -68,7 +68,7 @@ export abstract class CachedResource<V> {
         return latest
     }
 
-    async readResourceAndLock(): Promise<GlobalStateSchema<V> | undefined> {
+    private async readResourceAndLock(): Promise<GlobalStateSchema<V> | undefined> {
         const _acquireLock = async () => {
             const cachedValue = this.readCacheOrDefault()
 
@@ -95,13 +95,6 @@ export abstract class CachedResource<V> {
         )
 
         return lock
-    }
-
-    async releaseLock() {
-        await globals.globalState.update(this.key, {
-            ...this.readCacheOrDefault(),
-            locked: false,
-        })
     }
 
     private async updateCache(cache: GlobalStateSchema<any> | undefined, resource: Resource<any>) {
