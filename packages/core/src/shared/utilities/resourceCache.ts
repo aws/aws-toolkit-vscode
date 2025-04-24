@@ -39,7 +39,7 @@ export abstract class CachedResource<V> {
         const cachedValue = await this.readResourceAndLock()
         const resource = cachedValue?.resource
 
-        // if cache is still fresh, return
+        // If cache is still fresh, return cached result, otherwise pull latest from the service
         if (cachedValue && resource && resource.result) {
             if (now() - resource.timestamp < this.expirationInMilli) {
                 logger.info(`cache hit`)
@@ -58,7 +58,7 @@ export abstract class CachedResource<V> {
         logger.info(`cache miss, invoking service API to pull the latest response`)
         const latest = await this.resourceProvider()
 
-        // update resource cache and release the lock
+        // Update resource cache and release the lock
         const r: Resource<V> = {
             locked: false,
             timestamp: now(),
@@ -68,6 +68,7 @@ export abstract class CachedResource<V> {
         return latest
     }
 
+    // This method will lock the resource so other callers have to wait until the lock is released, otherwise will return undefined if it times out
     private async readResourceAndLock(): Promise<GlobalStateSchema<V> | undefined> {
         const _acquireLock = async () => {
             const cachedValue = this.readCacheOrDefault()
