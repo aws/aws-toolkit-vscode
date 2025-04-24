@@ -380,6 +380,10 @@ export async function activate(context: ExtContext): Promise<void> {
                     await auth.notifySessionConfiguration()
                 }
             }
+
+            if (auth.requireProfileSelection()) {
+                await auth.notifySelectProfile()
+            }
         },
         { emit: false, functionId: { name: 'activateCwCore' } }
     )
