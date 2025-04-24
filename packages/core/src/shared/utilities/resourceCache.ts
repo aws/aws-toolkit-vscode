@@ -8,13 +8,16 @@ import { globalKey } from '../globalState'
 import { getLogger } from '../logger/logger'
 import { waitUntil } from '../utilities/timeoutUtils'
 
-interface WithLock {
+interface Resource<V> {
+    result: V | undefined
     locked: boolean
     timestamp: number
 }
 
-interface Resource<V> extends WithLock {
-    result: V | undefined
+// GlobalStates schema, which is used for vscode global states deserialization
+// [globals.globalState.tryGet<T>]
+interface GlobalStateSchema<V> {
+    resource: Resource<V>
 }
 
 const logger = getLogger()
@@ -25,21 +28,23 @@ function now() {
 
 export abstract class CachedResource<V> {
     constructor(
-        readonly key: globalKey,
-        readonly expirationInMilli: number,
-        private readonly defaultValue: Resource<V>
+        private readonly key: globalKey,
+        private readonly expirationInMilli: number,
+        private readonly defaultValue: GlobalStateSchema<V>
     ) {}
 
     abstract resourceProvider(): Promise<V>
 
     async getResource(): Promise<V> {
-        const resource = await this.readResourceAndLock()
+        const cachedValue = await this.readResourceAndLock()
+        const resource = cachedValue?.resource
+
         // if cache is still fresh, return
-        if (resource && resource.result) {
+        if (cachedValue && resource && resource.result) {
             if (now() - resource.timestamp < this.expirationInMilli) {
                 logger.info(`cache hit`)
                 // release the lock
-                await globals.globalState.update(this.key, {
+                await this.updateCache(cachedValue, {
                     ...resource,
                     locked: false,
                 })
@@ -54,25 +59,24 @@ export abstract class CachedResource<V> {
         const latest = await this.resourceProvider()
 
         // update resource cache and release the lock
-        const toUpdate: Resource<V> = {
+        const r: Resource<V> = {
             locked: false,
             timestamp: now(),
             result: latest,
         }
-        await globals.globalState.update(this.key, toUpdate)
+        await this.updateCache(cachedValue, r)
         return latest
     }
 
-    async readResourceAndLock(): Promise<Resource<V> | undefined> {
+    async readResourceAndLock(): Promise<GlobalStateSchema<V> | undefined> {
         const _acquireLock = async () => {
             const cachedValue = this.readCacheOrDefault()
 
-            if (!cachedValue.locked) {
-                await globals.globalState.update(this.key, {
-                    ...cachedValue,
+            if (!cachedValue.resource.locked) {
+                await this.updateCache(cachedValue, {
+                    ...cachedValue.resource,
                     locked: true,
                 })
-
                 return cachedValue
             }
 
@@ -82,7 +86,7 @@ export abstract class CachedResource<V> {
         const lock = await waitUntil(
             async () => {
                 const lock = await _acquireLock()
-                logger.info(`try obtaining cache lock %s`, lock)
+                logger.info(`try obtain resource cache read lock %s`, lock)
                 if (lock) {
                     return lock
                 }
@@ -100,12 +104,24 @@ export abstract class CachedResource<V> {
         })
     }
 
-    private readCacheOrDefault(): Resource<V> {
-        const cachedValue = globals.globalState.tryGet<Resource<V>>(this.key, Object, {
+    private async updateCache(cache: GlobalStateSchema<any> | undefined, resource: Resource<any>) {
+        // TODO: undefined?
+
+        await globals.globalState.update(this.key, {
+            ...cache,
+            resource: resource,
+        })
+    }
+
+    private readCacheOrDefault(): GlobalStateSchema<V> {
+        const cachedValue = globals.globalState.tryGet<GlobalStateSchema<V>>(this.key, Object, {
             ...this.defaultValue,
-            locked: false,
-            result: undefined,
-            timestamp: 0,
+            resource: {
+                ...this.defaultValue.resource,
+                locked: false,
+                result: undefined,
+                timestamp: 0,
+            },
         })
 
         return cachedValue
