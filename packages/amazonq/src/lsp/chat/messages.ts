@@ -255,22 +255,16 @@ export function registerMessageListeners(
                         chatDisposable
                     )
                 } catch (e) {
-                    languageClient.info(`Error occurred during chat request: ${e}`)
-                    // Use the last partial result if available, append error message
-                    let body = ''
-                    if (!cancellationToken.token.isCancellationRequested) {
-                        body = lastPartialResult?.body
-                            ? `${lastPartialResult.body}\n\n ❌ Error: Request failed to complete`
-                            : '❌ An error occurred while processing your request'
+                    const errorMsg = `Error occurred during chat request: ${e}`
+                    languageClient.info(errorMsg)
+                    languageClient.info(
+                        `Last result from langauge server: ${JSON.stringify(lastPartialResult, undefined, 2)}`
+                    )
+                    if (!isValidResponseError(e)) {
+                        throw e
                     }
-
-                    const errorResult: ChatResult = {
-                        ...lastPartialResult,
-                        body,
-                    }
-
                     await handleCompleteResult<ChatResult>(
-                        errorResult,
+                        e.data,
                         encryptionKey,
                         provider,
                         chatParams.tabId,
@@ -558,4 +552,23 @@ async function resolveChatResponse(
         command: requestMethod,
         params: result,
     })
+}
+
+/**
+ * Perform a sanity check that the error we got from the LSP can be safely cast to the expected type.
+ * @param error
+ * @returns
+ */
+function isValidResponseError(error: unknown): error is ResponseError<ChatResult> & { data: ChatResult } {
+    return (
+        error instanceof ResponseError ||
+        (typeof error === 'object' &&
+            error !== null &&
+            'code' in error &&
+            typeof error.code === 'number' &&
+            'message' in error &&
+            typeof error.message === 'string' &&
+            'data' in error &&
+            error.data !== undefined)
+    )
 }
