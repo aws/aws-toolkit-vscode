@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Fix users can not log in successfully with 2+ IDE instnaces open due to throttle error throw by the service"
+}
