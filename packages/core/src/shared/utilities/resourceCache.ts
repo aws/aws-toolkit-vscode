@@ -54,18 +54,22 @@ export abstract class CachedResource<V> {
             }
         }
 
-        // catch and error case?
         logger.info(`cache miss, invoking service API to pull the latest response`)
-        const latest = await this.resourceProvider()
+        try {
+            const latest = await this.resourceProvider()
 
-        // Update resource cache and release the lock
-        const r: Resource<V> = {
-            locked: false,
-            timestamp: now(),
-            result: latest,
+            // Update resource cache and release the lock
+            const r: Resource<V> = {
+                locked: false,
+                timestamp: now(),
+                result: latest,
+            }
+            await this.updateCache(cachedValue, r)
+            return latest
+        } catch (e) {
+            await this.releaseLock()
+            throw e
         }
-        await this.updateCache(cachedValue, r)
-        return latest
     }
 
     // This method will lock the resource so other callers have to wait until the lock is released, otherwise will return undefined if it times out
