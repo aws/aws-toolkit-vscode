@@ -411,6 +411,7 @@ export class AuthUtil {
         })
     }
 
+    /** Notify the user they need to select a Developer Profile */
     public async notifySelectProfile() {
         const suppressId = 'amazonQSelectDeveloperProfile'
         const settings = AmazonQPromptSettings.instance
@@ -428,15 +429,17 @@ export class AuthUtil {
 
         await telemetry.toolkit_showNotification.run(async () => {
             telemetry.record({ id: 'mustSelectDeveloperProfileMessage' })
-            void vscode.window.showInformationMessage(message, selectProfile, dontShowAgain).then(async (resp) => {
+            void vscode.window.showWarningMessage(message, selectProfile, dontShowAgain).then(async (resp) => {
                 await telemetry.toolkit_invokeAction.run(async () => {
                     if (resp === selectProfile) {
                         // Show Profile
                         telemetry.record({ action: 'select' })
                         void selectRegionProfileCommand.execute(placeholder, toastMessage)
-                    } else {
-                        telemetry.record({ action: 'dismiss' })
+                    } else if (resp === dontShowAgain) {
+                        telemetry.record({ action: 'dontShowAgain' })
                         await settings.disablePrompt(suppressId)
+                    } else {
+                        telemetry.record({ action: 'ignore' })
                     }
                 })
             })
