@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+/* eslint-disable aws-toolkits/no-console-log */
+
 import * as vscode from 'vscode'
 import { CodewhispererCodeScanIssueApplyFix, Component, telemetry } from '../../shared/telemetry/telemetry'
 import { ExtContext, VSCODE_EXTENSION_ID } from '../../shared/extensions'
@@ -365,9 +367,11 @@ export const updateReferenceLog = Commands.declare(
 export const openSecurityIssuePanel = Commands.declare(
     'aws.amazonq.openSecurityIssuePanel',
     (context: ExtContext) => async (issue: CodeScanIssue | IssueItem, filePath: string) => {
+        console.log('in open security')
         const targetIssue: CodeScanIssue = issue instanceof IssueItem ? issue.issue : issue
         const targetFilePath: string = issue instanceof IssueItem ? issue.filePath : filePath
         await showSecurityIssueWebview(context.extensionContext, targetIssue, targetFilePath)
+        console.log('in show securityIssueWebview')
 
         telemetry.codewhisperer_codeScanIssueViewDetails.emit({
             findingId: targetIssue.findingId,
@@ -388,6 +392,7 @@ export const openSecurityIssuePanel = Commands.declare(
             !!targetIssue.suggestedFixes.length
         )
         if (targetIssue.suggestedFixes.length === 0) {
+            console.log('going to generate fix as suggested fix length is 0')
             await generateFix.execute(targetIssue, targetFilePath, 'webview', true, false)
         }
     }
@@ -686,13 +691,18 @@ export const generateFix = Commands.declare(
             refresh: boolean = false,
             shouldOpenSecurityIssuePanel: boolean = true
         ) => {
+            console.log('in generate fix')
             const targetIssue: CodeScanIssue | undefined = issue instanceof IssueItem ? issue.issue : issue
             const targetFilePath: string = issue instanceof IssueItem ? issue.filePath : filePath
             const targetSource: Component = issue instanceof IssueItem ? 'tree' : source
+            console.log('target issue', targetIssue)
+            console.log('target file path', targetFilePath)
+            console.log('target source', targetSource)
             if (!targetIssue) {
                 return
             }
             if (targetIssue.ruleId === CodeWhispererConstants.sasRuleId) {
+                console.log('GenerateFix is not available for SAS findings.')
                 getLogger().warn('GenerateFix is not available for SAS findings.')
                 return
             }
@@ -732,6 +742,9 @@ export const generateFix = Commands.declare(
                         getLogger().debug(
                             `Received fix with reference and user settings disallow references. Job ID: ${jobId}`
                         )
+                        console.log(
+                            `Received fix with reference and user settings disallow references. Job ID: ${jobId}`
+                        )
                         // TODO: re-enable notifications once references published
                         // void vscode.window.showInformationMessage(
                         //     'Your settings do not allow code generation with references.'
@@ -755,6 +768,7 @@ export const generateFix = Commands.declare(
                                   ]
                                 : [],
                     }
+                    console.log('finish updating issue', updatedIssue)
                     await updateSecurityIssueWebview({
                         issue: updatedIssue,
                         isGenerateFixLoading: false,
@@ -765,6 +779,7 @@ export const generateFix = Commands.declare(
 
                     SecurityIssueProvider.instance.updateIssue(updatedIssue, targetFilePath)
                     SecurityIssueTreeViewProvider.instance.refresh()
+                    console.log('finish updating webview')
                 } catch (err) {
                     const error = err instanceof Error ? err : new TypeError('Unexpected error')
                     await updateSecurityIssueWebview({
