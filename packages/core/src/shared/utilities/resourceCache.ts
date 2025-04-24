@@ -105,10 +105,8 @@ export abstract class CachedResource<V> {
     }
 
     private async updateCache(cache: GlobalStateSchema<any> | undefined, resource: Resource<any>) {
-        // TODO: undefined?
-
         await globals.globalState.update(this.key, {
-            ...cache,
+            ...(cache ? cache : this.readCacheOrDefault()),
             resource: resource,
         })
     }
