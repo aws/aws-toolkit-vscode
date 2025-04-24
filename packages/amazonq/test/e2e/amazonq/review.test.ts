@@ -300,9 +300,9 @@ describe('Amazon Q Code Review', function () {
                         const foundIssue = SecurityIssueProvider.instance.issues
                             .flatMap(({ issues }) => issues)
                             .find((i) => i.findingId === issue.findingId)
-                        console.log(SecurityIssueProvider.instance.issues)
-                        console.log('original issue', issue, issue.findingId, issue.suggestedFixes)
-                        console.log('issue', foundIssue, foundIssue?.findingId, foundIssue?.suggestedFixes)
+                        // console.log(SecurityIssueProvider.instance.issues)
+                        // console.log('original issue', issue, issue.findingId, issue.suggestedFixes)
+                        // console.log('issue', foundIssue, foundIssue?.findingId, foundIssue?.suggestedFixes)
 
                         return foundIssue?.suggestedFixes?.length !== undefined &&
                             foundIssue?.suggestedFixes?.length > 0
