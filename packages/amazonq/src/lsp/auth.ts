@@ -68,12 +68,15 @@ export const notificationTypes = {
 export class AmazonQLspAuth {
     constructor(private readonly client: LanguageClient) {}
 
-    async refreshConnection() {
+    /**
+     * @param force bypass memoization, and forcefully update the bearer token
+     */
+    async refreshConnection(force: boolean = false) {
         const activeConnection = AuthUtil.instance.auth.activeConnection
         if (activeConnection?.type === 'sso') {
             // send the token to the language server
             const token = await AuthUtil.instance.getBearerToken()
-            await this.updateBearerToken(token)
+            await (force ? this._updateBearerToken(token) : this.updateBearerToken(token))
         }
     }
 

@@ -6,7 +6,7 @@
 import vscode, { env, version } from 'vscode'
 import * as nls from 'vscode-nls'
 import * as crypto from 'crypto'
-import { LanguageClient, LanguageClientOptions, RequestType } from 'vscode-languageclient'
+import { LanguageClient, LanguageClientOptions, RequestType, State } from 'vscode-languageclient'
 import { InlineCompletionManager } from '../app/inline/completion'
 import { AmazonQLspAuth, encryptionKey, notificationTypes } from './auth'
 import {
@@ -268,7 +268,25 @@ export async function startLanguageServer(
                     },
                 } as DidChangeWorkspaceFoldersParams)
             }),
-            { dispose: () => clearInterval(refreshInterval) }
+            { dispose: () => clearInterval(refreshInterval) },
+            // Set this inside onReady so that it only triggers on subsequent language server starts (not the first)
+            onServerRestartHandler(client, auth)
         )
+    })
+}
+
+/**
+ * When the server restarts (likely due to a crash, then the LanguageClient automatically starts it again)
+ * we need to run some server intialization again.
+ */
+function onServerRestartHandler(client: LanguageClient, auth: AmazonQLspAuth) {
+    return client.onDidChangeState(async (e) => {
+        // Ensure we are in a "restart" state
+        if (!(e.oldState === State.Starting && e.newState === State.Running)) {
+            return
+        }
+
+        // Need to set the auth token in the again
+        await auth.refreshConnection(true)
     })
 }
