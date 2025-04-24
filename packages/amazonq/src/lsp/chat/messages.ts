@@ -516,7 +516,7 @@ async function handlePartialResult<T extends ChatResult>(
             ? await decodeRequest<T>(partialResult, encryptionKey)
             : (partialResult as T)
 
-    if (decryptedMessage.body) {
+    if (decryptedMessage.body !== undefined) {
         void provider.webview?.postMessage({
             command: chatRequestType.method,
             params: decryptedMessage,
