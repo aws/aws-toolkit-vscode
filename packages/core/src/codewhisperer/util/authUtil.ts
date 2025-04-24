@@ -142,6 +142,7 @@ export class AuthUtil {
 
             if (!this.isConnected()) {
                 await this.regionProfileManager.invalidateProfile(this.regionProfileManager.activeRegionProfile?.arn)
+                await this.regionProfileManager.resetCache()
             }
         })
 
