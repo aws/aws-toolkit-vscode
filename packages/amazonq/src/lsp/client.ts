@@ -20,7 +20,7 @@ import {
     updateConfigurationRequestType,
     WorkspaceFolder,
 } from '@aws/language-server-runtimes/protocol'
-import { AuthUtil, getSelectedCustomization } from 'aws-core-vscode/codewhisperer'
+import { AuthUtil, CodeWhispererSettings, getSelectedCustomization } from 'aws-core-vscode/codewhisperer'
 import {
     Settings,
     oidcClientName,
@@ -92,7 +92,9 @@ export async function startLanguageServer(
                                 customization,
                                 optOutTelemetry: getOptOutPreference() === 'OPTOUT',
                                 projectContext: {
-                                    enableLocalIndexing: true,
+                                    enableLocalIndexing: CodeWhispererSettings.instance.isLocalIndexEnabled(),
+                                    enableGpuAcceleration: CodeWhispererSettings.instance.isLocalIndexGPUEnabled(),
+                                    indexWorkerThreads: CodeWhispererSettings.instance.getIndexWorkerThreads(),
                                 },
                             },
                         ]
@@ -100,12 +102,9 @@ export async function startLanguageServer(
                     if (params.items[0].section === 'aws.codeWhisperer') {
                         return [
                             {
-                                includeSuggestionsWithCodeReferences: vscode.workspace
-                                    .getConfiguration()
-                                    .get('amazonQ.showCodeWithReferences'),
-                                shareCodeWhispererContentWithAWS: vscode.workspace
-                                    .getConfiguration()
-                                    .get('amazonQ.shareContentWithAWS'),
+                                includeSuggestionsWithCodeReferences:
+                                    CodeWhispererSettings.instance.isSuggestionsWithCodeReferencesEnabled(),
+                                shareCodeWhispererContentWithAWS: !CodeWhispererSettings.instance.isOptoutEnabled(),
                             },
                         ]
                     }
