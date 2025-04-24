@@ -79,6 +79,7 @@ export async function startLanguageServer(
                  * Convert VSCode settings format to be compatible with flare's configs
                  */
                 configuration: async (params, token, next) => {
+                    const vscodeConfig = vscode.workspace.getConfiguration()
                     const config = await next(params, token)
                     if (params.items[0].section === 'aws.q') {
                         const customization = undefinedIfEmpty(getSelectedCustomization().arn)
@@ -92,7 +93,9 @@ export async function startLanguageServer(
                                 customization,
                                 optOutTelemetry: getOptOutPreference() === 'OPTOUT',
                                 projectContext: {
-                                    enableLocalIndexing: true,
+                                    enableLocalIndexing: vscodeConfig.get('amazonQ.workspaceIndex'),
+                                    enableGpuAcceleration: vscodeConfig.get('amazonQ.workspaceIndexUseGPU'),
+                                    indexWorkerThreads: vscodeConfig.get('amazonQ.workspaceIndexWorkerThreads'),
                                 },
                             },
                         ]
@@ -100,12 +103,10 @@ export async function startLanguageServer(
                     if (params.items[0].section === 'aws.codeWhisperer') {
                         return [
                             {
-                                includeSuggestionsWithCodeReferences: vscode.workspace
-                                    .getConfiguration()
-                                    .get('amazonQ.showCodeWithReferences'),
-                                shareCodeWhispererContentWithAWS: vscode.workspace
-                                    .getConfiguration()
-                                    .get('amazonQ.shareContentWithAWS'),
+                                includeSuggestionsWithCodeReferences: vscodeConfig.get(
+                                    'amazonQ.showCodeWithReferences'
+                                ),
+                                shareCodeWhispererContentWithAWS: vscodeConfig.get('amazonQ.shareContentWithAWS'),
                             },
                         ]
                     }
