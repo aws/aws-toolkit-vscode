@@ -100,7 +100,6 @@ import { activateNextEditPrediction } from './nextEditPrediction/activation'
 let localize: nls.LocalizeFunc
 
 export async function activate(context: ExtContext): Promise<void> {
-    // Activate the Next Edit Prediction system
     activateNextEditPrediction(context)
     localize = nls.loadMessageBundle()
 

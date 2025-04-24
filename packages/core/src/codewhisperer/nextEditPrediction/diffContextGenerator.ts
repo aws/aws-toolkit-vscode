@@ -6,20 +6,12 @@
 import * as diff from 'diff'
 import { getLogger } from '../../shared/logger/logger'
 import * as codewhispererClient from '../client/codewhisperer'
+import { supplementalContextMaxTotalLength, charactersLimit } from '../models/constants'
 
 /**
  * Generates a unified diff format between old and new file contents
- *
- * @param oldFilePath - Path of the old file
- * @param newFilePath - Path of the new file
- * @param oldContent - Content of the old file
- * @param newContent - Content of the new file
- * @param oldTimestamp - Timestamp of the old file version
- * @param newTimestamp - Timestamp of the new file version
- * @param contextSize - Number of context lines to include (default: 3)
- * @returns Unified diff as a string
  */
-async function generateUnifiedDiffWithTimestamps(
+function generateUnifiedDiffWithTimestamps(
     oldFilePath: string,
     newFilePath: string,
     oldContent: string,
@@ -27,7 +19,7 @@ async function generateUnifiedDiffWithTimestamps(
     oldTimestamp: number,
     newTimestamp: number,
     contextSize: number = 3
-): Promise<string> {
+): string {
     const patchResult = diff.createTwoFilesPatch(
         oldFilePath,
         newFilePath,
@@ -66,12 +58,12 @@ export interface SnapshotContent {
  *  U1: udiff of T_0 and T_2
  *  U2: udiff of T_0 and T_3
  */
-export async function generateDiffContexts(
+export function generateDiffContexts(
     filePath: string,
     currentContent: string,
     snapshotContents: SnapshotContent[],
     maxContexts: number
-): Promise<codewhispererClient.SupplementalContext[]> {
+): codewhispererClient.SupplementalContext[] {
     if (snapshotContents.length === 0) {
         return []
     }
@@ -82,7 +74,7 @@ export async function generateDiffContexts(
     for (let i = snapshotContents.length - 1; i >= 0; i--) {
         const snapshot = snapshotContents[i]
         try {
-            const unifiedDiff = await generateUnifiedDiffWithTimestamps(
+            const unifiedDiff = generateUnifiedDiffWithTimestamps(
                 snapshot.filePath,
                 filePath,
                 snapshot.content,
@@ -106,10 +98,51 @@ export async function generateDiffContexts(
         }
     }
 
-    // Limit the number of supplemental contexts based on config
-    if (supplementalContexts.length > maxContexts) {
-        return supplementalContexts.slice(0, maxContexts)
+    return trimSupplementalContexts(supplementalContexts, maxContexts)
+}
+
+/**
+ * Trims the supplementalContexts array to ensure it doesn't exceed the max number
+ * of contexts or total character length limit
+ *
+ * @param supplementalContexts - Array of SupplementalContext objects (already sorted with newest first)
+ * @param maxContexts - Maximum number of supplemental contexts allowed
+ * @returns Trimmed array of SupplementalContext objects
+ */
+function trimSupplementalContexts(
+    supplementalContexts: codewhispererClient.SupplementalContext[],
+    maxContexts: number
+): codewhispererClient.SupplementalContext[] {
+    if (supplementalContexts.length === 0) {
+        return supplementalContexts
     }
 
-    return supplementalContexts
+    // First filter out any individual context that exceeds the character limit
+    let result = supplementalContexts.filter((context) => {
+        return context.content.length <= charactersLimit
+    })
+
+    // Then limit by max number of contexts
+    if (result.length > maxContexts) {
+        result = result.slice(0, maxContexts)
+    }
+
+    // Lastly enforce total character limit
+    let totalLength = 0
+    let i = 0
+
+    while (i < result.length) {
+        totalLength += result[i].content.length
+        if (totalLength > supplementalContextMaxTotalLength) {
+            break
+        }
+        i++
+    }
+
+    if (i === result.length) {
+        return result
+    }
+
+    const trimmedContexts = result.slice(0, i)
+    return trimmedContexts
 }

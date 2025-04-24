@@ -74,7 +74,7 @@ describe('PredictionTracker', function () {
 
         it('should save snapshot to storage', async function () {
             const timestamp = Date.now()
-            const storageKey = `${filePath}-${timestamp}`
+            const storageKey = `${filePath.replace(/\//g, '__')}-${timestamp}`
             await (tracker as any).takeSnapshot(filePath, previousContent)
 
             // Check if the snapshot was saved to storage
