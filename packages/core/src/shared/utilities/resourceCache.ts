@@ -28,7 +28,7 @@ export interface GlobalStateSchema<V> {
     resource: Resource<V>
 }
 
-const logger = getLogger()
+const logger = getLogger('resourceCache')
 
 function now() {
     return globals.clock.Date.now()
@@ -63,12 +63,16 @@ export abstract class CachedResource<V> {
         if (cachedValue && resource && resource.result) {
             const duration = now() - resource.timestamp
             if (duration < this.expirationInMilli) {
-                logger.info(`cache hit, duration(%sms) is less than expiration(%sms)`, duration, this.expirationInMilli)
+                logger.debug(
+                    `cache hit, duration(%sms) is less than expiration(%sms)`,
+                    duration,
+                    this.expirationInMilli
+                )
                 // release the lock
                 await this.releaseLock(resource, cachedValue)
                 return resource.result
             } else {
-                logger.info(
+                logger.debug(
                     `cached value is stale, duration(%sms) is older than expiration(%sms), invoking service API to pull the latest response`,
                     duration,
                     this.expirationInMilli
@@ -82,7 +86,7 @@ export abstract class CachedResource<V> {
          *  2. cache exists but expired.
          *  3. lock is held by other process and the waiting time is greater than the specified waiting time
          */
-        logger.info(`cache miss, invoking service API to pull the latest response`)
+        logger.debug(`cache miss, invoking service API to pull the latest response`)
         try {
             // Make the real network call / FS read to pull the resource
             const latest = await this.resourceProvider()
@@ -93,11 +97,11 @@ export abstract class CachedResource<V> {
                 timestamp: now(),
                 result: latest,
             }
-            logger.info(`doen loading the latest of resource(%s), updating resource cache`, this.key)
+            logger.debug(`doen loading the latest of resource(%s), updating resource cache`, this.key)
             await this.releaseLock(r)
             return latest
         } catch (e) {
-            logger.info(
+            logger.debug(
                 `encountered unexpected error while loading the latest of resource(%s), releasing resource lock`,
                 this.key
             )
@@ -121,7 +125,7 @@ export abstract class CachedResource<V> {
 
         const lock = await waitUntil(async () => {
             const lock = await _acquireLock()
-            logger.info(`try obtain resource cache read lock %s`, lock)
+            logger.debug(`try obtain resource cache read write lock for resource %s`, this.key)
             if (lock) {
                 return lock
             }
