@@ -46,8 +46,7 @@ import { withTelemetryContext } from '../../shared/telemetry/util'
 import { focusAmazonQPanel } from '../../codewhispererChat/commands/registerCommands'
 import { throttle } from 'lodash'
 import { RegionProfileManager } from '../region/regionProfileManager'
-import { selectRegionProfileCommand } from '../commands/basicCommands'
-import { toastMessage } from '../commands/types'
+
 /** Backwards compatibility for connections w pre-chat scopes */
 export const codeWhispererCoreScopes = [...scopesCodeWhispererCore]
 export const codeWhispererChatScopes = [...codeWhispererCoreScopes, ...scopesCodeWhispererChat]
@@ -406,41 +405,6 @@ export class AuthUtil {
                         telemetry.record({ action: 'dismissSessionExtensionNotification' })
                     }
                     await settings.disablePrompt(suppressId)
-                })
-            })
-        })
-    }
-
-    /** Notify the user they need to select a Developer Profile */
-    public async notifySelectProfile() {
-        const suppressId = 'amazonQSelectDeveloperProfile'
-        const settings = AmazonQPromptSettings.instance
-        const shouldShow = settings.isPromptEnabled(suppressId)
-        if (!shouldShow) {
-            return
-        }
-
-        const message = localize(
-            'aws.amazonq.profile.mustSelectMessage',
-            'You must select a Q Developer Profile for Amazon Q features to work.'
-        )
-        const selectProfile = 'Select Profile'
-        const dontShowAgain = 'Dont Show Again'
-
-        await telemetry.toolkit_showNotification.run(async () => {
-            telemetry.record({ id: 'mustSelectDeveloperProfileMessage' })
-            void vscode.window.showWarningMessage(message, selectProfile, dontShowAgain).then(async (resp) => {
-                await telemetry.toolkit_invokeAction.run(async () => {
-                    if (resp === selectProfile) {
-                        // Show Profile
-                        telemetry.record({ action: 'select' })
-                        void selectRegionProfileCommand.execute(placeholder, toastMessage)
-                    } else if (resp === dontShowAgain) {
-                        telemetry.record({ action: 'dontShowAgain' })
-                        await settings.disablePrompt(suppressId)
-                    } else {
-                        telemetry.record({ action: 'ignore' })
-                    }
                 })
             })
         })

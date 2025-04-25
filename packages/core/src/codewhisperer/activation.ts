@@ -95,6 +95,7 @@ import { SecurityIssueTreeViewProvider } from './service/securityIssueTreeViewPr
 import { setContext } from '../shared/vscode/setContext'
 import { syncSecurityIssueWebview } from './views/securityIssue/securityIssueWebview'
 import { detectCommentAboveLine } from '../shared/utilities/commentUtils'
+import { notifySelectDeveloperProfile } from './region/utils'
 
 let localize: nls.LocalizeFunc
 
@@ -382,7 +383,7 @@ export async function activate(context: ExtContext): Promise<void> {
             }
 
             if (auth.requireProfileSelection()) {
-                await auth.notifySelectProfile()
+                await notifySelectDeveloperProfile()
             }
         },
         { emit: false, functionId: { name: 'activateCwCore' } }
