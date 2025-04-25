@@ -51,7 +51,11 @@ export abstract class BaseLspInstaller<T extends ResourcePaths = ResourcePaths, 
 
         await this.postInstall(assetDirectory)
 
-        const deletedVersions = await cleanLspDownloads(manifest.versions, nodePath.dirname(assetDirectory))
+        const deletedVersions = await cleanLspDownloads(
+            installationResult.version,
+            manifest.versions,
+            nodePath.dirname(assetDirectory)
+        )
         if (deletedVersions.length > 0) {
             this.logger.debug(`cleaning old LSP versions: deleted ${deletedVersions.length} versions`)
         }

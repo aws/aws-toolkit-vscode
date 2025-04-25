@@ -7,6 +7,10 @@ import { Commands, globals } from 'aws-core-vscode/shared'
 import { window } from 'vscode'
 import { AmazonQChatViewProvider } from './webviewProvider'
 
+/**
+ * TODO: Re-enable these once we can figure out which path they're going to live in
+ * In hybrid chat mode they were being registered twice causing a registration error
+ */
 export function registerCommands(provider: AmazonQChatViewProvider) {
     globals.context.subscriptions.push(
         registerGenericCommand('aws.amazonq.explainCode', 'Explain', provider),

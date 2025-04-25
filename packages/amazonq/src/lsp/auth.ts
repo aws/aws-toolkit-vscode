@@ -4,10 +4,12 @@
  */
 
 import {
+    bearerCredentialsUpdateRequestType,
     ConnectionMetadata,
     NotificationType,
     RequestType,
     ResponseMessage,
+    UpdateCredentialsParams,
 } from '@aws/language-server-runtimes/protocol'
 import * as jose from 'jose'
 import * as crypto from 'crypto'
@@ -66,12 +68,15 @@ export const notificationTypes = {
 export class AmazonQLspAuth {
     constructor(private readonly client: LanguageClient) {}
 
-    async refreshConnection() {
+    /**
+     * @param force bypass memoization, and forcefully update the bearer token
+     */
+    async refreshConnection(force: boolean = false) {
         const activeConnection = AuthUtil.instance.auth.activeConnection
         if (activeConnection?.type === 'sso') {
             // send the token to the language server
             const token = await AuthUtil.instance.getBearerToken()
-            await this.updateBearerToken(token)
+            await (force ? this._updateBearerToken(token) : this.updateBearerToken(token))
         }
     }
 
@@ -81,12 +86,12 @@ export class AmazonQLspAuth {
             token,
         })
 
-        await this.client.sendRequest(notificationTypes.updateBearerToken.method, request)
+        await this.client.sendRequest(bearerCredentialsUpdateRequestType.method, request)
 
         this.client.info(`UpdateBearerToken: ${JSON.stringify(request)}`)
     }
 
-    public startTokenRefreshInterval(pollingTime: number = oneMinute) {
+    public startTokenRefreshInterval(pollingTime: number = oneMinute / 2) {
         const interval = setInterval(async () => {
             await this.refreshConnection().catch((e) => {
                 getLogger('amazonqLsp').error('Unable to update bearer token: %s', (e as Error).message)
@@ -96,7 +101,7 @@ export class AmazonQLspAuth {
         return interval
     }
 
-    private async createUpdateCredentialsRequest(data: any) {
+    private async createUpdateCredentialsRequest(data: any): Promise<UpdateCredentialsParams> {
         const payload = new TextEncoder().encode(JSON.stringify({ data }))
 
         const jwt = await new jose.CompactEncrypt(payload)
@@ -105,6 +110,11 @@ export class AmazonQLspAuth {
 
         return {
             data: jwt,
+            metadata: {
+                sso: {
+                    startUrl: AuthUtil.instance.auth.startUrl,
+                },
+            },
             encrypted: true,
         }
     }
