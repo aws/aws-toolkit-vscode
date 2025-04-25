@@ -79,6 +79,12 @@ export abstract class CachedResource<V> {
             }
         }
 
+        /**
+         * Possible paths here
+         *  1. cache doesn't exist.
+         *  2. cache exists but expired.
+         *  3. lock is held by other process and the waiting time is greater than the specified waiting time
+         */
         logger.info(`cache miss, invoking service API to pull the latest response`)
         try {
             // Make the real network call / FS read to pull the resource
