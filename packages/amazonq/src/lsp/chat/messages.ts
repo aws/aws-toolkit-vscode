@@ -61,6 +61,7 @@ import { AuthUtil } from 'aws-core-vscode/codewhisperer'
 import { amazonQDiffScheme, AmazonQPromptSettings, messages, openUrl } from 'aws-core-vscode/shared'
 import { DefaultAmazonQAppInitContext, messageDispatcher, EditorContentController } from 'aws-core-vscode/amazonq'
 import { telemetry, TelemetryBase } from 'aws-core-vscode/telemetry'
+import { isValidResponseError } from './error'
 
 export function registerLanguageServerEventListener(languageClient: LanguageClient, provider: AmazonQChatViewProvider) {
     languageClient.info(
@@ -255,22 +256,16 @@ export function registerMessageListeners(
                         chatDisposable
                     )
                 } catch (e) {
-                    languageClient.info(`Error occurred during chat request: ${e}`)
-                    // Use the last partial result if available, append error message
-                    let body = ''
-                    if (!cancellationToken.token.isCancellationRequested) {
-                        body = lastPartialResult?.body
-                            ? `${lastPartialResult.body}\n\n ❌ Error: Request failed to complete`
-                            : '❌ An error occurred while processing your request'
+                    const errorMsg = `Error occurred during chat request: ${e}`
+                    languageClient.info(errorMsg)
+                    languageClient.info(
+                        `Last result from langauge server: ${JSON.stringify(lastPartialResult, undefined, 2)}`
+                    )
+                    if (!isValidResponseError(e)) {
+                        throw e
                     }
-
-                    const errorResult: ChatResult = {
-                        ...lastPartialResult,
-                        body,
-                    }
-
                     await handleCompleteResult<ChatResult>(
-                        errorResult,
+                        e.data,
                         encryptionKey,
                         provider,
                         chatParams.tabId,
