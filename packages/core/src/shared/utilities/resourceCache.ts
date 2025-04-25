@@ -38,6 +38,7 @@ function now() {
  * CacheResource utilizes VSCode global states API to cache resources which are expensive to get so that the result can be shared across multiple VSCode instances.
  *  The first VSCode instance invoking #getResource will hold a lock and make the actual network call/FS read to pull the real response.
  *  When the pull is done, the lock will be released and it then caches the result in the global states. Then the rest of instances can now acquire the lock 1 by 1 and read the resource from the cache.
+ *
  * constructor:
  *  @param key: global state key, which is used for globals.globalState#update, #tryGet etc.
  *  @param expirationInMilli: cache expiration time in milli seconds
