@@ -65,7 +65,7 @@ export abstract class CachedResource<V> {
             if (duration < this.expirationInMilli) {
                 logger.info(`cache hit, duration(%sms) is less than expiration(%sms)`, duration, this.expirationInMilli)
                 // release the lock
-                await this.updateCache(cachedValue, {
+                await this.updateResourceCache(cachedValue, {
                     ...resource,
                     locked: false,
                 })
@@ -97,7 +97,7 @@ export abstract class CachedResource<V> {
                 result: latest,
             }
             logger.info(`doen loading the latest of resource(%s), updating resource cache`, this.key)
-            await this.updateCache(cachedValue, r)
+            await this.updateResourceCache(cachedValue, r)
             return latest
         } catch (e) {
             logger.info(
@@ -115,7 +115,7 @@ export abstract class CachedResource<V> {
             const cachedValue = this.readCacheOrDefault()
 
             if (!cachedValue.resource.locked) {
-                await this.updateCache(cachedValue, {
+                await this.updateResourceCache(cachedValue, {
                     ...cachedValue.resource,
                     locked: true,
                 })
@@ -144,11 +144,13 @@ export abstract class CachedResource<V> {
         })
     }
 
-    private async updateCache(cache: GlobalStateSchema<any> | undefined, resource: Resource<any>) {
-        await globals.globalState.update(this.key, {
+    private async updateResourceCache(cache: GlobalStateSchema<any> | undefined, resource: Resource<any>) {
+        const toUpdate: GlobalStateSchema<V> = {
             ...(cache ? cache : this.readCacheOrDefault()),
             resource: resource,
-        })
+        }
+
+        await globals.globalState.update(this.key, toUpdate)
     }
 
     private readCacheOrDefault(): GlobalStateSchema<V> {
