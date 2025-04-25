@@ -10,9 +10,9 @@ import { waitUntil } from '../utilities/timeoutUtils'
 
 /**
  * args:
- *  [result]: the actual resource type callers want to use
- *  [locked]: readWriteLock, while the lock is acquired by one process, the other can't access to it until it's released by the previous
- *  [timestamp]: used for determining the resource is stale or not
+ *  @member result: the actual resource type callers want to use
+ *  @member locked: readWriteLock, while the lock is acquired by one process, the other can't access to it until it's released by the previous
+ *  @member timestamp: used for determining the resource is stale or not
  */
 interface Resource<V> {
     result: V | undefined
@@ -35,15 +35,15 @@ function now() {
 }
 
 /**
- * args:
- *  [key]: global state key, which is used for globals.globalState#update, #tryGet etc.
- *  [expirationInMilli]: cache expiration time in milli seconds
- *  [defaultValue]: default value for the cache if the cache doesn't pre-exist in users' FS
- *  [waitUntilOption]: waitUntil option for acquire lock
+ * constructor:
+ *  @param key: global state key, which is used for globals.globalState#update, #tryGet etc.
+ *  @param expirationInMilli: cache expiration time in milli seconds
+ *  @param defaultValue: default value for the cache if the cache doesn't pre-exist in users' FS
+ *  @param waitUntilOption: waitUntil option for acquire lock
  *
  * methods:
- *  #resourceProvider: implementation needs to implement this method to obtain the latest resource either via network calls or FS read
- *  #getResource: obtain the resource from cache or pull the latest from the service if the cache either expires or doesn't exist
+ *  @method resourceProvider: implementation needs to implement this method to obtain the latest resource either via network calls or FS read
+ *  @method getResource: obtain the resource from cache or pull the latest from the service if the cache either expires or doesn't exist
  */
 export abstract class CachedResource<V> {
     constructor(
