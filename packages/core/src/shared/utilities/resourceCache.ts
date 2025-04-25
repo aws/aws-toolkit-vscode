@@ -64,20 +64,24 @@ export abstract class CachedResource<V> {
             const duration = now() - resource.timestamp
             if (duration < this.expirationInMilli) {
                 logger.debug(
-                    `cache hit, duration(%sms) is less than expiration(%sms)`,
+                    `cache hit, duration(%sms) is less than expiration(%sms), returning cached value %s`,
                     duration,
-                    this.expirationInMilli
+                    this.expirationInMilli,
+                    this.key
                 )
                 // release the lock
                 await this.releaseLock(resource, cachedValue)
                 return resource.result
             } else {
                 logger.debug(
-                    `cached value is stale, duration(%sms) is older than expiration(%sms), invoking service API to pull the latest response`,
+                    `cache is stale, duration(%sms) is older than expiration(%sms), pulling latest resource %s`,
                     duration,
-                    this.expirationInMilli
+                    this.expirationInMilli,
+                    this.key
                 )
             }
+        } else {
+            logger.debug(`cache miss, pulling latest resource %s`, this.key)
         }
 
         /**
@@ -86,7 +90,6 @@ export abstract class CachedResource<V> {
          *  2. cache exists but expired.
          *  3. lock is held by other process and the waiting time is greater than the specified waiting time
          */
-        logger.debug(`cache miss, invoking service API to pull the latest response`)
         try {
             // Make the real network call / FS read to pull the resource
             const latest = await this.resourceProvider()
@@ -97,7 +100,7 @@ export abstract class CachedResource<V> {
                 timestamp: now(),
                 result: latest,
             }
-            logger.debug(`doen loading the latest of resource(%s), updating resource cache`, this.key)
+            logger.debug(`doen loading latest resource, updating resource cache: %s`, this.key)
             await this.releaseLock(r)
             return latest
         } catch (e) {

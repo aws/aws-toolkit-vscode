@@ -126,10 +126,6 @@ export class RegionProfileManager {
 
     constructor(private readonly connectionProvider: () => Connection | undefined) {}
 
-    async resetCache() {
-        await this.cache.releaseLock()
-    }
-
     async getProfiles(): Promise<RegionProfile[]> {
         return this.cache.getResource()
     }
