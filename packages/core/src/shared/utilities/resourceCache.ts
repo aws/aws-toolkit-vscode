@@ -154,6 +154,11 @@ export abstract class CachedResource<V> {
         }
     }
 
+    async clearCache() {
+        const baseCache = this.readCacheOrDefault()
+        await this.updateResourceCache({ result: undefined, timestamp: 0, locked: false }, baseCache)
+    }
+
     private async updateResourceCache(resource: Partial<Resource<any>>, cache: GlobalStateSchema<any> | undefined) {
         const baseCache = cache ?? this.readCacheOrDefault()
 

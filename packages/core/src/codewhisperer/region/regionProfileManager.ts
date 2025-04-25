@@ -373,6 +373,11 @@ export class RegionProfileManager {
         }
     }
 
+    // Should be called on connection changed in case users change to a differnet connection and use the wrong resultset.
+    async clearCache() {
+        await this.cache.clearCache()
+    }
+
     async createQClient(region: string, endpoint: string, conn: SsoConnection): Promise<CodeWhispererUserClient> {
         const token = (await conn.getToken()).accessToken
         const serviceOption: ServiceOptions = {
