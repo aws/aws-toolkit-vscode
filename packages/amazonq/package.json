@@ -131,6 +131,10 @@
                         "amazonQChatDisclaimer": {
                             "type": "boolean",
                             "default": false
+                        },
+                        "amazonQSelectDeveloperProfile": {
+                            "type": "boolean",
+                            "default": false
                         }
                     },
                     "additionalProperties": false
