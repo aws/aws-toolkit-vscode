@@ -11,7 +11,8 @@ export interface ExtendedAmazonQLSPConfig extends LspConfig {
 }
 
 export const defaultAmazonQLspConfig: ExtendedAmazonQLSPConfig = {
-    manifestUrl: 'https://d3akiidp1wvqyg.cloudfront.net/qAgenticChatServer/0/manifest.json', // TODO swap this back
+    manifestUrl:
+        'https://raw.githubusercontent.com/aws/aws-toolkit-vscode/refs/heads/agentic-chat-beta/qAgenticServerManifest.json', // TODO swap this back
     supportedVersions: '*', // TODO swap this back
     id: 'AmazonQ', // used across IDEs for identifying global storage/local disk locations. Do not change.
     suppressPromptPrefix: 'amazonQ',
