@@ -21,7 +21,8 @@ export const amazonqSettings = {
         "ssoCacheError": {},
         "amazonQLspManifestMessage": {},
         "amazonQWorkspaceLspManifestMessage": {},
-        "amazonQChatDisclaimer": {}
+        "amazonQChatDisclaimer": {},
+        "amazonQSelectDeveloperProfile": {}
     },
     "amazonQ.showCodeWithReferences": {},
     "amazonQ.allowFeatureDevelopmentToRunCodeAndTests": {},
