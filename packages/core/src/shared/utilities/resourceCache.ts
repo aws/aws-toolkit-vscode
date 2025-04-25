@@ -56,7 +56,7 @@ export abstract class CachedResource<V> {
     abstract resourceProvider(): Promise<V>
 
     async getResource(): Promise<V> {
-        const cachedValue = await this.readResourceAndLock()
+        const cachedValue = await this.tryLoadResourceAndLock()
         const resource = cachedValue?.resource
 
         // If cache is still fresh, return cached result, otherwise pull latest from the service
@@ -99,7 +99,7 @@ export abstract class CachedResource<V> {
     }
 
     // This method will lock the resource so other callers have to wait until the lock is released, otherwise will return undefined if it times out
-    private async readResourceAndLock(): Promise<GlobalStateSchema<V> | undefined> {
+    private async tryLoadResourceAndLock(): Promise<GlobalStateSchema<V> | undefined> {
         const _acquireLock = async () => {
             const cachedValue = this.readCacheOrDefault()
 
