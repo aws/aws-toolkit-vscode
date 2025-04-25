@@ -181,7 +181,25 @@
                 "amazonQ.workspaceIndexMaxSize": {
                     "type": "number",
                     "markdownDescription": "%AWS.configuration.description.amazonq.workspaceIndexMaxSize%",
-                    "default": 250,
+                    "default": 2048,
+                    "scope": "application"
+                },
+                "amazonQ.workspaceIndexMaxFileSize": {
+                    "type": "number",
+                    "markdownDescription": "%AWS.configuration.description.amazonq.workspaceIndexMaxFileSize%",
+                    "default": 10,
+                    "scope": "application"
+                },
+                "amazonQ.workspaceIndexCacheDirPath": {
+                    "type": "string",
+                    "markdownDescription": "%AWS.configuration.description.amazonq.workspaceIndexCacheDirPath%",
+                    "default": null,
+                    "scope": "application"
+                },
+                "amazonQ.workspaceIndexIgnoreFilePatterns": {
+                    "type": "array",
+                    "markdownDescription": "%AWS.configuration.description.amazonq.workspaceIndexIgnoreFilePatterns%",
+                    "default": [],
                     "scope": "application"
                 },
                 "amazonQ.ignoredSecurityIssues": {
