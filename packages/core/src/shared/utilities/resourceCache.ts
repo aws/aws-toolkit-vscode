@@ -8,15 +8,22 @@ import { globalKey } from '../globalState'
 import { getLogger } from '../logger/logger'
 import { waitUntil } from '../utilities/timeoutUtils'
 
+/**
+ * result: the actual resource type callers want to use
+ * locked: readWriteLock, while the lock is acquired by one process, the other can't access to it until it's released by the previous
+ * timestamp: used for determining the resource is stale or not
+ */
 interface Resource<V> {
     result: V | undefined
     locked: boolean
     timestamp: number
 }
 
-// GlobalStates schema, which is used for vscode global states deserialization
-// [globals.globalState.tryGet<T>]
-interface GlobalStateSchema<V> {
+/**
+ * GlobalStates schema, which is used for vscode global states deserialization, [globals.globalState#tryGet<T>] etc.
+ * The purpose of it is to allow devs to overload the resource into existing global key and no need to create a specific key for only this purpose.
+ */
+export interface GlobalStateSchema<V> {
     resource: Resource<V>
 }
 
@@ -53,8 +60,9 @@ export abstract class CachedResource<V> {
 
         // If cache is still fresh, return cached result, otherwise pull latest from the service
         if (cachedValue && resource && resource.result) {
-            if (now() - resource.timestamp < this.expirationInMilli) {
-                logger.info(`cache hit`)
+            const duration = now() - resource.timestamp
+            if (duration < this.expirationInMilli) {
+                logger.info(`cache hit, duration(%sms) is less than expiration(%sms)`, duration, this.expirationInMilli)
                 // release the lock
                 await this.updateCache(cachedValue, {
                     ...resource,
@@ -62,7 +70,11 @@ export abstract class CachedResource<V> {
                 })
                 return resource.result
             } else {
-                logger.info(`cache hit but cached value is stale, invoking service API to pull the latest response`)
+                logger.info(
+                    `cached value is stale, duration(%sms) is older than expiration(%sms), invoking service API to pull the latest response`,
+                    duration,
+                    this.expirationInMilli
+                )
             }
         }
 
