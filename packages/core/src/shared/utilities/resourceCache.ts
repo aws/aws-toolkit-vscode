@@ -65,10 +65,7 @@ export abstract class CachedResource<V> {
             if (duration < this.expirationInMilli) {
                 logger.info(`cache hit, duration(%sms) is less than expiration(%sms)`, duration, this.expirationInMilli)
                 // release the lock
-                await this.updateResourceCache(cachedValue, {
-                    ...resource,
-                    locked: false,
-                })
+                await this.releaseLock(resource, cachedValue)
                 return resource.result
             } else {
                 logger.info(
@@ -97,7 +94,7 @@ export abstract class CachedResource<V> {
                 result: latest,
             }
             logger.info(`doen loading the latest of resource(%s), updating resource cache`, this.key)
-            await this.updateResourceCache(cachedValue, r)
+            await this.releaseLock(r)
             return latest
         } catch (e) {
             logger.info(
@@ -115,10 +112,7 @@ export abstract class CachedResource<V> {
             const cachedValue = this.readCacheOrDefault()
 
             if (!cachedValue.resource.locked) {
-                await this.updateResourceCache(cachedValue, {
-                    ...cachedValue.resource,
-                    locked: true,
-                })
+                await this.lockResource(cachedValue)
                 return cachedValue
             }
 
@@ -136,18 +130,32 @@ export abstract class CachedResource<V> {
         return lock
     }
 
-    // TODO: releaseLock and updateCache do similar things, how to improve
-    async releaseLock() {
-        await globals.globalState.update(this.key, {
-            ...this.readCacheOrDefault(),
-            locked: false,
-        })
+    async lockResource(baseCache: GlobalStateSchema<V>): Promise<void> {
+        await this.updateResourceCache({ locked: true }, baseCache)
     }
 
-    private async updateResourceCache(cache: GlobalStateSchema<any> | undefined, resource: Resource<any>) {
+    async releaseLock(): Promise<void>
+    async releaseLock(resource: Partial<Resource<V>>): Promise<void>
+    async releaseLock(resource: Partial<Resource<V>>, baseCache: GlobalStateSchema<V>): Promise<void>
+    async releaseLock(resource?: Partial<Resource<V>>, baseCache?: GlobalStateSchema<V>): Promise<void> {
+        if (!resource) {
+            await this.updateResourceCache({ locked: false }, undefined)
+        } else if (baseCache) {
+            await this.updateResourceCache(resource, baseCache)
+        } else {
+            await this.updateResourceCache(resource, undefined)
+        }
+    }
+
+    private async updateResourceCache(resource: Partial<Resource<any>>, cache: GlobalStateSchema<any> | undefined) {
+        const baseCache = cache ?? this.readCacheOrDefault()
+
         const toUpdate: GlobalStateSchema<V> = {
-            ...(cache ? cache : this.readCacheOrDefault()),
-            resource: resource,
+            ...baseCache,
+            resource: {
+                ...baseCache.resource,
+                ...resource,
+            },
         }
 
         await globals.globalState.update(this.key, toUpdate)
