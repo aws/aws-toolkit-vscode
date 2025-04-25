@@ -9,9 +9,10 @@ import { getLogger } from '../logger/logger'
 import { waitUntil } from '../utilities/timeoutUtils'
 
 /**
- * result: the actual resource type callers want to use
- * locked: readWriteLock, while the lock is acquired by one process, the other can't access to it until it's released by the previous
- * timestamp: used for determining the resource is stale or not
+ * args:
+ *  [result]: the actual resource type callers want to use
+ *  [locked]: readWriteLock, while the lock is acquired by one process, the other can't access to it until it's released by the previous
+ *  [timestamp]: used for determining the resource is stale or not
  */
 interface Resource<V> {
     result: V | undefined
@@ -35,14 +36,14 @@ function now() {
 
 /**
  * args:
- *  key: global state key, which is used for globals.globalState#update, #tryGet etc.
- *  expirationInMilli: cache expiration time in milli seconds
- *  defaultValue: default value for the cache if the cache doesn't pre-exist in users' FS
- *  waitUntilOption: waitUntil option for acquire lock
+ *  [key]: global state key, which is used for globals.globalState#update, #tryGet etc.
+ *  [expirationInMilli]: cache expiration time in milli seconds
+ *  [defaultValue]: default value for the cache if the cache doesn't pre-exist in users' FS
+ *  [waitUntilOption]: waitUntil option for acquire lock
  *
  * methods:
- *  resourceProvider(): implementation needs to implement this method to obtain the latest resource either via network calls or FS read
- *  getResource(): obtain the resource from cache or pull the latest from the service if the cache either expires or doesn't exist
+ *  #resourceProvider: implementation needs to implement this method to obtain the latest resource either via network calls or FS read
+ *  #getResource: obtain the resource from cache or pull the latest from the service if the cache either expires or doesn't exist
  */
 export abstract class CachedResource<V> {
     constructor(
