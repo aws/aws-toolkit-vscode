@@ -85,7 +85,7 @@ export abstract class CachedResource<V> {
                 )
             }
         } else {
-            logger.debug(`cache miss, pulling latest resource %s`, this.key)
+            logger.info(`cache miss, pulling latest resource %s`, this.key)
         }
 
         /**
@@ -104,14 +104,11 @@ export abstract class CachedResource<V> {
                 timestamp: now(),
                 result: latest,
             }
-            logger.debug(`doen loading latest resource, updating resource cache: %s`, this.key)
+            logger.info(`doen loading latest resource, updating resource cache: %s`, this.key)
             await this.releaseLock(r)
             return latest
         } catch (e) {
-            logger.debug(
-                `encountered unexpected error while loading the latest of resource(%s), releasing resource lock`,
-                this.key
-            )
+            logger.error(`failed to load latest resource, releasing lock: %s`, this.key)
             await this.releaseLock()
             throw e
         }
