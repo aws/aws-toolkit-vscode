@@ -61,6 +61,7 @@ import { AuthUtil } from 'aws-core-vscode/codewhisperer'
 import { amazonQDiffScheme, AmazonQPromptSettings, messages, openUrl } from 'aws-core-vscode/shared'
 import { DefaultAmazonQAppInitContext, messageDispatcher, EditorContentController } from 'aws-core-vscode/amazonq'
 import { telemetry, TelemetryBase } from 'aws-core-vscode/telemetry'
+import { isValidResponseError } from './error'
 
 export function registerLanguageServerEventListener(languageClient: LanguageClient, provider: AmazonQChatViewProvider) {
     languageClient.info(
@@ -552,23 +553,4 @@ async function resolveChatResponse(
         command: requestMethod,
         params: result,
     })
-}
-
-/**
- * Perform a sanity check that the error we got from the LSP can be safely cast to the expected type.
- * @param error
- * @returns
- */
-function isValidResponseError(error: unknown): error is ResponseError<ChatResult> & { data: ChatResult } {
-    return (
-        error instanceof ResponseError ||
-        (typeof error === 'object' &&
-            error !== null &&
-            'code' in error &&
-            typeof error.code === 'number' &&
-            'message' in error &&
-            typeof error.message === 'string' &&
-            'data' in error &&
-            error.data !== undefined)
-    )
 }
