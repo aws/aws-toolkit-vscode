@@ -90,9 +90,14 @@ export abstract class CachedResource<V> {
                 timestamp: now(),
                 result: latest,
             }
+            logger.info(`doen loading the latest of resource(%s), updating resource cache`, this.key)
             await this.updateCache(cachedValue, r)
             return latest
         } catch (e) {
+            logger.info(
+                `encountered unexpected error while loading the latest of resource(%s), releasing resource lock`,
+                this.key
+            )
             await this.releaseLock()
             throw e
         }
