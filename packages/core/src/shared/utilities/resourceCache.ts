@@ -26,6 +26,17 @@ function now() {
     return globals.clock.Date.now()
 }
 
+/**
+ * args:
+ *  key: global state key, which is used for globals.globalState#update, #tryGet etc.
+ *  expirationInMilli: cache expiration time in milli seconds
+ *  defaultValue: default value for the cache if the cache doesn't pre-exist in users' FS
+ *  waitUntilOption: waitUntil option for acquire lock
+ *
+ * methods:
+ *  resourceProvider(): implementation needs to implement this method to obtain the latest resource either via network calls or FS read
+ *  getResource(): obtain the resource from cache or pull the latest from the service if the cache either expires or doesn't exist
+ */
 export abstract class CachedResource<V> {
     constructor(
         private readonly key: globalKey,
@@ -100,6 +111,7 @@ export abstract class CachedResource<V> {
         return lock
     }
 
+    // TODO: releaseLock and updateCache do similar things, how to improve
     async releaseLock() {
         await globals.globalState.update(this.key, {
             ...this.readCacheOrDefault(),
