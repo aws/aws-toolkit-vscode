@@ -122,7 +122,7 @@ describe('Amazon Q Inline', async function () {
             .query({
                 metricName: 'codewhisperer_userTriggerDecision',
             })
-            .map((e) => collectionUtil.partialClone(e, 3, ['credentialStartUrl'], '[omitted]'))
+            .map((e) => collectionUtil.partialClone(e, 3, ['credentialStartUrl'], { replacement: '[omitted]' }))
     }
 
     for (const [name, invokeCompletion] of [
