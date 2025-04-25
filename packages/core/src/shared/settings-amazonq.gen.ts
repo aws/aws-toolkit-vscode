@@ -22,7 +22,8 @@ export const amazonqSettings = {
         "amazonQLspManifestMessage": {},
         "amazonQWorkspaceLspManifestMessage": {},
         "amazonQChatDisclaimer": {},
-        "amazonQChatPairProgramming": {}
+        "amazonQChatPairProgramming": {},
+        "amazonQSelectDeveloperProfile": {}
     },
     "amazonQ.showCodeWithReferences": {},
     "amazonQ.allowFeatureDevelopmentToRunCodeAndTests": {},
