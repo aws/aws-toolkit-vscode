@@ -81,6 +81,7 @@ export abstract class CachedResource<V> {
 
         logger.info(`cache miss, invoking service API to pull the latest response`)
         try {
+            // Make the real network call / FS read to pull the resource
             const latest = await this.resourceProvider()
 
             // Update resource cache and release the lock
