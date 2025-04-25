@@ -18,6 +18,7 @@ export type LogTopic =
     | 'chat'
     | 'stepfunctions'
     | 'unknown'
+    | 'resourceCache'
 
 class ErrorLog {
     constructor(
