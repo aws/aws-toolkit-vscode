@@ -223,7 +223,7 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
      */
     override async listRegionProfiles(): Promise<RegionProfile[] | string> {
         try {
-            return await AuthUtil.instance.regionProfileManager.listRegionProfile()
+            return await AuthUtil.instance.regionProfileManager.getProfiles()
         } catch (e) {
             const conn = AuthUtil.instance.conn as SsoConnection | undefined
             telemetry.amazonq_didSelectProfile.emit({
