@@ -10,7 +10,7 @@ import { default as stripAnsi } from 'strip-ansi'
 import { getLogger } from '../logger/logger'
 
 /**
- * Truncates string `s` if it exceeds `n` chars.
+ * Truncates string `s` if it has or exceeds `n` chars.
  *
  * If `n` is negative, truncates at start instead of end.
  *
