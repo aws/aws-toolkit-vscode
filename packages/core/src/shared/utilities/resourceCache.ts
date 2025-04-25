@@ -30,7 +30,8 @@ export abstract class CachedResource<V> {
     constructor(
         private readonly key: globalKey,
         private readonly expirationInMilli: number,
-        private readonly defaultValue: GlobalStateSchema<V>
+        private readonly defaultValue: GlobalStateSchema<V>,
+        private readonly waitUntilOption: { timeout: number; interval: number; truthy: boolean }
     ) {}
 
     abstract resourceProvider(): Promise<V>
@@ -88,16 +89,13 @@ export abstract class CachedResource<V> {
             return undefined
         }
 
-        const lock = await waitUntil(
-            async () => {
-                const lock = await _acquireLock()
-                logger.info(`try obtain resource cache read lock %s`, lock)
-                if (lock) {
-                    return lock
-                }
-            },
-            { timeout: 15000, interval: 1500, truthy: true } // TODO: pass via ctor
-        )
+        const lock = await waitUntil(async () => {
+            const lock = await _acquireLock()
+            logger.info(`try obtain resource cache read lock %s`, lock)
+            if (lock) {
+                return lock
+            }
+        }, this.waitUntilOption)
 
         return lock
     }

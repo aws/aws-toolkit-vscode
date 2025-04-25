@@ -62,13 +62,18 @@ export class RegionProfileManager {
 
     private readonly cache = new (class extends CachedResource<RegionProfile[]> {
         constructor(private readonly profileProvider: () => Promise<RegionProfile[]>) {
-            super('aws.amazonq.regionProfiles.cache', 60000, {
-                resource: {
-                    locked: false,
-                    timestamp: 0,
-                    result: undefined,
+            super(
+                'aws.amazonq.regionProfiles.cache',
+                60000,
+                {
+                    resource: {
+                        locked: false,
+                        timestamp: 0,
+                        result: undefined,
+                    },
                 },
-            })
+                { timeout: 15000, interval: 1500, truthy: true }
+            )
         }
 
         override resourceProvider(): Promise<RegionProfile[]> {
