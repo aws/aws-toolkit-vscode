@@ -27,10 +27,8 @@ export function getAmazonQLspConfig(): ExtendedAmazonQLSPConfig {
     }
 }
 
-// TODO: expose lsp logging settings to users
-// trace.server -> pipe LSP logs to seperate output channel.
-// lsp.logLevel -> log level to pass to the lsp.
-export function getLspLogLevel(clientId: string) {
+// TODO: expose lsp logging settings to users and re-send on update.
+export function getLspLogSettings(clientId: string) {
     const traceServerSetting = `${clientId}.trace.server`
     const lspLogLevelSetting = `${clientId}.lsp.logLevel`
 

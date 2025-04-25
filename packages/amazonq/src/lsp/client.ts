@@ -35,7 +35,7 @@ import {
 } from 'aws-core-vscode/shared'
 import { activate } from './chat/activation'
 import { AmazonQResourcePaths } from './lspInstaller'
-import { getLspLogLevel } from './config'
+import { getLspLogSettings } from './config'
 
 const localize = nls.loadMessageBundle()
 const logger = getLogger('amazonqLsp.lspClient')
@@ -63,7 +63,7 @@ export async function startLanguageServer(
     })
     const clientId = `amazonq`
     const documentSelector = [{ scheme: 'file', language: '*' }]
-    const lspLogSettings = getLspLogLevel(clientId)
+    const lspLogSettings = getLspLogSettings(clientId)
 
     getLogger('amazonqLsp').info(`Sending log settings to lsp: %O`, lspLogSettings)
 
