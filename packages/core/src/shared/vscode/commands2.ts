@@ -653,7 +653,7 @@ async function runCommand<T extends Callback>(fn: T, info: CommandInfo<T>): Prom
 
     logger.debug(
         `command: running ${label} with arguments: %O`,
-        partialClone(args, 3, ['clientSecret', 'accessToken', 'refreshToken', 'tooltip'], '[omitted]')
+        partialClone(args, 3, ['clientSecret', 'accessToken', 'refreshToken', 'tooltip'], { replacement: '[omitted]' })
     )
 
     try {
