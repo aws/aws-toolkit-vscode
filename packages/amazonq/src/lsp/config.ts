@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { DevSettings, getServiceEnvVarConfig } from 'aws-core-vscode/shared'
+import { DevSettings, getServiceEnvVarConfig, Settings } from 'aws-core-vscode/shared'
 import { LspConfig } from 'aws-core-vscode/amazonq'
 
 export interface ExtendedAmazonQLSPConfig extends LspConfig {
@@ -24,5 +24,18 @@ export function getAmazonQLspConfig(): ExtendedAmazonQLSPConfig {
         ...defaultAmazonQLspConfig,
         ...(DevSettings.instance.getServiceConfig('amazonqLsp', {}) as ExtendedAmazonQLSPConfig),
         ...getServiceEnvVarConfig('amazonqLsp', Object.keys(defaultAmazonQLspConfig)),
+    }
+}
+
+// TODO: expose lsp logging settings to users
+// trace.server -> pipe LSP logs to seperate output channel.
+// lsp.logLevel -> log level to pass to the lsp.
+export function getLspLogLevel(clientId: string) {
+    const traceServerSetting = `${clientId}.trace.server`
+    const lspLogLevelSetting = `${clientId}.lsp.logLevel`
+
+    return {
+        seperateTraceChannel: Settings.instance.get(traceServerSetting),
+        lspLogLevel: Settings.instance.get(lspLogLevelSetting, String, 'info'),
     }
 }

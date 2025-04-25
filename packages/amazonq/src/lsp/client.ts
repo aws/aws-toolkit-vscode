@@ -22,7 +22,6 @@ import {
 } from '@aws/language-server-runtimes/protocol'
 import { AuthUtil, CodeWhispererSettings, getSelectedCustomization } from 'aws-core-vscode/codewhisperer'
 import {
-    Settings,
     oidcClientName,
     createServerOptions,
     globals,
@@ -36,6 +35,7 @@ import {
 } from 'aws-core-vscode/shared'
 import { activate } from './chat/activation'
 import { AmazonQResourcePaths } from './lspInstaller'
+import { getLspLogLevel } from './config'
 
 const localize = nls.loadMessageBundle()
 const logger = getLogger('amazonqLsp.lspClient')
@@ -61,11 +61,11 @@ export async function startLanguageServer(
         serverModule,
         execArgv: argv,
     })
-
+    const clientId = `amazonq`
     const documentSelector = [{ scheme: 'file', language: '*' }]
+    const lspLogSettings = getLspLogLevel(clientId)
 
-    const clientId = 'amazonq'
-    const traceServerEnabled = Settings.instance.isSet(`${clientId}.trace.server`)
+    getLogger('amazonqLsp').info(`Sending log settings to lsp: %O`, lspLogSettings)
 
     await validateNodeExe(resourcePaths.node, resourcePaths.lsp, argv, logger)
 
@@ -139,6 +139,7 @@ export async function startLanguageServer(
                     },
                 },
             },
+            logLevel: lspLogSettings.lspLogLevel,
             credentials: {
                 providesBearerToken: true,
             },
@@ -148,7 +149,7 @@ export async function startLanguageServer(
          *   When trace server is enabled, logs go to a seperate "Amazon Q Language Server" output.
          *   Otherwise, logs go to the regular "Amazon Q Logs" channel.
          */
-        ...(traceServerEnabled
+        ...(lspLogSettings.seperateTraceChannel
             ? {}
             : {
                   outputChannel: globals.logOutputChannel,
