@@ -6,7 +6,8 @@
 import { DevSettings, getLogger, getServiceEnvVarConfig, Settings } from 'aws-core-vscode/shared'
 import { LspConfig } from 'aws-core-vscode/amazonq'
 
-// Taken from https://github.com/aws/language-server-runtimes/blob/eae85672c345d8adaf4c8cbd741260b8a59750c4/runtimes/runtimes/util/loggingUtil.ts#L4-L10
+// Taken from language server repo since they are not exported:
+// https://github.com/aws/language-server-runtimes/blob/eae85672c345d8adaf4c8cbd741260b8a59750c4/runtimes/runtimes/util/loggingUtil.ts#L4-L10
 const validLspLogLevels = ['error', 'warn', 'info', 'log', 'debug']
 export interface ExtendedAmazonQLSPConfig extends LspConfig {
     ui?: string
@@ -36,18 +37,18 @@ export function getLspLogSettings(clientId: string) {
     const seperateTraceChannel = Settings.instance.get(traceServerSetting)
     const lspLogLevel = Settings.instance.get(lspLogLevelSetting, String, 'info')
 
-    if (!validLspLogLevels.includes(lspLogLevel)) {
-        getLogger('amazonqLsp').warn(
-            `Invalid log level for ${lspLogLevelSetting}: ${lspLogLevel}. Defaulting to 'info'.`
-        )
-        return {
-            seperateTraceChannel,
-            lspLogLevel: 'info',
-        }
-    }
-
     return {
         seperateTraceChannel,
-        lspLogLevel: lspLogLevel,
+        lspLogLevel: sanitizeLogLevel(lspLogLevel),
     }
+}
+
+export function sanitizeLogLevel(lspLogLevel: string) {
+    if (!validLspLogLevels.includes(lspLogLevel)) {
+        getLogger('amazonqLsp').warn(
+            `Invalid log level for amazonq.lsp.logLevel: ${lspLogLevel}. Defaulting to 'info'.`
+        )
+        return 'info'
+    }
+    return lspLogLevel
 }
