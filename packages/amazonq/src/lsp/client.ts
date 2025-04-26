@@ -92,7 +92,8 @@ export async function startLanguageServer(
                                 customization,
                                 optOutTelemetry: getOptOutPreference() === 'OPTOUT',
                                 projectContext: {
-                                    enableLocalIndexing: CodeWhispererSettings.instance.isLocalIndexEnabled(),
+                                    // TODO: we might need another setting to control the actual indexing
+                                    enableLocalIndexing: true,
                                     enableGpuAcceleration: CodeWhispererSettings.instance.isLocalIndexGPUEnabled(),
                                     indexWorkerThreads: CodeWhispererSettings.instance.getIndexWorkerThreads(),
                                     localIndexing: {
