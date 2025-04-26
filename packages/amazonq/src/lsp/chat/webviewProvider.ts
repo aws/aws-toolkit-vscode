@@ -35,6 +35,9 @@ export class AmazonQChatViewProvider implements WebviewViewProvider {
     connectorAdapterPath?: string
     uiPath?: string
 
+    // Track the current active tab ID
+    private currentTabId?: string
+
     constructor(private readonly mynahUIPath: string) {}
 
     public async resolveWebviewView(
@@ -142,6 +145,7 @@ export class AmazonQChatViewProvider implements WebviewViewProvider {
                     qChat = amazonQChat.createChat(vscodeApi, {disclaimerAcknowledged: ${disclaimerAcknowledged}, pairProgrammingAcknowledged: ${pairProgrammingAcknowledged}, quickActionCommands: commands}, hybridChatConnector, ${JSON.stringify(featureConfigData)});
                 }
                 window.addEventListener('message', (event) => {
+                    console.log('inside webview provider event listener. event:', event)
                     /**
                      * special handler that "simulates" reloading the webview when a profile changes.
                      * required because chat-client relies on initializedResult from the lsp that
@@ -171,5 +175,21 @@ export class AmazonQChatViewProvider implements WebviewViewProvider {
                 command: 'reload',
             })
         }
+    }
+
+    /**
+     * Gets the current active tab ID from the Amazon Q chat UI
+     * @returns The current tab ID or undefined if it cannot be determined
+     */
+    getCurrentTabId(): string | undefined {
+        return this.currentTabId
+    }
+
+    /**
+     * Sets the current active tab ID
+     * @param tabId The ID of the currently active tab
+     */
+    setCurrentTabId(tabId: string): void {
+        this.currentTabId = tabId
     }
 }

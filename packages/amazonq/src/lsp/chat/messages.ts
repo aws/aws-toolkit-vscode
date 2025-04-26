@@ -122,6 +122,11 @@ export function registerMessageListeners(
     provider.webview?.onDidReceiveMessage(async (message) => {
         languageClient.info(`[VSCode Client]  Received ${JSON.stringify(message)} from chat`)
 
+        // Track the current tab ID when it's included in the message
+        if (message.params?.tabId) {
+            provider.setCurrentTabId(message.params.tabId)
+        }
+
         if ((message.tabType && message.tabType !== 'cwc') || messageDispatcher.isLegacyEvent(message.command)) {
             // handle the mynah ui -> agent legacy flow
             messageDispatcher.handleWebviewEvent(
@@ -205,10 +210,27 @@ export function registerMessageListeners(
             }
             case STOP_CHAT_RESPONSE: {
                 const tabId = (message as StopChatResponseMessage).params.tabId
-                const token = chatStreamTokens.get(tabId)
-                token?.cancel()
-                token?.dispose()
-                chatStreamTokens.delete(tabId)
+
+                // Special case: if tabId is 'all', cancel all tokens
+                if (tabId === 'all') {
+                    languageClient.info('[VSCode Client] Stopping all tool executions')
+                    for (const [id, token] of chatStreamTokens.entries()) {
+                        token.cancel()
+                        token.dispose()
+                        chatStreamTokens.delete(id)
+                    }
+                } else {
+                    // Cancel specific token
+                    const token = chatStreamTokens.get(tabId)
+                    if (token) {
+                        languageClient.info(`[VSCode Client] Stopping tool execution for tab ${tabId}`)
+                        token.cancel()
+                        token.dispose()
+                        chatStreamTokens.delete(tabId)
+                    } else {
+                        languageClient.info(`[VSCode Client] No active tool execution found for tab ${tabId}`)
+                    }
+                }
                 break
             }
             case chatRequestType.method: {
@@ -234,7 +256,6 @@ export function registerMessageListeners(
                         void handlePartialResult<ChatResult>(partialResult, encryptionKey, provider, chatParams.tabId)
                     }
                 )
-
                 const editor =
                     vscode.window.activeTextEditor ||
                     vscode.window.visibleTextEditors.find((editor) => editor.document.languageId !== 'Log')
@@ -458,7 +479,7 @@ export function registerMessageListeners(
             context: {
                 activeFileContext: {
                     filePath: params.originalFileUri,
-                    fileText: params.originalFileContent ?? '',
+                    fileText: '',
                     fileLanguage: undefined,
                     matchPolicy: undefined,
                 },

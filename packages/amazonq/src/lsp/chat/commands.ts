@@ -6,6 +6,7 @@
 import { Commands, globals } from 'aws-core-vscode/shared'
 import { window } from 'vscode'
 import { AmazonQChatViewProvider } from './webviewProvider'
+import { STOP_CHAT_RESPONSE } from '@aws/chat-client-ui-types'
 
 /**
  * TODO: Re-enable these once we can figure out which path they're going to live in
@@ -13,6 +14,19 @@ import { AmazonQChatViewProvider } from './webviewProvider'
  */
 export function registerCommands(provider: AmazonQChatViewProvider) {
     globals.context.subscriptions.push(
+        Commands.register('aws.amazonq.stopToolExecution', async () => {
+            // eslint-disable-next-line aws-toolkits/no-console-log
+            console.log('provider.getCurrentTabId()', provider.getCurrentTabId())
+            // Get all active tabs and cancel their tokens
+            if (provider.webview) {
+                void provider.webview.postMessage({
+                    command: STOP_CHAT_RESPONSE,
+                    params: {
+                        tabId: provider.getCurrentTabId(),
+                    },
+                })
+            }
+        }),
         registerGenericCommand('aws.amazonq.explainCode', 'Explain', provider),
         registerGenericCommand('aws.amazonq.refactorCode', 'Refactor', provider),
         registerGenericCommand('aws.amazonq.fixCode', 'Fix', provider),

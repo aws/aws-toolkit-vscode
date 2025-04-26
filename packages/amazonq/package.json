@@ -544,6 +544,11 @@
         },
         "commands": [
             {
+                "command": "aws.amazonq.stopToolExecution",
+                "title": "Stop Amazon Q Tool Execution",
+                "category": "%AWS.amazonq.title%"
+            },
+            {
                 "command": "_aws.amazonq.notifications.dismiss",
                 "title": "%AWS.generic.dismiss%",
                 "category": "%AWS.amazonq.title%",
@@ -894,6 +899,11 @@
                 "command": "aws.amazonq.inline.waitForUserDecisionRejectAll",
                 "key": "escape",
                 "when": "editorTextFocus && aws.codewhisperer.connected && amazonq.inline.codelensShortcutEnabled"
+            },
+            {
+                "command": "aws.amazonq.stopToolExecution",
+                "key": "cmd+alt+h",
+                "mac": "cmd+alt+h"
             }
         ],
         "icons": {
