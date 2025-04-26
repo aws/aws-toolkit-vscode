@@ -6,9 +6,6 @@
 import { DevSettings, getLogger, getServiceEnvVarConfig, Settings } from 'aws-core-vscode/shared'
 import { LspConfig } from 'aws-core-vscode/amazonq'
 
-// Taken from language server runtimes since they are not exported:
-// https://github.com/aws/language-server-runtimes/blob/eae85672c345d8adaf4c8cbd741260b8a59750c4/runtimes/runtimes/util/loggingUtil.ts#L4-L10
-const validLspLogLevels = ['error', 'warn', 'info', 'log', 'debug']
 export interface ExtendedAmazonQLSPConfig extends LspConfig {
     ui?: string
 }
@@ -30,9 +27,14 @@ export function getAmazonQLspConfig(): ExtendedAmazonQLSPConfig {
     }
 }
 
-// TODO: expose lsp logging settings to users and re-send on update.
-export function getLspLogSettings() {
-    const lspSettings = Settings.instance.getSection('lsp')
+// Taken from language server runtimes since they are not exported:
+// https://github.com/aws/language-server-runtimes/blob/eae85672c345d8adaf4c8cbd741260b8a59750c4/runtimes/runtimes/util/loggingUtil.ts#L4-L10
+const validLspLogLevels = ['error', 'warn', 'info', 'log', 'debug'] as const
+export type LspLogLevel = (typeof validLspLogLevels)[number]
+export const lspSettingsSection = 'amazonQ.lsp'
+
+export function getLspLogSettings(): { traceChannelEnabled: boolean; lspLogLevel: LspLogLevel } {
+    const lspSettings = Settings.instance.getSection(lspSettingsSection)
     const lspLogLevel = lspSettings.get('logLevel', 'info')
     const traceChannelEnabled = lspSettings.get('trace', false)
 
@@ -42,12 +44,16 @@ export function getLspLogSettings() {
     }
 }
 
-export function sanitizeLogLevel(lspLogLevel: string) {
-    if (!validLspLogLevels.includes(lspLogLevel)) {
+export function sanitizeLogLevel(lspLogLevel: string): LspLogLevel {
+    if (!isValidLspLogLevel(lspLogLevel)) {
         getLogger('amazonqLsp').warn(
             `Invalid log level for amazonq.lsp.logLevel: ${lspLogLevel}. Defaulting to 'info'.`
         )
         return 'info'
     }
     return lspLogLevel
+}
+
+function isValidLspLogLevel(value: unknown): value is LspLogLevel {
+    return typeof value === 'string' && validLspLogLevels.includes(value as LspLogLevel)
 }

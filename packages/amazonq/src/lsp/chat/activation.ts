@@ -8,7 +8,7 @@ import { LanguageClient } from 'vscode-languageclient'
 import { AmazonQChatViewProvider } from './webviewProvider'
 import { registerCommands } from './commands'
 import { registerLanguageServerEventListener, registerMessageListeners } from './messages'
-import { Commands, getLogger, globals, undefinedIfEmpty } from 'aws-core-vscode/shared'
+import { Commands, getLogger, globals, Settings, undefinedIfEmpty } from 'aws-core-vscode/shared'
 import { activate as registerLegacyChatListeners } from '../../app/chat/activation'
 import { DefaultAmazonQAppInitContext } from 'aws-core-vscode/amazonq'
 import { AuthUtil, getSelectedCustomization } from 'aws-core-vscode/codewhisperer'
@@ -16,6 +16,7 @@ import {
     DidChangeConfigurationNotification,
     updateConfigurationRequestType,
 } from '@aws/language-server-runtimes/protocol'
+import { getLspLogSettings, lspSettingsSection } from '../config'
 
 export async function activate(languageClient: LanguageClient, encryptionKey: Buffer, mynahUIPath: string) {
     const disposables = globals.context.subscriptions
@@ -85,6 +86,10 @@ export async function activate(languageClient: LanguageClient, encryptionKey: Bu
                 type: 'customization',
                 customization: undefinedIfEmpty(getSelectedCustomization().arn),
             })
+        }),
+        Settings.instance.onDidChangeSection(lspSettingsSection, () => {
+            void pushConfigUpdate(languageClient, { type: 'logging', ...getLspLogSettings() })
+            getLogger().info('LSP settings changed, sending to lsp')
         })
     )
 }
@@ -108,6 +113,10 @@ async function pushConfigUpdate(client: LanguageClient, config: QConfigs) {
             section: 'aws.q',
             settings: { customization: config.customization },
         })
+    } else if (config.type === 'logging') {
+        client.sendNotification(DidChangeConfigurationNotification.type.method, {
+            section: 'aws.logLevel',
+        })
     }
 }
 type ProfileConfig = {
@@ -118,4 +127,8 @@ type CustomizationConfig = {
     type: 'customization'
     customization: string | undefined
 }
-type QConfigs = ProfileConfig | CustomizationConfig
+interface LoggingConfig extends ReturnType<typeof getLspLogSettings> {
+    type: 'logging'
+}
+
+type QConfigs = ProfileConfig | CustomizationConfig | LoggingConfig

@@ -65,8 +65,6 @@ export async function startLanguageServer(
     const documentSelector = [{ scheme: 'file', language: '*' }]
     const lspLogSettings = getLspLogSettings()
 
-    getLogger('amazonqLsp').info(`Sending log settings to lsp: %O`, lspLogSettings)
-
     await validateNodeExe(resourcePaths.node, resourcePaths.lsp, argv, logger)
 
     // Options to control the language client
@@ -113,6 +111,9 @@ export async function startLanguageServer(
                                 shareCodeWhispererContentWithAWS: !CodeWhispererSettings.instance.isOptoutEnabled(),
                             },
                         ]
+                    }
+                    if (params.items[0].section === 'aws.logLevel') {
+                        return [getLspLogSettings().lspLogLevel]
                     }
                     return config
                 },
