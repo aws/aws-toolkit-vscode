@@ -31,14 +31,13 @@ export function getAmazonQLspConfig(): ExtendedAmazonQLSPConfig {
 }
 
 // TODO: expose lsp logging settings to users and re-send on update.
-export function getLspLogSettings(clientId: string) {
-    const traceServerSetting = `${clientId}.trace.server`
-    const lspLogLevelSetting = `${clientId}.lsp.logLevel`
-    const seperateTraceChannel = Settings.instance.get(traceServerSetting)
-    const lspLogLevel = Settings.instance.get(lspLogLevelSetting, String, 'info')
+export function getLspLogSettings() {
+    const lspSettings = Settings.instance.getSection('lsp')
+    const lspLogLevel = lspSettings.get('logLevel', 'info')
+    const traceChannelEnabled = lspSettings.get('trace', false)
 
     return {
-        seperateTraceChannel,
+        traceChannelEnabled,
         lspLogLevel: sanitizeLogLevel(lspLogLevel),
     }
 }

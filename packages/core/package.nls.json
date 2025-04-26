@@ -98,6 +98,8 @@
     "AWS.configuration.description.amazonq.workspaceIndexIgnoreFilePatterns": "File patterns to ignore when indexing your workspace files",
     "AWS.configuration.description.amazonq.workspaceIndexCacheDirPath": "The path to the directory that contains the cache of the index of your workspace files",
     "AWS.configuration.description.amazonq.ignoredSecurityIssues": "Specifies a list of code issue identifiers that Amazon Q should ignore when reviewing your workspace. Each item in the array should be a unique string identifier for a specific code issue. This allows you to suppress notifications for known issues that you've assessed and determined to be false positives or not applicable to your project. Use this setting with caution, as it may cause you to miss important security alerts.",
+    "AWS.configuration.description.amazonq.lsp.traceChannel": "View detailed log messages sent to/from the language server in a seperate output channel named 'Amazon Q Language Server'. All language server logs will be routed to this output channel instead.",
+    "AWS.configuration.description.amazonq.lsp.logLevel": "Set the logging level of the language server.",
     "AWS.command.apig.copyUrl": "Copy URL",
     "AWS.command.apig.invokeRemoteRestApi": "Invoke in the cloud",
     "AWS.command.apig.invokeRemoteRestApi.cn": "Invoke on Amazon",

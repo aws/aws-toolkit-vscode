@@ -63,7 +63,7 @@ export async function startLanguageServer(
     })
     const clientId = `amazonq`
     const documentSelector = [{ scheme: 'file', language: '*' }]
-    const lspLogSettings = getLspLogSettings(clientId)
+    const lspLogSettings = getLspLogSettings()
 
     getLogger('amazonqLsp').info(`Sending log settings to lsp: %O`, lspLogSettings)
 
@@ -149,7 +149,7 @@ export async function startLanguageServer(
          *   When trace server is enabled, logs go to a seperate "Amazon Q Language Server" output.
          *   Otherwise, logs go to the regular "Amazon Q Logs" channel.
          */
-        ...(lspLogSettings.seperateTraceChannel
+        ...(lspLogSettings.traceChannelEnabled
             ? {}
             : {
                   outputChannel: globals.logOutputChannel,

@@ -209,6 +209,23 @@
                     "items": {
                         "type": "string"
                     }
+                },
+                "amazonQ.lsp.traceChannel": {
+                    "type": "boolean",
+                    "markdownDescription": "%AWS.configuration.description.amazonq.lsp.traceChannel%",
+                    "default": false
+                },
+                "amazonQ.lsp.logLevel": {
+                    "type": "string",
+                    "markdownDescription": "%AWS.configuration.description.amazonq.lsp.logLevel%",
+                    "default": "info",
+                    "enum": [
+                        "error",
+                        "warn",
+                        "info",
+                        "log",
+                        "debug"
+                    ]
                 }
             }
         },
