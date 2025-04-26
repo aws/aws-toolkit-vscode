@@ -89,7 +89,6 @@ export async function activate(languageClient: LanguageClient, encryptionKey: Bu
         }),
         Settings.instance.onDidChangeSection(lspSettingsSection, () => {
             void pushConfigUpdate(languageClient, { type: 'logging', ...getLspLogSettings() })
-            getLogger().info('LSP settings changed, sending to lsp')
         })
     )
 }
