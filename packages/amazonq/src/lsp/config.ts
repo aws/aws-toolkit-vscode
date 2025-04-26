@@ -6,7 +6,7 @@
 import { DevSettings, getLogger, getServiceEnvVarConfig, Settings } from 'aws-core-vscode/shared'
 import { LspConfig } from 'aws-core-vscode/amazonq'
 
-// Taken from language server repo since they are not exported:
+// Taken from language server runtimes since they are not exported:
 // https://github.com/aws/language-server-runtimes/blob/eae85672c345d8adaf4c8cbd741260b8a59750c4/runtimes/runtimes/util/loggingUtil.ts#L4-L10
 const validLspLogLevels = ['error', 'warn', 'info', 'log', 'debug']
 export interface ExtendedAmazonQLSPConfig extends LspConfig {
