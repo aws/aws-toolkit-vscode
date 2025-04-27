@@ -47,7 +47,7 @@ export function getLspLogSettings(): { traceChannelEnabled: boolean; lspLogLevel
 export function sanitizeLogLevel(lspLogLevel: string): LspLogLevel {
     if (!isValidLspLogLevel(lspLogLevel)) {
         getLogger('amazonqLsp').warn(
-            `Invalid log level for amazonq.lsp.logLevel: ${lspLogLevel}. Defaulting to 'info'.`
+            `Invalid log level for ${lspSettingsSection}.logLevel: ${lspLogLevel}. Defaulting to 'info'.`
         )
         return 'info'
     }
