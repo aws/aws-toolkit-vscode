@@ -14,7 +14,7 @@ export interface ExtendedAmazonQLSPConfig extends LspConfig {
 // https://github.com/aws/language-server-runtimes/blob/eae85672c345d8adaf4c8cbd741260b8a59750c4/runtimes/runtimes/util/loggingUtil.ts#L4-L10
 const validLspLogLevels = ['error', 'warn', 'info', 'log', 'debug'] as const
 export type LspLogLevel = (typeof validLspLogLevels)[number]
-export const lspLogLevelMapping: Map<vscode.LogLevel, LspLogLevel> = new Map([
+const lspLogLevelMapping: Map<vscode.LogLevel, LspLogLevel> = new Map([
     [vscode.LogLevel.Error, 'error'],
     [vscode.LogLevel.Warning, 'warn'],
     [vscode.LogLevel.Info, 'info'],
@@ -46,7 +46,11 @@ export function getAmazonQLspConfig(): ExtendedAmazonQLSPConfig {
         ...getServiceEnvVarConfig('amazonqLsp', Object.keys(defaultAmazonQLspConfig)),
     }
 }
-
+/**
+ * The language server logging levels do not directly match those used in VSC. Therefore, we must perform a mapping defined by {@link lspLogLevelMapping}
+ * @param logLevel vscode log level (0-5)
+ * @returns language server log level
+ */
 export function toAmazonQLSPLogLevel(logLevel: vscode.LogLevel): LspLogLevel {
     return lspLogLevelMapping.get(logLevel) ?? 'info'
 }
