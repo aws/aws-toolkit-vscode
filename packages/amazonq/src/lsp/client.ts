@@ -269,6 +269,7 @@ function onServerRestartHandler(client: LanguageClient, auth: AmazonQLspAuth) {
 }
 
 function getConfigSection(section: ConfigSection) {
+    getLogger('amazonqLsp').debug('Fetching config section %s for language server', section)
     switch (section) {
         case 'aws.q':
             /**
