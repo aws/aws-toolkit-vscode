@@ -68,7 +68,7 @@ export abstract class CachedResource<V> {
             const duration = now() - resource.timestamp
             if (duration < this.expirationInMilli) {
                 logger.debug(
-                    `cache hit, duration(%sms) is less than expiration(%sms), returning cached value %s`,
+                    `cache hit, duration(%sms) is less than expiration(%sms), returning cached value: %s`,
                     duration,
                     this.expirationInMilli,
                     this.key
@@ -76,16 +76,16 @@ export abstract class CachedResource<V> {
                 // release the lock
                 await this.releaseLock(resource, cachedValue)
                 return resource.result
-            } else {
-                logger.debug(
-                    `cache is stale, duration(%sms) is older than expiration(%sms), pulling latest resource %s`,
-                    duration,
-                    this.expirationInMilli,
-                    this.key
-                )
             }
+
+            logger.debug(
+                `cache is stale, duration(%sms) is older than expiration(%sms), pulling latest resource: %s`,
+                duration,
+                this.expirationInMilli,
+                this.key
+            )
         } else {
-            logger.info(`cache miss, pulling latest resource %s`, this.key)
+            logger.info(`cache miss, pulling latest resource: %s`, this.key)
         }
 
         /**
@@ -104,8 +104,8 @@ export abstract class CachedResource<V> {
                 timestamp: now(),
                 result: latest,
             }
-            logger.info(`doen loading latest resource, updating resource cache: %s`, this.key)
             await this.releaseLock(r)
+            logger.info(`loaded latest resource and updated cache: %s`, this.key)
             return latest
         } catch (e) {
             logger.error(`failed to load latest resource, releasing lock: %s`, this.key)
@@ -129,7 +129,7 @@ export abstract class CachedResource<V> {
 
         const lock = await waitUntil(async () => {
             const lock = await _acquireLock()
-            logger.debug(`try obtain resource cache read write lock for resource %s`, this.key)
+            logger.debug(`trying to acquire resource cache lock: %s`, this.key)
             if (lock) {
                 return lock
             }
