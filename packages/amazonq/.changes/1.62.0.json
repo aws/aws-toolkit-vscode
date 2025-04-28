@@ -1,0 +1,14 @@
+{
+	"date": "2025-04-25",
+	"version": "1.62.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Toast message to warn users if Developer Profile is not selected"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Fix users can not log in successfully with 2+ IDE instnaces open due to throttle error throw by the service"
+		}
+	]
+}

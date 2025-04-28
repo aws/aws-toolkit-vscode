@@ -100,13 +100,7 @@ export * as diagnosticsProvider from './service/diagnosticsProvider'
 export * from './ui/codeWhispererNodes'
 export { SecurityScanError, SecurityScanTimedOutError } from '../codewhisperer/models/errors'
 export * as CodeWhispererConstants from '../codewhisperer/models/constants'
-export {
-    getSelectedCustomization,
-    setSelectedCustomization,
-    baseCustomization,
-    onProfileChangedListener,
-    CustomizationProvider,
-} from './util/customizationUtil'
+export { getSelectedCustomization, setSelectedCustomization, baseCustomization } from './util/customizationUtil'
 export { Container } from './service/serviceContainer'
 export * from './util/gitUtil'
 export * from './ui/prompters'
