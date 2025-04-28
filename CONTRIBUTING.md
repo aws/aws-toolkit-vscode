@@ -388,6 +388,10 @@ If you need to report an issue attach these to give the most detailed informatio
 5. Now you should see additional `[debug]` prefixed logs in the output.
     - ![](./docs/images/logsDebugLog.png)
 
+#### Language Server Logs
+
+For information related to configuring the logs produced by the AmazonQ language server, see [Language Server Logging](./docs/lsp.md#language-server-logging).
+
 ### Telemetry
 
 -   See [docs/telemetry.md](./docs/telemetry.md) for guidelines on developing telemetry in this project.
