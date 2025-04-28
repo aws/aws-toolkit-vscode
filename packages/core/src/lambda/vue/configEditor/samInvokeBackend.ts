@@ -381,6 +381,14 @@ export class SamInvokeWebview extends VueWebview {
                 return await vscode.debug.startDebugging(folder, finalConfig)
             }
         )
+        vscode.window.setStatusBarMessage(
+            localize(
+                'AWS.lambda.invoke.completed.statusBarMessage',
+                '$(testing-passed-icon) Invoke completed: {0}',
+                functionName
+            ),
+            5000
+        )
     }
 
     public async getLaunchConfigQuickPickItems(

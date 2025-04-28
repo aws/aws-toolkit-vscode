@@ -122,7 +122,7 @@ export class RemoteInvokeWebview extends VueWebview {
                     vscode.window.setStatusBarMessage(
                         result === 'Succeeded'
                             ? localize(
-                                  'AWS.lambda.invoke.succeed.statusBarMessage',
+                                  'AWS.lambda.invoke.succeeded.statusBarMessage',
                                   '$(testing-passed-icon) Invoke succeeded: {0}',
                                   this.data.FunctionName
                               )

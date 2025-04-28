@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "Lambda: add progress status item for Lambda invoke actions"
+}

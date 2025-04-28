@@ -583,8 +583,8 @@ describe('SamInvokeWebview', () => {
             await samInvokeWebview.invokeLaunchConfig(mockConfig)
             const messages = getTestWindow().statusBar.messages
             assert.strictEqual(messages.length, 2)
-            assert.strictEqual(messages[0], 'Remote Invoke Function: testFunction')
-            assert.strictEqual(messages[1], '$(testing-failed-icon) Invoke failed: testFunction')
+            assert.strictEqual(messages[0], 'Local Invoke Function: foobar')
+            assert.strictEqual(messages[1], '$(testing-passed-icon) Invoke completed: foobar')
 
             assert(startDebuggingStub.called)
         })
