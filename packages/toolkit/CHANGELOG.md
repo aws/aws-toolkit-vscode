@@ -1,3 +1,7 @@
+## 3.56.0 2025-04-25
+
+- Miscellaneous non-user-facing changes
+
 ## 3.55.0 2025-04-18
 
 - Miscellaneous non-user-facing changes
