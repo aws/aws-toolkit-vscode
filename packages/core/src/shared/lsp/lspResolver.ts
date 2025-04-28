@@ -23,12 +23,20 @@ import vscode from 'vscode'
 const remoteDownloadTimeout = oneMinute * 30
 
 export class LanguageServerResolver {
+    private readonly downloadMessage: string
+
     constructor(
         private readonly manifest: Manifest,
         private readonly lsName: string,
         private readonly versionRange: semver.Range,
+        /**
+         * Custom message to show user when downloading, if undefined it will use the default.
+         */
+        downloadMessage?: string,
         private readonly _defaultDownloadFolder?: string
-    ) {}
+    ) {
+        this.downloadMessage = downloadMessage ?? `Updating '${this.lsName}' language server`
+    }
 
     /**
      * Downloads and sets up the Language Server, attempting different locations in order:
@@ -109,7 +117,7 @@ export class LanguageServerResolver {
         const timeout = new Timeout(remoteDownloadTimeout)
         void showProgressWithTimeout(
             {
-                title: `Downloading '${this.lsName}' language server`,
+                title: this.downloadMessage,
                 location: vscode.ProgressLocation.Notification,
                 cancellable: false,
             },
