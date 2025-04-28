@@ -36,7 +36,7 @@ export const lspSettingsSection = 'amazonQ.lsp'
 export function getLspLogSettings(): { traceChannelEnabled: boolean; lspLogLevel: LspLogLevel } {
     const lspSettings = Settings.instance.getSection(lspSettingsSection)
     const lspLogLevel = lspSettings.get('logLevel', 'info')
-    const traceChannelEnabled = lspSettings.get('trace', false)
+    const traceChannelEnabled = lspSettings.get('traceChannel', false)
 
     return {
         traceChannelEnabled,

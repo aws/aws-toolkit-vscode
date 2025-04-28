@@ -53,7 +53,7 @@ sequenceDiagram
     ```
 4. Uncomment the `__AMAZONQLSP_PATH` and `__AMAZONQLSP_UI` variables in the `amazonq/.vscode/launch.json` extension configuration
 5. Use the `Launch LSP with Debugging` configuration and set breakpoints in VSCode or the language server
-6. (Optional): Enable `"amazonq.lsp.trace": "on"` in your VSCode settings to view detailed log messages sent to/from the language server. These log messages will show up in the "Amazon Q Language Server" output channel. `"amazonq.lsp.logLevel"` can be used to configure the log level for the language server.
+6. (Optional): Enable `"amazonq.lsp.traceChannel": "on"` in your VSCode settings to view detailed log messages sent to/from the language server. These log messages will show up in the "Amazon Q Language Server" output channel. `"amazonq.lsp.logLevel"` can be used to configure the log level for the language server.
 
 ## Amazon Q Inline Activation
 
