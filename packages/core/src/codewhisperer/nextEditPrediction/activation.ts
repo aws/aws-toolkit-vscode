@@ -12,13 +12,7 @@ import { ExtContext } from '../../shared/extensions'
 export let predictionTracker: PredictionTracker | undefined
 let keyStrokeHandler: PredictionKeyStrokeHandler | undefined
 
-export function activateNextEditPrediction(context: ExtContext): void {
-    // Skip activation if storage path is not available
-    if (!context.extensionContext.storageUri?.fsPath) {
-        getLogger().info('Next Edit Prediction not activated: storage path is not available')
-        return
-    }
-
+export function activateEditTracking(context: ExtContext): void {
     // Initialize the tracker
     predictionTracker = new PredictionTracker(context.extensionContext)
 
@@ -32,5 +26,5 @@ export function activateNextEditPrediction(context: ExtContext): void {
         })
     )
 
-    getLogger().info('Next Edit Prediction activated')
+    getLogger('nextEditPrediction').debug('Next Edit Prediction activated')
 }

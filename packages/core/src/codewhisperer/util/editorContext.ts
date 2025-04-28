@@ -158,7 +158,6 @@ export async function buildListRecommendationRequest(
 
     // Combine inline and prediction supplemental contexts
     const finalSupplementalContext = inlineSupplementalContext.concat(predictionSupplementalContext)
-
     return {
         request: {
             fileContext: fileContext,

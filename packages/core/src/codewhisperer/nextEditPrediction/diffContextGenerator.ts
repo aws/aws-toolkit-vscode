@@ -8,6 +8,8 @@ import { getLogger } from '../../shared/logger/logger'
 import * as codewhispererClient from '../client/codewhisperer'
 import { supplementalContextMaxTotalLength, charactersLimit } from '../models/constants'
 
+const logger = getLogger('nextEditPrediction')
+
 /**
  * Generates a unified diff format between old and new file contents
  */
@@ -94,11 +96,15 @@ export function generateDiffContexts(
                 },
             })
         } catch (err) {
-            getLogger().error(`Failed to generate diff: ${err}`)
+            logger.error(`Failed to generate diff: ${err}`)
         }
     }
 
-    return trimSupplementalContexts(supplementalContexts, maxContexts)
+    const trimmedContext = trimSupplementalContexts(supplementalContexts, maxContexts)
+    logger.debug(
+        `supplemental contexts: ${trimmedContext.length} contexts, total size: ${trimmedContext.reduce((sum, ctx) => sum + ctx.content.length, 0)} characters`
+    )
+    return trimmedContext
 }
 
 /**

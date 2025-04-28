@@ -47,13 +47,16 @@ export class PredictionKeyStrokeHandler {
 
     /**
      * Registers listeners for visibility events to maintain shadow copies of document content
+     * Only store and update shadow copies for currently visible editors
+     * And remove shadow copies for files that are no longer visible
+     * And edits are processed only if a shadow copy exists
+     * This avoids the memory problem if hidden files are bulk edited, i.e. with global find/replace
      */
     private registerVisibleDocumentListener(): void {
         // Track when documents become visible (switched to)
         const visibleDisposable = vscode.window.onDidChangeVisibleTextEditors((editors) => {
             const currentVisibleFiles = new Set<string>()
 
-            // Update shadow copies for currently visible editors
             for (const editor of editors) {
                 if (editor.document.uri.scheme === 'file') {
                     const filePath = editor.document.uri.fsPath
@@ -62,7 +65,6 @@ export class PredictionKeyStrokeHandler {
                 }
             }
 
-            // Remove shadow copies for files that are no longer visible
             for (const filePath of this.shadowCopies.keys()) {
                 if (!currentVisibleFiles.has(filePath)) {
                     this.shadowCopies.delete(filePath)
@@ -76,7 +78,7 @@ export class PredictionKeyStrokeHandler {
     private updateShadowCopy(document: vscode.TextDocument): void {
         if (document.uri.scheme === 'file') {
             this.shadowCopies.set(document.uri.fsPath, document.getText())
-            getLogger().debug(`Updated shadow copy for ${document.uri.fsPath}`)
+            getLogger('nextEditPrediction').debug(`Updated shadow copy for ${document.uri.fsPath}`)
         }
     }
 
@@ -85,7 +87,7 @@ export class PredictionKeyStrokeHandler {
      */
     private registerTextDocumentChangeListener(): void {
         // Listen for document changes
-        const changeDisposable = vscode.workspace.onDidChangeTextDocument((event) => {
+        const changeDisposable = vscode.workspace.onDidChangeTextDocument(async (event) => {
             const filePath = event.document.uri.fsPath
             const prevContent = this.shadowCopies.get(filePath)
 
@@ -99,7 +101,7 @@ export class PredictionKeyStrokeHandler {
                 return
             }
 
-            this.tracker.processEdit(event.document, prevContent)
+            await this.tracker.processEdit(event.document, prevContent)
             this.updateShadowCopy(event.document)
         })
 
