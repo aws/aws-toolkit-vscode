@@ -9,7 +9,7 @@ import * as os from 'os'
 import xml2js = require('xml2js')
 import * as CodeWhispererConstants from '../../models/constants'
 import { existsSync, readFileSync, writeFileSync } from 'fs' // eslint-disable-line no-restricted-imports
-import { BuildSystem, DB, FolderInfo, transformByQState } from '../../models/model'
+import { BuildSystem, DB, FolderInfo, TransformationType, transformByQState } from '../../models/model'
 import { IManifestFile } from '../../../amazonqFeatureDev/models'
 import fs from '../../../shared/fs/fs'
 import globals from '../../../shared/extensionGlobals'
@@ -31,7 +31,10 @@ export async function writeAndShowBuildLogs(isLocalInstall: boolean = false) {
     const logFilePath = path.join(os.tmpdir(), 'build-logs.txt')
     writeFileSync(logFilePath, transformByQState.getBuildLog())
     const doc = await vscode.workspace.openTextDocument(logFilePath)
-    if (!transformByQState.getBuildLog().includes('clean install succeeded')) {
+    if (
+        !transformByQState.getBuildLog().includes('clean install succeeded') &&
+        transformByQState.getTransformationType() !== TransformationType.SQL_CONVERSION
+    ) {
         // only show the log if the build failed; show it in second column for intermediate builds only
         const options = isLocalInstall ? undefined : { viewColumn: vscode.ViewColumn.Two }
         await vscode.window.showTextDocument(doc, options)
