@@ -32,7 +32,7 @@ export function isValidConfigSection(section: unknown): section is ConfigSection
 
 export const defaultAmazonQLspConfig: ExtendedAmazonQLSPConfig = {
     manifestUrl:
-        'https://raw.githubusercontent.com/aws/aws-toolkit-vscode/7399e6e32e8f674fc16791944a0a99305b81045c/qAgenticServerManifest.json', // TODO swap this back
+        'https://raw.githubusercontent.com/aws/aws-toolkit-vscode/cb9158dd012b2126b48b97974fb326820081ac64/qAgenticServerManifest.json', // TODO swap this back
     supportedVersions: '*', // TODO swap this back
     id: 'AmazonQ', // used across IDEs for identifying global storage/local disk locations. Do not change.
     suppressPromptPrefix: 'amazonQ',
