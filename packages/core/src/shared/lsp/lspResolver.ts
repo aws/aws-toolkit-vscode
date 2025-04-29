@@ -135,7 +135,7 @@ export class LanguageServerResolver {
     ): Promise<LspResult> {
         const timeout = await this.showDownloadProgress()
         try {
-            if (await this.downloadRemoteTargetContent(targetContents, latestVersion.serverVersion, timeout)) {
+            if (await this.downloadRemoteTargetContent(targetContents, latestVersion, timeout)) {
                 return {
                     location: 'remote',
                     version: latestVersion.serverVersion,
@@ -236,8 +236,8 @@ export class LanguageServerResolver {
      *  true, if all of the contents were successfully downloaded and unzipped
      *  false, if any of the contents failed to download or unzip
      */
-    private async downloadRemoteTargetContent(contents: TargetContent[], version: string, timeout: Timeout) {
-        const downloadDirectory = this.getDownloadDirectory(version)
+    private async downloadRemoteTargetContent(contents: TargetContent[], lspVersion: LspVersion, timeout: Timeout) {
+        const downloadDirectory = this.getDownloadDirectory(lspVersion.serverVersion)
 
         if (!(await fs.existsDir(downloadDirectory))) {
             await fs.mkdir(downloadDirectory)
@@ -272,6 +272,12 @@ export class LanguageServerResolver {
         }
 
         const filesToDownload = await lspSetupStage('validate', async () => (await Promise.all(verifyTasks)).flat())
+
+        // We were instructed by legal to show this message
+        const thirdPartyLicenses = lspVersion.thirdPartyLicenses
+        logger.info(
+            `Installing '${this.lsName}' Language Server v${lspVersion.serverVersion} to: ${downloadDirectory}${thirdPartyLicenses ? ` (Attribution notice can be found at ${thirdPartyLicenses})` : ''}`
+        )
 
         for (const file of filesToDownload) {
             await fs.writeFile(`${downloadDirectory}/${file.filename}`, file.data)
