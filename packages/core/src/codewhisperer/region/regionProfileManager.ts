@@ -111,12 +111,15 @@ export class RegionProfileManager {
             return []
         }
         const availableProfiles: RegionProfile[] = []
+        const failedRegions: string[] = []
+
         for (const [region, endpoint] of endpoints.entries()) {
-            const client = await this.createQClient(region, endpoint, conn as SsoConnection)
-            const requester = async (request: CodeWhispererUserClient.ListAvailableProfilesRequest) =>
-                client.listAvailableProfiles(request).promise()
-            const request: CodeWhispererUserClient.ListAvailableProfilesRequest = {}
             try {
+                const client = await this.createQClient(region, endpoint, conn as SsoConnection)
+                const requester = async (request: CodeWhispererUserClient.ListAvailableProfilesRequest) =>
+                    client.listAvailableProfiles(request).promise()
+                const request: CodeWhispererUserClient.ListAvailableProfilesRequest = {}
+
                 const profiles = await pageableToCollection(requester, request, 'nextToken', 'profiles')
                     .flatten()
                     .promise()
@@ -135,13 +138,22 @@ export class RegionProfileManager {
                 })
 
                 availableProfiles.push(...mappedPfs)
+                RegionProfileManager.logger.info(`Found ${mappedPfs.length} profiles in region ${region}`)
             } catch (e) {
                 const logMsg = isAwsError(e) ? `requestId=${e.requestId}; message=${e.message}` : (e as Error).message
-                RegionProfileManager.logger.error(`failed to listRegionProfile: ${logMsg}`)
-                throw e
+                RegionProfileManager.logger.error(`Failed to list profiles for region ${region}: ${logMsg}`)
+                failedRegions.push(region)
             }
+        }
 
-            RegionProfileManager.logger.info(`available amazonq profiles: ${availableProfiles.length}`)
+        if (availableProfiles.length === 0 && failedRegions.length > 0) {
+            // Only throw error if all regions fail
+            throw new Error(`Failed to list profiles for all regions: ${failedRegions.join(', ')}`)
+        }
+
+        RegionProfileManager.logger.info(`Total available amazonq profiles: ${availableProfiles.length}`)
+        if (failedRegions.length > 0) {
+            RegionProfileManager.logger.warn(`Failed to list profiles for regions: ${failedRegions.join(', ')}`)
         }
 
         this._profiles = availableProfiles
