@@ -67,7 +67,7 @@ export class CodeWhispererSettings extends fromExtensionManifest('amazonQ', desc
     }
 
     public getIndexCacheDirPath(): string {
-        return this.get('workspaceIndexCacheDirPath', undefined)
+        return this.get('workspaceIndexCacheDirPath', '')
     }
 
     public getIndexIgnoreFilePatterns(): string[] {
