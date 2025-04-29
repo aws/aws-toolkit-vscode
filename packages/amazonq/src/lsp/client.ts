@@ -101,7 +101,7 @@ export async function startLanguageServer(
                 },
                 awsClientCapabilities: {
                     q: {
-                        developerProfiles: false,
+                        developerProfiles: true,
                     },
                     window: {
                         notifications: true,
