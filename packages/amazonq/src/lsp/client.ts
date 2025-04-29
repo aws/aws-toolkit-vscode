@@ -281,8 +281,7 @@ function getConfigSection(section: ConfigSection) {
                     customization: undefinedIfEmpty(getSelectedCustomization().arn),
                     optOutTelemetry: getOptOutPreference() === 'OPTOUT',
                     projectContext: {
-                        // TODO: we might need another setting to control the actual indexing
-                        enableLocalIndexing: true,
+                        enableLocalIndexing: CodeWhispererSettings.instance.isLocalIndexEnabled(),
                         enableGpuAcceleration: CodeWhispererSettings.instance.isLocalIndexGPUEnabled(),
                         indexWorkerThreads: CodeWhispererSettings.instance.getIndexWorkerThreads(),
                         localIndexing: {
