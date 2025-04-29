@@ -13,21 +13,30 @@ import { TargetContent, logger, LspResult, LspVersion, Manifest } from './types'
 import { createHash } from '../crypto'
 import { lspSetupStage, StageResolver, tryStageResolvers } from './utils/setupStage'
 import { HttpResourceFetcher } from '../resourcefetcher/httpResourceFetcher'
-import { showMessageWithCancel } from '../../shared/utilities/messages'
+import { showProgressWithTimeout } from '../../shared/utilities/messages'
 import { Timeout } from '../utilities/timeoutUtils'
 import { oneMinute } from '../datetime'
+import vscode from 'vscode'
 
 // max timeout for downloading remote LSP assets. Some asserts are large (100+ MB) so this needs to be large for slow connections.
 // Since the user can cancel this one we can let it run very long.
 const remoteDownloadTimeout = oneMinute * 30
 
 export class LanguageServerResolver {
+    private readonly downloadMessage: string
+
     constructor(
         private readonly manifest: Manifest,
         private readonly lsName: string,
         private readonly versionRange: semver.Range,
+        /**
+         * Custom message to show user when downloading, if undefined it will use the default.
+         */
+        downloadMessage?: string,
         private readonly _defaultDownloadFolder?: string
-    ) {}
+    ) {
+        this.downloadMessage = downloadMessage ?? `Updating '${this.lsName}' language server`
+    }
 
     /**
      * Downloads and sets up the Language Server, attempting different locations in order:
@@ -106,7 +115,15 @@ export class LanguageServerResolver {
      */
     private async showDownloadProgress() {
         const timeout = new Timeout(remoteDownloadTimeout)
-        await showMessageWithCancel(`Downloading '${this.lsName}' language server`, timeout)
+        void showProgressWithTimeout(
+            {
+                title: this.downloadMessage,
+                location: vscode.ProgressLocation.Notification,
+                cancellable: false,
+            },
+            timeout,
+            0
+        )
         return timeout
     }
 

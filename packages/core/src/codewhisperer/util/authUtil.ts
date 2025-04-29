@@ -46,6 +46,7 @@ import { withTelemetryContext } from '../../shared/telemetry/util'
 import { focusAmazonQPanel } from '../../codewhispererChat/commands/registerCommands'
 import { throttle } from 'lodash'
 import { RegionProfileManager } from '../region/regionProfileManager'
+
 /** Backwards compatibility for connections w pre-chat scopes */
 export const codeWhispererCoreScopes = [...scopesCodeWhispererCore]
 export const codeWhispererChatScopes = [...codeWhispererCoreScopes, ...scopesCodeWhispererChat]
@@ -142,6 +143,7 @@ export class AuthUtil {
 
             if (!this.isConnected()) {
                 await this.regionProfileManager.invalidateProfile(this.regionProfileManager.activeRegionProfile?.arn)
+                await this.regionProfileManager.clearCache()
             }
         })
 

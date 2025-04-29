@@ -42,7 +42,7 @@ export class AmazonQChatViewProvider implements WebviewViewProvider {
         context: WebviewViewResolveContext,
         _token: CancellationToken
     ) {
-        const lspDir = Uri.parse(LanguageServerResolver.defaultDir())
+        const lspDir = Uri.file(LanguageServerResolver.defaultDir())
         const dist = Uri.joinPath(globals.context.extensionUri, 'dist')
 
         const resourcesRoots = [lspDir, dist]
@@ -54,7 +54,7 @@ export class AmazonQChatViewProvider implements WebviewViewProvider {
         const mynahUIPath = getAmazonQLspConfig().ui
         if (process.env.WEBPACK_DEVELOPER_SERVER && mynahUIPath) {
             const dir = path.dirname(mynahUIPath)
-            resourcesRoots.push(Uri.parse(dir))
+            resourcesRoots.push(Uri.file(dir))
         }
 
         webviewView.webview.options = {
@@ -68,11 +68,9 @@ export class AmazonQChatViewProvider implements WebviewViewProvider {
 
         this.connectorAdapterPath =
             serverHostname !== undefined
-                ? Uri.parse(serverHostname)
-                      .with({ path: `/${source}` })
-                      .toString()
-                : webviewView.webview.asWebviewUri(Uri.parse(path.join(dist.fsPath, source))).toString()
-        this.uiPath = webviewView.webview.asWebviewUri(Uri.parse(this.mynahUIPath)).toString()
+                ? `${serverHostname}/${source}`
+                : webviewView.webview.asWebviewUri(Uri.joinPath(dist, source)).toString()
+        this.uiPath = webviewView.webview.asWebviewUri(Uri.file(this.mynahUIPath)).toString()
 
         webviewView.webview.html = await this.getWebviewContent()
 
@@ -105,11 +103,11 @@ export class AmazonQChatViewProvider implements WebviewViewProvider {
         const regionProfileString: string = JSON.stringify(regionProfile)
 
         const entrypoint = process.env.WEBPACK_DEVELOPER_SERVER
-            ? 'http: localhost'
-            : 'https: file+.vscode-resources.vscode-cdn.net'
+            ? 'http://localhost:8080'
+            : 'https://file+.vscode-resource.vscode-cdn.net'
 
         const contentPolicy = `default-src ${entrypoint} data: blob: 'unsafe-inline';
-            script-src ${entrypoint} filesystem: ws: wss: 'unsafe-inline';`
+            script-src ${entrypoint} filesystem: file: vscode-resource: https: ws: wss: 'unsafe-inline';`
 
         return `
         <!DOCTYPE html>
