@@ -172,7 +172,7 @@ export default defineComponent({
 
             const source = this.resourceData?.source
 
-            client.invokeLaunchConfig(config, source, this.useDebugger).catch((e: Error) => {
+            client.invokeLaunchConfig(config, source).catch((e: Error) => {
                 console.error(`invokeLaunchConfig failed: ${e.message}`)
             })
         },
@@ -451,6 +451,7 @@ export default defineComponent({
                           },
                       }
                     : undefined,
+                noDebug: !this.useDebugger,
             }
         },
         clearForm() {
