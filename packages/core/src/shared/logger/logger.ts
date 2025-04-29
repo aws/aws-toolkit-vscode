@@ -19,6 +19,7 @@ export type LogTopic =
     | 'stepfunctions'
     | 'unknown'
     | 'resourceCache'
+    | 'telemetry'
 
 class ErrorLog {
     constructor(

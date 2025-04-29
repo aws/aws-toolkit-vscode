@@ -19,7 +19,7 @@ import {
 } from '../vscode/env'
 import { addTypeName } from '../utilities/typeConstructors'
 import globals, { isWeb } from '../extensionGlobals'
-import { mapMetadata } from './telemetryLogger'
+import { mapMetadata, MetadataObj } from './telemetryLogger'
 import { Result } from './telemetry.gen'
 import { MetricDatum } from './clienttelemetry'
 import { isValidationExemptMetric } from './exemptMetrics'
@@ -312,32 +312,40 @@ export async function getComputeEnvType(): Promise<EnvType> {
 
 /**
  * Validates that emitted telemetry metrics
- * 1. contain a result property and
+ * 1. contain a result property
  * 2. contain a reason propery if result = 'Failed'.
+ * 3. are not missing fields
  */
-export function validateMetricEvent(event: MetricDatum, fatal: boolean) {
+export function validateMetricEvent(event: MetricDatum, fatal: boolean, isExempt = isValidationExemptMetric) {
+    if (!isExempt(event.MetricName) && event.Metadata) {
+        const metadata = mapMetadata([])(event.Metadata)
+        validateMetadata(event.MetricName, metadata, fatal)
+    }
+}
+
+function validateMetadata(metricName: string, metadata: MetadataObj, fatal: boolean) {
     const failedStr: Result = 'Failed'
-    const telemetryRunDocsStr =
+    const preferRunSuffix =
         ' Consider using `.run()` instead of `.emit()`, which will set these properties automatically. ' +
         'See https://github.com/aws/aws-toolkit-vscode/blob/master/docs/telemetry.md#guidelines'
-
-    if (!isValidationExemptMetric(event.MetricName) && event.Metadata) {
-        const metadata = mapMetadata([])(event.Metadata)
-        let msg = 'telemetry: invalid Metric: '
-
-        if (metadata.result === undefined) {
-            msg += `"${event.MetricName}" emitted without the \`result\` property, which is always required.`
-        } else if (metadata.result === failedStr && metadata.reason === undefined) {
-            msg += `"${event.MetricName}" emitted with result=Failed but without the \`reason\` property.`
-        } else {
-            return // Validation passed.
-        }
-
-        msg += telemetryRunDocsStr
+    const msgPrefix = 'invalid Metric: '
+    const logger = getLogger('telemetry')
+    const logOrThrow = (msg: string, includeSuffix: boolean) => {
+        const fullMsg = msgPrefix + msg + (includeSuffix ? preferRunSuffix : '')
+        logger.warn(fullMsg)
         if (fatal) {
-            throw new Error(msg)
+            throw new Error(fullMsg)
         }
-        getLogger().warn(msg)
+    }
+
+    if (metadata.result === undefined) {
+        logOrThrow(`"${metricName}" emitted without the \`result\` property, which is always required.`, true)
+    } else if (metadata.result === failedStr && metadata.reason === undefined) {
+        logOrThrow(`"${metricName}" emitted with result=Failed but without the \`reason\` property.`, true)
+    }
+
+    if (metadata.missingFields) {
+        logOrThrow(`"${metricName} emitted with missing fields: ${metadata.missingFields}`, false)
     }
 }
 
