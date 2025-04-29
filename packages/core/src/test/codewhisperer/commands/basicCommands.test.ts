@@ -193,36 +193,36 @@ describe('CodeWhisperer-basicCommands', function () {
             codeScansState = new TestCodeScansState()
         })
 
-        it('has auto scans enabled by default', async function () {
+        it('has auto scans disabled by default', async function () {
             targetCommand = testCommand(toggleCodeScans, codeScansState)
-            assert.strictEqual(codeScansState.isScansEnabled(), true)
+            assert.strictEqual(codeScansState.isScansEnabled(), false)
         })
 
         it('toggles states as expected', async function () {
             targetCommand = testCommand(toggleCodeScans, codeScansState)
-            assert.strictEqual(codeScansState.isScansEnabled(), true)
-            await targetCommand.execute(placeholder, cwQuickPickSource)
             assert.strictEqual(codeScansState.isScansEnabled(), false)
             await targetCommand.execute(placeholder, cwQuickPickSource)
             assert.strictEqual(codeScansState.isScansEnabled(), true)
             await targetCommand.execute(placeholder, cwQuickPickSource)
             assert.strictEqual(codeScansState.isScansEnabled(), false)
+            await targetCommand.execute(placeholder, cwQuickPickSource)
+            assert.strictEqual(codeScansState.isScansEnabled(), true)
         })
 
         it('setScansEnabled() works as expected', async function () {
-            // initially true
-            assert.strictEqual(codeScansState.isScansEnabled(), true)
-
-            await codeScansState.setScansEnabled(false)
+            // initially false
             assert.strictEqual(codeScansState.isScansEnabled(), false)
 
-            // set new state to current state
-            await codeScansState.setScansEnabled(false)
-            assert.strictEqual(codeScansState.isScansEnabled(), false)
-
-            // set to opposite state
             await codeScansState.setScansEnabled(true)
             assert.strictEqual(codeScansState.isScansEnabled(), true)
+
+            // set new state to current state
+            await codeScansState.setScansEnabled(true)
+            assert.strictEqual(codeScansState.isScansEnabled(), true)
+
+            // set to opposite state
+            await codeScansState.setScansEnabled(false)
+            assert.strictEqual(codeScansState.isScansEnabled(), false)
         })
 
         it('triggers event listener when toggled', async function () {
@@ -239,21 +239,7 @@ describe('CodeWhisperer-basicCommands', function () {
             assert.strictEqual(eventListener.callCount, 1)
         })
 
-        it('emits aws_modifySetting event on user toggling autoScans - deactivate', async function () {
-            targetCommand = testCommand(toggleCodeScans, codeScansState)
-            await targetCommand.execute(placeholder, cwQuickPickSource)
-
-            assert.strictEqual(codeScansState.isScansEnabled(), false)
-            assertTelemetryCurried('aws_modifySetting')({
-                settingId: CodeWhispererConstants.autoScansConfig.settingId,
-                settingState: CodeWhispererConstants.autoScansConfig.deactivated,
-            })
-        })
-
-        it('emits aws_modifySetting event on user toggling autoScans -- activate', async function () {
-            codeScansState = new TestCodeScansState(false)
-            assert.strictEqual(codeScansState.isScansEnabled(), false)
-
+        it('emits aws_modifySetting event on user toggling autoScans - activate', async function () {
             targetCommand = testCommand(toggleCodeScans, codeScansState)
             await targetCommand.execute(placeholder, cwQuickPickSource)
 
@@ -261,6 +247,20 @@ describe('CodeWhisperer-basicCommands', function () {
             assertTelemetryCurried('aws_modifySetting')({
                 settingId: CodeWhispererConstants.autoScansConfig.settingId,
                 settingState: CodeWhispererConstants.autoScansConfig.activated,
+            })
+        })
+
+        it('emits aws_modifySetting event on user toggling autoScans -- deactivate', async function () {
+            codeScansState = new TestCodeScansState(true)
+            assert.strictEqual(codeScansState.isScansEnabled(), true)
+
+            targetCommand = testCommand(toggleCodeScans, codeScansState)
+            await targetCommand.execute(placeholder, cwQuickPickSource)
+
+            assert.strictEqual(codeScansState.isScansEnabled(), false)
+            assertTelemetryCurried('aws_modifySetting')({
+                settingId: CodeWhispererConstants.autoScansConfig.settingId,
+                settingState: CodeWhispererConstants.autoScansConfig.deactivated,
             })
         })
 

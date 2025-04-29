@@ -28,6 +28,8 @@ import { parse } from '@aws-sdk/util-arn-parser'
 import { isAwsError, ToolkitError } from '../../shared/errors'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { localize } from '../../shared/utilities/vsCodeUtils'
+import { Commands } from '../../shared/vscode/commands2'
+import { CachedResource } from '../../shared/utilities/resourceCache'
 
 // TODO: is there a better way to manage all endpoint strings in one place?
 export const defaultServiceConfig: CodeWhispererConfig = {
@@ -57,6 +59,27 @@ export class RegionProfileManager {
 
     // Store the last API results (for UI propuse) so we don't need to call service again if doesn't require "latest" result
     private _profiles: RegionProfile[] = []
+
+    private readonly cache = new (class extends CachedResource<RegionProfile[]> {
+        constructor(private readonly profileProvider: () => Promise<RegionProfile[]>) {
+            super(
+                'aws.amazonq.regionProfiles.cache',
+                60000,
+                {
+                    resource: {
+                        locked: false,
+                        timestamp: 0,
+                        result: undefined,
+                    },
+                },
+                { timeout: 15000, interval: 1500, truthy: true }
+            )
+        }
+
+        override resourceProvider(): Promise<RegionProfile[]> {
+            return this.profileProvider()
+        }
+    })(this.listRegionProfile.bind(this))
 
     get activeRegionProfile() {
         const conn = this.connectionProvider()
@@ -102,6 +125,10 @@ export class RegionProfileManager {
     }
 
     constructor(private readonly connectionProvider: () => Connection | undefined) {}
+
+    async getProfiles(): Promise<RegionProfile[]> {
+        return this.cache.getResource()
+    }
 
     async listRegionProfile(): Promise<RegionProfile[]> {
         this._profiles = []
@@ -218,6 +245,9 @@ export class RegionProfileManager {
 
         // persist to state
         await this.persistSelectRegionProfile()
+
+        // Force status bar to reflect this change in state
+        await Commands.tryExecute('aws.amazonq.refreshStatusBar')
     }
 
     restoreProfileSelection = once(async () => {
@@ -234,7 +264,7 @@ export class RegionProfileManager {
             return
         }
         // cross-validation
-        this.listRegionProfile()
+        this.getProfiles()
             .then(async (profiles) => {
                 const r = profiles.find((it) => it.arn === previousSelected.arn)
                 if (!r) {
@@ -296,7 +326,7 @@ export class RegionProfileManager {
         const selected = this.activeRegionProfile
         let profiles: RegionProfile[] = []
         try {
-            profiles = await this.listRegionProfile()
+            profiles = await this.getProfiles()
         } catch (e) {
             return [
                 {
@@ -341,6 +371,11 @@ export class RegionProfileManager {
             )
             await globals.globalState.update('aws.amazonq.regionProfiles', updatedProfiles)
         }
+    }
+
+    // Should be called on connection changed in case users change to a differnet connection and use the wrong resultset.
+    async clearCache() {
+        await this.cache.clearCache()
     }
 
     async createQClient(region: string, endpoint: string, conn: SsoConnection): Promise<CodeWhispererUserClient> {

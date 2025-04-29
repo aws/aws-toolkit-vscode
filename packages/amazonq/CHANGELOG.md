@@ -1,3 +1,13 @@
+## 1.62.0 2025-04-25
+
+- **Bug Fix** Toast message to warn users if Developer Profile is not selected
+- **Bug Fix** Fix users can not log in successfully with 2+ IDE instnaces open due to throttle error throw by the service
+
+## 1.61.0 2025-04-22
+
+- **Bug Fix** Some users not signaled they needed to select a Region Profile to get features working
+- **bugfix** /review: disable auto-review by default
+
 ## 1.60.0 2025-04-18
 
 - **Bug Fix** Users might be bound to a customization which they dont have access with the selected profile and it causes service throwing 403 when using inline suggestion and chat features
