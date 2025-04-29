@@ -334,7 +334,7 @@ function validateMetadata(metricName: string, metadata: MetadataObj, fatal: bool
         const fullMsg = msgPrefix + msg + (includeSuffix ? preferRunSuffix : '')
         logger.warn(fullMsg)
         if (fatal) {
-            throw new Error(fullMsg)
+            throw new Error('telemetry: ' + fullMsg)
         }
     }
 
