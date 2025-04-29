@@ -40,7 +40,6 @@ export function registerCommands() {
     /**
      * make these no-ops, since theres still callers that need to be deprecated
      */
-    Commands.register('aws.amazonq.generateUnitTests', async (data) => {})
     Commands.register('aws.amazonq.updateContextCommandItems', () => {})
 }
 
