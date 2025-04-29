@@ -10,8 +10,6 @@ import * as codewhispererClient from '../client/codewhisperer'
 import { predictionTrackerDefaultConfig } from '../models/constants'
 import globals from '../../shared/extensionGlobals'
 
-const logger = getLogger('nextEditPrediction')
-
 // defaul values are stored in codewhisperer/model/constants
 export interface FileTrackerConfig {
     maxFiles: number
@@ -33,6 +31,7 @@ export interface FileSnapshot {
 
 export class PredictionTracker {
     private snapshots: Map<string, FileSnapshot[]> = new Map()
+    private logger = getLogger('nextEditPrediction')
     readonly config: FileTrackerConfig
     private storageSize: number = 0
 
@@ -81,14 +80,14 @@ export class PredictionTracker {
             fileSnapshots.push(snapshot)
             this.snapshots.set(filePath, fileSnapshots)
             this.storageSize += size
-            logger.debug(
+            this.logger.debug(
                 `Snapshot taken for file: ${filePath}, total snapshots: ${this.getTotalSnapshotCount()}, total size: ${Math.round(this.storageSize / 1024)} KB`
             )
 
             await this.enforceMemoryLimits()
             this.enforceTimeLimits(snapshot)
         } catch (err) {
-            logger.error(`Failed to save snapshot: ${err}`)
+            this.logger.error(`Failed to save snapshot: ${err}`)
         }
     }
 
@@ -110,7 +109,7 @@ export class PredictionTracker {
                 if (fileSnapshots.length === 0) {
                     this.snapshots.delete(snapshot.filePath)
                 }
-                logger.debug(
+                this.logger.debug(
                     `Snapshot deleted (aged out) for file: ${snapshot.filePath}, remaining snapshots: ${this.getTotalSnapshotCount()}, new size: ${Math.round(this.storageSize / 1024)} KB`
                 )
             }
@@ -136,7 +135,7 @@ export class PredictionTracker {
             const removedSnapshot = fileSnapshots.shift()
             if (removedSnapshot) {
                 this.storageSize -= removedSnapshot.size
-                logger.debug(
+                this.logger.debug(
                     `Snapshot deleted (memory limit) for file: ${removedSnapshot.filePath}, remaining snapshots: ${this.getTotalSnapshotCount()}, new size: ${Math.round(this.storageSize / 1024)} KB`
                 )
             }
