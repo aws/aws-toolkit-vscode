@@ -155,7 +155,7 @@ export class QuickActionHandler {
         }
     }
 
-    private handleTestCommand(chatPrompt: ChatPrompt, tabID: string, eventId: string | undefined) {
+    private handleTestCommand(chatPrompt: ChatPrompt, tabID: string | undefined, eventId: string | undefined) {
         if (!this.isTestEnabled || !this.mynahUI) {
             return
         }
@@ -167,6 +167,15 @@ export class QuickActionHandler {
             this.connector.onTabChange(testTabId)
             this.connector.startTestGen(testTabId, realPromptText)
             return
+        }
+
+        /**
+         * right click -> generate test has no tab id
+         * we have to manually create one if a testgen tab
+         * wasn't previously created
+         */
+        if (!tabID) {
+            tabID = this.mynahUI.updateStore('', {})
         }
 
         // if there is no test tab, open a new one
