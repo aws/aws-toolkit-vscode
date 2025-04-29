@@ -14,18 +14,13 @@ import { STOP_CHAT_RESPONSE } from '@aws/chat-client-ui-types'
  */
 export function registerCommands(provider: AmazonQChatViewProvider) {
     globals.context.subscriptions.push(
-        Commands.register('aws.amazonq.stopToolExecution', async () => {
-            // eslint-disable-next-line aws-toolkits/no-console-log
-            console.log('provider.getCurrentTabId()', provider.getCurrentTabId())
-            // Get all active tabs and cancel their tokens
-            if (provider.webview) {
-                void provider.webview.postMessage({
-                    command: STOP_CHAT_RESPONSE,
-                    params: {
-                        tabId: provider.getCurrentTabId(),
-                    },
-                })
-            }
+        Commands.register('aws.amazonq.stopChatResponse', async () => {
+            void provider.webview?.postMessage({
+                command: STOP_CHAT_RESPONSE,
+                params: {
+                    tabId: provider.getCurrentTabId(),
+                },
+            })
         }),
         registerGenericCommand('aws.amazonq.explainCode', 'Explain', provider),
         registerGenericCommand('aws.amazonq.refactorCode', 'Refactor', provider),

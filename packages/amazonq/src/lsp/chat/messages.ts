@@ -58,7 +58,7 @@ import { Disposable, LanguageClient, Position, TextDocumentIdentifier } from 'vs
 import * as jose from 'jose'
 import { AmazonQChatViewProvider } from './webviewProvider'
 import { AuthUtil } from 'aws-core-vscode/codewhisperer'
-import { amazonQDiffScheme, AmazonQPromptSettings, messages, openUrl } from 'aws-core-vscode/shared'
+import { amazonQDiffScheme, AmazonQPromptSettings, messages, openUrl, setContext } from 'aws-core-vscode/shared'
 import {
     DefaultAmazonQAppInitContext,
     messageDispatcher,
@@ -96,6 +96,16 @@ export function registerLanguageServerEventListener(languageClient: LanguageClie
             telemetry[telemetryName as keyof TelemetryBase].emit(e.data)
         }
     })
+}
+
+async function setVscodeContextProps() {
+    // if users are "pending profile selection", they're not fully connected and require profile selection for Q usage
+    // requireProfileSelection() always returns false for builderID users
+    await setContext('aws.codewhisperer.connected', this.isConnected() && !this.requireProfileSelection())
+    const doShowAmazonQLoginView = !this.isConnected() || this.isConnectionExpired() || this.requireProfileSelection()
+    await setContext('aws.amazonq.showLoginView', doShowAmazonQLoginView)
+    await setContext('aws.codewhisperer.connectionExpired', this.isConnectionExpired())
+    await setContext('aws.amazonq.connectedSsoIdc', isIdcSsoConnection(this.conn))
 }
 
 function getCursorState(selection: readonly vscode.Selection[]) {
@@ -210,27 +220,10 @@ export function registerMessageListeners(
             }
             case STOP_CHAT_RESPONSE: {
                 const tabId = (message as StopChatResponseMessage).params.tabId
-
-                // Special case: if tabId is 'all', cancel all tokens
-                if (tabId === 'all') {
-                    languageClient.info('[VSCode Client] Stopping all tool executions')
-                    for (const [id, token] of chatStreamTokens.entries()) {
-                        token.cancel()
-                        token.dispose()
-                        chatStreamTokens.delete(id)
-                    }
-                } else {
-                    // Cancel specific token
-                    const token = chatStreamTokens.get(tabId)
-                    if (token) {
-                        languageClient.info(`[VSCode Client] Stopping tool execution for tab ${tabId}`)
-                        token.cancel()
-                        token.dispose()
-                        chatStreamTokens.delete(tabId)
-                    } else {
-                        languageClient.info(`[VSCode Client] No active tool execution found for tab ${tabId}`)
-                    }
-                }
+                const token = chatStreamTokens.get(tabId)
+                token?.cancel()
+                token?.dispose()
+                chatStreamTokens.delete(tabId)
                 break
             }
             case chatRequestType.method: {

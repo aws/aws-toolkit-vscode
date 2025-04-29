@@ -44,7 +44,8 @@ export abstract class BaseLspInstaller<T extends ResourcePaths = ResourcePaths, 
             id,
             new Range(supportedVersions, {
                 includePrerelease: true,
-            })
+            }),
+            this.downloadMessageOverride
         ).resolve()
 
         const assetDirectory = installationResult.assetDirectory
@@ -74,6 +75,12 @@ export abstract class BaseLspInstaller<T extends ResourcePaths = ResourcePaths, 
         }
         return r
     }
+
+    /**
+     * Allows implementations of this class to set a custom message to show users
+     * when the artifacts are being downloaded. If not set, a default message will be shown.
+     */
+    protected downloadMessageOverride: string | undefined = undefined
 
     protected abstract postInstall(assetDirectory: string): Promise<void>
     protected abstract resourcePaths(assetDirectory?: string): T

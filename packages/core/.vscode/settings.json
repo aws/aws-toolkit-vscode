@@ -10,6 +10,10 @@
     "files.watcherExclude": {
         "**/src/testFixtures": true
     },
+    "aws.experiments": {
+        "amazonqLSP": true
+    },
+    "amazonq.trace.server": "verbose",
     "typescript.preferences.importModuleSpecifier": "relative",
     "javascript.preferences.importModuleSpecifier": "relative",
     "typescript.tsdk": "../../node_modules/typescript/lib",

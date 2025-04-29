@@ -23,7 +23,6 @@ import {
 import { AuthUtil, CodeWhispererSettings, getSelectedCustomization } from 'aws-core-vscode/codewhisperer'
 import {
     Settings,
-    oidcClientName,
     createServerOptions,
     globals,
     Experiments,
@@ -36,6 +35,7 @@ import {
 } from 'aws-core-vscode/shared'
 import { activate } from './chat/activation'
 import { AmazonQResourcePaths } from './lspInstaller'
+import { ConfigSection, isValidConfigSection, toAmazonQLSPLogLevel } from './config'
 
 const localize = nls.loadMessageBundle()
 const logger = getLogger('amazonqLsp.lspClient')
@@ -80,42 +80,11 @@ export async function startLanguageServer(
                  */
                 configuration: async (params, token, next) => {
                     const config = await next(params, token)
-                    if (params.items[0].section === 'aws.q') {
-                        const customization = undefinedIfEmpty(getSelectedCustomization().arn)
-                        /**
-                         * IMPORTANT: This object is parsed by the following code in the language server, **so
-                         * it must match that expected shape**.
-                         * https://github.com/aws/language-servers/blob/1d2ca018f2248106690438b860d40a7ee67ac728/server/aws-lsp-codewhisperer/src/shared/amazonQServiceManager/configurationUtils.ts#L114
-                         */
-                        return [
-                            {
-                                customization,
-                                optOutTelemetry: getOptOutPreference() === 'OPTOUT',
-                                projectContext: {
-                                    // TODO: we might need another setting to control the actual indexing
-                                    enableLocalIndexing: true,
-                                    enableGpuAcceleration: CodeWhispererSettings.instance.isLocalIndexGPUEnabled(),
-                                    indexWorkerThreads: CodeWhispererSettings.instance.getIndexWorkerThreads(),
-                                    localIndexing: {
-                                        ignoreFilePatterns: CodeWhispererSettings.instance.getIndexIgnoreFilePatterns(),
-                                        maxFileSizeMB: CodeWhispererSettings.instance.getMaxIndexFileSize(),
-                                        maxIndexSizeMB: CodeWhispererSettings.instance.getMaxIndexSize(),
-                                        indexCacheDirPath: CodeWhispererSettings.instance.getIndexCacheDirPath(),
-                                    },
-                                },
-                            },
-                        ]
+                    const section = params.items[0].section
+                    if (!isValidConfigSection(section)) {
+                        return config
                     }
-                    if (params.items[0].section === 'aws.codeWhisperer') {
-                        return [
-                            {
-                                includeSuggestionsWithCodeReferences:
-                                    CodeWhispererSettings.instance.isSuggestionsWithCodeReferencesEnabled(),
-                                shareCodeWhispererContentWithAWS: !CodeWhispererSettings.instance.isOptoutEnabled(),
-                            },
-                        ]
-                    }
-                    return config
+                    return getConfigSection(section)
                 },
             },
         },
@@ -125,7 +94,7 @@ export async function startLanguageServer(
                     name: env.appName,
                     version: version,
                     extension: {
-                        name: oidcClientName(),
+                        name: 'AmazonQ-For-VSCode',
                         version: '0.0.1',
                     },
                     clientId: crypto.randomUUID(),
@@ -139,6 +108,7 @@ export async function startLanguageServer(
                         showSaveFileDialog: true,
                     },
                 },
+                logLevel: toAmazonQLSPLogLevel(globals.logOutputChannel.logLevel),
             },
             credentials: {
                 providesBearerToken: true,
@@ -295,4 +265,44 @@ function onServerRestartHandler(client: LanguageClient, auth: AmazonQLspAuth) {
         // Need to set the auth token in the again
         await auth.refreshConnection(true)
     })
+}
+
+function getConfigSection(section: ConfigSection) {
+    getLogger('amazonqLsp').debug('Fetching config section %s for language server', section)
+    switch (section) {
+        case 'aws.q':
+            /**
+             * IMPORTANT: This object is parsed by the following code in the language server, **so
+             * it must match that expected shape**.
+             * https://github.com/aws/language-servers/blob/1d2ca018f2248106690438b860d40a7ee67ac728/server/aws-lsp-codewhisperer/src/shared/amazonQServiceManager/configurationUtils.ts#L114
+             */
+            return [
+                {
+                    customization: undefinedIfEmpty(getSelectedCustomization().arn),
+                    optOutTelemetry: getOptOutPreference() === 'OPTOUT',
+                    projectContext: {
+                        // TODO: we might need another setting to control the actual indexing
+                        enableLocalIndexing: true,
+                        enableGpuAcceleration: CodeWhispererSettings.instance.isLocalIndexGPUEnabled(),
+                        indexWorkerThreads: CodeWhispererSettings.instance.getIndexWorkerThreads(),
+                        localIndexing: {
+                            ignoreFilePatterns: CodeWhispererSettings.instance.getIndexIgnoreFilePatterns(),
+                            maxFileSizeMB: CodeWhispererSettings.instance.getMaxIndexFileSize(),
+                            maxIndexSizeMB: CodeWhispererSettings.instance.getMaxIndexSize(),
+                            indexCacheDirPath: CodeWhispererSettings.instance.getIndexCacheDirPath(),
+                        },
+                    },
+                },
+            ]
+        case 'aws.codeWhisperer':
+            return [
+                {
+                    includeSuggestionsWithCodeReferences:
+                        CodeWhispererSettings.instance.isSuggestionsWithCodeReferencesEnabled(),
+                    shareCodeWhispererContentWithAWS: !CodeWhispererSettings.instance.isOptoutEnabled(),
+                },
+            ]
+        case 'aws.logLevel':
+            return [toAmazonQLSPLogLevel(globals.logOutputChannel.logLevel)]
+    }
 }
