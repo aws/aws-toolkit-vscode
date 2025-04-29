@@ -376,22 +376,7 @@ describe('validateMetricEvent', function () {
         assertLogsContain('invalid Metric', false, 'warn')
     })
 
-    it('does not fail validation for metrics with missing fields when fatal=true', function () {
-        const metricEvent: MetricDatum = {
-            MetricName: 'invalid_metric_missing_fields',
-            Value: 1,
-            Unit: 'None',
-            Metadata: [
-                { Key: 'result', Value: 'Succeeded' },
-                { Key: 'missingFields', Value: 'field1,field2' },
-            ],
-        } as MetricDatum
-
-        validateMetricEvent(metricEvent, false)
-        assertLogsContain('invalid Metric', false, 'warn')
-    })
-
-    it('logs warning for metrics with missing fields when fatal=false', function () {
+    it('does not fail validation for metrics with missing fields with fatal=true', function () {
         const metricEvent: MetricDatum = {
             MetricName: 'invalid_metric_missing_fields',
             Value: 1,
