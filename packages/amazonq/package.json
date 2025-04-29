@@ -132,6 +132,10 @@
                             "type": "boolean",
                             "default": false
                         },
+                        "amazonQChatPairProgramming": {
+                            "type": "boolean",
+                            "default": false
+                        },
                         "amazonQSelectDeveloperProfile": {
                             "type": "boolean",
                             "default": false
@@ -181,7 +185,25 @@
                 "amazonQ.workspaceIndexMaxSize": {
                     "type": "number",
                     "markdownDescription": "%AWS.configuration.description.amazonq.workspaceIndexMaxSize%",
-                    "default": 250,
+                    "default": 2048,
+                    "scope": "application"
+                },
+                "amazonQ.workspaceIndexMaxFileSize": {
+                    "type": "number",
+                    "markdownDescription": "%AWS.configuration.description.amazonq.workspaceIndexMaxFileSize%",
+                    "default": 10,
+                    "scope": "application"
+                },
+                "amazonQ.workspaceIndexCacheDirPath": {
+                    "type": "string",
+                    "markdownDescription": "%AWS.configuration.description.amazonq.workspaceIndexCacheDirPath%",
+                    "default": null,
+                    "scope": "application"
+                },
+                "amazonQ.workspaceIndexIgnoreFilePatterns": {
+                    "type": "array",
+                    "markdownDescription": "%AWS.configuration.description.amazonq.workspaceIndexIgnoreFilePatterns%",
+                    "default": [],
                     "scope": "application"
                 },
                 "amazonQ.ignoredSecurityIssues": {
@@ -521,6 +543,16 @@
             ]
         },
         "commands": [
+            {
+                "command": "aws.amazonq.stopToolExecution",
+                "title": "Stop Amazon Q Tool Execution",
+                "category": "%AWS.amazonq.title%"
+            },
+            {
+                "command": "aws.amazonq.stopChatResponse",
+                "title": "Stop Amazon Q Tool Execution",
+                "category": "%AWS.amazonq.title%"
+            },
             {
                 "command": "_aws.amazonq.notifications.dismiss",
                 "title": "%AWS.generic.dismiss%",
@@ -872,6 +904,16 @@
                 "command": "aws.amazonq.inline.waitForUserDecisionRejectAll",
                 "key": "escape",
                 "when": "editorTextFocus && aws.codewhisperer.connected && amazonq.inline.codelensShortcutEnabled"
+            },
+            {
+                "command": "aws.amazonq.stopToolExecution",
+                "key": "cmd+alt+h",
+                "mac": "cmd+alt+h"
+            },
+            {
+                "command": "aws.amazonq.stopChatResponse",
+                "key": "cmd+alt+c",
+                "mac": "cmd+alt+c"
             }
         ],
         "icons": {

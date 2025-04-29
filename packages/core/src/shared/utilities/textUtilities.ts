@@ -8,6 +8,7 @@ import * as crypto from 'crypto'
 import * as fs from 'fs' // eslint-disable-line no-restricted-imports
 import { default as stripAnsi } from 'strip-ansi'
 import { getLogger } from '../logger/logger'
+import { ViewDiffMessage } from '../../amazonq/commons/controllers/contentController'
 
 /**
  * Truncates string `s` if it has or exceeds `n` chars.
@@ -268,10 +269,11 @@ export function decodeBase64(base64Str: string): string {
  * @param {any} message - The message object containing the file and selection context.
  * @returns {Object} - An object with `filePath` and `selection` properties.
  */
-export function extractFileAndCodeSelectionFromMessage(message: any) {
+export function extractFileAndCodeSelectionFromMessage(message: ViewDiffMessage) {
     const filePath = message?.context?.activeFileContext?.filePath
+    const fileText = message?.context?.activeFileContext?.fileText
     const selection = message?.context?.focusAreaContext?.selectionInsideExtendedCodeBlock as vscode.Selection
-    return { filePath, selection }
+    return { filePath, fileText, selection }
 }
 
 export function matchesPattern(source: string, target: string | RegExp) {

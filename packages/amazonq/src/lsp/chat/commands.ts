@@ -6,9 +6,22 @@
 import { Commands, globals } from 'aws-core-vscode/shared'
 import { window } from 'vscode'
 import { AmazonQChatViewProvider } from './webviewProvider'
+import { STOP_CHAT_RESPONSE } from '@aws/chat-client-ui-types'
 
+/**
+ * TODO: Re-enable these once we can figure out which path they're going to live in
+ * In hybrid chat mode they were being registered twice causing a registration error
+ */
 export function registerCommands(provider: AmazonQChatViewProvider) {
     globals.context.subscriptions.push(
+        Commands.register('aws.amazonq.stopChatResponse', async () => {
+            void provider.webview?.postMessage({
+                command: STOP_CHAT_RESPONSE,
+                params: {
+                    tabId: provider.getCurrentTabId(),
+                },
+            })
+        }),
         registerGenericCommand('aws.amazonq.explainCode', 'Explain', provider),
         registerGenericCommand('aws.amazonq.refactorCode', 'Refactor', provider),
         registerGenericCommand('aws.amazonq.fixCode', 'Fix', provider),
