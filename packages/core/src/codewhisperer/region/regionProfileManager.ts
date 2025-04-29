@@ -172,8 +172,8 @@ export class RegionProfileManager {
             }
         }
 
-        if (availableProfiles.length === 0 && failedRegions.length > 0) {
-            // Only throw error if all regions fail
+        // Only throw error if all regions fail
+        if (failedRegions.length === endpoints.size) {
             throw new Error(`Failed to list profiles for all regions: ${failedRegions.join(', ')}`)
         }
 
