@@ -18,7 +18,7 @@ export async function activate(context: ExtensionContext) {
         void amazonq.LspController.instance.trySetupLsp(context, {
             startUrl: AuthUtil.instance.startUrl,
             maxIndexSize: CodeWhispererSettings.instance.getMaxIndexSize(),
-            isVectorIndexEnabled: CodeWhispererSettings.instance.isLocalIndexEnabled(),
+            isVectorIndexEnabled: false,
         })
     }, 5000)
 
@@ -30,14 +30,7 @@ export async function activate(context: ExtensionContext) {
         amazonq.listCodeWhispererCommandsWalkthrough.register(),
         amazonq.focusAmazonQPanel.register(),
         amazonq.focusAmazonQPanelKeybinding.register(),
-        amazonq.tryChatCodeLensCommand.register(),
-        vscode.workspace.onDidChangeConfiguration(async (configurationChangeEvent) => {
-            if (configurationChangeEvent.affectsConfiguration('amazonQ.workspaceIndex')) {
-                if (CodeWhispererSettings.instance.isLocalIndexEnabled()) {
-                    void setupLsp()
-                }
-            }
-        })
+        amazonq.tryChatCodeLensCommand.register()
     )
 
     Commands.register('aws.amazonq.learnMore', () => {
