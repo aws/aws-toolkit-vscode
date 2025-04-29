@@ -7,6 +7,7 @@ import * as vscode from 'vscode'
 import * as sinon from 'sinon'
 import assert from 'assert'
 import * as path from 'path'
+
 import {
     FileSnapshot,
     FileTrackerConfig,
@@ -52,7 +53,7 @@ describe('PredictionTracker', function () {
         let mockDocument: vscode.TextDocument
 
         beforeEach(function () {
-            filePath = path.join('path', 'to', 'file.js')
+            filePath = testPath('path', 'to', 'file.js')
             previousContent = 'previous content'
             tracker = new PredictionTracker(mockExtensionContext)
 
@@ -127,8 +128,8 @@ describe('PredictionTracker', function () {
             }
             tracker = new PredictionTracker(mockExtensionContext, customConfig)
 
-            const file1 = path.join('path', 'to', 'file1.js')
-            const file2 = path.join('path', 'to', 'file2.js')
+            const file1 = testPath('path', 'to', 'file1.js')
+            const file2 = testPath('path', 'to', 'file2.js')
 
             const initialTime = globals.clock.Date.now()
 
@@ -161,12 +162,12 @@ describe('PredictionTracker', function () {
         })
 
         it('should return empty array for non-existent file', function () {
-            const result = tracker.getFileSnapshots(path.join('non-existent', 'file.js'))
+            const result = tracker.getFileSnapshots(testPath('non-existent', 'file.js'))
             assert.deepStrictEqual(result, [])
         })
 
         it('should return snapshots for existing file', async function () {
-            const file = path.join('path', 'to', 'file.js')
+            const file = testPath('path', 'to', 'file.js')
             const content = 'file content'
             const mockDocument = createMockDocument(content, file)
             await tracker.processEdit(mockDocument, content)
@@ -185,7 +186,7 @@ describe('PredictionTracker', function () {
 
         beforeEach(async function () {
             tracker = new PredictionTracker(mockExtensionContext)
-            file = path.join('path', 'to', 'file.js')
+            file = testPath('path', 'to', 'file.js')
             snapshotContent = 'snapshot content'
             const mockDocument = createMockDocument(snapshotContent, file)
             await tracker.processEdit(mockDocument, snapshotContent)
@@ -208,7 +209,7 @@ describe('PredictionTracker', function () {
 
             // Mock active editor, we only care about document
             mockEditor = {
-                document: createMockDocument('current content', path.join('path', 'to', 'active.js')),
+                document: createMockDocument('current content', testPath('path', 'to', 'active.js')),
                 selection: new vscode.Selection(0, 0, 0, 0),
                 selections: [new vscode.Selection(0, 0, 0, 0)],
                 options: {},
@@ -234,7 +235,7 @@ describe('PredictionTracker', function () {
         })
 
         it('should generate and return supplemental contexts', async function () {
-            const filePath = path.join('path', 'to', 'active.js')
+            const filePath = testPath('path', 'to', 'active.js')
             const initialTime = globals.clock.Date.now()
 
             const mockDoc = createMockDocument('old content 1', filePath)
@@ -267,4 +268,9 @@ describe('PredictionTracker', function () {
             assert.strictEqual(snapshotContents[1].content, 'old content 2')
         })
     })
+
+    function testPath(...segments: string[]): string {
+        // Mock the path from vscode uri
+        return path.sep + path.join(...segments)
+    }
 })
