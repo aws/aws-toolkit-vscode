@@ -152,7 +152,7 @@ describe('RemoteInvokeWebview', () => {
                 assert.ok(err instanceof Error)
                 assert.strictEqual(
                     err.message,
-                    'telemetry: invalid Metric: "lambda_invokeRemote" emitted with result=Failed but without the `reason` property. Consider using `.run()` instead of `.emit()`, which will set these properties automatically. See https://github.com/aws/aws-toolkit-vscode/blob/master/docs/telemetry.md#guidelines'
+                    'invalid Metric: "lambda_invokeRemote" emitted with result=Failed but without the `reason` property. Consider using `.run()` instead of `.emit()`, which will set these properties automatically. See https://github.com/aws/aws-toolkit-vscode/blob/master/docs/telemetry.md#guidelines'
                 )
             }
 
