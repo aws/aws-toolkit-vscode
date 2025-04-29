@@ -344,8 +344,9 @@ function validateMetadata(metricName: string, metadata: MetadataObj, fatal: bool
         logOrThrow(`"${metricName}" emitted with result=Failed but without the \`reason\` property.`, true)
     }
 
+    // TODO: there are many instances in the toolkit where we emit metrics with missing fields. If those can be removed, we can configure this to throw in CI.
     if (metadata.missingFields) {
-        logOrThrow(`"${metricName} emitted with missing fields: ${metadata.missingFields}`, false)
+        logger.warn(msgPrefix + `"${metricName} emitted with missing fields: ${metadata.missingFields}`, false)
     }
 }
 
