@@ -23,7 +23,6 @@ import {
 import { AuthUtil, CodeWhispererSettings, getSelectedCustomization } from 'aws-core-vscode/codewhisperer'
 import {
     Settings,
-    oidcClientName,
     createServerOptions,
     globals,
     Experiments,
@@ -95,7 +94,7 @@ export async function startLanguageServer(
                     name: env.appName,
                     version: version,
                     extension: {
-                        name: oidcClientName(),
+                        name: 'AmazonQ-For-VSCode',
                         version: '0.0.1',
                     },
                     clientId: crypto.randomUUID(),
