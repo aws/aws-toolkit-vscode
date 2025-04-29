@@ -13,10 +13,8 @@ export let predictionTracker: PredictionTracker | undefined
 let keyStrokeHandler: PredictionKeyStrokeHandler | undefined
 
 export function activateEditTracking(context: ExtContext): void {
-    // Initialize the tracker
     predictionTracker = new PredictionTracker(context.extensionContext)
 
-    // Initialize the keystroke handler
     keyStrokeHandler = new PredictionKeyStrokeHandler(predictionTracker)
     context.extensionContext.subscriptions.push(
         vscode.Disposable.from({

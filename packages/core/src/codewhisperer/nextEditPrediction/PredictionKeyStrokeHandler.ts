@@ -4,7 +4,6 @@
  */
 
 import * as vscode from 'vscode'
-import { getLogger } from '../../shared/logger/logger'
 import { PredictionTracker } from './PredictionTracker'
 
 /**
@@ -78,7 +77,6 @@ export class PredictionKeyStrokeHandler {
     private updateShadowCopy(document: vscode.TextDocument): void {
         if (document.uri.scheme === 'file') {
             this.shadowCopies.set(document.uri.fsPath, document.getText())
-            getLogger('nextEditPrediction').debug(`Updated shadow copy for ${document.uri.fsPath}`)
         }
     }
 
@@ -92,7 +90,6 @@ export class PredictionKeyStrokeHandler {
             const prevContent = this.shadowCopies.get(filePath)
 
             // Skip if there are no content changes or if the file is not visible
-            // This avoids tracking bulk edits on non-visible files
             if (
                 event.contentChanges.length === 0 ||
                 event.document.uri.scheme !== 'file' ||

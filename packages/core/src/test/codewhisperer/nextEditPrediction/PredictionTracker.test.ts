@@ -19,7 +19,6 @@ import globals from '../../../shared/extensionGlobals'
 describe('PredictionTracker', function () {
     let sandbox: sinon.SinonSandbox
     let mockExtensionContext: vscode.ExtensionContext
-    let storagePath: string
     let tracker: PredictionTracker
     let clock: sinon.SinonFakeTimers
     let dateNowStub: sinon.SinonStub
@@ -38,7 +37,6 @@ describe('PredictionTracker', function () {
         dateNowStub = sandbox.stub(globals.clock.Date, 'now')
         dateNowStub.returns(startTime)
 
-        storagePath = '/fake/storage/path'
         mockExtensionContext = await FakeExtensionContext.create()
     })
 
