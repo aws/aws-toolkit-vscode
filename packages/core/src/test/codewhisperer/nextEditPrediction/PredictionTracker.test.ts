@@ -17,6 +17,7 @@ import { FakeExtensionContext } from '../../fakeExtensionContext'
 import { createMockDocument } from '../testUtil'
 import * as diffGenerator from '../../../codewhisperer/nextEditPrediction/diffContextGenerator'
 import globals from '../../../shared/extensionGlobals'
+import { charactersLimit, supplementalContextMaxTotalLength } from '../../../codewhisperer/models/constants'
 
 describe('PredictionTracker', function () {
     let sandbox: sinon.SinonSandbox
@@ -273,4 +274,71 @@ describe('PredictionTracker', function () {
         // Mock the path from vscode uri
         return path.sep + path.join(...segments)
     }
+
+    describe('trimSupplementalContexts', function () {
+        it('should filter out contexts that exceed individual character limit', function () {
+            const smallContext = {
+                filePath: 'file.js',
+                content: 'small content',
+                type: 'PreviousEditorState',
+            }
+
+            // Create a context that exceeds the characters limit
+            const largeContent = 'a'.repeat(charactersLimit + 100)
+            const largeContext = {
+                filePath: 'file.js',
+                content: largeContent,
+                type: 'PreviousEditorState',
+            }
+
+            const contexts = [smallContext, largeContext]
+            const result = diffGenerator.trimSupplementalContexts(contexts, 10)
+
+            assert.strictEqual(result.length, 1)
+            assert.deepStrictEqual(result[0], smallContext)
+        })
+
+        it('should limit the number of contexts to maxContexts', function () {
+            const contexts = [
+                { filePath: 'file1.js', content: 'content 1', type: 'PreviousEditorState' },
+                { filePath: 'file2.js', content: 'content 2', type: 'PreviousEditorState' },
+                { filePath: 'file3.js', content: 'content 3', type: 'PreviousEditorState' },
+                { filePath: 'file4.js', content: 'content 4', type: 'PreviousEditorState' },
+                { filePath: 'file5.js', content: 'content 5', type: 'PreviousEditorState' },
+            ]
+
+            const maxContexts = 3
+            const result = diffGenerator.trimSupplementalContexts(contexts, maxContexts)
+
+            assert.strictEqual(result.length, maxContexts)
+        })
+
+        it('should enforce total character length limit across all contexts', function () {
+            // Create contexts where total size exceeds the limit
+            const contentSize = Math.floor(supplementalContextMaxTotalLength / 2.5)
+            const contexts = [
+                {
+                    filePath: 'file1.js',
+                    content: 'a'.repeat(contentSize),
+                    type: 'PreviousEditorState',
+                },
+                {
+                    filePath: 'file2.js',
+                    content: 'b'.repeat(contentSize),
+                    type: 'PreviousEditorState',
+                },
+                {
+                    filePath: 'file3.js',
+                    content: 'c'.repeat(contentSize),
+                    type: 'PreviousEditorState',
+                },
+            ]
+
+            const result = diffGenerator.trimSupplementalContexts(contexts, 10)
+
+            // Only the first two contexts should be included since the third would exceed the total limit
+            assert.strictEqual(result.length, 2)
+            assert.deepStrictEqual(result, contexts.slice(0, 2))
+        })
+    })
 })

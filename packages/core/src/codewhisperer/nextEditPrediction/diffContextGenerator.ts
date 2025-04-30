@@ -115,7 +115,7 @@ export function generateDiffContexts(
  * @param maxContexts - Maximum number of supplemental contexts allowed
  * @returns Trimmed array of SupplementalContext objects
  */
-function trimSupplementalContexts(
+export function trimSupplementalContexts(
     supplementalContexts: codewhispererClient.SupplementalContext[],
     maxContexts: number
 ): codewhispererClient.SupplementalContext[] {
