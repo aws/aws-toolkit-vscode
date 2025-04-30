@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "AppBuilder: unchecking the 'Attach a debugger' checkbox in local invoke webview invokes the function without a debugger"
+}
