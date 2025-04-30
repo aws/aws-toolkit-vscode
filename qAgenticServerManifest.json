@@ -5,6 +5,1914 @@
     "isManifestDeprecated": false,
     "versions": [
         {
+            "serverVersion": "0.1.0-alpha.112",
+            "isDelisted": false,
+            "runtime": {
+                "name": "standalone",
+                "version": "0.2.77"
+            },
+            "capabilities": [
+                {
+                    "name": "code-whisperer-lsp-server",
+                    "version": "0.0.32"
+                }
+            ],
+            "protocol": [
+                {
+                    "name": "protocol",
+                    "version": "0.2.77"
+                },
+                {
+                    "name": "types",
+                    "version": "0.1.26"
+                }
+            ],
+            "thirdPartyLicenses": "https://dhi0h88q3j9q6.cloudfront.net/0e120019-2345-4ed6-b7ef-7ada2a24037c/THIRD_PARTY_LICENSES",
+            "targets": [
+                {
+                    "platform": "windows",
+                    "arch": "x64",
+                    "contents": [
+                        {
+                            "filename": "servers.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/0e120019-2345-4ed6-b7ef-7ada2a24037c/qAgenticChatServer/win-x64/servers.zip",
+                            "hashes": [
+                                "sha384:f68efcc2d17fdb890a5ad85463e536849737c08a4f1f59f7d50e8680774b9a6ebffbf7bc2885bc38ca4066d4b5ba75b1"
+                            ],
+                            "bytes": 142269251
+                        },
+                        {
+                            "filename": "clients.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/0e120019-2345-4ed6-b7ef-7ada2a24037c/clients.zip",
+                            "hashes": [
+                                "sha384:aa6a85fbc351bb019b1e691cc3602133ac62fab9f0278d55679767f57d71188af070e514f93a3ffa5b56918750374552"
+                            ],
+                            "bytes": 1603302
+                        }
+                    ]
+                },
+                {
+                    "platform": "windows",
+                    "arch": "arm64",
+                    "contents": [
+                        {
+                            "filename": "servers.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/0e120019-2345-4ed6-b7ef-7ada2a24037c/qAgenticChatServer/win-x64/servers.zip",
+                            "hashes": [
+                                "sha384:f68efcc2d17fdb890a5ad85463e536849737c08a4f1f59f7d50e8680774b9a6ebffbf7bc2885bc38ca4066d4b5ba75b1"
+                            ],
+                            "bytes": 142269251
+                        },
+                        {
+                            "filename": "clients.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/0e120019-2345-4ed6-b7ef-7ada2a24037c/clients.zip",
+                            "hashes": [
+                                "sha384:aa6a85fbc351bb019b1e691cc3602133ac62fab9f0278d55679767f57d71188af070e514f93a3ffa5b56918750374552"
+                            ],
+                            "bytes": 1603302
+                        }
+                    ]
+                },
+                {
+                    "platform": "linux",
+                    "arch": "x64",
+                    "contents": [
+                        {
+                            "filename": "servers.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/0e120019-2345-4ed6-b7ef-7ada2a24037c/qAgenticChatServer/linux-x64/servers.zip",
+                            "hashes": [
+                                "sha384:215946f1b6b2535cdb67a57998aaaecf9e4b215859c14114f6b298059dcb2528f41fb0d0d9cd88986cb7dae7c78f85ee"
+                            ],
+                            "bytes": 149598057
+                        },
+                        {
+                            "filename": "clients.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/0e120019-2345-4ed6-b7ef-7ada2a24037c/clients.zip",
+                            "hashes": [
+                                "sha384:aa6a85fbc351bb019b1e691cc3602133ac62fab9f0278d55679767f57d71188af070e514f93a3ffa5b56918750374552"
+                            ],
+                            "bytes": 1603302
+                        }
+                    ]
+                },
+                {
+                    "platform": "linux",
+                    "arch": "arm64",
+                    "contents": [
+                        {
+                            "filename": "servers.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/0e120019-2345-4ed6-b7ef-7ada2a24037c/qAgenticChatServer/linux-arm64/servers.zip",
+                            "hashes": [
+                                "sha384:b6a7c209c125c9b3e420cd0779bdf271f198a4b05853f987e78e96eb6c768cfba5dd1b9a3522ed45e8dde985f6ce13ac"
+                            ],
+                            "bytes": 137478662
+                        },
+                        {
+                            "filename": "clients.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/0e120019-2345-4ed6-b7ef-7ada2a24037c/clients.zip",
+                            "hashes": [
+                                "sha384:aa6a85fbc351bb019b1e691cc3602133ac62fab9f0278d55679767f57d71188af070e514f93a3ffa5b56918750374552"
+                            ],
+                            "bytes": 1603302
+                        }
+                    ]
+                },
+                {
+                    "platform": "darwin",
+                    "arch": "x64",
+                    "contents": [
+                        {
+                            "filename": "servers.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/0e120019-2345-4ed6-b7ef-7ada2a24037c/qAgenticChatServer/mac-x64/servers.zip",
+                            "hashes": [
+                                "sha384:a18f9cf6f8dd280eed6844ac54d0912f587a95a86d7de2d32f3eebc6d2a3c98e165027779ab9daa582e29002031bb293"
+                            ],
+                            "bytes": 129991536
+                        },
+                        {
+                            "filename": "clients.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/0e120019-2345-4ed6-b7ef-7ada2a24037c/clients.zip",
+                            "hashes": [
+                                "sha384:aa6a85fbc351bb019b1e691cc3602133ac62fab9f0278d55679767f57d71188af070e514f93a3ffa5b56918750374552"
+                            ],
+                            "bytes": 1603302
+                        }
+                    ]
+                },
+                {
+                    "platform": "darwin",
+                    "arch": "arm64",
+                    "contents": [
+                        {
+                            "filename": "servers.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/0e120019-2345-4ed6-b7ef-7ada2a24037c/qAgenticChatServer/mac-arm64/servers.zip",
+                            "hashes": [
+                                "sha384:9f6dfd5e2361afb5d48089ec55167c5d892d9caf02ccb5817225ecfece3594a978b242605ca1b84c8b99958a77e345cc"
+                            ],
+                            "bytes": 127088105
+                        },
+                        {
+                            "filename": "clients.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/0e120019-2345-4ed6-b7ef-7ada2a24037c/clients.zip",
+                            "hashes": [
+                                "sha384:aa6a85fbc351bb019b1e691cc3602133ac62fab9f0278d55679767f57d71188af070e514f93a3ffa5b56918750374552"
+                            ],
+                            "bytes": 1603302
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "serverVersion": "0.1.0-alpha.111",
+            "isDelisted": false,
+            "runtime": {
+                "name": "standalone",
+                "version": "0.2.77"
+            },
+            "capabilities": [
+                {
+                    "name": "code-whisperer-lsp-server",
+                    "version": "0.0.32"
+                }
+            ],
+            "protocol": [
+                {
+                    "name": "protocol",
+                    "version": "0.2.77"
+                },
+                {
+                    "name": "types",
+                    "version": "0.1.26"
+                }
+            ],
+            "thirdPartyLicenses": "https://dhi0h88q3j9q6.cloudfront.net/d7b4b0b2-bf94-448c-8311-eda9991c0c3d/THIRD_PARTY_LICENSES",
+            "targets": [
+                {
+                    "platform": "windows",
+                    "arch": "x64",
+                    "contents": [
+                        {
+                            "filename": "servers.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/d7b4b0b2-bf94-448c-8311-eda9991c0c3d/qAgenticChatServer/win-x64/servers.zip",
+                            "hashes": [
+                                "sha384:7eefe3c5f4f9a649e705789d9fc297de89147a97b487ca77f3d2ccc5d8e65c31e5dfb632de1e30da4e15918108f85018"
+                            ],
+                            "bytes": 142268941
+                        },
+                        {
+                            "filename": "clients.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/d7b4b0b2-bf94-448c-8311-eda9991c0c3d/clients.zip",
+                            "hashes": [
+                                "sha384:7f0094ae50c708b0bf5d87876428e4dd039af34beffa2fe3e10bb4c1374ffef034f48840eb414972d939287b754703ad"
+                            ],
+                            "bytes": 1603482
+                        }
+                    ]
+                },
+                {
+                    "platform": "windows",
+                    "arch": "arm64",
+                    "contents": [
+                        {
+                            "filename": "servers.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/d7b4b0b2-bf94-448c-8311-eda9991c0c3d/qAgenticChatServer/win-x64/servers.zip",
+                            "hashes": [
+                                "sha384:7eefe3c5f4f9a649e705789d9fc297de89147a97b487ca77f3d2ccc5d8e65c31e5dfb632de1e30da4e15918108f85018"
+                            ],
+                            "bytes": 142268941
+                        },
+                        {
+                            "filename": "clients.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/d7b4b0b2-bf94-448c-8311-eda9991c0c3d/clients.zip",
+                            "hashes": [
+                                "sha384:7f0094ae50c708b0bf5d87876428e4dd039af34beffa2fe3e10bb4c1374ffef034f48840eb414972d939287b754703ad"
+                            ],
+                            "bytes": 1603482
+                        }
+                    ]
+                },
+                {
+                    "platform": "linux",
+                    "arch": "x64",
+                    "contents": [
+                        {
+                            "filename": "servers.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/d7b4b0b2-bf94-448c-8311-eda9991c0c3d/qAgenticChatServer/linux-x64/servers.zip",
+                            "hashes": [
+                                "sha384:534c41f9260dca60fd0d135af8112b8d1f64134b54e5becef478f30a9788fce0837e4808eb03edaa91e2842aa332a16a"
+                            ],
+                            "bytes": 149597747
+                        },
+                        {
+                            "filename": "clients.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/d7b4b0b2-bf94-448c-8311-eda9991c0c3d/clients.zip",
+                            "hashes": [
+                                "sha384:7f0094ae50c708b0bf5d87876428e4dd039af34beffa2fe3e10bb4c1374ffef034f48840eb414972d939287b754703ad"
+                            ],
+                            "bytes": 1603482
+                        }
+                    ]
+                },
+                {
+                    "platform": "linux",
+                    "arch": "arm64",
+                    "contents": [
+                        {
+                            "filename": "servers.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/d7b4b0b2-bf94-448c-8311-eda9991c0c3d/qAgenticChatServer/linux-arm64/servers.zip",
+                            "hashes": [
+                                "sha384:2f77b3e575a476dab977dd69177ded7c7ccf957d02c7769e544c4c86c161db917edd74291a1332b26edf2bbfe15070a0"
+                            ],
+                            "bytes": 137478352
+                        },
+                        {
+                            "filename": "clients.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/d7b4b0b2-bf94-448c-8311-eda9991c0c3d/clients.zip",
+                            "hashes": [
+                                "sha384:7f0094ae50c708b0bf5d87876428e4dd039af34beffa2fe3e10bb4c1374ffef034f48840eb414972d939287b754703ad"
+                            ],
+                            "bytes": 1603482
+                        }
+                    ]
+                },
+                {
+                    "platform": "darwin",
+                    "arch": "x64",
+                    "contents": [
+                        {
+                            "filename": "servers.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/d7b4b0b2-bf94-448c-8311-eda9991c0c3d/qAgenticChatServer/mac-x64/servers.zip",
+                            "hashes": [
+                                "sha384:189040c0772ecaf965992ae59d3e0984e1411675247c9375ba3b1a791d5a942df16f822c84b4222efdea4a5bfe324063"
+                            ],
+                            "bytes": 129991226
+                        },
+                        {
+                            "filename": "clients.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/d7b4b0b2-bf94-448c-8311-eda9991c0c3d/clients.zip",
+                            "hashes": [
+                                "sha384:7f0094ae50c708b0bf5d87876428e4dd039af34beffa2fe3e10bb4c1374ffef034f48840eb414972d939287b754703ad"
+                            ],
+                            "bytes": 1603482
+                        }
+                    ]
+                },
+                {
+                    "platform": "darwin",
+                    "arch": "arm64",
+                    "contents": [
+                        {
+                            "filename": "servers.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/d7b4b0b2-bf94-448c-8311-eda9991c0c3d/qAgenticChatServer/mac-arm64/servers.zip",
+                            "hashes": [
+                                "sha384:de850e4e5f1caff5a44087aedb73933a1913da3179e0d15ea808b2ef3e669e3c985373a6a0942d9038a4faad12d77fbc"
+                            ],
+                            "bytes": 127087795
+                        },
+                        {
+                            "filename": "clients.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/d7b4b0b2-bf94-448c-8311-eda9991c0c3d/clients.zip",
+                            "hashes": [
+                                "sha384:7f0094ae50c708b0bf5d87876428e4dd039af34beffa2fe3e10bb4c1374ffef034f48840eb414972d939287b754703ad"
+                            ],
+                            "bytes": 1603482
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "serverVersion": "0.1.0-alpha.110",
+            "isDelisted": false,
+            "runtime": {
+                "name": "standalone",
+                "version": "0.2.77"
+            },
+            "capabilities": [
+                {
+                    "name": "code-whisperer-lsp-server",
+                    "version": "0.0.32"
+                }
+            ],
+            "protocol": [
+                {
+                    "name": "protocol",
+                    "version": "0.2.77"
+                },
+                {
+                    "name": "types",
+                    "version": "0.1.26"
+                }
+            ],
+            "thirdPartyLicenses": "https://dhi0h88q3j9q6.cloudfront.net/3dd51b3c-86af-4f5b-bbcd-80bf80d33cb6/THIRD_PARTY_LICENSES",
+            "targets": [
+                {
+                    "platform": "windows",
+                    "arch": "x64",
+                    "contents": [
+                        {
+                            "filename": "servers.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/3dd51b3c-86af-4f5b-bbcd-80bf80d33cb6/qAgenticChatServer/win-x64/servers.zip",
+                            "hashes": [
+                                "sha384:7a004bc5ef2c573e549839a21bb80215cdf3e6093e45dd820eb2f0d48830d65193e1d4f7f3e267a7539cf341a631847e"
+                            ],
+                            "bytes": 142268926
+                        },
+                        {
+                            "filename": "clients.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/3dd51b3c-86af-4f5b-bbcd-80bf80d33cb6/clients.zip",
+                            "hashes": [
+                                "sha384:038ba7ddba43c8e0a731e77498c6099972a448062c66c89293bf2222fe7f24c8d67ebfe831fd2caf00d933f0ff623f2a"
+                            ],
+                            "bytes": 1604801
+                        }
+                    ]
+                },
+                {
+                    "platform": "windows",
+                    "arch": "arm64",
+                    "contents": [
+                        {
+                            "filename": "servers.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/3dd51b3c-86af-4f5b-bbcd-80bf80d33cb6/qAgenticChatServer/win-x64/servers.zip",
+                            "hashes": [
+                                "sha384:7a004bc5ef2c573e549839a21bb80215cdf3e6093e45dd820eb2f0d48830d65193e1d4f7f3e267a7539cf341a631847e"
+                            ],
+                            "bytes": 142268926
+                        },
+                        {
+                            "filename": "clients.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/3dd51b3c-86af-4f5b-bbcd-80bf80d33cb6/clients.zip",
+                            "hashes": [
+                                "sha384:038ba7ddba43c8e0a731e77498c6099972a448062c66c89293bf2222fe7f24c8d67ebfe831fd2caf00d933f0ff623f2a"
+                            ],
+                            "bytes": 1604801
+                        }
+                    ]
+                },
+                {
+                    "platform": "linux",
+                    "arch": "x64",
+                    "contents": [
+                        {
+                            "filename": "servers.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/3dd51b3c-86af-4f5b-bbcd-80bf80d33cb6/qAgenticChatServer/linux-x64/servers.zip",
+                            "hashes": [
+                                "sha384:854df9c9d6df8b2301132f8a86f65376c960f3ff935e48abc10e1565829a97f2618d240c9fcdd9117a6968f3632cc58b"
+                            ],
+                            "bytes": 149597732
+                        },
+                        {
+                            "filename": "clients.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/3dd51b3c-86af-4f5b-bbcd-80bf80d33cb6/clients.zip",
+                            "hashes": [
+                                "sha384:038ba7ddba43c8e0a731e77498c6099972a448062c66c89293bf2222fe7f24c8d67ebfe831fd2caf00d933f0ff623f2a"
+                            ],
+                            "bytes": 1604801
+                        }
+                    ]
+                },
+                {
+                    "platform": "linux",
+                    "arch": "arm64",
+                    "contents": [
+                        {
+                            "filename": "servers.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/3dd51b3c-86af-4f5b-bbcd-80bf80d33cb6/qAgenticChatServer/linux-arm64/servers.zip",
+                            "hashes": [
+                                "sha384:7233e1ed995aa6830da0a55d4768c34ab4100ca994bb495e2edaeaa93e8648413f08f82dc8eb2d03cc05799caab8ab16"
+                            ],
+                            "bytes": 137478337
+                        },
+                        {
+                            "filename": "clients.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/3dd51b3c-86af-4f5b-bbcd-80bf80d33cb6/clients.zip",
+                            "hashes": [
+                                "sha384:038ba7ddba43c8e0a731e77498c6099972a448062c66c89293bf2222fe7f24c8d67ebfe831fd2caf00d933f0ff623f2a"
+                            ],
+                            "bytes": 1604801
+                        }
+                    ]
+                },
+                {
+                    "platform": "darwin",
+                    "arch": "x64",
+                    "contents": [
+                        {
+                            "filename": "servers.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/3dd51b3c-86af-4f5b-bbcd-80bf80d33cb6/qAgenticChatServer/mac-x64/servers.zip",
+                            "hashes": [
+                                "sha384:e95ebc7b4f818864db10364af931cf7b4d445b15bb86a2e06fc15088477b2e563e8128eef834762be1f020df7864c607"
+                            ],
+                            "bytes": 129991211
+                        },
+                        {
+                            "filename": "clients.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/3dd51b3c-86af-4f5b-bbcd-80bf80d33cb6/clients.zip",
+                            "hashes": [
+                                "sha384:038ba7ddba43c8e0a731e77498c6099972a448062c66c89293bf2222fe7f24c8d67ebfe831fd2caf00d933f0ff623f2a"
+                            ],
+                            "bytes": 1604801
+                        }
+                    ]
+                },
+                {
+                    "platform": "darwin",
+                    "arch": "arm64",
+                    "contents": [
+                        {
+                            "filename": "servers.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/3dd51b3c-86af-4f5b-bbcd-80bf80d33cb6/qAgenticChatServer/mac-arm64/servers.zip",
+                            "hashes": [
+                                "sha384:8f056c539f7c852662e3f64321d915ec75b2c5be83a48c42473f3f6dc12f12b93d642106df0424d06e4f45f2c2378bcc"
+                            ],
+                            "bytes": 127087780
+                        },
+                        {
+                            "filename": "clients.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/3dd51b3c-86af-4f5b-bbcd-80bf80d33cb6/clients.zip",
+                            "hashes": [
+                                "sha384:038ba7ddba43c8e0a731e77498c6099972a448062c66c89293bf2222fe7f24c8d67ebfe831fd2caf00d933f0ff623f2a"
+                            ],
+                            "bytes": 1604801
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "serverVersion": "0.1.0-alpha.109",
+            "isDelisted": false,
+            "runtime": {
+                "name": "standalone",
+                "version": "0.2.77"
+            },
+            "capabilities": [
+                {
+                    "name": "code-whisperer-lsp-server",
+                    "version": "0.0.32"
+                }
+            ],
+            "protocol": [
+                {
+                    "name": "protocol",
+                    "version": "0.2.77"
+                },
+                {
+                    "name": "types",
+                    "version": "0.1.26"
+                }
+            ],
+            "thirdPartyLicenses": "https://dhi0h88q3j9q6.cloudfront.net/208df29d-e152-478f-af1d-ff15d5cbf6f5/THIRD_PARTY_LICENSES",
+            "targets": [
+                {
+                    "platform": "windows",
+                    "arch": "x64",
+                    "contents": [
+                        {
+                            "filename": "servers.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/208df29d-e152-478f-af1d-ff15d5cbf6f5/qAgenticChatServer/win-x64/servers.zip",
+                            "hashes": [
+                                "sha384:d153ac60cf2172737731e72522ffb369f8711b9bca4363f68466d3a50af64ee383232106702071faa5e8b8543aa6df8f"
+                            ],
+                            "bytes": 142268908
+                        },
+                        {
+                            "filename": "clients.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/208df29d-e152-478f-af1d-ff15d5cbf6f5/clients.zip",
+                            "hashes": [
+                                "sha384:2b7cb06599c916485d0bf1a13938d4533a7020ff88f61d6c3a8acf00d448dec48c8181355b63601039b83e859514e2c2"
+                            ],
+                            "bytes": 1599319
+                        }
+                    ]
+                },
+                {
+                    "platform": "windows",
+                    "arch": "arm64",
+                    "contents": [
+                        {
+                            "filename": "servers.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/208df29d-e152-478f-af1d-ff15d5cbf6f5/qAgenticChatServer/win-x64/servers.zip",
+                            "hashes": [
+                                "sha384:d153ac60cf2172737731e72522ffb369f8711b9bca4363f68466d3a50af64ee383232106702071faa5e8b8543aa6df8f"
+                            ],
+                            "bytes": 142268908
+                        },
+                        {
+                            "filename": "clients.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/208df29d-e152-478f-af1d-ff15d5cbf6f5/clients.zip",
+                            "hashes": [
+                                "sha384:2b7cb06599c916485d0bf1a13938d4533a7020ff88f61d6c3a8acf00d448dec48c8181355b63601039b83e859514e2c2"
+                            ],
+                            "bytes": 1599319
+                        }
+                    ]
+                },
+                {
+                    "platform": "linux",
+                    "arch": "x64",
+                    "contents": [
+                        {
+                            "filename": "servers.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/208df29d-e152-478f-af1d-ff15d5cbf6f5/qAgenticChatServer/linux-x64/servers.zip",
+                            "hashes": [
+                                "sha384:9f2882f68062a4d62c29de7983ca5144c52718f036809f2142a97a434ae227e9108d96259d98c13d97eb28f666b59d47"
+                            ],
+                            "bytes": 149597714
+                        },
+                        {
+                            "filename": "clients.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/208df29d-e152-478f-af1d-ff15d5cbf6f5/clients.zip",
+                            "hashes": [
+                                "sha384:2b7cb06599c916485d0bf1a13938d4533a7020ff88f61d6c3a8acf00d448dec48c8181355b63601039b83e859514e2c2"
+                            ],
+                            "bytes": 1599319
+                        }
+                    ]
+                },
+                {
+                    "platform": "linux",
+                    "arch": "arm64",
+                    "contents": [
+                        {
+                            "filename": "servers.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/208df29d-e152-478f-af1d-ff15d5cbf6f5/qAgenticChatServer/linux-arm64/servers.zip",
+                            "hashes": [
+                                "sha384:71889c21bb9f296deb8553434df44c896108a18869162e9459ac51d62832902ad36d365c4dc08e8cc702a47376603763"
+                            ],
+                            "bytes": 137478319
+                        },
+                        {
+                            "filename": "clients.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/208df29d-e152-478f-af1d-ff15d5cbf6f5/clients.zip",
+                            "hashes": [
+                                "sha384:2b7cb06599c916485d0bf1a13938d4533a7020ff88f61d6c3a8acf00d448dec48c8181355b63601039b83e859514e2c2"
+                            ],
+                            "bytes": 1599319
+                        }
+                    ]
+                },
+                {
+                    "platform": "darwin",
+                    "arch": "x64",
+                    "contents": [
+                        {
+                            "filename": "servers.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/208df29d-e152-478f-af1d-ff15d5cbf6f5/qAgenticChatServer/mac-x64/servers.zip",
+                            "hashes": [
+                                "sha384:3ed15ba58c04908fab99864980e80b187b0da9b88bded047ae599ca45352913fe90d6238e37f576166385fa0ddc3b9a0"
+                            ],
+                            "bytes": 129991193
+                        },
+                        {
+                            "filename": "clients.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/208df29d-e152-478f-af1d-ff15d5cbf6f5/clients.zip",
+                            "hashes": [
+                                "sha384:2b7cb06599c916485d0bf1a13938d4533a7020ff88f61d6c3a8acf00d448dec48c8181355b63601039b83e859514e2c2"
+                            ],
+                            "bytes": 1599319
+                        }
+                    ]
+                },
+                {
+                    "platform": "darwin",
+                    "arch": "arm64",
+                    "contents": [
+                        {
+                            "filename": "servers.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/208df29d-e152-478f-af1d-ff15d5cbf6f5/qAgenticChatServer/mac-arm64/servers.zip",
+                            "hashes": [
+                                "sha384:1b0363248b9b28d9946943a4262a35d5d653e111e02faf5b3e8083a1d166af08d79c70b49a538197e90c7489d7d633b0"
+                            ],
+                            "bytes": 127087762
+                        },
+                        {
+                            "filename": "clients.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/208df29d-e152-478f-af1d-ff15d5cbf6f5/clients.zip",
+                            "hashes": [
+                                "sha384:2b7cb06599c916485d0bf1a13938d4533a7020ff88f61d6c3a8acf00d448dec48c8181355b63601039b83e859514e2c2"
+                            ],
+                            "bytes": 1599319
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "serverVersion": "0.1.0-alpha.108",
+            "isDelisted": false,
+            "runtime": {
+                "name": "standalone",
+                "version": "0.2.77"
+            },
+            "capabilities": [
+                {
+                    "name": "code-whisperer-lsp-server",
+                    "version": "0.0.32"
+                }
+            ],
+            "protocol": [
+                {
+                    "name": "protocol",
+                    "version": "0.2.77"
+                },
+                {
+                    "name": "types",
+                    "version": "0.1.26"
+                }
+            ],
+            "thirdPartyLicenses": "https://dhi0h88q3j9q6.cloudfront.net/b47538d6-13f6-400e-b2d3-a3ac5e5f409c/THIRD_PARTY_LICENSES",
+            "targets": [
+                {
+                    "platform": "windows",
+                    "arch": "x64",
+                    "contents": [
+                        {
+                            "filename": "servers.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/b47538d6-13f6-400e-b2d3-a3ac5e5f409c/qAgenticChatServer/win-x64/servers.zip",
+                            "hashes": [
+                                "sha384:61d9dc4810a1bb94abd138d6c6da3857a1d01442569ba7cf0fb4c19dd0af4f06029f57bfd472d7398cf5eb27619d6e53"
+                            ],
+                            "bytes": 142268908
+                        },
+                        {
+                            "filename": "clients.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/b47538d6-13f6-400e-b2d3-a3ac5e5f409c/clients.zip",
+                            "hashes": [
+                                "sha384:66cc5d45a0b8e642c837227207bdd8a4a060c1b2d86fc968971b88a019d2ee25cf914fd5b869215ca2ecd4220f4d9d1f"
+                            ],
+                            "bytes": 1599319
+                        }
+                    ]
+                },
+                {
+                    "platform": "windows",
+                    "arch": "arm64",
+                    "contents": [
+                        {
+                            "filename": "servers.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/b47538d6-13f6-400e-b2d3-a3ac5e5f409c/qAgenticChatServer/win-x64/servers.zip",
+                            "hashes": [
+                                "sha384:61d9dc4810a1bb94abd138d6c6da3857a1d01442569ba7cf0fb4c19dd0af4f06029f57bfd472d7398cf5eb27619d6e53"
+                            ],
+                            "bytes": 142268908
+                        },
+                        {
+                            "filename": "clients.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/b47538d6-13f6-400e-b2d3-a3ac5e5f409c/clients.zip",
+                            "hashes": [
+                                "sha384:66cc5d45a0b8e642c837227207bdd8a4a060c1b2d86fc968971b88a019d2ee25cf914fd5b869215ca2ecd4220f4d9d1f"
+                            ],
+                            "bytes": 1599319
+                        }
+                    ]
+                },
+                {
+                    "platform": "linux",
+                    "arch": "x64",
+                    "contents": [
+                        {
+                            "filename": "servers.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/b47538d6-13f6-400e-b2d3-a3ac5e5f409c/qAgenticChatServer/linux-x64/servers.zip",
+                            "hashes": [
+                                "sha384:04ec7b7295cfaed3b28f73318a97a46850244d09e539df0e5a91f6231e91d6646d7f3c81bcdab67b9c921202b31d2244"
+                            ],
+                            "bytes": 149597714
+                        },
+                        {
+                            "filename": "clients.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/b47538d6-13f6-400e-b2d3-a3ac5e5f409c/clients.zip",
+                            "hashes": [
+                                "sha384:66cc5d45a0b8e642c837227207bdd8a4a060c1b2d86fc968971b88a019d2ee25cf914fd5b869215ca2ecd4220f4d9d1f"
+                            ],
+                            "bytes": 1599319
+                        }
+                    ]
+                },
+                {
+                    "platform": "linux",
+                    "arch": "arm64",
+                    "contents": [
+                        {
+                            "filename": "servers.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/b47538d6-13f6-400e-b2d3-a3ac5e5f409c/qAgenticChatServer/linux-arm64/servers.zip",
+                            "hashes": [
+                                "sha384:d0ec24bbbb7b21cebc0b8d9e158c4a84d46e9712fc171fd1ee95c67932a6924011449bdd2768da7b9caab2c660f935fe"
+                            ],
+                            "bytes": 137478319
+                        },
+                        {
+                            "filename": "clients.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/b47538d6-13f6-400e-b2d3-a3ac5e5f409c/clients.zip",
+                            "hashes": [
+                                "sha384:66cc5d45a0b8e642c837227207bdd8a4a060c1b2d86fc968971b88a019d2ee25cf914fd5b869215ca2ecd4220f4d9d1f"
+                            ],
+                            "bytes": 1599319
+                        }
+                    ]
+                },
+                {
+                    "platform": "darwin",
+                    "arch": "x64",
+                    "contents": [
+                        {
+                            "filename": "servers.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/b47538d6-13f6-400e-b2d3-a3ac5e5f409c/qAgenticChatServer/mac-x64/servers.zip",
+                            "hashes": [
+                                "sha384:37d8cae39ff1c2365863027ebb18d5d02d28ae9777d619469637e99a6b2686515d025aa855c9dae45aca0e11ff0c34a8"
+                            ],
+                            "bytes": 129991193
+                        },
+                        {
+                            "filename": "clients.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/b47538d6-13f6-400e-b2d3-a3ac5e5f409c/clients.zip",
+                            "hashes": [
+                                "sha384:66cc5d45a0b8e642c837227207bdd8a4a060c1b2d86fc968971b88a019d2ee25cf914fd5b869215ca2ecd4220f4d9d1f"
+                            ],
+                            "bytes": 1599319
+                        }
+                    ]
+                },
+                {
+                    "platform": "darwin",
+                    "arch": "arm64",
+                    "contents": [
+                        {
+                            "filename": "servers.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/b47538d6-13f6-400e-b2d3-a3ac5e5f409c/qAgenticChatServer/mac-arm64/servers.zip",
+                            "hashes": [
+                                "sha384:edc3319839b712dd8088d7f2e7c8d0aecde7f87b59cd61f831afcfe05051c7ba486c0f6384bf0f07ff4bebe97a2c8db9"
+                            ],
+                            "bytes": 127087762
+                        },
+                        {
+                            "filename": "clients.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/b47538d6-13f6-400e-b2d3-a3ac5e5f409c/clients.zip",
+                            "hashes": [
+                                "sha384:66cc5d45a0b8e642c837227207bdd8a4a060c1b2d86fc968971b88a019d2ee25cf914fd5b869215ca2ecd4220f4d9d1f"
+                            ],
+                            "bytes": 1599319
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "serverVersion": "0.1.0-alpha.107",
+            "isDelisted": false,
+            "runtime": {
+                "name": "standalone",
+                "version": "0.2.77"
+            },
+            "capabilities": [
+                {
+                    "name": "code-whisperer-lsp-server",
+                    "version": "0.0.32"
+                }
+            ],
+            "protocol": [
+                {
+                    "name": "protocol",
+                    "version": "0.2.77"
+                },
+                {
+                    "name": "types",
+                    "version": "0.1.26"
+                }
+            ],
+            "thirdPartyLicenses": "https://dhi0h88q3j9q6.cloudfront.net/f80f8d2d-7998-4faa-9594-acda3aa6101c/THIRD_PARTY_LICENSES",
+            "targets": [
+                {
+                    "platform": "windows",
+                    "arch": "x64",
+                    "contents": [
+                        {
+                            "filename": "servers.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/f80f8d2d-7998-4faa-9594-acda3aa6101c/qAgenticChatServer/win-x64/servers.zip",
+                            "hashes": [
+                                "sha384:2c6bc692bd5ba0427c11eb5e396c41f95a4aad480185614225d4eaec636302c167d81543f592128e513c36d458b08ce7"
+                            ],
+                            "bytes": 142268908
+                        },
+                        {
+                            "filename": "clients.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/f80f8d2d-7998-4faa-9594-acda3aa6101c/clients.zip",
+                            "hashes": [
+                                "sha384:f508f820a49868faa0893e9b5f1a3f98dcdded89e508c9d5d11d61f45370946535588f799c5520b205b1af087748766e"
+                            ],
+                            "bytes": 1599319
+                        }
+                    ]
+                },
+                {
+                    "platform": "windows",
+                    "arch": "arm64",
+                    "contents": [
+                        {
+                            "filename": "servers.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/f80f8d2d-7998-4faa-9594-acda3aa6101c/qAgenticChatServer/win-x64/servers.zip",
+                            "hashes": [
+                                "sha384:2c6bc692bd5ba0427c11eb5e396c41f95a4aad480185614225d4eaec636302c167d81543f592128e513c36d458b08ce7"
+                            ],
+                            "bytes": 142268908
+                        },
+                        {
+                            "filename": "clients.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/f80f8d2d-7998-4faa-9594-acda3aa6101c/clients.zip",
+                            "hashes": [
+                                "sha384:f508f820a49868faa0893e9b5f1a3f98dcdded89e508c9d5d11d61f45370946535588f799c5520b205b1af087748766e"
+                            ],
+                            "bytes": 1599319
+                        }
+                    ]
+                },
+                {
+                    "platform": "linux",
+                    "arch": "x64",
+                    "contents": [
+                        {
+                            "filename": "servers.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/f80f8d2d-7998-4faa-9594-acda3aa6101c/qAgenticChatServer/linux-x64/servers.zip",
+                            "hashes": [
+                                "sha384:18f39884301e04453edda1c847ce38b7adfbc7db04384760558f4ee4364d4bde305246dfb81b25102d578bffa59dc6af"
+                            ],
+                            "bytes": 149597714
+                        },
+                        {
+                            "filename": "clients.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/f80f8d2d-7998-4faa-9594-acda3aa6101c/clients.zip",
+                            "hashes": [
+                                "sha384:f508f820a49868faa0893e9b5f1a3f98dcdded89e508c9d5d11d61f45370946535588f799c5520b205b1af087748766e"
+                            ],
+                            "bytes": 1599319
+                        }
+                    ]
+                },
+                {
+                    "platform": "linux",
+                    "arch": "arm64",
+                    "contents": [
+                        {
+                            "filename": "servers.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/f80f8d2d-7998-4faa-9594-acda3aa6101c/qAgenticChatServer/linux-arm64/servers.zip",
+                            "hashes": [
+                                "sha384:edc8bfb31bf1136c0d2f11b1e41a572ffb4c4b3f3db18313f79297c2aecf9ecd848beb4213753a73f6b8698b5f583f5a"
+                            ],
+                            "bytes": 137478319
+                        },
+                        {
+                            "filename": "clients.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/f80f8d2d-7998-4faa-9594-acda3aa6101c/clients.zip",
+                            "hashes": [
+                                "sha384:f508f820a49868faa0893e9b5f1a3f98dcdded89e508c9d5d11d61f45370946535588f799c5520b205b1af087748766e"
+                            ],
+                            "bytes": 1599319
+                        }
+                    ]
+                },
+                {
+                    "platform": "darwin",
+                    "arch": "x64",
+                    "contents": [
+                        {
+                            "filename": "servers.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/f80f8d2d-7998-4faa-9594-acda3aa6101c/qAgenticChatServer/mac-x64/servers.zip",
+                            "hashes": [
+                                "sha384:920c8ebb741d40309e4c4bac99f560b2db387fe06e344a1c29a637a4a62af1a79cefbbcfae90615154313c6c36246322"
+                            ],
+                            "bytes": 129991193
+                        },
+                        {
+                            "filename": "clients.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/f80f8d2d-7998-4faa-9594-acda3aa6101c/clients.zip",
+                            "hashes": [
+                                "sha384:f508f820a49868faa0893e9b5f1a3f98dcdded89e508c9d5d11d61f45370946535588f799c5520b205b1af087748766e"
+                            ],
+                            "bytes": 1599319
+                        }
+                    ]
+                },
+                {
+                    "platform": "darwin",
+                    "arch": "arm64",
+                    "contents": [
+                        {
+                            "filename": "servers.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/f80f8d2d-7998-4faa-9594-acda3aa6101c/qAgenticChatServer/mac-arm64/servers.zip",
+                            "hashes": [
+                                "sha384:2acffb31cc8416c478269a738f0c13bda10e12ee9942734aecee8d9012dd4a7ccc5fba0a121e7469173f1da45844bc8f"
+                            ],
+                            "bytes": 127087762
+                        },
+                        {
+                            "filename": "clients.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/f80f8d2d-7998-4faa-9594-acda3aa6101c/clients.zip",
+                            "hashes": [
+                                "sha384:f508f820a49868faa0893e9b5f1a3f98dcdded89e508c9d5d11d61f45370946535588f799c5520b205b1af087748766e"
+                            ],
+                            "bytes": 1599319
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "serverVersion": "0.1.0-alpha.106",
+            "isDelisted": false,
+            "runtime": {
+                "name": "standalone",
+                "version": "0.2.77"
+            },
+            "capabilities": [
+                {
+                    "name": "code-whisperer-lsp-server",
+                    "version": "0.0.32"
+                }
+            ],
+            "protocol": [
+                {
+                    "name": "protocol",
+                    "version": "0.2.77"
+                },
+                {
+                    "name": "types",
+                    "version": "0.1.26"
+                }
+            ],
+            "thirdPartyLicenses": "https://dhi0h88q3j9q6.cloudfront.net/00836428-9115-4c52-a276-21056dc205d8/THIRD_PARTY_LICENSES",
+            "targets": [
+                {
+                    "platform": "windows",
+                    "arch": "x64",
+                    "contents": [
+                        {
+                            "filename": "servers.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/00836428-9115-4c52-a276-21056dc205d8/qAgenticChatServer/win-x64/servers.zip",
+                            "hashes": [
+                                "sha384:dbac8a91891f991aa87b15c97ea35ef85252e4f751646c40e2a7fb01c3f2cc245f675c864f2310fbafcf05c8b6e4a55f"
+                            ],
+                            "bytes": 142268708
+                        },
+                        {
+                            "filename": "clients.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/00836428-9115-4c52-a276-21056dc205d8/clients.zip",
+                            "hashes": [
+                                "sha384:815866e70bcb857fe5d13553348254cc9e00e6522ead75b9e769319ad5f0636f80fde227584e0ca88291970816c29a12"
+                            ],
+                            "bytes": 1599319
+                        }
+                    ]
+                },
+                {
+                    "platform": "windows",
+                    "arch": "arm64",
+                    "contents": [
+                        {
+                            "filename": "servers.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/00836428-9115-4c52-a276-21056dc205d8/qAgenticChatServer/win-x64/servers.zip",
+                            "hashes": [
+                                "sha384:dbac8a91891f991aa87b15c97ea35ef85252e4f751646c40e2a7fb01c3f2cc245f675c864f2310fbafcf05c8b6e4a55f"
+                            ],
+                            "bytes": 142268708
+                        },
+                        {
+                            "filename": "clients.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/00836428-9115-4c52-a276-21056dc205d8/clients.zip",
+                            "hashes": [
+                                "sha384:815866e70bcb857fe5d13553348254cc9e00e6522ead75b9e769319ad5f0636f80fde227584e0ca88291970816c29a12"
+                            ],
+                            "bytes": 1599319
+                        }
+                    ]
+                },
+                {
+                    "platform": "linux",
+                    "arch": "x64",
+                    "contents": [
+                        {
+                            "filename": "servers.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/00836428-9115-4c52-a276-21056dc205d8/qAgenticChatServer/linux-x64/servers.zip",
+                            "hashes": [
+                                "sha384:98323802ade7d964131d1f624738ee3a4c36f0defc89b2cb69e9a4d59e6130e153b0b7d1da4fd2e0fce50b55f282940e"
+                            ],
+                            "bytes": 149597514
+                        },
+                        {
+                            "filename": "clients.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/00836428-9115-4c52-a276-21056dc205d8/clients.zip",
+                            "hashes": [
+                                "sha384:815866e70bcb857fe5d13553348254cc9e00e6522ead75b9e769319ad5f0636f80fde227584e0ca88291970816c29a12"
+                            ],
+                            "bytes": 1599319
+                        }
+                    ]
+                },
+                {
+                    "platform": "linux",
+                    "arch": "arm64",
+                    "contents": [
+                        {
+                            "filename": "servers.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/00836428-9115-4c52-a276-21056dc205d8/qAgenticChatServer/linux-arm64/servers.zip",
+                            "hashes": [
+                                "sha384:b49d4aa5703c03ba9a766521ee1a4862d4a5453a1aa2d3091d75388d02f4aa3a1f03e230013d32c6d39705aeade4ea6f"
+                            ],
+                            "bytes": 137478119
+                        },
+                        {
+                            "filename": "clients.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/00836428-9115-4c52-a276-21056dc205d8/clients.zip",
+                            "hashes": [
+                                "sha384:815866e70bcb857fe5d13553348254cc9e00e6522ead75b9e769319ad5f0636f80fde227584e0ca88291970816c29a12"
+                            ],
+                            "bytes": 1599319
+                        }
+                    ]
+                },
+                {
+                    "platform": "darwin",
+                    "arch": "x64",
+                    "contents": [
+                        {
+                            "filename": "servers.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/00836428-9115-4c52-a276-21056dc205d8/qAgenticChatServer/mac-x64/servers.zip",
+                            "hashes": [
+                                "sha384:a7ef60c28dc9e2668b1f1a9dd60dc21fb085e730ddc9fd69e3aeb3d34a0afd1b726cb0b00dfb57c7b5abd505fae83a6b"
+                            ],
+                            "bytes": 129990993
+                        },
+                        {
+                            "filename": "clients.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/00836428-9115-4c52-a276-21056dc205d8/clients.zip",
+                            "hashes": [
+                                "sha384:815866e70bcb857fe5d13553348254cc9e00e6522ead75b9e769319ad5f0636f80fde227584e0ca88291970816c29a12"
+                            ],
+                            "bytes": 1599319
+                        }
+                    ]
+                },
+                {
+                    "platform": "darwin",
+                    "arch": "arm64",
+                    "contents": [
+                        {
+                            "filename": "servers.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/00836428-9115-4c52-a276-21056dc205d8/qAgenticChatServer/mac-arm64/servers.zip",
+                            "hashes": [
+                                "sha384:d26630c8995e15737ac2a36037458315b636c2552b79db1a679f6bfa33ac831979d701ee0bbe1ea788c31cd19219f3d3"
+                            ],
+                            "bytes": 127087562
+                        },
+                        {
+                            "filename": "clients.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/00836428-9115-4c52-a276-21056dc205d8/clients.zip",
+                            "hashes": [
+                                "sha384:815866e70bcb857fe5d13553348254cc9e00e6522ead75b9e769319ad5f0636f80fde227584e0ca88291970816c29a12"
+                            ],
+                            "bytes": 1599319
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "serverVersion": "0.1.0-alpha.105",
+            "isDelisted": false,
+            "runtime": {
+                "name": "standalone",
+                "version": "0.2.77"
+            },
+            "capabilities": [
+                {
+                    "name": "code-whisperer-lsp-server",
+                    "version": "0.0.32"
+                }
+            ],
+            "protocol": [
+                {
+                    "name": "protocol",
+                    "version": "0.2.77"
+                },
+                {
+                    "name": "types",
+                    "version": "0.1.26"
+                }
+            ],
+            "thirdPartyLicenses": "https://dhi0h88q3j9q6.cloudfront.net/77623230-bbe5-4bce-87ad-c1b1e2bfa411/THIRD_PARTY_LICENSES",
+            "targets": [
+                {
+                    "platform": "windows",
+                    "arch": "x64",
+                    "contents": [
+                        {
+                            "filename": "servers.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/77623230-bbe5-4bce-87ad-c1b1e2bfa411/qAgenticChatServer/win-x64/servers.zip",
+                            "hashes": [
+                                "sha384:711bad2203f885427f73e45ec868cdce44fcd15221780cd681ad5697dd4897b9a69599f8bd24eb2a018f7f67a0503e16"
+                            ],
+                            "bytes": 142268628
+                        },
+                        {
+                            "filename": "clients.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/77623230-bbe5-4bce-87ad-c1b1e2bfa411/clients.zip",
+                            "hashes": [
+                                "sha384:c15489ee2d80359e9267cde5496418f05022c9b4d57e75ac718d88543583e0212f61dff4c8594435f3ee53cba6b5c6a9"
+                            ],
+                            "bytes": 1599319
+                        }
+                    ]
+                },
+                {
+                    "platform": "windows",
+                    "arch": "arm64",
+                    "contents": [
+                        {
+                            "filename": "servers.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/77623230-bbe5-4bce-87ad-c1b1e2bfa411/qAgenticChatServer/win-x64/servers.zip",
+                            "hashes": [
+                                "sha384:711bad2203f885427f73e45ec868cdce44fcd15221780cd681ad5697dd4897b9a69599f8bd24eb2a018f7f67a0503e16"
+                            ],
+                            "bytes": 142268628
+                        },
+                        {
+                            "filename": "clients.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/77623230-bbe5-4bce-87ad-c1b1e2bfa411/clients.zip",
+                            "hashes": [
+                                "sha384:c15489ee2d80359e9267cde5496418f05022c9b4d57e75ac718d88543583e0212f61dff4c8594435f3ee53cba6b5c6a9"
+                            ],
+                            "bytes": 1599319
+                        }
+                    ]
+                },
+                {
+                    "platform": "linux",
+                    "arch": "x64",
+                    "contents": [
+                        {
+                            "filename": "servers.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/77623230-bbe5-4bce-87ad-c1b1e2bfa411/qAgenticChatServer/linux-x64/servers.zip",
+                            "hashes": [
+                                "sha384:e5d75def0a28e60f9dea5afd75926482ca0e52c0d31c370d756fbb56b7f657037c62fa7b306f0fff95f5806fb0e60d0e"
+                            ],
+                            "bytes": 149597434
+                        },
+                        {
+                            "filename": "clients.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/77623230-bbe5-4bce-87ad-c1b1e2bfa411/clients.zip",
+                            "hashes": [
+                                "sha384:c15489ee2d80359e9267cde5496418f05022c9b4d57e75ac718d88543583e0212f61dff4c8594435f3ee53cba6b5c6a9"
+                            ],
+                            "bytes": 1599319
+                        }
+                    ]
+                },
+                {
+                    "platform": "linux",
+                    "arch": "arm64",
+                    "contents": [
+                        {
+                            "filename": "servers.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/77623230-bbe5-4bce-87ad-c1b1e2bfa411/qAgenticChatServer/linux-arm64/servers.zip",
+                            "hashes": [
+                                "sha384:ea7f8e2bb25aa0252e1bfe9d1e7503d1abc041a271a020769f68d824dac88ace5e247f29de312482796930177cf47c6c"
+                            ],
+                            "bytes": 137478039
+                        },
+                        {
+                            "filename": "clients.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/77623230-bbe5-4bce-87ad-c1b1e2bfa411/clients.zip",
+                            "hashes": [
+                                "sha384:c15489ee2d80359e9267cde5496418f05022c9b4d57e75ac718d88543583e0212f61dff4c8594435f3ee53cba6b5c6a9"
+                            ],
+                            "bytes": 1599319
+                        }
+                    ]
+                },
+                {
+                    "platform": "darwin",
+                    "arch": "x64",
+                    "contents": [
+                        {
+                            "filename": "servers.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/77623230-bbe5-4bce-87ad-c1b1e2bfa411/qAgenticChatServer/mac-x64/servers.zip",
+                            "hashes": [
+                                "sha384:46699f4e0d3556355351a047ee3ba9272cd08c76070a678c9459b000262c1b0c1faeadf7c3f32193538e71280d0db915"
+                            ],
+                            "bytes": 129990913
+                        },
+                        {
+                            "filename": "clients.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/77623230-bbe5-4bce-87ad-c1b1e2bfa411/clients.zip",
+                            "hashes": [
+                                "sha384:c15489ee2d80359e9267cde5496418f05022c9b4d57e75ac718d88543583e0212f61dff4c8594435f3ee53cba6b5c6a9"
+                            ],
+                            "bytes": 1599319
+                        }
+                    ]
+                },
+                {
+                    "platform": "darwin",
+                    "arch": "arm64",
+                    "contents": [
+                        {
+                            "filename": "servers.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/77623230-bbe5-4bce-87ad-c1b1e2bfa411/qAgenticChatServer/mac-arm64/servers.zip",
+                            "hashes": [
+                                "sha384:f1be371753907b6a76b00b79e1ca6c8f725d12be5bf889b6b180ac70bbc04857ff4ff23b169f529cd27c74e6a5e45584"
+                            ],
+                            "bytes": 127087482
+                        },
+                        {
+                            "filename": "clients.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/77623230-bbe5-4bce-87ad-c1b1e2bfa411/clients.zip",
+                            "hashes": [
+                                "sha384:c15489ee2d80359e9267cde5496418f05022c9b4d57e75ac718d88543583e0212f61dff4c8594435f3ee53cba6b5c6a9"
+                            ],
+                            "bytes": 1599319
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "serverVersion": "0.1.0-alpha.104",
+            "isDelisted": false,
+            "runtime": {
+                "name": "standalone",
+                "version": "0.2.77"
+            },
+            "capabilities": [
+                {
+                    "name": "code-whisperer-lsp-server",
+                    "version": "0.0.32"
+                }
+            ],
+            "protocol": [
+                {
+                    "name": "protocol",
+                    "version": "0.2.77"
+                },
+                {
+                    "name": "types",
+                    "version": "0.1.26"
+                }
+            ],
+            "thirdPartyLicenses": "https://dhi0h88q3j9q6.cloudfront.net/09a3d6c0-0b06-4e68-b043-988de18981c4/THIRD_PARTY_LICENSES",
+            "targets": [
+                {
+                    "platform": "windows",
+                    "arch": "x64",
+                    "contents": [
+                        {
+                            "filename": "servers.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/09a3d6c0-0b06-4e68-b043-988de18981c4/qAgenticChatServer/win-x64/servers.zip",
+                            "hashes": [
+                                "sha384:68b9612ce4727714a4ca202ab2d5ff5303b256c74addc7ca984f2df05394d7158a68b2a7cb52530d5fba06f40d81c6ea"
+                            ],
+                            "bytes": 142268449
+                        },
+                        {
+                            "filename": "clients.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/09a3d6c0-0b06-4e68-b043-988de18981c4/clients.zip",
+                            "hashes": [
+                                "sha384:07c8f13873480acb7833e4929e6f77672227c686ea894b72085090d302e7fdf59cec6c33b1e1ec3a8762d235e4100713"
+                            ],
+                            "bytes": 1599054
+                        }
+                    ]
+                },
+                {
+                    "platform": "windows",
+                    "arch": "arm64",
+                    "contents": [
+                        {
+                            "filename": "servers.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/09a3d6c0-0b06-4e68-b043-988de18981c4/qAgenticChatServer/win-x64/servers.zip",
+                            "hashes": [
+                                "sha384:68b9612ce4727714a4ca202ab2d5ff5303b256c74addc7ca984f2df05394d7158a68b2a7cb52530d5fba06f40d81c6ea"
+                            ],
+                            "bytes": 142268449
+                        },
+                        {
+                            "filename": "clients.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/09a3d6c0-0b06-4e68-b043-988de18981c4/clients.zip",
+                            "hashes": [
+                                "sha384:07c8f13873480acb7833e4929e6f77672227c686ea894b72085090d302e7fdf59cec6c33b1e1ec3a8762d235e4100713"
+                            ],
+                            "bytes": 1599054
+                        }
+                    ]
+                },
+                {
+                    "platform": "linux",
+                    "arch": "x64",
+                    "contents": [
+                        {
+                            "filename": "servers.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/09a3d6c0-0b06-4e68-b043-988de18981c4/qAgenticChatServer/linux-x64/servers.zip",
+                            "hashes": [
+                                "sha384:cea45ea59f1e790fee06e0176073accae0a8257430cbc9917c1b11ab4e5358c862f252d0bba5417eab0d6340b6ea133f"
+                            ],
+                            "bytes": 149597255
+                        },
+                        {
+                            "filename": "clients.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/09a3d6c0-0b06-4e68-b043-988de18981c4/clients.zip",
+                            "hashes": [
+                                "sha384:07c8f13873480acb7833e4929e6f77672227c686ea894b72085090d302e7fdf59cec6c33b1e1ec3a8762d235e4100713"
+                            ],
+                            "bytes": 1599054
+                        }
+                    ]
+                },
+                {
+                    "platform": "linux",
+                    "arch": "arm64",
+                    "contents": [
+                        {
+                            "filename": "servers.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/09a3d6c0-0b06-4e68-b043-988de18981c4/qAgenticChatServer/linux-arm64/servers.zip",
+                            "hashes": [
+                                "sha384:8f4aee5f337d44518c7217db868dadfd2c83e8922e9aa4e05efdbec06ebadc2858838886da44b337ee68f0f1f9c8283e"
+                            ],
+                            "bytes": 137477860
+                        },
+                        {
+                            "filename": "clients.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/09a3d6c0-0b06-4e68-b043-988de18981c4/clients.zip",
+                            "hashes": [
+                                "sha384:07c8f13873480acb7833e4929e6f77672227c686ea894b72085090d302e7fdf59cec6c33b1e1ec3a8762d235e4100713"
+                            ],
+                            "bytes": 1599054
+                        }
+                    ]
+                },
+                {
+                    "platform": "darwin",
+                    "arch": "x64",
+                    "contents": [
+                        {
+                            "filename": "servers.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/09a3d6c0-0b06-4e68-b043-988de18981c4/qAgenticChatServer/mac-x64/servers.zip",
+                            "hashes": [
+                                "sha384:470046527a947f409396822a610f7d9c33b69233098a1f8b23e180846365fb0a748887f9fb986ad382c904e55196bf9e"
+                            ],
+                            "bytes": 129990734
+                        },
+                        {
+                            "filename": "clients.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/09a3d6c0-0b06-4e68-b043-988de18981c4/clients.zip",
+                            "hashes": [
+                                "sha384:07c8f13873480acb7833e4929e6f77672227c686ea894b72085090d302e7fdf59cec6c33b1e1ec3a8762d235e4100713"
+                            ],
+                            "bytes": 1599054
+                        }
+                    ]
+                },
+                {
+                    "platform": "darwin",
+                    "arch": "arm64",
+                    "contents": [
+                        {
+                            "filename": "servers.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/09a3d6c0-0b06-4e68-b043-988de18981c4/qAgenticChatServer/mac-arm64/servers.zip",
+                            "hashes": [
+                                "sha384:6ddce369f793cc2fee90d477aefd17371caf72c5e4d32aca8097d0f7c4c323f03660edf90fd974fb7dc7242c74ebac43"
+                            ],
+                            "bytes": 127087303
+                        },
+                        {
+                            "filename": "clients.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/09a3d6c0-0b06-4e68-b043-988de18981c4/clients.zip",
+                            "hashes": [
+                                "sha384:07c8f13873480acb7833e4929e6f77672227c686ea894b72085090d302e7fdf59cec6c33b1e1ec3a8762d235e4100713"
+                            ],
+                            "bytes": 1599054
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "serverVersion": "0.1.0-alpha.103",
+            "isDelisted": false,
+            "runtime": {
+                "name": "standalone",
+                "version": "0.2.77"
+            },
+            "capabilities": [
+                {
+                    "name": "code-whisperer-lsp-server",
+                    "version": "0.0.32"
+                }
+            ],
+            "protocol": [
+                {
+                    "name": "protocol",
+                    "version": "0.2.77"
+                },
+                {
+                    "name": "types",
+                    "version": "0.1.26"
+                }
+            ],
+            "thirdPartyLicenses": "https://dhi0h88q3j9q6.cloudfront.net/d7d6299f-d732-44fc-a6ee-c187bb61864c/THIRD_PARTY_LICENSES",
+            "targets": [
+                {
+                    "platform": "windows",
+                    "arch": "x64",
+                    "contents": [
+                        {
+                            "filename": "servers.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/d7d6299f-d732-44fc-a6ee-c187bb61864c/qAgenticChatServer/win-x64/servers.zip",
+                            "hashes": [
+                                "sha384:359c8d0ae74a720e1a8d3d8ac94eed379d50d28a57ce2a604598a78d869e35befaa8963b4d55f20f5308e6eb4019575f"
+                            ],
+                            "bytes": 142268045
+                        },
+                        {
+                            "filename": "clients.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/d7d6299f-d732-44fc-a6ee-c187bb61864c/clients.zip",
+                            "hashes": [
+                                "sha384:0bd219df3d1a11363f562b67d69e59649a1a864bad94d76d7145fab5219ed46a77adcbe52c65862cb2982e852906532c"
+                            ],
+                            "bytes": 1596789
+                        }
+                    ]
+                },
+                {
+                    "platform": "windows",
+                    "arch": "arm64",
+                    "contents": [
+                        {
+                            "filename": "servers.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/d7d6299f-d732-44fc-a6ee-c187bb61864c/qAgenticChatServer/win-x64/servers.zip",
+                            "hashes": [
+                                "sha384:359c8d0ae74a720e1a8d3d8ac94eed379d50d28a57ce2a604598a78d869e35befaa8963b4d55f20f5308e6eb4019575f"
+                            ],
+                            "bytes": 142268045
+                        },
+                        {
+                            "filename": "clients.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/d7d6299f-d732-44fc-a6ee-c187bb61864c/clients.zip",
+                            "hashes": [
+                                "sha384:0bd219df3d1a11363f562b67d69e59649a1a864bad94d76d7145fab5219ed46a77adcbe52c65862cb2982e852906532c"
+                            ],
+                            "bytes": 1596789
+                        }
+                    ]
+                },
+                {
+                    "platform": "linux",
+                    "arch": "x64",
+                    "contents": [
+                        {
+                            "filename": "servers.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/d7d6299f-d732-44fc-a6ee-c187bb61864c/qAgenticChatServer/linux-x64/servers.zip",
+                            "hashes": [
+                                "sha384:46ea9a0a8374329190cc3a440f162a0a89d98f14fa4054e480a473783680fe3aafacf0ae409f8004aa951622cd219c37"
+                            ],
+                            "bytes": 149596851
+                        },
+                        {
+                            "filename": "clients.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/d7d6299f-d732-44fc-a6ee-c187bb61864c/clients.zip",
+                            "hashes": [
+                                "sha384:0bd219df3d1a11363f562b67d69e59649a1a864bad94d76d7145fab5219ed46a77adcbe52c65862cb2982e852906532c"
+                            ],
+                            "bytes": 1596789
+                        }
+                    ]
+                },
+                {
+                    "platform": "linux",
+                    "arch": "arm64",
+                    "contents": [
+                        {
+                            "filename": "servers.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/d7d6299f-d732-44fc-a6ee-c187bb61864c/qAgenticChatServer/linux-arm64/servers.zip",
+                            "hashes": [
+                                "sha384:051c8c1c5a052962bde3baef7f269253170ded42db1ae4938e3948bcb84d29c599f81cd2bd25bc9710aaccbf6d6cb547"
+                            ],
+                            "bytes": 137477456
+                        },
+                        {
+                            "filename": "clients.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/d7d6299f-d732-44fc-a6ee-c187bb61864c/clients.zip",
+                            "hashes": [
+                                "sha384:0bd219df3d1a11363f562b67d69e59649a1a864bad94d76d7145fab5219ed46a77adcbe52c65862cb2982e852906532c"
+                            ],
+                            "bytes": 1596789
+                        }
+                    ]
+                },
+                {
+                    "platform": "darwin",
+                    "arch": "x64",
+                    "contents": [
+                        {
+                            "filename": "servers.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/d7d6299f-d732-44fc-a6ee-c187bb61864c/qAgenticChatServer/mac-x64/servers.zip",
+                            "hashes": [
+                                "sha384:225bd6e62f3cd5afac5bf49253bf3e96159b54de0f2f265900d19caeffaa339f0bd8ad768b13e3aa8754b0e232b5f5ca"
+                            ],
+                            "bytes": 129990330
+                        },
+                        {
+                            "filename": "clients.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/d7d6299f-d732-44fc-a6ee-c187bb61864c/clients.zip",
+                            "hashes": [
+                                "sha384:0bd219df3d1a11363f562b67d69e59649a1a864bad94d76d7145fab5219ed46a77adcbe52c65862cb2982e852906532c"
+                            ],
+                            "bytes": 1596789
+                        }
+                    ]
+                },
+                {
+                    "platform": "darwin",
+                    "arch": "arm64",
+                    "contents": [
+                        {
+                            "filename": "servers.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/d7d6299f-d732-44fc-a6ee-c187bb61864c/qAgenticChatServer/mac-arm64/servers.zip",
+                            "hashes": [
+                                "sha384:da20e8d60d093910461fa194ad14ba191a6f771164e644f34daf45ca538cde5536a252128587cdc94b94c698e0627432"
+                            ],
+                            "bytes": 127086899
+                        },
+                        {
+                            "filename": "clients.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/d7d6299f-d732-44fc-a6ee-c187bb61864c/clients.zip",
+                            "hashes": [
+                                "sha384:0bd219df3d1a11363f562b67d69e59649a1a864bad94d76d7145fab5219ed46a77adcbe52c65862cb2982e852906532c"
+                            ],
+                            "bytes": 1596789
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "serverVersion": "0.1.0-alpha.102",
+            "isDelisted": false,
+            "runtime": {
+                "name": "standalone",
+                "version": "0.2.77"
+            },
+            "capabilities": [
+                {
+                    "name": "code-whisperer-lsp-server",
+                    "version": "0.0.32"
+                }
+            ],
+            "protocol": [
+                {
+                    "name": "protocol",
+                    "version": "0.2.77"
+                },
+                {
+                    "name": "types",
+                    "version": "0.1.26"
+                }
+            ],
+            "thirdPartyLicenses": "https://dhi0h88q3j9q6.cloudfront.net/f120d975-93c7-4320-97f9-313a5243bd9d/THIRD_PARTY_LICENSES",
+            "targets": [
+                {
+                    "platform": "windows",
+                    "arch": "x64",
+                    "contents": [
+                        {
+                            "filename": "servers.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/f120d975-93c7-4320-97f9-313a5243bd9d/qAgenticChatServer/win-x64/servers.zip",
+                            "hashes": [
+                                "sha384:88f05a725860d9c466842443d7bf173e0d392c638be5ab9e51c11a54580debc007021e6c293663e4c416368fb544b391"
+                            ],
+                            "bytes": 142267825
+                        },
+                        {
+                            "filename": "clients.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/f120d975-93c7-4320-97f9-313a5243bd9d/clients.zip",
+                            "hashes": [
+                                "sha384:52d8227e5a72d10e5d20c9772dfb97b203d3b542d77f83e24348dc16b934caab2f3f1115d4390b470fd4d0e090445775"
+                            ],
+                            "bytes": 1596789
+                        }
+                    ]
+                },
+                {
+                    "platform": "windows",
+                    "arch": "arm64",
+                    "contents": [
+                        {
+                            "filename": "servers.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/f120d975-93c7-4320-97f9-313a5243bd9d/qAgenticChatServer/win-x64/servers.zip",
+                            "hashes": [
+                                "sha384:88f05a725860d9c466842443d7bf173e0d392c638be5ab9e51c11a54580debc007021e6c293663e4c416368fb544b391"
+                            ],
+                            "bytes": 142267825
+                        },
+                        {
+                            "filename": "clients.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/f120d975-93c7-4320-97f9-313a5243bd9d/clients.zip",
+                            "hashes": [
+                                "sha384:52d8227e5a72d10e5d20c9772dfb97b203d3b542d77f83e24348dc16b934caab2f3f1115d4390b470fd4d0e090445775"
+                            ],
+                            "bytes": 1596789
+                        }
+                    ]
+                },
+                {
+                    "platform": "linux",
+                    "arch": "x64",
+                    "contents": [
+                        {
+                            "filename": "servers.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/f120d975-93c7-4320-97f9-313a5243bd9d/qAgenticChatServer/linux-x64/servers.zip",
+                            "hashes": [
+                                "sha384:427765b25383b93b3d8d48ab6dcce71da5820215292ab765fbad92136a42d5162a6b3347cfde385994e17da9fe5f848d"
+                            ],
+                            "bytes": 149596631
+                        },
+                        {
+                            "filename": "clients.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/f120d975-93c7-4320-97f9-313a5243bd9d/clients.zip",
+                            "hashes": [
+                                "sha384:52d8227e5a72d10e5d20c9772dfb97b203d3b542d77f83e24348dc16b934caab2f3f1115d4390b470fd4d0e090445775"
+                            ],
+                            "bytes": 1596789
+                        }
+                    ]
+                },
+                {
+                    "platform": "linux",
+                    "arch": "arm64",
+                    "contents": [
+                        {
+                            "filename": "servers.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/f120d975-93c7-4320-97f9-313a5243bd9d/qAgenticChatServer/linux-arm64/servers.zip",
+                            "hashes": [
+                                "sha384:196d7e36a3223761842a52286c1faebf6f310741c21322ec3aba26a6950e9ceb66e26a25f435127b1829acd3cee37a75"
+                            ],
+                            "bytes": 137477236
+                        },
+                        {
+                            "filename": "clients.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/f120d975-93c7-4320-97f9-313a5243bd9d/clients.zip",
+                            "hashes": [
+                                "sha384:52d8227e5a72d10e5d20c9772dfb97b203d3b542d77f83e24348dc16b934caab2f3f1115d4390b470fd4d0e090445775"
+                            ],
+                            "bytes": 1596789
+                        }
+                    ]
+                },
+                {
+                    "platform": "darwin",
+                    "arch": "x64",
+                    "contents": [
+                        {
+                            "filename": "servers.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/f120d975-93c7-4320-97f9-313a5243bd9d/qAgenticChatServer/mac-x64/servers.zip",
+                            "hashes": [
+                                "sha384:4a3ebb215591e1c6d533a817267cb02ba509d999e0e506aa486c13d345e6b567049947128625b3b6318483fafbf80040"
+                            ],
+                            "bytes": 129990110
+                        },
+                        {
+                            "filename": "clients.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/f120d975-93c7-4320-97f9-313a5243bd9d/clients.zip",
+                            "hashes": [
+                                "sha384:52d8227e5a72d10e5d20c9772dfb97b203d3b542d77f83e24348dc16b934caab2f3f1115d4390b470fd4d0e090445775"
+                            ],
+                            "bytes": 1596789
+                        }
+                    ]
+                },
+                {
+                    "platform": "darwin",
+                    "arch": "arm64",
+                    "contents": [
+                        {
+                            "filename": "servers.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/f120d975-93c7-4320-97f9-313a5243bd9d/qAgenticChatServer/mac-arm64/servers.zip",
+                            "hashes": [
+                                "sha384:4ca5166f41688b1e3cf68250fc18d0642d01cb21aa0069f58650201e2d64eef574a4dc1e29efaeb77698827e8e8af7c3"
+                            ],
+                            "bytes": 127086679
+                        },
+                        {
+                            "filename": "clients.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/f120d975-93c7-4320-97f9-313a5243bd9d/clients.zip",
+                            "hashes": [
+                                "sha384:52d8227e5a72d10e5d20c9772dfb97b203d3b542d77f83e24348dc16b934caab2f3f1115d4390b470fd4d0e090445775"
+                            ],
+                            "bytes": 1596789
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "serverVersion": "0.1.0-alpha.101",
+            "isDelisted": false,
+            "runtime": {
+                "name": "standalone",
+                "version": "0.2.77"
+            },
+            "capabilities": [
+                {
+                    "name": "code-whisperer-lsp-server",
+                    "version": "0.0.32"
+                }
+            ],
+            "protocol": [
+                {
+                    "name": "protocol",
+                    "version": "0.2.77"
+                },
+                {
+                    "name": "types",
+                    "version": "0.1.26"
+                }
+            ],
+            "thirdPartyLicenses": "https://dhi0h88q3j9q6.cloudfront.net/d1067e96-d06b-4285-99fa-dc9b0a0791b9/THIRD_PARTY_LICENSES",
+            "targets": [
+                {
+                    "platform": "windows",
+                    "arch": "x64",
+                    "contents": [
+                        {
+                            "filename": "servers.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/d1067e96-d06b-4285-99fa-dc9b0a0791b9/qAgenticChatServer/win-x64/servers.zip",
+                            "hashes": [
+                                "sha384:c4d65c39ab8b5066559dec4a717bde8ab0c9710e16abe687420b9fc9e6716e4c7dba4b56bf7e63ab5593a8c1ee5fb89b"
+                            ],
+                            "bytes": 142267068
+                        },
+                        {
+                            "filename": "clients.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/d1067e96-d06b-4285-99fa-dc9b0a0791b9/clients.zip",
+                            "hashes": [
+                                "sha384:7e63ee80dc8bae49d3eeb21fcc6c062f70a0a8a708fe8d37a81c8ef59dbec63b6578d949b97fd7a5a93f59e7eab4a2a9"
+                            ],
+                            "bytes": 1596587
+                        }
+                    ]
+                },
+                {
+                    "platform": "windows",
+                    "arch": "arm64",
+                    "contents": [
+                        {
+                            "filename": "servers.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/d1067e96-d06b-4285-99fa-dc9b0a0791b9/qAgenticChatServer/win-x64/servers.zip",
+                            "hashes": [
+                                "sha384:c4d65c39ab8b5066559dec4a717bde8ab0c9710e16abe687420b9fc9e6716e4c7dba4b56bf7e63ab5593a8c1ee5fb89b"
+                            ],
+                            "bytes": 142267068
+                        },
+                        {
+                            "filename": "clients.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/d1067e96-d06b-4285-99fa-dc9b0a0791b9/clients.zip",
+                            "hashes": [
+                                "sha384:7e63ee80dc8bae49d3eeb21fcc6c062f70a0a8a708fe8d37a81c8ef59dbec63b6578d949b97fd7a5a93f59e7eab4a2a9"
+                            ],
+                            "bytes": 1596587
+                        }
+                    ]
+                },
+                {
+                    "platform": "linux",
+                    "arch": "x64",
+                    "contents": [
+                        {
+                            "filename": "servers.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/d1067e96-d06b-4285-99fa-dc9b0a0791b9/qAgenticChatServer/linux-x64/servers.zip",
+                            "hashes": [
+                                "sha384:ebb136d0ec818a329fef6f1024d636fbbda14784b2adf32075d23d6f5999c0d20dd6e6ae854f37e9d8db53393b5ab002"
+                            ],
+                            "bytes": 149595874
+                        },
+                        {
+                            "filename": "clients.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/d1067e96-d06b-4285-99fa-dc9b0a0791b9/clients.zip",
+                            "hashes": [
+                                "sha384:7e63ee80dc8bae49d3eeb21fcc6c062f70a0a8a708fe8d37a81c8ef59dbec63b6578d949b97fd7a5a93f59e7eab4a2a9"
+                            ],
+                            "bytes": 1596587
+                        }
+                    ]
+                },
+                {
+                    "platform": "linux",
+                    "arch": "arm64",
+                    "contents": [
+                        {
+                            "filename": "servers.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/d1067e96-d06b-4285-99fa-dc9b0a0791b9/qAgenticChatServer/linux-arm64/servers.zip",
+                            "hashes": [
+                                "sha384:38b014a28bffaef957c5e4f3489588528f51e51a9f348de5ebe5e22c6dcaedce7ffc5becb3e091fda3612002d1c92d9a"
+                            ],
+                            "bytes": 137476479
+                        },
+                        {
+                            "filename": "clients.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/d1067e96-d06b-4285-99fa-dc9b0a0791b9/clients.zip",
+                            "hashes": [
+                                "sha384:7e63ee80dc8bae49d3eeb21fcc6c062f70a0a8a708fe8d37a81c8ef59dbec63b6578d949b97fd7a5a93f59e7eab4a2a9"
+                            ],
+                            "bytes": 1596587
+                        }
+                    ]
+                },
+                {
+                    "platform": "darwin",
+                    "arch": "x64",
+                    "contents": [
+                        {
+                            "filename": "servers.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/d1067e96-d06b-4285-99fa-dc9b0a0791b9/qAgenticChatServer/mac-x64/servers.zip",
+                            "hashes": [
+                                "sha384:e70e89b38ab72cbb39da6be7084c40722d8c534dc9d9e22416d96c29261c06572cc73e778a1d13c724c077b0c88f61c7"
+                            ],
+                            "bytes": 129989353
+                        },
+                        {
+                            "filename": "clients.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/d1067e96-d06b-4285-99fa-dc9b0a0791b9/clients.zip",
+                            "hashes": [
+                                "sha384:7e63ee80dc8bae49d3eeb21fcc6c062f70a0a8a708fe8d37a81c8ef59dbec63b6578d949b97fd7a5a93f59e7eab4a2a9"
+                            ],
+                            "bytes": 1596587
+                        }
+                    ]
+                },
+                {
+                    "platform": "darwin",
+                    "arch": "arm64",
+                    "contents": [
+                        {
+                            "filename": "servers.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/d1067e96-d06b-4285-99fa-dc9b0a0791b9/qAgenticChatServer/mac-arm64/servers.zip",
+                            "hashes": [
+                                "sha384:24379cf802c41e67d71c308b6f1ff5cfefb73268bc6fc7e73a1f18671ebcbdc95a7f58283acf180e7780762f4ef8c669"
+                            ],
+                            "bytes": 127085922
+                        },
+                        {
+                            "filename": "clients.zip",
+                            "url": "https://dhi0h88q3j9q6.cloudfront.net/d1067e96-d06b-4285-99fa-dc9b0a0791b9/clients.zip",
+                            "hashes": [
+                                "sha384:7e63ee80dc8bae49d3eeb21fcc6c062f70a0a8a708fe8d37a81c8ef59dbec63b6578d949b97fd7a5a93f59e7eab4a2a9"
+                            ],
+                            "bytes": 1596587
+                        }
+                    ]
+                }
+            ]
+        },
+        {
             "serverVersion": "0.1.0-alpha.100",
             "isDelisted": false,
             "runtime": {
