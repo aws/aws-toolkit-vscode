@@ -44,7 +44,7 @@ function createNodeProcess(nodePath: string, args: string[]) {
  */
 export async function validateNodeExe(nodePath: string, lsp: string, args: string[], logger: Logger) {
     // Check that we can start `node` by itself.
-    const proc = createNodeProcess(nodePath, ['-e', 'console.log("ok")'])
+    const proc = createNodeProcess(nodePath, ['-e', 'console.log("ok " + process.version)'])
     const r = await proc.run()
     const ok = r.exitCode === 0 && r.stdout.includes('ok')
     if (!ok) {
