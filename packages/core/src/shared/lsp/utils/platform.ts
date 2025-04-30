@@ -7,7 +7,7 @@ import { ToolkitError } from '../../errors'
 import { Logger } from '../../logger/logger'
 import { ChildProcess } from '../../utilities/processUtils'
 import { waitUntil } from '../../utilities/timeoutUtils'
-import { isDebugInstance } from '../../vscode/env'
+import { isAmazonInternalOs, isDebugInstance } from '../../vscode/env'
 
 export function getNodeExecutableName(): string {
     return process.platform === 'win32' ? 'node.exe' : 'node'
@@ -26,10 +26,19 @@ function getEncryptionInit(key: Buffer): string {
     return JSON.stringify(request) + '\n'
 }
 
+function getNodePath(nodePath: string) {
+    if (isAmazonInternalOs()) {
+        nodePath = `/opt/vsc-sysroot/lib64/ld-linux-x86-64.so.2 --library-path /opt/vsc-sysroot/lib64 ${nodePath}`
+    }
+    return nodePath
+}
+
 /**
  * Checks that we can actually run the `node` executable and execute code with it.
  */
 export async function validateNodeExe(nodePath: string, lsp: string, args: string[], logger: Logger) {
+    nodePath = getNodePath(nodePath)
+
     // Check that we can start `node` by itself.
     const proc = new ChildProcess(nodePath, ['-e', 'console.log("ok " + process.version)'], { logging: 'no' })
     const r = await proc.run()
@@ -89,7 +98,8 @@ export function createServerOptions({
         if (isDebugInstance()) {
             args.unshift('--inspect=6080')
         }
-        const lspProcess = new ChildProcess(executable, args)
+
+        const lspProcess = new ChildProcess(getNodePath(executable), args)
 
         // this is a long running process, awaiting it will never resolve
         void lspProcess.run()
