@@ -933,7 +933,6 @@ export const testGenExcludePatterns = [
 ]
 
 export const predictionTrackerDefaultConfig = {
-    maxFiles: 25,
     maxStorageSizeKb: 10000,
     debounceIntervalMs: 2000,
     maxAgeMs: 30000,

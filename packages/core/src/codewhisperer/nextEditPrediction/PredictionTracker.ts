@@ -12,7 +12,6 @@ import globals from '../../shared/extensionGlobals'
 
 // defaul values are stored in codewhisperer/model/constants
 export interface FileTrackerConfig {
-    maxFiles: number
     maxStorageSizeKb: number
     debounceIntervalMs: number
     maxAgeMs: number
