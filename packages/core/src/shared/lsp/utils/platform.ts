@@ -7,7 +7,7 @@ import { ToolkitError } from '../../errors'
 import { Logger } from '../../logger/logger'
 import { ChildProcess } from '../../utilities/processUtils'
 import { waitUntil } from '../../utilities/timeoutUtils'
-import { isDebugInstance } from '../../vscode/env'
+import { isAmazonInternalOs, isDebugInstance } from '../../vscode/env'
 
 export function getNodeExecutableName(): string {
     return process.platform === 'win32' ? 'node.exe' : 'node'
@@ -26,12 +26,23 @@ function getEncryptionInit(key: Buffer): string {
     return JSON.stringify(request) + '\n'
 }
 
+const al2Config = {
+    path: '/opt/vsc-sysroot/lib64/ld-linux-x86-64.so.2',
+    args: ['--library-path', '/opt/vsc-sysroot/lib64'],
+}
+
 /**
  * Checks that we can actually run the `node` executable and execute code with it.
  */
 export async function validateNodeExe(nodePath: string, lsp: string, args: string[], logger: Logger) {
     // Check that we can start `node` by itself.
-    const proc = new ChildProcess(nodePath, ['-e', 'console.log("ok " + process.version)'], { logging: 'no' })
+    const proc = new ChildProcess(
+        isAmazonInternalOs() ? al2Config.path : nodePath,
+        isAmazonInternalOs()
+            ? [...al2Config.args, nodePath, '-e', 'console.log("ok " + process.version)']
+            : ['-e', 'console.log("ok " + process.version)'],
+        { logging: 'no' }
+    )
     const r = await proc.run()
     const ok = r.exitCode === 0 && r.stdout.includes('ok')
     if (!ok) {
@@ -41,7 +52,12 @@ export async function validateNodeExe(nodePath: string, lsp: string, args: strin
     }
 
     // Check that we can start `node …/lsp.js --stdio …`.
-    const lspProc = new ChildProcess(nodePath, [lsp, ...args], { logging: 'no' })
+    const lspProc = new ChildProcess(
+        isAmazonInternalOs() ? al2Config.path : nodePath,
+        isAmazonInternalOs() ? [...al2Config.args, nodePath, lsp, ...args] : [lsp, ...args],
+        { logging: 'no' }
+    )
+
     try {
         // Start asynchronously (it never stops; we need to stop it below).
         lspProc.run().catch((e) => logger.error('failed to run: %s', lspProc.toString(false, true)))
@@ -89,8 +105,11 @@ export function createServerOptions({
         if (isDebugInstance()) {
             args.unshift('--inspect=6080')
         }
-        const lspProcess = new ChildProcess(executable, args)
-
+        const lspProcess = new ChildProcess(
+            isAmazonInternalOs() ? al2Config.path : executable,
+            isAmazonInternalOs() ? [...al2Config.args, executable, ...args] : args,
+            { logging: 'no' }
+        )
         // this is a long running process, awaiting it will never resolve
         void lspProcess.run()
 
