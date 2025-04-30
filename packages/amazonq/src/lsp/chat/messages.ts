@@ -532,10 +532,6 @@ async function handlePartialResult<T extends ChatResult>(
             tabId: tabId,
         })
     }
-
-    for (const ref of decryptedMessage.codeReference ?? []) {
-        ReferenceLogViewProvider.instance.addReferenceLog(referenceLogText(ref))
-    }
 }
 
 /**
@@ -556,6 +552,8 @@ async function handleCompleteResult<T extends ChatResult>(
         params: decryptedMessage,
         tabId: tabId,
     })
+
+    // only add the reference log once the request is complete, otherwise we will get duplicate log items
     for (const ref of decryptedMessage.codeReference ?? []) {
         ReferenceLogViewProvider.instance.addReferenceLog(referenceLogText(ref))
     }
