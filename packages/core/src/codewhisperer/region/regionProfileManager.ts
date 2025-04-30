@@ -138,6 +138,8 @@ export class RegionProfileManager {
             return []
         }
         const availableProfiles: RegionProfile[] = []
+        const failedRegions: string[] = []
+
         for (const [region, endpoint] of endpoints.entries()) {
             const client = await this.createQClient(region, endpoint, conn as SsoConnection)
             const requester = async (request: CodeWhispererUserClient.ListAvailableProfilesRequest) =>
@@ -162,13 +164,17 @@ export class RegionProfileManager {
                 })
 
                 availableProfiles.push(...mappedPfs)
+                RegionProfileManager.logger.debug(`Found ${mappedPfs.length} profiles in region ${region}`)
             } catch (e) {
                 const logMsg = isAwsError(e) ? `requestId=${e.requestId}; message=${e.message}` : (e as Error).message
-                RegionProfileManager.logger.error(`failed to listRegionProfile: ${logMsg}`)
-                throw e
+                RegionProfileManager.logger.error(`Failed to list profiles for region ${region}: ${logMsg}`)
+                failedRegions.push(region)
             }
+        }
 
-            RegionProfileManager.logger.info(`available amazonq profiles: ${availableProfiles.length}`)
+        // Only throw error if all regions fail
+        if (failedRegions.length === endpoints.size) {
+            throw new Error(`Failed to list profiles for all regions: ${failedRegions.join(', ')}`)
         }
 
         this._profiles = availableProfiles
