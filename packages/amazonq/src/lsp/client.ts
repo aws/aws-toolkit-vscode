@@ -23,7 +23,6 @@ import {
 import { AuthUtil, CodeWhispererSettings, getSelectedCustomization } from 'aws-core-vscode/codewhisperer'
 import {
     Settings,
-    oidcClientName,
     createServerOptions,
     globals,
     Experiments,
@@ -95,14 +94,14 @@ export async function startLanguageServer(
                     name: env.appName,
                     version: version,
                     extension: {
-                        name: oidcClientName(),
+                        name: 'AmazonQ-For-VSCode',
                         version: '0.0.1',
                     },
                     clientId: crypto.randomUUID(),
                 },
                 awsClientCapabilities: {
                     q: {
-                        developerProfiles: false,
+                        developerProfiles: true,
                     },
                     window: {
                         notifications: true,
@@ -282,8 +281,7 @@ function getConfigSection(section: ConfigSection) {
                     customization: undefinedIfEmpty(getSelectedCustomization().arn),
                     optOutTelemetry: getOptOutPreference() === 'OPTOUT',
                     projectContext: {
-                        // TODO: we might need another setting to control the actual indexing
-                        enableLocalIndexing: true,
+                        enableLocalIndexing: CodeWhispererSettings.instance.isLocalIndexEnabled(),
                         enableGpuAcceleration: CodeWhispererSettings.instance.isLocalIndexGPUEnabled(),
                         indexWorkerThreads: CodeWhispererSettings.instance.getIndexWorkerThreads(),
                         localIndexing: {

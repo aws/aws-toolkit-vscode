@@ -35,7 +35,7 @@ export {
     computeDiff,
 } from './commons/diff'
 export { AuthFollowUpType, AuthMessageDataMap } from './auth/model'
-export { ChatItemType } from './commons/model'
+export { ChatItemType, referenceLogText } from './commons/model'
 export { ExtensionMessage } from '../amazonq/webview/ui/commands'
 export { CodeReference } from '../codewhispererChat/view/connector/connector'
 export { extractAuthFollowUp } from './util/authUtils'

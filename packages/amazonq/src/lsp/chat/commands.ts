@@ -6,6 +6,9 @@
 import { Commands, globals } from 'aws-core-vscode/shared'
 import { window } from 'vscode'
 import { AmazonQChatViewProvider } from './webviewProvider'
+import { CodeScanIssue } from 'aws-core-vscode/codewhisperer'
+import { EditorContextExtractor } from 'aws-core-vscode/codewhispererChat'
+import { DefaultAmazonQAppInitContext } from 'aws-core-vscode/amazonq'
 
 /**
  * TODO: Re-enable these once we can figure out which path they're going to live in
@@ -17,6 +20,52 @@ export function registerCommands(provider: AmazonQChatViewProvider) {
         registerGenericCommand('aws.amazonq.refactorCode', 'Refactor', provider),
         registerGenericCommand('aws.amazonq.fixCode', 'Fix', provider),
         registerGenericCommand('aws.amazonq.optimizeCode', 'Optimize', provider),
+        Commands.register('aws.amazonq.generateUnitTests', async () => {
+            DefaultAmazonQAppInitContext.instance.getAppsToWebViewMessagePublisher().publish({
+                sender: 'testChat',
+                command: 'test',
+                type: 'chatMessage',
+            })
+        }),
+        Commands.register('aws.amazonq.explainIssue', async (issue: CodeScanIssue) => {
+            void focusAmazonQPanel().then(async () => {
+                const editorContextExtractor = new EditorContextExtractor()
+                const extractedContext = await editorContextExtractor.extractContextForTrigger('ContextMenu')
+                const selectedCode =
+                    extractedContext?.activeFileContext?.fileText
+                        ?.split('\n')
+                        .slice(issue.startLine, issue.endLine)
+                        .join('\n') ?? ''
+
+                // The message that gets sent to the UI
+                const uiMessage = [
+                    'Explain the ',
+                    issue.title,
+                    ' issue in the following code:',
+                    '\n```\n',
+                    selectedCode,
+                    '\n```',
+                ].join('')
+
+                // The message that gets sent to the backend
+                const contextMessage = `Explain the issue "${issue.title}" (${JSON.stringify(
+                    issue
+                )}) and generate code demonstrating the fix`
+
+                void provider.webview?.postMessage({
+                    command: 'sendToPrompt',
+                    params: {
+                        selection: '',
+                        triggerType: 'contextMenu',
+                        prompt: {
+                            prompt: uiMessage, // what gets sent to the user
+                            escapedPrompt: contextMessage, // what gets sent to the backend
+                        },
+                        autoSubmit: true,
+                    },
+                })
+            })
+        }),
         Commands.register('aws.amazonq.sendToPrompt', (data) => {
             const triggerType = getCommandTriggerType(data)
             const selection = getSelectedText()
