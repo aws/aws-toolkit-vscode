@@ -49,6 +49,7 @@ interface SamInvokeVueData {
     newTestEventName: string
     resourceData: ResourceData | undefined
     invokeInProgress: boolean
+    useDebugger: boolean
 }
 
 function newLaunchConfig(existingConfig?: AwsSamDebuggerConfiguration): AwsSamDebuggerConfigurationLoose {
@@ -113,6 +114,7 @@ function initData() {
     return {
         containerBuild: false,
         skipNewImageCheck: false,
+        useDebugger: true,
         launchConfig: newLaunchConfig(),
         payload: { value: '', errorMsg: '' },
         apiPayload: { value: '', errorMsg: '' },
@@ -457,6 +459,7 @@ export default defineComponent({
                           },
                       }
                     : undefined,
+                noDebug: !this.useDebugger,
             }
         },
         clearForm() {

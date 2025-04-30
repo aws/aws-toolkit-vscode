@@ -7,7 +7,8 @@ import { TransformationCandidateProject } from '../../../codewhisperer/models/mo
 
 export enum ConversationState {
     IDLE,
-    PROMPT_JAVA_HOME,
+    PROMPT_SOURCE_JAVA_HOME,
+    PROMPT_TARGET_JAVA_HOME,
     COMPILING,
     JOB_SUBMITTED,
     WAITING_FOR_HIL_INPUT,
