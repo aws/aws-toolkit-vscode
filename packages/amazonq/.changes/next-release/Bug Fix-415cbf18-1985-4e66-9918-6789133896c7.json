@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Q profile selection hangs when a region is blocked"
+}
