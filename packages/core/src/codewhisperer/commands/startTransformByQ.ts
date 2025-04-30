@@ -56,7 +56,6 @@ import { submitFeedback } from '../../feedback/vue/submitFeedback'
 import { placeholder } from '../../shared/vscode/commands2'
 import {
     AlternateDependencyVersionsNotFoundError,
-    JavaHomeNotSetError,
     JobStartError,
     ModuleUploadError,
     PollJobError,
@@ -69,8 +68,7 @@ import {
     getJsonValuesFromManifestFile,
     highlightPomIssueInProject,
     parseVersionsListFromPomFile,
-    setMaven,
-    writeLogs,
+    writeAndShowBuildLogs,
 } from '../service/transformByQ/transformFileHandler'
 import { sleep } from '../../shared/utilities/timeoutUtils'
 import DependencyVersions from '../../amazonqGumby/models/dependencies'
@@ -111,37 +109,6 @@ export async function processSQLConversionTransformFormInput(pathToProject: stri
     transformByQState.setTargetJDKVersion(JDKVersion.JDK17)
 }
 
-async function validateJavaHome(): Promise<boolean> {
-    const versionData = await getVersionData()
-    let javaVersionUsedByMaven = versionData[1]
-    if (javaVersionUsedByMaven !== undefined) {
-        javaVersionUsedByMaven = javaVersionUsedByMaven.slice(0, 3)
-        if (javaVersionUsedByMaven === '1.8') {
-            javaVersionUsedByMaven = JDKVersion.JDK8
-        } else if (javaVersionUsedByMaven === '11.') {
-            javaVersionUsedByMaven = JDKVersion.JDK11
-        } else if (javaVersionUsedByMaven === '17.') {
-            javaVersionUsedByMaven = JDKVersion.JDK17
-        } else if (javaVersionUsedByMaven === '21.') {
-            javaVersionUsedByMaven = JDKVersion.JDK21
-        }
-    }
-    if (javaVersionUsedByMaven !== transformByQState.getSourceJDKVersion()) {
-        // means either javaVersionUsedByMaven is undefined or it does not match the project JDK
-        return false
-    }
-
-    return true
-}
-
-export async function validateCanCompileProject() {
-    await setMaven()
-    const javaHomeFound = await validateJavaHome()
-    if (!javaHomeFound) {
-        throw new JavaHomeNotSetError()
-    }
-}
-
 export async function compileProject() {
     try {
         const dependenciesFolder: FolderInfo = getDependenciesFolderInfo()
@@ -150,9 +117,7 @@ export async function compileProject() {
         await prepareProjectDependencies(dependenciesFolder, modulePath)
     } catch (err) {
         // open build-logs.txt file to show user error logs
-        const logFilePath = await writeLogs()
-        const doc = await vscode.workspace.openTextDocument(logFilePath)
-        await vscode.window.showTextDocument(doc)
+        await writeAndShowBuildLogs(true)
         throw err
     }
 }
@@ -300,7 +265,7 @@ export async function initiateHumanInTheLoopPrompt(jobId: string) {
         const profile = AuthUtil.instance.regionProfileManager.activeRegionProfile
         const humanInTheLoopManager = HumanInTheLoopManager.instance
         // 1) We need to call GetTransformationPlan to get artifactId
-        const transformationSteps = await getTransformationSteps(jobId, false, profile)
+        const transformationSteps = await getTransformationSteps(jobId, profile)
         const { transformationStep, progressUpdate } = findDownloadArtifactStep(transformationSteps)
 
         if (!transformationStep || !progressUpdate) {
@@ -566,7 +531,7 @@ export async function pollTransformationStatusUntilPlanReady(jobId: string, prof
         try {
             const tempToolkitFolder = await makeTemporaryToolkitFolder()
             const tempBuildLogsDir = path.join(tempToolkitFolder, 'q-transformation-build-logs')
-            await downloadAndExtractResultArchive(jobId, undefined, tempBuildLogsDir, 'Logs')
+            await downloadAndExtractResultArchive(jobId, tempBuildLogsDir)
             pathToLog = path.join(tempBuildLogsDir, 'buildCommandOutput.log')
             transformByQState.setPreBuildLogFilePath(pathToLog)
         } catch (e) {
@@ -788,7 +753,8 @@ export async function postTransformationJob() {
     }
 
     if (transformByQState.getPayloadFilePath() !== '') {
-        fs.rmSync(transformByQState.getPayloadFilePath(), { recursive: true, force: true }) // delete ZIP if it exists
+        // delete original upload ZIP at very end of transformation
+        fs.rmSync(transformByQState.getPayloadFilePath(), { recursive: true, force: true })
     }
 
     // attempt download for user
