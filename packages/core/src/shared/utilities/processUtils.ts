@@ -89,7 +89,7 @@ export class ChildProcessTracker {
         this.#pids = new PollingSet(ChildProcessTracker.pollingInterval, () => this.monitor())
     }
 
-    private getThreshold(pid: number) {
+    private getThreshold(pid: number): ProcessStats {
         if (!this.#processByPid.has(pid)) {
             ChildProcessTracker.logOnce(pid, `Missing process with id ${pid}, returning default threshold`)
             return defaultProcessWarnThresholds
@@ -126,10 +126,13 @@ export class ChildProcessTracker {
         if (stats) {
             ChildProcessTracker.logger.debug(`Process ${pid} usage: %O`, stats)
             if (stats.memory > threshold.memory) {
-                ChildProcessTracker.logOnce(pid, `Process ${pid} exceeded memory threshold: ${stats.memory / oneMB} MB`)
+                ChildProcessTracker.logOnce(
+                    pid,
+                    `Process ${pid} exceeded memory threshold: ${(stats.memory / oneMB).toFixed(2)} MB`
+                )
             }
             if (stats.cpu > threshold.cpu) {
-                ChildProcessTracker.logOnce(pid, `Process ${pid} exceeded cpu threshold: %${stats.cpu}`)
+                ChildProcessTracker.logOnce(pid, `Process ${pid} exceeded cpu threshold: ${stats.cpu}%`)
             }
         }
     }

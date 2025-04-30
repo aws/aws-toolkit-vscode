@@ -33,6 +33,7 @@ import {
     undefinedIfEmpty,
     getOptOutPreference,
 } from 'aws-core-vscode/shared'
+import { processUtils } from 'aws-core-vscode/shared'
 import { activate } from './chat/activation'
 import { AmazonQResourcePaths } from './lspInstaller'
 import { ConfigSection, isValidConfigSection, toAmazonQLSPLogLevel } from './config'
@@ -55,7 +56,7 @@ export async function startLanguageServer(
         '--pre-init-encryption',
         '--set-credentials-encryption-key',
     ]
-    const memoryWarnThreshold = 200 * 1024 * 1024 // 200 MB
+    const memoryWarnThreshold = 200 * processUtils.oneMB // 200 MB
     const serverOptions = createServerOptions({
         encryptionKey,
         executable: resourcePaths.node,

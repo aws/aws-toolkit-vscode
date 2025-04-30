@@ -8,6 +8,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  */
 import * as vscode from 'vscode'
+import { oneMB } from '../../shared/utilities/processUtils'
 import * as path from 'path'
 import * as nls from 'vscode-nls'
 import * as crypto from 'crypto'
@@ -252,7 +253,7 @@ export async function activate(extensionContext: ExtensionContext, resourcePaths
     }
 
     const serverModule = resourcePaths.lsp
-    const memoryWarnThreshold = 600 * 1024 * 1024 // 600 MB
+    const memoryWarnThreshold = 600 * oneMB // 600 MB
 
     const serverOptions = createServerOptions({
         encryptionKey: key,
