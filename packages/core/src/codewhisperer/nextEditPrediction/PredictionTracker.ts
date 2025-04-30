@@ -54,20 +54,20 @@ export class PredictionTracker {
             return
         }
 
-        // Get existing snapshots for this file
-        const fileSnapshots = this.snapshots.get(filePath) || []
-        const timestamp = globals.clock.Date.now()
-
-        // Anti-throttling, only add snap shot after the debounce is cleared
-        const shouldAddSnapshot =
-            fileSnapshots.length === 0 ||
-            timestamp - fileSnapshots[fileSnapshots.length - 1].timestamp > this.config.debounceIntervalMs
-
-        if (!shouldAddSnapshot) {
-            return
-        }
-
         try {
+            // Get existing snapshots for this file
+            const fileSnapshots = this.snapshots.get(filePath) || []
+            const timestamp = globals.clock.Date.now()
+
+            // Anti-throttling, only add snap shot after the debounce is cleared
+            const shouldAddSnapshot =
+                fileSnapshots.length === 0 ||
+                timestamp - fileSnapshots[fileSnapshots.length - 1].timestamp > this.config.debounceIntervalMs
+
+            if (!shouldAddSnapshot) {
+                return
+            }
+
             const content = previousContent
             const size = Buffer.byteLength(content, 'utf8')
             const snapshot: FileSnapshot = {
@@ -201,32 +201,38 @@ export class PredictionTracker {
      * @returns Array of SupplementalContext objects containing diffs between snapshots and current content
      */
     public async generatePredictionSupplementalContext(): Promise<codewhispererClient.SupplementalContext[]> {
-        const activeEditor = vscode.window.activeTextEditor
-        if (activeEditor === undefined) {
+        try {
+            const activeEditor = vscode.window.activeTextEditor
+            if (activeEditor === undefined) {
+                return []
+            }
+            const filePath = activeEditor.document.uri.fsPath
+            const currentContent = activeEditor.document.getText()
+            const snapshots = this.getFileSnapshots(filePath)
+
+            if (snapshots.length === 0) {
+                return []
+            }
+
+            // Create SnapshotContent array from snapshots
+            const snapshotContents: diffGenerator.SnapshotContent[] = snapshots.map((snapshot) => ({
+                filePath: snapshot.filePath,
+                content: snapshot.content,
+                timestamp: snapshot.timestamp,
+            }))
+
+            // Use the diffGenerator module to generate supplemental contexts
+            return diffGenerator.generateDiffContexts(
+                filePath,
+                currentContent,
+                snapshotContents,
+                this.config.maxSupplementalContext
+            )
+        } catch (err) {
+            // this ensures we are not breaking inline requests
+            this.logger.error(`Failed to generate prediction supplemental context: ${err}`)
             return []
         }
-        const filePath = activeEditor.document.uri.fsPath
-        const currentContent = activeEditor.document.getText()
-        const snapshots = this.getFileSnapshots(filePath)
-
-        if (snapshots.length === 0) {
-            return []
-        }
-
-        // Create SnapshotContent array from snapshots
-        const snapshotContents: diffGenerator.SnapshotContent[] = snapshots.map((snapshot) => ({
-            filePath: snapshot.filePath,
-            content: snapshot.content,
-            timestamp: snapshot.timestamp,
-        }))
-
-        // Use the diffGenerator module to generate supplemental contexts
-        return diffGenerator.generateDiffContexts(
-            filePath,
-            currentContent,
-            snapshotContents,
-            this.config.maxSupplementalContext
-        )
     }
 
     public getTotalSize() {

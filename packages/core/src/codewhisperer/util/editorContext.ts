@@ -122,16 +122,12 @@ export async function buildListRecommendationRequest(
 
     // Get predictionSupplementalContext from PredictionTracker
     let predictionSupplementalContext: codewhispererClient.SupplementalContext[] = []
-    try {
-        if (predictionTracker) {
-            predictionSupplementalContext = await predictionTracker.generatePredictionSupplementalContext()
-        }
-    } catch (error) {
-        getLogger().error(`Error getting prediction supplemental context: ${error}`)
+    if (predictionTracker) {
+        predictionSupplementalContext = await predictionTracker.generatePredictionSupplementalContext()
     }
 
     const selectedCustomization = getSelectedCustomization()
-    const inlineSupplementalContext: codewhispererClient.SupplementalContext[] = supplementalContexts
+    const completionSupplementalContext: codewhispererClient.SupplementalContext[] = supplementalContexts
         ? supplementalContexts.supplementalContextItems.map((v) => {
               return selectFrom(v, 'content', 'filePath')
           })
@@ -139,25 +135,10 @@ export async function buildListRecommendationRequest(
 
     const profile = AuthUtil.instance.regionProfileManager.activeRegionProfile
 
-    // Dynamically create editorState from current editor context
-    const editorState = {
-        document: {
-            programmingLanguage: {
-                languageName: fileContext.programmingLanguage.languageName,
-            },
-            relativeFilePath: fileContext.filename,
-            text: editor.document.getText(),
-        },
-        cursorState: {
-            position: {
-                line: editor.selection.active.line,
-                character: editor.selection.active.character,
-            },
-        },
-    }
+    const editorState = getEditorState(editor, fileContext)
 
     // Combine inline and prediction supplemental contexts
-    const finalSupplementalContext = inlineSupplementalContext.concat(predictionSupplementalContext)
+    const finalSupplementalContext = completionSupplementalContext.concat(predictionSupplementalContext)
     return {
         request: {
             fileContext: fileContext,
@@ -231,6 +212,29 @@ export function updateTabSize(val: number): void {
 
 export function getTabSize(): number {
     return tabSize
+}
+
+export function getEditorState(editor: vscode.TextEditor, fileContext: codewhispererClient.FileContext): any {
+    try {
+        return {
+            document: {
+                programmingLanguage: {
+                    languageName: fileContext.programmingLanguage.languageName,
+                },
+                relativeFilePath: fileContext.filename,
+                text: editor.document.getText(),
+            },
+            cursorState: {
+                position: {
+                    line: editor.selection.active.line,
+                    character: editor.selection.active.character,
+                },
+            },
+        }
+    } catch (error) {
+        getLogger().error(`Error generating editor state: ${error}`)
+        return undefined
+    }
 }
 
 export function getLeftContext(editor: vscode.TextEditor, line: number): string {
