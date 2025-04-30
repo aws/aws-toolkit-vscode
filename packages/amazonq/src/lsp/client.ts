@@ -55,11 +55,13 @@ export async function startLanguageServer(
         '--pre-init-encryption',
         '--set-credentials-encryption-key',
     ]
+    const memoryWarnThreshold = 200 * 1024 * 1024 // 200 MB
     const serverOptions = createServerOptions({
         encryptionKey,
         executable: resourcePaths.node,
         serverModule,
         execArgv: argv,
+        warnThresholds: { memory: memoryWarnThreshold },
     })
 
     const documentSelector = [{ scheme: 'file', language: '*' }]

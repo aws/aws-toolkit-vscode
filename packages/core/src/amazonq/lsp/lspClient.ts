@@ -252,6 +252,7 @@ export async function activate(extensionContext: ExtensionContext, resourcePaths
     }
 
     const serverModule = resourcePaths.lsp
+    const memoryWarnThreshold = 600 * 1024 * 1024 // 600 MB
 
     const serverOptions = createServerOptions({
         encryptionKey: key,
@@ -259,6 +260,7 @@ export async function activate(extensionContext: ExtensionContext, resourcePaths
         serverModule,
         // TODO(jmkeyes): we always use the debug options...?
         execArgv: debugOptions.execArgv,
+        warnThresholds: { memory: memoryWarnThreshold },
     })
 
     const documentSelector = [{ scheme: 'file', language: '*' }]
