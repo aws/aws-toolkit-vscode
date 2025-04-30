@@ -15,7 +15,7 @@ import { TelemetryHelper } from '../../amazonq/util/telemetryHelper'
 import { ConversationNotStartedState } from '../../amazonqFeatureDev/session/sessionState'
 import { logWithConversationId } from '../../amazonqFeatureDev/userFacingText'
 import { ConversationIdNotFoundError, IllegalStateError } from '../../amazonqFeatureDev/errors'
-import { referenceLogText } from '../../amazonqFeatureDev/constants'
+import { referenceLogText } from '../../amazonq/commons/model'
 import {
     DocInteractionType,
     DocV2AcceptanceEvent,
