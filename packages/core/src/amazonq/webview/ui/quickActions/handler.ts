@@ -107,7 +107,7 @@ export class QuickActionHandler {
         }
     }
 
-    private handleScanCommand(tabID: string, eventId: string | undefined) {
+    private handleScanCommand(tabID: string | undefined, eventId: string | undefined) {
         if (!this.isScanEnabled || !this.mynahUI) {
             return
         }
@@ -124,6 +124,14 @@ export class QuickActionHandler {
             this.connector.onTabChange(scanTabId)
             this.connector.scans(scanTabId)
             return
+        }
+
+        /**
+         * status bar -> "full project scan is now /review" doesn't have a tab ID
+         * since it's called via a command so we need to manually create one
+         */
+        if (!tabID) {
+            tabID = this.mynahUI.updateStore('', {})
         }
 
         // if there is no scan tab, open a new one

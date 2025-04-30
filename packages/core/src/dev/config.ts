@@ -10,3 +10,6 @@ export const betaUrl = {
     amazonq: '',
     toolkit: '',
 }
+
+// TO-DO: remove when releasing CSB
+export const isClientSideBuildEnabled = false
