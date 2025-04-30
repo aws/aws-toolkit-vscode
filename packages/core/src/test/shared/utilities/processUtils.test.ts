@@ -494,6 +494,7 @@ describe('ChildProcessTracker', function () {
 
     it('does not log for processes within threshold', async function () {
         const runningProcess = startSleepProcess()
+        tracker.add(runningProcess.childProcess)
 
         usageMock.returns({
             cpu: defaultProcessWarnThresholds.cpu - 1,
@@ -508,12 +509,20 @@ describe('ChildProcessTracker', function () {
     })
 
     it('respects custom thresholds', async function () {
-        const runningProcess = startSleepProcess({
+        const largeRunningProcess = startSleepProcess({
             warnThresholds: {
                 cpu: defaultProcessWarnThresholds.cpu + 10,
                 memory: defaultProcessWarnThresholds.memory + 10,
             },
         })
+        tracker.add(largeRunningProcess.childProcess)
+        const smallRunningProcess = startSleepProcess({
+            warnThresholds: {
+                cpu: defaultProcessWarnThresholds.cpu - 10,
+                memory: defaultProcessWarnThresholds.memory - 10,
+            },
+        })
+        tracker.add(smallRunningProcess.childProcess)
 
         usageMock.returns({
             cpu: defaultProcessWarnThresholds.cpu + 5,
@@ -521,9 +530,11 @@ describe('ChildProcessTracker', function () {
         })
 
         await clock.tickAsync(ChildProcessTracker.pollingInterval)
-        assert.throws(() => assertLogsContain(runningProcess.childProcess.pid().toString(), false, 'warn'))
+        assert.throws(() => assertLogsContain(largeRunningProcess.childProcess.pid().toString(), false, 'warn'))
+        assertLogsContain(smallRunningProcess.childProcess.pid().toString(), false, 'warn')
 
-        await stopAndWait(runningProcess)
+        await stopAndWait(largeRunningProcess)
+        await stopAndWait(smallRunningProcess)
     })
 
     it('fills custom thresholds with default', async function () {
@@ -532,6 +543,7 @@ describe('ChildProcessTracker', function () {
                 cpu: defaultProcessWarnThresholds.cpu + 10,
             },
         })
+        tracker.add(runningProcess.childProcess)
 
         usageMock.returns({
             memory: defaultProcessWarnThresholds.memory + 1,
