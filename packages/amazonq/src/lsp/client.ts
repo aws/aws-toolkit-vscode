@@ -6,6 +6,7 @@
 import vscode, { env, version } from 'vscode'
 import * as nls from 'vscode-nls'
 import * as crypto from 'crypto'
+import * as path from 'path'
 import { LanguageClient, LanguageClientOptions, RequestType, State } from 'vscode-languageclient'
 import { InlineCompletionManager } from '../app/inline/completion'
 import { AmazonQLspAuth, encryptionKey, notificationTypes } from './auth'
@@ -32,13 +33,20 @@ import {
     getLogger,
     undefinedIfEmpty,
     getOptOutPreference,
+    isAmazonInternalOs,
+    fs,
 } from 'aws-core-vscode/shared'
 import { activate } from './chat/activation'
 import { AmazonQResourcePaths } from './lspInstaller'
 import { ConfigSection, isValidConfigSection, toAmazonQLSPLogLevel } from './config'
+import { chmodSync } from 'fs'
 
 const localize = nls.loadMessageBundle()
 const logger = getLogger('amazonqLsp.lspClient')
+
+export async function hasGlibcPatch(): Promise<boolean> {
+    return await fs.exists('/opt/vsc-sysroot/lib64/ld-linux-x86-64.so.2')
+}
 
 export async function startLanguageServer(
     extensionContext: vscode.ExtensionContext,
@@ -55,17 +63,31 @@ export async function startLanguageServer(
         '--pre-init-encryption',
         '--set-credentials-encryption-key',
     ]
+
+    const documentSelector = [{ scheme: 'file', language: '*' }]
+
+    const clientId = 'amazonq'
+    const traceServerEnabled = Settings.instance.isSet(`${clientId}.trace.server`)
+
+    // apply the GLIBC 2.28 path to node js runtime binary
+    if (isAmazonInternalOs() && (await hasGlibcPatch())) {
+        const nodeWrapper = `
+        #! /bin/bash
+        exec /opt/vsc-sysroot/lib64/ld-linux-x86-64.so.2 --library-path /opt/vsc-sysroot/lib64 ${resourcePaths.node} "$@"
+        `
+        const nodeWrapperPath = path.join(path.dirname(resourcePaths.node), 'node-wrapper')
+        await fs.writeFile(nodeWrapperPath, nodeWrapper)
+        chmodSync(nodeWrapperPath, 0o755)
+        resourcePaths.node = nodeWrapperPath
+        getLogger('amazonqLsp').info(`Patched node runtime with GLIBC to ${resourcePaths.node}`)
+    }
+
     const serverOptions = createServerOptions({
         encryptionKey,
         executable: resourcePaths.node,
         serverModule,
         execArgv: argv,
     })
-
-    const documentSelector = [{ scheme: 'file', language: '*' }]
-
-    const clientId = 'amazonq'
-    const traceServerEnabled = Settings.instance.isSet(`${clientId}.trace.server`)
 
     await validateNodeExe(resourcePaths.node, resourcePaths.lsp, argv, logger)
 
