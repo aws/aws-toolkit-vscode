@@ -88,11 +88,6 @@
             "description": "CPU used by LSP server as a percentage of all available CPUs on the system"
         },
         {
-            "name": "cwsprChatResponseErrorReason",
-            "type": "string",
-            "description": "Client error reason when processing response stream"
-        },
-        {
             "name": "cwsprChatInteractionTarget",
             "type": "string",
             "description": "Identifies the entity within the message that user interacts with."
@@ -661,56 +656,6 @@
                 },
                 {
                     "type": "amazonqVectorIndexEnabled",
-                    "required": false
-                }
-            ]
-        },
-        {
-            "name": "amazonq_messageResponseError",
-            "description": "When an error has occured in response to a prompt",
-            "metadata": [
-                {
-                    "type": "cwsprChatConversationId",
-                    "required": false
-                },
-                {
-                    "type": "credentialStartUrl",
-                    "required": false
-                },
-                {
-                    "type": "cwsprChatTriggerInteraction"
-                },
-                {
-                    "type": "cwsprChatUserIntent",
-                    "required": false
-                },
-                {
-                    "type": "cwsprChatHasCodeSnippet",
-                    "required": false
-                },
-                {
-                    "type": "cwsprChatProgrammingLanguage",
-                    "required": false
-                },
-                {
-                    "type": "cwsprChatActiveEditorTotalCharacters",
-                    "required": false
-                },
-                {
-                    "type": "cwsprChatActiveEditorImportCount",
-                    "required": false
-                },
-                {
-                    "type": "cwsprChatResponseCode"
-                },
-                {
-                    "type": "cwsprChatRequestLength"
-                },
-                {
-                    "type": "cwsprChatConversationType"
-                },
-                {
-                    "type": "cwsprChatResponseErrorReason",
                     "required": false
                 }
             ]
