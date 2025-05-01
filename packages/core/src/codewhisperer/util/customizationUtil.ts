@@ -147,6 +147,9 @@ export const setSelectedCustomization = async (customization: Customization, isO
     }
     vsCodeState.isFreeTierLimitReached = false
     await Commands.tryExecute('aws.amazonq.refreshStatusBar')
+
+    // hack: triggers amazon q to send the customizations back to flare
+    await Commands.tryExecute('aws.amazonq.updateCustomizations')
 }
 
 export const getPersistedCustomizations = (): Customization[] => {

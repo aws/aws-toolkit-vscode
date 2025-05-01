@@ -6,12 +6,10 @@
 import vscode, { env, version } from 'vscode'
 import * as nls from 'vscode-nls'
 import * as crypto from 'crypto'
-import { LanguageClient, LanguageClientOptions, RequestType } from 'vscode-languageclient'
+import { LanguageClient, LanguageClientOptions, RequestType, State } from 'vscode-languageclient'
 import { InlineCompletionManager } from '../app/inline/completion'
 import { AmazonQLspAuth, encryptionKey, notificationTypes } from './auth'
-import { AuthUtil } from 'aws-core-vscode/codewhisperer'
 import {
-    ConnectionMetadata,
     CreateFilesParams,
     DeleteFilesParams,
     DidChangeWorkspaceFoldersParams,
@@ -22,9 +20,9 @@ import {
     updateConfigurationRequestType,
     WorkspaceFolder,
 } from '@aws/language-server-runtimes/protocol'
+import { AuthUtil, CodeWhispererSettings, getSelectedCustomization } from 'aws-core-vscode/codewhisperer'
 import {
     Settings,
-    oidcClientName,
     createServerOptions,
     globals,
     Experiments,
@@ -32,9 +30,12 @@ import {
     oneSecond,
     validateNodeExe,
     getLogger,
+    undefinedIfEmpty,
+    getOptOutPreference,
 } from 'aws-core-vscode/shared'
 import { activate } from './chat/activation'
 import { AmazonQResourcePaths } from './lspInstaller'
+import { ConfigSection, isValidConfigSection, toAmazonQLSPLogLevel } from './config'
 
 const localize = nls.loadMessageBundle()
 const logger = getLogger('amazonqLsp.lspClient')
@@ -72,25 +73,42 @@ export async function startLanguageServer(
     const clientOptions: LanguageClientOptions = {
         // Register the server for json documents
         documentSelector,
+        middleware: {
+            workspace: {
+                /**
+                 * Convert VSCode settings format to be compatible with flare's configs
+                 */
+                configuration: async (params, token, next) => {
+                    const config = await next(params, token)
+                    const section = params.items[0].section
+                    if (!isValidConfigSection(section)) {
+                        return config
+                    }
+                    return getConfigSection(section)
+                },
+            },
+        },
         initializationOptions: {
             aws: {
                 clientInfo: {
                     name: env.appName,
                     version: version,
                     extension: {
-                        name: oidcClientName(),
+                        name: 'AmazonQ-For-VSCode',
                         version: '0.0.1',
                     },
                     clientId: crypto.randomUUID(),
                 },
                 awsClientCapabilities: {
-                    window: {
-                        notifications: true,
-                    },
                     q: {
                         developerProfiles: true,
                     },
+                    window: {
+                        notifications: true,
+                        showSaveFileDialog: true,
+                    },
                 },
+                logLevel: toAmazonQLSPLogLevel(globals.logOutputChannel.logLevel),
             },
             credentials: {
                 providesBearerToken: true,
@@ -121,14 +139,6 @@ export async function startLanguageServer(
     const auth = new AmazonQLspAuth(client)
 
     return client.onReady().then(async () => {
-        // Request handler for when the server wants to know about the clients auth connnection. Must be registered before the initial auth init call
-        client.onRequest<ConnectionMetadata, Error>(notificationTypes.getConnectionMetadata.method, () => {
-            return {
-                sso: {
-                    startUrl: AuthUtil.instance.auth.startUrl,
-                },
-            }
-        })
         await auth.refreshConnection()
 
         if (Experiments.instance.get('amazonqLSPInline', false)) {
@@ -145,8 +155,8 @@ export async function startLanguageServer(
             )
         }
 
-        if (Experiments.instance.get('amazonqChatLSP', false)) {
-            activate(client, encryptionKey, resourcePaths.ui)
+        if (Experiments.instance.get('amazonqChatLSP', true)) {
+            await activate(client, encryptionKey, resourcePaths.ui)
         }
 
         const refreshInterval = auth.startTokenRefreshInterval(10 * oneSecond)
@@ -234,7 +244,64 @@ export async function startLanguageServer(
                     },
                 } as DidChangeWorkspaceFoldersParams)
             }),
-            { dispose: () => clearInterval(refreshInterval) }
+            { dispose: () => clearInterval(refreshInterval) },
+            // Set this inside onReady so that it only triggers on subsequent language server starts (not the first)
+            onServerRestartHandler(client, auth)
         )
     })
+}
+
+/**
+ * When the server restarts (likely due to a crash, then the LanguageClient automatically starts it again)
+ * we need to run some server intialization again.
+ */
+function onServerRestartHandler(client: LanguageClient, auth: AmazonQLspAuth) {
+    return client.onDidChangeState(async (e) => {
+        // Ensure we are in a "restart" state
+        if (!(e.oldState === State.Starting && e.newState === State.Running)) {
+            return
+        }
+
+        // Need to set the auth token in the again
+        await auth.refreshConnection(true)
+    })
+}
+
+function getConfigSection(section: ConfigSection) {
+    getLogger('amazonqLsp').debug('Fetching config section %s for language server', section)
+    switch (section) {
+        case 'aws.q':
+            /**
+             * IMPORTANT: This object is parsed by the following code in the language server, **so
+             * it must match that expected shape**.
+             * https://github.com/aws/language-servers/blob/1d2ca018f2248106690438b860d40a7ee67ac728/server/aws-lsp-codewhisperer/src/shared/amazonQServiceManager/configurationUtils.ts#L114
+             */
+            return [
+                {
+                    customization: undefinedIfEmpty(getSelectedCustomization().arn),
+                    optOutTelemetry: getOptOutPreference() === 'OPTOUT',
+                    projectContext: {
+                        enableLocalIndexing: CodeWhispererSettings.instance.isLocalIndexEnabled(),
+                        enableGpuAcceleration: CodeWhispererSettings.instance.isLocalIndexGPUEnabled(),
+                        indexWorkerThreads: CodeWhispererSettings.instance.getIndexWorkerThreads(),
+                        localIndexing: {
+                            ignoreFilePatterns: CodeWhispererSettings.instance.getIndexIgnoreFilePatterns(),
+                            maxFileSizeMB: CodeWhispererSettings.instance.getMaxIndexFileSize(),
+                            maxIndexSizeMB: CodeWhispererSettings.instance.getMaxIndexSize(),
+                            indexCacheDirPath: CodeWhispererSettings.instance.getIndexCacheDirPath(),
+                        },
+                    },
+                },
+            ]
+        case 'aws.codeWhisperer':
+            return [
+                {
+                    includeSuggestionsWithCodeReferences:
+                        CodeWhispererSettings.instance.isSuggestionsWithCodeReferencesEnabled(),
+                    shareCodeWhispererContentWithAWS: !CodeWhispererSettings.instance.isOptoutEnabled(),
+                },
+            ]
+        case 'aws.logLevel':
+            return [toAmazonQLSPLogLevel(globals.logOutputChannel.logLevel)]
+    }
 }
