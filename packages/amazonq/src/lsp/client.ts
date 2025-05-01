@@ -76,6 +76,8 @@ export async function startLanguageServer(
             resourcePaths.node,
         ]
         getLogger('amazonqLsp').info(`Patched node runtime with GLIBC to ${executable}`)
+    } else {
+        executable = [resourcePaths.node]
     }
 
     const serverOptions = createServerOptions({
