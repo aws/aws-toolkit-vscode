@@ -39,7 +39,7 @@ import {
 import { activate } from './chat/activation'
 import { AmazonQResourcePaths } from './lspInstaller'
 import { ConfigSection, isValidConfigSection, toAmazonQLSPLogLevel } from './config'
-import { chmodSync } from 'fs'
+import { chmodSync } from 'fs' // eslint-disable-line no-restricted-imports
 
 const localize = nls.loadMessageBundle()
 const logger = getLogger('amazonqLsp.lspClient')
