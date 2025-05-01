@@ -107,7 +107,7 @@ export class QuickActionHandler {
         }
     }
 
-    private handleScanCommand(tabID: string, eventId: string | undefined) {
+    private handleScanCommand(tabID: string | undefined, eventId: string | undefined) {
         if (!this.isScanEnabled || !this.mynahUI) {
             return
         }
@@ -124,6 +124,14 @@ export class QuickActionHandler {
             this.connector.onTabChange(scanTabId)
             this.connector.scans(scanTabId)
             return
+        }
+
+        /**
+         * status bar -> "full project scan is now /review" doesn't have a tab ID
+         * since it's called via a command so we need to manually create one
+         */
+        if (!tabID) {
+            tabID = this.mynahUI.updateStore('', {})
         }
 
         // if there is no scan tab, open a new one
@@ -155,7 +163,7 @@ export class QuickActionHandler {
         }
     }
 
-    private handleTestCommand(chatPrompt: ChatPrompt, tabID: string, eventId: string | undefined) {
+    private handleTestCommand(chatPrompt: ChatPrompt, tabID: string | undefined, eventId: string | undefined) {
         if (!this.isTestEnabled || !this.mynahUI) {
             return
         }
@@ -167,6 +175,15 @@ export class QuickActionHandler {
             this.connector.onTabChange(testTabId)
             this.connector.startTestGen(testTabId, realPromptText)
             return
+        }
+
+        /**
+         * right click -> generate test has no tab id
+         * we have to manually create one if a testgen tab
+         * wasn't previously created
+         */
+        if (!tabID) {
+            tabID = this.mynahUI.updateStore('', {})
         }
 
         // if there is no test tab, open a new one

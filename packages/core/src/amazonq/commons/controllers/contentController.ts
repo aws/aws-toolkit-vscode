@@ -11,7 +11,7 @@ import { amazonQDiffScheme, amazonQTabSuffix } from '../../../shared/constants'
 import { disposeOnEditorClose } from '../../../shared/utilities/editorUtilities'
 import {
     applyChanges,
-    createTempFileForDiff,
+    createTempUrisForDiff,
     getIndentedCode,
     getSelectionFromRange,
 } from '../../../shared/utilities/textDocumentUtilities'
@@ -19,6 +19,11 @@ import { ToolkitError, getErrorMsg } from '../../../shared/errors'
 import fs from '../../../shared/fs/fs'
 import { extractFileAndCodeSelectionFromMessage } from '../../../shared/utilities/textUtilities'
 import { UserWrittenCodeTracker } from '../../../codewhisperer/tracker/userWrittenCodeTracker'
+import type { ViewDiff } from '../../../codewhispererChat/controllers/chat/model'
+import type { TriggerEvent } from '../../../codewhispererChat/storages/triggerEvents'
+import { DiffContentProvider } from './diffContentProvider'
+
+export type ViewDiffMessage = Pick<ViewDiff, 'code'> & Partial<Pick<TriggerEvent, 'context'>>
 
 export class ContentProvider implements vscode.TextDocumentContentProvider {
     constructor(private uri: vscode.Uri) {}
@@ -155,26 +160,35 @@ export class EditorContentController {
      * isolating them from any other modifications in the original file.
      *
      * @param message the message from Amazon Q chat
+     * @param scheme the URI scheme to use for the diff view
      */
-    public async viewDiff(message: any, scheme: string = amazonQDiffScheme, reverseOrder = false) {
+    public async viewDiff(message: ViewDiffMessage, scheme: string = amazonQDiffScheme) {
         const errorNotification = 'Unable to Open Diff.'
-        const { filePath, selection } = extractFileAndCodeSelectionFromMessage(message)
+        const { filePath, fileText, selection } = extractFileAndCodeSelectionFromMessage(message)
 
         try {
             if (filePath && message?.code !== undefined && selection) {
-                const originalFileUri = vscode.Uri.file(filePath)
-                const uri = await createTempFileForDiff(originalFileUri, message, selection, scheme)
-
                 // Register content provider and show diff
-                const contentProvider = new ContentProvider(uri)
+                const contentProvider = new DiffContentProvider()
                 const disposable = vscode.workspace.registerTextDocumentContentProvider(scheme, contentProvider)
+
+                const [originalFileUri, modifiedFileUri] = await createTempUrisForDiff(
+                    filePath,
+                    fileText,
+                    message,
+                    selection,
+                    scheme,
+                    contentProvider
+                )
+
                 await vscode.commands.executeCommand(
                     'vscode.diff',
-                    ...(reverseOrder ? [uri, originalFileUri] : [originalFileUri, uri]),
+                    originalFileUri,
+                    modifiedFileUri,
                     `${path.basename(filePath)} ${amazonQTabSuffix}`
                 )
 
-                disposeOnEditorClose(uri, disposable)
+                disposeOnEditorClose(originalFileUri, disposable)
             }
         } catch (error) {
             void vscode.window.showInformationMessage(errorNotification)

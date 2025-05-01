@@ -35,7 +35,7 @@ export {
     computeDiff,
 } from './commons/diff'
 export { AuthFollowUpType, AuthMessageDataMap } from './auth/model'
-export { ChatItemType } from './commons/model'
+export { ChatItemType, referenceLogText } from './commons/model'
 export { ExtensionMessage } from '../amazonq/webview/ui/commands'
 export { CodeReference } from '../codewhispererChat/view/connector/connector'
 export { extractAuthFollowUp } from './util/authUtils'
@@ -47,7 +47,7 @@ export * as authConnection from '../auth/connection'
 export * as featureConfig from './webview/generators/featureConfig'
 export * as messageDispatcher from './webview/messages/messageDispatcher'
 import { FeatureContext } from '../shared/featureConfig'
-export { EditorContentController } from './commons/controllers/contentController'
+export { EditorContentController, ViewDiffMessage } from './commons/controllers/contentController'
 
 /**
  * main from createMynahUI is a purely browser dependency. Due to this

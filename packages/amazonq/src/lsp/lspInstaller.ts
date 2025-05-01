@@ -40,4 +40,6 @@ export class AmazonQLspInstaller extends BaseLspInstaller.BaseLspInstaller<
             ui: path.join(assetDirectory, 'clients/amazonq-ui.js'),
         }
     }
+
+    protected override downloadMessageOverride: string | undefined = 'Updating Amazon Q plugin'
 }
