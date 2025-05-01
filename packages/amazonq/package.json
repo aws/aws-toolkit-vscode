@@ -544,6 +544,21 @@
         },
         "commands": [
             {
+                "command": "aws.amazonq.stopCmdExecution",
+                "title": "Stop Amazon Q Command Execution",
+                "category": "%AWS.amazonq.title%"
+            },
+            {
+                "command": "aws.amazonq.runCmdExecution",
+                "title": "Run Amazon Q Command Execution",
+                "category": "%AWS.amazonq.title%"
+            },
+            {
+                "command": "aws.amazonq.rejectCmdExecution",
+                "title": "Reject Amazon Q Command Execution",
+                "category": "%AWS.amazonq.title%"
+            },
+            {
                 "command": "_aws.amazonq.notifications.dismiss",
                 "title": "%AWS.generic.dismiss%",
                 "category": "%AWS.amazonq.title%",
@@ -808,6 +823,24 @@
             }
         ],
         "keybindings": [
+            {
+                "command": "aws.amazonq.stopCmdExecution",
+                "key": "cmd+alt+s",
+                "mac": "cmd+alt+s",
+                "when": "aws.amazonq.amazonqChatLSP.isRunning"
+            },
+            {
+                "command": "aws.amazonq.runCmdExecution",
+                "key": "cmd+alt+r",
+                "mac": "cmd+alt+r",
+                "when": "aws.amazonq.amazonqChatLSP.isRunning"
+            },
+            {
+                "command": "aws.amazonq.rejectCmdExecution",
+                "key": "cmd+alt+h",
+                "mac": "cmd+alt+h",
+                "when": "aws.amazonq.amazonqChatLSP.isRunning"
+            },
             {
                 "command": "_aws.amazonq.focusChat.keybinding",
                 "win": "win+alt+i",
