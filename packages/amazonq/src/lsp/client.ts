@@ -39,7 +39,6 @@ import {
 import { activate } from './chat/activation'
 import { AmazonQResourcePaths } from './lspInstaller'
 import { ConfigSection, isValidConfigSection, toAmazonQLSPLogLevel } from './config'
-import { chmodSync } from 'fs' // eslint-disable-line no-restricted-imports
 
 const localize = nls.loadMessageBundle()
 const logger = getLogger('amazonqLsp.lspClient')
@@ -77,7 +76,7 @@ export async function startLanguageServer(
         `
         const nodeWrapperPath = path.join(path.dirname(resourcePaths.node), 'node-wrapper')
         await fs.writeFile(nodeWrapperPath, nodeWrapper)
-        chmodSync(nodeWrapperPath, 0o755)
+        await fs.chmod(nodeWrapperPath, 0o755)
         resourcePaths.node = nodeWrapperPath
         getLogger('amazonqLsp').info(`Patched node runtime with GLIBC to ${resourcePaths.node}`)
     }
