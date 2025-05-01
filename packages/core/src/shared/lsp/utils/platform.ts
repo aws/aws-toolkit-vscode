@@ -41,7 +41,7 @@ export async function validateNodeExe(nodePath: string, lsp: string, args: strin
     }
 
     // Check that we can start `node …/lsp.js --stdio …`.
-    const lspProc = new ChildProcess(nodePath, [lsp, ...args])
+    const lspProc = new ChildProcess(nodePath, [lsp, ...args], { logging: 'no' })
 
     try {
         // Start asynchronously (it never stops; we need to stop it below).
