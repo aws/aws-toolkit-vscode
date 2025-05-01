@@ -121,7 +121,7 @@ export async function activateAmazonQCommon(context: vscode.ExtensionContext, is
     // This contains every lsp agnostic things (auth, security scan, code scan)
     await activateCodeWhisperer(extContext as ExtContext)
     if (
-        (Experiments.instance.get('amazonqLSP', false) || Auth.instance.isInternalAmazonUser()) &&
+        (Experiments.instance.get('amazonqLSP', true) || Auth.instance.isInternalAmazonUser()) &&
         !isAmazonInternalOs()
     ) {
         // start the Amazon Q LSP for internal users first

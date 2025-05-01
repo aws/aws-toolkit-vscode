@@ -15,7 +15,7 @@ import {
     UpdateFilesPathsParams,
 } from '../../amazonq/commons/types'
 import { ContentLengthError, ConversationIdNotFoundError, IllegalStateError } from '../errors'
-import { featureDevChat, referenceLogText, featureDevScheme } from '../constants'
+import { featureDevChat, featureDevScheme } from '../constants'
 import fs from '../../shared/fs/fs'
 import { FeatureDevClient } from '../client/featureDev'
 import { codeGenRetryLimit } from '../limits'
@@ -34,6 +34,8 @@ import { FollowUpTypes } from '../../amazonq/commons/types'
 import { SessionConfig } from '../../amazonq/commons/session/sessionConfigFactory'
 import { Messenger } from '../../amazonq/commons/connector/baseMessenger'
 import { ContentLengthError as CommonContentLengthError } from '../../shared/errors'
+import { referenceLogText } from '../../amazonq/commons/model'
+
 export class Session {
     private _state?: SessionState | Omit<SessionState, 'uploadId'>
     private task: string = ''

@@ -23,7 +23,11 @@ function isDelisted(manifestVersions: LspVersion[], targetVersion: string): bool
  * @param downloadDirectory
  * @returns array of deleted versions.
  */
-export async function cleanLspDownloads(manifestVersions: LspVersion[], downloadDirectory: string): Promise<string[]> {
+export async function cleanLspDownloads(
+    latestInstalledVersion: string,
+    manifestVersions: LspVersion[],
+    downloadDirectory: string
+): Promise<string[]> {
     const downloadedVersions = await getDownloadedVersions(downloadDirectory)
     const [delistedVersions, remainingVersions] = partition(downloadedVersions, (v: string) =>
         isDelisted(manifestVersions, v)
@@ -40,6 +44,15 @@ export async function cleanLspDownloads(manifestVersions: LspVersion[], download
     }
 
     for (const v of sort(remainingVersions).slice(0, -2)) {
+        /**
+         * When switching between different manifests, the following edge case can occur:
+         * A newly downloaded version might chronologically be older than all previously downloaded versions,
+         * even though it's marked as the latest version in its own manifest.
+         * In such cases, we skip the cleanup process to preserve this version. Otherwise we will get an EPIPE error
+         */
+        if (v === latestInstalledVersion) {
+            continue
+        }
         await fs.delete(path.join(downloadDirectory, v), { force: true, recursive: true })
         deletedVersions.push(v)
     }
