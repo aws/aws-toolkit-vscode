@@ -42,7 +42,6 @@ export async function validateNodeExe(nodePath: string, lsp: string, args: strin
 
     // Check that we can start `node …/lsp.js --stdio …`.
     const lspProc = new ChildProcess(nodePath, [lsp, ...args], { logging: 'no' })
-
     try {
         // Start asynchronously (it never stops; we need to stop it below).
         lspProc.run().catch((e) => logger.error('failed to run: %s', lspProc.toString(false, true)))
@@ -91,6 +90,7 @@ export function createServerOptions({
             args.unshift('--inspect=6080')
         }
         const lspProcess = new ChildProcess(executable, args)
+
         // this is a long running process, awaiting it will never resolve
         void lspProcess.run()
 
