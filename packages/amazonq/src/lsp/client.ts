@@ -6,7 +6,6 @@
 import vscode, { env, version } from 'vscode'
 import * as nls from 'vscode-nls'
 import * as crypto from 'crypto'
-import * as path from 'path'
 import { LanguageClient, LanguageClientOptions, RequestType, State } from 'vscode-languageclient'
 import { InlineCompletionManager } from '../app/inline/completion'
 import { AmazonQLspAuth, encryptionKey, notificationTypes } from './auth'
@@ -67,28 +66,26 @@ export async function startLanguageServer(
 
     const clientId = 'amazonq'
     const traceServerEnabled = Settings.instance.isSet(`${clientId}.trace.server`)
-
+    let executable: string[] = []
     // apply the GLIBC 2.28 path to node js runtime binary
     if (isAmazonInternalOs() && (await hasGlibcPatch())) {
-        const nodeWrapper = `
-        #! /bin/bash
-        exec /opt/vsc-sysroot/lib64/ld-linux-x86-64.so.2 --library-path /opt/vsc-sysroot/lib64 ${resourcePaths.node} "$@"
-        `
-        const nodeWrapperPath = path.join(path.dirname(resourcePaths.node), 'node-wrapper')
-        await fs.writeFile(nodeWrapperPath, nodeWrapper)
-        await fs.chmod(nodeWrapperPath, 0o755)
-        resourcePaths.node = nodeWrapperPath
-        getLogger('amazonqLsp').info(`Patched node runtime with GLIBC to ${resourcePaths.node}`)
+        executable = [
+            '/opt/vsc-sysroot/lib64/ld-linux-x86-64.so.2',
+            '--library-path',
+            '/opt/vsc-sysroot/lib64',
+            resourcePaths.node,
+        ]
+        getLogger('amazonqLsp').info(`Patched node runtime with GLIBC to ${executable}`)
     }
 
     const serverOptions = createServerOptions({
         encryptionKey,
-        executable: resourcePaths.node,
+        executable: executable,
         serverModule,
         execArgv: argv,
     })
 
-    await validateNodeExe(resourcePaths.node, resourcePaths.lsp, argv, logger)
+    await validateNodeExe(executable, resourcePaths.lsp, argv, logger)
 
     // Options to control the language client
     const clientOptions: LanguageClientOptions = {
