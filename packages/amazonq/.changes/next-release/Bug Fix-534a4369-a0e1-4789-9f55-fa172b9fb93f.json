@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Enable Amazon Q LSP in AL2 instances"
+}
