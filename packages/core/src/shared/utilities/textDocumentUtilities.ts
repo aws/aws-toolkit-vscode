@@ -11,6 +11,8 @@ import { getLogger } from '../logger/logger'
 import fs from '../fs/fs'
 import { ToolkitError } from '../errors'
 import { indent } from './textUtilities'
+import { ViewDiffMessage } from '../../amazonq/commons/controllers/contentController'
+import { DiffContentProvider } from '../../amazonq/commons/controllers/diffContentProvider'
 
 /**
  * Finds occurences of text in a document. Currently only used for highlighting cloudwatchlogs data.
@@ -123,13 +125,13 @@ export async function applyChanges(doc: vscode.TextDocument, range: vscode.Range
  * and applying the proposed changes within the selected range.
  *
  * @param {vscode.Uri} originalFileUri - The URI of the original file.
- * @param {any} message - The message object containing the proposed code changes.
+ * @param {ViewDiffMessage} message - The message object containing the proposed code changes.
  * @param {vscode.Selection} selection - The selection range in the document where the changes are applied.
  * @returns {Promise<vscode.Uri>} - A promise that resolves to the URI of the temporary file.
  */
 export async function createTempFileForDiff(
     originalFileUri: vscode.Uri,
-    message: any,
+    message: ViewDiffMessage,
     selection: vscode.Selection,
     scheme: string
 ): Promise<vscode.Uri> {
@@ -169,6 +171,53 @@ export async function createTempFileForDiff(
 }
 
 /**
+ * Creates temporary URIs for diff comparison and registers their content with a DiffContentProvider.
+ * This approach avoids writing to the file system by keeping content in memory.
+ *
+ * @param filePath The path of the original file (used for naming)
+ * @param fileText Optional content of the original file (if not provided, will be read from filePath)
+ * @param message The message object containing the proposed code changes
+ * @param selection The selection range where changes should be applied
+ * @param scheme The URI scheme to use
+ * @param diffProvider The content provider to register URIs with
+ * @returns A promise that resolves to a tuple of [originalUri, modifiedUri]
+ */
+export async function createTempUrisForDiff(
+    filePath: string,
+    fileText: string | undefined,
+    message: ViewDiffMessage,
+    selection: vscode.Selection,
+    scheme: string,
+    diffProvider: DiffContentProvider
+): Promise<[vscode.Uri, vscode.Uri]> {
+    const originalFile = _path.parse(filePath)
+    const id = Date.now()
+
+    // Create URIs with the custom scheme
+    const originalFileUri = vscode.Uri.parse(`${scheme}:/${originalFile.name}_original-${id}${originalFile.ext}`)
+    const modifiedFileUri = vscode.Uri.parse(`${scheme}:/${originalFile.name}_proposed-${id}${originalFile.ext}`)
+
+    // Get the original content
+    const contentToUse = fileText ?? (await fs.readFileText(filePath))
+
+    // Register the original content
+    diffProvider.registerContent(originalFileUri, contentToUse)
+
+    const indentedCode = getIndentedCodeFromOriginalContent(message, contentToUse, selection)
+    const lines = contentToUse.split('\n')
+
+    // Create the modified content
+    const beforeLines = lines.slice(0, selection.start.line)
+    const afterLines = lines.slice(selection.end.line + 1)
+    const modifiedContent = [...beforeLines, indentedCode, ...afterLines].join('\n')
+
+    // Register the modified content
+    diffProvider.registerContent(modifiedFileUri, modifiedContent)
+
+    return [originalFileUri, modifiedFileUri]
+}
+
+/**
  * Indents the given code based on the current document's indentation at the selection start.
  *
  * @param message The message object containing the code.
@@ -176,7 +225,7 @@ export async function createTempFileForDiff(
  * @param selection The selection range in the document.
  * @returns The processed code to be applied to the document.
  */
-export function getIndentedCode(message: any, doc: vscode.TextDocument, selection: vscode.Selection) {
+export function getIndentedCode(message: ViewDiffMessage, doc: vscode.TextDocument, selection: vscode.Selection) {
     const indentRange = new vscode.Range(new vscode.Position(selection.start.line, 0), selection.active)
     let indentation = doc.getText(indentRange)
 
@@ -184,6 +233,26 @@ export function getIndentedCode(message: any, doc: vscode.TextDocument, selectio
         indentation = ' '.repeat(indentation.length - indentation.trimStart().length)
     }
 
+    return indent(message.code, indentation.length)
+}
+
+/**
+ * Indents the given code based on the indentation of the original content at the selection start.
+ *
+ * @param message The message object containing the code.
+ * @param originalContent The original content of the document.
+ * @param selection The selection range in the document.
+ * @returns The processed code to be applied to the document.
+ */
+export function getIndentedCodeFromOriginalContent(
+    message: ViewDiffMessage,
+    originalContent: string,
+    selection: vscode.Selection
+) {
+    const lines = originalContent.split('\n')
+    const selectionStartLine = lines[selection.start.line] || ''
+    const indentMatch = selectionStartLine.match(/^(\s*)/)
+    const indentation = indentMatch ? indentMatch[1] : ''
     return indent(message.code, indentation.length)
 }
 
