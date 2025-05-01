@@ -29,9 +29,12 @@ function getEncryptionInit(key: Buffer): string {
 /**
  * Checks that we can actually run the `node` executable and execute code with it.
  */
-export async function validateNodeExe(nodePath: string, lsp: string, args: string[], logger: Logger) {
+export async function validateNodeExe(nodePath: string[], lsp: string, args: string[], logger: Logger) {
+    const bin = nodePath[0]
     // Check that we can start `node` by itself.
-    const proc = new ChildProcess(nodePath, ['-e', 'console.log("ok " + process.version)'], { logging: 'no' })
+    const proc = new ChildProcess(bin, [...nodePath.slice(1), '-e', 'console.log("ok " + process.version)'], {
+        logging: 'no',
+    })
     const r = await proc.run()
     const ok = r.exitCode === 0 && r.stdout.includes('ok')
     if (!ok) {
@@ -41,7 +44,7 @@ export async function validateNodeExe(nodePath: string, lsp: string, args: strin
     }
 
     // Check that we can start `node …/lsp.js --stdio …`.
-    const lspProc = new ChildProcess(nodePath, [lsp, ...args], { logging: 'no' })
+    const lspProc = new ChildProcess(bin, [...nodePath.slice(1), lsp, ...args], { logging: 'no' })
     try {
         // Start asynchronously (it never stops; we need to stop it below).
         lspProc.run().catch((e) => logger.error('failed to run: %s', lspProc.toString(false, true)))
@@ -80,16 +83,17 @@ export function createServerOptions({
     execArgv,
 }: {
     encryptionKey: Buffer
-    executable: string
+    executable: string[]
     serverModule: string
     execArgv: string[]
 }) {
     return async () => {
-        const args = [serverModule, ...execArgv]
+        const bin = executable[0]
+        const args = [...executable.slice(1), serverModule, ...execArgv]
         if (isDebugInstance()) {
             args.unshift('--inspect=6080')
         }
-        const lspProcess = new ChildProcess(executable, args)
+        const lspProcess = new ChildProcess(bin, args)
 
         // this is a long running process, awaiting it will never resolve
         void lspProcess.run()
