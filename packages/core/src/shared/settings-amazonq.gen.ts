@@ -33,7 +33,6 @@ export const amazonqSettings = {
     "amazonQ.workspaceIndexWorkerThreads": {},
     "amazonQ.workspaceIndexUseGPU": {},
     "amazonQ.workspaceIndexMaxSize": {},
-    "amazonQ.ignoredSecurityIssues": {},
     "amazonQ.workspaceIndexMaxFileSize": {},
     "amazonQ.workspaceIndexCacheDirPath": {},
     "amazonQ.workspaceIndexIgnoreFilePatterns": {},
