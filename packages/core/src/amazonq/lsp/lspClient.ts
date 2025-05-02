@@ -253,7 +253,7 @@ export async function activate(extensionContext: ExtensionContext, resourcePaths
     }
 
     const serverModule = resourcePaths.lsp
-    const memoryWarnThreshold = 800 * oneMB // 800 MB
+    const memoryWarnThreshold = 800 * oneMB
 
     const serverOptions = createServerOptions({
         encryptionKey: key,

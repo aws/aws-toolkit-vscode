@@ -48,7 +48,7 @@ export interface ChildProcessOptions {
     warnThresholds?: {
         /** Threshold for memory usage in bytes */
         memory?: number
-        /** Threshold for CPU usage in percent */
+        /** Threshold for CPU usage by percentage */
         cpu?: number
     }
 }
@@ -70,7 +70,7 @@ export interface ChildProcessResult {
 export const oneMB = 1024 * 1024
 export const eof = Symbol('EOF')
 export const defaultProcessWarnThresholds = {
-    memory: 100 * oneMB, // 100 MB
+    memory: 100 * oneMB,
     cpu: 50,
 }
 
