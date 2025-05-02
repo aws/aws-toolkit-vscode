@@ -257,7 +257,7 @@ export async function activate(extensionContext: ExtensionContext, resourcePaths
 
     const serverOptions = createServerOptions({
         encryptionKey: key,
-        executable: resourcePaths.node,
+        executable: [resourcePaths.node],
         serverModule,
         // TODO(jmkeyes): we always use the debug options...?
         execArgv: debugOptions.execArgv,
@@ -266,7 +266,7 @@ export async function activate(extensionContext: ExtensionContext, resourcePaths
 
     const documentSelector = [{ scheme: 'file', language: '*' }]
 
-    await validateNodeExe(resourcePaths.node, resourcePaths.lsp, debugOptions.execArgv, logger)
+    await validateNodeExe([resourcePaths.node], resourcePaths.lsp, debugOptions.execArgv, logger)
 
     // Options to control the language client
     const clientOptions: LanguageClientOptions = {
