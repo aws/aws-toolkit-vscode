@@ -81,7 +81,7 @@ export async function startLanguageServer(
         executable = [resourcePaths.node]
     }
 
-    const memoryWarnThreshold = 200 * processUtils.oneMB
+    const memoryWarnThreshold = 1024 * processUtils.oneMB
     const serverOptions = createServerOptions({
         encryptionKey,
         executable: executable,
