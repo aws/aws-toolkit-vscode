@@ -374,25 +374,29 @@ export const openSecurityIssuePanel = Commands.declare(
         console.log('in show securityIssueWebview')
         console.log('targetIssue', targetIssue)
         console.log('file Path', filePath)
+        console.log('before', targetIssue.suggestedFixes.length === 0)
 
-        telemetry.codewhisperer_codeScanIssueViewDetails.emit({
-            findingId: targetIssue.findingId,
-            detectorId: targetIssue.detectorId,
-            ruleId: targetIssue.ruleId,
-            credentialStartUrl: AuthUtil.instance.startUrl,
-            autoDetected: targetIssue.autoDetected,
-        })
-        TelemetryHelper.instance.sendCodeScanRemediationsEvent(
-            undefined,
-            'CODESCAN_ISSUE_VIEW_DETAILS',
-            targetIssue.detectorId,
-            targetIssue.findingId,
-            targetIssue.ruleId,
-            undefined,
-            undefined,
-            undefined,
-            !!targetIssue.suggestedFixes.length
-        )
+        // telemetry.codewhisperer_codeScanIssueViewDetails.emit({
+        //     findingId: targetIssue.findingId,
+        //     detectorId: targetIssue.detectorId,
+        //     ruleId: targetIssue.ruleId,
+        //     credentialStartUrl: AuthUtil.instance.startUrl,
+        //     autoDetected: targetIssue.autoDetected,
+        // })
+        console.log('middle', targetIssue.suggestedFixes.length === 0)
+
+        // TelemetryHelper.instance.sendCodeScanRemediationsEvent(
+        //     undefined,
+        //     'CODESCAN_ISSUE_VIEW_DETAILS',
+        //     targetIssue.detectorId,
+        //     targetIssue.findingId,
+        //     targetIssue.ruleId,
+        //     undefined,
+        //     undefined,
+        //     undefined,
+        //     !!targetIssue.suggestedFixes.length
+        // )
+        console.log('after', targetIssue.suggestedFixes.length === 0)
         if (targetIssue.suggestedFixes.length === 0) {
             console.log('going to generate fix as suggested fix length is 0')
             await generateFix.execute(targetIssue, targetFilePath, 'webview', true, false)
