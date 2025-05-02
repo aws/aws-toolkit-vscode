@@ -13,6 +13,9 @@ const description = {
     workspaceIndexWorkerThreads: Number,
     workspaceIndexUseGPU: Boolean,
     workspaceIndexMaxSize: Number,
+    workspaceIndexMaxFileSize: Number,
+    workspaceIndexCacheDirPath: String,
+    workspaceIndexIgnoreFilePatterns: ArrayConstructor(String),
     allowFeatureDevelopmentToRunCodeAndTests: Object,
     ignoredSecurityIssues: ArrayConstructor(String),
 }
@@ -55,7 +58,20 @@ export class CodeWhispererSettings extends fromExtensionManifest('amazonQ', desc
 
     public getMaxIndexSize(): number {
         // minimal 1MB
-        return Math.max(this.get('workspaceIndexMaxSize', 250), 1)
+        return Math.max(this.get('workspaceIndexMaxSize', 2048), 1)
+    }
+
+    public getMaxIndexFileSize(): number {
+        // minimal 1MB
+        return Math.max(this.get('workspaceIndexMaxFileSize', 10), 1)
+    }
+
+    public getIndexCacheDirPath(): string {
+        return this.get('workspaceIndexCacheDirPath', '')
+    }
+
+    public getIndexIgnoreFilePatterns(): string[] {
+        return this.get('workspaceIndexIgnoreFilePatterns', [])
     }
 
     public getAutoBuildSetting(): { [key: string]: boolean } {

@@ -236,5 +236,5 @@ export function init(appContext: AmazonQAppInitContext) {
 
     appContext.registerWebViewToAppMessagePublisher(new MessagePublisher<any>(cwChatUIInputEventEmitter), 'cwc')
 
-    registerCommands(cwChatControllerMessagePublishers)
+    registerCommands()
 }

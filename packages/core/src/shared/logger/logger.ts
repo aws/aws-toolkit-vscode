@@ -106,11 +106,6 @@ const logLevels = new Map<LogLevel, number>([
 export type LogLevel = 'error' | 'warn' | 'info' | 'verbose' | 'debug'
 
 export function fromVscodeLogLevel(logLevel: vscode.LogLevel): LogLevel {
-    if (!vscode.LogLevel) {
-        // vscode version <= 1.73
-        return 'info'
-    }
-
     switch (logLevel) {
         case vscode.LogLevel.Trace:
         case vscode.LogLevel.Debug:

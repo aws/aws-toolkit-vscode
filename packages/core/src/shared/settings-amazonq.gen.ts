@@ -22,6 +22,7 @@ export const amazonqSettings = {
         "amazonQLspManifestMessage": {},
         "amazonQWorkspaceLspManifestMessage": {},
         "amazonQChatDisclaimer": {},
+        "amazonQChatPairProgramming": {},
         "amazonQSelectDeveloperProfile": {}
     },
     "amazonQ.showCodeWithReferences": {},
@@ -33,11 +34,10 @@ export const amazonqSettings = {
     "amazonQ.workspaceIndexUseGPU": {},
     "amazonQ.workspaceIndexMaxSize": {},
     "amazonQ.ignoredSecurityIssues": {},
-    "amazonQ.nextEditPrediction.maxFiles": {},
-    "amazonQ.nextEditPrediction.maxTotalSizeKb": {},
-    "amazonQ.nextEditPrediction.maxFileSizeKb": {},
-    "amazonQ.nextEditPrediction.debounceIntervalMs": {},
-    "amazonQ.nextEditPrediction.maxAgeMs": {}
+    "amazonQ.workspaceIndexMaxFileSize": {},
+    "amazonQ.workspaceIndexCacheDirPath": {},
+    "amazonQ.workspaceIndexIgnoreFilePatterns": {},
+    "amazonQ.ignoredSecurityIssues": {}
 }
 
 export default amazonqSettings

@@ -66,6 +66,7 @@ export const createMynahUI = (
         disabledCommands,
         isSMUS,
         isSM,
+        hybridChat: false,
     })
 
     return {
@@ -120,6 +121,7 @@ export class WebviewUIHandler {
         disabledCommands,
         isSMUS,
         isSM,
+        hybridChat,
     }: {
         postMessage: any
         mynahUIRef: { mynahUI: MynahUI | undefined }
@@ -131,6 +133,7 @@ export class WebviewUIHandler {
         disabledCommands?: string[]
         isSMUS?: boolean
         isSM?: boolean
+        hybridChat?: boolean
     }) {
         this.postMessage = postMessage
         this.welcomeCount = welcomeCount
@@ -207,6 +210,7 @@ export class WebviewUIHandler {
                     isScanEnabled: this.isScanEnabled,
                     isTestEnabled: this.isTestEnabled,
                     isDocEnabled: this.isDocEnabled,
+                    hybridChat,
                     disabledCommands,
                 })
 
@@ -642,8 +646,27 @@ export class WebviewUIHandler {
         })
 
         this.mynahUIProps = {
-            onReady: this.connector.uiReady,
+            onReady: () => {
+                // the legacy event flow adds events listeners to the window, we want to avoid these in the lsp flow, since those
+                // are handled by the flare chat-client
+                if (hybridChat && this.connector) {
+                    this.connector.isUIReady = true
+                    postMessage({
+                        command: 'ui-is-ready',
+                    })
+                    return
+                }
+                this.connector?.uiReady()
+            },
             onTabAdd: (tabID: string) => {
+                if (hybridChat) {
+                    /**
+                     * hybrid chat doesn't support the welcome page
+                     * tabs are already added by the quick action handler
+                     * so theres nothing we have to do here
+                     */
+                    return
+                }
                 /**
                  * If the next tab opening will cross the welcome count threshold then
                  * update the next tabs defaults
@@ -989,7 +1012,13 @@ export class WebviewUIHandler {
             },
         }
 
-        this.mynahUIRef = { mynahUI: new MynahUI(this.mynahUIProps) }
+        if (!hybridChat) {
+            /**
+             * when in hybrid chat the reference gets resolved later so we
+             * don't need to create mynah UI
+             */
+            this.mynahUIRef = { mynahUI: new MynahUI({ ...this.mynahUIProps, loadStyles: false }) }
+        }
 
         /**
          * Update the welcome count if we've initially shown
@@ -1013,6 +1042,7 @@ export class WebviewUIHandler {
             isScanEnabled: this.isScanEnabled,
             isTestEnabled: this.isTestEnabled,
             isDocEnabled: this.isDocEnabled,
+            hybridChat,
         })
         this.textMessageHandler = new TextMessageHandler({
             mynahUIRef: this.mynahUIRef,
