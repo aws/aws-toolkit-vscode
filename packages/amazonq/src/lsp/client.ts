@@ -35,6 +35,7 @@ import {
     isAmazonInternalOs,
     fs,
 } from 'aws-core-vscode/shared'
+import { processUtils } from 'aws-core-vscode/shared'
 import { activate } from './chat/activation'
 import { AmazonQResourcePaths } from './lspInstaller'
 import { ConfigSection, isValidConfigSection, toAmazonQLSPLogLevel } from './config'
@@ -80,11 +81,13 @@ export async function startLanguageServer(
         executable = [resourcePaths.node]
     }
 
+    const memoryWarnThreshold = 1024 * processUtils.oneMB
     const serverOptions = createServerOptions({
         encryptionKey,
         executable: executable,
         serverModule,
         execArgv: argv,
+        warnThresholds: { memory: memoryWarnThreshold },
     })
 
     await validateNodeExe(executable, resourcePaths.lsp, argv, logger)
