@@ -72,6 +72,10 @@ export interface LspVersion {
     serverVersion: string
     isDelisted: boolean
     targets: Target[]
+    /**
+     * I'm not sure if this **always** exists (couldn't find it in the spec)
+     */
+    thirdPartyLicenses?: string
 }
 
 export interface Manifest {

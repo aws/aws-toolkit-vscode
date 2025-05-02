@@ -1,3 +1,13 @@
+## 1.63.0 2025-05-01
+
+- **Bug Fix** Q profile selection hangs when a region is blocked
+- **Feature** Agentic coding experience: Amazon Q can now write code and run shell commands on your behalf
+
+## 1.62.0 2025-04-25
+
+- **Bug Fix** Toast message to warn users if Developer Profile is not selected
+- **Bug Fix** Fix users can not log in successfully with 2+ IDE instnaces open due to throttle error throw by the service
+
 ## 1.61.0 2025-04-22
 
 - **Bug Fix** Some users not signaled they needed to select a Region Profile to get features working

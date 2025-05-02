@@ -5,8 +5,8 @@
 
 import * as vscode from 'vscode'
 import { activateAmazonQCommon, amazonQContextPrefix, deactivateCommon } from './extension'
-import { DefaultAmazonQAppInitContext } from 'aws-core-vscode/amazonq'
-import { activate as activateQGumby } from 'aws-core-vscode/amazonqGumby'
+import { DefaultAmazonQAppInitContext, AmazonQChatViewProvider } from 'aws-core-vscode/amazonq'
+import { activate as activateTransformationHub } from 'aws-core-vscode/amazonqGumby'
 import {
     ExtContext,
     globals,
@@ -30,6 +30,7 @@ import { beta } from 'aws-core-vscode/dev'
 import { activate as activateNotifications, NotificationsController } from 'aws-core-vscode/notifications'
 import { AuthState, AuthUtil } from 'aws-core-vscode/codewhisperer'
 import { telemetry, AuthUserState } from 'aws-core-vscode/telemetry'
+import { activateAgents } from './app/chat/node/activateAgents'
 
 export async function activate(context: vscode.ExtensionContext) {
     // IMPORTANT: No other code should be added to this function. Place it in one of the following 2 functions where appropriate.
@@ -52,10 +53,26 @@ async function activateAmazonQNode(context: vscode.ExtensionContext) {
         extensionContext: context,
     }
 
-    if (!Experiments.instance.get('amazonqChatLSP', false)) {
+    if (!Experiments.instance.get('amazonqChatLSP', true)) {
+        const appInitContext = DefaultAmazonQAppInitContext.instance
+        const provider = new AmazonQChatViewProvider(
+            context,
+            appInitContext.getWebViewToAppsMessagePublishers(),
+            appInitContext.getAppsToWebViewMessageListener(),
+            appInitContext.onDidChangeAmazonQVisibility
+        )
+        context.subscriptions.push(
+            vscode.window.registerWebviewViewProvider(AmazonQChatViewProvider.viewType, provider, {
+                webviewOptions: {
+                    retainContextWhenHidden: true,
+                },
+            })
+        )
+        // this is registered inside of lsp/chat/activation.ts when the chat experiment is enabled
         await activateCWChat(context)
-        await activateQGumby(extContext as ExtContext)
     }
+    activateAgents()
+    await activateTransformationHub(extContext as ExtContext)
     activateInlineChat(context)
 
     const authProvider = new CommonAuthViewProvider(
