@@ -81,11 +81,13 @@ export function createServerOptions({
     executable,
     serverModule,
     execArgv,
+    warnThresholds,
 }: {
     encryptionKey: Buffer
     executable: string[]
     serverModule: string
     execArgv: string[]
+    warnThresholds?: { cpu?: number; memory?: number }
 }) {
     return async () => {
         const bin = executable[0]
@@ -93,7 +95,7 @@ export function createServerOptions({
         if (isDebugInstance()) {
             args.unshift('--inspect=6080')
         }
-        const lspProcess = new ChildProcess(bin, args)
+        const lspProcess = new ChildProcess(bin, args, { warnThresholds })
 
         // this is a long running process, awaiting it will never resolve
         void lspProcess.run()
