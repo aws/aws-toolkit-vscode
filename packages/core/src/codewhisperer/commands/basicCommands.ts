@@ -367,18 +367,11 @@ export const updateReferenceLog = Commands.declare(
 export const openSecurityIssuePanel = Commands.declare(
     'aws.amazonq.openSecurityIssuePanel',
     (context: ExtContext) => async (issue: CodeScanIssue | IssueItem, filePath: string) => {
-        console.log('in open security')
         const targetIssue: CodeScanIssue = issue instanceof IssueItem ? issue.issue : issue
         const targetFilePath: string = issue instanceof IssueItem ? issue.filePath : filePath
         await showSecurityIssueWebview(context.extensionContext, targetIssue, targetFilePath)
-        console.log('in show securityIssueWebview')
-        console.log('targetIssue', targetIssue)
-        console.log('file Path', filePath)
-        console.log('before', targetIssue.suggestedFixes.length === 0)
 
-        console.log('after', targetIssue.suggestedFixes.length === 0)
         if (targetIssue.suggestedFixes.length === 0) {
-            console.log('going to generate fix as suggested fix length is 0')
             await generateFix.execute(targetIssue, targetFilePath, 'webview', true, false)
         }
 

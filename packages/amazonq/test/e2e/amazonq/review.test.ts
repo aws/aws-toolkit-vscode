@@ -210,7 +210,7 @@ describe('Amazon Q Code Review', function () {
 
                 assert.ok(securityDiagnostics.length > 0, 'No security diagnostics found')
 
-                // 1 exact critical issue matches
+                // at least 1 exact critical issue matches
                 assert.ok(
                     matchingSecurityDiagnosticCount(securityDiagnostics, 'CWE-798 - Hardcoded credentials', 21) >= 1
                 )
