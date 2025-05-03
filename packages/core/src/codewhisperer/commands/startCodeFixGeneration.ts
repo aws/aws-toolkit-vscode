@@ -21,7 +21,6 @@ import { tempDirPath } from '../../shared/filesystemUtilities'
 import { CodeWhispererSettings } from '../util/codewhispererSettings'
 import { AuthUtil } from '../util/authUtil'
 import { saveDocumentIfDirty } from '../../shared/utilities/textDocumentUtilities'
-/* eslint-disable aws-toolkits/no-console-log */
 
 export async function startCodeFixGeneration(
     client: DefaultCodeWhispererClient,
