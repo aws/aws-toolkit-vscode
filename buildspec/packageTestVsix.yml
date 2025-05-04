@@ -20,6 +20,7 @@ phases:
     pre_build:
         commands:
             - export HOME=/home/codebuild-user
+            - export GITHUB_TOKEN=${GITHUB_READONLY_TOKEN}
             - bash buildspec/shared/linux-pre_build.sh
 
     build:
