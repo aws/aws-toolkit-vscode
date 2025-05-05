@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import { ExtensionContext } from 'vscode'
 import { telemetry } from 'aws-core-vscode/telemetry'
 import { AuthUtil, CodeWhispererSettings } from 'aws-core-vscode/codewhisperer'
-import { Commands, placeholder, funcUtil } from 'aws-core-vscode/shared'
+import { Commands, placeholder, funcUtil, globals } from 'aws-core-vscode/shared'
 import * as amazonq from 'aws-core-vscode/amazonq'
 
 export async function activate(context: ExtensionContext) {
@@ -38,7 +38,10 @@ export async function activate(context: ExtensionContext) {
     })
 
     void setupLsp()
-    void setupAuthNotification()
+
+    // Display notification to sign if the user hasn't yet.
+    // Abitrary wait time to give the auth restore routine time to initialize.
+    globals.clock.setTimeout(() => void setupAuthNotification(), 5000)
 }
 
 /**
