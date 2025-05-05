@@ -1,3 +1,7 @@
+## 3.58.0 2025-05-02
+
+- Miscellaneous non-user-facing changes
+
 ## 3.57.0 2025-05-01
 
 - **Feature** AppBuilder: unchecking the 'Attach a debugger' checkbox in local invoke webview invokes the function without a debugger
