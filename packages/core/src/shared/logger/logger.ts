@@ -18,6 +18,7 @@ export type LogTopic =
     | 'chat'
     | 'stepfunctions'
     | 'unknown'
+    | 'nextEditPrediction'
     | 'resourceCache'
 
 class ErrorLog {
