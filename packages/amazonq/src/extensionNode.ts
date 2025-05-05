@@ -7,22 +7,22 @@ import * as vscode from 'vscode'
 import { activateAmazonQCommon, amazonQContextPrefix, deactivateCommon } from './extension'
 import { DefaultAmazonQAppInitContext } from 'aws-core-vscode/amazonq'
 import { activate as activateQGumby } from 'aws-core-vscode/amazonqGumby'
-import { ExtContext, globals, CrashMonitoring /* getLogger, isSageMaker,*/, Experiments } from 'aws-core-vscode/shared'
+import { ExtContext, globals, CrashMonitoring, getLogger, isSageMaker, Experiments } from 'aws-core-vscode/shared'
 import { filetypes, SchemaService } from 'aws-core-vscode/sharedNode'
 import { updateDevMode } from 'aws-core-vscode/dev'
 import { CommonAuthViewProvider } from 'aws-core-vscode/login'
 import { isExtensionActive, VSCODE_EXTENSION_ID } from 'aws-core-vscode/utils'
 import { registerSubmitFeedback } from 'aws-core-vscode/feedback'
 import { DevOptions } from 'aws-core-vscode/dev'
-import { Auth /* , AuthUtils, getTelemetryMetadataForConn, isAnySsoConnection*/ } from 'aws-core-vscode/auth'
+import { Auth, authUtils } from 'aws-core-vscode/auth'
 import api from './api'
 import { activate as activateCWChat } from './app/chat/activation'
 import { activate as activateInlineChat } from './inlineChat/activation'
 import { beta } from 'aws-core-vscode/dev'
 import * as amazonq from 'aws-core-vscode/amazonq'
-import { /* activate as activateNotifications,*/ NotificationsController } from 'aws-core-vscode/notifications'
-// import { AuthState, AuthUtil } from 'aws-core-vscode/codewhisperer'
-// import { telemetry, AuthUserState } from 'aws-core-vscode/telemetry'
+import { activate as activateNotifications, NotificationsController } from 'aws-core-vscode/notifications'
+import { AuthUtil } from 'aws-core-vscode/codewhisperer'
+import { telemetry, AuthUserState, AuthStatus } from 'aws-core-vscode/telemetry'
 
 export async function activate(context: vscode.ExtensionContext) {
     // IMPORTANT: No other code should be added to this function. Place it in one of the following 2 functions where appropriate.
@@ -73,34 +73,32 @@ async function activateAmazonQNode(context: vscode.ExtensionContext) {
     await setupDevMode(context)
     await beta.activate(context)
 
-    // TODO: @opieter Fix telemetry
-    // Will the web metric look the same?
-    // telemetry.auth_userState.emit({
-    //     passive: true,
-    //     result: 'Succeeded',
-    //     source: AuthUtils.ExtensionUse.instance.sourceForTelemetry(),
-    //     ...(await getAuthState()),
-    // })
+    await getAuthState()
+    telemetry.auth_userState.emit({
+        passive: true,
+        result: 'Succeeded',
+        source: authUtils.ExtensionUse.instance.sourceForTelemetry(),
+        authStatus: AuthUtil.instance.getAuthState(),
+        authEnabledConnections: (await AuthUtil.instance.getAuthFormIds()).join(','),
+    })
 
-    // void activateNotifications(context, getAuthState)
+    void activateNotifications(context, getAuthState)
 }
 
-// async function getAuthState(): Promise<Omit<auth2.AuthState, 'source'>> {
-//     let authState: AuthState = 'disconnected'
-//     authState = AuthUtil.instance.getAuthState()
+async function getAuthState(): Promise<Omit<AuthUserState, 'source'>> {
+    const state = AuthUtil.instance.getAuthState()
 
-//     if (AuthUtil.instance.isConnected() && !(AuthUtil.instance.isSsoSession() || isSageMaker())) {
-//         getLogger().error('Current Amazon Q connection is not SSO')
-//     }
+    if (AuthUtil.instance.isConnected() && !(AuthUtil.instance.isSsoSession() || isSageMaker())) {
+        getLogger().error('Current Amazon Q connection is not SSO')
+    }
 
-//     return {
-//         authStatus:
-//             authState === 'connected' || authState === 'expired'
-//                 ? authState
-//                 : 'notConnected',
-//         ...(await getTelemetryMetadataForConn(currConn)),
-//     }
-// }
+    return {
+        // @ts-ignore
+        authStatus: (state ?? 'notConnected') as AuthStatus,
+        authEnabledConnections: (await AuthUtil.instance.getAuthFormIds()).join(','),
+        ...AuthUtil.instance.getTelemetryMetadata(),
+    }
+}
 
 /**
  * Some parts of this do not work in Web mode so we need to set Dev Mode up here.

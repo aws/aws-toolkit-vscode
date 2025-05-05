@@ -8,7 +8,15 @@ import * as localizedText from '../../shared/localizedText'
 import * as nls from 'vscode-nls'
 import { ToolkitError } from '../../shared/errors'
 import { AmazonQPromptSettings } from '../../shared/settings'
-import { scopesCodeWhispererCore, scopesCodeWhispererChat, scopesFeatureDev, scopesGumby } from '../../auth/connection'
+import {
+    scopesCodeWhispererCore,
+    scopesCodeWhispererChat,
+    scopesFeatureDev,
+    scopesGumby,
+    TelemetryMetadata,
+    scopesSsoAccountAccess,
+    hasScopes,
+} from '../../auth/connection'
 import { getLogger } from '../../shared/logger/logger'
 import { Commands } from '../../shared/vscode/commands2'
 import { vsCodeState } from '../models/model'
@@ -21,6 +29,7 @@ import { AuthStateEvent, LanguageClientAuth, LoginTypes, SsoLogin } from '../../
 import { builderIdStartUrl } from '../../auth/sso/constants'
 import { VSCODE_EXTENSION_ID } from '../../shared/extensions'
 import { RegionProfileManager } from '../region/regionProfileManager'
+import { AuthFormId } from '../../login/webview/vue/types'
 
 const localize = nls.loadMessageBundle()
 
@@ -259,5 +268,56 @@ export class AuthUtil implements IAuthProvider {
         if (state === 'connected' && this.isIdcConnection()) {
             void vscode.commands.executeCommand('aws.amazonq.notifyNewCustomizations')
         }
+    }
+
+    async getTelemetryMetadata(): Promise<TelemetryMetadata> {
+        if (!this.isConnected()) {
+            return {
+                id: 'undefined',
+            }
+        }
+
+        if (this.isSsoSession()) {
+            const ssoSessionDetails = (await this.session.getProfile()).ssoSession?.settings
+            return {
+                authScopes: ssoSessionDetails?.sso_registration_scopes?.join(','),
+                credentialSourceId: AuthUtil.instance.isBuilderIdConnection() ? 'awsId' : 'iamIdentityCenter',
+                credentialStartUrl: AuthUtil.instance.connection?.startUrl,
+                awsRegion: AuthUtil.instance.connection?.region,
+            }
+        } else if (!AuthUtil.instance.isSsoSession) {
+            return {
+                credentialSourceId: 'sharedCredentials',
+            }
+        }
+
+        throw new Error('getTelemetryMetadataForConn() called with unknown connection type')
+    }
+
+    async getAuthFormIds(): Promise<AuthFormId[]> {
+        if (!this.isConnected()) {
+            return []
+        }
+
+        const authIds: AuthFormId[] = []
+        let connType: 'builderId' | 'identityCenter'
+
+        // TODO: update when there is IAM support
+        if (!this.isSsoSession()) {
+            return ['credentials']
+        } else if (this.isBuilderIdConnection()) {
+            connType = 'builderId'
+        } else if (this.isIdcConnection()) {
+            connType = 'identityCenter'
+            const ssoSessionDetails = (await this.session.getProfile()).ssoSession?.settings
+            if (hasScopes(ssoSessionDetails?.sso_registration_scopes ?? [], scopesSsoAccountAccess)) {
+                authIds.push('identityCenterExplorer')
+            }
+        } else {
+            return ['unknown']
+        }
+        authIds.push(`${connType}CodeWhisperer`)
+
+        return authIds
     }
 }
