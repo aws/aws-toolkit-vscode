@@ -12,7 +12,7 @@ import { setMaven } from './transformFileHandler'
 import { throwIfCancelled } from './transformApiHandler'
 import { sleep } from '../../../shared/utilities/timeoutUtils'
 import path from 'path'
-import { globals } from '../../../shared'
+import globals from '../../../shared/extensionGlobals'
 
 function collectDependenciesAndMetadata(dependenciesFolderPath: string, workingDirPath: string) {
     getLogger().info('CodeTransformation: running mvn clean test-compile with maven JAR')

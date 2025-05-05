@@ -745,7 +745,7 @@ export async function transformationJobErrorHandler(error: any) {
         transformByQState.setToFailed()
         transformByQState.setPolledJobStatus('FAILED')
         // jobFailureErrorNotification should always be defined here
-        let displayedErrorMessage =
+        const displayedErrorMessage =
             transformByQState.getJobFailureErrorNotification() ?? CodeWhispererConstants.failedToCompleteJobNotification
         transformByQState.setJobFailureErrorChatMessage(
             transformByQState.getJobFailureErrorChatMessage() ?? CodeWhispererConstants.failedToCompleteJobChatMessage
