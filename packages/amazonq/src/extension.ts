@@ -121,10 +121,7 @@ export async function activateAmazonQCommon(context: vscode.ExtensionContext, is
     }
     // This contains every lsp agnostic things (auth, security scan, code scan)
     await activateCodeWhisperer(extContext as ExtContext)
-    if (
-        (Experiments.instance.get('amazonqLSP', true) || Auth.instance.isInternalAmazonUser()) &&
-        (!isAmazonInternalOs() || (await hasGlibcPatch()))
-    ) {
+    if (!isAmazonInternalOs() || (await hasGlibcPatch())) {
         // start the Amazon Q LSP for internal users first
         // for AL2, start LSP if glibc patch is found
         await activateAmazonqLsp(context)
@@ -172,7 +169,7 @@ export async function activateAmazonQCommon(context: vscode.ExtensionContext, is
 
     context.subscriptions.push(
         Experiments.instance.onDidChange(async (event) => {
-            if (event.key === 'amazonqLSP' || event.key === 'amazonqChatLSP' || event.key === 'amazonqLSPInline') {
+            if (event.key === 'amazonqLSPInline') {
                 await vscode.window
                     .showInformationMessage(
                         'Amazon Q LSP setting has changed. Reload VS Code for the changes to take effect.',
