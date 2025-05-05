@@ -369,6 +369,10 @@ export class RegionProfileManager {
         return this.authProvider.isIdcConnection() && this.activeRegionProfile === undefined
     }
 
+    async clearCache() {
+        await this.cache.clearCache()
+    }
+
     async createQClient(region: string, endpoint: string): Promise<CodeWhispererUserClient> {
         const token = await this.authProvider.getToken()
         const serviceOption: ServiceOptions = {

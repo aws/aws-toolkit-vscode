@@ -85,7 +85,7 @@ function getAmazonQCodeWhispererNodes() {
 }
 
 export function getQuickPickItems(): DataQuickPickItem<string>[] {
-    const isUsingEnterpriseSso = AuthUtil.instance.isValidEnterpriseSsoInUse()
+    const isUsingEnterpriseSso = AuthUtil.instance.isIdcConnection()
     const regionProfile = AuthUtil.instance.regionProfileManager.activeRegionProfile
 
     const children = [

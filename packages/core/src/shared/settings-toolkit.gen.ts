@@ -42,6 +42,7 @@ export const toolkitSettings = {
     },
     "aws.experiments": {
         "jsonResourceModification": {},
+        "amazonqLSP": {},
         "amazonqLSPInline": {},
         "amazonqChatLSP": {}
     },

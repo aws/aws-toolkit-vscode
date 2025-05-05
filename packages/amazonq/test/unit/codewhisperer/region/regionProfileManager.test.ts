@@ -61,7 +61,7 @@ describe('RegionProfileManager', function () {
             }
             const createClientStub = sinon.stub(regionProfileManager, 'createQClient').resolves(mockClient)
 
-            const r = await regionProfileManager.listRegionProfiles()
+            const r = await regionProfileManager.listRegionProfile()
 
             assert.strictEqual(r.length, 2)
             assert.deepStrictEqual(r, [
@@ -177,7 +177,7 @@ describe('RegionProfileManager', function () {
         })
 
         it(`restoreRegionProfile`, async function () {
-            sinon.stub(regionProfileManager, 'listRegionProfiles').resolves([profileFoo])
+            sinon.stub(regionProfileManager, 'listRegionProfile').resolves([profileFoo])
             await setupConnection('idc')
             if (!AuthUtil.instance.isConnected()) {
                 fail('connection should not be undefined')
