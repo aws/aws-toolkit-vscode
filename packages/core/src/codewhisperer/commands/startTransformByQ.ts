@@ -109,7 +109,7 @@ export async function processSQLConversionTransformFormInput(pathToProject: stri
 
 export async function compileProject() {
     try {
-        const dependenciesFolder: FolderInfo = getDependenciesFolderInfo()
+        const dependenciesFolder: FolderInfo = await getDependenciesFolderInfo()
         transformByQState.setDependencyFolderInfo(dependenciesFolder)
         const projectPath = transformByQState.getProjectPath()
         await prepareProjectDependencies(dependenciesFolder.path, projectPath)

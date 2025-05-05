@@ -18,10 +18,10 @@ import { AbsolutePathDetectedError } from '../../../amazonqGumby/errors'
 import { getLogger } from '../../../shared/logger/logger'
 import AdmZip from 'adm-zip'
 
-export function getDependenciesFolderInfo(): FolderInfo {
+export async function getDependenciesFolderInfo(): Promise<FolderInfo> {
     const dependencyFolderName = `${CodeWhispererConstants.dependencyFolderName}${globals.clock.Date.now()}`
     const dependencyFolderPath = path.join(os.tmpdir(), dependencyFolderName)
-    fs.mkdir(dependencyFolderPath)
+    await fs.mkdir(dependencyFolderPath)
     return {
         name: dependencyFolderName,
         path: dependencyFolderPath,
