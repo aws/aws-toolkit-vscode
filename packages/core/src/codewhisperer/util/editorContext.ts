@@ -20,6 +20,7 @@ import { getOptOutPreference } from '../../shared/telemetry/util'
 import { indent } from '../../shared/utilities/textUtilities'
 import { isInDirectory } from '../../shared/filesystemUtilities'
 import { AuthUtil } from './authUtil'
+import { predictionTracker } from '../nextEditPrediction/activation'
 
 let tabSize: number = getTabSizeSetting()
 
@@ -119,8 +120,14 @@ export async function buildListRecommendationRequest(
 
     logSupplementalContext(supplementalContexts)
 
+    // Get predictionSupplementalContext from PredictionTracker
+    let predictionSupplementalContext: codewhispererClient.SupplementalContext[] = []
+    if (predictionTracker) {
+        predictionSupplementalContext = await predictionTracker.generatePredictionSupplementalContext()
+    }
+
     const selectedCustomization = getSelectedCustomization()
-    const supplementalContext: codewhispererClient.SupplementalContext[] = supplementalContexts
+    const completionSupplementalContext: codewhispererClient.SupplementalContext[] = supplementalContexts
         ? supplementalContexts.supplementalContextItems.map((v) => {
               return selectFrom(v, 'content', 'filePath')
           })
@@ -128,6 +135,10 @@ export async function buildListRecommendationRequest(
 
     const profile = AuthUtil.instance.regionProfileManager.activeRegionProfile
 
+    const editorState = getEditorState(editor, fileContext)
+
+    // Combine inline and prediction supplemental contexts
+    const finalSupplementalContext = completionSupplementalContext.concat(predictionSupplementalContext)
     return {
         request: {
             fileContext: fileContext,
@@ -135,7 +146,9 @@ export async function buildListRecommendationRequest(
             referenceTrackerConfiguration: {
                 recommendationsWithReferences: allowCodeWithReference ? 'ALLOW' : 'BLOCK',
             },
-            supplementalContexts: supplementalContext,
+            supplementalContexts: finalSupplementalContext,
+            editorState: editorState,
+            maxResults: CodeWhispererConstants.maxRecommendations,
             customizationArn: selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
             optOutPreference: getOptOutPreference(),
             workspaceId: await getWorkspaceId(editor),
@@ -199,6 +212,29 @@ export function updateTabSize(val: number): void {
 
 export function getTabSize(): number {
     return tabSize
+}
+
+export function getEditorState(editor: vscode.TextEditor, fileContext: codewhispererClient.FileContext): any {
+    try {
+        return {
+            document: {
+                programmingLanguage: {
+                    languageName: fileContext.programmingLanguage.languageName,
+                },
+                relativeFilePath: fileContext.filename,
+                text: editor.document.getText(),
+            },
+            cursorState: {
+                position: {
+                    line: editor.selection.active.line,
+                    character: editor.selection.active.character,
+                },
+            },
+        }
+    } catch (error) {
+        getLogger().error(`Error generating editor state: ${error}`)
+        return undefined
+    }
 }
 
 export function getLeftContext(editor: vscode.TextEditor, line: number): string {
