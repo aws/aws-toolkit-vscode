@@ -4,6 +4,7 @@
  */
 import { randomUUID } from 'crypto'
 import * as vscode from 'vscode'
+import { LanguageClient } from 'vscode-languageclient'
 import { InlineDecorator } from '../decorations/inlineDecorator'
 import { InlineChatProvider } from '../provider/inlineChatProvider'
 import { InlineTask, TaskState, TextDiff } from './inlineTask'
@@ -36,8 +37,8 @@ export class InlineChatController {
     private userQuery: string | undefined
     private listeners: vscode.Disposable[] = []
 
-    constructor(context: vscode.ExtensionContext) {
-        this.inlineChatProvider = new InlineChatProvider()
+    constructor(context: vscode.ExtensionContext, client: LanguageClient, encryptionKey: Buffer) {
+        this.inlineChatProvider = new InlineChatProvider(client, encryptionKey)
         this.inlineChatProvider.onErrorOccured(() => this.handleError())
         this.codeLenseProvider = new CodelensProvider(context)
         this.inlineLineAnnotationController = new InlineLineAnnotationController(context)
@@ -237,7 +238,9 @@ export class InlineChatController {
         const requestStart = performance.now()
         let responseStartLatency: number | undefined
 
-        const response = await this.inlineChatProvider.processPromptMessage(message)
+        // TODO make sure this calls the api and then streams the results back to do something similiar
+        // to line 257 and below
+        const response = (await this.inlineChatProvider.processPromptMessage(message)) as any
         this.task.requestId = response?.$metadata.requestId
 
         // Deselect all code

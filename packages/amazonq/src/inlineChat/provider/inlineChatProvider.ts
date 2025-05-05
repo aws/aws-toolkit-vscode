@@ -4,182 +4,88 @@
  */
 
 import * as vscode from 'vscode'
-import {
-    CodeWhispererStreamingServiceException,
-    GenerateAssistantResponseCommandOutput,
-} from '@amzn/codewhisperer-streaming'
-import { AuthUtil, getSelectedCustomization } from 'aws-core-vscode/codewhisperer'
-import {
-    ChatSessionStorage,
-    ChatTriggerType,
-    EditorContextExtractor,
-    PromptMessage,
-    TriggerEventsStorage,
-    TriggerPayload,
-    triggerPayloadToChatRequest,
-    UserIntentRecognizer,
-} from 'aws-core-vscode/codewhispererChat'
-import { AwsClientResponseError, getLogger, isAwsError, ToolkitError } from 'aws-core-vscode/shared'
-import { randomUUID } from 'crypto'
+import { LanguageClient } from 'vscode-languageclient'
+import { InlineChatParams, InlineChatResult } from '@aws/language-server-runtimes-types'
+import { inlineChatRequestType } from '@aws/language-server-runtimes/protocol'
+import { PromptMessage } from 'aws-core-vscode/codewhispererChat'
+import { getLogger, isAwsError } from 'aws-core-vscode/shared'
 import { codeWhispererClient } from 'aws-core-vscode/codewhisperer'
 import type { InlineChatEvent } from 'aws-core-vscode/codewhisperer'
 import { InlineTask } from '../controller/inlineTask'
-import { extractAuthFollowUp } from 'aws-core-vscode/amazonq'
+import { decodeRequest, encryptRequest } from '../../lsp/encryption'
 
 export class InlineChatProvider {
-    private readonly editorContextExtractor: EditorContextExtractor
-    private readonly userIntentRecognizer: UserIntentRecognizer
-    private readonly sessionStorage: ChatSessionStorage
-    private readonly triggerEventsStorage: TriggerEventsStorage
     private errorEmitter = new vscode.EventEmitter<void>()
     public onErrorOccured = this.errorEmitter.event
 
-    public constructor() {
-        this.editorContextExtractor = new EditorContextExtractor()
-        this.userIntentRecognizer = new UserIntentRecognizer()
-        this.sessionStorage = new ChatSessionStorage()
-        this.triggerEventsStorage = new TriggerEventsStorage()
-    }
+    public constructor(
+        private readonly client: LanguageClient,
+        private readonly encryptionKey: Buffer
+    ) {}
 
     public async processPromptMessage(message: PromptMessage) {
-        return this.editorContextExtractor
-            .extractContextForTrigger('ChatMessage')
-            .then((context) => {
-                const triggerID = randomUUID()
-                this.triggerEventsStorage.addTriggerEvent({
-                    id: triggerID,
-                    tabID: message.tabID,
-                    message: message.message,
-                    type: 'inline_chat',
-                    context,
-                })
-                return this.generateResponse(
-                    {
-                        message: message.message ?? '',
-                        trigger: ChatTriggerType.InlineChatMessage,
-                        query: message.message,
-                        codeSelection: context?.focusAreaContext?.selectionInsideExtendedCodeBlock,
-                        fileText: context?.focusAreaContext?.extendedCodeBlock ?? '',
-                        fileLanguage: context?.activeFileContext?.fileLanguage,
-                        filePath: context?.activeFileContext?.filePath,
-                        matchPolicy: context?.activeFileContext?.matchPolicy,
-                        codeQuery: context?.focusAreaContext?.names,
-                        userIntent: this.userIntentRecognizer.getFromPromptChatMessage(message),
-                        customization: getSelectedCustomization(),
-                        profile: AuthUtil.instance.regionProfileManager.activeRegionProfile,
-                        context: [],
-                        relevantTextDocuments: [],
-                        additionalContents: [],
-                        documentReferences: [],
-                        useRelevantDocuments: false,
-                        contextLengths: {
-                            additionalContextLengths: {
-                                fileContextLength: 0,
-                                promptContextLength: 0,
-                                ruleContextLength: 0,
-                            },
-                            truncatedAdditionalContextLengths: {
-                                fileContextLength: 0,
-                                promptContextLength: 0,
-                                ruleContextLength: 0,
-                            },
-                            workspaceContextLength: 0,
-                            truncatedWorkspaceContextLength: 0,
-                            userInputContextLength: 0,
-                            truncatedUserInputContextLength: 0,
-                            focusFileContextLength: 0,
-                            truncatedFocusFileContextLength: 0,
-                        },
-                    },
-                    triggerID
-                )
-            })
-            .catch((e) => {
-                this.processException(e, message.tabID)
-            })
-    }
-
-    private async generateResponse(
-        triggerPayload: TriggerPayload & { projectContextQueryLatencyMs?: number },
-        triggerID: string
-    ) {
-        const triggerEvent = this.triggerEventsStorage.getTriggerEvent(triggerID)
-        if (triggerEvent === undefined) {
+        const params = this.getCurrentEditorParams(message.message ?? '')
+        this.client.info(`Logging request for inline chat ${JSON.stringify(params)}`)
+        if (!params) {
+            this.client.warn(`Invalid request params for inline chat`)
             return
         }
-
-        if (triggerEvent.tabID === 'no-available-tabs') {
-            return
-        }
-
-        if (triggerEvent.tabID === undefined) {
-            setTimeout(() => {
-                this.generateResponse(triggerPayload, triggerID).catch((e) => {
-                    getLogger().error('generateResponse failed: %s', (e as Error).message)
-                })
-            }, 20)
-            return
-        }
-
-        const tabID = triggerEvent.tabID
-
-        const credentialsState = await AuthUtil.instance.getChatAuthState()
-        if (
-            !(credentialsState.codewhispererChat === 'connected' && credentialsState.codewhispererCore === 'connected')
-        ) {
-            const { message } = extractAuthFollowUp(credentialsState)
-            this.errorEmitter.fire()
-            throw new ToolkitError(message)
-        }
-        triggerPayload.useRelevantDocuments = false
-
-        const request = triggerPayloadToChatRequest(triggerPayload)
-        const session = this.sessionStorage.getSession(tabID)
-        getLogger().debug(
-            `request from tab: ${tabID} conversationID: ${session.sessionIdentifier} request: %O`,
-            request
-        )
-
-        let response: GenerateAssistantResponseCommandOutput | undefined = undefined
-        session.createNewTokenSource()
         try {
-            response = await session.chatSso(request)
-            getLogger().info(
-                `response to tab: ${tabID} conversationID: ${session.sessionIdentifier} requestID: ${response.$metadata.requestId} metadata: %O`,
-                response.$metadata
-            )
-        } catch (e: any) {
-            this.processException(e, tabID)
-        }
+            const inlineChatRequest = await encryptRequest<InlineChatParams>(params, this.encryptionKey)
+            const response = await this.client.sendRequest(inlineChatRequestType.method, inlineChatRequest)
+            const result: InlineChatResult = response as InlineChatResult
+            const decryptedMessage =
+                typeof result === 'string' && this.encryptionKey
+                    ? await decodeRequest(result, this.encryptionKey)
+                    : result
+            this.client.info(`Logging response for inline chat ${JSON.stringify(decryptedMessage)}`)
 
-        return response
+            // wait don't I have to listen for onProgress events here?
+            // yes I think I do if the response is long
+        } catch (e) {
+            this.client.info(`Logging error for inline chat ${JSON.stringify(e)}`)
+        }
     }
 
-    private processException(e: any, tabID: string) {
-        let errorMessage: string | undefined
-        let requestID: string | undefined
-        if (typeof e === 'string') {
-            errorMessage = e.toUpperCase()
-        } else if (e instanceof SyntaxError) {
-            // Workaround to handle case when LB returns web-page with error and our client doesn't return proper exception
-            errorMessage = AwsClientResponseError.tryExtractReasonFromSyntaxError(e)
-        } else if (e instanceof CodeWhispererStreamingServiceException) {
-            errorMessage = e.message
-            requestID = e.$metadata.requestId
-        } else if (e instanceof Error) {
-            errorMessage = e.message
+    private getCurrentEditorParams(prompt: string): InlineChatParams | undefined {
+        // Get the active text editor
+        const editor = vscode.window.activeTextEditor
+        if (!editor) {
+            return undefined
         }
 
-        this.errorEmitter.fire()
-        this.sessionStorage.deleteSession(tabID)
+        // Get cursor position
+        const position = editor.selection.active
 
-        throw ToolkitError.chain(e, errorMessage ?? 'Failed to get response', {
-            details: {
-                tabID,
-                requestID,
+        // Get document URI
+        const documentUri = editor.document.uri.toString()
+
+        const params: InlineChatParams = {
+            prompt: {
+                prompt,
             },
-        })
+            cursorState: [
+                {
+                    position: {
+                        line: position.line,
+                        character: position.character,
+                    },
+                },
+            ],
+            textDocument: {
+                uri: documentUri,
+            },
+        }
+
+        return params
     }
+
+    // private async generateResponse(
+    //     triggerPayload: TriggerPayload & { projectContextQueryLatencyMs?: number },
+    //     triggerID: string
+    // ) {}
+
+    // private processException(e: any, tabID: string) {}
 
     public sendTelemetryEvent(inlineChatEvent: InlineChatEvent, currentTask?: InlineTask) {
         codeWhispererClient
