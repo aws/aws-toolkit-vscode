@@ -21,6 +21,7 @@ import AdmZip from 'adm-zip'
 export function getDependenciesFolderInfo(): FolderInfo {
     const dependencyFolderName = `${CodeWhispererConstants.dependencyFolderName}${globals.clock.Date.now()}`
     const dependencyFolderPath = path.join(os.tmpdir(), dependencyFolderName)
+    fs.mkdir(dependencyFolderPath)
     return {
         name: dependencyFolderName,
         path: dependencyFolderPath,
