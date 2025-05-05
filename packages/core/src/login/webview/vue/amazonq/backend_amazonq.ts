@@ -27,7 +27,6 @@ import { randomUUID } from '../../../../shared/crypto'
 import globals from '../../../../shared/extensionGlobals'
 import { telemetry } from '../../../../shared/telemetry/telemetry'
 import { ProfileSwitchIntent } from '../../../../codewhisperer/region/regionProfileManager'
-import { setContext } from '../../../../shared'
 
 const className = 'AmazonQLoginWebview'
 export class AmazonQLoginWebview extends CommonAuthWebview {
