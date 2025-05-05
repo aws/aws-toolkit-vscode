@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { PredictionTracker } from './PredictionTracker'
+import { PredictionTracker } from './predictionTracker'
 
 /**
  * Monitors document changes in the editor and track them for prediction.

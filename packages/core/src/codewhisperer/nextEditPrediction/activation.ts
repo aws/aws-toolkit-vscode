@@ -4,8 +4,8 @@
  */
 
 import * as vscode from 'vscode'
-import { PredictionTracker } from './PredictionTracker'
-import { PredictionKeyStrokeHandler } from './PredictionKeyStrokeHandler'
+import { PredictionTracker } from './predictionTracker'
+import { PredictionKeyStrokeHandler } from './predictionKeyStrokeHandler'
 import { getLogger } from '../../shared/logger/logger'
 import { ExtContext } from '../../shared/extensions'
 

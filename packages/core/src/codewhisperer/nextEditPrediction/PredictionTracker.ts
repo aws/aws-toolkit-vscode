@@ -49,10 +49,6 @@ export class PredictionTracker {
     public async processEdit(document: vscode.TextDocument, previousContent: string): Promise<void> {
         const filePath = document.uri.fsPath
 
-        if (!document.uri.scheme.startsWith('file')) {
-            return
-        }
-
         try {
             // Get existing snapshots for this file
             const fileSnapshots = this.snapshots.get(filePath) || []

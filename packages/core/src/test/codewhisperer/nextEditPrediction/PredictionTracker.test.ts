@@ -12,7 +12,7 @@ import {
     FileSnapshot,
     FileTrackerConfig,
     PredictionTracker,
-} from '../../../codewhisperer/nextEditPrediction/PredictionTracker'
+} from '../../../codewhisperer/nextEditPrediction/predictionTracker'
 import { FakeExtensionContext } from '../../fakeExtensionContext'
 import { createMockDocument } from '../testUtil'
 import * as diffGenerator from '../../../codewhisperer/nextEditPrediction/diffContextGenerator'
