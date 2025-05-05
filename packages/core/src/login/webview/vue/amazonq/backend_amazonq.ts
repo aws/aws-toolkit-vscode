@@ -27,6 +27,7 @@ import { randomUUID } from '../../../../shared/crypto'
 import globals from '../../../../shared/extensionGlobals'
 import { telemetry } from '../../../../shared/telemetry/telemetry'
 import { ProfileSwitchIntent } from '../../../../codewhisperer/region/regionProfileManager'
+import { setContext } from '../../../../shared'
 
 const className = 'AmazonQLoginWebview'
 export class AmazonQLoginWebview extends CommonAuthWebview {
@@ -80,6 +81,10 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
 
     async startEnterpriseSetup(startUrl: string, region: string): Promise<AuthError | undefined> {
         getLogger().debug(`called startEnterpriseSetup() with startUrl: '${startUrl}', region: '${region}'`)
+        await globals.globalState.update('recentSso', {
+            startUrl: startUrl,
+            region: region,
+        })
         return await this.ssoSetup('startCodeWhispererEnterpriseSetup', async () => {
             this.storeMetricMetadata({
                 credentialStartUrl: startUrl,
