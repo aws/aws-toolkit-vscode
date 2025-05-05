@@ -129,8 +129,6 @@ describe('Amazon Q Code Transformation', function () {
                 waitIntervalInMs: 1000,
             })
 
-            // TO-DO: add this back when releasing CSB
-            /*
             const customDependencyVersionPrompt = tab.getChatItems().pop()
             assert.strictEqual(
                 customDependencyVersionPrompt?.body?.includes('You can optionally upload a YAML file'),
@@ -143,7 +141,6 @@ describe('Amazon Q Code Transformation', function () {
                 waitTimeoutInMs: 5000,
                 waitIntervalInMs: 1000,
             })
-            */
 
             const sourceJdkPathPrompt = tab.getChatItems().pop()
             assert.strictEqual(sourceJdkPathPrompt?.body?.includes('Enter the path to JDK 8'), true)
@@ -151,7 +148,7 @@ describe('Amazon Q Code Transformation', function () {
             tab.addChatMessage({ prompt: '/dummy/path/to/jdk8' })
 
             // 2 additional chat messages get sent after JDK path submitted; wait for both of them
-            await tab.waitForEvent(() => tab.getChatItems().length > 10, {
+            await tab.waitForEvent(() => tab.getChatItems().length > 15, {
                 waitTimeoutInMs: 5000,
                 waitIntervalInMs: 1000,
             })
@@ -173,7 +170,7 @@ describe('Amazon Q Code Transformation', function () {
                 text: 'View summary',
             })
 
-            await tab.waitForEvent(() => tab.getChatItems().length > 11, {
+            await tab.waitForEvent(() => tab.getChatItems().length > 18, {
                 waitTimeoutInMs: 5000,
                 waitIntervalInMs: 1000,
             })

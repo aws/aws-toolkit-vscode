@@ -720,9 +720,9 @@ export const linkToBillingInfo = 'https://aws.amazon.com/q/developer/pricing/'
 
 export const dependencyFolderName = 'transformation_dependencies_temp_'
 
-export const cleanInstallErrorChatMessage = `Sorry, I couldn\'t run the Maven clean install command to build your project. For more information, see the [Amazon Q documentation](${codeTransformTroubleshootMvnFailure}).`
+export const cleanTestCompileErrorChatMessage = `I could not run \`mvn clean test-compile\` to build your project. For more information, see the [Amazon Q documentation](${codeTransformTroubleshootMvnFailure}).`
 
-export const cleanInstallErrorNotification = `Amazon Q could not run the Maven clean install command to build your project. For more information, see the [Amazon Q documentation](${codeTransformTroubleshootMvnFailure}).`
+export const cleanTestCompileErrorNotification = `Amazon Q could not run \`mvn clean test-compile\` to build your project. For more information, see the [Amazon Q documentation](${codeTransformTroubleshootMvnFailure}).`
 
 export const enterJavaHomeChatMessage = 'Enter the path to JDK'
 
@@ -737,10 +737,6 @@ export const macJavaVersionHomeHelpChatMessage = (version: number) =>
 
 export const linuxJavaHomeHelpChatMessage =
     'To find the JDK path, run the following command in a new terminal: `update-java-alternatives --list`'
-
-export const projectSizeTooLargeChatMessage = `Sorry, your project size exceeds the Amazon Q Code Transformation upload limit of 2GB. For more information, see the [Amazon Q documentation](${codeTransformTroubleshootProjectSize}).`
-
-export const projectSizeTooLargeNotification = `Your project size exceeds the Amazon Q Code Transformation upload limit of 2GB. For more information, see the [Amazon Q documentation](${codeTransformTroubleshootProjectSize}).`
 
 export const JDK8VersionNumber = '52'
 
@@ -759,7 +755,7 @@ export const chooseProjectSchemaFormMessage = 'To continue, choose the project a
 export const skipUnitTestsFormTitle = 'Choose to skip unit tests'
 
 export const skipUnitTestsFormMessage =
-    'I will build your project using `mvn clean test` by default. If you would like me to build your project without running unit tests, I will use `mvn clean test-compile`.'
+    'I will build generated code in your local environment, not on the server side. For information on how I scan code to reduce security risks associated with building the code in your local environment, see the [Amazon Q Developer documentation](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/code-transformation.html#java-local-builds).\n\nI will build your project using `mvn clean test` by default. If you would like me to build your project without running unit tests, I will use `mvn clean test-compile`.'
 
 export const runUnitTestsMessage = 'Run unit tests'
 
