@@ -1,3 +1,7 @@
+## 1.64.0 2025-05-02
+
+- **Bug Fix** Enable Amazon Q LSP in AL2 instances
+
 ## 1.63.0 2025-05-01
 
 - **Bug Fix** Q profile selection hangs when a region is blocked
