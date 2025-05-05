@@ -65,7 +65,7 @@ describe('RegionProfileManager', function () {
             const mockClient = {
                 listAvailableProfiles: listProfilesStub,
             }
-            const createClientStub = sinon.stub(sut, 'createQClient').resolves(mockClient)
+            const createClientStub = sinon.stub(sut, '_createQClient').resolves(mockClient)
 
             const r = await sut.listRegionProfile()
 
@@ -234,13 +234,65 @@ describe('RegionProfileManager', function () {
     })
 
     describe('createQClient', function () {
+        it(`should configure the endpoint and region from a profile`, async function () {
+            await setupConnection('idc')
+
+            const iadClient = await sut.createQClient({
+                name: 'foo',
+                region: 'us-east-1',
+                arn: 'arn',
+                description: 'description',
+            })
+
+            assert.deepStrictEqual(iadClient.config.region, 'us-east-1')
+            assert.deepStrictEqual(iadClient.endpoint.href, 'https://q.us-east-1.amazonaws.com/')
+
+            const fraClient = await sut.createQClient({
+                name: 'bar',
+                region: 'eu-central-1',
+                arn: 'arn',
+                description: 'description',
+            })
+
+            assert.deepStrictEqual(fraClient.config.region, 'eu-central-1')
+            assert.deepStrictEqual(fraClient.endpoint.href, 'https://q.eu-central-1.amazonaws.com/')
+        })
+
+        it(`should throw if the region is not supported or recognizable by Q`, async function () {
+            await setupConnection('idc')
+
+            await assert.rejects(
+                async () => {
+                    await sut.createQClient({
+                        name: 'foo',
+                        region: 'ap-east-1',
+                        arn: 'arn',
+                        description: 'description',
+                    })
+                },
+                { message: /trying to initiatize Q client with unrecognizable region/ }
+            )
+
+            await assert.rejects(
+                async () => {
+                    await sut.createQClient({
+                        name: 'foo',
+                        region: 'unknown-somewhere',
+                        arn: 'arn',
+                        description: 'description',
+                    })
+                },
+                { message: /trying to initiatize Q client with unrecognizable region/ }
+            )
+        })
+
         it(`should configure the endpoint and region correspondingly`, async function () {
             await setupConnection('idc')
             await sut.switchRegionProfile(profileFoo, 'user')
             assert.deepStrictEqual(sut.activeRegionProfile, profileFoo)
             const conn = authUtil.conn as SsoConnection
 
-            const client = await sut.createQClient('eu-central-1', 'https://amazon.com/', conn)
+            const client = await sut._createQClient('eu-central-1', 'https://amazon.com/', conn)
 
             assert.deepStrictEqual(client.config.region, 'eu-central-1')
             assert.deepStrictEqual(client.endpoint.href, 'https://amazon.com/')
