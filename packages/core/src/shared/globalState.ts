@@ -69,6 +69,7 @@ export type globalKey =
     | 'lastSelectedRegion'
     | 'lastOsStartTime'
     | 'recentCredentials'
+    | 'recentSso'
     // List of regions enabled in AWS Explorer.
     | 'region'
     // TODO: implement this via `PromptSettings` instead of globalState.
