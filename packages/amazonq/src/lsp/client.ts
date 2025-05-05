@@ -164,7 +164,7 @@ export async function startLanguageServer(
     return client.onReady().then(async () => {
         await auth.refreshConnection()
 
-        if (Experiments.instance.get('amazonqLSPInline', false)) {
+        if (Experiments.instance.get('amazonqLSPInline', true)) {
             const inlineManager = new InlineCompletionManager(client)
             inlineManager.registerInlineCompletion()
             toDispose.push(

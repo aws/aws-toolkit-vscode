@@ -129,7 +129,7 @@ export async function activateAmazonQCommon(context: vscode.ExtensionContext, is
         // for AL2, start LSP if glibc patch is found
         await activateAmazonqLsp(context)
     }
-    if (!Experiments.instance.get('amazonqLSPInline', false)) {
+    if (!Experiments.instance.get('amazonqLSPInline', true)) {
         await activateInlineCompletion()
     }
 
