@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as vscode from 'vscode'
-import { DevSettings, getServiceEnvVarConfig } from 'aws-core-vscode/shared'
+import { DevSettings, getServiceEnvVarConfig, resolvePath } from 'aws-core-vscode/shared'
 import { LspConfig } from 'aws-core-vscode/amazonq'
 import { LanguageClient } from 'vscode-languageclient'
 import {
@@ -40,8 +40,10 @@ export const defaultAmazonQLspConfig: ExtendedAmazonQLSPConfig = {
     supportedVersions: '*', // TODO swap this back
     id: 'AmazonQ', // used across IDEs for identifying global storage/local disk locations. Do not change.
     suppressPromptPrefix: 'amazonQ',
-    path: undefined,
-    ui: undefined,
+    path: resolvePath('~/aws-lsp-codewhisperer.js'), // '/Volumes/workplace/aws-language-servers/app/aws-lsp-codewhisperer-runtimes/out/agent-standalone.js'
+    ui: resolvePath('~/amazonq-ui.js'), // '/Volumes/workplace/aws-language-servers/chat-client/build/amazonq-ui.js'
+    // path: resolvePath('~/app/aws-lsp-codewhisperer-runtimes/out/agent-standalone.js'), // '/Volumes/workplace/aws-language-servers/app/aws-lsp-codewhisperer-runtimes/out/agent-standalone.js'
+    // ui: resolvePath('~/chat-client/build/amazonq-ui.js'), // '/Volumes/workplace/aws-language-servers/chat-client/build/amazonq-ui.js'
 }
 
 export function getAmazonQLspConfig(): ExtendedAmazonQLSPConfig {

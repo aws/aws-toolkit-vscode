@@ -56,7 +56,7 @@ export class AmazonQChatViewProvider implements WebviewViewProvider {
          * it will 401 when trying to load
          */
         const mynahUIPath = getAmazonQLspConfig().ui
-        if (process.env.WEBPACK_DEVELOPER_SERVER && mynahUIPath) {
+        if (mynahUIPath) {
             const dir = path.dirname(mynahUIPath)
             resourcesRoots.push(Uri.file(dir))
         }
