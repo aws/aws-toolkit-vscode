@@ -86,7 +86,7 @@ describe('editorContext', function () {
             assert.deepStrictEqual(actual, expected)
         })
 
-        it('Should include context from other cells when in a notebook', async function () {
+        it('in a notebook, includes context from other cells', async function () {
             const cells: vscode.NotebookCellData[] = [
                 new vscode.NotebookCellData(vscode.NotebookCellKind.Markup, 'Previous cell', 'python'),
                 new vscode.NotebookCellData(
@@ -175,7 +175,7 @@ describe('editorContext', function () {
         })
     })
 
-    describe('extractSingleCellContext', function () {
+    describe('getNotebookCellContext', function () {
         it('Should return cell text for python code cells when language is python', function () {
             const mockCodeCell = createNotebookCell(createMockDocument('def example():\n    return "test"'))
             const result = EditorContext.extractSingleCellContext(mockCodeCell, 'python')
