@@ -45,6 +45,7 @@ import { telemetry } from '../../shared/telemetry/telemetry'
 import { AuthSources } from './util'
 import { AuthFlowStates } from './vue/types'
 import { ExtensionUse } from '../../auth/utils'
+import { AuthUtil } from '../../codewhisperer/util/authUtil'
 
 export class CommonAuthViewProvider implements WebviewViewProvider {
     public readonly viewType: string
@@ -107,7 +108,7 @@ export class CommonAuthViewProvider implements WebviewViewProvider {
                 if (authState === AuthFlowStates.REAUTHNEEDED || authState === AuthFlowStates.REAUTHENTICATING) {
                     this.webView!.server.storeMetricMetadata({
                         isReAuth: true,
-                        // ...(await getTelemetryMetadataForConn(AuthUtil.instance.conn)), // TODO: @opieter Re-add telemetry
+                        ...(await AuthUtil.instance.getTelemetryMetadata()),
                     })
                 } else {
                     this.webView!.server.storeMetricMetadata({ isReAuth: false })
