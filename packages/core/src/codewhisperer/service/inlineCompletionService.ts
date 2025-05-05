@@ -167,6 +167,9 @@ export class InlineCompletionService {
     /** Updates the status bar to represent the latest CW state */
     refreshStatusBar() {
         if (AuthUtil.instance.isConnected()) {
+            if (AuthUtil.instance.regionProfileManager.requireProfileSelection()) {
+                return this.setState('needsProfile')
+            }
             return this.setState('ok')
         } else if (AuthUtil.instance.isConnectionExpired()) {
             return this.setState('expired')
@@ -193,6 +196,10 @@ export class InlineCompletionService {
                 await this.statusBar.setState('notConnected')
                 break
             }
+            case 'needsProfile': {
+                await this.statusBar.setState('needsProfile')
+                break
+            }
         }
     }
 }
@@ -203,6 +210,7 @@ const states = {
     ok: 'ok',
     expired: 'expired',
     notConnected: 'notConnected',
+    needsProfile: 'needsProfile',
 } as const
 
 export class CodeWhispererStatusBar {
@@ -245,6 +253,7 @@ export class CodeWhispererStatusBar {
                 statusBar.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground')
                 break
             }
+            case 'needsProfile':
             case 'notConnected':
                 statusBar.text = codicon` ${getIcon('vscode-chrome-close')} ${title}`
                 statusBar.backgroundColor = new vscode.ThemeColor('statusBarItem.errorBackground')

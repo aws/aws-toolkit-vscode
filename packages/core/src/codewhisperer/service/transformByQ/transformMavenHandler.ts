@@ -11,22 +11,20 @@ import { spawnSync } from 'child_process' // eslint-disable-line no-restricted-i
 import { CodeTransformBuildCommand, telemetry } from '../../../shared/telemetry/telemetry'
 import { CodeTransformTelemetryState } from '../../../amazonqGumby/telemetry/codeTransformTelemetryState'
 import { ToolkitError } from '../../../shared/errors'
-import { setMaven, writeLogs } from './transformFileHandler'
+import { setMaven } from './transformFileHandler'
 import { throwIfCancelled } from './transformApiHandler'
 import { sleep } from '../../../shared/utilities/timeoutUtils'
 
-// run 'install' with either 'mvnw.cmd', './mvnw', or 'mvn' (if wrapper exists, we use that, otherwise we use regular 'mvn')
 function installProjectDependencies(dependenciesFolder: FolderInfo, modulePath: string) {
     telemetry.codeTransform_localBuildProject.run(() => {
         telemetry.record({ codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId() })
 
-        // baseCommand will be one of: '.\mvnw.cmd', './mvnw', 'mvn'
+        // will always be 'mvn'
         const baseCommand = transformByQState.getMavenName()
 
-        transformByQState.appendToErrorLog(`Running command ${baseCommand} clean install`)
-
-        // Note: IntelliJ runs 'clean' separately from 'install'. Evaluate benefits (if any) of this.
         const args = [`-Dmaven.repo.local=${dependenciesFolder.path}`, 'clean', 'install', '-q']
+
+        transformByQState.appendToBuildLog(`Running ${baseCommand} ${args.join(' ')}`)
 
         if (transformByQState.getCustomBuildCommand() === CodeWhispererConstants.skipUnitTestsBuildCommand) {
             args.push('-DskipTests')
@@ -34,8 +32,8 @@ function installProjectDependencies(dependenciesFolder: FolderInfo, modulePath: 
 
         let environment = process.env
 
-        if (transformByQState.getJavaHome() !== undefined) {
-            environment = { ...process.env, JAVA_HOME: transformByQState.getJavaHome() }
+        if (transformByQState.getSourceJavaHome()) {
+            environment = { ...process.env, JAVA_HOME: transformByQState.getSourceJavaHome() }
         }
 
         const argString = args.join(' ')
@@ -47,36 +45,26 @@ function installProjectDependencies(dependenciesFolder: FolderInfo, modulePath: 
             maxBuffer: CodeWhispererConstants.maxBufferSize,
         })
 
-        let mavenBuildCommand = transformByQState.getMavenName()
-        // slashes not allowed in telemetry
-        if (mavenBuildCommand === './mvnw') {
-            mavenBuildCommand = 'mvnw'
-        } else if (mavenBuildCommand === '.\\mvnw.cmd') {
-            mavenBuildCommand = 'mvnw.cmd'
-        }
-
+        const mavenBuildCommand = transformByQState.getMavenName()
         telemetry.record({ codeTransformBuildCommand: mavenBuildCommand as CodeTransformBuildCommand })
 
         if (spawnResult.status !== 0) {
             let errorLog = ''
             errorLog += spawnResult.error ? JSON.stringify(spawnResult.error) : ''
             errorLog += `${spawnResult.stderr}\n${spawnResult.stdout}`
-            transformByQState.appendToErrorLog(`${baseCommand} ${argString} failed: \n ${errorLog}`)
+            transformByQState.appendToBuildLog(`${baseCommand} ${argString} failed: \n ${errorLog}`)
             getLogger().error(
-                `CodeTransformation: Error in running Maven ${argString} command ${baseCommand} = ${errorLog}`
+                `CodeTransformation: Error in running Maven command ${baseCommand} ${argString} = ${errorLog}`
             )
             throw new ToolkitError(`Maven ${argString} error`, { code: 'MavenExecutionError' })
         } else {
-            transformByQState.appendToErrorLog(`${baseCommand} ${argString} succeeded`)
+            transformByQState.appendToBuildLog(`mvn clean install succeeded`)
         }
     })
 }
 
 function copyProjectDependencies(dependenciesFolder: FolderInfo, modulePath: string) {
-    // baseCommand will be one of: '.\mvnw.cmd', './mvnw', 'mvn'
     const baseCommand = transformByQState.getMavenName()
-
-    transformByQState.appendToErrorLog(`Running command ${baseCommand} copy-dependencies`)
 
     const args = [
         'dependency:copy-dependencies',
@@ -88,8 +76,8 @@ function copyProjectDependencies(dependenciesFolder: FolderInfo, modulePath: str
     ]
 
     let environment = process.env
-    if (transformByQState.getJavaHome() !== undefined) {
-        environment = { ...process.env, JAVA_HOME: transformByQState.getJavaHome() }
+    if (transformByQState.getSourceJavaHome()) {
+        environment = { ...process.env, JAVA_HOME: transformByQState.getSourceJavaHome() }
     }
 
     const spawnResult = spawnSync(baseCommand, args, {
@@ -103,18 +91,15 @@ function copyProjectDependencies(dependenciesFolder: FolderInfo, modulePath: str
         let errorLog = ''
         errorLog += spawnResult.error ? JSON.stringify(spawnResult.error) : ''
         errorLog += `${spawnResult.stderr}\n${spawnResult.stdout}`
-        transformByQState.appendToErrorLog(`${baseCommand} copy-dependencies failed: \n ${errorLog}`)
         getLogger().info(
-            `CodeTransformation: Maven copy-dependencies command ${baseCommand} failed, but still continuing with transformation: ${errorLog}`
+            `CodeTransformation: Maven command ${baseCommand} ${args} failed, but still continuing with transformation: ${errorLog}`
         )
         throw new Error('Maven copy-deps error')
-    } else {
-        transformByQState.appendToErrorLog(`${baseCommand} copy-dependencies succeeded`)
     }
 }
 
 export async function prepareProjectDependencies(dependenciesFolder: FolderInfo, rootPomPath: string) {
-    await setMaven()
+    setMaven()
     getLogger().info('CodeTransformation: running Maven copy-dependencies')
     // pause to give chat time to update
     await sleep(100)
@@ -132,10 +117,6 @@ export async function prepareProjectDependencies(dependenciesFolder: FolderInfo,
         installProjectDependencies(dependenciesFolder, rootPomPath)
     } catch (err) {
         void vscode.window.showErrorMessage(CodeWhispererConstants.cleanInstallErrorNotification)
-        // open build-logs.txt file to show user error logs
-        const logFilePath = await writeLogs()
-        const doc = await vscode.workspace.openTextDocument(logFilePath)
-        await vscode.window.showTextDocument(doc)
         throw err
     }
 
@@ -144,7 +125,7 @@ export async function prepareProjectDependencies(dependenciesFolder: FolderInfo,
 }
 
 export async function getVersionData() {
-    const baseCommand = transformByQState.getMavenName() // will be one of: 'mvnw.cmd', './mvnw', 'mvn'
+    const baseCommand = transformByQState.getMavenName()
     const projectPath = transformByQState.getProjectPath()
     const args = ['-v']
     const spawnResult = spawnSync(baseCommand, args, { cwd: projectPath, shell: true, encoding: 'utf-8' })
@@ -174,12 +155,9 @@ export async function getVersionData() {
     return [localMavenVersion, localJavaVersion]
 }
 
-// run maven 'versions:dependency-updates-aggregate-report' with either 'mvnw.cmd', './mvnw', or 'mvn' (if wrapper exists, we use that, otherwise we use regular 'mvn')
 export function runMavenDependencyUpdateCommands(dependenciesFolder: FolderInfo) {
-    // baseCommand will be one of: '.\mvnw.cmd', './mvnw', 'mvn'
-    const baseCommand = transformByQState.getMavenName() // will be one of: 'mvnw.cmd', './mvnw', 'mvn'
+    const baseCommand = transformByQState.getMavenName()
 
-    // Note: IntelliJ runs 'clean' separately from 'install'. Evaluate benefits (if any) of this.
     const args = [
         'versions:dependency-updates-aggregate-report',
         `-DoutputDirectory=${dependenciesFolder.path}`,
@@ -188,9 +166,9 @@ export function runMavenDependencyUpdateCommands(dependenciesFolder: FolderInfo)
     ]
 
     let environment = process.env
-    // if JAVA_HOME not found or not matching project JDK, get user input for it and set here
-    if (transformByQState.getJavaHome() !== undefined) {
-        environment = { ...process.env, JAVA_HOME: transformByQState.getJavaHome() }
+
+    if (transformByQState.getSourceJavaHome()) {
+        environment = { ...process.env, JAVA_HOME: transformByQState.getSourceJavaHome() }
     }
 
     const spawnResult = spawnSync(baseCommand, args, {

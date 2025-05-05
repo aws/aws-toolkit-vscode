@@ -41,7 +41,7 @@ describe('cleanLSPDownloads', function () {
 
     it('keeps two newest versions', async function () {
         await fakeInstallVersions(['1.0.0', '1.0.1', '1.1.1', '2.1.1'], installationDir.fsPath)
-        const deleted = await cleanLspDownloads([], installationDir.fsPath)
+        const deleted = await cleanLspDownloads('2.1.1', [], installationDir.fsPath)
 
         const result = (await fs.readdir(installationDir.fsPath)).map(([filename, _filetype], _index) => filename)
         assert.strictEqual(result.length, 2)
@@ -53,6 +53,7 @@ describe('cleanLSPDownloads', function () {
     it('deletes delisted versions', async function () {
         await fakeInstallVersions(['1.0.0', '1.0.1', '1.1.1', '2.1.1'], installationDir.fsPath)
         const deleted = await cleanLspDownloads(
+            '2.1.1',
             [{ serverVersion: '1.1.1', isDelisted: true, targets: [] }],
             installationDir.fsPath
         )
@@ -67,6 +68,7 @@ describe('cleanLSPDownloads', function () {
     it('handles case where less than 2 versions are not delisted', async function () {
         await fakeInstallVersions(['1.0.0', '1.0.1', '1.1.1', '2.1.1'], installationDir.fsPath)
         const deleted = await cleanLspDownloads(
+            '1.0.1',
             [
                 { serverVersion: '1.1.1', isDelisted: true, targets: [] },
                 { serverVersion: '2.1.1', isDelisted: true, targets: [] },
@@ -83,7 +85,7 @@ describe('cleanLSPDownloads', function () {
 
     it('handles case where less than 2 versions exist', async function () {
         await fakeInstallVersions(['1.0.0'], installationDir.fsPath)
-        const deleted = await cleanLspDownloads([], installationDir.fsPath)
+        const deleted = await cleanLspDownloads('1.0.0', [], installationDir.fsPath)
 
         const result = (await fs.readdir(installationDir.fsPath)).map(([filename, _filetype], _index) => filename)
         assert.strictEqual(result.length, 1)
@@ -93,6 +95,7 @@ describe('cleanLSPDownloads', function () {
     it('does not install delisted version when no other option exists', async function () {
         await fakeInstallVersions(['1.0.0'], installationDir.fsPath)
         const deleted = await cleanLspDownloads(
+            '1.0.0',
             [{ serverVersion: '1.0.0', isDelisted: true, targets: [] }],
             installationDir.fsPath
         )
@@ -105,6 +108,7 @@ describe('cleanLSPDownloads', function () {
     it('ignores invalid versions', async function () {
         await fakeInstallVersions(['1.0.0', '.DS_STORE'], installationDir.fsPath)
         const deleted = await cleanLspDownloads(
+            '1.0.0',
             [{ serverVersion: '1.0.0', isDelisted: true, targets: [] }],
             installationDir.fsPath
         )

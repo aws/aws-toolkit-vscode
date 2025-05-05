@@ -22,6 +22,8 @@ import { isAwsError, ToolkitError } from '../../shared/errors'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { IAuthProvider } from '../util/authUtil'
+import { Commands } from '../../shared/vscode/commands2'
+import { CachedResource } from '../../shared/utilities/resourceCache'
 
 // TODO: is there a better way to manage all endpoint strings in one place?
 export const defaultServiceConfig: CodeWhispererConfig = {
@@ -51,7 +53,26 @@ export class RegionProfileManager {
     // Store the last API results (for UI propuse) so we don't need to call service again if doesn't require "latest" result
     private _profiles: RegionProfile[] = []
 
-    constructor(private readonly authProvider: IAuthProvider) {}
+    private readonly cache = new (class extends CachedResource<RegionProfile[]> {
+        constructor(private readonly profileProvider: () => Promise<RegionProfile[]>) {
+            super(
+                'aws.amazonq.regionProfiles.cache',
+                60000,
+                {
+                    resource: {
+                        locked: false,
+                        timestamp: 0,
+                        result: undefined,
+                    },
+                },
+                { timeout: 15000, interval: 1500, truthy: true }
+            )
+        }
+
+        override resourceProvider(): Promise<RegionProfile[]> {
+            return this.profileProvider()
+        }
+    })(this.listRegionProfile.bind(this))
 
     get activeRegionProfile() {
         if (this.authProvider.isBuilderIdConnection()) {
@@ -94,13 +115,21 @@ export class RegionProfileManager {
         return this._profiles
     }
 
-    async listRegionProfiles(): Promise<RegionProfile[]> {
+    constructor(private readonly authProvider: IAuthProvider) {}
+
+    async getProfiles(): Promise<RegionProfile[]> {
+        return this.cache.getResource()
+    }
+
+    async listRegionProfile(): Promise<RegionProfile[]> {
         this._profiles = []
 
         if (!this.authProvider.isConnected() || !this.authProvider.isSsoSession()) {
             return []
         }
         const availableProfiles: RegionProfile[] = []
+        const failedRegions: string[] = []
+
         for (const [region, endpoint] of endpoints.entries()) {
             const client = await this.createQClient(region, endpoint)
             const requester = async (request: CodeWhispererUserClient.ListAvailableProfilesRequest) =>
@@ -125,13 +154,17 @@ export class RegionProfileManager {
                 })
 
                 availableProfiles.push(...mappedPfs)
+                RegionProfileManager.logger.debug(`Found ${mappedPfs.length} profiles in region ${region}`)
             } catch (e) {
                 const logMsg = isAwsError(e) ? `requestId=${e.requestId}; message=${e.message}` : (e as Error).message
-                RegionProfileManager.logger.error(`failed to listRegionProfiles: ${logMsg}`)
-                throw e
+                RegionProfileManager.logger.error(`Failed to list profiles for region ${region}: ${logMsg}`)
+                failedRegions.push(region)
             }
+        }
 
-            RegionProfileManager.logger.info(`available amazonq profiles: ${availableProfiles.length}`)
+        // Only throw error if all regions fail
+        if (failedRegions.length === endpoints.size) {
+            throw new Error(`Failed to list profiles for all regions: ${failedRegions.join(', ')}`)
         }
 
         this._profiles = availableProfiles
@@ -204,6 +237,9 @@ export class RegionProfileManager {
 
         // persist to state
         await this.persistSelectRegionProfile()
+
+        // Force status bar to reflect this change in state
+        await Commands.tryExecute('aws.amazonq.refreshStatusBar')
     }
 
     restoreProfileSelection = once(async () => {
@@ -219,7 +255,7 @@ export class RegionProfileManager {
             return
         }
         // cross-validation
-        this.listRegionProfiles()
+        this.getProfiles()
             .then(async (profiles) => {
                 const r = profiles.find((it) => it.arn === previousSelected.arn)
                 if (!r) {
@@ -279,7 +315,7 @@ export class RegionProfileManager {
         const selected = this.activeRegionProfile
         let profiles: RegionProfile[] = []
         try {
-            profiles = await this.listRegionProfiles()
+            profiles = await this.getProfiles()
         } catch (e) {
             return [
                 {

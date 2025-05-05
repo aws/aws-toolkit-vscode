@@ -26,9 +26,7 @@ sequenceDiagram
 
 ## Language Server Debugging
 
-1. Clone https://github.com/aws/language-servers.git and set it up in the same workspace as this project
-
-    e.g.
+1. Clone https://github.com/aws/language-servers.git and set it up in the same workspace as this project by cmd+shift+p and "add folder to workspace" and selecting the language-servers folder that you just cloned. Your VS code folder structure should look like below.
 
     ```
     /aws-toolkit-vscode
@@ -52,9 +50,9 @@ sequenceDiagram
       "amazonqLSPChat": true // optional: enables chat from flare
     }
     ```
-4. Uncomment the `__AMAZONQLSP_PATH` variable in `amazonq/.vscode/launch.json` Extension configuration
-    1. Uncomment the `__AMAZONQLSP_UI` variable in `amazonq/.vscode/launch.json` Extension configuration if you want to debug the flare chat-client as well
+4. Uncomment the `__AMAZONQLSP_PATH` and `__AMAZONQLSP_UI` variables in the `amazonq/.vscode/launch.json` extension configuration
 5. Use the `Launch LSP with Debugging` configuration and set breakpoints in VSCode or the language server
+6. (Optional): Enable `"amazonq.trace.server": "on"` or `"amazonq.trace.server": "verbose"` in your VSCode settings to view detailed log messages sent to/from the language server. These log messages will show up in the "Amazon Q Language Server" output channel
 
 ## Amazon Q Inline Activation
 
