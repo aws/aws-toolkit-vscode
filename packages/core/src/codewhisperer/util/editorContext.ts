@@ -30,7 +30,7 @@ const languageCommentChars: Record<string, string> = {
     java: '// ',
 }
 
-export function extractSingleCellContext(cell: vscode.NotebookCell, referenceLanguage?: string): string {
+export function getNotebookCellContext(cell: vscode.NotebookCell, referenceLanguage?: string): string {
     // Extract the text verbatim if the cell is code and the cell has the same language.
     // Otherwise, add the correct comment string for the refeference language
     const cellText = cell.document.getText()
@@ -52,7 +52,7 @@ export function extractSingleCellContext(cell: vscode.NotebookCell, referenceLan
     return cellText
 }
 
-export function extractCellsSliceContext(
+export function getNotebookCellsSliceContext(
     cells: vscode.NotebookCell[],
     maxLength: number,
     referenceLanguage: string,
