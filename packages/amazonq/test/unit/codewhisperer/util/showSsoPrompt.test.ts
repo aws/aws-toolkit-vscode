@@ -13,7 +13,6 @@ import { SsoAccessTokenProvider, constants } from 'aws-core-vscode/auth'
 
 describe('showConnectionPrompt', function () {
     let isBuilderIdConnection: sinon.SinonStub
-    let useDeviceFlowStub: sinon.SinonStub
 
     beforeEach(async function () {
         await resetCodeWhispererGlobalVariables()
@@ -21,7 +20,7 @@ describe('showConnectionPrompt', function () {
         isBuilderIdConnection.resolves()
 
         // Stub useDeviceFlow so we always use DeviceFlow for auth
-        useDeviceFlowStub = sinon.stub(SsoAccessTokenProvider, 'useDeviceFlow').returns(true)
+        sinon.stub(SsoAccessTokenProvider, 'useDeviceFlow').returns(true)
     })
 
     afterEach(function () {
