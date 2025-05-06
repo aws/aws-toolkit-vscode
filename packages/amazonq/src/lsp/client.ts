@@ -26,6 +26,11 @@ import {
     ShowMessageRequest,
     ShowMessageRequestParams,
     ConnectionMetadata,
+    ShowDocumentRequest,
+    ShowDocumentParams,
+    ShowDocumentResult,
+    ResponseError,
+    LSPErrorCodes,
 } from '@aws/language-server-runtimes/protocol'
 import { AuthUtil, CodeWhispererSettings, getSelectedCustomization } from 'aws-core-vscode/codewhisperer'
 import {
@@ -41,9 +46,10 @@ import {
     isAmazonInternalOs,
     fs,
     oidcClientName,
+    openUrl,
 } from 'aws-core-vscode/shared'
 import { processUtils } from 'aws-core-vscode/shared'
-import { activate } from './chat/activation'
+import { activate as activateChat } from './chat/activation'
 import { AmazonQResourcePaths } from './lspInstaller'
 import { auth2 } from 'aws-core-vscode/auth'
 import { ConfigSection, isValidConfigSection, toAmazonQLSPLogLevel } from './config'
@@ -127,7 +133,7 @@ export async function startLanguageServer(
                     name: env.appName,
                     version: version,
                     extension: {
-                        name: clientName,
+                        name: 'AmazonQ-For-VSCode',
                         version: '0.0.1',
                     },
                     clientId: crypto.randomUUID(),
@@ -183,6 +189,31 @@ export async function startLanguageServer(
             const actions = params.actions?.map((a) => a.title) ?? []
             const response = await vscode.window.showInformationMessage(params.message, { modal: true }, ...actions)
             return params.actions?.find((a) => a.title === response) ?? (undefined as unknown as null)
+        }
+    )
+
+    client.onRequest<ShowDocumentParams, ShowDocumentResult>(
+        ShowDocumentRequest.method,
+        async (params: ShowDocumentParams): Promise<ShowDocumentParams | ResponseError<ShowDocumentResult>> => {
+            try {
+                const uri = vscode.Uri.parse(params.uri)
+                if (uri.scheme.startsWith('http')) {
+                    try {
+                        await openUrl(vscode.Uri.parse(params.uri))
+                        return params
+                    } catch (err: any) {
+                        getLogger().error(`Failed to open http from LSP: error: %s`, err)
+                    }
+                }
+                const doc = await vscode.workspace.openTextDocument(uri)
+                await vscode.window.showTextDocument(doc, { preview: false })
+                return params
+            } catch (e) {
+                return new ResponseError(
+                    LSPErrorCodes.RequestFailed,
+                    `Failed to open document: ${(e as Error).message}`
+                )
+            }
         }
     )
 
@@ -251,7 +282,7 @@ export async function startLanguageServer(
         )
     }
 
-    await activate(client, encryptionKey, resourcePaths.ui)
+    await activateChat(client, encryptionKey, resourcePaths.ui)
 
     toDispose.push(
         AuthUtil.instance.regionProfileManager.onDidChangeRegionProfile(sendProfileToLsp),
