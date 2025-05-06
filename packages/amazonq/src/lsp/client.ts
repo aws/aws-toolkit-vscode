@@ -26,9 +26,6 @@ import {
     ShowMessageRequest,
     ShowMessageRequestParams,
     ConnectionMetadata,
-    // ShowDocumentResult,
-    // ShowDocumentRequest,
-    // ShowDocumentParams,
 } from '@aws/language-server-runtimes/protocol'
 import { AuthUtil, CodeWhispererSettings, getSelectedCustomization } from 'aws-core-vscode/codewhisperer'
 import {
@@ -44,7 +41,6 @@ import {
     isAmazonInternalOs,
     fs,
     oidcClientName,
-    //openUrl,
 } from 'aws-core-vscode/shared'
 import { processUtils } from 'aws-core-vscode/shared'
 import { activate } from './chat/activation'
@@ -189,15 +185,6 @@ export async function startLanguageServer(
             return params.actions?.find((a) => a.title === response) ?? (undefined as unknown as null)
         }
     )
-
-    // client.onRequest<ShowDocumentResult, Error>(ShowDocumentRequest.method, async (params: ShowDocumentParams) => {
-    //     try {
-    //         return { success: await openUrl(vscode.Uri.parse(params.uri), lspName) }
-    //     } catch (err: any) {
-    //         getLogger().error(`Failed to open document for LSP: ${lspName}, error: %s`, err)
-    //         return { success: false }
-    //     }
-    // })
 
     const sendProfileToLsp = async () => {
         try {
