@@ -32,6 +32,7 @@ import {
     ReferenceLogViewProvider,
     ImportAdderProvider,
     CodeSuggestionsState,
+    TelemetryHelper,
 } from 'aws-core-vscode/codewhisperer'
 
 export class InlineCompletionManager implements Disposable {
@@ -187,6 +188,8 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
                 // return early when suggestions are disabled with auto trigger
                 return []
             }
+
+            TelemetryHelper.instance.setInvokeSuggestionStartTime()
 
             // make service requests if it's a new session
             await this.recommendationService.getAllRecommendations(
