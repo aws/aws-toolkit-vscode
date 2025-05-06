@@ -88,6 +88,9 @@ export class AuthUtil implements IAuthProvider {
 
     async restore() {
         await this.session.restore()
+        if (!this.isConnected()) {
+            await this.refreshState()
+        }
     }
 
     async login(startUrl: string, region: string) {
