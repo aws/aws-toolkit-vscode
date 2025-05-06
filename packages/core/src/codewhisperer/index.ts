@@ -9,13 +9,6 @@ export * from './models/model'
 export * from './models/constants'
 export * from './commands/basicCommands'
 export * from './commands/types'
-export {
-    AutotriggerState,
-    EndState,
-    ManualtriggerState,
-    PressTabState,
-    TryMoreExState,
-} from './views/lineAnnotationController'
 export type {
     TransformationProgressUpdate,
     TransformationStep,
@@ -53,22 +46,15 @@ export {
     IssueItem,
     SeverityItem,
 } from './service/securityIssueTreeViewProvider'
-export { invokeRecommendation } from './commands/invokeRecommendation'
-export { onAcceptance } from './commands/onAcceptance'
 export { CodeWhispererTracker } from './tracker/codewhispererTracker'
-export { RecommendationHandler } from './service/recommendationHandler'
 export { CodeWhispererUserGroupSettings } from './util/userGroupUtil'
 export { session } from './util/codeWhispererSession'
-export { onInlineAcceptance } from './commands/onInlineAcceptance'
 export { stopTransformByQ } from './commands/startTransformByQ'
-export { getCompletionItems, getCompletionItem, getLabel } from './service/completionProvider'
 export { featureDefinitions, FeatureConfigProvider } from '../shared/featureConfig'
 export { ReferenceInlineProvider } from './service/referenceInlineProvider'
 export { ReferenceHoverProvider } from './service/referenceHoverProvider'
 export { CWInlineCompletionItemProvider } from './service/inlineCompletionItemProvider'
-export { RecommendationService } from './service/recommendationService'
 export { ClassifierTrigger } from './service/classifierTrigger'
-export { DocumentChangedSource, KeyStrokeHandler, DefaultDocumentChangedType } from './service/keyStrokeHandler'
 export { ReferenceLogViewProvider } from './service/referenceLogViewProvider'
 export { ImportAdderProvider } from './service/importAdderProvider'
 export { LicenseUtil } from './util/licenseUtil'
