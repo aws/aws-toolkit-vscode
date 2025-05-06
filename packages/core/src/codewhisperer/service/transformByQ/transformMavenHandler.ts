@@ -49,7 +49,7 @@ function collectDependenciesAndMetadata(dependenciesFolderPath: string, workingD
         let errorLog = ''
         errorLog += spawnResult.error ? JSON.stringify(spawnResult.error) : ''
         errorLog += `${spawnResult.stderr}\n${spawnResult.stdout}`
-        errorLog = errorLog.toLowerCase().replace(/elastic\s*gumby/, 'QCT')
+        errorLog = errorLog.toLowerCase().replace('elasticgumby', 'QCT')
         transformByQState.appendToBuildLog(`mvn clean test-compile with maven JAR failed:\n${errorLog}`)
         getLogger().error(`CodeTransformation: Error in running mvn clean test-compile with maven JAR = ${errorLog}`)
         throw new Error('mvn clean test-compile with maven JAR failed')
