@@ -3,13 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { CredentialsStore, LoginManager, authUtils, initializeAuth } from 'aws-core-vscode/auth'
-import { Auth, AuthUtils, CredentialsStore, LoginManager, initializeAuth } from 'aws-core-vscode/auth'
-import {
-    activate as activateCodeWhisperer,
-    AuthUtil,
-    shutdown as shutdownCodeWhisperer,
-} from 'aws-core-vscode/codewhisperer'
+import { authUtils, CredentialsStore, LoginManager, initializeAuth } from 'aws-core-vscode/auth'
+import { activate as activateCodeWhisperer, shutdown as shutdownCodeWhisperer } from 'aws-core-vscode/codewhisperer'
 import { makeEndpointsProvider, registerGenericCommands } from 'aws-core-vscode'
 import { CommonAuthWebview } from 'aws-core-vscode/login'
 import {
@@ -39,7 +34,6 @@ import {
     Experiments,
     isSageMaker,
     Commands,
-    isAmazonInternalOs,
 } from 'aws-core-vscode/shared'
 import { ExtStartUpSources } from 'aws-core-vscode/telemetry'
 import { VSCODE_EXTENSION_ID } from 'aws-core-vscode/utils'
@@ -50,8 +44,6 @@ import { registerCommands } from './commands'
 import { focusAmazonQPanel } from 'aws-core-vscode/codewhispererChat'
 import { activate as activateAmazonqLsp } from './lsp/activation'
 import { activate as activateInlineCompletion } from './app/inline/activation'
-import { isAmazonInternalOs } from 'aws-core-vscode/shared'
-import { hasGlibcPatch } from './lsp/client'
 
 export const amazonQContextPrefix = 'amazonq'
 
@@ -127,17 +119,12 @@ export async function activateAmazonQCommon(context: vscode.ExtensionContext, is
         extensionContext: context,
     }
 
+    // Auth is dependent on LSP, needs to be activated before CW and Inline
+    await activateAmazonqLsp(context)
+
     // This contains every lsp agnostic things (auth, security scan, code scan)
     await activateCodeWhisperer(extContext as ExtContext)
 
-    if (
-        (Experiments.instance.get('amazonqLSP', true) || AuthUtil.instance.isInternalAmazonUser()) &&
-        (!isAmazonInternalOs() || (await hasGlibcPatch()))
-    ) {
-        // start the Amazon Q LSP for internal users first
-        // for AL2, start LSP if glibc patch is found
-        await activateAmazonqLsp(context)
-    }
     if (!Experiments.instance.get('amazonqLSPInline', false)) {
         await activateInlineCompletion()
     }

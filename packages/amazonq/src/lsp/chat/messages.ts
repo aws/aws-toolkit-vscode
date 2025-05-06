@@ -58,7 +58,7 @@ import { Disposable, LanguageClient, Position, TextDocumentIdentifier } from 'vs
 import * as jose from 'jose'
 import { AmazonQChatViewProvider } from './webviewProvider'
 import { AuthUtil, ReferenceLogViewProvider } from 'aws-core-vscode/codewhisperer'
-import { amazonQDiffScheme, AmazonQPromptSettings, messages, openUrl } from 'aws-core-vscode/shared'
+import { amazonQDiffScheme, AmazonQPromptSettings, getLogger, messages, openUrl } from 'aws-core-vscode/shared'
 import {
     DefaultAmazonQAppInitContext,
     messageDispatcher,
@@ -428,6 +428,14 @@ export function registerMessageListeners(
         async (params: ShowDocumentParams): Promise<ShowDocumentParams | ResponseError<ShowDocumentResult>> => {
             try {
                 const uri = vscode.Uri.parse(params.uri)
+                if (uri.scheme.startsWith('http')) {
+                    try {
+                        await openUrl(vscode.Uri.parse(params.uri))
+                        return params
+                    } catch (err: any) {
+                        getLogger().error(`Failed to open http from LSP: error: %s`, err)
+                    }
+                }
                 const doc = await vscode.workspace.openTextDocument(uri)
                 await vscode.window.showTextDocument(doc, { preview: false })
                 return params

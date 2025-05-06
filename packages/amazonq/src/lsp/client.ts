@@ -23,12 +23,12 @@ import {
     GetSsoTokenProgressToken,
     GetSsoTokenProgressType,
     MessageActionItem,
-    ShowDocumentParams,
-    ShowDocumentRequest,
-    ShowDocumentResult,
     ShowMessageRequest,
     ShowMessageRequestParams,
     ConnectionMetadata,
+    // ShowDocumentResult,
+    // ShowDocumentRequest,
+    // ShowDocumentParams,
 } from '@aws/language-server-runtimes/protocol'
 import { AuthUtil, CodeWhispererSettings, getSelectedCustomization } from 'aws-core-vscode/codewhisperer'
 import {
@@ -37,7 +37,6 @@ import {
     globals,
     Experiments,
     Commands,
-    openUrl,
     validateNodeExe,
     getLogger,
     undefinedIfEmpty,
@@ -45,6 +44,7 @@ import {
     isAmazonInternalOs,
     fs,
     oidcClientName,
+    //openUrl,
 } from 'aws-core-vscode/shared'
 import { processUtils } from 'aws-core-vscode/shared'
 import { activate } from './chat/activation'
@@ -131,7 +131,7 @@ export async function startLanguageServer(
                     name: env.appName,
                     version: version,
                     extension: {
-                        name: 'AmazonQ-For-VSCode',
+                        name: clientName,
                         version: '0.0.1',
                     },
                     clientId: crypto.randomUUID(),
@@ -143,9 +143,6 @@ export async function startLanguageServer(
                     window: {
                         notifications: true,
                         showSaveFileDialog: true,
-                    },
-                    q: {
-                        developerProfiles: true,
                     },
                 },
                 logLevel: toAmazonQLSPLogLevel(globals.logOutputChannel.logLevel),
@@ -173,6 +170,7 @@ export async function startLanguageServer(
     toDispose.push(disposable)
 
     await client.onReady()
+    AuthUtil.create(new auth2.LanguageClientAuth(client, clientId, encryptionKey))
 
     // Request handler for when the server wants to know about the clients auth connnection. Must be registered before the initial auth init call
     client.onRequest<ConnectionMetadata, Error>(auth2.notificationTypes.getConnectionMetadata.method, () => {
@@ -180,15 +178,6 @@ export async function startLanguageServer(
             sso: {
                 startUrl: AuthUtil.instance.connection?.startUrl,
             },
-        }
-    })
-
-    client.onRequest<ShowDocumentResult, Error>(ShowDocumentRequest.method, async (params: ShowDocumentParams) => {
-        try {
-            return { success: await openUrl(vscode.Uri.parse(params.uri), lspName) }
-        } catch (err: any) {
-            getLogger().error(`Failed to open document for LSP: ${lspName}, error: %s`, err)
-            return { success: false }
         }
     })
 
@@ -200,6 +189,15 @@ export async function startLanguageServer(
             return params.actions?.find((a) => a.title === response) ?? (undefined as unknown as null)
         }
     )
+
+    // client.onRequest<ShowDocumentResult, Error>(ShowDocumentRequest.method, async (params: ShowDocumentParams) => {
+    //     try {
+    //         return { success: await openUrl(vscode.Uri.parse(params.uri), lspName) }
+    //     } catch (err: any) {
+    //         getLogger().error(`Failed to open document for LSP: ${lspName}, error: %s`, err)
+    //         return { success: false }
+    //     }
+    // })
 
     const sendProfileToLsp = async () => {
         try {
@@ -266,9 +264,7 @@ export async function startLanguageServer(
         )
     }
 
-    if (Experiments.instance.get('amazonqChatLSP', false)) {
-        activate(client, encryptionKey, resourcePaths.ui)
-    }
+    activate(client, encryptionKey, resourcePaths.ui)
 
     toDispose.push(
         AuthUtil.instance.regionProfileManager.onDidChangeRegionProfile(sendProfileToLsp),
