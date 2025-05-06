@@ -1,0 +1,14 @@
+{
+	"date": "2025-05-05",
+	"version": "1.65.0",
+	"entries": [
+		{
+			"type": "Feature",
+			"description": "Support selecting customizations across all Q profiles with automatic profile switching for enterprise users"
+		},
+		{
+			"type": "Feature",
+			"description": "Memorize and autofill users' last Sso login profile"
+		}
+	]
+}
