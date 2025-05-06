@@ -175,6 +175,19 @@ export function createGettingStarted(): DataQuickPickItem<'gettingStarted'> {
     } as DataQuickPickItem<'gettingStarted'>
 }
 
+export function createManageSubscription(): DataQuickPickItem<'manageSubscription'> {
+    const label = localize('AWS.command.manageSubscription', 'Manage Subscription')
+    // const kind = AuthUtil.instance.isBuilderIdInUse() ? 'AWS Builder ID' : 'IAM Identity Center'
+
+    return {
+        data: 'manageSubscription',
+        label: label,
+        iconPath: getIcon('vscode-link-external'),
+        // TODO
+        onClick: () => Commands.tryExecute('aws.amazonq.manageSubscription'),
+    } as DataQuickPickItem<'manageSubscription'>
+}
+
 export function createSignout(): DataQuickPickItem<'signout'> {
     const label = localize('AWS.codewhisperer.signoutNode.label', 'Sign Out')
     const icon = getIcon('vscode-export')

@@ -393,6 +393,11 @@
                     "group": "1_amazonQ@1"
                 },
                 {
+                    "command": "aws.amazonq.manageSubscription",
+                    "when": "(view == aws.amazonq.AmazonQChatView) && aws.codewhisperer.connected",
+                    "group": "2_amazonQ@4"
+                },
+                {
                     "command": "aws.amazonq.signout",
                     "when": "(view == aws.amazonq.AmazonQChatView) && aws.codewhisperer.connected && !aws.isSageMakerUnifiedStudio",
                     "group": "2_amazonQ@4"
@@ -672,6 +677,13 @@
                 "title": "%AWS.command.codewhisperer.introduction%",
                 "category": "%AWS.amazonq.title%",
                 "icon": "$(question)"
+            },
+            {
+                "command": "aws.amazonq.manageSubscription",
+                "title": "%AWS.command.manageSubscription%",
+                "category": "%AWS.amazonq.title%",
+                "icon": "$(gear)",
+                "enablement": "aws.codewhisperer.connected"
             },
             {
                 "command": "aws.amazonq.signout",
