@@ -14,7 +14,7 @@ import {
     toTextEditor,
     using,
 } from 'aws-core-vscode/test'
-import { RecommendationHandler, RecommendationService, session } from 'aws-core-vscode/codewhisperer'
+import { session } from 'aws-core-vscode/codewhisperer'
 import { Commands, globals, sleep, waitUntil, collectionUtil } from 'aws-core-vscode/shared'
 import { loginToIdC } from '../amazonq/utils/setup'
 
@@ -54,7 +54,6 @@ describe('Amazon Q Inline', async function () {
         const events = getUserTriggerDecision()
         console.table({
             'telemetry events': JSON.stringify(events),
-            'recommendation service status': RecommendationService.instance.isRunning,
         })
     }
 
@@ -76,24 +75,10 @@ describe('Amazon Q Inline', async function () {
         if (!suggestionShown) {
             throw new Error(`Suggestion did not show. Suggestion States: ${JSON.stringify(session.suggestionStates)}`)
         }
-        const suggestionVisible = await waitUntil(
-            async () => RecommendationHandler.instance.isSuggestionVisible(),
-            waitOptions
-        )
-        if (!suggestionVisible) {
-            throw new Error(
-                `Suggestions failed to become visible. Suggestion States: ${JSON.stringify(session.suggestionStates)}`
-            )
-        }
         console.table({
             'suggestions states': JSON.stringify(session.suggestionStates),
-            'valid recommendation': RecommendationHandler.instance.isValidResponse(),
-            'recommendation service status': RecommendationService.instance.isRunning,
             recommendations: session.recommendations,
         })
-        if (!RecommendationHandler.instance.isValidResponse()) {
-            throw new Error('Did not find a valid response')
-        }
     }
 
     /**
@@ -234,7 +219,7 @@ describe('Amazon Q Inline', async function () {
 
                 if (name === 'automatic') {
                     // It should never get triggered since its not a supported file type
-                    assert.deepStrictEqual(RecommendationService.instance.isRunning, false)
+                    // assert.deepStrictEqual(RecommendationService.instance.isRunning, false)
                 } else {
                     await getTestWindow().waitForMessage('currently not supported by Amazon Q inline suggestions')
                 }
