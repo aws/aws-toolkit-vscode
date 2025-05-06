@@ -36,6 +36,7 @@ import {
 import { InlineGeneratingMessage } from './inlineGeneratingMessage'
 import { LineTracker } from './stateTracker/lineTracker'
 import { InlineTutorialAnnotation } from './tutorials/inlineTutorialAnnotation'
+import { TelemetryHelper } from './telemetryHelper'
 
 export class InlineCompletionManager implements Disposable {
     private disposable: Disposable
@@ -212,6 +213,8 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
 
             // tell the tutorial that completions has been triggered
             await this.inlineTutorialAnnotation.triggered(context.triggerKind)
+            TelemetryHelper.instance.setInvokeSuggestionStartTime()
+            TelemetryHelper.instance.setTriggerType(context.triggerKind)
 
             // make service requests if it's a new session
             await this.recommendationService.getAllRecommendations(
