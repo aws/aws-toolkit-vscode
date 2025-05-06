@@ -108,8 +108,8 @@
                     @toggle="toggleItemSelection"
                     :isSelected="selectedLoginOption === LoginOption.BUILDER_ID"
                     :itemId="LoginOption.BUILDER_ID"
-                    :itemText="'with Builder ID, a personal profile from AWS'"
-                    :itemTitle="'Use for Free'"
+                    :itemText="'Free to start with a Builder ID.'"
+                    :itemTitle="'Personal account'"
                     :itemType="LoginOption.BUILDER_ID"
                     class="selectable-item bottomMargin"
                 ></SelectableItem>
@@ -118,8 +118,8 @@
                     @toggle="toggleItemSelection"
                     :isSelected="selectedLoginOption === LoginOption.ENTERPRISE_SSO"
                     :itemId="LoginOption.ENTERPRISE_SSO"
-                    :itemText="''"
-                    :itemTitle="'Use with Pro license'"
+                    :itemText="'Best for individual teams or organizations.'"
+                    :itemTitle="'Company account'"
                     :itemType="LoginOption.ENTERPRISE_SSO"
                     class="selectable-item bottomMargin"
                 ></SelectableItem>
