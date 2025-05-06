@@ -5,8 +5,6 @@
 
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-import { getTabSizeSetting } from '../shared/utilities/editorUtilities'
-import * as EditorContext from './util/editorContext'
 import * as CodeWhispererConstants from './models/constants'
 import {
     CodeSuggestionsState,
@@ -143,10 +141,6 @@ export async function activate(context: ExtContext): Promise<void> {
          * Configuration change
          */
         vscode.workspace.onDidChangeConfiguration(async (configurationChangeEvent) => {
-            if (configurationChangeEvent.affectsConfiguration('editor.tabSize')) {
-                EditorContext.updateTabSize(getTabSizeSetting())
-            }
-
             if (configurationChangeEvent.affectsConfiguration('amazonQ.showCodeWithReferences')) {
                 ReferenceLogViewProvider.instance.update()
                 if (auth.isEnterpriseSsoInUse()) {

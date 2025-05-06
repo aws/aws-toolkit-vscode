@@ -6,7 +6,6 @@
 import vscode from 'vscode'
 import {
     AuthUtil,
-    CodeWhispererCodeCoverageTracker,
     CodeWhispererConstants,
     isInlineCompletionEnabled,
     runtimeLanguageContext,
@@ -39,7 +38,6 @@ export async function activate() {
                     return
                 }
 
-                CodeWhispererCodeCoverageTracker.getTracker(e.document.languageId)?.countTotalTokens(e)
                 UserWrittenCodeTracker.instance.onTextDocumentChange(e)
                 /**
                  * Handle this keystroke event only when
