@@ -21,7 +21,9 @@ export const amazonqSettings = {
         "ssoCacheError": {},
         "amazonQLspManifestMessage": {},
         "amazonQWorkspaceLspManifestMessage": {},
-        "amazonQChatDisclaimer": {}
+        "amazonQChatDisclaimer": {},
+        "amazonQChatPairProgramming": {},
+        "amazonQSelectDeveloperProfile": {}
     },
     "amazonQ.showCodeWithReferences": {},
     "amazonQ.allowFeatureDevelopmentToRunCodeAndTests": {},
@@ -31,6 +33,9 @@ export const amazonqSettings = {
     "amazonQ.workspaceIndexWorkerThreads": {},
     "amazonQ.workspaceIndexUseGPU": {},
     "amazonQ.workspaceIndexMaxSize": {},
+    "amazonQ.workspaceIndexMaxFileSize": {},
+    "amazonQ.workspaceIndexCacheDirPath": {},
+    "amazonQ.workspaceIndexIgnoreFilePatterns": {},
     "amazonQ.ignoredSecurityIssues": {}
 }
 

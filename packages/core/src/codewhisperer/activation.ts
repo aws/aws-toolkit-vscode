@@ -95,6 +95,7 @@ import { SecurityIssueTreeViewProvider } from './service/securityIssueTreeViewPr
 import { setContext } from '../shared/vscode/setContext'
 import { syncSecurityIssueWebview } from './views/securityIssue/securityIssueWebview'
 import { detectCommentAboveLine } from '../shared/utilities/commentUtils'
+import { notifySelectDeveloperProfile } from './region/utils'
 
 let localize: nls.LocalizeFunc
 
@@ -103,8 +104,6 @@ export async function activate(context: ExtContext): Promise<void> {
 
     // Import old CodeWhisperer settings into Amazon Q
     await CodeWhispererSettings.instance.importSettings()
-
-    const auth = AuthUtil.instance
 
     // TODO: is this indirection useful?
     registerDeclaredCommands(
@@ -156,7 +155,7 @@ export async function activate(context: ExtContext): Promise<void> {
 
             if (configurationChangeEvent.affectsConfiguration('amazonQ.showCodeWithReferences')) {
                 ReferenceLogViewProvider.instance.update()
-                if (auth.isIdcConnection()) {
+                if (AuthUtil.instance.isIdcConnection()) {
                     await vscode.window
                         .showInformationMessage(
                             CodeWhispererConstants.ssoConfigAlertMessage,
@@ -171,7 +170,7 @@ export async function activate(context: ExtContext): Promise<void> {
             }
 
             if (configurationChangeEvent.affectsConfiguration('amazonQ.shareContentWithAWS')) {
-                if (auth.isIdcConnection()) {
+                if (AuthUtil.instance.isIdcConnection()) {
                     await vscode.window
                         .showInformationMessage(
                             CodeWhispererConstants.ssoConfigAlertMessageShareData,
@@ -341,7 +340,7 @@ export async function activate(context: ExtContext): Promise<void> {
             SecurityIssueCodeActionProvider.instance
         ),
         vscode.commands.registerCommand('aws.amazonq.openEditorAtRange', openEditorAtRange),
-        auth.regionProfileManager.onDidChangeRegionProfile(() => {
+        AuthUtil.instance.regionProfileManager.onDidChangeRegionProfile(() => {
             // Validate user still has access to the selected customization.
             const selectedCustomization = getSelectedCustomization()
             // No need to validate base customization which has empty arn.
@@ -366,23 +365,27 @@ export async function activate(context: ExtContext): Promise<void> {
     // run the auth startup code with context for telemetry
     await telemetry.function_call.run(
         async () => {
-            if (auth.isConnectionExpired()) {
-                auth.showReauthenticatePrompt().catch((e) => {
+            if (AuthUtil.instance.isConnectionExpired()) {
+                AuthUtil.instance.showReauthenticatePrompt().catch((e) => {
                     const defaulMsg = localize('AWS.generic.message.error', 'Failed to reauth:')
                     void logAndShowError(localize, e, 'showReauthenticatePrompt', defaulMsg)
                 })
-                if (auth.isIdcConnection()) {
-                    await auth.notifySessionConfiguration()
+                if (AuthUtil.instance.isIdcConnection()) {
+                    await AuthUtil.instance.notifySessionConfiguration()
                 }
+            }
+
+            if (AuthUtil.instance.regionProfileManager.requireProfileSelection()) {
+                await notifySelectDeveloperProfile()
             }
         },
         { emit: false, functionId: { name: 'activateCwCore' } }
     )
 
-    if (auth.isIdcConnection() && auth.isConnected()) {
+    if (AuthUtil.instance.isIdcConnection() && AuthUtil.instance.isConnected()) {
         await notifyNewCustomizations()
     }
-    if (auth.isBuilderIdConnection()) {
+    if (AuthUtil.instance.isBuilderIdConnection()) {
         await CodeScansState.instance.setScansEnabled(false)
     }
 
@@ -397,8 +400,8 @@ export async function activate(context: ExtContext): Promise<void> {
         return (
             (isScansEnabled ?? CodeScansState.instance.isScansEnabled()) &&
             !CodeScansState.instance.isMonthlyQuotaExceeded() &&
-            auth.isConnected() &&
-            !auth.isBuilderIdConnection() &&
+            AuthUtil.instance.isConnected() &&
+            !AuthUtil.instance.isBuilderIdConnection() &&
             editor &&
             editor.document.uri.scheme === 'file' &&
             securityScanLanguageContext.isLanguageSupported(editor.document.languageId)

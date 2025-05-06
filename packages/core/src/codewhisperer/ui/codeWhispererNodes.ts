@@ -21,7 +21,7 @@ import {
     selectRegionProfileCommand,
 } from '../commands/basicCommands'
 import { CodeWhispererCommandDeclarations } from '../commands/gettingStartedPageCommands'
-import { CodeScansState, codeScanState } from '../models/model'
+import { CodeScansState, codeScanState, RegionProfile } from '../models/model'
 import { getNewCustomizationsAvailable, getSelectedCustomization } from '../util/customizationUtil'
 import { cwQuickPickSource } from '../commands/types'
 import { AuthUtil } from '../util/authUtil'
@@ -139,12 +139,16 @@ export function createSelectCustomization(): DataQuickPickItem<'selectCustomizat
     } as DataQuickPickItem<'selectCustomization'>
 }
 
-export function createSelectRegionProfileNode(): DataQuickPickItem<'selectRegionProfile'> {
-    const selectedRegionProfile = AuthUtil.instance.regionProfileManager.activeRegionProfile
+export function createSelectRegionProfileNode(
+    profile: RegionProfile | undefined
+): DataQuickPickItem<'selectRegionProfile'> {
+    const selectedRegionProfile = profile
 
-    const label = 'Change Profile'
+    const label = profile ? 'Change Profile' : '(Required) Select Profile'
     const icon = getIcon('vscode-arrow-swap')
-    const description = selectedRegionProfile ? `Current profile: ${selectedRegionProfile.name}` : ''
+    const description = selectedRegionProfile
+        ? `Current profile: ${selectedRegionProfile.name}`
+        : 'A profile MUST be selected for features to work'
 
     return {
         data: 'selectRegionProfile',
@@ -153,6 +157,7 @@ export function createSelectRegionProfileNode(): DataQuickPickItem<'selectRegion
             await selectRegionProfileCommand.execute(placeholder, cwQuickPickSource)
         },
         description: description,
+        picked: profile === undefined,
     }
 }
 

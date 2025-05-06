@@ -26,7 +26,7 @@ import { setContext } from '../../shared/vscode/setContext'
 import { openUrl } from '../../shared/utilities/vsCodeUtils'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { AuthStateEvent, LanguageClientAuth, LoginTypes, SsoLogin } from '../../auth/auth2'
-import { builderIdStartUrl } from '../../auth/sso/constants'
+import { builderIdStartUrl, internalStartUrl } from '../../auth/sso/constants'
 import { VSCODE_EXTENSION_ID } from '../../shared/extensions'
 import { RegionProfileManager } from '../region/regionProfileManager'
 import { AuthFormId } from '../../login/webview/vue/types'
@@ -146,6 +146,10 @@ export class AuthUtil implements IAuthProvider {
         return Boolean(this.connection?.startUrl && this.connection?.startUrl !== builderIdStartUrl)
     }
 
+    isInternalAmazonUser(): boolean {
+        return this.isConnected() && this.connection?.startUrl === internalStartUrl
+    }
+
     onDidChangeConnectionState(handler: (e: AuthStateEvent) => any) {
         return this.session.onDidChangeConnectionState(handler)
     }
@@ -247,6 +251,7 @@ export class AuthUtil implements IAuthProvider {
         if (state === 'expired' || state === 'notConnected') {
             if (this.isIdcConnection()) {
                 await this.regionProfileManager.invalidateProfile(this.regionProfileManager.activeRegionProfile?.arn)
+                await this.regionProfileManager.clearCache()
             }
             this.lspAuth.deleteBearerToken()
         }

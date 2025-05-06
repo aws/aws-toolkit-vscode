@@ -4,46 +4,32 @@
  */
 
 import * as vscode from 'vscode'
-import { ExtensionContext, window } from 'vscode'
+import { ExtensionContext } from 'vscode'
 import { telemetry } from 'aws-core-vscode/telemetry'
 import { AuthUtil, CodeWhispererSettings } from 'aws-core-vscode/codewhisperer'
 import { Commands, placeholder, funcUtil } from 'aws-core-vscode/shared'
 import * as amazonq from 'aws-core-vscode/amazonq'
-import { scanChatAppInit } from '../amazonqScan'
 
 export async function activate(context: ExtensionContext) {
     const appInitContext = amazonq.DefaultAmazonQAppInitContext.instance
-
-    registerApps(appInitContext, context)
-
-    const provider = new amazonq.AmazonQChatViewProvider(
-        context,
-        appInitContext.getWebViewToAppsMessagePublishers(),
-        appInitContext.getAppsToWebViewMessageListener(),
-        appInitContext.onDidChangeAmazonQVisibility
-    )
-
     await amazonq.TryChatCodeLensProvider.register(appInitContext.onDidChangeAmazonQVisibility.event)
 
     const setupLsp = funcUtil.debounce(async () => {
         void amazonq.LspController.instance.trySetupLsp(context, {
             startUrl: AuthUtil.instance.connection?.startUrl,
             maxIndexSize: CodeWhispererSettings.instance.getMaxIndexSize(),
-            isVectorIndexEnabled: CodeWhispererSettings.instance.isLocalIndexEnabled(),
+            isVectorIndexEnabled: false,
         })
     }, 5000)
 
     context.subscriptions.push(
-        window.registerWebviewViewProvider(amazonq.AmazonQChatViewProvider.viewType, provider, {
-            webviewOptions: {
-                retainContextWhenHidden: true,
-            },
-        }),
         amazonq.focusAmazonQChatWalkthrough.register(),
         amazonq.walkthroughInlineSuggestionsExample.register(),
         amazonq.walkthroughSecurityScanExample.register(),
         amazonq.openAmazonQWalkthrough.register(),
         amazonq.listCodeWhispererCommandsWalkthrough.register(),
+        amazonq.focusAmazonQPanel.register(),
+        amazonq.focusAmazonQPanelKeybinding.register(),
         amazonq.tryChatCodeLensCommand.register(),
         vscode.workspace.onDidChangeConfiguration(async (configurationChangeEvent) => {
             if (configurationChangeEvent.affectsConfiguration('amazonQ.workspaceIndex')) {
@@ -60,15 +46,6 @@ export async function activate(context: ExtensionContext) {
 
     void setupLsp()
     void setupAuthNotification()
-}
-
-function registerApps(appInitContext: amazonq.AmazonQAppInitContext, context: ExtensionContext) {
-    amazonq.cwChatAppInit(appInitContext)
-    amazonq.featureDevChatAppInit(appInitContext)
-    amazonq.gumbyChatAppInit(appInitContext)
-    amazonq.testChatAppInit(appInitContext)
-    scanChatAppInit(appInitContext)
-    amazonq.docChatAppInit(appInitContext)
 }
 
 /**
