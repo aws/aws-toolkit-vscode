@@ -195,23 +195,22 @@ export async function startLanguageServer(
     client.onRequest<ShowDocumentParams, ShowDocumentResult>(
         ShowDocumentRequest.method,
         async (params: ShowDocumentParams): Promise<ShowDocumentParams | ResponseError<ShowDocumentResult>> => {
+            const uri = vscode.Uri.parse(params.uri)
+            getLogger().info(`Processing ShowDocumentRequest for URI scheme: ${uri.scheme}`)
             try {
-                const uri = vscode.Uri.parse(params.uri)
                 if (uri.scheme.startsWith('http')) {
-                    try {
-                        await openUrl(vscode.Uri.parse(params.uri))
-                        return params
-                    } catch (err: any) {
-                        getLogger().error(`Failed to open http from LSP: error: %s`, err)
-                    }
+                    getLogger().info('Opening URL...')
+                    await openUrl(vscode.Uri.parse(params.uri))
+                } else {
+                    getLogger().info('Opening text document...')
+                    const doc = await vscode.workspace.openTextDocument(uri)
+                    await vscode.window.showTextDocument(doc, { preview: false })
                 }
-                const doc = await vscode.workspace.openTextDocument(uri)
-                await vscode.window.showTextDocument(doc, { preview: false })
                 return params
             } catch (e) {
                 return new ResponseError(
                     LSPErrorCodes.RequestFailed,
-                    `Failed to open document: ${(e as Error).message}`
+                    `Failed to process ShowDocumentRequest: ${(e as Error).message}`
                 )
             }
         }
