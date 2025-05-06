@@ -51,6 +51,7 @@ export async function startLanguageServer(
     extensionContext: vscode.ExtensionContext,
     resourcePaths: AmazonQResourcePaths
 ) {
+    logger.debug('starting amazon q language server')
     const toDispose = extensionContext.subscriptions
 
     const serverModule = resourcePaths.lsp
@@ -80,6 +81,8 @@ export async function startLanguageServer(
     } else {
         executable = [resourcePaths.node]
     }
+
+    logger.debug('creating the server options')
 
     const memoryWarnThreshold = 1024 * processUtils.oneMB
     const serverOptions = createServerOptions({
@@ -161,7 +164,9 @@ export async function startLanguageServer(
 
     const auth = new AmazonQLspAuth(client)
 
+    logger.debug('waiting for the client to be ready')
     return client.onReady().then(async () => {
+        logger.debug('client is ready')
         await auth.refreshConnection()
 
         if (Experiments.instance.get('amazonqLSPInline', false)) {

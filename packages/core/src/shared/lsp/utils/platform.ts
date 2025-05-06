@@ -31,6 +31,8 @@ function getEncryptionInit(key: Buffer): string {
  */
 export async function validateNodeExe(nodePath: string[], lsp: string, args: string[], logger: Logger) {
     const bin = nodePath[0]
+
+    logger.debug('validating node can launch')
     // Check that we can start `node` by itself.
     const proc = new ChildProcess(bin, [...nodePath.slice(1), '-e', 'console.log("ok " + process.version)'], {
         logging: 'no',
@@ -42,7 +44,9 @@ export async function validateNodeExe(nodePath: string[], lsp: string, args: str
         logger.error(msg)
         throw new ToolkitError(`amazonqLsp: ${msg}`)
     }
+    logger.debug('node process is OK')
 
+    logger.debug('testing if language server can be started')
     // Check that we can start `node …/lsp.js --stdio …`.
     const lspProc = new ChildProcess(bin, [...nodePath.slice(1), lsp, ...args], { logging: 'no' })
     try {
@@ -74,6 +78,7 @@ export async function validateNodeExe(nodePath: string[], lsp: string, args: str
     } finally {
         lspProc.stop(true)
     }
+    logger.debug('language server process is OK')
 }
 
 export function createServerOptions({
