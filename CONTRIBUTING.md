@@ -534,6 +534,7 @@ Unlike the user setting overrides, not all of these environment variables have t
 -   `AWS_TOOLKIT_TEST_NO_COLOR`: If the tests should include colour in their output
 -   `DEVELOPMENT_PATH`: The path to the aws toolkit vscode project
 -   `TEST_DIR` - The directory where the test runner should find the tests
+-   `AMAZONQ_FEATUREDEV_ITERATION_TEST` - Controls whether to enable multiple iteration testing for Amazon Q feature development
 
 ### SAM/CFN ("goformation") JSON schema
 
