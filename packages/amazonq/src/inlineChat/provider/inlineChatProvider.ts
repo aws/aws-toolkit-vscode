@@ -69,6 +69,7 @@ export class InlineChatProvider {
     }
 
     public async processPromptMessageLSP(message: PromptMessage): Promise<InlineChatResult> {
+        // TODO: handle partial responses.
         getLogger().info('Making inline chat request with message %O', message)
         const params = this.getCurrentEditorParams(message.message ?? '')
         const inlineChatRequest = await encryptRequest<InlineChatParams>(params, this.encryptionKey)

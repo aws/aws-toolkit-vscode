@@ -249,11 +249,14 @@ export class InlineChatController {
             return
         }
 
+        // Update inline diff view
         const textDiff = computeDiff(response.body, this.task, false)
         const decorations = computeDecorations(this.task)
         this.task.decorations = decorations
         await this.applyDiff(this.task, textDiff ?? [])
         this.decorator.applyDecorations(this.task)
+
+        // Update Codelenses
         await this.updateTaskAndLenses(this.task, TaskState.WaitingForDecision)
         await setContext('amazonq.inline.codelensShortcutEnabled', true)
         this.undoListener(this.task)
