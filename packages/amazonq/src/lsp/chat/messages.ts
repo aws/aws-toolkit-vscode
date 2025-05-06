@@ -68,6 +68,7 @@ import {
 import { telemetry, TelemetryBase } from 'aws-core-vscode/telemetry'
 import { isValidResponseError } from './error'
 import { decodeRequest, encryptRequest } from '../encryption'
+import { getCursorState } from '../utils'
 
 export function registerLanguageServerEventListener(languageClient: LanguageClient, provider: AmazonQChatViewProvider) {
     languageClient.info(
@@ -97,21 +98,6 @@ export function registerLanguageServerEventListener(languageClient: LanguageClie
             telemetry[telemetryName as keyof TelemetryBase].emit(e.data)
         }
     })
-}
-
-function getCursorState(selection: readonly vscode.Selection[]) {
-    return selection.map((s) => ({
-        range: {
-            start: {
-                line: s.start.line,
-                character: s.start.character,
-            },
-            end: {
-                line: s.end.line,
-                character: s.end.character,
-            },
-        },
-    }))
 }
 
 export function registerMessageListeners(
