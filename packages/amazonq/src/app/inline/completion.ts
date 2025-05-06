@@ -16,6 +16,7 @@ import {
     Disposable,
     window,
     TextEditor,
+    InlineCompletionTriggerKind,
 } from 'vscode'
 import { LanguageClient } from 'vscode-languageclient'
 import {
@@ -30,6 +31,7 @@ import {
     ReferenceInlineProvider,
     ReferenceLogViewProvider,
     ImportAdderProvider,
+    CodeSuggestionsState,
 } from 'aws-core-vscode/codewhisperer'
 
 export class InlineCompletionManager implements Disposable {
@@ -180,6 +182,12 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
         token: CancellationToken
     ): Promise<InlineCompletionItem[] | InlineCompletionList> {
         if (this.isNewSession) {
+            const isAutoTrigger = context.triggerKind === InlineCompletionTriggerKind.Automatic
+            if (isAutoTrigger && !CodeSuggestionsState.instance.isSuggestionsEnabled()) {
+                // return early when suggestions are disabled with auto trigger
+                return []
+            }
+
             // make service requests if it's a new session
             await this.recommendationService.getAllRecommendations(
                 this.languageClient,
