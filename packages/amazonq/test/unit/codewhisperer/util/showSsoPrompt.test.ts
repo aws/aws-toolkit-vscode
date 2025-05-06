@@ -28,6 +28,8 @@ describe('showConnectionPrompt', function () {
     })
 
     it('can select connect to AwsBuilderId', async function () {
+        sinon.stub(AuthUtil.instance, 'login').resolves()
+
         getTestWindow().onDidShowQuickPick(async (picker) => {
             await picker.untilReady()
             picker.acceptItem(picker.items[0])
