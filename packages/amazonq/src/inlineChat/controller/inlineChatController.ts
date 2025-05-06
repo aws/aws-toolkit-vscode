@@ -14,6 +14,7 @@ import { CodelensProvider } from '../codeLenses/codeLenseProvider'
 import { PromptMessage, ReferenceLogController } from 'aws-core-vscode/codewhispererChat'
 import { CodeWhispererSettings } from 'aws-core-vscode/codewhisperer'
 import { UserWrittenCodeTracker } from 'aws-core-vscode/codewhisperer'
+import { LanguageClient } from 'vscode-languageclient'
 import {
     codicon,
     getIcon,
@@ -38,8 +39,8 @@ export class InlineChatController {
     private userQuery: string | undefined
     private listeners: vscode.Disposable[] = []
 
-    constructor(context: vscode.ExtensionContext) {
-        this.inlineChatProvider = new InlineChatProvider()
+    constructor(context: vscode.ExtensionContext, client: LanguageClient, encryptionKey: Buffer) {
+        this.inlineChatProvider = new InlineChatProvider(client, encryptionKey)
         this.inlineChatProvider.onErrorOccured(() => this.handleError())
         this.codeLenseProvider = new CodelensProvider(context)
         this.inlineLineAnnotationController = new InlineLineAnnotationController(context)
@@ -239,102 +240,26 @@ export class InlineChatController {
             tabID: uuid,
         }
 
-        const requestStart = performance.now()
-        let responseStartLatency: number | undefined
+        const response = await this.inlineChatProvider.processPromptMessageLSP(message)
 
-        const response = await this.inlineChatProvider.processPromptMessage(message)
-        this.task.requestId = response?.$metadata.requestId
-
-        // Deselect all code
-        const editor = vscode.window.activeTextEditor
-        if (editor) {
-            const selection = editor.selection
-            if (!selection.isEmpty) {
-                const cursor = selection.active
-                const newSelection = new vscode.Selection(cursor, cursor)
-                editor.selection = newSelection
-            }
+        // TODO: add tests for this case.
+        if (!response.body) {
+            getLogger().warn('Empty body in inline chat response')
+            await this.handleError()
+            return
         }
 
-        if (response) {
-            let qSuggestedCodeResponse = ''
-            for await (const chatEvent of response.generateAssistantResponseResponse!) {
-                if (
-                    chatEvent.assistantResponseEvent?.content !== undefined &&
-                    chatEvent.assistantResponseEvent.content.length > 0
-                ) {
-                    if (responseStartLatency === undefined) {
-                        responseStartLatency = performance.now() - requestStart
-                    }
-
-                    qSuggestedCodeResponse += chatEvent.assistantResponseEvent.content
-
-                    const transformedResponse = responseTransformer(qSuggestedCodeResponse, this.task, false)
-                    if (transformedResponse) {
-                        const textDiff = computeDiff(transformedResponse, this.task, true)
-                        const decorations = computeDecorations(this.task)
-                        this.task.decorations = decorations
-                        await this.applyDiff(this.task!, textDiff ?? [], {
-                            undoStopBefore: false,
-                            undoStopAfter: false,
-                        })
-                        this.decorator.applyDecorations(this.task)
-                        this.task.previouseDiff = textDiff
-                    }
-                }
-                if (
-                    chatEvent.codeReferenceEvent?.references !== undefined &&
-                    chatEvent.codeReferenceEvent.references.length > 0
-                ) {
-                    this.task.codeReferences = this.task.codeReferences.concat(chatEvent.codeReferenceEvent?.references)
-                    // clear diff if user settings is off for code reference
-                    if (!CodeWhispererSettings.instance.isSuggestionsWithCodeReferencesEnabled()) {
-                        await this.rejectAllChanges(this.task, false)
-                        void vscode.window.showInformationMessage(
-                            'Your settings do not allow code generation with references.'
-                        )
-                        await this.updateTaskAndLenses(this.task, TaskState.Complete)
-                        return
-                    }
-                }
-                if (chatEvent.error) {
-                    getLogger().error('generateAssistantResponse stream error: %s', chatEvent.error)
-                    await this.rejectAllChanges(this.task, false)
-                    void vscode.window.showErrorMessage(`Amazon Q: ${chatEvent.error.message}`)
-                    await this.updateTaskAndLenses(this.task, TaskState.Complete)
-                    return
-                }
-            }
-
-            if (this.task) {
-                // Unclear why we need to check if task is defined, but occasionally an error occurs otherwise
-                this.task.responseStartLatency = responseStartLatency
-                this.task.responseEndLatency = performance.now() - requestStart
-            }
-            getLogger().info(`qSuggestedCodeResponse:\n${qSuggestedCodeResponse}`)
-            const transformedResponse = responseTransformer(qSuggestedCodeResponse, this.task, true)
-            if (transformedResponse) {
-                const textDiff = computeDiff(transformedResponse, this.task, false)
-                const decorations = computeDecorations(this.task)
-                this.task.decorations = decorations
-                await this.applyDiff(this.task, textDiff ?? [])
-                this.decorator.applyDecorations(this.task)
-                await this.updateTaskAndLenses(this.task, TaskState.WaitingForDecision)
-                await setContext('amazonq.inline.codelensShortcutEnabled', true)
-                this.undoListener(this.task)
-            } else {
-                void messages.showMessageWithCancel(
-                    'No suggestions from Q, please try different instructions.',
-                    new Timeout(5000)
-                )
-                await this.updateTaskAndLenses(this.task, TaskState.Complete)
-                await this.inlineQuickPick(this.userQuery)
-                await this.handleError()
-            }
-        }
+        const textDiff = computeDiff(response.body, this.task, false)
+        const decorations = computeDecorations(this.task)
+        this.task.decorations = decorations
+        await this.applyDiff(this.task, textDiff ?? [])
+        this.decorator.applyDecorations(this.task)
+        await this.updateTaskAndLenses(this.task, TaskState.WaitingForDecision)
+        await setContext('amazonq.inline.codelensShortcutEnabled', true)
+        this.undoListener(this.task)
     }
 
-    // TODO: remove this implementation in favor or LSP
+    // TODO: remove this implementation in favor of LSP
     private async computeDiffAndRenderOnEditorLocal(query: string) {
         if (!this.task) {
             return

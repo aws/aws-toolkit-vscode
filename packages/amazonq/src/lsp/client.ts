@@ -39,6 +39,7 @@ import { processUtils } from 'aws-core-vscode/shared'
 import { activate } from './chat/activation'
 import { AmazonQResourcePaths } from './lspInstaller'
 import { ConfigSection, isValidConfigSection, toAmazonQLSPLogLevel } from './config'
+import { activate as activateInline } from '../inlineChat/activation'
 
 const localize = nls.loadMessageBundle()
 const logger = getLogger('amazonqLsp.lspClient')
@@ -181,6 +182,8 @@ export async function startLanguageServer(
         if (Experiments.instance.get('amazonqChatLSP', true)) {
             await activate(client, encryptionKey, resourcePaths.ui)
         }
+
+        activateInline(extensionContext, client, encryptionKey)
 
         const refreshInterval = auth.startTokenRefreshInterval(10 * oneSecond)
 

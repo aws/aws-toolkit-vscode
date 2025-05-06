@@ -8,6 +8,8 @@ import {
     CodeWhispererStreamingServiceException,
     GenerateAssistantResponseCommandOutput,
 } from '@amzn/codewhisperer-streaming'
+import { LanguageClient } from 'vscode-languageclient'
+import { inlineChatRequestType } from '@aws/language-server-runtimes/protocol'
 import { AuthUtil, getSelectedCustomization } from 'aws-core-vscode/codewhisperer'
 import {
     ChatSessionStorage,
@@ -25,6 +27,9 @@ import { codeWhispererClient } from 'aws-core-vscode/codewhisperer'
 import type { InlineChatEvent } from 'aws-core-vscode/codewhisperer'
 import { InlineTask } from '../controller/inlineTask'
 import { extractAuthFollowUp } from 'aws-core-vscode/amazonq'
+import { InlineChatParams, InlineChatResult } from '@aws/language-server-runtimes-types'
+import { decodeRequest, encryptRequest } from '../../lsp/encryption'
+import { getCursorState } from '../../lsp/utils'
 
 export class InlineChatProvider {
     private readonly editorContextExtractor: EditorContextExtractor
@@ -34,13 +39,51 @@ export class InlineChatProvider {
     private errorEmitter = new vscode.EventEmitter<void>()
     public onErrorOccured = this.errorEmitter.event
 
-    public constructor() {
+    public constructor(
+        private readonly client: LanguageClient,
+        private readonly encryptionKey: Buffer
+    ) {
         this.editorContextExtractor = new EditorContextExtractor()
         this.userIntentRecognizer = new UserIntentRecognizer()
         this.sessionStorage = new ChatSessionStorage()
         this.triggerEventsStorage = new TriggerEventsStorage()
     }
 
+    private getCurrentEditorParams(prompt: string): InlineChatParams {
+        const editor = vscode.window.activeTextEditor
+        if (!editor) {
+            throw new ToolkitError('No active editor')
+        }
+
+        const documentUri = editor.document.uri.toString()
+
+        return {
+            prompt: {
+                prompt,
+            },
+            cursorState: getCursorState(editor.selections),
+            textDocument: {
+                uri: documentUri,
+            },
+        }
+    }
+
+    public async processPromptMessageLSP(message: PromptMessage): Promise<InlineChatResult> {
+        getLogger().info('Making inline chat request with message %O', message)
+        const params = this.getCurrentEditorParams(message.message ?? '')
+        const inlineChatRequest = await encryptRequest<InlineChatParams>(params, this.encryptionKey)
+        const response = await this.client.sendRequest(inlineChatRequestType.method, inlineChatRequest)
+        const decryptedMessage =
+            typeof response === 'string' && this.encryptionKey
+                ? await decodeRequest(response, this.encryptionKey)
+                : response
+        const result: InlineChatResult = decryptedMessage as InlineChatResult
+        this.client.info(`Logging response for inline chat ${JSON.stringify(decryptedMessage)}`)
+
+        return result
+    }
+
+    // TODO: remove in favor of LSP implementation.
     public async processPromptMessage(message: PromptMessage) {
         return this.editorContextExtractor
             .extractContextForTrigger('ChatMessage')
