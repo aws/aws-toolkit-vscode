@@ -63,6 +63,7 @@ import * as jose from 'jose'
 import { AmazonQChatViewProvider } from './webviewProvider'
 import { AuthUtil, ReferenceLogViewProvider } from 'aws-core-vscode/codewhisperer'
 import { amazonQDiffScheme, AmazonQPromptSettings, messages, openUrl } from 'aws-core-vscode/shared'
+import { credentialsValidation } from 'aws-core-vscode/auth'
 import {
     DefaultAmazonQAppInitContext,
     messageDispatcher,
@@ -72,6 +73,7 @@ import {
 } from 'aws-core-vscode/amazonq'
 import { telemetry, TelemetryBase } from 'aws-core-vscode/telemetry'
 import { isValidResponseError } from './error'
+import { focusAmazonQPanel } from './commands'
 
 export function registerLanguageServerEventListener(languageClient: LanguageClient, provider: AmazonQChatViewProvider) {
     languageClient.info(
@@ -328,13 +330,33 @@ export function registerMessageListeners(
                 }
                 break
             case buttonClickRequestType.method: {
+                if (message.params.buttonId === 'paidtier-upgrade-q') {
+                    focusAmazonQPanel().catch((e) => languageClient.error(`[VSCode Client] focusAmazonQPanel() failed`))
+
+                    const accountId = await vscode.window.showInputBox({
+                        title: 'Upgrade Amazon Q',
+                        prompt: 'Enter your 12-digit AWS account ID',
+                        placeHolder: '111111111111',
+                        validateInput: credentialsValidation.validateAwsAccount,
+                    })
+
+                    if (accountId) {
+                        languageClient.sendRequest('workspace/executeCommand', {
+                            command: 'aws/chat/manageSubscription',
+                            arguments: [accountId],
+                        })
+                    } else {
+                        languageClient.error('[VSCode Client] user canceled or did not input AWS account id')
+                    }
+                }
+
                 const buttonResult = await languageClient.sendRequest<ButtonClickResult>(
                     buttonClickRequestType.method,
                     message.params
                 )
                 if (!buttonResult.success) {
                     languageClient.error(
-                        `[VSCode Client] Failed to execute action associated with button with reason: ${buttonResult.failureReason}`
+                        `[VSCode Client] Failed to execute button action: ${buttonResult.failureReason}`
                     )
                 }
                 break
@@ -433,6 +455,8 @@ export function registerMessageListeners(
     languageClient.onRequest<ShowDocumentParams, ShowDocumentResult>(
         ShowDocumentRequest.method,
         async (params: ShowDocumentParams): Promise<ShowDocumentParams | ResponseError<ShowDocumentResult>> => {
+            focusAmazonQPanel().catch((e) => languageClient.error(`[VSCode Client] focusAmazonQPanel() failed`))
+
             try {
                 const uri = vscode.Uri.parse(params.uri)
 
