@@ -251,7 +251,7 @@ export async function startLanguageServer(
         )
     }
 
-    activate(client, encryptionKey, resourcePaths.ui)
+    await activate(client, encryptionKey, resourcePaths.ui)
 
     toDispose.push(
         AuthUtil.instance.regionProfileManager.onDidChangeRegionProfile(sendProfileToLsp),
