@@ -56,12 +56,12 @@ export class InlineChatProvider {
         }
 
         const documentUri = editor.document.uri.toString()
-
+        const cursorState = getCursorState(editor.selections)
         return {
             prompt: {
                 prompt,
             },
-            cursorState: getCursorState(editor.selections),
+            cursorState,
             textDocument: {
                 uri: documentUri,
             },
