@@ -19,9 +19,9 @@ describe('Amazon Q Login', async function () {
     let sandbox: sinon.SinonSandbox
     let backend: AmazonQLoginWebview
 
-    await createTestAuthUtil()
+    beforeEach(async function () {
+        await createTestAuthUtil()
 
-    beforeEach(function () {
         sandbox = sinon.createSandbox()
         backend = new AmazonQLoginWebview()
     })
