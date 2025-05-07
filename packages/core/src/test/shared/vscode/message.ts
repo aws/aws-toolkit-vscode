@@ -363,47 +363,42 @@ export class TestFileSystemDialog {
         fs: vscode.FileSystem,
         callback?: (dialog: TestFileSystemDialog) => void
     ): Window['showOpenDialog'] {
-        return async () => undefined
+        return async (options?: vscode.OpenDialogOptions) => {
+            const dialog = new TestFileSystemDialog([], { type: 'Open', ...options })
 
-        // return async (options?: vscode.OpenDialogOptions) => {
-        //     const dialog = new TestFileSystemDialog([], { type: 'Open', ...options })
+            return new Promise<vscode.Uri[] | undefined>((resolve) => {
+                dialog.onDidAcceptItem((item) => resolve(item instanceof vscode.Uri ? [item] : item))
+                dialog.show()
+                callback?.(dialog)
 
-        //     return new Promise<vscode.Uri[] | undefined>((resolve) => {
-        //         dialog.onDidAcceptItem((item) => resolve(item instanceof vscode.Uri ? [item] : item))
-        //         dialog.show()
-        //         callback?.(dialog)
-
-        //         // Auto-close dialog in test environments to prevent hanging
-        //         setTimeout(() => {
-        //             if (dialog.visible) {
-        //                 dialog.close()
-        //             }
-        //         }, 0)
-        //     })
-        // }
+                // Auto-close dialog in test environments to prevent hanging
+                setTimeout(() => {
+                    if (dialog.visible) {
+                        dialog.close()
+                    }
+                }, 0)
+            })
+        }
     }
 
     public static createShowSaveDialogFn(
         fs: vscode.FileSystem,
         callback?: (dialog: TestFileSystemDialog) => void
     ): Window['showSaveDialog'] {
-        return async () => undefined
+        return async (options?: vscode.SaveDialogOptions) => {
+            const dialog = new TestFileSystemDialog([], { type: 'Save', ...options })
 
-        //     return async (options?: vscode.SaveDialogOptions) => {
-        //         const dialog = new TestFileSystemDialog([], { type: 'Save', ...options })
+            return new Promise<vscode.Uri | undefined>((resolve) => {
+                dialog.onDidAcceptItem((item) => resolve(Array.isArray(item) ? item[0] : item))
+                dialog.show()
+                callback?.(dialog)
 
-        //         return new Promise<vscode.Uri | undefined>((resolve) => {
-        //             dialog.onDidAcceptItem((item) => resolve(Array.isArray(item) ? item[0] : item))
-        //             dialog.show()
-        //             callback?.(dialog)
-
-        //             setTimeout(() => {
-        //                 if (dialog.visible) {
-        //                     dialog.close()
-        //                 }
-        //             }, 0)
-        //         })
-        //     }
-        // }
+                setTimeout(() => {
+                    if (dialog.visible) {
+                        dialog.close()
+                    }
+                }, 0)
+            })
+        }
     }
 }

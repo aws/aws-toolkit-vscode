@@ -147,10 +147,10 @@ export function createTestWindow(workspace = vscode.workspace): Window & TestWin
         emitters.onDidShowMessage.fire(message)
     }
 
-    // function fireOnDidShowDialog(dialog: TestFileSystemDialog) {
-    //     state.shownDialogs.push(dialog)
-    //     emitters.onDidShowDialog.fire(dialog)
-    // }
+    function fireOnDidShowDialog(dialog: TestFileSystemDialog) {
+        state.shownDialogs.push(dialog)
+        emitters.onDidShowDialog.fire(dialog)
+    }
 
     function fireOnDidShowQuickPick(picker: TestQuickPick) {
         if (!state.shownQuickPicks.includes(picker)) {
@@ -399,14 +399,8 @@ export function createTestWindow(workspace = vscode.workspace): Window & TestWin
         showInformationMessage: TestMessage.createShowMessageFn(SeverityLevel.Information, fireOnDidShowMessage),
         showWarningMessage: TestMessage.createShowMessageFn(SeverityLevel.Warning, fireOnDidShowMessage),
         showErrorMessage: TestMessage.createShowMessageFn(SeverityLevel.Error, fireOnDidShowMessage),
-        showOpenDialog: async (...args) => {
-            console.log('showOpenDialog called with args:', args)
-            return undefined
-        },
-        showSaveDialog: async (...args) => {
-            console.log('showSaveDialog called with args:', args)
-            return undefined
-        },
+        showOpenDialog: TestFileSystemDialog.createOpenSaveDialogFn(workspace.fs, fireOnDidShowDialog),
+        showSaveDialog: TestFileSystemDialog.createShowSaveDialogFn(workspace.fs, fireOnDidShowDialog),
         onError: onErrorEmitter.event,
     }
 
