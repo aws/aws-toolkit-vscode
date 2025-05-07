@@ -8,11 +8,12 @@ import assert, { fail } from 'assert'
 import { AuthUtil, RegionProfile, RegionProfileManager, defaultServiceConfig } from 'aws-core-vscode/codewhisperer'
 import { globals } from 'aws-core-vscode/shared'
 import { constants } from 'aws-core-vscode/auth'
+import { createTestAuthUtil } from 'aws-core-vscode/test'
 
 const enterpriseSsoStartUrl = 'https://enterprise.awsapps.com/start'
 const region = 'us-east-1'
 
-describe('RegionProfileManager', function () {
+describe('RegionProfileManager', async function () {
     let regionProfileManager: RegionProfileManager
 
     const profileFoo: RegionProfile = {
@@ -21,6 +22,8 @@ describe('RegionProfileManager', function () {
         arn: 'foo arn',
         description: 'foo description',
     }
+
+    await createTestAuthUtil()
 
     async function setupConnection(type: 'builderId' | 'idc') {
         if (type === 'builderId') {
@@ -34,7 +37,7 @@ describe('RegionProfileManager', function () {
         }
     }
 
-    beforeEach(function () {
+    beforeEach(async function () {
         regionProfileManager = new RegionProfileManager(AuthUtil.instance)
     })
 
