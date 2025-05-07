@@ -37,7 +37,7 @@ describe('RegionProfileManager', async function () {
         }
     }
 
-    beforeEach(async function () {
+    beforeEach(function () {
         regionProfileManager = new RegionProfileManager(AuthUtil.instance)
     })
 

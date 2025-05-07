@@ -5,7 +5,7 @@
 
 import assert from 'assert'
 import * as sinon from 'sinon'
-import { assertTelemetryCurried, createTestAuthUtil } from 'aws-core-vscode/test'
+import { assertTelemetryCurried } from 'aws-core-vscode/test'
 import { AuthUtil, CodeWhispererTracker } from 'aws-core-vscode/codewhisperer'
 import { resetCodeWhispererGlobalVariables, createAcceptedSuggestionEntry } from 'aws-core-vscode/test'
 import { globals } from 'aws-core-vscode/shared'
@@ -82,9 +82,6 @@ describe('codewhispererTracker', function () {
 
     describe('emitTelemetryOnSuggestion', function () {
         it('Should call recordCodewhispererUserModification with suggestion event', async function () {
-            await createTestAuthUtil()
-            const testStartUrl = 'testStartUrl'
-            sinon.stub(AuthUtil.instance.connection!, 'startUrl').value(testStartUrl)
             const suggestion = createAcceptedSuggestionEntry()
             const assertTelemetry = assertTelemetryCurried('codewhisperer_userModification')
             await CodeWhispererTracker.getTracker().emitTelemetryOnSuggestion(suggestion)
@@ -96,7 +93,7 @@ describe('codewhispererTracker', function () {
                 codewhispererModificationPercentage: 1,
                 codewhispererCompletionType: 'Line',
                 codewhispererLanguage: 'java',
-                credentialStartUrl: testStartUrl,
+                credentialStartUrl: AuthUtil.instance.connection?.startUrl,
                 codewhispererCharactersAccepted: suggestion.originalString.length,
                 codewhispererCharactersModified: 0,
             })

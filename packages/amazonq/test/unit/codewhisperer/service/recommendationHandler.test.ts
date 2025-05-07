@@ -15,6 +15,7 @@ import {
     RecommendationHandler,
     CodeWhispererCodeCoverageTracker,
     supplementalContextUtil,
+    AuthUtil,
 } from 'aws-core-vscode/codewhisperer'
 import {
     assertTelemetryCurried,
@@ -23,8 +24,6 @@ import {
     resetCodeWhispererGlobalVariables,
 } from 'aws-core-vscode/test'
 // import * as supplementalContextUtil from 'aws-core-vscode/codewhisperer'
-
-const enterpriseSsoStartUrl = 'https://enterprise.awsapps.com/start'
 
 describe('recommendationHandler', function () {
     const config: ConfigurationEntry = {
@@ -142,7 +141,7 @@ describe('recommendationHandler', function () {
                 codewhispererLineNumber: 1,
                 codewhispererCursorOffset: 38,
                 codewhispererLanguage: 'python',
-                credentialStartUrl: enterpriseSsoStartUrl,
+                credentialStartUrl: AuthUtil.instance.connection?.startUrl,
                 codewhispererSupplementalContextIsUtg: false,
                 codewhispererSupplementalContextTimeout: false,
                 codewhispererSupplementalContextLatency: 0,
