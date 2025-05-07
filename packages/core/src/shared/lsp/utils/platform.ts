@@ -68,7 +68,8 @@ export async function validateNodeExe(nodePath: string[], lsp: string, args: str
         })
         if (!ok2 || selfExit) {
             throw new ToolkitError(
-                `amazonqLsp: failed to run (exitcode=${lspProc.exitCode()}): ${lspProc.toString(false, true)}`
+                `amazonqLsp: failed to run (exitcode=${lspProc.exitCode()}): ${lspProc.toString(false, true)}`,
+                { code: 'InvalidLSP' }
             )
         }
     } finally {
