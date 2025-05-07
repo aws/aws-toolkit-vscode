@@ -22,6 +22,7 @@ import {
     stub,
     createMockTextEditor,
     resetCodeWhispererGlobalVariables,
+    createTestAuthUtil,
 } from 'aws-core-vscode/test'
 // import * as supplementalContextUtil from 'aws-core-vscode/codewhisperer'
 
@@ -40,6 +41,8 @@ describe('recommendationHandler', function () {
         const mockClient = stub(DefaultCodeWhispererClient)
         const mockEditor = createMockTextEditor()
         const testStartUrl = 'testStartUrl'
+
+        await createTestAuthUtil()
 
         beforeEach(async function () {
             sinon.restore()
