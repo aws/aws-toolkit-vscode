@@ -28,7 +28,7 @@ import type { InlineChatEvent } from 'aws-core-vscode/codewhisperer'
 import { InlineTask } from '../controller/inlineTask'
 import { extractAuthFollowUp } from 'aws-core-vscode/amazonq'
 import { InlineChatParams, InlineChatResult } from '@aws/language-server-runtimes-types'
-import { decodeRequest, encryptRequest } from '../../lsp/encryption'
+import { decryptResponse, encryptRequest } from '../../lsp/encryption'
 import { getCursorState } from '../../lsp/utils'
 
 export class InlineChatProvider {
@@ -72,16 +72,13 @@ export class InlineChatProvider {
         // TODO: handle partial responses.
         getLogger().info('Making inline chat request with message %O', message)
         const params = this.getCurrentEditorParams(message.message ?? '')
+
         const inlineChatRequest = await encryptRequest<InlineChatParams>(params, this.encryptionKey)
         const response = await this.client.sendRequest(inlineChatRequestType.method, inlineChatRequest)
-        const decryptedMessage =
-            typeof response === 'string' && this.encryptionKey
-                ? await decodeRequest(response, this.encryptionKey)
-                : response
-        const result: InlineChatResult = decryptedMessage as InlineChatResult
-        this.client.info(`Logging response for inline chat ${JSON.stringify(decryptedMessage)}`)
+        const inlineChatResponse = await decryptResponse<InlineChatResult>(response, this.encryptionKey)
+        this.client.info(`Logging response for inline chat ${JSON.stringify(inlineChatResponse)}`)
 
-        return result
+        return inlineChatResponse
     }
 
     // TODO: remove in favor of LSP implementation.

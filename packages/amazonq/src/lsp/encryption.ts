@@ -14,8 +14,14 @@ export async function encryptRequest<T>(params: T, encryptionKey: Buffer): Promi
     return { message: encryptedMessage }
 }
 
-export async function decodeRequest<T>(request: string, key: Buffer): Promise<T> {
-    const result = await jose.jwtDecrypt(request, key, {
+export async function decryptResponse<T>(response: unknown, key: Buffer | undefined) {
+    // Note that casts are required since language client requests return 'unknown' type.
+    // If we can't decrypt, return original response casted.
+    if (typeof response !== 'string' || key === undefined) {
+        return response as T
+    }
+
+    const result = await jose.jwtDecrypt(response, key, {
         clockTolerance: 60, // Allow up to 60 seconds to account for clock differences
         contentEncryptionAlgorithms: ['A256GCM'],
         keyManagementAlgorithms: ['dir'],
