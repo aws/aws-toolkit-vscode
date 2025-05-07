@@ -370,13 +370,6 @@ export class TestFileSystemDialog {
                 dialog.onDidAcceptItem((item) => resolve(item instanceof vscode.Uri ? [item] : item))
                 dialog.show()
                 callback?.(dialog)
-
-                // Auto-close dialog in test environments to prevent hanging
-                setTimeout(() => {
-                    if (dialog.visible) {
-                        dialog.close()
-                    }
-                }, 0)
             })
         }
     }
@@ -392,12 +385,6 @@ export class TestFileSystemDialog {
                 dialog.onDidAcceptItem((item) => resolve(Array.isArray(item) ? item[0] : item))
                 dialog.show()
                 callback?.(dialog)
-
-                setTimeout(() => {
-                    if (dialog.visible) {
-                        dialog.close()
-                    }
-                }, 0)
             })
         }
     }
