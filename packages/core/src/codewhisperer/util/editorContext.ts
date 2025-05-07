@@ -109,7 +109,7 @@ export function getNotebookCellsSliceContext(
         cells = cells.reverse()
     }
     cells.some((cell) => {
-        let cellText = addNewlineIfMissing(getNotebookCellContext(cell, referenceLanguage))
+        const cellText = addNewlineIfMissing(getNotebookCellContext(cell, referenceLanguage))
         if (cellText.length > 0) {
             if (cellText.length >= maxLength) {
                 if (fromStart) {
