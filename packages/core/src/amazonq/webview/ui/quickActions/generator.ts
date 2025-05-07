@@ -60,7 +60,7 @@ export class QuickActionGenerator {
                                   command: '/test',
                                   icon: MynahIcons.CHECK_LIST,
                                   placeholder: 'Specify a function(s) in the current file (optional)',
-                                  description: 'Generate unit tests (python & java) for selected code',
+                                  description: 'Generate unit tests for selected code',
                               },
                           ]
                         : []),
