@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as vscode from 'vscode'
-import { AwsConnection, SsoConnection, getTelemetryMetadataForConn } from '../../../../auth/connection'
+import { AwsConnection, SsoConnection } from '../../../../auth/connection'
 import { AuthUtil } from '../../../../codewhisperer/util/authUtil'
 import { CommonAuthWebview } from '../backend'
 import { awsIdSignIn } from '../../../../codewhisperer/util/showSsoPrompt'
@@ -114,9 +114,7 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
                     ...(await AuthUtil.instance.getTelemetryMetadata()),
                 })
                 await AuthUtil.instance.reauthenticate()
-                this.storeMetricMetadata({
-                    ...(await AuthUtil.instance.getTelemetryMetadata()),
-                })
+                this.storeMetricMetadata(await AuthUtil.instance.getTelemetryMetadata())
             })
         } finally {
             this.isReauthenticating = false
@@ -178,7 +176,7 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
         this.storeMetricMetadata({
             authEnabledFeatures: 'codewhisperer',
             isReAuth: true,
-            ...(await getTelemetryMetadataForConn()),
+            ...(await AuthUtil.instance.getTelemetryMetadata()),
             result: 'Cancelled',
         })
 
