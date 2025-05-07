@@ -55,7 +55,6 @@ import {
 import { v4 as uuidv4 } from 'uuid'
 import * as vscode from 'vscode'
 import { Disposable, LanguageClient, Position, TextDocumentIdentifier } from 'vscode-languageclient'
-import * as jose from 'jose'
 import { AmazonQChatViewProvider } from './webviewProvider'
 import { AuthUtil, ReferenceLogViewProvider } from 'aws-core-vscode/codewhisperer'
 import { amazonQDiffScheme, AmazonQPromptSettings, messages, openUrl } from 'aws-core-vscode/shared'
@@ -68,6 +67,8 @@ import {
 } from 'aws-core-vscode/amazonq'
 import { telemetry, TelemetryBase } from 'aws-core-vscode/telemetry'
 import { isValidResponseError } from './error'
+import { decodeRequest, encryptRequest } from '../encryption'
+import { getCursorState } from '../utils'
 
 export function registerLanguageServerEventListener(languageClient: LanguageClient, provider: AmazonQChatViewProvider) {
     languageClient.info(
@@ -97,21 +98,6 @@ export function registerLanguageServerEventListener(languageClient: LanguageClie
             telemetry[telemetryName as keyof TelemetryBase].emit(e.data)
         }
     })
-}
-
-function getCursorState(selection: readonly vscode.Selection[]) {
-    return selection.map((s) => ({
-        range: {
-            start: {
-                line: s.start.line,
-                character: s.start.character,
-            },
-            end: {
-                line: s.end.line,
-                character: s.end.character,
-            },
-        },
-    }))
 }
 
 export function registerMessageListeners(
@@ -485,29 +471,6 @@ export function registerMessageListeners(
 
 function isServerEvent(command: string) {
     return command.startsWith('aws/chat/') || command === 'telemetry/event'
-}
-
-async function encryptRequest<T>(params: T, encryptionKey: Buffer): Promise<{ message: string } | T> {
-    const payload = new TextEncoder().encode(JSON.stringify(params))
-
-    const encryptedMessage = await new jose.CompactEncrypt(payload)
-        .setProtectedHeader({ alg: 'dir', enc: 'A256GCM' })
-        .encrypt(encryptionKey)
-
-    return { message: encryptedMessage }
-}
-
-async function decodeRequest<T>(request: string, key: Buffer): Promise<T> {
-    const result = await jose.jwtDecrypt(request, key, {
-        clockTolerance: 60, // Allow up to 60 seconds to account for clock differences
-        contentEncryptionAlgorithms: ['A256GCM'],
-        keyManagementAlgorithms: ['dir'],
-    })
-
-    if (!result.payload) {
-        throw new Error('JWT payload not found')
-    }
-    return result.payload as T
 }
 
 /**

@@ -14,6 +14,7 @@ import { CodelensProvider } from '../codeLenses/codeLenseProvider'
 import { PromptMessage, ReferenceLogController } from 'aws-core-vscode/codewhispererChat'
 import { CodeWhispererSettings } from 'aws-core-vscode/codewhisperer'
 import { UserWrittenCodeTracker } from 'aws-core-vscode/codewhisperer'
+import { LanguageClient } from 'vscode-languageclient'
 import {
     codicon,
     getIcon,
@@ -23,6 +24,7 @@ import {
     Timeout,
     textDocumentUtil,
     isSageMaker,
+    Experiments,
 } from 'aws-core-vscode/shared'
 import { InlineLineAnnotationController } from '../decorations/inlineLineAnnotationController'
 
@@ -33,14 +35,18 @@ export class InlineChatController {
     private readonly codeLenseProvider: CodelensProvider
     private readonly referenceLogController = new ReferenceLogController()
     private readonly inlineLineAnnotationController: InlineLineAnnotationController
+    private readonly computeDiffAndRenderOnEditor: (query: string) => Promise<void>
     private userQuery: string | undefined
     private listeners: vscode.Disposable[] = []
 
-    constructor(context: vscode.ExtensionContext) {
-        this.inlineChatProvider = new InlineChatProvider()
+    constructor(context: vscode.ExtensionContext, client: LanguageClient, encryptionKey: Buffer) {
+        this.inlineChatProvider = new InlineChatProvider(client, encryptionKey)
         this.inlineChatProvider.onErrorOccured(() => this.handleError())
         this.codeLenseProvider = new CodelensProvider(context)
         this.inlineLineAnnotationController = new InlineLineAnnotationController(context)
+        this.computeDiffAndRenderOnEditor = Experiments.instance.get('amazonqLSPInlineChat', false)
+            ? this.computeDiffAndRenderOnEditorLSP.bind(this)
+            : this.computeDiffAndRenderOnEditorLocal.bind(this)
     }
 
     public async createTask(
@@ -206,7 +212,7 @@ export class InlineChatController {
                 await textDocumentUtil.addEofNewline(editor)
                 this.task = await this.createTask(query, editor.document, editor.selection)
                 await this.inlineLineAnnotationController.disable(editor)
-                await this.computeDiffAndRenderOnEditor(query, editor.document).catch(async (err) => {
+                await this.computeDiffAndRenderOnEditor(query).catch(async (err) => {
                     getLogger().error('computeDiffAndRenderOnEditor error: %s', (err as Error)?.message)
                     if (err instanceof Error) {
                         void vscode.window.showErrorMessage(`Amazon Q: ${err.message}`)
@@ -218,7 +224,46 @@ export class InlineChatController {
             })
     }
 
-    private async computeDiffAndRenderOnEditor(query: string, document: vscode.TextDocument) {
+    private async computeDiffAndRenderOnEditorLSP(query: string) {
+        if (!this.task) {
+            return
+        }
+
+        await this.updateTaskAndLenses(this.task, TaskState.InProgress)
+        getLogger().info(`inline chat query:\n${query}`)
+        const uuid = randomUUID()
+        const message: PromptMessage = {
+            message: query,
+            messageId: uuid,
+            command: undefined,
+            userIntent: undefined,
+            tabID: uuid,
+        }
+
+        const response = await this.inlineChatProvider.processPromptMessageLSP(message)
+
+        // TODO: add tests for this case.
+        if (!response.body) {
+            getLogger().warn('Empty body in inline chat response')
+            await this.handleError()
+            return
+        }
+
+        // Update inline diff view
+        const textDiff = computeDiff(response.body, this.task, false)
+        const decorations = computeDecorations(this.task)
+        this.task.decorations = decorations
+        await this.applyDiff(this.task, textDiff ?? [])
+        this.decorator.applyDecorations(this.task)
+
+        // Update Codelenses
+        await this.updateTaskAndLenses(this.task, TaskState.WaitingForDecision)
+        await setContext('amazonq.inline.codelensShortcutEnabled', true)
+        this.undoListener(this.task)
+    }
+
+    // TODO: remove this implementation in favor of LSP
+    private async computeDiffAndRenderOnEditorLocal(query: string) {
         if (!this.task) {
             return
         }
