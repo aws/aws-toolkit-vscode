@@ -59,7 +59,7 @@ export const onProfileChangedListener: (event: ProfileChangedEvent) => any = asy
     if (event.intent === 'customization') {
         return
     }
-    const logger = getLogger()
+
     if (!event.profile) {
         await setSelectedCustomization(baseCustomization)
         return
@@ -69,16 +69,7 @@ export const onProfileChangedListener: (event: ProfileChangedEvent) => any = asy
     const selectedCustomization = getSelectedCustomization()
     // No need to validate base customization which has empty arn.
     if (selectedCustomization.arn.length > 0) {
-        const customizationProvider = await CustomizationProvider.init(event.profile)
-        const customizations = await customizationProvider.listAvailableCustomizations()
-
-        const r = customizations.find((it) => it.arn === selectedCustomization.arn)
-        if (!r) {
-            logger.debug(
-                `profile ${event.profile.name} doesnt have access to customization ${selectedCustomization.name} but has access to ${customizations.map((it) => it.name)}`
-            )
-            await switchToBaseCustomizationAndNotify()
-        }
+        await switchToBaseCustomizationAndNotify()
     }
 }
 
