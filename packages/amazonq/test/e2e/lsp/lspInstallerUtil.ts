@@ -304,30 +304,6 @@ export function createLspInstallerTests({
                         return true
                     }
                 )
-
-                // Verify telemetry for the failed attempts
-                // const expectedTelemetry: Partial<LanguageServerSetup>[] = [
-                //     {
-                //         id: lspConfig.id,
-                //         manifestLocation: 'remote',
-                //         languageServerSetupStage: 'getManifest',
-                //         result: 'Failed',
-                //     },
-                //     {
-                //         id: lspConfig.id,
-                //         languageServerLocation: 'cache',
-                //         languageServerSetupStage: 'getServer',
-                //         result: 'Failed',
-                //     },
-                //     {
-                //         id: lspConfig.id,
-                //         languageServerLocation: 'remote',
-                //         languageServerSetupStage: 'getServer',
-                //         result: 'Failed',
-                //     },
-                // ]
-
-                // assertTelemetry('languageServer_setup', expectedTelemetry)
             })
         })
     })
