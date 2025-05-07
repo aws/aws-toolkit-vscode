@@ -3,8 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as vscode from 'vscode'
+import { CursorState } from '@aws/language-server-runtimes-types'
 
-export function getCursorState(selection: readonly vscode.Selection[]) {
+/**
+ * Convert from vscode selection type to the general CursorState expected by the AmazonQLSP.
+ * @param selection
+ * @returns
+ */
+export function getCursorState(selection: readonly vscode.Selection[]): CursorState[] {
     return selection.map((s) => ({
         range: {
             start: {
