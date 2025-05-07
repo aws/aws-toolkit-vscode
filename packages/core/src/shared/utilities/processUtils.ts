@@ -74,7 +74,7 @@ export class ChildProcessTracker {
         cpu: 50,
     }
     static readonly logger = logger.getLogger('childProcess')
-    static readonly loggedPids = new CircularBuffer(1000)
+    static readonly loggedPids = new CircularBuffer<number>(1000)
     #processByPid: Map<number, ChildProcess> = new Map<number, ChildProcess>()
     #pids: PollingSet<number>
 

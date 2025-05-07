@@ -4,7 +4,7 @@
  */
 
 import assert from 'assert'
-import { once, onceChanged, debounce } from '../../../shared/utilities/functionUtils'
+import { once, onceChanged, debounce, oncePerUniqueArg } from '../../../shared/utilities/functionUtils'
 import { installFakeClock } from '../../testUtil'
 
 describe('functionUtils', function () {
@@ -47,6 +47,65 @@ describe('functionUtils', function () {
         // TODO: use lib?: https://github.com/anywhichway/nano-memoize
         fn('arg1', arg2_)
         assert.strictEqual(counter, 3)
+    })
+
+    it('oncePerUniqueArg()', function () {
+        let counter = 0
+        const fn = oncePerUniqueArg((s: string) => {
+            counter++
+            return `processed-${s}`
+        })
+
+        // First call with unique arg should execute
+        const result1 = fn('hello')
+        assert.strictEqual(result1, 'processed-hello')
+        assert.strictEqual(counter, 1)
+
+        // Second call with same arg should not execute
+        const result2 = fn('hello')
+        assert.strictEqual(result2, undefined)
+        assert.strictEqual(counter, 1)
+
+        // Call with new arg should execute
+        const result3 = fn('world')
+        assert.strictEqual(result3, 'processed-world')
+        assert.strictEqual(counter, 2)
+
+        // Repeated calls with seen args should not execute
+        fn('hello')
+        fn('world')
+        assert.strictEqual(counter, 2)
+
+        // New arg should execute
+        const result4 = fn('test')
+        assert.strictEqual(result4, 'processed-test')
+        assert.strictEqual(counter, 3)
+    })
+
+    it('oncePerUniqueArg() with overflow limit', function () {
+        let counter = 0
+        // Create function with small overflow limit
+        const fn = oncePerUniqueArg((s: string) => {
+            counter++
+            return counter
+        }, 2)
+
+        // Fill the buffer
+        fn('one')
+        fn('two')
+        assert.strictEqual(counter, 2)
+
+        // This should execute since it's a new value
+        fn('three')
+        assert.strictEqual(counter, 3)
+
+        // 'one' should now be treated as new again since it was evicted
+        fn('one')
+        assert.strictEqual(counter, 4, 'one should still be in the buffer')
+
+        // 'three' should still be in the buffer (not executed)
+        fn('three')
+        assert.strictEqual(counter, 4, 'three should still be in the buffer')
     })
 })
 

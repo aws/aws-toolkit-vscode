@@ -8,7 +8,7 @@ import { env, version } from 'vscode'
 import * as os from 'os'
 import { getLogger } from '../logger/logger'
 import { fromExtensionManifest, Settings } from '../settings'
-import { memoize, once } from '../utilities/functionUtils'
+import { memoize, once, oncePerUniqueArg } from '../utilities/functionUtils'
 import {
     isInDevEnv,
     extensionVersion,
@@ -329,7 +329,7 @@ function validateMetadata(metricName: string, metadata: MetadataObj, fatal: bool
         ' Consider using `.run()` instead of `.emit()`, which will set these properties automatically. ' +
         'See https://github.com/aws/aws-toolkit-vscode/blob/master/docs/telemetry.md#guidelines'
     const msgPrefix = 'invalid Metric: '
-    const logger = getLogger('telemetry')
+    const logger = getTelemetryLogger()
     const logOrThrow = (msg: string, includeSuffix: boolean) => {
         const fullMsg = msgPrefix + msg + (includeSuffix ? preferRunSuffix : '')
         logger.warn(fullMsg)
@@ -346,9 +346,15 @@ function validateMetadata(metricName: string, metadata: MetadataObj, fatal: bool
 
     // TODO: there are many instances in the toolkit where we emit metrics with missing fields. If those can be removed, we can configure this to throw in CI.
     if (metadata.missingFields) {
-        logger.warn(msgPrefix + `"${metricName} emitted with missing fields: ${metadata.missingFields}`, false)
+        logWarningOnce(`"${metricName}" emitted with missing fields: ${metadata.missingFields}`)
     }
 }
+
+function getTelemetryLogger() {
+    return getLogger('telemetry')
+}
+
+const logWarningOnce = oncePerUniqueArg((m: string) => getTelemetryLogger().warn(m))
 
 /**
  * Potentially helpful values for the 'source' field in telemetry.
