@@ -205,17 +205,12 @@ export function registerMessageListeners(
                 const cancellationToken = new CancellationTokenSource()
                 chatStreamTokens.set(chatParams.tabId, cancellationToken)
 
-                const chatDisposable = languageClient.onProgress(
-                    chatRequestType,
-                    partialResultToken,
-                    (partialResult) => {
-                        // Store the latest partial result
-                        decryptResponse<ChatResult>(partialResult, encryptionKey).then((result) => {
+                const chatDisposable = languageClient.onProgress(chatRequestType, partialResultToken, (partialResult) =>
+                    handlePartialResult<ChatResult>(partialResult, encryptionKey, provider, chatParams.tabId).then(
+                        (result) => {
                             lastPartialResult = result
-                        })
-
-                        void handlePartialResult<ChatResult>(partialResult, encryptionKey, provider, chatParams.tabId)
-                    }
+                        }
+                    )
                 )
 
                 const editor =
@@ -488,6 +483,7 @@ async function handlePartialResult<T extends ChatResult>(
             tabId: tabId,
         })
     }
+    return decryptedMessage
 }
 
 /**
