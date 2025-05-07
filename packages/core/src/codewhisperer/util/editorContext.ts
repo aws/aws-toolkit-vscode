@@ -30,7 +30,52 @@ const languageCommentChars: Record<string, string> = {
     java: '// ',
 }
 
-export function getNotebookCellContext(cell: vscode.NotebookCell, referenceLanguage?: string): string {
+function getEnclosingNotebook(editor: vscode.TextEditor): vscode.NotebookDocument | undefined {
+    // For notebook cells, find the existing notebook with a cell that matches the current editor.
+    return vscode.workspace.notebookDocuments.find(
+        (nb) =>
+            nb.notebookType === 'jupyter-notebook' && nb.getCells().some((cell) => cell.document === editor.document)
+    )
+}
+
+export function extractNotebookContext(
+    notebook: vscode.NotebookDocument,
+    editor: vscode.TextEditor,
+    languageName: string,
+    caretLeftFileContext: string,
+    caretRightFileContext: string
+) {
+    // Expand the context for a cell inside of a noteboo with whatever text fits from the preceding and subsequent cells
+    const allCells = notebook.getCells()
+    const cellIndex = allCells.findIndex((cell) => cell.document === editor.document)
+    // Extract text from prior cells if there is enough room in left file context
+    if (caretLeftFileContext.length < CodeWhispererConstants.charactersLimit - 1) {
+        const leftCellsText = getNotebookCellsSliceContext(
+            allCells.slice(0, cellIndex),
+            CodeWhispererConstants.charactersLimit - (caretLeftFileContext.length + 1),
+            languageName,
+            true
+        )
+        if (leftCellsText.length > 0) {
+            caretLeftFileContext = addNewlineIfMissing(leftCellsText) + caretLeftFileContext
+        }
+    }
+    // Extract text from subsequent cells if there is enough room in right file context
+    if (caretRightFileContext.length < CodeWhispererConstants.charactersLimit - 1) {
+        const rightCellsText = getNotebookCellsSliceContext(
+            allCells.slice(cellIndex + 1),
+            CodeWhispererConstants.charactersLimit - (caretRightFileContext.length + 1),
+            languageName,
+            false
+        )
+        if (rightCellsText.length > 0) {
+            caretRightFileContext = addNewlineIfMissing(caretRightFileContext) + rightCellsText
+        }
+    }
+    return { caretLeftFileContext, caretRightFileContext }
+}
+
+export function extractSingleCellContext(cell: vscode.NotebookCell, referenceLanguage?: string): string {
     // Extract the text verbatim if the cell is code and the cell has the same language.
     // Otherwise, add the correct comment string for the refeference language
     const cellText = cell.document.getText()
@@ -58,6 +103,8 @@ export function getNotebookCellsSliceContext(
     referenceLanguage: string,
     fromStart: boolean
 ): string {
+    // Extract context from array of notebook cells that fits inside `maxLength` characters,
+    // from either the start or the end of the array.
     let output: string[] = []
     if (!fromStart) {
         cells = cells.reverse()
@@ -113,40 +160,15 @@ export function extractContextForCodeWhisperer(editor: vscode.TextEditor): codew
             runtimeLanguageContext.normalizeLanguage(editor.document.languageId) ?? editor.document.languageId
     }
     if (editor.document.uri.scheme === 'vscode-notebook-cell') {
-        // For notebook cells, first find the existing notebook with a cell that matches the current editor.
-        const notebook = vscode.workspace.notebookDocuments.find(
-            (nb) =>
-                nb.notebookType === 'jupyter-notebook' &&
-                nb.getCells().some((cell) => cell.document === editor.document)
-        )
+        const notebook = getEnclosingNotebook(editor)
         if (notebook) {
-            const allCells = notebook.getCells()
-            const cellIndex = allCells.findIndex((cell) => cell.document === editor.document)
-
-            // Extract text from prior cells if there is enough room in left file context
-            if (caretLeftFileContext.length < CodeWhispererConstants.charactersLimit - 1) {
-                const leftCellsText = extractCellsSliceContext(
-                    allCells.slice(0, cellIndex),
-                    CodeWhispererConstants.charactersLimit - (caretLeftFileContext.length + 1),
-                    languageName,
-                    true
-                )
-                if (leftCellsText.length > 0) {
-                    caretLeftFileContext = addNewlineIfMissing(leftCellsText) + caretLeftFileContext
-                }
-            }
-            // Extract text from subsequent cells if there is enough room in right file context
-            if (caretRightFileContext.length < CodeWhispererConstants.charactersLimit - 1) {
-                const rightCellsText = extractCellsSliceContext(
-                    allCells.slice(cellIndex + 1),
-                    CodeWhispererConstants.charactersLimit - (caretRightFileContext.length + 1),
-                    languageName,
-                    false
-                )
-                if (rightCellsText.length > 0) {
-                    caretRightFileContext = addNewlineIfMissing(caretRightFileContext) + rightCellsText
-                }
-            }
+            ;({ caretLeftFileContext, caretRightFileContext } = extractNotebookContext(
+                notebook,
+                editor,
+                languageName,
+                caretLeftFileContext,
+                caretRightFileContext
+            ))
         }
     }
 
