@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { CircularBuffer } from './collectionUtils'
 import { Timeout } from './timeoutUtils'
 
 /**
@@ -154,5 +155,45 @@ export function keyedDebounce<T, U extends any[], K extends string = string>(
         pending.set(key, promise)
 
         return promise
+    }
+}
+/**
+ * Creates a function that runs only for unique arguments that haven't been seen before.
+ *
+ * This utility tracks all unique inputs it has seen and only executes the callback
+ * for new inputs. Unlike `onceChanged` which only compares with the previous invocation,
+ * this function maintains a history of all arguments it has processed.
+ *
+ * @param fn The function to execute for unique arguments
+ * @param key A function that returns a unique string for each argument set, defaults to joining with ":" seperating
+ * @param overflow The maximum number of unique arguments to store.
+ * @returns A wrapped function that only executes for new unique arguments
+ *
+ * @example
+ * ```ts
+ * const logOnce = oncePerUniqueArg((message) => console.log(message))
+ *
+ * logOnce('hello') // prints: hello
+ * logOnce('world') // prints: world
+ * logOnce('hello') // nothing happens (already seen)
+ * logOnce('test')  // prints: test
+ * ```
+ */
+export function oncePerUniqueArg<T, U extends any[]>(
+    fn: (...args: U) => T,
+    options?: { key?: (...args: U) => string; overflow?: number }
+): (...args: U) => T | undefined {
+    const seen = new CircularBuffer(options?.overflow ?? 1000)
+    const keyMap = options?.key ?? ((...args: U) => args.map(String).join(':'))
+
+    return (...args) => {
+        const signature = keyMap(...args)
+
+        if (!seen.contains(signature)) {
+            seen.add(signature)
+            return fn(...args)
+        }
+
+        return undefined
     }
 }
