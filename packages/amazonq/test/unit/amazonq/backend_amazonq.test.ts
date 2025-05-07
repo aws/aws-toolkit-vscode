@@ -4,26 +4,23 @@
  */
 
 import assert from 'assert'
-import { AmazonQLoginWebview } from '../../../../login/webview/vue/amazonq/backend_amazonq'
-import { AuthUtil } from '../../../../codewhisperer/util/authUtil'
 import * as sinon from 'sinon'
-import { assertTelemetry } from '../../../testUtil'
-import { connectToEnterpriseSso } from '../../../../codewhisperer/util/getStartUrl'
-import { awsIdSignIn } from '../../../../codewhisperer/util/showSsoPrompt'
-import { createTestAuthUtil } from '../../../testAuthUtil'
+import { assertTelemetry, createTestAuthUtil } from 'aws-core-vscode/test'
+import { AuthUtil, awsIdSignIn, getStartUrl } from 'aws-core-vscode/codewhisperer'
+import { backendAmazonQ } from 'aws-core-vscode/login'
 
 describe('Amazon Q Login', async function () {
     const region = 'fakeRegion'
     const startUrl = 'fakeUrl'
 
     let sandbox: sinon.SinonSandbox
-    let backend: AmazonQLoginWebview
+    let backend: backendAmazonQ.AmazonQLoginWebview
 
-    beforeEach(async function () {
-        await createTestAuthUtil()
+    await createTestAuthUtil()
 
+    beforeEach(function () {
         sandbox = sinon.createSandbox()
-        backend = new AmazonQLoginWebview()
+        backend = new backendAmazonQ.AmazonQLoginWebview()
     })
 
     afterEach(function () {
@@ -85,7 +82,7 @@ describe('Amazon Q Login', async function () {
     })
 
     it('reauths IdC and emits telemetry', async function () {
-        await connectToEnterpriseSso(startUrl, region)
+        await getStartUrl.connectToEnterpriseSso(startUrl, region)
 
         await backend.reauthenticateConnection()
 
