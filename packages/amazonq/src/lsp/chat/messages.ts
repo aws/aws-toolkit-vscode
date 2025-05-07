@@ -67,7 +67,7 @@ import {
 } from 'aws-core-vscode/amazonq'
 import { telemetry, TelemetryBase } from 'aws-core-vscode/telemetry'
 import { isValidResponseError } from './error'
-import { decodeRequest, encryptRequest } from '../encryption'
+import { decryptResponse, encryptRequest } from '../encryption'
 import { getCursorState } from '../utils'
 
 export function registerLanguageServerEventListener(languageClient: LanguageClient, provider: AmazonQChatViewProvider) {
@@ -205,21 +205,12 @@ export function registerMessageListeners(
                 const cancellationToken = new CancellationTokenSource()
                 chatStreamTokens.set(chatParams.tabId, cancellationToken)
 
-                const chatDisposable = languageClient.onProgress(
-                    chatRequestType,
-                    partialResultToken,
-                    (partialResult) => {
-                        // Store the latest partial result
-                        if (typeof partialResult === 'string' && encryptionKey) {
-                            void decodeRequest<ChatResult>(partialResult, encryptionKey).then(
-                                (decoded) => (lastPartialResult = decoded)
-                            )
-                        } else {
-                            lastPartialResult = partialResult as ChatResult
+                const chatDisposable = languageClient.onProgress(chatRequestType, partialResultToken, (partialResult) =>
+                    handlePartialResult<ChatResult>(partialResult, encryptionKey, provider, chatParams.tabId).then(
+                        (result) => {
+                            lastPartialResult = result
                         }
-
-                        void handlePartialResult<ChatResult>(partialResult, encryptionKey, provider, chatParams.tabId)
-                    }
+                    )
                 )
 
                 const editor =
@@ -482,10 +473,7 @@ async function handlePartialResult<T extends ChatResult>(
     provider: AmazonQChatViewProvider,
     tabId: string
 ) {
-    const decryptedMessage =
-        typeof partialResult === 'string' && encryptionKey
-            ? await decodeRequest<T>(partialResult, encryptionKey)
-            : (partialResult as T)
+    const decryptedMessage = await decryptResponse<T>(partialResult, encryptionKey)
 
     if (decryptedMessage.body !== undefined) {
         void provider.webview?.postMessage({
@@ -495,6 +483,7 @@ async function handlePartialResult<T extends ChatResult>(
             tabId: tabId,
         })
     }
+    return decryptedMessage
 }
 
 /**
@@ -508,8 +497,8 @@ async function handleCompleteResult<T extends ChatResult>(
     tabId: string,
     disposable: Disposable
 ) {
-    const decryptedMessage =
-        typeof result === 'string' && encryptionKey ? await decodeRequest<T>(result, encryptionKey) : (result as T)
+    const decryptedMessage = await decryptResponse<T>(result, encryptionKey)
+
     void provider.webview?.postMessage({
         command: chatRequestType.method,
         params: decryptedMessage,
