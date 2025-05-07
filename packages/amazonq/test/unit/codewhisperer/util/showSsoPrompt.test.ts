@@ -7,8 +7,9 @@ import * as vscode from 'vscode'
 import assert from 'assert'
 import * as sinon from 'sinon'
 import { resetCodeWhispererGlobalVariables } from 'aws-core-vscode/test'
-import { assertTelemetryCurried, getTestWindow, getTestLogger } from 'aws-core-vscode/test'
+import { assertTelemetryCurried, getTestWindow } from 'aws-core-vscode/test'
 import { AuthUtil, awsIdSignIn, showCodeWhispererConnectionPrompt } from 'aws-core-vscode/codewhisperer'
+import { SsoAccessTokenProvider, constants } from 'aws-core-vscode/auth'
 
 describe('showConnectionPrompt', function () {
     let isBuilderIdConnection: sinon.SinonStub
@@ -17,6 +18,9 @@ describe('showConnectionPrompt', function () {
         await resetCodeWhispererGlobalVariables()
         isBuilderIdConnection = sinon.stub(AuthUtil.instance, 'isBuilderIdConnection')
         isBuilderIdConnection.resolves()
+
+        // Stub useDeviceFlow so we always use DeviceFlow for auth
+        sinon.stub(SsoAccessTokenProvider, 'useDeviceFlow').returns(true)
     })
 
     afterEach(function () {
@@ -24,6 +28,8 @@ describe('showConnectionPrompt', function () {
     })
 
     it('can select connect to AwsBuilderId', async function () {
+        sinon.stub(AuthUtil.instance, 'login').resolves()
+
         getTestWindow().onDidShowQuickPick(async (picker) => {
             await picker.untilReady()
             picker.acceptItem(picker.items[0])
@@ -36,12 +42,13 @@ describe('showConnectionPrompt', function () {
         assert.ok(isBuilderIdConnection)
     })
 
-    it('connectToAwsBuilderId logs that AWS ID sign in was selected', async function () {
+    it('connectToAwsBuilderId calls AuthUtil login with builderIdStartUrl', async function () {
         sinon.stub(vscode.commands, 'executeCommand')
+        const loginStub = sinon.stub(AuthUtil.instance, 'login').resolves()
 
         await awsIdSignIn()
 
-        const loggedEntries = getTestLogger().getLoggedEntries()
-        assert.ok(loggedEntries.find((entry) => entry === 'selected AWS ID sign in'))
+        assert.strictEqual(loginStub.called, true)
+        assert.strictEqual(loginStub.firstCall.args[0], constants.builderIdStartUrl)
     })
 })
