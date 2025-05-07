@@ -178,19 +178,19 @@ describe('editorContext', function () {
     describe('getNotebookCellContext', function () {
         it('Should return cell text for python code cells when language is python', function () {
             const mockCodeCell = createNotebookCell(createMockDocument('def example():\n    return "test"'))
-            const result = EditorContext.extractSingleCellContext(mockCodeCell, 'python')
+            const result = EditorContext.getNotebookCellContext(mockCodeCell, 'python')
             assert.strictEqual(result, 'def example():\n    return "test"')
         })
 
         it('Should return java comments for python code cells when language is java', function () {
             const mockCodeCell = createNotebookCell(createMockDocument('def example():\n    return "test"'))
-            const result = EditorContext.extractSingleCellContext(mockCodeCell, 'java')
+            const result = EditorContext.getNotebookCellContext(mockCodeCell, 'java')
             assert.strictEqual(result, '// def example():\n//     return "test"')
         })
 
         it('Should return python comments for java code cells when language is python', function () {
             const mockCodeCell = createNotebookCell(createMockDocument('println(1 + 1);', 'somefile.ipynb', 'java'))
-            const result = EditorContext.extractSingleCellContext(mockCodeCell, 'python')
+            const result = EditorContext.getNotebookCellContext(mockCodeCell, 'python')
             assert.strictEqual(result, '# println(1 + 1);')
         })
 
@@ -199,7 +199,7 @@ describe('editorContext', function () {
                 createMockDocument('# Heading\nThis is a markdown cell'),
                 vscode.NotebookCellKind.Markup
             )
-            const result = EditorContext.extractSingleCellContext(mockMarkdownCell, 'python')
+            const result = EditorContext.getNotebookCellContext(mockMarkdownCell, 'python')
             assert.strictEqual(result, '# # Heading\n# This is a markdown cell')
         })
 
@@ -208,7 +208,7 @@ describe('editorContext', function () {
                 createMockDocument('# Heading\nThis is a markdown cell'),
                 vscode.NotebookCellKind.Markup
             )
-            const result = EditorContext.extractSingleCellContext(mockMarkdownCell, 'java')
+            const result = EditorContext.getNotebookCellContext(mockMarkdownCell, 'java')
             assert.strictEqual(result, '// # Heading\n// This is a markdown cell')
         })
     })

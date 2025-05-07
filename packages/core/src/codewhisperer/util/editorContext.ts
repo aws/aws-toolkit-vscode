@@ -38,7 +38,7 @@ function getEnclosingNotebook(editor: vscode.TextEditor): vscode.NotebookDocumen
     )
 }
 
-export function extractNotebookContext(
+export function getNotebookContext(
     notebook: vscode.NotebookDocument,
     editor: vscode.TextEditor,
     languageName: string,
@@ -75,7 +75,7 @@ export function extractNotebookContext(
     return { caretLeftFileContext, caretRightFileContext }
 }
 
-export function extractSingleCellContext(cell: vscode.NotebookCell, referenceLanguage?: string): string {
+export function getNotebookCellContext(cell: vscode.NotebookCell, referenceLanguage?: string): string {
     // Extract the text verbatim if the cell is code and the cell has the same language.
     // Otherwise, add the correct comment string for the refeference language
     const cellText = cell.document.getText()
@@ -110,7 +110,7 @@ export function getNotebookCellsSliceContext(
         cells = cells.reverse()
     }
     cells.some((cell) => {
-        let cellText = addNewlineIfMissing(extractSingleCellContext(cell, referenceLanguage))
+        let cellText = addNewlineIfMissing(getNotebookCellContext(cell, referenceLanguage))
         if (cellText.length > 0) {
             if (cellText.length >= maxLength) {
                 if (fromStart) {
@@ -162,7 +162,7 @@ export function extractContextForCodeWhisperer(editor: vscode.TextEditor): codew
     if (editor.document.uri.scheme === 'vscode-notebook-cell') {
         const notebook = getEnclosingNotebook(editor)
         if (notebook) {
-            ;({ caretLeftFileContext, caretRightFileContext } = extractNotebookContext(
+            ;({ caretLeftFileContext, caretRightFileContext } = getNotebookContext(
                 notebook,
                 editor,
                 languageName,
