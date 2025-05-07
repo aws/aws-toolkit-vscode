@@ -1,3 +1,17 @@
+## 1.65.0 2025-05-05
+
+- **Feature** Support selecting customizations across all Q profiles with automatic profile switching for enterprise users
+- **Feature** Memorize and autofill users' last Sso login profile
+
+## 1.64.0 2025-05-02
+
+- **Bug Fix** Enable Amazon Q LSP in AL2 instances
+
+## 1.63.0 2025-05-01
+
+- **Bug Fix** Q profile selection hangs when a region is blocked
+- **Feature** Agentic coding experience: Amazon Q can now write code and run shell commands on your behalf
+
 ## 1.62.0 2025-04-25
 
 - **Bug Fix** Toast message to warn users if Developer Profile is not selected

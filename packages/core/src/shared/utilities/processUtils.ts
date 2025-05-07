@@ -45,6 +45,13 @@ export interface ChildProcessOptions {
     onStdout?: (text: string, context: RunParameterContext) => void
     /** Callback for intercepting text from the stderr stream. */
     onStderr?: (text: string, context: RunParameterContext) => void
+    /** Thresholds to configure warning logs */
+    warnThresholds?: {
+        /** Threshold for memory usage in bytes */
+        memory?: number
+        /** Threshold for CPU usage by percentage */
+        cpu?: number
+    }
 }
 
 export interface ChildProcessRunOptions extends Omit<ChildProcessOptions, 'logging'> {
@@ -61,8 +68,12 @@ export interface ChildProcessResult {
     stderr: string
     signal?: string
 }
-
+export const oneMB = 1024 * 1024
 export const eof = Symbol('EOF')
+export const defaultProcessWarnThresholds = {
+    memory: 100 * oneMB,
+    cpu: 50,
+}
 
 export interface ProcessStats {
     memory: number
@@ -70,16 +81,22 @@ export interface ProcessStats {
 }
 export class ChildProcessTracker {
     static readonly pollingInterval: number = 10000 // Check usage every 10 seconds
-    static readonly thresholds: ProcessStats = {
-        memory: 100 * 1024 * 1024, // 100 MB
-        cpu: 50,
-    }
     static readonly logger = logger.getLogger('childProcess')
+    static readonly loggedPids = new CircularBuffer(1000)
     #processByPid: Map<number, ChildProcess> = new Map<number, ChildProcess>()
     #pids: PollingSet<number>
 
     public constructor() {
         this.#pids = new PollingSet(ChildProcessTracker.pollingInterval, () => this.monitor())
+    }
+
+    private getThreshold(pid: number): ProcessStats {
+        if (!this.#processByPid.has(pid)) {
+            ChildProcessTracker.logOnce(pid, `Missing process with id ${pid}, returning default threshold`)
+            return defaultProcessWarnThresholds
+        }
+        // Safe to assert since it exists from check above.
+        return this.#processByPid.get(pid)!.getWarnThresholds()
     }
 
     private cleanUp() {
@@ -102,31 +119,30 @@ export class ChildProcessTracker {
 
     private async checkProcessUsage(pid: number): Promise<void> {
         if (!this.#pids.has(pid)) {
-            ChildProcessTracker.logMissingPid(pid)
+            ChildProcessTracker.logOnce(pid, `Missing process with id ${pid}`)
             return
         }
         const stats = this.getUsage(pid)
+        const threshold = this.getThreshold(pid)
         if (stats) {
             ChildProcessTracker.logger.debug(`Process ${pid} usage: %O`, stats)
-            if (stats.memory > ChildProcessTracker.thresholds.memory) {
-                ChildProcessTracker.logExceededThreshold(pid, 'memory')
+            if (stats.memory > threshold.memory) {
+                ChildProcessTracker.logOnce(
+                    pid,
+                    `Process ${pid} exceeded memory threshold: ${(stats.memory / oneMB).toFixed(2)} MB`
+                )
             }
-            if (stats.cpu > ChildProcessTracker.thresholds.cpu) {
-                ChildProcessTracker.logExceededThreshold(pid, 'cpu')
+            if (stats.cpu > threshold.cpu) {
+                ChildProcessTracker.logOnce(pid, `Process ${pid} exceeded cpu threshold: ${stats.cpu}%`)
             }
         }
     }
 
-    private static logMissingPid = oncePerUniqueArg((pid: number) =>
-        ChildProcessTracker.logger.warn(`Missing process with id ${pid}`)
-    )
-
-    private static logStatFailure = oncePerUniqueArg((pid: number, e: unknown) =>
-        ChildProcessTracker.logger.warn(`Failed to get process stats for ${pid}: ${e}`)
-    )
-
-    private static logExceededThreshold = oncePerUniqueArg((pid: number, threshold: keyof ProcessStats) =>
-        ChildProcessTracker.logger.warn(`Process ${pid} exceeded ${threshold} threshold`)
+    public static logOnce = oncePerUniqueArg(
+        (_pid: number, msg: string) => {
+            ChildProcessTracker.logger.warn(msg)
+        },
+        { key: (pid, _) => `${pid}` }
     )
 
     public add(childProcess: ChildProcess) {
@@ -161,7 +177,7 @@ export class ChildProcessTracker {
             // isWin() leads to circular dependency.
             return process.platform === 'win32' ? getWindowsUsage() : getUnixUsage()
         } catch (e) {
-            ChildProcessTracker.logStatFailure(pid, e)
+            ChildProcessTracker.logOnce(pid, `Failed to get process stats for ${pid}: ${e}`)
             return { cpu: 0, memory: 0 }
         }
 
@@ -251,6 +267,10 @@ export class ChildProcess {
         options?: ChildProcessOptions
     ): Promise<ChildProcessResult> {
         return await new ChildProcess(command, args, options).run()
+    }
+
+    public getWarnThresholds(): ProcessStats {
+        return { ...defaultProcessWarnThresholds, ...this.#baseOptions.warnThresholds }
     }
 
     // Inspired by 'got'

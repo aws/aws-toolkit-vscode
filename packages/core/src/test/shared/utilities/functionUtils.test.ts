@@ -56,25 +56,21 @@ describe('functionUtils', function () {
             return `processed-${s}`
         })
 
-        // First call with unique arg should execute
         const result1 = fn('hello')
         assert.strictEqual(result1, 'processed-hello')
-        assert.strictEqual(counter, 1)
+        assert.strictEqual(counter, 1, 'First call with unique arg should execute')
 
-        // Second call with same arg should not execute
         const result2 = fn('hello')
         assert.strictEqual(result2, undefined)
-        assert.strictEqual(counter, 1)
+        assert.strictEqual(counter, 1, 'Second call with same arg should not execute')
 
-        // Call with new arg should execute
         const result3 = fn('world')
         assert.strictEqual(result3, 'processed-world')
-        assert.strictEqual(counter, 2)
+        assert.strictEqual(counter, 2, 'Call with new arg should execute')
 
-        // Repeated calls with seen args should not execute
         fn('hello')
         fn('world')
-        assert.strictEqual(counter, 2)
+        assert.strictEqual(counter, 2, 'Repeated calls with seen args should not execute')
 
         // New arg should execute
         const result4 = fn('test')
@@ -82,22 +78,43 @@ describe('functionUtils', function () {
         assert.strictEqual(counter, 3)
     })
 
+    it('oncePerUniqueArg() with custom key', function () {
+        let counter = 0
+        const fn = oncePerUniqueArg(
+            (_s1: string, _s2: string) => {
+                counter++
+            },
+            { key: (s1, _s2) => s1 }
+        )
+
+        fn('hello', 'world')
+        assert.strictEqual(counter, 1, 'First call with unique arg should execute')
+
+        fn('hello', 'worldss')
+        assert.strictEqual(counter, 1, 'Second arg being different should not execute')
+
+        fn('world', 'hello')
+        assert.strictEqual(counter, 2, 'First arg being different should execute')
+    })
+
     it('oncePerUniqueArg() with overflow limit', function () {
         let counter = 0
         // Create function with small overflow limit
-        const fn = oncePerUniqueArg((s: string) => {
-            counter++
-            return counter
-        }, 2)
+        const fn = oncePerUniqueArg(
+            (_s: string) => {
+                counter++
+                return counter
+            },
+            { overflow: 2 }
+        )
 
         // Fill the buffer
         fn('one')
         fn('two')
         assert.strictEqual(counter, 2)
 
-        // This should execute since it's a new value
         fn('three')
-        assert.strictEqual(counter, 3)
+        assert.strictEqual(counter, 3, '"three" call should execute since it is a new value')
 
         // 'one' should now be treated as new again since it was evicted
         fn('one')

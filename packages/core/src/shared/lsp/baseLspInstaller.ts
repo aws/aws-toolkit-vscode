@@ -41,7 +41,7 @@ export abstract class BaseLspInstaller<T extends ResourcePaths = ResourcePaths, 
         const manifest = await new ManifestResolver(manifestUrl, id, suppressPromptPrefix).resolve()
         const installationResult = await new LanguageServerResolver(
             manifest,
-            id,
+            id, // TODO: We may want a display name instead of the ID
             new Range(supportedVersions, {
                 includePrerelease: true,
             }),

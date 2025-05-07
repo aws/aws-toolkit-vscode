@@ -49,12 +49,17 @@ const endpoints = createConstantMap({
  * 'update' -> plugin auto select the profile on users' behalf as there is only 1 profile
  * 'reload' -> on plugin restart, plugin will try to reload previous selected profile
  */
-export type ProfileSwitchIntent = 'user' | 'auth' | 'update' | 'reload'
+export type ProfileSwitchIntent = 'user' | 'auth' | 'update' | 'reload' | 'customization'
+
+export type ProfileChangedEvent = {
+    profile: RegionProfile | undefined
+    intent: ProfileSwitchIntent
+}
 
 export class RegionProfileManager {
     private static logger = getLogger()
     private _activeRegionProfile: RegionProfile | undefined
-    private _onDidChangeRegionProfile = new vscode.EventEmitter<RegionProfile | undefined>()
+    private _onDidChangeRegionProfile = new vscode.EventEmitter<ProfileChangedEvent>()
     public readonly onDidChangeRegionProfile = this._onDidChangeRegionProfile.event
 
     // Store the last API results (for UI propuse) so we don't need to call service again if doesn't require "latest" result
@@ -138,8 +143,10 @@ export class RegionProfileManager {
             return []
         }
         const availableProfiles: RegionProfile[] = []
+        const failedRegions: string[] = []
+
         for (const [region, endpoint] of endpoints.entries()) {
-            const client = await this.createQClient(region, endpoint, conn as SsoConnection)
+            const client = await this._createQClient(region, endpoint, conn as SsoConnection)
             const requester = async (request: CodeWhispererUserClient.ListAvailableProfilesRequest) =>
                 client.listAvailableProfiles(request).promise()
             const request: CodeWhispererUserClient.ListAvailableProfilesRequest = {}
@@ -162,13 +169,17 @@ export class RegionProfileManager {
                 })
 
                 availableProfiles.push(...mappedPfs)
+                RegionProfileManager.logger.debug(`Found ${mappedPfs.length} profiles in region ${region}`)
             } catch (e) {
                 const logMsg = isAwsError(e) ? `requestId=${e.requestId}; message=${e.message}` : (e as Error).message
-                RegionProfileManager.logger.error(`failed to listRegionProfile: ${logMsg}`)
-                throw e
+                RegionProfileManager.logger.error(`Failed to list profiles for region ${region}: ${logMsg}`)
+                failedRegions.push(region)
             }
+        }
 
-            RegionProfileManager.logger.info(`available amazonq profiles: ${availableProfiles.length}`)
+        // Only throw error if all regions fail
+        if (failedRegions.length === endpoints.size) {
+            throw new Error(`Failed to list profiles for all regions: ${failedRegions.join(', ')}`)
         }
 
         this._profiles = availableProfiles
@@ -189,7 +200,7 @@ export class RegionProfileManager {
         const ssoConn = this.connectionProvider() as SsoConnection
 
         // only prompt to users when users switch from A profile to B profile
-        if (this.activeRegionProfile !== undefined && regionProfile !== undefined) {
+        if (source !== 'customization' && this.activeRegionProfile !== undefined && regionProfile !== undefined) {
             const response = await showConfirmationMessage({
                 prompt: localize(
                     'AWS.amazonq.profile.confirmation',
@@ -231,13 +242,16 @@ export class RegionProfileManager {
             })
         }
 
-        await this._switchRegionProfile(regionProfile)
+        await this._switchRegionProfile(regionProfile, source)
     }
 
-    private async _switchRegionProfile(regionProfile: RegionProfile | undefined) {
+    private async _switchRegionProfile(regionProfile: RegionProfile | undefined, source: ProfileSwitchIntent) {
         this._activeRegionProfile = regionProfile
 
-        this._onDidChangeRegionProfile.fire(regionProfile)
+        this._onDidChangeRegionProfile.fire({
+            profile: regionProfile,
+            intent: source,
+        })
         // dont show if it's a default (fallback)
         if (regionProfile && this.profiles.length > 1) {
             void vscode.window.showInformationMessage(`You are using the ${regionProfile.name} profile for Q.`).then()
@@ -378,7 +392,21 @@ export class RegionProfileManager {
         await this.cache.clearCache()
     }
 
-    async createQClient(region: string, endpoint: string, conn: SsoConnection): Promise<CodeWhispererUserClient> {
+    // TODO: Should maintain sdk client in a better way
+    async createQClient(profile: RegionProfile): Promise<CodeWhispererUserClient> {
+        const conn = this.connectionProvider()
+        if (conn === undefined || !isSsoConnection(conn)) {
+            throw new Error('No valid SSO connection')
+        }
+        const endpoint = endpoints.get(profile.region)
+        if (!endpoint) {
+            throw new Error(`trying to initiatize Q client with unrecognizable region ${profile.region}`)
+        }
+        return this._createQClient(profile.region, endpoint, conn)
+    }
+
+    // Visible for testing only, do not use this directly, please use createQClient(profile)
+    async _createQClient(region: string, endpoint: string, conn: SsoConnection): Promise<CodeWhispererUserClient> {
         const token = (await conn.getToken()).accessToken
         const serviceOption: ServiceOptions = {
             apiConfig: userApiConfig,

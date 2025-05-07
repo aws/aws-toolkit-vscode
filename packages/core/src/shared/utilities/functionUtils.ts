@@ -165,6 +165,7 @@ export function keyedDebounce<T, U extends any[], K extends string = string>(
  * this function maintains a history of all arguments it has processed.
  *
  * @param fn The function to execute for unique arguments
+ * @param key A function that returns a unique string for each argument set, defaults to joining with ":" seperating
  * @param overflow The maximum number of unique arguments to store.
  * @returns A wrapped function that only executes for new unique arguments
  *
@@ -180,12 +181,13 @@ export function keyedDebounce<T, U extends any[], K extends string = string>(
  */
 export function oncePerUniqueArg<T, U extends any[]>(
     fn: (...args: U) => T,
-    overflow?: number
+    options?: { key?: (...args: U) => string; overflow?: number }
 ): (...args: U) => T | undefined {
-    const seen = new CircularBuffer(overflow ?? 1000)
+    const seen = new CircularBuffer(options?.overflow ?? 1000)
+    const keyMap = options?.key ?? ((...args: U) => args.map(String).join(':'))
 
     return (...args) => {
-        const signature = args.map(String).join(':')
+        const signature = keyMap(...args)
 
         if (!seen.contains(signature)) {
             seen.add(signature)
