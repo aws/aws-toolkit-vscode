@@ -40,7 +40,7 @@ export async function validateNodeExe(nodePath: string[], lsp: string, args: str
     if (!ok) {
         const msg = `failed to run basic "node -e" test (exitcode=${r.exitCode}): ${proc.toString(false, true)}`
         logger.error(msg)
-        throw new ToolkitError(`amazonqLsp: ${msg}`)
+        throw new ToolkitError(`amazonqLsp: ${msg}`, { code: 'InvalidNode' })
     }
 
     // Check that we can start `node …/lsp.js --stdio …`.
