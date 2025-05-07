@@ -44,7 +44,9 @@ export class RecommendationService {
 
         // Set telemetry data for the first response
         TelemetryHelper.instance.setSdkApiCallEndTime()
-        TelemetryHelper.instance.setFirstResponseRequestId(firstResult.sessionId)
+        if (firstResult.items.length > 0) {
+            TelemetryHelper.instance.setFirstResponseRequestId(firstResult.items[0].itemId)
+        }
         TelemetryHelper.instance.setFirstSuggestionShowTime()
 
         const firstCompletionDisplayLatency = Date.now() - requestStartTime

@@ -32,8 +32,8 @@ import {
     ReferenceLogViewProvider,
     ImportAdderProvider,
     CodeSuggestionsState,
-    TelemetryHelper,
 } from 'aws-core-vscode/codewhisperer'
+import { TelemetryHelper } from './telemetryHelper'
 
 export class InlineCompletionManager implements Disposable {
     private disposable: Disposable
@@ -190,6 +190,7 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
             }
 
             TelemetryHelper.instance.setInvokeSuggestionStartTime()
+            TelemetryHelper.instance.setTriggerType(context.triggerKind)
 
             // make service requests if it's a new session
             await this.recommendationService.getAllRecommendations(
