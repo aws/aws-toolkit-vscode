@@ -4,7 +4,7 @@
  */
 
 import assert from 'assert'
-import { once, onceChanged, debounce } from '../../../shared/utilities/functionUtils'
+import { once, onceChanged, debounce, oncePerUniqueArg } from '../../../shared/utilities/functionUtils'
 import { installFakeClock } from '../../testUtil'
 
 describe('functionUtils', function () {
@@ -47,6 +47,82 @@ describe('functionUtils', function () {
         // TODO: use lib?: https://github.com/anywhichway/nano-memoize
         fn('arg1', arg2_)
         assert.strictEqual(counter, 3)
+    })
+
+    it('oncePerUniqueArg()', function () {
+        let counter = 0
+        const fn = oncePerUniqueArg((s: string) => {
+            counter++
+            return `processed-${s}`
+        })
+
+        const result1 = fn('hello')
+        assert.strictEqual(result1, 'processed-hello')
+        assert.strictEqual(counter, 1, 'First call with unique arg should execute')
+
+        const result2 = fn('hello')
+        assert.strictEqual(result2, undefined)
+        assert.strictEqual(counter, 1, 'Second call with same arg should not execute')
+
+        const result3 = fn('world')
+        assert.strictEqual(result3, 'processed-world')
+        assert.strictEqual(counter, 2, 'Call with new arg should execute')
+
+        fn('hello')
+        fn('world')
+        assert.strictEqual(counter, 2, 'Repeated calls with seen args should not execute')
+
+        // New arg should execute
+        const result4 = fn('test')
+        assert.strictEqual(result4, 'processed-test')
+        assert.strictEqual(counter, 3)
+    })
+
+    it('oncePerUniqueArg() with custom key', function () {
+        let counter = 0
+        const fn = oncePerUniqueArg(
+            (_s1: string, _s2: string) => {
+                counter++
+            },
+            { key: (s1, _s2) => s1 }
+        )
+
+        fn('hello', 'world')
+        assert.strictEqual(counter, 1, 'First call with unique arg should execute')
+
+        fn('hello', 'worldss')
+        assert.strictEqual(counter, 1, 'Second arg being different should not execute')
+
+        fn('world', 'hello')
+        assert.strictEqual(counter, 2, 'First arg being different should execute')
+    })
+
+    it('oncePerUniqueArg() with overflow limit', function () {
+        let counter = 0
+        // Create function with small overflow limit
+        const fn = oncePerUniqueArg(
+            (_s: string) => {
+                counter++
+                return counter
+            },
+            { overflow: 2 }
+        )
+
+        // Fill the buffer
+        fn('one')
+        fn('two')
+        assert.strictEqual(counter, 2)
+
+        fn('three')
+        assert.strictEqual(counter, 3, '"three" call should execute since it is a new value')
+
+        // 'one' should now be treated as new again since it was evicted
+        fn('one')
+        assert.strictEqual(counter, 4, 'one should still be in the buffer')
+
+        // 'three' should still be in the buffer (not executed)
+        fn('three')
+        assert.strictEqual(counter, 4, 'three should still be in the buffer')
     })
 })
 
