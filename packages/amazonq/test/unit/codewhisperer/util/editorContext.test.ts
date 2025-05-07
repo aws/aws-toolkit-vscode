@@ -213,7 +213,7 @@ describe('editorContext', function () {
         })
     })
 
-    describe('extractCellsSliceContext', function () {
+    describe('getNotebookCellsSliceContext', function () {
         it('Should extract content from cells in reverse order up to maxLength from prefix cells', function () {
             const mockCells = [
                 createNotebookCell(createMockDocument('First cell content')),
@@ -221,7 +221,7 @@ describe('editorContext', function () {
                 createNotebookCell(createMockDocument('Third cell content')),
             ]
 
-            const result = EditorContext.extractCellsSliceContext(mockCells, 100, 'python', false)
+            const result = EditorContext.getNotebookCellsSliceContext(mockCells, 100, 'python', false)
             assert.strictEqual(result, 'First cell content\nSecond cell content\nThird cell content\n')
         })
 
@@ -232,7 +232,7 @@ describe('editorContext', function () {
                 createNotebookCell(createMockDocument('Third cell content')),
             ]
 
-            const result = EditorContext.extractCellsSliceContext(mockCells, 100, 'python', true)
+            const result = EditorContext.getNotebookCellsSliceContext(mockCells, 100, 'python', true)
             assert.strictEqual(result, 'First cell content\nSecond cell content\nThird cell content\n')
         })
 
@@ -244,7 +244,7 @@ describe('editorContext', function () {
                 createNotebookCell(createMockDocument('Fourth')),
             ]
             // Should only include part of second cell and the last two cells
-            const result = EditorContext.extractCellsSliceContext(mockCells, 15, 'python', false)
+            const result = EditorContext.getNotebookCellsSliceContext(mockCells, 15, 'python', false)
             assert.strictEqual(result, 'd\nThird\nFourth\n')
         })
 
@@ -257,17 +257,17 @@ describe('editorContext', function () {
             ]
 
             // Should only include first cell and part of second cell
-            const result = EditorContext.extractCellsSliceContext(mockCells, 15, 'python', true)
+            const result = EditorContext.getNotebookCellsSliceContext(mockCells, 15, 'python', true)
             assert.strictEqual(result, 'First\nSecond\nTh')
         })
 
         it('Should handle empty cells array from prefix cells', function () {
-            const result = EditorContext.extractCellsSliceContext([], 100, 'python', false)
+            const result = EditorContext.getNotebookCellsSliceContext([], 100, 'python', false)
             assert.strictEqual(result, '')
         })
 
         it('Should handle empty cells array from suffix cells', function () {
-            const result = EditorContext.extractCellsSliceContext([], 100, 'python', true)
+            const result = EditorContext.getNotebookCellsSliceContext([], 100, 'python', true)
             assert.strictEqual(result, '')
         })
 
@@ -276,7 +276,7 @@ describe('editorContext', function () {
                 createNotebookCell(createMockDocument('# Heading\nThis is markdown'), vscode.NotebookCellKind.Markup),
                 createNotebookCell(createMockDocument('def example():\n    return "test"')),
             ]
-            const result = EditorContext.extractCellsSliceContext(mockCells, 100, 'python', false)
+            const result = EditorContext.getNotebookCellsSliceContext(mockCells, 100, 'python', false)
             assert.strictEqual(result, '# # Heading\n# This is markdown\ndef example():\n    return "test"\n')
         })
 
@@ -286,7 +286,7 @@ describe('editorContext', function () {
                 createNotebookCell(createMockDocument('def example():\n    return "test"')),
             ]
 
-            const result = EditorContext.extractCellsSliceContext(mockCells, 100, 'python', true)
+            const result = EditorContext.getNotebookCellsSliceContext(mockCells, 100, 'python', true)
             assert.strictEqual(result, '# # Heading\n# This is markdown\ndef example():\n    return "test"\n')
         })
 
@@ -295,7 +295,7 @@ describe('editorContext', function () {
                 createNotebookCell(createMockDocument('# Heading\nThis is markdown'), vscode.NotebookCellKind.Markup),
                 createNotebookCell(createMockDocument('def example():\n    return "test"')),
             ]
-            const result = EditorContext.extractCellsSliceContext(mockCells, 100, 'java', false)
+            const result = EditorContext.getNotebookCellsSliceContext(mockCells, 100, 'java', false)
             assert.strictEqual(result, '// # Heading\n// This is markdown\n// def example():\n//     return "test"\n')
         })
 
@@ -305,7 +305,7 @@ describe('editorContext', function () {
                 createNotebookCell(createMockDocument('println(1 + 1);', 'somefile.ipynb', 'java')),
             ]
 
-            const result = EditorContext.extractCellsSliceContext(mockCells, 100, 'java', true)
+            const result = EditorContext.getNotebookCellsSliceContext(mockCells, 100, 'java', true)
             assert.strictEqual(result, '// # Heading\n// This is markdown\nprintln(1 + 1);\n')
         })
 
@@ -317,7 +317,7 @@ describe('editorContext', function () {
                 ),
                 createNotebookCell(createMockDocument('def example():\n    return "test"')),
             ]
-            const result = EditorContext.extractCellsSliceContext(mockCells, 100, 'python', false)
+            const result = EditorContext.getNotebookCellsSliceContext(mockCells, 100, 'python', false)
             assert.strictEqual(result, '# println(1 + 1);\ndef example():\n    return "test"\n')
         })
 
@@ -329,7 +329,7 @@ describe('editorContext', function () {
                 ),
                 createNotebookCell(createMockDocument('def example():\n    return "test"')),
             ]
-            const result = EditorContext.extractCellsSliceContext(mockCells, 100, 'python', true)
+            const result = EditorContext.getNotebookCellsSliceContext(mockCells, 100, 'python', true)
             assert.strictEqual(result, '# println(1 + 1);\ndef example():\n    return "test"\n')
         })
     })
