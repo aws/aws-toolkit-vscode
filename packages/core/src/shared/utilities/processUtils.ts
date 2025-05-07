@@ -9,6 +9,7 @@ import * as logger from '../logger/logger'
 import { Timeout, CancellationError, waitUntil } from './timeoutUtils'
 import { PollingSet } from './pollingSet'
 import { CircularBuffer } from './collectionUtils'
+import { oncePerUniqueArg } from './functionUtils'
 
 export interface RunParameterContext {
     /** Reports an error parsed from the stdin/stdout streams. */
@@ -74,7 +75,6 @@ export class ChildProcessTracker {
         cpu: 50,
     }
     static readonly logger = logger.getLogger('childProcess')
-    static readonly loggedPids = new CircularBuffer<number>(1000)
     #processByPid: Map<number, ChildProcess> = new Map<number, ChildProcess>()
     #pids: PollingSet<number>
 
@@ -102,27 +102,32 @@ export class ChildProcessTracker {
 
     private async checkProcessUsage(pid: number): Promise<void> {
         if (!this.#pids.has(pid)) {
-            ChildProcessTracker.logOnce(pid, `Missing process with id ${pid}`)
+            ChildProcessTracker.logMissingPid(pid)
             return
         }
         const stats = this.getUsage(pid)
         if (stats) {
             ChildProcessTracker.logger.debug(`Process ${pid} usage: %O`, stats)
             if (stats.memory > ChildProcessTracker.thresholds.memory) {
-                ChildProcessTracker.logOnce(pid, `Process ${pid} exceeded memory threshold: ${stats.memory}`)
+                ChildProcessTracker.logExceededThreshold(pid, 'memory')
             }
             if (stats.cpu > ChildProcessTracker.thresholds.cpu) {
-                ChildProcessTracker.logOnce(pid, `Process ${pid} exceeded cpu threshold: ${stats.cpu}`)
+                ChildProcessTracker.logExceededThreshold(pid, 'cpu')
             }
         }
     }
 
-    public static logOnce(pid: number, msg: string) {
-        if (!ChildProcessTracker.loggedPids.contains(pid)) {
-            ChildProcessTracker.loggedPids.add(pid)
-            ChildProcessTracker.logger.warn(msg)
-        }
-    }
+    private static logMissingPid = oncePerUniqueArg((pid: number) =>
+        ChildProcessTracker.logger.warn(`Missing process with id ${pid}`)
+    )
+
+    private static logStatFailure = oncePerUniqueArg((pid: number, e: unknown) =>
+        ChildProcessTracker.logger.warn(`Failed to get process stats for ${pid}: ${e}`)
+    )
+
+    private static logExceededThreshold = oncePerUniqueArg((pid: number, threshold: keyof ProcessStats) =>
+        ChildProcessTracker.logger.warn(`Process ${pid} exceeded ${threshold} threshold`)
+    )
 
     public add(childProcess: ChildProcess) {
         const pid = childProcess.pid()
@@ -156,7 +161,7 @@ export class ChildProcessTracker {
             // isWin() leads to circular dependency.
             return process.platform === 'win32' ? getWindowsUsage() : getUnixUsage()
         } catch (e) {
-            ChildProcessTracker.logOnce(pid, `Failed to get process stats for ${pid}: ${e}`)
+            ChildProcessTracker.logStatFailure(pid, e)
             return { cpu: 0, memory: 0 }
         }
 
