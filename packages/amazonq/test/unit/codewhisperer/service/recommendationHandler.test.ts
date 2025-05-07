@@ -9,7 +9,6 @@ import * as sinon from 'sinon'
 import {
     ReferenceInlineProvider,
     session,
-    AuthUtil,
     DefaultCodeWhispererClient,
     RecommendationsList,
     ConfigurationEntry,
@@ -22,9 +21,10 @@ import {
     stub,
     createMockTextEditor,
     resetCodeWhispererGlobalVariables,
-    createTestAuthUtil,
 } from 'aws-core-vscode/test'
 // import * as supplementalContextUtil from 'aws-core-vscode/codewhisperer'
+
+const enterpriseSsoStartUrl = 'https://enterprise.awsapps.com/start'
 
 describe('recommendationHandler', function () {
     const config: ConfigurationEntry = {
@@ -40,9 +40,6 @@ describe('recommendationHandler', function () {
     describe('getRecommendations', async function () {
         const mockClient = stub(DefaultCodeWhispererClient)
         const mockEditor = createMockTextEditor()
-        const testStartUrl = 'testStartUrl'
-
-        await createTestAuthUtil()
 
         beforeEach(async function () {
             sinon.restore()
@@ -50,7 +47,6 @@ describe('recommendationHandler', function () {
             mockClient.listRecommendations.resolves({})
             mockClient.generateRecommendations.resolves({})
             RecommendationHandler.instance.clearRecommendations()
-            sinon.stub(AuthUtil.instance.connection!, 'startUrl').value(testStartUrl)
         })
 
         afterEach(function () {
@@ -146,7 +142,7 @@ describe('recommendationHandler', function () {
                 codewhispererLineNumber: 1,
                 codewhispererCursorOffset: 38,
                 codewhispererLanguage: 'python',
-                credentialStartUrl: testStartUrl,
+                credentialStartUrl: enterpriseSsoStartUrl,
                 codewhispererSupplementalContextIsUtg: false,
                 codewhispererSupplementalContextTimeout: false,
                 codewhispererSupplementalContextLatency: 0,
