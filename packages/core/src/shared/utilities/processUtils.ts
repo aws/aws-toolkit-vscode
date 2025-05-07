@@ -8,7 +8,7 @@ import * as crossSpawn from 'cross-spawn'
 import * as logger from '../logger/logger'
 import { Timeout, CancellationError, waitUntil } from './timeoutUtils'
 import { PollingSet } from './pollingSet'
-import { CircularBuffer } from './collectionUtils'
+import { oncePerUniqueArg } from './functionUtils'
 
 export interface RunParameterContext {
     /** Reports an error parsed from the stdin/stdout streams. */
@@ -81,7 +81,6 @@ export interface ProcessStats {
 export class ChildProcessTracker {
     static readonly pollingInterval: number = 10000 // Check usage every 10 seconds
     static readonly logger = logger.getLogger('childProcess')
-    static readonly loggedPids = new CircularBuffer(1000)
     #processByPid: Map<number, ChildProcess> = new Map<number, ChildProcess>()
     #pids: PollingSet<number>
 
@@ -137,12 +136,12 @@ export class ChildProcessTracker {
         }
     }
 
-    public static logOnce(pid: number, msg: string) {
-        if (!ChildProcessTracker.loggedPids.contains(pid)) {
-            ChildProcessTracker.loggedPids.add(pid)
+    public static logOnce = oncePerUniqueArg(
+        (_pid: number, msg: string) => {
             ChildProcessTracker.logger.warn(msg)
-        }
-    }
+        },
+        { key: (pid, _) => `${pid}` }
+    )
 
     public add(childProcess: ChildProcess) {
         const pid = childProcess.pid()
