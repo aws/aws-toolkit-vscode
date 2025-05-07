@@ -20,6 +20,7 @@ export type LogTopic =
     | 'unknown'
     | 'nextEditPrediction'
     | 'resourceCache'
+    | 'telemetry'
 
 class ErrorLog {
     constructor(
