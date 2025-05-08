@@ -220,7 +220,7 @@ export function getEditorState(editor: vscode.TextEditor, fileContext: codewhisp
         const cursorOffset = editor.document.offsetAt(cursorPosition)
         const documentText = editor.document.getText()
 
-        // Truncate if text needs truncation (longer than 40000 characters)
+        // Truncate if document content is too large (defined in constants.ts)
         let fileText = documentText
         if (documentText.length > editorStateMaxLength) {
             const startOffset = Math.max(0, cursorOffset - Math.floor(editorStateMaxLength / 2))
