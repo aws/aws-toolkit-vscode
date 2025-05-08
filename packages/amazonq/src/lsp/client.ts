@@ -147,6 +147,9 @@ export async function startLanguageServer(
                         showSaveFileDialog: true,
                     },
                 },
+                contextConfiguration: {
+                    workspaceIdentifier: extensionContext.storageUri,
+                },
                 logLevel: toAmazonQLSPLogLevel(globals.logOutputChannel.logLevel),
             },
             credentials: {
@@ -280,8 +283,9 @@ export async function startLanguageServer(
             })
         )
     }
-
-    await activateChat(client, encryptionKey, resourcePaths.ui)
+    if (Experiments.instance.get('amazonqChatLSP', true)) {
+        await activateChat(client, encryptionKey, resourcePaths.ui)
+    }
 
     toDispose.push(
         AuthUtil.instance.regionProfileManager.onDidChangeRegionProfile(sendProfileToLsp),

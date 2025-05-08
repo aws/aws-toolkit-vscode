@@ -11,9 +11,11 @@ import {
     AuthUtil,
     baseCustomization,
     Customization,
+    CustomizationProvider,
     FeatureConfigProvider,
     getSelectedCustomization,
     refreshStatusBar,
+    RegionProfileManager,
     setSelectedCustomization,
 } from '../../codewhisperer'
 import { FeatureContext, globals } from '../../shared'
@@ -22,6 +24,45 @@ import { createSsoProfile, createTestAuth } from '../credentials/testUtil'
 import { createTestAuthUtil } from '../testAuthUtil'
 
 const enterpriseSsoStartUrl = 'https://enterprise.awsapps.com/start'
+
+describe('customizationProvider', function () {
+    let auth: ReturnType<typeof createTestAuth>
+    let ssoConn: SsoConnection
+    let regionProfileManager: RegionProfileManager
+
+    beforeEach(async () => {
+        auth = createTestAuth(globals.globalState)
+        ssoConn = await auth.createInvalidSsoConnection(
+            createSsoProfile({ startUrl: enterpriseSsoStartUrl, scopes: amazonQScopes })
+        )
+
+        regionProfileManager = new RegionProfileManager(() => ssoConn)
+    })
+
+    afterEach(() => {
+        sinon.restore()
+    })
+
+    it('init should create new instance with client', async function () {
+        const mockAuthUtil = {
+            regionProfileManager: regionProfileManager,
+        }
+        sinon.stub(AuthUtil, 'instance').get(() => mockAuthUtil)
+        const createClientStub = sinon.stub(regionProfileManager, 'createQClient')
+        const mockProfile = {
+            name: 'foo',
+            region: 'us-east-1',
+            arn: 'arn',
+            description: '',
+        }
+
+        const provider = await CustomizationProvider.init(mockProfile)
+        assert(provider instanceof CustomizationProvider)
+        assert(createClientStub.calledOnce)
+        assert(createClientStub.calledWith(mockProfile))
+        assert.strictEqual(provider.region, 'us-east-1')
+    })
+})
 
 describe('CodeWhisperer-customizationUtils', function () {
     let auth: ReturnType<typeof createTestAuth>

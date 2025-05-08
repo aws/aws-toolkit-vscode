@@ -18,7 +18,9 @@ export type LogTopic =
     | 'chat'
     | 'stepfunctions'
     | 'unknown'
+    | 'nextEditPrediction'
     | 'resourceCache'
+    | 'telemetry'
 
 class ErrorLog {
     constructor(
