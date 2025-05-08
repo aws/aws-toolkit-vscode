@@ -11,13 +11,11 @@ import { constants } from 'aws-core-vscode/auth'
 import { auth2 } from 'aws-core-vscode/auth'
 
 describe('AuthUtil', async function () {
-    await createTestAuthUtil()
-
-    const auth = AuthUtil.instance
-    const originalSession = (auth as any).session
+    let auth: any
 
     beforeEach(async function () {
-        ;(auth as any).session = originalSession
+        await createTestAuthUtil()
+        auth = AuthUtil.instance
     })
 
     afterEach(async function () {

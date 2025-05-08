@@ -23,8 +23,6 @@ describe('RegionProfileManager', async function () {
         description: 'foo description',
     }
 
-    await createTestAuthUtil()
-
     async function setupConnection(type: 'builderId' | 'idc') {
         if (type === 'builderId') {
             await AuthUtil.instance.login(constants.builderIdStartUrl, region)
@@ -37,7 +35,8 @@ describe('RegionProfileManager', async function () {
         }
     }
 
-    beforeEach(function () {
+    beforeEach(async function () {
+        await createTestAuthUtil()
         regionProfileManager = new RegionProfileManager(AuthUtil.instance)
     })
 
