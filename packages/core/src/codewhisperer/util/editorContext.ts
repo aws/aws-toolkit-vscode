@@ -8,6 +8,7 @@ import * as codewhispererClient from '../client/codewhisperer'
 import * as path from 'path'
 import * as CodeWhispererConstants from '../models/constants'
 import { getTabSizeSetting } from '../../shared/utilities/editorUtilities'
+import { truncate } from '../../shared/utilities/textUtilities'
 import { getLogger } from '../../shared/logger/logger'
 import { runtimeLanguageContext } from './runtimeLanguageContext'
 import { fetchSupplementalContext } from './supplementalContext/supplementalContextUtil'
@@ -223,10 +224,13 @@ export function getEditorState(editor: vscode.TextEditor, fileContext: codewhisp
         // Truncate if document content is too large (defined in constants.ts)
         let fileText = documentText
         if (documentText.length > editorStateMaxLength) {
-            const startOffset = Math.max(0, cursorOffset - Math.floor(editorStateMaxLength / 2))
-            const endOffset = Math.min(documentText.length, cursorOffset + Math.floor(editorStateMaxLength / 2))
+            const halfLength = Math.floor(editorStateMaxLength / 2)
 
-            fileText = documentText.substring(startOffset, endOffset)
+            // Use truncate function to get the text around the cursor position
+            const leftPart = truncate(documentText.substring(0, cursorOffset), -halfLength, '')
+            const rightPart = truncate(documentText.substring(cursorOffset), halfLength, '')
+
+            fileText = leftPart + rightPart
         }
 
         return {
@@ -291,8 +295,8 @@ function logSupplementalContext(supplementalContext: CodeWhispererSupplementalCo
         logString += indent(`\nChunk ${index}:\n`, 4, true)
         logString += indent(
             `Path: ${context.filePath}
-            Length: ${context.content.length}
-            Score: ${context.score}`,
+Length: ${context.content.length}
+Score: ${context.score}`,
             8,
             true
         )
