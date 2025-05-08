@@ -15,6 +15,8 @@ import {
     ReferenceInlineProvider,
     ReferenceLogViewProvider,
 } from 'aws-core-vscode/codewhisperer'
+import { ActiveStateTracker } from '../../../../../src/app/inline/stateTracker/activeStateTracker'
+import { LineTracker } from '../../../../../src/app/inline/stateTracker/lineTracker'
 
 describe('InlineCompletionManager', () => {
     let manager: InlineCompletionManager
@@ -264,7 +266,9 @@ describe('InlineCompletionManager', () => {
             let setInlineReferenceStub: sinon.SinonStub
 
             beforeEach(() => {
-                recommendationService = new RecommendationService(mockSessionManager)
+                const lineTracker = new LineTracker()
+                const activeStateController = new ActiveStateTracker(lineTracker)
+                recommendationService = new RecommendationService(mockSessionManager, activeStateController)
                 setInlineReferenceStub = sandbox.stub(ReferenceInlineProvider.instance, 'setInlineReference')
 
                 mockSessionManager = {

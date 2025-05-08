@@ -11,9 +11,13 @@ import {
 import { CancellationToken, InlineCompletionContext, Position, TextDocument } from 'vscode'
 import { LanguageClient } from 'vscode-languageclient'
 import { SessionManager } from './sessionManager'
+import { ActiveStateTracker } from './stateTracker/activeStateTracker'
 
 export class RecommendationService {
-    constructor(private readonly sessionManager: SessionManager) {}
+    constructor(
+        private readonly sessionManager: SessionManager,
+        private readonly activeStateTracker: ActiveStateTracker
+    ) {}
 
     async getAllRecommendations(
         languageClient: LanguageClient,
@@ -30,6 +34,8 @@ export class RecommendationService {
             context,
         }
         const requestStartTime = Date.now()
+
+        await this.activeStateTracker.showGenerating(context.triggerKind)
 
         // Handle first request
         const firstResult: InlineCompletionListWithReferences = await languageClient.sendRequest(
@@ -54,6 +60,8 @@ export class RecommendationService {
         } else {
             this.sessionManager.closeSession()
         }
+
+        this.activeStateTracker.hideGenerating()
     }
 
     private async processRemainingRequests(
