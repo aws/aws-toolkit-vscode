@@ -4,13 +4,18 @@
  */
 
 import assert from 'assert'
-import { resetCodeWhispererGlobalVariables, toTextDocument } from 'aws-core-vscode/test'
+import { resetCodeWhispererGlobalVariables, TestFolder, toTextDocument } from 'aws-core-vscode/test'
 import { runtimeLanguageContext, RuntimeLanguageContext, PlatformLanguageId } from 'aws-core-vscode/codewhisperer'
 import * as codewhispererClient from 'aws-core-vscode/codewhisperer'
 import { CodewhispererLanguage } from 'aws-core-vscode/shared'
 
 describe('runtimeLanguageContext', function () {
     const languageContext = new RuntimeLanguageContext()
+    let tempFolder: TestFolder
+
+    before(async function () {
+        tempFolder = await TestFolder.create()
+    })
 
     describe('test isLanguageSupported', function () {
         const cases: [string, boolean][] = [
@@ -104,13 +109,12 @@ describe('runtimeLanguageContext', function () {
                 ['helloUnknown', false],
                 ['helloFoo.foo', false],
             ]
-
             for (const tuple of cases) {
                 const fileName = tuple[0]
                 const expected = tuple[1]
 
                 it(`pass document ${fileName} as argument should first try determine by languageId then file extensions`, async function () {
-                    const doc = await toTextDocument('', fileName)
+                    const doc = await toTextDocument('', fileName, tempFolder.path)
                     const actual = languageContext.isLanguageSupported(doc)
                     assert.strictEqual(actual, expected)
                 })
