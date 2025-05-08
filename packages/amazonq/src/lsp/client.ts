@@ -131,6 +131,9 @@ export async function startLanguageServer(
                         showSaveFileDialog: true,
                     },
                 },
+                contextConfiguration: {
+                    workspaceIdentifier: extensionContext.storageUri,
+                },
                 logLevel: toAmazonQLSPLogLevel(globals.logOutputChannel.logLevel),
             },
             credentials: {
