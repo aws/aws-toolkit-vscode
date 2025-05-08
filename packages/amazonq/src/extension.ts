@@ -44,7 +44,7 @@ import { registerCommands } from './commands'
 import { focusAmazonQPanel } from 'aws-core-vscode/codewhispererChat'
 import { activate as activateAmazonqLsp } from './lsp/activation'
 import { activate as activateInlineCompletion } from './app/inline/activation'
-import { hasGlibcPatch } from './lsp/client'
+import { getGlibcPatch } from './lsp/client'
 
 export const amazonQContextPrefix = 'amazonq'
 
@@ -123,7 +123,7 @@ export async function activateAmazonQCommon(context: vscode.ExtensionContext, is
     await activateCodeWhisperer(extContext as ExtContext)
     if (
         (Experiments.instance.get('amazonqLSP', true) || Auth.instance.isInternalAmazonUser()) &&
-        (!isAmazonInternalOs() || (await hasGlibcPatch()))
+        (!isAmazonInternalOs() || (await getGlibcPatch()))
     ) {
         // start the Amazon Q LSP for internal users first
         // for AL2, start LSP if glibc patch is found

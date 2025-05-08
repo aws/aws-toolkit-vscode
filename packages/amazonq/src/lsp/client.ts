@@ -43,8 +43,16 @@ import { ConfigSection, isValidConfigSection, toAmazonQLSPLogLevel } from './con
 const localize = nls.loadMessageBundle()
 const logger = getLogger('amazonqLsp.lspClient')
 
-export async function hasGlibcPatch(): Promise<boolean> {
-    return await fs.exists('/opt/vsc-sysroot/lib64/ld-linux-x86-64.so.2')
+export async function getGlibcPatch(): Promise<string | undefined> {
+    for (const file of [
+        '/opt/vsc-sysroot/lib64/ld-linux-x86-64.so.2',
+        '/opt/vsc-sysroot/lib64/ld-linux-aarch64.so.1',
+    ]) {
+        if (await fs.exists(file)) {
+            return file
+        }
+    }
+    return undefined
 }
 
 export async function startLanguageServer(
@@ -69,13 +77,9 @@ export async function startLanguageServer(
     const traceServerEnabled = Settings.instance.isSet(`${clientId}.trace.server`)
     let executable: string[] = []
     // apply the GLIBC 2.28 path to node js runtime binary
-    if (isAmazonInternalOs() && (await hasGlibcPatch())) {
-        executable = [
-            '/opt/vsc-sysroot/lib64/ld-linux-x86-64.so.2',
-            '--library-path',
-            '/opt/vsc-sysroot/lib64',
-            resourcePaths.node,
-        ]
+    const glibcPath = await getGlibcPatch()
+    if (isAmazonInternalOs() && glibcPath) {
+        executable = [glibcPath, '--library-path', '/opt/vsc-sysroot/lib64', resourcePaths.node]
         getLogger('amazonqLsp').info(`Patched node runtime with GLIBC to ${executable}`)
     } else {
         executable = [resourcePaths.node]
