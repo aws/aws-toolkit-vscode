@@ -99,7 +99,7 @@ describe('Amazon Q Login', async function () {
         })
     })
 
-    it.only('signs out of reauth and emits telemetry', async function () {
+    it('signs out of reauth and emits telemetry', async function () {
         await getStartUrl.connectToEnterpriseSso(startUrl, region)
 
         await backend.signout()
