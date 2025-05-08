@@ -10,6 +10,9 @@ import { LanguageClientAuth } from '../auth/auth2'
 import { AuthUtil } from '../codewhisperer/util/authUtil'
 
 export async function createTestAuthUtil() {
+    sinon.restore()
+    AuthUtil.destroy()
+
     const encryptionKey = crypto.randomBytes(32)
 
     const jwe = await new jose.CompactEncrypt(new TextEncoder().encode(JSON.stringify({ your: 'mock data' })))

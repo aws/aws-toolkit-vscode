@@ -82,6 +82,10 @@ export class AuthUtil implements IAuthProvider {
         })
     }
 
+    static destroy(): void {
+        this.#instance = undefined as any
+    }
+
     isSsoSession() {
         return this.session.loginType === LoginTypes.SSO
     }

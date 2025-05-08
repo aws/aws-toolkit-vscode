@@ -7,18 +7,15 @@ import assert from 'assert'
 import sinon from 'sinon'
 import { AWSError, Request } from 'aws-sdk'
 import { Features, FeatureConfigProvider, featureDefinitions, FeatureName } from '../../shared/featureConfig'
-import { AuthUtil, ListFeatureEvaluationsResponse } from '../../codewhisperer'
+import { ListFeatureEvaluationsResponse } from '../../codewhisperer'
 import { createSpyClient } from '../codewhisperer/testUtil'
 import { mockFeatureConfigsData } from '../fake/mockFeatureConfigData'
-import { LanguageClientAuth } from '../../auth/auth2'
+import { createTestAuthUtil } from '../testAuthUtil'
 
 describe('FeatureConfigProvider', () => {
-    const mockLspAuth: Partial<LanguageClientAuth> = {
-        registerSsoTokenChangedHandler: sinon.stub().resolves(),
-    }
-    AuthUtil.create(mockLspAuth as LanguageClientAuth)
-
     beforeEach(async () => {
+        await createTestAuthUtil()
+
         const clientSpy = await createSpyClient()
         sinon.stub(clientSpy, 'listFeatureEvaluations').returns({
             promise: () =>

@@ -26,7 +26,7 @@ describe('Amazon Q Login', async function () {
         sandbox.restore()
     })
 
-    it('signs into builder ID and emits telemetry', async function () {
+    it('signs into builder ID npm run and emits telemetry', async function () {
         await backend.startBuilderIdSetup()
 
         assert.ok(AuthUtil.instance.isConnected())
