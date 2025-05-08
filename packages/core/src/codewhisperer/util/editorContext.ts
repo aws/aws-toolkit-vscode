@@ -295,8 +295,8 @@ function logSupplementalContext(supplementalContext: CodeWhispererSupplementalCo
         logString += indent(`\nChunk ${index}:\n`, 4, true)
         logString += indent(
             `Path: ${context.filePath}
-Length: ${context.content.length}
-Score: ${context.score}`,
+            Length: ${context.content.length}
+            Score: ${context.score}`,
             8,
             true
         )
