@@ -61,12 +61,12 @@ describe('RegionProfileManager', async function () {
             const mockClient = {
                 listAvailableProfiles: listProfilesStub,
             }
-            const createClientStub = sinon.stub(regionProfileManager, 'createQClient').resolves(mockClient)
+            const createClientStub = sinon.stub(regionProfileManager, '_createQClient').resolves(mockClient)
 
-            const r = await regionProfileManager.listRegionProfile()
+            const profileList = await regionProfileManager.listRegionProfile()
 
-            assert.strictEqual(r.length, 2)
-            assert.deepStrictEqual(r, [
+            assert.strictEqual(profileList.length, 2)
+            assert.deepStrictEqual(profileList, [
                 {
                     name: 'foo',
                     arn: 'arn',
