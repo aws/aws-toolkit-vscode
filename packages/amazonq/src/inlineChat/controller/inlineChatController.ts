@@ -26,7 +26,7 @@ import {
     isSageMaker,
     Experiments,
 } from 'aws-core-vscode/shared'
-import { InlineLineAnnotationController } from '../decorations/inlineLineAnnotationController'
+import { InlineLineAnnotationController } from '../../app/inline/stateTracker/inlineLineAnnotationTracker'
 
 export class InlineChatController {
     private task: InlineTask | undefined
@@ -39,11 +39,16 @@ export class InlineChatController {
     private userQuery: string | undefined
     private listeners: vscode.Disposable[] = []
 
-    constructor(context: vscode.ExtensionContext, client: LanguageClient, encryptionKey: Buffer) {
+    constructor(
+        context: vscode.ExtensionContext,
+        client: LanguageClient,
+        encryptionKey: Buffer,
+        inlineLineAnnotationController: InlineLineAnnotationController
+    ) {
         this.inlineChatProvider = new InlineChatProvider(client, encryptionKey)
         this.inlineChatProvider.onErrorOccured(() => this.handleError())
         this.codeLenseProvider = new CodelensProvider(context)
-        this.inlineLineAnnotationController = new InlineLineAnnotationController(context)
+        this.inlineLineAnnotationController = inlineLineAnnotationController
         this.computeDiffAndRenderOnEditor = Experiments.instance.get('amazonqLSPInlineChat', false)
             ? this.computeDiffAndRenderOnEditorLSP.bind(this)
             : this.computeDiffAndRenderOnEditorLocal.bind(this)

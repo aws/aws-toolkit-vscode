@@ -3,14 +3,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Container } from 'aws-core-vscode/codewhisperer'
 import * as vscode from 'vscode'
+import { LineAnnotationController } from './lineAnnotationTracker'
+import { globals } from 'aws-core-vscode/shared'
 
 export class InlineLineAnnotationController {
     private enabled: boolean = true
 
-    constructor(context: vscode.ExtensionContext) {
-        context.subscriptions.push(
+    constructor(private readonly lineAnnotationController: LineAnnotationController) {
+        globals.context.subscriptions.push(
             vscode.window.onDidChangeTextEditorSelection(async ({ selections, textEditor }) => {
                 let showShow = false
 
@@ -33,12 +34,12 @@ export class InlineLineAnnotationController {
     private async setVisible(editor: vscode.TextEditor, visible: boolean) {
         let needsRefresh: boolean
         if (visible) {
-            needsRefresh = await Container.instance.lineAnnotationController.tryShowInlineHint()
+            needsRefresh = await this.lineAnnotationController.tryShowInlineHint()
         } else {
-            needsRefresh = await Container.instance.lineAnnotationController.tryHideInlineHint()
+            needsRefresh = await this.lineAnnotationController.tryHideInlineHint()
         }
         if (needsRefresh) {
-            await Container.instance.lineAnnotationController.refresh(editor, 'codewhisperer')
+            await this.lineAnnotationController.refresh(editor, 'codewhisperer')
         }
     }
 

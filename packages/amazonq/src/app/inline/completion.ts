@@ -35,6 +35,7 @@ import {
 } from 'aws-core-vscode/codewhisperer'
 import { InlineGeneratingMessage } from './inlineGeneratingMessage'
 import { LineTracker } from './stateTracker/lineTracker'
+import { LineAnnotationController } from './stateTracker/lineAnnotationTracker'
 
 export class InlineCompletionManager implements Disposable {
     private disposable: Disposable
@@ -43,19 +44,27 @@ export class InlineCompletionManager implements Disposable {
     private sessionManager: SessionManager
     private recommendationService: RecommendationService
     private lineTracker: LineTracker
-    private activeStateTracker: InlineGeneratingMessage
+    private incomingGeneratingMessage: InlineGeneratingMessage
+    private lineAnnotationTracker: LineAnnotationController
     private readonly logSessionResultMessageName = 'aws/logInlineCompletionSessionResults'
 
-    constructor(languageClient: LanguageClient) {
+    constructor(
+        languageClient: LanguageClient,
+        sessionManager: SessionManager,
+        lineTracker: LineTracker,
+        lineAnnotationTracker: LineAnnotationController
+    ) {
         this.languageClient = languageClient
-        this.sessionManager = new SessionManager()
-        this.lineTracker = new LineTracker()
-        this.activeStateTracker = new InlineGeneratingMessage(this.lineTracker)
-        this.recommendationService = new RecommendationService(this.sessionManager, this.activeStateTracker)
+        this.sessionManager = sessionManager
+        this.lineTracker = lineTracker
+        this.incomingGeneratingMessage = new InlineGeneratingMessage(this.lineTracker)
+        this.recommendationService = new RecommendationService(this.sessionManager, this.incomingGeneratingMessage)
+        this.lineAnnotationTracker = lineAnnotationTracker
         this.inlineCompletionProvider = new AmazonQInlineCompletionItemProvider(
             languageClient,
             this.recommendationService,
-            this.sessionManager
+            this.sessionManager,
+            this.lineAnnotationTracker
         )
         this.disposable = languages.registerInlineCompletionItemProvider(
             CodeWhispererConstants.platformLanguageIds,
@@ -68,7 +77,7 @@ export class InlineCompletionManager implements Disposable {
     public dispose(): void {
         if (this.disposable) {
             this.disposable.dispose()
-            this.activeStateTracker.dispose()
+            this.incomingGeneratingMessage.dispose()
             this.lineTracker.dispose()
         }
     }
@@ -113,6 +122,7 @@ export class InlineCompletionManager implements Disposable {
             if (item.mostRelevantMissingImports?.length) {
                 await ImportAdderProvider.instance.onAcceptRecommendation(editor, item, startLine)
             }
+            this.sessionManager.incrementSuggestionCount()
         }
         commands.registerCommand('aws.amazonq.acceptInline', onInlineAcceptance)
 
@@ -157,6 +167,7 @@ export class InlineCompletionManager implements Disposable {
                     this.languageClient,
                     this.recommendationService,
                     this.sessionManager,
+                    this.lineAnnotationTracker,
                     false
                 )
             )
@@ -182,6 +193,7 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
         private readonly languageClient: LanguageClient,
         private readonly recommendationService: RecommendationService,
         private readonly sessionManager: SessionManager,
+        private readonly lineAnnotationController: LineAnnotationController,
         private readonly isNewSession: boolean = true
     ) {}
 
@@ -197,6 +209,9 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
                 // return early when suggestions are disabled with auto trigger
                 return []
             }
+
+            // tell the tutorial that completions has been triggered
+            await this.lineAnnotationController.triggered(context.triggerKind)
 
             // make service requests if it's a new session
             await this.recommendationService.getAllRecommendations(
