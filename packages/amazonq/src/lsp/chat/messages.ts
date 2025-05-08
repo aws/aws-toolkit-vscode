@@ -56,7 +56,7 @@ import { v4 as uuidv4 } from 'uuid'
 import * as vscode from 'vscode'
 import { Disposable, LanguageClient, Position, TextDocumentIdentifier } from 'vscode-languageclient'
 import { AmazonQChatViewProvider } from './webviewProvider'
-import { AuthUtil, ReferenceLogViewProvider } from 'aws-core-vscode/codewhisperer'
+import { AuthUtil, CodeWhispererSettings, ReferenceLogViewProvider } from 'aws-core-vscode/codewhisperer'
 import { amazonQDiffScheme, AmazonQPromptSettings, messages, openUrl } from 'aws-core-vscode/shared'
 import {
     DefaultAmazonQAppInitContext,
@@ -95,6 +95,14 @@ export function registerLanguageServerEventListener(languageClient: LanguageClie
         const telemetryName: string = e.name
 
         if (telemetryName in telemetry) {
+            switch (telemetryName) {
+                case 'codewhisperer_serviceInvocation': {
+                    // this feature is entirely client side right now
+                    e.data.codewhispererImportRecommendationEnabled =
+                        CodeWhispererSettings.instance.isImportRecommendationEnabled()
+                    break
+                }
+            }
             telemetry[telemetryName as keyof TelemetryBase].emit(e.data)
         }
     })
