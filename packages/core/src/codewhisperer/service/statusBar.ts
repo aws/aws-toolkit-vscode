@@ -10,7 +10,7 @@ import { codicon, getIcon } from '../../shared/icons'
 import { Commands } from '../../shared/vscode/commands2'
 import { listCodeWhispererCommandsId } from '../ui/statusBarMenu'
 
-export class InlineCompletionService {
+export class CodeWhispererStatusBarManager {
     private statusBar: CodeWhispererStatusBar
 
     constructor(statusBar: CodeWhispererStatusBar = CodeWhispererStatusBar.instance) {
@@ -21,7 +21,7 @@ export class InlineCompletionService {
         })
     }
 
-    static #instance: InlineCompletionService
+    static #instance: CodeWhispererStatusBarManager
 
     public static get instance() {
         return (this.#instance ??= new this())
@@ -39,6 +39,17 @@ export class InlineCompletionService {
         } else {
             return this.setState('notConnected')
         }
+    }
+
+    /**
+     * Sets the status bar in to a "loading state", effectively showing
+     * the spinning circle.
+     *
+     * When loading is done, call {@link refreshStatusBar} to update the
+     * status bar to the latest state.
+     */
+    async setLoading(): Promise<void> {
+        await this.setState('loading')
     }
 
     private async setState(state: keyof typeof states) {
@@ -76,7 +87,7 @@ const states = {
     needsProfile: 'needsProfile',
 } as const
 
-export class CodeWhispererStatusBar {
+class CodeWhispererStatusBar {
     protected statusBar: vscode.StatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 1)
 
     static #instance: CodeWhispererStatusBar
@@ -127,10 +138,10 @@ export class CodeWhispererStatusBar {
     }
 }
 
-/** In this module due to circulare dependency issues */
+/** In this module due to circular dependency issues */
 export const refreshStatusBar = Commands.declare(
     { id: 'aws.amazonq.refreshStatusBar', logging: false },
     () => async () => {
-        await InlineCompletionService.instance.refreshStatusBar()
+        await CodeWhispererStatusBarManager.instance.refreshStatusBar()
     }
 )

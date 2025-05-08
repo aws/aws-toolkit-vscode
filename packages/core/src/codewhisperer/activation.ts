@@ -62,7 +62,7 @@ import {
 } from './service/diagnosticsProvider'
 import { SecurityPanelViewProvider, openEditorAtRange } from './views/securityPanelViewProvider'
 import { Commands, registerCommandErrorHandler, registerDeclaredCommands } from '../shared/vscode/commands2'
-import { refreshStatusBar } from './service/inlineCompletionService'
+import { refreshStatusBar } from './service/statusBar'
 import { AuthUtil } from './util/authUtil'
 import { ImportAdderProvider } from './service/importAdderProvider'
 import { openUrl } from '../shared/utilities/vsCodeUtils'
