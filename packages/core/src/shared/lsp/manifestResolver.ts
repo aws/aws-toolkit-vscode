@@ -69,7 +69,6 @@ export class ManifestResolver {
 
             const localManifest = await this.getLocalManifest(true).catch(() => undefined)
             if (localManifest) {
-                localManifest.location = 'remote'
                 return localManifest
             } else {
                 // Will emit a `languageServer_setup` result=failed metric...
