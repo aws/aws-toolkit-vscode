@@ -25,11 +25,6 @@ import { predictionTracker } from '../nextEditPrediction/activation'
 
 let tabSize: number = getTabSizeSetting()
 
-const languageCommentChars: Record<string, string> = {
-    python: '# ',
-    java: '// ',
-}
-
 function getEnclosingNotebook(editor: vscode.TextEditor): vscode.NotebookDocument | undefined {
     // For notebook cells, find the existing notebook with a cell that matches the current editor.
     return vscode.workspace.notebookDocuments.find(
@@ -77,14 +72,14 @@ export function getNotebookContext(
 
 export function getNotebookCellContext(cell: vscode.NotebookCell, referenceLanguage?: string): string {
     // Extract the text verbatim if the cell is code and the cell has the same language.
-    // Otherwise, add the correct comment string for the refeference language
+    // Otherwise, add the correct comment string for the reference language
     const cellText = cell.document.getText()
     if (
         cell.kind === vscode.NotebookCellKind.Markup ||
         (runtimeLanguageContext.normalizeLanguage(cell.document.languageId) ?? cell.document.languageId) !==
             referenceLanguage
     ) {
-        const commentPrefix = (referenceLanguage && languageCommentChars[referenceLanguage]) ?? ''
+        const commentPrefix = runtimeLanguageContext.getSingleLineCommentPrefix(referenceLanguage)
         if (commentPrefix === '') {
             return cellText
         }
