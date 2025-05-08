@@ -24,7 +24,8 @@ import {
     PressTabState,
     TryMoreExState,
 } from '../../../codewhisperer/views/lineAnnotationController'
-import { AuthState, LanguageClientAuth } from '../../../auth/auth2'
+import { AuthState } from '../../../auth/auth2'
+import { createTestAuthUtil } from '../../testAuthUtil'
 
 describe('TryChatCodeLensProvider', () => {
     let instance: TryChatCodeLensProvider
@@ -41,13 +42,10 @@ describe('TryChatCodeLensProvider', () => {
         // that originally would have been registered by the `core` `activate()` at some point
         tryRegister(tryChatCodeLensCommand)
         tryRegister(focusAmazonQPanel)
-        const mockLspAuth: Partial<LanguageClientAuth> = {
-            registerSsoTokenChangedHandler: sinon.stub().resolves(),
-        }
-        AuthUtil.create(mockLspAuth as LanguageClientAuth)
     })
 
     beforeEach(async function () {
+        await createTestAuthUtil()
         isAmazonQVisibleEventEmitter = new vscode.EventEmitter<boolean>()
         isAmazonQVisibleEvent = isAmazonQVisibleEventEmitter.event
         instance = new TryChatCodeLensProvider(isAmazonQVisibleEvent, () => codeLensPosition)

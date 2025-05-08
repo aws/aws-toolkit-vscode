@@ -28,9 +28,9 @@ import {
 import * as model from '../../codewhisperer/models/model'
 import * as errors from '../../shared/errors'
 import * as timeoutUtils from '../../shared/utilities/timeoutUtils'
-import { AuthUtil, SecurityIssueTreeViewProvider } from '../../codewhisperer'
+import { SecurityIssueTreeViewProvider } from '../../codewhisperer'
 import { createClient, mockGetCodeScanResponse } from './testUtil'
-import { LanguageClientAuth } from '../../auth/auth2'
+import { createTestAuthUtil } from '../testAuthUtil'
 
 let extensionContext: FakeExtensionContext
 let mockSecurityPanelViewProvider: SecurityPanelViewProvider
@@ -42,14 +42,8 @@ let focusStub: sinon.SinonStub
 describe('startSecurityScan', function () {
     const workspaceFolder = getTestWorkspaceFolder()
 
-    before(async function () {
-        const mockLspAuth: Partial<LanguageClientAuth> = {
-            registerSsoTokenChangedHandler: sinon.stub().resolves(),
-        }
-        AuthUtil.create(mockLspAuth as LanguageClientAuth)
-    })
-
     beforeEach(async function () {
+        await createTestAuthUtil()
         extensionContext = await FakeExtensionContext.create()
         mockSecurityPanelViewProvider = new SecurityPanelViewProvider(extensionContext)
         appRoot = join(workspaceFolder, 'python3.7-plain-sam-app')

@@ -19,7 +19,12 @@ import {
     listCodeWhispererCommandsId,
     DefaultCodeWhispererClient,
 } from 'aws-core-vscode/codewhisperer'
-import { createMockTextEditor, resetCodeWhispererGlobalVariables, createMockDocument } from 'aws-core-vscode/test'
+import {
+    createMockTextEditor,
+    resetCodeWhispererGlobalVariables,
+    createMockDocument,
+    createTestAuthUtil,
+} from 'aws-core-vscode/test'
 
 describe('inlineCompletionService', function () {
     beforeEach(async function () {
@@ -192,6 +197,7 @@ describe('codewhisperer status bar', function () {
     }
 
     beforeEach(async function () {
+        await createTestAuthUtil()
         await resetCodeWhispererGlobalVariables()
         sandbox = sinon.createSandbox()
         statusBar = new TestStatusBar()
