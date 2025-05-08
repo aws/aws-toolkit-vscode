@@ -33,6 +33,8 @@ import {
     ImportAdderProvider,
     CodeSuggestionsState,
 } from 'aws-core-vscode/codewhisperer'
+import { ActiveStateTracker } from './stateTracker/activeStateTracker'
+import { LineTracker } from './stateTracker/lineTracker'
 
 export class InlineCompletionManager implements Disposable {
     private disposable: Disposable
@@ -40,12 +42,16 @@ export class InlineCompletionManager implements Disposable {
     private languageClient: LanguageClient
     private sessionManager: SessionManager
     private recommendationService: RecommendationService
+    private lineTracker: LineTracker
+    private activeStateTracker: ActiveStateTracker
     private readonly logSessionResultMessageName = 'aws/logInlineCompletionSessionResults'
 
     constructor(languageClient: LanguageClient) {
         this.languageClient = languageClient
         this.sessionManager = new SessionManager()
-        this.recommendationService = new RecommendationService(this.sessionManager)
+        this.lineTracker = new LineTracker()
+        this.activeStateTracker = new ActiveStateTracker(this.lineTracker)
+        this.recommendationService = new RecommendationService(this.sessionManager, this.activeStateTracker)
         this.inlineCompletionProvider = new AmazonQInlineCompletionItemProvider(
             languageClient,
             this.recommendationService,
@@ -55,11 +61,15 @@ export class InlineCompletionManager implements Disposable {
             CodeWhispererConstants.platformLanguageIds,
             this.inlineCompletionProvider
         )
+
+        this.lineTracker.ready()
     }
 
     public dispose(): void {
         if (this.disposable) {
             this.disposable.dispose()
+            this.activeStateTracker.dispose()
+            this.lineTracker.dispose()
         }
     }
 
