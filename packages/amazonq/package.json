@@ -60,7 +60,6 @@
         "testCompile": "npm run clean && npm run buildScripts && npm run compileOnly",
         "test": "npm run testCompile && c8 --allowExternal ts-node ../core/scripts/test/launchTest.ts unit dist/test/unit/index.js ../core/dist/src/testFixtures/workspaceFolder",
         "testE2E": "npm run testCompile && c8 --allowExternal ts-node ../core/scripts/test/launchTest.ts e2e dist/test/e2e/index.js ../core/dist/src/testFixtures/workspaceFolder",
-        "testWeb": "npm run compileDev && c8 --allowExternal ts-node ../core/scripts/test/launchTest.ts web dist/test/web/testRunnerWebCore.js",
         "webRun": "npx @vscode/test-web --open-devtools --browserOption=--disable-web-security --waitForDebugger=9222 --extensionDevelopmentPath=. .",
         "webWatch": "npm run clean && npm run buildScripts && webpack --mode development --watch",
         "serve": "webpack serve --config-name mainServe --mode development",
