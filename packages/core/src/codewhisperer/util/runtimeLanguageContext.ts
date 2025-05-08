@@ -58,6 +58,13 @@ export class RuntimeLanguageContext {
      */
     private supportedLanguageExtensionMap: ConstantMap<string, CodewhispererLanguage>
 
+    /**
+     * A map storing single-line comment prefixes for different languages
+     * Key: CodewhispererLanguage
+     * Value: Comment prefix string
+     */
+    private languageSingleLineCommentPrefixMap: ConstantMap<CodewhispererLanguage, string>
+
     constructor() {
         this.supportedLanguageMap = createConstantMap<
             CodeWhispererConstants.PlatformLanguageId | CodewhispererLanguage,
@@ -146,6 +153,39 @@ export class RuntimeLanguageContext {
             psm1: 'powershell',
             r: 'r',
         })
+        this.languageSingleLineCommentPrefixMap = createConstantMap<CodewhispererLanguage, string>({
+            c: '// ',
+            cpp: '// ',
+            csharp: '// ',
+            dart: '// ',
+            go: '// ',
+            hcl: '# ',
+            java: '// ',
+            javascript: '// ',
+            json: '// ',
+            jsonc: '// ',
+            jsx: '// ',
+            kotlin: '// ',
+            lua: '-- ',
+            php: '// ',
+            plaintext: '',
+            powershell: '# ',
+            python: '# ',
+            r: '# ',
+            ruby: '# ',
+            rust: '// ',
+            scala: '// ',
+            shell: '# ',
+            sql: '-- ',
+            swift: '// ',
+            systemVerilog: '// ',
+            tf: '# ',
+            tsx: '// ',
+            typescript: '// ',
+            vue: '', // vue lacks a single-line comment prefix
+            yaml: '# ',
+            yml: '# ',
+        })
     }
 
     /**
@@ -157,6 +197,16 @@ export class RuntimeLanguageContext {
      */
     public normalizeLanguage(languageId?: string): CodewhispererLanguage | undefined {
         return this.supportedLanguageMap.get(languageId)
+    }
+
+    /**
+     * Get the comment prefix for a given language
+     * @param language The language to get comment prefix for
+     * @returns The comment prefix string, or empty string if not found
+     */
+    public getSingleLineCommentPrefix(language?: string): string {
+        const normalizedLanguage = this.normalizeLanguage(language)
+        return normalizedLanguage ? (this.languageSingleLineCommentPrefixMap.get(normalizedLanguage) ?? '') : ''
     }
 
     /**
