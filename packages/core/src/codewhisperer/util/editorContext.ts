@@ -11,7 +11,7 @@ import { getTabSizeSetting } from '../../shared/utilities/editorUtilities'
 import { getLogger } from '../../shared/logger/logger'
 import { runtimeLanguageContext } from './runtimeLanguageContext'
 import { fetchSupplementalContext } from './supplementalContext/supplementalContextUtil'
-import { supplementalContextTimeoutInMs } from '../models/constants'
+import { editorStateMaxLength, supplementalContextTimeoutInMs } from '../models/constants'
 import { getSelectedCustomization } from './customizationUtil'
 import { selectFrom } from '../../shared/utilities/tsUtils'
 import { checkLeftContextKeywordsForJson } from './commonUtil'
@@ -220,11 +220,11 @@ export function getEditorState(editor: vscode.TextEditor, fileContext: codewhisp
         const cursorOffset = editor.document.offsetAt(cursorPosition)
         const documentText = editor.document.getText()
 
-        // Check if text needs truncation (longer than 40000 characters)
+        // Truncate if text needs truncation (longer than 40000 characters)
         let fileText = documentText
-        if (documentText.length > 40000) {
-            const startOffset = Math.max(0, cursorOffset - 20000)
-            const endOffset = Math.min(documentText.length, cursorOffset + 20000)
+        if (documentText.length > editorStateMaxLength) {
+            const startOffset = Math.max(0, cursorOffset - Math.floor(editorStateMaxLength / 2))
+            const endOffset = Math.min(documentText.length, cursorOffset + Math.floor(editorStateMaxLength / 2))
 
             fileText = documentText.substring(startOffset, endOffset)
         }
