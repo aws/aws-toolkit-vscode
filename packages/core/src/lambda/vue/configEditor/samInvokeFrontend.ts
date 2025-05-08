@@ -179,7 +179,7 @@ export default defineComponent({
                 // Instead of using vscode.window.withProgress directly, delegate to the backend
                 await client.invokeLaunchConfig(config, source)
             } catch (e: any) {
-                console.error(`invokeLaunchConfig failed: ${e.message}`)
+                console.error("invokeLaunchConfig failed", e)
             } finally {
                 this.invokeInProgress = false
             }
