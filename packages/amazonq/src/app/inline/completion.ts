@@ -33,7 +33,7 @@ import {
     ImportAdderProvider,
     CodeSuggestionsState,
 } from 'aws-core-vscode/codewhisperer'
-import { ActiveStateTracker } from './stateTracker/activeStateTracker'
+import { InlineGeneratingMessage } from './inlineGeneratingMessage'
 import { LineTracker } from './stateTracker/lineTracker'
 
 export class InlineCompletionManager implements Disposable {
@@ -43,14 +43,14 @@ export class InlineCompletionManager implements Disposable {
     private sessionManager: SessionManager
     private recommendationService: RecommendationService
     private lineTracker: LineTracker
-    private activeStateTracker: ActiveStateTracker
+    private activeStateTracker: InlineGeneratingMessage
     private readonly logSessionResultMessageName = 'aws/logInlineCompletionSessionResults'
 
     constructor(languageClient: LanguageClient) {
         this.languageClient = languageClient
         this.sessionManager = new SessionManager()
         this.lineTracker = new LineTracker()
-        this.activeStateTracker = new ActiveStateTracker(this.lineTracker)
+        this.activeStateTracker = new InlineGeneratingMessage(this.lineTracker)
         this.recommendationService = new RecommendationService(this.sessionManager, this.activeStateTracker)
         this.inlineCompletionProvider = new AmazonQInlineCompletionItemProvider(
             languageClient,

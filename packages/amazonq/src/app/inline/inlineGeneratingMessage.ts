@@ -5,11 +5,14 @@
 
 import { editorUtilities } from 'aws-core-vscode/shared'
 import * as vscode from 'vscode'
-import { LineSelection, LineTracker } from './lineTracker'
+import { LineSelection, LineTracker } from './stateTracker/lineTracker'
 import { AuthUtil } from 'aws-core-vscode/codewhisperer'
 import { cancellableDebounce } from 'aws-core-vscode/utils'
 
-export class ActiveStateTracker implements vscode.Disposable {
+/**
+ * Manages the inline ghost text message show when Inline Suggestions is "thinking".
+ */
+export class InlineGeneratingMessage implements vscode.Disposable {
     private readonly _disposable: vscode.Disposable
 
     private readonly cwLineHintDecoration: vscode.TextEditorDecorationType =

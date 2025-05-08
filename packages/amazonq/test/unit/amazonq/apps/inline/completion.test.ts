@@ -15,7 +15,7 @@ import {
     ReferenceInlineProvider,
     ReferenceLogViewProvider,
 } from 'aws-core-vscode/codewhisperer'
-import { ActiveStateTracker } from '../../../../../src/app/inline/stateTracker/activeStateTracker'
+import { InlineGeneratingMessage } from '../../../../../src/app/inline/inlineGeneratingMessage'
 import { LineTracker } from '../../../../../src/app/inline/stateTracker/lineTracker'
 
 describe('InlineCompletionManager', () => {
@@ -267,7 +267,7 @@ describe('InlineCompletionManager', () => {
 
             beforeEach(() => {
                 const lineTracker = new LineTracker()
-                const activeStateController = new ActiveStateTracker(lineTracker)
+                const activeStateController = new InlineGeneratingMessage(lineTracker)
                 recommendationService = new RecommendationService(mockSessionManager, activeStateController)
                 setInlineReferenceStub = sandbox.stub(ReferenceInlineProvider.instance, 'setInlineReference')
 

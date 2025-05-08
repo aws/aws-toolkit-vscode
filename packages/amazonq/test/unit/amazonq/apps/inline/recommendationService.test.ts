@@ -11,7 +11,7 @@ import { RecommendationService } from '../../../../../src/app/inline/recommendat
 import { SessionManager } from '../../../../../src/app/inline/sessionManager'
 import { createMockDocument } from 'aws-core-vscode/test'
 import { LineTracker } from '../../../../../src/app/inline/stateTracker/lineTracker'
-import { ActiveStateTracker } from '../../../../../src/app/inline/stateTracker/activeStateTracker'
+import { InlineGeneratingMessage } from '../../../../../src/app/inline/inlineGeneratingMessage'
 
 describe('RecommendationService', () => {
     let languageClient: LanguageClient
@@ -31,7 +31,7 @@ describe('RecommendationService', () => {
     const mockPartialResultToken = 'some-random-token'
     const sessionManager = new SessionManager()
     const lineTracker = new LineTracker()
-    const activeStateController = new ActiveStateTracker(lineTracker)
+    const activeStateController = new InlineGeneratingMessage(lineTracker)
     const service = new RecommendationService(sessionManager, activeStateController)
 
     beforeEach(() => {
