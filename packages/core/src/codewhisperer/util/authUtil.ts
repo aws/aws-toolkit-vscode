@@ -82,6 +82,7 @@ export class AuthUtil implements IAuthProvider {
         })
     }
 
+    // Do NOT use this in production code, only used for testing
     static destroy(): void {
         this.#instance = undefined as any
     }
