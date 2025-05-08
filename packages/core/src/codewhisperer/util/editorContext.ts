@@ -216,13 +216,26 @@ export function getTabSize(): number {
 
 export function getEditorState(editor: vscode.TextEditor, fileContext: codewhispererClient.FileContext): any {
     try {
+        const cursorPosition = editor.selection.active
+        const cursorOffset = editor.document.offsetAt(cursorPosition)
+        const documentText = editor.document.getText()
+
+        // Check if text needs truncation (longer than 40000 characters)
+        let fileText = documentText
+        if (documentText.length > 40000) {
+            const startOffset = Math.max(0, cursorOffset - 20000)
+            const endOffset = Math.min(documentText.length, cursorOffset + 20000)
+
+            fileText = documentText.substring(startOffset, endOffset)
+        }
+
         return {
             document: {
                 programmingLanguage: {
                     languageName: fileContext.programmingLanguage.languageName,
                 },
                 relativeFilePath: fileContext.filename,
-                text: editor.document.getText(),
+                text: fileText,
             },
             cursorState: {
                 position: {
