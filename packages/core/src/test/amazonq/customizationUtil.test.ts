@@ -26,17 +26,12 @@ import { createTestAuthUtil } from '../testAuthUtil'
 const enterpriseSsoStartUrl = 'https://enterprise.awsapps.com/start'
 
 describe('customizationProvider', function () {
-    let auth: ReturnType<typeof createTestAuth>
-    let ssoConn: SsoConnection
     let regionProfileManager: RegionProfileManager
 
     beforeEach(async () => {
-        auth = createTestAuth(globals.globalState)
-        ssoConn = await auth.createInvalidSsoConnection(
-            createSsoProfile({ startUrl: enterpriseSsoStartUrl, scopes: amazonQScopes })
-        )
-
-        regionProfileManager = new RegionProfileManager(() => ssoConn)
+        createTestAuth(globals.globalState)
+        await createTestAuthUtil()
+        regionProfileManager = new RegionProfileManager(AuthUtil.instance)
     })
 
     afterEach(() => {

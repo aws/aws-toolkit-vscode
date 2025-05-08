@@ -126,10 +126,6 @@ export class RegionProfileManager {
         return this.cache.getResource()
     }
 
-    async getProfiles(): Promise<RegionProfile[]> {
-        return this.cache.getResource()
-    }
-
     async listRegionProfile(): Promise<RegionProfile[]> {
         this._profiles = []
 

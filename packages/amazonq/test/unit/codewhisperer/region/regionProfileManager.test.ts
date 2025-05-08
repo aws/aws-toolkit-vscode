@@ -257,7 +257,7 @@ describe('RegionProfileManager', async function () {
 
             await assert.rejects(
                 async () => {
-                    await sut.createQClient({
+                    await regionProfileManager.createQClient({
                         name: 'foo',
                         region: 'ap-east-1',
                         arn: 'arn',
@@ -269,7 +269,7 @@ describe('RegionProfileManager', async function () {
 
             await assert.rejects(
                 async () => {
-                    await sut.createQClient({
+                    await regionProfileManager.createQClient({
                         name: 'foo',
                         region: 'unknown-somewhere',
                         arn: 'arn',
