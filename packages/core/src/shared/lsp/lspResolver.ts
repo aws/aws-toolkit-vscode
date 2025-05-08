@@ -29,6 +29,7 @@ export class LanguageServerResolver {
         private readonly manifest: Manifest,
         private readonly lsName: string,
         private readonly versionRange: semver.Range,
+        private readonly manifestUrl: string,
         /**
          * Custom message to show user when downloading, if undefined it will use the default.
          */
@@ -90,7 +91,22 @@ export class LanguageServerResolver {
 
     /** Finds an older, cached version of the LSP server bundle. */
     private async getFallbackServer(latestVersion: LspVersion): Promise<LspResult> {
-        const fallbackDirectory = await this.getFallbackDir(latestVersion.serverVersion)
+        const cachedVersions = await this.getCachedVersions()
+        if (cachedVersions.length === 0) {
+            /**
+             * at this point the latest version doesn't exist locally, lsp download (with retries) failed, and there are no cached fallback versions.
+             * This _probably_ only happens when the user hit a firewall/proxy issue, since otherwise they would probably have at least
+             * one other language server locally
+             */
+            throw new ToolkitError(
+                `Unable to download dependencies from ${this.manifestUrl}. Check your network connectivity or firewall configuration and then try again.`,
+                {
+                    code: 'NetworkConnectivityError',
+                }
+            )
+        }
+
+        const fallbackDirectory = await this.getFallbackDir(latestVersion.serverVersion, cachedVersions)
         if (!fallbackDirectory) {
             throw new ToolkitError('Unable to find a compatible version of the Language Server', {
                 code: 'IncompatibleVersion',
@@ -142,10 +158,19 @@ export class LanguageServerResolver {
                     assetDirectory: cacheDirectory,
                 }
             } else {
+                await this.cleanupVersion(latestVersion.serverVersion)
                 throw new ToolkitError('Failed to download server from remote', { code: 'RemoteDownloadFailed' })
             }
         } finally {
             timeout.dispose()
+        }
+    }
+
+    private async cleanupVersion(version: string) {
+        // clean up the X.X.X download directory since the download failed
+        const downloadDirectory = this.getDownloadDirectory(version)
+        if (await fs.existsDir(downloadDirectory)) {
+            await fs.delete(downloadDirectory)
         }
     }
 
@@ -178,15 +203,8 @@ export class LanguageServerResolver {
     /**
      * Returns the path to the most compatible cached LSP version that can serve as a fallback
      **/
-    private async getFallbackDir(version: string) {
+    private async getFallbackDir(version: string, cachedVersions: string[]) {
         const compatibleLspVersions = this.compatibleManifestLspVersion()
-
-        // determine all folders containing lsp versions in the fallback parent folder
-        const cachedVersions = (await fs.readdir(this.defaultDownloadFolder()))
-            .filter(([_, filetype]) => filetype === FileType.Directory)
-            .map(([pathName, _]) => semver.parse(pathName))
-            .filter((ver): ver is semver.SemVer => ver !== null)
-            .map((x) => x.version)
 
         const expectedVersion = semver.parse(version)
         if (!expectedVersion) {
@@ -201,6 +219,15 @@ export class LanguageServerResolver {
             await Promise.all(sortedCachedLspVersions.map((ver) => this.getValidLocalCacheDirectory(ver)))
         ).filter((v) => v !== undefined)
         return fallbackDir.length > 0 ? fallbackDir[0] : undefined
+    }
+
+    private async getCachedVersions() {
+        // determine all folders containing lsp versions in the parent folder
+        return (await fs.readdir(this.defaultDownloadFolder()))
+            .filter(([_, filetype]) => filetype === FileType.Directory)
+            .map(([pathName, _]) => semver.parse(pathName))
+            .filter((ver): ver is semver.SemVer => ver !== null)
+            .map((x) => x.version)
     }
 
     /**
