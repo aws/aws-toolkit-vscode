@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Named agent tabs sometimes open with unnecessary input options"
+}
