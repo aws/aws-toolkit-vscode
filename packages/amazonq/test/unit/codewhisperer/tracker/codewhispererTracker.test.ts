@@ -82,8 +82,6 @@ describe('codewhispererTracker', function () {
 
     describe('emitTelemetryOnSuggestion', function () {
         it('Should call recordCodewhispererUserModification with suggestion event', async function () {
-            const testStartUrl = 'testStartUrl'
-            sinon.stub(AuthUtil.instance.connection!, 'startUrl').value(testStartUrl)
             const suggestion = createAcceptedSuggestionEntry()
             const assertTelemetry = assertTelemetryCurried('codewhisperer_userModification')
             await CodeWhispererTracker.getTracker().emitTelemetryOnSuggestion(suggestion)
@@ -95,7 +93,7 @@ describe('codewhispererTracker', function () {
                 codewhispererModificationPercentage: 1,
                 codewhispererCompletionType: 'Line',
                 codewhispererLanguage: 'java',
-                credentialStartUrl: testStartUrl,
+                credentialStartUrl: AuthUtil.instance.connection?.startUrl,
                 codewhispererCharactersAccepted: suggestion.originalString.length,
                 codewhispererCharactersModified: 0,
             })
