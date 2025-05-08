@@ -14,6 +14,7 @@ import {
     ManifestResolver,
     request,
     TargetContent,
+    ToolkitError,
 } from 'aws-core-vscode/shared'
 import * as semver from 'semver'
 import { assertTelemetry } from 'aws-core-vscode/test'
@@ -201,12 +202,6 @@ export function createLspInstallerTests({
                         id: lspConfig.id,
                         manifestLocation: 'remote',
                         languageServerSetupStage: 'getManifest',
-                        result: 'Failed',
-                    },
-                    {
-                        id: lspConfig.id,
-                        manifestLocation: 'cache',
-                        languageServerSetupStage: 'getManifest',
                         result: 'Succeeded',
                     },
                     {
@@ -281,6 +276,34 @@ export function createLspInstallerTests({
                 lspConfig.supportedVersions = version.startsWith('^') ? version : `^${version}`
                 const download = await createInstaller(lspConfig).resolve()
                 assert.ok(download.assetDirectory.endsWith('-rc.0'))
+            })
+
+            it('throws on firewall error', async () => {
+                // Stub the manifest resolver to return a valid manifest
+                sandbox.stub(ManifestResolver.prototype, 'resolve').resolves({
+                    manifestSchemaVersion: '0.0.0',
+                    artifactId: 'foo',
+                    artifactDescription: 'foo',
+                    isManifestDeprecated: false,
+                    versions: [createVersion('1.0.0', targetContents)],
+                })
+
+                // Fail all HTTP requests for the language server
+                sandbox.stub(request, 'fetch').returns({
+                    response: Promise.resolve({
+                        ok: false,
+                    }),
+                } as any)
+
+                // This should now throw a NetworkConnectivityError
+                await assert.rejects(
+                    async () => await installer.resolve(),
+                    (err: ToolkitError) => {
+                        assert.strictEqual(err.code, 'NetworkConnectivityError')
+                        assert.ok(err.message.includes('Unable to download dependencies'))
+                        return true
+                    }
+                )
             })
         })
     })
