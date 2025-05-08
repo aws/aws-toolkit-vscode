@@ -40,7 +40,7 @@ export async function validateNodeExe(nodePath: string[], lsp: string, args: str
     if (!ok) {
         const msg = `failed to run basic "node -e" test (exitcode=${r.exitCode}): ${proc.toString(false, true)}`
         logger.error(msg)
-        throw new ToolkitError(`amazonqLsp: ${msg}`)
+        throw new ToolkitError(`amazonqLsp: ${msg}`, { code: 'FailedToRunNode' })
     }
 
     // Check that we can start `node …/lsp.js --stdio …`.
@@ -68,7 +68,8 @@ export async function validateNodeExe(nodePath: string[], lsp: string, args: str
         })
         if (!ok2 || selfExit) {
             throw new ToolkitError(
-                `amazonqLsp: failed to run (exitcode=${lspProc.exitCode()}): ${lspProc.toString(false, true)}`
+                `amazonqLsp: failed to run (exitcode=${lspProc.exitCode()}): ${lspProc.toString(false, true)}`,
+                { code: 'FailedToStartLanguageServer' }
             )
         }
     } finally {
