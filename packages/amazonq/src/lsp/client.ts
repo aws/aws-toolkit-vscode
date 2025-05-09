@@ -332,6 +332,8 @@ function getConfigSection(section: ConfigSection) {
                     includeSuggestionsWithCodeReferences:
                         CodeWhispererSettings.instance.isSuggestionsWithCodeReferencesEnabled(),
                     shareCodeWhispererContentWithAWS: !CodeWhispererSettings.instance.isOptoutEnabled(),
+                    includeImportsWithSuggestions: CodeWhispererSettings.instance.isImportRecommendationEnabled(),
+                    sendUserWrittenCodeMetrics: true,
                 },
             ]
         case 'aws.logLevel':
