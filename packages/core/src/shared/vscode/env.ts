@@ -125,23 +125,21 @@ export function isRemoteWorkspace(): boolean {
 }
 
 /**
- * There is Amazon Linux 2, but additionally an Amazon Linux 2 Internal.
- * The internal version is for Amazon employees only. And this version can
- * be used by either EC2 OR CloudDesktop. It is not exclusive to either.
+ * There is Amazon Linux 2.
  *
- * Use {@link isCloudDesktop()} to know if we are specifically using it.
+ * Use {@link isCloudDesktop()} to know if we are specifically using internal Amazon Linux 2.
  *
- * Example: `5.10.220-188.869.amzn2int.x86_64`
+ * Example: `5.10.220-188.869.amzn2int.x86_64` or `5.10.236-227.928.amzn2.x86_64` (Cloud Dev Machine)
  */
-export function isAmazonInternalOs() {
-    return os.release().includes('amzn2int') && process.platform === 'linux'
+export function isAmazonLinux2() {
+    return (os.release().includes('.amzn2int.') || os.release().includes('.amzn2.')) && process.platform === 'linux'
 }
 
 /**
  * Returns true if we are in an internal Amazon Cloud Desktop
  */
 export async function isCloudDesktop() {
-    if (!isAmazonInternalOs()) {
+    if (!isAmazonLinux2()) {
         return false
     }
 

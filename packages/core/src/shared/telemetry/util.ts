@@ -15,7 +15,7 @@ import {
     isAutomation,
     isRemoteWorkspace,
     isCloudDesktop,
-    isAmazonInternalOs,
+    isAmazonLinux2,
 } from '../vscode/env'
 import { addTypeName } from '../utilities/typeConstructors'
 import globals, { isWeb } from '../extensionGlobals'
@@ -290,7 +290,7 @@ export async function getComputeEnvType(): Promise<EnvType> {
     } else if (isSageMaker()) {
         return web ? 'sagemaker-web' : 'sagemaker'
     } else if (isRemoteWorkspace()) {
-        if (isAmazonInternalOs()) {
+        if (isAmazonLinux2()) {
             if (await isCloudDesktop()) {
                 return 'cloudDesktop-amzn'
             }

@@ -5,13 +5,7 @@
 
 import assert from 'assert'
 import path from 'path'
-import {
-    isCloudDesktop,
-    getEnvVars,
-    getServiceEnvVarConfig,
-    isAmazonInternalOs as isAmazonInternalOS,
-    isBeta,
-} from '../../../shared/vscode/env'
+import { isCloudDesktop, getEnvVars, getServiceEnvVarConfig, isAmazonLinux2, isBeta } from '../../../shared/vscode/env'
 import { ChildProcess } from '../../../shared/utilities/processUtils'
 import * as sinon from 'sinon'
 import os from 'os'
@@ -103,13 +97,16 @@ describe('env', function () {
         assert.strictEqual(isBeta(), expected)
     })
 
-    it('isAmazonInternalOS', function () {
+    it('isAmazonLinux2', function () {
         sandbox.stub(process, 'platform').value('linux')
         const versionStub = stubOsVersion('5.10.220-188.869.amzn2int.x86_64')
-        assert.strictEqual(isAmazonInternalOS(), true)
+        assert.strictEqual(isAmazonLinux2(), true)
+
+        versionStub.returns('5.10.236-227.928.amzn2.x86_64')
+        assert.strictEqual(isAmazonLinux2(), true)
 
         versionStub.returns('5.10.220-188.869.NOT_INTERNAL.x86_64')
-        assert.strictEqual(isAmazonInternalOS(), false)
+        assert.strictEqual(isAmazonLinux2(), false)
     })
 
     it('isCloudDesktop', async function () {
