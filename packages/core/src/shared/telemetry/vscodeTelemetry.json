@@ -1020,6 +1020,15 @@
             ]
         },
         {
+            "name": "languageServer_crash",
+            "description": "Called when a language server crash is detected. TODO: Port this to common",
+            "metadata": [
+                {
+                    "type": "id"
+                }
+            ]
+        },
+        {
             "name": "ide_heartbeat",
             "description": "A heartbeat sent by the extension",
             "metadata": [
