@@ -39,6 +39,7 @@ import { processUtils } from 'aws-core-vscode/shared'
 import { activate } from './chat/activation'
 import { AmazonQResourcePaths } from './lspInstaller'
 import { ConfigSection, isValidConfigSection, toAmazonQLSPLogLevel } from './config'
+import { telemetry } from 'aws-core-vscode/telemetry'
 
 const localize = nls.loadMessageBundle()
 const logger = getLogger('amazonqLsp.lspClient')
@@ -292,6 +293,12 @@ function onServerRestartHandler(client: LanguageClient, auth: AmazonQLspAuth) {
         if (!(e.oldState === State.Starting && e.newState === State.Running)) {
             return
         }
+
+        // Emit telemetry that a crash was detected.
+        // It is not guaranteed to 100% be a crash since somehow the server may have been intentionally restarted,
+        // but most of the time it probably will have been due to a crash.
+        // TODO: Port this metric override to common definitions
+        telemetry.languageServer_crash.emit({ id: 'AmazonQ' })
 
         // Need to set the auth token in the again
         await auth.refreshConnection(true)
