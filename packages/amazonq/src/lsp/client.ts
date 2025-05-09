@@ -5,7 +5,6 @@
 
 import vscode, { env, version } from 'vscode'
 import * as nls from 'vscode-nls'
-import * as crypto from 'crypto'
 import { LanguageClient, LanguageClientOptions, RequestType, State } from 'vscode-languageclient'
 import { InlineCompletionManager } from '../app/inline/completion'
 import { AmazonQLspAuth, encryptionKey, notificationTypes } from './auth'
@@ -34,6 +33,7 @@ import {
     getOptOutPreference,
     isAmazonInternalOs,
     fs,
+    getClientId,
 } from 'aws-core-vscode/shared'
 import { processUtils } from 'aws-core-vscode/shared'
 import { activate } from './chat/activation'
@@ -123,7 +123,7 @@ export async function startLanguageServer(
                         name: 'AmazonQ-For-VSCode',
                         version: '0.0.1',
                     },
-                    clientId: crypto.randomUUID(),
+                    clientId: getClientId(globals.globalState),
                 },
                 awsClientCapabilities: {
                     q: {
