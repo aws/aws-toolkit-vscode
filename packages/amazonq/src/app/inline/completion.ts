@@ -17,6 +17,7 @@ import {
     window,
     TextEditor,
     InlineCompletionTriggerKind,
+    Range,
 } from 'vscode'
 import { LanguageClient } from 'vscode-languageclient'
 import {
@@ -228,10 +229,13 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
         // get active item from session for displaying
         const items = this.sessionManager.getActiveRecommendation()
         const session = this.sessionManager.getActiveSession()
-        if (!session || !items.length) {
+        const editor = window.activeTextEditor
+        if (!session || !items.length || !editor) {
             return []
         }
-        const editor = window.activeTextEditor
+
+        const start = document.validatePosition(editor.selection.active)
+        const end = position
         for (const item of items) {
             item.command = {
                 command: 'aws.amazonq.acceptInline',
@@ -245,6 +249,7 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
                     session.firstCompletionDisplayLatency,
                 ],
             }
+            item.range = new Range(start, end)
             ReferenceInlineProvider.instance.setInlineReference(
                 position.line,
                 item.insertText as string,

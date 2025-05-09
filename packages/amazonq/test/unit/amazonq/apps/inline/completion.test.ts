@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import sinon from 'sinon'
-import { CancellationToken, commands, languages, Position } from 'vscode'
+import { CancellationToken, commands, languages, Position, window } from 'vscode'
 import assert from 'assert'
 import { LanguageClient } from 'vscode-languageclient'
 import { AmazonQInlineCompletionItemProvider, InlineCompletionManager } from '../../../../../src/app/inline/completion'
@@ -291,6 +291,7 @@ describe('InlineCompletionManager', () => {
                 getActiveRecommendationStub.returns(mockSuggestions)
                 getAllRecommendationsStub = sandbox.stub(recommendationService, 'getAllRecommendations')
                 getAllRecommendationsStub.resolves()
+                sandbox.stub(window, 'activeTextEditor').value(createMockTextEditor())
             }),
                 it('should call recommendation service to get new suggestions for new sessions', async () => {
                     provider = new AmazonQInlineCompletionItemProvider(
