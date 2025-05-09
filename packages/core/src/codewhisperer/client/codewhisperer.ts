@@ -7,18 +7,16 @@ import { AWSError, Credentials, Service } from 'aws-sdk'
 import globals from '../../shared/extensionGlobals'
 import * as CodeWhispererClient from './codewhispererclient'
 import * as CodeWhispererUserClient from './codewhispereruserclient'
-import { ListAvailableCustomizationsResponse, SendTelemetryEventRequest } from './codewhispereruserclient'
+import { SendTelemetryEventRequest } from './codewhispereruserclient'
 import { ServiceOptions } from '../../shared/awsClientBuilder'
 import { hasVendedIamCredentials } from '../../auth/auth'
 import { CodeWhispererSettings } from '../util/codewhispererSettings'
 import { PromiseResult } from 'aws-sdk/lib/request'
 import { AuthUtil } from '../util/authUtil'
-import { pageableToCollection } from '../../shared/utilities/collectionUtils'
 import apiConfig = require('./service-2.json')
 import userApiConfig = require('./user-service-2.json')
 import { session } from '../util/codeWhispererSession'
 import { getLogger } from '../../shared/logger/logger'
-import { indent } from '../../shared/utilities/textUtilities'
 import { getClientId, getOptOutPreference, getOperatingSystem } from '../../shared/telemetry/util'
 import { extensionVersion, getServiceEnvVarConfig } from '../../shared/vscode/env'
 import { DevSettings } from '../../shared/settings'
@@ -218,28 +216,6 @@ export class DefaultCodeWhispererClient {
         return (await this.createSdkClient())
             .listCodeScanFindings(request as CodeWhispererClient.ListCodeScanFindingsRequest)
             .promise()
-    }
-
-    public async listAvailableCustomizations(): Promise<ListAvailableCustomizationsResponse[]> {
-        const client = await this.createUserSdkClient()
-        const profile = AuthUtil.instance.regionProfileManager.activeRegionProfile
-        const requester = async (request: CodeWhispererUserClient.ListAvailableCustomizationsRequest) =>
-            client.listAvailableCustomizations(request).promise()
-        return pageableToCollection(requester, { profileArn: profile?.arn }, 'nextToken')
-            .promise()
-            .then((resps) => {
-                let logStr = 'amazonq: listAvailableCustomizations API request:'
-                for (const resp of resps) {
-                    const requestId = resp.$response.requestId
-                    logStr += `\n${indent('RequestID: ', 4)}${requestId},\n${indent('Customizations:', 4)}`
-                    for (const [index, c] of resp.customizations.entries()) {
-                        const entry = `${index.toString().padStart(2, '0')}: ${c.name?.trim()}`
-                        logStr += `\n${indent(entry, 8)}`
-                    }
-                }
-                getLogger().debug(logStr)
-                return resps
-            })
     }
 
     public async sendTelemetryEvent(request: SendTelemetryEventRequest) {

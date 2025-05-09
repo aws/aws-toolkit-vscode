@@ -287,8 +287,13 @@ export abstract class CommonAuthWebview extends VueWebview {
         return authEnabledFeatures.join(',')
     }
 
-    getDefaultStartUrl() {
-        return DevSettings.instance.get('autofillStartUrl', '')
+    getDefaultSsoProfile(): { startUrl: string; region: string } {
+        const devSettings = DevSettings.instance.get('autofillStartUrl', '')
+        if (devSettings) {
+            return { startUrl: devSettings, region: 'us-east-1' }
+        }
+
+        return globals.globalState.tryGet('recentSso', Object, { startUrl: '', region: 'us-east-1' })
     }
 
     cancelAuthFlow() {

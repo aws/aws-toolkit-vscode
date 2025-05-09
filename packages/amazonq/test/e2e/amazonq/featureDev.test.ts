@@ -166,6 +166,12 @@ describe('Amazon Q Feature Dev', function () {
 
     describe('/dev {msg} entry', async () => {
         beforeEach(async function () {
+            const isMultiIterationTestsEnabled = process.env['AMAZONQ_FEATUREDEV_ITERATION_TEST'] // Controls whether to enable multiple iteration testing for Amazon Q feature development
+            if (!isMultiIterationTestsEnabled) {
+                this.skip()
+            } else {
+                this.timeout(900000) // Code Gen with multi-iterations requires longer than default timeout(5 mins).
+            }
             tab = framework.createTab()
             tab.addChatMessage({ command: '/dev', prompt })
             tab = framework.getSelectedTab()

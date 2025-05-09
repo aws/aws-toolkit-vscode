@@ -8,10 +8,11 @@ import * as codewhispererClient from '../client/codewhisperer'
 import * as path from 'path'
 import * as CodeWhispererConstants from '../models/constants'
 import { getTabSizeSetting } from '../../shared/utilities/editorUtilities'
+import { truncate } from '../../shared/utilities/textUtilities'
 import { getLogger } from '../../shared/logger/logger'
 import { runtimeLanguageContext } from './runtimeLanguageContext'
 import { fetchSupplementalContext } from './supplementalContext/supplementalContextUtil'
-import { supplementalContextTimeoutInMs } from '../models/constants'
+import { editorStateMaxLength, supplementalContextTimeoutInMs } from '../models/constants'
 import { getSelectedCustomization } from './customizationUtil'
 import { selectFrom } from '../../shared/utilities/tsUtils'
 import { checkLeftContextKeywordsForJson } from './commonUtil'
@@ -20,6 +21,7 @@ import { getOptOutPreference } from '../../shared/telemetry/util'
 import { indent } from '../../shared/utilities/textUtilities'
 import { isInDirectory } from '../../shared/filesystemUtilities'
 import { AuthUtil } from './authUtil'
+import { predictionTracker } from '../nextEditPrediction/activation'
 
 let tabSize: number = getTabSizeSetting()
 
@@ -119,8 +121,14 @@ export async function buildListRecommendationRequest(
 
     logSupplementalContext(supplementalContexts)
 
+    // Get predictionSupplementalContext from PredictionTracker
+    let predictionSupplementalContext: codewhispererClient.SupplementalContext[] = []
+    if (predictionTracker) {
+        predictionSupplementalContext = await predictionTracker.generatePredictionSupplementalContext()
+    }
+
     const selectedCustomization = getSelectedCustomization()
-    const supplementalContext: codewhispererClient.SupplementalContext[] = supplementalContexts
+    const completionSupplementalContext: codewhispererClient.SupplementalContext[] = supplementalContexts
         ? supplementalContexts.supplementalContextItems.map((v) => {
               return selectFrom(v, 'content', 'filePath')
           })
@@ -128,6 +136,10 @@ export async function buildListRecommendationRequest(
 
     const profile = AuthUtil.instance.regionProfileManager.activeRegionProfile
 
+    const editorState = getEditorState(editor, fileContext)
+
+    // Combine inline and prediction supplemental contexts
+    const finalSupplementalContext = completionSupplementalContext.concat(predictionSupplementalContext)
     return {
         request: {
             fileContext: fileContext,
@@ -135,7 +147,9 @@ export async function buildListRecommendationRequest(
             referenceTrackerConfiguration: {
                 recommendationsWithReferences: allowCodeWithReference ? 'ALLOW' : 'BLOCK',
             },
-            supplementalContexts: supplementalContext,
+            supplementalContexts: finalSupplementalContext,
+            editorState: editorState,
+            maxResults: CodeWhispererConstants.maxRecommendations,
             customizationArn: selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
             optOutPreference: getOptOutPreference(),
             workspaceId: await getWorkspaceId(editor),
@@ -199,6 +213,45 @@ export function updateTabSize(val: number): void {
 
 export function getTabSize(): number {
     return tabSize
+}
+
+export function getEditorState(editor: vscode.TextEditor, fileContext: codewhispererClient.FileContext): any {
+    try {
+        const cursorPosition = editor.selection.active
+        const cursorOffset = editor.document.offsetAt(cursorPosition)
+        const documentText = editor.document.getText()
+
+        // Truncate if document content is too large (defined in constants.ts)
+        let fileText = documentText
+        if (documentText.length > editorStateMaxLength) {
+            const halfLength = Math.floor(editorStateMaxLength / 2)
+
+            // Use truncate function to get the text around the cursor position
+            const leftPart = truncate(documentText.substring(0, cursorOffset), -halfLength, '')
+            const rightPart = truncate(documentText.substring(cursorOffset), halfLength, '')
+
+            fileText = leftPart + rightPart
+        }
+
+        return {
+            document: {
+                programmingLanguage: {
+                    languageName: fileContext.programmingLanguage.languageName,
+                },
+                relativeFilePath: fileContext.filename,
+                text: fileText,
+            },
+            cursorState: {
+                position: {
+                    line: editor.selection.active.line,
+                    character: editor.selection.active.character,
+                },
+            },
+        }
+    } catch (error) {
+        getLogger().error(`Error generating editor state: ${error}`)
+        return undefined
+    }
 }
 
 export function getLeftContext(editor: vscode.TextEditor, line: number): string {

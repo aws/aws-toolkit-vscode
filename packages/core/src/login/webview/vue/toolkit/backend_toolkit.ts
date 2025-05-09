@@ -22,6 +22,7 @@ import { setContext } from '../../../../shared/vscode/setContext'
 import { builderIdStartUrl } from '../../../../auth/sso/constants'
 import { RegionProfile } from '../../../../codewhisperer/models/model'
 import { ProfileSwitchIntent } from '../../../../codewhisperer/region/regionProfileManager'
+import globals from '../../../../shared/extensionGlobals'
 
 export class ToolkitLoginWebview extends CommonAuthWebview {
     public override id: string = 'aws.toolkit.AmazonCommonAuth'
@@ -45,6 +46,10 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
             credentialStartUrl: startUrl,
             isReAuth: false,
         }
+        await globals.globalState.update('recentSso', {
+            startUrl: startUrl,
+            region: region,
+        })
 
         if (this.isCodeCatalystLogin) {
             return this.ssoSetup('startCodeCatalystSSOSetup', async () => {
