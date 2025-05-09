@@ -48,8 +48,8 @@ import { activate as activateInlineChat } from '../inlineChat/activation'
 import { telemetry } from 'aws-core-vscode/telemetry'
 import { SessionManager } from '../app/inline/sessionManager'
 import { LineTracker } from '../app/inline/stateTracker/lineTracker'
-import { LineAnnotationController } from '../app/inline/stateTracker/lineAnnotationTracker'
-import { InlineLineAnnotationController } from '../app/inline/stateTracker/inlineLineAnnotationTracker'
+import { InlineTutorialAnnotation } from '../app/inline/tutorials/inlineTutorialAnnotation'
+import { InlineChatTutorialAnnotation } from '../app/inline/tutorials/inlineChatTutorialAnnotation'
 
 const localize = nls.loadMessageBundle()
 const logger = getLogger('amazonqLsp.lspClient')
@@ -185,12 +185,12 @@ export async function startLanguageServer(
         const lineTracker = new LineTracker()
 
         // tutorial for inline suggestions
-        const lineAnnotationTracker = new LineAnnotationController(lineTracker, sessionManager)
+        const inlineTutorialAnnotation = new InlineTutorialAnnotation(lineTracker, sessionManager)
 
         // tutorial for inline chat
-        const line = new InlineLineAnnotationController(lineAnnotationTracker)
+        const inlineChatTutorialAnnotation = new InlineChatTutorialAnnotation(inlineTutorialAnnotation)
 
-        const inlineManager = new InlineCompletionManager(client, sessionManager, lineTracker, lineAnnotationTracker)
+        const inlineManager = new InlineCompletionManager(client, sessionManager, lineTracker, inlineTutorialAnnotation)
         inlineManager.registerInlineCompletion()
         toDispose.push(
             inlineManager,
@@ -205,9 +205,9 @@ export async function startLanguageServer(
                 const editor = vscode.window.activeTextEditor
                 if (editor) {
                     if (forceProceed) {
-                        await lineAnnotationTracker.refresh(editor, 'codewhisperer', true)
+                        await inlineTutorialAnnotation.refresh(editor, 'codewhisperer', true)
                     } else {
-                        await lineAnnotationTracker.refresh(editor, 'codewhisperer')
+                        await inlineTutorialAnnotation.refresh(editor, 'codewhisperer')
                     }
                 }
             }),
@@ -217,11 +217,11 @@ export async function startLanguageServer(
             Commands.register('aws.amazonq.dismissTutorial', async () => {
                 const editor = vscode.window.activeTextEditor
                 if (editor) {
-                    lineAnnotationTracker.clear()
+                    inlineTutorialAnnotation.clear()
                     try {
-                        telemetry.ui_click.emit({ elementId: `dismiss_${lineAnnotationTracker.currentState.id}` })
+                        telemetry.ui_click.emit({ elementId: `dismiss_${inlineTutorialAnnotation.currentState.id}` })
                     } catch (_) {}
-                    await lineAnnotationTracker.dismissTutorial()
+                    await inlineTutorialAnnotation.dismissTutorial()
                     getLogger().debug(`codewhisperer: user dismiss tutorial.`)
                 }
             })
@@ -231,7 +231,7 @@ export async function startLanguageServer(
             await activate(client, encryptionKey, resourcePaths.ui)
         }
 
-        activateInlineChat(extensionContext, client, encryptionKey, line)
+        activateInlineChat(extensionContext, client, encryptionKey, inlineChatTutorialAnnotation)
 
         const refreshInterval = auth.startTokenRefreshInterval(10 * oneSecond)
 

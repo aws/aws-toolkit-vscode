@@ -4,13 +4,13 @@
  */
 
 import * as vscode from 'vscode'
-import { LineAnnotationController } from './lineAnnotationTracker'
+import { InlineTutorialAnnotation } from './inlineTutorialAnnotation'
 import { globals } from 'aws-core-vscode/shared'
 
-export class InlineLineAnnotationController {
+export class InlineChatTutorialAnnotation {
     private enabled: boolean = true
 
-    constructor(private readonly lineAnnotationController: LineAnnotationController) {
+    constructor(private readonly inlineTutorialAnnotation: InlineTutorialAnnotation) {
         globals.context.subscriptions.push(
             vscode.window.onDidChangeTextEditorSelection(async ({ selections, textEditor }) => {
                 let showShow = false
@@ -34,12 +34,12 @@ export class InlineLineAnnotationController {
     private async setVisible(editor: vscode.TextEditor, visible: boolean) {
         let needsRefresh: boolean
         if (visible) {
-            needsRefresh = await this.lineAnnotationController.tryShowInlineHint()
+            needsRefresh = await this.inlineTutorialAnnotation.tryShowInlineHint()
         } else {
-            needsRefresh = await this.lineAnnotationController.tryHideInlineHint()
+            needsRefresh = await this.inlineTutorialAnnotation.tryHideInlineHint()
         }
         if (needsRefresh) {
-            await this.lineAnnotationController.refresh(editor, 'codewhisperer')
+            await this.inlineTutorialAnnotation.refresh(editor, 'codewhisperer')
         }
     }
 

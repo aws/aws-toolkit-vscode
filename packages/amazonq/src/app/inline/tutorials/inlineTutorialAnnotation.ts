@@ -13,7 +13,7 @@ import {
     TelemetryHelper,
 } from 'aws-core-vscode/codewhisperer'
 import { editorUtilities, getLogger, globals, setContext, vscodeUtilities } from 'aws-core-vscode/shared'
-import { LinesChangeEvent, LineSelection, LineTracker } from './lineTracker'
+import { LinesChangeEvent, LineSelection, LineTracker } from '../stateTracker/lineTracker'
 import { telemetry } from 'aws-core-vscode/telemetry'
 import { cancellableDebounce } from 'aws-core-vscode/utils'
 import { SessionManager } from '../sessionManager'
@@ -231,7 +231,7 @@ export class InlineChatState implements AnnotationState {
  * "new users who has seen tutorial" should have the context key "inlineKey" and "CODEWHISPERER_AUTO_TRIGGER_ENABLED"
  * the remaining grouop of users should belong to "new users who has not seen tutorial"
  */
-export class LineAnnotationController implements vscode.Disposable {
+export class InlineTutorialAnnotation implements vscode.Disposable {
     private readonly _disposable: vscode.Disposable
     private _editor: vscode.TextEditor | undefined
 

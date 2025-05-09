@@ -6,19 +6,14 @@ import * as vscode from 'vscode'
 import { InlineChatController } from './controller/inlineChatController'
 import { registerInlineCommands } from './command/registerInlineCommands'
 import { LanguageClient } from 'vscode-languageclient'
-import { InlineLineAnnotationController } from '../app/inline/stateTracker/inlineLineAnnotationTracker'
+import { InlineChatTutorialAnnotation } from '../app/inline/tutorials/inlineChatTutorialAnnotation'
 
 export function activate(
     context: vscode.ExtensionContext,
     client: LanguageClient,
     encryptionKey: Buffer,
-    inlineLineAnnotationController: InlineLineAnnotationController
+    inlineChatTutorialAnnotation: InlineChatTutorialAnnotation
 ) {
-    const inlineChatController = new InlineChatController(
-        context,
-        client,
-        encryptionKey,
-        inlineLineAnnotationController
-    )
+    const inlineChatController = new InlineChatController(context, client, encryptionKey, inlineChatTutorialAnnotation)
     registerInlineCommands(context, inlineChatController)
 }

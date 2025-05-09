@@ -35,7 +35,7 @@ import {
 } from 'aws-core-vscode/codewhisperer'
 import { InlineGeneratingMessage } from './inlineGeneratingMessage'
 import { LineTracker } from './stateTracker/lineTracker'
-import { LineAnnotationController } from './stateTracker/lineAnnotationTracker'
+import { InlineTutorialAnnotation } from './tutorials/inlineTutorialAnnotation'
 
 export class InlineCompletionManager implements Disposable {
     private disposable: Disposable
@@ -45,26 +45,26 @@ export class InlineCompletionManager implements Disposable {
     private recommendationService: RecommendationService
     private lineTracker: LineTracker
     private incomingGeneratingMessage: InlineGeneratingMessage
-    private lineAnnotationTracker: LineAnnotationController
+    private inlineTutorialAnnotation: InlineTutorialAnnotation
     private readonly logSessionResultMessageName = 'aws/logInlineCompletionSessionResults'
 
     constructor(
         languageClient: LanguageClient,
         sessionManager: SessionManager,
         lineTracker: LineTracker,
-        lineAnnotationTracker: LineAnnotationController
+        inlineTutorialAnnotation: InlineTutorialAnnotation
     ) {
         this.languageClient = languageClient
         this.sessionManager = sessionManager
         this.lineTracker = lineTracker
         this.incomingGeneratingMessage = new InlineGeneratingMessage(this.lineTracker)
         this.recommendationService = new RecommendationService(this.sessionManager, this.incomingGeneratingMessage)
-        this.lineAnnotationTracker = lineAnnotationTracker
+        this.inlineTutorialAnnotation = inlineTutorialAnnotation
         this.inlineCompletionProvider = new AmazonQInlineCompletionItemProvider(
             languageClient,
             this.recommendationService,
             this.sessionManager,
-            this.lineAnnotationTracker
+            this.inlineTutorialAnnotation
         )
         this.disposable = languages.registerInlineCompletionItemProvider(
             CodeWhispererConstants.platformLanguageIds,
@@ -167,7 +167,7 @@ export class InlineCompletionManager implements Disposable {
                     this.languageClient,
                     this.recommendationService,
                     this.sessionManager,
-                    this.lineAnnotationTracker,
+                    this.inlineTutorialAnnotation,
                     false
                 )
             )
@@ -193,7 +193,7 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
         private readonly languageClient: LanguageClient,
         private readonly recommendationService: RecommendationService,
         private readonly sessionManager: SessionManager,
-        private readonly lineAnnotationController: LineAnnotationController,
+        private readonly inlineTutorialAnnotation: InlineTutorialAnnotation,
         private readonly isNewSession: boolean = true
     ) {}
 
@@ -211,7 +211,7 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
             }
 
             // tell the tutorial that completions has been triggered
-            await this.lineAnnotationController.triggered(context.triggerKind)
+            await this.inlineTutorialAnnotation.triggered(context.triggerKind)
 
             // make service requests if it's a new session
             await this.recommendationService.getAllRecommendations(

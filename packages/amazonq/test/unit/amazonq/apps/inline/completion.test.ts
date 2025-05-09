@@ -17,7 +17,7 @@ import {
 } from 'aws-core-vscode/codewhisperer'
 import { InlineGeneratingMessage } from '../../../../../src/app/inline/inlineGeneratingMessage'
 import { LineTracker } from '../../../../../src/app/inline/stateTracker/lineTracker'
-import { LineAnnotationController } from '../../../../../src/app/inline/stateTracker/lineAnnotationTracker'
+import { InlineTutorialAnnotation } from '../../../../../src/app/inline/tutorials/inlineTutorialAnnotation'
 
 describe('InlineCompletionManager', () => {
     let manager: InlineCompletionManager
@@ -77,8 +77,8 @@ describe('InlineCompletionManager', () => {
 
         const sessionManager = new SessionManager()
         const lineTracker = new LineTracker()
-        const lineAnnotationTracker = new LineAnnotationController(lineTracker, sessionManager)
-        manager = new InlineCompletionManager(languageClient, sessionManager, lineTracker, lineAnnotationTracker)
+        const inlineTutorialAnnotation = new InlineTutorialAnnotation(lineTracker, sessionManager)
+        manager = new InlineCompletionManager(languageClient, sessionManager, lineTracker, inlineTutorialAnnotation)
         getActiveSessionStub = sandbox.stub(manager['sessionManager'], 'getActiveSession')
         getActiveRecommendationStub = sandbox.stub(manager['sessionManager'], 'getActiveRecommendation')
         getReferenceStub = sandbox.stub(ReferenceLogViewProvider, 'getReferenceLog')
@@ -268,12 +268,12 @@ describe('InlineCompletionManager', () => {
             let getAllRecommendationsStub: sinon.SinonStub
             let recommendationService: RecommendationService
             let setInlineReferenceStub: sinon.SinonStub
-            let lineAnnotationTracker: LineAnnotationController
+            let inlineTutorialAnnotation: InlineTutorialAnnotation
 
             beforeEach(() => {
                 const lineTracker = new LineTracker()
                 const activeStateController = new InlineGeneratingMessage(lineTracker)
-                lineAnnotationTracker = new LineAnnotationController(lineTracker, mockSessionManager)
+                inlineTutorialAnnotation = new InlineTutorialAnnotation(lineTracker, mockSessionManager)
                 recommendationService = new RecommendationService(mockSessionManager, activeStateController)
                 setInlineReferenceStub = sandbox.stub(ReferenceInlineProvider.instance, 'setInlineReference')
 
@@ -297,7 +297,7 @@ describe('InlineCompletionManager', () => {
                         languageClient,
                         recommendationService,
                         mockSessionManager,
-                        lineAnnotationTracker
+                        inlineTutorialAnnotation
                     )
                     const items = await provider.provideInlineCompletionItems(
                         mockDocument,
@@ -313,7 +313,7 @@ describe('InlineCompletionManager', () => {
                         languageClient,
                         recommendationService,
                         mockSessionManager,
-                        lineAnnotationTracker,
+                        inlineTutorialAnnotation,
                         false
                     )
                     const items = await provider.provideInlineCompletionItems(
@@ -330,7 +330,7 @@ describe('InlineCompletionManager', () => {
                         languageClient,
                         recommendationService,
                         mockSessionManager,
-                        lineAnnotationTracker,
+                        inlineTutorialAnnotation,
                         false
                     )
                     await provider.provideInlineCompletionItems(mockDocument, mockPosition, mockContext, mockToken)
