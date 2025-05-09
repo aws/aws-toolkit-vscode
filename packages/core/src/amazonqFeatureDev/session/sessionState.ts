@@ -205,6 +205,14 @@ export class FeatureDevCodeGenState extends BaseCodeGenState {
                     429
                 )
             }
+            case codegenResult.codeGenerationStatusDetail?.includes('FileCreationFailed'): {
+                return new ApiServiceError(
+                    i18n('AWS.amazonq.featureDev.error.codeGen.default'),
+                    'GetTaskAssistCodeGeneration',
+                    'FileCreationFailedException',
+                    500
+                )
+            }
             default: {
                 return new ApiServiceError(
                     i18n('AWS.amazonq.featureDev.error.codeGen.default'),
