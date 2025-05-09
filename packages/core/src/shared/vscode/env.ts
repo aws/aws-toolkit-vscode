@@ -133,7 +133,7 @@ export function isRemoteWorkspace(): boolean {
  *
  * Example: `5.10.220-188.869.amzn2int.x86_64` or `5.10.236-227.928.amzn2.x86_64` (Cloud Dev Machine)
  */
-export function isAmazonInternalOs() {
+export function isAmazonLinux2() {
     return (os.release().includes('.amzn2int.') || os.release().includes('.amzn2.')) && process.platform === 'linux'
 }
 
@@ -141,7 +141,7 @@ export function isAmazonInternalOs() {
  * Returns true if we are in an internal Amazon Cloud Desktop
  */
 export async function isCloudDesktop() {
-    if (!isAmazonInternalOs()) {
+    if (!isAmazonLinux2()) {
         return false
     }
 

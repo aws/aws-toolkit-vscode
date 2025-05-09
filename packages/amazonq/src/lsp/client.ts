@@ -32,7 +32,7 @@ import {
     getLogger,
     undefinedIfEmpty,
     getOptOutPreference,
-    isAmazonInternalOs,
+    isAmazonLinux2,
     fs,
 } from 'aws-core-vscode/shared'
 import { processUtils } from 'aws-core-vscode/shared'
@@ -78,7 +78,7 @@ export async function startLanguageServer(
     let executable: string[] = []
     // apply the GLIBC 2.28 path to node js runtime binary
     const glibcPath = await getGlibcPath()
-    if (isAmazonInternalOs() && glibcPath) {
+    if (isAmazonLinux2() && glibcPath) {
         executable = [glibcPath, '--library-path', '/opt/vsc-sysroot/lib64', resourcePaths.node]
         getLogger('amazonqLsp').info(`Patched node runtime with GLIBC to ${executable}`)
     } else {
