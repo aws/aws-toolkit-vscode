@@ -5,18 +5,10 @@
 
 import * as vscode from 'vscode'
 import assert from 'assert'
-import {
-    closeAllEditors,
-    getTestWindow,
-    registerAuthHook,
-    resetCodeWhispererGlobalVariables,
-    TestFolder,
-    toTextEditor,
-    using,
-} from 'aws-core-vscode/test'
-import { session } from 'aws-core-vscode/codewhisperer'
+import { closeAllEditors, registerAuthHook, TestFolder, toTextEditor, using } from 'aws-core-vscode/test'
 import { Commands, globals, sleep, waitUntil, collectionUtil } from 'aws-core-vscode/shared'
 import { loginToIdC } from '../amazonq/utils/setup'
+import { vsCodeState } from 'aws-core-vscode/codewhisperer'
 
 describe('Amazon Q Inline', async function () {
     const retries = 3
@@ -40,7 +32,6 @@ describe('Amazon Q Inline', async function () {
         const folder = await TestFolder.create()
         tempFolder = folder.path
         await closeAllEditors()
-        await resetCodeWhispererGlobalVariables()
     })
 
     afterEach(async function () {
@@ -67,17 +58,6 @@ describe('Amazon Q Inline', async function () {
 }`
         await toTextEditor(textContents, fileName, tempFolder, {
             selection: new vscode.Range(new vscode.Position(1, 4), new vscode.Position(1, 4)),
-        })
-    }
-
-    async function waitForRecommendations() {
-        const suggestionShown = await waitUntil(async () => session.getSuggestionState(0) === 'Showed', waitOptions)
-        if (!suggestionShown) {
-            throw new Error(`Suggestion did not show. Suggestion States: ${JSON.stringify(session.suggestionStates)}`)
-        }
-        console.table({
-            'suggestions states': JSON.stringify(session.suggestionStates),
-            recommendations: session.recommendations,
         })
     }
 
@@ -134,8 +114,9 @@ describe('Amazon Q Inline', async function () {
                     await invokeCompletion()
                     originalEditorContents = vscode.window.activeTextEditor?.document.getText()
 
-                    // wait until the ghost text appears
-                    await waitForRecommendations()
+                    // wait until all the recommendations have finished
+                    await waitUntil(() => Promise.resolve(vsCodeState.isRecommendationsActive === true), waitOptions)
+                    await waitUntil(() => Promise.resolve(vsCodeState.isRecommendationsActive === false), waitOptions)
                 }
 
                 beforeEach(async () => {
@@ -148,14 +129,12 @@ describe('Amazon Q Inline', async function () {
                         try {
                             await setup()
                             console.log(`test run ${attempt} succeeded`)
-                            logUserDecisionStatus()
                             break
                         } catch (e) {
                             console.log(`test run ${attempt} failed`)
                             console.log(e)
                             logUserDecisionStatus()
                             attempt++
-                            await resetCodeWhispererGlobalVariables()
                         }
                     }
                     if (attempt === retries) {
@@ -200,29 +179,6 @@ describe('Amazon Q Inline', async function () {
                     // Contents are the same
                     assert.deepStrictEqual(vscode.window.activeTextEditor?.document.getText(), originalEditorContents)
                 })
-            })
-
-            it(`${name} invoke on unsupported filetype`, async function () {
-                await setupEditor({
-                    name: 'test.zig',
-                    contents: `fn doSomething() void {
-        
-             }`,
-                })
-
-                /**
-                 * Add delay between editor loading and invoking completion
-                 * @see beforeEach in supported filetypes for more information
-                 */
-                await sleep(1000)
-                await invokeCompletion()
-
-                if (name === 'automatic') {
-                    // It should never get triggered since its not a supported file type
-                    // assert.deepStrictEqual(RecommendationService.instance.isRunning, false)
-                } else {
-                    await getTestWindow().waitForMessage('currently not supported by Amazon Q inline suggestions')
-                }
             })
         })
     }

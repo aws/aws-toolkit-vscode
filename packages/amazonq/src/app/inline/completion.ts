@@ -33,11 +33,13 @@ import {
     ReferenceLogViewProvider,
     ImportAdderProvider,
     CodeSuggestionsState,
+    vsCodeState,
 } from 'aws-core-vscode/codewhisperer'
 import { InlineGeneratingMessage } from './inlineGeneratingMessage'
 import { LineTracker } from './stateTracker/lineTracker'
 import { InlineTutorialAnnotation } from './tutorials/inlineTutorialAnnotation'
 import { TelemetryHelper } from './telemetryHelper'
+import { getLogger } from 'aws-core-vscode/shared'
 
 export class InlineCompletionManager implements Disposable {
     private disposable: Disposable
@@ -205,58 +207,66 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
         context: InlineCompletionContext,
         token: CancellationToken
     ): Promise<InlineCompletionItem[] | InlineCompletionList> {
-        if (this.isNewSession) {
-            const isAutoTrigger = context.triggerKind === InlineCompletionTriggerKind.Automatic
-            if (isAutoTrigger && !CodeSuggestionsState.instance.isSuggestionsEnabled()) {
-                // return early when suggestions are disabled with auto trigger
+        try {
+            vsCodeState.isRecommendationsActive = true
+            if (this.isNewSession) {
+                const isAutoTrigger = context.triggerKind === InlineCompletionTriggerKind.Automatic
+                if (isAutoTrigger && !CodeSuggestionsState.instance.isSuggestionsEnabled()) {
+                    // return early when suggestions are disabled with auto trigger
+                    return []
+                }
+
+                // tell the tutorial that completions has been triggered
+                await this.inlineTutorialAnnotation.triggered(context.triggerKind)
+                TelemetryHelper.instance.setInvokeSuggestionStartTime()
+                TelemetryHelper.instance.setTriggerType(context.triggerKind)
+
+                // make service requests if it's a new session
+                await this.recommendationService.getAllRecommendations(
+                    this.languageClient,
+                    document,
+                    position,
+                    context,
+                    token
+                )
+            }
+            // get active item from session for displaying
+            const items = this.sessionManager.getActiveRecommendation()
+            const session = this.sessionManager.getActiveSession()
+            const editor = window.activeTextEditor
+            if (!session || !items.length || !editor) {
                 return []
             }
 
-            // tell the tutorial that completions has been triggered
-            await this.inlineTutorialAnnotation.triggered(context.triggerKind)
-            TelemetryHelper.instance.setInvokeSuggestionStartTime()
-            TelemetryHelper.instance.setTriggerType(context.triggerKind)
-
-            // make service requests if it's a new session
-            await this.recommendationService.getAllRecommendations(
-                this.languageClient,
-                document,
-                position,
-                context,
-                token
-            )
-        }
-        // get active item from session for displaying
-        const items = this.sessionManager.getActiveRecommendation()
-        const session = this.sessionManager.getActiveSession()
-        const editor = window.activeTextEditor
-        if (!session || !items.length || !editor) {
-            return []
-        }
-
-        const start = document.validatePosition(editor.selection.active)
-        const end = position
-        for (const item of items) {
-            item.command = {
-                command: 'aws.amazonq.acceptInline',
-                title: 'On acceptance',
-                arguments: [
-                    session.sessionId,
-                    item,
-                    editor,
-                    session.requestStartTime,
+            const start = document.validatePosition(editor.selection.active)
+            const end = position
+            for (const item of items) {
+                item.command = {
+                    command: 'aws.amazonq.acceptInline',
+                    title: 'On acceptance',
+                    arguments: [
+                        session.sessionId,
+                        item,
+                        editor,
+                        session.requestStartTime,
+                        position.line,
+                        session.firstCompletionDisplayLatency,
+                    ],
+                }
+                item.range = new Range(start, end)
+                ReferenceInlineProvider.instance.setInlineReference(
                     position.line,
-                    session.firstCompletionDisplayLatency,
-                ],
+                    item.insertText as string,
+                    item.references
+                )
+                ImportAdderProvider.instance.onShowRecommendation(document, position.line, item)
             }
-            item.range = new Range(start, end)
-            ReferenceInlineProvider.instance.setInlineReference(
-                position.line,
-                item.insertText as string,
-                item.references
-            )
-            ImportAdderProvider.instance.onShowRecommendation(document, position.line, item)
+            return items as InlineCompletionItem[]
+        } catch (e) {
+            getLogger('amazonqLsp').error('Failed to provide completion items: %O', e)
+            return []
+        } finally {
+            vsCodeState.isRecommendationsActive = false
         }
-        return items as InlineCompletionItem[]
     }
 }
