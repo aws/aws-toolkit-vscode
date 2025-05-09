@@ -2,7 +2,6 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-
 import {
     CodewhispererCompletionType,
     CodewhispererLanguage,
@@ -13,6 +12,7 @@ import {
 import { GenerateRecommendationsRequest, ListRecommendationsRequest, Recommendation } from '../client/codewhisperer'
 import { Position } from 'vscode'
 import { CodeWhispererSupplementalContext, vsCodeState } from '../models/model'
+import { FileDiagnostic, getDiagnosticsOfCurrentFile } from './diagnosticsUtil'
 
 class CodeWhispererSession {
     static #instance: CodeWhispererSession
@@ -45,6 +45,7 @@ class CodeWhispererSession {
     timeToFirstRecommendation = 0
     firstSuggestionShowTime = 0
     perceivedLatency = 0
+    diagnosticsBeforeAccept: FileDiagnostic | undefined = undefined
 
     public static get instance() {
         return (this.#instance ??= new CodeWhispererSession())
@@ -66,6 +67,7 @@ class CodeWhispererSession {
         if (this.invokeSuggestionStartTime) {
             this.timeToFirstRecommendation = timeToFirstRecommendation - this.invokeSuggestionStartTime
         }
+        this.diagnosticsBeforeAccept = getDiagnosticsOfCurrentFile()
     }
 
     setSuggestionState(index: number, value: string) {
@@ -116,6 +118,7 @@ class CodeWhispererSession {
         this.recommendations = []
         this.suggestionStates.clear()
         this.completionTypes.clear()
+        this.diagnosticsBeforeAccept = undefined
     }
 }
 
