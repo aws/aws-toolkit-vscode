@@ -131,10 +131,10 @@ export function isRemoteWorkspace(): boolean {
  *
  * Use {@link isCloudDesktop()} to know if we are specifically using it.
  *
- * Example: `5.10.220-188.869.amzn2int.x86_64`
+ * Example: `5.10.220-188.869.amzn2int.x86_64` or `5.10.236-227.928.amzn2.x86_64` (Cloud Dev Machine)
  */
 export function isAmazonInternalOs() {
-    return os.release().includes('amzn2int') && process.platform === 'linux'
+    return (os.release().includes('.amzn2int.') || os.release().includes('.amzn2.')) && process.platform === 'linux'
 }
 
 /**
