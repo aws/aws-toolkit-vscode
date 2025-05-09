@@ -5,7 +5,6 @@
 
 import vscode, { env, version } from 'vscode'
 import * as nls from 'vscode-nls'
-import * as crypto from 'crypto'
 import { LanguageClient, LanguageClientOptions, RequestType, State } from 'vscode-languageclient'
 import { InlineCompletionManager } from '../app/inline/completion'
 import { AmazonQLspAuth, encryptionKey, notificationTypes } from './auth'
