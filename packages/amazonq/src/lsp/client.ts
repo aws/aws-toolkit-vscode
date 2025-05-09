@@ -34,6 +34,7 @@ import {
     getOptOutPreference,
     isAmazonInternalOs,
     fs,
+    getClientId,
 } from 'aws-core-vscode/shared'
 import { processUtils } from 'aws-core-vscode/shared'
 import { activate } from './chat/activation'
@@ -120,7 +121,7 @@ export async function startLanguageServer(
                         name: 'AmazonQ-For-VSCode',
                         version: '0.0.1',
                     },
-                    clientId: crypto.randomUUID(),
+                    clientId: getClientId(globals.globalState),
                 },
                 awsClientCapabilities: {
                     q: {
