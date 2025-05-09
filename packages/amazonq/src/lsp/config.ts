@@ -3,10 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as vscode from 'vscode'
-import { DevSettings, getServiceEnvVarConfig } from 'aws-core-vscode/shared'
-import { LspConfig } from 'aws-core-vscode/amazonq'
+import { DevSettings, getServiceEnvVarConfig, BaseLspInstaller } from 'aws-core-vscode/shared'
 
-export interface ExtendedAmazonQLSPConfig extends LspConfig {
+export interface ExtendedAmazonQLSPConfig extends BaseLspInstaller.LspConfig {
     ui?: string
 }
 

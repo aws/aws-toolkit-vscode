@@ -40,7 +40,6 @@ import { FeatureAuthState } from '../../../../codewhisperer/util/authUtil'
 import { CodeScanIssue } from '../../../../codewhisperer/models/model'
 import { marked } from 'marked'
 import { JSDOM } from 'jsdom'
-import { LspController } from '../../../../amazonq/lsp/lspController'
 import { extractCodeBlockLanguage } from '../../../../shared/markdown'
 import { extractAuthFollowUp } from '../../../../amazonq/util/authUtils'
 import { helpMessage } from '../../../../amazonq/webview/ui/texts/constants'
@@ -290,11 +289,7 @@ export class Messenger {
                         relatedContent: { title: 'Sources', content: relatedSuggestions as any },
                     })
                 }
-                if (
-                    triggerPayload.relevantTextDocuments &&
-                    triggerPayload.relevantTextDocuments.length > 0 &&
-                    LspController.instance.isIndexingInProgress()
-                ) {
+                if (triggerPayload.relevantTextDocuments && triggerPayload.relevantTextDocuments.length > 0) {
                     this.dispatcher.sendChatMessage(
                         new ChatMessage(
                             {
