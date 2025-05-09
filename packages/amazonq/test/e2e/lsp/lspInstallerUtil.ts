@@ -18,7 +18,6 @@ import {
 } from 'aws-core-vscode/shared'
 import * as semver from 'semver'
 import { assertTelemetry } from 'aws-core-vscode/test'
-import { LspConfig } from 'aws-core-vscode/amazonq'
 import { LanguageServerSetup } from 'aws-core-vscode/telemetry'
 
 function createVersion(version: string, contents: TargetContent[]) {
@@ -44,8 +43,8 @@ export function createLspInstallerTests({
     resetEnv,
 }: {
     suiteName: string
-    lspConfig: LspConfig
-    createInstaller: (lspConfig?: LspConfig) => BaseLspInstaller.BaseLspInstaller
+    lspConfig: BaseLspInstaller.LspConfig
+    createInstaller: (lspConfig?: BaseLspInstaller.LspConfig) => BaseLspInstaller.BaseLspInstaller
     targetContents: TargetContent[]
     setEnv: (path: string) => void
     resetEnv: () => void
