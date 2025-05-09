@@ -13,6 +13,7 @@ import { LanguageClient } from 'vscode-languageclient'
 import { SessionManager } from './sessionManager'
 import { InlineGeneratingMessage } from './inlineGeneratingMessage'
 import { CodeWhispererStatusBarManager } from 'aws-core-vscode/codewhisperer'
+import { TelemetryHelper } from './telemetryHelper'
 
 export class RecommendationService {
     constructor(
@@ -36,6 +37,9 @@ export class RecommendationService {
         }
         const requestStartTime = Date.now()
         const statusBar = CodeWhispererStatusBarManager.instance
+        TelemetryHelper.instance.setInvokeSuggestionStartTime()
+        TelemetryHelper.instance.setPreprocessEndTime()
+        TelemetryHelper.instance.setSdkApiCallStartTime()
 
         try {
             // Show UI indicators that we are generating suggestions
@@ -48,6 +52,14 @@ export class RecommendationService {
                 request,
                 token
             )
+
+            // Set telemetry data for the first response
+            TelemetryHelper.instance.setSdkApiCallEndTime()
+            TelemetryHelper.instance.setSessionId(firstResult.sessionId)
+            if (firstResult.items.length > 0) {
+                TelemetryHelper.instance.setFirstResponseRequestId(firstResult.items[0].itemId)
+            }
+            TelemetryHelper.instance.setFirstSuggestionShowTime()
 
             const firstCompletionDisplayLatency = Date.now() - requestStartTime
             this.sessionManager.startSession(
@@ -64,6 +76,10 @@ export class RecommendationService {
                 })
             } else {
                 this.sessionManager.closeSession()
+
+                // No more results to fetch, mark pagination as complete
+                TelemetryHelper.instance.setAllPaginationEndTime()
+                TelemetryHelper.instance.tryRecordClientComponentLatency()
             }
         } finally {
             // Remove all UI indicators of message generation since we are done
@@ -89,6 +105,11 @@ export class RecommendationService {
             this.sessionManager.updateSessionSuggestions(result.items)
             nextToken = result.partialResultToken
         }
+
         this.sessionManager.closeSession()
+
+        // All pagination requests completed
+        TelemetryHelper.instance.setAllPaginationEndTime()
+        TelemetryHelper.instance.tryRecordClientComponentLatency()
     }
 }
