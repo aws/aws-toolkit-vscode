@@ -18,7 +18,7 @@ import {
 } from 'aws-core-vscode/shared'
 import * as semver from 'semver'
 import { assertTelemetry } from 'aws-core-vscode/test'
-import { LspConfig, LspController } from 'aws-core-vscode/amazonq'
+import { LspConfig } from 'aws-core-vscode/amazonq'
 import { LanguageServerSetup } from 'aws-core-vscode/telemetry'
 
 function createVersion(version: string, contents: TargetContent[]) {
@@ -60,8 +60,6 @@ export function createLspInstallerTests({
             installer = createInstaller()
             tempDir = await makeTemporaryToolkitFolder()
             sandbox.stub(LanguageServerResolver.prototype, 'defaultDownloadFolder').returns(tempDir)
-            // Called on extension activation and can contaminate telemetry.
-            sandbox.stub(LspController.prototype, 'trySetupLsp')
         })
 
         afterEach(async () => {

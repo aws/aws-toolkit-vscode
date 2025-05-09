@@ -59,7 +59,6 @@ import { triggerPayloadToChatRequest } from './chatRequest/converter'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import { openUrl } from '../../../shared/utilities/vsCodeUtils'
 import { randomUUID } from '../../../shared/crypto'
-import { LspController } from '../../../amazonq/lsp/lspController'
 import { CodeWhispererSettings } from '../../../codewhisperer/util/codewhispererSettings'
 import { getSelectedCustomization } from '../../../codewhisperer/util/customizationUtil'
 import { getHttpStatusCode, AwsClientResponseError } from '../../../shared/errors'
@@ -70,8 +69,6 @@ import { inspect } from '../../../shared/utilities/collectionUtils'
 import { DefaultAmazonQAppInitContext } from '../../../amazonq/apps/initContext'
 import globals from '../../../shared/extensionGlobals'
 import { MynahIconsType, MynahUIDataModel, QuickActionCommand } from '@aws/mynah-ui'
-import { LspClient } from '../../../amazonq/lsp/lspClient'
-import { AdditionalContextPrompt, ContextCommandItem, ContextCommandItemType } from '../../../amazonq/lsp/types'
 import { workspaceCommand } from '../../../amazonq/webview/ui/tabs/constants'
 import fs from '../../../shared/fs/fs'
 import { FeatureConfigProvider, Features } from '../../../shared/featureConfig'
@@ -80,9 +77,6 @@ import {
     getUserPromptsDirectory,
     promptFileExtension,
     createSavedPromptCommandId,
-    aditionalContentNameLimit,
-    additionalContentInnerContextLimit,
-    workspaceChunkMaxSize,
     defaultContextLengths,
 } from '../../constants'
 import { ChatSession } from '../../clients/chat/v0/chat'
@@ -527,7 +521,7 @@ export class ChatController {
                 commands: [{ command: commandName, description: commandDescription }],
             })
         }
-        const symbolsCmd: QuickActionCommand = contextCommand[0].commands?.[3]
+        // const symbolsCmd: QuickActionCommand = contextCommand[0].commands?.[3]
         const promptsCmd: QuickActionCommand = contextCommand[0].commands?.[4]
 
         // Check for user prompts
@@ -543,7 +537,7 @@ export class ChatController {
                             command: path.basename(name, promptFileExtension),
                             icon: 'magic' as MynahIconsType,
                             id: 'prompt',
-                            label: 'file' as ContextCommandItemType,
+                            // label: 'file' as ContextCommandItemType,
                             route: [userPromptsDirectory, name],
                         }))
                 )
@@ -559,47 +553,47 @@ export class ChatController {
             icon: 'list-add' as MynahIconsType,
         })
 
-        const lspClientReady = await LspClient.instance.waitUntilReady()
-        if (lspClientReady) {
-            const contextCommandItems = await LspClient.instance.getContextCommandItems()
-            const folderCmd: QuickActionCommand = contextCommand[0].commands?.[1]
-            const filesCmd: QuickActionCommand = contextCommand[0].commands?.[2]
+        // const lspClientReady = await LspClient.instance.waitUntilReady()
+        // if (lspClientReady) {
+        //     const contextCommandItems = await LspClient.instance.getContextCommandItems()
+        //     const folderCmd: QuickActionCommand = contextCommand[0].commands?.[1]
+        //     const filesCmd: QuickActionCommand = contextCommand[0].commands?.[2]
 
-            for (const contextCommandItem of contextCommandItems) {
-                const wsFolderName = path.basename(contextCommandItem.workspaceFolder)
-                if (contextCommandItem.type === 'file') {
-                    filesCmd.children?.[0].commands.push({
-                        command: path.basename(contextCommandItem.relativePath),
-                        description: path.join(wsFolderName, contextCommandItem.relativePath),
-                        route: [contextCommandItem.workspaceFolder, contextCommandItem.relativePath],
-                        label: 'file' as ContextCommandItemType,
-                        id: contextCommandItem.id,
-                        icon: 'file' as MynahIconsType,
-                    })
-                } else if (contextCommandItem.type === 'folder') {
-                    folderCmd.children?.[0].commands.push({
-                        command: path.basename(contextCommandItem.relativePath),
-                        description: path.join(wsFolderName, contextCommandItem.relativePath),
-                        route: [contextCommandItem.workspaceFolder, contextCommandItem.relativePath],
-                        label: 'folder' as ContextCommandItemType,
-                        id: contextCommandItem.id,
-                        icon: 'folder' as MynahIconsType,
-                    })
-                } else if (contextCommandItem.symbol && symbolsCmd.children) {
-                    symbolsCmd.children?.[0].commands.push({
-                        command: contextCommandItem.symbol.name,
-                        description: `${contextCommandItem.symbol.kind}, ${path.join(wsFolderName, contextCommandItem.relativePath)}, L${contextCommandItem.symbol.range.start.line}-${contextCommandItem.symbol.range.end.line}`,
-                        route: [contextCommandItem.workspaceFolder, contextCommandItem.relativePath],
-                        label: 'code' as ContextCommandItemType,
-                        id: contextCommandItem.id,
-                        icon: 'code-block' as MynahIconsType,
-                    })
-                }
-            }
-        }
+        //     for (const contextCommandItem of contextCommandItems) {
+        //         const wsFolderName = path.basename(contextCommandItem.workspaceFolder)
+        //         if (contextCommandItem.type === 'file') {
+        //             filesCmd.children?.[0].commands.push({
+        //                 command: path.basename(contextCommandItem.relativePath),
+        //                 description: path.join(wsFolderName, contextCommandItem.relativePath),
+        //                 route: [contextCommandItem.workspaceFolder, contextCommandItem.relativePath],
+        //                 label: 'file' as ContextCommandItemType,
+        //                 id: contextCommandItem.id,
+        //                 icon: 'file' as MynahIconsType,
+        //             })
+        //         } else if (contextCommandItem.type === 'folder') {
+        //             folderCmd.children?.[0].commands.push({
+        //                 command: path.basename(contextCommandItem.relativePath),
+        //                 description: path.join(wsFolderName, contextCommandItem.relativePath),
+        //                 route: [contextCommandItem.workspaceFolder, contextCommandItem.relativePath],
+        //                 label: 'folder' as ContextCommandItemType,
+        //                 id: contextCommandItem.id,
+        //                 icon: 'folder' as MynahIconsType,
+        //             })
+        //         } else if (contextCommandItem.symbol && symbolsCmd.children) {
+        //             symbolsCmd.children?.[0].commands.push({
+        //                 command: contextCommandItem.symbol.name,
+        //                 description: `${contextCommandItem.symbol.kind}, ${path.join(wsFolderName, contextCommandItem.relativePath)}, L${contextCommandItem.symbol.range.start.line}-${contextCommandItem.symbol.range.end.line}`,
+        //                 route: [contextCommandItem.workspaceFolder, contextCommandItem.relativePath],
+        //                 label: 'code' as ContextCommandItemType,
+        //                 id: contextCommandItem.id,
+        //                 icon: 'code-block' as MynahIconsType,
+        //             })
+        //         }
+        //     }
+        // }
 
         this.messenger.sendContextCommandData(contextCommand)
-        void LspController.instance.updateContextCommandSymbolsOnce()
+        // void LspController.instance.updateContextCommandSymbolsOnce()
     }
 
     private handlePromptCreate(tabID: string) {
@@ -1006,7 +1000,7 @@ export class ChatController {
     }
 
     private async resolveContextCommandPayload(triggerPayload: TriggerPayload, session: ChatSession) {
-        const contextCommands: ContextCommandItem[] = []
+        const contextCommands: any[] = []
 
         // Check for workspace rules to add to context
         const workspaceRules = await this.collectWorkspaceRules()
@@ -1017,7 +1011,7 @@ export class ChatController {
                         vscode.workspace.getWorkspaceFolder(vscode.Uri.parse(rule))?.uri?.path || ''
                     return {
                         workspaceFolder: workspaceFolderPath,
-                        type: 'file' as ContextCommandItemType,
+                        type: 'file' as any,
                         relativePath: path.relative(workspaceFolderPath, rule),
                     }
                 })
@@ -1029,7 +1023,7 @@ export class ChatController {
             if (typeof context !== 'string' && context.route && context.route.length === 2) {
                 contextCommands.push({
                     workspaceFolder: context.route[0] || '',
-                    type: (context.label || '') as ContextCommandItemType,
+                    type: (context.label || '') as any,
                     relativePath: context.route[1] || '',
                     id: context.id,
                 })
@@ -1044,45 +1038,45 @@ export class ChatController {
             return []
         }
         workspaceFolders.sort()
-        const workspaceFolder = workspaceFolders[0]
-        for (const contextCommand of contextCommands) {
-            session.relativePathToWorkspaceRoot.set(contextCommand.workspaceFolder, contextCommand.workspaceFolder)
-        }
-        let prompts: AdditionalContextPrompt[] = []
-        try {
-            prompts = await LspClient.instance.getContextCommandPrompt(contextCommands)
-        } catch (e) {
-            // todo: handle @workspace used before indexing is ready
-            getLogger().verbose(`Could not get context command prompts: ${e}`)
-        }
+        // const workspaceFolder = workspaceFolders[0]
+        // for (const contextCommand of contextCommands) {
+        //     session.relativePathToWorkspaceRoot.set(contextCommand.workspaceFolder, contextCommand.workspaceFolder)
+        // }
+        // const prompts: any[] = []
+        // try {
+        //     // prompts = await LspClient.instance.getContextCommandPrompt(contextCommands)
+        // } catch (e) {
+        //     // todo: handle @workspace used before indexing is ready
+        //     getLogger().verbose(`Could not get context command prompts: ${e}`)
+        // }
 
-        triggerPayload.contextLengths.additionalContextLengths = this.telemetryHelper.getContextLengths(prompts)
-        for (const prompt of prompts.slice(0, 20)) {
-            // Add system prompt for user prompts and workspace rules
-            const contextType = this.telemetryHelper.getContextType(prompt)
-            const description =
-                contextType === 'rule' || contextType === 'prompt'
-                    ? `You must follow the instructions in ${prompt.relativePath}. Below are lines ${prompt.startLine}-${prompt.endLine} of this file:\n`
-                    : prompt.description
+        // triggerPayload.contextLengths.additionalContextLengths = this.telemetryHelper.getContextLengths(prompts)
+        // for (const prompt of prompts.slice(0, 20)) {
+        //     // Add system prompt for user prompts and workspace rules
+        //     const contextType = this.telemetryHelper.getContextType(prompt)
+        //     const description =
+        //         contextType === 'rule' || contextType === 'prompt'
+        //             ? `You must follow the instructions in ${prompt.relativePath}. Below are lines ${prompt.startLine}-${prompt.endLine} of this file:\n`
+        //             : prompt.description
 
-            // Handle user prompts outside the workspace
-            const relativePath = prompt.filePath.startsWith(getUserPromptsDirectory())
-                ? path.basename(prompt.filePath)
-                : path.relative(workspaceFolder, prompt.filePath)
+        //     // Handle user prompts outside the workspace
+        //     const relativePath = prompt.filePath.startsWith(getUserPromptsDirectory())
+        //         ? path.basename(prompt.filePath)
+        //         : path.relative(workspaceFolder, prompt.filePath)
 
-            const entry = {
-                name: prompt.name.substring(0, aditionalContentNameLimit),
-                description: description.substring(0, aditionalContentNameLimit),
-                innerContext: prompt.content.substring(0, additionalContentInnerContextLimit),
-                type: contextType,
-                relativePath: relativePath,
-                startLine: prompt.startLine,
-                endLine: prompt.endLine,
-            }
+        //     const entry = {
+        //         name: prompt.name.substring(0, aditionalContentNameLimit),
+        //         description: description.substring(0, aditionalContentNameLimit),
+        //         innerContext: prompt.content.substring(0, additionalContentInnerContextLimit),
+        //         type: contextType,
+        //         relativePath: relativePath,
+        //         startLine: prompt.startLine,
+        //         endLine: prompt.endLine,
+        //     }
 
-            triggerPayload.additionalContents.push(entry)
-        }
-        getLogger().info(`Retrieved chunks of additional context count: ${triggerPayload.additionalContents.length} `)
+        //     triggerPayload.additionalContents.push(entry)
+        // }
+        // getLogger().info(`Retrieved chunks of additional context count: ${triggerPayload.additionalContents.length} `)
     }
 
     private async generateResponse(
@@ -1130,25 +1124,24 @@ export class ChatController {
         if (triggerPayload.useRelevantDocuments) {
             triggerPayload.message = triggerPayload.message.replace(/@workspace/, '')
             if (CodeWhispererSettings.instance.isLocalIndexEnabled()) {
-                const start = performance.now()
-                const relevantTextDocuments = await LspController.instance.query(triggerPayload.message)
-                for (const relevantDocument of relevantTextDocuments) {
-                    if (relevantDocument.text && relevantDocument.text.length > 0) {
-                        triggerPayload.contextLengths.workspaceContextLength += relevantDocument.text.length
-                        if (relevantDocument.text.length > workspaceChunkMaxSize) {
-                            relevantDocument.text = relevantDocument.text.substring(0, workspaceChunkMaxSize)
-                            getLogger().debug(`Truncating @workspace chunk: ${relevantDocument.relativeFilePath} `)
-                        }
-                        triggerPayload.relevantTextDocuments.push(relevantDocument)
-                    }
-                }
-
-                for (const doc of triggerPayload.relevantTextDocuments) {
-                    getLogger().info(
-                        `amazonq: Using workspace files ${doc.relativeFilePath}, content(partial): ${doc.text?.substring(0, 200)}, start line: ${doc.startLine}, end line: ${doc.endLine}`
-                    )
-                }
-                triggerPayload.projectContextQueryLatencyMs = performance.now() - start
+                // const start = performance.now()
+                // const relevantTextDocuments = await LspController.instance.query(triggerPayload.message)
+                // for (const relevantDocument of relevantTextDocuments) {
+                //     if (relevantDocument.text && relevantDocument.text.length > 0) {
+                //         triggerPayload.contextLengths.workspaceContextLength += relevantDocument.text.length
+                //         if (relevantDocument.text.length > workspaceChunkMaxSize) {
+                //             relevantDocument.text = relevantDocument.text.substring(0, workspaceChunkMaxSize)
+                //             getLogger().debug(`Truncating @workspace chunk: ${relevantDocument.relativeFilePath} `)
+                //         }
+                //         triggerPayload.relevantTextDocuments.push(relevantDocument)
+                //     }
+                // }
+                // for (const doc of triggerPayload.relevantTextDocuments) {
+                //     getLogger().info(
+                //         `amazonq: Using workspace files ${doc.relativeFilePath}, content(partial): ${doc.text?.substring(0, 200)}, start line: ${doc.startLine}, end line: ${doc.endLine}`
+                //     )
+                // }
+                // triggerPayload.projectContextQueryLatencyMs = performance.now() - start
             } else {
                 this.messenger.sendOpenSettingsMessage(triggerID, tabID)
                 return

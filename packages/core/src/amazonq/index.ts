@@ -15,9 +15,6 @@ export {
     walkthroughInlineSuggestionsExample,
     walkthroughSecurityScanExample,
 } from './onboardingPage/walkthrough'
-export { LspController } from './lsp/lspController'
-export { LspClient } from './lsp/lspClient'
-export * as lspClient from './lsp/lspClient'
 export { api } from './extApi'
 export { AmazonQChatViewProvider } from './webview/webView'
 export { amazonQHelpUrl } from '../shared/constants'
@@ -41,7 +38,6 @@ export { CodeReference } from '../codewhispererChat/view/connector/connector'
 export { extractAuthFollowUp } from './util/authUtils'
 export { Messenger } from './commons/connector/baseMessenger'
 export * from './lsp/config'
-export * as WorkspaceLspInstaller from './lsp/workspaceInstaller'
 export * as secondaryAuth from '../auth/secondaryAuth'
 export * as authConnection from '../auth/connection'
 export * as featureConfig from './webview/generators/featureConfig'
