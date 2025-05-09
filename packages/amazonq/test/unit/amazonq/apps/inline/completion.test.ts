@@ -17,6 +17,7 @@ import {
 } from 'aws-core-vscode/codewhisperer'
 import { InlineGeneratingMessage } from '../../../../../src/app/inline/inlineGeneratingMessage'
 import { LineTracker } from '../../../../../src/app/inline/stateTracker/lineTracker'
+import { InlineTutorialAnnotation } from '../../../../../src/app/inline/tutorials/inlineTutorialAnnotation'
 
 describe('InlineCompletionManager', () => {
     let manager: InlineCompletionManager
@@ -74,7 +75,10 @@ describe('InlineCompletionManager', () => {
             sendNotification: sendNotificationStub,
         } as unknown as LanguageClient
 
-        manager = new InlineCompletionManager(languageClient)
+        const sessionManager = new SessionManager()
+        const lineTracker = new LineTracker()
+        const inlineTutorialAnnotation = new InlineTutorialAnnotation(lineTracker, sessionManager)
+        manager = new InlineCompletionManager(languageClient, sessionManager, lineTracker, inlineTutorialAnnotation)
         getActiveSessionStub = sandbox.stub(manager['sessionManager'], 'getActiveSession')
         getActiveRecommendationStub = sandbox.stub(manager['sessionManager'], 'getActiveRecommendation')
         getReferenceStub = sandbox.stub(ReferenceLogViewProvider, 'getReferenceLog')
@@ -264,10 +268,12 @@ describe('InlineCompletionManager', () => {
             let getAllRecommendationsStub: sinon.SinonStub
             let recommendationService: RecommendationService
             let setInlineReferenceStub: sinon.SinonStub
+            let inlineTutorialAnnotation: InlineTutorialAnnotation
 
             beforeEach(() => {
                 const lineTracker = new LineTracker()
                 const activeStateController = new InlineGeneratingMessage(lineTracker)
+                inlineTutorialAnnotation = new InlineTutorialAnnotation(lineTracker, mockSessionManager)
                 recommendationService = new RecommendationService(mockSessionManager, activeStateController)
                 setInlineReferenceStub = sandbox.stub(ReferenceInlineProvider.instance, 'setInlineReference')
 
@@ -290,7 +296,8 @@ describe('InlineCompletionManager', () => {
                     provider = new AmazonQInlineCompletionItemProvider(
                         languageClient,
                         recommendationService,
-                        mockSessionManager
+                        mockSessionManager,
+                        inlineTutorialAnnotation
                     )
                     const items = await provider.provideInlineCompletionItems(
                         mockDocument,
@@ -306,6 +313,7 @@ describe('InlineCompletionManager', () => {
                         languageClient,
                         recommendationService,
                         mockSessionManager,
+                        inlineTutorialAnnotation,
                         false
                     )
                     const items = await provider.provideInlineCompletionItems(
@@ -322,6 +330,7 @@ describe('InlineCompletionManager', () => {
                         languageClient,
                         recommendationService,
                         mockSessionManager,
+                        inlineTutorialAnnotation,
                         false
                     )
                     await provider.provideInlineCompletionItems(mockDocument, mockPosition, mockContext, mockToken)

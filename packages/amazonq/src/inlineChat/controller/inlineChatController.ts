@@ -26,7 +26,7 @@ import {
     isSageMaker,
     Experiments,
 } from 'aws-core-vscode/shared'
-import { InlineLineAnnotationController } from '../decorations/inlineLineAnnotationController'
+import { InlineChatTutorialAnnotation } from '../../app/inline/tutorials/inlineChatTutorialAnnotation'
 
 export class InlineChatController {
     private task: InlineTask | undefined
@@ -34,16 +34,21 @@ export class InlineChatController {
     private readonly inlineChatProvider: InlineChatProvider
     private readonly codeLenseProvider: CodelensProvider
     private readonly referenceLogController = new ReferenceLogController()
-    private readonly inlineLineAnnotationController: InlineLineAnnotationController
+    private readonly inlineChatTutorialAnnotation: InlineChatTutorialAnnotation
     private readonly computeDiffAndRenderOnEditor: (query: string) => Promise<void>
     private userQuery: string | undefined
     private listeners: vscode.Disposable[] = []
 
-    constructor(context: vscode.ExtensionContext, client: LanguageClient, encryptionKey: Buffer) {
+    constructor(
+        context: vscode.ExtensionContext,
+        client: LanguageClient,
+        encryptionKey: Buffer,
+        inlineChatTutorialAnnotation: InlineChatTutorialAnnotation
+    ) {
         this.inlineChatProvider = new InlineChatProvider(client, encryptionKey)
         this.inlineChatProvider.onErrorOccured(() => this.handleError())
         this.codeLenseProvider = new CodelensProvider(context)
-        this.inlineLineAnnotationController = new InlineLineAnnotationController(context)
+        this.inlineChatTutorialAnnotation = inlineChatTutorialAnnotation
         this.computeDiffAndRenderOnEditor = Experiments.instance.get('amazonqLSPInlineChat', false)
             ? this.computeDiffAndRenderOnEditorLSP.bind(this)
             : this.computeDiffAndRenderOnEditorLocal.bind(this)
@@ -144,7 +149,7 @@ export class InlineChatController {
         this.codeLenseProvider.updateLenses(task)
         if (task.state === TaskState.InProgress) {
             if (vscode.window.activeTextEditor) {
-                await this.inlineLineAnnotationController.hide(vscode.window.activeTextEditor)
+                await this.inlineChatTutorialAnnotation.hide(vscode.window.activeTextEditor)
             }
         }
         await this.refreshCodeLenses(task)
@@ -170,7 +175,7 @@ export class InlineChatController {
         this.listeners = []
 
         this.task = undefined
-        this.inlineLineAnnotationController.enable()
+        this.inlineChatTutorialAnnotation.enable()
         await setContext('amazonq.inline.codelensShortcutEnabled', undefined)
     }
 
@@ -211,7 +216,7 @@ export class InlineChatController {
                 this.userQuery = query
                 await textDocumentUtil.addEofNewline(editor)
                 this.task = await this.createTask(query, editor.document, editor.selection)
-                await this.inlineLineAnnotationController.disable(editor)
+                await this.inlineChatTutorialAnnotation.disable(editor)
                 await this.computeDiffAndRenderOnEditor(query).catch(async (err) => {
                     getLogger().error('computeDiffAndRenderOnEditor error: %s', (err as Error)?.message)
                     if (err instanceof Error) {

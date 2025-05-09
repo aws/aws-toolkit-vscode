@@ -20,7 +20,12 @@ import {
     updateConfigurationRequestType,
     WorkspaceFolder,
 } from '@aws/language-server-runtimes/protocol'
-import { AuthUtil, CodeWhispererSettings, getSelectedCustomization } from 'aws-core-vscode/codewhisperer'
+import {
+    AuthUtil,
+    CodeWhispererSettings,
+    getSelectedCustomization,
+    TelemetryHelper,
+} from 'aws-core-vscode/codewhisperer'
 import {
     Settings,
     createServerOptions,
@@ -40,6 +45,11 @@ import { activate } from './chat/activation'
 import { AmazonQResourcePaths } from './lspInstaller'
 import { ConfigSection, isValidConfigSection, toAmazonQLSPLogLevel } from './config'
 import { activate as activateInlineChat } from '../inlineChat/activation'
+import { telemetry } from 'aws-core-vscode/telemetry'
+import { SessionManager } from '../app/inline/sessionManager'
+import { LineTracker } from '../app/inline/stateTracker/lineTracker'
+import { InlineTutorialAnnotation } from '../app/inline/tutorials/inlineTutorialAnnotation'
+import { InlineChatTutorialAnnotation } from '../app/inline/tutorials/inlineChatTutorialAnnotation'
 
 const localize = nls.loadMessageBundle()
 const logger = getLogger('amazonqLsp.lspClient')
@@ -168,25 +178,60 @@ export async function startLanguageServer(
     return client.onReady().then(async () => {
         await auth.refreshConnection()
 
-        if (Experiments.instance.get('amazonqLSPInline', true)) {
-            const inlineManager = new InlineCompletionManager(client)
-            inlineManager.registerInlineCompletion()
-            toDispose.push(
-                inlineManager,
-                Commands.register({ id: 'aws.amazonq.invokeInlineCompletion', autoconnect: true }, async () => {
-                    await vscode.commands.executeCommand('editor.action.inlineSuggest.trigger')
-                }),
-                vscode.workspace.onDidCloseTextDocument(async () => {
-                    await vscode.commands.executeCommand('aws.amazonq.rejectCodeSuggestion')
+        // session manager for inline
+        const sessionManager = new SessionManager()
+
+        // keeps track of the line changes
+        const lineTracker = new LineTracker()
+
+        // tutorial for inline suggestions
+        const inlineTutorialAnnotation = new InlineTutorialAnnotation(lineTracker, sessionManager)
+
+        // tutorial for inline chat
+        const inlineChatTutorialAnnotation = new InlineChatTutorialAnnotation(inlineTutorialAnnotation)
+
+        const inlineManager = new InlineCompletionManager(client, sessionManager, lineTracker, inlineTutorialAnnotation)
+        inlineManager.registerInlineCompletion()
+        toDispose.push(
+            inlineManager,
+            Commands.register({ id: 'aws.amazonq.invokeInlineCompletion', autoconnect: true }, async () => {
+                await vscode.commands.executeCommand('editor.action.inlineSuggest.trigger')
+            }),
+            Commands.register('aws.amazonq.refreshAnnotation', async (forceProceed: boolean) => {
+                telemetry.record({
+                    traceId: TelemetryHelper.instance.traceId,
                 })
-            )
-        }
+
+                const editor = vscode.window.activeTextEditor
+                if (editor) {
+                    if (forceProceed) {
+                        await inlineTutorialAnnotation.refresh(editor, 'codewhisperer', true)
+                    } else {
+                        await inlineTutorialAnnotation.refresh(editor, 'codewhisperer')
+                    }
+                }
+            }),
+            vscode.workspace.onDidCloseTextDocument(async () => {
+                await vscode.commands.executeCommand('aws.amazonq.rejectCodeSuggestion')
+            }),
+            Commands.register('aws.amazonq.dismissTutorial', async () => {
+                const editor = vscode.window.activeTextEditor
+                if (editor) {
+                    inlineTutorialAnnotation.clear()
+                    try {
+                        telemetry.ui_click.emit({ elementId: `dismiss_${inlineTutorialAnnotation.currentState.id}` })
+                    } catch (_) {}
+                    await inlineTutorialAnnotation.dismissTutorial()
+                    getLogger().debug(`codewhisperer: user dismiss tutorial.`)
+                }
+            })
+        )
 
         if (Experiments.instance.get('amazonqChatLSP', true)) {
             await activate(client, encryptionKey, resourcePaths.ui)
         }
 
-        activateInlineChat(extensionContext, client, encryptionKey)
+        activateInlineChat(extensionContext, client, encryptionKey, inlineChatTutorialAnnotation)
 
         const refreshInterval = auth.startTokenRefreshInterval(10 * oneSecond)
 
