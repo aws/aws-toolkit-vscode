@@ -1,3 +1,8 @@
+## 1.66.0 2025-05-09
+
+- **Bug Fix** Avoid inline completion 'Improperly formed request' errors when file is too large
+- **Bug Fix** Named agent tabs sometimes open with unnecessary input options
+
 ## 1.65.0 2025-05-05
 
 - **Feature** Support selecting customizations across all Q profiles with automatic profile switching for enterprise users
