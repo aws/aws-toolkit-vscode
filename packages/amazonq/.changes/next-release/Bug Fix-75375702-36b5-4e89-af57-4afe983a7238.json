@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Avoid inline completion 'Improperly formed request' errors when file is too large"
-}
