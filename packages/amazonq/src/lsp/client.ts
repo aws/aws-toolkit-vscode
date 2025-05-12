@@ -137,7 +137,7 @@ export async function startLanguageServer(
                     },
                 },
                 contextConfiguration: {
-                    workspaceIdentifier: extensionContext.storageUri,
+                    workspaceIdentifier: extensionContext.storageUri?.path,
                 },
                 logLevel: toAmazonQLSPLogLevel(globals.logOutputChannel.logLevel),
             },
