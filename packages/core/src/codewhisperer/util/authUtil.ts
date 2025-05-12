@@ -30,6 +30,8 @@ import { builderIdStartUrl, internalStartUrl } from '../../auth/sso/constants'
 import { VSCODE_EXTENSION_ID } from '../../shared/extensions'
 import { RegionProfileManager } from '../region/regionProfileManager'
 import { AuthFormId } from '../../login/webview/vue/types'
+import { notifySelectDeveloperProfile } from '../region/utils'
+import { once } from '../../shared/utilities/functionUtils'
 
 const localize = nls.loadMessageBundle()
 
@@ -91,8 +93,20 @@ export class AuthUtil implements IAuthProvider {
         return this.session.loginType === LoginTypes.SSO
     }
 
+    /**
+     * HACK: Ideally we'd put {@link notifySelectDeveloperProfile} in to {@link restore}.
+     *       But because {@link refreshState} is only called if !isConnected, we cannot do it since
+     *       {@link notifySelectDeveloperProfile} needs {@link refreshState} to run so it can set
+     *       the Bearer Token in the LSP first.
+     */
+    startedConnected = false
+
     async restore() {
         await this.session.restore()
+        this.startedConnected = this.isConnected()
+
+        // HACK: The LSP should allow us to call refreshState multiple times, but for some reason it breaks.
+        // isConnected somehow allows it to work. Assumption is that the LSP does not handle redundant calls nicely.
         if (!this.isConnected()) {
             await this.refreshState()
         }
@@ -258,7 +272,6 @@ export class AuthUtil implements IAuthProvider {
     private async refreshState(state = this.getAuthState()) {
         if (state === 'expired' || state === 'notConnected') {
             this.lspAuth.deleteBearerToken()
-
             if (this.isIdcConnection()) {
                 await this.regionProfileManager.invalidateProfile(this.regionProfileManager.activeRegionProfile?.arn)
                 await this.regionProfileManager.clearCache()
@@ -273,6 +286,9 @@ export class AuthUtil implements IAuthProvider {
             }
         }
 
+        // regardless of state, send message at startup if user needs to select a Developer Profile
+        void this.tryNotifySelectDeveloperProfile()
+
         vsCodeState.isFreeTierLimitReached = false
         await this.setVscodeContextProps(state)
         await Promise.all([
@@ -284,6 +300,12 @@ export class AuthUtil implements IAuthProvider {
             void vscode.commands.executeCommand('aws.amazonq.notifyNewCustomizations')
         }
     }
+
+    private tryNotifySelectDeveloperProfile = once(async () => {
+        if (this.regionProfileManager.requireProfileSelection() && this.startedConnected) {
+            await notifySelectDeveloperProfile()
+        }
+    })
 
     async getTelemetryMetadata(): Promise<TelemetryMetadata> {
         if (!this.isConnected()) {
