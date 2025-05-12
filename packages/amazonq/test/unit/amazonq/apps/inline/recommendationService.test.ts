@@ -214,6 +214,47 @@ describe('RecommendationService', () => {
 
                 await promise2
             })
+
+            it('makes request with the last call', async () => {
+                const mockResult = {
+                    sessionId: 'test-session',
+                    items: [mockInlineCompletionItemOne],
+                    partialResultToken: undefined,
+                }
+
+                sendRequestStub.resolves(mockResult)
+
+                const promise1 = service.getAllRecommendations(
+                    languageClient,
+                    mockDocument,
+                    mockPosition,
+                    mockContext,
+                    mockToken
+                )
+
+                const promise2 = service.getAllRecommendations(
+                    languageClient,
+                    mockDocument,
+                    { line: 2, character: 2 } as Position,
+                    mockContext,
+                    mockToken
+                )
+
+                await clock.tickAsync(inlineCompletionsDebounceDelay + 1000)
+
+                await promise1
+                await promise2
+
+                const expectedRequestArgs = {
+                    textDocument: {
+                        uri: 'file:///test.py',
+                    },
+                    position: { line: 2, character: 2 } as Position,
+                    context: mockContext,
+                }
+                const firstCallArgs = sendRequestStub.firstCall.args[1]
+                assert.deepStrictEqual(firstCallArgs, expectedRequestArgs)
+            })
         })
     })
 })

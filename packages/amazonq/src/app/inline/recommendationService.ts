@@ -22,7 +22,7 @@ export class RecommendationService {
         private readonly inlineGeneratingMessage: InlineGeneratingMessage
     ) {}
 
-    getAllRecommendations = debounce(this._getAllRecommendations.bind(this), inlineCompletionsDebounceDelay)
+    getAllRecommendations = debounce(this._getAllRecommendations.bind(this), inlineCompletionsDebounceDelay, true)
 
     private async _getAllRecommendations(
         languageClient: LanguageClient,
