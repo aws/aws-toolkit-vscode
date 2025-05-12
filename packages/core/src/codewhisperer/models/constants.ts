@@ -194,15 +194,9 @@ export const securityScanLearnMoreUri = 'https://docs.aws.amazon.com/amazonq/lat
 export const identityPoolID = 'us-east-1:70717e99-906f-4add-908c-bd9074a2f5b9'
 
 /**
- * the interval of the background thread invocation, which is triggered by the timer
+ * Delay for making requests once the user stops typing. Without a delay, inline suggestions request is triggered every keystroke.
  */
-export const defaultCheckPeriodMillis = 1000 * 60 * 5
-
-// suggestion show delay, in milliseconds
-export const suggestionShowDelay = 250
-
-// add 200ms more delay on top of inline default 30-50ms
-export const inlineSuggestionShowDelay = 200
+export const inlineCompletionsDebounceDelay = 25
 
 export const referenceLog = 'Code Reference Log'
 

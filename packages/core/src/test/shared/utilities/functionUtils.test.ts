@@ -152,6 +152,33 @@ describe('debounce', function () {
         assert.strictEqual(counter, 2)
     })
 
+    describe('useLastCall option', function () {
+        let args: number[]
+        let clock: ReturnType<typeof installFakeClock>
+        let addToArgs: (i: number) => void
+
+        before(function () {
+            args = []
+            clock = installFakeClock()
+            addToArgs = (n: number) => args.push(n)
+        })
+
+        afterEach(function () {
+            clock.uninstall()
+            args.length = 0
+        })
+
+        it('only calls with the last args', async function () {
+            const debounced = debounce(addToArgs, 10, true)
+            const p1 = debounced(1)
+            const p2 = debounced(2)
+            const p3 = debounced(3)
+            await clock.tickAsync(100)
+            await Promise.all([p1, p2, p3])
+            assert.deepStrictEqual(args, [3])
+        })
+    })
+
     describe('window rolling', function () {
         let clock: ReturnType<typeof installFakeClock>
         const calls: ReturnType<typeof fn>[] = []
