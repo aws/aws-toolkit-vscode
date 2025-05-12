@@ -196,7 +196,7 @@ export const identityPoolID = 'us-east-1:70717e99-906f-4add-908c-bd9074a2f5b9'
 /**
  * Delay for making requests once the user stops typing. Without a delay, inline suggestions request is triggered every keystroke.
  */
-export const inlineCompletionsDebounceDelay = 100
+export const inlineCompletionsDebounceDelay = 25
 
 export const referenceLog = 'Code Reference Log'
 
