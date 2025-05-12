@@ -45,8 +45,7 @@ export function extractContextForCodeWhisperer(editor: vscode.TextEditor): codew
     )
     let languageName = 'plaintext'
     if (!checkLeftContextKeywordsForJson(document.fileName, caretLeftFileContext, editor.document.languageId)) {
-        languageName =
-            runtimeLanguageContext.normalizeLanguage(editor.document.languageId) ?? editor.document.languageId
+        languageName = runtimeLanguageContext.resolveLang(editor.document)
     }
     return {
         filename: getFileRelativePath(editor),

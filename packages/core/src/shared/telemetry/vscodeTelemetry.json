@@ -1,6 +1,45 @@
 {
     "types": [
         {
+            "name": "codewhispererLanguage",
+            "type": "string",
+            "description": "Programming language of the CodeWhisperer recommendation",
+            "allowedValues": [
+                "abap",
+                "c",
+                "cpp",
+                "csharp",
+                "dart",
+                "go",
+                "hcl",
+                "java",
+                "javascript",
+                "json",
+                "jsonc",
+                "jsx",
+                "kotlin",
+                "lua",
+                "php",
+                "plaintext",
+                "powershell",
+                "python",
+                "r",
+                "ruby",
+                "rust",
+                "scala",
+                "shell",
+                "sql",
+                "swift",
+                "systemVerilog",
+                "tf",
+                "tsx",
+                "typescript",
+                "vue",
+                "yaml",
+                "yml"
+            ]
+        },
+        {
             "name": "amazonQProfileRegion",
             "type": "string",
             "description": "Region of the Q Profile associated with a metric\n- \"n/a\" if metric is not associated with a profile or region.\n- \"not-set\" if metric is associated with a profile, but profile is unknown."
