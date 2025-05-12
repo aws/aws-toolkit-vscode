@@ -160,7 +160,7 @@ describe('debounce', function () {
         before(function () {
             args = []
             clock = installFakeClock()
-            addToArgs = args.push
+            addToArgs = (n: number) => args.push(n)
         })
 
         afterEach(function () {
@@ -169,11 +169,12 @@ describe('debounce', function () {
         })
 
         it('only calls with the last args', async function () {
-            const debounced = debounce((i: number) => args.push(i), 10, true)
-            debounced(1)
-            debounced(2)
-            debounced(3)
+            const debounced = debounce(addToArgs, 10, true)
+            const p1 = debounced(1)
+            const p2 = debounced(2)
+            const p3 = debounced(3)
             await clock.tickAsync(100)
+            await Promise.all([p1, p2, p3])
             assert.deepStrictEqual(args, [3])
         })
     })
