@@ -257,18 +257,20 @@ export class AuthUtil implements IAuthProvider {
 
     private async refreshState(state = this.getAuthState()) {
         if (state === 'expired' || state === 'notConnected') {
+            this.lspAuth.deleteBearerToken()
+
             if (this.isIdcConnection()) {
                 await this.regionProfileManager.invalidateProfile(this.regionProfileManager.activeRegionProfile?.arn)
                 await this.regionProfileManager.clearCache()
             }
-            this.lspAuth.deleteBearerToken()
         }
         if (state === 'connected') {
+            const bearerTokenParams = (await this.session.getToken()).updateCredentialsParams
+            await this.lspAuth.updateBearerToken(bearerTokenParams)
+
             if (this.isIdcConnection()) {
                 await this.regionProfileManager.restoreProfileSelection()
             }
-            const bearerTokenParams = (await this.session.getToken()).updateCredentialsParams
-            await this.lspAuth.updateBearerToken(bearerTokenParams)
         }
 
         vsCodeState.isFreeTierLimitReached = false
