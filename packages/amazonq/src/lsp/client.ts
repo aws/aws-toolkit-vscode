@@ -33,6 +33,7 @@ import {
     getOptOutPreference,
     isAmazonLinux2,
     getClientId,
+    extensionVersion,
 } from 'aws-core-vscode/shared'
 import { processUtils } from 'aws-core-vscode/shared'
 import { activate } from './chat/activation'
@@ -116,7 +117,7 @@ export async function startLanguageServer(
                     version: version,
                     extension: {
                         name: 'AmazonQ-For-VSCode',
-                        version: '0.0.1',
+                        version: extensionVersion,
                     },
                     clientId: getClientId(globals.globalState),
                 },
