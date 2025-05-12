@@ -175,7 +175,12 @@ export async function startLanguageServer(
     toDispose.push(disposable)
 
     await client.onReady()
+
+    // IMPORTANT: This sets up Auth and must be called before anything attempts to use it
     AuthUtil.create(new auth2.LanguageClientAuth(client, clientId, encryptionKey))
+    // Ideally this would be part of AuthUtil.create() as it restores the existing Auth connection, but we have some
+    // future work which will need to delay this call
+    await AuthUtil.instance.restore()
 
     await postStartLanguageServer(client, resourcePaths, toDispose)
 
