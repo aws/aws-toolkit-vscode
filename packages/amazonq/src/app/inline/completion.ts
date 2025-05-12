@@ -209,7 +209,7 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
         true
     )
 
-    async _provideInlineCompletionItems(
+    private async _provideInlineCompletionItems(
         document: TextDocument,
         position: Position,
         context: InlineCompletionContext,

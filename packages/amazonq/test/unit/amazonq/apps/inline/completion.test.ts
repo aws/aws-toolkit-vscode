@@ -3,13 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import sinon from 'sinon'
-import { CancellationToken, commands, languages, Position, window } from 'vscode'
+import { CancellationToken, commands, InlineCompletionItem, languages, Position, window } from 'vscode'
 import assert from 'assert'
 import { LanguageClient } from 'vscode-languageclient'
 import { AmazonQInlineCompletionItemProvider, InlineCompletionManager } from '../../../../../src/app/inline/completion'
 import { RecommendationService } from '../../../../../src/app/inline/recommendationService'
 import { SessionManager } from '../../../../../src/app/inline/sessionManager'
-import { createMockDocument, createMockTextEditor } from 'aws-core-vscode/test'
+import { createMockDocument, createMockTextEditor, installFakeClock } from 'aws-core-vscode/test'
 import {
     ReferenceHoverProvider,
     ReferenceInlineProvider,
@@ -343,6 +343,57 @@ describe('InlineCompletionManager', () => {
                             fakeReferences
                         )
                     )
+                }),
+                describe('debounce behavior', function () {
+                    let clock: ReturnType<typeof installFakeClock>
+
+                    beforeEach(function () {
+                        clock = installFakeClock()
+                    })
+
+                    after(function () {
+                        clock.uninstall()
+                    })
+
+                    it('should only trigger once on rapid events', async () => {
+                        provider = new AmazonQInlineCompletionItemProvider(
+                            languageClient,
+                            recommendationService,
+                            mockSessionManager,
+                            inlineTutorialAnnotation,
+                            false
+                        )
+                        const p1 = provider.provideInlineCompletionItems(
+                            mockDocument,
+                            mockPosition,
+                            mockContext,
+                            mockToken
+                        )
+                        const p2 = provider.provideInlineCompletionItems(
+                            mockDocument,
+                            mockPosition,
+                            mockContext,
+                            mockToken
+                        )
+                        const p3 = provider.provideInlineCompletionItems(
+                            mockDocument,
+                            new Position(2, 2),
+                            mockContext,
+                            mockToken
+                        )
+
+                        await clock.tickAsync(1000)
+
+                        // All promises should be the same object when debounced properly.
+                        assert.strictEqual(p1, p2)
+                        assert.strictEqual(p1, p3)
+                        await p1
+                        await p2
+                        const r3 = await p3
+
+                        // calls the function with the latest provided args.
+                        assert.deepStrictEqual((r3 as InlineCompletionItem[])[0].range?.end, new Position(2, 2))
+                    })
                 })
         })
     })
