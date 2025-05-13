@@ -12,9 +12,8 @@ import { CancellationToken, InlineCompletionContext, Position, TextDocument } fr
 import { LanguageClient } from 'vscode-languageclient'
 import { SessionManager } from './sessionManager'
 import { InlineGeneratingMessage } from './inlineGeneratingMessage'
-import { CodeWhispererStatusBarManager, inlineCompletionsDebounceDelay } from 'aws-core-vscode/codewhisperer'
+import { CodeWhispererStatusBarManager } from 'aws-core-vscode/codewhisperer'
 import { TelemetryHelper } from './telemetryHelper'
-import { debounce } from 'aws-core-vscode/utils'
 
 export class RecommendationService {
     constructor(
@@ -22,9 +21,7 @@ export class RecommendationService {
         private readonly inlineGeneratingMessage: InlineGeneratingMessage
     ) {}
 
-    getAllRecommendations = debounce(this._getAllRecommendations.bind(this), inlineCompletionsDebounceDelay, true)
-
-    private async _getAllRecommendations(
+    async getAllRecommendations(
         languageClient: LanguageClient,
         document: TextDocument,
         position: Position,

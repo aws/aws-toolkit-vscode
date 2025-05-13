@@ -34,12 +34,14 @@ import {
     ImportAdderProvider,
     CodeSuggestionsState,
     vsCodeState,
+    inlineCompletionsDebounceDelay,
 } from 'aws-core-vscode/codewhisperer'
 import { InlineGeneratingMessage } from './inlineGeneratingMessage'
 import { LineTracker } from './stateTracker/lineTracker'
 import { InlineTutorialAnnotation } from './tutorials/inlineTutorialAnnotation'
 import { TelemetryHelper } from './telemetryHelper'
 import { getLogger } from 'aws-core-vscode/shared'
+import { debounce } from 'aws-core-vscode/utils'
 
 export class InlineCompletionManager implements Disposable {
     private disposable: Disposable
@@ -201,7 +203,13 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
         private readonly isNewSession: boolean = true
     ) {}
 
-    async provideInlineCompletionItems(
+    provideInlineCompletionItems = debounce(
+        this._provideInlineCompletionItems.bind(this),
+        inlineCompletionsDebounceDelay,
+        true
+    )
+
+    private async _provideInlineCompletionItems(
         document: TextDocument,
         position: Position,
         context: InlineCompletionContext,
