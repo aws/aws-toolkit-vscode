@@ -80,6 +80,10 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
 
     async startEnterpriseSetup(startUrl: string, region: string): Promise<AuthError | undefined> {
         getLogger().debug(`called startEnterpriseSetup() with startUrl: '${startUrl}', region: '${region}'`)
+        await globals.globalState.update('recentSso', {
+            startUrl: startUrl,
+            region: region,
+        })
         return await this.ssoSetup('startCodeWhispererEnterpriseSetup', async () => {
             this.storeMetricMetadata({
                 credentialStartUrl: startUrl,
@@ -223,7 +227,7 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
      */
     override async listRegionProfiles(): Promise<RegionProfile[] | string> {
         try {
-            return await AuthUtil.instance.regionProfileManager.listRegionProfile()
+            return await AuthUtil.instance.regionProfileManager.getProfiles()
         } catch (e) {
             const conn = AuthUtil.instance.conn as SsoConnection | undefined
             telemetry.amazonq_didSelectProfile.emit({

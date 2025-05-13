@@ -41,17 +41,23 @@ export abstract class BaseLspInstaller<T extends ResourcePaths = ResourcePaths, 
         const manifest = await new ManifestResolver(manifestUrl, id, suppressPromptPrefix).resolve()
         const installationResult = await new LanguageServerResolver(
             manifest,
-            id,
+            id, // TODO: We may want a display name instead of the ID
             new Range(supportedVersions, {
                 includePrerelease: true,
-            })
+            }),
+            manifestUrl,
+            this.downloadMessageOverride
         ).resolve()
 
         const assetDirectory = installationResult.assetDirectory
 
         await this.postInstall(assetDirectory)
 
-        const deletedVersions = await cleanLspDownloads(manifest.versions, nodePath.dirname(assetDirectory))
+        const deletedVersions = await cleanLspDownloads(
+            installationResult.version,
+            manifest.versions,
+            nodePath.dirname(assetDirectory)
+        )
         if (deletedVersions.length > 0) {
             this.logger.debug(`cleaning old LSP versions: deleted ${deletedVersions.length} versions`)
         }
@@ -70,6 +76,12 @@ export abstract class BaseLspInstaller<T extends ResourcePaths = ResourcePaths, 
         }
         return r
     }
+
+    /**
+     * Allows implementations of this class to set a custom message to show users
+     * when the artifacts are being downloaded. If not set, a default message will be shown.
+     */
+    protected downloadMessageOverride: string | undefined = undefined
 
     protected abstract postInstall(assetDirectory: string): Promise<void>
     protected abstract resourcePaths(assetDirectory?: string): T

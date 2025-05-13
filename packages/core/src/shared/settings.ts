@@ -389,6 +389,10 @@ function createSettingsClass<T extends TypeDescriptor>(section: string, descript
         public _getOrThrow<K extends keyof Inner>(key: K & string, defaultValue?: Inner[K]) {
             const value = this.#config.get(key, defaultValue)
 
+            if (defaultValue !== undefined && (value === undefined || value === null)) {
+                return defaultValue
+            }
+
             return cast<Inner[K]>(value, descriptor[key])
         }
 

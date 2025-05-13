@@ -371,6 +371,28 @@ export const openSecurityIssuePanel = Commands.declare(
         const targetIssue: CodeScanIssue = issue instanceof IssueItem ? issue.issue : issue
         const targetFilePath: string = issue instanceof IssueItem ? issue.filePath : filePath
         await showSecurityIssueWebview(context.extensionContext, targetIssue, targetFilePath)
+
+        if (targetIssue.suggestedFixes.length === 0) {
+            await generateFix.execute(targetIssue, targetFilePath, 'webview', true, false)
+        }
+        telemetry.codewhisperer_codeScanIssueViewDetails.emit({
+            findingId: targetIssue.findingId,
+            detectorId: targetIssue.detectorId,
+            ruleId: targetIssue.ruleId,
+            credentialStartUrl: AuthUtil.instance.startUrl,
+            autoDetected: targetIssue.autoDetected,
+        })
+        TelemetryHelper.instance.sendCodeScanRemediationsEvent(
+            undefined,
+            'CODESCAN_ISSUE_VIEW_DETAILS',
+            targetIssue.detectorId,
+            targetIssue.findingId,
+            targetIssue.ruleId,
+            undefined,
+            undefined,
+            undefined,
+            !!targetIssue.suggestedFixes.length
+        )
         console.log('in show securityIssueWebview')
         console.log('targetIssue', targetIssue)
         console.log('file Path', filePath)

@@ -8,6 +8,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  */
 import * as vscode from 'vscode'
+import { oneMB } from '../../shared/utilities/processUtils'
 import * as path from 'path'
 import * as nls from 'vscode-nls'
 import * as crypto from 'crypto'
@@ -252,18 +253,20 @@ export async function activate(extensionContext: ExtensionContext, resourcePaths
     }
 
     const serverModule = resourcePaths.lsp
+    const memoryWarnThreshold = 800 * oneMB
 
     const serverOptions = createServerOptions({
         encryptionKey: key,
-        executable: resourcePaths.node,
+        executable: [resourcePaths.node],
         serverModule,
         // TODO(jmkeyes): we always use the debug options...?
         execArgv: debugOptions.execArgv,
+        warnThresholds: { memory: memoryWarnThreshold },
     })
 
     const documentSelector = [{ scheme: 'file', language: '*' }]
 
-    await validateNodeExe(resourcePaths.node, resourcePaths.lsp, debugOptions.execArgv, logger)
+    await validateNodeExe([resourcePaths.node], resourcePaths.lsp, debugOptions.execArgv, logger)
 
     // Options to control the language client
     const clientOptions: LanguageClientOptions = {

@@ -7,6 +7,7 @@ import { isWeb } from '../extensionGlobals'
 import { inspect as nodeInspect } from 'util'
 import { AsyncCollection, toCollection } from './asyncCollection'
 import { SharedProp, AccumulableKeys, Coalesce, isNonNullable } from './tsUtils'
+import { truncate } from './textUtilities'
 
 export function union<T>(a: Iterable<T>, b: Iterable<T>): Set<T> {
     const result = new Set<T>()
@@ -304,10 +305,22 @@ export function assign<T extends Record<any, any>, U extends Partial<T>>(data: T
  * @param depth
  * @param omitKeys Omit properties matching these names (at any depth).
  * @param replacement Replacement for object whose fields extend beyond `depth`, and properties matching `omitKeys`.
+ * @param maxStringLength truncates string values that exceed this threshold (includes values in nested arrays)
  */
-export function partialClone(obj: any, depth: number = 3, omitKeys: string[] = [], replacement?: any): any {
+export function partialClone(
+    obj: any,
+    depth: number = 3,
+    omitKeys: string[] = [],
+    options?: {
+        replacement?: any
+        maxStringLength?: number
+    }
+): any {
     // Base case: If input is not an object or has no children, return it.
     if (typeof obj !== 'object' || obj === null || 0 === Object.getOwnPropertyNames(obj).length) {
+        if (typeof obj === 'string' && options?.maxStringLength) {
+            return truncate(obj, options?.maxStringLength, '...')
+        }
         return obj
     }
 
@@ -315,15 +328,15 @@ export function partialClone(obj: any, depth: number = 3, omitKeys: string[] = [
     const clonedObj = Array.isArray(obj) ? [] : {}
 
     if (depth === 0) {
-        return replacement ? replacement : clonedObj
+        return options?.replacement ? options.replacement : clonedObj
     }
 
     // Recursively clone properties of the input object
     for (const key in obj) {
         if (omitKeys.includes(key)) {
-            ;(clonedObj as any)[key] = replacement ? replacement : Array.isArray(obj) ? [] : {}
+            ;(clonedObj as any)[key] = options?.replacement ? options.replacement : Array.isArray(obj) ? [] : {}
         } else if (Object.prototype.hasOwnProperty.call(obj, key)) {
-            ;(clonedObj as any)[key] = partialClone(obj[key], depth - 1, omitKeys, replacement)
+            ;(clonedObj as any)[key] = partialClone(obj[key], depth - 1, omitKeys, options)
         }
     }
 
@@ -567,25 +580,25 @@ export function isPresent<T>(value: T | undefined): value is T {
     return value !== undefined
 }
 
-export class CircularBuffer {
-    private buffer = new Set<number>()
+export class CircularBuffer<T> {
+    private buffer = new Set<T>()
     private maxSize: number
 
     constructor(size: number) {
         this.maxSize = size
     }
 
-    add(value: number): void {
+    add(value: T): void {
         if (this.buffer.size >= this.maxSize) {
             // Set iterates its keys in insertion-order.
             // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Set
             const firstKey = this.buffer.keys().next().value
-            this.buffer.delete(firstKey)
+            this.buffer.delete(firstKey as T)
         }
         this.buffer.add(value)
     }
 
-    contains(value: number): boolean {
+    contains(value: T): boolean {
         return this.buffer.has(value)
     }
 

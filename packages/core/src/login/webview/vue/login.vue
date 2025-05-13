@@ -343,7 +343,7 @@ export default defineComponent({
             regions: [] as Region[],
             startUrlError: '',
             startUrlWarning: '',
-            selectedRegion: 'us-east-1',
+            selectedRegion: '',
             startUrl: '',
             app: this.app,
             LoginOption,
@@ -353,7 +353,9 @@ export default defineComponent({
         }
     },
     async created() {
-        this.startUrl = await this.getDefaultStartUrl()
+        const defaultSso = await this.getDefaultSso()
+        this.startUrl = defaultSso.startUrl
+        this.selectedRegion = defaultSso.region
         await this.emitUpdate('created')
     },
 
@@ -564,8 +566,8 @@ export default defineComponent({
         async updateExistingStartUrls() {
             this.existingStartUrls = (await client.listSsoConnections()).map((conn) => conn.startUrl)
         },
-        async getDefaultStartUrl() {
-            return await client.getDefaultStartUrl()
+        async getDefaultSso() {
+            return await client.getDefaultSsoProfile()
         },
         handleHelpLinkClick() {
             void client.emitUiClick('auth_helpLink')

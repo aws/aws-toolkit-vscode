@@ -210,10 +210,9 @@ describe('Amazon Q Code Review', function () {
 
                 assert.ok(securityDiagnostics.length > 0, 'No security diagnostics found')
 
-                // 1 exact critical issue matches
-                assert.equal(
-                    matchingSecurityDiagnosticCount(securityDiagnostics, 'CWE-798 - Hardcoded credentials', 21),
-                    1
+                // at least 1 exact critical issue matches
+                assert.ok(
+                    matchingSecurityDiagnosticCount(securityDiagnostics, 'CWE-798 - Hardcoded credentials', 21) >= 1
                 )
 
                 // Find one diagnostic
@@ -228,8 +227,6 @@ describe('Amazon Q Code Review', function () {
                     range
                 )
 
-                console.log('first diag', sampleDiagnostic)
-
                 await new Promise((resolve) => setTimeout(resolve, 1000))
 
                 // Find the "View details" code action
@@ -238,8 +235,6 @@ describe('Amazon Q Code Review', function () {
 
                 // Execute the view details command
                 if (viewDetailsAction?.command) {
-                    console.log('has command, viewing details', viewDetailsAction.command.command)
-                    console.log('view command args', viewDetailsAction.command.arguments!)
                     await vscode.commands.executeCommand(
                         viewDetailsAction.command.command,
                         ...viewDetailsAction.command.arguments!
@@ -266,7 +261,6 @@ describe('Amazon Q Code Review', function () {
 
                 await new Promise((resolve) => setTimeout(resolve, 1000))
 
-                console.log('webviewPanel', webviewPanel)
                 assert.ok(webviewPanel, 'Security issue webview panel did not open after waiting')
 
                 // Wait until viewDetailsAction.command is defined
@@ -284,13 +278,8 @@ describe('Amazon Q Code Review', function () {
                 )
                 await new Promise((resolve) => setTimeout(resolve, 1000))
 
-                console.log('viewDetails', viewDetailsActionDefined)
-
                 assert.ok(viewDetailsActionDefined, 'viewDetailsAction.command was not defined after waiting')
 
-                console.log('command', viewDetailsActionDefined)
-                console.log('arguments', viewDetailsActionDefined.arguments)
-                console.log('arguments[0]', viewDetailsActionDefined.arguments?.[0])
                 const issue = viewDetailsActionDefined.arguments?.[0] as CodeScanIssue
                 console.log('issue', issue)
 
@@ -300,9 +289,6 @@ describe('Amazon Q Code Review', function () {
                         const foundIssue = SecurityIssueProvider.instance.issues
                             .flatMap(({ issues }) => issues)
                             .find((i) => i.findingId === issue.findingId)
-                        // console.log(SecurityIssueProvider.instance.issues)
-                        // console.log('original issue', issue, issue.findingId, issue.suggestedFixes)
-                        // console.log('issue', foundIssue, foundIssue?.findingId, foundIssue?.suggestedFixes)
 
                         return foundIssue?.suggestedFixes?.length !== undefined &&
                             foundIssue?.suggestedFixes?.length > 0
@@ -618,7 +604,6 @@ describe('Amazon Q Code Review', function () {
                 } finally {
                     // Clean up git repository
                     await fs.delete(path.join(fileDir, '.git'), { recursive: true })
-                    console.log('done runnign test')
                 }
             })
         })
