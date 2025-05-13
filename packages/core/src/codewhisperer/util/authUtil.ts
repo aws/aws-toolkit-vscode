@@ -99,15 +99,25 @@ export class AuthUtil implements IAuthProvider {
      *       {@link notifySelectDeveloperProfile} needs {@link refreshState} to run so it can set
      *       the Bearer Token in the LSP first.
      */
-    startedConnected = false
+    didStartSignedIn = false
 
     async restore() {
         await this.session.restore()
-        this.startedConnected = this.isConnected()
+        this.didStartSignedIn = this.isConnected()
 
-        // HACK: The LSP should allow us to call refreshState multiple times, but for some reason it breaks.
-        // isConnected somehow allows it to work. Assumption is that the LSP does not handle redundant calls nicely.
-        if (!this.isConnected()) {
+        // HACK: We noticed that if calling `refreshState()` here when the user was already signed in, something broke.
+        //       So as a solution we only call it if they were not already signed in.
+        //
+        //       But in the case where a user was already signed in, we allow `session.restore()` to trigger `refreshState()` through
+        //       event emitters.
+        //       This is unoptimal since `refreshState()` should be able to be called multiple times and still work.
+        //
+        //       Because of this edge case, when `restore()` is called we cannot assume all Auth is setup when this function returns,
+        //       since we may still be waiting on the event emitter to trigger the expected functions.
+        //
+        //       TODO: Figure out why removing the if statement below causes things to break. Maybe we just need to
+        //             promisify the call and any subsequent callers will not make a redundant call.
+        if (!this.didStartSignedIn) {
             await this.refreshState()
         }
     }
@@ -302,7 +312,7 @@ export class AuthUtil implements IAuthProvider {
     }
 
     private tryNotifySelectDeveloperProfile = once(async () => {
-        if (this.regionProfileManager.requireProfileSelection() && this.startedConnected) {
+        if (this.regionProfileManager.requireProfileSelection() && this.didStartSignedIn) {
             await notifySelectDeveloperProfile()
         }
     })
