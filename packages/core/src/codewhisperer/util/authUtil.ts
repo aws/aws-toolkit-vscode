@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import * as localizedText from '../../shared/localizedText'
 import * as nls from 'vscode-nls'
-import * as fs from 'fs'
+import { fs } from '../../shared/fs/fs'
 import * as path from 'path'
 import * as crypto from 'crypto'
 import { ToolkitError } from '../../shared/errors'
@@ -403,8 +403,8 @@ export class AuthUtil implements IAuthProvider {
                 const toTokenFile = filePath(this.profileName)
 
                 try {
-                    fs.renameSync(fromRegistrationFile, toRegistrationFile)
-                    fs.renameSync(fromTokenFile, toTokenFile)
+                    await fs.rename(fromRegistrationFile, toRegistrationFile)
+                    await fs.rename(fromTokenFile, toTokenFile)
                     getLogger().debug('Successfully renamed registration and token files')
                 } catch (err) {
                     getLogger().error(`Failed to rename files during migration: ${err}`)
