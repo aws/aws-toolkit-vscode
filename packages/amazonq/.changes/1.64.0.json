@@ -1,0 +1,10 @@
+{
+	"date": "2025-05-02",
+	"version": "1.64.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Enable Amazon Q LSP in AL2 instances"
+		}
+	]
+}

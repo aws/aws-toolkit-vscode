@@ -85,6 +85,12 @@ export async function activate(languageClient: LanguageClient, encryptionKey: Bu
                 type: 'customization',
                 customization: undefinedIfEmpty(getSelectedCustomization().arn),
             })
+        }),
+        globals.logOutputChannel.onDidChangeLogLevel((logLevel) => {
+            getLogger('amazonqLsp').info(`Local log level changed to ${logLevel}, notifying LSP`)
+            void pushConfigUpdate(languageClient, {
+                type: 'logLevel',
+            })
         })
     )
 }
@@ -98,16 +104,24 @@ export async function activate(languageClient: LanguageClient, encryptionKey: Bu
  * push the given config.
  */
 async function pushConfigUpdate(client: LanguageClient, config: QConfigs) {
-    if (config.type === 'profile') {
-        await client.sendRequest(updateConfigurationRequestType.method, {
-            section: 'aws.q',
-            settings: { profileArn: config.profileArn },
-        })
-    } else if (config.type === 'customization') {
-        client.sendNotification(DidChangeConfigurationNotification.type.method, {
-            section: 'aws.q',
-            settings: { customization: config.customization },
-        })
+    switch (config.type) {
+        case 'profile':
+            await client.sendRequest(updateConfigurationRequestType.method, {
+                section: 'aws.q',
+                settings: { profileArn: config.profileArn },
+            })
+            break
+        case 'customization':
+            client.sendNotification(DidChangeConfigurationNotification.type.method, {
+                section: 'aws.q',
+                settings: { customization: config.customization },
+            })
+            break
+        case 'logLevel':
+            client.sendNotification(DidChangeConfigurationNotification.type.method, {
+                section: 'aws.logLevel',
+            })
+            break
     }
 }
 type ProfileConfig = {
@@ -118,4 +132,7 @@ type CustomizationConfig = {
     type: 'customization'
     customization: string | undefined
 }
-type QConfigs = ProfileConfig | CustomizationConfig
+type LogLevelConfig = {
+    type: 'logLevel'
+}
+type QConfigs = ProfileConfig | CustomizationConfig | LogLevelConfig

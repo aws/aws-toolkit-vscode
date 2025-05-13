@@ -5,7 +5,6 @@
 
 import vscode, { env, version } from 'vscode'
 import * as nls from 'vscode-nls'
-import * as crypto from 'crypto'
 import { LanguageClient, LanguageClientOptions, RequestType, State } from 'vscode-languageclient'
 import { InlineCompletionManager } from '../app/inline/completion'
 import { AmazonQLspAuth, encryptionKey, notificationTypes } from './auth'
@@ -23,7 +22,6 @@ import {
 import { AuthUtil, CodeWhispererSettings, getSelectedCustomization } from 'aws-core-vscode/codewhisperer'
 import {
     Settings,
-    oidcClientName,
     createServerOptions,
     globals,
     Experiments,
@@ -33,12 +31,23 @@ import {
     getLogger,
     undefinedIfEmpty,
     getOptOutPreference,
+    isAmazonInternalOs,
+    fs,
+    getClientId,
+    extensionVersion,
 } from 'aws-core-vscode/shared'
+import { processUtils } from 'aws-core-vscode/shared'
 import { activate } from './chat/activation'
 import { AmazonQResourcePaths } from './lspInstaller'
+import { ConfigSection, isValidConfigSection, toAmazonQLSPLogLevel } from './config'
+import { telemetry } from 'aws-core-vscode/telemetry'
 
 const localize = nls.loadMessageBundle()
 const logger = getLogger('amazonqLsp.lspClient')
+
+export async function hasGlibcPatch(): Promise<boolean> {
+    return await fs.exists('/opt/vsc-sysroot/lib64/ld-linux-x86-64.so.2')
+}
 
 export async function startLanguageServer(
     extensionContext: vscode.ExtensionContext,
@@ -55,19 +64,35 @@ export async function startLanguageServer(
         '--pre-init-encryption',
         '--set-credentials-encryption-key',
     ]
-    const serverOptions = createServerOptions({
-        encryptionKey,
-        executable: resourcePaths.node,
-        serverModule,
-        execArgv: argv,
-    })
 
     const documentSelector = [{ scheme: 'file', language: '*' }]
 
     const clientId = 'amazonq'
     const traceServerEnabled = Settings.instance.isSet(`${clientId}.trace.server`)
+    let executable: string[] = []
+    // apply the GLIBC 2.28 path to node js runtime binary
+    if (isAmazonInternalOs() && (await hasGlibcPatch())) {
+        executable = [
+            '/opt/vsc-sysroot/lib64/ld-linux-x86-64.so.2',
+            '--library-path',
+            '/opt/vsc-sysroot/lib64',
+            resourcePaths.node,
+        ]
+        getLogger('amazonqLsp').info(`Patched node runtime with GLIBC to ${executable}`)
+    } else {
+        executable = [resourcePaths.node]
+    }
 
-    await validateNodeExe(resourcePaths.node, resourcePaths.lsp, argv, logger)
+    const memoryWarnThreshold = 1024 * processUtils.oneMB
+    const serverOptions = createServerOptions({
+        encryptionKey,
+        executable: executable,
+        serverModule,
+        execArgv: argv,
+        warnThresholds: { memory: memoryWarnThreshold },
+    })
+
+    await validateNodeExe(executable, resourcePaths.lsp, argv, logger)
 
     // Options to control the language client
     const clientOptions: LanguageClientOptions = {
@@ -80,42 +105,11 @@ export async function startLanguageServer(
                  */
                 configuration: async (params, token, next) => {
                     const config = await next(params, token)
-                    if (params.items[0].section === 'aws.q') {
-                        const customization = undefinedIfEmpty(getSelectedCustomization().arn)
-                        /**
-                         * IMPORTANT: This object is parsed by the following code in the language server, **so
-                         * it must match that expected shape**.
-                         * https://github.com/aws/language-servers/blob/1d2ca018f2248106690438b860d40a7ee67ac728/server/aws-lsp-codewhisperer/src/shared/amazonQServiceManager/configurationUtils.ts#L114
-                         */
-                        return [
-                            {
-                                customization,
-                                optOutTelemetry: getOptOutPreference() === 'OPTOUT',
-                                projectContext: {
-                                    // TODO: we might need another setting to control the actual indexing
-                                    enableLocalIndexing: true,
-                                    enableGpuAcceleration: CodeWhispererSettings.instance.isLocalIndexGPUEnabled(),
-                                    indexWorkerThreads: CodeWhispererSettings.instance.getIndexWorkerThreads(),
-                                    localIndexing: {
-                                        ignoreFilePatterns: CodeWhispererSettings.instance.getIndexIgnoreFilePatterns(),
-                                        maxFileSizeMB: CodeWhispererSettings.instance.getMaxIndexFileSize(),
-                                        maxIndexSizeMB: CodeWhispererSettings.instance.getMaxIndexSize(),
-                                        indexCacheDirPath: CodeWhispererSettings.instance.getIndexCacheDirPath(),
-                                    },
-                                },
-                            },
-                        ]
+                    const section = params.items[0].section
+                    if (!isValidConfigSection(section)) {
+                        return config
                     }
-                    if (params.items[0].section === 'aws.codeWhisperer') {
-                        return [
-                            {
-                                includeSuggestionsWithCodeReferences:
-                                    CodeWhispererSettings.instance.isSuggestionsWithCodeReferencesEnabled(),
-                                shareCodeWhispererContentWithAWS: !CodeWhispererSettings.instance.isOptoutEnabled(),
-                            },
-                        ]
-                    }
-                    return config
+                    return getConfigSection(section)
                 },
             },
         },
@@ -125,20 +119,24 @@ export async function startLanguageServer(
                     name: env.appName,
                     version: version,
                     extension: {
-                        name: oidcClientName(),
-                        version: '0.0.1',
+                        name: 'AmazonQ-For-VSCode',
+                        version: extensionVersion,
                     },
-                    clientId: crypto.randomUUID(),
+                    clientId: getClientId(globals.globalState),
                 },
                 awsClientCapabilities: {
                     q: {
-                        developerProfiles: false,
+                        developerProfiles: true,
                     },
                     window: {
                         notifications: true,
                         showSaveFileDialog: true,
                     },
                 },
+                contextConfiguration: {
+                    workspaceIdentifier: extensionContext.storageUri?.path,
+                },
+                logLevel: toAmazonQLSPLogLevel(globals.logOutputChannel.logLevel),
             },
             credentials: {
                 providesBearerToken: true,
@@ -292,7 +290,52 @@ function onServerRestartHandler(client: LanguageClient, auth: AmazonQLspAuth) {
             return
         }
 
+        // Emit telemetry that a crash was detected.
+        // It is not guaranteed to 100% be a crash since somehow the server may have been intentionally restarted,
+        // but most of the time it probably will have been due to a crash.
+        // TODO: Port this metric override to common definitions
+        telemetry.languageServer_crash.emit({ id: 'AmazonQ' })
+
         // Need to set the auth token in the again
         await auth.refreshConnection(true)
     })
+}
+
+function getConfigSection(section: ConfigSection) {
+    getLogger('amazonqLsp').debug('Fetching config section %s for language server', section)
+    switch (section) {
+        case 'aws.q':
+            /**
+             * IMPORTANT: This object is parsed by the following code in the language server, **so
+             * it must match that expected shape**.
+             * https://github.com/aws/language-servers/blob/1d2ca018f2248106690438b860d40a7ee67ac728/server/aws-lsp-codewhisperer/src/shared/amazonQServiceManager/configurationUtils.ts#L114
+             */
+            return [
+                {
+                    customization: undefinedIfEmpty(getSelectedCustomization().arn),
+                    optOutTelemetry: getOptOutPreference() === 'OPTOUT',
+                    projectContext: {
+                        enableLocalIndexing: CodeWhispererSettings.instance.isLocalIndexEnabled(),
+                        enableGpuAcceleration: CodeWhispererSettings.instance.isLocalIndexGPUEnabled(),
+                        indexWorkerThreads: CodeWhispererSettings.instance.getIndexWorkerThreads(),
+                        localIndexing: {
+                            ignoreFilePatterns: CodeWhispererSettings.instance.getIndexIgnoreFilePatterns(),
+                            maxFileSizeMB: CodeWhispererSettings.instance.getMaxIndexFileSize(),
+                            maxIndexSizeMB: CodeWhispererSettings.instance.getMaxIndexSize(),
+                            indexCacheDirPath: CodeWhispererSettings.instance.getIndexCacheDirPath(),
+                        },
+                    },
+                },
+            ]
+        case 'aws.codeWhisperer':
+            return [
+                {
+                    includeSuggestionsWithCodeReferences:
+                        CodeWhispererSettings.instance.isSuggestionsWithCodeReferencesEnabled(),
+                    shareCodeWhispererContentWithAWS: !CodeWhispererSettings.instance.isOptoutEnabled(),
+                },
+            ]
+        case 'aws.logLevel':
+            return [toAmazonQLSPLogLevel(globals.logOutputChannel.logLevel)]
+    }
 }

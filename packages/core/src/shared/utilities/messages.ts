@@ -236,7 +236,7 @@ export function showOutputMessage(message: string, outputChannel: vscode.OutputC
  *
  * @see showMessageWithCancel for an example usage
  */
-async function showProgressWithTimeout(
+export async function showProgressWithTimeout(
     options: vscode.ProgressOptions,
     timeout: Timeout,
     showAfterMs: number

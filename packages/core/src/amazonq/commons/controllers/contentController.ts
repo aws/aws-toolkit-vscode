@@ -19,6 +19,7 @@ import { ToolkitError, getErrorMsg } from '../../../shared/errors'
 import fs from '../../../shared/fs/fs'
 import { extractFileAndCodeSelectionFromMessage } from '../../../shared/utilities/textUtilities'
 import { UserWrittenCodeTracker } from '../../../codewhisperer/tracker/userWrittenCodeTracker'
+import { CWCTelemetryHelper } from '../../../codewhispererChat/controllers/chat/telemetryHelper'
 import type { ViewDiff } from '../../../codewhispererChat/controllers/chat/model'
 import type { TriggerEvent } from '../../../codewhispererChat/storages/triggerEvents'
 import { DiffContentProvider } from './diffContentProvider'
@@ -49,6 +50,7 @@ export class EditorContentController {
     ) {
         const editor = window.activeTextEditor
         if (editor) {
+            CWCTelemetryHelper.instance.setDocumentDiagnostics()
             UserWrittenCodeTracker.instance.onQStartsMakingEdits()
             const cursorStart = editor.selection.active
             const indentRange = new vscode.Range(new vscode.Position(cursorStart.line, 0), cursorStart)

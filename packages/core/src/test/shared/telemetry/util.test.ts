@@ -15,12 +15,15 @@ import {
     SessionId,
     telemetryClientIdEnvKey,
     TelemetryConfig,
+    validateMetricEvent,
 } from '../../../shared/telemetry/util'
 import { extensionVersion } from '../../../shared/vscode/env'
 import { FakeMemento } from '../../fakeExtensionContext'
 import { GlobalState } from '../../../shared/globalState'
 import { randomUUID } from 'crypto'
 import { isUuid } from '../../../shared/crypto'
+import { MetricDatum } from '../../../shared/telemetry/clienttelemetry'
+import { assertLogsContain } from '../../globalSetup.test'
 
 describe('TelemetryConfig', function () {
     const settingKey = 'aws.telemetry'
@@ -279,5 +282,112 @@ describe('getUserAgent', function () {
         const clientPairIndex = pairs.findIndex((pair) => pair.startsWith('ClientId/'))
         const beforeClient = pairs[clientPairIndex - 1]
         assert.strictEqual(beforeClient, platformPair())
+    })
+})
+
+describe('validateMetricEvent', function () {
+    it('does not validate exempt metrics', function () {
+        const metricEvent: MetricDatum = {
+            MetricName: 'exempt_metric',
+            Value: 1,
+            Unit: 'None',
+            Metadata: [{ Key: 'result', Value: 'Succeeded' }],
+        } as MetricDatum
+
+        validateMetricEvent(metricEvent, true, (_) => true)
+        assert.throws(() => assertLogsContain('invalid Metric', false, 'warn'))
+    })
+
+    it('passes validation for metrics with proper result property', function () {
+        const metricEvent: MetricDatum = {
+            MetricName: 'valid_metric',
+            Value: 1,
+            Unit: 'None',
+            Metadata: [{ Key: 'result', Value: 'Succeeded' }],
+        } as MetricDatum
+
+        validateMetricEvent(metricEvent, true, (_) => false)
+        assert.throws(() => assertLogsContain('invalid Metric', false, 'warn'))
+    })
+
+    it('passes validation for metrics with Failed result and reason property', function () {
+        const metricEvent: MetricDatum = {
+            MetricName: 'valid_failed_metric',
+            Value: 1,
+            Unit: 'None',
+            Metadata: [
+                { Key: 'result', Value: 'Failed' },
+                { Key: 'reason', Value: 'Something went wrong' },
+            ],
+        } as MetricDatum
+
+        validateMetricEvent(metricEvent, true, (_) => false)
+    })
+
+    it('fails validation for metrics missing result property when fatal=true', function () {
+        const metricEvent: MetricDatum = {
+            MetricName: 'invalid_metric_no_result',
+            Value: 1,
+            Unit: 'None',
+            Metadata: [{ Key: 'someOtherProperty', Value: 'value' }],
+        } as MetricDatum
+
+        assert.throws(
+            () => validateMetricEvent(metricEvent, true, (_) => false),
+            /emitted without the `result` property/
+        )
+    })
+
+    it('logs warning for metrics missing result property when fatal=false', function () {
+        const metricEvent: MetricDatum = {
+            MetricName: 'invalid_metric_no_result',
+            Value: 1,
+            Unit: 'None',
+            Metadata: [{ Key: 'someOtherProperty', Value: 'value' }],
+        } as MetricDatum
+
+        validateMetricEvent(metricEvent, false, (_) => false)
+        assertLogsContain('invalid Metric', false, 'warn')
+    })
+
+    it('fails validation for metrics with Failed result but missing reason property when fatal=true', function () {
+        const metricEvent: MetricDatum = {
+            MetricName: 'invalid_metric_failed_no_reason',
+            Value: 1,
+            Unit: 'None',
+            Metadata: [{ Key: 'result', Value: 'Failed' }],
+        } as MetricDatum
+
+        assert.throws(
+            () => validateMetricEvent(metricEvent, true),
+            /emitted with result=Failed but without the `reason` property/
+        )
+    })
+
+    it('logs warning for metrics with Failed result but missing reason property when fatal=false', function () {
+        const metricEvent: MetricDatum = {
+            MetricName: 'invalid_metric_failed_no_reason',
+            Value: 1,
+            Unit: 'None',
+            Metadata: [{ Key: 'result', Value: 'Failed' }],
+        } as MetricDatum
+
+        validateMetricEvent(metricEvent, false)
+        assertLogsContain('invalid Metric', false, 'warn')
+    })
+
+    it('does not fail validation for metrics with missing fields with fatal=true', function () {
+        const metricEvent: MetricDatum = {
+            MetricName: 'invalid_metric_missing_fields',
+            Value: 1,
+            Unit: 'None',
+            Metadata: [
+                { Key: 'result', Value: 'Succeeded' },
+                { Key: 'missingFields', Value: 'field1,field2' },
+            ],
+        } as MetricDatum
+
+        validateMetricEvent(metricEvent, false)
+        assertLogsContain('invalid Metric', false, 'warn')
     })
 })

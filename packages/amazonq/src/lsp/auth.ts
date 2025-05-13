@@ -66,18 +66,27 @@ export const notificationTypes = {
  * Facade over our VSCode Auth that does crud operations on the language server auth
  */
 export class AmazonQLspAuth {
-    constructor(private readonly client: LanguageClient) {}
+    #logErrorIfChanged = onceChanged((s) => getLogger('amazonqLsp').error(s))
+    constructor(
+        private readonly client: LanguageClient,
+        private readonly authUtil: AuthUtil = AuthUtil.instance
+    ) {}
 
     /**
      * @param force bypass memoization, and forcefully update the bearer token
      */
     async refreshConnection(force: boolean = false) {
-        const activeConnection = AuthUtil.instance.auth.activeConnection
-        if (activeConnection?.type === 'sso') {
+        const activeConnection = this.authUtil.auth.activeConnection
+        if (activeConnection?.state === 'valid' && activeConnection?.type === 'sso') {
             // send the token to the language server
-            const token = await AuthUtil.instance.getBearerToken()
+            const token = await this.authUtil.getBearerToken()
             await (force ? this._updateBearerToken(token) : this.updateBearerToken(token))
         }
+    }
+
+    async logRefreshError(e: unknown) {
+        const err = e as Error
+        this.#logErrorIfChanged(`Unable to update bearer token: ${err.name}:${err.message}`)
     }
 
     public updateBearerToken = onceChanged(this._updateBearerToken.bind(this))
@@ -93,10 +102,7 @@ export class AmazonQLspAuth {
 
     public startTokenRefreshInterval(pollingTime: number = oneMinute / 2) {
         const interval = setInterval(async () => {
-            await this.refreshConnection().catch((e) => {
-                getLogger('amazonqLsp').error('Unable to update bearer token: %s', (e as Error).message)
-                clearInterval(interval)
-            })
+            await this.refreshConnection().catch((e) => this.logRefreshError(e))
         }, pollingTime)
         return interval
     }

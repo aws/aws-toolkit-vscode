@@ -10,8 +10,10 @@ import * as sinon from 'sinon'
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../../shared/filesystemUtilities'
 import {
     ChildProcess,
+    ChildProcessOptions,
     ChildProcessResult,
     ChildProcessTracker,
+    defaultProcessWarnThresholds,
     eof,
     ProcessStats,
 } from '../../../shared/utilities/processUtils'
@@ -376,8 +378,8 @@ async function stopAndWait(runningProcess: RunningProcess): Promise<void> {
     await runningProcess.result
 }
 
-function startSleepProcess(timeout: number = 90): RunningProcess {
-    const childProcess = new ChildProcess(getSleepCmd(), [timeout.toString()])
+function startSleepProcess(options?: ChildProcessOptions, timeout: number = 90): RunningProcess {
+    const childProcess = new ChildProcess(getSleepCmd(), [timeout.toString()], options)
     const result = childProcess.run().catch(() => assert.fail('sleep command threw an error'))
     return { childProcess, result }
 }
@@ -391,10 +393,6 @@ describe('ChildProcessTracker', function () {
         clock = installFakeClock()
         tracker = new ChildProcessTracker()
         usageMock = sinon.stub(ChildProcessTracker.prototype, 'getUsage')
-    })
-
-    beforeEach(function () {
-        ChildProcessTracker.loggedPids.clear()
     })
 
     afterEach(function () {
@@ -449,17 +447,13 @@ describe('ChildProcessTracker', function () {
         assert.strictEqual(tracker.size, 0, 'expected tracker to be empty')
     })
 
-    it('logs a warning message when system usage exceeds threshold', async function () {
+    it('logs a warning message when cpu usage exceeds threshold', async function () {
         const runningProcess = startSleepProcess()
         tracker.add(runningProcess.childProcess)
 
         const highCpu: ProcessStats = {
-            cpu: ChildProcessTracker.thresholds.cpu + 1,
+            cpu: defaultProcessWarnThresholds.cpu + 1,
             memory: 0,
-        }
-        const highMemory: ProcessStats = {
-            cpu: 0,
-            memory: ChildProcessTracker.thresholds.memory + 1,
         }
 
         usageMock.returns(highCpu)
@@ -467,8 +461,19 @@ describe('ChildProcessTracker', function () {
         await clock.tickAsync(ChildProcessTracker.pollingInterval)
         assertLogsContain('exceeded cpu threshold', false, 'warn')
 
-        ChildProcessTracker.loggedPids.clear()
+        await stopAndWait(runningProcess)
+    })
+
+    it('logs a warning message when memory usage exceeds threshold', async function () {
+        const runningProcess = startSleepProcess()
+        tracker.add(runningProcess.childProcess)
+
+        const highMemory: ProcessStats = {
+            cpu: 0,
+            memory: defaultProcessWarnThresholds.memory + 1,
+        }
         usageMock.returns(highMemory)
+
         await clock.tickAsync(ChildProcessTracker.pollingInterval)
         assertLogsContain('exceeded memory threshold', false, 'warn')
 
@@ -480,7 +485,7 @@ describe('ChildProcessTracker', function () {
         tracker.add(runningProcess.childProcess)
 
         usageMock.returns({
-            cpu: ChildProcessTracker.thresholds.cpu + 1,
+            cpu: defaultProcessWarnThresholds.cpu + 1,
             memory: 0,
         })
 
@@ -492,15 +497,63 @@ describe('ChildProcessTracker', function () {
 
     it('does not log for processes within threshold', async function () {
         const runningProcess = startSleepProcess()
+        tracker.add(runningProcess.childProcess)
 
         usageMock.returns({
-            cpu: ChildProcessTracker.thresholds.cpu - 1,
-            memory: ChildProcessTracker.thresholds.memory - 1,
+            cpu: defaultProcessWarnThresholds.cpu - 1,
+            memory: defaultProcessWarnThresholds.memory - 1,
         })
 
         await clock.tickAsync(ChildProcessTracker.pollingInterval)
 
         assert.throws(() => assertLogsContain(runningProcess.childProcess.pid().toString(), false, 'warn'))
+
+        await stopAndWait(runningProcess)
+    })
+
+    it('respects custom thresholds', async function () {
+        const largeRunningProcess = startSleepProcess({
+            warnThresholds: {
+                cpu: defaultProcessWarnThresholds.cpu + 10,
+                memory: defaultProcessWarnThresholds.memory + 10,
+            },
+        })
+        tracker.add(largeRunningProcess.childProcess)
+        const smallRunningProcess = startSleepProcess({
+            warnThresholds: {
+                cpu: defaultProcessWarnThresholds.cpu - 10,
+                memory: defaultProcessWarnThresholds.memory - 10,
+            },
+        })
+        tracker.add(smallRunningProcess.childProcess)
+
+        usageMock.returns({
+            cpu: defaultProcessWarnThresholds.cpu + 5,
+            memory: defaultProcessWarnThresholds.memory + 5,
+        })
+
+        await clock.tickAsync(ChildProcessTracker.pollingInterval)
+        assert.throws(() => assertLogsContain(largeRunningProcess.childProcess.pid().toString(), false, 'warn'))
+        assertLogsContain(smallRunningProcess.childProcess.pid().toString(), false, 'warn')
+
+        await stopAndWait(largeRunningProcess)
+        await stopAndWait(smallRunningProcess)
+    })
+
+    it('fills custom thresholds with default', async function () {
+        const runningProcess = startSleepProcess({
+            warnThresholds: {
+                cpu: defaultProcessWarnThresholds.cpu + 10,
+            },
+        })
+        tracker.add(runningProcess.childProcess)
+
+        usageMock.returns({
+            memory: defaultProcessWarnThresholds.memory + 1,
+        })
+
+        await clock.tickAsync(ChildProcessTracker.pollingInterval)
+        assertLogsContain(runningProcess.childProcess.pid().toString(), false, 'warn')
 
         await stopAndWait(runningProcess)
     })
