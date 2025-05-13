@@ -325,10 +325,14 @@ export class SsoLogin implements BaseLogin {
     }
 
     private updateConnectionState(state: AuthState) {
-        if (this.connectionState !== state) {
-            this.eventEmitter.fire({ id: this.profileName, state })
+        const oldState = this.connectionState
+        const newState = state
+
+        this.connectionState = newState
+
+        if (oldState !== newState) {
+            this.eventEmitter.fire({ id: this.profileName, state: this.connectionState })
         }
-        this.connectionState = state
     }
 
     private ssoTokenChangedHandler(params: SsoTokenChangedParams) {

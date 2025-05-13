@@ -91,7 +91,6 @@ import { setContext } from '../shared/vscode/setContext'
 import { syncSecurityIssueWebview } from './views/securityIssue/securityIssueWebview'
 import { detectCommentAboveLine } from '../shared/utilities/commentUtils'
 import { activateEditTracking } from './nextEditPrediction/activation'
-import { notifySelectDeveloperProfile } from './region/utils'
 
 let localize: nls.LocalizeFunc
 
@@ -350,10 +349,6 @@ export async function activate(context: ExtContext): Promise<void> {
                 if (AuthUtil.instance.isIdcConnection()) {
                     await AuthUtil.instance.notifySessionConfiguration()
                 }
-            }
-
-            if (AuthUtil.instance.regionProfileManager.requireProfileSelection()) {
-                await notifySelectDeveloperProfile()
             }
         },
         { emit: false, functionId: { name: 'activateCwCore' } }

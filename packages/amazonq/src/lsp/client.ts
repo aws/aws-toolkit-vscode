@@ -175,8 +175,23 @@ export async function startLanguageServer(
     toDispose.push(disposable)
 
     await client.onReady()
-    AuthUtil.create(new auth2.LanguageClientAuth(client, clientId, encryptionKey))
 
+    // IMPORTANT: This sets up Auth and must be called before anything attempts to use it
+    AuthUtil.create(new auth2.LanguageClientAuth(client, clientId, encryptionKey))
+    // Ideally this would be part of AuthUtil.create() as it restores the existing Auth connection, but we have some
+    // future work which will need to delay this call
+    await AuthUtil.instance.restore()
+
+    await postStartLanguageServer(client, resourcePaths, toDispose)
+
+    return client
+}
+
+async function postStartLanguageServer(
+    client: LanguageClient,
+    resourcePaths: AmazonQResourcePaths,
+    toDispose: vscode.Disposable[]
+) {
     // Request handler for when the server wants to know about the clients auth connnection. Must be registered before the initial auth init call
     client.onRequest<ConnectionMetadata, Error>(auth2.notificationTypes.getConnectionMetadata.method, () => {
         return {
@@ -347,8 +362,6 @@ export async function startLanguageServer(
         // Set this inside onReady so that it only triggers on subsequent language server starts (not the first)
         onServerRestartHandler(client)
     )
-
-    return client
 }
 
 /**
