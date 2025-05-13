@@ -496,7 +496,8 @@
         "umd-compat-loader": "^2.1.2",
         "vue-loader": "^17.2.2",
         "vue-style-loader": "^4.1.3",
-        "webfont": "^11.2.26"
+        "webfont": "^11.2.26",
+        "@types/svgdom": "^0.1.2"
     },
     "dependencies": {
         "@amzn/amazon-q-developer-streaming-client": "file:../../src.gen/@amzn/amazon-q-developer-streaming-client",
@@ -577,7 +578,9 @@
         "winston": "^3.11.0",
         "winston-transport": "^4.6.0",
         "xml2js": "^0.6.1",
-        "yaml-cfn": "^0.3.2"
+        "yaml-cfn": "^0.3.2",
+        "@svgdotjs/svg.js": "^3.0.16",
+        "svgdom": "^0.1.0"
     },
     "overrides": {
         "webfont": {

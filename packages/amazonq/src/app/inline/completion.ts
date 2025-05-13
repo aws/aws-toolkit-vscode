@@ -24,6 +24,7 @@ import {
     InlineCompletionItemWithReferences,
     LogInlineCompletionSessionResultsParams,
 } from '@aws/language-server-runtimes/protocol'
+import { renderDiffFromText } from './imageRendering/imageRenderer'
 import { SessionManager } from './sessionManager'
 import { RecommendationService } from './recommendationService'
 import {
@@ -241,6 +242,17 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
             const start = document.validatePosition(editor.selection.active)
             const end = position
             for (const item of items) {
+                if (item.isInlineEdit) {
+                    // eslint-disable-next-line aws-toolkits/no-json-stringify-in-log
+                    getLogger().info(`nextEditPrediction: Got edit: ${JSON.stringify(item.insertText)}`)
+                    // Render the edit using our image renderer
+                    if (typeof item.insertText === 'string') {
+                        // Get document language ID for syntax highlighting
+                        const languageId = document.languageId
+                        // Render the unified diff as an image
+                        void renderDiffFromText(editor, item.insertText, languageId)
+                    }
+                }
                 item.command = {
                     command: 'aws.amazonq.acceptInline',
                     title: 'On acceptance',

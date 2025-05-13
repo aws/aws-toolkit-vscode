@@ -14,11 +14,14 @@ import {
     vsCodeState,
 } from 'aws-core-vscode/codewhisperer'
 import { globals, sleep } from 'aws-core-vscode/shared'
+import { activate as activateImageRenderer } from './imageRendering/imageRenderer'
 
 export async function activate() {
     if (isInlineCompletionEnabled()) {
         await setSubscriptionsforInlineCompletion()
         await AuthUtil.instance.setVscodeContextProps()
+        // Activate image renderer for inline edits
+        await activateImageRenderer(globals.context)
     }
 
     async function setSubscriptionsforInlineCompletion() {
