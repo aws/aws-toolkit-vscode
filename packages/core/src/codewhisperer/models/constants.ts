@@ -87,6 +87,9 @@ export const lineBreakWin = '\r\n'
 export const supplementalContextTimeoutInMs = 100
 
 export const supplementalContextMaxTotalLength = 20480
+
+export const editorStateMaxLength = 40000
+
 /**
  * Ux of recommendations
  */

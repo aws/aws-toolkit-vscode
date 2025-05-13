@@ -1,0 +1,14 @@
+{
+	"date": "2025-05-09",
+	"version": "1.66.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Avoid inline completion 'Improperly formed request' errors when file is too large"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Named agent tabs sometimes open with unnecessary input options"
+		}
+	]
+}

@@ -355,6 +355,8 @@ export class QuickActionHandler {
                 loadingChat: true,
                 cancelButtonWhenLoading: false,
             })
+        } else {
+            this.mynahUI.updateStore(affectedTabId, { promptInputOptions: [] })
         }
 
         if (affectedTabId && this.isHybridChatEnabled) {

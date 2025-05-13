@@ -103,6 +103,7 @@ export function registerLanguageServerEventListener(languageClient: LanguageClie
                     break
                 }
             }
+            languageClient.info(`[Telemetry] Emitting ${telemetryName} telemetry: ${JSON.stringify(e.data)}`)
             telemetry[telemetryName as keyof TelemetryBase].emit(e.data)
         }
     })
