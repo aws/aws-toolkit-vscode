@@ -433,6 +433,18 @@ export function registerMessageListeners(
         async (params: ShowDocumentParams): Promise<ShowDocumentParams | ResponseError<ShowDocumentResult>> => {
             try {
                 const uri = vscode.Uri.parse(params.uri)
+
+                if (params.external) {
+                    // Don't use openUrl() because we don't want telemetry (URLs may be auth-related).
+                    try {
+                        // HACK: workaround vscode bug: https://github.com/microsoft/vscode/issues/85930
+                        vscode.env.openExternal(params.uri as any)
+                    } catch {
+                        vscode.env.openExternal(uri)
+                    }
+                    return params
+                }
+
                 const doc = await vscode.workspace.openTextDocument(uri)
                 await vscode.window.showTextDocument(doc, { preview: false })
                 return params
