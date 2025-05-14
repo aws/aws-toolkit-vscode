@@ -72,7 +72,7 @@ import { AuthUtil } from './util/authUtil'
 import { ImportAdderProvider } from './service/importAdderProvider'
 import { TelemetryHelper } from './util/telemetryHelper'
 import { openUrl } from '../shared/utilities/vsCodeUtils'
-import { notifyNewCustomizations, onProfileChangedListener } from './util/customizationUtil'
+import { onProfileChangedListener } from './util/customizationUtil'
 import { CodeWhispererCommandBackend, CodeWhispererCommandDeclarations } from './commands/gettingStartedPageCommands'
 import { SecurityIssueHoverProvider } from './service/securityIssueHoverProvider'
 import { SecurityIssueCodeActionProvider } from './service/securityIssueCodeActionProvider'
@@ -354,9 +354,6 @@ export async function activate(context: ExtContext): Promise<void> {
         { emit: false, functionId: { name: 'activateCwCore' } }
     )
 
-    if (AuthUtil.instance.isIdcConnection() && AuthUtil.instance.isConnected()) {
-        await notifyNewCustomizations()
-    }
     if (AuthUtil.instance.isBuilderIdConnection()) {
         await CodeScansState.instance.setScansEnabled(false)
     }
