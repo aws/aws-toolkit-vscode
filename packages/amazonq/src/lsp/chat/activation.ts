@@ -25,6 +25,11 @@ export async function activate(languageClient: LanguageClient, encryptionKey: Bu
         type: 'profile',
         profileArn: AuthUtil.instance.regionProfileManager.activeRegionProfile?.arn,
     })
+    // We need to push the cached customization on startup explicitly
+    await pushConfigUpdate(languageClient, {
+        type: 'customization',
+        customization: getSelectedCustomization(),
+    })
 
     const provider = new AmazonQChatViewProvider(mynahUIPath)
 
