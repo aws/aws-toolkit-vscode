@@ -69,7 +69,7 @@ export class RegionProfileManager {
         constructor(private readonly profileProvider: () => Promise<RegionProfile[]>) {
             super(
                 'aws.amazonq.regionProfiles.cache',
-                60000,
+                1000 * 60 * 60,
                 {
                     resource: {
                         locked: false,
