@@ -7,10 +7,10 @@ import assert from 'assert'
 import * as sinon from 'sinon'
 import * as path from 'path'
 import { AuthUtil, amazonQScopes } from 'aws-core-vscode/codewhisperer'
-import { createTestAuthUtil } from 'aws-core-vscode/test'
+import { createTestAuthUtil, TestFolder } from 'aws-core-vscode/test'
 import { constants, cache } from 'aws-core-vscode/auth'
 import { auth2 } from 'aws-core-vscode/auth'
-import { mementoUtils, makeTemporaryToolkitFolder, tryRemoveFolder, fs } from 'aws-core-vscode/shared'
+import { mementoUtils, fs } from 'aws-core-vscode/shared'
 
 describe('AuthUtil', async function () {
     let auth: any
@@ -211,12 +211,13 @@ describe('AuthUtil', async function () {
                 connectionState: 'valid',
             },
         }
+
         beforeEach(async function () {
             memento = {
                 get: sinon.stub(),
                 update: sinon.stub().resolves(),
             }
-            cacheDir = await makeTemporaryToolkitFolder()
+            cacheDir = (await TestFolder.create()).path
 
             sinon.stub(mementoUtils, 'getEnvironmentSpecificMemento').returns(memento)
             sinon.stub(cache, 'getCacheDir').returns(cacheDir)
@@ -237,7 +238,6 @@ describe('AuthUtil', async function () {
         })
 
         afterEach(async function () {
-            await Promise.all([tryRemoveFolder(cacheDir)])
             sinon.restore()
         })
 
