@@ -11,11 +11,8 @@ import { registerLanguageServerEventListener, registerMessageListeners } from '.
 import { Commands, getLogger, globals, undefinedIfEmpty } from 'aws-core-vscode/shared'
 import { activate as registerLegacyChatListeners } from '../../app/chat/activation'
 import { DefaultAmazonQAppInitContext } from 'aws-core-vscode/amazonq'
-import { AuthUtil, getSelectedCustomization } from 'aws-core-vscode/codewhisperer'
-import {
-    DidChangeConfigurationNotification,
-    updateConfigurationRequestType,
-} from '@aws/language-server-runtimes/protocol'
+import { AuthUtil, getSelectedCustomization, notifyNewCustomizations } from 'aws-core-vscode/codewhisperer'
+import { pushConfigUpdate } from '../config'
 
 export async function activate(languageClient: LanguageClient, encryptionKey: Buffer, mynahUIPath: string) {
     const disposables = globals.context.subscriptions
@@ -25,11 +22,8 @@ export async function activate(languageClient: LanguageClient, encryptionKey: Bu
         type: 'profile',
         profileArn: AuthUtil.instance.regionProfileManager.activeRegionProfile?.arn,
     })
-    // We need to push the cached customization on startup explicitly
-    await pushConfigUpdate(languageClient, {
-        type: 'customization',
-        customization: getSelectedCustomization(),
-    })
+
+    await initializeCustomizations()
 
     const provider = new AmazonQChatViewProvider(mynahUIPath)
 
@@ -79,17 +73,10 @@ export async function activate(languageClient: LanguageClient, encryptionKey: Bu
 
     disposables.push(
         AuthUtil.instance.regionProfileManager.onDidChangeRegionProfile(async () => {
-            void pushConfigUpdate(languageClient, {
-                type: 'profile',
-                profileArn: AuthUtil.instance.regionProfileManager.activeRegionProfile?.arn,
-            })
             await provider.refreshWebview()
         }),
         Commands.register('aws.amazonq.updateCustomizations', () => {
-            void pushConfigUpdate(languageClient, {
-                type: 'customization',
-                customization: undefinedIfEmpty(getSelectedCustomization().arn),
-            })
+            pushCustomizationToServer(languageClient)
         }),
         globals.logOutputChannel.onDidChangeLogLevel((logLevel) => {
             getLogger('amazonqLsp').info(`Local log level changed to ${logLevel}, notifying LSP`)
@@ -98,46 +85,35 @@ export async function activate(languageClient: LanguageClient, encryptionKey: Bu
             })
         })
     )
-}
 
-/**
- * Push a config value to the language server, effectively updating it with the
- * latest configuration from the client.
- *
- * The issue is we need to push certain configs to different places, since there are
- * different handlers for specific configs. So this determines the correct place to
- * push the given config.
- */
-async function pushConfigUpdate(client: LanguageClient, config: QConfigs) {
-    switch (config.type) {
-        case 'profile':
-            await client.sendRequest(updateConfigurationRequestType.method, {
-                section: 'aws.q',
-                settings: { profileArn: config.profileArn },
-            })
-            break
-        case 'customization':
-            client.sendNotification(DidChangeConfigurationNotification.type.method, {
-                section: 'aws.q',
-                settings: { customization: config.customization },
-            })
-            break
-        case 'logLevel':
-            client.sendNotification(DidChangeConfigurationNotification.type.method, {
-                section: 'aws.logLevel',
-            })
-            break
+    /**
+     * Initialize customizations on extension startup
+     */
+    async function initializeCustomizations() {
+        /**
+         * Even though this function is called "notify", it has a side effect that first restores the
+         * cached customization. So for {@link getSelectedCustomization()} to work as expected, we must
+         * call {@link notifyNewCustomizations} first.
+         *
+         * TODO: Separate restoring and notifying, or just rename the function to something better
+         */
+        if (AuthUtil.instance.isIdcConnection() && AuthUtil.instance.isConnected()) {
+            await notifyNewCustomizations()
+        }
+
+        /**
+         * HACK: We must explicitly push the customization here since restoring the customization from cache
+         * does not currently trigger a push to server.
+         *
+         * TODO: Always push to server whenever restoring from cache.
+         */
+        pushCustomizationToServer(languageClient)
+    }
+
+    function pushCustomizationToServer(languageClient: LanguageClient) {
+        void pushConfigUpdate(languageClient, {
+            type: 'customization',
+            customization: undefinedIfEmpty(getSelectedCustomization().arn),
+        })
     }
 }
-type ProfileConfig = {
-    type: 'profile'
-    profileArn: string | undefined
-}
-type CustomizationConfig = {
-    type: 'customization'
-    customization: string | undefined
-}
-type LogLevelConfig = {
-    type: 'logLevel'
-}
-type QConfigs = ProfileConfig | CustomizationConfig | LogLevelConfig

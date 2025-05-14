@@ -54,7 +54,7 @@ import { processUtils } from 'aws-core-vscode/shared'
 import { activate as activateChat } from './chat/activation'
 import { AmazonQResourcePaths } from './lspInstaller'
 import { auth2 } from 'aws-core-vscode/auth'
-import { ConfigSection, isValidConfigSection, toAmazonQLSPLogLevel } from './config'
+import { ConfigSection, isValidConfigSection, pushConfigUpdate, toAmazonQLSPLogLevel } from './config'
 import { telemetry } from 'aws-core-vscode/telemetry'
 
 const localize = nls.loadMessageBundle()
@@ -180,25 +180,40 @@ export async function startLanguageServer(
 
     await client.onReady()
 
-    // IMPORTANT: This sets up Auth and must be called before anything attempts to use it
-    AuthUtil.create(new auth2.LanguageClientAuth(client, clientId, encryptionKey))
-
-    // Migrate SSO connections from old Auth to the LSP identity server
-    // This function only migrates connections once
-    // This call can be removed once all/most users have updated to the latest AmazonQ version
-    try {
-        await AuthUtil.instance.migrateSsoConnectionToLsp(clientName)
-    } catch (e) {
-        getLogger().error(`Error while migration SSO connection to Amazon Q LSP: ${e}`)
-    }
-
-    // Ideally this would be part of AuthUtil.create() as it restores the existing Auth connection
-    // but the SSO connection migration delays this call
-    await AuthUtil.instance.restore()
+    /**
+     * We use the Flare Auth language server, and our Auth client depends on it.
+     * Because of this we initialize our Auth client **immediately** after the language server is ready.
+     * Doing this removes the chance of something else attempting to use the Auth client before it is ready.
+     */
+    await initializeAuth(client)
 
     await postStartLanguageServer(client, resourcePaths, toDispose)
 
     return client
+
+    async function initializeAuth(client: LanguageClient) {
+        AuthUtil.create(new auth2.LanguageClientAuth(client, clientId, encryptionKey))
+      
+        // Migrate SSO connections from old Auth to the LSP identity server
+        // This function only migrates connections once
+        // This call can be removed once all/most users have updated to the latest AmazonQ version
+        try {
+            await AuthUtil.instance.migrateSsoConnectionToLsp(clientName)
+        } catch (e) {
+            getLogger().error(`Error while migration SSO connection to Amazon Q LSP: ${e}`)
+        }
+
+        /** All must be setup before {@link AuthUtil.restore} otherwise they may not trigger when expected */
+        AuthUtil.instance.regionProfileManager.onDidChangeRegionProfile(async () => {
+            void pushConfigUpdate(client, {
+                type: 'profile',
+                profileArn: AuthUtil.instance.regionProfileManager.activeRegionProfile?.arn,
+            })
+        })
+
+        // Try and restore a cached connection if exists
+        await AuthUtil.instance.restore()
+    }
 }
 
 async function postStartLanguageServer(
