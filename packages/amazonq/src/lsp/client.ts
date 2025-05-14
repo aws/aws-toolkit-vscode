@@ -184,7 +184,7 @@ export async function startLanguageServer(
     try {
         await AuthUtil.instance.migrateSsoConnectionToLsp(clientName)
     } catch (e) {
-        client.error(`Error while migration SSO connection to Amazon Q LSP: ${e}`)
+        getLogger().error(`Error while migration SSO connection to Amazon Q LSP: ${e}`)
     }
 
     // Request handler for when the server wants to know about the clients auth connnection. Must be registered before the initial auth init call

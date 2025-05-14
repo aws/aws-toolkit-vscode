@@ -357,8 +357,10 @@ export class AuthUtil implements IAuthProvider {
         let toImport: SsoProfile | undefined
         let profileId: string | undefined
 
-        getLogger().info(`codewhisperer: checking for old SSO connections`)
-        if (profiles) {
+        if (!profiles) {
+            return
+        } else {
+            getLogger().info(`codewhisperer: checking for old SSO connections`)
             for (const [id, p] of Object.entries(profiles)) {
                 if (p.type === 'sso' && hasExactScopes(p.scopes ?? [], amazonQScopes)) {
                     toImport = p
