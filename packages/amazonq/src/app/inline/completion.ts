@@ -8,7 +8,6 @@ import {
     InlineCompletionContext,
     InlineCompletionItem,
     InlineCompletionItemProvider,
-    InlineCompletionList,
     Position,
     TextDocument,
     commands,
@@ -214,7 +213,7 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
         position: Position,
         context: InlineCompletionContext,
         token: CancellationToken
-    ): Promise<InlineCompletionItem[] | InlineCompletionList> {
+    ): Promise<InlineCompletionItem[]> {
         try {
             vsCodeState.isRecommendationsActive = true
             if (this.isNewSession) {
@@ -246,8 +245,7 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
                 return []
             }
 
-            const start = document.validatePosition(editor.selection.active)
-            const end = position
+            const cursorPosition = document.validatePosition(position)
             for (const item of items) {
                 item.command = {
                     command: 'aws.amazonq.acceptInline',
@@ -257,17 +255,18 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
                         item,
                         editor,
                         session.requestStartTime,
-                        position.line,
+                        cursorPosition.line,
                         session.firstCompletionDisplayLatency,
                     ],
                 }
-                item.range = new Range(start, end)
+                item.range = new Range(cursorPosition, cursorPosition)
+                item.insertText = typeof item.insertText === 'string' ? item.insertText : item.insertText.value
                 ReferenceInlineProvider.instance.setInlineReference(
-                    position.line,
-                    item.insertText as string,
+                    cursorPosition.line,
+                    item.insertText,
                     item.references
                 )
-                ImportAdderProvider.instance.onShowRecommendation(document, position.line, item)
+                ImportAdderProvider.instance.onShowRecommendation(document, cursorPosition.line, item)
             }
             return items as InlineCompletionItem[]
         } catch (e) {

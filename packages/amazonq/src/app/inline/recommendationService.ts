@@ -48,7 +48,7 @@ export class RecommendationService {
 
             // Handle first request
             const firstResult: InlineCompletionListWithReferences = await languageClient.sendRequest(
-                inlineCompletionWithReferencesRequestType as any,
+                inlineCompletionWithReferencesRequestType.method,
                 request,
                 token
             )
@@ -98,7 +98,7 @@ export class RecommendationService {
         while (nextToken) {
             const request = { ...initialRequest, partialResultToken: nextToken }
             const result: InlineCompletionListWithReferences = await languageClient.sendRequest(
-                inlineCompletionWithReferencesRequestType as any,
+                inlineCompletionWithReferencesRequestType.method,
                 request,
                 token
             )
