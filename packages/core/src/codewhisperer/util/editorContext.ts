@@ -151,8 +151,7 @@ export function extractContextForCodeWhisperer(editor: vscode.TextEditor): codew
     )
     let languageName = 'plaintext'
     if (!checkLeftContextKeywordsForJson(document.fileName, caretLeftFileContext, editor.document.languageId)) {
-        languageName =
-            runtimeLanguageContext.normalizeLanguage(editor.document.languageId) ?? editor.document.languageId
+        languageName = runtimeLanguageContext.resolveLang(editor.document)
     }
     if (editor.document.uri.scheme === 'vscode-notebook-cell') {
         const notebook = getEnclosingNotebook(editor)
