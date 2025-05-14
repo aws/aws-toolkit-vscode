@@ -1,3 +1,8 @@
+## 1.67.0 2025-05-14
+
+- **Bug Fix** Previous and subsequent cells are used as context for completion in a Jupyter notebook
+- **Bug Fix** Support chat in AL2 aarch64
+
 ## 1.66.0 2025-05-09
 
 - **Bug Fix** Avoid inline completion 'Improperly formed request' errors when file is too large
