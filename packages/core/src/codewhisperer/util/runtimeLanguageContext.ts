@@ -187,6 +187,7 @@ export class RuntimeLanguageContext {
             vue: '', // vue lacks a single-line comment prefix
             yaml: '# ',
             yml: '# ',
+            abap: '',
         })
     }
 
