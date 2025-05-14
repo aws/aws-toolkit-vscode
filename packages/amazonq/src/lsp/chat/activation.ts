@@ -73,10 +73,6 @@ export async function activate(languageClient: LanguageClient, encryptionKey: Bu
 
     disposables.push(
         AuthUtil.instance.regionProfileManager.onDidChangeRegionProfile(async () => {
-            void pushConfigUpdate(languageClient, {
-                type: 'profile',
-                profileArn: AuthUtil.instance.regionProfileManager.activeRegionProfile?.arn,
-            })
             await provider.refreshWebview()
         }),
         Commands.register('aws.amazonq.updateCustomizations', () => {
