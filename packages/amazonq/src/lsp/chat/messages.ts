@@ -320,8 +320,6 @@ export function registerMessageListeners(
             case listMcpServersRequestType.method:
             case mcpServerClickRequestType.method:
             case tabBarActionRequestType.method:
-                // eslint-disable-next-line aws-toolkits/no-console-log
-                console.log(message)
                 await resolveChatResponse(message.command, message.params, languageClient, webview)
                 break
             case followUpClickNotificationType.method:
