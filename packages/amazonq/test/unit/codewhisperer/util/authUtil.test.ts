@@ -5,10 +5,12 @@
 
 import assert from 'assert'
 import * as sinon from 'sinon'
-import { AuthUtil } from 'aws-core-vscode/codewhisperer'
-import { createTestAuthUtil } from 'aws-core-vscode/test'
-import { constants } from 'aws-core-vscode/auth'
+import * as path from 'path'
+import { AuthUtil, amazonQScopes } from 'aws-core-vscode/codewhisperer'
+import { createTestAuthUtil, TestFolder } from 'aws-core-vscode/test'
+import { constants, cache } from 'aws-core-vscode/auth'
 import { auth2 } from 'aws-core-vscode/auth'
+import { mementoUtils, fs } from 'aws-core-vscode/shared'
 
 describe('AuthUtil', async function () {
     let auth: any
@@ -191,6 +193,147 @@ describe('AuthUtil', async function () {
 
             assert.ok(invalidateProfileSpy.called)
             assert.ok(clearCacheSpy.called)
+        })
+    })
+
+    describe('migrateSsoConnectionToLsp', function () {
+        let memento: any
+        let cacheDir: string
+        let fromRegistrationFile: string
+        let fromTokenFile: string
+
+        const validProfile = {
+            type: 'sso',
+            startUrl: 'https://test2.com',
+            ssoRegion: 'us-east-1',
+            scopes: amazonQScopes,
+            metadata: {
+                connectionState: 'valid',
+            },
+        }
+
+        beforeEach(async function () {
+            memento = {
+                get: sinon.stub(),
+                update: sinon.stub().resolves(),
+            }
+            cacheDir = (await TestFolder.create()).path
+
+            sinon.stub(mementoUtils, 'getEnvironmentSpecificMemento').returns(memento)
+            sinon.stub(cache, 'getCacheDir').returns(cacheDir)
+
+            fromTokenFile = cache.getTokenCacheFile(cacheDir, 'profile1')
+            const registrationKey = {
+                startUrl: validProfile.startUrl,
+                region: validProfile.ssoRegion,
+                scopes: amazonQScopes,
+            }
+            fromRegistrationFile = cache.getRegistrationCacheFile(cacheDir, registrationKey)
+
+            const registrationData = { test: 'registration' }
+            const tokenData = { test: 'token' }
+
+            await fs.writeFile(fromRegistrationFile, JSON.stringify(registrationData))
+            await fs.writeFile(fromTokenFile, JSON.stringify(tokenData))
+        })
+
+        afterEach(async function () {
+            sinon.restore()
+        })
+
+        it('migrates valid SSO connection', async function () {
+            memento.get.returns({ profile1: validProfile })
+
+            const updateProfileStub = sinon.stub((auth as any).session, 'updateProfile').resolves()
+
+            await auth.migrateSsoConnectionToLsp('test-client')
+
+            assert.ok(updateProfileStub.calledOnce)
+            assert.ok(memento.update.calledWith('auth.profiles', undefined))
+
+            const files = await fs.readdir(cacheDir)
+            assert.strictEqual(files.length, 2) // Should have both the token and registration file
+
+            // Verify file contents were preserved
+            const newFiles = files.map((f) => path.join(cacheDir, f[0]))
+            for (const file of newFiles) {
+                const content = await fs.readFileText(file)
+                const parsed = JSON.parse(content)
+                assert.ok(parsed.test === 'registration' || parsed.test === 'token')
+            }
+        })
+
+        it('does not migrate if no matching SSO profile exists', async function () {
+            const mockProfiles = {
+                'test-profile': {
+                    type: 'iam',
+                    startUrl: 'https://test.com',
+                    ssoRegion: 'us-east-1',
+                },
+            }
+            memento.get.returns(mockProfiles)
+
+            await auth.migrateSsoConnectionToLsp('test-client')
+
+            // Assert that the file names have not updated
+            const files = await fs.readdir(cacheDir)
+            assert.ok(files.length === 2)
+            assert.ok(await fs.exists(fromRegistrationFile))
+            assert.ok(await fs.exists(fromTokenFile))
+            assert.ok(!memento.update.called)
+        })
+
+        it('migrates only profile with matching scopes', async function () {
+            const mockProfiles = {
+                profile1: validProfile,
+                profile2: {
+                    type: 'sso',
+                    startUrl: 'https://test.com',
+                    ssoRegion: 'us-east-1',
+                    scopes: ['different:scope'],
+                    metadata: {
+                        connectionState: 'valid',
+                    },
+                },
+            }
+            memento.get.returns(mockProfiles)
+
+            const updateProfileStub = sinon.stub((auth as any).session, 'updateProfile').resolves()
+
+            await auth.migrateSsoConnectionToLsp('test-client')
+
+            assert.ok(updateProfileStub.calledOnce)
+            assert.ok(memento.update.calledWith('auth.profiles', undefined))
+            assert.deepStrictEqual(updateProfileStub.firstCall.args[0], {
+                startUrl: validProfile.startUrl,
+                region: validProfile.ssoRegion,
+                scopes: validProfile.scopes,
+            })
+        })
+
+        it('uses valid connection state when multiple profiles exist', async function () {
+            const mockProfiles = {
+                profile2: {
+                    ...validProfile,
+                    metadata: {
+                        connectionState: 'invalid',
+                    },
+                },
+                profile1: validProfile,
+            }
+            memento.get.returns(mockProfiles)
+
+            const updateProfileStub = sinon.stub((auth as any).session, 'updateProfile').resolves()
+
+            await auth.migrateSsoConnectionToLsp('test-client')
+
+            assert.ok(
+                updateProfileStub.calledWith({
+                    startUrl: validProfile.startUrl,
+                    region: validProfile.ssoRegion,
+                    scopes: validProfile.scopes,
+                })
+            )
         })
     })
 })

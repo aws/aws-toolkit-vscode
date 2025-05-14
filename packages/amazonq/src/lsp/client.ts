@@ -112,6 +112,7 @@ export async function startLanguageServer(
     await validateNodeExe(executable, resourcePaths.lsp, argv, logger)
 
     // Options to control the language client
+    const clientName = 'AmazonQ-For-VSCode'
     const clientOptions: LanguageClientOptions = {
         // Register the server for json documents
         documentSelector,
@@ -136,7 +137,7 @@ export async function startLanguageServer(
                     name: env.appName,
                     version: version,
                     extension: {
-                        name: 'AmazonQ-For-VSCode',
+                        name: clientName,
                         version: extensionVersion,
                     },
                     clientId: getClientId(globals.globalState),
@@ -192,6 +193,15 @@ export async function startLanguageServer(
 
     async function initializeAuth(client: LanguageClient) {
         AuthUtil.create(new auth2.LanguageClientAuth(client, clientId, encryptionKey))
+
+        // Migrate SSO connections from old Auth to the LSP identity server
+        // This function only migrates connections once
+        // This call can be removed once all/most users have updated to the latest AmazonQ version
+        try {
+            await AuthUtil.instance.migrateSsoConnectionToLsp(clientName)
+        } catch (e) {
+            getLogger().error(`Error while migration SSO connection to Amazon Q LSP: ${e}`)
+        }
 
         /** All must be setup before {@link AuthUtil.restore} otherwise they may not trigger when expected */
         AuthUtil.instance.regionProfileManager.onDidChangeRegionProfile(async () => {
