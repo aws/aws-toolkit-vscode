@@ -11,7 +11,7 @@ import { activate as activateLsp, LspClient } from './lspClient'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import globals, { isWeb } from '../../shared/extensionGlobals'
-import { isAmazonInternalOs } from '../../shared/vscode/env'
+import { isAmazonLinux2 } from '../../shared/vscode/env'
 import { WorkspaceLspInstaller } from './workspaceInstaller'
 import { lspSetupStage } from '../../shared/lsp/utils/setupStage'
 import { RelevantTextDocumentAddition } from '../../codewhispererChat/controllers/chat/model'
@@ -165,7 +165,7 @@ export class LspController {
     }
 
     async trySetupLsp(context: vscode.ExtensionContext, buildIndexConfig: BuildIndexConfig) {
-        if (isCloud9() || isWeb() || isAmazonInternalOs()) {
+        if (isCloud9() || isWeb() || isAmazonLinux2()) {
             this.logger.warn('Skipping LSP setup. LSP is not compatible with the current environment. ')
             // do not do anything if in Cloud9 or Web mode or in AL2 (AL2 does not support node v18+)
             return
