@@ -107,6 +107,7 @@ export {
     baseCustomization,
     onProfileChangedListener,
     CustomizationProvider,
+    notifyNewCustomizations,
 } from './util/customizationUtil'
 export { Container } from './service/serviceContainer'
 export * from './util/gitUtil'
