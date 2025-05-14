@@ -6,12 +6,16 @@ import * as vscode from 'vscode'
 import assert from 'assert'
 import { EditorContentController } from '../../../amazonq/commons/controllers/contentController'
 import { toTextEditor } from '../../testUtil'
+import { CWCTelemetryHelper } from '../../../codewhispererChat/controllers/chat/telemetryHelper'
+import { ChatSessionStorage } from '../../../codewhispererChat/storages/chatSession'
+import { TriggerEventsStorage } from '../../../codewhispererChat'
 
 describe('contentController', () => {
     let controller: EditorContentController
 
     beforeEach(async () => {
         controller = new EditorContentController()
+        CWCTelemetryHelper.instance = new CWCTelemetryHelper(new ChatSessionStorage(), new TriggerEventsStorage())
     })
 
     describe('insertTextAtCursorPosition', () => {
@@ -31,7 +35,7 @@ describe('contentController', () => {
             }
         })
 
-        it('insert code when left hand size has non empty character', async () => {
+        it('insert code when left hand size has non empty character 2', async () => {
             const editor = await toTextEditor('def hello_world():\n    ', 'test.py')
             if (editor) {
                 const pos = new vscode.Position(0, 4)

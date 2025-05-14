@@ -8,10 +8,11 @@ import * as codewhispererClient from '../client/codewhisperer'
 import * as path from 'path'
 import * as CodeWhispererConstants from '../models/constants'
 import { getTabSizeSetting } from '../../shared/utilities/editorUtilities'
+import { truncate } from '../../shared/utilities/textUtilities'
 import { getLogger } from '../../shared/logger/logger'
 import { runtimeLanguageContext } from './runtimeLanguageContext'
 import { fetchSupplementalContext } from './supplementalContext/supplementalContextUtil'
-import { supplementalContextTimeoutInMs } from '../models/constants'
+import { editorStateMaxLength, supplementalContextTimeoutInMs } from '../models/constants'
 import { getSelectedCustomization } from './customizationUtil'
 import { selectFrom } from '../../shared/utilities/tsUtils'
 import { checkLeftContextKeywordsForJson } from './commonUtil'
@@ -20,22 +21,129 @@ import { getOptOutPreference } from '../../shared/telemetry/util'
 import { indent } from '../../shared/utilities/textUtilities'
 import { isInDirectory } from '../../shared/filesystemUtilities'
 import { AuthUtil } from './authUtil'
+import { predictionTracker } from '../nextEditPrediction/activation'
 
 let tabSize: number = getTabSizeSetting()
+
+function getEnclosingNotebook(editor: vscode.TextEditor): vscode.NotebookDocument | undefined {
+    // For notebook cells, find the existing notebook with a cell that matches the current editor.
+    return vscode.workspace.notebookDocuments.find(
+        (nb) =>
+            nb.notebookType === 'jupyter-notebook' && nb.getCells().some((cell) => cell.document === editor.document)
+    )
+}
+
+export function getNotebookContext(
+    notebook: vscode.NotebookDocument,
+    editor: vscode.TextEditor,
+    languageName: string,
+    caretLeftFileContext: string,
+    caretRightFileContext: string
+) {
+    // Expand the context for a cell inside of a noteboo with whatever text fits from the preceding and subsequent cells
+    const allCells = notebook.getCells()
+    const cellIndex = allCells.findIndex((cell) => cell.document === editor.document)
+    // Extract text from prior cells if there is enough room in left file context
+    if (caretLeftFileContext.length < CodeWhispererConstants.charactersLimit - 1) {
+        const leftCellsText = getNotebookCellsSliceContext(
+            allCells.slice(0, cellIndex),
+            CodeWhispererConstants.charactersLimit - (caretLeftFileContext.length + 1),
+            languageName,
+            true
+        )
+        if (leftCellsText.length > 0) {
+            caretLeftFileContext = addNewlineIfMissing(leftCellsText) + caretLeftFileContext
+        }
+    }
+    // Extract text from subsequent cells if there is enough room in right file context
+    if (caretRightFileContext.length < CodeWhispererConstants.charactersLimit - 1) {
+        const rightCellsText = getNotebookCellsSliceContext(
+            allCells.slice(cellIndex + 1),
+            CodeWhispererConstants.charactersLimit - (caretRightFileContext.length + 1),
+            languageName,
+            false
+        )
+        if (rightCellsText.length > 0) {
+            caretRightFileContext = addNewlineIfMissing(caretRightFileContext) + rightCellsText
+        }
+    }
+    return { caretLeftFileContext, caretRightFileContext }
+}
+
+export function getNotebookCellContext(cell: vscode.NotebookCell, referenceLanguage?: string): string {
+    // Extract the text verbatim if the cell is code and the cell has the same language.
+    // Otherwise, add the correct comment string for the reference language
+    const cellText = cell.document.getText()
+    if (
+        cell.kind === vscode.NotebookCellKind.Markup ||
+        (runtimeLanguageContext.normalizeLanguage(cell.document.languageId) ?? cell.document.languageId) !==
+            referenceLanguage
+    ) {
+        const commentPrefix = runtimeLanguageContext.getSingleLineCommentPrefix(referenceLanguage)
+        if (commentPrefix === '') {
+            return cellText
+        }
+        return cell.document
+            .getText()
+            .split('\n')
+            .map((line) => `${commentPrefix}${line}`)
+            .join('\n')
+    }
+    return cellText
+}
+
+export function getNotebookCellsSliceContext(
+    cells: vscode.NotebookCell[],
+    maxLength: number,
+    referenceLanguage: string,
+    fromStart: boolean
+): string {
+    // Extract context from array of notebook cells that fits inside `maxLength` characters,
+    // from either the start or the end of the array.
+    let output: string[] = []
+    if (!fromStart) {
+        cells = cells.reverse()
+    }
+    cells.some((cell) => {
+        const cellText = addNewlineIfMissing(getNotebookCellContext(cell, referenceLanguage))
+        if (cellText.length > 0) {
+            if (cellText.length >= maxLength) {
+                if (fromStart) {
+                    output.push(cellText.substring(0, maxLength))
+                } else {
+                    output.push(cellText.substring(cellText.length - maxLength))
+                }
+                return true
+            }
+            output.push(cellText)
+            maxLength -= cellText.length
+        }
+    })
+    if (!fromStart) {
+        output = output.reverse()
+    }
+    return output.join('')
+}
+
+export function addNewlineIfMissing(text: string): string {
+    if (text.length > 0 && !text.endsWith('\n')) {
+        text += '\n'
+    }
+    return text
+}
 
 export function extractContextForCodeWhisperer(editor: vscode.TextEditor): codewhispererClient.FileContext {
     const document = editor.document
     const curPos = editor.selection.active
     const offset = document.offsetAt(curPos)
 
-    const caretLeftFileContext = editor.document.getText(
+    let caretLeftFileContext = editor.document.getText(
         new vscode.Range(
             document.positionAt(offset - CodeWhispererConstants.charactersLimit),
             document.positionAt(offset)
         )
     )
-
-    const caretRightFileContext = editor.document.getText(
+    let caretRightFileContext = editor.document.getText(
         new vscode.Range(
             document.positionAt(offset),
             document.positionAt(offset + CodeWhispererConstants.charactersLimit)
@@ -46,6 +154,19 @@ export function extractContextForCodeWhisperer(editor: vscode.TextEditor): codew
         languageName =
             runtimeLanguageContext.normalizeLanguage(editor.document.languageId) ?? editor.document.languageId
     }
+    if (editor.document.uri.scheme === 'vscode-notebook-cell') {
+        const notebook = getEnclosingNotebook(editor)
+        if (notebook) {
+            ;({ caretLeftFileContext, caretRightFileContext } = getNotebookContext(
+                notebook,
+                editor,
+                languageName,
+                caretLeftFileContext,
+                caretRightFileContext
+            ))
+        }
+    }
+
     return {
         filename: getFileRelativePath(editor),
         programmingLanguage: {
@@ -119,8 +240,14 @@ export async function buildListRecommendationRequest(
 
     logSupplementalContext(supplementalContexts)
 
+    // Get predictionSupplementalContext from PredictionTracker
+    let predictionSupplementalContext: codewhispererClient.SupplementalContext[] = []
+    if (predictionTracker) {
+        predictionSupplementalContext = await predictionTracker.generatePredictionSupplementalContext()
+    }
+
     const selectedCustomization = getSelectedCustomization()
-    const supplementalContext: codewhispererClient.SupplementalContext[] = supplementalContexts
+    const completionSupplementalContext: codewhispererClient.SupplementalContext[] = supplementalContexts
         ? supplementalContexts.supplementalContextItems.map((v) => {
               return selectFrom(v, 'content', 'filePath')
           })
@@ -128,6 +255,10 @@ export async function buildListRecommendationRequest(
 
     const profile = AuthUtil.instance.regionProfileManager.activeRegionProfile
 
+    const editorState = getEditorState(editor, fileContext)
+
+    // Combine inline and prediction supplemental contexts
+    const finalSupplementalContext = completionSupplementalContext.concat(predictionSupplementalContext)
     return {
         request: {
             fileContext: fileContext,
@@ -135,7 +266,9 @@ export async function buildListRecommendationRequest(
             referenceTrackerConfiguration: {
                 recommendationsWithReferences: allowCodeWithReference ? 'ALLOW' : 'BLOCK',
             },
-            supplementalContexts: supplementalContext,
+            supplementalContexts: finalSupplementalContext,
+            editorState: editorState,
+            maxResults: CodeWhispererConstants.maxRecommendations,
             customizationArn: selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
             optOutPreference: getOptOutPreference(),
             workspaceId: await getWorkspaceId(editor),
@@ -199,6 +332,45 @@ export function updateTabSize(val: number): void {
 
 export function getTabSize(): number {
     return tabSize
+}
+
+export function getEditorState(editor: vscode.TextEditor, fileContext: codewhispererClient.FileContext): any {
+    try {
+        const cursorPosition = editor.selection.active
+        const cursorOffset = editor.document.offsetAt(cursorPosition)
+        const documentText = editor.document.getText()
+
+        // Truncate if document content is too large (defined in constants.ts)
+        let fileText = documentText
+        if (documentText.length > editorStateMaxLength) {
+            const halfLength = Math.floor(editorStateMaxLength / 2)
+
+            // Use truncate function to get the text around the cursor position
+            const leftPart = truncate(documentText.substring(0, cursorOffset), -halfLength, '')
+            const rightPart = truncate(documentText.substring(cursorOffset), halfLength, '')
+
+            fileText = leftPart + rightPart
+        }
+
+        return {
+            document: {
+                programmingLanguage: {
+                    languageName: fileContext.programmingLanguage.languageName,
+                },
+                relativeFilePath: fileContext.filename,
+                text: fileText,
+            },
+            cursorState: {
+                position: {
+                    line: editor.selection.active.line,
+                    character: editor.selection.active.character,
+                },
+            },
+        }
+    } catch (error) {
+        getLogger().error(`Error generating editor state: ${error}`)
+        return undefined
+    }
 }
 
 export function getLeftContext(editor: vscode.TextEditor, line: number): string {

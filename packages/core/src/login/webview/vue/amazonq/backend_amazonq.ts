@@ -73,6 +73,10 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
 
     async startEnterpriseSetup(startUrl: string, region: string): Promise<AuthError | undefined> {
         getLogger().debug(`called startEnterpriseSetup() with startUrl: '${startUrl}', region: '${region}'`)
+        await globals.globalState.update('recentSso', {
+            startUrl: startUrl,
+            region: region,
+        })
         return await this.ssoSetup('startCodeWhispererEnterpriseSetup', async () => {
             this.storeMetricMetadata({
                 credentialStartUrl: startUrl,

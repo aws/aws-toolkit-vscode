@@ -45,6 +45,7 @@ export abstract class BaseLspInstaller<T extends ResourcePaths = ResourcePaths, 
             new Range(supportedVersions, {
                 includePrerelease: true,
             }),
+            manifestUrl,
             this.downloadMessageOverride
         ).resolve()
 

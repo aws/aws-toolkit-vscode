@@ -39,5 +39,8 @@ export async function createTestAuthUtil() {
         encryptionKey,
     }
 
+    // Since AuthUtil is a singleton, we want to remove an existing instance before setting up a new one
+    AuthUtil.destroy()
+
     AuthUtil.create(mockLspAuth as LanguageClientAuth)
 }

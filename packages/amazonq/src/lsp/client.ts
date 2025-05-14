@@ -7,8 +7,8 @@ import vscode, { env, version } from 'vscode'
 import * as nls from 'vscode-nls'
 import * as crypto from 'crypto'
 import * as jose from 'jose'
-import { InlineCompletionManager } from '../app/inline/completion'
 import { LanguageClient, LanguageClientOptions, RequestType, State } from 'vscode-languageclient'
+import { InlineCompletionManager } from '../app/inline/completion'
 import {
     CreateFilesParams,
     DeleteFilesParams,
@@ -47,12 +47,15 @@ import {
     fs,
     oidcClientName,
     openUrl,
+    getClientId,
+    extensionVersion,
 } from 'aws-core-vscode/shared'
 import { processUtils } from 'aws-core-vscode/shared'
 import { activate as activateChat } from './chat/activation'
 import { AmazonQResourcePaths } from './lspInstaller'
 import { auth2 } from 'aws-core-vscode/auth'
 import { ConfigSection, isValidConfigSection, toAmazonQLSPLogLevel } from './config'
+import { telemetry } from 'aws-core-vscode/telemetry'
 
 const localize = nls.loadMessageBundle()
 const logger = getLogger('amazonqLsp.lspClient')
@@ -134,9 +137,9 @@ export async function startLanguageServer(
                     version: version,
                     extension: {
                         name: 'AmazonQ-For-VSCode',
-                        version: '0.0.1',
+                        version: extensionVersion,
                     },
-                    clientId: crypto.randomUUID(),
+                    clientId: getClientId(globals.globalState),
                 },
                 awsClientCapabilities: {
                     q: {
@@ -146,6 +149,9 @@ export async function startLanguageServer(
                         notifications: true,
                         showSaveFileDialog: true,
                     },
+                },
+                contextConfiguration: {
+                    workspaceIdentifier: extensionContext.storageUri?.path,
                 },
                 logLevel: toAmazonQLSPLogLevel(globals.logOutputChannel.logLevel),
             },
@@ -172,8 +178,23 @@ export async function startLanguageServer(
     toDispose.push(disposable)
 
     await client.onReady()
-    AuthUtil.create(new auth2.LanguageClientAuth(client, clientId, encryptionKey))
 
+    // IMPORTANT: This sets up Auth and must be called before anything attempts to use it
+    AuthUtil.create(new auth2.LanguageClientAuth(client, clientId, encryptionKey))
+    // Ideally this would be part of AuthUtil.create() as it restores the existing Auth connection, but we have some
+    // future work which will need to delay this call
+    await AuthUtil.instance.restore()
+
+    await postStartLanguageServer(client, resourcePaths, toDispose)
+
+    return client
+}
+
+async function postStartLanguageServer(
+    client: LanguageClient,
+    resourcePaths: AmazonQResourcePaths,
+    toDispose: vscode.Disposable[]
+) {
     // Request handler for when the server wants to know about the clients auth connnection. Must be registered before the initial auth init call
     client.onRequest<ConnectionMetadata, Error>(auth2.notificationTypes.getConnectionMetadata.method, () => {
         return {
@@ -280,8 +301,9 @@ export async function startLanguageServer(
             })
         )
     }
-
-    await activateChat(client, encryptionKey, resourcePaths.ui)
+    if (Experiments.instance.get('amazonqChatLSP', true)) {
+        await activateChat(client, encryptionKey, resourcePaths.ui)
+    }
 
     toDispose.push(
         AuthUtil.instance.regionProfileManager.onDidChangeRegionProfile(sendProfileToLsp),
@@ -343,8 +365,6 @@ export async function startLanguageServer(
         // Set this inside onReady so that it only triggers on subsequent language server starts (not the first)
         onServerRestartHandler(client)
     )
-
-    return client
 }
 
 /**
@@ -357,6 +377,12 @@ function onServerRestartHandler(client: LanguageClient) {
         if (!(e.oldState === State.Starting && e.newState === State.Running)) {
             return
         }
+
+        // Emit telemetry that a crash was detected.
+        // It is not guaranteed to 100% be a crash since somehow the server may have been intentionally restarted,
+        // but most of the time it probably will have been due to a crash.
+        // TODO: Port this metric override to common definitions
+        telemetry.languageServer_crash.emit({ id: 'AmazonQ' })
 
         // Need to set the auth token in the again
         await AuthUtil.instance.restore()
@@ -395,6 +421,8 @@ function getConfigSection(section: ConfigSection) {
                     includeSuggestionsWithCodeReferences:
                         CodeWhispererSettings.instance.isSuggestionsWithCodeReferencesEnabled(),
                     shareCodeWhispererContentWithAWS: !CodeWhispererSettings.instance.isOptoutEnabled(),
+                    includeImportsWithSuggestions: CodeWhispererSettings.instance.isImportRecommendationEnabled(),
+                    sendUserWrittenCodeMetrics: true,
                 },
             ]
         case 'aws.logLevel':

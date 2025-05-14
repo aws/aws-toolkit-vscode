@@ -11,17 +11,53 @@ import {
     AuthUtil,
     baseCustomization,
     Customization,
+    CustomizationProvider,
     FeatureConfigProvider,
     getSelectedCustomization,
     refreshStatusBar,
+    RegionProfileManager,
     setSelectedCustomization,
 } from '../../codewhisperer'
 import { FeatureContext, globals } from '../../shared'
 import { resetCodeWhispererGlobalVariables } from '../codewhisperer/testUtil'
 import { createSsoProfile, createTestAuth } from '../credentials/testUtil'
-import { LanguageClientAuth } from '../../auth/auth2'
+import { createTestAuthUtil } from '../testAuthUtil'
 
 const enterpriseSsoStartUrl = 'https://enterprise.awsapps.com/start'
+
+describe('customizationProvider', function () {
+    let regionProfileManager: RegionProfileManager
+
+    beforeEach(async () => {
+        createTestAuth(globals.globalState)
+        await createTestAuthUtil()
+        regionProfileManager = new RegionProfileManager(AuthUtil.instance)
+    })
+
+    afterEach(() => {
+        sinon.restore()
+    })
+
+    it('init should create new instance with client', async function () {
+        const mockAuthUtil = {
+            regionProfileManager: regionProfileManager,
+        }
+        sinon.stub(AuthUtil, 'instance').get(() => mockAuthUtil)
+        const createClientStub = sinon.stub(regionProfileManager, 'createQClient')
+        const mockProfile = {
+            name: 'foo',
+            region: 'us-east-1',
+            arn: 'arn',
+            description: '',
+        }
+
+        const provider = await CustomizationProvider.init(mockProfile)
+        assert(provider instanceof CustomizationProvider)
+        assert(createClientStub.calledOnce)
+        assert(createClientStub.calledWith(mockProfile))
+        assert.strictEqual(provider.region, 'us-east-1')
+    })
+})
 
 describe('CodeWhisperer-customizationUtils', function () {
     let auth: ReturnType<typeof createTestAuth>
@@ -30,13 +66,11 @@ describe('CodeWhisperer-customizationUtils', function () {
     before(async function () {
         createTestAuth(globals.globalState)
         tryRegister(refreshStatusBar)
-        const mockLspAuth: Partial<LanguageClientAuth> = {
-            registerSsoTokenChangedHandler: sinon.stub().resolves(),
-        }
-        AuthUtil.create(mockLspAuth as LanguageClientAuth)
     })
 
     beforeEach(async function () {
+        await createTestAuthUtil()
+
         auth = createTestAuth(globals.globalState)
         await auth.createInvalidSsoConnection(
             createSsoProfile({ startUrl: enterpriseSsoStartUrl, scopes: amazonQScopes })

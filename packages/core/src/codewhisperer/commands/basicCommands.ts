@@ -368,6 +368,9 @@ export const openSecurityIssuePanel = Commands.declare(
         const targetFilePath: string = issue instanceof IssueItem ? issue.filePath : filePath
         await showSecurityIssueWebview(context.extensionContext, targetIssue, targetFilePath)
 
+        if (targetIssue.suggestedFixes.length === 0) {
+            await generateFix.execute(targetIssue, targetFilePath, 'webview', true, false)
+        }
         telemetry.codewhisperer_codeScanIssueViewDetails.emit({
             findingId: targetIssue.findingId,
             detectorId: targetIssue.detectorId,
@@ -386,9 +389,6 @@ export const openSecurityIssuePanel = Commands.declare(
             undefined,
             !!targetIssue.suggestedFixes.length
         )
-        if (targetIssue.suggestedFixes.length === 0) {
-            await generateFix.execute(targetIssue, targetFilePath, 'webview', true, false)
-        }
     }
 )
 

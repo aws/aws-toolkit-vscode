@@ -3,420 +3,194 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-// import assert from 'assert'
-// import {
-//     AuthStates,
-//     AuthUtil,
-//     amazonQScopes,
-//     codeWhispererChatScopes,
-//     codeWhispererCoreScopes,
-// } from 'aws-core-vscode/codewhisperer'
-// import {
-//     assertTelemetry,
-//     getTestWindow,
-//     SeverityLevel,
-//     createBuilderIdProfile,
-//     createSsoProfile,
-//     createTestAuth,
-//     captureEventNTimes,
-// } from 'aws-core-vscode/test'
-// import { Auth, Connection, isAnySsoConnection, isBuilderIdConnection } from 'aws-core-vscode/auth'
-// import { globals, vscodeComponent } from 'aws-core-vscode/shared'
-
-// const enterpriseSsoStartUrl = 'https://enterprise.awsapps.com/start'
-
-// describe('AuthUtil', async function () {
-//     let auth: ReturnType<typeof createTestAuth>
-//     let authUtil: AuthUtil
-
-//     beforeEach(async function () {
-//         auth = createTestAuth(globals.globalState)
-//         authUtil = new AuthUtil(auth)
-//     })
-
-//     afterEach(async function () {
-//         await auth.logout()
-//     })
-
-//     it('if there is no valid AwsBuilderID conn, it will create one and use it', async function () {
-//         getTestWindow().onDidShowQuickPick(async (picker) => {
-//             await picker.untilReady()
-//             picker.acceptItem(picker.items[1])
-//         })
-
-//         await authUtil.connectToAwsBuilderId()
-//         const conn = authUtil.conn
-//         assert.strictEqual(conn?.type, 'sso')
-//         assert.strictEqual(conn.label, 'AWS Builder ID')
-//         assert.deepStrictEqual(conn.scopes, amazonQScopes)
-//     })
-
-//     it('if there IS an existing AwsBuilderID conn, it will upgrade the scopes and use it', async function () {
-//         const existingBuilderId = await auth.createConnection(
-//             createBuilderIdProfile({ scopes: codeWhispererCoreScopes })
-//         )
-//         getTestWindow().onDidShowQuickPick(async (picker) => {
-//             await picker.untilReady()
-//             picker.acceptItem(picker.items[1])
-//         })
-
-//         await authUtil.connectToAwsBuilderId()
-
-//         const conn = authUtil.conn
-//         assert.strictEqual(conn?.type, 'sso')
-//         assert.strictEqual(conn.id, existingBuilderId.id)
-//         assert.deepStrictEqual(conn.scopes, amazonQScopes)
-//     })
-
-//     it('if there is no valid enterprise SSO conn, will create and use one', async function () {
-//         getTestWindow().onDidShowQuickPick(async (picker) => {
-//             await picker.untilReady()
-//             picker.acceptItem(picker.items[1])
-//         })
-
-//         await authUtil.connectToEnterpriseSso(enterpriseSsoStartUrl, 'us-east-1')
-//         const conn = authUtil.conn
-//         assert.strictEqual(conn?.type, 'sso')
-//         assert.strictEqual(conn.label, 'IAM Identity Center (enterprise)')
-//     })
-
-//     it('should add scopes + connect to existing IAM Identity Center connection', async function () {
-//         getTestWindow().onDidShowMessage(async (message) => {
-//             assert.ok(message.modal)
-//             message.selectItem('Proceed')
-//         })
-//         const randomScope = 'my:random:scope'
-//         const ssoConn = await auth.createInvalidSsoConnection(
-//             createSsoProfile({ startUrl: enterpriseSsoStartUrl, scopes: [randomScope] })
-//         )
-
-//         // Method under test
-//         await authUtil.connectToEnterpriseSso(ssoConn.startUrl, 'us-east-1')
-
-//         const cwConn = authUtil.conn
-//         assert.strictEqual(cwConn?.type, 'sso')
-//         assert.strictEqual(cwConn.label, 'IAM Identity Center (enterprise)')
-//         assert.deepStrictEqual(cwConn.scopes, [randomScope, ...amazonQScopes])
-//     })
-
-//     it('reauthenticates an existing BUT invalid Amazon Q IAM Identity Center connection', async function () {
-//         const ssoConn = await auth.createInvalidSsoConnection(
-//             createSsoProfile({ startUrl: enterpriseSsoStartUrl, scopes: amazonQScopes })
-//         )
-//         await auth.refreshConnectionState(ssoConn)
-//         assert.strictEqual(auth.getConnectionState(ssoConn), 'invalid')
-
-//         // Method under test
-//         await authUtil.connectToEnterpriseSso(ssoConn.startUrl, 'us-east-1')
-
-//         const cwConn = authUtil.conn
-//         assert.strictEqual(cwConn?.type, 'sso')
-//         assert.strictEqual(cwConn.id, ssoConn.id)
-//         assert.deepStrictEqual(cwConn.scopes, amazonQScopes)
-//         assert.strictEqual(auth.getConnectionState(cwConn), 'valid')
-//     })
-
-//     it('should show reauthenticate prompt', async function () {
-//         getTestWindow().onDidShowMessage((m) => {
-//             if (m.severity === SeverityLevel.Information) {
-//                 m.close()
-//             }
-//         })
-
-//         await authUtil.showReauthenticatePrompt()
-
-//         const warningMessage = getTestWindow().shownMessages.filter((m) => m.severity === SeverityLevel.Information)
-//         assert.strictEqual(warningMessage.length, 1)
-//         assert.strictEqual(warningMessage[0].message, `Your Amazon Q connection has expired. Please re-authenticate.`)
-//         warningMessage[0].close()
-//         assertTelemetry('toolkit_showNotification', {
-//             id: 'codeWhispererConnectionExpired',
-//             result: 'Succeeded',
-//             source: vscodeComponent,
-//         })
-//         assertTelemetry('toolkit_invokeAction', {
-//             id: 'codeWhispererConnectionExpired',
-//             action: 'dismiss',
-//             result: 'Succeeded',
-//             source: vscodeComponent,
-//         })
-//     })
-
-//     it('reauthenticate prompt reauthenticates invalid connection', async function () {
-//         const conn = await auth.createInvalidSsoConnection(
-//             createSsoProfile({ startUrl: enterpriseSsoStartUrl, scopes: codeWhispererChatScopes })
-//         )
-//         await auth.useConnection(conn)
-//         getTestWindow().onDidShowMessage((m) => {
-//             m.selectItem('Re-authenticate')
-//         })
-
-//         assert.strictEqual(auth.getConnectionState(conn), 'invalid')
-
-//         await authUtil.showReauthenticatePrompt()
-
-//         assert.strictEqual(authUtil.conn?.type, 'sso')
-//         assert.strictEqual(auth.getConnectionState(conn), 'valid')
-//         assertTelemetry('toolkit_showNotification', {
-//             id: 'codeWhispererConnectionExpired',
-//             result: 'Succeeded',
-//             source: vscodeComponent,
-//         })
-//         assertTelemetry('toolkit_invokeAction', {
-//             id: 'codeWhispererConnectionExpired',
-//             action: 'connect',
-//             result: 'Succeeded',
-//             source: vscodeComponent,
-//         })
-//     })
-
-//     it('reauthenticates Builder ID connection that already has all scopes', async function () {
-//         const conn = await auth.createInvalidSsoConnection(createBuilderIdProfile({ scopes: amazonQScopes }))
-//         await auth.useConnection(conn)
-
-//         // method under test
-//         await authUtil.reauthenticate()
-
-//         assert.strictEqual(authUtil.conn?.type, 'sso')
-//         assert.deepStrictEqual(authUtil.conn?.scopes, amazonQScopes)
-//         assert.strictEqual(auth.getConnectionState(conn), 'valid')
-//     })
-
-//     it('reauthenticates IdC connection that already has all scopes', async function () {
-//         const conn = await auth.createInvalidSsoConnection(
-//             createSsoProfile({ startUrl: enterpriseSsoStartUrl, scopes: codeWhispererCoreScopes })
-//         )
-//         await auth.useConnection(conn)
-
-//         // method under test
-//         await authUtil.reauthenticate()
-
-//         assert.strictEqual(authUtil.conn?.type, 'sso')
-//         assert.deepStrictEqual(authUtil.conn?.scopes, amazonQScopes)
-//         assert.strictEqual(auth.getConnectionState(conn), 'valid')
-//     })
-
-//     it('reauthenticate adds missing Builder ID scopes', async function () {
-//         const conn = await auth.createInvalidSsoConnection(createBuilderIdProfile({ scopes: codeWhispererCoreScopes }))
-//         await auth.useConnection(conn)
-
-//         // method under test
-//         await authUtil.reauthenticate()
-
-//         assert.strictEqual(authUtil.conn?.type, 'sso')
-//         assert.deepStrictEqual(authUtil.conn?.scopes, amazonQScopes)
-//         assert.strictEqual(auth.getConnectionState(conn), 'valid')
-//     })
-
-//     it('reauthenticate adds missing Amazon Q IdC scopes', async function () {
-//         const conn = await auth.createInvalidSsoConnection(
-//             createSsoProfile({ startUrl: enterpriseSsoStartUrl, scopes: codeWhispererCoreScopes })
-//         )
-//         await auth.useConnection(conn)
-
-//         // method under test
-//         await authUtil.reauthenticate()
-
-//         assert.strictEqual(authUtil.conn?.type, 'sso')
-//         assert.deepStrictEqual(authUtil.conn?.scopes, amazonQScopes)
-//         assert.strictEqual(auth.getConnectionState(conn), 'valid')
-//     })
-
-//     it('CodeWhisperer uses fallback connection when switching to an unsupported connection', async function () {
-//         const supportedConn = await auth.createConnection(createBuilderIdProfile({ scopes: codeWhispererChatScopes }))
-//         const unsupportedConn = await auth.createConnection(createSsoProfile())
-
-//         await auth.useConnection(supportedConn)
-//         assert.ok(authUtil.isConnected())
-//         assert.strictEqual(auth.activeConnection?.id, authUtil.conn?.id)
-
-//         // Switch to unsupported connection
-//         const cwAuthUpdatedConnection = captureEventNTimes(authUtil.secondaryAuth.onDidChangeActiveConnection, 2)
-//         await auth.useConnection(unsupportedConn)
-//         // - This is triggered when the main Auth connection is switched
-//         // - This is triggered by registerAuthListener() when it saves the previous active connection as a fallback.
-//         await cwAuthUpdatedConnection
-
-//         // TODO in a refactor see if we can simplify multiple multiple triggers on the same event.
-//         assert.ok(authUtil.isConnected())
-//         assert.ok(authUtil.isUsingSavedConnection)
-//         assert.notStrictEqual(auth.activeConnection?.id, authUtil.conn?.id)
-//         assert.strictEqual(authUtil.conn?.type, 'sso')
-//         assert.deepStrictEqual(authUtil.conn?.scopes, codeWhispererChatScopes)
-//     })
-
-//     it('does not prompt to sign out of duplicate builder ID connections', async function () {
-//         await authUtil.connectToAwsBuilderId()
-//         await authUtil.connectToAwsBuilderId()
-//         assert.ok(authUtil.isConnected())
-
-//         const ssoConnectionIds = new Set(auth.activeConnectionEvents.emits.filter(isAnySsoConnection).map((c) => c.id))
-//         assert.strictEqual(ssoConnectionIds.size, 1, 'Expected exactly 1 unique SSO connection id')
-//         assert.strictEqual((await auth.listConnections()).filter(isAnySsoConnection).length, 1)
-//     })
-
-//     it('automatically upgrades connections if they do not have the required scopes', async function () {
-//         const upgradeableConn = await auth.createConnection(createBuilderIdProfile())
-//         await auth.useConnection(upgradeableConn)
-//         assert.strictEqual(authUtil.isConnected(), false)
-
-//         await authUtil.connectToAwsBuilderId()
-//         assert.ok(authUtil.isConnected())
-//         assert.ok(authUtil.isConnectionValid())
-//         assert.ok(isBuilderIdConnection(authUtil.conn))
-//         assert.strictEqual(authUtil.conn?.id, upgradeableConn.id)
-//         assert.strictEqual(authUtil.conn.startUrl, upgradeableConn.startUrl)
-//         assert.strictEqual(authUtil.conn.ssoRegion, upgradeableConn.ssoRegion)
-//         assert.deepStrictEqual(authUtil.conn.scopes, amazonQScopes)
-//         assert.strictEqual((await auth.listConnections()).filter(isAnySsoConnection).length, 1)
-//     })
-
-//     it('test reformatStartUrl should remove trailing slash and hash', function () {
-//         const expected = 'https://view.awsapps.com/start'
-//         assert.strictEqual(authUtil.reformatStartUrl(expected + '/'), expected)
-//         assert.strictEqual(authUtil.reformatStartUrl(undefined), undefined)
-//         assert.strictEqual(authUtil.reformatStartUrl(expected + '/#'), expected)
-//         assert.strictEqual(authUtil.reformatStartUrl(expected + '#/'), expected)
-//         assert.strictEqual(authUtil.reformatStartUrl(expected + '/#/'), expected)
-//         assert.strictEqual(authUtil.reformatStartUrl(expected + '####'), expected)
-//     })
-
-//     it(`clearExtraConnections()`, async function () {
-//         const conn1 = await auth.createConnection(createBuilderIdProfile())
-//         const conn2 = await auth.createConnection(createSsoProfile({ startUrl: enterpriseSsoStartUrl }))
-//         const conn3 = await auth.createConnection(createSsoProfile({ startUrl: enterpriseSsoStartUrl + 1 }))
-//         // validate listConnections shows all connections
-//         assert.deepStrictEqual(
-//             (await authUtil.auth.listConnections()).map((conn) => conn.id).sort((a, b) => a.localeCompare(b)),
-//             [conn1, conn2, conn3].map((conn) => conn.id).sort((a, b) => a.localeCompare(b))
-//         )
-//         await authUtil.secondaryAuth.useNewConnection(conn3)
-
-//         await authUtil.clearExtraConnections() // method under test
-
-//         // Only the conn that AuthUtil is using is remaining
-//         assert.deepStrictEqual(
-//             (await authUtil.auth.listConnections()).map((conn) => conn.id),
-//             [conn3.id]
-//         )
-//     })
-// })
-
-// describe('getChatAuthState()', function () {
-//     let auth: ReturnType<typeof createTestAuth>
-//     let authUtil: AuthUtil
-//     let laterDate: Date
-
-//     beforeEach(async function () {
-//         auth = createTestAuth(globals.globalState)
-//         authUtil = new AuthUtil(auth)
-
-//         laterDate = new Date(Date.now() + 10_000_000)
-//     })
-
-//     afterEach(async function () {
-//         await auth.logout()
-//     })
-
-//     it('indicates nothing connected when no auth connection exists', async function () {
-//         const result = await authUtil.getChatAuthState()
-//         assert.deepStrictEqual(result, {
-//             codewhispererChat: AuthStates.disconnected,
-//             codewhispererCore: AuthStates.disconnected,
-//             amazonQ: AuthStates.disconnected,
-//         })
-//     })
-
-//     /** Affects {@link Auth.refreshConnectionState} */
-//     function createToken(conn: Connection) {
-//         auth.getTestTokenProvider(conn).getToken.resolves({ accessToken: 'myAccessToken', expiresAt: laterDate })
-//     }
-
-//     describe('Builder ID', function () {
-//         it('indicates only CodeWhisperer core is connected when only CW core scopes are set', async function () {
-//             const conn = await auth.createConnection(createBuilderIdProfile({ scopes: codeWhispererCoreScopes }))
-//             createToken(conn)
-//             await auth.useConnection(conn)
-
-//             const result = await authUtil.getChatAuthState()
-//             assert.deepStrictEqual(result, {
-//                 codewhispererCore: AuthStates.connected,
-//                 codewhispererChat: AuthStates.expired,
-//                 amazonQ: AuthStates.expired,
-//             })
-//         })
-
-//         it('indicates all SUPPORTED features connected when all scopes are set', async function () {
-//             const conn = await auth.createConnection(createBuilderIdProfile({ scopes: amazonQScopes }))
-//             createToken(conn)
-//             await auth.useConnection(conn)
-
-//             const result = await authUtil.getChatAuthState()
-//             assert.deepStrictEqual(result, {
-//                 codewhispererCore: AuthStates.connected,
-//                 codewhispererChat: AuthStates.connected,
-//                 amazonQ: AuthStates.connected,
-//             })
-//         })
-
-//         it('indicates all SUPPORTED features expired when connection is invalid', async function () {
-//             const conn = await auth.createInvalidSsoConnection(
-//                 createBuilderIdProfile({ scopes: codeWhispererChatScopes })
-//             )
-//             await auth.useConnection(conn)
-
-//             const result = await authUtil.getChatAuthState()
-//             assert.deepStrictEqual(result, {
-//                 codewhispererCore: AuthStates.expired,
-//                 codewhispererChat: AuthStates.expired,
-//                 amazonQ: AuthStates.expired,
-//             })
-//         })
-//     })
-
-//     describe('Identity Center', function () {
-//         it('indicates only CW core is connected when only CW core scopes are set', async function () {
-//             const conn = await auth.createConnection(
-//                 createSsoProfile({ startUrl: enterpriseSsoStartUrl, scopes: codeWhispererCoreScopes })
-//             )
-//             createToken(conn)
-//             await auth.useConnection(conn)
-
-//             const result = await authUtil.getChatAuthState()
-//             assert.deepStrictEqual(result, {
-//                 codewhispererCore: AuthStates.pendingProfileSelection,
-//                 codewhispererChat: AuthStates.expired,
-//                 amazonQ: AuthStates.expired,
-//             })
-//         })
-
-//         it('indicates all features connected when all scopes are set', async function () {
-//             const conn = await auth.createConnection(
-//                 createSsoProfile({ startUrl: enterpriseSsoStartUrl, scopes: amazonQScopes })
-//             )
-//             createToken(conn)
-//             await auth.useConnection(conn)
-
-//             const result = await authUtil.getChatAuthState()
-//             assert.deepStrictEqual(result, {
-//                 codewhispererCore: AuthStates.pendingProfileSelection,
-//                 codewhispererChat: AuthStates.pendingProfileSelection,
-//                 amazonQ: AuthStates.pendingProfileSelection,
-//             })
-//         })
-
-//         it('indicates all features expired when connection is invalid', async function () {
-//             const conn = await auth.createInvalidSsoConnection(
-//                 createSsoProfile({ startUrl: enterpriseSsoStartUrl, scopes: amazonQScopes })
-//             )
-//             await auth.useConnection(conn)
-
-//             const result = await authUtil.getChatAuthState()
-//             assert.deepStrictEqual(result, {
-//                 codewhispererCore: AuthStates.expired,
-//                 codewhispererChat: AuthStates.expired,
-//                 amazonQ: AuthStates.expired,
-//             })
-//         })
-//     })
-// })
+import assert from 'assert'
+import * as sinon from 'sinon'
+import { AuthUtil } from 'aws-core-vscode/codewhisperer'
+import { createTestAuthUtil } from 'aws-core-vscode/test'
+import { constants } from 'aws-core-vscode/auth'
+import { auth2 } from 'aws-core-vscode/auth'
+
+describe('AuthUtil', async function () {
+    let auth: any
+
+    beforeEach(async function () {
+        await createTestAuthUtil()
+        auth = AuthUtil.instance
+    })
+
+    afterEach(async function () {
+        sinon.restore()
+    })
+
+    describe('Auth state', function () {
+        it('login with BuilderId', async function () {
+            await auth.login(constants.builderIdStartUrl, constants.builderIdRegion)
+            assert.ok(auth.isConnected())
+            assert.ok(auth.isBuilderIdConnection())
+        })
+
+        it('login with IDC', async function () {
+            await auth.login('https://example.awsapps.com/start', 'us-east-1')
+            assert.ok(auth.isConnected())
+            assert.ok(auth.isIdcConnection())
+        })
+
+        it('identifies internal users', async function () {
+            await auth.login(constants.internalStartUrl, 'us-east-1')
+            assert.ok(auth.isInternalAmazonUser())
+        })
+
+        it('identifies SSO session', function () {
+            ;(auth as any).session = { loginType: auth2.LoginTypes.SSO }
+            assert.strictEqual(auth.isSsoSession(), true)
+        })
+
+        it('identifies non-SSO session', function () {
+            ;(auth as any).session = { loginType: auth2.LoginTypes.IAM }
+            assert.strictEqual(auth.isSsoSession(), false)
+        })
+    })
+
+    describe('Token management', function () {
+        it('can get token when connected with SSO', async function () {
+            await auth.login(constants.builderIdStartUrl, constants.builderIdRegion)
+            const token = await auth.getToken()
+            assert.ok(token)
+        })
+
+        it('throws when getting token without SSO connection', async function () {
+            sinon.stub(AuthUtil.instance, 'isSsoSession').returns(false)
+            await assert.rejects(async () => await auth.getToken())
+        })
+    })
+
+    describe('getTelemetryMetadata', function () {
+        it('returns valid metadata for BuilderId connection', async function () {
+            await auth.login(constants.builderIdStartUrl, constants.builderIdRegion)
+            const metadata = await auth.getTelemetryMetadata()
+            assert.strictEqual(metadata.credentialSourceId, 'awsId')
+            assert.strictEqual(metadata.credentialStartUrl, constants.builderIdStartUrl)
+        })
+
+        it('returns valid metadata for IDC connection', async function () {
+            await auth.login('https://example.awsapps.com/start', 'us-east-1')
+            const metadata = await auth.getTelemetryMetadata()
+            assert.strictEqual(metadata.credentialSourceId, 'iamIdentityCenter')
+            assert.strictEqual(metadata.credentialStartUrl, 'https://example.awsapps.com/start')
+        })
+
+        it('returns undefined metadata when not connected', async function () {
+            await auth.logout()
+            const metadata = await auth.getTelemetryMetadata()
+            assert.strictEqual(metadata.id, 'undefined')
+        })
+    })
+
+    describe('getAuthFormIds', function () {
+        it('returns empty array when not connected', async function () {
+            await auth.logout()
+            const forms = await auth.getAuthFormIds()
+            assert.deepStrictEqual(forms, [])
+        })
+
+        it('returns BuilderId forms when using BuilderId', async function () {
+            await auth.login(constants.builderIdStartUrl, constants.builderIdRegion)
+            const forms = await auth.getAuthFormIds()
+            assert.deepStrictEqual(forms, ['builderIdCodeWhisperer'])
+        })
+
+        it('returns IDC forms when using IDC without SSO account access', async function () {
+            const session = (auth as any).session
+            sinon.stub(session, 'getProfile').resolves({
+                ssoSession: {
+                    settings: {
+                        sso_registration_scopes: ['codewhisperer:*'],
+                    },
+                },
+            })
+
+            await auth.login('https://example.awsapps.com/start', 'us-east-1')
+            const forms = await auth.getAuthFormIds()
+            assert.deepStrictEqual(forms, ['identityCenterCodeWhisperer'])
+        })
+
+        it('returns IDC forms with explorer when using IDC with SSO account access', async function () {
+            const session = (auth as any).session
+            sinon.stub(session, 'getProfile').resolves({
+                ssoSession: {
+                    settings: {
+                        sso_registration_scopes: ['codewhisperer:*', 'sso:account:access'],
+                    },
+                },
+            })
+
+            await auth.login('https://example.awsapps.com/start', 'us-east-1')
+            const forms = await auth.getAuthFormIds()
+            assert.deepStrictEqual(forms.sort(), ['identityCenterCodeWhisperer', 'identityCenterExplorer'].sort())
+        })
+
+        it('returns credentials form for IAM credentials', async function () {
+            sinon.stub(auth, 'isSsoSession').returns(false)
+            sinon.stub(auth, 'isConnected').returns(true)
+
+            const forms = await auth.getAuthFormIds()
+            assert.deepStrictEqual(forms, ['credentials'])
+        })
+    })
+
+    describe('stateChangeHandler', function () {
+        let mockLspAuth: any
+        let regionProfileManager: any
+
+        beforeEach(function () {
+            mockLspAuth = (auth as any).lspAuth
+            regionProfileManager = (auth as any).regionProfileManager
+        })
+
+        it('updates bearer token when state is refreshed', async function () {
+            await auth.login(constants.builderIdStartUrl, 'us-east-1')
+
+            await (auth as any).stateChangeHandler({ state: 'refreshed' })
+
+            assert.ok(mockLspAuth.updateBearerToken.called)
+            assert.strictEqual(mockLspAuth.updateBearerToken.firstCall.args[0].data, 'fake-data')
+        })
+
+        it('cleans up when connection expires', async function () {
+            await auth.login(constants.builderIdStartUrl, 'us-east-1')
+
+            await (auth as any).stateChangeHandler({ state: 'expired' })
+
+            assert.ok(mockLspAuth.deleteBearerToken.called)
+        })
+
+        it('deletes bearer token when disconnected', async function () {
+            await (auth as any).stateChangeHandler({ state: 'notConnected' })
+
+            assert.ok(mockLspAuth.deleteBearerToken.called)
+        })
+
+        it('updates bearer token and restores profile on reconnection', async function () {
+            const restoreProfileSelectionSpy = sinon.spy(regionProfileManager, 'restoreProfileSelection')
+
+            await auth.login('https://example.awsapps.com/start', 'us-east-1')
+
+            await (auth as any).stateChangeHandler({ state: 'connected' })
+
+            assert.ok(mockLspAuth.updateBearerToken.called)
+            assert.ok(restoreProfileSelectionSpy.called)
+        })
+
+        it('clears region profile cache and invalidates profile on IDC connection expiration', async function () {
+            const invalidateProfileSpy = sinon.spy(regionProfileManager, 'invalidateProfile')
+            const clearCacheSpy = sinon.spy(regionProfileManager, 'clearCache')
+
+            await auth.login('https://example.awsapps.com/start', 'us-east-1')
+
+            await (auth as any).stateChangeHandler({ state: 'expired' })
+
+            assert.ok(invalidateProfileSpy.called)
+            assert.ok(clearCacheSpy.called)
+        })
+    })
+})
