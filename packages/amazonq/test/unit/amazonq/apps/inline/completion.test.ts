@@ -3,9 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import sinon from 'sinon'
-import { CancellationToken, commands, InlineCompletionItem, languages, Position, window } from 'vscode'
+import { CancellationToken, commands, InlineCompletionItem, languages, Position, window, Range } from 'vscode'
 import assert from 'assert'
 import { LanguageClient } from 'vscode-languageclient'
+import { StringValue } from 'vscode-languageserver-types'
 import { AmazonQInlineCompletionItemProvider, InlineCompletionManager } from '../../../../../src/app/inline/completion'
 import { RecommendationService } from '../../../../../src/app/inline/recommendationService'
 import { SessionManager } from '../../../../../src/app/inline/sessionManager'
@@ -343,6 +344,61 @@ describe('InlineCompletionManager', () => {
                             fakeReferences
                         )
                     )
+                }),
+                it('should add a range to the completion item when missing', async function () {
+                    provider = new AmazonQInlineCompletionItemProvider(
+                        languageClient,
+                        recommendationService,
+                        mockSessionManager,
+                        inlineTutorialAnnotation,
+                        true
+                    )
+                    getActiveRecommendationStub.returns([
+                        {
+                            insertText: 'testText',
+                            itemId: 'itemId',
+                        },
+                        {
+                            insertText: 'testText2',
+                            itemId: 'itemId2',
+                            range: undefined,
+                        },
+                    ])
+                    const cursorPosition = new Position(5, 6)
+                    const result = await provider.provideInlineCompletionItems(
+                        mockDocument,
+                        cursorPosition,
+                        mockContext,
+                        mockToken
+                    )
+
+                    for (const item of result) {
+                        assert.deepStrictEqual(item.range, new Range(cursorPosition, cursorPosition))
+                    }
+                }),
+                it('should handle StringValue instead of strings', async function () {
+                    provider = new AmazonQInlineCompletionItemProvider(
+                        languageClient,
+                        recommendationService,
+                        mockSessionManager,
+                        inlineTutorialAnnotation,
+                        true
+                    )
+                    const expectedText = 'this is my text'
+                    getActiveRecommendationStub.returns([
+                        {
+                            insertText: { kind: 'snippet', value: 'this is my text' } satisfies StringValue,
+                            itemId: 'itemId',
+                        },
+                    ])
+                    const result = await provider.provideInlineCompletionItems(
+                        mockDocument,
+                        mockPosition,
+                        mockContext,
+                        mockToken
+                    )
+
+                    assert.strictEqual(result[0].insertText, expectedText)
                 }),
                 describe('debounce behavior', function () {
                     let clock: ReturnType<typeof installFakeClock>
