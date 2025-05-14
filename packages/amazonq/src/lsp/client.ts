@@ -163,117 +163,128 @@ export async function startLanguageServer(
 
     const auth = new AmazonQLspAuth(client)
 
-    return client.onReady().then(async () => {
-        await auth.refreshConnection()
+    await client.onReady()
 
-        if (Experiments.instance.get('amazonqLSPInline', false)) {
-            const inlineManager = new InlineCompletionManager(client)
-            inlineManager.registerInlineCompletion()
-            toDispose.push(
-                inlineManager,
-                Commands.register({ id: 'aws.amazonq.invokeInlineCompletion', autoconnect: true }, async () => {
-                    await vscode.commands.executeCommand('editor.action.inlineSuggest.trigger')
-                }),
-                vscode.workspace.onDidCloseTextDocument(async () => {
-                    await vscode.commands.executeCommand('aws.amazonq.rejectCodeSuggestion')
-                })
-            )
-        }
+    await postStartLanguageServer(auth, client, resourcePaths, toDispose)
 
-        if (Experiments.instance.get('amazonqChatLSP', true)) {
-            await activate(client, encryptionKey, resourcePaths.ui)
-        }
+    return client
+}
 
-        const refreshInterval = auth.startTokenRefreshInterval(10 * oneSecond)
+async function postStartLanguageServer(
+    auth: AmazonQLspAuth,
+    client: LanguageClient,
+    resourcePaths: AmazonQResourcePaths,
+    toDispose: vscode.Disposable[]
+) {
+    await auth.refreshConnection()
 
-        const sendProfileToLsp = async () => {
-            try {
-                const result = await client.sendRequest(updateConfigurationRequestType.method, {
-                    section: 'aws.q',
-                    settings: {
-                        profileArn: AuthUtil.instance.regionProfileManager.activeRegionProfile?.arn,
-                    },
-                })
-                client.info(
-                    `Client: Updated Amazon Q Profile ${AuthUtil.instance.regionProfileManager.activeRegionProfile?.arn} to Amazon Q LSP`,
-                    result
-                )
-            } catch (err) {
-                client.error('Error when setting Q Developer Profile to Amazon Q LSP', err)
-            }
-        }
-
-        // send profile to lsp once.
-        void sendProfileToLsp()
-
+    if (Experiments.instance.get('amazonqLSPInline', false)) {
+        const inlineManager = new InlineCompletionManager(client)
+        inlineManager.registerInlineCompletion()
         toDispose.push(
-            AuthUtil.instance.auth.onDidChangeActiveConnection(async () => {
-                await auth.refreshConnection()
+            inlineManager,
+            Commands.register({ id: 'aws.amazonq.invokeInlineCompletion', autoconnect: true }, async () => {
+                await vscode.commands.executeCommand('editor.action.inlineSuggest.trigger')
             }),
-            AuthUtil.instance.auth.onDidDeleteConnection(async () => {
-                client.sendNotification(notificationTypes.deleteBearerToken.method)
-            }),
-            AuthUtil.instance.regionProfileManager.onDidChangeRegionProfile(sendProfileToLsp),
-            vscode.commands.registerCommand('aws.amazonq.getWorkspaceId', async () => {
-                const requestType = new RequestType<GetConfigurationFromServerParams, ResponseMessage, Error>(
-                    'aws/getConfigurationFromServer'
-                )
-                const workspaceIdResp = await client.sendRequest(requestType.method, {
-                    section: 'aws.q.workspaceContext',
-                })
-                return workspaceIdResp
-            }),
-            vscode.workspace.onDidCreateFiles((e) => {
-                client.sendNotification('workspace/didCreateFiles', {
-                    files: e.files.map((it) => {
-                        return { uri: it.fsPath }
-                    }),
-                } as CreateFilesParams)
-            }),
-            vscode.workspace.onDidDeleteFiles((e) => {
-                client.sendNotification('workspace/didDeleteFiles', {
-                    files: e.files.map((it) => {
-                        return { uri: it.fsPath }
-                    }),
-                } as DeleteFilesParams)
-            }),
-            vscode.workspace.onDidRenameFiles((e) => {
-                client.sendNotification('workspace/didRenameFiles', {
-                    files: e.files.map((it) => {
-                        return { oldUri: it.oldUri.fsPath, newUri: it.newUri.fsPath }
-                    }),
-                } as RenameFilesParams)
-            }),
-            vscode.workspace.onDidSaveTextDocument((e) => {
-                client.sendNotification('workspace/didSaveTextDocument', {
-                    textDocument: {
-                        uri: e.uri.fsPath,
-                    },
-                } as DidSaveTextDocumentParams)
-            }),
-            vscode.workspace.onDidChangeWorkspaceFolders((e) => {
-                client.sendNotification('workspace/didChangeWorkspaceFolder', {
-                    event: {
-                        added: e.added.map((it) => {
-                            return {
-                                name: it.name,
-                                uri: it.uri.fsPath,
-                            } as WorkspaceFolder
-                        }),
-                        removed: e.removed.map((it) => {
-                            return {
-                                name: it.name,
-                                uri: it.uri.fsPath,
-                            } as WorkspaceFolder
-                        }),
-                    },
-                } as DidChangeWorkspaceFoldersParams)
-            }),
-            { dispose: () => clearInterval(refreshInterval) },
-            // Set this inside onReady so that it only triggers on subsequent language server starts (not the first)
-            onServerRestartHandler(client, auth)
+            vscode.workspace.onDidCloseTextDocument(async () => {
+                await vscode.commands.executeCommand('aws.amazonq.rejectCodeSuggestion')
+            })
         )
-    })
+    }
+
+    if (Experiments.instance.get('amazonqChatLSP', true)) {
+        await activate(client, encryptionKey, resourcePaths.ui)
+    }
+
+    const refreshInterval = auth.startTokenRefreshInterval(10 * oneSecond)
+
+    const sendProfileToLsp = async () => {
+        try {
+            const result = await client.sendRequest(updateConfigurationRequestType.method, {
+                section: 'aws.q',
+                settings: {
+                    profileArn: AuthUtil.instance.regionProfileManager.activeRegionProfile?.arn,
+                },
+            })
+            client.info(
+                `Client: Updated Amazon Q Profile ${AuthUtil.instance.regionProfileManager.activeRegionProfile?.arn} to Amazon Q LSP`,
+                result
+            )
+        } catch (err) {
+            client.error('Error when setting Q Developer Profile to Amazon Q LSP', err)
+        }
+    }
+
+    // send profile to lsp once.
+    void sendProfileToLsp()
+
+    toDispose.push(
+        AuthUtil.instance.auth.onDidChangeActiveConnection(async () => {
+            await auth.refreshConnection()
+        }),
+        AuthUtil.instance.auth.onDidDeleteConnection(async () => {
+            client.sendNotification(notificationTypes.deleteBearerToken.method)
+        }),
+        AuthUtil.instance.regionProfileManager.onDidChangeRegionProfile(sendProfileToLsp),
+        vscode.commands.registerCommand('aws.amazonq.getWorkspaceId', async () => {
+            const requestType = new RequestType<GetConfigurationFromServerParams, ResponseMessage, Error>(
+                'aws/getConfigurationFromServer'
+            )
+            const workspaceIdResp = await client.sendRequest(requestType.method, {
+                section: 'aws.q.workspaceContext',
+            })
+            return workspaceIdResp
+        }),
+        vscode.workspace.onDidCreateFiles((e) => {
+            client.sendNotification('workspace/didCreateFiles', {
+                files: e.files.map((it) => {
+                    return { uri: it.fsPath }
+                }),
+            } as CreateFilesParams)
+        }),
+        vscode.workspace.onDidDeleteFiles((e) => {
+            client.sendNotification('workspace/didDeleteFiles', {
+                files: e.files.map((it) => {
+                    return { uri: it.fsPath }
+                }),
+            } as DeleteFilesParams)
+        }),
+        vscode.workspace.onDidRenameFiles((e) => {
+            client.sendNotification('workspace/didRenameFiles', {
+                files: e.files.map((it) => {
+                    return { oldUri: it.oldUri.fsPath, newUri: it.newUri.fsPath }
+                }),
+            } as RenameFilesParams)
+        }),
+        vscode.workspace.onDidSaveTextDocument((e) => {
+            client.sendNotification('workspace/didSaveTextDocument', {
+                textDocument: {
+                    uri: e.uri.fsPath,
+                },
+            } as DidSaveTextDocumentParams)
+        }),
+        vscode.workspace.onDidChangeWorkspaceFolders((e) => {
+            client.sendNotification('workspace/didChangeWorkspaceFolder', {
+                event: {
+                    added: e.added.map((it) => {
+                        return {
+                            name: it.name,
+                            uri: it.uri.fsPath,
+                        } as WorkspaceFolder
+                    }),
+                    removed: e.removed.map((it) => {
+                        return {
+                            name: it.name,
+                            uri: it.uri.fsPath,
+                        } as WorkspaceFolder
+                    }),
+                },
+            } as DidChangeWorkspaceFoldersParams)
+        }),
+        { dispose: () => clearInterval(refreshInterval) },
+        // Set this inside onReady so that it only triggers on subsequent language server starts (not the first)
+        onServerRestartHandler(client, auth)
+    )
 }
 
 /**
