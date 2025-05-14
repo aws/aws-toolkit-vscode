@@ -33,7 +33,7 @@ import {
     maybeShowMinVscodeWarning,
     Experiments,
     isSageMaker,
-    isAmazonInternalOs,
+    isAmazonLinux2,
 } from 'aws-core-vscode/shared'
 import { ExtStartUpSources } from 'aws-core-vscode/telemetry'
 import { VSCODE_EXTENSION_ID } from 'aws-core-vscode/utils'
@@ -123,7 +123,7 @@ export async function activateAmazonQCommon(context: vscode.ExtensionContext, is
     await activateCodeWhisperer(extContext as ExtContext)
     if (
         (Experiments.instance.get('amazonqLSP', true) || Auth.instance.isInternalAmazonUser()) &&
-        (!isAmazonInternalOs() || (await hasGlibcPatch()))
+        (!isAmazonLinux2() || hasGlibcPatch())
     ) {
         // start the Amazon Q LSP for internal users first
         // for AL2, start LSP if glibc patch is found
