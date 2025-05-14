@@ -38,7 +38,7 @@ import {
 import { processUtils } from 'aws-core-vscode/shared'
 import { activate } from './chat/activation'
 import { AmazonQResourcePaths } from './lspInstaller'
-import { ConfigSection, isValidConfigSection, toAmazonQLSPLogLevel } from './config'
+import { ConfigSection, isValidConfigSection, pushConfigUpdate, toAmazonQLSPLogLevel } from './config'
 import { telemetry } from 'aws-core-vscode/telemetry'
 
 const localize = nls.loadMessageBundle()
@@ -160,14 +160,26 @@ export async function startLanguageServer(
 
     const disposable = client.start()
     toDispose.push(disposable)
-
-    const auth = new AmazonQLspAuth(client)
-
     await client.onReady()
+
+    const auth = await initializeAuth(client)
 
     await postStartLanguageServer(auth, client, resourcePaths, toDispose)
 
     return client
+}
+
+async function initializeAuth(client: LanguageClient): Promise<AmazonQLspAuth> {
+    AuthUtil.instance.regionProfileManager.onDidChangeRegionProfile(async () => {
+        void pushConfigUpdate(client, {
+            type: 'profile',
+            profileArn: AuthUtil.instance.regionProfileManager.activeRegionProfile?.arn,
+        })
+    })
+
+    const auth = new AmazonQLspAuth(client)
+    await auth.refreshConnection(true)
+    return auth
 }
 
 async function postStartLanguageServer(
@@ -176,8 +188,6 @@ async function postStartLanguageServer(
     resourcePaths: AmazonQResourcePaths,
     toDispose: vscode.Disposable[]
 ) {
-    await auth.refreshConnection()
-
     if (Experiments.instance.get('amazonqLSPInline', false)) {
         const inlineManager = new InlineCompletionManager(client)
         inlineManager.registerInlineCompletion()

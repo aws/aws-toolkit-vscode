@@ -18,15 +18,20 @@ export async function activate(languageClient: LanguageClient, encryptionKey: Bu
     const disposables = globals.context.subscriptions
 
     // Make sure we've sent an auth profile to the language server before even initializing the UI
-    await pushConfigUpdate(languageClient, {
-        type: 'profile',
-        profileArn: AuthUtil.instance.regionProfileManager.activeRegionProfile?.arn,
-    })
-    // We need to push the cached customization on startup explicitly
-    await pushConfigUpdate(languageClient, {
-        type: 'customization',
-        customization: getSelectedCustomization(),
-    })
+    //
+    // Ideally the handler for onDidChangeRegionProfile would trigger this, but because the handler is set up too late (due to the current structure), the initial event is missed.
+    // So we have to explicitly do it here on startup.
+    if (AuthUtil.instance.isConnectionValid()) {
+        await pushConfigUpdate(languageClient, {
+            type: 'profile',
+            profileArn: AuthUtil.instance.regionProfileManager.activeRegionProfile?.arn,
+        })
+
+        await pushConfigUpdate(languageClient, {
+            type: 'customization',
+            customization: getSelectedCustomization(),
+        })
+    }
 
     const provider = new AmazonQChatViewProvider(mynahUIPath)
 
@@ -76,10 +81,6 @@ export async function activate(languageClient: LanguageClient, encryptionKey: Bu
 
     disposables.push(
         AuthUtil.instance.regionProfileManager.onDidChangeRegionProfile(async () => {
-            void pushConfigUpdate(languageClient, {
-                type: 'profile',
-                profileArn: AuthUtil.instance.regionProfileManager.activeRegionProfile?.arn,
-            })
             await provider.refreshWebview()
         }),
         Commands.register('aws.amazonq.updateCustomizations', () => {
