@@ -182,7 +182,7 @@ export async function startLanguageServer(
 
     // IMPORTANT: This sets up Auth and must be called before anything attempts to use it
     AuthUtil.create(new auth2.LanguageClientAuth(client, clientId, encryptionKey))
-  
+
     // Migrate SSO connections from old Auth to the LSP identity server
     // This function only migrates connections once
     // This call can be removed once all/most users have updated to the latest AmazonQ version
@@ -191,7 +191,7 @@ export async function startLanguageServer(
     } catch (e) {
         getLogger().error(`Error while migration SSO connection to Amazon Q LSP: ${e}`)
     }
-  
+
     // Ideally this would be part of AuthUtil.create() as it restores the existing Auth connection
     // but the SSO connection migration delays this call
     await AuthUtil.instance.restore()
