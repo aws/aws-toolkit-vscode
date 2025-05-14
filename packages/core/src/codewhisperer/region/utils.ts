@@ -7,7 +7,6 @@ const localize = nls.loadMessageBundle()
 import { AmazonQPromptSettings } from '../../shared/settings'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import vscode from 'vscode'
-import { selectRegionProfileCommand } from '../commands/basicCommands'
 import { placeholder } from '../../shared/vscode/commands2'
 import { toastMessage } from '../commands/types'
 
@@ -36,7 +35,7 @@ export async function notifySelectDeveloperProfile() {
                 if (resp === selectProfile) {
                     // Show Profile
                     telemetry.record({ action: 'select' })
-                    void selectRegionProfileCommand.execute(placeholder, toastMessage)
+                    void vscode.commands.executeCommand('aws.amazonq.selectRegionProfile', placeholder, toastMessage)
                 } else if (resp === dontShowAgain) {
                     telemetry.record({ action: 'dontShowAgain' })
                     await settings.disablePrompt(suppressId)

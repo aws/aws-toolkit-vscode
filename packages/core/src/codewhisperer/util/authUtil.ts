@@ -38,6 +38,8 @@ import { RegionProfileManager } from '../region/regionProfileManager'
 import { AuthFormId } from '../../login/webview/vue/types'
 import { getEnvironmentSpecificMemento } from '../../shared/utilities/mementos'
 import { getCacheDir, getRegistrationCacheFile, getTokenCacheFile } from '../../auth/sso/cache'
+import { notifySelectDeveloperProfile } from '../region/utils'
+import { once } from '../../shared/utilities/functionUtils'
 
 const localize = nls.loadMessageBundle()
 
@@ -99,9 +101,31 @@ export class AuthUtil implements IAuthProvider {
         return this.session.loginType === LoginTypes.SSO
     }
 
+    /**
+     * HACK: Ideally we'd put {@link notifySelectDeveloperProfile} in to {@link restore}.
+     *       But because {@link refreshState} is only called if !isConnected, we cannot do it since
+     *       {@link notifySelectDeveloperProfile} needs {@link refreshState} to run so it can set
+     *       the Bearer Token in the LSP first.
+     */
+    didStartSignedIn = false
+
     async restore() {
         await this.session.restore()
-        if (!this.isConnected()) {
+        this.didStartSignedIn = this.isConnected()
+
+        // HACK: We noticed that if calling `refreshState()` here when the user was already signed in, something broke.
+        //       So as a solution we only call it if they were not already signed in.
+        //
+        //       But in the case where a user was already signed in, we allow `session.restore()` to trigger `refreshState()` through
+        //       event emitters.
+        //       This is unoptimal since `refreshState()` should be able to be called multiple times and still work.
+        //
+        //       Because of this edge case, when `restore()` is called we cannot assume all Auth is setup when this function returns,
+        //       since we may still be waiting on the event emitter to trigger the expected functions.
+        //
+        //       TODO: Figure out why removing the if statement below causes things to break. Maybe we just need to
+        //             promisify the call and any subsequent callers will not make a redundant call.
+        if (!this.didStartSignedIn) {
             await this.refreshState()
         }
     }
@@ -265,19 +289,23 @@ export class AuthUtil implements IAuthProvider {
 
     private async refreshState(state = this.getAuthState()) {
         if (state === 'expired' || state === 'notConnected') {
+            this.lspAuth.deleteBearerToken()
             if (this.isIdcConnection()) {
                 await this.regionProfileManager.invalidateProfile(this.regionProfileManager.activeRegionProfile?.arn)
                 await this.regionProfileManager.clearCache()
             }
-            this.lspAuth.deleteBearerToken()
         }
         if (state === 'connected') {
+            const bearerTokenParams = (await this.session.getToken()).updateCredentialsParams
+            await this.lspAuth.updateBearerToken(bearerTokenParams)
+
             if (this.isIdcConnection()) {
                 await this.regionProfileManager.restoreProfileSelection()
             }
-            const bearerTokenParams = (await this.session.getToken()).updateCredentialsParams
-            await this.lspAuth.updateBearerToken(bearerTokenParams)
         }
+
+        // regardless of state, send message at startup if user needs to select a Developer Profile
+        void this.tryNotifySelectDeveloperProfile()
 
         vsCodeState.isFreeTierLimitReached = false
         await this.setVscodeContextProps(state)
@@ -290,6 +318,12 @@ export class AuthUtil implements IAuthProvider {
             void vscode.commands.executeCommand('aws.amazonq.notifyNewCustomizations')
         }
     }
+
+    private tryNotifySelectDeveloperProfile = once(async () => {
+        if (this.regionProfileManager.requireProfileSelection() && this.didStartSignedIn) {
+            await notifySelectDeveloperProfile()
+        }
+    })
 
     async getTelemetryMetadata(): Promise<TelemetryMetadata> {
         if (!this.isConnected()) {
