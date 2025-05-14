@@ -4,7 +4,6 @@
  */
 
 import * as vscode from 'vscode'
-import { References } from '../client/codewhisperer'
 import { LicenseUtil } from '../util/licenseUtil'
 import * as CodeWhispererConstants from '../models/constants'
 import { CodeWhispererSettings } from '../util/codewhispererSettings'
@@ -13,6 +12,7 @@ import { AuthUtil } from '../util/authUtil'
 import { session } from '../util/codeWhispererSession'
 import CodeWhispererClient from '../client/codewhispererclient'
 import CodeWhispererUserClient from '../client/codewhispereruserclient'
+import { InlineCompletionItemWithReferences } from '@aws/language-server-runtimes-types'
 
 export class ReferenceLogViewProvider implements vscode.WebviewViewProvider {
     public static readonly viewType = 'aws.codeWhisperer.referenceLog'
@@ -54,15 +54,20 @@ export class ReferenceLogViewProvider implements vscode.WebviewViewProvider {
         }
     }
 
-    public static getReferenceLog(recommendation: string, references: References, editor: vscode.TextEditor): string {
+    public static getReferenceLog(recommendation: string, references: Reference[], editor: vscode.TextEditor): string {
         const filePath = editor.document.uri.path
         const time = new Date().toLocaleString()
         let text = ``
         for (const reference of references) {
-            const { start, end } = getReferenceSpan(reference)
-            if (start === undefined || end === undefined) {
+            const standardReference = toStandardReference(reference)
+            if (
+                standardReference.position === undefined ||
+                standardReference.position.start === undefined ||
+                standardReference.position.end === undefined
+            ) {
                 continue
             }
+            const { start, end } = standardReference.position
             const code = recommendation.substring(start, end)
             const firstCharLineNumber = editor.document.positionAt(session.startCursorOffset + start).line + 1
             const lastCharLineNumber = editor.document.positionAt(session.startCursorOffset + end - 1).line + 1
@@ -76,11 +81,11 @@ export class ReferenceLogViewProvider implements vscode.WebviewViewProvider {
                 text += `And `
             }
 
-            let license = `<a href=${LicenseUtil.getLicenseHtml(reference.licenseName)}>${reference.licenseName}</a>`
-            let repository = reference.repository?.length ? reference.repository : 'unknown'
-            if (reference.url?.length) {
-                repository = `<a href=${reference.url}>${reference.repository}</a>`
-                license = `<b><i>${reference.licenseName || 'unknown'}</i></b>`
+            let license = `<a href=${LicenseUtil.getLicenseHtml(standardReference.licenseName)}>${standardReference.licenseName}</a>`
+            let repository = standardReference.repository?.length ? standardReference.repository : 'unknown'
+            if (standardReference.url?.length) {
+                repository = `<a href=${standardReference.url}>${standardReference.repository}</a>`
+                license = `<b><i>${standardReference.licenseName || 'unknown'}</i></b>`
             }
 
             text +=
@@ -137,18 +142,47 @@ export class ReferenceLogViewProvider implements vscode.WebviewViewProvider {
     }
 }
 
-function getReferenceSpan(ref: CodeWhispererClient.Reference | CodeWhispererUserClient.Reference): {
-    start?: number
-    end?: number
-} {
-    // TODO: this cast shouldn't be necessary, perhaps client is out of date?
-    const castRef = ref as typeof ref & {
-        position?: {
-            startCharacter: number
-            endCharacter: number
+/**
+ * Reference log needs to support references directly from CW, as well as those from Flare. These references have different shapes, so we standarize them here.
+ */
+type GetInnerType<T> = T extends (infer U)[] ? U : never
+type Reference =
+    | CodeWhispererClient.Reference
+    | CodeWhispererUserClient.Reference
+    | GetInnerType<InlineCompletionItemWithReferences['references']>
+
+type StandardizedReference = {
+    licenseName?: string
+    position?: {
+        start?: number
+        end?: number
+    }
+    repository?: string
+    url?: string
+}
+
+/**
+ * Convert a general reference to the standardized format expected by the reference log.
+ * @param ref
+ * @returns
+ */
+function toStandardReference(ref: Reference): StandardizedReference {
+    const isCWReference = (ref: any) => ref.recommendationContentSpan !== undefined
+
+    if (isCWReference(ref)) {
+        const castRef = ref as CodeWhispererClient.Reference
+        return {
+            licenseName: castRef.licenseName!,
+            position: { start: castRef.recommendationContentSpan?.start, end: castRef.recommendationContentSpan?.end },
+            repository: castRef.repository,
+            url: castRef.url,
         }
     }
-    return ref.recommendationContentSpan
-        ? { start: ref.recommendationContentSpan.start, end: ref.recommendationContentSpan.end }
-        : { start: castRef.position?.startCharacter, end: castRef.position?.endCharacter }
+    const castRef = ref as GetInnerType<InlineCompletionItemWithReferences['references']>
+    return {
+        licenseName: castRef.licenseName,
+        position: { start: castRef.position?.startCharacter, end: castRef.position?.endCharacter },
+        repository: castRef.referenceName,
+        url: castRef.referenceUrl,
+    }
 }
