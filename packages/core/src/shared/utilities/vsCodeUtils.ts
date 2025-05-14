@@ -215,8 +215,11 @@ export function reloadWindowPrompt(message: string): void {
  * if user dismisses the vscode confirmation prompt.
  */
 export async function openUrl(url: vscode.Uri, source?: string): Promise<boolean> {
+    // Avoid PII in URL.
+    const truncatedUrl = `${url.scheme}${url.authority}${url.path}${url.fragment.substring(20)}`
+
     return telemetry.aws_openUrl.run(async (span) => {
-        span.record({ url: url.toString(), source })
+        span.record({ url: truncatedUrl, source })
         const didOpen = await vscode.env.openExternal(url)
         if (!didOpen) {
             throw new CancellationError('user')
