@@ -1,0 +1,14 @@
+{
+	"date": "2025-05-14",
+	"version": "1.67.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Previous and subsequent cells are used as context for completion in a Jupyter notebook"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Support chat in AL2 aarch64"
+		}
+	]
+}
