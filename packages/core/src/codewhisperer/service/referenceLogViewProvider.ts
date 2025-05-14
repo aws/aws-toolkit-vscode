@@ -11,6 +11,8 @@ import { CodeWhispererSettings } from '../util/codewhispererSettings'
 import globals from '../../shared/extensionGlobals'
 import { AuthUtil } from '../util/authUtil'
 import { session } from '../util/codeWhispererSession'
+import CodeWhispererClient from '../client/codewhispererclient'
+import CodeWhispererUserClient from '../client/codewhispereruserclient'
 
 export class ReferenceLogViewProvider implements vscode.WebviewViewProvider {
     public static readonly viewType = 'aws.codeWhisperer.referenceLog'
@@ -57,23 +59,13 @@ export class ReferenceLogViewProvider implements vscode.WebviewViewProvider {
         const time = new Date().toLocaleString()
         let text = ``
         for (const reference of references) {
-            if (
-                reference.recommendationContentSpan === undefined ||
-                reference.recommendationContentSpan.start === undefined ||
-                reference.recommendationContentSpan.end === undefined
-            ) {
+            const { start, end } = getReferenceSpan(reference)
+            if (start === undefined || end === undefined) {
                 continue
             }
-            const code = recommendation.substring(
-                reference.recommendationContentSpan.start,
-                reference.recommendationContentSpan.end
-            )
-            const firstCharLineNumber =
-                editor.document.positionAt(session.startCursorOffset + reference.recommendationContentSpan.start).line +
-                1
-            const lastCharLineNumber =
-                editor.document.positionAt(session.startCursorOffset + reference.recommendationContentSpan.end - 1)
-                    .line + 1
+            const code = recommendation.substring(start, end)
+            const firstCharLineNumber = editor.document.positionAt(session.startCursorOffset + start).line + 1
+            const lastCharLineNumber = editor.document.positionAt(session.startCursorOffset + end - 1).line + 1
             let lineInfo = ``
             if (firstCharLineNumber === lastCharLineNumber) {
                 lineInfo = `(line at ${firstCharLineNumber})`
@@ -143,4 +135,20 @@ export class ReferenceLogViewProvider implements vscode.WebviewViewProvider {
             </body>
             </html>`
     }
+}
+
+function getReferenceSpan(ref: CodeWhispererClient.Reference | CodeWhispererUserClient.Reference): {
+    start?: number
+    end?: number
+} {
+    // TODO: this cast shouldn't be necessary, perhaps client is out of date?
+    const castRef = ref as typeof ref & {
+        position?: {
+            startCharacter: number
+            endCharacter: number
+        }
+    }
+    return ref.recommendationContentSpan
+        ? { start: ref.recommendationContentSpan.start, end: ref.recommendationContentSpan.end }
+        : { start: castRef.position?.startCharacter, end: castRef.position?.endCharacter }
 }
