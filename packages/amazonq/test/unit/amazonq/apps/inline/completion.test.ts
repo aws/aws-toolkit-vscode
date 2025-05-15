@@ -29,7 +29,6 @@ import {
 import { InlineGeneratingMessage } from '../../../../../src/app/inline/inlineGeneratingMessage'
 import { LineTracker } from '../../../../../src/app/inline/stateTracker/lineTracker'
 import { InlineTutorialAnnotation } from '../../../../../src/app/inline/tutorials/inlineTutorialAnnotation'
-import { waitUntil } from 'aws-core-vscode/shared'
 
 describe('InlineCompletionManager', () => {
     let manager: InlineCompletionManager
@@ -420,20 +419,19 @@ describe('InlineCompletionManager', () => {
                         true
                     )
                     getActiveRecommendationStub.returns([])
-                    let messageShown = false
-                    getTestWindow().onDidShowMessage((e) => {
-                        assert.strictEqual(e.message, noInlineSuggestionsMsg)
-                        messageShown = true
-                    })
+                    const messageShown = new Promise((resolve) =>
+                        getTestWindow().onDidShowMessage((e) => {
+                            assert.strictEqual(e.message, noInlineSuggestionsMsg)
+                            resolve(true)
+                        })
+                    )
                     await provider.provideInlineCompletionItems(
                         mockDocument,
                         mockPosition,
                         { triggerKind: InlineCompletionTriggerKind.Invoke, selectedCompletionInfo: undefined },
                         mockToken
                     )
-                    // Wait up to a second for message to appear since there is potential race condition.
-                    await waitUntil(async () => messageShown, { timeout: 1000, interval: 100 })
-                    assert.ok(messageShown)
+                    await messageShown
                 })
             describe('debounce behavior', function () {
                 let clock: ReturnType<typeof installFakeClock>
