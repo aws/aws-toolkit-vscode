@@ -173,7 +173,6 @@ export async function startLanguageServer(
 
     const disposable = client.start()
     toDispose.push(disposable)
-    await client.onReady()
 
     await client.onReady()
 
