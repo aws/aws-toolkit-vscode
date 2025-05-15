@@ -688,13 +688,17 @@ export class GumbyController {
                 const pathToJavaHome = extractPath(data.message)
                 if (pathToJavaHome) {
                     transformByQState.setSourceJavaHome(pathToJavaHome)
+                    // TO-DO: delete line below and comment block below when releasing CSB
+                    await this.prepareLanguageUpgradeProject(data.tabID)
                     // if source and target JDK versions are the same, just re-use the source JAVA_HOME and start the build
+                    /*
                     if (transformByQState.getTargetJDKVersion() === transformByQState.getSourceJDKVersion()) {
                         transformByQState.setTargetJavaHome(pathToJavaHome)
                         await this.prepareLanguageUpgradeProject(data.tabID)
                     } else {
                         this.promptJavaHome('target', data.tabID)
                     }
+                    */
                 } else {
                     this.messenger.sendUnrecoverableErrorResponse('invalid-java-home', data.tabID)
                 }
