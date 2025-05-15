@@ -3,15 +3,25 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import sinon from 'sinon'
-import { CancellationToken, commands, InlineCompletionItem, languages, Position, window, Range } from 'vscode'
+import {
+    CancellationToken,
+    commands,
+    InlineCompletionItem,
+    languages,
+    Position,
+    window,
+    Range,
+    InlineCompletionTriggerKind,
+} from 'vscode'
 import assert from 'assert'
 import { LanguageClient } from 'vscode-languageclient'
 import { StringValue } from 'vscode-languageserver-types'
 import { AmazonQInlineCompletionItemProvider, InlineCompletionManager } from '../../../../../src/app/inline/completion'
 import { RecommendationService } from '../../../../../src/app/inline/recommendationService'
 import { SessionManager } from '../../../../../src/app/inline/sessionManager'
-import { createMockDocument, createMockTextEditor, installFakeClock } from 'aws-core-vscode/test'
+import { createMockDocument, createMockTextEditor, getTestWindow, installFakeClock } from 'aws-core-vscode/test'
 import {
+    noSuggestions,
     ReferenceHoverProvider,
     ReferenceInlineProvider,
     ReferenceLogViewProvider,
@@ -19,6 +29,7 @@ import {
 import { InlineGeneratingMessage } from '../../../../../src/app/inline/inlineGeneratingMessage'
 import { LineTracker } from '../../../../../src/app/inline/stateTracker/lineTracker'
 import { InlineTutorialAnnotation } from '../../../../../src/app/inline/tutorials/inlineTutorialAnnotation'
+import { waitUntil } from 'aws-core-vscode/shared'
 
 describe('InlineCompletionManager', () => {
     let manager: InlineCompletionManager
@@ -400,57 +411,71 @@ describe('InlineCompletionManager', () => {
 
                     assert.strictEqual(result[0].insertText, expectedText)
                 }),
-                describe('debounce behavior', function () {
-                    let clock: ReturnType<typeof installFakeClock>
-
-                    beforeEach(function () {
-                        clock = installFakeClock()
+                it('shows message to user when manual invoke fails to produce results', async function () {
+                    provider = new AmazonQInlineCompletionItemProvider(
+                        languageClient,
+                        recommendationService,
+                        mockSessionManager,
+                        inlineTutorialAnnotation,
+                        true
+                    )
+                    getActiveRecommendationStub.returns([])
+                    let messageShown = false
+                    getTestWindow().onDidShowMessage((e) => {
+                        assert.strictEqual(e.message, noSuggestions)
+                        messageShown = true
                     })
-
-                    after(function () {
-                        clock.uninstall()
-                    })
-
-                    it('should only trigger once on rapid events', async () => {
-                        provider = new AmazonQInlineCompletionItemProvider(
-                            languageClient,
-                            recommendationService,
-                            mockSessionManager,
-                            inlineTutorialAnnotation,
-                            false
-                        )
-                        const p1 = provider.provideInlineCompletionItems(
-                            mockDocument,
-                            mockPosition,
-                            mockContext,
-                            mockToken
-                        )
-                        const p2 = provider.provideInlineCompletionItems(
-                            mockDocument,
-                            mockPosition,
-                            mockContext,
-                            mockToken
-                        )
-                        const p3 = provider.provideInlineCompletionItems(
-                            mockDocument,
-                            new Position(2, 2),
-                            mockContext,
-                            mockToken
-                        )
-
-                        await clock.tickAsync(1000)
-
-                        // All promises should be the same object when debounced properly.
-                        assert.strictEqual(p1, p2)
-                        assert.strictEqual(p1, p3)
-                        await p1
-                        await p2
-                        const r3 = await p3
-
-                        // calls the function with the latest provided args.
-                        assert.deepStrictEqual((r3 as InlineCompletionItem[])[0].range?.end, new Position(2, 2))
-                    })
+                    await provider.provideInlineCompletionItems(
+                        mockDocument,
+                        mockPosition,
+                        { triggerKind: InlineCompletionTriggerKind.Invoke, selectedCompletionInfo: undefined },
+                        mockToken
+                    )
+                    // Wait up to a second for message to appear since there is potential race condition.
+                    await waitUntil(async () => messageShown, { timeout: 1000, interval: 100 })
+                    assert.ok(messageShown)
                 })
+            describe('debounce behavior', function () {
+                let clock: ReturnType<typeof installFakeClock>
+
+                beforeEach(function () {
+                    clock = installFakeClock()
+                })
+
+                after(function () {
+                    clock.uninstall()
+                })
+
+                it('should only trigger once on rapid events', async () => {
+                    provider = new AmazonQInlineCompletionItemProvider(
+                        languageClient,
+                        recommendationService,
+                        mockSessionManager,
+                        inlineTutorialAnnotation,
+                        false
+                    )
+                    const p1 = provider.provideInlineCompletionItems(mockDocument, mockPosition, mockContext, mockToken)
+                    const p2 = provider.provideInlineCompletionItems(mockDocument, mockPosition, mockContext, mockToken)
+                    const p3 = provider.provideInlineCompletionItems(
+                        mockDocument,
+                        new Position(2, 2),
+                        mockContext,
+                        mockToken
+                    )
+
+                    await clock.tickAsync(1000)
+
+                    // All promises should be the same object when debounced properly.
+                    assert.strictEqual(p1, p2)
+                    assert.strictEqual(p1, p3)
+                    await p1
+                    await p2
+                    const r3 = await p3
+
+                    // calls the function with the latest provided args.
+                    assert.deepStrictEqual((r3 as InlineCompletionItem[])[0].range?.end, new Position(2, 2))
+                })
+            })
         })
     })
 })
