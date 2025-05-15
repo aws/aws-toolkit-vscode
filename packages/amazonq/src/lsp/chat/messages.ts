@@ -38,9 +38,6 @@ import {
     ShowSaveFileDialogParams,
     LSPErrorCodes,
     tabBarActionRequestType,
-    ShowDocumentParams,
-    ShowDocumentResult,
-    ShowDocumentRequest,
     contextCommandsNotificationType,
     ContextCommandParams,
     openFileDiffNotificationType,
@@ -179,7 +176,7 @@ export function registerMessageListeners(
 
                 if (fullAuthTypes.includes(authType)) {
                     try {
-                        await AuthUtil.instance.secondaryAuth.deleteConnection()
+                        await AuthUtil.instance.logout()
                     } catch (e) {
                         languageClient.error(
                             `[VSCode Client] Failed to authenticate after AUTH_FOLLOW_UP_CLICKED: ${(e as Error).message}`
@@ -427,23 +424,6 @@ export function registerMessageListeners(
             targetUri: targetUri.toString(),
         }
     })
-
-    languageClient.onRequest<ShowDocumentParams, ShowDocumentResult>(
-        ShowDocumentRequest.method,
-        async (params: ShowDocumentParams): Promise<ShowDocumentParams | ResponseError<ShowDocumentResult>> => {
-            try {
-                const uri = vscode.Uri.parse(params.uri)
-                const doc = await vscode.workspace.openTextDocument(uri)
-                await vscode.window.showTextDocument(doc, { preview: false })
-                return params
-            } catch (e) {
-                return new ResponseError(
-                    LSPErrorCodes.RequestFailed,
-                    `Failed to open document: ${(e as Error).message}`
-                )
-            }
-        }
-    )
 
     languageClient.onNotification(contextCommandsNotificationType.method, (params: ContextCommandParams) => {
         void provider.webview?.postMessage({

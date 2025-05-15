@@ -83,7 +83,7 @@ describe('SsoAccessTokenProvider', function () {
         tempDir = await makeTemporaryTokenCacheFolder()
         cache = getCache(tempDir)
         reAuthState = new TestReAuthState()
-        sut = SsoAccessTokenProvider.create({ region, startUrl }, cache, oidcClient, reAuthState, () => true)
+        sut = SsoAccessTokenProvider.create({ region, startUrl }, cache, oidcClient, reAuthState)
     })
 
     afterEach(async function () {
@@ -271,13 +271,7 @@ describe('SsoAccessTokenProvider', function () {
             await sut.createToken()
 
             // Mimic when we sign out then in again with the same region+startUrl. The ID is the only thing different.
-            sut = SsoAccessTokenProvider.create(
-                { region, startUrl, identifier: 'bbb' },
-                cache,
-                oidcClient,
-                reAuthState,
-                () => true
-            )
+            sut = SsoAccessTokenProvider.create({ region, startUrl, identifier: 'bbb' }, cache, oidcClient, reAuthState)
             await sut.createToken()
 
             assertTelemetry('aws_loginWithBrowser', [

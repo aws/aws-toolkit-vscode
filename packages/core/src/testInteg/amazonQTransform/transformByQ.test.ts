@@ -13,18 +13,16 @@ import request from '../../shared/request'
 import { transformByQState, ZipManifest } from '../../codewhisperer/models/model'
 import globals from '../../shared/extensionGlobals'
 import { fs } from '../../shared'
-import { setValidConnection } from '../../testE2E/util/connection'
+import { AuthUtil } from '../../codewhisperer/util/authUtil'
 
 describe('transformByQ', async function () {
     let tempDir = ''
     let tempFileName = ''
     let tempFilePath = ''
     let zippedCodePath = ''
-    let validConnection: boolean
 
     before(async function () {
-        validConnection = await setValidConnection()
-        if (!validConnection) {
+        if (!AuthUtil.instance.isConnected()) {
             this.skip()
         }
         tempDir = path.join(os.tmpdir(), 'gumby-test')

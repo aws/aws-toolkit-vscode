@@ -7,41 +7,37 @@ import * as sinon from 'sinon'
 import assert, { fail } from 'assert'
 import { AuthUtil, RegionProfile, RegionProfileManager, defaultServiceConfig } from 'aws-core-vscode/codewhisperer'
 import { globals } from 'aws-core-vscode/shared'
-import { createTestAuth } from 'aws-core-vscode/test'
-import { SsoConnection } from 'aws-core-vscode/auth'
+import { constants } from 'aws-core-vscode/auth'
+import { createTestAuthUtil } from 'aws-core-vscode/test'
 
 const enterpriseSsoStartUrl = 'https://enterprise.awsapps.com/start'
+const region = 'us-east-1'
 
-describe('RegionProfileManager', function () {
-    let sut: RegionProfileManager
-    let auth: ReturnType<typeof createTestAuth>
-    let authUtil: AuthUtil
+describe('RegionProfileManager', async function () {
+    let regionProfileManager: RegionProfileManager
 
     const profileFoo: RegionProfile = {
         name: 'foo',
-        region: 'us-east-1',
+        region,
         arn: 'foo arn',
         description: 'foo description',
     }
 
     async function setupConnection(type: 'builderId' | 'idc') {
         if (type === 'builderId') {
-            await authUtil.connectToAwsBuilderId()
-            const conn = authUtil.conn
-            assert.strictEqual(conn?.type, 'sso')
-            assert.strictEqual(conn.label, 'AWS Builder ID')
+            await AuthUtil.instance.login(constants.builderIdStartUrl, region)
+            assert.ok(AuthUtil.instance.isSsoSession())
+            assert.ok(AuthUtil.instance.isBuilderIdConnection())
         } else if (type === 'idc') {
-            await authUtil.connectToEnterpriseSso(enterpriseSsoStartUrl, 'us-east-1')
-            const conn = authUtil.conn
-            assert.strictEqual(conn?.type, 'sso')
-            assert.strictEqual(conn.label, 'IAM Identity Center (enterprise)')
+            await AuthUtil.instance.login(enterpriseSsoStartUrl, region)
+            assert.ok(AuthUtil.instance.isSsoSession())
+            assert.ok(AuthUtil.instance.isIdcConnection())
         }
     }
 
-    beforeEach(function () {
-        auth = createTestAuth(globals.globalState)
-        authUtil = new AuthUtil(auth)
-        sut = new RegionProfileManager(() => authUtil.conn)
+    beforeEach(async function () {
+        await createTestAuthUtil()
+        regionProfileManager = new RegionProfileManager(AuthUtil.instance)
     })
 
     afterEach(function () {
@@ -65,12 +61,12 @@ describe('RegionProfileManager', function () {
             const mockClient = {
                 listAvailableProfiles: listProfilesStub,
             }
-            const createClientStub = sinon.stub(sut, '_createQClient').resolves(mockClient)
+            const createClientStub = sinon.stub(regionProfileManager, '_createQClient').resolves(mockClient)
 
-            const r = await sut.listRegionProfile()
+            const profileList = await regionProfileManager.listRegionProfile()
 
-            assert.strictEqual(r.length, 2)
-            assert.deepStrictEqual(r, [
+            assert.strictEqual(profileList.length, 2)
+            assert.deepStrictEqual(profileList, [
                 {
                     name: 'foo',
                     arn: 'arn',
@@ -93,41 +89,42 @@ describe('RegionProfileManager', function () {
     describe('switch and get profile', function () {
         it('should switch if connection is IdC', async function () {
             await setupConnection('idc')
-            await sut.switchRegionProfile(profileFoo, 'user')
-            assert.deepStrictEqual(sut.activeRegionProfile, profileFoo)
+            await regionProfileManager.switchRegionProfile(profileFoo, 'user')
+            assert.deepStrictEqual(regionProfileManager.activeRegionProfile, profileFoo)
         })
 
         it('should do nothing and return undefined if connection is builder id', async function () {
             await setupConnection('builderId')
-            await sut.switchRegionProfile(profileFoo, 'user')
-            assert.deepStrictEqual(sut.activeRegionProfile, undefined)
+            await regionProfileManager.switchRegionProfile(profileFoo, 'user')
+            assert.deepStrictEqual(regionProfileManager.activeRegionProfile, undefined)
         })
     })
 
     describe(`client config`, function () {
         it(`no valid credential should throw`, async function () {
-            assert.ok(authUtil.conn === undefined)
+            await AuthUtil.instance.logout()
+
+            assert.ok(!AuthUtil.instance.isConnected())
 
             assert.throws(() => {
-                sut.clientConfig
+                regionProfileManager.clientConfig
             }, /trying to get client configuration without credential/)
         })
 
         it(`builder id should always use default profile IAD`, async function () {
             await setupConnection('builderId')
-            await sut.switchRegionProfile(profileFoo, 'user')
-            assert.deepStrictEqual(sut.activeRegionProfile, undefined)
-            const conn = authUtil.conn
-            if (!conn) {
+            await regionProfileManager.switchRegionProfile(profileFoo, 'user')
+            assert.deepStrictEqual(regionProfileManager.activeRegionProfile, undefined)
+            if (!AuthUtil.instance.isConnected()) {
                 fail('connection should not be undefined')
             }
 
-            assert.deepStrictEqual(sut.clientConfig, defaultServiceConfig)
+            assert.deepStrictEqual(regionProfileManager.clientConfig, defaultServiceConfig)
         })
 
         it(`idc should return correct endpoint corresponding to profile region`, async function () {
             await setupConnection('idc')
-            await sut.switchRegionProfile(
+            await regionProfileManager.switchRegionProfile(
                 {
                     name: 'foo',
                     region: 'eu-central-1',
@@ -136,8 +133,8 @@ describe('RegionProfileManager', function () {
                 },
                 'user'
             )
-            assert.ok(sut.activeRegionProfile)
-            assert.deepStrictEqual(sut.clientConfig, {
+            assert.ok(regionProfileManager.activeRegionProfile)
+            assert.deepStrictEqual(regionProfileManager.clientConfig, {
                 region: 'eu-central-1',
                 endpoint: 'https://q.eu-central-1.amazonaws.com/',
             })
@@ -145,7 +142,7 @@ describe('RegionProfileManager', function () {
 
         it(`idc should throw if corresponding endpoint is not defined`, async function () {
             await setupConnection('idc')
-            await sut.switchRegionProfile(
+            await regionProfileManager.switchRegionProfile(
                 {
                     name: 'foo',
                     region: 'unknown region',
@@ -156,7 +153,7 @@ describe('RegionProfileManager', function () {
             )
 
             assert.throws(() => {
-                sut.clientConfig
+                regionProfileManager.clientConfig
             }, /Q client configuration error, endpoint not found for region*/)
         })
     })
@@ -164,14 +161,13 @@ describe('RegionProfileManager', function () {
     describe('persistence', function () {
         it('persistSelectedRegionProfile', async function () {
             await setupConnection('idc')
-            await sut.switchRegionProfile(profileFoo, 'user')
-            assert.deepStrictEqual(sut.activeRegionProfile, profileFoo)
-            const conn = authUtil.conn
-            if (!conn) {
+            await regionProfileManager.switchRegionProfile(profileFoo, 'user')
+            assert.deepStrictEqual(regionProfileManager.activeRegionProfile, profileFoo)
+            if (!AuthUtil.instance.isConnected()) {
                 fail('connection should not be undefined')
             }
 
-            await sut.persistSelectRegionProfile()
+            await regionProfileManager.persistSelectRegionProfile()
 
             const state = globals.globalState.tryGet<{ [label: string]: RegionProfile }>(
                 'aws.amazonq.regionProfiles',
@@ -179,25 +175,24 @@ describe('RegionProfileManager', function () {
                 {}
             )
 
-            assert.strictEqual(state[conn.id], profileFoo)
+            assert.strictEqual(state[AuthUtil.instance.profileName], profileFoo)
         })
 
         it(`restoreRegionProfile`, async function () {
-            sinon.stub(sut, 'listRegionProfile').resolves([profileFoo])
+            sinon.stub(regionProfileManager, 'listRegionProfile').resolves([profileFoo])
             await setupConnection('idc')
-            const conn = authUtil.conn
-            if (!conn) {
+            if (!AuthUtil.instance.isConnected()) {
                 fail('connection should not be undefined')
             }
 
             const state = {} as any
-            state[conn.id] = profileFoo
+            state[AuthUtil.instance.profileName] = profileFoo
 
             await globals.globalState.update('aws.amazonq.regionProfiles', state)
 
-            await sut.restoreRegionProfile(conn)
+            await regionProfileManager.restoreRegionProfile()
 
-            assert.strictEqual(sut.activeRegionProfile, profileFoo)
+            assert.strictEqual(regionProfileManager.activeRegionProfile, profileFoo)
         })
     })
 
@@ -205,25 +200,24 @@ describe('RegionProfileManager', function () {
         it('should reset activeProfile and global state', async function () {
             // setup
             await setupConnection('idc')
-            await sut.switchRegionProfile(profileFoo, 'user')
-            assert.deepStrictEqual(sut.activeRegionProfile, profileFoo)
-            const conn = authUtil.conn
-            if (!conn) {
+            await regionProfileManager.switchRegionProfile(profileFoo, 'user')
+            assert.deepStrictEqual(regionProfileManager.activeRegionProfile, profileFoo)
+            if (!AuthUtil.instance.isConnected()) {
                 fail('connection should not be undefined')
             }
-            await sut.persistSelectRegionProfile()
+            await regionProfileManager.persistSelectRegionProfile()
             const state = globals.globalState.tryGet<{ [label: string]: RegionProfile }>(
                 'aws.amazonq.regionProfiles',
                 Object,
                 {}
             )
-            assert.strictEqual(state[conn.id], profileFoo)
+            assert.strictEqual(state[AuthUtil.instance.profileName], profileFoo)
 
             // subject to test
-            await sut.invalidateProfile(profileFoo.arn)
+            await regionProfileManager.invalidateProfile(profileFoo.arn)
 
             // assertion
-            assert.strictEqual(sut.activeRegionProfile, undefined)
+            assert.strictEqual(regionProfileManager.activeRegionProfile, undefined)
             const actualGlobalState = globals.globalState.tryGet<{ [label: string]: RegionProfile }>(
                 'aws.amazonq.regionProfiles',
                 Object,
@@ -237,7 +231,7 @@ describe('RegionProfileManager', function () {
         it(`should configure the endpoint and region from a profile`, async function () {
             await setupConnection('idc')
 
-            const iadClient = await sut.createQClient({
+            const iadClient = await regionProfileManager.createQClient({
                 name: 'foo',
                 region: 'us-east-1',
                 arn: 'arn',
@@ -247,7 +241,7 @@ describe('RegionProfileManager', function () {
             assert.deepStrictEqual(iadClient.config.region, 'us-east-1')
             assert.deepStrictEqual(iadClient.endpoint.href, 'https://q.us-east-1.amazonaws.com/')
 
-            const fraClient = await sut.createQClient({
+            const fraClient = await regionProfileManager.createQClient({
                 name: 'bar',
                 region: 'eu-central-1',
                 arn: 'arn',
@@ -263,7 +257,7 @@ describe('RegionProfileManager', function () {
 
             await assert.rejects(
                 async () => {
-                    await sut.createQClient({
+                    await regionProfileManager.createQClient({
                         name: 'foo',
                         region: 'ap-east-1',
                         arn: 'arn',
@@ -275,7 +269,7 @@ describe('RegionProfileManager', function () {
 
             await assert.rejects(
                 async () => {
-                    await sut.createQClient({
+                    await regionProfileManager.createQClient({
                         name: 'foo',
                         region: 'unknown-somewhere',
                         arn: 'arn',
@@ -288,11 +282,10 @@ describe('RegionProfileManager', function () {
 
         it(`should configure the endpoint and region correspondingly`, async function () {
             await setupConnection('idc')
-            await sut.switchRegionProfile(profileFoo, 'user')
-            assert.deepStrictEqual(sut.activeRegionProfile, profileFoo)
-            const conn = authUtil.conn as SsoConnection
+            await regionProfileManager.switchRegionProfile(profileFoo, 'user')
+            assert.deepStrictEqual(regionProfileManager.activeRegionProfile, profileFoo)
 
-            const client = await sut._createQClient('eu-central-1', 'https://amazon.com/', conn)
+            const client = await regionProfileManager._createQClient('eu-central-1', 'https://amazon.com/')
 
             assert.deepStrictEqual(client.config.region, 'eu-central-1')
             assert.deepStrictEqual(client.endpoint.href, 'https://amazon.com/')

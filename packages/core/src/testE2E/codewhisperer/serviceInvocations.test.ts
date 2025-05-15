@@ -6,7 +6,7 @@
 import assert from 'assert'
 import * as vscode from 'vscode'
 import * as path from 'path'
-import { setValidConnection, skipTestIfNoValidConn } from '../util/connection'
+import { skipTestIfNoValidConn } from '../util/connection'
 import { ConfigurationEntry } from '../../codewhisperer/models/model'
 import * as codewhispererClient from '../../codewhisperer/client/codewhisperer'
 import { RecommendationHandler } from '../../codewhisperer/service/recommendationHandler'
@@ -20,6 +20,7 @@ import { sleep } from '../../shared/utilities/timeoutUtils'
 import { invokeRecommendation } from '../../codewhisperer/commands/invokeRecommendation'
 import { getTestWorkspaceFolder } from '../../testInteg/integrationTestsUtilities'
 import { session } from '../../codewhisperer/util/codeWhispererSession'
+import { AuthUtil } from '../../codewhisperer/util/authUtil'
 
 describe('CodeWhisperer service invocation', async function () {
     let validConnection: boolean
@@ -32,7 +33,7 @@ describe('CodeWhisperer service invocation', async function () {
     }
 
     before(async function () {
-        validConnection = await setValidConnection()
+        validConnection = AuthUtil.instance.isConnected()
     })
 
     beforeEach(function () {

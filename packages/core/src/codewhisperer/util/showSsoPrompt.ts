@@ -17,6 +17,7 @@ import { telemetry } from '../../shared/telemetry/telemetry'
 import { createBuilderIdItem, createSsoItem, createIamItem } from '../../auth/utils'
 import { Commands } from '../../shared/vscode/commands2'
 import { vsCodeState } from '../models/model'
+import { builderIdRegion, builderIdStartUrl } from '../../auth/sso/constants'
 
 export const showCodeWhispererConnectionPrompt = async () => {
     const items = [createBuilderIdItem(), createSsoItem(), createCodeWhispererIamItem()]
@@ -45,16 +46,13 @@ export const showCodeWhispererConnectionPrompt = async () => {
 
 export async function awsIdSignIn() {
     getLogger().info('selected AWS ID sign in')
-    let conn
     try {
-        conn = await AuthUtil.instance.connectToAwsBuilderId()
+        await AuthUtil.instance.login(builderIdStartUrl, builderIdRegion)
     } catch (e) {
         throw ToolkitError.chain(e, failedToConnectAwsBuilderId, { code: 'FailedToConnect' })
     }
     vsCodeState.isFreeTierLimitReached = false
     await Commands.tryExecute('aws.amazonq.enableCodeSuggestions')
-
-    return conn
 }
 
 export const createCodeWhispererIamItem = () => {

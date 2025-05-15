@@ -300,7 +300,7 @@ export async function getPresignedUrlAndUpload(
         span.record({
             amazonqUploadIntent: uploadIntent,
             amazonqRepositorySize: zipMetadata.srcPayloadSizeInBytes,
-            credentialStartUrl: AuthUtil.instance.startUrl,
+            credentialStartUrl: AuthUtil.instance.connection?.startUrl,
         })
         const srcReq: CreateUploadUrlRequest = {
             contentMd5: getMd5(zipMetadata.zipFilePath),

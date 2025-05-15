@@ -5,360 +5,205 @@
 
 import * as vscode from 'vscode'
 import * as localizedText from '../../shared/localizedText'
-import { Auth } from '../../auth/auth'
-import { ToolkitError, isNetworkError, tryRun } from '../../shared/errors'
-import { getSecondaryAuth, setScopes } from '../../auth/secondaryAuth'
-import { isSageMaker } from '../../shared/extensionUtilities'
+import * as nls from 'vscode-nls'
+import { fs } from '../../shared/fs/fs'
+import * as path from 'path'
+import * as crypto from 'crypto'
+import { ToolkitError } from '../../shared/errors'
 import { AmazonQPromptSettings } from '../../shared/settings'
 import {
     scopesCodeWhispererCore,
-    createBuilderIdProfile,
-    hasScopes,
-    SsoConnection,
-    createSsoProfile,
-    Connection,
-    isIamConnection,
-    isSsoConnection,
-    isBuilderIdConnection,
     scopesCodeWhispererChat,
     scopesFeatureDev,
     scopesGumby,
-    isIdcSsoConnection,
+    TelemetryMetadata,
+    scopesSsoAccountAccess,
+    hasScopes,
+    SsoProfile,
+    StoredProfile,
     hasExactScopes,
-    getTelemetryMetadataForConn,
-    ProfileNotFoundError,
 } from '../../auth/connection'
 import { getLogger } from '../../shared/logger/logger'
-import { Commands, placeholder } from '../../shared/vscode/commands2'
+import { Commands } from '../../shared/vscode/commands2'
 import { vsCodeState } from '../models/model'
-import { onceChanged, once } from '../../shared/utilities/functionUtils'
-import { indent } from '../../shared/utilities/textUtilities'
 import { showReauthenticateMessage } from '../../shared/utilities/messages'
 import { showAmazonQWalkthroughOnce } from '../../amazonq/onboardingPage/walkthrough'
 import { setContext } from '../../shared/vscode/setContext'
-import { isInDevEnv } from '../../shared/vscode/env'
 import { openUrl } from '../../shared/utilities/vsCodeUtils'
-import * as nls from 'vscode-nls'
-const localize = nls.loadMessageBundle()
 import { telemetry } from '../../shared/telemetry/telemetry'
-import { asStringifiedStack } from '../../shared/telemetry/spans'
-import { withTelemetryContext } from '../../shared/telemetry/util'
-import { focusAmazonQPanel } from '../../codewhispererChat/commands/registerCommands'
-import { throttle } from 'lodash'
+import { AuthStateEvent, LanguageClientAuth, LoginTypes, SsoLogin } from '../../auth/auth2'
+import { builderIdStartUrl, internalStartUrl } from '../../auth/sso/constants'
+import { VSCODE_EXTENSION_ID } from '../../shared/extensions'
 import { RegionProfileManager } from '../region/regionProfileManager'
+import { AuthFormId } from '../../login/webview/vue/types'
+import { getEnvironmentSpecificMemento } from '../../shared/utilities/mementos'
+import { getCacheDir, getRegistrationCacheFile, getTokenCacheFile } from '../../auth/sso/cache'
+import { notifySelectDeveloperProfile } from '../region/utils'
+import { once } from '../../shared/utilities/functionUtils'
+
+const localize = nls.loadMessageBundle()
 
 /** Backwards compatibility for connections w pre-chat scopes */
 export const codeWhispererCoreScopes = [...scopesCodeWhispererCore]
 export const codeWhispererChatScopes = [...codeWhispererCoreScopes, ...scopesCodeWhispererChat]
 export const amazonQScopes = [...codeWhispererChatScopes, ...scopesGumby, ...scopesFeatureDev]
 
+/** AuthProvider interface for the auth functionality needed by RegionProfileManager  */
+export interface IAuthProvider {
+    isConnected(): boolean
+    isBuilderIdConnection(): boolean
+    isIdcConnection(): boolean
+    isSsoSession(): boolean
+    getToken(): Promise<string>
+    readonly profileName: string
+    readonly connection?: { region: string; startUrl: string }
+}
+
 /**
- * "Core" are the CW scopes that existed before the addition of new scopes
- * for Amazon Q.
+ * Handles authentication within Amazon Q.
+ * Amazon Q only supports a single connection at a time.
  */
-export const isValidCodeWhispererCoreConnection = (conn?: Connection): conn is Connection => {
-    return (
-        (isSageMaker() && isIamConnection(conn)) || (isSsoConnection(conn) && hasScopes(conn, codeWhispererCoreScopes))
-    )
-}
-/** Superset that includes all of CodeWhisperer + Amazon Q */
-export const isValidAmazonQConnection = (conn?: Connection): conn is Connection => {
-    return (
-        (isSageMaker() && isIamConnection(conn)) ||
-        ((isSsoConnection(conn) || isBuilderIdConnection(conn)) &&
-            isValidCodeWhispererCoreConnection(conn) &&
-            hasScopes(conn, amazonQScopes))
-    )
-}
+export class AuthUtil implements IAuthProvider {
+    public readonly profileName = VSCODE_EXTENSION_ID.amazonq
+    public readonly regionProfileManager: RegionProfileManager
 
-const authClassName = 'AuthQ'
+    // IAM login currently not supported
+    private session: SsoLogin
 
-export class AuthUtil {
+    static create(lspAuth: LanguageClientAuth) {
+        return (this.#instance ??= new this(lspAuth))
+    }
+
     static #instance: AuthUtil
-    protected static readonly logIfChanged = onceChanged((s: string) => getLogger().info(s))
-
-    private reauthenticatePromptShown: boolean = false
-    private _isCustomizationFeatureEnabled: boolean = false
-
-    // user should only see that screen once.
-    // TODO: move to memento
-    public hasAlreadySeenMigrationAuthScreen: boolean = false
-
-    public get isCustomizationFeatureEnabled(): boolean {
-        return this._isCustomizationFeatureEnabled
-    }
-
-    // This boolean controls whether the Select Customization node will be visible. A change to this value
-    // means that the old UX was wrong and must refresh the devTool tree.
-    public set isCustomizationFeatureEnabled(value: boolean) {
-        if (this._isCustomizationFeatureEnabled === value) {
-            return
+    public static get instance() {
+        if (!this.#instance) {
+            throw new ToolkitError('AuthUtil not ready. Was it initialized with a running LSP?')
         }
-        this._isCustomizationFeatureEnabled = value
-        void Commands.tryExecute('aws.amazonq.refreshStatusBar')
+        return this.#instance
     }
 
-    public readonly secondaryAuth = getSecondaryAuth(
-        this.auth,
-        'codewhisperer',
-        'Amazon Q',
-        isValidCodeWhispererCoreConnection
-    )
-    public readonly restore = () => this.secondaryAuth.restoreConnection()
+    private constructor(private readonly lspAuth: LanguageClientAuth) {
+        this.session = new SsoLogin(this.profileName, this.lspAuth)
+        this.onDidChangeConnectionState((e: AuthStateEvent) => this.stateChangeHandler(e))
 
-    public constructor(
-        public readonly auth = Auth.instance,
-        public readonly regionProfileManager = new RegionProfileManager(() => this.conn)
-    ) {}
-
-    public initCodeWhispererHooks = once(() => {
-        this.auth.onDidChangeConnectionState(async (e) => {
-            getLogger().info(`codewhisperer: connection changed to ${e.state}: ${e.id}`)
-            if (e.state !== 'authenticating') {
-                await this.refreshCodeWhisperer()
-            }
-
-            await this.setVscodeContextProps()
-        })
-
-        this.secondaryAuth.onDidChangeActiveConnection(async () => {
-            getLogger().info(`codewhisperer: active connection changed`)
-            if (this.isValidEnterpriseSsoInUse()) {
-                void vscode.commands.executeCommand('aws.amazonq.notifyNewCustomizations')
-                await this.regionProfileManager.restoreProfileSelection()
-            }
-            vsCodeState.isFreeTierLimitReached = false
-            await Promise.all([
-                // onDidChangeActiveConnection may trigger before these modules are activated.
-                Commands.tryExecute('aws.amazonq.refreshStatusBar'),
-                Commands.tryExecute('aws.amazonq.updateReferenceLog'),
-            ])
-
-            await this.setVscodeContextProps()
-
-            // To check valid connection
-            if (this.isValidEnterpriseSsoInUse() || (this.isBuilderIdInUse() && !this.isConnectionExpired())) {
-                await showAmazonQWalkthroughOnce()
-            }
-
-            if (!this.isConnected()) {
-                await this.regionProfileManager.invalidateProfile(this.regionProfileManager.activeRegionProfile?.arn)
-                await this.regionProfileManager.clearCache()
-            }
-        })
-
+        this.regionProfileManager = new RegionProfileManager(this)
         this.regionProfileManager.onDidChangeRegionProfile(async () => {
             await this.setVscodeContextProps()
         })
-    })
-
-    public async setVscodeContextProps() {
-        // if users are "pending profile selection", they're not fully connected and require profile selection for Q usage
-        // requireProfileSelection() always returns false for builderID users
-        await setContext('aws.codewhisperer.connected', this.isConnected() && !this.requireProfileSelection())
-        const doShowAmazonQLoginView =
-            !this.isConnected() || this.isConnectionExpired() || this.requireProfileSelection()
-        await setContext('aws.amazonq.showLoginView', doShowAmazonQLoginView)
-        await setContext('aws.codewhisperer.connectionExpired', this.isConnectionExpired())
-        await setContext('aws.amazonq.connectedSsoIdc', isIdcSsoConnection(this.conn))
     }
 
-    public reformatStartUrl(startUrl: string | undefined) {
-        return !startUrl ? undefined : startUrl.replace(/[\/#]+$/g, '')
+    // Do NOT use this in production code, only used for testing
+    static destroy(): void {
+        this.#instance = undefined as any
     }
 
-    // current active cwspr connection
-    public get conn() {
-        return this.secondaryAuth.activeConnection
+    isSsoSession() {
+        return this.session.loginType === LoginTypes.SSO
     }
 
-    // TODO: move this to the shared auth.ts
-    public get startUrl(): string | undefined {
-        // Reformat the url to remove any trailing '/' and `#`
-        // e.g. https://view.awsapps.com/start/# will become https://view.awsapps.com/start
-        return isSsoConnection(this.conn) ? this.reformatStartUrl(this.conn?.startUrl) : undefined
-    }
+    /**
+     * HACK: Ideally we'd put {@link notifySelectDeveloperProfile} in to {@link restore}.
+     *       But because {@link refreshState} is only called if !isConnected, we cannot do it since
+     *       {@link notifySelectDeveloperProfile} needs {@link refreshState} to run so it can set
+     *       the Bearer Token in the LSP first.
+     */
+    didStartSignedIn = false
 
-    public get isUsingSavedConnection() {
-        return this.conn !== undefined && this.secondaryAuth.hasSavedConnection
-    }
+    async restore() {
+        await this.session.restore()
+        this.didStartSignedIn = this.isConnected()
 
-    public isConnected(): boolean {
-        return this.conn !== undefined
-    }
-
-    public isEnterpriseSsoInUse(): boolean {
-        const conn = this.conn
-        // we have an sso that isn't builder id, must be IdC by process of elimination
-        const isUsingEnterpriseSso = conn?.type === 'sso' && !isBuilderIdConnection(conn)
-        return conn !== undefined && isUsingEnterpriseSso
-    }
-
-    // If there is an active SSO connection
-    public isValidEnterpriseSsoInUse(): boolean {
-        return this.isEnterpriseSsoInUse() && !this.isConnectionExpired()
-    }
-
-    public isBuilderIdInUse(): boolean {
-        return this.conn !== undefined && isBuilderIdConnection(this.conn)
-    }
-
-    @withTelemetryContext({ name: 'connectToAwsBuilderId', class: authClassName })
-    public async connectToAwsBuilderId(): Promise<SsoConnection> {
-        let conn = (await this.auth.listConnections()).find(isBuilderIdConnection)
-
-        if (!conn) {
-            conn = await this.auth.createConnection(createBuilderIdProfile(amazonQScopes))
-        } else if (!isValidAmazonQConnection(conn)) {
-            conn = await this.secondaryAuth.addScopes(conn, amazonQScopes)
-        }
-
-        if (this.auth.getConnectionState(conn) === 'invalid') {
-            conn = await this.auth.reauthenticate(conn)
-        }
-
-        return (await this.secondaryAuth.useNewConnection(conn)) as SsoConnection
-    }
-
-    @withTelemetryContext({ name: 'connectToEnterpriseSso', class: authClassName })
-    public async connectToEnterpriseSso(startUrl: string, region: string): Promise<SsoConnection> {
-        let conn = (await this.auth.listConnections()).find(
-            (conn): conn is SsoConnection =>
-                isSsoConnection(conn) && conn.startUrl.toLowerCase() === startUrl.toLowerCase()
-        )
-
-        if (!conn) {
-            conn = await this.auth.createConnection(createSsoProfile(startUrl, region, amazonQScopes))
-        } else if (!isValidAmazonQConnection(conn)) {
-            conn = await this.secondaryAuth.addScopes(conn, amazonQScopes)
-        }
-
-        if (this.auth.getConnectionState(conn) === 'invalid') {
-            conn = await this.auth.reauthenticate(conn)
-        }
-
-        return (await this.secondaryAuth.useNewConnection(conn)) as SsoConnection
-    }
-
-    public static get instance() {
-        if (this.#instance !== undefined) {
-            return this.#instance
-        }
-
-        const self = (this.#instance = new this())
-        return self
-    }
-
-    @withTelemetryContext({ name: 'getBearerToken', class: authClassName })
-    public async getBearerToken(): Promise<string> {
-        await this.restore()
-
-        if (this.conn === undefined) {
-            throw new ToolkitError('No connection found', { code: 'NoConnection' })
-        }
-
-        if (!isSsoConnection(this.conn)) {
-            throw new ToolkitError('Connection is not an SSO connection', { code: 'BadConnectionType' })
-        }
-
-        try {
-            const bearerToken = await this.conn.getToken()
-            return bearerToken.accessToken
-        } catch (err) {
-            if (err instanceof ProfileNotFoundError) {
-                // Expected that connection would be deleted by conn.getToken()
-                void focusAmazonQPanel.execute(placeholder, 'profileNotFoundSignout')
-            }
-            throw err
+        // HACK: We noticed that if calling `refreshState()` here when the user was already signed in, something broke.
+        //       So as a solution we only call it if they were not already signed in.
+        //
+        //       But in the case where a user was already signed in, we allow `session.restore()` to trigger `refreshState()` through
+        //       event emitters.
+        //       This is unoptimal since `refreshState()` should be able to be called multiple times and still work.
+        //
+        //       Because of this edge case, when `restore()` is called we cannot assume all Auth is setup when this function returns,
+        //       since we may still be waiting on the event emitter to trigger the expected functions.
+        //
+        //       TODO: Figure out why removing the if statement below causes things to break. Maybe we just need to
+        //             promisify the call and any subsequent callers will not make a redundant call.
+        if (!this.didStartSignedIn) {
+            await this.refreshState()
         }
     }
 
-    @withTelemetryContext({ name: 'getCredentials', class: authClassName })
-    public async getCredentials() {
-        await this.restore()
+    async login(startUrl: string, region: string) {
+        const response = await this.session.login({ startUrl, region, scopes: amazonQScopes })
+        await showAmazonQWalkthroughOnce()
 
-        if (this.conn === undefined) {
-            throw new ToolkitError('No connection found', { code: 'NoConnection' })
-        }
-
-        if (!isIamConnection(this.conn)) {
-            throw new ToolkitError('Connection is not an IAM connection', { code: 'BadConnectionType' })
-        }
-
-        return this.conn.getCredentials()
+        return response
     }
 
-    public isConnectionValid(log: boolean = true): boolean {
-        const connectionValid = this.conn !== undefined && !this.secondaryAuth.isConnectionExpired
-
-        if (log) {
-            this.logConnection()
+    reauthenticate() {
+        if (!this.isSsoSession()) {
+            throw new ToolkitError('Cannot reauthenticate non-SSO session.')
         }
 
-        return connectionValid
+        return this.session.reauthenticate()
     }
 
-    public isConnectionExpired(log: boolean = true): boolean {
-        const connectionExpired =
-            this.secondaryAuth.isConnectionExpired &&
-            this.conn !== undefined &&
-            isValidCodeWhispererCoreConnection(this.conn)
-
-        if (log) {
-            this.logConnection()
+    logout() {
+        if (!this.isSsoSession()) {
+            // Only SSO requires logout
+            return
         }
-
-        return connectionExpired
+        this.lspAuth.deleteBearerToken()
+        return this.session.logout()
     }
 
-    requireProfileSelection(): boolean {
-        if (isBuilderIdConnection(this.conn)) {
-            return false
-        }
-        return isIdcSsoConnection(this.conn) && this.regionProfileManager.activeRegionProfile === undefined
-    }
-
-    private logConnection() {
-        const logStr = indent(
-            `codewhisperer: connection states
-            connection isValid=${this.isConnectionValid(false)},
-            connection isValidCodewhispererCoreConnection=${isValidCodeWhispererCoreConnection(this.conn)},
-            connection isExpired=${this.isConnectionExpired(false)},
-            secondaryAuth isExpired=${this.secondaryAuth.isConnectionExpired},
-            connection isUndefined=${this.conn === undefined}`,
-            4,
-            true
-        )
-
-        AuthUtil.logIfChanged(logStr)
-    }
-
-    @withTelemetryContext({ name: 'reauthenticate', class: authClassName })
-    public async reauthenticate() {
-        try {
-            if (this.conn?.type !== 'sso') {
-                return
-            }
-
-            if (!hasExactScopes(this.conn, amazonQScopes)) {
-                const conn = await setScopes(this.conn, amazonQScopes, this.auth)
-                await this.secondaryAuth.useNewConnection(conn)
-            }
-
-            await this.auth.reauthenticate(this.conn)
-        } catch (err) {
-            throw ToolkitError.chain(err, 'Unable to authenticate connection')
-        } finally {
-            await this.setVscodeContextProps()
+    async getToken() {
+        if (this.isSsoSession()) {
+            return (await this.session.getToken()).token
+        } else {
+            throw new ToolkitError('Cannot get token for non-SSO session.')
         }
     }
 
-    public async refreshCodeWhisperer() {
-        vsCodeState.isFreeTierLimitReached = false
-        await Commands.tryExecute('aws.amazonq.refreshStatusBar')
+    get connection() {
+        return this.session.data
     }
 
-    @withTelemetryContext({ name: 'showReauthenticatePrompt', class: authClassName })
+    getAuthState() {
+        return this.session.getConnectionState()
+    }
+
+    isConnected() {
+        return this.getAuthState() === 'connected'
+    }
+
+    isConnectionExpired() {
+        return this.getAuthState() === 'expired'
+    }
+
+    isBuilderIdConnection() {
+        return this.connection?.startUrl === builderIdStartUrl
+    }
+
+    isIdcConnection() {
+        return Boolean(this.connection?.startUrl && this.connection?.startUrl !== builderIdStartUrl)
+    }
+
+    isInternalAmazonUser(): boolean {
+        return this.isConnected() && this.connection?.startUrl === internalStartUrl
+    }
+
+    onDidChangeConnectionState(handler: (e: AuthStateEvent) => any) {
+        return this.session.onDidChangeConnectionState(handler)
+    }
+
+    public async setVscodeContextProps(state = this.getAuthState()) {
+        await setContext('aws.codewhisperer.connected', state === 'connected')
+        const showAmazonQLoginView =
+            !this.isConnected() || this.isConnectionExpired() || this.regionProfileManager.requireProfileSelection()
+        await setContext('aws.amazonq.showLoginView', showAmazonQLoginView)
+        await setContext('aws.amazonq.connectedSsoIdc', this.isIdcConnection())
+        await setContext('aws.codewhisperer.connectionExpired', state === 'expired')
+    }
+
+    private reauthenticatePromptShown: boolean = false
     public async showReauthenticatePrompt(isAutoTrigger?: boolean) {
         if (isAutoTrigger && this.reauthenticatePromptShown) {
             return
@@ -377,6 +222,26 @@ export class AuthUtil {
         if (isAutoTrigger) {
             this.reauthenticatePromptShown = true
         }
+    }
+
+    private _isCustomizationFeatureEnabled: boolean = false
+    public get isCustomizationFeatureEnabled(): boolean {
+        return this._isCustomizationFeatureEnabled
+    }
+
+    // This boolean controls whether the Select Customization node will be visible. A change to this value
+    // means that the old UX was wrong and must refresh the devTool tree.
+    public set isCustomizationFeatureEnabled(value: boolean) {
+        if (this._isCustomizationFeatureEnabled === value) {
+            return
+        }
+        this._isCustomizationFeatureEnabled = value
+        void Commands.tryExecute('aws.amazonq.refreshStatusBar')
+    }
+
+    public async notifyReauthenticate(isAutoTrigger?: boolean) {
+        void this.showReauthenticatePrompt(isAutoTrigger)
+        await this.setVscodeContextProps()
     }
 
     public async notifySessionConfiguration() {
@@ -411,175 +276,180 @@ export class AuthUtil {
         })
     }
 
-    @withTelemetryContext({ name: 'notifyReauthenticate', class: authClassName })
-    public async notifyReauthenticate(isAutoTrigger?: boolean) {
-        void this.showReauthenticatePrompt(isAutoTrigger)
-        await this.setVscodeContextProps()
-    }
-
-    public isValidCodeTransformationAuthUser(): boolean {
-        return (this.isEnterpriseSsoInUse() || this.isBuilderIdInUse()) && this.isConnectionValid()
-    }
-
-    /**
-     * Asynchronously returns a snapshot of the overall auth state of CodeWhisperer + Chat features.
-     * It guarantees the latest state is correct at the risk of modifying connection state.
-     * If this guarantee is not required, use sync method getChatAuthStateSync()
-     *
-     * By default, network errors are ignored when determining auth state since they may be silently
-     * recoverable later.
-     *
-     * THROTTLE: This function is called in rapid succession by Amazon Q features and can lead to
-     *           a barrage of disk access and/or token refreshes. We throttle to deal with this.
-     *
-     *           Note we do an explicit cast of the return type due to Lodash types incorrectly indicating
-     *           a FeatureAuthState or undefined can be returned. But since we set `leading: true`
-     *           it will always return FeatureAuthState
-     */
-    public getChatAuthState = throttle(() => this._getChatAuthState(), 2000, {
-        leading: true,
-    }) as () => Promise<FeatureAuthState>
-    /**
-     * IMPORTANT: Only use this if you do NOT want to swallow network errors, otherwise use {@link getChatAuthState()}
-     * @param ignoreNetErr swallows network errors
-     */
-    @withTelemetryContext({ name: 'getChatAuthState', class: authClassName })
-    public async _getChatAuthState(ignoreNetErr: boolean = true): Promise<FeatureAuthState> {
-        // The state of the connection may not have been properly validated
-        // and the current state we see may be stale, so refresh for latest state.
-        if (ignoreNetErr) {
-            await tryRun(
-                () => this.auth.refreshConnectionState(this.conn),
-                (err) => !isNetworkError(err),
-                'getChatAuthState: Cannot refresh connection state due to network error: %s'
-            )
+    private async stateChangeHandler(e: AuthStateEvent) {
+        if (e.state === 'refreshed') {
+            const params = this.isSsoSession() ? (await this.session.getToken()).updateCredentialsParams : undefined
+            await this.lspAuth.updateBearerToken(params!)
+            return
         } else {
-            await this.auth.refreshConnectionState(this.conn)
+            getLogger().info(`codewhisperer: connection changed to ${e.state}`)
+            await this.refreshState(e.state)
         }
-
-        return this.getChatAuthStateSync(this.conn)
     }
 
-    /**
-     * Synchronously returns a snapshot of the overall auth state of CodeWhisperer + Chat features without
-     * validating or modifying the connection state. It is possible that the connection
-     * is invalid/valid, but the current state displays something else. To guarantee the true state,
-     * use async method getChatAuthState()
-     */
-    public getChatAuthStateSync(conn = this.conn): FeatureAuthState {
-        if (conn === undefined) {
-            return buildFeatureAuthState(AuthStates.disconnected)
-        }
-
-        if (!isSsoConnection(conn) && !isSageMaker()) {
-            throw new ToolkitError(`Connection "${conn.id}" is not a valid type: ${conn.type}`)
-        }
-
-        // default to expired to indicate reauth is needed if unmodified
-        const state: FeatureAuthState = buildFeatureAuthState(AuthStates.expired)
-
-        if (this.isConnectionExpired()) {
-            return state
-        }
-
-        if (isBuilderIdConnection(conn) || isIdcSsoConnection(conn) || isSageMaker()) {
-            // TODO: refactor
-            if (isValidCodeWhispererCoreConnection(conn)) {
-                if (this.requireProfileSelection()) {
-                    state[Features.codewhispererCore] = AuthStates.pendingProfileSelection
-                } else {
-                    state[Features.codewhispererCore] = AuthStates.connected
-                }
+    private async refreshState(state = this.getAuthState()) {
+        if (state === 'expired' || state === 'notConnected') {
+            this.lspAuth.deleteBearerToken()
+            if (this.isIdcConnection()) {
+                await this.regionProfileManager.invalidateProfile(this.regionProfileManager.activeRegionProfile?.arn)
+                await this.regionProfileManager.clearCache()
             }
-            if (isValidAmazonQConnection(conn)) {
-                if (this.requireProfileSelection()) {
-                    for (const v of Object.values(Features)) {
-                        state[v as Feature] = AuthStates.pendingProfileSelection
-                    }
-                } else {
-                    for (const v of Object.values(Features)) {
-                        state[v as Feature] = AuthStates.connected
-                    }
-                }
+        }
+        if (state === 'connected') {
+            const bearerTokenParams = (await this.session.getToken()).updateCredentialsParams
+            await this.lspAuth.updateBearerToken(bearerTokenParams)
+
+            if (this.isIdcConnection()) {
+                await this.regionProfileManager.restoreProfileSelection()
             }
         }
 
-        return state
+        // regardless of state, send message at startup if user needs to select a Developer Profile
+        void this.tryNotifySelectDeveloperProfile()
+
+        vsCodeState.isFreeTierLimitReached = false
+        await this.setVscodeContextProps(state)
+        await Promise.all([
+            Commands.tryExecute('aws.amazonq.refreshStatusBar'),
+            Commands.tryExecute('aws.amazonq.updateReferenceLog'),
+        ])
+
+        if (state === 'connected' && this.isIdcConnection()) {
+            void vscode.commands.executeCommand('aws.amazonq.notifyNewCustomizations')
+        }
+    }
+
+    private tryNotifySelectDeveloperProfile = once(async () => {
+        if (this.regionProfileManager.requireProfileSelection() && this.didStartSignedIn) {
+            await notifySelectDeveloperProfile()
+        }
+    })
+
+    async getTelemetryMetadata(): Promise<TelemetryMetadata> {
+        if (!this.isConnected()) {
+            return {
+                id: 'undefined',
+            }
+        }
+
+        if (this.isSsoSession()) {
+            const ssoSessionDetails = (await this.session.getProfile()).ssoSession?.settings
+            return {
+                authScopes: ssoSessionDetails?.sso_registration_scopes?.join(','),
+                credentialSourceId: AuthUtil.instance.isBuilderIdConnection() ? 'awsId' : 'iamIdentityCenter',
+                credentialStartUrl: AuthUtil.instance.connection?.startUrl,
+                awsRegion: AuthUtil.instance.connection?.region,
+            }
+        } else if (!AuthUtil.instance.isSsoSession) {
+            return {
+                credentialSourceId: 'sharedCredentials',
+            }
+        }
+
+        throw new Error('getTelemetryMetadataForConn() called with unknown connection type')
+    }
+
+    async getAuthFormIds(): Promise<AuthFormId[]> {
+        if (!this.isConnected()) {
+            return []
+        }
+
+        const authIds: AuthFormId[] = []
+        let connType: 'builderId' | 'identityCenter'
+
+        // TODO: update when there is IAM support
+        if (!this.isSsoSession()) {
+            return ['credentials']
+        } else if (this.isBuilderIdConnection()) {
+            connType = 'builderId'
+        } else if (this.isIdcConnection()) {
+            connType = 'identityCenter'
+            const ssoSessionDetails = (await this.session.getProfile()).ssoSession?.settings
+            if (hasScopes(ssoSessionDetails?.sso_registration_scopes ?? [], scopesSsoAccountAccess)) {
+                authIds.push('identityCenterExplorer')
+            }
+        } else {
+            return ['unknown']
+        }
+        authIds.push(`${connType}CodeWhisperer`)
+
+        return authIds
     }
 
     /**
-     * Edge Case: Due to a change in behaviour/functionality, there are potential extra
-     * auth connections that the Amazon Q extension has cached. We need to remove these
-     * as they are irrelevant to the Q extension and can cause issues.
+     * Migrates existing SSO connections to the LSP identity server by updating the cache files
+     *
+     * @param clientName - The client name to use for the new registration cache file
+     * @returns A Promise that resolves when the migration is complete
+     * @throws Error if file operations fail during migration
      */
-    public async clearExtraConnections(): Promise<void> {
-        const currentQConn = this.conn
-        // Q currently only maintains 1 connection at a time, so we assume everything else is extra.
-        // IMPORTANT: In the case Q starts to manage multiple connections, this implementation will need to be updated.
-        const allOtherConnections = (await this.auth.listConnections()).filter((c) => c.id !== currentQConn?.id)
-        for (const conn of allOtherConnections) {
-            getLogger().warn(`forgetting extra amazon q connection: %O`, conn)
-            await telemetry.auth_modifyConnection.run(
-                async () => {
-                    telemetry.record({
-                        connectionState: Auth.instance.getConnectionState(conn) ?? 'undefined',
-                        source: asStringifiedStack(telemetry.getFunctionStack()),
-                        ...(await getTelemetryMetadataForConn(conn)),
+    async migrateSsoConnectionToLsp(clientName: string) {
+        const memento = getEnvironmentSpecificMemento()
+        const key = 'auth.profiles'
+        const profiles: { readonly [id: string]: StoredProfile } | undefined = memento.get(key)
+
+        let toImport: SsoProfile | undefined
+        let profileId: string | undefined
+
+        if (!profiles) {
+            return
+        } else {
+            getLogger().info(`codewhisperer: checking for old SSO connections`)
+            for (const [id, p] of Object.entries(profiles)) {
+                if (p.type === 'sso' && hasExactScopes(p.scopes ?? [], amazonQScopes)) {
+                    toImport = p
+                    profileId = id
+                    if (p.metadata.connectionState === 'valid') {
+                        break
+                    }
+                }
+            }
+
+            if (toImport && profileId) {
+                getLogger().info(`codewhisperer: migrating SSO connection to LSP identity server...`)
+
+                const registrationKey = {
+                    startUrl: toImport.startUrl,
+                    region: toImport.ssoRegion,
+                    scopes: amazonQScopes,
+                }
+
+                await this.session.updateProfile(registrationKey)
+
+                const cacheDir = getCacheDir()
+
+                const hash = (str: string) => {
+                    const hasher = crypto.createHash('sha1')
+                    return hasher.update(str).digest('hex')
+                }
+                const filePath = (str: string) => {
+                    return path.join(cacheDir, hash(str) + '.json')
+                }
+
+                const fromRegistrationFile = getRegistrationCacheFile(cacheDir, registrationKey)
+                const toRegistrationFile = filePath(
+                    JSON.stringify({
+                        region: toImport.ssoRegion,
+                        startUrl: toImport.startUrl,
+                        tool: clientName,
                     })
+                )
 
-                    if (isInDevEnv()) {
-                        telemetry.record({ action: 'forget' })
-                        // in a Dev Env the connection may be used by code catalyst, so we forget instead of fully deleting
-                        await this.auth.forgetConnection(conn)
-                    } else {
-                        telemetry.record({ action: 'delete' })
-                        await this.auth.deleteConnection(conn)
-                    }
-                },
-                { functionId: { name: 'clearExtraConnections', class: authClassName } }
-            )
+                const fromTokenFile = getTokenCacheFile(cacheDir, profileId)
+                const toTokenFile = filePath(this.profileName)
+
+                try {
+                    await fs.rename(fromRegistrationFile, toRegistrationFile)
+                    await fs.rename(fromTokenFile, toTokenFile)
+                    getLogger().debug('Successfully renamed registration and token files')
+                } catch (err) {
+                    getLogger().error(`Failed to rename files during migration: ${err}`)
+                    throw err
+                }
+
+                await memento.update(key, undefined)
+                getLogger().info(`codewhisperer: successfully migrated SSO connection to LSP identity server`)
+            }
         }
-    }
-}
-
-export type FeatureAuthState = { [feature in Feature]: AuthState }
-export type Feature = (typeof Features)[keyof typeof Features]
-export type AuthState = (typeof AuthStates)[keyof typeof AuthStates]
-
-export const AuthStates = {
-    /** The current connection is working and supports this feature. */
-    connected: 'connected',
-    /** No connection exists, so this feature cannot be used*/
-    disconnected: 'disconnected',
-    /**
-     * The current connection exists, but needs to be reauthenticated for this feature to work
-     *
-     * Look to use {@link AuthUtil.reauthenticate()}
-     */
-    expired: 'expired',
-    /**
-     * A connection exists, but does not support this feature.
-     *
-     * Eg: We are currently using Builder ID, but must use Identity Center.
-     */
-    unsupported: 'unsupported',
-    /**
-     * The current connection exists and isn't expired,
-     * but fetching/refreshing the token resulted in a network error.
-     */
-    connectedWithNetworkError: 'connectedWithNetworkError',
-    pendingProfileSelection: 'pendingProfileSelection',
-} as const
-const Features = {
-    codewhispererCore: 'codewhispererCore',
-    codewhispererChat: 'codewhispererChat',
-    amazonQ: 'amazonQ',
-} as const
-
-function buildFeatureAuthState(state: AuthState): FeatureAuthState {
-    return {
-        codewhispererCore: state,
-        codewhispererChat: state,
-        amazonQ: state,
     }
 }

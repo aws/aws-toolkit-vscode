@@ -16,7 +16,7 @@ export async function activate(context: ExtensionContext) {
 
     const setupLsp = funcUtil.debounce(async () => {
         void amazonq.LspController.instance.trySetupLsp(context, {
-            startUrl: AuthUtil.instance.startUrl,
+            startUrl: AuthUtil.instance.connection?.startUrl,
             maxIndexSize: CodeWhispererSettings.instance.getMaxIndexSize(),
             isVectorIndexEnabled: false,
         })

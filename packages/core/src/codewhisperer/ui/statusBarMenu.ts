@@ -43,7 +43,7 @@ function getAmazonQCodeWhispererNodes() {
         return [createSignIn(), createLearnMore()]
     }
 
-    if (AuthUtil.instance.isConnected() && AuthUtil.instance.requireProfileSelection()) {
+    if (AuthUtil.instance.isConnected() && AuthUtil.instance.regionProfileManager.requireProfileSelection()) {
         return []
     }
 
@@ -72,12 +72,12 @@ function getAmazonQCodeWhispererNodes() {
 
         // Security scans
         createSeparator('Code Reviews'),
-        ...(AuthUtil.instance.isBuilderIdInUse() ? [] : [createAutoScans(autoScansEnabled)]),
+        ...(AuthUtil.instance.isBuilderIdConnection() ? [] : [createAutoScans(autoScansEnabled)]),
         createSecurityScan(),
 
         // Amazon Q + others
         createSeparator('Other Features'),
-        ...(AuthUtil.instance.isValidEnterpriseSsoInUse() && AuthUtil.instance.isCustomizationFeatureEnabled
+        ...(AuthUtil.instance.isIdcConnection() && AuthUtil.instance.isCustomizationFeatureEnabled
             ? [createSelectCustomization()]
             : []),
         switchToAmazonQNode(),
@@ -85,7 +85,7 @@ function getAmazonQCodeWhispererNodes() {
 }
 
 export function getQuickPickItems(): DataQuickPickItem<string>[] {
-    const isUsingEnterpriseSso = AuthUtil.instance.isValidEnterpriseSsoInUse()
+    const isUsingEnterpriseSso = AuthUtil.instance.isIdcConnection()
     const regionProfile = AuthUtil.instance.regionProfileManager.activeRegionProfile
 
     const children = [
@@ -104,7 +104,7 @@ export function getQuickPickItems(): DataQuickPickItem<string>[] {
         // Add settings and signout
         createSeparator(),
         createSettingsNode(),
-        ...(isUsingEnterpriseSso && regionProfile ? [createSelectRegionProfileNode(regionProfile)] : []),
+        ...(AuthUtil.instance.isIdcConnection() && regionProfile ? [createSelectRegionProfileNode(regionProfile)] : []),
         ...(AuthUtil.instance.isConnected() && !hasVendedIamCredentials() && !hasVendedCredentialsFromMetadata()
             ? [createSignout()]
             : []),

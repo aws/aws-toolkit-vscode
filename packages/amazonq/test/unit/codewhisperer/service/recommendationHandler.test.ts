@@ -9,13 +9,13 @@ import * as sinon from 'sinon'
 import {
     ReferenceInlineProvider,
     session,
-    AuthUtil,
     DefaultCodeWhispererClient,
     RecommendationsList,
     ConfigurationEntry,
     RecommendationHandler,
     CodeWhispererCodeCoverageTracker,
     supplementalContextUtil,
+    AuthUtil,
 } from 'aws-core-vscode/codewhisperer'
 import {
     assertTelemetryCurried,
@@ -39,7 +39,6 @@ describe('recommendationHandler', function () {
     describe('getRecommendations', async function () {
         const mockClient = stub(DefaultCodeWhispererClient)
         const mockEditor = createMockTextEditor()
-        const testStartUrl = 'testStartUrl'
 
         beforeEach(async function () {
             sinon.restore()
@@ -47,7 +46,6 @@ describe('recommendationHandler', function () {
             mockClient.listRecommendations.resolves({})
             mockClient.generateRecommendations.resolves({})
             RecommendationHandler.instance.clearRecommendations()
-            sinon.stub(AuthUtil.instance, 'startUrl').value(testStartUrl)
         })
 
         afterEach(function () {
@@ -143,7 +141,7 @@ describe('recommendationHandler', function () {
                 codewhispererLineNumber: 1,
                 codewhispererCursorOffset: 38,
                 codewhispererLanguage: 'python',
-                credentialStartUrl: testStartUrl,
+                credentialStartUrl: AuthUtil.instance.connection?.startUrl,
                 codewhispererSupplementalContextIsUtg: false,
                 codewhispererSupplementalContextTimeout: false,
                 codewhispererSupplementalContextLatency: 0,

@@ -42,7 +42,6 @@ import { application } from '../util/codeWhispererApplication'
 import { openUrl } from '../../shared/utilities/vsCodeUtils'
 import { indent } from '../../shared/utilities/textUtilities'
 import path from 'path'
-import { isIamConnection } from '../../auth/connection'
 import { UserWrittenCodeTracker } from '../tracker/userWrittenCodeTracker'
 
 /**
@@ -172,7 +171,7 @@ export class RecommendationHandler {
         autoTriggerType?: CodewhispererAutomatedTriggerType,
         pagination: boolean = true,
         page: number = 0,
-        generate: boolean = isIamConnection(AuthUtil.instance.conn)
+        generate: boolean = false
     ): Promise<GetRecommendationsResponse> {
         let invocationResult: 'Succeeded' | 'Failed' = 'Failed'
         let errorMessage: string | undefined = undefined
@@ -716,7 +715,7 @@ export class RecommendationHandler {
                 codewhispererLanguage: languageContext.language,
                 duration: performance.now() - this.lastInvocationTime,
                 passive: true,
-                credentialStartUrl: AuthUtil.instance.startUrl,
+                credentialStartUrl: AuthUtil.instance.connection?.startUrl,
                 result: 'Succeeded',
             })
         }

@@ -8,13 +8,6 @@ import { getIcon } from '../../shared/icons'
 import { DataQuickPickItem } from '../../shared/ui/pickerPrompter'
 import { CodeWhispererConfig, RegionProfile } from '../models/model'
 import { showConfirmationMessage } from '../../shared/utilities/messages'
-import {
-    Connection,
-    isBuilderIdConnection,
-    isIdcSsoConnection,
-    isSsoConnection,
-    SsoConnection,
-} from '../../auth/connection'
 import globals from '../../shared/extensionGlobals'
 import { once } from '../../shared/utilities/functionUtils'
 import CodeWhispererUserClient from '../client/codewhispereruserclient'
@@ -28,6 +21,7 @@ import { parse } from '@aws-sdk/util-arn-parser'
 import { isAwsError, ToolkitError } from '../../shared/errors'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { localize } from '../../shared/utilities/vsCodeUtils'
+import { IAuthProvider } from '../util/authUtil'
 import { Commands } from '../../shared/vscode/commands2'
 import { CachedResource } from '../../shared/utilities/resourceCache'
 
@@ -61,7 +55,6 @@ export class RegionProfileManager {
     private _activeRegionProfile: RegionProfile | undefined
     private _onDidChangeRegionProfile = new vscode.EventEmitter<ProfileChangedEvent>()
     public readonly onDidChangeRegionProfile = this._onDidChangeRegionProfile.event
-
     // Store the last API results (for UI propuse) so we don't need to call service again if doesn't require "latest" result
     private _profiles: RegionProfile[] = []
 
@@ -87,21 +80,19 @@ export class RegionProfileManager {
     })(this.listRegionProfile.bind(this))
 
     get activeRegionProfile() {
-        const conn = this.connectionProvider()
-        if (isBuilderIdConnection(conn)) {
+        if (this.authProvider.isBuilderIdConnection()) {
             return undefined
         }
         return this._activeRegionProfile
     }
 
     get clientConfig(): CodeWhispererConfig {
-        const conn = this.connectionProvider()
-        if (!conn) {
+        if (!this.authProvider.isConnected()) {
             throw new ToolkitError('trying to get client configuration without credential')
         }
 
         // builder id should simply use default IAD
-        if (isBuilderIdConnection(conn)) {
+        if (this.authProvider.isBuilderIdConnection()) {
             return defaultServiceConfig
         }
 
@@ -129,7 +120,7 @@ export class RegionProfileManager {
         return this._profiles
     }
 
-    constructor(private readonly connectionProvider: () => Connection | undefined) {}
+    constructor(private readonly authProvider: IAuthProvider) {}
 
     async getProfiles(): Promise<RegionProfile[]> {
         return this.cache.getResource()
@@ -138,15 +129,14 @@ export class RegionProfileManager {
     async listRegionProfile(): Promise<RegionProfile[]> {
         this._profiles = []
 
-        const conn = this.connectionProvider()
-        if (conn === undefined || !isSsoConnection(conn)) {
+        if (!this.authProvider.isConnected() || !this.authProvider.isSsoSession()) {
             return []
         }
         const availableProfiles: RegionProfile[] = []
         const failedRegions: string[] = []
 
         for (const [region, endpoint] of endpoints.entries()) {
-            const client = await this._createQClient(region, endpoint, conn as SsoConnection)
+            const client = await this._createQClient(region, endpoint)
             const requester = async (request: CodeWhispererUserClient.ListAvailableProfilesRequest) =>
                 client.listAvailableProfiles(request).promise()
             const request: CodeWhispererUserClient.ListAvailableProfilesRequest = {}
@@ -187,17 +177,13 @@ export class RegionProfileManager {
     }
 
     async switchRegionProfile(regionProfile: RegionProfile | undefined, source: ProfileSwitchIntent) {
-        const conn = this.connectionProvider()
-        if (conn === undefined || !isIdcSsoConnection(conn)) {
+        if (!this.authProvider.isConnected() || !this.authProvider.isIdcConnection()) {
             return
         }
 
         if (regionProfile && this.activeRegionProfile && regionProfile.arn === this.activeRegionProfile.arn) {
             return
         }
-
-        // TODO: make it typesafe
-        const ssoConn = this.connectionProvider() as SsoConnection
 
         // only prompt to users when users switch from A profile to B profile
         if (source !== 'customization' && this.activeRegionProfile !== undefined && regionProfile !== undefined) {
@@ -216,9 +202,9 @@ export class RegionProfileManager {
                 telemetry.amazonq_didSelectProfile.emit({
                     source: source,
                     amazonQProfileRegion: this.activeRegionProfile?.region ?? 'not-set',
-                    ssoRegion: ssoConn.ssoRegion,
+                    ssoRegion: this.authProvider.connection?.region,
                     result: 'Cancelled',
-                    credentialStartUrl: ssoConn.startUrl,
+                    credentialStartUrl: this.authProvider.connection?.startUrl,
                     profileCount: this.profiles.length,
                 })
                 return
@@ -235,9 +221,9 @@ export class RegionProfileManager {
             telemetry.amazonq_didSelectProfile.emit({
                 source: source,
                 amazonQProfileRegion: regionProfile?.region ?? 'not-set',
-                ssoRegion: ssoConn.ssoRegion,
+                ssoRegion: this.authProvider.connection?.region,
                 result: 'Succeeded',
-                credentialStartUrl: ssoConn.startUrl,
+                credentialStartUrl: this.authProvider.connection?.startUrl,
                 profileCount: this.profiles.length,
             })
         }
@@ -265,15 +251,14 @@ export class RegionProfileManager {
     }
 
     restoreProfileSelection = once(async () => {
-        const conn = this.connectionProvider()
-        if (conn) {
-            await this.restoreRegionProfile(conn)
+        if (this.authProvider.isConnected()) {
+            await this.restoreRegionProfile()
         }
     })
 
-    // Note: should be called after [AuthUtil.instance.conn] returns non null
-    async restoreRegionProfile(conn: Connection) {
-        const previousSelected = this.loadPersistedRegionProfle()[conn.id] || undefined
+    // Note: should be called after [this.authProvider.isConnected()] returns non null
+    async restoreRegionProfile() {
+        const previousSelected = this.loadPersistedRegionProfle()[this.authProvider.profileName] || undefined
         if (!previousSelected) {
             return
         }
@@ -318,10 +303,8 @@ export class RegionProfileManager {
     }
 
     async persistSelectRegionProfile() {
-        const conn = this.connectionProvider()
-
         // default has empty arn and shouldn't be persisted because it's just a fallback
-        if (!conn || this.activeRegionProfile === undefined) {
+        if (!this.authProvider.isConnected() || this.activeRegionProfile === undefined) {
             return
         }
 
@@ -332,7 +315,7 @@ export class RegionProfileManager {
             {}
         )
 
-        previousPersistedState[conn.id] = this.activeRegionProfile
+        previousPersistedState[this.authProvider.profileName] = this.activeRegionProfile
         await globals.globalState.update('aws.amazonq.regionProfiles', previousPersistedState)
     }
 
@@ -387,27 +370,32 @@ export class RegionProfileManager {
         }
     }
 
-    // Should be called on connection changed in case users change to a differnet connection and use the wrong resultset.
+    requireProfileSelection(): boolean {
+        if (this.authProvider.isBuilderIdConnection()) {
+            return false
+        }
+        return this.authProvider.isIdcConnection() && this.activeRegionProfile === undefined
+    }
+
     async clearCache() {
         await this.cache.clearCache()
     }
 
     // TODO: Should maintain sdk client in a better way
     async createQClient(profile: RegionProfile): Promise<CodeWhispererUserClient> {
-        const conn = this.connectionProvider()
-        if (conn === undefined || !isSsoConnection(conn)) {
+        if (!this.authProvider.isConnected() || !this.authProvider.isSsoSession()) {
             throw new Error('No valid SSO connection')
         }
         const endpoint = endpoints.get(profile.region)
         if (!endpoint) {
             throw new Error(`trying to initiatize Q client with unrecognizable region ${profile.region}`)
         }
-        return this._createQClient(profile.region, endpoint, conn)
+        return this._createQClient(profile.region, endpoint)
     }
 
     // Visible for testing only, do not use this directly, please use createQClient(profile)
-    async _createQClient(region: string, endpoint: string, conn: SsoConnection): Promise<CodeWhispererUserClient> {
-        const token = (await conn.getToken()).accessToken
+    async _createQClient(region: string, endpoint: string): Promise<CodeWhispererUserClient> {
+        const token = await this.authProvider.getToken()
         const serviceOption: ServiceOptions = {
             apiConfig: userApiConfig,
             region: region,

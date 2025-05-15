@@ -5,7 +5,7 @@
 
 import assert from 'assert'
 import * as sinon from 'sinon'
-import { resetCodeWhispererGlobalVariables, createMockTextEditor } from 'aws-core-vscode/test'
+import { resetCodeWhispererGlobalVariables, createMockTextEditor, createTestAuthUtil } from 'aws-core-vscode/test'
 import {
     ConfigurationEntry,
     invokeRecommendation,
@@ -20,6 +20,7 @@ describe('invokeRecommendation', function () {
         let mockClient: DefaultCodeWhispererClient
 
         beforeEach(async function () {
+            await createTestAuthUtil()
             await resetCodeWhispererGlobalVariables()
             getRecommendationStub = sinon.stub(InlineCompletionService.instance, 'getPaginatedRecommendation')
         })
