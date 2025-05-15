@@ -7,27 +7,51 @@ import { AmazonQLspAuth } from '../../../../src/lsp/auth'
 import { LanguageClient } from 'vscode-languageclient'
 
 describe('AmazonQLspAuth', function () {
+    let requestsMade: { method: string; param: any }[]
+    const stubLanguageClient = {
+        sendRequest: (method: string, param: any) => {
+            requestsMade.push({ method, param })
+        },
+        info: (_message: string, _data: any) => {},
+    } as LanguageClient
+
+    beforeEach(function () {
+        requestsMade = []
+    })
+
+    it('sends the bearer token, then the profile', async function () {
+        await AmazonQLspAuth.initialize(stubLanguageClient)
+        assert.strictEqual(requestsMade.length, 2)
+        const [firstRequest, secondRequest] = requestsMade
+        assert.strictEqual(firstRequest.method, 'aws/credentials/token/update')
+        assert.strictEqual(secondRequest.method, 'aws/updateConfiguration')
+    })
+
     describe('updateBearerToken', function () {
         it('makes request to LSP when token changes', async function () {
-            // Note: this token will be encrypted
-            let lastSentToken = {}
-            const auth = new AmazonQLspAuth({
-                sendRequest: (_method: string, param: any) => {
-                    lastSentToken = param
-                },
-                info: (_message: string, _data: any) => {},
-            } as LanguageClient)
+            const auth = await AmazonQLspAuth.initialize(stubLanguageClient)
 
             await auth.updateBearerToken('firstToken')
-            assert.notDeepStrictEqual(lastSentToken, {})
-            const encryptedFirstToken = lastSentToken
+            const firstRequest = requestsMade.at(-1)
+            assert.ok(firstRequest)
+            const firstTokenPushed = firstRequest.param.data
+            assert.strictEqual(firstRequest.method, 'aws/credentials/token/update')
+            assert.notStrictEqual(firstTokenPushed, '')
 
             await auth.updateBearerToken('secondToken')
-            assert.notDeepStrictEqual(lastSentToken, encryptedFirstToken)
-            const encryptedSecondToken = lastSentToken
+            const secondRequest = requestsMade.at(-1)
+            assert.ok(secondRequest)
+            const secondTokenPushed = secondRequest.param.data
+            assert.notStrictEqual(secondTokenPushed, firstTokenPushed)
 
+            const lengthBefore = requestsMade.length
             await auth.updateBearerToken('secondToken')
-            assert.deepStrictEqual(lastSentToken, encryptedSecondToken)
+            const lengthAfter = requestsMade.length
+            assert.strictEqual(
+                lengthBefore,
+                lengthAfter,
+                'should not make requests to language server if token does not change'
+            )
         })
     })
 })

@@ -16,7 +16,6 @@ import {
     GetConfigurationFromServerParams,
     RenameFilesParams,
     ResponseMessage,
-    updateConfigurationRequestType,
     WorkspaceFolder,
 } from '@aws/language-server-runtimes/protocol'
 import { AuthUtil, CodeWhispererSettings, getSelectedCustomization } from 'aws-core-vscode/codewhisperer'
@@ -161,10 +160,9 @@ export async function startLanguageServer(
     const disposable = client.start()
     toDispose.push(disposable)
 
-    const auth = new AmazonQLspAuth(client)
-
     return client.onReady().then(async () => {
-        await auth.refreshConnection()
+        // This must be the first thing called in onReady to ensure credentials and profiles are synced.
+        const auth = await AmazonQLspAuth.initialize(client)
 
         if (Experiments.instance.get('amazonqLSPInline', false)) {
             const inlineManager = new InlineCompletionManager(client)
@@ -186,26 +184,6 @@ export async function startLanguageServer(
 
         const refreshInterval = auth.startTokenRefreshInterval(10 * oneSecond)
 
-        const sendProfileToLsp = async () => {
-            try {
-                const result = await client.sendRequest(updateConfigurationRequestType.method, {
-                    section: 'aws.q',
-                    settings: {
-                        profileArn: AuthUtil.instance.regionProfileManager.activeRegionProfile?.arn,
-                    },
-                })
-                client.info(
-                    `Client: Updated Amazon Q Profile ${AuthUtil.instance.regionProfileManager.activeRegionProfile?.arn} to Amazon Q LSP`,
-                    result
-                )
-            } catch (err) {
-                client.error('Error when setting Q Developer Profile to Amazon Q LSP', err)
-            }
-        }
-
-        // send profile to lsp once.
-        void sendProfileToLsp()
-
         toDispose.push(
             AuthUtil.instance.auth.onDidChangeActiveConnection(async () => {
                 await auth.refreshConnection()
@@ -213,7 +191,7 @@ export async function startLanguageServer(
             AuthUtil.instance.auth.onDidDeleteConnection(async () => {
                 client.sendNotification(notificationTypes.deleteBearerToken.method)
             }),
-            AuthUtil.instance.regionProfileManager.onDidChangeRegionProfile(sendProfileToLsp),
+            AuthUtil.instance.regionProfileManager.onDidChangeRegionProfile(() => auth.sendProfileToLsp(client)),
             vscode.commands.registerCommand('aws.amazonq.getWorkspaceId', async () => {
                 const requestType = new RequestType<GetConfigurationFromServerParams, ResponseMessage, Error>(
                     'aws/getConfigurationFromServer'

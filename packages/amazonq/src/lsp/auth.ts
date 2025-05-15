@@ -9,6 +9,7 @@ import {
     NotificationType,
     RequestType,
     ResponseMessage,
+    updateConfigurationRequestType,
     UpdateCredentialsParams,
 } from '@aws/language-server-runtimes/protocol'
 import * as jose from 'jose'
@@ -67,17 +68,32 @@ export const notificationTypes = {
  */
 export class AmazonQLspAuth {
     #logErrorIfChanged = onceChanged((s) => getLogger('amazonqLsp').error(s))
-    constructor(
+    private constructor(
         private readonly client: LanguageClient,
-        private readonly authUtil: AuthUtil = AuthUtil.instance
+        private readonly authUtil: AuthUtil
     ) {}
 
+    /**
+     * Intialize the auth syncing with the Language Server.
+     * It is critical that the following happens in the correct order:
+     * 1. send the bearer token
+     * 2. send the profile selection.
+     * @param client
+     * @param authUtil
+     * @returns
+     */
+    static async initialize(client: LanguageClient, authUtil: AuthUtil = AuthUtil.instance) {
+        const auth = new AmazonQLspAuth(client, authUtil)
+        await auth.refreshConnection()
+        await auth.sendProfileToLsp(client)
+        return auth
+    }
     /**
      * @param force bypass memoization, and forcefully update the bearer token
      */
     async refreshConnection(force: boolean = false) {
-        const activeConnection = this.authUtil.auth.activeConnection
-        if (activeConnection?.state === 'valid' && activeConnection?.type === 'sso') {
+        const activeConnection = this.authUtil.conn
+        if (activeConnection?.type === 'sso' && this.authUtil.isConnectionValid()) {
             // send the token to the language server
             const token = await this.authUtil.getBearerToken()
             await (force ? this._updateBearerToken(token) : this.updateBearerToken(token))
@@ -118,10 +134,27 @@ export class AmazonQLspAuth {
             data: jwt,
             metadata: {
                 sso: {
-                    startUrl: AuthUtil.instance.auth.startUrl,
+                    startUrl: AuthUtil.instance.startUrl,
                 },
             },
             encrypted: true,
+        }
+    }
+
+    public async sendProfileToLsp(client: LanguageClient) {
+        try {
+            const result = await client.sendRequest(updateConfigurationRequestType.method, {
+                section: 'aws.q',
+                settings: {
+                    profileArn: AuthUtil.instance.regionProfileManager.activeRegionProfile?.arn,
+                },
+            })
+            client.info(
+                `Client: Updated Amazon Q Profile ${AuthUtil.instance.regionProfileManager.activeRegionProfile?.arn} to Amazon Q LSP`,
+                result
+            )
+        } catch (err) {
+            client.error('Error when setting Q Developer Profile to Amazon Q LSP', err)
         }
     }
 }
