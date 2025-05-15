@@ -250,7 +250,7 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
 
             if (!session || !items.length || !editor) {
                 getLogger().debug(
-                    `Failed to produce inline suggestion results. Recieved ${items.length} items from service`
+                    `Failed to produce inline suggestion results. Received ${items.length} items from service`
                 )
                 return []
             }
