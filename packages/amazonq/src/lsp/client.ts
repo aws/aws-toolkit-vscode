@@ -69,7 +69,6 @@ export const clientId = 'amazonq'
 export const clientName = oidcClientName()
 export const encryptionKey = crypto.randomBytes(32)
 
-
 export async function startLanguageServer(
     extensionContext: vscode.ExtensionContext,
     resourcePaths: AmazonQResourcePaths
