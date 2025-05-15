@@ -115,11 +115,14 @@ export class AmazonQLspAuth {
             .setProtectedHeader({ alg: 'dir', enc: 'A256GCM' })
             .encrypt(encryptionKey)
 
+        const conn = AuthUtil.instance.conn
+        const startUrl = conn?.type === 'sso' ? conn.startUrl : undefined
+
         return {
             data: jwt,
             metadata: {
                 sso: {
-                    startUrl: AuthUtil.instance.auth.startUrl,
+                    startUrl,
                 },
             },
             encrypted: true,
