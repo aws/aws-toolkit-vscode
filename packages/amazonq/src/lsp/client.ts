@@ -30,7 +30,6 @@ import {
     ShowDocumentResult,
     ResponseError,
     LSPErrorCodes,
-    updateConfigurationRequestType,
 } from '@aws/language-server-runtimes/protocol'
 import {
     AuthUtil,
@@ -187,13 +186,13 @@ export async function startLanguageServer(
      *
      * All other LSP initialization steps should happen after this.
      */
-    await initializeAuth(client)
+    await initializeAuth(client, toDispose)
 
     await postStartLanguageServer(client, resourcePaths, toDispose)
 
     return client
 
-    async function initializeAuth(client: LanguageClient) {
+    async function initializeAuth(client: LanguageClient, toDispose: vscode.Disposable[]) {
         AuthUtil.create(new auth2.LanguageClientAuth(client, clientId, encryptionKey))
 
         // Migrate SSO connections from old Auth to the LSP identity server
@@ -205,15 +204,17 @@ export async function startLanguageServer(
             getLogger().error(`Error while migration SSO connection to Amazon Q LSP: ${e}`)
         }
 
-        // Push region profile to the Q Language Server whenever it changes
-        AuthUtil.instance.regionProfileManager.onDidChangeRegionProfile(async () => {
-            void pushConfigUpdate(client, {
-                type: 'profile',
-                profileArn: AuthUtil.instance.regionProfileManager.activeRegionProfile?.arn,
+        // We set these handlers before the auth restore below since it may trigger these
+        toDispose.push(
+            // Push region profile to the Q Language Server whenever it changes
+            AuthUtil.instance.regionProfileManager.onDidChangeRegionProfile(async () => {
+                await sendDeveloperProfileToLsp(client)
+            }),
+            // Handle for Customization when the Developer Profile changes
+            AuthUtil.instance.regionProfileManager.onDidChangeRegionProfile((e) => {
+                onProfileChangedListener(e)
             })
-        })
-        // Handle for Customization when the Developer Profile changes
-        AuthUtil.instance.regionProfileManager.onDidChangeRegionProfile(onProfileChangedListener)
+        )
 
         // THIS SHOULD BE LAST!!!
         // This will result start the process of initializing the cached token (if it exists)
@@ -268,23 +269,6 @@ async function postStartLanguageServer(
         }
     )
 
-    const sendProfileToLsp = async () => {
-        try {
-            const result = await client.sendRequest(updateConfigurationRequestType.method, {
-                section: 'aws.q',
-                settings: {
-                    profileArn: AuthUtil.instance.regionProfileManager.activeRegionProfile?.arn,
-                },
-            })
-            client.info(
-                `Client: Updated Amazon Q Profile ${AuthUtil.instance.regionProfileManager.activeRegionProfile?.arn} to Amazon Q LSP`,
-                result
-            )
-        } catch (err) {
-            client.error('Error when setting Q Developer Profile to Amazon Q LSP', err)
-        }
-    }
-
     let promise: Promise<void> | undefined
     let resolver: () => void = () => {}
     client.onProgress(GetSsoTokenProgressType, GetSsoTokenProgressToken, async (partialResult: GetSsoTokenProgress) => {
@@ -305,7 +289,7 @@ async function postStartLanguageServer(
         }
 
         // send profile to lsp once.
-        void sendProfileToLsp()
+        void sendDeveloperProfileToLsp(client)
 
         void vscode.window.withProgress(
             {
@@ -337,7 +321,6 @@ async function postStartLanguageServer(
     }
 
     toDispose.push(
-        AuthUtil.instance.regionProfileManager.onDidChangeRegionProfile(sendProfileToLsp),
         vscode.commands.registerCommand('aws.amazonq.getWorkspaceId', async () => {
             const requestType = new RequestType<GetConfigurationFromServerParams, ResponseMessage, Error>(
                 'aws/getConfigurationFromServer'
@@ -396,6 +379,20 @@ async function postStartLanguageServer(
         // Set this inside onReady so that it only triggers on subsequent language server starts (not the first)
         onServerRestartHandler(client)
     )
+}
+
+async function sendDeveloperProfileToLsp(client: LanguageClient) {
+    const profileArn = AuthUtil.instance.regionProfileManager.activeRegionProfile?.arn
+
+    try {
+        await pushConfigUpdate(client, {
+            type: 'profile',
+            profileArn,
+        })
+        client.info(`DeveloperProfile: Successfully pushed Developer Profile, ${profileArn}, to Amazon Q LSP`)
+    } catch (err) {
+        client.error(`DeveloperProfile: Failed to push Developer Profile, ${profileArn}, to Amazon Q LSP`, err)
+    }
 }
 
 /**
