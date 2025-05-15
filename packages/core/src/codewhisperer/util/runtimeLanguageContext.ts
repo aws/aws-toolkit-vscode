@@ -67,7 +67,7 @@ export class RuntimeLanguageContext {
 
     constructor() {
         this.supportedLanguageMap = createConstantMap<
-            Exclude<CodeWhispererConstants.PlatformLanguageId | CodewhispererLanguage, 'plaintext'>,
+            CodeWhispererConstants.PlatformLanguageId | CodewhispererLanguage,
             CodewhispererLanguage
         >({
             c: 'c',
@@ -85,6 +85,7 @@ export class RuntimeLanguageContext {
             jsx: 'jsx',
             kotlin: 'kotlin',
             packer: 'tf',
+            plaintext: 'plaintext',
             php: 'php',
             python: 'python',
             ruby: 'ruby',
@@ -111,7 +112,6 @@ export class RuntimeLanguageContext {
             systemverilog: 'systemVerilog',
             verilog: 'systemVerilog',
             vue: 'vue',
-            abap: 'abap',
         })
         this.supportedLanguageExtensionMap = createConstantMap<string, CodewhispererLanguage>({
             c: 'c',
@@ -152,8 +152,6 @@ export class RuntimeLanguageContext {
             ps1: 'powershell',
             psm1: 'powershell',
             r: 'r',
-            abap: 'abap',
-            acds: 'abap',
         })
         this.languageSingleLineCommentPrefixMap = createConstantMap<CodewhispererLanguage, string>({
             c: '// ',
@@ -187,12 +185,7 @@ export class RuntimeLanguageContext {
             vue: '', // vue lacks a single-line comment prefix
             yaml: '# ',
             yml: '# ',
-            abap: '',
         })
-    }
-
-    public resolveLang(doc: vscode.TextDocument): CodewhispererLanguage {
-        return this.normalizeLanguage(doc.languageId) || this.byFileExt(doc) || 'plaintext'
     }
 
     /**
@@ -324,7 +317,8 @@ export class RuntimeLanguageContext {
         } else {
             const normalizedLanguageId = this.normalizeLanguage(arg.languageId)
             const byLanguageId = !normalizedLanguageId || normalizedLanguageId === 'plaintext' ? false : true
-            const byFileExtension = this.byFileExt(arg) !== undefined
+            const extension = path.extname(arg.uri.fsPath)
+            const byFileExtension = this.isFileFormatSupported(extension.substring(1))
 
             return byLanguageId || byFileExtension
         }
@@ -346,17 +340,6 @@ export class RuntimeLanguageContext {
      */
     public getLanguageFromFileExtension(fileExtension: string) {
         return this.supportedLanguageExtensionMap.get(fileExtension)
-    }
-
-    private byFileExt(doc: vscode.TextDocument): CodewhispererLanguage | undefined {
-        const extension = path.extname(doc.uri.fsPath)
-        const byExt = this.supportedLanguageExtensionMap.get(extension.substring(1))
-
-        if (byExt === 'plaintext') {
-            return undefined
-        }
-
-        return byExt
     }
 }
 
