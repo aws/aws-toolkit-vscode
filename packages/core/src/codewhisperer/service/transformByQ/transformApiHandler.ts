@@ -521,39 +521,51 @@ export function getFormattedString(s: string) {
     return CodeWhispererConstants.formattedStringMap.get(s) ?? s
 }
 
-export function addTableMarkdown(plan: string, stepId: string, tableMapping: { [key: string]: string }) {
-    const tableObj = tableMapping[stepId]
-    if (!tableObj) {
-        // no table present for this step
+export function addTableMarkdown(plan: string, stepId: string, tableMapping: { [key: string]: string[] }) {
+    const tableObjects = tableMapping[stepId]
+    if (!tableObjects || tableObjects.length === 0 || tableObjects.every((table: string) => table === '')) {
+        // no tables for this stepId
         return plan
     }
-    const table = JSON.parse(tableObj)
-    if (table.rows.length === 0) {
-        // empty table
-        plan += `\n\nThere are no ${table.name.toLowerCase()} to display.\n\n`
+    const tables: any[] = []
+    tableObjects.forEach((tableObj: string) => {
+        try {
+            const table = JSON.parse(tableObj)
+            if (table) {
+                tables.push(table)
+            }
+        } catch (e) {
+            getLogger().error(`CodeTransformation: Failed to parse table JSON, skipping: ${e}`)
+        }
+    })
+
+    if (tables.every((table: any) => table.rows.length === 0)) {
+        // empty tables for this stepId
+        plan += `\n\nThere are no ${tables[0].name.toLowerCase()} to display.\n\n`
         return plan
     }
-    plan += `\n\n\n${table.name}\n|`
-    const columns = table.columnNames
-    // eslint-disable-next-line unicorn/no-array-for-each
+    // table name and columns are shared, so only add to plan once
+    plan += `\n\n\n${tables[0].name}\n|`
+    const columns = tables[0].columnNames
     columns.forEach((columnName: string) => {
         plan += ` ${getFormattedString(columnName)} |`
     })
     plan += '\n|'
-    // eslint-disable-next-line unicorn/no-array-for-each
     columns.forEach((_: any) => {
         plan += '-----|'
     })
-    // eslint-disable-next-line unicorn/no-array-for-each
-    table.rows.forEach((row: any) => {
-        plan += '\n|'
-        // eslint-disable-next-line unicorn/no-array-for-each
-        columns.forEach((columnName: string) => {
-            if (columnName === 'relativePath') {
-                plan += ` [${row[columnName]}](${row[columnName]}) |` // add MD link only for files
-            } else {
-                plan += ` ${row[columnName]} |`
-            }
+    // add all rows of all tables
+    tables.forEach((table: any) => {
+        table.rows.forEach((row: any) => {
+            plan += '\n|'
+            columns.forEach((columnName: string) => {
+                if (columnName === 'relativePath') {
+                    // add markdown link only for file paths
+                    plan += ` [${row[columnName]}](${row[columnName]}) |`
+                } else {
+                    plan += ` ${row[columnName]} |`
+                }
+            })
         })
     })
     plan += '\n\n'
@@ -561,11 +573,13 @@ export function addTableMarkdown(plan: string, stepId: string, tableMapping: { [
 }
 
 export function getTableMapping(stepZeroProgressUpdates: ProgressUpdates) {
-    const map: { [key: string]: string } = {}
+    const map: { [key: string]: string[] } = {}
     for (const update of stepZeroProgressUpdates) {
-        // description should never be undefined since even if no data we show an empty table
-        // but just in case, empty string allows us to skip this table without errors when rendering
-        map[update.name] = update.description ?? ''
+        if (!map[update.name]) {
+            map[update.name] = []
+        }
+        // empty string allows us to skip this table when rendering
+        map[update.name].push(update.description ?? '')
     }
     return map
 }
@@ -594,6 +608,78 @@ export async function getTransformationPlan(jobId: string, profile: RegionProfil
             profileArn: profile?.arn,
         })
 
+        // TO-DO: remove this mocked API response
+        response = {
+            transformationPlan: {
+                transformationSteps: [
+                    {
+                        id: '0',
+                        name: 'Supplement Info',
+                        status: 'COMPLETED',
+                        progressUpdates: [
+                            {
+                                name: '0',
+                                status: 'COMPLETED',
+                                description:
+                                    '{"type":"STATISTICS","name":"Plan Statistics","description":null,"columnNames":["name","value"],"rows":[{"name":"linesOfCode","value":"2532"},{"name":"plannedDependencyChanges","value":"4"},{"name":"plannedDeprecatedApiChanges","value":"0"},{"name":"plannedFileChanges","value":"7"}]}',
+                            },
+                            {
+                                name: '1',
+                                status: 'COMPLETED',
+                                description:
+                                    '{"type":"DEPENDENCIES","name":"Dependency Changes","description":null,"columnNames":["dependencyName","action","currentVersion","targetVersion"],"rows":[]}',
+                            },
+                            {
+                                name: '1',
+                                status: 'COMPLETED',
+                                description:
+                                    '{"type":"DEPENDENCIES","name":"Dependency Changes","description":null,"columnNames":["dependencyName","action","currentVersion","targetVersion"],"rows":[{"dependencyName":"junit:junit","action":"REMOVE","currentVersion":"4.12","targetVersion":"-"},{"dependencyName":"org.apache.logging.log4j:log4j-slf4j-impl","action":"ADD","currentVersion":"-","targetVersion":"2.x"},{"dependencyName":"org.apache.maven.plugins:maven-surefire-plugin","action":"UPDATE","currentVersion":"2.18.1","targetVersion":"3.1.x"},{"dependencyName":"org.slf4j:slf4j-log4j12","action":"REMOVE","currentVersion":"1.8.0-beta0","targetVersion":"-"}]}',
+                            },
+                            {
+                                name: '1',
+                                status: 'FAILED',
+                                description:
+                                    '{"type":"DEPENDENCIES","name":"Dependency Changes","description":null,"columnNames":["dependencyName","action","currentVersion","targetVersion"],"rows":[{"dependencyName":"com.squareup.okio:okio","action":"UPDATE","currentVersion":"4.12","targetVersion":"-"},{"dependencyName":"org.apache.logging.log4j:log4j-slf4j-impl","action":"ADD","currentVersion":"-","targetVersion":"2.x"},{"dependencyName":"org.apache.maven.plugins:maven-surefire-plugin","action":"UPDATE","currentVersion":"2.18.1","targetVersion":"3.1.x"},{"dependencyName":"org.slf4j:slf4j-log4j12","action":"REMOVE","currentVersion":"1.8.0-beta0","targetVersion":"-"}]}',
+                            },
+                            {
+                                name: '1',
+                                status: 'FAILED',
+                                description:
+                                    '{"type":"DEPENDENCIES","name":"Dependency Changes","description":null,"columnNames":["dependencyName","action","currentVersion","targetVersion"],"rows":[{"dependencyName":"com.squareup.okio:okio","action":"UPDATE","currentVersion":"4.12","targetVersion":"-"},{"dependencyName":"org.apache.logging.log4j:log4j-slf4j-impl","action":"ADD","currentVersion":"-","targetVersion":"2.x"},{"dependencyName":"org.apache.maven.plugins:maven-surefire-plugin","action":"UPDATE","currentVersion":"2.18.1","targetVersion":"3.1.x"},{"dependencyName":"org.slf4j:slf4j-log4j12","action":"REMOVE","currentVersion":"1.8.0-beta0","targetVersion":"-"}]}',
+                            },
+                            {
+                                name: '1',
+                                status: 'COMPLETED',
+                                description:
+                                    '{"type":"DEPENDENCIES","name":"Dependency Changes","description":null,"columnNames":["dependencyName","action","currentVersion","targetVersion"],"rows":[{"dependencyName":"com.squareup.okio:okio","action":"UPDATE","currentVersion":"4.12","targetVersion":"-"},{"dependencyName":"org.apache.logging.log4j:log4j-slf4j-impl","action":"ADD","currentVersion":"-","targetVersion":"2.x"},{"dependencyName":"org.apache.maven.plugins:maven-surefire-plugin","action":"UPDATE","currentVersion":"2.18.1","targetVersion":"3.1.x"},{"dependencyName":"org.slf4j:slf4j-log4j12","action":"REMOVE","currentVersion":"1.8.0-beta0","targetVersion":"-"}]}',
+                            },
+                            {
+                                name: '-1',
+                                status: 'COMPLETED',
+                                description:
+                                    '{"type":"FILES","name":"File Changes","description":null,"columnNames":["relativePath","action"],"rows":[{"relativePath":"src/main/test/com/nxllxn/plantuml/java/TopLevelInterfaceTest.java","action":"UPDATE"},{"relativePath":"src/main/test/com/nxllxn/plantuml/java/TopLevelEnumerationTest.java","action":"UPDATE"},{"relativePath":"src/main/test/com/nxllxn/plantuml/java/TopLevelClassTest.java","action":"UPDATE"},{"relativePath":"src/main/test/com/nxllxn/plantuml/java/TopLevelAnnotationTest.java","action":"UPDATE"},{"relativePath":"src/main/test/com/nxllxn/plantuml/java/ParameterTest.java","action":"UPDATE"},{"relativePath":"src/main/test/com/nxllxn/plantuml/java/MethodTest.java","action":"UPDATE"},{"relativePath":"src/main/test/com/nxllxn/plantuml/java/FieldTest.java","action":"UPDATE"}]}',
+                            },
+                        ],
+                    },
+                    {
+                        id: '1',
+                        name: 'Step 1 - Update JDK version, dependencies and related code (David)',
+                        description:
+                            'Amazon Q will attempt to update the JDK version and change the following dependencies and related code.',
+                        status: 'CREATED',
+                        progressUpdates: [],
+                    },
+                    {
+                        id: '2',
+                        name: 'Step 2 - Finalize code changes',
+                        description: 'Amazon Q will attempt to replace the following instances of deprecated code.',
+                        status: 'CREATED',
+                        progressUpdates: [],
+                    },
+                ],
+            },
+        }
+
         const stepZeroProgressUpdates = response.transformationPlan.transformationSteps[0].progressUpdates
 
         if (!stepZeroProgressUpdates || stepZeroProgressUpdates.length === 0) {
@@ -604,7 +690,7 @@ export async function getTransformationPlan(jobId: string, profile: RegionProfil
         // gets a mapping between the ID ('name' field) of each progressUpdate (substep) and the associated table
         const tableMapping = getTableMapping(stepZeroProgressUpdates)
 
-        const jobStatistics = JSON.parse(tableMapping['0']).rows // ID of '0' reserved for job statistics table
+        const jobStatistics = JSON.parse(tableMapping['0'][0]).rows // ID of '0' reserved for job statistics table; only 1 table there
 
         // get logo directly since we only use one logo regardless of color theme
         const logoIcon = getTransformationIcon('transformLogo')
@@ -631,7 +717,7 @@ export async function getTransformationPlan(jobId: string, profile: RegionProfil
         }
         plan += `</div><br>`
         plan += `<p style="font-size: 18px; margin-bottom: 4px;"><b>Appendix</b><br><a href="#top" style="float: right; font-size: 14px;">Scroll to top <img src="${arrowIcon}" style="vertical-align: middle;"></a></p><br>`
-        plan = addTableMarkdown(plan, '-1', tableMapping) // ID of '-1' reserved for appendix table
+        plan = addTableMarkdown(plan, '-1', tableMapping) // ID of '-1' reserved for appendix table; only 1 table there
         return plan
     } catch (e: any) {
         const errorMessage = (e as Error).message
