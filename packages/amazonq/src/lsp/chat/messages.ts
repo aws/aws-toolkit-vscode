@@ -134,9 +134,6 @@ export function registerMessageListeners(
             return
         }
 
-        // eslint-disable-next-line aws-toolkits/no-console-log
-        console.log('vscode message:', message)
-
         const webview = provider.webview
         switch (message.command) {
             case COPY_TO_CLIPBOARD:
