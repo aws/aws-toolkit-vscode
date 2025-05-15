@@ -318,3 +318,48 @@ export class GlobalState implements vscode.Memento {
         return all?.[id]
     }
 }
+
+/**
+ * Utility class that polls a state value at regular intervals and triggers a callback when the state changes.
+ *
+ * This class can be used to monitor changes in global state and react to those changes.
+ */
+export class GlobalStatePoller {
+    protected oldValue: any
+    protected getState: () => any
+    protected changeHandler: () => void
+
+    constructor(getState: () => any, changeHandler: () => void) {
+        this.getState = getState
+        this.changeHandler = changeHandler
+        this.oldValue = getState()
+    }
+
+    /**
+     * Factory method that creates and starts a GlobalStatePoller instance.
+     *
+     * @param getState - Function that returns the current state value to monitor, e.g. globals.globalState.tryGet
+     * @param changeHandler - Callback function that is invoked when the state changes
+     * @returns A new GlobalStatePoller instance that has already started polling
+     */
+    static create(getState: () => any, changeHandler: () => void) {
+        const instance = new GlobalStatePoller(getState, changeHandler)
+        instance.poll()
+        return instance
+    }
+
+    /**
+     * Starts polling the state value at 1 second intervals.
+     * When a change is detected, the changeHandler callback is invoked.
+     */
+    poll() {
+        const interval = 1000 // ms
+        setInterval(() => {
+            const newValue = this.getState()
+            if (this.oldValue !== newValue) {
+                this.oldValue = newValue
+                this.changeHandler()
+            }
+        }, interval)
+    }
+}
