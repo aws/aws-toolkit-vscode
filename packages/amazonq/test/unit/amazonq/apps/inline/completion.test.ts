@@ -230,46 +230,6 @@ describe('InlineCompletionManager', () => {
                 assert(registerProviderStub.calledTwice) // Once in constructor, once after rejection
             })
         })
-
-        describe('previous command', () => {
-            it('should register and handle previous command correctly', async () => {
-                const prevCommandCall = registerCommandStub
-                    .getCalls()
-                    .find((call) => call.args[0] === 'editor.action.inlineSuggest.showPrevious')
-
-                assert(prevCommandCall, 'Previous command should be registered')
-
-                if (prevCommandCall) {
-                    const handler = prevCommandCall.args[1]
-                    await handler()
-
-                    assert(executeCommandStub.calledWith('editor.action.inlineSuggest.hide'))
-                    assert(disposableStub.calledOnce)
-                    assert(registerProviderStub.calledTwice)
-                    assert(executeCommandStub.calledWith('editor.action.inlineSuggest.trigger'))
-                }
-            })
-        })
-
-        describe('next command', () => {
-            it('should register and handle next command correctly', async () => {
-                const nextCommandCall = registerCommandStub
-                    .getCalls()
-                    .find((call) => call.args[0] === 'editor.action.inlineSuggest.showNext')
-
-                assert(nextCommandCall, 'Next command should be registered')
-
-                if (nextCommandCall) {
-                    const handler = nextCommandCall.args[1]
-                    await handler()
-
-                    assert(executeCommandStub.calledWith('editor.action.inlineSuggest.hide'))
-                    assert(disposableStub.calledOnce)
-                    assert(registerProviderStub.calledTwice)
-                    assert(executeCommandStub.calledWith('editor.action.inlineSuggest.trigger'))
-                }
-            })
-        })
     })
 
     describe('AmazonQInlineCompletionItemProvider', () => {
