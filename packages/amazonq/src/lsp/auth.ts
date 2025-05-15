@@ -18,6 +18,7 @@ import { AuthUtil } from 'aws-core-vscode/codewhisperer'
 import { Writable } from 'stream'
 import { onceChanged } from 'aws-core-vscode/utils'
 import { getLogger, oneMinute } from 'aws-core-vscode/shared'
+import { isSsoConnection } from 'aws-core-vscode/auth'
 
 export const encryptionKey = crypto.randomBytes(32)
 
@@ -76,8 +77,8 @@ export class AmazonQLspAuth {
      * @param force bypass memoization, and forcefully update the bearer token
      */
     async refreshConnection(force: boolean = false) {
-        const activeConnection = this.authUtil.auth.activeConnection
-        if (activeConnection?.state === 'valid' && activeConnection?.type === 'sso') {
+        const activeConnection = this.authUtil.conn
+        if (this.authUtil.isConnectionValid() && isSsoConnection(activeConnection)) {
             // send the token to the language server
             const token = await this.authUtil.getBearerToken()
             await (force ? this._updateBearerToken(token) : this.updateBearerToken(token))
@@ -118,7 +119,7 @@ export class AmazonQLspAuth {
             data: jwt,
             metadata: {
                 sso: {
-                    startUrl: AuthUtil.instance.auth.startUrl,
+                    startUrl: AuthUtil.instance.startUrl,
                 },
             },
             encrypted: true,
