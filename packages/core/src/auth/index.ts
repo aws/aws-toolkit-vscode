@@ -18,6 +18,7 @@ export {
     isBuilderIdConnection,
     getTelemetryMetadataForConn,
     isIamConnection,
+    isSsoConnection,
 } from './connection'
 export { Auth } from './auth'
 export { CredentialsStore } from './credentials/store'

@@ -32,6 +32,8 @@ import {
     getSerializedChatRequestType,
     listConversationsRequestType,
     conversationClickRequestType,
+    listMcpServersRequestType,
+    mcpServerClickRequestType,
     ShowSaveFileDialogRequestType,
     ShowSaveFileDialogParams,
     LSPErrorCodes,
@@ -310,6 +312,8 @@ export function registerMessageListeners(
             }
             case listConversationsRequestType.method:
             case conversationClickRequestType.method:
+            case listMcpServersRequestType.method:
+            case mcpServerClickRequestType.method:
             case tabBarActionRequestType.method:
                 await resolveChatResponse(message.command, message.params, languageClient, webview)
                 break

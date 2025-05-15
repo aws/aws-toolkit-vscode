@@ -17,7 +17,6 @@ import {
     GetConfigurationFromServerParams,
     RenameFilesParams,
     ResponseMessage,
-    updateConfigurationRequestType,
     WorkspaceFolder,
     GetSsoTokenProgress,
     GetSsoTokenProgressToken,
@@ -31,6 +30,7 @@ import {
     ShowDocumentResult,
     ResponseError,
     LSPErrorCodes,
+    updateConfigurationRequestType,
 } from '@aws/language-server-runtimes/protocol'
 import { AuthUtil, CodeWhispererSettings, getSelectedCustomization } from 'aws-core-vscode/codewhisperer'
 import {
@@ -43,8 +43,7 @@ import {
     getLogger,
     undefinedIfEmpty,
     getOptOutPreference,
-    isAmazonInternalOs,
-    fs,
+    isAmazonLinux2,
     oidcClientName,
     openUrl,
     getClientId,
@@ -60,13 +59,15 @@ import { telemetry } from 'aws-core-vscode/telemetry'
 const localize = nls.loadMessageBundle()
 const logger = getLogger('amazonqLsp.lspClient')
 
+export const glibcLinker: string = process.env.VSCODE_SERVER_CUSTOM_GLIBC_LINKER || ''
+export const glibcPath: string = process.env.VSCODE_SERVER_CUSTOM_GLIBC_PATH || ''
+export function hasGlibcPatch(): boolean {
+    return glibcLinker.length > 0 && glibcPath.length > 0
+}
+
 export const clientId = 'amazonq'
 export const clientName = oidcClientName()
 export const encryptionKey = crypto.randomBytes(32)
-
-export async function hasGlibcPatch(): Promise<boolean> {
-    return await fs.exists('/opt/vsc-sysroot/lib64/ld-linux-x86-64.so.2')
-}
 
 export async function startLanguageServer(
     extensionContext: vscode.ExtensionContext,
@@ -88,13 +89,8 @@ export async function startLanguageServer(
     const traceServerEnabled = Settings.instance.isSet(`${clientId}.trace.server`)
     let executable: string[] = []
     // apply the GLIBC 2.28 path to node js runtime binary
-    if (isAmazonInternalOs() && (await hasGlibcPatch())) {
-        executable = [
-            '/opt/vsc-sysroot/lib64/ld-linux-x86-64.so.2',
-            '--library-path',
-            '/opt/vsc-sysroot/lib64',
-            resourcePaths.node,
-        ]
+    if (isAmazonLinux2() && hasGlibcPatch()) {
+        executable = [glibcLinker, '--library-path', glibcPath, resourcePaths.node]
         getLogger('amazonqLsp').info(`Patched node runtime with GLIBC to ${executable}`)
     } else {
         executable = [resourcePaths.node]
@@ -177,6 +173,7 @@ export async function startLanguageServer(
 
     const disposable = client.start()
     toDispose.push(disposable)
+    await client.onReady()
 
     await client.onReady()
 
