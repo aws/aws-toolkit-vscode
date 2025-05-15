@@ -16,7 +16,6 @@ import {
     GetConfigurationFromServerParams,
     RenameFilesParams,
     ResponseMessage,
-    updateConfigurationRequestType,
     WorkspaceFolder,
 } from '@aws/language-server-runtimes/protocol'
 import { AuthUtil, CodeWhispererSettings, getSelectedCustomization } from 'aws-core-vscode/codewhisperer'
@@ -164,25 +163,18 @@ export async function startLanguageServer(
 
     const auth = await initializeAuth(client)
 
-    await postStartLanguageServer(auth, client, resourcePaths, toDispose)
+    await onLanguageServerReady(auth, client, resourcePaths, toDispose)
 
     return client
 }
 
 async function initializeAuth(client: LanguageClient): Promise<AmazonQLspAuth> {
-    AuthUtil.instance.regionProfileManager.onDidChangeRegionProfile(async () => {
-        void pushConfigUpdate(client, {
-            type: 'profile',
-            profileArn: AuthUtil.instance.regionProfileManager.activeRegionProfile?.arn,
-        })
-    })
-
     const auth = new AmazonQLspAuth(client)
     await auth.refreshConnection(true)
     return auth
 }
 
-async function postStartLanguageServer(
+async function onLanguageServerReady(
     auth: AmazonQLspAuth,
     client: LanguageClient,
     resourcePaths: AmazonQResourcePaths,
@@ -208,25 +200,17 @@ async function postStartLanguageServer(
 
     const refreshInterval = auth.startTokenRefreshInterval(10 * oneSecond)
 
-    const sendProfileToLsp = async () => {
-        try {
-            const result = await client.sendRequest(updateConfigurationRequestType.method, {
-                section: 'aws.q',
-                settings: {
-                    profileArn: AuthUtil.instance.regionProfileManager.activeRegionProfile?.arn,
-                },
-            })
-            client.info(
-                `Client: Updated Amazon Q Profile ${AuthUtil.instance.regionProfileManager.activeRegionProfile?.arn} to Amazon Q LSP`,
-                result
-            )
-        } catch (err) {
-            client.error('Error when setting Q Developer Profile to Amazon Q LSP', err)
-        }
-    }
+    // We manually push the cached values the first time since event handlers, which should push, may not have been setup yet.
+    // Execution order is weird and should be fixed in the flare implementation.
+    // TODO: Revisit if we need this if we setup the event handlers properly
+    if (AuthUtil.instance.isConnectionValid()) {
+        await sendProfileToLsp(client)
 
-    // send profile to lsp once.
-    void sendProfileToLsp()
+        await pushConfigUpdate(client, {
+            type: 'customization',
+            customization: getSelectedCustomization(),
+        })
+    }
 
     toDispose.push(
         AuthUtil.instance.auth.onDidChangeActiveConnection(async () => {
@@ -235,7 +219,7 @@ async function postStartLanguageServer(
         AuthUtil.instance.auth.onDidDeleteConnection(async () => {
             client.sendNotification(notificationTypes.deleteBearerToken.method)
         }),
-        AuthUtil.instance.regionProfileManager.onDidChangeRegionProfile(sendProfileToLsp),
+        AuthUtil.instance.regionProfileManager.onDidChangeRegionProfile(() => sendProfileToLsp(client)),
         vscode.commands.registerCommand('aws.amazonq.getWorkspaceId', async () => {
             const requestType = new RequestType<GetConfigurationFromServerParams, ResponseMessage, Error>(
                 'aws/getConfigurationFromServer'
@@ -295,6 +279,13 @@ async function postStartLanguageServer(
         // Set this inside onReady so that it only triggers on subsequent language server starts (not the first)
         onServerRestartHandler(client, auth)
     )
+
+    async function sendProfileToLsp(client: LanguageClient) {
+        await pushConfigUpdate(client, {
+            type: 'profile',
+            profileArn: AuthUtil.instance.regionProfileManager.activeRegionProfile?.arn,
+        })
+    }
 }
 
 /**

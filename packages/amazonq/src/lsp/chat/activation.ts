@@ -17,22 +17,6 @@ import { pushConfigUpdate } from '../config'
 export async function activate(languageClient: LanguageClient, encryptionKey: Buffer, mynahUIPath: string) {
     const disposables = globals.context.subscriptions
 
-    // Make sure we've sent an auth profile to the language server before even initializing the UI
-    //
-    // Ideally the handler for onDidChangeRegionProfile would trigger this, but because the handler is set up too late (due to the current structure), the initial event is missed.
-    // So we have to explicitly do it here on startup.
-    if (AuthUtil.instance.isConnectionValid()) {
-        await pushConfigUpdate(languageClient, {
-            type: 'profile',
-            profileArn: AuthUtil.instance.regionProfileManager.activeRegionProfile?.arn,
-        })
-
-        await pushConfigUpdate(languageClient, {
-            type: 'customization',
-            customization: getSelectedCustomization(),
-        })
-    }
-
     const provider = new AmazonQChatViewProvider(mynahUIPath)
 
     disposables.push(
