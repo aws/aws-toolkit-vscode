@@ -55,10 +55,7 @@ export class SessionManager {
     }
 
     public getActiveRecommendation(): InlineCompletionItemWithReferences[] {
-        if (!this.activeSession) {
-            return []
-        }
-        return this.activeSession.suggestions
+        return this.activeSession?.suggestions ?? []
     }
 
     public get acceptedSuggestionCount(): number {
