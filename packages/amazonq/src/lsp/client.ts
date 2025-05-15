@@ -188,7 +188,7 @@ export async function startLanguageServer(
      */
     await initializeAuth(client, toDispose)
 
-    await postStartLanguageServer(client, resourcePaths, toDispose)
+    await onLanguageServerReady(client, resourcePaths, toDispose)
 
     return client
 
@@ -222,7 +222,7 @@ export async function startLanguageServer(
     }
 }
 
-async function postStartLanguageServer(
+async function onLanguageServerReady(
     client: LanguageClient,
     resourcePaths: AmazonQResourcePaths,
     toDispose: vscode.Disposable[]
