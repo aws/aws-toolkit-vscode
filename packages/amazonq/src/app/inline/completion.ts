@@ -34,13 +34,14 @@ import {
     CodeSuggestionsState,
     vsCodeState,
     inlineCompletionsDebounceDelay,
+    noInlineSuggestionsMsg,
 } from 'aws-core-vscode/codewhisperer'
 import { InlineGeneratingMessage } from './inlineGeneratingMessage'
 import { LineTracker } from './stateTracker/lineTracker'
 import { InlineTutorialAnnotation } from './tutorials/inlineTutorialAnnotation'
 import { TelemetryHelper } from './telemetryHelper'
 import { getLogger } from 'aws-core-vscode/shared'
-import { debounce } from 'aws-core-vscode/utils'
+import { debounce, messageUtils } from 'aws-core-vscode/utils'
 
 export class InlineCompletionManager implements Disposable {
     private disposable: Disposable
@@ -241,7 +242,16 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
             const items = this.sessionManager.getActiveRecommendation()
             const session = this.sessionManager.getActiveSession()
             const editor = window.activeTextEditor
+
+            // Show message to user when manual invoke fails to produce results.
+            if (items.length === 0 && context.triggerKind === InlineCompletionTriggerKind.Invoke) {
+                void messageUtils.showTimedMessage(noInlineSuggestionsMsg, 2000)
+            }
+
             if (!session || !items.length || !editor) {
+                getLogger().debug(
+                    `Failed to produce inline suggestion results. Received ${items.length} items from service`
+                )
                 return []
             }
 
