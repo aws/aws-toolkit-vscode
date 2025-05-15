@@ -125,7 +125,7 @@ export class RegionProfileManager {
         const getProfileFunction = () =>
             globals.globalState.tryGet<{ [label: string]: RegionProfile }>('aws.amazonq.regionProfiles', Object, {})
         const profileChangedHandler = async () => {
-            const profile = await this.loadPersistedRegionProfle()
+            const profile = this.loadPersistedRegionProfle()
             void this._switchRegionProfile(profile[this.authProvider.profileName], 'reload')
         }
 
@@ -274,7 +274,7 @@ export class RegionProfileManager {
 
     // Note: should be called after [this.authProvider.isConnected()] returns non null
     async restoreRegionProfile() {
-        const previousSelected = (await this.loadPersistedRegionProfle())[this.authProvider.profileName] || undefined
+        const previousSelected = this.loadPersistedRegionProfle()[this.authProvider.profileName] || undefined
         if (!previousSelected) {
             return
         }
@@ -308,7 +308,7 @@ export class RegionProfileManager {
         await this.switchRegionProfile(previousSelected, 'reload')
     }
 
-    private async loadPersistedRegionProfle(): Promise<{ [label: string]: RegionProfile }> {
+    private loadPersistedRegionProfle(): { [label: string]: RegionProfile } {
         const previousPersistedState = globals.globalState.tryGet<{ [label: string]: RegionProfile }>(
             'aws.amazonq.regionProfiles',
             Object,
