@@ -361,6 +361,9 @@ export class GlobalStatePoller {
      * Starts polling the state value. When a change is detected, the changeHandler callback is invoked.
      */
     private poll() {
+        if (this.intervalId) {
+            this.kill()
+        }
         this.intervalId = setInterval(() => {
             const newValue = this.getState()
             if (this.oldValue !== newValue) {
