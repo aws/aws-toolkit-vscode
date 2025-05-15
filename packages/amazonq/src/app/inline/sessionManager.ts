@@ -17,7 +17,6 @@ interface CodeWhispererSession {
 
 export class SessionManager {
     private activeSession?: CodeWhispererSession
-    private activeIndex: number = 0
     private _acceptedSuggestionCount: number = 0
 
     constructor() {}
@@ -35,7 +34,6 @@ export class SessionManager {
             requestStartTime,
             firstCompletionDisplayLatency,
         }
-        this.activeIndex = 0
     }
 
     public closeSession() {
@@ -56,23 +54,6 @@ export class SessionManager {
         this.activeSession.suggestions = [...this.activeSession.suggestions, ...suggestions]
     }
 
-    public incrementActiveIndex() {
-        const suggestionCount = this.activeSession?.suggestions?.length
-        if (!suggestionCount) {
-            return
-        }
-        this.activeIndex === suggestionCount - 1 ? suggestionCount - 1 : this.activeIndex++
-    }
-
-    public decrementActiveIndex() {
-        this.activeIndex === 0 ? 0 : this.activeIndex--
-    }
-
-    /*
-        We have to maintain the active suggestion index ourselves because VS Code doesn't expose which suggestion it's currently showing
-        In order to keep track of the right suggestion state, and for features such as reference tracker, this hack is still needed
-     */
-
     public getActiveRecommendation(): InlineCompletionItemWithReferences[] {
         if (!this.activeSession) {
             return []
@@ -90,6 +71,5 @@ export class SessionManager {
 
     public clear() {
         this.activeSession = undefined
-        this.activeIndex = 0
     }
 }
