@@ -34,7 +34,7 @@ import {
     CodeSuggestionsState,
     vsCodeState,
     inlineCompletionsDebounceDelay,
-    noSuggestions,
+    noInlineSuggestionsMsg,
 } from 'aws-core-vscode/codewhisperer'
 import { InlineGeneratingMessage } from './inlineGeneratingMessage'
 import { LineTracker } from './stateTracker/lineTracker'
@@ -245,7 +245,7 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
 
             // Show message to user when manual invoke fails to produce results.
             if (items.length === 0 && context.triggerKind === InlineCompletionTriggerKind.Invoke) {
-                void messageUtils.showTimedMessage(noSuggestions, 2000)
+                void messageUtils.showTimedMessage(noInlineSuggestionsMsg, 2000)
             }
 
             if (!session || !items.length || !editor) {

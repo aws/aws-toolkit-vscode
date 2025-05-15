@@ -155,7 +155,7 @@ export const runningSecurityScan = 'Reviewing project for code issues...'
 
 export const runningFileScan = 'Reviewing current file for code issues...'
 
-export const noSuggestions = 'No suggestions from Amazon Q'
+export const noInlineSuggestionsMsg = 'No suggestions from Amazon Q'
 
 export const licenseFilter = 'Amazon Q suggestions were filtered due to reference settings'
 

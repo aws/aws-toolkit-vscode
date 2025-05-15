@@ -21,7 +21,7 @@ import { RecommendationService } from '../../../../../src/app/inline/recommendat
 import { SessionManager } from '../../../../../src/app/inline/sessionManager'
 import { createMockDocument, createMockTextEditor, getTestWindow, installFakeClock } from 'aws-core-vscode/test'
 import {
-    noSuggestions,
+    noInlineSuggestionsMsg,
     ReferenceHoverProvider,
     ReferenceInlineProvider,
     ReferenceLogViewProvider,
@@ -422,7 +422,7 @@ describe('InlineCompletionManager', () => {
                     getActiveRecommendationStub.returns([])
                     let messageShown = false
                     getTestWindow().onDidShowMessage((e) => {
-                        assert.strictEqual(e.message, noSuggestions)
+                        assert.strictEqual(e.message, noInlineSuggestionsMsg)
                         messageShown = true
                     })
                     await provider.provideInlineCompletionItems(
