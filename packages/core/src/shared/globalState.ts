@@ -319,6 +319,12 @@ export class GlobalState implements vscode.Memento {
     }
 }
 
+export interface GlobalStatePollerProps {
+    getState: () => any
+    changeHandler: () => void
+    pollIntervalInMs: number
+}
+
 /**
  * Utility class that polls a state value at regular intervals and triggers a callback when the state changes.
  *
@@ -326,13 +332,16 @@ export class GlobalState implements vscode.Memento {
  */
 export class GlobalStatePoller {
     protected oldValue: any
+    protected pollIntervalInMs: number
     protected getState: () => any
     protected changeHandler: () => void
+    protected intervalId?: NodeJS.Timeout
 
-    constructor(getState: () => any, changeHandler: () => void) {
-        this.getState = getState
-        this.changeHandler = changeHandler
-        this.oldValue = getState()
+    constructor(props: GlobalStatePollerProps) {
+        this.getState = props.getState
+        this.changeHandler = props.changeHandler
+        this.pollIntervalInMs = props.pollIntervalInMs
+        this.oldValue = this.getState()
     }
 
     /**
@@ -342,24 +351,32 @@ export class GlobalStatePoller {
      * @param changeHandler - Callback function that is invoked when the state changes
      * @returns A new GlobalStatePoller instance that has already started polling
      */
-    static create(getState: () => any, changeHandler: () => void) {
-        const instance = new GlobalStatePoller(getState, changeHandler)
+    static create(props: GlobalStatePollerProps) {
+        const instance = new GlobalStatePoller(props)
         instance.poll()
         return instance
     }
 
     /**
-     * Starts polling the state value at 1 second intervals.
-     * When a change is detected, the changeHandler callback is invoked.
+     * Starts polling the state value. When a change is detected, the changeHandler callback is invoked.
      */
-    poll() {
-        const interval = 1000 // ms
-        setInterval(() => {
+    private poll() {
+        this.intervalId = setInterval(() => {
             const newValue = this.getState()
             if (this.oldValue !== newValue) {
                 this.oldValue = newValue
                 this.changeHandler()
             }
-        }, interval)
+        }, this.pollIntervalInMs)
+    }
+
+    /**
+     * Stops the polling interval.
+     */
+    kill() {
+        if (this.intervalId) {
+            clearInterval(this.intervalId)
+            this.intervalId = undefined
+        }
     }
 }

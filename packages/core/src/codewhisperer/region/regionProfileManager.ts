@@ -38,6 +38,9 @@ const endpoints = createConstantMap({
     'eu-central-1': 'https://q.eu-central-1.amazonaws.com/',
 })
 
+const getRegionProfile = () =>
+    globals.globalState.tryGet<{ [label: string]: RegionProfile }>('aws.amazonq.regionProfiles', Object, {})
+
 /**
  * 'user' -> users change the profile through Q menu
  * 'auth' -> users change the profile through webview profile selector page
@@ -80,6 +83,17 @@ export class RegionProfileManager {
         }
     })(this.listRegionProfile.bind(this))
 
+    // This is a poller that handles synchornization of selected region profiles between different IDE windows.
+    // It checks for changes in global state of region profile, invoking the change handler to switch profiles
+    public globalStatePoller = GlobalStatePoller.create({
+        getState: getRegionProfile,
+        changeHandler: async () => {
+            const profile = this.loadPersistedRegionProfle()
+            void this._switchRegionProfile(profile[this.authProvider.profileName], 'reload')
+        },
+        pollIntervalInMs: 2000,
+    })
+
     get activeRegionProfile() {
         if (this.authProvider.isBuilderIdConnection()) {
             return undefined
@@ -121,18 +135,7 @@ export class RegionProfileManager {
         return this._profiles
     }
 
-    constructor(private readonly authProvider: IAuthProvider) {
-        const getProfileFunction = () =>
-            globals.globalState.tryGet<{ [label: string]: RegionProfile }>('aws.amazonq.regionProfiles', Object, {})
-        const profileChangedHandler = async () => {
-            const profile = this.loadPersistedRegionProfle()
-            void this._switchRegionProfile(profile[this.authProvider.profileName], 'reload')
-        }
-
-        // This is a poller that handles synchornization of selected region profiles between different IDE windows.
-        // It checks for changes in global state of region profile, invoking the change handler to switch profiles
-        GlobalStatePoller.create(getProfileFunction, profileChangedHandler)
-    }
+    constructor(private readonly authProvider: IAuthProvider) {}
 
     async getProfiles(): Promise<RegionProfile[]> {
         return this.cache.getResource()
@@ -309,13 +312,7 @@ export class RegionProfileManager {
     }
 
     private loadPersistedRegionProfle(): { [label: string]: RegionProfile } {
-        const previousPersistedState = globals.globalState.tryGet<{ [label: string]: RegionProfile }>(
-            'aws.amazonq.regionProfiles',
-            Object,
-            {}
-        )
-
-        return previousPersistedState
+        return getRegionProfile()
     }
 
     async persistSelectRegionProfile() {
@@ -325,11 +322,7 @@ export class RegionProfileManager {
         }
 
         // persist connectionId to profileArn
-        const previousPersistedState = globals.globalState.tryGet<{ [label: string]: RegionProfile }>(
-            'aws.amazonq.regionProfiles',
-            Object,
-            {}
-        )
+        const previousPersistedState = getRegionProfile()
 
         previousPersistedState[this.authProvider.profileName] = this.activeRegionProfile
         await globals.globalState.update('aws.amazonq.regionProfiles', previousPersistedState)

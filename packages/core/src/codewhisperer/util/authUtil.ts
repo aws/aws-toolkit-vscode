@@ -277,7 +277,7 @@ export class AuthUtil implements IAuthProvider {
         })
     }
 
-    private async cacheChangedHandler(event: string) {
+    private async cacheChangedHandler(event: 'create' | 'delete') {
         if (event === 'delete') {
             await this.logout()
         } else if (event === 'create') {
