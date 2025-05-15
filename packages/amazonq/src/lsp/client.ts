@@ -32,7 +32,12 @@ import {
     LSPErrorCodes,
     updateConfigurationRequestType,
 } from '@aws/language-server-runtimes/protocol'
-import { AuthUtil, CodeWhispererSettings, getSelectedCustomization } from 'aws-core-vscode/codewhisperer'
+import {
+    AuthUtil,
+    CodeWhispererSettings,
+    getSelectedCustomization,
+    onProfileChangedListener,
+} from 'aws-core-vscode/codewhisperer'
 import {
     Settings,
     createServerOptions,
@@ -175,11 +180,12 @@ export async function startLanguageServer(
     toDispose.push(disposable)
 
     await client.onReady()
-
     /**
      * We use the Flare Auth language server, and our Auth client depends on it.
      * Because of this we initialize our Auth client **immediately** after the language server is ready.
      * Doing this removes the chance of something else attempting to use the Auth client before it is ready.
+     *
+     * All other LSP initialization steps should happen after this.
      */
     await initializeAuth(client)
 
@@ -199,15 +205,18 @@ export async function startLanguageServer(
             getLogger().error(`Error while migration SSO connection to Amazon Q LSP: ${e}`)
         }
 
-        /** All must be setup before {@link AuthUtil.restore} otherwise they may not trigger when expected */
+        // Push region profile to the Q Language Server whenever it changes
         AuthUtil.instance.regionProfileManager.onDidChangeRegionProfile(async () => {
             void pushConfigUpdate(client, {
                 type: 'profile',
                 profileArn: AuthUtil.instance.regionProfileManager.activeRegionProfile?.arn,
             })
         })
+        // Handle for Customization when the Developer Profile changes
+        AuthUtil.instance.regionProfileManager.onDidChangeRegionProfile(onProfileChangedListener)
 
-        // Try and restore a cached connection if exists
+        // THIS SHOULD BE LAST!!!
+        // This will result start the process of initializing the cached token (if it exists)
         await AuthUtil.instance.restore()
     }
 }

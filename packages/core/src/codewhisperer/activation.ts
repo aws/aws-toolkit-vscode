@@ -72,7 +72,6 @@ import { AuthUtil } from './util/authUtil'
 import { ImportAdderProvider } from './service/importAdderProvider'
 import { TelemetryHelper } from './util/telemetryHelper'
 import { openUrl } from '../shared/utilities/vsCodeUtils'
-import { onProfileChangedListener } from './util/customizationUtil'
 import { CodeWhispererCommandBackend, CodeWhispererCommandDeclarations } from './commands/gettingStartedPageCommands'
 import { SecurityIssueHoverProvider } from './service/securityIssueHoverProvider'
 import { SecurityIssueCodeActionProvider } from './service/securityIssueCodeActionProvider'
@@ -334,8 +333,7 @@ export async function activate(context: ExtContext): Promise<void> {
             [...CodeWhispererConstants.securityScanLanguageIds],
             SecurityIssueCodeActionProvider.instance
         ),
-        vscode.commands.registerCommand('aws.amazonq.openEditorAtRange', openEditorAtRange),
-        AuthUtil.instance.regionProfileManager.onDidChangeRegionProfile(onProfileChangedListener)
+        vscode.commands.registerCommand('aws.amazonq.openEditorAtRange', openEditorAtRange)
     )
 
     // run the auth startup code with context for telemetry
