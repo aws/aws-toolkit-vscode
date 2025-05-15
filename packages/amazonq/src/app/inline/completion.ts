@@ -28,7 +28,6 @@ import { RecommendationService } from './recommendationService'
 import {
     CodeWhispererConstants,
     ReferenceHoverProvider,
-    ReferenceInlineProvider,
     ReferenceLogViewProvider,
     ImportAdderProvider,
     CodeSuggestionsState,
@@ -234,11 +233,6 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
                 }
                 item.range = new Range(cursorPosition, cursorPosition)
                 item.insertText = typeof item.insertText === 'string' ? item.insertText : item.insertText.value
-                ReferenceInlineProvider.instance.setInlineReference(
-                    cursorPosition.line,
-                    item.insertText,
-                    item.references
-                )
                 ImportAdderProvider.instance.onShowRecommendation(document, cursorPosition.line, item)
             }
             return items as InlineCompletionItem[]
