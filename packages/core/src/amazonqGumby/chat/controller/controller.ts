@@ -688,7 +688,7 @@ export class GumbyController {
                 const pathToJavaHome = extractPath(data.message)
                 if (pathToJavaHome) {
                     transformByQState.setSourceJavaHome(pathToJavaHome)
-                    // TO-DO: delete line below and comment block below when releasing CSB
+                    // TO-DO: delete line below and uncomment the block below when releasing CSB
                     await this.prepareLanguageUpgradeProject(data.tabID)
                     // if source and target JDK versions are the same, just re-use the source JAVA_HOME and start the build
                     /*
