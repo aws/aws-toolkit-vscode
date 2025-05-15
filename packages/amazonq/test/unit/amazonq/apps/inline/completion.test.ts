@@ -320,30 +320,12 @@ describe('InlineCompletionManager', () => {
                     assert(getAllRecommendationsStub.calledOnce)
                     assert.deepStrictEqual(items, mockSuggestions)
                 }),
-                it('should not call recommendation service for existing sessions', async () => {
-                    provider = new AmazonQInlineCompletionItemProvider(
-                        languageClient,
-                        recommendationService,
-                        mockSessionManager,
-                        inlineTutorialAnnotation,
-                        false
-                    )
-                    const items = await provider.provideInlineCompletionItems(
-                        mockDocument,
-                        mockPosition,
-                        mockContext,
-                        mockToken
-                    )
-                    assert(getAllRecommendationsStub.notCalled)
-                    assert.deepStrictEqual(items, mockSuggestions)
-                }),
                 it('should handle reference if there is any', async () => {
                     provider = new AmazonQInlineCompletionItemProvider(
                         languageClient,
                         recommendationService,
                         mockSessionManager,
-                        inlineTutorialAnnotation,
-                        false
+                        inlineTutorialAnnotation
                     )
                     await provider.provideInlineCompletionItems(mockDocument, mockPosition, mockContext, mockToken)
                     assert(setInlineReferenceStub.calledOnce)
@@ -360,8 +342,7 @@ describe('InlineCompletionManager', () => {
                         languageClient,
                         recommendationService,
                         mockSessionManager,
-                        inlineTutorialAnnotation,
-                        true
+                        inlineTutorialAnnotation
                     )
                     getActiveRecommendationStub.returns([
                         {
@@ -391,8 +372,7 @@ describe('InlineCompletionManager', () => {
                         languageClient,
                         recommendationService,
                         mockSessionManager,
-                        inlineTutorialAnnotation,
-                        true
+                        inlineTutorialAnnotation
                     )
                     const expectedText = 'this is my text'
                     getActiveRecommendationStub.returns([
@@ -415,8 +395,7 @@ describe('InlineCompletionManager', () => {
                         languageClient,
                         recommendationService,
                         mockSessionManager,
-                        inlineTutorialAnnotation,
-                        true
+                        inlineTutorialAnnotation
                     )
                     getActiveRecommendationStub.returns([])
                     const messageShown = new Promise((resolve) =>
@@ -449,8 +428,7 @@ describe('InlineCompletionManager', () => {
                         languageClient,
                         recommendationService,
                         mockSessionManager,
-                        inlineTutorialAnnotation,
-                        false
+                        inlineTutorialAnnotation
                     )
                     const p1 = provider.provideInlineCompletionItems(mockDocument, mockPosition, mockContext, mockToken)
                     const p2 = provider.provideInlineCompletionItems(mockDocument, mockPosition, mockContext, mockToken)

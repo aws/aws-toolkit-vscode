@@ -74,27 +74,10 @@ export class SessionManager {
      */
 
     public getActiveRecommendation(): InlineCompletionItemWithReferences[] {
-        let suggestionCount = this.activeSession?.suggestions.length
-        if (!suggestionCount) {
+        if (!this.activeSession) {
             return []
         }
-        if (suggestionCount === 1 && this.activeSession?.isRequestInProgress) {
-            suggestionCount += 1
-        }
-
-        const activeSuggestion = this.activeSession?.suggestions[this.activeIndex]
-        if (!activeSuggestion) {
-            return []
-        }
-        const items = [activeSuggestion]
-        // to make the total number of suggestions match the actual number
-        for (let i = 1; i < suggestionCount; i++) {
-            items.push({
-                ...activeSuggestion,
-                insertText: `${i}`,
-            })
-        }
-        return items
+        return this.activeSession.suggestions
     }
 
     public get acceptedSuggestionCount(): number {
