@@ -67,6 +67,8 @@ interface BaseLogin {
     readonly loginType: LoginType
 }
 
+export type cacheChangedEvent = 'delete' | 'create'
+
 export type Login = SsoLogin // TODO: add IamLogin type when supported
 
 export type TokenSource = IamIdentityCenterSsoTokenSource | AwsBuilderIdSsoTokenSource
@@ -168,7 +170,7 @@ export class LanguageClientAuth {
         this.client.onNotification(ssoTokenChangedRequestType.method, ssoTokenChangedHandler)
     }
 
-    registerCacheWatcher(cacheChangedHandler: (event: string) => any) {
+    registerCacheWatcher(cacheChangedHandler: (event: cacheChangedEvent) => any) {
         this.cacheWatcher.onDidCreate(() => cacheChangedHandler('create'))
         this.cacheWatcher.onDidDelete(() => cacheChangedHandler('delete'))
     }

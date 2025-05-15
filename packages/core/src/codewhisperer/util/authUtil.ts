@@ -31,7 +31,7 @@ import { showAmazonQWalkthroughOnce } from '../../amazonq/onboardingPage/walkthr
 import { setContext } from '../../shared/vscode/setContext'
 import { openUrl } from '../../shared/utilities/vsCodeUtils'
 import { telemetry } from '../../shared/telemetry/telemetry'
-import { AuthStateEvent, LanguageClientAuth, LoginTypes, SsoLogin } from '../../auth/auth2'
+import { AuthStateEvent, cacheChangedEvent, LanguageClientAuth, LoginTypes, SsoLogin } from '../../auth/auth2'
 import { builderIdStartUrl, internalStartUrl } from '../../auth/sso/constants'
 import { VSCODE_EXTENSION_ID } from '../../shared/extensions'
 import { RegionProfileManager } from '../region/regionProfileManager'
@@ -90,7 +90,7 @@ export class AuthUtil implements IAuthProvider {
         this.regionProfileManager.onDidChangeRegionProfile(async () => {
             await this.setVscodeContextProps()
         })
-        lspAuth.registerCacheWatcher(async (event: string) => await this.cacheChangedHandler(event))
+        lspAuth.registerCacheWatcher(async (event: cacheChangedEvent) => await this.cacheChangedHandler(event))
     }
 
     // Do NOT use this in production code, only used for testing
@@ -277,7 +277,7 @@ export class AuthUtil implements IAuthProvider {
         })
     }
 
-    private async cacheChangedHandler(event: 'create' | 'delete') {
+    private async cacheChangedHandler(event: cacheChangedEvent) {
         if (event === 'delete') {
             await this.logout()
         } else if (event === 'create') {
