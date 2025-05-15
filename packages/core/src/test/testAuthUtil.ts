@@ -36,6 +36,7 @@ export async function createTestAuthUtil() {
         deleteBearerToken: sinon.stub().resolves(),
         updateBearerToken: sinon.stub().resolves(),
         invalidateSsoToken: sinon.stub().resolves(),
+        registerCacheWatcher: sinon.stub().resolves(),
         encryptionKey,
     }
 
