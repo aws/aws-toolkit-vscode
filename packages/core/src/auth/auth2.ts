@@ -41,6 +41,7 @@ import { LanguageClient } from 'vscode-languageclient'
 import { getLogger } from '../shared/logger/logger'
 import { ToolkitError } from '../shared/errors'
 import { useDeviceFlow } from './sso/ssoAccessTokenProvider'
+import { getCacheFileWatcher } from './sso/cache'
 
 export const notificationTypes = {
     updateBearerToken: new RequestType<UpdateCredentialsParams, ResponseMessage, Error>(
@@ -74,11 +75,17 @@ export type TokenSource = IamIdentityCenterSsoTokenSource | AwsBuilderIdSsoToken
  * Handles auth requests to the Identity Server in the Amazon Q LSP.
  */
 export class LanguageClientAuth {
+    readonly #ssoCacheWatcher = getCacheFileWatcher()
+
     constructor(
         private readonly client: LanguageClient,
         private readonly clientName: string,
         public readonly encryptionKey: Buffer
     ) {}
+
+    public get cacheWatcher() {
+        return this.#ssoCacheWatcher
+    }
 
     getSsoToken(
         tokenSource: TokenSource,
@@ -159,6 +166,11 @@ export class LanguageClientAuth {
 
     registerSsoTokenChangedHandler(ssoTokenChangedHandler: (params: SsoTokenChangedParams) => any) {
         this.client.onNotification(ssoTokenChangedRequestType.method, ssoTokenChangedHandler)
+    }
+
+    registerCacheWatcher(cacheChangedHandler: (event: string) => any) {
+        this.cacheWatcher.onDidCreate(() => cacheChangedHandler('create'))
+        this.cacheWatcher.onDidDelete(() => cacheChangedHandler('delete'))
     }
 }
 

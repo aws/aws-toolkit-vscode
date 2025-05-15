@@ -24,6 +24,9 @@ import { localize } from '../../shared/utilities/vsCodeUtils'
 import { IAuthProvider } from '../util/authUtil'
 import { Commands } from '../../shared/vscode/commands2'
 import { CachedResource } from '../../shared/utilities/resourceCache'
+import { fs } from '../../shared/fs/fs'
+import path from 'path'
+import { globalKey } from '../../shared/globalState'
 
 // TODO: is there a better way to manage all endpoint strings in one place?
 export const defaultServiceConfig: CodeWhispererConfig = {
@@ -57,6 +60,7 @@ export class RegionProfileManager {
     public readonly onDidChangeRegionProfile = this._onDidChangeRegionProfile.event
     // Store the last API results (for UI propuse) so we don't need to call service again if doesn't require "latest" result
     private _profiles: RegionProfile[] = []
+    //private sharedState: SharedState
 
     private readonly cache = new (class extends CachedResource<RegionProfile[]> {
         constructor(private readonly profileProvider: () => Promise<RegionProfile[]>) {
@@ -120,7 +124,22 @@ export class RegionProfileManager {
         return this._profiles
     }
 
-    constructor(private readonly authProvider: IAuthProvider) {}
+    constructor(private readonly authProvider: IAuthProvider) {
+        const getProfileFunction = () =>
+            globals.globalState.tryGet<{ [label: string]: RegionProfile }>('aws.amazonq.regionProfiles', Object, {})
+
+        const profileChangedHandler = async () => {
+            const profile = await this.loadPersistedRegionProfle()
+            void this._switchRegionProfile(profile[this.authProvider.profileName], 'reload')
+        }
+
+        GlobalStatePoller.create(getProfileFunction, profileChangedHandler)
+
+        //     , async () => {
+        //     void this._switchRegionProfile((await this.loadPersistedRegionProfle())[this.authProvider.profileName], 'user')
+        // })
+        //this.sharedState = new SharedState('aws.amazonq.regionProfiles')
+    }
 
     async getProfiles(): Promise<RegionProfile[]> {
         return this.cache.getResource()
@@ -232,6 +251,10 @@ export class RegionProfileManager {
     }
 
     private async _switchRegionProfile(regionProfile: RegionProfile | undefined, source: ProfileSwitchIntent) {
+        if (this._activeRegionProfile?.arn === regionProfile?.arn) {
+            return
+        }
+
         this._activeRegionProfile = regionProfile
 
         this._onDidChangeRegionProfile.fire({
@@ -246,6 +269,8 @@ export class RegionProfileManager {
         // persist to state
         await this.persistSelectRegionProfile()
 
+        //this.sharedState.updateSharedState(this._activeRegionProfile)
+
         // Force status bar to reflect this change in state
         await Commands.tryExecute('aws.amazonq.refreshStatusBar')
     }
@@ -258,7 +283,7 @@ export class RegionProfileManager {
 
     // Note: should be called after [this.authProvider.isConnected()] returns non null
     async restoreRegionProfile() {
-        const previousSelected = this.loadPersistedRegionProfle()[this.authProvider.profileName] || undefined
+        const previousSelected = (await this.loadPersistedRegionProfle())[this.authProvider.profileName] || undefined
         if (!previousSelected) {
             return
         }
@@ -292,7 +317,7 @@ export class RegionProfileManager {
         await this.switchRegionProfile(previousSelected, 'reload')
     }
 
-    private loadPersistedRegionProfle(): { [label: string]: RegionProfile } {
+    private async loadPersistedRegionProfle(): Promise<{ [label: string]: RegionProfile }> {
         const previousPersistedState = globals.globalState.tryGet<{ [label: string]: RegionProfile }>(
             'aws.amazonq.regionProfiles',
             Object,
@@ -317,6 +342,13 @@ export class RegionProfileManager {
 
         previousPersistedState[this.authProvider.profileName] = this.activeRegionProfile
         await globals.globalState.update('aws.amazonq.regionProfiles', previousPersistedState)
+
+        const persistedState = globals.globalState.tryGet<{ [label: string]: RegionProfile }>(
+            'aws.amazonq.regionProfiles',
+            Object,
+            {}
+        )
+        console.log(persistedState)
     }
 
     async generateQuickPickItem(): Promise<DataQuickPickItem<string>[]> {
@@ -360,6 +392,7 @@ export class RegionProfileManager {
         if (arn) {
             if (this.activeRegionProfile && this.activeRegionProfile.arn === arn) {
                 this._activeRegionProfile = undefined
+                //this.sharedState.updateSharedState(this._activeRegionProfile)
             }
 
             const profiles = this.loadPersistedRegionProfle()
@@ -417,5 +450,84 @@ export class RegionProfileManager {
         )) as CodeWhispererUserClient
 
         return c
+    }
+}
+
+export class GlobalStatePoller {
+    protected oldValue: any
+    protected getState: Function
+    protected changeHandler: Function
+
+    constructor(getState: Function, changeHandler: Function) {
+        this.getState = getState
+        this.changeHandler = changeHandler
+        this.oldValue = getState()
+    }
+
+    static create(getState: Function, changeHandler: () => void) {
+        const instance = new GlobalStatePoller(getState, changeHandler)
+        instance.poll()
+        return instance
+    }
+
+    poll() {
+        const interval = 1000 // ms
+        setInterval(() => {
+            const newValue = this.getState()
+            if (this.oldValue !== newValue) {
+                this.oldValue = newValue
+                this.changeHandler()
+            }
+        }, interval)
+    }
+}
+
+export class SharedState {
+    readonly key: globalKey
+    protected value: any
+    readonly filePath: string
+
+    constructor(key: globalKey) {
+        this.key = key
+        this.filePath = path.join(globals.context.globalStorageUri.fsPath, `${key}.json`)
+    }
+
+    static async create(key: globalKey, changeHandler: () => void) {
+        const instance = new SharedState(key)
+        await instance.createGlobalStateFile()
+        const fileWatcher = instance.getSharedStateFileWatcher()
+        fileWatcher.onDidChange(changeHandler)
+    }
+
+    protected async createGlobalStateFile() {
+        if (!(await fs.existsFile(this.filePath))) {
+            await this.updateFile()
+        }
+    }
+
+    protected async updateFile() {
+        await fs.writeFile(this.filePath, `${new Date().toISOString()}`, { encoding: 'utf8' })
+    }
+
+    protected getSharedStateFileWatcher() {
+        const watcher = vscode.workspace.createFileSystemWatcher(
+            new vscode.RelativePattern(globals.context.globalStorageUri, `${this.key}.json`)
+        )
+        globals.context.subscriptions.push(watcher)
+        return watcher
+    }
+
+    async updateSharedState(value: any) {
+        const persistedState = globals.globalState.tryGet<{ [label: string]: RegionProfile }>(
+            'aws.amazonq.regionProfiles',
+            Object,
+            {}
+        )
+        console.log(persistedState)
+        if (value === this.value && value !== undefined) {
+            return
+        }
+        this.value = value
+        await this.updateFile()
     }
 }

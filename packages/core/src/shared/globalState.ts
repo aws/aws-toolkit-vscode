@@ -51,7 +51,7 @@ export type globalKey =
     | 'aws.amazonq.customization.overrideV2'
     | 'aws.amazonq.regionProfiles'
     | 'aws.amazonq.regionProfiles.cache'
-    // Deprecated/legacy names. New keys should start with "aws.".
+    // Deprecated/legacy names. New keys should start with "aws.".x
     | '#sessionCreationDates' // Legacy name from `ssoAccessTokenProvider.ts`.
     | 'CODECATALYST_RECONNECT'
     | 'CODEWHISPERER_AUTO_SCANS_ENABLED'

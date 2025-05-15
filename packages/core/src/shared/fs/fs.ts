@@ -123,7 +123,7 @@ export class FileSystem {
      * The {@link vscode.workspace.fs} implementation does not explicitly provide an append method
      * so we must do it ourselves (this implementation is inefficient).
      */
-    async appendFile(path: Uri | string, content: Uint8Array | string): Promise<void> {
+    async appendFile(path: Uri | string, content: Uint8Array | string, overwrite: boolean = false): Promise<void> {
         path = toUri(path)
 
         const currentContent: Uint8Array = (await this.existsFile(path))

@@ -90,6 +90,7 @@ export class AuthUtil implements IAuthProvider {
         this.regionProfileManager.onDidChangeRegionProfile(async () => {
             await this.setVscodeContextProps()
         })
+        lspAuth.registerCacheWatcher((event: string) => this.cacheChangedHandler(event))
     }
 
     // Do NOT use this in production code, only used for testing
@@ -274,6 +275,14 @@ export class AuthUtil implements IAuthProvider {
                 })
             })
         })
+    }
+
+    private cacheChangedHandler(event: string) {
+        if (event === 'delete') {
+            this.logout()
+        } else if (event === 'create') {
+            this.restore()
+        }
     }
 
     private async stateChangeHandler(e: AuthStateEvent) {
