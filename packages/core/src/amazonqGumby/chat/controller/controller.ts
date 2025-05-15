@@ -367,15 +367,11 @@ export class GumbyController {
                     this.transformationFinished({
                         message: CodeWhispererConstants.jobCancelledChatMessage,
                         tabID: message.tabID,
-                        includeStartNewTransformationButton: true,
                     })
                 })
                 break
             case ButtonActions.CONFIRM_SKIP_TESTS_FORM:
                 await this.handleSkipTestsSelection(message)
-                break
-            case ButtonActions.CONFIRM_SELECTIVE_TRANSFORMATION_FORM:
-                await this.handleOneOrMultipleDiffs(message)
                 break
             case ButtonActions.CONFIRM_SQL_CONVERSION_TRANSFORMATION_FORM:
                 await this.handleUserSQLConversionProjectSelection(message)
@@ -441,25 +437,6 @@ export class GumbyController {
                 userChoice: skipTestsSelection,
             })
             this.messenger.sendSkipTestsSelectionMessage(skipTestsSelection, message.tabID)
-            await this.messenger.sendOneOrMultipleDiffsPrompt(message.tabID)
-        })
-    }
-
-    private async handleOneOrMultipleDiffs(message: any) {
-        await telemetry.codeTransform_submitSelection.run(async () => {
-            const oneOrMultipleDiffsSelection = message.formSelectedValues['GumbyTransformOneOrMultipleDiffsForm']
-            if (oneOrMultipleDiffsSelection === CodeWhispererConstants.multipleDiffsMessage) {
-                transformByQState.setMultipleDiffs(true)
-            } else {
-                transformByQState.setMultipleDiffs(false)
-            }
-
-            telemetry.record({
-                codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-                userChoice: oneOrMultipleDiffsSelection,
-            })
-
-            this.messenger.sendOneOrMultipleDiffsMessage(oneOrMultipleDiffsSelection, message.tabID)
             this.promptJavaHome('source', message.tabID)
             // TO-DO: delete line above and uncomment line below when releasing CSB
             // await this.messenger.sendCustomDependencyVersionMessage(message.tabID)
@@ -618,7 +595,6 @@ export class GumbyController {
             this.transformationFinished({
                 message: CodeWhispererConstants.jobCancelledChatMessage,
                 tabID: message.tabID,
-                includeStartNewTransformationButton: true,
             })
             return
         }
@@ -647,15 +623,11 @@ export class GumbyController {
         )
     }
 
-    private transformationFinished(data: {
-        message: string | undefined
-        tabID: string
-        includeStartNewTransformationButton: boolean
-    }) {
+    private transformationFinished(data: { message: string | undefined; tabID: string }) {
         this.resetTransformationChatFlow()
         // at this point job is either completed, partially_completed, cancelled, or failed
         if (data.message) {
-            this.messenger.sendJobFinishedMessage(data.tabID, data.message, data.includeStartNewTransformationButton)
+            this.messenger.sendJobFinishedMessage(data.tabID, data.message)
         }
     }
 
@@ -779,7 +751,6 @@ export class GumbyController {
             this.transformationFinished({
                 tabID: message.tabID,
                 message: (err as Error).message,
-                includeStartNewTransformationButton: true,
             })
         }
 

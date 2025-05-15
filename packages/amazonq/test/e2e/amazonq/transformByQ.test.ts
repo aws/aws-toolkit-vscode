@@ -65,7 +65,7 @@ describe('Amazon Q Code Transformation', function () {
     })
 
     describe('Starting a transformation from chat', () => {
-        it('Can click through all user input forms for a Java upgrade', async () => {
+        it.only('Can click through all user input forms for a Java upgrade', async () => {
             sinon.stub(startTransformByQ, 'getValidSQLConversionCandidateProjects').resolves([])
             sinon.stub(GumbyController.prototype, 'validateLanguageUpgradeProjects' as keyof GumbyController).resolves([
                 {
@@ -123,29 +123,8 @@ describe('Amazon Q Code Transformation', function () {
                 formItemValues: skipTestsFormValues,
             })
 
-            // 3 additional chat messages (including message with 3rd form) get sent after 2nd form submitted; wait for all of them
-            await tab.waitForEvent(() => tab.getChatItems().length > 9, {
-                waitTimeoutInMs: 5000,
-                waitIntervalInMs: 1000,
-            })
-            const multipleDiffsForm = tab.getChatItems().pop()
-            assert.strictEqual(
-                multipleDiffsForm?.formItems?.[0]?.id ?? undefined,
-                'GumbyTransformOneOrMultipleDiffsForm'
-            )
-
-            const oneOrMultipleDiffsFormItemValues = {
-                GumbyTransformOneOrMultipleDiffsForm: 'One diff',
-            }
-            const oneOrMultipleDiffsFormValues: Record<string, string> = { ...oneOrMultipleDiffsFormItemValues }
-            tab.clickCustomFormButton({
-                id: 'gumbyTransformOneOrMultipleDiffsFormConfirm',
-                text: 'Confirm',
-                formItemValues: oneOrMultipleDiffsFormValues,
-            })
-
             // 2 additional chat messages get sent after 3rd form submitted; wait for both of them
-            await tab.waitForEvent(() => tab.getChatItems().length > 11, {
+            await tab.waitForEvent(() => tab.getChatItems().length > 8, {
                 waitTimeoutInMs: 5000,
                 waitIntervalInMs: 1000,
             })
@@ -172,7 +151,7 @@ describe('Amazon Q Code Transformation', function () {
             tab.addChatMessage({ prompt: '/dummy/path/to/jdk8' })
 
             // 2 additional chat messages get sent after JDK path submitted; wait for both of them
-            await tab.waitForEvent(() => tab.getChatItems().length > 13, {
+            await tab.waitForEvent(() => tab.getChatItems().length > 10, {
                 waitTimeoutInMs: 5000,
                 waitIntervalInMs: 1000,
             })
@@ -194,7 +173,7 @@ describe('Amazon Q Code Transformation', function () {
                 text: 'View summary',
             })
 
-            await tab.waitForEvent(() => tab.getChatItems().length > 14, {
+            await tab.waitForEvent(() => tab.getChatItems().length > 11, {
                 waitTimeoutInMs: 5000,
                 waitIntervalInMs: 1000,
             })

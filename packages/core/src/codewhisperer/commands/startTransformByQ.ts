@@ -699,11 +699,10 @@ export async function postTransformationJob() {
     }
 
     let chatMessage = transformByQState.getJobFailureErrorChatMessage()
-    const diffMessage = CodeWhispererConstants.diffMessage(transformByQState.getMultipleDiffs())
     if (transformByQState.isSucceeded()) {
-        chatMessage = CodeWhispererConstants.jobCompletedChatMessage(diffMessage)
+        chatMessage = CodeWhispererConstants.jobCompletedChatMessage
     } else if (transformByQState.isPartiallySucceeded()) {
-        chatMessage = CodeWhispererConstants.jobPartiallyCompletedChatMessage(diffMessage)
+        chatMessage = CodeWhispererConstants.jobPartiallyCompletedChatMessage
     }
 
     transformByQState.getChatControllers()?.transformationFinished.fire({
@@ -732,13 +731,13 @@ export async function postTransformationJob() {
     }
 
     if (transformByQState.isSucceeded()) {
-        void vscode.window.showInformationMessage(CodeWhispererConstants.jobCompletedNotification(diffMessage), {
+        void vscode.window.showInformationMessage(CodeWhispererConstants.jobCompletedNotification, {
             title: localizedText.ok,
         })
     } else if (transformByQState.isPartiallySucceeded()) {
         void vscode.window
             .showInformationMessage(
-                CodeWhispererConstants.jobPartiallyCompletedNotification(diffMessage),
+                CodeWhispererConstants.jobPartiallyCompletedNotification,
                 CodeWhispererConstants.amazonQFeedbackText
             )
             .then((choice) => {
