@@ -24,6 +24,7 @@ import { localize } from '../../shared/utilities/vsCodeUtils'
 import { IAuthProvider } from '../util/authUtil'
 import { Commands } from '../../shared/vscode/commands2'
 import { CachedResource } from '../../shared/utilities/resourceCache'
+import { GlobalStatePoller } from '../../shared/globalState'
 
 // TODO: is there a better way to manage all endpoint strings in one place?
 export const defaultServiceConfig: CodeWhispererConfig = {
@@ -36,6 +37,9 @@ const endpoints = createConstantMap({
     'us-east-1': 'https://q.us-east-1.amazonaws.com/',
     'eu-central-1': 'https://q.eu-central-1.amazonaws.com/',
 })
+
+const getRegionProfile = () =>
+    globals.globalState.tryGet<{ [label: string]: RegionProfile }>('aws.amazonq.regionProfiles', Object, {})
 
 /**
  * 'user' -> users change the profile through Q menu
@@ -78,6 +82,17 @@ export class RegionProfileManager {
             return this.profileProvider()
         }
     })(this.listRegionProfile.bind(this))
+
+    // This is a poller that handles synchornization of selected region profiles between different IDE windows.
+    // It checks for changes in global state of region profile, invoking the change handler to switch profiles
+    public globalStatePoller = GlobalStatePoller.create({
+        getState: getRegionProfile,
+        changeHandler: async () => {
+            const profile = this.loadPersistedRegionProfle()
+            void this._switchRegionProfile(profile[this.authProvider.profileName], 'reload')
+        },
+        pollIntervalInMs: 2000,
+    })
 
     get activeRegionProfile() {
         if (this.authProvider.isBuilderIdConnection()) {
@@ -232,6 +247,10 @@ export class RegionProfileManager {
     }
 
     private async _switchRegionProfile(regionProfile: RegionProfile | undefined, source: ProfileSwitchIntent) {
+        if (this._activeRegionProfile?.arn === regionProfile?.arn) {
+            return
+        }
+
         this._activeRegionProfile = regionProfile
 
         this._onDidChangeRegionProfile.fire({
@@ -293,13 +312,7 @@ export class RegionProfileManager {
     }
 
     private loadPersistedRegionProfle(): { [label: string]: RegionProfile } {
-        const previousPersistedState = globals.globalState.tryGet<{ [label: string]: RegionProfile }>(
-            'aws.amazonq.regionProfiles',
-            Object,
-            {}
-        )
-
-        return previousPersistedState
+        return getRegionProfile()
     }
 
     async persistSelectRegionProfile() {
@@ -309,11 +322,7 @@ export class RegionProfileManager {
         }
 
         // persist connectionId to profileArn
-        const previousPersistedState = globals.globalState.tryGet<{ [label: string]: RegionProfile }>(
-            'aws.amazonq.regionProfiles',
-            Object,
-            {}
-        )
+        const previousPersistedState = getRegionProfile()
 
         previousPersistedState[this.authProvider.profileName] = this.activeRegionProfile
         await globals.globalState.update('aws.amazonq.regionProfiles', previousPersistedState)

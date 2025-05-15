@@ -318,3 +318,68 @@ export class GlobalState implements vscode.Memento {
         return all?.[id]
     }
 }
+
+export interface GlobalStatePollerProps {
+    getState: () => any
+    changeHandler: () => void
+    pollIntervalInMs: number
+}
+
+/**
+ * Utility class that polls a state value at regular intervals and triggers a callback when the state changes.
+ *
+ * This class can be used to monitor changes in global state and react to those changes.
+ */
+export class GlobalStatePoller {
+    protected oldValue: any
+    protected pollIntervalInMs: number
+    protected getState: () => any
+    protected changeHandler: () => void
+    protected intervalId?: NodeJS.Timeout
+
+    constructor(props: GlobalStatePollerProps) {
+        this.getState = props.getState
+        this.changeHandler = props.changeHandler
+        this.pollIntervalInMs = props.pollIntervalInMs
+        this.oldValue = this.getState()
+    }
+
+    /**
+     * Factory method that creates and starts a GlobalStatePoller instance.
+     *
+     * @param getState - Function that returns the current state value to monitor, e.g. globals.globalState.tryGet
+     * @param changeHandler - Callback function that is invoked when the state changes
+     * @returns A new GlobalStatePoller instance that has already started polling
+     */
+    static create(props: GlobalStatePollerProps) {
+        const instance = new GlobalStatePoller(props)
+        instance.poll()
+        return instance
+    }
+
+    /**
+     * Starts polling the state value. When a change is detected, the changeHandler callback is invoked.
+     */
+    private poll() {
+        if (this.intervalId) {
+            this.kill()
+        }
+        this.intervalId = setInterval(() => {
+            const newValue = this.getState()
+            if (this.oldValue !== newValue) {
+                this.oldValue = newValue
+                this.changeHandler()
+            }
+        }, this.pollIntervalInMs)
+    }
+
+    /**
+     * Stops the polling interval.
+     */
+    kill() {
+        if (this.intervalId) {
+            clearInterval(this.intervalId)
+            this.intervalId = undefined
+        }
+    }
+}

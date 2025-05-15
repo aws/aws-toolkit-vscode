@@ -140,6 +140,34 @@ describe('AuthUtil', async function () {
         })
     })
 
+    describe('cacheChangedHandler', function () {
+        it('calls logout when event is delete', async function () {
+            const logoutSpy = sinon.spy(auth, 'logout')
+
+            await (auth as any).cacheChangedHandler('delete')
+
+            assert.ok(logoutSpy.calledOnce)
+        })
+
+        it('calls restore when event is create', async function () {
+            const restoreSpy = sinon.spy(auth, 'restore')
+
+            await (auth as any).cacheChangedHandler('create')
+
+            assert.ok(restoreSpy.calledOnce)
+        })
+
+        it('does nothing for other events', async function () {
+            const logoutSpy = sinon.spy(auth, 'logout')
+            const restoreSpy = sinon.spy(auth, 'restore')
+
+            await (auth as any).cacheChangedHandler('unknown')
+
+            assert.ok(logoutSpy.notCalled)
+            assert.ok(restoreSpy.notCalled)
+        })
+    })
+
     describe('stateChangeHandler', function () {
         let mockLspAuth: any
         let regionProfileManager: any

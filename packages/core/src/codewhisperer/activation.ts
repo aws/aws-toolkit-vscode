@@ -498,6 +498,7 @@ export async function activate(context: ExtContext): Promise<void> {
 export async function shutdown() {
     RecommendationHandler.instance.reportUserDecisions(-1)
     await CodeWhispererTracker.getTracker().shutdown()
+    AuthUtil.instance.regionProfileManager.globalStatePoller.kill()
 }
 
 function toggleIssuesVisibility(visibleCondition: (issue: CodeScanIssue, filePath: string) => boolean) {
