@@ -181,10 +181,8 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
         context: InlineCompletionContext,
         token: CancellationToken
     ): Promise<InlineCompletionItem[]> {
-        getLogger().debug(`provideInlineCompletionItems: ${context.triggerKind}`)
         try {
             vsCodeState.isRecommendationsActive = true
-            getLogger().debug(`provideInlineCompletionItems triggered`)
             const isAutoTrigger = context.triggerKind === InlineCompletionTriggerKind.Automatic
             if (isAutoTrigger && !CodeSuggestionsState.instance.isSuggestionsEnabled()) {
                 // return early when suggestions are disabled with auto trigger
