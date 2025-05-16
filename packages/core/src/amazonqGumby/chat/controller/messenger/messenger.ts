@@ -157,47 +157,6 @@ export class Messenger {
         )
     }
 
-    public async sendOneOrMultipleDiffsPrompt(tabID: string) {
-        const formItems: ChatItemFormItem[] = []
-        formItems.push({
-            id: 'GumbyTransformOneOrMultipleDiffsForm',
-            type: 'select',
-            title: CodeWhispererConstants.selectiveTransformationFormTitle,
-            mandatory: true,
-            options: [
-                {
-                    value: CodeWhispererConstants.oneDiffMessage,
-                    label: CodeWhispererConstants.oneDiffMessage,
-                },
-                {
-                    value: CodeWhispererConstants.multipleDiffsMessage,
-                    label: CodeWhispererConstants.multipleDiffsMessage,
-                },
-            ],
-        })
-
-        this.dispatcher.sendAsyncEventProgress(
-            new AsyncEventProgressMessage(tabID, {
-                inProgress: true,
-                message: CodeWhispererConstants.userPatchDescriptionChatMessage(
-                    transformByQState.getTargetJDKVersion() ?? ''
-                ),
-            })
-        )
-
-        this.dispatcher.sendChatPrompt(
-            new ChatPrompt(
-                {
-                    message: 'Q Code Transformation',
-                    formItems: formItems,
-                },
-                'TransformOneOrMultipleDiffsForm',
-                tabID,
-                false
-            )
-        )
-    }
-
     public async sendLanguageUpgradeProjectPrompt(projects: TransformationCandidateProject[], tabID: string) {
         const projectFormOptions: { value: any; label: string }[] = []
         const detectedJavaVersions = new Array<JDKVersion | undefined>()
@@ -501,16 +460,14 @@ export class Messenger {
         this.dispatcher.sendCommandMessage(new SendCommandMessage(message.command, message.tabID, message.eventId))
     }
 
-    public sendJobFinishedMessage(tabID: string, message: string, includeStartNewTransformationButton: boolean = true) {
+    public sendJobFinishedMessage(tabID: string, message: string) {
         const buttons: ChatItemButton[] = []
-        if (includeStartNewTransformationButton) {
-            buttons.push({
-                keepCardAfterClick: false,
-                text: CodeWhispererConstants.startTransformationButtonText,
-                id: ButtonActions.CONFIRM_START_TRANSFORMATION_FLOW,
-                disabled: false,
-            })
-        }
+        buttons.push({
+            keepCardAfterClick: false,
+            text: CodeWhispererConstants.startTransformationButtonText,
+            id: ButtonActions.CONFIRM_START_TRANSFORMATION_FLOW,
+            disabled: false,
+        })
 
         if (transformByQState.isPartiallySucceeded() || transformByQState.isSucceeded()) {
             buttons.push({
@@ -595,11 +552,6 @@ export class Messenger {
 
     public sendSkipTestsSelectionMessage(skipTestsSelection: string, tabID: string) {
         const message = `Okay, I will ${skipTestsSelection.toLowerCase()} when building your project.`
-        this.dispatcher.sendChatMessage(new ChatMessage({ message, messageType: 'ai-prompt' }, tabID))
-    }
-
-    public sendOneOrMultipleDiffsMessage(selectiveTransformationSelection: string, tabID: string) {
-        const message = `Okay, I will create ${selectiveTransformationSelection.toLowerCase()} with my proposed changes.`
         this.dispatcher.sendChatMessage(new ChatMessage({ message, messageType: 'ai-prompt' }, tabID))
     }
 
