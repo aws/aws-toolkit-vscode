@@ -9,7 +9,11 @@
 import * as vscode from 'vscode'
 import { Auth } from 'aws-core-vscode/auth'
 import { Commands } from 'aws-core-vscode/shared'
+import { clearCacheDeclaration } from './util/clearCache'
 
 export function registerCommands(context: vscode.ExtensionContext) {
-    context.subscriptions.push(Commands.register('_aws.amazonq.auth.autoConnect', Auth.instance.tryAutoConnect))
+    context.subscriptions.push(
+        Commands.register('_aws.amazonq.auth.autoConnect', Auth.instance.tryAutoConnect),
+        clearCacheDeclaration.register()
+    )
 }
