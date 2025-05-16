@@ -31,7 +31,12 @@ import {
     LSPErrorCodes,
     updateConfigurationRequestType,
 } from '@aws/language-server-runtimes/protocol'
-import { AuthUtil, CodeWhispererSettings, getSelectedCustomization } from 'aws-core-vscode/codewhisperer'
+import {
+    AuthUtil,
+    CodeWhispererSettings,
+    getSelectedCustomization,
+    TelemetryHelper,
+} from 'aws-core-vscode/codewhisperer'
 import {
     Settings,
     createServerOptions,
@@ -46,13 +51,20 @@ import {
     openUrl,
     getClientId,
     extensionVersion,
+    Commands,
 } from 'aws-core-vscode/shared'
 import { processUtils } from 'aws-core-vscode/shared'
 import { activate as activateChat } from './chat/activation'
+import { activate as activeInlineChat } from '../inlineChat/activation'
 import { AmazonQResourcePaths } from './lspInstaller'
 import { auth2 } from 'aws-core-vscode/auth'
 import { ConfigSection, isValidConfigSection, pushConfigUpdate, toAmazonQLSPLogLevel } from './config'
 import { telemetry } from 'aws-core-vscode/telemetry'
+import { SessionManager } from '../app/inline/sessionManager'
+import { LineTracker } from '../app/inline/stateTracker/lineTracker'
+import { InlineChatTutorialAnnotation } from '../app/inline/tutorials/inlineChatTutorialAnnotation'
+import { InlineTutorialAnnotation } from '../app/inline/tutorials/inlineTutorialAnnotation'
+import { InlineCompletionManager } from '../app/inline/completion'
 
 const localize = nls.loadMessageBundle()
 const logger = getLogger('amazonqLsp.lspClient')
@@ -181,7 +193,7 @@ export async function startLanguageServer(
      */
     await initializeAuth(client)
 
-    await postStartLanguageServer(client, resourcePaths, toDispose)
+    await postStartLanguageServer(extensionContext, client, resourcePaths, toDispose)
 
     return client
 
@@ -210,7 +222,60 @@ export async function startLanguageServer(
     }
 }
 
+async function setupInline(
+    extensionContext: vscode.ExtensionContext,
+    client: LanguageClient,
+    toDispose: vscode.Disposable[]
+) {
+    const sessionManager = new SessionManager()
+    const lineTracker = new LineTracker()
+    const inlineTutorialAnnotation = new InlineTutorialAnnotation(lineTracker, sessionManager)
+    const inlineChatTutorialAnnotation = new InlineChatTutorialAnnotation(inlineTutorialAnnotation)
+
+    const inlineManager = new InlineCompletionManager(client, sessionManager, lineTracker, inlineTutorialAnnotation)
+
+    inlineManager.registerInlineCompletion()
+
+    activeInlineChat(extensionContext, client, encryptionKey, inlineChatTutorialAnnotation)
+
+    toDispose.push(
+        inlineManager,
+        Commands.register({ id: 'aws.amazonq.invokeInlineCompletion', autoconnect: true }, async () => {
+            await vscode.commands.executeCommand('editor.action.inlineSuggest.trigger')
+        }),
+        Commands.register('aws.amazonq.refreshAnnotation', async (forceProceed: boolean) => {
+            telemetry.record({
+                traceId: TelemetryHelper.instance.traceId,
+            })
+
+            const editor = vscode.window.activeTextEditor
+            if (editor) {
+                if (forceProceed) {
+                    await inlineTutorialAnnotation.refresh(editor, 'codewhisperer', true)
+                } else {
+                    await inlineTutorialAnnotation.refresh(editor, 'codewhisperer')
+                }
+            }
+        }),
+        Commands.register('aws.amazonq.dismissTutorial', async () => {
+            const editor = vscode.window.activeTextEditor
+            if (editor) {
+                inlineTutorialAnnotation.clear()
+                try {
+                    telemetry.ui_click.emit({ elementId: `dismiss_${inlineTutorialAnnotation.currentState.id}` })
+                } catch (_) {}
+                await inlineTutorialAnnotation.dismissTutorial()
+                getLogger().debug(`codewhisperer: user dismiss tutorial.`)
+            }
+        }),
+        vscode.workspace.onDidCloseTextDocument(async () => {
+            await vscode.commands.executeCommand('aws.amazonq.rejectCodeSuggestion')
+        })
+    )
+}
+
 async function postStartLanguageServer(
+    extensionContext: vscode.ExtensionContext,
     client: LanguageClient,
     resourcePaths: AmazonQResourcePaths,
     toDispose: vscode.Disposable[]
@@ -308,22 +373,11 @@ async function postStartLanguageServer(
         )
     })
 
-    // if (Experiments.instance.get('amazonqLSPInline', false)) {
-    //     const inlineManager = new InlineCompletionManager(client)
-    //     inlineManager.registerInlineCompletion()
-    //     toDispose.push(
-    //         inlineManager,
-    //         Commands.register({ id: 'aws.amazonq.invokeInlineCompletion', autoconnect: true }, async () => {
-    //             await vscode.commands.executeCommand('editor.action.inlineSuggest.trigger')
-    //         }),
-    //         vscode.workspace.onDidCloseTextDocument(async () => {
-    //             await vscode.commands.executeCommand('aws.amazonq.rejectCodeSuggestion')
-    //         })
-    //     )
-    // }
     if (Experiments.instance.get('amazonqChatLSP', true)) {
         await activateChat(client, encryptionKey, resourcePaths.ui)
     }
+
+    await setupInline(extensionContext, client, toDispose)
 
     toDispose.push(
         AuthUtil.instance.regionProfileManager.onDidChangeRegionProfile(sendProfileToLsp),
