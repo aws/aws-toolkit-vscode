@@ -34,6 +34,7 @@ import {
     vsCodeState,
     inlineCompletionsDebounceDelay,
     noInlineSuggestionsMsg,
+    ReferenceInlineProvider,
 } from 'aws-core-vscode/codewhisperer'
 import { InlineGeneratingMessage } from './inlineGeneratingMessage'
 import { LineTracker } from './stateTracker/lineTracker'
@@ -123,6 +124,16 @@ export class InlineCompletionManager implements Disposable {
                 )
                 ReferenceLogViewProvider.instance.addReferenceLog(referenceLog)
                 ReferenceHoverProvider.instance.addCodeReferences(item.insertText as string, item.references)
+
+                // Show codelense for 5 seconds.
+                ReferenceInlineProvider.instance.setInlineReference(
+                    startLine,
+                    item.insertText as string,
+                    item.references
+                )
+                setTimeout(() => {
+                    ReferenceInlineProvider.instance.removeInlineReference()
+                }, 5000)
             }
             if (item.mostRelevantMissingImports?.length) {
                 await ImportAdderProvider.instance.onAcceptRecommendation(editor, item, startLine)
