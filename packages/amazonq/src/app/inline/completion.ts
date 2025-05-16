@@ -34,6 +34,7 @@ import {
     vsCodeState,
     inlineCompletionsDebounceDelay,
     noInlineSuggestionsMsg,
+    referenceAcceptedMsg,
 } from 'aws-core-vscode/codewhisperer'
 import { InlineGeneratingMessage } from './inlineGeneratingMessage'
 import { LineTracker } from './stateTracker/lineTracker'
@@ -87,6 +88,17 @@ export class InlineCompletionManager implements Disposable {
         }
     }
 
+    private showReferenceMessage() {
+        void messageUtils.showMessage('info', referenceAcceptedMsg, ['Open Code Reference Log']).then(() =>
+            commands.executeCommand('aws.amazonq.openReferencePanel').then(
+                () => {},
+                () => {
+                    getLogger().warn('Failed to open code reference log')
+                }
+            )
+        )
+    }
+
     public registerInlineCompletion() {
         const onInlineAcceptance = async (
             sessionId: string,
@@ -123,6 +135,7 @@ export class InlineCompletionManager implements Disposable {
                 )
                 ReferenceLogViewProvider.instance.addReferenceLog(referenceLog)
                 ReferenceHoverProvider.instance.addCodeReferences(item.insertText as string, item.references)
+                this.showReferenceMessage()
             }
             if (item.mostRelevantMissingImports?.length) {
                 await ImportAdderProvider.instance.onAcceptRecommendation(editor, item, startLine)

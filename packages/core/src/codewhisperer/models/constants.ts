@@ -157,6 +157,9 @@ export const runningFileScan = 'Reviewing current file for code issues...'
 
 export const noInlineSuggestionsMsg = 'No suggestions from Amazon Q'
 
+export const referenceAcceptedMsg =
+    'Amazon Q accepted a suggestion with a reference, see Code Reference Log for more info.'
+
 export const licenseFilter = 'Amazon Q suggestions were filtered due to reference settings'
 
 /**
