@@ -136,7 +136,7 @@ describe('codewhisperer', async function () {
                 }),
         } as Request<SendTelemetryEventResponse, AWSError>)
 
-        const authUtilStub = sinon.stub(AuthUtil.instance, 'isValidEnterpriseSsoInUse').returns(isSso)
+        const authUtilStub = sinon.stub(AuthUtil.instance, 'isIdcConnection').returns(isSso)
         await globals.telemetry.setTelemetryEnabled(isTelemetryEnabled)
         await codeWhispererClient.sendTelemetryEvent({ telemetryEvent: payload })
         const expectedOptOutPreference = isTelemetryEnabled ? 'OPTIN' : 'OPTOUT'

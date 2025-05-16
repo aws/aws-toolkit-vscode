@@ -166,8 +166,8 @@ export class InlineCompletionService {
 
     /** Updates the status bar to represent the latest CW state */
     refreshStatusBar() {
-        if (AuthUtil.instance.isConnectionValid()) {
-            if (AuthUtil.instance.requireProfileSelection()) {
+        if (AuthUtil.instance.isConnected()) {
+            if (AuthUtil.instance.regionProfileManager.requireProfileSelection()) {
                 return this.setState('needsProfile')
             }
             return this.setState('ok')

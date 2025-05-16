@@ -30,6 +30,7 @@ import * as errors from '../../shared/errors'
 import * as timeoutUtils from '../../shared/utilities/timeoutUtils'
 import { SecurityIssueTreeViewProvider } from '../../codewhisperer'
 import { createClient, mockGetCodeScanResponse } from './testUtil'
+import { createTestAuthUtil } from '../testAuthUtil'
 
 let extensionContext: FakeExtensionContext
 let mockSecurityPanelViewProvider: SecurityPanelViewProvider
@@ -40,7 +41,9 @@ let focusStub: sinon.SinonStub
 
 describe('startSecurityScan', function () {
     const workspaceFolder = getTestWorkspaceFolder()
+
     beforeEach(async function () {
+        await createTestAuthUtil()
         extensionContext = await FakeExtensionContext.create()
         mockSecurityPanelViewProvider = new SecurityPanelViewProvider(extensionContext)
         appRoot = join(workspaceFolder, 'python3.7-plain-sam-app')
@@ -50,9 +53,11 @@ describe('startSecurityScan', function () {
         sinon.stub(timeoutUtils, 'sleep')
         focusStub = sinon.stub(SecurityIssueTreeViewProvider, 'focus')
     })
+
     afterEach(function () {
         sinon.restore()
     })
+
     after(async function () {
         await closeAllEditors()
     })

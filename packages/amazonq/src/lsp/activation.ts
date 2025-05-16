@@ -8,11 +8,11 @@ import { startLanguageServer } from './client'
 import { AmazonQLspInstaller } from './lspInstaller'
 import { lspSetupStage, ToolkitError, messages } from 'aws-core-vscode/shared'
 
-export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
+export async function activate(ctx: vscode.ExtensionContext) {
     try {
         await lspSetupStage('all', async () => {
             const installResult = await new AmazonQLspInstaller().resolve()
-            await lspSetupStage('launch', async () => await startLanguageServer(ctx, installResult.resourcePaths))
+            return await lspSetupStage('launch', () => startLanguageServer(ctx, installResult.resourcePaths))
         })
     } catch (err) {
         const e = err as ToolkitError

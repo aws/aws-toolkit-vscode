@@ -19,7 +19,12 @@ import {
     listCodeWhispererCommandsId,
     DefaultCodeWhispererClient,
 } from 'aws-core-vscode/codewhisperer'
-import { createMockTextEditor, resetCodeWhispererGlobalVariables, createMockDocument } from 'aws-core-vscode/test'
+import {
+    createMockTextEditor,
+    resetCodeWhispererGlobalVariables,
+    createMockDocument,
+    createTestAuthUtil,
+} from 'aws-core-vscode/test'
 
 describe('inlineCompletionService', function () {
     beforeEach(async function () {
@@ -192,6 +197,7 @@ describe('codewhisperer status bar', function () {
     }
 
     beforeEach(async function () {
+        await createTestAuthUtil()
         await resetCodeWhispererGlobalVariables()
         sandbox = sinon.createSandbox()
         statusBar = new TestStatusBar()
@@ -203,7 +209,7 @@ describe('codewhisperer status bar', function () {
     })
 
     it('shows correct status bar when auth is not connected', async function () {
-        sandbox.stub(AuthUtil.instance, 'isConnectionValid').returns(false)
+        sandbox.stub(AuthUtil.instance, 'isConnected').returns(false)
         sandbox.stub(AuthUtil.instance, 'isConnectionExpired').returns(false)
 
         await service.refreshStatusBar()
@@ -215,7 +221,7 @@ describe('codewhisperer status bar', function () {
     })
 
     it('shows correct status bar when auth is connected', async function () {
-        sandbox.stub(AuthUtil.instance, 'isConnectionValid').returns(true)
+        sandbox.stub(AuthUtil.instance, 'isConnected').returns(true)
         sandbox.stub(CodeSuggestionsState.instance, 'isSuggestionsEnabled').returns(true)
 
         await service.refreshStatusBar()
@@ -227,7 +233,7 @@ describe('codewhisperer status bar', function () {
     })
 
     it('shows correct status bar when auth is connected but paused', async function () {
-        sandbox.stub(AuthUtil.instance, 'isConnectionValid').returns(true)
+        sandbox.stub(AuthUtil.instance, 'isConnected').returns(true)
         sandbox.stub(CodeSuggestionsState.instance, 'isSuggestionsEnabled').returns(false)
 
         await service.refreshStatusBar()
@@ -239,7 +245,7 @@ describe('codewhisperer status bar', function () {
     })
 
     it('shows correct status bar when auth is expired', async function () {
-        sandbox.stub(AuthUtil.instance, 'isConnectionValid').returns(false)
+        sandbox.stub(AuthUtil.instance, 'isConnected').returns(false)
         sandbox.stub(AuthUtil.instance, 'isConnectionExpired').returns(true)
 
         await service.refreshStatusBar()

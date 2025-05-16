@@ -126,7 +126,7 @@ export function getTokenCache(directory = getCacheDir()): KeyedCache<SsoAccess> 
     return mapCache(cache, read, write)
 }
 
-function getTokenCacheFile(ssoCacheDir: string, key: string): string {
+export function getTokenCacheFile(ssoCacheDir: string, key: string): string {
     const encoded = encodeURI(key)
     // Per the spec: 'SSO Login Token Flow' the access token must be
     // cached as the SHA1 hash of the bytes of the UTF-8 encoded
@@ -145,7 +145,7 @@ function getTokenCacheFile(ssoCacheDir: string, key: string): string {
     return path.join(ssoCacheDir, `${hashedKey}.json`)
 }
 
-function getRegistrationCacheFile(ssoCacheDir: string, key: RegistrationKey): string {
+export function getRegistrationCacheFile(ssoCacheDir: string, key: RegistrationKey): string {
     const hash = (startUrl: string, scopes: string[]) => {
         const shasum = crypto.createHash('sha256')
         shasum.update(startUrl)

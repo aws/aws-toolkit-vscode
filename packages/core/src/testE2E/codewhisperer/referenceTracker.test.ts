@@ -6,11 +6,12 @@
 import assert from 'assert'
 import * as codewhispererClient from '../../codewhisperer/client/codewhisperer'
 import { ConfigurationEntry } from '../../codewhisperer/models/model'
-import { setValidConnection, skipTestIfNoValidConn } from '../util/connection'
+import { skipTestIfNoValidConn } from '../util/connection'
 import { RecommendationHandler } from '../../codewhisperer/service/recommendationHandler'
 import { createMockTextEditor, resetCodeWhispererGlobalVariables } from '../../test/codewhisperer/testUtil'
 import { invokeRecommendation } from '../../codewhisperer/commands/invokeRecommendation'
 import { session } from '../../codewhisperer/util/codeWhispererSession'
+import { AuthUtil } from '../../codewhisperer/util/authUtil'
 
 /*
 New model deployment may impact references returned. 
@@ -49,7 +50,7 @@ describe('CodeWhisperer service invocation', async function () {
     }
 
     before(async function () {
-        validConnection = await setValidConnection()
+        validConnection = AuthUtil.instance.isConnected()
     })
 
     beforeEach(function () {
