@@ -68,7 +68,7 @@ export class RecommendationService {
         event?: vscode.TextDocumentChangeEvent
     ) {
         // TODO: should move all downstream auth check(inlineCompletionService, recommendationHandler etc) to here(upstream) instead of spreading everywhere
-        if (AuthUtil.instance.isConnected() && AuthUtil.instance.requireProfileSelection()) {
+        if (AuthUtil.instance.isConnected() && AuthUtil.instance.regionProfileManager.requireProfileSelection()) {
             return
         }
 

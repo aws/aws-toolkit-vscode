@@ -5,9 +5,10 @@
 
 import vscode, { env, version } from 'vscode'
 import * as nls from 'vscode-nls'
+import * as crypto from 'crypto'
+import * as jose from 'jose'
 import { LanguageClient, LanguageClientOptions, RequestType, State } from 'vscode-languageclient'
 import { InlineCompletionManager } from '../app/inline/completion'
-import { AmazonQLspAuth, encryptionKey, notificationTypes } from './auth'
 import {
     CreateFilesParams,
     DeleteFilesParams,
@@ -17,6 +18,19 @@ import {
     RenameFilesParams,
     ResponseMessage,
     WorkspaceFolder,
+    GetSsoTokenProgress,
+    GetSsoTokenProgressToken,
+    GetSsoTokenProgressType,
+    MessageActionItem,
+    ShowMessageRequest,
+    ShowMessageRequestParams,
+    ConnectionMetadata,
+    ShowDocumentRequest,
+    ShowDocumentParams,
+    ShowDocumentResult,
+    ResponseError,
+    LSPErrorCodes,
+    updateConfigurationRequestType,
 } from '@aws/language-server-runtimes/protocol'
 import { AuthUtil, CodeWhispererSettings, getSelectedCustomization } from 'aws-core-vscode/codewhisperer'
 import {
@@ -25,18 +39,20 @@ import {
     globals,
     Experiments,
     Commands,
-    oneSecond,
     validateNodeExe,
     getLogger,
     undefinedIfEmpty,
     getOptOutPreference,
     isAmazonLinux2,
+    oidcClientName,
+    openUrl,
     getClientId,
     extensionVersion,
 } from 'aws-core-vscode/shared'
 import { processUtils } from 'aws-core-vscode/shared'
-import { activate } from './chat/activation'
+import { activate as activateChat } from './chat/activation'
 import { AmazonQResourcePaths } from './lspInstaller'
+import { auth2 } from 'aws-core-vscode/auth'
 import { ConfigSection, isValidConfigSection, pushConfigUpdate, toAmazonQLSPLogLevel } from './config'
 import { telemetry } from 'aws-core-vscode/telemetry'
 
@@ -45,15 +61,18 @@ const logger = getLogger('amazonqLsp.lspClient')
 
 export const glibcLinker: string = process.env.VSCODE_SERVER_CUSTOM_GLIBC_LINKER || ''
 export const glibcPath: string = process.env.VSCODE_SERVER_CUSTOM_GLIBC_PATH || ''
-
 export function hasGlibcPatch(): boolean {
     return glibcLinker.length > 0 && glibcPath.length > 0
 }
 
+export const clientId = 'amazonq'
+export const clientName = oidcClientName()
+export const encryptionKey = crypto.randomBytes(32)
+
 export async function startLanguageServer(
     extensionContext: vscode.ExtensionContext,
     resourcePaths: AmazonQResourcePaths
-) {
+): Promise<LanguageClient> {
     const toDispose = extensionContext.subscriptions
 
     const serverModule = resourcePaths.lsp
@@ -67,8 +86,6 @@ export async function startLanguageServer(
     ]
 
     const documentSelector = [{ scheme: 'file', language: '*' }]
-
-    const clientId = 'amazonq'
     const traceServerEnabled = Settings.instance.isSet(`${clientId}.trace.server`)
     let executable: string[] = []
     // apply the GLIBC 2.28 path to node js runtime binary
@@ -91,6 +108,7 @@ export async function startLanguageServer(
     await validateNodeExe(executable, resourcePaths.lsp, argv, logger)
 
     // Options to control the language client
+    const clientName = 'AmazonQ-For-VSCode'
     const clientOptions: LanguageClientOptions = {
         // Register the server for json documents
         documentSelector,
@@ -115,7 +133,7 @@ export async function startLanguageServer(
                     name: env.appName,
                     version: version,
                     extension: {
-                        name: 'AmazonQ-For-VSCode',
+                        name: clientName,
                         version: extensionVersion,
                     },
                     clientId: getClientId(globals.globalState),
@@ -150,36 +168,149 @@ export async function startLanguageServer(
               }),
     }
 
-    const client = new LanguageClient(
-        clientId,
-        localize('amazonq.server.name', 'Amazon Q Language Server'),
-        serverOptions,
-        clientOptions
-    )
+    const lspName = localize('amazonq.server.name', 'Amazon Q Language Server')
+    const client = new LanguageClient(clientId, lspName, serverOptions, clientOptions)
 
     const disposable = client.start()
     toDispose.push(disposable)
     await client.onReady()
 
-    const auth = await initializeAuth(client)
+    await client.onReady()
 
-    await onLanguageServerReady(auth, client, resourcePaths, toDispose)
+    /**
+     * We use the Flare Auth language server, and our Auth client depends on it.
+     * Because of this we initialize our Auth client **immediately** after the language server is ready.
+     * Doing this removes the chance of something else attempting to use the Auth client before it is ready.
+     */
+    await initializeAuth(client)
+
+    await postStartLanguageServer(client, resourcePaths, toDispose)
 
     return client
+
+    async function initializeAuth(client: LanguageClient) {
+        AuthUtil.create(new auth2.LanguageClientAuth(client, clientId, encryptionKey))
+
+        // Migrate SSO connections from old Auth to the LSP identity server
+        // This function only migrates connections once
+        // This call can be removed once all/most users have updated to the latest AmazonQ version
+        try {
+            await AuthUtil.instance.migrateSsoConnectionToLsp(clientName)
+        } catch (e) {
+            getLogger().error(`Error while migration SSO connection to Amazon Q LSP: ${e}`)
+        }
+
+        /** All must be setup before {@link AuthUtil.restore} otherwise they may not trigger when expected */
+        AuthUtil.instance.regionProfileManager.onDidChangeRegionProfile(async () => {
+            void pushConfigUpdate(client, {
+                type: 'profile',
+                profileArn: AuthUtil.instance.regionProfileManager.activeRegionProfile?.arn,
+            })
+        })
+
+        // Try and restore a cached connection if exists
+        await AuthUtil.instance.restore()
+    }
 }
 
-async function initializeAuth(client: LanguageClient): Promise<AmazonQLspAuth> {
-    const auth = new AmazonQLspAuth(client)
-    await auth.refreshConnection(true)
-    return auth
-}
-
-async function onLanguageServerReady(
-    auth: AmazonQLspAuth,
+async function postStartLanguageServer(
     client: LanguageClient,
     resourcePaths: AmazonQResourcePaths,
     toDispose: vscode.Disposable[]
 ) {
+    // Request handler for when the server wants to know about the clients auth connnection. Must be registered before the initial auth init call
+    client.onRequest<ConnectionMetadata, Error>(auth2.notificationTypes.getConnectionMetadata.method, () => {
+        return {
+            sso: {
+                startUrl: AuthUtil.instance.connection?.startUrl,
+            },
+        }
+    })
+
+    client.onRequest<MessageActionItem | null, Error>(
+        ShowMessageRequest.method,
+        async (params: ShowMessageRequestParams) => {
+            const actions = params.actions?.map((a) => a.title) ?? []
+            const response = await vscode.window.showInformationMessage(params.message, { modal: true }, ...actions)
+            return params.actions?.find((a) => a.title === response) ?? (undefined as unknown as null)
+        }
+    )
+
+    client.onRequest<ShowDocumentParams, ShowDocumentResult>(
+        ShowDocumentRequest.method,
+        async (params: ShowDocumentParams): Promise<ShowDocumentParams | ResponseError<ShowDocumentResult>> => {
+            const uri = vscode.Uri.parse(params.uri)
+            getLogger().info(`Processing ShowDocumentRequest for URI scheme: ${uri.scheme}`)
+            try {
+                if (uri.scheme.startsWith('http')) {
+                    getLogger().info('Opening URL...')
+                    await openUrl(vscode.Uri.parse(params.uri))
+                } else {
+                    getLogger().info('Opening text document...')
+                    const doc = await vscode.workspace.openTextDocument(uri)
+                    await vscode.window.showTextDocument(doc, { preview: false })
+                }
+                return params
+            } catch (e) {
+                return new ResponseError(
+                    LSPErrorCodes.RequestFailed,
+                    `Failed to process ShowDocumentRequest: ${(e as Error).message}`
+                )
+            }
+        }
+    )
+
+    const sendProfileToLsp = async () => {
+        try {
+            const result = await client.sendRequest(updateConfigurationRequestType.method, {
+                section: 'aws.q',
+                settings: {
+                    profileArn: AuthUtil.instance.regionProfileManager.activeRegionProfile?.arn,
+                },
+            })
+            client.info(
+                `Client: Updated Amazon Q Profile ${AuthUtil.instance.regionProfileManager.activeRegionProfile?.arn} to Amazon Q LSP`,
+                result
+            )
+        } catch (err) {
+            client.error('Error when setting Q Developer Profile to Amazon Q LSP', err)
+        }
+    }
+
+    let promise: Promise<void> | undefined
+    let resolver: () => void = () => {}
+    client.onProgress(GetSsoTokenProgressType, GetSsoTokenProgressToken, async (partialResult: GetSsoTokenProgress) => {
+        const decryptedKey = await jose.compactDecrypt(partialResult as unknown as string, encryptionKey)
+        const val: GetSsoTokenProgress = JSON.parse(decryptedKey.plaintext.toString())
+
+        if (val.state === 'InProgress') {
+            if (promise) {
+                resolver()
+            }
+            promise = new Promise<void>((resolve) => {
+                resolver = resolve
+            })
+        } else {
+            resolver()
+            promise = undefined
+            return
+        }
+
+        // send profile to lsp once.
+        void sendProfileToLsp()
+
+        void vscode.window.withProgress(
+            {
+                cancellable: true,
+                location: vscode.ProgressLocation.Notification,
+                title: val.message,
+            },
+            async (_) => {
+                await promise
+            }
+        )
+    })
+
     if (Experiments.instance.get('amazonqLSPInline', false)) {
         const inlineManager = new InlineCompletionManager(client)
         inlineManager.registerInlineCompletion()
@@ -193,33 +324,12 @@ async function onLanguageServerReady(
             })
         )
     }
-
     if (Experiments.instance.get('amazonqChatLSP', true)) {
-        await activate(client, encryptionKey, resourcePaths.ui)
-    }
-
-    const refreshInterval = auth.startTokenRefreshInterval(10 * oneSecond)
-
-    // We manually push the cached values the first time since event handlers, which should push, may not have been setup yet.
-    // Execution order is weird and should be fixed in the flare implementation.
-    // TODO: Revisit if we need this if we setup the event handlers properly
-    if (AuthUtil.instance.isConnectionValid()) {
-        await sendProfileToLsp(client)
-
-        await pushConfigUpdate(client, {
-            type: 'customization',
-            customization: getSelectedCustomization(),
-        })
+        await activateChat(client, encryptionKey, resourcePaths.ui)
     }
 
     toDispose.push(
-        AuthUtil.instance.auth.onDidChangeActiveConnection(async () => {
-            await auth.refreshConnection()
-        }),
-        AuthUtil.instance.auth.onDidDeleteConnection(async () => {
-            client.sendNotification(notificationTypes.deleteBearerToken.method)
-        }),
-        AuthUtil.instance.regionProfileManager.onDidChangeRegionProfile(() => sendProfileToLsp(client)),
+        AuthUtil.instance.regionProfileManager.onDidChangeRegionProfile(sendProfileToLsp),
         vscode.commands.registerCommand('aws.amazonq.getWorkspaceId', async () => {
             const requestType = new RequestType<GetConfigurationFromServerParams, ResponseMessage, Error>(
                 'aws/getConfigurationFromServer'
@@ -275,24 +385,16 @@ async function onLanguageServerReady(
                 },
             } as DidChangeWorkspaceFoldersParams)
         }),
-        { dispose: () => clearInterval(refreshInterval) },
         // Set this inside onReady so that it only triggers on subsequent language server starts (not the first)
-        onServerRestartHandler(client, auth)
+        onServerRestartHandler(client)
     )
-
-    async function sendProfileToLsp(client: LanguageClient) {
-        await pushConfigUpdate(client, {
-            type: 'profile',
-            profileArn: AuthUtil.instance.regionProfileManager.activeRegionProfile?.arn,
-        })
-    }
 }
 
 /**
  * When the server restarts (likely due to a crash, then the LanguageClient automatically starts it again)
  * we need to run some server intialization again.
  */
-function onServerRestartHandler(client: LanguageClient, auth: AmazonQLspAuth) {
+function onServerRestartHandler(client: LanguageClient) {
     return client.onDidChangeState(async (e) => {
         // Ensure we are in a "restart" state
         if (!(e.oldState === State.Starting && e.newState === State.Running)) {
@@ -306,7 +408,7 @@ function onServerRestartHandler(client: LanguageClient, auth: AmazonQLspAuth) {
         telemetry.languageServer_crash.emit({ id: 'AmazonQ' })
 
         // Need to set the auth token in the again
-        await auth.refreshConnection(true)
+        await AuthUtil.instance.restore()
     })
 }
 

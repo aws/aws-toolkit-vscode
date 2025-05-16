@@ -9,6 +9,7 @@ import * as sinon from 'sinon'
 import * as codewhispererSdkClient from 'aws-core-vscode/codewhisperer'
 import {
     createMockTextEditor,
+    createTestAuthUtil,
     createTextDocumentChangeEvent,
     resetCodeWhispererGlobalVariables,
 } from 'aws-core-vscode/test'
@@ -160,13 +161,16 @@ describe('keyStrokeHandler', function () {
 
     describe('invokeAutomatedTrigger', function () {
         let mockClient: codewhispererSdkClient.DefaultCodeWhispererClient
+
         beforeEach(async function () {
+            await createTestAuthUtil()
             sinon.restore()
             mockClient = new codewhispererSdkClient.DefaultCodeWhispererClient()
             await resetCodeWhispererGlobalVariables()
             sinon.stub(mockClient, 'listRecommendations')
             sinon.stub(mockClient, 'generateRecommendations')
         })
+
         afterEach(function () {
             sinon.restore()
         })

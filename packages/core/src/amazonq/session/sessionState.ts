@@ -238,7 +238,7 @@ export abstract class BasePrepareCodeGenState implements SessionState {
         const uploadId = await telemetry.amazonq_createUpload.run(async (span) => {
             span.record({
                 amazonqConversationId: this.config.conversationId,
-                credentialStartUrl: AuthUtil.instance.startUrl,
+                credentialStartUrl: AuthUtil.instance.connection?.startUrl,
             })
             const { zipFileBuffer, zipFileChecksum } = await this.prepareProjectZip(
                 this.config.workspaceRoots,
@@ -357,7 +357,7 @@ export abstract class BaseCodeGenState extends CodeGenBase implements SessionSta
 
                 span.record({
                     amazonqConversationId: this.config.conversationId,
-                    credentialStartUrl: AuthUtil.instance.startUrl,
+                    credentialStartUrl: AuthUtil.instance.connection?.startUrl,
                 })
 
                 action.telemetry.setGenerateCodeIteration(this.currentIteration)

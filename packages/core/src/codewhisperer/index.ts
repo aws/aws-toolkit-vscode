@@ -94,6 +94,7 @@ export * from './util/commonUtil'
 export * from './util/supplementalContext/codeParsingUtil'
 export * from './util/supplementalContext/supplementalContextUtil'
 export * from './util/codewhispererSettings'
+export * as getStartUrl from './util/getStartUrl'
 export * as supplementalContextUtil from './util/supplementalContext/supplementalContextUtil'
 export * from './service/diagnosticsProvider'
 export * as diagnosticsProvider from './service/diagnosticsProvider'
@@ -106,6 +107,7 @@ export {
     baseCustomization,
     onProfileChangedListener,
     CustomizationProvider,
+    notifyNewCustomizations,
 } from './util/customizationUtil'
 export { Container } from './service/serviceContainer'
 export * from './util/gitUtil'

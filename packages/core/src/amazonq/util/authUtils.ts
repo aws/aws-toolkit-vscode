@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { FeatureAuthState } from '../../codewhisperer/util/authUtil'
+import { AuthState } from '../../auth/auth2'
 import { AuthFollowUpType, AuthMessageDataMap } from '../auth/model'
 
 /**
@@ -15,20 +15,13 @@ import { AuthFollowUpType, AuthMessageDataMap } from '../auth/model'
  *   - authType: The type of authentication follow-up required (AuthFollowUpType)
  *   - message: The corresponding message for the determined auth type
  */
-export function extractAuthFollowUp(credentialState: FeatureAuthState) {
+export function extractAuthFollowUp(credentialState: AuthState) {
     let authType: AuthFollowUpType = 'full-auth'
     let message = AuthMessageDataMap[authType].message
-    if (credentialState.codewhispererChat === 'disconnected' && credentialState.codewhispererCore === 'disconnected') {
+    if (credentialState === 'notConnected') {
         authType = 'full-auth'
         message = AuthMessageDataMap[authType].message
-    }
-
-    if (credentialState.codewhispererCore === 'connected' && credentialState.codewhispererChat === 'expired') {
-        authType = 'missing_scopes'
-        message = AuthMessageDataMap[authType].message
-    }
-
-    if (credentialState.codewhispererChat === 'expired' && credentialState.codewhispererCore === 'expired') {
+    } else if (credentialState === 'expired') {
         authType = 're-auth'
         message = AuthMessageDataMap[authType].message
     }
