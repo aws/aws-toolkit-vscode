@@ -8,7 +8,6 @@ import * as nls from 'vscode-nls'
 import * as crypto from 'crypto'
 import * as jose from 'jose'
 import { LanguageClient, LanguageClientOptions, RequestType, State } from 'vscode-languageclient'
-import { InlineCompletionManager } from '../app/inline/completion'
 import {
     CreateFilesParams,
     DeleteFilesParams,
@@ -38,7 +37,6 @@ import {
     createServerOptions,
     globals,
     Experiments,
-    Commands,
     validateNodeExe,
     getLogger,
     undefinedIfEmpty,
@@ -173,7 +171,6 @@ export async function startLanguageServer(
 
     const disposable = client.start()
     toDispose.push(disposable)
-    await client.onReady()
 
     await client.onReady()
 
@@ -311,19 +308,19 @@ async function postStartLanguageServer(
         )
     })
 
-    if (Experiments.instance.get('amazonqLSPInline', false)) {
-        const inlineManager = new InlineCompletionManager(client)
-        inlineManager.registerInlineCompletion()
-        toDispose.push(
-            inlineManager,
-            Commands.register({ id: 'aws.amazonq.invokeInlineCompletion', autoconnect: true }, async () => {
-                await vscode.commands.executeCommand('editor.action.inlineSuggest.trigger')
-            }),
-            vscode.workspace.onDidCloseTextDocument(async () => {
-                await vscode.commands.executeCommand('aws.amazonq.rejectCodeSuggestion')
-            })
-        )
-    }
+    // if (Experiments.instance.get('amazonqLSPInline', false)) {
+    //     const inlineManager = new InlineCompletionManager(client)
+    //     inlineManager.registerInlineCompletion()
+    //     toDispose.push(
+    //         inlineManager,
+    //         Commands.register({ id: 'aws.amazonq.invokeInlineCompletion', autoconnect: true }, async () => {
+    //             await vscode.commands.executeCommand('editor.action.inlineSuggest.trigger')
+    //         }),
+    //         vscode.workspace.onDidCloseTextDocument(async () => {
+    //             await vscode.commands.executeCommand('aws.amazonq.rejectCodeSuggestion')
+    //         })
+    //     )
+    // }
     if (Experiments.instance.get('amazonqChatLSP', true)) {
         await activateChat(client, encryptionKey, resourcePaths.ui)
     }

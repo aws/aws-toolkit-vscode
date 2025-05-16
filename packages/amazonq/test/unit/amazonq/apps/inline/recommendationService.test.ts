@@ -10,6 +10,8 @@ import assert from 'assert'
 import { RecommendationService } from '../../../../../src/app/inline/recommendationService'
 import { SessionManager } from '../../../../../src/app/inline/sessionManager'
 import { createMockDocument } from 'aws-core-vscode/test'
+import { LineTracker } from '../../../../../src/app/inline/stateTracker/lineTracker'
+import { InlineGeneratingMessage } from '../../../../../src/app/inline/inlineGeneratingMessage'
 
 describe('RecommendationService', () => {
     let languageClient: LanguageClient
@@ -28,7 +30,9 @@ describe('RecommendationService', () => {
     } as InlineCompletionItem
     const mockPartialResultToken = 'some-random-token'
     const sessionManager = new SessionManager()
-    const service = new RecommendationService(sessionManager)
+    const lineTracker = new LineTracker()
+    const activeStateController = new InlineGeneratingMessage(lineTracker)
+    const service = new RecommendationService(sessionManager, activeStateController)
 
     beforeEach(() => {
         sandbox = sinon.createSandbox()

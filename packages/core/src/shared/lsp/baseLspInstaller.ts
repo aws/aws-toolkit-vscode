@@ -5,7 +5,6 @@
 
 import * as nodePath from 'path'
 import vscode from 'vscode'
-import { LspConfig } from '../../amazonq/lsp/config'
 import { LanguageServerResolver } from './lspResolver'
 import { ManifestResolver } from './manifestResolver'
 import { LspResolution, ResourcePaths } from './types'
@@ -13,6 +12,14 @@ import { cleanLspDownloads } from './utils/cleanup'
 import { Range } from 'semver'
 import { getLogger } from '../logger/logger'
 import type { Logger, LogTopic } from '../logger/logger'
+
+export interface LspConfig {
+    manifestUrl: string
+    supportedVersions: string
+    id: string
+    suppressPromptPrefix: string
+    path?: string
+}
 
 export abstract class BaseLspInstaller<T extends ResourcePaths = ResourcePaths, Config extends LspConfig = LspConfig> {
     private logger: Logger
