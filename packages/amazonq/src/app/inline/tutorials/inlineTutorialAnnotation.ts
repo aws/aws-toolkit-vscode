@@ -5,31 +5,29 @@
 
 import * as vscode from 'vscode'
 import * as os from 'os'
-import { LineSelection, LinesChangeEvent } from '../tracker/lineTracker'
-import { isTextEditor } from '../../shared/utilities/editorUtilities'
-import { cancellableDebounce } from '../../shared/utilities/functionUtils'
-import { subscribeOnce } from '../../shared/utilities/vsCodeUtils'
-// import { RecommendationService } from '../service/recommendationService'
-import { AnnotationChangeSource, inlinehintKey } from '../models/constants'
-import globals from '../../shared/extensionGlobals'
-import { Container } from '../service/serviceContainer'
-import { telemetry } from '../../shared/telemetry/telemetry'
-import { getLogger } from '../../shared/logger/logger'
-// import { session } from '../util/codeWhispererSession'
-// import { RecommendationHandler } from '../service/recommendationHandler'
-import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
-import { setContext } from '../../shared/vscode/setContext'
+import {
+    AnnotationChangeSource,
+    AuthUtil,
+    inlinehintKey,
+    runtimeLanguageContext,
+    TelemetryHelper,
+} from 'aws-core-vscode/codewhisperer'
+import { editorUtilities, getLogger, globals, setContext, vscodeUtilities } from 'aws-core-vscode/shared'
+import { LinesChangeEvent, LineSelection, LineTracker } from '../stateTracker/lineTracker'
+import { telemetry } from 'aws-core-vscode/telemetry'
+import { cancellableDebounce } from 'aws-core-vscode/utils'
+import { SessionManager } from '../sessionManager'
 
 const case3TimeWindow = 30000 // 30 seconds
 
 const maxSmallIntegerV8 = 2 ** 30 // Max number that can be stored in V8's smis (small integers)
 
-function fromId(id: string | undefined): AnnotationState | undefined {
+function fromId(id: string | undefined, sessionManager: SessionManager): AnnotationState | undefined {
     switch (id) {
         case AutotriggerState.id:
-            return new AutotriggerState()
+            return new AutotriggerState(sessionManager)
         case PressTabState.id:
-            return new AutotriggerState()
+            return new AutotriggerState(sessionManager)
         case ManualtriggerState.id:
             return new ManualtriggerState()
         case TryMoreExState.id:
@@ -72,15 +70,16 @@ export class AutotriggerState implements AnnotationState {
     text = () => 'Amazon Q Tip 1/3: Start typing to get suggestions ([ESC] to exit)'
     static acceptedCount = 0
 
+    constructor(private readonly sessionManager: SessionManager) {}
+
     updateState(changeSource: AnnotationChangeSource, force: boolean): AnnotationState | undefined {
-        // if (AutotriggerState.acceptedCount < RecommendationService.instance.acceptedSuggestionCount) {
-        //     return new ManualtriggerState()
-        // } else if (session.recommendations.length > 0 && RecommendationHandler.instance.isSuggestionVisible()) {
-        //     return new PressTabState()
-        // } else {
-        //     return this
-        // }
-        return undefined
+        if (AutotriggerState.acceptedCount < this.sessionManager.acceptedSuggestionCount) {
+            return new ManualtriggerState()
+        } else if (this.sessionManager.getActiveRecommendation().length > 0) {
+            return new PressTabState(this.sessionManager)
+        } else {
+            return this
+        }
     }
 
     isNextState(state: AnnotationState | undefined): boolean {
@@ -105,8 +104,10 @@ export class PressTabState implements AnnotationState {
 
     text = () => 'Amazon Q Tip 1/3: Press [TAB] to accept ([ESC] to exit)'
 
+    constructor(private readonly sessionManager: SessionManager) {}
+
     updateState(changeSource: AnnotationChangeSource, force: boolean): AnnotationState | undefined {
-        return new AutotriggerState().updateState(changeSource, force)
+        return new AutotriggerState(this.sessionManager).updateState(changeSource, force)
     }
 
     isNextState(state: AnnotationState | undefined): boolean {
@@ -183,7 +184,6 @@ export class TryMoreExState implements AnnotationState {
         return state instanceof EndState
     }
 
-    static triggerCount: number = 0
     static learnmoeCount: number = 0
 }
 
@@ -231,7 +231,7 @@ export class InlineChatState implements AnnotationState {
  * "new users who has seen tutorial" should have the context key "inlineKey" and "CODEWHISPERER_AUTO_TRIGGER_ENABLED"
  * the remaining grouop of users should belong to "new users who has not seen tutorial"
  */
-export class LineAnnotationController implements vscode.Disposable {
+export class InlineTutorialAnnotation implements vscode.Disposable {
     private readonly _disposable: vscode.Disposable
     private _editor: vscode.TextEditor | undefined
 
@@ -248,13 +248,16 @@ export class LineAnnotationController implements vscode.Disposable {
             rangeBehavior: vscode.DecorationRangeBehavior.OpenOpen,
         })
 
-    constructor(private readonly container: Container) {
-        const cachedState = fromId(globals.globalState.get<string>(inlinehintKey))
+    constructor(
+        private readonly lineTracker: LineTracker,
+        private readonly sessionManager: SessionManager
+    ) {
+        const cachedState = fromId(globals.globalState.get<string>(inlinehintKey), sessionManager)
         const cachedAutotriggerEnabled = globals.globalState.get<boolean>('CODEWHISPERER_AUTO_TRIGGER_ENABLED')
 
         // new users (has or has not seen tutorial)
         if (cachedAutotriggerEnabled === undefined || cachedState !== undefined) {
-            this._currentState = cachedState ?? new AutotriggerState()
+            this._currentState = cachedState ?? new AutotriggerState(this.sessionManager)
             getLogger().debug(
                 `codewhisperer: new user login, activating inline tutorial. (autotriggerEnabled=${cachedAutotriggerEnabled}; inlineState=${cachedState?.id})`
             )
@@ -264,48 +267,20 @@ export class LineAnnotationController implements vscode.Disposable {
         }
 
         this._disposable = vscode.Disposable.from(
-            subscribeOnce(this.container.lineTracker.onReady)(async (_) => {
+            vscodeUtilities.subscribeOnce(this.lineTracker.onReady)(async (_) => {
                 await this.onReady()
             }),
-            // RecommendationService.instance.suggestionActionEvent(async (e) => {
-            //     await telemetry.withTraceId(async () => {
-            //         if (!this._isReady) {
-            //             return
-            //         }
-
-            //         if (this._currentState instanceof ManualtriggerState) {
-            //             if (e.triggerType === 'OnDemand' && this._currentState.hasManualTrigger === false) {
-            //                 this._currentState.hasManualTrigger = true
-            //             }
-            //             if (
-            //                 e.response?.recommendationCount !== undefined &&
-            //                 e.response?.recommendationCount > 0 &&
-            //                 this._currentState.hasValidResponse === false
-            //             ) {
-            //                 this._currentState.hasValidResponse = true
-            //             }
-            //         }
-
-            //         await this.refresh(e.editor, 'codewhisperer')
-            //     }, TelemetryHelper.instance.traceId)
-            // }),
-            this.container.lineTracker.onDidChangeActiveLines(async (e) => {
+            this.lineTracker.onDidChangeActiveLines(async (e) => {
                 await this.onActiveLinesChanged(e)
             }),
-            this.container.auth.onDidChangeConnectionState(async () => {
+            AuthUtil.instance.auth.onDidChangeConnectionState(async (e) => {
+                if (e.state !== 'authenticating') {
+                    await this.refresh(vscode.window.activeTextEditor, 'editor')
+                }
+            }),
+            AuthUtil.instance.secondaryAuth.onDidChangeActiveConnection(async () => {
                 await this.refresh(vscode.window.activeTextEditor, 'editor')
             })
-            // Commands.register('aws.amazonq.dismissTutorial', async () => {
-            //     const editor = vscode.window.activeTextEditor
-            //     if (editor) {
-            //         this.clear()
-            //         try {
-            //             telemetry.ui_click.emit({ elementId: `dismiss_${this._currentState.id}` })
-            //         } catch (_) {}
-            //         await this.dismissTutorial()
-            //         getLogger().debug(`codewhisperer: user dismiss tutorial.`)
-            //     }
-            // })
         )
     }
 
@@ -318,6 +293,31 @@ export class LineAnnotationController implements vscode.Disposable {
     private async onReady(): Promise<void> {
         this._isReady = !(this._currentState instanceof EndState)
         await this._refresh(vscode.window.activeTextEditor, 'editor')
+    }
+
+    async triggered(triggerType: vscode.InlineCompletionTriggerKind): Promise<void> {
+        await telemetry.withTraceId(async () => {
+            if (!this._isReady) {
+                return
+            }
+
+            if (this._currentState instanceof ManualtriggerState) {
+                if (
+                    triggerType === vscode.InlineCompletionTriggerKind.Invoke &&
+                    this._currentState.hasManualTrigger === false
+                ) {
+                    this._currentState.hasManualTrigger = true
+                }
+                if (
+                    this.sessionManager.getActiveRecommendation().length > 0 &&
+                    this._currentState.hasValidResponse === false
+                ) {
+                    this._currentState.hasValidResponse = true
+                }
+            }
+
+            await this.refresh(vscode.window.activeTextEditor, 'codewhisperer')
+        }, TelemetryHelper.instance.traceId)
     }
 
     isTutorialDone(): boolean {
@@ -400,8 +400,8 @@ export class LineAnnotationController implements vscode.Disposable {
             return
         }
 
-        const selections = this.container.lineTracker.selections
-        if (editor === undefined || selections === undefined || !isTextEditor(editor)) {
+        const selections = this.lineTracker.selections
+        if (editor === undefined || selections === undefined || !editorUtilities.isTextEditor(editor)) {
             this.clear()
             return
         }
@@ -413,12 +413,12 @@ export class LineAnnotationController implements vscode.Disposable {
         }
 
         // Make sure the editor hasn't died since the await above and that we are still on the same line(s)
-        if (editor.document === undefined || !this.container.lineTracker.includes(selections)) {
+        if (editor.document === undefined || !this.lineTracker.includes(selections)) {
             this.clear()
             return
         }
 
-        if (!this.container.auth.isConnected()) {
+        if (!AuthUtil.instance.isConnectionValid()) {
             this.clear()
             return
         }
@@ -478,7 +478,7 @@ export class LineAnnotationController implements vscode.Disposable {
         source: AnnotationChangeSource,
         force?: boolean
     ): Partial<vscode.DecorationOptions> | undefined {
-        const isCWRunning = true
+        const isCWRunning = this.sessionManager.getActiveSession()?.isRequestInProgress ?? false
 
         const textOptions: vscode.ThemableDecorationAttachmentRenderOptions = {
             contentText: '',
@@ -511,14 +511,16 @@ export class LineAnnotationController implements vscode.Disposable {
         this._currentState = updatedState
 
         // take snapshot of accepted session so that we can compre if there is delta -> users accept 1 suggestion after seeing this state
-        AutotriggerState.acceptedCount = 0
-        // take snapshot of total trigger count so that we can compare if there is delta -> users accept/reject suggestions after seeing this state
-        TryMoreExState.triggerCount = 0
+        AutotriggerState.acceptedCount = this.sessionManager.acceptedSuggestionCount
 
         textOptions.contentText = this._currentState.text()
 
         return {
             renderOptions: { after: textOptions },
         }
+    }
+
+    public get currentState(): AnnotationState {
+        return this._currentState
     }
 }

@@ -18,6 +18,8 @@ interface CodeWhispererSession {
 export class SessionManager {
     private activeSession?: CodeWhispererSession
     private activeIndex: number = 0
+    private _acceptedSuggestionCount: number = 0
+
     constructor() {}
 
     public startSession(
@@ -93,6 +95,14 @@ export class SessionManager {
             })
         }
         return items
+    }
+
+    public get acceptedSuggestionCount(): number {
+        return this._acceptedSuggestionCount
+    }
+
+    public incrementSuggestionCount() {
+        this._acceptedSuggestionCount += 1
     }
 
     public clear() {

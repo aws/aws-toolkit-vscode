@@ -2,7 +2,7 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import * as path from 'path'
+
 import { UserIntent } from '@amzn/codewhisperer-streaming'
 import {
     AmazonqAddMessage,
@@ -28,7 +28,6 @@ import {
     ResponseBodyLinkClickMessage,
     SourceLinkClickMessage,
     TriggerPayload,
-    AdditionalContextLengths,
     AdditionalContextInfo,
 } from './model'
 import { TriggerEvent, TriggerEventsStorage } from '../../storages/triggerEvents'
@@ -43,9 +42,6 @@ import { supportedLanguagesList } from '../chat/chatRequest/converter'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import { getSelectedCustomization } from '../../../codewhisperer/util/customizationUtil'
 import { undefinedIfEmpty } from '../../../shared/utilities/textUtilities'
-import { AdditionalContextPrompt } from '../../../amazonq/lsp/types'
-import { getUserPromptsDirectory, promptFileExtension } from '../../constants'
-import { isInDirectory } from '../../../shared/filesystemUtilities'
 import { sleep } from '../../../shared/utilities/timeoutUtils'
 import {
     FileDiagnostic,
@@ -162,40 +158,6 @@ export class CWCTelemetryHelper {
 
     public recordExitFocusChat() {
         telemetry.amazonq_exitFocusChat.emit({ result: 'Succeeded', passive: true })
-    }
-
-    public getContextType(prompt: AdditionalContextPrompt): string {
-        if (prompt.filePath.endsWith(promptFileExtension)) {
-            if (isInDirectory(path.join('.amazonq', 'rules'), prompt.relativePath)) {
-                return 'rule'
-            } else if (isInDirectory(getUserPromptsDirectory(), prompt.filePath)) {
-                return 'prompt'
-            }
-        }
-        return 'file'
-    }
-
-    public getContextLengths(prompts: AdditionalContextPrompt[]): AdditionalContextLengths {
-        let fileContextLength = 0
-        let promptContextLength = 0
-        let ruleContextLength = 0
-
-        for (const prompt of prompts) {
-            const type = this.getContextType(prompt)
-            switch (type) {
-                case 'rule':
-                    ruleContextLength += prompt.content.length
-                    break
-                case 'file':
-                    fileContextLength += prompt.content.length
-                    break
-                case 'prompt':
-                    promptContextLength += prompt.content.length
-                    break
-            }
-        }
-
-        return { fileContextLength, promptContextLength, ruleContextLength }
     }
 
     public async recordFeedback(message: ChatItemFeedbackMessage) {

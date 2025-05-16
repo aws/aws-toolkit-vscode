@@ -6,13 +6,9 @@
 import * as vscode from 'vscode'
 import { LineSelection, LinesChangeEvent } from '../tracker/lineTracker'
 import { isTextEditor } from '../../shared/utilities/editorUtilities'
-import { RecommendationService, SuggestionActionEvent } from '../service/recommendationService'
 import { subscribeOnce } from '../../shared/utilities/vsCodeUtils'
 import { Container } from '../service/serviceContainer'
-import { RecommendationHandler } from '../service/recommendationHandler'
 import { cancellableDebounce } from '../../shared/utilities/functionUtils'
-import { telemetry } from '../../shared/telemetry/telemetry'
-import { TelemetryHelper } from '../util/telemetryHelper'
 
 export class ActiveStateController implements vscode.Disposable {
     private readonly _disposable: vscode.Disposable
@@ -34,14 +30,14 @@ export class ActiveStateController implements vscode.Disposable {
 
     constructor(private readonly container: Container) {
         this._disposable = vscode.Disposable.from(
-            RecommendationService.instance.suggestionActionEvent(async (e) => {
-                await telemetry.withTraceId(async () => {
-                    await this.onSuggestionActionEvent(e)
-                }, TelemetryHelper.instance.traceId)
-            }),
-            RecommendationHandler.instance.onDidReceiveRecommendation(async (_) => {
-                await this.onDidReceiveRecommendation()
-            }),
+            // RecommendationService.instance.suggestionActionEvent(async (e) => {
+            //     await telemetry.withTraceId(async () => {
+            //         await this.onSuggestionActionEvent(e)
+            //     }, TelemetryHelper.instance.traceId)
+            // }),
+            // RecommendationHandler.instance.onDidReceiveRecommendation(async (_) => {
+            //     await this.onDidReceiveRecommendation()
+            // }),
             this.container.lineTracker.onDidChangeActiveLines(async (e) => {
                 await this.onActiveLinesChanged(e)
             }),
@@ -65,32 +61,32 @@ export class ActiveStateController implements vscode.Disposable {
         await this._refresh(vscode.window.activeTextEditor)
     }
 
-    private async onSuggestionActionEvent(e: SuggestionActionEvent) {
-        if (!this._isReady) {
-            return
-        }
+    // private async onSuggestionActionEvent(e: SuggestionActionEvent) {
+    //     if (!this._isReady) {
+    //         return
+    //     }
 
-        this.clear(e.editor) // do we need this?
-        if (e.triggerType === 'OnDemand' && e.isRunning) {
-            // if user triggers on demand, immediately update the UI and cancel the previous debounced update if there is one
-            this.refreshDebounced.cancel()
-            await this._refresh(this._editor)
-        } else {
-            await this.refreshDebounced.promise(e.editor)
-        }
-    }
+    //     this.clear(e.editor) // do we need this?
+    //     if (e.triggerType === 'OnDemand' && e.isRunning) {
+    //         // if user triggers on demand, immediately update the UI and cancel the previous debounced update if there is one
+    //         this.refreshDebounced.cancel()
+    //         await this._refresh(this._editor)
+    //     } else {
+    //         await this.refreshDebounced.promise(e.editor)
+    //     }
+    // }
 
-    private async onDidReceiveRecommendation() {
-        if (!this._isReady) {
-            return
-        }
+    // private async onDidReceiveRecommendation() {
+    //     if (!this._isReady) {
+    //         return
+    //     }
 
-        if (this._editor && this._editor === vscode.window.activeTextEditor) {
-            // receives recommendation, immediately update the UI and cacnel the debounced update if there is one
-            this.refreshDebounced.cancel()
-            await this._refresh(this._editor, false)
-        }
-    }
+    //     if (this._editor && this._editor === vscode.window.activeTextEditor) {
+    //         // receives recommendation, immediately update the UI and cacnel the debounced update if there is one
+    //         this.refreshDebounced.cancel()
+    //         await this._refresh(this._editor, false)
+    //     }
+    // }
 
     private async onActiveLinesChanged(e: LinesChangeEvent) {
         if (!this._isReady) {
@@ -142,7 +138,7 @@ export class ActiveStateController implements vscode.Disposable {
         if (shouldDisplay !== undefined) {
             await this.updateDecorations(editor, selections, shouldDisplay)
         } else {
-            await this.updateDecorations(editor, selections, RecommendationService.instance.isRunning)
+            await this.updateDecorations(editor, selections, true)
         }
     }
 
