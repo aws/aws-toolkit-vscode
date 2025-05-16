@@ -805,6 +805,11 @@
             {
                 "command": "aws.amazonq.walkthrough.show",
                 "title": "%AWS.amazonq.welcomeWalkthrough%"
+            },
+            {
+                "command": "aws.amazonq.clearCache",
+                "title": "%AWS.amazonq.clearCache%",
+                "category": "%AWS.amazonq.title%"
             }
         ],
         "keybindings": [
