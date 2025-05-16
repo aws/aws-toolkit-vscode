@@ -5,8 +5,6 @@
 
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-import { getTabSizeSetting } from '../shared/utilities/editorUtilities'
-import * as EditorContext from './util/editorContext'
 import * as CodeWhispererConstants from './models/constants'
 import {
     CodeSuggestionsState,
@@ -16,7 +14,6 @@ import {
     CodeScanIssue,
     CodeIssueGroupingStrategyState,
 } from './models/model'
-import { acceptSuggestion } from './commands/onInlineAcceptance'
 import { CodeWhispererSettings } from './util/codewhispererSettings'
 import { ExtContext } from '../shared/extensions'
 import { CodeWhispererTracker } from './tracker/codewhispererTracker'
@@ -64,20 +61,16 @@ import {
     updateSecurityDiagnosticCollection,
 } from './service/diagnosticsProvider'
 import { SecurityPanelViewProvider, openEditorAtRange } from './views/securityPanelViewProvider'
-import { RecommendationHandler } from './service/recommendationHandler'
 import { Commands, registerCommandErrorHandler, registerDeclaredCommands } from '../shared/vscode/commands2'
-import { InlineCompletionService, refreshStatusBar } from './service/inlineCompletionService'
-import { isInlineCompletionEnabled } from './util/commonUtil'
+import { refreshStatusBar } from './service/statusBar'
 import { AuthUtil } from './util/authUtil'
 import { ImportAdderProvider } from './service/importAdderProvider'
-import { TelemetryHelper } from './util/telemetryHelper'
 import { openUrl } from '../shared/utilities/vsCodeUtils'
 import { onProfileChangedListener } from './util/customizationUtil'
 import { CodeWhispererCommandBackend, CodeWhispererCommandDeclarations } from './commands/gettingStartedPageCommands'
 import { SecurityIssueHoverProvider } from './service/securityIssueHoverProvider'
 import { SecurityIssueCodeActionProvider } from './service/securityIssueCodeActionProvider'
 import { listCodeWhispererCommands } from './ui/statusBarMenu'
-import { Container } from './service/serviceContainer'
 import { debounceStartSecurityScan } from './commands/startSecurityScan'
 import { securityScanLanguageContext } from './util/securityScanLanguageContext'
 import { registerWebviewErrorHandler } from '../webviews/server'
@@ -132,7 +125,6 @@ export async function activate(context: ExtContext): Promise<void> {
     const client = new codewhispererClient.DefaultCodeWhispererClient()
 
     // Service initialization
-    const container = Container.instance
     ReferenceInlineProvider.instance
     ImportAdderProvider.instance
 
@@ -144,10 +136,6 @@ export async function activate(context: ExtContext): Promise<void> {
          * Configuration change
          */
         vscode.workspace.onDidChangeConfiguration(async (configurationChangeEvent) => {
-            if (configurationChangeEvent.affectsConfiguration('editor.tabSize')) {
-                EditorContext.updateTabSize(getTabSizeSetting())
-            }
-
             if (configurationChangeEvent.affectsConfiguration('amazonQ.showCodeWithReferences')) {
                 ReferenceLogViewProvider.instance.update()
                 if (AuthUtil.instance.isIdcConnection()) {
@@ -210,20 +198,21 @@ export async function activate(context: ExtContext): Promise<void> {
                 await openSettings('amazonQ')
             }
         }),
-        Commands.register('aws.amazonq.refreshAnnotation', async (forceProceed: boolean) => {
-            telemetry.record({
-                traceId: TelemetryHelper.instance.traceId,
-            })
+        // TODO port this to lsp
+        // Commands.register('aws.amazonq.refreshAnnotation', async (forceProceed: boolean) => {
+        //     telemetry.record({
+        //         traceId: TelemetryHelper.instance.traceId,
+        //     })
 
-            const editor = vscode.window.activeTextEditor
-            if (editor) {
-                if (forceProceed) {
-                    await container.lineAnnotationController.refresh(editor, 'codewhisperer', true)
-                } else {
-                    await container.lineAnnotationController.refresh(editor, 'codewhisperer')
-                }
-            }
-        }),
+        //     const editor = vscode.window.activeTextEditor
+        //     if (editor) {
+        //         if (forceProceed) {
+        //             await container.lineAnnotationController.refresh(editor, 'codewhisperer', true)
+        //         } else {
+        //             await container.lineAnnotationController.refresh(editor, 'codewhisperer')
+        //         }
+        //     }
+        // }),
         // show introduction
         showIntroduction.register(),
         // toggle code suggestions
@@ -295,21 +284,9 @@ export async function activate(context: ExtContext): Promise<void> {
         // notify new customizations
         notifyNewCustomizationsCmd.register(),
         selectRegionProfileCommand.register(),
-        /**
-         * On recommendation acceptance
-         */
-        acceptSuggestion.register(context),
 
         // direct CodeWhisperer connection setup with customization
         connectWithCustomization.register(),
-
-        // on text document close.
-        vscode.workspace.onDidCloseTextDocument((e) => {
-            if (isInlineCompletionEnabled() && e.uri.fsPath !== InlineCompletionService.instance.filePath()) {
-                return
-            }
-            RecommendationHandler.instance.reportUserDecisions(-1)
-        }),
 
         vscode.languages.registerHoverProvider(
             [...CodeWhispererConstants.platformLanguageIds],
@@ -458,7 +435,6 @@ export async function activate(context: ExtContext): Promise<void> {
     })
 
     await Commands.tryExecute('aws.amazonq.refreshConnectionCallback')
-    container.ready()
 
     function setSubscriptionsForCodeIssues() {
         context.extensionContext.subscriptions.push(
@@ -496,7 +472,6 @@ export async function activate(context: ExtContext): Promise<void> {
 }
 
 export async function shutdown() {
-    RecommendationHandler.instance.reportUserDecisions(-1)
     await CodeWhispererTracker.getTracker().shutdown()
     AuthUtil.instance.regionProfileManager.globalStatePoller.kill()
 }
