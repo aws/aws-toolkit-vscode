@@ -13,7 +13,7 @@ export interface AmazonQResourcePaths extends ResourcePaths {
      * Path to `rg` (or `rg.exe`) executable/binary.
      * Example: `"<cachedir>/aws/toolkits/language-servers/AmazonQ/3.3.0/servers/rg"`
      */
-    rg: string
+    ripGrep: string
 }
 
 export class AmazonQLspInstaller extends BaseLspInstaller.BaseLspInstaller<
@@ -27,8 +27,8 @@ export class AmazonQLspInstaller extends BaseLspInstaller.BaseLspInstaller<
     protected override async postInstall(assetDirectory: string): Promise<void> {
         const resourcePaths = this.resourcePaths(assetDirectory)
         await fs.chmod(resourcePaths.node, 0o755)
-        if (await fs.exists(resourcePaths.rg)) {
-            await fs.chmod(resourcePaths.rg, 0o755)
+        if (await fs.exists(resourcePaths.ripGrep)) {
+            await fs.chmod(resourcePaths.ripGrep, 0o755)
         }
     }
 
@@ -37,7 +37,7 @@ export class AmazonQLspInstaller extends BaseLspInstaller.BaseLspInstaller<
             return {
                 lsp: this.config.path ?? '',
                 node: getNodeExecutableName(),
-                rg: `ripgrep/${getRgExecutableName()}`,
+                ripGrep: `ripgrep/${getRgExecutableName()}`,
                 ui: this.config.ui ?? '',
             }
         }
@@ -47,7 +47,7 @@ export class AmazonQLspInstaller extends BaseLspInstaller.BaseLspInstaller<
         return {
             lsp: path.join(assetDirectory, 'servers/aws-lsp-codewhisperer.js'),
             node: nodePath,
-            rg: rgPath,
+            ripGrep: rgPath,
             ui: path.join(assetDirectory, 'clients/amazonq-ui.js'),
         }
     }
