@@ -56,6 +56,7 @@ describe('editorContext', function () {
             const editor = createMockTextEditor('import math\ndef two_sum(nums, target):\n', 'test.py', 'python', 1, 17)
             const actual = EditorContext.extractContextForCodeWhisperer(editor)
             const expected: codewhispererClient.FileContext = {
+                fileUri: 'file:///test.py',
                 filename: 'test.py',
                 programmingLanguage: {
                     languageName: 'python',
@@ -76,6 +77,7 @@ describe('editorContext', function () {
             )
             const actual = EditorContext.extractContextForCodeWhisperer(editor)
             const expected: codewhispererClient.FileContext = {
+                fileUri: 'file:///test.py',
                 filename: 'test.py',
                 programmingLanguage: {
                     languageName: 'python',
@@ -112,6 +114,7 @@ describe('editorContext', function () {
 
             const actual = EditorContext.extractContextForCodeWhisperer(editor)
             const expected: codewhispererClient.FileContext = {
+                fileUri: editor.document.uri.toString(),
                 filename: 'Untitled-1.py',
                 programmingLanguage: {
                     languageName: 'python',
