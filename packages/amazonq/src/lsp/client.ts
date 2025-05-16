@@ -36,7 +36,6 @@ import {
     AuthUtil,
     CodeWhispererSettings,
     getSelectedCustomization,
-    LineTracker,
     TelemetryHelper,
 } from 'aws-core-vscode/codewhisperer'
 import {
@@ -55,6 +54,7 @@ import {
     getClientId,
     extensionVersion,
 } from 'aws-core-vscode/shared'
+import { LineTracker } from 'aws-core-vscode/codewhisperer'
 import { processUtils } from 'aws-core-vscode/shared'
 import { activate as activateChat } from './chat/activation'
 import { AmazonQResourcePaths } from './lspInstaller'
@@ -185,8 +185,6 @@ export async function startLanguageServer(
     toDispose.push(disposable)
     await client.onReady()
 
-    await client.onReady()
-
     /**
      * We use the Flare Auth language server, and our Auth client depends on it.
      * Because of this we initialize our Auth client **immediately** after the language server is ready.
@@ -220,6 +218,8 @@ export async function startLanguageServer(
 
         // Try and restore a cached connection if exists
         await AuthUtil.instance.restore()
+        const conn = AuthUtil.instance.connection
+        getLogger().info('%O', conn)
     }
 }
 

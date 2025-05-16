@@ -4,8 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { isTextEditor } from '../../shared/utilities/editorUtilities'
-import { setContext } from '../../shared/vscode/setContext'
+import { editorUtilities, setContext } from 'aws-core-vscode/shared'
 
 export interface LineSelection {
     anchor: number
@@ -95,7 +94,7 @@ export class LineTracker implements vscode.Disposable {
     // @VisibleForTesting
     async onTextEditorSelectionChanged(e: vscode.TextEditorSelectionChangeEvent) {
         // If this isn't for our cached editor and its not a real editor -- kick out
-        if (this._editor !== e.textEditor && !isTextEditor(e.textEditor)) {
+        if (this._editor !== e.textEditor && !editorUtilities.isTextEditor(e.textEditor)) {
             return
         }
 
@@ -117,7 +116,7 @@ export class LineTracker implements vscode.Disposable {
     // @VisibleForTesting
     onContentChanged(e: vscode.TextDocumentChangeEvent) {
         const editor = vscode.window.activeTextEditor
-        if (e.document === editor?.document && e.contentChanges.length > 0 && isTextEditor(editor)) {
+        if (e.document === editor?.document && e.contentChanges.length > 0 && editorUtilities.isTextEditor(editor)) {
             this._editor = editor
             this._selections = toLineSelections(this._editor?.selections)
 

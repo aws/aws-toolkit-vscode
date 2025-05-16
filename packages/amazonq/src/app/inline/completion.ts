@@ -35,9 +35,9 @@ import {
     vsCodeState,
     inlineCompletionsDebounceDelay,
     noInlineSuggestionsMsg,
+    LineTracker,
 } from 'aws-core-vscode/codewhisperer'
 import { InlineGeneratingMessage } from './inlineGeneratingMessage'
-import { LineTracker } from './stateTracker/lineTracker'
 import { InlineTutorialAnnotation } from './tutorials/inlineTutorialAnnotation'
 import { TelemetryHelper } from './telemetryHelper'
 import { getLogger } from 'aws-core-vscode/shared'

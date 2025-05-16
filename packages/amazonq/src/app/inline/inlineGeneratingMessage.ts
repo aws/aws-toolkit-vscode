@@ -5,8 +5,7 @@
 
 import { editorUtilities } from 'aws-core-vscode/shared'
 import * as vscode from 'vscode'
-import { LineSelection, LineTracker } from './stateTracker/lineTracker'
-import { AuthUtil } from 'aws-core-vscode/codewhisperer'
+import { AuthUtil, LineSelection, LineTracker } from 'aws-core-vscode/codewhisperer'
 import { cancellableDebounce } from 'aws-core-vscode/utils'
 
 /**
@@ -31,12 +30,7 @@ export class InlineGeneratingMessage implements vscode.Disposable {
 
     constructor(private readonly lineTracker: LineTracker) {
         this._disposable = vscode.Disposable.from(
-            AuthUtil.instance.auth.onDidChangeConnectionState(async (e) => {
-                if (e.state !== 'authenticating') {
-                    this.hideGenerating()
-                }
-            }),
-            AuthUtil.instance.secondaryAuth.onDidChangeActiveConnection(async () => {
+            AuthUtil.instance.onDidChangeConnectionState(async () => {
                 this.hideGenerating()
             })
         )
@@ -72,7 +66,7 @@ export class InlineGeneratingMessage implements vscode.Disposable {
             return
         }
 
-        if (!AuthUtil.instance.isConnectionValid()) {
+        if (!AuthUtil.instance.isConnected()) {
             this.hideGenerating()
             return
         }

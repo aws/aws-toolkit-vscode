@@ -5,7 +5,7 @@
 
 import * as assert from 'assert'
 import { decryptResponse, encryptRequest } from '../../../../src/lsp/encryption'
-import { encryptionKey } from '../../../../src/lsp/auth'
+import { encryptionKey } from '../../../../src/lsp/client'
 
 describe('LSP encryption', function () {
     it('encrypt and decrypt invert eachother with same key', async function () {

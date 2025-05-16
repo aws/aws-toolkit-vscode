@@ -155,7 +155,7 @@ export class TelemetryHelper {
             codewhispererRequestId: this._firstResponseRequestId,
             codewhispererSessionId: this._sessionId,
             codewhispererTriggerType: this._triggerType,
-            credentialStartUrl: AuthUtil.instance.startUrl,
+            credentialStartUrl: AuthUtil.instance.connection?.startUrl,
             result: 'Succeeded',
         })
     }

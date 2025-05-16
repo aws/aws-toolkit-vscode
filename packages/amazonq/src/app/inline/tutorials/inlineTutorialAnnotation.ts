@@ -13,7 +13,7 @@ import {
     TelemetryHelper,
 } from 'aws-core-vscode/codewhisperer'
 import { editorUtilities, getLogger, globals, setContext, vscodeUtilities } from 'aws-core-vscode/shared'
-import { LinesChangeEvent, LineSelection, LineTracker } from '../stateTracker/lineTracker'
+import { LinesChangeEvent, LineSelection, LineTracker } from 'aws-core-vscode/codewhisperer'
 import { telemetry } from 'aws-core-vscode/telemetry'
 import { cancellableDebounce } from 'aws-core-vscode/utils'
 import { SessionManager } from '../sessionManager'
@@ -273,12 +273,7 @@ export class InlineTutorialAnnotation implements vscode.Disposable {
             this.lineTracker.onDidChangeActiveLines(async (e) => {
                 await this.onActiveLinesChanged(e)
             }),
-            AuthUtil.instance.auth.onDidChangeConnectionState(async (e) => {
-                if (e.state !== 'authenticating') {
-                    await this.refresh(vscode.window.activeTextEditor, 'editor')
-                }
-            }),
-            AuthUtil.instance.secondaryAuth.onDidChangeActiveConnection(async () => {
+            AuthUtil.instance.onDidChangeConnectionState(async () => {
                 await this.refresh(vscode.window.activeTextEditor, 'editor')
             })
         )
@@ -418,7 +413,7 @@ export class InlineTutorialAnnotation implements vscode.Disposable {
             return
         }
 
-        if (!AuthUtil.instance.isConnectionValid()) {
+        if (!AuthUtil.instance.isConnected()) {
             this.clear()
             return
         }

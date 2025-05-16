@@ -27,7 +27,7 @@ import {
     ReferenceLogViewProvider,
 } from 'aws-core-vscode/codewhisperer'
 import { InlineGeneratingMessage } from '../../../../../src/app/inline/inlineGeneratingMessage'
-import { LineTracker } from '../../../../../src/app/inline/stateTracker/lineTracker'
+import { LineTracker } from 'aws-core-vscode/codewhisperer'
 import { InlineTutorialAnnotation } from '../../../../../src/app/inline/tutorials/inlineTutorialAnnotation'
 
 describe('InlineCompletionManager', () => {

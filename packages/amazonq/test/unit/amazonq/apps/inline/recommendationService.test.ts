@@ -10,7 +10,7 @@ import assert from 'assert'
 import { RecommendationService } from '../../../../../src/app/inline/recommendationService'
 import { SessionManager } from '../../../../../src/app/inline/sessionManager'
 import { createMockDocument } from 'aws-core-vscode/test'
-import { LineTracker } from '../../../../../src/app/inline/stateTracker/lineTracker'
+import { LineTracker } from 'aws-core-vscode/codewhisperer'
 import { InlineGeneratingMessage } from '../../../../../src/app/inline/inlineGeneratingMessage'
 
 describe('RecommendationService', () => {
