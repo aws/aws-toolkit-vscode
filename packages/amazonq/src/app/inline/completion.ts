@@ -28,7 +28,6 @@ import { RecommendationService } from './recommendationService'
 import {
     CodeWhispererConstants,
     ReferenceHoverProvider,
-    ReferenceInlineProvider,
     ReferenceLogViewProvider,
     ImportAdderProvider,
     CodeSuggestionsState,
@@ -158,39 +157,6 @@ export class InlineCompletionManager implements Disposable {
             this.languageClient.sendNotification(this.logSessionResultMessageName, params)
         }
         commands.registerCommand('aws.amazonq.rejectCodeSuggestion', onInlineRejection)
-
-        /*
-            We have to overwrite the prev. and next. commands because the inlineCompletionProvider only contained the current item
-            To show prev. and next. recommendation we need to re-register a new provider with the previous or next item
-        */
-
-        const swapProviderAndShow = async () => {
-            await commands.executeCommand('editor.action.inlineSuggest.hide')
-            this.disposable.dispose()
-            this.disposable = languages.registerInlineCompletionItemProvider(
-                CodeWhispererConstants.platformLanguageIds,
-                new AmazonQInlineCompletionItemProvider(
-                    this.languageClient,
-                    this.recommendationService,
-                    this.sessionManager,
-                    this.inlineTutorialAnnotation,
-                    false
-                )
-            )
-            await commands.executeCommand('editor.action.inlineSuggest.trigger')
-        }
-
-        const prevCommandHandler = async () => {
-            this.sessionManager.decrementActiveIndex()
-            await swapProviderAndShow()
-        }
-        commands.registerCommand('editor.action.inlineSuggest.showPrevious', prevCommandHandler)
-
-        const nextCommandHandler = async () => {
-            this.sessionManager.incrementActiveIndex()
-            await swapProviderAndShow()
-        }
-        commands.registerCommand('editor.action.inlineSuggest.showNext', nextCommandHandler)
     }
 }
 
@@ -199,8 +165,7 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
         private readonly languageClient: LanguageClient,
         private readonly recommendationService: RecommendationService,
         private readonly sessionManager: SessionManager,
-        private readonly inlineTutorialAnnotation: InlineTutorialAnnotation,
-        private readonly isNewSession: boolean = true
+        private readonly inlineTutorialAnnotation: InlineTutorialAnnotation
     ) {}
 
     provideInlineCompletionItems = debounce(
@@ -217,27 +182,24 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
     ): Promise<InlineCompletionItem[]> {
         try {
             vsCodeState.isRecommendationsActive = true
-            if (this.isNewSession) {
-                const isAutoTrigger = context.triggerKind === InlineCompletionTriggerKind.Automatic
-                if (isAutoTrigger && !CodeSuggestionsState.instance.isSuggestionsEnabled()) {
-                    // return early when suggestions are disabled with auto trigger
-                    return []
-                }
-
-                // tell the tutorial that completions has been triggered
-                await this.inlineTutorialAnnotation.triggered(context.triggerKind)
-                TelemetryHelper.instance.setInvokeSuggestionStartTime()
-                TelemetryHelper.instance.setTriggerType(context.triggerKind)
-
-                // make service requests if it's a new session
-                await this.recommendationService.getAllRecommendations(
-                    this.languageClient,
-                    document,
-                    position,
-                    context,
-                    token
-                )
+            const isAutoTrigger = context.triggerKind === InlineCompletionTriggerKind.Automatic
+            if (isAutoTrigger && !CodeSuggestionsState.instance.isSuggestionsEnabled()) {
+                // return early when suggestions are disabled with auto trigger
+                return []
             }
+
+            // tell the tutorial that completions has been triggered
+            await this.inlineTutorialAnnotation.triggered(context.triggerKind)
+            TelemetryHelper.instance.setInvokeSuggestionStartTime()
+            TelemetryHelper.instance.setTriggerType(context.triggerKind)
+
+            await this.recommendationService.getAllRecommendations(
+                this.languageClient,
+                document,
+                position,
+                context,
+                token
+            )
             // get active item from session for displaying
             const items = this.sessionManager.getActiveRecommendation()
             const session = this.sessionManager.getActiveSession()
@@ -271,11 +233,6 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
                 }
                 item.range = new Range(cursorPosition, cursorPosition)
                 item.insertText = typeof item.insertText === 'string' ? item.insertText : item.insertText.value
-                ReferenceInlineProvider.instance.setInlineReference(
-                    cursorPosition.line,
-                    item.insertText,
-                    item.references
-                )
                 ImportAdderProvider.instance.onShowRecommendation(document, cursorPosition.line, item)
             }
             return items as InlineCompletionItem[]

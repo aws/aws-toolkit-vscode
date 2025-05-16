@@ -111,13 +111,6 @@ describe('RecommendationService', () => {
                 ...expectedRequestArgs,
                 partialResultToken: mockPartialResultToken,
             })
-
-            // Verify session management
-            const items = sessionManager.getActiveRecommendation()
-            assert.deepStrictEqual(items, [mockInlineCompletionItemOne, { insertText: '1' } as InlineCompletionItem])
-            sessionManager.incrementActiveIndex()
-            const items2 = sessionManager.getActiveRecommendation()
-            assert.deepStrictEqual(items2, [mockInlineCompletionItemTwo, { insertText: '1' } as InlineCompletionItem])
         })
     })
 })
