@@ -18,7 +18,7 @@ function collectDependenciesAndMetadata(dependenciesFolderPath: string, workingD
     getLogger().info('CodeTransformation: running mvn clean test-compile with maven JAR')
 
     const baseCommand = transformByQState.getMavenName()
-    const jarPath = globals.context.asAbsolutePath(path.join('resources', 'amazonQCT', 'QCT-Maven.jar'))
+    const jarPath = globals.context.asAbsolutePath(path.join('resources', 'amazonQCT', 'QCT-Maven-5-16.jar'))
 
     getLogger().info('CodeTransformation: running Maven extension with JAR')
 

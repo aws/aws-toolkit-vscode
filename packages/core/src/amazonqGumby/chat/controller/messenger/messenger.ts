@@ -731,7 +731,7 @@ ${codeSnippet}
                 tabID
             )
         )
-        const sampleYAML = `name: dependency-upgrade
+        const sampleYAML = `name: "dependency-upgrade"
 description: "Custom dependency version management for Java migration from JDK 8/11/17 to JDK 17/21"
 
 dependencyManagement:
