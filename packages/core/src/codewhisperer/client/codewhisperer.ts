@@ -262,7 +262,7 @@ export class DefaultCodeWhispererClient {
     /**
      * @description Use this function to get the status of the code transformation. We should
      * be polling this function periodically to get updated results. When this function
-     * returns COMPLETED we know the transformation is done.
+     * returns PARTIALLY_COMPLETED or COMPLETED we know the transformation is done.
      */
     public async codeModernizerGetCodeTransformation(
         request: CodeWhispererUserClient.GetTransformationRequest
@@ -272,15 +272,15 @@ export class DefaultCodeWhispererClient {
     }
 
     /**
-     * @description After the job has been PAUSED we need to get user intervention. Once that user
-     * intervention has been handled we can resume the transformation job.
+     * @description During client-side build, or after the job has been PAUSED we need to get user intervention.
+     * Once that user action has been handled we can resume the transformation job.
      * @params transformationJobId - String id returned from StartCodeTransformationResponse
      * @params userActionStatus - String to determine what action the user took, if any.
      */
     public async codeModernizerResumeTransformation(
         request: CodeWhispererUserClient.ResumeTransformationRequest
     ): Promise<PromiseResult<CodeWhispererUserClient.ResumeTransformationResponse, AWSError>> {
-        return (await this.createUserSdkClient()).resumeTransformation(request).promise()
+        return (await this.createUserSdkClient(8)).resumeTransformation(request).promise()
     }
 
     /**

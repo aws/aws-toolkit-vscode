@@ -41,13 +41,9 @@ import {
 } from '../../errors'
 import * as CodeWhispererConstants from '../../../codewhisperer/models/constants'
 import MessengerUtils, { ButtonActions, GumbyCommands } from './messenger/messengerUtils'
-import { CancelActionPositions, JDKToTelemetryValue, telemetryUndefined } from '../../telemetry/codeTransformTelemetry'
+import { CancelActionPositions } from '../../telemetry/codeTransformTelemetry'
 import { openUrl } from '../../../shared/utilities/vsCodeUtils'
-import {
-    telemetry,
-    CodeTransformJavaTargetVersionsAllowed,
-    CodeTransformJavaSourceVersionsAllowed,
-} from '../../../shared/telemetry/telemetry'
+import { telemetry } from '../../../shared/telemetry/telemetry'
 import { CodeTransformTelemetryState } from '../../telemetry/codeTransformTelemetryState'
 import DependencyVersions from '../../models/dependencies'
 import { getStringHash } from '../../../shared/utilities/textUtilities'
@@ -308,7 +304,6 @@ export class GumbyController {
     }
 
     private async validateLanguageUpgradeProjects(message: any) {
-        let telemetryJavaVersion = JDKToTelemetryValue(JDKVersion.UNSUPPORTED) as CodeTransformJavaSourceVersionsAllowed
         try {
             const validProjects = await telemetry.codeTransform_validateProject.run(async () => {
                 telemetry.record({
@@ -317,12 +312,6 @@ export class GumbyController {
                 })
 
                 const validProjects = await getValidLanguageUpgradeCandidateProjects()
-                if (validProjects.length > 0) {
-                    // validProjects[0].JDKVersion will be undefined if javap errors out or no .class files found, so call it UNSUPPORTED
-                    const javaVersion = validProjects[0].JDKVersion ?? JDKVersion.UNSUPPORTED
-                    telemetryJavaVersion = JDKToTelemetryValue(javaVersion) as CodeTransformJavaSourceVersionsAllowed
-                }
-                telemetry.record({ codeTransformLocalJavaVersion: telemetryJavaVersion })
                 return validProjects
             })
             return validProjects
@@ -460,9 +449,7 @@ export class GumbyController {
             })
 
             this.messenger.sendOneOrMultipleDiffsMessage(oneOrMultipleDiffsSelection, message.tabID)
-            this.promptJavaHome('source', message.tabID)
-            // TO-DO: delete line above and uncomment line below when releasing CSB
-            // await this.messenger.sendCustomDependencyVersionMessage(message.tabID)
+            await this.messenger.sendCustomDependencyVersionMessage(message.tabID)
         })
     }
 
@@ -488,16 +475,9 @@ export class GumbyController {
             const fromJDKVersion: JDKVersion = message.formSelectedValues['GumbyTransformJdkFromForm']
 
             telemetry.record({
-                // TODO: remove JavaSource/TargetVersionsAllowed when BI is updated to use source/target
-                codeTransformJavaSourceVersionsAllowed: JDKToTelemetryValue(
-                    fromJDKVersion
-                ) as CodeTransformJavaSourceVersionsAllowed,
-                codeTransformJavaTargetVersionsAllowed: JDKToTelemetryValue(
-                    toJDKVersion
-                ) as CodeTransformJavaTargetVersionsAllowed,
                 source: fromJDKVersion,
                 target: toJDKVersion,
-                codeTransformProjectId: pathToProject === undefined ? telemetryUndefined : getStringHash(pathToProject),
+                codeTransformProjectId: pathToProject === undefined ? undefined : getStringHash(pathToProject),
                 userChoice: 'Confirm-Java',
             })
 
@@ -526,7 +506,7 @@ export class GumbyController {
             const schema: string = message.formSelectedValues['GumbyTransformSQLSchemaForm']
 
             telemetry.record({
-                codeTransformProjectId: pathToProject === undefined ? telemetryUndefined : getStringHash(pathToProject),
+                codeTransformProjectId: pathToProject === undefined ? undefined : getStringHash(pathToProject),
                 source: transformByQState.getSourceDB(),
                 target: transformByQState.getTargetDB(),
                 userChoice: 'Confirm-SQL',
