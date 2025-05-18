@@ -51,11 +51,11 @@ import { encodeHTML } from '../../../shared/utilities/textUtilities'
 import { convertToTimeString } from '../../../shared/datetime'
 import { getAuthType } from '../../../auth/utils'
 import { UserWrittenCodeTracker } from '../../tracker/userWrittenCodeTracker'
+import { setContext } from '../../../shared/vscode/setContext'
 import { AuthUtil } from '../../util/authUtil'
 import { DiffModel } from './transformationResultsViewProvider'
 import { spawnSync } from 'child_process' // eslint-disable-line no-restricted-imports
 import { isClientSideBuildEnabled } from '../../../dev/config'
-import { openTransformationPlan } from '../../commands/startTransformByQ'
 
 export function getSha256(buffer: Buffer) {
     const hasher = crypto.createHash('sha256')
@@ -756,6 +756,31 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
         }
     }
     return status
+}
+
+async function openTransformationPlan(jobId: string, profile?: RegionProfile) {
+    let plan = undefined
+    try {
+        plan = await getTransformationPlan(jobId, profile)
+    } catch (error) {
+        // means API call failed
+        getLogger().error(`CodeTransformation: ${CodeWhispererConstants.failedToCompleteJobNotification}`, error)
+        transformByQState.setJobFailureErrorNotification(
+            `${CodeWhispererConstants.failedToGetPlanNotification} ${(error as Error).message}`
+        )
+        transformByQState.setJobFailureErrorChatMessage(
+            `${CodeWhispererConstants.failedToGetPlanChatMessage} ${(error as Error).message}`
+        )
+        throw new Error('Get plan failed')
+    }
+
+    if (plan) {
+        const planFilePath = path.join(transformByQState.getProjectPath(), 'transformation-plan.md')
+        nodefs.writeFileSync(planFilePath, plan)
+        await vscode.commands.executeCommand('markdown.showPreview', vscode.Uri.file(planFilePath))
+        transformByQState.setPlanFilePath(planFilePath)
+        await setContext('gumby.isPlanAvailable', true)
+    }
 }
 
 async function attemptLocalBuild() {
