@@ -247,7 +247,25 @@ dependencyManagement:
             },
             transformationJob: { status: 'COMPLETED' },
         }
+        const mockPlanResponse = {
+            $response: {
+                data: {
+                    transformationPlan: { transformationSteps: [] },
+                },
+                requestId: 'requestId',
+                hasNextPage: () => false,
+                error: undefined,
+                nextPage: () => null, // eslint-disable-line unicorn/no-null
+                redirectCount: 0,
+                retryCount: 0,
+                httpResponse: new HttpResponse(),
+            },
+            transformationPlan: { transformationSteps: [] },
+        }
         sinon.stub(codeWhisperer.codeWhispererClient, 'codeModernizerGetCodeTransformation').resolves(mockJobResponse)
+        sinon
+            .stub(codeWhisperer.codeWhispererClient, 'codeModernizerGetCodeTransformationPlan')
+            .resolves(mockPlanResponse)
         transformByQState.setToSucceeded()
         const status = await pollTransformationJob(
             'dummyId',
