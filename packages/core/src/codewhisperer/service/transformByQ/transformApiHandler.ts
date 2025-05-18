@@ -529,6 +529,7 @@ export function addTableMarkdown(plan: string, stepId: string, tableMapping: { [
         return plan
     }
     const tables: any[] = []
+    // eslint-disable-next-line unicorn/no-array-for-each
     tableObjects.forEach((tableObj: string) => {
         try {
             const table = JSON.parse(tableObj)
@@ -548,17 +549,22 @@ export function addTableMarkdown(plan: string, stepId: string, tableMapping: { [
     // table name and columns are shared, so only add to plan once
     plan += `\n\n\n${tables[0].name}\n|`
     const columns = tables[0].columnNames
+    // eslint-disable-next-line unicorn/no-array-for-each
     columns.forEach((columnName: string) => {
         plan += ` ${getFormattedString(columnName)} |`
     })
     plan += '\n|'
+    // eslint-disable-next-line unicorn/no-array-for-each
     columns.forEach((_: any) => {
         plan += '-----|'
     })
     // add all rows of all tables
+    // eslint-disable-next-line unicorn/no-array-for-each
     tables.forEach((table: any) => {
+        // eslint-disable-next-line unicorn/no-array-for-each
         table.rows.forEach((row: any) => {
             plan += '\n|'
+            // eslint-disable-next-line unicorn/no-array-for-each
             columns.forEach((columnName: string) => {
                 if (columnName === 'relativePath') {
                     // add markdown link only for file paths
