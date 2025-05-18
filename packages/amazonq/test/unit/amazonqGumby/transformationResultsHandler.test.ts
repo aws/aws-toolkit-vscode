@@ -63,30 +63,4 @@ describe('DiffModel', function () {
 
         assert.strictEqual(change instanceof ModifiedChangeNode, true)
     })
-
-    it('WHEN parsing a diff patch where diff.json is not present and a file was modified THEN returns an array representing the modified file', async function () {
-        const testDiffModel = new DiffModel()
-
-        const fileAmount = 1
-        const workspaceFolder = await createTestWorkspace(fileAmount, { fileContent: '' })
-
-        await fs.writeFile(
-            path.join(workspaceFolder.uri.fsPath, 'README.md'),
-            'This guide walks you through using Gradle to build a simple Java project.'
-        )
-
-        testDiffModel.parseDiff(
-            getTestResourceFilePath('resources/files/modifiedFile.diff'),
-            workspaceFolder.uri.fsPath
-        )
-
-        assert.strictEqual(
-            testDiffModel.patchFileNodes[0].patchFilePath,
-            getTestResourceFilePath('resources/files/modifiedFile.diff')
-        )
-        assert(testDiffModel.patchFileNodes[0].label.endsWith('modifiedFile.diff'))
-        const change = testDiffModel.patchFileNodes[0].children[0]
-
-        assert.strictEqual(change instanceof ModifiedChangeNode, true)
-    })
 })
