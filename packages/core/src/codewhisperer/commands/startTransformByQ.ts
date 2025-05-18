@@ -554,6 +554,11 @@ export async function pollTransformationStatusUntilPlanReady(jobId: string, prof
         // for now, no plan shown with SQL conversions. later, we may add one
         return
     }
+    jobPlanProgress['generatePlan'] = StepProgress.Succeeded
+    throwIfCancelled()
+}
+
+export async function openTransformationPlan(jobId: string, profile?: RegionProfile) {
     let plan = undefined
     try {
         plan = await getTransformationPlan(jobId, profile)
@@ -576,8 +581,6 @@ export async function pollTransformationStatusUntilPlanReady(jobId: string, prof
         transformByQState.setPlanFilePath(planFilePath)
         await setContext('gumby.isPlanAvailable', true)
     }
-    jobPlanProgress['generatePlan'] = StepProgress.Succeeded
-    throwIfCancelled()
 }
 
 export async function pollTransformationStatusUntilComplete(jobId: string, profile: RegionProfile | undefined) {

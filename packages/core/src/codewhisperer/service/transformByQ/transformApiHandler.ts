@@ -55,6 +55,7 @@ import { AuthUtil } from '../../util/authUtil'
 import { DiffModel } from './transformationResultsViewProvider'
 import { spawnSync } from 'child_process' // eslint-disable-line no-restricted-imports
 import { isClientSideBuildEnabled } from '../../../dev/config'
+import { openTransformationPlan } from '../../commands/startTransformByQ'
 
 export function getSha256(buffer: Buffer) {
     const hasher = crypto.createHash('sha256')
@@ -785,6 +786,11 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
                     `${CodeWhispererConstants.failedToCompleteJobGenericNotification} ${errorMessage}`
                 )
             }
+
+            if (CodeWhispererConstants.validStatesForPlanGenerated.includes(status)) {
+                await openTransformationPlan(jobId, profile)
+            }
+
             if (validStates.includes(status)) {
                 break
             }
