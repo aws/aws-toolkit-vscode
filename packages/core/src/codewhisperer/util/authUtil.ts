@@ -8,7 +8,6 @@ import * as localizedText from '../../shared/localizedText'
 import * as nls from 'vscode-nls'
 import { fs } from '../../shared/fs/fs'
 import * as path from 'path'
-import * as crypto from 'crypto'
 import { ToolkitError } from '../../shared/errors'
 import { AmazonQPromptSettings } from '../../shared/settings'
 import {
@@ -37,7 +36,7 @@ import { VSCODE_EXTENSION_ID } from '../../shared/extensions'
 import { RegionProfileManager } from '../region/regionProfileManager'
 import { AuthFormId } from '../../login/webview/vue/types'
 import { getEnvironmentSpecificMemento } from '../../shared/utilities/mementos'
-import { getCacheDir, getRegistrationCacheFile, getTokenCacheFile } from '../../auth/sso/cache'
+import { getCacheDir, getFlareCacheFileName, getRegistrationCacheFile, getTokenCacheFile } from '../../auth/sso/cache'
 import { notifySelectDeveloperProfile } from '../region/utils'
 import { once } from '../../shared/utilities/functionUtils'
 
@@ -278,6 +277,7 @@ export class AuthUtil implements IAuthProvider {
     }
 
     private async cacheChangedHandler(event: cacheChangedEvent) {
+        getLogger().debug(`Auth: Cache change event received: ${event}`)
         if (event === 'delete') {
             await this.logout()
         } else if (event === 'create') {
@@ -427,25 +427,20 @@ export class AuthUtil implements IAuthProvider {
 
                 const cacheDir = getCacheDir()
 
-                const hash = (str: string) => {
-                    const hasher = crypto.createHash('sha1')
-                    return hasher.update(str).digest('hex')
-                }
-                const filePath = (str: string) => {
-                    return path.join(cacheDir, hash(str) + '.json')
-                }
-
                 const fromRegistrationFile = getRegistrationCacheFile(cacheDir, registrationKey)
-                const toRegistrationFile = filePath(
-                    JSON.stringify({
-                        region: toImport.ssoRegion,
-                        startUrl: toImport.startUrl,
-                        tool: clientName,
-                    })
+                const toRegistrationFile = path.join(
+                    cacheDir,
+                    getFlareCacheFileName(
+                        JSON.stringify({
+                            region: toImport.ssoRegion,
+                            startUrl: toImport.startUrl,
+                            tool: clientName,
+                        })
+                    )
                 )
 
                 const fromTokenFile = getTokenCacheFile(cacheDir, profileId)
-                const toTokenFile = filePath(this.profileName)
+                const toTokenFile = path.join(cacheDir, getFlareCacheFileName(this.profileName))
 
                 try {
                     await fs.rename(fromRegistrationFile, toRegistrationFile)

@@ -45,8 +45,8 @@ export function getCache(directory = getCacheDir()): SsoCache {
     }
 }
 
-export function getCacheFileWatcher(directory = getCacheDir()) {
-    const watcher = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(directory, '*.json'))
+export function getCacheFileWatcher(directory = getCacheDir(), file = '*.json') {
+    const watcher = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(directory, file))
     globals.context.subscriptions.push(watcher)
     return watcher
 }
@@ -157,4 +157,20 @@ export function getRegistrationCacheFile(ssoCacheDir: string, key: RegistrationK
 
     const suffix = `${key.region}${key.scopes && key.scopes.length > 0 ? `-${hash(key.startUrl, key.scopes)}` : ''}`
     return path.join(ssoCacheDir, `aws-toolkit-vscode-client-id-${suffix}.json`)
+}
+
+/**
+ * Returns the cache file name that Flare identity server uses for SSO token and registration
+ *
+ * @param key - The key to use for the new registration cache file.
+ * See https://github.com/aws/language-servers/blob/c10819ea2c25ce564c75fb43a6792f3c919b757a/server/aws-lsp-identity/src/sso/cache/fileSystemSsoCache.ts
+ * @returns File name of the Flare cache file
+ */
+export function getFlareCacheFileName(key: string) {
+    const hash = (str: string) => {
+        const hasher = crypto.createHash('sha1')
+        return hasher.update(str).digest('hex')
+    }
+
+    return hash(key) + '.json'
 }

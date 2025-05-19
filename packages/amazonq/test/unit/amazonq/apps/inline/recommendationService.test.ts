@@ -9,7 +9,7 @@ import { Position, CancellationToken, InlineCompletionItem } from 'vscode'
 import assert from 'assert'
 import { RecommendationService } from '../../../../../src/app/inline/recommendationService'
 import { SessionManager } from '../../../../../src/app/inline/sessionManager'
-import { createMockDocument } from 'aws-core-vscode/test'
+import { createMockDocument, createTestAuthUtil } from 'aws-core-vscode/test'
 import { LineTracker } from '../../../../../src/app/inline/stateTracker/lineTracker'
 import { InlineGeneratingMessage } from '../../../../../src/app/inline/inlineGeneratingMessage'
 
@@ -17,6 +17,11 @@ describe('RecommendationService', () => {
     let languageClient: LanguageClient
     let sendRequestStub: sinon.SinonStub
     let sandbox: sinon.SinonSandbox
+    let sessionManager: SessionManager
+    let lineTracker: LineTracker
+    let activeStateController: InlineGeneratingMessage
+    let service: RecommendationService
+
     const mockDocument = createMockDocument()
     const mockPosition = { line: 0, character: 0 } as Position
     const mockContext = { triggerKind: 1, selectedCompletionInfo: undefined }
@@ -29,12 +34,8 @@ describe('RecommendationService', () => {
         insertText: 'ItemTwo',
     } as InlineCompletionItem
     const mockPartialResultToken = 'some-random-token'
-    const sessionManager = new SessionManager()
-    const lineTracker = new LineTracker()
-    const activeStateController = new InlineGeneratingMessage(lineTracker)
-    const service = new RecommendationService(sessionManager, activeStateController)
 
-    beforeEach(() => {
+    beforeEach(async () => {
         sandbox = sinon.createSandbox()
 
         sendRequestStub = sandbox.stub()
@@ -42,6 +43,13 @@ describe('RecommendationService', () => {
         languageClient = {
             sendRequest: sendRequestStub,
         } as unknown as LanguageClient
+
+        await createTestAuthUtil()
+
+        sessionManager = new SessionManager()
+        lineTracker = new LineTracker()
+        activeStateController = new InlineGeneratingMessage(lineTracker)
+        service = new RecommendationService(sessionManager, activeStateController)
     })
 
     afterEach(() => {

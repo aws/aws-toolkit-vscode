@@ -41,7 +41,8 @@ import { LanguageClient } from 'vscode-languageclient'
 import { getLogger } from '../shared/logger/logger'
 import { ToolkitError } from '../shared/errors'
 import { useDeviceFlow } from './sso/ssoAccessTokenProvider'
-import { getCacheFileWatcher } from './sso/cache'
+import { getCacheDir, getCacheFileWatcher, getFlareCacheFileName } from './sso/cache'
+import { VSCODE_EXTENSION_ID } from '../shared/extensions'
 
 export const notificationTypes = {
     updateBearerToken: new RequestType<UpdateCredentialsParams, ResponseMessage, Error>(
@@ -77,7 +78,7 @@ export type TokenSource = IamIdentityCenterSsoTokenSource | AwsBuilderIdSsoToken
  * Handles auth requests to the Identity Server in the Amazon Q LSP.
  */
 export class LanguageClientAuth {
-    readonly #ssoCacheWatcher = getCacheFileWatcher()
+    readonly #ssoCacheWatcher = getCacheFileWatcher(getCacheDir(), getFlareCacheFileName(VSCODE_EXTENSION_ID.amazonq))
 
     constructor(
         private readonly client: LanguageClient,
