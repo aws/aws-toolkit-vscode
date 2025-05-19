@@ -1852,8 +1852,15 @@
                 "leftFileContent": { "shape": "FileContextLeftFileContentString" },
                 "rightFileContent": { "shape": "FileContextRightFileContentString" },
                 "filename": { "shape": "FileContextFilenameString" },
+                "fileUri": { "shape": "FileContextFileUriString" },
                 "programmingLanguage": { "shape": "ProgrammingLanguage" }
             }
+        },
+        "FileContextFileUriString": {
+            "type": "string",
+            "max": 1024,
+            "min": 1,
+            "sensitive": true
         },
         "FileContextFilenameString": {
             "type": "string",
