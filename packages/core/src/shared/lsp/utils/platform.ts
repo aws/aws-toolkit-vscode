@@ -13,6 +13,10 @@ export function getNodeExecutableName(): string {
     return process.platform === 'win32' ? 'node.exe' : 'node'
 }
 
+export function getRgExecutableName(): string {
+    return process.platform === 'win32' ? 'rg.exe' : 'rg'
+}
+
 /**
  * Get a json payload that will be sent to the language server, who is waiting to know what the encryption key is.
  * Code reference: https://github.com/aws/language-servers/blob/7da212185a5da75a72ce49a1a7982983f438651a/client/vscode/src/credentialsActivation.ts#L77
