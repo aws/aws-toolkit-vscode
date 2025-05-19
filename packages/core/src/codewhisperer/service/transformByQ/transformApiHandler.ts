@@ -617,8 +617,6 @@ export async function getTransformationPlan(jobId: string, profile: RegionProfil
 
         const stepZeroProgressUpdates = response.transformationPlan.transformationSteps[0].progressUpdates
 
-        console.log('stepZeroProgressUpdates', JSON.stringify(stepZeroProgressUpdates))
-
         if (!stepZeroProgressUpdates || stepZeroProgressUpdates.length === 0) {
             // means backend API response wrong and table data is missing
             throw new Error('No progress updates found in step 0')

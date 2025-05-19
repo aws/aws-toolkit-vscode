@@ -28,10 +28,10 @@ const warnOnce = onceChanged((s: string, url: string) => {
 export const scopesCodeCatalyst = ['codecatalyst:read_write']
 export const scopesSsoAccountAccess = ['sso:account:access']
 /** These are the non-chat scopes for CW. */
-export const scopesCodeWhispererCore = ['codewhisperer:completions', 'codewhisperer:analysis']
-export const scopesCodeWhispererChat = ['codewhisperer:conversations']
-export const scopesFeatureDev = ['codewhisperer:taskassist']
-export const scopesGumby = ['codewhisperer:transformations']
+export const scopesCodeWhispererCore = ['codewhisperer_internal:completions', 'codewhisperer_internal:analysis']
+export const scopesCodeWhispererChat = ['codewhisperer_internal:conversations']
+export const scopesFeatureDev = ['codewhisperer_internal:taskassist']
+export const scopesGumby = ['codewhisperer_internal:transformations']
 
 export const defaultSsoRegion = 'us-east-1'
 
