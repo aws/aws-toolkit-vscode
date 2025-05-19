@@ -617,6 +617,8 @@ export async function getTransformationPlan(jobId: string, profile: RegionProfil
 
         const stepZeroProgressUpdates = response.transformationPlan.transformationSteps[0].progressUpdates
 
+        console.log('stepZeroProgressUpdates', JSON.stringify(stepZeroProgressUpdates))
+
         if (!stepZeroProgressUpdates || stepZeroProgressUpdates.length === 0) {
             // means backend API response wrong and table data is missing
             throw new Error('No progress updates found in step 0')
@@ -721,7 +723,10 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
                 )
             }
 
-            if (CodeWhispererConstants.validStatesForPlanGenerated.includes(status)) {
+            if (
+                CodeWhispererConstants.validStatesForPlanGenerated.includes(status) &&
+                transformByQState.getTransformationType() === TransformationType.LANGUAGE_UPGRADE
+            ) {
                 await openTransformationPlan(jobId, profile)
             }
 
