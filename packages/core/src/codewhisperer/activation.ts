@@ -27,7 +27,6 @@ import {
     showLearnMore,
     showSsoSignIn,
     showFreeTierLimit,
-    updateReferenceLog,
     showIntroduction,
     reconnect,
     openSecurityIssuePanel,
@@ -62,7 +61,6 @@ import {
 } from './service/diagnosticsProvider'
 import { SecurityPanelViewProvider, openEditorAtRange } from './views/securityPanelViewProvider'
 import { Commands, registerCommandErrorHandler, registerDeclaredCommands } from '../shared/vscode/commands2'
-import { refreshStatusBar } from './service/statusBar'
 import { AuthUtil } from './util/authUtil'
 import { ImportAdderProvider } from './service/importAdderProvider'
 import { openUrl } from '../shared/utilities/vsCodeUtils'
@@ -235,10 +233,6 @@ export async function activate(context: ExtContext): Promise<void> {
         showLearnMore.register(),
         // show free tier limit
         showFreeTierLimit.register(),
-        // update reference log instance
-        updateReferenceLog.register(),
-        // refresh codewhisperer status bar
-        refreshStatusBar.register(),
         // generate code fix
         generateFix.register(client, context),
         // regenerate code fix
