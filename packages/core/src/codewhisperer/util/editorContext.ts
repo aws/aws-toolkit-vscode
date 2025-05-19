@@ -167,6 +167,7 @@ export function extractContextForCodeWhisperer(editor: vscode.TextEditor): codew
     }
 
     return {
+        fileUri: editor.document.uri.toString().substring(0, CodeWhispererConstants.filenameCharsLimit),
         filename: getFileRelativePath(editor),
         programmingLanguage: {
             languageName: languageName,
