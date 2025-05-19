@@ -4,24 +4,28 @@
  */
 
 import assert from 'assert'
-import { RemoteInvokeWebview, invokeRemoteLambda, InitialData } from '../../../../lambda/vue/remoteInvoke/invokeLambda'
-import { LambdaClient, DefaultLambdaClient } from '../../../../shared/clients/lambdaClient'
+import {
+    RemoteInvokeWebview,
+    invokeRemoteLambda,
+    InitialData,
+} from '../../../lambda/vue/remoteInvoke/remoteInvokeBackend'
+import { LambdaClient, DefaultLambdaClient } from '../../../shared/clients/lambdaClient'
 import * as vscode from 'vscode'
 import * as path from 'path'
-import { makeTemporaryToolkitFolder } from '../../../../shared/filesystemUtilities'
+import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import sinon, { SinonStubbedInstance, createStubInstance } from 'sinon'
-import { fs } from '../../../../shared'
-import * as picker from '../../../../shared/ui/picker'
-import { getTestWindow } from '../../../shared/vscode/window'
-import { LambdaFunctionNode } from '../../../../lambda/explorer/lambdaFunctionNode'
-import * as utils from '../../../../lambda/utils'
-import { HttpResourceFetcher } from '../../../../shared/resourcefetcher/httpResourceFetcher'
-import { ExtContext } from '../../../../shared/extensions'
-import { FakeExtensionContext } from '../../../fakeExtensionContext'
-import * as samCliRemoteTestEvent from '../../../../shared/sam/cli/samCliRemoteTestEvent'
-import { TestEventsOperation, SamCliRemoteTestEventsParameters } from '../../../../shared/sam/cli/samCliRemoteTestEvent'
-import { assertLogsContain } from '../../../globalSetup.test'
-import { createResponse } from '../../../testUtil'
+import { fs } from '../../../shared'
+import * as picker from '../../../shared/ui/picker'
+import { getTestWindow } from '../../shared/vscode/window'
+import { LambdaFunctionNode } from '../../../lambda/explorer/lambdaFunctionNode'
+import * as utils from '../../../lambda/utils'
+import { HttpResourceFetcher } from '../../../shared/resourcefetcher/httpResourceFetcher'
+import { ExtContext } from '../../../shared/extensions'
+import { FakeExtensionContext } from '../../fakeExtensionContext'
+import * as samCliRemoteTestEvent from '../../../shared/sam/cli/samCliRemoteTestEvent'
+import { TestEventsOperation, SamCliRemoteTestEventsParameters } from '../../../shared/sam/cli/samCliRemoteTestEvent'
+import { assertLogsContain } from '../../globalSetup.test'
+import { createResponse } from '../../testUtil'
 
 describe('RemoteInvokeWebview', () => {
     let outputChannel: vscode.OutputChannel
@@ -57,7 +61,7 @@ describe('RemoteInvokeWebview', () => {
         })
     })
     describe('invokeLambda', () => {
-        it('invokes Lambda function successfully', async () => {
+        it('invokes Lambda function with payload', async () => {
             const input = '{"key": "value"}'
             const mockResponse = {
                 LogResult: Buffer.from('Test log').toString('base64'),
@@ -71,6 +75,13 @@ describe('RemoteInvokeWebview', () => {
             }
 
             await remoteInvokeWebview.invokeLambda(input)
+
+            const messages = getTestWindow().statusBar.messages
+            assert.strictEqual(messages.length, 2)
+            assert.strictEqual(messages[0], 'Remote Invoke Function: testFunction')
+            assert.strictEqual(messages[1], '$(testing-passed-icon) Invoke succeeded: testFunction')
+
+            // Verify other assertions
             assert(client.invoke.calledOnce)
             assert(client.invoke.calledWith(data.FunctionArn, input))
             assert.deepStrictEqual(appendedLines, [
@@ -84,6 +95,7 @@ describe('RemoteInvokeWebview', () => {
                 '',
             ])
         })
+
         it('handles Lambda invocation with no payload', async () => {
             const mockResponse = {
                 LogResult: Buffer.from('Test log').toString('base64'),
@@ -98,6 +110,11 @@ describe('RemoteInvokeWebview', () => {
 
             await remoteInvokeWebview.invokeLambda('')
 
+            const messages = getTestWindow().statusBar.messages
+            assert.strictEqual(messages.length, 2)
+            assert.strictEqual(messages[0], 'Remote Invoke Function: testFunction')
+            assert.strictEqual(messages[1], '$(testing-passed-icon) Invoke succeeded: testFunction')
+
             assert.deepStrictEqual(appendedLines, [
                 'Loading response...',
                 'Invocation result for arn:aws:lambda:us-west-2:123456789012:function:testFunction',
@@ -109,6 +126,7 @@ describe('RemoteInvokeWebview', () => {
                 '',
             ])
         })
+
         it('handles Lambda invocation with undefined LogResult', async () => {
             const mockResponse = {
                 Payload: '{"result": "success"}',
@@ -122,6 +140,10 @@ describe('RemoteInvokeWebview', () => {
             }
 
             await remoteInvokeWebview.invokeLambda('{}')
+            const messages = getTestWindow().statusBar.messages
+            assert.strictEqual(messages.length, 2)
+            assert.strictEqual(messages[0], 'Remote Invoke Function: testFunction')
+            assert.strictEqual(messages[1], '$(testing-passed-icon) Invoke succeeded: testFunction')
 
             assert.deepStrictEqual(appendedLines, [
                 'Loading response...',
@@ -134,6 +156,7 @@ describe('RemoteInvokeWebview', () => {
                 '',
             ])
         })
+
         it('handles Lambda invocation error', async () => {
             const input = '{"key": "value"}'
             const mockError = new Error('Lambda invocation failed')
@@ -154,6 +177,10 @@ describe('RemoteInvokeWebview', () => {
                     err.message,
                     'telemetry: invalid Metric: "lambda_invokeRemote" emitted with result=Failed but without the `reason` property. Consider using `.run()` instead of `.emit()`, which will set these properties automatically. See https://github.com/aws/aws-toolkit-vscode/blob/master/docs/telemetry.md#guidelines'
                 )
+                const messages = getTestWindow().statusBar.messages
+                assert.strictEqual(messages.length, 2)
+                assert.strictEqual(messages[0], 'Remote Invoke Function: testFunction')
+                assert.strictEqual(messages[1], '$(testing-failed-icon) Invoke failed: testFunction')
             }
 
             assert.deepStrictEqual(appendedLines, [
