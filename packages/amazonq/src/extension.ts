@@ -3,8 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { authUtils, CredentialsStore, LoginManager, initializeAuth } from 'aws-core-vscode/auth'
-import { activate as activateCodeWhisperer, shutdown as shutdownCodeWhisperer } from 'aws-core-vscode/codewhisperer'
+import { authUtils, CredentialsStore, LoginManager } from 'aws-core-vscode/auth'
+import {
+    activate as activateCodeWhisperer,
+    refreshStatusBar,
+    shutdown as shutdownCodeWhisperer,
+    updateReferenceLog,
+} from 'aws-core-vscode/codewhisperer'
 import { makeEndpointsProvider, registerGenericCommands } from 'aws-core-vscode'
 import { CommonAuthWebview } from 'aws-core-vscode/login'
 import {
@@ -113,16 +118,16 @@ export async function activateAmazonQCommon(context: vscode.ExtensionContext, is
 
     await activateTelemetry(context, globals.awsContext, Settings.instance, 'Amazon Q For VS Code')
 
-    await initializeAuth(globals.loginManager)
-
     const extContext = {
         extensionContext: context,
     }
 
+    activateAuthDependentCommands()
+
     // Auth is dependent on LSP, needs to be activated before CW and Inline
     await activateAmazonqLsp(context)
 
-    // This contains every lsp agnostic things (auth, security scan, code scan)
+    // This contains every lsp agnostic things (security scan, code scan)
     await activateCodeWhisperer(extContext as ExtContext)
     if (!Experiments.instance.get('amazonqLSPInline', false)) {
         await activateInlineCompletion()
@@ -185,6 +190,14 @@ export async function activateAmazonQCommon(context: vscode.ExtensionContext, is
             }
         })
     )
+
+    // Activate commands that are required for activateAmazonqLsp
+    function activateAuthDependentCommands() {
+        // update reference log instance
+        updateReferenceLog.register()
+        // refresh codewhisperer status bar
+        refreshStatusBar.register()
+    }
 }
 
 export async function deactivateCommon() {
