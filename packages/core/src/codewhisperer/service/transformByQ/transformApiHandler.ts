@@ -684,6 +684,7 @@ export async function getTransformationSteps(jobId: string, profile: RegionProfi
 
 export async function pollTransformationJob(jobId: string, validStates: string[], profile: RegionProfile | undefined) {
     let status: string = ''
+    let isPlanComplete = false
     while (true) {
         throwIfCancelled()
         try {
@@ -723,9 +724,14 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
 
             if (
                 CodeWhispererConstants.validStatesForPlanGenerated.includes(status) &&
-                transformByQState.getTransformationType() === TransformationType.LANGUAGE_UPGRADE
+                transformByQState.getTransformationType() === TransformationType.LANGUAGE_UPGRADE &&
+                !isPlanComplete
             ) {
-                await openTransformationPlan(jobId, profile)
+                const plan = await openTransformationPlan(jobId, profile)
+                if (plan?.toLowerCase().includes('dependency changes')) {
+                    // final plan is complete; show to user
+                    isPlanComplete = true
+                }
             }
 
             if (validStates.includes(status)) {
@@ -790,6 +796,7 @@ async function openTransformationPlan(jobId: string, profile?: RegionProfile) {
         transformByQState.setPlanFilePath(planFilePath)
         await setContext('gumby.isPlanAvailable', true)
     }
+    return plan
 }
 
 async function attemptLocalBuild() {
