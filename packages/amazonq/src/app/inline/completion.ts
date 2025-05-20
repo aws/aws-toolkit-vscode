@@ -42,6 +42,7 @@ import { InlineTutorialAnnotation } from './tutorials/inlineTutorialAnnotation'
 import { TelemetryHelper } from './telemetryHelper'
 import { getLogger } from 'aws-core-vscode/shared'
 import { debounce, messageUtils } from 'aws-core-vscode/utils'
+import { showEdits } from './EditRendering/imageRenderer'
 
 export class InlineCompletionManager implements Disposable {
     private disposable: Disposable
@@ -230,6 +231,11 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
 
             const cursorPosition = document.validatePosition(position)
             for (const item of items) {
+                if (item.isInlineEdit) {
+                    await showEdits(item.insertText as string, editor)
+                    return []
+                }
+
                 item.command = {
                     command: 'aws.amazonq.acceptInline',
                     title: 'On acceptance',

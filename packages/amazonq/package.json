@@ -809,6 +809,14 @@
                 "command": "aws.amazonq.clearCache",
                 "title": "%AWS.amazonq.clearCache%",
                 "category": "%AWS.amazonq.title%"
+            },
+            {
+                "command": "aws.amazonq.inline.acceptEdit",
+                "title": "%aws.amazonq.inline.acceptEdit%"
+            },
+            {
+                "command": "aws.amazonq.inline.rejectEdit",
+                "title": "%aws.amazonq.inline.rejectEdit%"
             }
         ],
         "keybindings": [
@@ -898,6 +906,16 @@
                 "command": "aws.amazonq.inline.waitForUserDecisionRejectAll",
                 "key": "escape",
                 "when": "editorTextFocus && aws.codewhisperer.connected && amazonq.inline.codelensShortcutEnabled"
+            },
+            {
+                "command": "aws.amazonq.inline.acceptEdit",
+                "key": "tab",
+                "when": "editorTextFocus"
+            },
+            {
+                "command": "aws.amazonq.inline.rejectEdit",
+                "key": "escape",
+                "when": "editorTextFocus"
             }
         ],
         "icons": {
