@@ -73,16 +73,6 @@ export type CrossFileStrategy = 'opentabs' | 'codemap' | 'bm25' | 'default'
 
 export type SupplementalContextStrategy = CrossFileStrategy | UtgStrategy | 'empty'
 
-export type PatchInfo = {
-    name: string
-    filename: string
-    isSuccessful: boolean
-}
-
-export type DescriptionContent = {
-    content: PatchInfo[]
-}
-
 export interface CodeWhispererSupplementalContext {
     isUtg: boolean
     isProcessTimeout: boolean
@@ -693,6 +683,7 @@ export class ZipManifest {
     version: string = '1.0'
     hilCapabilities: string[] = ['HIL_1pDependency_VersionUpgrade']
     // TO-DO: add 'CLIENT_SIDE_BUILD' here when releasing
+    // TO-DO: add something like AGENTIC_PLAN_V1 here when BE allowlists everyone
     transformCapabilities: string[] = ['EXPLAINABILITY_V1']
     customBuildCommand: string = 'clean test'
     requestedConversions?: {
@@ -763,8 +754,6 @@ export class TransformByQState {
     private sourceJDKVersion: JDKVersion | undefined = undefined
 
     private targetJDKVersion: JDKVersion | undefined = undefined
-
-    private produceMultipleDiffs: boolean = false
 
     private customBuildCommand: string = ''
 
@@ -860,10 +849,6 @@ export class TransformByQState {
 
     public getLinesOfCodeSubmitted() {
         return this.linesOfCodeSubmitted
-    }
-
-    public getMultipleDiffs() {
-        return this.produceMultipleDiffs
     }
 
     public getPreBuildLogFilePath() {
@@ -1042,10 +1027,6 @@ export class TransformByQState {
         this.linesOfCodeSubmitted = lines
     }
 
-    public setMultipleDiffs(produceMultipleDiffs: boolean) {
-        this.produceMultipleDiffs = produceMultipleDiffs
-    }
-
     public setStartTime(time: string) {
         this.startTime = time
     }
@@ -1188,7 +1169,6 @@ export class TransformByQState {
         this.buildLog = ''
         this.customBuildCommand = ''
         this.intervalId = undefined
-        this.produceMultipleDiffs = false
     }
 }
 
