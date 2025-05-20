@@ -51,6 +51,7 @@ import { encodeHTML } from '../../../shared/utilities/textUtilities'
 import { convertToTimeString } from '../../../shared/datetime'
 import { getAuthType } from '../../../auth/utils'
 import { UserWrittenCodeTracker } from '../../tracker/userWrittenCodeTracker'
+import { setContext } from '../../../shared/vscode/setContext'
 import { AuthUtil } from '../../util/authUtil'
 import { DiffModel } from './transformationResultsViewProvider'
 import { spawnSync } from 'child_process' // eslint-disable-line no-restricted-imports
@@ -521,20 +522,33 @@ export function getFormattedString(s: string) {
     return CodeWhispererConstants.formattedStringMap.get(s) ?? s
 }
 
-export function addTableMarkdown(plan: string, stepId: string, tableMapping: { [key: string]: string }) {
-    const tableObj = tableMapping[stepId]
-    if (!tableObj) {
-        // no table present for this step
+export function addTableMarkdown(plan: string, stepId: string, tableMapping: { [key: string]: string[] }) {
+    const tableObjects = tableMapping[stepId]
+    if (!tableObjects || tableObjects.length === 0 || tableObjects.every((table: string) => table === '')) {
+        // no tables for this stepId
         return plan
     }
-    const table = JSON.parse(tableObj)
-    if (table.rows.length === 0) {
-        // empty table
-        plan += `\n\nThere are no ${table.name.toLowerCase()} to display.\n\n`
+    const tables: any[] = []
+    // eslint-disable-next-line unicorn/no-array-for-each
+    tableObjects.forEach((tableObj: string) => {
+        try {
+            const table = JSON.parse(tableObj)
+            if (table) {
+                tables.push(table)
+            }
+        } catch (e) {
+            getLogger().error(`CodeTransformation: Failed to parse table JSON, skipping: ${e}`)
+        }
+    })
+
+    if (tables.every((table: any) => table.rows.length === 0)) {
+        // empty tables for this stepId
+        plan += `\n\nThere are no ${tables[0].name.toLowerCase()} to display.\n\n`
         return plan
     }
-    plan += `\n\n\n${table.name}\n|`
-    const columns = table.columnNames
+    // table name and columns are shared, so only add to plan once
+    plan += `\n\n\n${tables[0].name}\n|`
+    const columns = tables[0].columnNames
     // eslint-disable-next-line unicorn/no-array-for-each
     columns.forEach((columnName: string) => {
         plan += ` ${getFormattedString(columnName)} |`
@@ -544,16 +558,21 @@ export function addTableMarkdown(plan: string, stepId: string, tableMapping: { [
     columns.forEach((_: any) => {
         plan += '-----|'
     })
+    // add all rows of all tables
     // eslint-disable-next-line unicorn/no-array-for-each
-    table.rows.forEach((row: any) => {
-        plan += '\n|'
+    tables.forEach((table: any) => {
         // eslint-disable-next-line unicorn/no-array-for-each
-        columns.forEach((columnName: string) => {
-            if (columnName === 'relativePath') {
-                plan += ` [${row[columnName]}](${row[columnName]}) |` // add MD link only for files
-            } else {
-                plan += ` ${row[columnName]} |`
-            }
+        table.rows.forEach((row: any) => {
+            plan += '\n|'
+            // eslint-disable-next-line unicorn/no-array-for-each
+            columns.forEach((columnName: string) => {
+                if (columnName === 'relativePath') {
+                    // add markdown link only for file paths
+                    plan += ` [${row[columnName]}](${row[columnName]}) |`
+                } else {
+                    plan += ` ${row[columnName]} |`
+                }
+            })
         })
     })
     plan += '\n\n'
@@ -561,11 +580,13 @@ export function addTableMarkdown(plan: string, stepId: string, tableMapping: { [
 }
 
 export function getTableMapping(stepZeroProgressUpdates: ProgressUpdates) {
-    const map: { [key: string]: string } = {}
+    const map: { [key: string]: string[] } = {}
     for (const update of stepZeroProgressUpdates) {
-        // description should never be undefined since even if no data we show an empty table
-        // but just in case, empty string allows us to skip this table without errors when rendering
-        map[update.name] = update.description ?? ''
+        if (!map[update.name]) {
+            map[update.name] = []
+        }
+        // empty string allows us to skip this table when rendering
+        map[update.name].push(update.description ?? '')
     }
     return map
 }
@@ -604,7 +625,7 @@ export async function getTransformationPlan(jobId: string, profile: RegionProfil
         // gets a mapping between the ID ('name' field) of each progressUpdate (substep) and the associated table
         const tableMapping = getTableMapping(stepZeroProgressUpdates)
 
-        const jobStatistics = JSON.parse(tableMapping['0']).rows // ID of '0' reserved for job statistics table
+        const jobStatistics = JSON.parse(tableMapping['0'][0]).rows // ID of '0' reserved for job statistics table; only 1 table there
 
         // get logo directly since we only use one logo regardless of color theme
         const logoIcon = getTransformationIcon('transformLogo')
@@ -631,7 +652,7 @@ export async function getTransformationPlan(jobId: string, profile: RegionProfil
         }
         plan += `</div><br>`
         plan += `<p style="font-size: 18px; margin-bottom: 4px;"><b>Appendix</b><br><a href="#top" style="float: right; font-size: 14px;">Scroll to top <img src="${arrowIcon}" style="vertical-align: middle;"></a></p><br>`
-        plan = addTableMarkdown(plan, '-1', tableMapping) // ID of '-1' reserved for appendix table
+        plan = addTableMarkdown(plan, '-1', tableMapping) // ID of '-1' reserved for appendix table; only 1 table there
         return plan
     } catch (e: any) {
         const errorMessage = (e as Error).message
@@ -663,6 +684,7 @@ export async function getTransformationSteps(jobId: string, profile: RegionProfi
 
 export async function pollTransformationJob(jobId: string, validStates: string[], profile: RegionProfile | undefined) {
     let status: string = ''
+    let isPlanComplete = false
     while (true) {
         throwIfCancelled()
         try {
@@ -699,6 +721,19 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
                     `${CodeWhispererConstants.failedToCompleteJobGenericNotification} ${errorMessage}`
                 )
             }
+
+            if (
+                CodeWhispererConstants.validStatesForPlanGenerated.includes(status) &&
+                transformByQState.getTransformationType() === TransformationType.LANGUAGE_UPGRADE &&
+                !isPlanComplete
+            ) {
+                const plan = await openTransformationPlan(jobId, profile)
+                if (plan?.toLowerCase().includes('dependency changes')) {
+                    // final plan is complete; show to user
+                    isPlanComplete = true
+                }
+            }
+
             if (validStates.includes(status)) {
                 break
             }
@@ -736,6 +771,32 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
         }
     }
     return status
+}
+
+async function openTransformationPlan(jobId: string, profile?: RegionProfile) {
+    let plan = undefined
+    try {
+        plan = await getTransformationPlan(jobId, profile)
+    } catch (error) {
+        // means API call failed
+        getLogger().error(`CodeTransformation: ${CodeWhispererConstants.failedToCompleteJobNotification}`, error)
+        transformByQState.setJobFailureErrorNotification(
+            `${CodeWhispererConstants.failedToGetPlanNotification} ${(error as Error).message}`
+        )
+        transformByQState.setJobFailureErrorChatMessage(
+            `${CodeWhispererConstants.failedToGetPlanChatMessage} ${(error as Error).message}`
+        )
+        throw new Error('Get plan failed')
+    }
+
+    if (plan) {
+        const planFilePath = path.join(transformByQState.getProjectPath(), 'transformation-plan.md')
+        nodefs.writeFileSync(planFilePath, plan)
+        await vscode.commands.executeCommand('markdown.showPreview', vscode.Uri.file(planFilePath))
+        transformByQState.setPlanFilePath(planFilePath)
+        await setContext('gumby.isPlanAvailable', true)
+    }
+    return plan
 }
 
 async function attemptLocalBuild() {
