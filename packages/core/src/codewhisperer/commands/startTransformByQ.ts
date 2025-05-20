@@ -27,7 +27,6 @@ import {
     downloadHilResultArchive,
     findDownloadArtifactStep,
     getArtifactsFromProgressUpdate,
-    getTransformationPlan,
     getTransformationSteps,
     pollTransformationJob,
     resumeTransformationJob,
@@ -553,28 +552,6 @@ export async function pollTransformationStatusUntilPlanReady(jobId: string, prof
     if (transformByQState.getTransformationType() === TransformationType.SQL_CONVERSION) {
         // for now, no plan shown with SQL conversions. later, we may add one
         return
-    }
-    let plan = undefined
-    try {
-        plan = await getTransformationPlan(jobId, profile)
-    } catch (error) {
-        // means API call failed
-        getLogger().error(`CodeTransformation: ${CodeWhispererConstants.failedToCompleteJobNotification}`, error)
-        transformByQState.setJobFailureErrorNotification(
-            `${CodeWhispererConstants.failedToGetPlanNotification} ${(error as Error).message}`
-        )
-        transformByQState.setJobFailureErrorChatMessage(
-            `${CodeWhispererConstants.failedToGetPlanChatMessage} ${(error as Error).message}`
-        )
-        throw new Error('Get plan failed')
-    }
-
-    if (plan !== undefined) {
-        const planFilePath = path.join(transformByQState.getProjectPath(), 'transformation-plan.md')
-        fs.writeFileSync(planFilePath, plan)
-        await vscode.commands.executeCommand('markdown.showPreview', vscode.Uri.file(planFilePath))
-        transformByQState.setPlanFilePath(planFilePath)
-        await setContext('gumby.isPlanAvailable', true)
     }
     jobPlanProgress['generatePlan'] = StepProgress.Succeeded
     throwIfCancelled()
