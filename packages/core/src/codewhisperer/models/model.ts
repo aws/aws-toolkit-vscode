@@ -66,16 +66,6 @@ export type CrossFileStrategy = 'opentabs' | 'codemap' | 'bm25' | 'default'
 
 export type SupplementalContextStrategy = CrossFileStrategy | UtgStrategy | 'empty'
 
-export type PatchInfo = {
-    name: string
-    filename: string
-    isSuccessful: boolean
-}
-
-export type DescriptionContent = {
-    content: PatchInfo[]
-}
-
 export interface CodeWhispererSupplementalContext {
     isUtg: boolean
     isProcessTimeout: boolean
@@ -758,8 +748,6 @@ export class TransformByQState {
 
     private targetJDKVersion: JDKVersion | undefined = undefined
 
-    private produceMultipleDiffs: boolean = false
-
     private customBuildCommand: string = ''
 
     private sourceDB: DB | undefined = undefined
@@ -854,10 +842,6 @@ export class TransformByQState {
 
     public getLinesOfCodeSubmitted() {
         return this.linesOfCodeSubmitted
-    }
-
-    public getMultipleDiffs() {
-        return this.produceMultipleDiffs
     }
 
     public getPreBuildLogFilePath() {
@@ -1036,10 +1020,6 @@ export class TransformByQState {
         this.linesOfCodeSubmitted = lines
     }
 
-    public setMultipleDiffs(produceMultipleDiffs: boolean) {
-        this.produceMultipleDiffs = produceMultipleDiffs
-    }
-
     public setStartTime(time: string) {
         this.startTime = time
     }
@@ -1182,7 +1162,6 @@ export class TransformByQState {
         this.buildLog = ''
         this.customBuildCommand = ''
         this.intervalId = undefined
-        this.produceMultipleDiffs = false
     }
 }
 
