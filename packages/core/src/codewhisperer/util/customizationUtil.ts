@@ -89,7 +89,14 @@ export const onProfileChangedListener: (event: ProfileChangedEvent) => any = asy
  */
 export const getNewCustomizations = (availableCustomizations: Customization[]) => {
     const persistedCustomizations = getPersistedCustomizations()
-    return availableCustomizations.filter((c) => !persistedCustomizations.map((p) => p.arn).includes(c.arn))
+    const newCustomizations = availableCustomizations.filter(
+        (c) =>
+            !persistedCustomizations
+                .flat()
+                .map((p) => p.arn)
+                .includes(c.arn)
+    )
+    return newCustomizations
 }
 
 export async function notifyNewCustomizations() {
