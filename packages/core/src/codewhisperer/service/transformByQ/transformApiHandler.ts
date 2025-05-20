@@ -348,10 +348,6 @@ export async function zipCode(
             getLogger().info(`CodeTransformation: source code files size = ${sourceFilesSize}`)
         }
 
-        if (transformByQState.getMultipleDiffs() && zipManifest instanceof ZipManifest) {
-            zipManifest.transformCapabilities.push('SELECTIVE_TRANSFORMATION_V1')
-        }
-
         if (
             transformByQState.getTransformationType() === TransformationType.SQL_CONVERSION &&
             zipManifest instanceof ZipManifest
@@ -849,7 +845,7 @@ async function processClientInstructions(jobId: string, clientInstructionsPath: 
     await extractOriginalProjectSources(destinationPath)
     getLogger().info(`CodeTransformation: copied project to ${destinationPath}`)
     const diffModel = new DiffModel()
-    diffModel.parseDiff(clientInstructionsPath, path.join(destinationPath, 'sources'), undefined, 1, true)
+    diffModel.parseDiff(clientInstructionsPath, path.join(destinationPath, 'sources'), true)
     // show user the diff.patch
     const doc = await vscode.workspace.openTextDocument(clientInstructionsPath)
     await vscode.window.showTextDocument(doc, { viewColumn: vscode.ViewColumn.One })
