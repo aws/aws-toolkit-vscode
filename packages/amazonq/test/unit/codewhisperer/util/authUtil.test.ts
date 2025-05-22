@@ -250,9 +250,9 @@ describe('AuthUtil', async function () {
 
             sinon.stub(mementoUtils, 'getEnvironmentSpecificMemento').returns(memento)
             sinon.stub(cache, 'getCacheDir').returns(cacheDir)
-            
+
             mockLspAuth = (auth as any).lspAuth
-            mockLspAuth.getSsoToken.resolves(undefined) 
+            mockLspAuth.getSsoToken.resolves(undefined)
 
             fromTokenFile = cache.getTokenCacheFile(cacheDir, 'profile1')
             const registrationKey = {

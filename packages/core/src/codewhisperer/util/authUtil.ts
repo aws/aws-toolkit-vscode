@@ -403,8 +403,8 @@ export class AuthUtil implements IAuthProvider {
 
         if (!profiles) {
             return
-        } 
-        
+        }
+
         try {
             // Try go get token from LSP auth. If available, skip migration and delete old auth profile
             const token = await this.lspAuth.getSsoToken(
