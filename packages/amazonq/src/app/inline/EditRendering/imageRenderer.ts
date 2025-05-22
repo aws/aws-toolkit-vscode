@@ -18,7 +18,6 @@ export async function showEdits(edits: string, editor: vscode.TextEditor | undef
         const originalCode = editor.document.getText()
         const { svgImage, startLine, newCode } = await svgGenerationService.generateDiffSvg(originalCode, edits)
 
-        getLogger('nextEditPrediction').info('SVG image generated successfully')
         if (svgImage) {
             // display the SVG image
             await displaySvgDecoration(editor, svgImage, startLine, newCode)

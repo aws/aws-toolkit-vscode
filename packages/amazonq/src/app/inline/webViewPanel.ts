@@ -165,7 +165,7 @@ export class NextEditPredictionPanel implements vscode.Disposable {
                     // Step 3: Parse the normalized string back to an object
                     const logEntry = JSON.parse(normalized) as RequestLogEntry
 
-                    // Parse request and response fields if they're JSON strings
+                    // Parse request and response fields if they're JSON stringss
                     if (typeof logEntry.request === 'string') {
                         try {
                             // Apply the same double-parse technique to nested JSON
