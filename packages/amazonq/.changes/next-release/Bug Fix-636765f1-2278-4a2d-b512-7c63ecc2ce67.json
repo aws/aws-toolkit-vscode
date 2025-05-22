@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "/transform: avoid prompting user for target JDK path unnecessarily"
-}
