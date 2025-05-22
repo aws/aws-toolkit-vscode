@@ -14,11 +14,14 @@ import { SessionManager } from './sessionManager'
 import { InlineGeneratingMessage } from './inlineGeneratingMessage'
 import { CodeWhispererStatusBarManager } from 'aws-core-vscode/codewhisperer'
 import { TelemetryHelper } from './telemetryHelper'
+import { CursorUpdateManager } from './cursorUpdateManager'
+import { globals } from 'aws-core-vscode/shared'
 
 export class RecommendationService {
     constructor(
         private readonly sessionManager: SessionManager,
-        private readonly inlineGeneratingMessage: InlineGeneratingMessage
+        private readonly inlineGeneratingMessage: InlineGeneratingMessage,
+        private readonly cursorUpdateManager?: CursorUpdateManager
     ) {}
 
     async getAllRecommendations(
@@ -28,6 +31,9 @@ export class RecommendationService {
         context: InlineCompletionContext,
         token: CancellationToken
     ) {
+        // Record that a regular request is being made
+        this.cursorUpdateManager?.recordCompletionRequest()
+
         const request: InlineCompletionWithReferencesParams = {
             textDocument: {
                 uri: document.uri.toString(),
@@ -35,7 +41,7 @@ export class RecommendationService {
             position,
             context,
         }
-        const requestStartTime = Date.now()
+        const requestStartTime = globals.clock.Date.now()
         const statusBar = CodeWhispererStatusBarManager.instance
         TelemetryHelper.instance.setInvokeSuggestionStartTime()
         TelemetryHelper.instance.setPreprocessEndTime()
@@ -61,7 +67,7 @@ export class RecommendationService {
             }
             TelemetryHelper.instance.setFirstSuggestionShowTime()
 
-            const firstCompletionDisplayLatency = Date.now() - requestStartTime
+            const firstCompletionDisplayLatency = globals.clock.Date.now() - requestStartTime
             this.sessionManager.startSession(
                 firstResult.sessionId,
                 firstResult.items,

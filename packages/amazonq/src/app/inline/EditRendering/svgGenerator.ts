@@ -14,7 +14,7 @@ export class SvgGenerationService {
     /**
      * Generates an SVG image representing a code diff
      * @param originalCode The original code
-     * @param newCode The new code with edits
+     * @param newCode The new code with editsss
      * @param theme The editor theme information
      * @param offSet The margin to add to the left of the image
      */
@@ -117,7 +117,8 @@ export class SvgGenerationService {
         const fontSize = theme.fontSize
         const headerFrontSize = Math.ceil(fontSize * 0.66)
         const lineHeight = theme.lingHeight
-        const foreground = theme.foreground || '#d4d4d4'
+        const foreground = theme.foreground
+        const bordeColor = 'rgba(212, 212, 212, 0.5)'
         const background = theme.background || '#1e1e1e'
         const diffRemoved = theme.diffRemoved || 'rgba(255, 0, 0, 0.2)'
         const diffAdded = 'rgba(72, 128, 72, 0.52)'
@@ -128,7 +129,7 @@ export class SvgGenerationService {
                 font-size: ${fontSize}px;
                 line-height: ${lineHeight}px;
                 background-color: ${background};
-                border: 1px solid ${foreground}40;
+                border: 1px solid ${bordeColor}40;
                 border-radius: 1px;
                 padding: 1px;
             }
@@ -263,40 +264,52 @@ export class SvgGenerationService {
         diffAdded: string
         diffRemoved: string
     } {
+        // Define default dark theme colors
+        const darkThemeColors = {
+            foreground: 'rgba(212, 212, 212, 1)',
+            background: 'rgba(30, 30, 30, 1)',
+            diffAdded: 'rgba(231, 245, 231, 0.2)',
+            diffRemoved: 'rgba(255, 0, 0, 0.2)',
+        }
+
+        // Define default light theme colors
+        const lightThemeColors = {
+            foreground: 'rgba(0, 0, 0, 1)',
+            background: 'rgba(255, 255, 255, 1)',
+            diffAdded: 'rgba(198, 239, 206, 0.2)',
+            diffRemoved: 'rgba(255, 199, 206, 0.5)',
+        }
+
         // Define colors for specific themes
         const themeColorMap: {
             [key: string]: { foreground: string; background: string; diffAdded: string; diffRemoved: string }
         } = {
-            'Default Dark+': {
-                foreground: '#d4d4d4',
-                background: '#1e1e1e',
-                diffAdded: 'rgba(231, 245, 231, 0.2)',
-                diffRemoved: 'rgba(255, 0, 0, 0.2)',
-            },
             Abyss: {
-                foreground: '#ffffff',
-                background: '#000c18',
+                foreground: 'rgba(255, 255, 255, 1)',
+                background: 'rgba(0, 12, 24, 1)',
                 diffAdded: 'rgba(0, 255, 0, 0.2)',
                 diffRemoved: 'rgba(255, 0, 0, 0.3)',
             },
             Red: {
-                foreground: '#ff0000',
-                background: '#330000',
+                foreground: 'rgba(255, 0, 0, 1)',
+                background: 'rgba(51, 0, 0, 1)',
                 diffAdded: 'rgba(255, 100, 100, 0.2)',
                 diffRemoved: 'rgba(255, 0, 0, 0.5)',
             },
             // Add more themes as needed
         }
 
-        // Return colors for the current theme or default colors
-        return (
-            themeColorMap[themeName] || {
-                foreground: '#000000',
-                background: '#ffffff',
-                diffAdded: 'rgba(198, 239, 206, 0.2)',
-                diffRemoved: 'rgba(255, 199, 206, 0.5)',
-            }
-        )
+        // Check if theme name contains "dark" or "light"
+        const themeNameLower = themeName.toLowerCase()
+
+        if (themeNameLower.includes('dark')) {
+            return darkThemeColors
+        } else if (themeNameLower.includes('light')) {
+            return lightThemeColors
+        }
+
+        // Return colors for the specific theme or default to light theme
+        return themeColorMap[themeName] || lightThemeColors
     }
 
     private calculatePosition(

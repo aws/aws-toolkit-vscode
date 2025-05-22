@@ -43,6 +43,7 @@ import { TelemetryHelper } from './telemetryHelper'
 import { getLogger } from 'aws-core-vscode/shared'
 import { debounce, messageUtils } from 'aws-core-vscode/utils'
 import { showEdits } from './EditRendering/imageRenderer'
+import { NextEditPredictionPanel } from './webViewPanel'
 
 export class InlineCompletionManager implements Disposable {
     private disposable: Disposable
@@ -61,6 +62,7 @@ export class InlineCompletionManager implements Disposable {
         lineTracker: LineTracker,
         inlineTutorialAnnotation: InlineTutorialAnnotation
     ) {
+        NextEditPredictionPanel.getInstance()
         this.languageClient = languageClient
         this.sessionManager = sessionManager
         this.lineTracker = lineTracker
@@ -232,7 +234,10 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
             const cursorPosition = document.validatePosition(position)
             for (const item of items) {
                 if (item.isInlineEdit) {
-                    await showEdits(item.insertText as string, editor)
+                    const panel = NextEditPredictionPanel.getInstance()
+                    panel.updateContent(item.insertText as string)
+                    void showEdits(item.insertText as string, editor)
+                    getLogger('nextEditPrediction').info('Received edit!')
                     return []
                 }
 
