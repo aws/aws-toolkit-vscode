@@ -225,6 +225,7 @@ describe('AuthUtil', async function () {
     })
 
     describe('migrateSsoConnectionToLsp', function () {
+        let mockLspAuth: any
         let memento: any
         let cacheDir: string
         let fromRegistrationFile: string
@@ -249,6 +250,9 @@ describe('AuthUtil', async function () {
 
             sinon.stub(mementoUtils, 'getEnvironmentSpecificMemento').returns(memento)
             sinon.stub(cache, 'getCacheDir').returns(cacheDir)
+            
+            mockLspAuth = (auth as any).lspAuth
+            mockLspAuth.getSsoToken.resolves(undefined) 
 
             fromTokenFile = cache.getTokenCacheFile(cacheDir, 'profile1')
             const registrationKey = {
@@ -267,6 +271,27 @@ describe('AuthUtil', async function () {
 
         afterEach(async function () {
             sinon.restore()
+        })
+
+        it('skips migration if LSP token exists', async function () {
+            memento.get.returns({ profile1: validProfile })
+            mockLspAuth.getSsoToken.resolves({ token: 'valid-token' })
+
+            await auth.migrateSsoConnectionToLsp('test-client')
+
+            assert.ok(memento.update.calledWith('auth.profiles', undefined))
+            assert.ok(!auth.session.updateProfile?.called)
+        })
+
+        it('proceeds with migration if LSP token check throws', async function () {
+            memento.get.returns({ profile1: validProfile })
+            mockLspAuth.getSsoToken.rejects(new Error('Token check failed'))
+            const updateProfileStub = sinon.stub((auth as any).session, 'updateProfile').resolves()
+
+            await auth.migrateSsoConnectionToLsp('test-client')
+
+            assert.ok(updateProfileStub.calledOnce)
+            assert.ok(memento.update.calledWith('auth.profiles', undefined))
         })
 
         it('migrates valid SSO connection', async function () {
