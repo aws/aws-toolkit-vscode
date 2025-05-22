@@ -1,3 +1,8 @@
+## 1.69.0 2025-05-22
+
+- **Bug Fix** /transform: avoid prompting user for target JDK path unnecessarily
+- **Removal** /transform: remove option to select multiple diffs
+
 ## 1.68.0 2025-05-15
 
 - **Bug Fix** Fix Error: 'Amazon Q service is not signed in'
