@@ -63,7 +63,6 @@ import * as jose from 'jose'
 import { AmazonQChatViewProvider } from './webviewProvider'
 import { AuthUtil, ReferenceLogViewProvider } from 'aws-core-vscode/codewhisperer'
 import { amazonQDiffScheme, AmazonQPromptSettings, messages, openUrl } from 'aws-core-vscode/shared'
-import { credentialsValidation } from 'aws-core-vscode/auth'
 import {
     DefaultAmazonQAppInitContext,
     messageDispatcher,
@@ -330,26 +329,6 @@ export function registerMessageListeners(
                 }
                 break
             case buttonClickRequestType.method: {
-                if (message.params.buttonId === 'paidtier-upgrade-q') {
-                    focusAmazonQPanel().catch((e) => languageClient.error(`[VSCode Client] focusAmazonQPanel() failed`))
-
-                    const accountId = await vscode.window.showInputBox({
-                        title: 'Upgrade Amazon Q',
-                        prompt: 'Enter your 12-digit AWS account ID',
-                        placeHolder: '111111111111',
-                        validateInput: credentialsValidation.validateAwsAccount,
-                    })
-
-                    if (accountId) {
-                        languageClient.sendRequest('workspace/executeCommand', {
-                            command: 'aws/chat/manageSubscription',
-                            arguments: [accountId],
-                        })
-                    } else {
-                        languageClient.error('[VSCode Client] user canceled or did not input AWS account id')
-                    }
-                }
-
                 const buttonResult = await languageClient.sendRequest<ButtonClickResult>(
                     buttonClickRequestType.method,
                     message.params
