@@ -659,6 +659,7 @@ export class TelemetryHelper {
             codewhispererSessionId: session.sessionId,
             codewhispererTriggerType: session.triggerType,
             credentialStartUrl: AuthUtil.instance.connection?.startUrl,
+            result: 'Succeeded',
         })
     }
     public sendCodeScanEvent(languageId: string, jobId: string) {
