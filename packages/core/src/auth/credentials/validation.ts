@@ -127,14 +127,6 @@ async function validateProfileName(profileName: SectionName) {
     }
 }
 
-export function validateAwsAccount(s: string): string | undefined {
-    // AWS account IDs are exactly 12 digits
-    if (!/^\d{12}$/.test(s)) {
-        return 'Enter a valid 12-digit AWS account ID'
-    }
-    return undefined
-}
-
 // All shared credentials keys
 const sharedCredentialsKeysSet = new Set(Object.values(SharedCredentialsKeys))
 
