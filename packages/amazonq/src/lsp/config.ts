@@ -40,8 +40,8 @@ export const defaultAmazonQLspConfig: ExtendedAmazonQLSPConfig = {
     supportedVersions: '1.*.*',
     id: 'AmazonQ', // used across IDEs for identifying global storage/local disk locations. Do not change.
     suppressPromptPrefix: 'amazonQ',
-    path: undefined,
-    ui: undefined,
+    path: '/Volumes/workplace/aws-language-servers/app/aws-lsp-codewhisperer-runtimes/out/agent-standalone.js',
+    ui: '/Volumes/workplace/aws-language-servers/chat-client/build/amazonq-ui.js',
 }
 
 export function getAmazonQLspConfig(): ExtendedAmazonQLSPConfig {

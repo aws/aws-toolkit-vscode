@@ -70,6 +70,7 @@ import {
 } from 'aws-core-vscode/amazonq'
 import { telemetry, TelemetryBase } from 'aws-core-vscode/telemetry'
 import { isValidResponseError } from './error'
+import { focusAmazonQPanel } from './commands'
 
 export function registerLanguageServerEventListener(languageClient: LanguageClient, provider: AmazonQChatViewProvider) {
     languageClient.info(
@@ -332,7 +333,7 @@ export function registerMessageListeners(
                 )
                 if (!buttonResult.success) {
                     languageClient.error(
-                        `[VSCode Client] Failed to execute action associated with button with reason: ${buttonResult.failureReason}`
+                        `[VSCode Client] Failed to execute button action: ${buttonResult.failureReason}`
                     )
                 }
                 break
@@ -431,8 +432,22 @@ export function registerMessageListeners(
     languageClient.onRequest<ShowDocumentParams, ShowDocumentResult>(
         ShowDocumentRequest.method,
         async (params: ShowDocumentParams): Promise<ShowDocumentParams | ResponseError<ShowDocumentResult>> => {
+            focusAmazonQPanel().catch((e) => languageClient.error(`[VSCode Client] focusAmazonQPanel() failed`))
+
             try {
                 const uri = vscode.Uri.parse(params.uri)
+
+                if (params.external) {
+                    // Don't use openUrl() because we don't want telemetry (URLs may be auth-related).
+                    try {
+                        // HACK: workaround vscode bug: https://github.com/microsoft/vscode/issues/85930
+                        vscode.env.openExternal(params.uri as any)
+                    } catch {
+                        vscode.env.openExternal(uri)
+                    }
+                    return params
+                }
+
                 const doc = await vscode.workspace.openTextDocument(uri)
                 await vscode.window.showTextDocument(doc, { preview: false })
                 return params

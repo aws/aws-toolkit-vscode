@@ -125,7 +125,7 @@ function registerGenericCommand(commandName: string, genericCommand: string, pro
  *
  * Instead, we just create our own as a temporary solution
  */
-async function focusAmazonQPanel() {
+export async function focusAmazonQPanel() {
     await Commands.tryExecute('aws.amazonq.AmazonQChatView.focus')
     await Commands.tryExecute('aws.amazonq.AmazonCommonAuth.focus')
 }
