@@ -39,6 +39,7 @@ import { getEnvironmentSpecificMemento } from '../../shared/utilities/mementos'
 import { getCacheDir, getFlareCacheFileName, getRegistrationCacheFile, getTokenCacheFile } from '../../auth/sso/cache'
 import { notifySelectDeveloperProfile } from '../region/utils'
 import { once } from '../../shared/utilities/functionUtils'
+import { CancellationTokenSource, SsoTokenSourceKind } from '@aws/language-server-runtimes/server-interface'
 
 const localize = nls.loadMessageBundle()
 
@@ -64,6 +65,8 @@ export interface IAuthProvider {
  */
 export class AuthUtil implements IAuthProvider {
     public readonly profileName = VSCODE_EXTENSION_ID.amazonq
+    protected logger = getLogger('amazonqAuth')
+
     public readonly regionProfileManager: RegionProfileManager
 
     // IAM login currently not supported
@@ -277,7 +280,7 @@ export class AuthUtil implements IAuthProvider {
     }
 
     private async cacheChangedHandler(event: cacheChangedEvent) {
-        getLogger().debug(`Auth: Cache change event received: ${event}`)
+        this.logger.debug(`Cache change event received: ${event}`)
         if (event === 'delete') {
             await this.logout()
         } else if (event === 'create') {
@@ -291,7 +294,7 @@ export class AuthUtil implements IAuthProvider {
             await this.lspAuth.updateBearerToken(params!)
             return
         } else {
-            getLogger().info(`codewhisperer: connection changed to ${e.state}`)
+            this.logger.info(`codewhisperer: connection changed to ${e.state}`)
             await this.refreshState(e.state)
         }
     }
@@ -402,58 +405,77 @@ export class AuthUtil implements IAuthProvider {
 
         if (!profiles) {
             return
-        } else {
-            getLogger().info(`codewhisperer: checking for old SSO connections`)
-            for (const [id, p] of Object.entries(profiles)) {
-                if (p.type === 'sso' && hasExactScopes(p.scopes ?? [], amazonQScopes)) {
-                    toImport = p
-                    profileId = id
-                    if (p.metadata.connectionState === 'valid') {
-                        break
-                    }
-                }
-            }
+        }
 
-            if (toImport && profileId) {
-                getLogger().info(`codewhisperer: migrating SSO connection to LSP identity server...`)
-
-                const registrationKey = {
-                    startUrl: toImport.startUrl,
-                    region: toImport.ssoRegion,
-                    scopes: amazonQScopes,
-                }
-
-                await this.session.updateProfile(registrationKey)
-
-                const cacheDir = getCacheDir()
-
-                const fromRegistrationFile = getRegistrationCacheFile(cacheDir, registrationKey)
-                const toRegistrationFile = path.join(
-                    cacheDir,
-                    getFlareCacheFileName(
-                        JSON.stringify({
-                            region: toImport.ssoRegion,
-                            startUrl: toImport.startUrl,
-                            tool: clientName,
-                        })
-                    )
-                )
-
-                const fromTokenFile = getTokenCacheFile(cacheDir, profileId)
-                const toTokenFile = path.join(cacheDir, getFlareCacheFileName(this.profileName))
-
-                try {
-                    await fs.rename(fromRegistrationFile, toRegistrationFile)
-                    await fs.rename(fromTokenFile, toTokenFile)
-                    getLogger().debug('Successfully renamed registration and token files')
-                } catch (err) {
-                    getLogger().error(`Failed to rename files during migration: ${err}`)
-                    throw err
-                }
-
+        try {
+            // Try go get token from LSP auth. If available, skip migration and delete old auth profile
+            const token = await this.lspAuth.getSsoToken(
+                {
+                    kind: SsoTokenSourceKind.IamIdentityCenter,
+                    profileName: this.profileName,
+                },
+                false,
+                new CancellationTokenSource().token
+            )
+            if (token) {
+                this.logger.info('existing LSP auth connection found. Skipping migration')
                 await memento.update(key, undefined)
-                getLogger().info(`codewhisperer: successfully migrated SSO connection to LSP identity server`)
+                return
             }
+        } catch {
+            this.logger.info('unable to get token from LSP auth, proceeding migration')
+        }
+
+        this.logger.info('checking for old SSO connections')
+        for (const [id, p] of Object.entries(profiles)) {
+            if (p.type === 'sso' && hasExactScopes(p.scopes ?? [], amazonQScopes)) {
+                toImport = p
+                profileId = id
+                if (p.metadata.connectionState === 'valid') {
+                    break
+                }
+            }
+        }
+
+        if (toImport && profileId) {
+            this.logger.info('migrating SSO connection to LSP identity server...')
+
+            const registrationKey = {
+                startUrl: toImport.startUrl,
+                region: toImport.ssoRegion,
+                scopes: amazonQScopes,
+            }
+
+            await this.session.updateProfile(registrationKey)
+
+            const cacheDir = getCacheDir()
+
+            const fromRegistrationFile = getRegistrationCacheFile(cacheDir, registrationKey)
+            const toRegistrationFile = path.join(
+                cacheDir,
+                getFlareCacheFileName(
+                    JSON.stringify({
+                        region: toImport.ssoRegion,
+                        startUrl: toImport.startUrl,
+                        tool: clientName,
+                    })
+                )
+            )
+
+            const fromTokenFile = getTokenCacheFile(cacheDir, profileId)
+            const toTokenFile = path.join(cacheDir, getFlareCacheFileName(this.profileName))
+
+            try {
+                await fs.rename(fromRegistrationFile, toRegistrationFile)
+                await fs.rename(fromTokenFile, toTokenFile)
+                this.logger.debug('Successfully renamed registration and token files')
+            } catch (err) {
+                this.logger.error(`Failed to rename files during migration: ${err}`)
+                throw err
+            }
+
+            this.logger.info('successfully migrated SSO connection to LSP identity server')
+            await memento.update(key, undefined)
         }
     }
 }
