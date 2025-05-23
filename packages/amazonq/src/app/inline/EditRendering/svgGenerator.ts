@@ -21,8 +21,14 @@ export class SvgGenerationService {
     public async generateDiffSvg(
         originalCode: string,
         udiff: string
-    ): Promise<{ svgImage: vscode.Uri; startLine: number; newCode: string }> {
-        const newCode = applyUnifiedDiff(originalCode, udiff)
+    ): Promise<{
+        svgImage: vscode.Uri
+        startLine: number
+        newCode: string
+        addedCharacterCount: number
+        deletedCharacterCount: number
+    }> {
+        const { newCode, addedCharacterCount, deletedCharacterCount } = applyUnifiedDiff(originalCode, udiff)
 
         // Abort SVG generation if we're in web mode
         if (isWeb() || !process.versions?.node) {
@@ -34,6 +40,8 @@ export class SvgGenerationService {
                 ),
                 startLine: 0,
                 newCode: newCode,
+                addedCharacterCount: 0,
+                deletedCharacterCount: 0,
             }
         }
         // Import required libraries - make sure we load svgdom before svg.js
@@ -93,6 +101,8 @@ export class SvgGenerationService {
             svgImage: vscode.Uri.parse(svgResult),
             startLine: editStartLine,
             newCode: newCode,
+            addedCharacterCount: addedCharacterCount,
+            deletedCharacterCount: deletedCharacterCount,
         }
     }
 

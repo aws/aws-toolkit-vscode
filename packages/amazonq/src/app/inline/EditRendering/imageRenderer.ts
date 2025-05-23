@@ -7,8 +7,16 @@ import * as vscode from 'vscode'
 import { displaySvgDecoration } from './displayImage'
 import { SvgGenerationService } from './svgGenerator'
 import { getLogger } from 'aws-core-vscode/shared'
+import { LanguageClient } from 'vscode-languageclient'
+import { InlineCompletionItemWithReferences } from '@aws/language-server-runtimes/protocol'
+import { CodeWhispererSession } from '../sessionManager'
 
-export async function showEdits(edits: string, editor: vscode.TextEditor | undefined) {
+export async function showEdits(
+    item: InlineCompletionItemWithReferences,
+    editor: vscode.TextEditor | undefined,
+    session: CodeWhispererSession,
+    languageClient: LanguageClient
+) {
     if (!editor) {
         return
     }
@@ -16,11 +24,22 @@ export async function showEdits(edits: string, editor: vscode.TextEditor | undef
         const svgGenerationService = new SvgGenerationService()
         // Generate your SVG image with the file contents ?
         const originalCode = editor.document.getText()
-        const { svgImage, startLine, newCode } = await svgGenerationService.generateDiffSvg(originalCode, edits)
+        const { svgImage, startLine, newCode, addedCharacterCount, deletedCharacterCount } =
+            await svgGenerationService.generateDiffSvg(originalCode, item.insertText as string)
 
         if (svgImage) {
             // display the SVG image
-            await displaySvgDecoration(editor, svgImage, startLine, newCode)
+            await displaySvgDecoration(
+                editor,
+                svgImage,
+                startLine,
+                newCode,
+                session,
+                languageClient,
+                item,
+                addedCharacterCount,
+                deletedCharacterCount
+            )
         } else {
             getLogger('nextEditPrediction').error('SVG image generation returned an empty result.')
         }
