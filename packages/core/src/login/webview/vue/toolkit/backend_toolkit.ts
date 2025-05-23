@@ -40,13 +40,26 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
         this.isCodeCatalystLogin = serviceToShow === 'codecatalyst'
     }
 
-    async startEnterpriseSetup(startUrl: string, region: string): Promise<AuthError | undefined> {
-        getLogger().debug(`called startEnterpriseSetup() with startUrl: '${startUrl}', region: '${region}'`)
+    async startEnterpriseSetup(
+        startUrl: string,
+        region: string,
+        app: string,
+        useDeviceCodeFlow?: boolean
+    ): Promise<AuthError | undefined> {
+        getLogger().debug(
+            `called startEnterpriseSetup() with startUrl: '${startUrl}', region: '${region}', useDeviceCodeFlow: ${useDeviceCodeFlow}`
+        )
         const metadata: TelemetryMetadata = {
             credentialSourceId: 'iamIdentityCenter',
             credentialStartUrl: startUrl,
             isReAuth: false,
         }
+
+        // Store the device code flow preference if it's set
+        if (useDeviceCodeFlow) {
+            await globals.globalState.update('aws.forceDeviceCodeFlow', true)
+        }
+
         await globals.globalState.update('recentSso', {
             startUrl: startUrl,
             region: region,
