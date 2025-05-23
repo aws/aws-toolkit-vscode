@@ -21,6 +21,7 @@ export type LogTopic =
     | 'nextEditPrediction'
     | 'resourceCache'
     | 'telemetry'
+    | 'amazonqAuth'
 
 class ErrorLog {
     constructor(
