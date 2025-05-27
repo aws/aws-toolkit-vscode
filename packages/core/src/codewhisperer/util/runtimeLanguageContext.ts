@@ -58,9 +58,16 @@ export class RuntimeLanguageContext {
      */
     private supportedLanguageExtensionMap: ConstantMap<string, CodewhispererLanguage>
 
+    /**
+     * A map storing single-line comment prefixes for different languages
+     * Key: CodewhispererLanguage
+     * Value: Comment prefix string
+     */
+    private languageSingleLineCommentPrefixMap: ConstantMap<CodewhispererLanguage, string>
+
     constructor() {
         this.supportedLanguageMap = createConstantMap<
-            CodeWhispererConstants.PlatformLanguageId | CodewhispererLanguage,
+            Exclude<CodeWhispererConstants.PlatformLanguageId | CodewhispererLanguage, 'plaintext'>,
             CodewhispererLanguage
         >({
             c: 'c',
@@ -78,7 +85,6 @@ export class RuntimeLanguageContext {
             jsx: 'jsx',
             kotlin: 'kotlin',
             packer: 'tf',
-            plaintext: 'plaintext',
             php: 'php',
             python: 'python',
             ruby: 'ruby',
@@ -105,6 +111,7 @@ export class RuntimeLanguageContext {
             systemverilog: 'systemVerilog',
             verilog: 'systemVerilog',
             vue: 'vue',
+            abap: 'abap',
         })
         this.supportedLanguageExtensionMap = createConstantMap<string, CodewhispererLanguage>({
             c: 'c',
@@ -145,7 +152,46 @@ export class RuntimeLanguageContext {
             ps1: 'powershell',
             psm1: 'powershell',
             r: 'r',
+            abap: 'abap',
         })
+        this.languageSingleLineCommentPrefixMap = createConstantMap<CodewhispererLanguage, string>({
+            c: '// ',
+            cpp: '// ',
+            csharp: '// ',
+            dart: '// ',
+            go: '// ',
+            hcl: '# ',
+            java: '// ',
+            javascript: '// ',
+            json: '// ',
+            jsonc: '// ',
+            jsx: '// ',
+            kotlin: '// ',
+            lua: '-- ',
+            php: '// ',
+            plaintext: '',
+            powershell: '# ',
+            python: '# ',
+            r: '# ',
+            ruby: '# ',
+            rust: '// ',
+            scala: '// ',
+            shell: '# ',
+            sql: '-- ',
+            swift: '// ',
+            systemVerilog: '// ',
+            tf: '# ',
+            tsx: '// ',
+            typescript: '// ',
+            vue: '', // vue lacks a single-line comment prefix
+            yaml: '# ',
+            yml: '# ',
+            abap: '',
+        })
+    }
+
+    public resolveLang(doc: vscode.TextDocument): CodewhispererLanguage {
+        return this.normalizeLanguage(doc.languageId) || this.byFileExt(doc) || 'plaintext'
     }
 
     /**
@@ -157,6 +203,16 @@ export class RuntimeLanguageContext {
      */
     public normalizeLanguage(languageId?: string): CodewhispererLanguage | undefined {
         return this.supportedLanguageMap.get(languageId)
+    }
+
+    /**
+     * Get the comment prefix for a given language
+     * @param language The language to get comment prefix for
+     * @returns The comment prefix string, or empty string if not found
+     */
+    public getSingleLineCommentPrefix(language?: string): string {
+        const normalizedLanguage = this.normalizeLanguage(language)
+        return normalizedLanguage ? (this.languageSingleLineCommentPrefixMap.get(normalizedLanguage) ?? '') : ''
     }
 
     /**
@@ -267,8 +323,7 @@ export class RuntimeLanguageContext {
         } else {
             const normalizedLanguageId = this.normalizeLanguage(arg.languageId)
             const byLanguageId = !normalizedLanguageId || normalizedLanguageId === 'plaintext' ? false : true
-            const extension = path.extname(arg.uri.fsPath)
-            const byFileExtension = this.isFileFormatSupported(extension.substring(1))
+            const byFileExtension = this.byFileExt(arg) !== undefined
 
             return byLanguageId || byFileExtension
         }
@@ -290,6 +345,17 @@ export class RuntimeLanguageContext {
      */
     public getLanguageFromFileExtension(fileExtension: string) {
         return this.supportedLanguageExtensionMap.get(fileExtension)
+    }
+
+    private byFileExt(doc: vscode.TextDocument): CodewhispererLanguage | undefined {
+        const extension = path.extname(doc.uri.fsPath)
+        const byExt = this.supportedLanguageExtensionMap.get(extension.substring(1))
+
+        if (byExt === 'plaintext') {
+            return undefined
+        }
+
+        return byExt
     }
 }
 
