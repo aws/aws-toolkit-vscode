@@ -1,0 +1,18 @@
+{
+	"date": "2025-05-15",
+	"version": "1.68.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Fix Error: 'Amazon Q service is not signed in'"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Fix Error: 'Amazon Q Profile is not selected for IDC connection type'"
+		},
+		{
+			"type": "Feature",
+			"description": "Add inline completion support for abap language"
+		}
+	]
+}
