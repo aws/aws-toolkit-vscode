@@ -323,6 +323,21 @@ export async function displaySvgDecoration(
             }
             languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
             decorationManager.dispose()
+            const params: LogInlineCompletionSessionResultsParams = {
+                sessionId: session.sessionId,
+                completionSessionResult: {
+                    [item.itemId]: {
+                        seen: true,
+                        accepted: true,
+                        discarded: false,
+                    },
+                },
+                totalSessionDisplayTime: Date.now() - session.requestStartTime,
+                firstCompletionDisplayLatency: session.firstCompletionDisplayLatency,
+                addedCharacterCount: addedCharacterCount,
+                deletedCharacterCount: deletedCharacterCount,
+            }
+            languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
         },
         () => {
             // Handle reject
@@ -341,6 +356,19 @@ export async function displaySvgDecoration(
             }
             languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
             decorationManager.dispose()
+            const params: LogInlineCompletionSessionResultsParams = {
+                sessionId: session.sessionId,
+                completionSessionResult: {
+                    [item.itemId]: {
+                        seen: true,
+                        accepted: false,
+                        discarded: false,
+                    },
+                },
+                addedCharacterCount: addedCharacterCount,
+                deletedCharacterCount: deletedCharacterCount,
+            }
+            languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
         },
         originalCode,
         newCode,
