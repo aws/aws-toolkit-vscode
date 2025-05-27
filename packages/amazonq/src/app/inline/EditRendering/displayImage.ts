@@ -6,6 +6,10 @@
 import { getLogger, setContext } from 'aws-core-vscode/shared'
 import * as vscode from 'vscode'
 import { diffLines } from 'diff'
+import { LanguageClient } from 'vscode-languageclient'
+import { CodeWhispererSession } from '../sessionManager'
+import { LogInlineCompletionSessionResultsParams } from '@aws/language-server-runtimes/protocol'
+import { InlineCompletionItemWithReferences } from '@aws/language-server-runtimes/protocol'
 
 export class EditDecorationManager {
     private imageDecorationType: vscode.TextEditorDecorationType
@@ -252,7 +256,12 @@ export async function displaySvgDecoration(
     editor: vscode.TextEditor,
     svgImage: vscode.Uri,
     startLine: number,
-    newCode: string
+    newCode: string,
+    session: CodeWhispererSession,
+    languageClient: LanguageClient,
+    item: InlineCompletionItemWithReferences,
+    addedCharacterCount: number,
+    deletedCharacterCount: number
 ) {
     const originalCode = editor.document.getText()
 
@@ -275,12 +284,40 @@ export async function displaySvgDecoration(
 
             decorationManager.clearDecorations(editor)
             decorationManager.dispose()
+            const params: LogInlineCompletionSessionResultsParams = {
+                sessionId: session.sessionId,
+                completionSessionResult: {
+                    [item.itemId]: {
+                        seen: true,
+                        accepted: true,
+                        discarded: false,
+                    },
+                },
+                totalSessionDisplayTime: Date.now() - session.requestStartTime,
+                firstCompletionDisplayLatency: session.firstCompletionDisplayLatency,
+                addedCharacterCount: addedCharacterCount,
+                deletedCharacterCount: deletedCharacterCount,
+            }
+            languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
         },
         () => {
             // Handle reject
             getLogger().info('Edit suggestion rejected')
             decorationManager.clearDecorations(editor)
             decorationManager.dispose()
+            const params: LogInlineCompletionSessionResultsParams = {
+                sessionId: session.sessionId,
+                completionSessionResult: {
+                    [item.itemId]: {
+                        seen: true,
+                        accepted: false,
+                        discarded: false,
+                    },
+                },
+                addedCharacterCount: addedCharacterCount,
+                deletedCharacterCount: deletedCharacterCount,
+            }
+            languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
         },
         originalCode,
         newCode

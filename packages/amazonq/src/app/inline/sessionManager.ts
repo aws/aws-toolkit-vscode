@@ -6,7 +6,7 @@
 import { InlineCompletionItemWithReferences } from '@aws/language-server-runtimes-types'
 
 // TODO: add more needed data to the session interface
-interface CodeWhispererSession {
+export interface CodeWhispererSession {
     sessionId: string
     suggestions: InlineCompletionItemWithReferences[]
     // TODO: might need to convert to enum states
