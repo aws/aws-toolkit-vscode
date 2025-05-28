@@ -20,6 +20,8 @@
 !package.json
 !package.nls.json
 !package.nls.*.json
+!**/*/clients.zip
+!**/*/servers.zip
 
 !quickStart**
 !README.**
