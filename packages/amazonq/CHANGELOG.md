@@ -1,3 +1,7 @@
+## 1.70.0 2025-05-28
+
+- **Removal** Disable local workspace LSP
+
 ## 1.69.0 2025-05-22
 
 - **Bug Fix** /transform: avoid prompting user for target JDK path unnecessarily
