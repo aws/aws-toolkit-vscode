@@ -44,8 +44,10 @@ export class AmazonQChatViewProvider implements WebviewViewProvider {
     ) {
         const lspDir = Uri.file(LanguageServerResolver.defaultDir())
         const dist = Uri.joinPath(globals.context.extensionUri, 'dist')
+        // Add the directory containing the UI file to resource roots
+        const uiDir = Uri.file(path.dirname(this.mynahUIPath))
 
-        const resourcesRoots = [lspDir, dist]
+        const resourcesRoots = [lspDir, dist, uiDir]
 
         /**
          * if the mynah chat client is defined, then make sure to add it to the resource roots, otherwise
@@ -71,6 +73,14 @@ export class AmazonQChatViewProvider implements WebviewViewProvider {
                 ? `${serverHostname}/${source}`
                 : webviewView.webview.asWebviewUri(Uri.joinPath(dist, source)).toString()
         this.uiPath = webviewView.webview.asWebviewUri(Uri.file(this.mynahUIPath)).toString()
+
+        // Log for debugging
+        console.log('Amazon Q Webview paths:', {
+            mynahUIPath: this.mynahUIPath,
+            uiPath: this.uiPath,
+            connectorAdapterPath: this.connectorAdapterPath,
+            resourceRoots: resourcesRoots.map((r) => r.toString()),
+        })
 
         webviewView.webview.html = await this.getWebviewContent()
 
