@@ -831,6 +831,28 @@
                 "linux": "meta+alt+i"
             },
             {
+                "command": "aws.amazonq.inline.acceptEdit",
+                "key": "tab",
+                "when": "editorTextFocus"
+            },
+            {
+                "command": "aws.amazonq.inline.rejectEdit",
+                "key": "escape",
+                "when": "editorTextFocus"
+            },
+            {
+                "command": "aws.amazonq.inline.debugAcceptEdit",
+                "key": "ctrl+alt+a",
+                "mac": "cmd+alt+a",
+                "when": "editorTextFocus"
+            },
+            {
+                "command": "aws.amazonq.inline.debugRejectEdit",
+                "key": "ctrl+alt+r",
+                "mac": "cmd+alt+r",
+                "when": "editorTextFocus"
+            },
+            {
                 "command": "aws.amazonq.explainCode",
                 "win": "win+alt+e",
                 "mac": "cmd+alt+e",
