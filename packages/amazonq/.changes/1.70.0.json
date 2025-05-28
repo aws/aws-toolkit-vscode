@@ -1,0 +1,10 @@
+{
+	"date": "2025-05-28",
+	"version": "1.70.0",
+	"entries": [
+		{
+			"type": "Removal",
+			"description": "Disable local workspace LSP"
+		}
+	]
+}
