@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import { fs } from '../../shared/fs/fs'
-// import { getLogger } from '../../shared/logger/logger'
+import { getLogger } from '../../shared/logger/logger'
 import {
     createCodeFixJob,
     getCodeFixJob,
@@ -21,7 +21,6 @@ import { tempDirPath } from '../../shared/filesystemUtilities'
 import { CodeWhispererSettings } from '../util/codewhispererSettings'
 import { AuthUtil } from '../util/authUtil'
 import { saveDocumentIfDirty } from '../../shared/utilities/textDocumentUtilities'
-/* eslint-disable aws-toolkits/no-console-log */
 
 export async function startCodeFixGeneration(
     client: DefaultCodeWhispererClient,
@@ -38,7 +37,7 @@ export async function startCodeFixGeneration(
     let linesOfFixGenerated
     let charsOfFixGenerated
     try {
-        console.log(
+        getLogger().verbose(
             `Starting code fix generation for lines ${issue.startLine + 1} through ${issue.endLine} of file ${filePath}`
         )
 
@@ -91,7 +90,7 @@ export async function startCodeFixGeneration(
         }
         jobId = codeFixJob.jobId
         issue.fixJobId = codeFixJob.jobId
-        console.log(`Created code fix job.`)
+        getLogger().verbose(`Created code fix job.`)
 
         /**
          * Step 4: Polling mechanism on code fix job status
@@ -99,7 +98,7 @@ export async function startCodeFixGeneration(
         throwIfCancelled()
         const jobStatus = await pollCodeFixJobStatus(client, String(codeFixJob.jobId), profile)
         if (jobStatus === 'Failed') {
-            console.log(`Code fix generation failed.`)
+            getLogger().verbose(`Code fix generation failed.`)
             throw new CreateCodeFixError()
         }
 
@@ -107,14 +106,14 @@ export async function startCodeFixGeneration(
          * Step 5: Process and render code fix results
          */
         throwIfCancelled()
-        console.log(`Code fix job succeeded and start processing result.`)
+        getLogger().verbose(`Code fix job succeeded and start processing result.`)
 
         const { suggestedFix } = await getCodeFixJob(client, String(codeFixJob.jobId), profile)
         // eslint-disable-next-line aws-toolkits/no-json-stringify-in-log
-        console.log(`Suggested fix: ${JSON.stringify(suggestedFix)}`)
+        getLogger().verbose(`Suggested fix: ${JSON.stringify(suggestedFix)}`)
         return { suggestedFix, jobId }
     } catch (err) {
-        console.log('Code fix generation failed: %s', err)
+        getLogger().error('Code fix generation failed: %s', err)
         throw err
     } finally {
         codeFixState.setToNotStarted()

@@ -890,8 +890,6 @@ export class TelemetryHelper {
         result?: string,
         includesFix?: boolean
     ) {
-        // eslint-disable-next-line aws-toolkits/no-console-log
-        console.log('sending telemetry')
         client
             .sendTelemetryEvent({
                 telemetryEvent: {
@@ -922,12 +920,6 @@ export class TelemetryHelper {
                 if (isAwsError(error)) {
                     requestId = error.requestId
                 }
-                // eslint-disable-next-line aws-toolkits/no-console-log
-                console.log(
-                    `Failed to sendCodeScanRemediationsEvent to CodeWhisperer, requestId: ${
-                        requestId ?? ''
-                    }, message: ${error.message}`
-                )
                 getLogger().debug(
                     `Failed to sendCodeScanRemediationsEvent to CodeWhisperer, requestId: ${
                         requestId ?? ''
