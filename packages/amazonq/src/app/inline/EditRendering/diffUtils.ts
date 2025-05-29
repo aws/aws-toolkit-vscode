@@ -157,13 +157,16 @@ export function getAddedAndDeletedCharCount(diff: string): {
         if (line.startsWith('+') && !line.startsWith('+++')) {
             addedCharacterCount += line.length - 1
         } else if (line.startsWith('-') && !line.startsWith('---')) {
-            const nextLine = lines[i + 1]
             const removedLine = line.substring(1)
+            deletedCharacterCount += removedLine.length
+
+            // Check if this is a modified line rather than a pure deletion
+            const nextLine = lines[i + 1]
             if (nextLine && nextLine.startsWith('+') && !nextLine.startsWith('+++') && nextLine.includes(removedLine)) {
-                addedCharacterCount += nextLine.length - removedLine.length - 1
+                // This is a modified line, not a pure deletion
+                // We've already counted the deletion, so we'll just increment i to skip the next line
+                // since we'll process the addition on the next iteration
                 i += 1
-            } else {
-                deletedCharacterCount += removedLine.length
             }
         }
         i += 1

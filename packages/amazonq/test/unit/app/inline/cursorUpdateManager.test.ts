@@ -22,6 +22,8 @@ describe('CursorUpdateManager', () => {
     beforeEach(() => {
         // Create stubs for all the methods we'll use
         sendRequestStub = sinon.stub()
+        sendRequestStub.resolves({}) // Default resolve value
+
         languageClient = {
             sendRequest: sendRequestStub,
         } as unknown as LanguageClient
@@ -76,7 +78,8 @@ describe('CursorUpdateManager', () => {
 
     it('should handle server configuration errors', async () => {
         // Setup the server to throw an error
-        sendRequestStub.rejects(new Error('Server error'))
+        sendRequestStub.onFirstCall().rejects(new Error('Server error'))
+        sendRequestStub.onSecondCall().resolves({})
 
         await cursorUpdateManager.start()
 
@@ -134,10 +137,13 @@ describe('CursorUpdateManager', () => {
                 uri: { toString: () => uri },
             },
         }
-        sinon.stub(vscode.window, 'activeTextEditor').get(() => mockEditor as any)(
-            // Start the manager
-            cursorUpdateManager as any
-        ).isActive = true as boolean
+        sinon.stub(vscode.window, 'activeTextEditor').get(() => mockEditor as any)
+
+        // Start the manager
+        await cursorUpdateManager.start()
+
+        // Reset the sendRequestStub to clear the call from start()
+        sendRequestStub.resetHistory()
 
         // Manually call the interval function
         await (cursorUpdateManager as any).sendCursorUpdate()
@@ -158,20 +164,23 @@ describe('CursorUpdateManager', () => {
         const uri = 'file:///test.ts'
         cursorUpdateManager.updatePosition(position, uri)
 
-        // Record a recent completion request
-        dateNowStub.returns(1000)
-        cursorUpdateManager.recordCompletionRequest()
-
         // Mock the active editor
         const mockEditor = {
             document: {
                 uri: { toString: () => uri },
             },
         }
-        sinon.stub(vscode.window, 'activeTextEditor').get(() => mockEditor as any)(
-            // Start the manager
-            cursorUpdateManager as any
-        ).isActive = true as boolean
+        sinon.stub(vscode.window, 'activeTextEditor').get(() => mockEditor as any)
+
+        // Start the manager
+        await cursorUpdateManager.start()
+
+        // Reset the sendRequestStub to clear the call from start()
+        sendRequestStub.resetHistory()
+
+        // Record a recent completion request
+        dateNowStub.returns(1000)
+        cursorUpdateManager.recordCompletionRequest()
 
         // Set current time to be within the interval
         dateNowStub.returns(1100) // Only 100ms after the request
