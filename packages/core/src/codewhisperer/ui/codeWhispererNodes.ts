@@ -28,6 +28,7 @@ import { AuthUtil } from '../util/authUtil'
 import { submitFeedback } from '../../feedback/vue/submitFeedback'
 import { focusAmazonQPanel } from '../../codewhispererChat/commands/registerCommands'
 import { isWeb } from '../../shared/extensionGlobals'
+import { getLogger } from '../../shared/logger/logger'
 
 export function createAutoSuggestions(running: boolean): DataQuickPickItem<'autoSuggestions'> {
     const labelResume = localize('AWS.codewhisperer.resumeCodeWhispererNode.label', 'Resume Auto-Suggestions')
@@ -250,7 +251,10 @@ export function switchToAmazonQNode(): DataQuickPickItem<'openChatPanel'> {
         data: 'openChatPanel',
         label: 'Open Chat Panel',
         iconPath: getIcon('vscode-comment'),
-        onClick: () => focusAmazonQPanel.execute(placeholder, 'codewhispererQuickPick'),
+        onClick: () =>
+            focusAmazonQPanel.execute(placeholder, 'codewhispererQuickPick').catch((e) => {
+                getLogger().error('focusAmazonQPanel failed: %s', e)
+            }),
     }
 }
 
@@ -259,7 +263,9 @@ export function createSignIn(): DataQuickPickItem<'signIn'> {
     const icon = getIcon('vscode-account')
 
     let onClick = () => {
-        void focusAmazonQPanel.execute(placeholder, 'codewhispererQuickPick')
+        focusAmazonQPanel.execute(placeholder, 'codewhispererQuickPick').catch((e) => {
+            getLogger().error('focusAmazonQPanel failed: %s', e)
+        })
     }
     if (isWeb()) {
         // TODO: nkomonen, call a Command instead

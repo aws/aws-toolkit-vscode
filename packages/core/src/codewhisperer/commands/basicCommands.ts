@@ -405,7 +405,9 @@ export const notifyNewCustomizationsCmd = Commands.declare(
 function focusQAfterDelay() {
     // this command won't work without a small delay after install
     globals.clock.setTimeout(() => {
-        void focusAmazonQPanel.execute(placeholder, 'startDelay')
+        focusAmazonQPanel.execute(placeholder, 'startDelay').catch((e) => {
+            getLogger().error('focusAmazonQPanel failed: %s', e)
+        })
     }, 1000)
 }
 
@@ -597,7 +599,10 @@ export const signoutCodeWhisperer = Commands.declare(
     (auth: AuthUtil) => async (_: VsCodeCommandArg, source: CodeWhispererSource) => {
         await auth.secondaryAuth.deleteConnection()
         SecurityIssueTreeViewProvider.instance.refresh()
-        return focusAmazonQPanel.execute(placeholder, source)
+        return focusAmazonQPanel.execute(placeholder, source).catch((e) => {
+            getLogger().error('focusAmazonQPanel failed: %s', e)
+            return undefined
+        })
     }
 )
 

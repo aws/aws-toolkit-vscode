@@ -267,7 +267,9 @@ export class AuthUtil {
         } catch (err) {
             if (err instanceof ProfileNotFoundError) {
                 // Expected that connection would be deleted by conn.getToken()
-                void focusAmazonQPanel.execute(placeholder, 'profileNotFoundSignout')
+                focusAmazonQPanel.execute(placeholder, 'profileNotFoundSignout').catch((e) => {
+                    getLogger().error('focusAmazonQPanel failed: %s', e)
+                })
             }
             throw err
         }
