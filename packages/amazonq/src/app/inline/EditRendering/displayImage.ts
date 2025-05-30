@@ -315,23 +315,6 @@ export async function displaySvgDecoration(
                 isInlineEdit: true,
             }
             languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
-            decorationManager.dispose()
-            const params: LogInlineCompletionSessionResultsParams = {
-                sessionId: session.sessionId,
-                completionSessionResult: {
-                    [item.itemId]: {
-                        seen: true,
-                        accepted: true,
-                        discarded: false,
-                    },
-                },
-                totalSessionDisplayTime: Date.now() - session.requestStartTime,
-                firstCompletionDisplayLatency: session.firstCompletionDisplayLatency,
-                // TODO: Update LogInlineCompletionSessionResultsParams interface to include these properties
-                // addedCharacterCount: addedCharacterCount,
-                // deletedCharacterCount: deletedCharacterCount,
-            }
-            languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
         },
         () => {
             // Handle reject
@@ -347,21 +330,6 @@ export async function displaySvgDecoration(
                     },
                 },
                 isInlineEdit: true,
-            }
-            languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
-            decorationManager.dispose()
-            const params: LogInlineCompletionSessionResultsParams = {
-                sessionId: session.sessionId,
-                completionSessionResult: {
-                    [item.itemId]: {
-                        seen: true,
-                        accepted: false,
-                        discarded: false,
-                    },
-                },
-                // TODO: Update LogInlineCompletionSessionResultsParams interface to include these properties
-                // addedCharacterCount: addedCharacterCount,
-                // deletedCharacterCount: deletedCharacterCount,
             }
             languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
         },
