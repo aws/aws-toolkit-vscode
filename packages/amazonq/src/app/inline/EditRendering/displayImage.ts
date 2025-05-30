@@ -100,7 +100,8 @@ export class EditDecorationManager {
         onAccept: () => void,
         onReject: () => void,
         originalCode: string,
-        newCode: string
+        newCode: string,
+        removedHighlights?: vscode.DecorationOptions[]
     ): void {
         // Clear any existing decorations
         this.clearDecorations(editor)
@@ -123,8 +124,13 @@ export class EditDecorationManager {
         // Apply image decoration
         editor.setDecorations(this.imageDecorationType, [this.currentImageDecoration])
 
-        // Highlight removed lines with red background
-        this.currentRemovedCodeDecorations = this.highlightRemovedLines(editor, originalCode, newCode)
+        // Highlight removed parts with red background - use provided highlights if available
+        if (removedHighlights && removedHighlights.length > 0) {
+            this.currentRemovedCodeDecorations = removedHighlights
+        } else {
+            // Fall back to line-level highlights if no char-level highlights provided
+            this.currentRemovedCodeDecorations = this.highlightRemovedLines(editor, originalCode, newCode)
+        }
         editor.setDecorations(this.removedCodeDecorationType, this.currentRemovedCodeDecorations)
     }
 
