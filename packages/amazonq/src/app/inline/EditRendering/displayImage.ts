@@ -18,6 +18,7 @@ export class EditDecorationManager {
     private currentRemovedCodeDecorations: vscode.DecorationOptions[] = []
     private acceptHandler: (() => void) | undefined
     private rejectHandler: (() => void) | undefined
+    private disposables: vscode.Disposable[] = []
 
     constructor() {
         this.imageDecorationType = vscode.window.createTextEditorDecorationType({
@@ -27,8 +28,6 @@ export class EditDecorationManager {
         this.removedCodeDecorationType = vscode.window.createTextEditorDecorationType({
             backgroundColor: 'rgba(255, 0, 0, 0.2)',
         })
-
-        this.registerCommandHandlers()
     }
 
     /**
@@ -103,6 +102,7 @@ export class EditDecorationManager {
         newCode: string
     ): void {
         // Clear any existing decorations
+        this.registerCommandHandlers()
         this.clearDecorations(editor)
 
         // Set context to enable the Tab key handler
@@ -138,6 +138,7 @@ export class EditDecorationManager {
         this.currentRemovedCodeDecorations = []
         this.acceptHandler = undefined
         this.rejectHandler = undefined
+        // Clear context to allow normal Tab key behavior
         void setContext('amazonq.editSuggestionActive' as any, false)
     }
 
@@ -146,24 +147,30 @@ export class EditDecorationManager {
      */
     public registerCommandHandlers(): void {
         // Register Tab key handler for accepting suggestion
-        vscode.commands.registerCommand('aws.amazonq.inline.acceptEdit', () => {
+        const acceptDisposable = vscode.commands.registerCommand('aws.amazonq.inline.acceptEdit', () => {
             if (this.acceptHandler) {
                 this.acceptHandler()
             }
         })
+        this.disposables.push(acceptDisposable)
 
         // Register Esc key handler for rejecting suggestion
-        vscode.commands.registerCommand('aws.amazonq.inline.rejectEdit', () => {
+        const rejectDisposable = vscode.commands.registerCommand('aws.amazonq.inline.rejectEdit', () => {
             if (this.rejectHandler) {
                 this.rejectHandler()
             }
         })
+        this.disposables.push(rejectDisposable)
     }
 
     /**
      * Disposes resources
      */
     public dispose(): void {
+        for (const disposable of this.disposables) {
+            disposable.dispose()
+        }
+        this.disposables = []
         this.imageDecorationType.dispose()
         this.removedCodeDecorationType.dispose()
     }
