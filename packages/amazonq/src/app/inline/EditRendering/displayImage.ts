@@ -172,6 +172,7 @@ export class EditDecorationManager {
         this.currentRemovedCodeDecorations = []
         this.acceptHandler = undefined
         this.rejectHandler = undefined
+        // Clear context to allow normal Tab key behavior
         void setContext('amazonq.editSuggestionActive' as any, false)
     }
 
@@ -321,6 +322,7 @@ export async function displaySvgDecoration(
                 isInlineEdit: true,
             }
             languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
+            decorationManager.dispose()
         },
         () => {
             // Handle reject
@@ -338,6 +340,7 @@ export async function displaySvgDecoration(
                 isInlineEdit: true,
             }
             languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
+            decorationManager.dispose()
         },
         originalCode,
         newCode,
