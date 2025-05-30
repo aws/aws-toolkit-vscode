@@ -14,25 +14,38 @@ import { SessionManager } from './sessionManager'
 import { InlineGeneratingMessage } from './inlineGeneratingMessage'
 import { CodeWhispererStatusBarManager } from 'aws-core-vscode/codewhisperer'
 import { TelemetryHelper } from './telemetryHelper'
-import { CursorUpdateManager } from './cursorUpdateManager'
+import { ICursorUpdateRecorder } from './cursorUpdateManager'
 import { globals } from 'aws-core-vscode/shared'
+
+export interface GetAllRecommendationsOptions {
+    emitTelemetry?: boolean
+    showUi?: boolean
+}
 
 export class RecommendationService {
     constructor(
         private readonly sessionManager: SessionManager,
         private readonly inlineGeneratingMessage: InlineGeneratingMessage,
-        private readonly cursorUpdateManager?: CursorUpdateManager
+        private cursorUpdateRecorder?: ICursorUpdateRecorder
     ) {}
+
+    /**
+     * Set the recommendation service
+     */
+    public setCursorUpdateRecorder(recorder: ICursorUpdateRecorder): void {
+        this.cursorUpdateRecorder = recorder
+    }
 
     async getAllRecommendations(
         languageClient: LanguageClient,
         document: TextDocument,
         position: Position,
         context: InlineCompletionContext,
-        token: CancellationToken
+        token: CancellationToken,
+        options: GetAllRecommendationsOptions = { emitTelemetry: true, showUi: true }
     ) {
         // Record that a regular request is being made
-        this.cursorUpdateManager?.recordCompletionRequest()
+        this.cursorUpdateRecorder?.recordCompletionRequest()
 
         const request: InlineCompletionWithReferencesParams = {
             textDocument: {
@@ -43,79 +56,66 @@ export class RecommendationService {
         }
         const requestStartTime = globals.clock.Date.now()
         const statusBar = CodeWhispererStatusBarManager.instance
+
+        // Only track telemetry if enabled
         TelemetryHelper.instance.setInvokeSuggestionStartTime()
         TelemetryHelper.instance.setPreprocessEndTime()
         TelemetryHelper.instance.setSdkApiCallStartTime()
 
         try {
-            // Show UI indicators that we are generating suggestions
-            await this.inlineGeneratingMessage.showGenerating(context.triggerKind)
-            await statusBar.setLoading()
+            // Show UI indicators only if UI is enabled
+            if (options.showUi) {
+                await this.inlineGeneratingMessage.showGenerating(context.triggerKind)
+                await statusBar.setLoading()
+            }
 
             // Handle first request
-            const firstResult: InlineCompletionListWithReferences = await languageClient.sendRequest(
+            let result: InlineCompletionListWithReferences = await languageClient.sendRequest(
                 inlineCompletionWithReferencesRequestType.method,
                 request,
                 token
             )
 
-            // Set telemetry data for the first response
             TelemetryHelper.instance.setSdkApiCallEndTime()
-            TelemetryHelper.instance.setSessionId(firstResult.sessionId)
-            if (firstResult.items.length > 0) {
-                TelemetryHelper.instance.setFirstResponseRequestId(firstResult.items[0].itemId)
+            TelemetryHelper.instance.setSessionId(result.sessionId)
+            if (result.items.length > 0 && result.items[0].itemId !== undefined) {
+                TelemetryHelper.instance.setFirstResponseRequestId(result.items[0].itemId as string)
             }
             TelemetryHelper.instance.setFirstSuggestionShowTime()
 
             const firstCompletionDisplayLatency = globals.clock.Date.now() - requestStartTime
             this.sessionManager.startSession(
-                firstResult.sessionId,
-                firstResult.items,
+                result.sessionId,
+                result.items,
                 requestStartTime,
                 firstCompletionDisplayLatency
             )
 
-            if (firstResult.partialResultToken) {
-                // If there are more results to fetch, handle them in the background
-                this.processRemainingRequests(languageClient, request, firstResult, token).catch((error) => {
-                    languageClient.warn(`Error when getting suggestions: ${error}`)
-                })
-            } else {
-                this.sessionManager.closeSession()
-
-                // No more results to fetch, mark pagination as complete
-                TelemetryHelper.instance.setAllPaginationEndTime()
-                TelemetryHelper.instance.tryRecordClientComponentLatency()
+            // If there are more results to fetch, handle them in the background
+            try {
+                while (result.partialResultToken) {
+                    const paginatedRequest = { ...request, partialResultToken: result.partialResultToken }
+                    result = await languageClient.sendRequest(
+                        inlineCompletionWithReferencesRequestType.method,
+                        paginatedRequest,
+                        token
+                    )
+                    this.sessionManager.updateSessionSuggestions(result.items)
+                }
+            } catch (error) {
+                languageClient.warn(`Error when getting suggestions: ${error}`)
             }
+
+            // Close session and finalize telemetry regardless of pagination path
+            this.sessionManager.closeSession()
+            TelemetryHelper.instance.setAllPaginationEndTime()
+            options.emitTelemetry && TelemetryHelper.instance.tryRecordClientComponentLatency()
         } finally {
-            // Remove all UI indicators of message generation since we are done
-            this.inlineGeneratingMessage.hideGenerating()
-            void statusBar.refreshStatusBar() // effectively "stop loading"
+            // Remove all UI indicators if UI is enabled
+            if (options.showUi) {
+                this.inlineGeneratingMessage.hideGenerating()
+                void statusBar.refreshStatusBar() // effectively "stop loading"
+            }
         }
-    }
-
-    private async processRemainingRequests(
-        languageClient: LanguageClient,
-        initialRequest: InlineCompletionWithReferencesParams,
-        firstResult: InlineCompletionListWithReferences,
-        token: CancellationToken
-    ): Promise<void> {
-        let nextToken = firstResult.partialResultToken
-        while (nextToken) {
-            const request = { ...initialRequest, partialResultToken: nextToken }
-            const result: InlineCompletionListWithReferences = await languageClient.sendRequest(
-                inlineCompletionWithReferencesRequestType.method,
-                request,
-                token
-            )
-            this.sessionManager.updateSessionSuggestions(result.items)
-            nextToken = result.partialResultToken
-        }
-
-        this.sessionManager.closeSession()
-
-        // All pagination requests completed
-        TelemetryHelper.instance.setAllPaginationEndTime()
-        TelemetryHelper.instance.tryRecordClientComponentLatency()
     }
 }

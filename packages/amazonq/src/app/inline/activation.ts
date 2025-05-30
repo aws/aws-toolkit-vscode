@@ -14,25 +14,19 @@ import {
     TelemetryHelper,
 } from 'aws-core-vscode/codewhisperer'
 import { globals, sleep } from 'aws-core-vscode/shared'
-import { CursorUpdateManager } from './cursorUpdateManager'
 import { NextEditPredictionPanel } from './webViewPanel'
 
 export async function activate(languageClient: any) {
     if (isInlineCompletionEnabled()) {
-        // Initialize CursorUpdateManager
-        const cursorUpdateManager = new CursorUpdateManager(languageClient)
-
         // Initialize NextEditPredictionPanel
         NextEditPredictionPanel.getInstance()
-        await setSubscriptionsforInlineCompletion(cursorUpdateManager)
+
+        await setSubscriptionsforInlineCompletion()
         await AuthUtil.instance.setVscodeContextProps()
     }
 }
 
-async function setSubscriptionsforInlineCompletion(cursorUpdateManager: CursorUpdateManager) {
-    // Start the cursor update manager
-    await cursorUpdateManager.start()
-
+async function setSubscriptionsforInlineCompletion() {
     /**
      * Automated trigger
      */
@@ -73,18 +67,6 @@ async function setSubscriptionsforInlineCompletion(cursorUpdateManager: CursorUp
              * Then this event can be processed by our code.
              */
             await sleep(CodeWhispererConstants.vsCodeCursorUpdateDelay)
-        }),
-
-        vscode.window.onDidChangeTextEditorSelection(async (e: vscode.TextEditorSelectionChangeEvent) => {
-            // Update cursor position in the manager
-            if (e.textEditor === vscode.window.activeTextEditor) {
-                cursorUpdateManager.updatePosition(e.selections[0].active, e.textEditor.document.uri.toString())
-            }
-        }),
-
-        // Add disposal of cursorUpdateManager
-        new vscode.Disposable(() => {
-            cursorUpdateManager.dispose()
         })
     )
 }

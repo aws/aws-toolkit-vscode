@@ -24,7 +24,7 @@ import {
     LogInlineCompletionSessionResultsParams,
 } from '@aws/language-server-runtimes/protocol'
 import { SessionManager } from './sessionManager'
-import { RecommendationService } from './recommendationService'
+import { GetAllRecommendationsOptions, RecommendationService } from './recommendationService'
 import {
     CodeWhispererConstants,
     ReferenceHoverProvider,
@@ -44,6 +44,7 @@ import { getLogger } from 'aws-core-vscode/shared'
 import { debounce, messageUtils } from 'aws-core-vscode/utils'
 import { showEdits } from './EditRendering/imageRenderer'
 import { NextEditPredictionPanel } from './webViewPanel'
+import { ICursorUpdateRecorder } from './cursorUpdateManager'
 
 export class InlineCompletionManager implements Disposable {
     private disposable: Disposable
@@ -60,14 +61,19 @@ export class InlineCompletionManager implements Disposable {
         languageClient: LanguageClient,
         sessionManager: SessionManager,
         lineTracker: LineTracker,
-        inlineTutorialAnnotation: InlineTutorialAnnotation
+        inlineTutorialAnnotation: InlineTutorialAnnotation,
+        cursorUpdateRecorder?: ICursorUpdateRecorder
     ) {
         NextEditPredictionPanel.getInstance()
         this.languageClient = languageClient
         this.sessionManager = sessionManager
         this.lineTracker = lineTracker
         this.incomingGeneratingMessage = new InlineGeneratingMessage(this.lineTracker)
-        this.recommendationService = new RecommendationService(this.sessionManager, this.incomingGeneratingMessage)
+        this.recommendationService = new RecommendationService(
+            this.sessionManager,
+            this.incomingGeneratingMessage,
+            cursorUpdateRecorder
+        )
         this.inlineTutorialAnnotation = inlineTutorialAnnotation
         this.inlineCompletionProvider = new AmazonQInlineCompletionItemProvider(
             languageClient,
@@ -89,6 +95,10 @@ export class InlineCompletionManager implements Disposable {
             this.incomingGeneratingMessage.dispose()
             this.lineTracker.dispose()
         }
+    }
+
+    public getInlineCompletionProvider(): AmazonQInlineCompletionItemProvider {
+        return this.inlineCompletionProvider
     }
 
     public registerInlineCompletion() {
@@ -192,7 +202,8 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
         document: TextDocument,
         position: Position,
         context: InlineCompletionContext,
-        token: CancellationToken
+        token: CancellationToken,
+        getAllRecommendationsOptions?: GetAllRecommendationsOptions
     ): Promise<InlineCompletionItem[]> {
         try {
             vsCodeState.isRecommendationsActive = true
@@ -212,7 +223,8 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
                 document,
                 position,
                 context,
-                token
+                token,
+                getAllRecommendationsOptions
             )
             // get active item from session for displaying
             const items = this.sessionManager.getActiveRecommendation()

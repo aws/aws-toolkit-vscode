@@ -65,6 +65,7 @@ import { LineTracker } from '../app/inline/stateTracker/lineTracker'
 import { InlineChatTutorialAnnotation } from '../app/inline/tutorials/inlineChatTutorialAnnotation'
 import { InlineTutorialAnnotation } from '../app/inline/tutorials/inlineTutorialAnnotation'
 import { InlineCompletionManager } from '../app/inline/completion'
+import { CursorUpdateManager } from '../app/inline/cursorUpdateManager'
 
 const localize = nls.loadMessageBundle()
 const logger = getLogger('amazonqLsp.lspClient')
@@ -232,14 +233,37 @@ async function setupInline(
     const inlineTutorialAnnotation = new InlineTutorialAnnotation(lineTracker, sessionManager)
     const inlineChatTutorialAnnotation = new InlineChatTutorialAnnotation(inlineTutorialAnnotation)
 
+    // Create InlineManager first
     const inlineManager = new InlineCompletionManager(client, sessionManager, lineTracker, inlineTutorialAnnotation)
 
+    // Register inline completion
     inlineManager.registerInlineCompletion()
+
+    // Get the provider from the manager
+    const inlineCompletionProvider = inlineManager.getInlineCompletionProvider()
+
+    // Create and start the CursorUpdateManager with the provider from InlineManager
+    const cursorUpdateManager = new CursorUpdateManager(client, inlineCompletionProvider)
+
+    // Start the CursorUpdateManager
+    await cursorUpdateManager.start()
+
+    // Track cursor position changes
+    const cursorUpdateDisposable = vscode.window.onDidChangeTextEditorSelection(
+        (e: vscode.TextEditorSelectionChangeEvent) => {
+            if (e.textEditor === vscode.window.activeTextEditor) {
+                cursorUpdateManager.updatePosition(e.selections[0].active, e.textEditor.document.uri.toString())
+            }
+        }
+    )
+
+    toDispose.push(cursorUpdateDisposable)
 
     activeInlineChat(extensionContext, client, encryptionKey, inlineChatTutorialAnnotation)
 
     toDispose.push(
         inlineManager,
+        cursorUpdateManager, // Add CursorUpdateManager to disposables
         Commands.register({ id: 'aws.amazonq.invokeInlineCompletion', autoconnect: true }, async () => {
             await vscode.commands.executeCommand('editor.action.inlineSuggest.trigger')
         }),

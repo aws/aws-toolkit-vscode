@@ -233,7 +233,7 @@ export class NextEditPredictionPanel implements vscode.Disposable {
     /**
      * Show the panel
      */
-    private show(): void {
+    public show(): void {
         if (!this.panel) {
             // Create the webview panel
             this.panel = vscode.window.createWebviewPanel(

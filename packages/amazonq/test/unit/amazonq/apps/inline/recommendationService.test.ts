@@ -12,7 +12,8 @@ import { SessionManager } from '../../../../../src/app/inline/sessionManager'
 import { createMockDocument, createTestAuthUtil } from 'aws-core-vscode/test'
 import { LineTracker } from '../../../../../src/app/inline/stateTracker/lineTracker'
 import { InlineGeneratingMessage } from '../../../../../src/app/inline/inlineGeneratingMessage'
-import { ICursorUpdateRecorder } from '../../../../../src/app/inline/cursorUpdateManager'
+// Import CursorUpdateManager directly instead of the interface
+import { CursorUpdateManager } from '../../../../../src/app/inline/cursorUpdateManager'
 import { CodeWhispererStatusBarManager } from 'aws-core-vscode/codewhisperer'
 import { globals } from 'aws-core-vscode/shared'
 
@@ -24,7 +25,7 @@ describe('RecommendationService', () => {
     let lineTracker: LineTracker
     let activeStateController: InlineGeneratingMessage
     let service: RecommendationService
-    let cursorUpdateRecorder: ICursorUpdateRecorder
+    let cursorUpdateManager: CursorUpdateManager
     let statusBarStub: any
     let clockStub: sinon.SinonFakeTimers
 
@@ -74,10 +75,18 @@ describe('RecommendationService', () => {
         lineTracker = new LineTracker()
         activeStateController = new InlineGeneratingMessage(lineTracker)
 
-        // Create cursor update recorder mock
-        cursorUpdateRecorder = {
+        // Create cursor update manager mock
+        cursorUpdateManager = {
             recordCompletionRequest: sandbox.stub(),
-        }
+            logger: { debug: sandbox.stub(), warn: sandbox.stub(), error: sandbox.stub() },
+            updateIntervalMs: 250,
+            isActive: false,
+            lastRequestTime: 0,
+            dispose: sandbox.stub(),
+            start: sandbox.stub(),
+            stop: sandbox.stub(),
+            updatePosition: sandbox.stub(),
+        } as unknown as CursorUpdateManager
 
         // Create status bar stub
         statusBarStub = {
@@ -101,11 +110,11 @@ describe('RecommendationService', () => {
             const serviceWithRecorder = new RecommendationService(
                 sessionManager,
                 activeStateController,
-                cursorUpdateRecorder
+                cursorUpdateManager
             )
 
             // Verify the service was created with the recorder
-            assert.strictEqual(serviceWithRecorder['cursorUpdateRecorder'], cursorUpdateRecorder)
+            assert.strictEqual(serviceWithRecorder['cursorUpdateRecorder'], cursorUpdateManager)
         })
     })
 
@@ -115,10 +124,10 @@ describe('RecommendationService', () => {
             assert.strictEqual(service['cursorUpdateRecorder'], undefined)
 
             // Set the recorder
-            service.setCursorUpdateRecorder(cursorUpdateRecorder)
+            service.setCursorUpdateRecorder(cursorUpdateManager)
 
             // Verify it was set correctly
-            assert.strictEqual(service['cursorUpdateRecorder'], cursorUpdateRecorder)
+            assert.strictEqual(service['cursorUpdateRecorder'], cursorUpdateManager)
         })
     })
 
@@ -188,7 +197,7 @@ describe('RecommendationService', () => {
 
         it('should record completion request when cursorUpdateRecorder is set', async () => {
             // Set the cursor update recorder
-            service.setCursorUpdateRecorder(cursorUpdateRecorder)
+            service.setCursorUpdateRecorder(cursorUpdateManager)
 
             const mockFirstResult = {
                 sessionId: 'test-session',
@@ -201,10 +210,10 @@ describe('RecommendationService', () => {
             await service.getAllRecommendations(languageClient, mockDocument, mockPosition, mockContext, mockToken)
 
             // Verify recordCompletionRequest was called
-            sinon.assert.calledOnce(cursorUpdateRecorder.recordCompletionRequest as sinon.SinonStub)
+            sinon.assert.calledOnce(cursorUpdateManager.recordCompletionRequest as sinon.SinonStub)
         })
 
-        it('should not show UI indicators when ui option is false', async () => {
+        it('should not show UI indicators when showUi option is false', async () => {
             const mockFirstResult = {
                 sessionId: 'test-session',
                 items: [mockInlineCompletionItemOne],
@@ -214,22 +223,23 @@ describe('RecommendationService', () => {
             sendRequestStub.resolves(mockFirstResult)
 
             // Spy on the UI methods
-            const showGeneratingSpy = sandbox.spy(activeStateController, 'showGenerating')
-            const hideGeneratingSpy = sandbox.spy(activeStateController, 'hideGenerating')
+            const showGeneratingStub = sandbox.stub(activeStateController, 'showGenerating').resolves()
+            const hideGeneratingStub = sandbox.stub(activeStateController, 'hideGenerating')
 
-            // Call with ui: false option
+            // Call with showUi: false option
             await service.getAllRecommendations(languageClient, mockDocument, mockPosition, mockContext, mockToken, {
-                ui: false,
+                showUi: false,
+                emitTelemetry: true,
             })
 
             // Verify UI methods were not called
-            sinon.assert.notCalled(showGeneratingSpy)
-            sinon.assert.notCalled(hideGeneratingSpy)
+            sinon.assert.notCalled(showGeneratingStub)
+            sinon.assert.notCalled(hideGeneratingStub)
             sinon.assert.notCalled(statusBarStub.setLoading)
             sinon.assert.notCalled(statusBarStub.refreshStatusBar)
         })
 
-        it('should show UI indicators when ui option is true (default)', async () => {
+        it('should show UI indicators when showUi option is true (default)', async () => {
             const mockFirstResult = {
                 sessionId: 'test-session',
                 items: [mockInlineCompletionItemOne],
@@ -238,29 +248,37 @@ describe('RecommendationService', () => {
 
             sendRequestStub.resolves(mockFirstResult)
 
-            // Call with default options (ui: true)
+            // Spy on the UI methods
+            const showGeneratingStub = sandbox.stub(activeStateController, 'showGenerating').resolves()
+            const hideGeneratingStub = sandbox.stub(activeStateController, 'hideGenerating')
+
+            // Call with default options (showUi: true)
             await service.getAllRecommendations(languageClient, mockDocument, mockPosition, mockContext, mockToken)
 
             // Verify UI methods were called
-            sinon.assert.calledOnce(activeStateController.showGenerating as sinon.SinonStub)
-            sinon.assert.calledOnce(activeStateController.hideGenerating as sinon.SinonStub)
+            sinon.assert.calledOnce(showGeneratingStub)
+            sinon.assert.calledOnce(hideGeneratingStub)
             sinon.assert.calledOnce(statusBarStub.setLoading)
             sinon.assert.calledOnce(statusBarStub.refreshStatusBar)
         })
 
         it('should handle errors gracefully', async () => {
             // Set the cursor update recorder
-            service.setCursorUpdateRecorder(cursorUpdateRecorder)
+            service.setCursorUpdateRecorder(cursorUpdateManager)
 
             // Make the request throw an error
             const testError = new Error('Test error')
             sendRequestStub.rejects(testError)
 
+            // Stub the UI methods to avoid errors
+            const showGeneratingStub = sandbox.stub(activeStateController, 'showGenerating').resolves()
+            const hideGeneratingStub = sandbox.stub(activeStateController, 'hideGenerating')
+
             // Call the method
             await service.getAllRecommendations(languageClient, mockDocument, mockPosition, mockContext, mockToken)
 
             // Verify the UI indicators were hidden even when an error occurs
-            sinon.assert.calledOnce(activeStateController.hideGenerating as sinon.SinonStub)
+            sinon.assert.calledOnce(hideGeneratingStub)
             sinon.assert.calledOnce(statusBarStub.refreshStatusBar)
         })
     })

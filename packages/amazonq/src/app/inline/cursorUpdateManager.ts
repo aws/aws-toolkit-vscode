@@ -7,24 +7,36 @@ import * as vscode from 'vscode'
 import { LanguageClient } from 'vscode-languageclient'
 import { getLogger } from 'aws-core-vscode/shared'
 import { globals } from 'aws-core-vscode/shared'
-import { InlineCompletionTriggerKind } from 'vscode'
+import { AmazonQInlineCompletionItemProvider } from './completion'
 
 // Configuration section for cursor updates
 export const cursorUpdateConfigurationSection = 'aws.q.cursorUpdate'
 
 /**
+ * Interface for recording completion requests
+ */
+export interface ICursorUpdateRecorder {
+    recordCompletionRequest(): void
+}
+
+/**
  * Manages periodic cursor position updates for Next Edit Prediction
  */
-export class CursorUpdateManager implements vscode.Disposable {
+export class CursorUpdateManager implements vscode.Disposable, ICursorUpdateRecorder {
     private readonly logger = getLogger('amazonqLsp')
     private updateIntervalMs = 250
     private updateTimer?: NodeJS.Timeout
     private lastPosition?: vscode.Position
     private lastDocumentUri?: string
+    private lastSentPosition?: vscode.Position
+    private lastSentDocumentUri?: string
     private isActive = false
     private lastRequestTime = 0
 
-    constructor(private readonly languageClient: LanguageClient) {}
+    constructor(
+        private readonly languageClient: LanguageClient,
+        private readonly inlineCompletionProvider?: AmazonQInlineCompletionItemProvider
+    ) {}
 
     /**
      * Start tracking cursor positions and sending periodic updates
@@ -48,13 +60,9 @@ export class CursorUpdateManager implements vscode.Disposable {
                 config.intervalMs > 0
             ) {
                 this.updateIntervalMs = config.intervalMs
-                this.logger.debug(`Using server-provided cursor update interval: ${this.updateIntervalMs}ms`)
-            } else {
-                this.logger.debug(`Using default cursor update interval: ${this.updateIntervalMs}ms`)
             }
         } catch (error) {
             this.logger.warn(`Failed to get cursor update configuration from server: ${error}`)
-            this.logger.debug(`Using default cursor update interval: ${this.updateIntervalMs}ms`)
         }
 
         this.isActive = true
@@ -67,14 +75,20 @@ export class CursorUpdateManager implements vscode.Disposable {
     public stop(): void {
         this.isActive = false
         this.clearUpdateTimer()
-        this.logger.debug('CursorUpdateManager stopped')
     }
 
     /**
      * Update the current cursor position
      */
     public updatePosition(position: vscode.Position, documentUri: string): void {
-        this.lastPosition = position
+        // If the document changed, set the last sent position to the current position
+        // This prevents triggering an immediate recommendation when switching tabs
+        if (this.lastDocumentUri !== documentUri) {
+            this.lastSentPosition = position.with() // Create a copy
+            this.lastSentDocumentUri = documentUri
+        }
+
+        this.lastPosition = position.with() // Create a copy
         this.lastDocumentUri = documentUri
     }
 
@@ -112,7 +126,7 @@ export class CursorUpdateManager implements vscode.Disposable {
      */
     private sendCursorUpdate(): void {
         // Only send updates if we have a position and document URI
-        if (!this.lastPosition || !this.lastDocumentUri || !this.isActive) {
+        if (!this.lastPosition || !this.lastDocumentUri || !this.isActive || !this.inlineCompletionProvider) {
             return
         }
 
@@ -127,25 +141,35 @@ export class CursorUpdateManager implements vscode.Disposable {
             return
         }
 
-        // Create a standard InlineCompletionWithReferences request
-        const request = {
-            textDocument: {
-                uri: this.lastDocumentUri,
-            },
-            position: {
-                line: this.lastPosition.line,
-                character: this.lastPosition.character,
-            },
-            context: {
-                triggerKind: InlineCompletionTriggerKind.Automatic,
-            },
+        // Don't send an update if the position hasn't changed since the last update
+        if (
+            this.lastSentPosition &&
+            this.lastSentDocumentUri === this.lastDocumentUri &&
+            this.lastSentPosition.line === this.lastPosition.line &&
+            this.lastSentPosition.character === this.lastPosition.character
+        ) {
+            return
         }
 
-        // Send the request to the language server
-        this.languageClient.sendRequest('aws/inlineCompletionWithReferences', request).catch((error) => {
-            // Ignore errors for cursor updates to avoid flooding the console
-            this.logger.debug(`Error sending cursor update: ${error}`)
-        })
+        // Update the last sent position
+        this.lastSentPosition = this.lastPosition.with() // Create a copy
+        this.lastSentDocumentUri = this.lastDocumentUri
+
+        // Call the inline completion provider instead of directly calling getAllRecommendations
+        this.inlineCompletionProvider
+            .provideInlineCompletionItems(
+                editor.document,
+                this.lastPosition,
+                {
+                    triggerKind: vscode.InlineCompletionTriggerKind.Automatic,
+                    selectedCompletionInfo: undefined,
+                },
+                new vscode.CancellationTokenSource().token,
+                { emitTelemetry: false, showUi: false }
+            )
+            .catch((error) => {
+                this.logger.error(`Error sending cursor update: ${error}`)
+            })
     }
 
     /**

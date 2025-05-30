@@ -9,6 +9,7 @@ import { LanguageClient } from 'vscode-languageclient'
 import { CursorUpdateManager } from '../../../../src/app/inline/cursorUpdateManager'
 import { globals } from 'aws-core-vscode/shared'
 import assert from 'assert'
+import { AmazonQInlineCompletionItemProvider } from '../../../../src/app/inline/completion'
 
 describe('CursorUpdateManager', () => {
     let cursorUpdateManager: CursorUpdateManager
@@ -34,8 +35,11 @@ describe('CursorUpdateManager', () => {
         clearIntervalStub = sinon.stub(globals.clock, 'clearInterval')
         dateNowStub = sinon.stub(globals.clock.Date, 'now').returns(1000)
 
-        // Create the manager
-        cursorUpdateManager = new CursorUpdateManager(languageClient)
+        // Create the manager with a mock recommendation service
+        const mockInlineCompletionProvider = {
+            provideInlineCompletionItems: sinon.stub().resolves([]),
+        } as unknown as AmazonQInlineCompletionItemProvider
+        cursorUpdateManager = new CursorUpdateManager(languageClient, mockInlineCompletionProvider)
     })
 
     afterEach(() => {
@@ -139,6 +143,18 @@ describe('CursorUpdateManager', () => {
         }
         sinon.stub(vscode.window, 'activeTextEditor').get(() => mockEditor as any)
 
+        // Create a mock cancellation token source
+        const mockCancellationTokenSource = {
+            token: {} as vscode.CancellationToken,
+        }
+        sinon.stub(vscode, 'CancellationTokenSource').returns(mockCancellationTokenSource as any)
+
+        // Mock the provideInlineCompletionItems method
+        const provideStub = sinon.stub().resolves([])
+        ;(cursorUpdateManager as any).inlineCompletionProvider = {
+            provideInlineCompletionItems: provideStub,
+        }
+
         // Start the manager
         await cursorUpdateManager.start()
 
@@ -148,14 +164,9 @@ describe('CursorUpdateManager', () => {
         // Manually call the interval function
         await (cursorUpdateManager as any).sendCursorUpdate()
 
-        // Verify the request was sent
-        assert.ok(sendRequestStub.called)
-        assert.strictEqual(sendRequestStub.firstCall.args[0], 'aws/inlineCompletionWithReferences')
-        assert.deepStrictEqual(sendRequestStub.firstCall.args[1], {
-            textDocument: { uri },
-            position: { line: 1, character: 2 },
-            context: { triggerKind: vscode.InlineCompletionTriggerKind.Automatic },
-        })
+        // Verify the provider was called
+        assert.ok(provideStub.called)
+        assert.strictEqual(provideStub.callCount, 1)
     })
 
     it('should not send cursor update if a regular request was made recently', async () => {
