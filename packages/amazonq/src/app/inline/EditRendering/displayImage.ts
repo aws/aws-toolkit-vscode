@@ -289,7 +289,6 @@ export async function displaySvgDecoration(
                 deletedCharacterCount: deletedCharacterCount,
             }
             languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
-            decorationManager.dispose()
         },
         () => {
             // Handle reject
@@ -308,7 +307,6 @@ export async function displaySvgDecoration(
                 deletedCharacterCount: deletedCharacterCount,
             }
             languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
-            decorationManager.dispose()
         },
         originalCode,
         newCode
