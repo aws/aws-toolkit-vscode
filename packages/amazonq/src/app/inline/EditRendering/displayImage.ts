@@ -4,7 +4,6 @@
  */
 
 import { getLogger, setContext } from 'aws-core-vscode/shared'
-import { getLogger, setContext } from 'aws-core-vscode/shared'
 import * as vscode from 'vscode'
 import { diffLines } from 'diff'
 import { LanguageClient } from 'vscode-languageclient'
@@ -263,16 +262,7 @@ export async function displaySvgDecoration(
             const endPosition = getEndOfEditPosition(originalCode, newCode)
 
             // Replace content
-
-            // Calculate cursor position before replacing content
-            const endPosition = getEndOfEditPosition(originalCode, newCode)
-
-            // Replace content
             replaceEditorContent(editor, newCode)
-
-            // Move cursor to end of the actual changed content
-            editor.selection = new vscode.Selection(endPosition, endPosition)
-
 
             // Move cursor to end of the actual changed content
             editor.selection = new vscode.Selection(endPosition, endPosition)
