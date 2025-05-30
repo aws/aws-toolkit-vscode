@@ -42,6 +42,7 @@ import {
     createGettingStarted,
     createGitHubNode,
     createLearnMore,
+    createManageSubscription,
     createOpenReferenceLog,
     createReconnect,
     createSecurityScan,
@@ -445,7 +446,13 @@ describe('CodeWhisperer-basicCommands', function () {
             sinon.stub(AuthUtil.instance, 'isConnected').returns(true)
 
             getTestWindow().onDidShowQuickPick((e) => {
-                e.assertContainsItems(createReconnect(), createLearnMore(), ...genericItems(), createSignout())
+                e.assertContainsItems(
+                    createReconnect(),
+                    createLearnMore(),
+                    ...genericItems(),
+                    createManageSubscription(),
+                    createSignout()
+                )
                 e.dispose() // skip needing to select an item to continue
             })
 
@@ -465,6 +472,7 @@ describe('CodeWhisperer-basicCommands', function () {
                     switchToAmazonQNode(),
                     ...genericItems(),
                     createSettingsNode(),
+                    createManageSubscription(),
                     createSignout()
                 )
                 e.dispose() // skip needing to select an item to continue
@@ -489,6 +497,7 @@ describe('CodeWhisperer-basicCommands', function () {
                     switchToAmazonQNode(),
                     ...genericItems(),
                     createSettingsNode(),
+                    createManageSubscription(),
                     createSignout()
                 )
                 e.dispose() // skip needing to select an item to continue
@@ -515,6 +524,7 @@ describe('CodeWhisperer-basicCommands', function () {
                     ...genericItems(),
                     createSeparator(),
                     createSettingsNode(),
+                    createManageSubscription(),
                     createSignout(),
                 ])
                 e.dispose() // skip needing to select an item to continue
@@ -537,6 +547,7 @@ describe('CodeWhisperer-basicCommands', function () {
                     switchToAmazonQNode(),
                     ...genericItems(),
                     createSettingsNode(),
+                    createManageSubscription(),
                     createSignout()
                 )
                 e.dispose()
