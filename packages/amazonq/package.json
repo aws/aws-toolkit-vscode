@@ -831,16 +831,6 @@
                 "linux": "meta+alt+i"
             },
             {
-                "command": "aws.amazonq.inline.acceptEdit",
-                "key": "tab",
-                "when": "editorTextFocus"
-            },
-            {
-                "command": "aws.amazonq.inline.rejectEdit",
-                "key": "escape",
-                "when": "editorTextFocus"
-            },
-            {
                 "command": "aws.amazonq.inline.debugAcceptEdit",
                 "key": "ctrl+alt+a",
                 "mac": "cmd+alt+a",
@@ -932,6 +922,16 @@
                 "command": "aws.amazonq.inline.waitForUserDecisionRejectAll",
                 "key": "escape",
                 "when": "editorTextFocus && aws.codewhisperer.connected && amazonq.inline.codelensShortcutEnabled"
+            },
+            {
+                "command": "aws.amazonq.inline.acceptEdit",
+                "key": "tab",
+                "when": "editorTextFocus && amazonq.editSuggestionActive"
+            },
+            {
+                "command": "aws.amazonq.inline.rejectEdit",
+                "key": "escape",
+                "when": "editorTextFocus && amazonq.editSuggestionActive"
             }
         ],
         "icons": {

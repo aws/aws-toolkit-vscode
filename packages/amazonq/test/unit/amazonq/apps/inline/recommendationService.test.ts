@@ -210,6 +210,7 @@ describe('RecommendationService', () => {
             await service.getAllRecommendations(languageClient, mockDocument, mockPosition, mockContext, mockToken)
 
             // Verify recordCompletionRequest was called
+            // eslint-disable-next-line @typescript-eslint/unbound-method
             sinon.assert.calledOnce(cursorUpdateManager.recordCompletionRequest as sinon.SinonStub)
         })
 
@@ -271,7 +272,7 @@ describe('RecommendationService', () => {
             sendRequestStub.rejects(testError)
 
             // Stub the UI methods to avoid errors
-            const showGeneratingStub = sandbox.stub(activeStateController, 'showGenerating').resolves()
+            // const showGeneratingStub = sandbox.stub(activeStateController, 'showGenerating').resolves()
             const hideGeneratingStub = sandbox.stub(activeStateController, 'hideGenerating')
 
             // Call the method

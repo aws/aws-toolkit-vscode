@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { getLogger } from 'aws-core-vscode/shared'
+import { getLogger, setContext } from 'aws-core-vscode/shared'
 import * as vscode from 'vscode'
 import { diffLines } from 'diff'
 import { LanguageClient } from 'vscode-languageclient'
@@ -105,6 +105,9 @@ export class EditDecorationManager {
         // Clear any existing decorations
         this.clearDecorations(editor)
 
+        // Set context to enable the Tab key handler
+        void setContext('amazonq.editSuggestionActive' as any, true)
+
         // Store handlers
         this.acceptHandler = onAccept
         this.rejectHandler = onReject
@@ -123,8 +126,6 @@ export class EditDecorationManager {
         // Highlight removed lines with red background
         this.currentRemovedCodeDecorations = this.highlightRemovedLines(editor, originalCode, newCode)
         editor.setDecorations(this.removedCodeDecorationType, this.currentRemovedCodeDecorations)
-
-        // Register command handlers for accept/reject
     }
 
     /**
@@ -137,6 +138,7 @@ export class EditDecorationManager {
         this.currentRemovedCodeDecorations = []
         this.acceptHandler = undefined
         this.rejectHandler = undefined
+        void setContext('amazonq.editSuggestionActive' as any, false)
     }
 
     /**
@@ -188,6 +190,51 @@ function replaceEditorContent(editor: vscode.TextEditor, newCode: string): void 
 }
 
 /**
+ * Calculates the end position of the actual edited content by finding the last changed part
+ */
+function getEndOfEditPosition(originalCode: string, newCode: string): vscode.Position {
+    const changes = diffLines(originalCode, newCode)
+    let lineOffset = 0
+
+    // Track the end position of the last added chunk
+    let lastChangeEndLine = 0
+    let lastChangeEndColumn = 0
+    let foundAddedContent = false
+
+    for (const part of changes) {
+        if (part.added) {
+            foundAddedContent = true
+
+            // Calculate lines in this added part
+            const lines = part.value.split('\n')
+            const linesCount = lines.length
+
+            // Update position to the end of this added chunk
+            lastChangeEndLine = lineOffset + linesCount - 1
+
+            // Get the length of the last line in this added chunk
+            lastChangeEndColumn = lines[linesCount - 1].length
+        }
+
+        // Update line offset (skip removed parts)
+        if (!part.removed) {
+            // Safely calculate line count from the part's value
+            const partLineCount = part.value.split('\n').length
+            lineOffset += partLineCount - 1
+        }
+    }
+
+    // If we found added content, return position at the end of the last addition
+    if (foundAddedContent) {
+        return new vscode.Position(lastChangeEndLine, lastChangeEndColumn)
+    }
+
+    // Fallback to current cursor position if no changes were found
+    const editor = vscode.window.activeTextEditor
+    return editor ? editor.selection.active : new vscode.Position(0, 0)
+}
+
+/**
  * Helper function to display SVG decorations
  */
 export async function displaySvgDecoration(
@@ -210,7 +257,16 @@ export async function displaySvgDecoration(
         () => {
             // Handle accept
             getLogger().info('Edit suggestion accepted')
+
+            // Calculate cursor position before replacing content
+            const endPosition = getEndOfEditPosition(originalCode, newCode)
+
+            // Replace content
             replaceEditorContent(editor, newCode)
+
+            // Move cursor to end of the actual changed content
+            editor.selection = new vscode.Selection(endPosition, endPosition)
+
             decorationManager.clearDecorations(editor)
             const params: LogInlineCompletionSessionResultsParams = {
                 sessionId: session.sessionId,

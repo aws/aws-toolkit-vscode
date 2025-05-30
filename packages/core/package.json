@@ -580,7 +580,8 @@
         "xml2js": "^0.6.1",
         "yaml-cfn": "^0.3.2",
         "@svgdotjs/svg.js": "^3.0.16",
-        "svgdom": "^0.1.0"
+        "svgdom": "^0.1.0",
+        "jaro-winkler": "^0.2.8"
     },
     "overrides": {
         "webfont": {

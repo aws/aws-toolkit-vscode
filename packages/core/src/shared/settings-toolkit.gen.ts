@@ -45,7 +45,8 @@ export const toolkitSettings = {
         "amazonqLSP": {},
         "amazonqLSPInline": {},
         "amazonqLSPInlineChat": {},
-        "amazonqChatLSP": {}
+        "amazonqChatLSP": {},
+        "amazonqLSPNEP": {}
     },
     "aws.resources.enabledResources": {},
     "aws.lambda.recentlyUploaded": {},

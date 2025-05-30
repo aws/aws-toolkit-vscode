@@ -262,6 +262,10 @@
                         "amazonqChatLSP": {
                             "type": "boolean",
                             "default": true
+                        },
+                        "amazonqLSPNEP": {
+                            "type": "boolean",
+                            "default": false
                         }
                     },
                     "additionalProperties": false
