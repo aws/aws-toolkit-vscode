@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import {
+import vscode, {
     CancellationToken,
     InlineCompletionContext,
     InlineCompletionItem,
@@ -152,6 +152,9 @@ export class InlineCompletionManager implements Disposable {
                 await ImportAdderProvider.instance.onAcceptRecommendation(editor, item, startLine)
             }
             this.sessionManager.incrementSuggestionCount()
+
+            // pull subsequent session
+            await vscode.commands.executeCommand('editor.action.inlineSuggest.trigger')
         }
         commands.registerCommand('aws.amazonq.acceptInline', onInlineAcceptance)
 
