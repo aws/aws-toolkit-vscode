@@ -40,7 +40,7 @@ import { InlineGeneratingMessage } from './inlineGeneratingMessage'
 import { LineTracker } from './stateTracker/lineTracker'
 import { InlineTutorialAnnotation } from './tutorials/inlineTutorialAnnotation'
 import { TelemetryHelper } from './telemetryHelper'
-import { getLogger } from 'aws-core-vscode/shared'
+import { Experiments, getLogger } from 'aws-core-vscode/shared'
 import { debounce, messageUtils } from 'aws-core-vscode/utils'
 import { showEdits } from './EditRendering/imageRenderer'
 import { NextEditPredictionPanel } from './webViewPanel'
@@ -246,11 +246,15 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
             const cursorPosition = document.validatePosition(position)
             for (const item of items) {
                 if (item.isInlineEdit) {
-                    const panel = NextEditPredictionPanel.getInstance()
-                    panel.updateContent(item.insertText as string)
-                    void showEdits(item, editor, session, this.languageClient)
-                    getLogger('nextEditPrediction').info('Received edit!')
-                    return []
+                    // Check if Next Edit Prediction feature flag is enabled
+                    if (Experiments.instance.isExperimentEnabled('amazonqLSPNEP')) {
+                        const panel = NextEditPredictionPanel.getInstance()
+                        panel.updateContent(item.insertText as string)
+                        void showEdits(item, editor, session, this.languageClient)
+                        getLogger('nextEditPrediction').info('Received edit!')
+                        return []
+                    }
+                    // If NEP is disabled, handle as regular completion
                 }
 
                 item.command = {
