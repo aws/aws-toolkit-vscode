@@ -239,7 +239,7 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
                     if (Experiments.instance.isExperimentEnabled('amazonqLSPNEP')) {
                         const panel = NextEditPredictionPanel.getInstance()
                         panel.updateContent(item.insertText as string)
-                        void showEdits(item.insertText as string, editor)
+                        void showEdits(item, editor, session, this.languageClient)
                         getLogger('nextEditPrediction').info('Received edit!')
                         return []
                     }
