@@ -166,7 +166,9 @@ export async function activateAmazonQCommon(context: vscode.ExtensionContext, is
         // Give time for the extension to finish initializing.
         globals.clock.setTimeout(async () => {
             CommonAuthWebview.authSource = ExtStartUpSources.firstStartUp
-            void focusAmazonQPanel.execute(placeholder, ExtStartUpSources.firstStartUp)
+            focusAmazonQPanel.execute(placeholder, ExtStartUpSources.firstStartUp).catch((e) => {
+                getLogger().error('focusAmazonQPanel failed: %s', e)
+            })
         }, 1000)
     }
 
