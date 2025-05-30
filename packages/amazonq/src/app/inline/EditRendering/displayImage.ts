@@ -126,8 +126,6 @@ export class EditDecorationManager {
         // Highlight removed lines with red background
         this.currentRemovedCodeDecorations = this.highlightRemovedLines(editor, originalCode, newCode)
         editor.setDecorations(this.removedCodeDecorationType, this.currentRemovedCodeDecorations)
-
-        // Register command handlers for accept/reject
     }
 
     /**
@@ -286,43 +284,11 @@ export async function displaySvgDecoration(
                 // deletedCharacterCount: deletedCharacterCount,
             }
             languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
-            decorationManager.dispose()
-            const params: LogInlineCompletionSessionResultsParams = {
-                sessionId: session.sessionId,
-                completionSessionResult: {
-                    [item.itemId]: {
-                        seen: true,
-                        accepted: true,
-                        discarded: false,
-                    },
-                },
-                totalSessionDisplayTime: Date.now() - session.requestStartTime,
-                firstCompletionDisplayLatency: session.firstCompletionDisplayLatency,
-                // TODO: Update LogInlineCompletionSessionResultsParams interface to include these properties
-                // addedCharacterCount: addedCharacterCount,
-                // deletedCharacterCount: deletedCharacterCount,
-            }
-            languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
         },
         () => {
             // Handle reject
             getLogger().info('Edit suggestion rejected')
             decorationManager.clearDecorations(editor)
-            const params: LogInlineCompletionSessionResultsParams = {
-                sessionId: session.sessionId,
-                completionSessionResult: {
-                    [item.itemId]: {
-                        seen: true,
-                        accepted: false,
-                        discarded: false,
-                    },
-                },
-                // TODO: Update LogInlineCompletionSessionResultsParams interface to include these properties
-                // addedCharacterCount: addedCharacterCount,
-                // deletedCharacterCount: deletedCharacterCount,
-            }
-            languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
-            decorationManager.dispose()
             const params: LogInlineCompletionSessionResultsParams = {
                 sessionId: session.sessionId,
                 completionSessionResult: {
