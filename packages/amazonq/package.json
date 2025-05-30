@@ -914,12 +914,12 @@
             {
                 "command": "aws.amazonq.inline.acceptEdit",
                 "key": "tab",
-                "when": "editorTextFocus"
+                "when": "editorTextFocus && amazonq.editSuggestionActive"
             },
             {
                 "command": "aws.amazonq.inline.rejectEdit",
                 "key": "escape",
-                "when": "editorTextFocus"
+                "when": "editorTextFocus && amazonq.editSuggestionActive"
             }
         ],
         "icons": {
