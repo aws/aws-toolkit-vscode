@@ -4,6 +4,7 @@
  */
 
 import { getLogger, setContext } from 'aws-core-vscode/shared'
+import { getLogger, setContext } from 'aws-core-vscode/shared'
 import * as vscode from 'vscode'
 import { diffLines } from 'diff'
 import { LanguageClient } from 'vscode-languageclient'
@@ -20,6 +21,7 @@ export class EditDecorationManager {
     private currentRemovedCodeDecorations: vscode.DecorationOptions[] = []
     private acceptHandler: (() => void) | undefined
     private rejectHandler: (() => void) | undefined
+    private disposables: vscode.Disposable[] = []
 
     constructor() {
         this.imageDecorationType = vscode.window.createTextEditorDecorationType({
@@ -29,8 +31,6 @@ export class EditDecorationManager {
         this.removedCodeDecorationType = vscode.window.createTextEditorDecorationType({
             backgroundColor: 'rgba(255, 0, 0, 0.2)',
         })
-
-        this.registerCommandHandlers()
     }
 
     /**
@@ -137,6 +137,7 @@ export class EditDecorationManager {
         originalCodeHighlightRanges: Array<{ line: number; start: number; end: number }>
     ): void {
         // Clear any existing decorations
+        this.registerCommandHandlers()
         this.clearDecorations(editor)
 
         // Set context to enable the Tab key handler
@@ -180,24 +181,30 @@ export class EditDecorationManager {
      */
     public registerCommandHandlers(): void {
         // Register Tab key handler for accepting suggestion
-        vscode.commands.registerCommand('aws.amazonq.inline.acceptEdit', () => {
+        const acceptDisposable = vscode.commands.registerCommand('aws.amazonq.inline.acceptEdit', () => {
             if (this.acceptHandler) {
                 this.acceptHandler()
             }
         })
+        this.disposables.push(acceptDisposable)
 
         // Register Esc key handler for rejecting suggestion
-        vscode.commands.registerCommand('aws.amazonq.inline.rejectEdit', () => {
+        const rejectDisposable = vscode.commands.registerCommand('aws.amazonq.inline.rejectEdit', () => {
             if (this.rejectHandler) {
                 this.rejectHandler()
             }
         })
+        this.disposables.push(rejectDisposable)
     }
 
     /**
      * Disposes resources
      */
     public dispose(): void {
+        for (const disposable of this.disposables) {
+            disposable.dispose()
+        }
+        this.disposables = []
         this.imageDecorationType.dispose()
         this.removedCodeDecorationType.dispose()
     }
@@ -291,11 +298,20 @@ export async function displaySvgDecoration(
             getLogger().info('Edit suggestion accepted')
 
             // Replace content
+
+            // Calculate cursor position before replacing content
+            const endPosition = getEndOfEditPosition(originalCode, newCode)
+
+            // Replace content
             replaceEditorContent(editor, newCode)
 
             // Move cursor to end of the actual changed content
             const endPosition = getEndOfEditPosition(originalCode, newCode)
             editor.selection = new vscode.Selection(endPosition, endPosition)
+
+            // Move cursor to end of the actual changed content
+            editor.selection = new vscode.Selection(endPosition, endPosition)
+
 
             // Move cursor to end of the actual changed content
             editor.selection = new vscode.Selection(endPosition, endPosition)
@@ -315,6 +331,7 @@ export async function displaySvgDecoration(
                 isInlineEdit: true,
             }
             languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
+            decorationManager.dispose()
         },
         () => {
             // Handle reject
@@ -332,6 +349,7 @@ export async function displaySvgDecoration(
                 isInlineEdit: true,
             }
             languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
+            decorationManager.dispose()
         },
         originalCode,
         newCode,
