@@ -34,13 +34,16 @@ export function isValidConfigSection(section: unknown): section is ConfigSection
     return typeof section === 'string' && configSections.includes(section as ConfigSection)
 }
 
+const lspPath = DevSettings.instance.get('flare', '') ?? undefined
+const lspUiPath = DevSettings.instance.get('flareUi', '') ?? undefined
+
 export const defaultAmazonQLspConfig: ExtendedAmazonQLSPConfig = {
     manifestUrl: 'https://aws-toolkit-language-servers.amazonaws.com/qAgenticChatServer/0/manifest.json',
     supportedVersions: '1.*.*',
     id: 'AmazonQ', // used across IDEs for identifying global storage/local disk locations. Do not change.
     suppressPromptPrefix: 'amazonQ',
-    path: undefined,
-    ui: undefined,
+    path: lspPath,
+    ui: lspUiPath,
 }
 
 export function getAmazonQLspConfig(): ExtendedAmazonQLSPConfig {

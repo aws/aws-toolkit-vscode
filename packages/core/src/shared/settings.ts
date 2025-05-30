@@ -782,6 +782,8 @@ const devSettings = {
     autofillStartUrl: String,
     webAuth: Boolean,
     notificationsPollInterval: Number,
+    flare: String,
+    flareUi: String,
 }
 type ResolvedDevSettings = FromDescriptor<typeof devSettings>
 type AwsDevSetting = keyof ResolvedDevSettings
