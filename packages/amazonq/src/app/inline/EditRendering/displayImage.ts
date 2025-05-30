@@ -146,7 +146,6 @@ export class EditDecorationManager {
         this.currentRemovedCodeDecorations = []
         this.acceptHandler = undefined
         this.rejectHandler = undefined
-        // Clear context to allow normal Tab key behavior
         void setContext('amazonq.editSuggestionActive' as any, false)
     }
 

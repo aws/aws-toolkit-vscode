@@ -831,16 +831,6 @@
                 "linux": "meta+alt+i"
             },
             {
-                "command": "aws.amazonq.inline.acceptEdit",
-                "key": "tab",
-                "when": "editorTextFocus"
-            },
-            {
-                "command": "aws.amazonq.inline.rejectEdit",
-                "key": "escape",
-                "when": "editorTextFocus"
-            },
-            {
                 "command": "aws.amazonq.inline.debugAcceptEdit",
                 "key": "ctrl+alt+a",
                 "mac": "cmd+alt+a",
