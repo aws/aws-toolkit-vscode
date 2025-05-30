@@ -321,7 +321,6 @@ export async function displaySvgDecoration(
                 isInlineEdit: true,
             }
             languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
-            decorationManager.dispose()
         },
         () => {
             // Handle reject
@@ -339,7 +338,6 @@ export async function displaySvgDecoration(
                 isInlineEdit: true,
             }
             languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
-            decorationManager.dispose()
         },
         originalCode,
         newCode,
