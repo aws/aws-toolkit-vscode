@@ -223,9 +223,8 @@ export async function displaySvgDecoration(
                 },
                 totalSessionDisplayTime: Date.now() - session.requestStartTime,
                 firstCompletionDisplayLatency: session.firstCompletionDisplayLatency,
-                // TODO: Update LogInlineCompletionSessionResultsParams interface to include these properties
-                // addedCharacterCount: addedCharacterCount,
-                // deletedCharacterCount: deletedCharacterCount,
+                addedCharacterCount: addedCharacterCount,
+                deletedCharacterCount: deletedCharacterCount,
             }
             languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
         },
@@ -242,9 +241,8 @@ export async function displaySvgDecoration(
                         discarded: false,
                     },
                 },
-                // TODO: Update LogInlineCompletionSessionResultsParams interface to include these properties
-                // addedCharacterCount: addedCharacterCount,
-                // deletedCharacterCount: deletedCharacterCount,
+                addedCharacterCount: addedCharacterCount,
+                deletedCharacterCount: deletedCharacterCount,
             }
             languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
         },
