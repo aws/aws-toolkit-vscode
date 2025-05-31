@@ -202,15 +202,22 @@ async function saveFileMessageHandler(request: SaveFileRequestMessage, context: 
 }
 
 /**
- * Handler for saving a file and starting the state machine deployment flow, while also switching to default editor.
+ * Handler for saving a file and starting the state machine deployment flow while staying in WFS view.
  * Triggered when the user triggers 'Save and Deploy' action in WFS
  * @param request The request message containing the file contents.
  * @param context The webview context containing the necessary information for saving the file.
  */
 async function saveFileAndDeployMessageHandler(request: SaveFileRequestMessage, context: WebviewContext) {
     await saveFileMessageHandler(request, context)
-    await closeCustomEditorMessageHandler(context)
-    await publishStateMachine(globals.awsContext, globals.outputChannel)
+    await publishStateMachine({
+        awsContext: globals.awsContext,
+        outputChannel: globals.outputChannel,
+        text: context.textDocument,
+    })
+
+    telemetry.ui_click.emit({
+        elementId: 'stepfunctions_saveAndDeploy',
+    })
 }
 
 /**

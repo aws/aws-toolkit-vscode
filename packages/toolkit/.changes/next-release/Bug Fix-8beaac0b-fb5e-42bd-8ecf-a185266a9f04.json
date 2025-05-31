@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "State Machine deployments can now be initiated directly from Workflow Studio without closing the editor"
+}
