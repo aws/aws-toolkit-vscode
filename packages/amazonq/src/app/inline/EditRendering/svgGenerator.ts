@@ -7,6 +7,7 @@ import { diffLines } from 'diff'
 import * as vscode from 'vscode'
 import { applyUnifiedDiff } from './diffUtils'
 import { getLogger, isWeb } from 'aws-core-vscode/shared'
+import { diffUtilities } from 'aws-core-vscode/shared'
 
 const logger = getLogger('nextEditPrediction')
 
@@ -19,7 +20,7 @@ export class SvgGenerationService {
      * @param offSet The margin to add to the left of the image
      */
     public async generateDiffSvg(
-        originalCode: string,
+        filePath: string,
         udiff: string
     ): Promise<{
         svgImage: vscode.Uri
@@ -28,12 +29,15 @@ export class SvgGenerationService {
         addedCharacterCount: number
         deletedCharacterCount: number
     }> {
-        const { newCode, addedCharacterCount, deletedCharacterCount } = applyUnifiedDiff(originalCode, udiff)
+        const textDoc = await vscode.workspace.openTextDocument(filePath)
+        const originalCode = textDoc.getText()
+        const { appliedCode, addedCharacterCount, deletedCharacterCount } = applyUnifiedDiff(originalCode, udiff)
+        const newCode = await diffUtilities.getPatchedCode(filePath, udiff)
+        logger.info(`testing patch udiff: ${newCode}`)
+        logger.info(`old patch udiff: ${appliedCode}`)
 
-        // Abort SVG generation if we're in web mode
         if (isWeb() || !process.versions?.node) {
             logger.info('Skipping SVG generation in web mode')
-            // Return a placeholder URI and the new code
             return {
                 svgImage: vscode.Uri.parse(
                     'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMCIgaGVpZ2h0PSIxMCI+PC9zdmc+'
@@ -44,21 +48,11 @@ export class SvgGenerationService {
                 deletedCharacterCount: 0,
             }
         }
-        // Import required libraries - make sure we load svgdom before svg.js
-        // These need to be imported in sequence, not in parallel, to avoid initialization issues
         const { createSVGWindow } = await import('svgdom')
 
-        // Only import svg.js after svgdom is fully initialized
-        let svgjs
-        let SVG, registerWindow
-        try {
-            svgjs = await import('@svgdotjs/svg.js')
-            SVG = svgjs.SVG
-            registerWindow = svgjs.registerWindow
-        } catch (error) {
-            logger.error(`Failed to import @svgdotjs/svg.js: ${error}`)
-            throw error
-        }
+        const svgjs = await import('@svgdotjs/svg.js')
+        const SVG = svgjs.SVG
+        const registerWindow = svgjs.registerWindow
 
         // Get editor theme info
         const currentTheme = this.getEditorTheme()
@@ -93,9 +87,9 @@ export class SvgGenerationService {
         const foreignObject = draw.foreignObject(width + offset, height)
         foreignObject.node.innerHTML = htmlContent.trim()
 
-        // Convert SVG to data URI
         const svgData = draw.svg()
         const svgResult = `data:image/svg+xml;base64,${Buffer.from(svgData).toString('base64')}`
+        // const adjustedStartLine = editStartLine > 0 ? editStartLine - 1 : editStartLine
 
         return {
             svgImage: vscode.Uri.parse(svgResult),
