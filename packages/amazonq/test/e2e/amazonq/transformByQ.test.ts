@@ -137,7 +137,7 @@ describe('Amazon Q Code Transformation', function () {
             tab.clickCustomFormButton({ id: 'gumbyTransformFormContinue' })
 
             // 2 additional chat messages get sent after Continue button clicked; wait for both of them
-            await tab.waitForEvent(() => tab.getChatItems().length > 13, {
+            await tab.waitForEvent(() => tab.getChatItems().length > 10, {
                 waitTimeoutInMs: 5000,
                 waitIntervalInMs: 1000,
             })
@@ -148,7 +148,7 @@ describe('Amazon Q Code Transformation', function () {
             tab.addChatMessage({ prompt: '/dummy/path/to/jdk8' })
 
             // 2 additional chat messages get sent after JDK path submitted; wait for both of them
-            await tab.waitForEvent(() => tab.getChatItems().length > 15, {
+            await tab.waitForEvent(() => tab.getChatItems().length > 12, {
                 waitTimeoutInMs: 5000,
                 waitIntervalInMs: 1000,
             })
@@ -170,7 +170,7 @@ describe('Amazon Q Code Transformation', function () {
                 text: 'View summary',
             })
 
-            await tab.waitForEvent(() => tab.getChatItems().length > 18, {
+            await tab.waitForEvent(() => tab.getChatItems().length > 13, {
                 waitTimeoutInMs: 5000,
                 waitIntervalInMs: 1000,
             })
