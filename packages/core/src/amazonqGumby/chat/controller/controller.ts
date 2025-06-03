@@ -373,7 +373,7 @@ export class GumbyController {
                 break
             case ButtonActions.CONTINUE_TRANSFORMATION_FORM:
                 this.messenger.sendMessage(
-                    CodeWhispererConstants.continueWithoutYamlMessage,
+                    CodeWhispererConstants.continueWithoutConfigFileMessage,
                     message.tabID,
                     'ai-prompt'
                 )
@@ -543,7 +543,7 @@ export class GumbyController {
             canSelectMany: false,
             openLabel: 'Select',
             filters: {
-                'YAML file': ['yaml'], // restrict user to only pick a .yaml file
+                File: ['yaml', 'json'], // restrict user to only pick a .yaml or .json file
             },
         })
         if (!fileUri || fileUri.length === 0) {
@@ -556,7 +556,7 @@ export class GumbyController {
             this.messenger.sendUnrecoverableErrorResponse('invalid-custom-versions-file', message.tabID)
             return
         }
-        this.messenger.sendMessage('Received custom dependency version YAML file.', message.tabID, 'ai-prompt')
+        this.messenger.sendMessage(CodeWhispererConstants.receivedValidConfigFileMessage, message.tabID, 'ai-prompt')
         transformByQState.setCustomDependencyVersionFilePath(fileUri[0].fsPath)
         this.promptJavaHome('source', message.tabID)
     }
@@ -640,17 +640,13 @@ export class GumbyController {
                 const pathToJavaHome = extractPath(data.message)
                 if (pathToJavaHome) {
                     transformByQState.setSourceJavaHome(pathToJavaHome)
-                    // TO-DO: delete line below and uncomment the block below when releasing CSB
-                    await this.prepareLanguageUpgradeProject(data.tabID)
                     // if source and target JDK versions are the same, just re-use the source JAVA_HOME and start the build
-                    /*
                     if (transformByQState.getTargetJDKVersion() === transformByQState.getSourceJDKVersion()) {
                         transformByQState.setTargetJavaHome(pathToJavaHome)
                         await this.prepareLanguageUpgradeProject(data.tabID)
                     } else {
                         this.promptJavaHome('target', data.tabID)
                     }
-                    */
                 } else {
                     this.messenger.sendUnrecoverableErrorResponse('invalid-java-home', data.tabID)
                 }
