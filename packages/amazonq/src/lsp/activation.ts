@@ -5,17 +5,27 @@
 
 import vscode from 'vscode'
 import { startLanguageServer } from './client'
-import { AmazonQLspInstaller } from './lspInstaller'
-import { lspSetupStage, ToolkitError, messages } from 'aws-core-vscode/shared'
+import { AmazonQLspInstaller, getBundledResourcePaths } from './lspInstaller'
+import { lspSetupStage, ToolkitError, messages, getLogger } from 'aws-core-vscode/shared'
 
 export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
     try {
         await lspSetupStage('all', async () => {
+            throw Error(`Q Install failed!`)
             const installResult = await new AmazonQLspInstaller().resolve()
             await lspSetupStage('launch', async () => await startLanguageServer(ctx, installResult.resourcePaths))
         })
     } catch (err) {
         const e = err as ToolkitError
-        void messages.showViewLogsMessage(`Failed to launch Amazon Q language server: ${e.message}`)
+        getLogger('amazonqLsp').warn(`Failed to start downloaded LSP ${e.message}. Starting with bundled LSP...`)
+        try {
+            await lspSetupStage('all', async () => {
+                await lspSetupStage('launch', async () => await startLanguageServer(ctx, getBundledResourcePaths(ctx)))
+            })
+        } catch (error) {
+            void messages.showViewLogsMessage(
+                `Failed to launch Amazon Q language server: ${(error as ToolkitError).message}`
+            )
+        }
     }
 }

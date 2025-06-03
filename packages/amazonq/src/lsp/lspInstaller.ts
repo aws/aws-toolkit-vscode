@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import vscode from 'vscode'
 import { fs, getNodeExecutableName, getRgExecutableName, BaseLspInstaller, ResourcePaths } from 'aws-core-vscode/shared'
 import path from 'path'
 import { ExtendedAmazonQLSPConfig, getAmazonQLspConfig } from './config'
@@ -53,4 +54,14 @@ export class AmazonQLspInstaller extends BaseLspInstaller.BaseLspInstaller<
     }
 
     protected override downloadMessageOverride: string | undefined = 'Updating Amazon Q plugin'
+}
+
+export function getBundledResourcePaths(ctx: vscode.ExtensionContext): AmazonQResourcePaths {
+    const assetDirectory = vscode.Uri.joinPath(ctx.extensionUri, 'resources', 'language-server').fsPath
+    return {
+        lsp: path.join(assetDirectory, 'aws-lsp-codewhisperer.js'),
+        node: process.execPath,
+        ripGrep: '',
+        ui: path.join(assetDirectory, 'amazonq-ui.js'),
+    }
 }

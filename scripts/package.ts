@@ -157,8 +157,10 @@ async function main() {
 
         nodefs.writeFileSync(packageJsonFile, JSON.stringify(packageJson, undefined, '    '))
 
-        // add language server fallback
-        await downloadLanguageServer()
+        // add language server bundle
+        if (packageJson.name === 'amazon-q-vscode') {
+            await downloadLanguageServer()
+        }
 
         child_process.execFileSync(
             'vsce',
