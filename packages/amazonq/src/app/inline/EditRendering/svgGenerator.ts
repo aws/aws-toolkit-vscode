@@ -74,6 +74,7 @@ export class SvgGenerationService {
 
         // Calculate dimensions based on code content
         const diffLines = this.getEditedLinesFromDiff(udiff)
+        // editStartLine might be wrong
         const { offset, editStartLine } = this.calculatePosition(
             originalCode.split('\n'),
             newCode.split('\n'),
