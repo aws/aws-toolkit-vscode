@@ -44,8 +44,8 @@ export class AmazonQChatViewProvider implements WebviewViewProvider {
     ) {
         const lspDir = Uri.file(LanguageServerResolver.defaultDir())
         const dist = Uri.joinPath(globals.context.extensionUri, 'dist')
-
-        const resourcesRoots = [lspDir, dist]
+        const bundledResources = Uri.joinPath(globals.context.extensionUri, 'resources', 'language-server')
+        const resourcesRoots = [lspDir, dist, bundledResources]
 
         /**
          * if the mynah chat client is defined, then make sure to add it to the resource roots, otherwise

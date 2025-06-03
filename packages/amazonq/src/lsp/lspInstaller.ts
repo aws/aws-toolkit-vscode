@@ -59,9 +59,9 @@ export class AmazonQLspInstaller extends BaseLspInstaller.BaseLspInstaller<
 export function getBundledResourcePaths(ctx: vscode.ExtensionContext): AmazonQResourcePaths {
     const assetDirectory = vscode.Uri.joinPath(ctx.extensionUri, 'resources', 'language-server').fsPath
     return {
-        lsp: path.join(assetDirectory, 'aws-lsp-codewhisperer.js'),
+        lsp: path.join(assetDirectory, 'servers', 'aws-lsp-codewhisperer.js'),
         node: process.execPath,
         ripGrep: '',
-        ui: path.join(assetDirectory, 'amazonq-ui.js'),
+        ui: path.join(assetDirectory, 'clients', 'amazonq-ui.js'),
     }
 }

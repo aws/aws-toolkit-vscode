@@ -103,6 +103,7 @@ export async function downloadLanguageServer(): Promise<void> {
                             const fileUrl = content.url
                             const expectedHash = content.hashes[0]
                             const tempFilePath = path.join(tempDir, fileName)
+                            const fileFolderName = content.filename.replace('.zip', '')
 
                             console.log(`Downloading ${fileName} from ${fileUrl} ...`)
 
@@ -138,7 +139,7 @@ export async function downloadLanguageServer(): Promise<void> {
 
                             console.log(`Extracting ${fileName}...`)
                             const zip = new AdmZip(tempFilePath)
-                            zip.extractAllTo(resourcesDir, true) // true for overwrite
+                            zip.extractAllTo(path.join(resourcesDir, fileFolderName), true) // true for overwrite
 
                             // Clean up temp file
                             fs.unlinkSync(tempFilePath)
@@ -147,8 +148,8 @@ export async function downloadLanguageServer(): Promise<void> {
 
                         // Clean up temp directory
                         fs.rmdirSync(tempDir)
-                        fs.rmdirSync(path.join(resourcesDir, 'indexing'), { recursive: true })
-                        fs.rmSync(path.join(resourcesDir, 'node'))
+                        fs.rmdirSync(path.join(resourcesDir, 'servers', 'indexing'), { recursive: true })
+                        fs.rmSync(path.join(resourcesDir, 'servers', 'node'))
                         console.log('Download and extraction completed successfully')
                         resolve()
                     } catch (err) {

@@ -11,7 +11,6 @@ import { lspSetupStage, ToolkitError, messages, getLogger } from 'aws-core-vscod
 export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
     try {
         await lspSetupStage('all', async () => {
-            throw Error(`Q Install failed!`)
             const installResult = await new AmazonQLspInstaller().resolve()
             await lspSetupStage('launch', async () => await startLanguageServer(ctx, installResult.resourcePaths))
         })
