@@ -59,9 +59,11 @@ export async function downloadLanguageServer(): Promise<void> {
 
     // clear previous cached language server
     try {
-        fs.rmdirSync(resourcesDir, { recursive: true })
+        if (fs.existsSync(resourcesDir)) {
+            fs.rmdirSync(resourcesDir, { recursive: true })
+        }
     } catch (e) {
-        throw Error(`Failed to clean up language server`)
+        throw Error(`Failed to clean up language server ${resourcesDir}`)
     }
 
     await ensureDirectoryExists(tempDir)
