@@ -543,7 +543,7 @@ export class GumbyController {
             canSelectMany: false,
             openLabel: 'Select',
             filters: {
-                File: ['yaml', 'json'], // restrict user to only pick a .yaml or .json file
+                File: ['yaml'], // restrict user to only pick a .yaml file
             },
         })
         if (!fileUri || fileUri.length === 0) {
