@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import {
+import vscode, {
     CancellationToken,
     InlineCompletionContext,
     InlineCompletionItem,
@@ -152,6 +152,9 @@ export class InlineCompletionManager implements Disposable {
                 await ImportAdderProvider.instance.onAcceptRecommendation(editor, item, startLine)
             }
             this.sessionManager.incrementSuggestionCount()
+
+            // pull subsequent session
+            await vscode.commands.executeCommand('editor.action.inlineSuggest.trigger')
         }
         commands.registerCommand('aws.amazonq.acceptInline', onInlineAcceptance)
 
@@ -206,10 +209,12 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
         getAllRecommendationsOptions?: GetAllRecommendationsOptions
     ): Promise<InlineCompletionItem[]> {
         try {
+            console.log(`calling _provideInlineCompletionItems @completion.ts`)
             vsCodeState.isRecommendationsActive = true
             const isAutoTrigger = context.triggerKind === InlineCompletionTriggerKind.Automatic
             if (isAutoTrigger && !CodeSuggestionsState.instance.isSuggestionsEnabled()) {
                 // return early when suggestions are disabled with auto trigger
+                console.log('1 ??????????')
                 return []
             }
 
@@ -218,6 +223,7 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
             TelemetryHelper.instance.setInvokeSuggestionStartTime()
             TelemetryHelper.instance.setTriggerType(context.triggerKind)
 
+            console.log(`calling recommendationService.getAllRecommendations @completion.ts`)
             await this.recommendationService.getAllRecommendations(
                 this.languageClient,
                 document,
@@ -227,7 +233,9 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
                 getAllRecommendationsOptions
             )
             // get active item from session for displaying
+            console.log(`items: @completions.ts`)
             const items = this.sessionManager.getActiveRecommendation()
+            console.log(items)
             const session = this.sessionManager.getActiveSession()
             const editor = window.activeTextEditor
 
@@ -237,6 +245,7 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
             }
 
             if (!session || !items.length || !editor) {
+                console.log(`Failed to produce inline suggestion results. Received ${items.length} items from service`)
                 getLogger().debug(
                     `Failed to produce inline suggestion results. Received ${items.length} items from service`
                 )
@@ -244,12 +253,14 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
             }
 
             const cursorPosition = document.validatePosition(position)
+            console.log(items)
             for (const item of items) {
                 if (item.isInlineEdit) {
                     // Check if Next Edit Prediction feature flag is enabled
                     if (Experiments.instance.isExperimentEnabled('amazonqLSPNEP')) {
                         const panel = NextEditPredictionPanel.getInstance()
                         panel.updateContent(item.insertText as string)
+                        console.log('calling showEdits() @completion.ts')
                         void showEdits(item, editor, session, this.languageClient)
                         getLogger('nextEditPrediction').info('Received edit!')
                         return []

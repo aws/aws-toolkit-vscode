@@ -10,6 +10,7 @@ import { LanguageClient } from 'vscode-languageclient'
 import { CodeWhispererSession } from '../sessionManager'
 import { LogInlineCompletionSessionResultsParams } from '@aws/language-server-runtimes/protocol'
 import { InlineCompletionItemWithReferences } from '@aws/language-server-runtimes/protocol'
+import { start } from 'repl'
 
 export class EditDecorationManager {
     private imageDecorationType: vscode.TextEditorDecorationType
@@ -102,28 +103,38 @@ export class EditDecorationManager {
         originalCode: string,
         newCode: string
     ): void {
+        console.log(`displayEditSuggestion @displayImage.ts`)
         // Clear any existing decorations
+        console.log(`step 1`)
         this.clearDecorations(editor)
 
+        console.log(`step 2`)
         // Set context to enable the Tab key handler
         void setContext('amazonq.editSuggestionActive' as any, true)
 
+        console.log(`step 3`)
         // Store handlers
         this.acceptHandler = onAccept
         this.rejectHandler = onReject
 
+        console.log(`step 4, startLine: ${startLine}`)
         // Get the line text to determine the end position
         const lineText = editor.document.lineAt(startLine).text
         const endPosition = new vscode.Position(startLine, lineText.length)
         const range = new vscode.Range(endPosition, endPosition)
 
+        console.log(`step 5`)
         // Create decoration options using the existing image2decoration function
         this.currentImageDecoration = this.image2decoration(svgImage, range)
 
+        console.log(`step 6`)
         // Apply image decoration
         editor.setDecorations(this.imageDecorationType, [this.currentImageDecoration])
 
+        console.log(`step 7`)
         // Highlight removed lines with red background
+
+        console.log(`step 8`)
         this.currentRemovedCodeDecorations = this.highlightRemovedLines(editor, originalCode, newCode)
         editor.setDecorations(this.removedCodeDecorationType, this.currentRemovedCodeDecorations)
     }
@@ -254,7 +265,7 @@ export async function displaySvgDecoration(
         editor,
         svgImage,
         startLine,
-        () => {
+        async () => {
             // Handle accept
             getLogger().info('Edit suggestion accepted')
 
@@ -283,6 +294,9 @@ export async function displaySvgDecoration(
                 deletedCharacterCount: deletedCharacterCount,
             }
             languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
+            // pull subsequent session
+            console.log(`pull subsequent response if any.....`)
+            await vscode.commands.executeCommand('editor.action.inlineSuggest.trigger')
         },
         () => {
             // Handle reject

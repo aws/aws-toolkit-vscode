@@ -41,9 +41,11 @@ export async function showEdits(
                 deletedCharacterCount
             )
         } else {
+            console.log(`null svgImage!!!!!!!!!!!!!!!!!!!!!`)
             getLogger('nextEditPrediction').error('SVG image generation returned an empty result.')
         }
     } catch (error) {
+        console.log(`ERRORRRRRRRRRRRRRRRRRRRRRRR`, error)
         getLogger('nextEditPrediction').error(`Error generating SVG image: ${error}`)
     }
 }

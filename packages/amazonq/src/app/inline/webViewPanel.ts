@@ -334,6 +334,8 @@ export class NextEditPredictionPanel implements vscode.Disposable {
             } catch (error) {
                 getLogger('nextEditPrediction').error(`Error updating webview: ${error}`)
             }
+        } else {
+            console.log('???')
         }
     }
 
