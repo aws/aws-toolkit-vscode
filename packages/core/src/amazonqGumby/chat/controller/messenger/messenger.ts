@@ -704,7 +704,7 @@ ${codeSnippet}
     }
 
     public async sendCustomDependencyVersionMessage(tabID: string) {
-        const message = CodeWhispererConstants.chooseYamlMessage
+        const message = CodeWhispererConstants.chooseConfigFileMessage
         const buttons: ChatItemButton[] = []
 
         buttons.push({
