@@ -122,14 +122,17 @@ export class CursorUpdateManager implements vscode.Disposable, ICursorUpdateReco
     }
 
     /**
+     * Creates a cancellation token source
+     * This method exists to make testing easier by allowing it to be stubbed
+     */
+    private createCancellationTokenSource(): vscode.CancellationTokenSource {
+        return new vscode.CancellationTokenSource()
+    }
+
+    /**
      * Send a cursor position update to the language server
      */
     private sendCursorUpdate(): void {
-        // Only send updates if we have a position and document URI
-        if (!this.lastPosition || !this.lastDocumentUri || !this.isActive || !this.inlineCompletionProvider) {
-            return
-        }
-
         // Don't send an update if a regular request was made recently
         const now = globals.clock.Date.now()
         if (now - this.lastRequestTime < this.updateIntervalMs) {
@@ -144,6 +147,7 @@ export class CursorUpdateManager implements vscode.Disposable, ICursorUpdateReco
         // Don't send an update if the position hasn't changed since the last update
         if (
             this.lastSentPosition &&
+            this.lastPosition &&
             this.lastSentDocumentUri === this.lastDocumentUri &&
             this.lastSentPosition.line === this.lastPosition.line &&
             this.lastSentPosition.character === this.lastPosition.character
@@ -152,24 +156,29 @@ export class CursorUpdateManager implements vscode.Disposable, ICursorUpdateReco
         }
 
         // Update the last sent position
-        this.lastSentPosition = this.lastPosition.with() // Create a copy
-        this.lastSentDocumentUri = this.lastDocumentUri
+        if (this.lastPosition) {
+            this.lastSentPosition = this.lastPosition.with() // Create a copy
+            this.lastSentDocumentUri = this.lastDocumentUri
 
-        // Call the inline completion provider instead of directly calling getAllRecommendations
-        this.inlineCompletionProvider
-            .provideInlineCompletionItems(
-                editor.document,
-                this.lastPosition,
-                {
-                    triggerKind: vscode.InlineCompletionTriggerKind.Automatic,
-                    selectedCompletionInfo: undefined,
-                },
-                new vscode.CancellationTokenSource().token,
-                { emitTelemetry: false, showUi: false }
-            )
-            .catch((error) => {
-                this.logger.error(`Error sending cursor update: ${error}`)
-            })
+            // Call the inline completion provider instead of directly calling getAllRecommendations
+            if (this.inlineCompletionProvider) {
+                const position = this.lastPosition ?? new vscode.Position(0, 0)
+                this.inlineCompletionProvider
+                    .provideInlineCompletionItems(
+                        editor.document,
+                        position,
+                        {
+                            triggerKind: vscode.InlineCompletionTriggerKind.Automatic,
+                            selectedCompletionInfo: undefined,
+                        },
+                        this.createCancellationTokenSource().token,
+                        { emitTelemetry: false, showUi: false }
+                    )
+                    .catch((error) => {
+                        this.logger.error(`Error sending cursor update: ${error}`)
+                    })
+            }
+        }
     }
 
     /**

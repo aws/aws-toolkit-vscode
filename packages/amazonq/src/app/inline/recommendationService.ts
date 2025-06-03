@@ -110,6 +110,9 @@ export class RecommendationService {
             this.sessionManager.closeSession()
             TelemetryHelper.instance.setAllPaginationEndTime()
             options.emitTelemetry && TelemetryHelper.instance.tryRecordClientComponentLatency()
+        } catch (error) {
+            console.error('Error getting recommendations:', error)
+            return []
         } finally {
             // Remove all UI indicators if UI is enabled
             if (options.showUi) {

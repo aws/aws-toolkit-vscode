@@ -271,12 +271,30 @@ describe('RecommendationService', () => {
             const testError = new Error('Test error')
             sendRequestStub.rejects(testError)
 
+            // Set up UI options
+            const options = { showUi: true }
+
             // Stub the UI methods to avoid errors
-            // const showGeneratingStub = sandbox.stub(activeStateController, 'showGenerating').resolves()
+            sandbox.stub(activeStateController, 'showGenerating').resolves()
             const hideGeneratingStub = sandbox.stub(activeStateController, 'hideGenerating')
 
-            // Call the method
-            await service.getAllRecommendations(languageClient, mockDocument, mockPosition, mockContext, mockToken)
+            // Stub console.error to prevent actual error output during tests
+            const consoleErrorStub = sandbox.stub(console, 'error')
+
+            // Call the method and expect it to handle the error
+            const result = await service.getAllRecommendations(
+                languageClient,
+                mockDocument,
+                mockPosition,
+                mockContext,
+                mockToken,
+                options
+            )
+
+            // Assert that error handling was done correctly
+            assert.deepStrictEqual(result, [])
+            sinon.assert.calledOnce(consoleErrorStub)
+            sinon.assert.calledWith(consoleErrorStub, 'Error getting recommendations:', testError)
 
             // Verify the UI indicators were hidden even when an error occurs
             sinon.assert.calledOnce(hideGeneratingStub)

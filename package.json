@@ -74,6 +74,8 @@
         "webpack-merge": "^5.10.0"
     },
     "dependencies": {
+        "@aws/language-server-runtimes": "^0.2.90",
+        "@aws/language-server-runtimes-types": "^0.1.35",
         "@types/node": "^22.7.5",
         "jaro-winkler": "^0.2.8",
         "vscode-nls": "^5.2.0",

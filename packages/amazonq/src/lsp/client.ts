@@ -157,6 +157,11 @@ export async function startLanguageServer(
                         notifications: true,
                         showSaveFileDialog: true,
                     },
+                    textDocument: {
+                        inlineCompletionWithReferences: {
+                            inlineEditSupport: true,
+                        },
+                    },
                 },
                 contextConfiguration: {
                     workspaceIdentifier: extensionContext.storageUri?.path,

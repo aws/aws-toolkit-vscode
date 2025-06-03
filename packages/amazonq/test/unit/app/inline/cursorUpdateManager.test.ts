@@ -146,8 +146,9 @@ describe('CursorUpdateManager', () => {
         // Create a mock cancellation token source
         const mockCancellationTokenSource = {
             token: {} as vscode.CancellationToken,
+            dispose: sinon.stub(),
         }
-        sinon.stub(vscode, 'CancellationTokenSource').returns(mockCancellationTokenSource as any)
+        sinon.stub(cursorUpdateManager as any, 'createCancellationTokenSource').returns(mockCancellationTokenSource)
 
         // Mock the provideInlineCompletionItems method
         const provideStub = sinon.stub().resolves([])
@@ -165,7 +166,7 @@ describe('CursorUpdateManager', () => {
         await (cursorUpdateManager as any).sendCursorUpdate()
 
         // Verify the provider was called
-        assert.ok(provideStub.called)
+        assert.ok(provideStub.called, 'provideInlineCompletionItems should have been called')
         assert.strictEqual(provideStub.callCount, 1)
     })
 
