@@ -580,7 +580,7 @@ export const invalidMetadataFileUnsupportedTargetDB =
     'I can only convert SQL for migrations to Aurora PostgreSQL or Amazon RDS for PostgreSQL target databases. The provided .sct file indicates another target database for this migration.'
 
 export const invalidCustomVersionsFileMessage =
-    'Your .YAML file is not formatted correctly. Make sure that the .YAML file you upload follows the format of the sample file provided.'
+    "I wasn't able to parse the dependency upgrade file. Check that it's configured properly and try again. For an example of the required dependency upgrade file format, see the [documentation](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/code-transformation.html#dependency-upgrade-file)."
 
 export const invalidMetadataFileErrorParsing =
     "It looks like the .sct file you provided isn't valid. Make sure that you've uploaded the .zip file you retrieved from your schema conversion in AWS DMS."
@@ -640,10 +640,14 @@ export const jobCancelledNotification = 'You cancelled the transformation.'
 
 export const continueWithoutHilMessage = 'I will continue transforming your code without upgrading this dependency.'
 
-export const continueWithoutYamlMessage = 'Ok, I will continue without this information.'
+export const continueWithoutConfigFileMessage =
+    'Ok, I will continue the transformation without additional dependency upgrade information.'
 
-export const chooseYamlMessage =
-    'You can optionally upload a YAML file to specify which dependency versions to upgrade to.'
+export const receivedValidConfigFileMessage =
+    'The dependency upgrade file looks good. I will use this information to upgrade the dependencies you specified.'
+
+export const chooseConfigFileMessage =
+    'Would you like to provide a dependency upgrade file? You can specify first and third party dependencies and their versions in a YAML or JSON file, and I will upgrade them during the transformation. For an example dependency upgrade file, see the [documentation](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/code-transformation.html#dependency-upgrade-file).'
 
 export const enterJavaHomePlaceholder = 'Enter the path to your Java installation'
 
