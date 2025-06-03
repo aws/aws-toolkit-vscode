@@ -234,8 +234,8 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
             )
             // get active item from session for displaying
             console.log(`items: @completions.ts`)
-            console.log(items)
             const items = this.sessionManager.getActiveRecommendation()
+            console.log(items)
             const session = this.sessionManager.getActiveSession()
             const editor = window.activeTextEditor
 
