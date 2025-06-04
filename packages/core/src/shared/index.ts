@@ -39,6 +39,7 @@ export {
     CodewhispererUserDecision,
     CodewhispererSecurityScan,
 } from './telemetry/telemetry.gen'
+export { ProxyUtil } from './utilities/proxyUtil'
 export { randomUUID } from './crypto'
 export * from './environmentVariables'
 export * from './vscode/setContext'

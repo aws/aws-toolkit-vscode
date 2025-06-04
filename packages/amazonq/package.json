@@ -213,6 +213,24 @@
                     "items": {
                         "type": "string"
                     }
+                },
+                "amazonQ.proxy.certificateAuthority": {
+                    "type": "string",
+                    "markdownDescription": "%AWS.configuration.description.amazonq.proxy.certificateAuthority%",
+                    "default": null,
+                    "scope": "application"
+                },
+                "amazonQ.proxy.username": {
+                    "type": "string",
+                    "markdownDescription": "%AWS.configuration.description.amazonq.proxy.username%",
+                    "default": null,
+                    "scope": "application"
+                },
+                "amazonQ.proxy.password": {
+                    "type": "string",
+                    "markdownDescription": "%AWS.configuration.description.amazonq.proxy.password%",
+                    "default": null,
+                    "scope": "application"
                 }
             }
         },
