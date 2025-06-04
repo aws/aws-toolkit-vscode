@@ -39,7 +39,7 @@ export class ProxyUtil {
     private static getProxyConfiguration(): ProxyConfig {
         const httpConfig = vscode.workspace.getConfiguration('http')
         const proxyUrl = httpConfig.get<string>('proxy')
-        this.logger.debug(`Proxy URL: ${proxyUrl}`)
+        this.logger.debug(`Proxy URL Setting in VSCode Settings: ${proxyUrl}`)
 
         const amazonQConfig = vscode.workspace.getConfiguration('amazonQ')
         const proxySettings = amazonQConfig.get<{
@@ -60,6 +60,8 @@ export class ProxyUtil {
 
         // Always enable experimental proxy support for better handling of both explicit and transparent proxies
         process.env.EXPERIMENTAL_HTTP_PROXY_SUPPORT = 'true'
+        // Add OpenSSL certificate store support
+        process.env.NODE_OPTIONS = '--use-openssl-ca'
 
         // Set proxy environment variables
         if (proxyUrl) {
