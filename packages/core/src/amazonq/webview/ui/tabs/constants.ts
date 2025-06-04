@@ -63,7 +63,8 @@ To learn more, visit the [User Guide](${userGuideURL}).`,
     gumby: {
         title: 'Q - Code Transformation',
         placeholder: 'Open a new tab to chat with Q',
-        welcome: 'Welcome to Code Transformation!',
+        welcome:
+            'Welcome to Code Transformation! You can also run transformations from the command line. To install the tool, see the [documentation](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/run-CLI-transformations.html).',
     },
     review: {
         title: 'Q - Review',
