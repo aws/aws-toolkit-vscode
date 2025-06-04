@@ -1,3 +1,7 @@
+## 1.71.0 2025-06-04
+
+- Miscellaneous non-user-facing changes
+
 ## 1.70.0 2025-05-28
 
 - **Removal** Disable local workspace LSP
