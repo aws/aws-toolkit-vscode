@@ -213,6 +213,12 @@
                     "items": {
                         "type": "string"
                     }
+                },
+                "amazonQ.proxy.certificateAuthority": {
+                    "type": "string",
+                    "markdownDescription": "%AWS.configuration.description.amazonq.proxy.certificateAuthority%",
+                    "default": null,
+                    "scope": "application"
                 }
             }
         },
