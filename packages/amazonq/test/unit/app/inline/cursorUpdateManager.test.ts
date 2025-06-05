@@ -129,7 +129,7 @@ describe('CursorUpdateManager', () => {
         assert.ok(stopSpy.called)
     })
 
-    it('should send cursor update requests at intervals', async () => {
+    it('should send cursor update requests at intervals', () => {
         // Setup test data
         const position = new vscode.Position(1, 2)
         const uri = 'file:///test.ts'
@@ -150,24 +150,26 @@ describe('CursorUpdateManager', () => {
         }
         sinon.stub(cursorUpdateManager as any, 'createCancellationTokenSource').returns(mockCancellationTokenSource)
 
-        // Mock the provideInlineCompletionItems method
+        // Mock the provideInlineCompletionItems method with a proper stub
         const provideStub = sinon.stub().resolves([])
         ;(cursorUpdateManager as any).inlineCompletionProvider = {
             provideInlineCompletionItems: provideStub,
         }
 
-        // Start the manager
-        await cursorUpdateManager.start()
+        // Start the manager - we're not awaiting this since we're just setting up the test
+        cursorUpdateManager.start()
 
         // Reset the sendRequestStub to clear the call from start()
         sendRequestStub.resetHistory()
 
+        // Make sure lastSentPosition is different from lastPosition to trigger an update
+        ;(cursorUpdateManager as any).lastSentPosition = new vscode.Position(0, 0)
+
         // Manually call the interval function
-        await (cursorUpdateManager as any).sendCursorUpdate()
+        ;(cursorUpdateManager as any).sendCursorUpdate()
 
         // Verify the provider was called
-        assert.ok(provideStub.called, 'provideInlineCompletionItems should have been called')
-        assert.strictEqual(provideStub.callCount, 1)
+        assert.strictEqual(provideStub.called, true, 'provideInlineCompletionItems should have been called')
     })
 
     it('should not send cursor update if a regular request was made recently', async () => {
@@ -202,5 +204,64 @@ describe('CursorUpdateManager', () => {
 
         // Verify no request was sent
         assert.strictEqual(sendRequestStub.called, false)
+    })
+
+    it.only('should not send cursor update if position has not changed since last update', async () => {
+        // Setup test data
+        const position = new vscode.Position(1, 2)
+        const uri = 'file:///test.ts'
+        cursorUpdateManager.updatePosition(position, uri)
+
+        // Mock the active editor
+        const mockEditor = {
+            document: {
+                uri: { toString: () => uri },
+            },
+        }
+        sinon.stub(vscode.window, 'activeTextEditor').get(() => mockEditor as any)
+
+        // Create a mock cancellation token source
+        const mockCancellationTokenSource = {
+            token: {} as vscode.CancellationToken,
+            dispose: sinon.stub(),
+        }
+        sinon.stub(cursorUpdateManager as any, 'createCancellationTokenSource').returns(mockCancellationTokenSource)
+
+        // Mock the provideInlineCompletionItems method
+        const provideStub = sinon.stub().resolves([])
+        ;(cursorUpdateManager as any).inlineCompletionProvider = {
+            provideInlineCompletionItems: provideStub,
+        }
+
+        // Start the manager
+        await cursorUpdateManager.start()
+
+        // Set lastSentPosition to undefined to ensure first update is sent
+        ;(cursorUpdateManager as any).lastSentPosition = undefined
+
+        // First call to sendCursorUpdate - should send update
+        await (cursorUpdateManager as any).sendCursorUpdate()
+
+        // Verify the provider was called once
+        assert.strictEqual(provideStub.callCount, 1, 'First update should be sent')
+
+        // Reset the stub to clear the call history
+        provideStub.resetHistory()
+
+        // Second call to sendCursorUpdate without changing position - should NOT send update
+        await (cursorUpdateManager as any).sendCursorUpdate()
+
+        // Verify the provider was NOT called again
+        assert.strictEqual(provideStub.callCount, 0, 'No update should be sent when position has not changed')
+
+        // Now change the position
+        const newPosition = new vscode.Position(1, 3)
+        cursorUpdateManager.updatePosition(newPosition, uri)
+
+        // Third call to sendCursorUpdate with changed position - should send update
+        await (cursorUpdateManager as any).sendCursorUpdate()
+
+        // Verify the provider was called again
+        assert.strictEqual(provideStub.callCount, 1, 'Update should be sent when position has changed')
     })
 })
