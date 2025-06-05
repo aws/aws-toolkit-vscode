@@ -13,10 +13,10 @@
             "args": ["--extensionDevelopmentPath=${workspaceFolder}"],
             "env": {
                 "SSMDOCUMENT_LANGUAGESERVER_PORT": "6010",
-                "WEBPACK_DEVELOPER_SERVER": "http://localhost:8080"
+                "WEBPACK_DEVELOPER_SERVER": "http://localhost:8080",
                 // Below allows for overrides used during development
-                // "__AMAZONQLSP_PATH": "${workspaceFolder}/../../../language-servers/app/aws-lsp-codewhisperer-runtimes/out/agent-standalone.js",
-                // "__AMAZONQLSP_UI": "${workspaceFolder}/../../../language-servers/chat-client/build/amazonq-ui.js"
+                "__AMAZONQLSP_PATH": "${workspaceFolder}/../../../language-servers/app/aws-lsp-codewhisperer-runtimes/out/agent-standalone.js",
+                "__AMAZONQLSP_UI": "${workspaceFolder}/../../../language-servers/chat-client/build/amazonq-ui.js"
             },
             "envFile": "${workspaceFolder}/.local.env",
             "outFiles": ["${workspaceFolder}/dist/**/*.js", "${workspaceFolder}/../core/dist/**/*.js"],
