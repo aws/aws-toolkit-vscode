@@ -61,7 +61,7 @@ export function getBundledResourcePaths(ctx: vscode.ExtensionContext): AmazonQRe
     return {
         lsp: path.join(assetDirectory, 'servers', 'aws-lsp-codewhisperer.js'),
         node: process.execPath,
-        ripGrep: process.platform === 'win32' ? 'rg.exe' : 'rg',
+        ripGrep: '',
         ui: path.join(assetDirectory, 'clients', 'amazonq-ui.js'),
     }
 }
