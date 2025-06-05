@@ -696,6 +696,9 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
                 break
             }
 
+            // TO-DO: make sure we are not in AWAITING_CLIENT_ACTION while job is in PLANNING state
+            // (that should only happen in interactive mode; IDE is always non-interactive)
+            // otherwise below need to change *status === 'TRANSFORMING'* to *jobPlanProgress['generatePlan'] === StepProgress.Succeeded*
             if (
                 status === 'TRANSFORMING' &&
                 transformByQState.getTransformationType() === TransformationType.LANGUAGE_UPGRADE
@@ -769,7 +772,13 @@ async function attemptLocalBuild() {
         getLogger().info(
             `CodeTransformation: downloaded clientInstructions with diff.patch at: ${clientInstructionsPath}`
         )
-        await processClientInstructions(jobId, clientInstructionsPath, artifactId)
+        const diffContents = await fs.readFileText(clientInstructionsPath)
+        // make sure diff.patch is not empty
+        if (diffContents.trim()) {
+            await processClientInstructions(jobId, clientInstructionsPath, artifactId)
+        } else {
+            getLogger().info('CodeTransformation: diff.patch is empty, skipping client-side build for this iteration')
+        }
     }
 }
 
