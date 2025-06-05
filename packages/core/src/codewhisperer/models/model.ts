@@ -675,8 +675,12 @@ export class ZipManifest {
     version: string = '1.0'
     hilCapabilities: string[] = ['HIL_1pDependency_VersionUpgrade']
     // TO-DO: add something like AGENTIC_PLAN_V1 here when BE allowlists everyone
+    // TO-DO: is SELECTIVE_TRANSFORMATION_V2 needed here?
     transformCapabilities: string[] = ['EXPLAINABILITY_V1', 'CLIENT_SIDE_BUILD']
     dependencyUpgradeConfigFile?: string = undefined
+    // TODO: make sure the below 2 keys don't mess up SQL conversions when present
+    noInteractiveMode: boolean = true
+    compilationsJsonFile: string = 'compilations.json'
     customBuildCommand: string = 'clean test'
     requestedConversions?: {
         sqlConversion?: {
