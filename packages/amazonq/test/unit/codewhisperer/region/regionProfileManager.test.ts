@@ -9,6 +9,7 @@ import { AuthUtil, RegionProfile, RegionProfileManager, defaultServiceConfig } f
 import { globals } from 'aws-core-vscode/shared'
 import { constants } from 'aws-core-vscode/auth'
 import { createTestAuthUtil } from 'aws-core-vscode/test'
+import { randomUUID } from 'crypto'
 
 const enterpriseSsoStartUrl = 'https://enterprise.awsapps.com/start'
 const region = 'us-east-1'
@@ -158,7 +159,7 @@ describe('RegionProfileManager', async function () {
         })
     })
 
-    describe('persistence', function () {
+    describe('persistSelectedRegionProfile', function () {
         it('persistSelectedRegionProfile', async function () {
             await setupConnection('idc')
             await regionProfileManager.switchRegionProfile(profileFoo, 'user')
@@ -177,14 +178,13 @@ describe('RegionProfileManager', async function () {
 
             assert.strictEqual(state[AuthUtil.instance.profileName], profileFoo)
         })
+    })
 
-        it(`restoreRegionProfile`, async function () {
-            sinon.stub(regionProfileManager, 'listRegionProfile').resolves([profileFoo])
+    describe('restoreRegionProfile', function () {
+        beforeEach(async function () {
             await setupConnection('idc')
-            if (!AuthUtil.instance.isConnected()) {
-                fail('connection should not be undefined')
-            }
-
+        })
+        it('restores region profile if profile name matches', async function () {
             const state = {} as any
             state[AuthUtil.instance.profileName] = profileFoo
 
@@ -193,6 +193,51 @@ describe('RegionProfileManager', async function () {
             await regionProfileManager.restoreRegionProfile()
 
             assert.strictEqual(regionProfileManager.activeRegionProfile, profileFoo)
+        })
+
+        it('returns early when no profiles exist', async function () {
+            const state = {} as any
+            state[AuthUtil.instance.profileName] = undefined
+
+            await globals.globalState.update('aws.amazonq.regionProfiles', state)
+
+            await regionProfileManager.restoreRegionProfile()
+            assert.strictEqual(regionProfileManager.activeRegionProfile, undefined)
+        })
+
+        it('returns early when no profile name matches, and multiple profiles exist', async function () {
+            const state = {} as any
+            state[AuthUtil.instance.profileName] = undefined
+            state[randomUUID()] = profileFoo
+
+            await globals.globalState.update('aws.amazonq.regionProfiles', state)
+
+            await regionProfileManager.restoreRegionProfile()
+            assert.strictEqual(regionProfileManager.activeRegionProfile, undefined)
+        })
+
+        it('uses single profile when no profile name matches', async function () {
+            const state = {} as any
+            state[randomUUID()] = profileFoo
+
+            await globals.globalState.update('aws.amazonq.regionProfiles', state)
+
+            await regionProfileManager.restoreRegionProfile()
+
+            assert.strictEqual(regionProfileManager.activeRegionProfile, profileFoo)
+        })
+
+        it('handles cross-validation failure', async function () {
+            const state = {
+                [AuthUtil.instance.profileName]: profileFoo,
+            }
+            sinon.stub(regionProfileManager, 'loadPersistedRegionProfiles').returns(state)
+            sinon.stub(regionProfileManager, 'getProfiles').resolves([]) // No matching profile
+            const invalidateStub = sinon.stub(regionProfileManager, 'invalidateProfile')
+
+            await regionProfileManager.restoreRegionProfile()
+
+            assert.ok(invalidateStub.calledWith(profileFoo.arn))
         })
     })
 

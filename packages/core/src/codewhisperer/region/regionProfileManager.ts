@@ -38,7 +38,7 @@ const endpoints = createConstantMap({
     'eu-central-1': 'https://q.eu-central-1.amazonaws.com/',
 })
 
-const getRegionProfile = () =>
+const getRegionProfiles = () =>
     globals.globalState.tryGet<{ [label: string]: RegionProfile }>('aws.amazonq.regionProfiles', Object, {})
 
 /**
@@ -86,9 +86,9 @@ export class RegionProfileManager {
     // This is a poller that handles synchornization of selected region profiles between different IDE windows.
     // It checks for changes in global state of region profile, invoking the change handler to switch profiles
     public globalStatePoller = GlobalStatePoller.create({
-        getState: getRegionProfile,
+        getState: getRegionProfiles,
         changeHandler: async () => {
-            const profile = this.loadPersistedRegionProfle()
+            const profile = this.loadPersistedRegionProfiles()
             void this._switchRegionProfile(profile[this.authProvider.profileName], 'reload')
         },
         pollIntervalInMs: 2000,
@@ -285,10 +285,23 @@ export class RegionProfileManager {
 
     // Note: should be called after [this.authProvider.isConnected()] returns non null
     async restoreRegionProfile() {
-        const previousSelected = this.loadPersistedRegionProfle()[this.authProvider.profileName] || undefined
-        if (!previousSelected) {
+        const profiles = this.loadPersistedRegionProfiles()
+        if (!profiles || Object.keys(profiles).length === 0) {
             return
         }
+
+        let previousSelected = profiles[this.authProvider.profileName]
+
+        // If no profile matches auth profileName and there are multiple profiles, return so user can select
+        if (!previousSelected && Object.keys(profiles).length > 1) {
+            return
+        }
+
+        // If no profile matches auth profileName but there's only one profile, use that one
+        if (!previousSelected && Object.keys(profiles).length === 1) {
+            previousSelected = Object.values(profiles)[0]
+        }
+
         // cross-validation
         this.getProfiles()
             .then(async (profiles) => {
@@ -319,8 +332,8 @@ export class RegionProfileManager {
         await this.switchRegionProfile(previousSelected, 'reload')
     }
 
-    private loadPersistedRegionProfle(): { [label: string]: RegionProfile } {
-        return getRegionProfile()
+    public loadPersistedRegionProfiles(): { [label: string]: RegionProfile } {
+        return getRegionProfiles()
     }
 
     async persistSelectRegionProfile() {
@@ -330,7 +343,7 @@ export class RegionProfileManager {
         }
 
         // persist connectionId to profileArn
-        const previousPersistedState = getRegionProfile()
+        const previousPersistedState = getRegionProfiles()
 
         previousPersistedState[this.authProvider.profileName] = this.activeRegionProfile
         await globals.globalState.update('aws.amazonq.regionProfiles', previousPersistedState)
@@ -379,7 +392,7 @@ export class RegionProfileManager {
                 this._activeRegionProfile = undefined
             }
 
-            const profiles = this.loadPersistedRegionProfle()
+            const profiles = this.loadPersistedRegionProfiles()
             const updatedProfiles = Object.fromEntries(
                 Object.entries(profiles).filter(([connId, profile]) => profile.arn !== arn)
             )
