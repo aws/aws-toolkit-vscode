@@ -72,6 +72,33 @@ import {
 } from 'aws-core-vscode/amazonq'
 import { telemetry, TelemetryBase } from 'aws-core-vscode/telemetry'
 import { isValidResponseError } from './error'
+import { RealTimeDiffController } from './diffController'
+
+// Add these at the module level
+const editorCache = new Map<string, { editor: vscode.TextEditor; filePath: string; originalContent?: string }>()
+const diffController = new RealTimeDiffController()
+
+// Helper function to open file for diff
+async function openFileForDiff(filePath: string, tabId: string, languageClient: LanguageClient) {
+    try {
+        // Open the file in the editor
+        const document = await vscode.workspace.openTextDocument(filePath)
+        const editor = await vscode.window.showTextDocument(document, {
+            preview: false,
+            viewColumn: vscode.ViewColumn.Beside, // Open beside the chat
+        })
+
+        // Store the original content
+        const originalContent = document.getText()
+
+        // Store the editor reference for real-time updates
+        editorCache.set(tabId, { editor, filePath, originalContent })
+
+        languageClient.info(`Opened file for diff: ${filePath}`)
+    } catch (error) {
+        languageClient.error(`Failed to open file for diff: ${error}`)
+    }
+}
 
 export function registerLanguageServerEventListener(languageClient: LanguageClient, provider: AmazonQChatViewProvider) {
     languageClient.info(
@@ -237,7 +264,13 @@ export function registerMessageListeners(
                             lastPartialResult = partialResult as ChatResult
                         }
 
-                        void handlePartialResult<ChatResult>(partialResult, encryptionKey, provider, chatParams.tabId)
+                        void handlePartialResult<ChatResult>(
+                            partialResult,
+                            encryptionKey,
+                            provider,
+                            chatParams.tabId,
+                            languageClient
+                        )
                     }
                 )
 
@@ -297,7 +330,8 @@ export function registerMessageListeners(
                             partialResult,
                             encryptionKey,
                             provider,
-                            message.params.tabId
+                            message.params.tabId,
+                            languageClient
                         )
                 )
 
@@ -435,21 +469,6 @@ export function registerMessageListeners(
         async (params: ShowDocumentParams): Promise<ShowDocumentParams | ResponseError<ShowDocumentResult>> => {
             try {
                 const uri = vscode.Uri.parse(params.uri)
-
-                if (params.external) {
-                    // Note: Not using openUrl() because we probably don't want telemetry for these URLs.
-                    // Also it doesn't yet support the required HACK below.
-
-                    // HACK: workaround vscode bug: https://github.com/microsoft/vscode/issues/85930
-                    vscode.env.openExternal(params.uri as any).then(undefined, (e) => {
-                        // TODO: getLogger('?').error('failed vscode.env.openExternal: %O', e)
-                        vscode.env.openExternal(uri).then(undefined, (e) => {
-                            // TODO: getLogger('?').error('failed vscode.env.openExternal: %O', e)
-                        })
-                    })
-                    return params
-                }
-
                 const doc = await vscode.workspace.openTextDocument(uri)
                 await vscode.window.showTextDocument(doc, { preview: false })
                 return params
@@ -497,7 +516,32 @@ export function registerMessageListeners(
         await ecc.viewDiff(viewDiffMessage, amazonQDiffScheme)
     })
 
-    languageClient.onNotification(chatUpdateNotificationType.method, (params: ChatUpdateParams) => {
+    languageClient.onNotification(chatUpdateNotificationType.method, async (params: ChatUpdateParams) => {
+        // Check if this is a file write update
+        const messages = params.data?.messages
+        if (messages) {
+            for (const message of messages) {
+                // Handle fsWrite tool updates with file content
+                if (message.type === 'tool' && message.messageId && !message.messageId.startsWith('progress_')) {
+                    const cachedEditor = editorCache.get(params.tabId)
+                    if (cachedEditor && message.body) {
+                        // Check if the message contains file content update
+                        // This assumes the backend sends the content in the body
+                        try {
+                            await diffController.applyIncrementalDiff(
+                                cachedEditor.editor,
+                                cachedEditor.originalContent || '',
+                                message.body,
+                                true // isPartial
+                            )
+                        } catch (error) {
+                            languageClient.error(`Failed to apply diff: ${error}`)
+                        }
+                    }
+                }
+            }
+        }
+
         void provider.webview?.postMessage({
             command: chatUpdateNotificationType.method,
             params: params,
@@ -509,6 +553,12 @@ export function registerMessageListeners(
             command: chatOptionsUpdateType.method,
             params: params,
         })
+    })
+
+    // Add cleanup when the webview is disposed
+    provider.webviewView?.onDidDispose(() => {
+        diffController.dispose()
+        editorCache.clear()
     })
 }
 
@@ -546,12 +596,32 @@ async function handlePartialResult<T extends ChatResult>(
     partialResult: string | T,
     encryptionKey: Buffer | undefined,
     provider: AmazonQChatViewProvider,
-    tabId: string
+    tabId: string,
+    languageClient: LanguageClient
 ) {
     const decryptedMessage =
         typeof partialResult === 'string' && encryptionKey
             ? await decodeRequest<T>(partialResult, encryptionKey)
             : (partialResult as T)
+
+    // Check if this is a fsWrite tool use starting
+    if (decryptedMessage.additionalMessages) {
+        for (const message of decryptedMessage.additionalMessages) {
+            if (message.type === 'tool' && message.messageId?.startsWith('progress_')) {
+                // Extract file path from the message
+                const fileList = message.header?.fileList
+                if (fileList?.filePaths?.[0] && fileList.details) {
+                    const fileName = fileList.filePaths[0]
+                    const filePath = fileList.details[fileName]?.description
+
+                    if (filePath) {
+                        // Open the file immediately when fsWrite starts
+                        await openFileForDiff(filePath, tabId, languageClient)
+                    }
+                }
+            }
+        }
+    }
 
     if (decryptedMessage.body !== undefined) {
         void provider.webview?.postMessage({
