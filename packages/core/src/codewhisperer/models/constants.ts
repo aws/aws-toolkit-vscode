@@ -647,7 +647,7 @@ export const receivedValidConfigFileMessage =
     'The dependency upgrade file looks good. I will use this information to upgrade the dependencies you specified.'
 
 export const chooseConfigFileMessage =
-    'Would you like to provide a dependency upgrade file? You can specify first and third party dependencies and their versions in a YAML or JSON file, and I will upgrade them during the transformation. For an example dependency upgrade file, see the [documentation](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/code-transformation.html#dependency-upgrade-file).'
+    'Would you like to provide a dependency upgrade file? You can specify first and third party dependencies and their versions in a YAML file, and I will upgrade them during the transformation. For an example dependency upgrade file, see the [documentation](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/code-transformation.html#dependency-upgrade-file).'
 
 export const enterJavaHomePlaceholder = 'Enter the path to your Java installation'
 

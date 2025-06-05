@@ -688,6 +688,7 @@ export async function postTransformationJob() {
         codeTransformJobId: transformByQState.getJobId(),
         codeTransformResultStatusMessage: resultStatusMessage,
         codeTransformRunTimeLatency: durationInMs,
+        reason: transformByQState.getPolledJobStatus(),
         result:
             transformByQState.isSucceeded() || transformByQState.isPartiallySucceeded()
                 ? MetadataResult.Pass
