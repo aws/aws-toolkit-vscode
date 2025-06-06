@@ -16,7 +16,7 @@ export async function activate(ctx: vscode.ExtensionContext): Promise<void> {
         })
     } catch (err) {
         const e = err as ToolkitError
-        getLogger('amazonqLsp').warn(`Failed to start downloaded LSP ${e.message}. Starting with bundled LSP...`)
+        getLogger('amazonqLsp').warn(`Failed to start downloaded LSP, falling back to bundled LSP: ${e.message}`)
         try {
             await lspSetupStage('all', async () => {
                 await lspSetupStage('launch', async () => await startLanguageServer(ctx, getBundledResourcePaths(ctx)))
