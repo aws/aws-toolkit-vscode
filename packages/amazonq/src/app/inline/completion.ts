@@ -206,6 +206,7 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
         token: CancellationToken,
         getAllRecommendationsOptions?: GetAllRecommendationsOptions
     ): Promise<InlineCompletionItem[]> {
+        let logstr = `GenerateCompletion metadata:\n`
         try {
             const t0 = performance.now()
             vsCodeState.isRecommendationsActive = true
@@ -222,9 +223,6 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
             TelemetryHelper.instance.setTriggerType(context.triggerKind)
 
             const t1 = performance.now()
-            this.logger.info(
-                `Time elapsed ${t1 - t0}ms since trigger to before sending listSuggestions request to Flare`
-            )
 
             await this.recommendationService.getAllRecommendations(
                 this.languageClient,
@@ -237,8 +235,17 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
             // get active item from session for displaying
             const items = this.sessionManager.getActiveRecommendation()
 
+            // eslint-disable-next-line @typescript-eslint/no-base-to-string
+            const itemLog = items[0] ? `first suggestion: ${items[0].insertText.toString()}` : `no suggestion`
+
             const t2 = performance.now()
-            this.logger.info(`Tiem elapsed ${t2 - t0}ms since trigger to receiving suggestions`)
+
+            logstr = logstr += `- number of suggestions: ${items.length}
+- first suggestion content (next line):
+${itemLog}
+- duration since trigger to before sending Flare call: ${t1 - t0}ms
+- duration since trigger to receiving responses from Flare: ${t2 - t0}ms
+`
             const session = this.sessionManager.getActiveSession()
             const editor = window.activeTextEditor
 
@@ -263,7 +270,7 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
                         panel.updateContent(item.insertText as string)
                         void showEdits(item, editor, session, this.languageClient).then(() => {
                             const t3 = performance.now()
-                            this.logger.info(`tiem elapsed ${t3 - t0}ms since trigger to NEP suggestion is displayed`)
+                            logstr = logstr + `- duration since trigger to NEP suggestion is displayed: ${t3 - t0}ms`
                         })
                         getLogger('nextEditPrediction').info('Received edit!')
                         return []
@@ -293,6 +300,7 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
             return []
         } finally {
             vsCodeState.isRecommendationsActive = false
+            this.logger.info(logstr)
         }
     }
 }
