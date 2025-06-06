@@ -151,7 +151,14 @@ export async function downloadLanguageServer(): Promise<void> {
                         // Clean up temp directory
                         fs.rmdirSync(tempDir)
                         fs.rmdirSync(path.join(resourcesDir, 'servers', 'indexing'), { recursive: true })
+                        fs.rmdirSync(path.join(resourcesDir, 'servers', 'ripgrep'), { recursive: true })
                         fs.rmSync(path.join(resourcesDir, 'servers', 'node'))
+                        if (!fs.existsSync(path.join(resourcesDir, 'servers', 'aws-lsp-codewhisperer.js'))) {
+                            throw new Error(`Extracting aws-lsp-codewhisperer.js failure`)
+                        }
+                        if (!fs.existsSync(path.join(resourcesDir, 'clients', 'amazonq-ui.js'))) {
+                            throw new Error(`Extracting amazonq-ui.js failure`)
+                        }
                         console.log('Download and extraction completed successfully')
                         resolve()
                     } catch (err) {
