@@ -15,7 +15,7 @@ import { InlineGeneratingMessage } from './inlineGeneratingMessage'
 import { CodeWhispererStatusBarManager } from 'aws-core-vscode/codewhisperer'
 import { TelemetryHelper } from './telemetryHelper'
 import { ICursorUpdateRecorder } from './cursorUpdateManager'
-import { getLogger, globals } from 'aws-core-vscode/shared'
+import { globals } from 'aws-core-vscode/shared'
 
 export interface GetAllRecommendationsOptions {
     emitTelemetry?: boolean
@@ -23,7 +23,6 @@ export interface GetAllRecommendationsOptions {
 }
 
 export class RecommendationService {
-    private logger = getLogger('nextEditPrediction')
     constructor(
         private readonly sessionManager: SessionManager,
         private readonly inlineGeneratingMessage: InlineGeneratingMessage,
@@ -64,7 +63,6 @@ export class RecommendationService {
         TelemetryHelper.instance.setSdkApiCallStartTime()
 
         try {
-            const t0 = performance.now()
             // Show UI indicators only if UI is enabled
             if (options.showUi) {
                 await this.inlineGeneratingMessage.showGenerating(context.triggerKind)
@@ -108,8 +106,6 @@ export class RecommendationService {
                 languageClient.warn(`Error when getting suggestions: ${error}`)
             }
 
-            const t1 = performance.now()
-            this.logger.info(`Time elapsed ${t1 - t0}ms to get suggestions from Flare @recommendationService.ts`)
             // Close session and finalize telemetry regardless of pagination path
             this.sessionManager.closeSession()
             TelemetryHelper.instance.setAllPaginationEndTime()
