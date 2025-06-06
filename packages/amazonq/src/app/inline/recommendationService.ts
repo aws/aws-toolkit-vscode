@@ -111,6 +111,7 @@ export class RecommendationService {
             TelemetryHelper.instance.setAllPaginationEndTime()
             options.emitTelemetry && TelemetryHelper.instance.tryRecordClientComponentLatency()
         } catch (error) {
+            console.log('test')
             console.error('Error getting recommendations:', error)
             return []
         } finally {
