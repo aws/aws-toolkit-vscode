@@ -185,6 +185,7 @@ export class InlineCompletionManager implements Disposable {
 }
 
 export class AmazonQInlineCompletionItemProvider implements InlineCompletionItemProvider {
+    private logger = getLogger('nextEditPrediction')
     constructor(
         private readonly languageClient: LanguageClient,
         private readonly recommendationService: RecommendationService,
@@ -206,6 +207,7 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
         getAllRecommendationsOptions?: GetAllRecommendationsOptions
     ): Promise<InlineCompletionItem[]> {
         try {
+            const t0 = performance.now()
             vsCodeState.isRecommendationsActive = true
             const isAutoTrigger = context.triggerKind === InlineCompletionTriggerKind.Automatic
             if (isAutoTrigger && !CodeSuggestionsState.instance.isSuggestionsEnabled()) {
@@ -219,6 +221,11 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
             TelemetryHelper.instance.setInvokeSuggestionStartTime()
             TelemetryHelper.instance.setTriggerType(context.triggerKind)
 
+            const t1 = performance.now()
+            this.logger.info(
+                `Time elapsed ${t1 - t0}ms since trigger to before sending listSuggestions request to Flare`
+            )
+
             await this.recommendationService.getAllRecommendations(
                 this.languageClient,
                 document,
@@ -229,6 +236,9 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
             )
             // get active item from session for displaying
             const items = this.sessionManager.getActiveRecommendation()
+
+            const t2 = performance.now()
+            this.logger.info(`Tiem elapsed ${t2 - t0}ms since trigger to receiving suggestions`)
             const session = this.sessionManager.getActiveSession()
             const editor = window.activeTextEditor
 
@@ -251,7 +261,10 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
                     if (Experiments.instance.isExperimentEnabled('amazonqLSPNEP')) {
                         const panel = NextEditPredictionPanel.getInstance()
                         panel.updateContent(item.insertText as string)
-                        void showEdits(item, editor, session, this.languageClient)
+                        void showEdits(item, editor, session, this.languageClient).then(() => {
+                            const t3 = performance.now()
+                            this.logger.info(`tiem elapsed ${t3 - t0}ms since trigger to NEP suggestion is displayed`)
+                        })
                         getLogger('nextEditPrediction').info('Received edit!')
                         return []
                     }
