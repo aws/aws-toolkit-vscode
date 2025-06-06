@@ -45,7 +45,7 @@ export class AmazonQChatViewProvider implements WebviewViewProvider {
     ) {
         const lspDir = Uri.file(LanguageServerResolver.defaultDir())
         const dist = Uri.joinPath(globals.context.extensionUri, 'dist')
-        const bundledResources = Uri.joinPath(globals.context.extensionUri, 'resources', 'language-server')
+        const bundledResources = Uri.joinPath(globals.context.extensionUri, 'resources/language-server')
         let resourcesRoots = [lspDir, dist]
         if (this.mynahUIPath?.startsWith(globals.context.extensionUri.fsPath)) {
             getLogger('amazonqLsp').info(`Using bundled webview resources ${bundledResources.fsPath}`)
