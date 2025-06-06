@@ -274,6 +274,7 @@ ${itemLog}
                         void showEdits(item, editor, session, this.languageClient).then(() => {
                             const t3 = performance.now()
                             logstr = logstr + `- duration since trigger to NEP suggestion is displayed: ${t3 - t0}ms`
+                            this.logger.info(logstr)
                         })
                         getLogger('nextEditPrediction').info('Received edit!')
                         return []
@@ -303,7 +304,6 @@ ${itemLog}
             return []
         } finally {
             vsCodeState.isRecommendationsActive = false
-            this.logger.info(logstr)
         }
     }
 }
