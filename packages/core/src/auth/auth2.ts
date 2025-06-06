@@ -28,6 +28,8 @@ import {
     AuthorizationFlowKind,
     CancellationToken,
     CancellationTokenSource,
+    iamCredentialsUpdateRequestType,
+    iamCredentialsDeleteNotificationType,
     bearerCredentialsDeleteNotificationType,
     bearerCredentialsUpdateRequestType,
     SsoTokenChangedKind,
@@ -45,6 +47,10 @@ import { getCacheDir, getCacheFileWatcher, getFlareCacheFileName } from './sso/c
 import { VSCODE_EXTENSION_ID } from '../shared/extensions'
 
 export const notificationTypes = {
+    updateIamCredential: new RequestType<UpdateCredentialsParams, ResponseMessage, Error>(
+        iamCredentialsUpdateRequestType.method
+    ),
+    deleteIamCredential: new NotificationType(iamCredentialsDeleteNotificationType.method),
     updateBearerToken: new RequestType<UpdateCredentialsParams, ResponseMessage, Error>(
         bearerCredentialsUpdateRequestType.method
     ),
