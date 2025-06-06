@@ -185,6 +185,7 @@ export class InlineCompletionManager implements Disposable {
 }
 
 export class AmazonQInlineCompletionItemProvider implements InlineCompletionItemProvider {
+    private logger = getLogger('nextEditPrediction')
     constructor(
         private readonly languageClient: LanguageClient,
         private readonly recommendationService: RecommendationService,
@@ -205,7 +206,9 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
         token: CancellationToken,
         getAllRecommendationsOptions?: GetAllRecommendationsOptions
     ): Promise<InlineCompletionItem[]> {
+        let logstr = `GenerateCompletion metadata:\n`
         try {
+            const t0 = performance.now()
             vsCodeState.isRecommendationsActive = true
             const isAutoTrigger = context.triggerKind === InlineCompletionTriggerKind.Automatic
             if (isAutoTrigger && !CodeSuggestionsState.instance.isSuggestionsEnabled()) {
@@ -213,10 +216,16 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
                 return []
             }
 
+            // TODO: comment this out for now as it's slow, will take ~200ms each trigger, need to investigate more
             // tell the tutorial that completions has been triggered
-            await this.inlineTutorialAnnotation.triggered(context.triggerKind)
+            // await this.inlineTutorialAnnotation.triggered(context.triggerKind)
+            // TODO: remove this line as otherwise it wont compile
+            this.inlineTutorialAnnotation
+
             TelemetryHelper.instance.setInvokeSuggestionStartTime()
             TelemetryHelper.instance.setTriggerType(context.triggerKind)
+
+            const t1 = performance.now()
 
             await this.recommendationService.getAllRecommendations(
                 this.languageClient,
@@ -228,6 +237,18 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
             )
             // get active item from session for displaying
             const items = this.sessionManager.getActiveRecommendation()
+
+            // eslint-disable-next-line @typescript-eslint/no-base-to-string
+            const itemLog = items[0] ? `first suggestion: ${items[0].insertText.toString()}` : `no suggestion`
+
+            const t2 = performance.now()
+
+            logstr = logstr += `- number of suggestions: ${items.length}
+- first suggestion content (next line):
+${itemLog}
+- duration since trigger to before sending Flare call: ${t1 - t0}ms
+- duration since trigger to receiving responses from Flare: ${t2 - t0}ms
+`
             const session = this.sessionManager.getActiveSession()
             const editor = window.activeTextEditor
 
@@ -250,7 +271,11 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
                     if (Experiments.instance.isExperimentEnabled('amazonqLSPNEP')) {
                         const panel = NextEditPredictionPanel.getInstance()
                         panel.updateContent(item.insertText as string)
-                        void showEdits(item, editor, session, this.languageClient)
+                        void showEdits(item, editor, session, this.languageClient).then(() => {
+                            const t3 = performance.now()
+                            logstr = logstr + `- duration since trigger to NEP suggestion is displayed: ${t3 - t0}ms`
+                            this.logger.info(logstr)
+                        })
                         getLogger('nextEditPrediction').info('Received edit!')
                         return []
                     }
