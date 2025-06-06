@@ -239,7 +239,7 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
             const items = this.sessionManager.getActiveRecommendation()
 
             // eslint-disable-next-line @typescript-eslint/no-base-to-string
-            const itemLog = items[0] ? `first suggestion: ${items[0].insertText.toString()}` : `no suggestion`
+            const itemLog = items[0] ? `${items[0].insertText.toString()}` : `no suggestion`
 
             const t2 = performance.now()
 
