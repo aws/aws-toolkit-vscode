@@ -1,5 +1,5 @@
 # github actions: https://docs.github.com/en/actions/use-cases-and-examples/building-and-testing/building-and-testing-nodejs
-# setup-node: https://github.com/actions/setup-node
+# setup-node: https://gh.io/t-r0052/hubhub-oneday/security.md
 
 name: CI
 
