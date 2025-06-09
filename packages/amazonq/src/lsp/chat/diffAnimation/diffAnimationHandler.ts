@@ -3,8 +3,25 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+/**
+ * DiffAnimationHandler - Temporary File Animation Approach
+ *
+ * Uses temporary files to show diff animations, with one temp file per source file:
+ * 1. When file change detected, create or reuse a temporary file
+ * 2. Show animation in the temporary file (red deletions → green additions)
+ * 3. Update the actual file with final content
+ * 4. Keep temp file open for reuse on subsequent changes
+ *
+ * Benefits:
+ * - Deletion animations (red lines) are always visible
+ * - One temp file per source file - reused for multiple animations
+ * - Clear separation between animation and actual file
+ * - No race conditions or timing issues
+ */
+
 import * as vscode from 'vscode'
 import * as path from 'path'
+import * as os from 'os'
 import { ChatResult, ChatMessage, ChatUpdateParams } from '@aws/language-server-runtimes/protocol'
 import { getLogger } from 'aws-core-vscode/shared'
 import { DiffAnimationController } from './diffAnimationController'
@@ -17,6 +34,30 @@ interface PendingFileWrite {
 }
 
 export class DiffAnimationHandler implements vscode.Disposable {
+    /**
+     * BEHAVIOR SUMMARY:
+     *
+     * 1. ONE TEMP FILE PER SOURCE FILE
+     *    - Each source file gets exactly ONE temporary file
+     *    - The temp file is reused for all subsequent changes
+     *    - Example: "index.js" → "[DIFF] index.js" (always the same temp file)
+     *
+     * 2. TEMP FILES AUTOMATICALLY OPEN
+     *    - When a file is about to be modified, its temp file opens automatically
+     *    - Temp files appear in the second column (side-by-side view)
+     *    - Files stay open for future animations
+     *
+     * 3. ANIMATION FLOW
+     *    - Detect change in source file
+     *    - Find or create temp file for that source
+     *    - Replace temp file content with original
+     *    - Run animation (red deletions → green additions)
+     *    - Return focus to source file
+     *    - Keep temp file open for next time
+     *
+     * This ensures deletion animations always show properly!
+     */
+
     private diffAnimationController: DiffAnimationController
     private disposables: vscode.Disposable[] = []
 
@@ -28,6 +69,10 @@ export class DiffAnimationHandler implements vscode.Disposable {
     private processedMessages = new Set<string>()
     // File system watcher
     private fileWatcher: vscode.FileSystemWatcher | undefined
+    // Track temporary files for cleanup - maps original file path to temp file path
+    private tempFileMapping = new Map<string, string>()
+    // Track open temp file editors - maps temp file path to editor
+    private tempFileEditors = new Map<string, vscode.TextEditor>()
 
     constructor() {
         getLogger().info(`[DiffAnimationHandler] 🚀 Initializing DiffAnimationHandler`)
@@ -38,11 +83,19 @@ export class DiffAnimationHandler implements vscode.Disposable {
 
         // Watch for file changes
         this.fileWatcher.onDidChange(async (uri) => {
+            // Skip temporary files
+            if (this.isTempFile(uri.fsPath)) {
+                return
+            }
             await this.handleFileChange(uri)
         })
 
         // Watch for file creation
         this.fileWatcher.onDidCreate(async (uri) => {
+            // Skip temporary files
+            if (this.isTempFile(uri.fsPath)) {
+                return
+            }
             await this.handleFileChange(uri)
         })
 
@@ -54,12 +107,140 @@ export class DiffAnimationHandler implements vscode.Disposable {
                 return
             }
 
+            // Skip temporary files
+            if (this.isTempFile(event.document.uri.fsPath)) {
+                return
+            }
+
+            // Skip if we're currently animating this file
+            if (this.animatingFiles.has(event.document.uri.fsPath)) {
+                return
+            }
+
             // Check if this is an external change (not from user typing)
             if (event.reason === undefined) {
                 await this.handleFileChange(event.document.uri)
             }
         })
         this.disposables.push(changeTextDocumentDisposable)
+
+        // Listen for editor close events to clean up temp file references
+        const onDidCloseTextDocument = vscode.workspace.onDidCloseTextDocument((document) => {
+            const filePath = document.uri.fsPath
+            if (this.isTempFile(filePath)) {
+                // Remove from editor tracking
+                this.tempFileEditors.delete(filePath)
+                getLogger().info(`[DiffAnimationHandler] 📄 Temp file editor closed: ${filePath}`)
+            }
+        })
+        this.disposables.push(onDidCloseTextDocument)
+    }
+
+    /**
+     * Check if a file path is a temporary file
+     */
+    private isTempFile(filePath: string): boolean {
+        // Check if this path is in our temp file mappings
+        for (const tempPath of this.tempFileMapping.values()) {
+            if (filePath === tempPath) {
+                return true
+            }
+        }
+        return false
+    }
+
+    /**
+     * Focus on the temp file for a specific source file (if it exists)
+     */
+    public async focusTempFile(sourceFilePath: string): Promise<boolean> {
+        const tempFilePath = this.tempFileMapping.get(sourceFilePath)
+        if (!tempFilePath) {
+            return false
+        }
+
+        const editor = this.tempFileEditors.get(tempFilePath)
+        if (editor && !editor.document.isClosed) {
+            await vscode.window.showTextDocument(editor.document, {
+                preview: false,
+                preserveFocus: false,
+            })
+            getLogger().info(`[DiffAnimationHandler] 👁️ Focused on temp file for: ${sourceFilePath}`)
+            return true
+        }
+
+        return false
+    }
+
+    /**
+     * Get information about active temp files (for debugging)
+     */
+    public getTempFileInfo(): { sourceFile: string; tempFile: string; isOpen: boolean }[] {
+        const info: { sourceFile: string; tempFile: string; isOpen: boolean }[] = []
+
+        for (const [sourceFile, tempFile] of this.tempFileMapping) {
+            const editor = this.tempFileEditors.get(tempFile)
+            info.push({
+                sourceFile,
+                tempFile,
+                isOpen: editor ? !editor.document.isClosed : false,
+            })
+        }
+
+        return info
+    }
+
+    /**
+     * Close temp file for a specific source file
+     */
+    public async closeTempFileForSource(sourceFilePath: string): Promise<void> {
+        const tempFilePath = this.tempFileMapping.get(sourceFilePath)
+        if (!tempFilePath) {
+            return
+        }
+
+        const editor = this.tempFileEditors.get(tempFilePath)
+        if (editor && !editor.document.isClosed) {
+            // We can't programmatically close the editor, but we can clean up our references
+            this.tempFileEditors.delete(tempFilePath)
+            getLogger().info(`[DiffAnimationHandler] 🧹 Cleaned up temp file references for: ${sourceFilePath}`)
+        }
+
+        // Delete the temp file
+        try {
+            await vscode.workspace.fs.delete(vscode.Uri.file(tempFilePath))
+            this.tempFileMapping.delete(sourceFilePath)
+            getLogger().info(`[DiffAnimationHandler] 🗑️ Deleted temp file: ${tempFilePath}`)
+        } catch (error) {
+            getLogger().warn(`[DiffAnimationHandler] ⚠️ Failed to delete temp file: ${error}`)
+        }
+    }
+
+    /**
+     * Test method to manually trigger animation (for debugging)
+     */
+    public async testAnimation(): Promise<void> {
+        const originalContent = `function hello() {
+    console.log("Hello World");
+    return true;
+}`
+
+        const newContent = `function hello(name) {
+    console.log(\`Hello \${name}!\`);
+    console.log("Welcome to the app");
+    return { success: true, name: name };
+}`
+
+        const testFilePath = path.join(
+            vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || os.tmpdir(),
+            'test_animation.js'
+        )
+        getLogger().info(`[DiffAnimationHandler] 🧪 Running test animation for: ${testFilePath}`)
+
+        // First simulate the preparation phase (which opens the temp file)
+        await this.openOrCreateTempFile(testFilePath, originalContent)
+
+        // Then run the animation
+        await this.animateFileChangeWithTemp(testFilePath, originalContent, newContent, 'test')
     }
 
     /**
@@ -98,6 +279,14 @@ export class DiffAnimationHandler implements vscode.Disposable {
             return
         }
 
+        // Deduplicate messages
+        const messageKey = `${message.messageId}_${message.type}`
+        if (this.processedMessages.has(messageKey)) {
+            getLogger().info(`[DiffAnimationHandler] ⏭️ Already processed message: ${messageKey}`)
+            return
+        }
+        this.processedMessages.add(messageKey)
+
         // Check for fsWrite tool preparation (when tool is about to execute)
         if (message.type === 'tool' && message.messageId.startsWith('progress_')) {
             await this.processFsWritePreparation(message, tabId)
@@ -129,6 +318,12 @@ export class DiffAnimationHandler implements vscode.Disposable {
         const toolUseId = message.messageId!.replace('progress_', '')
 
         getLogger().info(`[DiffAnimationHandler] 🎬 Preparing for fsWrite: ${filePath} (toolUse: ${toolUseId})`)
+
+        // Check if we already have a pending write for this file
+        if (this.pendingWrites.has(filePath)) {
+            getLogger().warn(`[DiffAnimationHandler] ⚠️ Already have pending write for ${filePath}, skipping`)
+            return
+        }
 
         // Capture current content IMMEDIATELY before the write happens
         let originalContent = ''
@@ -166,17 +361,128 @@ export class DiffAnimationHandler implements vscode.Disposable {
                 await vscode.workspace.fs.writeFile(uri, Buffer.from(''))
             }
 
-            // Open the document
+            // Open the document (but keep it in background)
             const document = await vscode.workspace.openTextDocument(uri)
             await vscode.window.showTextDocument(document, {
                 preview: false,
-                preserveFocus: false,
+                preserveFocus: true, // Keep focus on current editor
+                viewColumn: vscode.ViewColumn.One, // Open in first column
             })
+
+            // IMPORTANT: Automatically open the corresponding temp file if it exists
+            // This ensures the user can see the animation without manually opening the temp file
+            await this.openOrCreateTempFile(filePath, originalContent)
 
             getLogger().info(`[DiffAnimationHandler] ✅ File opened and ready: ${filePath}`)
         } catch (error) {
             getLogger().error(`[DiffAnimationHandler] ❌ Failed to prepare file: ${error}`)
+            // Clean up on error
+            this.pendingWrites.delete(filePath)
         }
+    }
+
+    /**
+     * Open or create the temp file for a source file
+     */
+    private async openOrCreateTempFile(sourceFilePath: string, initialContent: string): Promise<void> {
+        const tempFilePath = this.getOrCreateTempFilePath(sourceFilePath)
+
+        // Check if we already have an editor open for this temp file
+        let tempFileEditor = this.tempFileEditors.get(tempFilePath)
+
+        if (tempFileEditor && tempFileEditor.document && !tempFileEditor.document.isClosed) {
+            // Temp file is already open, just ensure it's visible
+            getLogger().info(`[DiffAnimationHandler] 👁️ Temp file already open, making it visible`)
+            await vscode.window.showTextDocument(tempFileEditor.document, {
+                preview: false,
+                preserveFocus: true,
+                viewColumn: vscode.ViewColumn.Two,
+            })
+        } else {
+            // Need to create/open the temp file
+            getLogger().info(`[DiffAnimationHandler] 📄 Opening temp file for: ${sourceFilePath}`)
+
+            const tempUri = vscode.Uri.file(tempFilePath)
+
+            try {
+                // Check if temp file exists
+                await vscode.workspace.fs.stat(tempUri)
+            } catch {
+                // File doesn't exist, create it with initial content
+                await vscode.workspace.fs.writeFile(tempUri, Buffer.from(initialContent, 'utf8'))
+            }
+
+            // Ensure we have a two-column layout
+            await vscode.commands.executeCommand('workbench.action.editorLayoutTwoColumns')
+
+            // Open temp file in editor
+            const tempDoc = await vscode.workspace.openTextDocument(tempUri)
+            tempFileEditor = await vscode.window.showTextDocument(tempDoc, {
+                preview: false,
+                preserveFocus: true, // Don't steal focus
+                viewColumn: vscode.ViewColumn.Two, // Show in second column
+            })
+
+            // Add a header comment to indicate this is a diff animation file
+            const header = `// 🎬 DIFF ANIMATION for: ${path.basename(sourceFilePath)}\n// This file shows animations of changes (Red = Deleted, Green = Added)\n// ${'='.repeat(60)}\n\n`
+            if (!tempDoc.getText().startsWith(header)) {
+                await tempFileEditor.edit((editBuilder) => {
+                    editBuilder.insert(new vscode.Position(0, 0), header)
+                })
+                await tempDoc.save()
+            }
+
+            // Store the editor reference
+            this.tempFileEditors.set(tempFilePath, tempFileEditor)
+
+            // Set the language mode to match the original file
+            const ext = path.extname(sourceFilePath).substring(1).toLowerCase()
+            const languageMap: { [key: string]: string } = {
+                js: 'javascript',
+                ts: 'typescript',
+                jsx: 'javascriptreact',
+                tsx: 'typescriptreact',
+                py: 'python',
+                rb: 'ruby',
+                go: 'go',
+                rs: 'rust',
+                java: 'java',
+                cpp: 'cpp',
+                c: 'c',
+                cs: 'csharp',
+                php: 'php',
+                swift: 'swift',
+                kt: 'kotlin',
+                md: 'markdown',
+                json: 'json',
+                xml: 'xml',
+                yaml: 'yaml',
+                yml: 'yaml',
+                html: 'html',
+                css: 'css',
+                scss: 'scss',
+                less: 'less',
+                sql: 'sql',
+                sh: 'shellscript',
+                bash: 'shellscript',
+                ps1: 'powershell',
+                r: 'r',
+                dart: 'dart',
+                vue: 'vue',
+                lua: 'lua',
+                pl: 'perl',
+            }
+            const languageId = languageMap[ext] || ext || 'plaintext'
+
+            try {
+                await vscode.languages.setTextDocumentLanguage(tempDoc, languageId)
+                getLogger().info(`[DiffAnimationHandler] 🎨 Set language mode to: ${languageId}`)
+            } catch (error) {
+                getLogger().warn(`[DiffAnimationHandler] ⚠️ Failed to set language mode: ${error}`)
+            }
+        }
+
+        getLogger().info(`[DiffAnimationHandler] ✅ Temp file is ready and visible`)
     }
 
     /**
@@ -184,6 +490,11 @@ export class DiffAnimationHandler implements vscode.Disposable {
      */
     private async handleFileChange(uri: vscode.Uri): Promise<void> {
         const filePath = uri.fsPath
+
+        // Skip if we're already animating this file
+        if (this.animatingFiles.has(filePath)) {
+            return
+        }
 
         // Check if we have a pending write for this file
         const pendingWrite = this.pendingWrites.get(filePath)
@@ -201,8 +512,8 @@ export class DiffAnimationHandler implements vscode.Disposable {
 
         try {
             // Read the new content
-            const document = await vscode.workspace.openTextDocument(uri)
-            const newContent = document.getText()
+            const newContentBuffer = await vscode.workspace.fs.readFile(uri)
+            const newContent = Buffer.from(newContentBuffer).toString('utf8')
 
             // Check if content actually changed
             if (pendingWrite.originalContent !== newContent) {
@@ -211,8 +522,13 @@ export class DiffAnimationHandler implements vscode.Disposable {
                         `original: ${pendingWrite.originalContent.length} chars, new: ${newContent.length} chars`
                 )
 
-                // Start the animation
-                await this.animateFileChange(filePath, pendingWrite.originalContent, newContent, pendingWrite.toolUseId)
+                // Start the animation using temporary file
+                await this.animateFileChangeWithTemp(
+                    filePath,
+                    pendingWrite.originalContent,
+                    newContent,
+                    pendingWrite.toolUseId
+                )
             } else {
                 getLogger().info(`[DiffAnimationHandler] ℹ️ No content change for: ${filePath}`)
             }
@@ -222,9 +538,45 @@ export class DiffAnimationHandler implements vscode.Disposable {
     }
 
     /**
-     * Animate file changes
+     * Get or create a temporary file path for the given original file
      */
-    private async animateFileChange(
+    private getOrCreateTempFilePath(originalPath: string): string {
+        // Check if we already have a temp file for this original file
+        const existingTempPath = this.tempFileMapping.get(originalPath)
+        if (existingTempPath) {
+            getLogger().info(`[DiffAnimationHandler] 🔄 Reusing existing temp file: ${existingTempPath}`)
+            return existingTempPath
+        }
+
+        // Create new temp file path
+        const ext = path.extname(originalPath)
+        const basename = path.basename(originalPath, ext)
+        // Use a consistent name for the temp file (no timestamp) so it's easier to identify
+        const tempName = `[DIFF] ${basename}${ext}`
+        const tempDir = path.join(os.tmpdir(), 'vscode-diff-animations')
+
+        // Ensure temp directory exists
+        try {
+            if (!require('fs').existsSync(tempDir)) {
+                require('fs').mkdirSync(tempDir, { recursive: true })
+            }
+        } catch (error) {
+            getLogger().warn(`[DiffAnimationHandler] Failed to create temp dir: ${error}`)
+        }
+
+        const tempPath = path.join(tempDir, tempName)
+
+        // Store the mapping
+        this.tempFileMapping.set(originalPath, tempPath)
+        getLogger().info(`[DiffAnimationHandler] 📄 Created new temp file mapping: ${originalPath} → ${tempPath}`)
+
+        return tempPath
+    }
+
+    /**
+     * Animate file changes using a temporary file
+     */
+    private async animateFileChangeWithTemp(
         filePath: string,
         originalContent: string,
         newContent: string,
@@ -236,27 +588,209 @@ export class DiffAnimationHandler implements vscode.Disposable {
         }
 
         this.animatingFiles.add(filePath)
+        const animationId = `${path.basename(filePath)}_${Date.now()}`
+
+        // Get or create temporary file path
+        const tempFilePath = this.getOrCreateTempFilePath(filePath)
+
+        getLogger().info(`[DiffAnimationHandler] 🎬 Starting animation ${animationId}`)
+        getLogger().info(`[DiffAnimationHandler] 📄 Using temporary file: ${tempFilePath}`)
+
+        let tempFileEditor: vscode.TextEditor | undefined
 
         try {
-            getLogger().info(`[DiffAnimationHandler] 🔄 Animating file change: ${filePath}`)
+            // Check if we already have an editor open for this temp file
+            tempFileEditor = this.tempFileEditors.get(tempFilePath)
 
-            // Open the file
-            try {
-                const uri = vscode.Uri.file(filePath)
-                const document = await vscode.workspace.openTextDocument(uri)
-                await vscode.window.showTextDocument(document, { preview: false })
-            } catch (error) {
-                getLogger().warn(`[DiffAnimationHandler] ⚠️ Could not open file: ${error}`)
+            if (tempFileEditor && tempFileEditor.document && !tempFileEditor.document.isClosed) {
+                // Reuse existing editor
+                getLogger().info(`[DiffAnimationHandler] ♻️ Reusing existing temp file editor`)
+
+                // Make sure it's visible and focused for the animation
+                tempFileEditor = await vscode.window.showTextDocument(tempFileEditor.document, {
+                    preview: false,
+                    preserveFocus: false, // Take focus for animation
+                    viewColumn: tempFileEditor.viewColumn || vscode.ViewColumn.Two,
+                })
+
+                // Replace content with original content for this animation
+                await tempFileEditor.edit((editBuilder) => {
+                    const fullRange = new vscode.Range(
+                        tempFileEditor!.document.positionAt(0),
+                        tempFileEditor!.document.positionAt(tempFileEditor!.document.getText().length)
+                    )
+                    editBuilder.replace(fullRange, originalContent)
+                })
+
+                await tempFileEditor.document.save()
+            } else {
+                // Create new temp file or open existing one
+                const tempUri = vscode.Uri.file(tempFilePath)
+
+                // Write original content to temp file
+                getLogger().info(
+                    `[DiffAnimationHandler] 📝 Writing original content to temp file (${originalContent.length} chars)`
+                )
+                await vscode.workspace.fs.writeFile(tempUri, Buffer.from(originalContent, 'utf8'))
+
+                // Open temp file in editor
+                let tempDoc = await vscode.workspace.openTextDocument(tempUri)
+
+                // Ensure the temp document has the correct content
+                if (tempDoc.getText() !== originalContent) {
+                    getLogger().warn(`[DiffAnimationHandler] ⚠️ Temp file content mismatch, rewriting...`)
+                    await vscode.workspace.fs.writeFile(tempUri, Buffer.from(originalContent, 'utf8'))
+                    tempDoc = await vscode.workspace.openTextDocument(tempUri)
+                }
+
+                // Show the temp file in a new editor
+                tempFileEditor = await vscode.window.showTextDocument(tempDoc, {
+                    preview: false,
+                    preserveFocus: false,
+                    viewColumn: vscode.ViewColumn.Two, // Show in second column
+                })
+
+                // Store the editor reference
+                this.tempFileEditors.set(tempFilePath, tempFileEditor)
+
+                // Set the language mode to match the original file for proper syntax highlighting
+                const ext = path.extname(filePath).substring(1).toLowerCase()
+                const languageMap: { [key: string]: string } = {
+                    js: 'javascript',
+                    ts: 'typescript',
+                    jsx: 'javascriptreact',
+                    tsx: 'typescriptreact',
+                    py: 'python',
+                    rb: 'ruby',
+                    go: 'go',
+                    rs: 'rust',
+                    java: 'java',
+                    cpp: 'cpp',
+                    c: 'c',
+                    cs: 'csharp',
+                    php: 'php',
+                    swift: 'swift',
+                    kt: 'kotlin',
+                    md: 'markdown',
+                    json: 'json',
+                    xml: 'xml',
+                    yaml: 'yaml',
+                    yml: 'yaml',
+                    html: 'html',
+                    css: 'css',
+                    scss: 'scss',
+                    less: 'less',
+                    sql: 'sql',
+                    sh: 'shellscript',
+                    bash: 'shellscript',
+                    ps1: 'powershell',
+                    r: 'r',
+                    dart: 'dart',
+                    vue: 'vue',
+                    lua: 'lua',
+                    pl: 'perl',
+                }
+                const languageId = languageMap[ext] || ext || 'plaintext'
+
+                try {
+                    await vscode.languages.setTextDocumentLanguage(tempDoc, languageId)
+                    getLogger().info(`[DiffAnimationHandler] 🎨 Set language mode to: ${languageId}`)
+                } catch (error) {
+                    getLogger().warn(`[DiffAnimationHandler] ⚠️ Failed to set language mode: ${error}`)
+                }
             }
 
-            // Start the animation
-            await this.diffAnimationController.startDiffAnimation(filePath, originalContent, newContent)
+            // Wait for editor to be ready
+            await new Promise((resolve) => setTimeout(resolve, 300))
 
-            getLogger().info(`[DiffAnimationHandler] ✅ Animation completed for: ${filePath}`)
+            // Verify the editor is showing our temp file
+            if (vscode.window.activeTextEditor?.document.uri.fsPath !== tempFilePath) {
+                getLogger().warn(`[DiffAnimationHandler] ⚠️ Active editor is not showing temp file, refocusing...`)
+                tempFileEditor = await vscode.window.showTextDocument(tempFileEditor.document, {
+                    preview: false,
+                    preserveFocus: false,
+                    viewColumn: vscode.ViewColumn.Active,
+                })
+                await new Promise((resolve) => setTimeout(resolve, 200))
+            }
+
+            // Double-check the document content before animation
+            const currentContent = tempFileEditor.document.getText()
+            if (currentContent !== originalContent) {
+                getLogger().warn(`[DiffAnimationHandler] ⚠️ Document content changed, restoring original content`)
+                await tempFileEditor.edit((editBuilder) => {
+                    const fullRange = new vscode.Range(
+                        tempFileEditor!.document.positionAt(0),
+                        tempFileEditor!.document.positionAt(currentContent.length)
+                    )
+                    editBuilder.replace(fullRange, originalContent)
+                })
+                await tempFileEditor.document.save()
+                await new Promise((resolve) => setTimeout(resolve, 100))
+            }
+
+            getLogger().info(`[DiffAnimationHandler] 🎨 Starting diff animation on temp file`)
+            getLogger().info(
+                `[DiffAnimationHandler] 📊 Animation details: from ${originalContent.length} chars to ${newContent.length} chars`
+            )
+
+            // Show a status message
+            vscode.window.setStatusBarMessage(`🎬 Animating changes for ${path.basename(filePath)}...`, 5000)
+
+            // Ensure the temp file editor is still active
+            if (vscode.window.activeTextEditor !== tempFileEditor) {
+                await vscode.window.showTextDocument(tempFileEditor.document, {
+                    preview: false,
+                    preserveFocus: false,
+                })
+            }
+
+            // Run animation on temp file
+            try {
+                await this.diffAnimationController.startDiffAnimation(tempFilePath, originalContent, newContent)
+                getLogger().info(`[DiffAnimationHandler] ✅ Animation completed successfully`)
+            } catch (animError) {
+                getLogger().error(`[DiffAnimationHandler] ❌ Animation failed: ${animError}`)
+                // Try alternative approach: direct file write
+                getLogger().info(`[DiffAnimationHandler] 🔄 Attempting fallback animation approach`)
+                await vscode.workspace.fs.writeFile(vscode.Uri.file(tempFilePath), Buffer.from(newContent, 'utf8'))
+                throw animError
+            }
+
+            // IMPORTANT: We keep the temp file open after animation!
+            // This allows us to reuse it for subsequent changes to the same file.
+            // The temp file will show all animations for a specific source file.
+            // Benefits:
+            // - One temp file per source file (not multiple)
+            // - User can see the history of changes
+            // - Better performance (no need to create new files)
+            // - Clear visual separation from actual file
+            // - Automatically opens when file is being modified
+
+            // Keep temp file open after animation (don't close it)
+            // The user can close it manually or it will be reused for next animation
+            getLogger().info(`[DiffAnimationHandler] 📌 Keeping temp file open for potential reuse`)
+
+            // Show completion message
+            vscode.window.setStatusBarMessage(`✅ Animation completed for ${path.basename(filePath)}`, 3000)
+
+            // Focus back on the original file
+            const originalUri = vscode.Uri.file(filePath)
+            try {
+                const originalDoc = await vscode.workspace.openTextDocument(originalUri)
+                await vscode.window.showTextDocument(originalDoc, {
+                    preview: false,
+                    preserveFocus: false,
+                    viewColumn: vscode.ViewColumn.One,
+                })
+            } catch (error) {
+                getLogger().warn(`[DiffAnimationHandler] ⚠️ Could not focus original file: ${error}`)
+            }
         } catch (error) {
-            getLogger().error(`[DiffAnimationHandler] ❌ Failed to animate: ${error}`)
+            getLogger().error(`[DiffAnimationHandler] ❌ Failed to animate ${animationId}: ${error}`)
         } finally {
             this.animatingFiles.delete(filePath)
+            getLogger().info(`[DiffAnimationHandler] 🏁 Animation ${animationId} completed`)
         }
     }
 
@@ -283,15 +817,8 @@ export class DiffAnimationHandler implements vscode.Disposable {
             if (originalContent !== newContent) {
                 getLogger().info(`[DiffAnimationHandler] ✨ Content differs, starting diff animation`)
 
-                // Open the file first
-                try {
-                    const uri = vscode.Uri.file(filePath)
-                    await vscode.window.showTextDocument(uri, { preview: false })
-                } catch (error) {
-                    getLogger().warn(`[DiffAnimationHandler] ⚠️ Could not open file: ${error}`)
-                }
-
-                await this.diffAnimationController.startDiffAnimation(filePath, originalContent, newContent)
+                // Use temp file approach for this too
+                await this.animateFileChangeWithTemp(filePath, originalContent, newContent, 'manual_diff')
             } else {
                 getLogger().warn(`[DiffAnimationHandler] ⚠️ Original and new content are identical`)
             }
@@ -405,20 +932,67 @@ export class DiffAnimationHandler implements vscode.Disposable {
         const now = Date.now()
         const timeout = 5 * 60 * 1000 // 5 minutes
 
+        let cleanedWrites = 0
         for (const [filePath, write] of this.pendingWrites) {
             if (now - write.timestamp > timeout) {
                 this.pendingWrites.delete(filePath)
+                cleanedWrites++
             }
         }
 
-        getLogger().info(`[DiffAnimationHandler] 🧹 Cleared old pending writes`)
+        // Clear processed messages to prevent memory leak
+        if (this.processedMessages.size > 1000) {
+            const oldSize = this.processedMessages.size
+            this.processedMessages.clear()
+            getLogger().info(`[DiffAnimationHandler] 🧹 Cleared ${oldSize} processed messages`)
+        }
+
+        // Clean up closed temp file editors
+        for (const [tempPath, editor] of this.tempFileEditors) {
+            if (!editor || editor.document.isClosed) {
+                this.tempFileEditors.delete(tempPath)
+                getLogger().info(`[DiffAnimationHandler] 🧹 Removed closed temp file editor: ${tempPath}`)
+            }
+        }
+
+        if (cleanedWrites > 0) {
+            getLogger().info(`[DiffAnimationHandler] 🧹 Cleared ${cleanedWrites} old pending writes`)
+        }
     }
 
-    public dispose(): void {
+    public async dispose(): Promise<void> {
         getLogger().info(`[DiffAnimationHandler] 💥 Disposing DiffAnimationHandler`)
+
+        // Close all temp file editors
+        for (const [tempPath, editor] of this.tempFileEditors) {
+            try {
+                if (editor && !editor.document.isClosed) {
+                    getLogger().info(`[DiffAnimationHandler] 📄 Closing temp file editor: ${tempPath}`)
+                    // Note: We can't programmatically close editors, but we can clean up our references
+                }
+            } catch (error) {
+                // Ignore errors during cleanup
+            }
+        }
+
+        // Clean up any remaining temp files
+        for (const tempPath of this.tempFileMapping.values()) {
+            try {
+                await vscode.workspace.fs.delete(vscode.Uri.file(tempPath))
+                getLogger().info(`[DiffAnimationHandler] 🗑️ Deleted temp file: ${tempPath}`)
+            } catch (error) {
+                // Ignore errors during cleanup
+            }
+        }
+
+        // Clear all tracking sets and maps
         this.pendingWrites.clear()
         this.processedMessages.clear()
         this.animatingFiles.clear()
+        this.tempFileMapping.clear()
+        this.tempFileEditors.clear()
+
+        // Dispose the diff animation controller
         this.diffAnimationController.dispose()
 
         if (this.fileWatcher) {
