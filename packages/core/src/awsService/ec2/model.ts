@@ -43,9 +43,8 @@ export interface Ec2RemoteEnv extends VscodeRemoteConnection {
     ssmSession: StartSessionResponse
 }
 
-export type Ec2OS = 'Amazon Linux' | 'Ubuntu' | 'macOS'
 interface RemoteUser {
-    os: Ec2OS
+    os: string
     name: string
 }
 
@@ -301,7 +300,7 @@ export class Ec2Connecter implements vscode.Disposable {
     public async tryCleanKeys(
         instanceId: string,
         hintComment: string,
-        hostOS: Ec2OS,
+        hostOS: string,
         remoteAuthorizedKeysPath: string
     ) {
         try {
@@ -345,6 +344,13 @@ export class Ec2Connecter implements vscode.Disposable {
             return { name: 'ubuntu', os }
         }
 
+        const input = await vscode.window.showInputBox({
+            prompt: `Unrecognized OS "${os}". Please enter the username to use for instance ${instanceId}:`,
+        })
+        if (input) {
+            return { name: input, os }
+        }
+
         throw new ToolkitError(`Unrecognized OS name ${os} on instance ${instanceId}`, { code: 'UnknownEc2OS' })
     }
 }
@@ -355,14 +361,9 @@ export class Ec2Connecter implements vscode.Disposable {
  * @param filepath filepath (as string) to target with the command.
  * @returns bash command to remove lines from file.
  */
-export function getRemoveLinesCommand(pattern: string, hostOS: Ec2OS, filepath: string): string {
+export function getRemoveLinesCommand(pattern: string, hostOS: string, filepath: string): string {
     if (pattern.includes('/')) {
         throw new ToolkitError(`ec2: cannot match pattern containing '/', given: ${pattern}`)
     }
-    // Linux allows not passing extension to -i, whereas macOS requires zero length extension.
-    return `sed -i${isLinux(hostOS) ? '' : " ''"} /${pattern}/d ${filepath}`
-}
-
-function isLinux(os: Ec2OS): boolean {
-    return os === 'Amazon Linux' || os === 'Ubuntu'
+    return `sed -i.bak '/${pattern}/d' ${filepath} && rm ${filepath}.bak`
 }
