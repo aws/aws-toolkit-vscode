@@ -580,7 +580,7 @@ export function registerMessageListeners(
 // Clean up on extension deactivation
 export function dispose() {
     if (diffAnimationHandler) {
-        diffAnimationHandler.dispose()
+        void diffAnimationHandler.dispose()
         diffAnimationHandler = undefined
     }
 }
