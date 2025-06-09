@@ -137,6 +137,7 @@
     "AWS.command.codecatalyst.login": "Connect to CodeCatalyst",
     "AWS.command.codecatalyst.logout": "Sign out of CodeCatalyst",
     "AWS.command.codecatalyst.signout": "Sign Out",
+    "AWS.command.manageSubscription": "Manage Q Developer Pro Subscription",
     "AWS.command.amazonq.explainCode": "Explain",
     "AWS.command.amazonq.refactorCode": "Refactor",
     "AWS.command.amazonq.fixCode": "Fix",
