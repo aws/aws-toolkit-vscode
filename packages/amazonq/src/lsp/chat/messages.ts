@@ -40,6 +40,9 @@ import {
     tabBarActionRequestType,
     contextCommandsNotificationType,
     ContextCommandParams,
+    ShowDocumentParams,
+    ShowDocumentResult,
+    ShowDocumentRequest,
     openFileDiffNotificationType,
     OpenFileDiffParams,
     LINK_CLICK_NOTIFICATION_METHOD,
@@ -70,6 +73,7 @@ import { telemetry, TelemetryBase } from 'aws-core-vscode/telemetry'
 import { isValidResponseError } from './error'
 import { decryptResponse, encryptRequest } from '../encryption'
 import { getCursorState } from '../utils'
+import { focusAmazonQPanel } from './commands'
 
 export function registerLanguageServerEventListener(languageClient: LanguageClient, provider: AmazonQChatViewProvider) {
     languageClient.info(
@@ -316,7 +320,7 @@ export function registerMessageListeners(
                 )
                 if (!buttonResult.success) {
                     languageClient.error(
-                        `[VSCode Client] Failed to execute action associated with button with reason: ${buttonResult.failureReason}`
+                        `[VSCode Client] Failed to execute button action: ${buttonResult.failureReason}`
                     )
                 }
                 break
@@ -411,6 +415,40 @@ export function registerMessageListeners(
             targetUri: targetUri.toString(),
         }
     })
+
+    languageClient.onRequest<ShowDocumentParams, ShowDocumentResult>(
+        ShowDocumentRequest.method,
+        async (params: ShowDocumentParams): Promise<ShowDocumentParams | ResponseError<ShowDocumentResult>> => {
+            focusAmazonQPanel().catch((e) => languageClient.error(`[VSCode Client] focusAmazonQPanel() failed`))
+
+            try {
+                const uri = vscode.Uri.parse(params.uri)
+
+                if (params.external) {
+                    // Note: Not using openUrl() because we probably don't want telemetry for these URLs.
+                    // Also it doesn't yet support the required HACK below.
+
+                    // HACK: workaround vscode bug: https://github.com/microsoft/vscode/issues/85930
+                    vscode.env.openExternal(params.uri as any).then(undefined, (e) => {
+                        // TODO: getLogger('?').error('failed vscode.env.openExternal: %O', e)
+                        vscode.env.openExternal(uri).then(undefined, (e) => {
+                            // TODO: getLogger('?').error('failed vscode.env.openExternal: %O', e)
+                        })
+                    })
+                    return params
+                }
+
+                const doc = await vscode.workspace.openTextDocument(uri)
+                await vscode.window.showTextDocument(doc, { preview: false })
+                return params
+            } catch (e) {
+                return new ResponseError(
+                    LSPErrorCodes.RequestFailed,
+                    `Failed to open document: ${(e as Error).message}`
+                )
+            }
+        }
+    )
 
     languageClient.onNotification(contextCommandsNotificationType.method, (params: ContextCommandParams) => {
         void provider.webview?.postMessage({
