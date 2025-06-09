@@ -24,6 +24,7 @@ import { liveTailRegistry, liveTailCodeLensProvider } from '../awsService/cloudW
 import { getFunctionLogGroupName } from '../awsService/cloudWatchLogs/activation'
 import { ToolkitError, isError } from '../shared/errors'
 import { LogStreamFilterResponse } from '../awsService/cloudWatchLogs/wizard/liveTailLogStreamSubmenu'
+import { registerLambdaUriHandler } from './uriHandlers'
 
 /**
  * Activates Lambda components.
@@ -116,6 +117,8 @@ export async function activate(context: ExtContext): Promise<void> {
                     throw err
                 }
             }
-        })
+        }),
+
+        registerLambdaUriHandler()
     )
 }
