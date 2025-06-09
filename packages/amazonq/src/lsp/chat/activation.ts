@@ -6,7 +6,7 @@
 import { window } from 'vscode'
 import { LanguageClient } from 'vscode-languageclient'
 import { AmazonQChatViewProvider } from './webviewProvider'
-import { registerCommands } from './commands'
+import { focusAmazonQPanel, registerCommands } from './commands'
 import { registerLanguageServerEventListener, registerMessageListeners } from './messages'
 import { Commands, getLogger, globals, undefinedIfEmpty } from 'aws-core-vscode/shared'
 import { activate as registerLegacyChatListeners } from '../../app/chat/activation'
@@ -72,6 +72,18 @@ export async function activate(languageClient: LanguageClient, encryptionKey: Bu
                 type: 'customization',
                 customization: undefinedIfEmpty(getSelectedCustomization().arn),
             })
+        }),
+        Commands.register('aws.amazonq.manageSubscription', () => {
+            focusAmazonQPanel().catch((e) => languageClient.error(`[VSCode Client] focusAmazonQPanel() failed`))
+
+            languageClient
+                .sendRequest('workspace/executeCommand', {
+                    command: 'aws/chat/manageSubscription',
+                    // arguments: [],
+                })
+                .catch((e) => {
+                    getLogger('amazonqLsp').error('failed request: aws/chat/manageSubscription: %O', e)
+                })
         }),
         globals.logOutputChannel.onDidChangeLogLevel((logLevel) => {
             getLogger('amazonqLsp').info(`Local log level changed to ${logLevel}, notifying LSP`)
