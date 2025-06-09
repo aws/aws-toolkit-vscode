@@ -73,6 +73,7 @@ import {
 import { telemetry, TelemetryBase } from 'aws-core-vscode/telemetry'
 import { isValidResponseError } from './error'
 import { DiffAnimationHandler } from './diffAnimation/diffAnimationHandler'
+import { getLogger } from 'aws-core-vscode/shared'
 
 // Create a singleton instance of DiffAnimationHandler
 let diffAnimationHandler: DiffAnimationHandler | undefined
@@ -123,20 +124,26 @@ function getCursorState(selection: readonly vscode.Selection[]) {
     }))
 }
 
+// Initialize DiffAnimationHandler on first use
+function getDiffAnimationHandler(): DiffAnimationHandler {
+    if (!diffAnimationHandler) {
+        diffAnimationHandler = new DiffAnimationHandler()
+    }
+    return diffAnimationHandler
+}
+
 export function registerMessageListeners(
     languageClient: LanguageClient,
     provider: AmazonQChatViewProvider,
     encryptionKey: Buffer
 ) {
-    // Initialize DiffAnimationHandler
-    if (!diffAnimationHandler) {
-        diffAnimationHandler = new DiffAnimationHandler()
-        languageClient.info('[message.ts] 🚀 Initialized DiffAnimationHandler')
-    }
-
     const chatStreamTokens = new Map<string, CancellationTokenSource>() // tab id -> token
+
+    // Initialize DiffAnimationHandler
+    const animationHandler = getDiffAnimationHandler()
+
     provider.webview?.onDidReceiveMessage(async (message) => {
-        languageClient.info(`[VSCode Client] 📨 Received ${JSON.stringify(message)} from chat`)
+        languageClient.info(`[VSCode Client]  Received ${JSON.stringify(message)} from chat`)
 
         if ((message.tabType && message.tabType !== 'cwc') || messageDispatcher.isLegacyEvent(message.command)) {
             // handle the mynah ui -> agent legacy flow
@@ -237,24 +244,30 @@ export function registerMessageListeners(
                 const chatDisposable = languageClient.onProgress(
                     chatRequestType,
                     partialResultToken,
-                    (partialResult) => {
-                        // Process partial result with diff animation
-                        void handlePartialResult<ChatResult>(
-                            partialResult,
-                            encryptionKey,
-                            provider,
-                            chatParams.tabId,
-                            languageClient,
-                            diffAnimationHandler!
-                        )
-                            .then((decoded) => {
-                                if (decoded) {
-                                    lastPartialResult = decoded
-                                }
-                            })
-                            .catch((error) => {
-                                languageClient.error(`[message.ts] ❌ Error in partial result handler: ${error}`)
-                            })
+                    async (partialResult) => {
+                        // Store the latest partial result
+                        if (typeof partialResult === 'string' && encryptionKey) {
+                            const decoded = await decodeRequest<ChatResult>(partialResult, encryptionKey)
+                            lastPartialResult = decoded
+
+                            // Process partial results for diff animations
+                            try {
+                                await animationHandler.processChatResult(decoded, chatParams.tabId, true)
+                            } catch (error) {
+                                getLogger().error(`Failed to process partial result for animations: ${error}`)
+                            }
+                        } else {
+                            lastPartialResult = partialResult as ChatResult
+
+                            // Process partial results for diff animations
+                            try {
+                                await animationHandler.processChatResult(lastPartialResult, chatParams.tabId, true)
+                            } catch (error) {
+                                getLogger().error(`Failed to process partial result for animations: ${error}`)
+                            }
+                        }
+
+                        void handlePartialResult<ChatResult>(partialResult, encryptionKey, provider, chatParams.tabId)
                     }
                 )
 
@@ -267,17 +280,7 @@ export function registerMessageListeners(
                 }
 
                 const chatRequest = await encryptRequest<ChatParams>(chatParams, encryptionKey)
-
-                // Add timeout monitoring
-                const timeoutId = setTimeout(() => {
-                    languageClient.warn(
-                        `[message.ts] ⚠️ Chat request taking longer than expected for tab ${chatParams.tabId}`
-                    )
-                }, 30000) // 30 seconds warning
-
                 try {
-                    languageClient.info(`[message.ts] 📤 Sending chat request for tab ${chatParams.tabId}`)
-
                     const chatResult = await languageClient.sendRequest<string | ChatResult>(
                         chatRequestType.method,
                         {
@@ -286,48 +289,42 @@ export function registerMessageListeners(
                         },
                         cancellationToken.token
                     )
-
-                    clearTimeout(timeoutId)
-                    languageClient.info(`[message.ts] ✅ Received final chat result for tab ${chatParams.tabId}`)
-
                     await handleCompleteResult<ChatResult>(
                         chatResult,
                         encryptionKey,
                         provider,
                         chatParams.tabId,
-                        chatDisposable,
-                        languageClient,
-                        diffAnimationHandler!
+                        chatDisposable
                     )
-                } catch (e) {
-                    clearTimeout(timeoutId)
-                    const errorMsg = `Error occurred during chat request: ${e}`
-                    languageClient.error(`[message.ts] ❌ ${errorMsg}`)
 
-                    // Log last partial result for debugging
-                    if (lastPartialResult) {
-                        languageClient.info(
-                            `[message.ts] 📊 Last partial result before error: ${JSON.stringify(lastPartialResult, undefined, 2).substring(0, 500)}...`
-                        )
+                    // Process final result for animations
+                    const finalResult =
+                        typeof chatResult === 'string' && encryptionKey
+                            ? await decodeRequest<ChatResult>(chatResult, encryptionKey)
+                            : (chatResult as ChatResult)
+                    try {
+                        await animationHandler.processChatResult(finalResult, chatParams.tabId, false)
+                    } catch (error) {
+                        getLogger().error(`Failed to process final result for animations: ${error}`)
                     }
-
+                } catch (e) {
+                    const errorMsg = `Error occurred during chat request: ${e}`
+                    languageClient.info(errorMsg)
+                    languageClient.info(
+                        `Last result from langauge server: ${JSON.stringify(lastPartialResult, undefined, 2)}`
+                    )
                     if (!isValidResponseError(e)) {
                         throw e
                     }
-
-                    // Try to handle the error result
                     await handleCompleteResult<ChatResult>(
                         e.data,
                         encryptionKey,
                         provider,
                         chatParams.tabId,
-                        chatDisposable,
-                        languageClient,
-                        diffAnimationHandler!
+                        chatDisposable
                     )
                 } finally {
                     chatStreamTokens.delete(chatParams.tabId)
-                    clearTimeout(timeoutId)
                 }
                 break
             }
@@ -337,13 +334,11 @@ export function registerMessageListeners(
                     quickActionRequestType,
                     quickActionPartialResultToken,
                     (partialResult) =>
-                        void handlePartialResult<QuickActionResult>(
+                        handlePartialResult<QuickActionResult>(
                             partialResult,
                             encryptionKey,
                             provider,
-                            message.params.tabId,
-                            languageClient,
-                            diffAnimationHandler!
+                            message.params.tabId
                         )
                 )
 
@@ -357,9 +352,7 @@ export function registerMessageListeners(
                     encryptionKey,
                     provider,
                     message.params.tabId,
-                    quickActionDisposable,
-                    languageClient,
-                    diffAnimationHandler!
+                    quickActionDisposable
                 )
                 break
             }
@@ -483,6 +476,21 @@ export function registerMessageListeners(
         async (params: ShowDocumentParams): Promise<ShowDocumentParams | ResponseError<ShowDocumentResult>> => {
             try {
                 const uri = vscode.Uri.parse(params.uri)
+
+                if (params.external) {
+                    // Note: Not using openUrl() because we probably don't want telemetry for these URLs.
+                    // Also it doesn't yet support the required HACK below.
+
+                    // HACK: workaround vscode bug: https://github.com/microsoft/vscode/issues/85930
+                    vscode.env.openExternal(params.uri as any).then(undefined, (e) => {
+                        // TODO: getLogger('?').error('failed vscode.env.openExternal: %O', e)
+                        vscode.env.openExternal(uri).then(undefined, (e) => {
+                            // TODO: getLogger('?').error('failed vscode.env.openExternal: %O', e)
+                        })
+                    })
+                    return params
+                }
+
                 const doc = await vscode.workspace.openTextDocument(uri)
                 await vscode.window.showTextDocument(doc, { preview: false })
                 return params
@@ -503,65 +511,55 @@ export function registerMessageListeners(
     })
 
     languageClient.onNotification(openFileDiffNotificationType.method, async (params: OpenFileDiffParams) => {
-        languageClient.info(`[message.ts] 🎨 Received openFileDiff notification: ${params.originalFileUri}`)
-        languageClient.info(
-            `[message.ts] 📏 Original content present: ${!!params.originalFileContent}, length: ${params.originalFileContent?.length || 0}`
-        )
-        languageClient.info(
-            `[message.ts] 📏 New content present: ${!!params.fileContent}, length: ${params.fileContent?.length || 0}`
-        )
+        // Try to use DiffAnimationHandler first
+        try {
+            await animationHandler.processFileDiff({
+                originalFileUri: params.originalFileUri,
+                originalFileContent: params.originalFileContent,
+                fileContent: params.fileContent,
+            })
+            getLogger().info('[VSCode Client] Successfully triggered diff animation')
+        } catch (error) {
+            // If animation fails, fall back to the original diff view
+            getLogger().error(`[VSCode Client] Diff animation failed, falling back to standard diff view: ${error}`)
 
-        if (diffAnimationHandler) {
-            await diffAnimationHandler.processFileDiff(params)
-        }
-
-        const ecc = new EditorContentController()
-        const uri = params.originalFileUri
-        const doc = await vscode.workspace.openTextDocument(uri)
-        const entireDocumentSelection = new vscode.Selection(
-            new vscode.Position(0, 0),
-            new vscode.Position(doc.lineCount - 1, doc.lineAt(doc.lineCount - 1).text.length)
-        )
-        const viewDiffMessage: ViewDiffMessage = {
-            context: {
-                activeFileContext: {
-                    filePath: params.originalFileUri,
-                    fileText: params.originalFileContent ?? '',
-                    fileLanguage: undefined,
-                    matchPolicy: undefined,
+            const ecc = new EditorContentController()
+            const uri = params.originalFileUri
+            const doc = await vscode.workspace.openTextDocument(uri)
+            const entireDocumentSelection = new vscode.Selection(
+                new vscode.Position(0, 0),
+                new vscode.Position(doc.lineCount - 1, doc.lineAt(doc.lineCount - 1).text.length)
+            )
+            const viewDiffMessage: ViewDiffMessage = {
+                context: {
+                    activeFileContext: {
+                        filePath: params.originalFileUri,
+                        fileText: params.originalFileContent ?? '',
+                        fileLanguage: undefined,
+                        matchPolicy: undefined,
+                    },
+                    focusAreaContext: {
+                        selectionInsideExtendedCodeBlock: entireDocumentSelection,
+                        codeBlock: '',
+                        extendedCodeBlock: '',
+                        names: undefined,
+                    },
                 },
-                focusAreaContext: {
-                    selectionInsideExtendedCodeBlock: entireDocumentSelection,
-                    codeBlock: '',
-                    extendedCodeBlock: '',
-                    names: undefined,
-                },
-            },
-            code: params.fileContent ?? '',
+                code: params.fileContent ?? '',
+            }
+            await ecc.viewDiff(viewDiffMessage, amazonQDiffScheme)
         }
-        await ecc.viewDiff(viewDiffMessage, amazonQDiffScheme)
     })
 
     languageClient.onNotification(chatUpdateNotificationType.method, async (params: ChatUpdateParams) => {
-        languageClient.info(`[message.ts] 🔄 Received chatUpdate notification for tab: ${params.tabId}`)
-        languageClient.info(`[message.ts] 📊 Update contains ${params.data?.messages?.length || 0} messages`)
-
-        // Log the messages in the update
+        // Process chat updates for diff animations
         if (params.data?.messages) {
-            for (const [index, msg] of params.data.messages.entries()) {
-                languageClient.info(`[message.ts]   [${index}] type: ${msg.type}, messageId: ${msg.messageId}`)
-                if (msg.header?.fileList) {
-                    languageClient.info(`[message.ts]     Has fileList: ${msg.header.fileList.filePaths?.join(', ')}`)
+            for (const message of params.data.messages) {
+                try {
+                    await animationHandler.processChatResult(message, params.tabId, false)
+                } catch (error) {
+                    getLogger().error(`Failed to process chat update for animations: ${error}`)
                 }
-            }
-        }
-
-        // Process the update through DiffAnimationHandler
-        if (diffAnimationHandler && params.data?.messages) {
-            try {
-                await diffAnimationHandler.processChatUpdate(params)
-            } catch (error) {
-                languageClient.error(`[message.ts] ❌ Error processing chat update for animation: ${error}`)
             }
         }
 
@@ -577,15 +575,14 @@ export function registerMessageListeners(
             params: params,
         })
     })
+}
 
-    // Cleanup when provider's webview is disposed
-    provider.webviewView?.onDidDispose(() => {
-        if (diffAnimationHandler) {
-            diffAnimationHandler.dispose()
-            diffAnimationHandler = undefined
-            languageClient.info('[message.ts] 💥 Disposed DiffAnimationHandler')
-        }
-    })
+// Clean up on extension deactivation
+export function dispose() {
+    if (diffAnimationHandler) {
+        diffAnimationHandler.dispose()
+        diffAnimationHandler = undefined
+    }
 }
 
 function isServerEvent(command: string) {
@@ -622,62 +619,13 @@ async function handlePartialResult<T extends ChatResult>(
     partialResult: string | T,
     encryptionKey: Buffer | undefined,
     provider: AmazonQChatViewProvider,
-    tabId: string,
-    languageClient: LanguageClient,
-    diffAnimationHandler: DiffAnimationHandler
-): Promise<T | undefined> {
-    languageClient.info(`[message.ts] 📨 Processing partial result for tab ${tabId}`)
-
+    tabId: string
+) {
     const decryptedMessage =
         typeof partialResult === 'string' && encryptionKey
             ? await decodeRequest<T>(partialResult, encryptionKey)
             : (partialResult as T)
 
-    // Log the structure of the partial result
-    languageClient.info(`[message.ts] 📊 Partial result details:`)
-    languageClient.info(`[message.ts]   - messageId: ${decryptedMessage.messageId}`)
-    languageClient.info(`[message.ts]   - has body: ${!!decryptedMessage.body}`)
-    languageClient.info(`[message.ts]   - has header: ${!!decryptedMessage.header}`)
-    languageClient.info(`[message.ts]   - has fileList: ${!!decryptedMessage.header?.fileList}`)
-    languageClient.info(
-        `[message.ts]   - additionalMessages count: ${decryptedMessage.additionalMessages?.length || 0}`
-    )
-
-    // Log additional messages in detail
-    if (decryptedMessage.additionalMessages && decryptedMessage.additionalMessages.length > 0) {
-        languageClient.info(`[message.ts] 📋 Additional messages in partial result:`)
-        for (const [index, msg] of decryptedMessage.additionalMessages.entries()) {
-            languageClient.info(
-                `[message.ts]   [${index}] type: ${msg.type}, messageId: ${msg.messageId}, body length: ${msg.body?.length || 0}`
-            )
-
-            // Check for diff content
-            if (msg.type === 'system-prompt' && msg.messageId) {
-                if (msg.messageId.endsWith('_original') || msg.messageId.endsWith('_new')) {
-                    languageClient.info(`[message.ts] 🎯 Found diff content: ${msg.messageId}`)
-                }
-            }
-
-            // Check for progress messages (file being processed)
-            if (msg.type === 'tool' && msg.messageId?.startsWith('progress_')) {
-                languageClient.info(`[message.ts] 🎬 Found progress message: ${msg.messageId}`)
-                const fileList = msg.header?.fileList
-                if (fileList?.filePaths?.[0]) {
-                    languageClient.info(`[message.ts] 📁 File being processed: ${fileList.filePaths[0]}`)
-                }
-            }
-
-            // Check for final tool messages
-            if (msg.type === 'tool' && msg.messageId && !msg.messageId.startsWith('progress_')) {
-                languageClient.info(`[message.ts] 🔧 Found tool message: ${msg.messageId}`)
-                if (msg.header?.fileList) {
-                    languageClient.info(`[message.ts]   Files: ${msg.header.fileList.filePaths?.join(', ')}`)
-                }
-            }
-        }
-    }
-
-    // Send to UI first
     if (decryptedMessage.body !== undefined) {
         void provider.webview?.postMessage({
             command: chatRequestType.method,
@@ -686,16 +634,6 @@ async function handlePartialResult<T extends ChatResult>(
             tabId: tabId,
         })
     }
-
-    // Process for diff animation - IMPORTANT: pass true for isPartialResult
-    languageClient.info('[message.ts] 🎬 Processing partial result for diff animation')
-    try {
-        await diffAnimationHandler.processChatResult(decryptedMessage, tabId, true)
-    } catch (error) {
-        languageClient.error(`[message.ts] ❌ Error processing partial result for animation: ${error}`)
-    }
-
-    return decryptedMessage
 }
 
 /**
@@ -707,77 +645,15 @@ async function handleCompleteResult<T extends ChatResult>(
     encryptionKey: Buffer | undefined,
     provider: AmazonQChatViewProvider,
     tabId: string,
-    disposable: Disposable,
-    languageClient: LanguageClient,
-    diffAnimationHandler: DiffAnimationHandler
+    disposable: Disposable
 ) {
-    languageClient.info(`[message.ts] ✅ Processing complete result for tab ${tabId}`)
-
     const decryptedMessage =
         typeof result === 'string' && encryptionKey ? await decodeRequest<T>(result, encryptionKey) : (result as T)
-
-    // Log complete result details
-    languageClient.info(`[message.ts] 📊 Complete result details:`)
-    languageClient.info(`[message.ts]   - Main message ID: ${decryptedMessage.messageId}`)
-    languageClient.info(
-        `[message.ts]   - Additional messages count: ${decryptedMessage.additionalMessages?.length || 0}`
-    )
-
-    // Log additional messages in detail
-    if (decryptedMessage.additionalMessages && decryptedMessage.additionalMessages.length > 0) {
-        languageClient.info(`[message.ts] 📋 Additional messages in complete result:`)
-        for (const [index, msg] of decryptedMessage.additionalMessages.entries()) {
-            languageClient.info(
-                `[message.ts]   [${index}] type: ${msg.type}, messageId: ${msg.messageId}, body length: ${msg.body?.length || 0}`
-            )
-
-            // Check for diff content
-            if (msg.type === 'system-prompt' && msg.messageId) {
-                if (msg.messageId.endsWith('_original')) {
-                    const toolUseId = msg.messageId.replace('_original', '')
-                    languageClient.info(
-                        `[message.ts] 🎯 Found original diff content for toolUse: ${toolUseId}, content length: ${msg.body?.length || 0}`
-                    )
-                    // Log first 100 chars of content
-                    if (msg.body) {
-                        languageClient.info(`[message.ts]   Content preview: ${msg.body.substring(0, 100)}...`)
-                    }
-                } else if (msg.messageId.endsWith('_new')) {
-                    const toolUseId = msg.messageId.replace('_new', '')
-                    languageClient.info(
-                        `[message.ts] 🎯 Found new diff content for toolUse: ${toolUseId}, content length: ${msg.body?.length || 0}`
-                    )
-                    // Log first 100 chars of content
-                    if (msg.body) {
-                        languageClient.info(`[message.ts]   Content preview: ${msg.body.substring(0, 100)}...`)
-                    }
-                }
-            }
-
-            // Check for final tool messages
-            if (msg.type === 'tool' && msg.messageId && !msg.messageId.startsWith('progress_')) {
-                languageClient.info(`[message.ts] 🔧 Found tool completion message: ${msg.messageId}`)
-                if (msg.header?.fileList) {
-                    languageClient.info(`[message.ts]   Files affected: ${msg.header.fileList.filePaths?.join(', ')}`)
-                }
-            }
-        }
-    }
-
-    // Send to UI
     void provider.webview?.postMessage({
         command: chatRequestType.method,
         params: decryptedMessage,
         tabId: tabId,
     })
-
-    // Process for diff animation - IMPORTANT: pass false for isPartialResult
-    languageClient.info('[message.ts] 🎬 Processing complete result for diff animation')
-    try {
-        await diffAnimationHandler.processChatResult(decryptedMessage, tabId, false)
-    } catch (error) {
-        languageClient.error(`[message.ts] ❌ Error processing complete result for animation: ${error}`)
-    }
 
     // only add the reference log once the request is complete, otherwise we will get duplicate log items
     for (const ref of decryptedMessage.codeReference ?? []) {
