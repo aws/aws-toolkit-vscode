@@ -16,6 +16,7 @@ import {
     ChatPromptOptionAcknowledgedMessage,
     STOP_CHAT_RESPONSE,
     StopChatResponseMessage,
+    OPEN_FILE_DIALOG,
 } from '@aws/chat-client-ui-types'
 import {
     ChatResult,
@@ -60,6 +61,10 @@ import {
     ruleClickRequestType,
     pinnedContextNotificationType,
     activeEditorChangedNotificationType,
+    ShowOpenDialogRequestType,
+    ShowOpenDialogParams,
+    openFileDialogRequestType,
+    OpenFileDialogResult,
 } from '@aws/language-server-runtimes/protocol'
 import { v4 as uuidv4 } from 'uuid'
 import * as vscode from 'vscode'
@@ -316,6 +321,17 @@ export function registerMessageListeners(
                 }
                 break
             }
+            case OPEN_FILE_DIALOG: {
+                const result = await languageClient.sendRequest<OpenFileDialogResult>(
+                    openFileDialogRequestType.method,
+                    message.params
+                )
+                void provider.webview?.postMessage({
+                    command: openFileDialogRequestType.method,
+                    params: result,
+                })
+                break
+            }
             case quickActionRequestType.method: {
                 const quickActionPartialResultToken = uuidv4()
                 const quickActionDisposable = languageClient.onProgress(
@@ -459,6 +475,19 @@ export function registerMessageListeners(
         return {
             targetUri: targetUri.toString(),
         }
+    })
+
+    languageClient.onRequest(ShowOpenDialogRequestType.method, async (params: ShowOpenDialogParams) => {
+        const uris = await vscode.window.showOpenDialog({
+            canSelectFiles: params.canSelectFiles ?? true,
+            canSelectFolders: params.canSelectFolders ?? false,
+            canSelectMany: params.canSelectMany ?? false,
+            filters: params.filters,
+            defaultUri: params.defaultUri ? vscode.Uri.parse(params.defaultUri) : undefined,
+            title: params.title,
+        })
+        const urisString = uris?.map((uri) => uri.toString())
+        return { uris: urisString || [] }
     })
 
     languageClient.onRequest<ShowDocumentParams, ShowDocumentResult>(
