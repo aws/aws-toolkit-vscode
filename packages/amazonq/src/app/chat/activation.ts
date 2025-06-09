@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import { ExtensionContext } from 'vscode'
 import { telemetry } from 'aws-core-vscode/telemetry'
 import { AuthUtil } from 'aws-core-vscode/codewhisperer'
-import { Commands, placeholder } from 'aws-core-vscode/shared'
+import { Commands, getLogger, placeholder } from 'aws-core-vscode/shared'
 import * as amazonq from 'aws-core-vscode/amazonq'
 
 export async function activate(context: ExtensionContext) {
@@ -67,7 +67,9 @@ async function setupAuthNotification() {
         const selection = await vscode.window.showWarningMessage('Start using Amazon Q', buttonAction)
 
         if (selection === buttonAction) {
-            void amazonq.focusAmazonQPanel.execute(placeholder, source)
+            amazonq.focusAmazonQPanel.execute(placeholder, source).catch((e) => {
+                getLogger().error('focusAmazonQPanel failed: %s', e)
+            })
         }
     }
 }
