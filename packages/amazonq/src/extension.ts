@@ -39,7 +39,6 @@ import {
     Experiments,
     isSageMaker,
     Commands,
-    isAmazonLinux2,
     ProxyUtil,
 } from 'aws-core-vscode/shared'
 import { ExtStartUpSources } from 'aws-core-vscode/telemetry'

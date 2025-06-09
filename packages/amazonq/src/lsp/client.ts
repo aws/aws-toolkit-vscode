@@ -48,7 +48,6 @@ import {
     getOptOutPreference,
     isAmazonLinux2,
     oidcClientName,
-    openUrl,
     getClientId,
     extensionVersion,
     Commands,
