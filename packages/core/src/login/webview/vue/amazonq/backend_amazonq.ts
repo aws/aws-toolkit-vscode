@@ -206,10 +206,9 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
         // Defining separate auth function to emit telemetry before returning from setup
         const runAuth = async (): Promise<AuthError | undefined> => {
             try {
-                await AuthUtil.instance.login(accessKey, secretKey)
+                await AuthUtil.instance.login(accessKey, secretKey, 'iam')
                 // Add auth telemetry
                 this.storeMetricMetadata(await AuthUtil.instance.getTelemetryMetadata())
-                // Show sign-in message
                 void vscode.window.showInformationMessage('AmazonQ: Successfully connected to AWS IAM Credentials')
             } catch (e) {
                 getLogger().error('Failed submitting credentials %O', e)

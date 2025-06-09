@@ -30,7 +30,15 @@ import { showAmazonQWalkthroughOnce } from '../../amazonq/onboardingPage/walkthr
 import { setContext } from '../../shared/vscode/setContext'
 import { openUrl } from '../../shared/utilities/vsCodeUtils'
 import { telemetry } from '../../shared/telemetry/telemetry'
-import { AuthStateEvent, cacheChangedEvent, LanguageClientAuth, LoginTypes, SsoLogin } from '../../auth/auth2'
+import {
+    AuthStateEvent,
+    cacheChangedEvent,
+    LanguageClientAuth,
+    LoginTypes,
+    Login,
+    SsoLogin,
+    IamLogin,
+} from '../../auth/auth2'
 import { builderIdStartUrl, internalStartUrl } from '../../auth/sso/constants'
 import { VSCODE_EXTENSION_ID } from '../../shared/extensions'
 import { RegionProfileManager } from '../region/regionProfileManager'
@@ -39,7 +47,11 @@ import { getEnvironmentSpecificMemento } from '../../shared/utilities/mementos'
 import { getCacheDir, getFlareCacheFileName, getRegistrationCacheFile, getTokenCacheFile } from '../../auth/sso/cache'
 import { notifySelectDeveloperProfile } from '../region/utils'
 import { once } from '../../shared/utilities/functionUtils'
-import { CancellationTokenSource, SsoTokenSourceKind } from '@aws/language-server-runtimes/server-interface'
+import {
+    CancellationTokenSource,
+    GetSsoTokenResult,
+    SsoTokenSourceKind,
+} from '@aws/language-server-runtimes/server-interface'
 
 const localize = nls.loadMessageBundle()
 
@@ -69,8 +81,8 @@ export class AuthUtil implements IAuthProvider {
 
     public readonly regionProfileManager: RegionProfileManager
 
-    // IAM login currently not supported
-    private session: SsoLogin
+    private session?: Login
+    private readonly eventEmitter = new vscode.EventEmitter<AuthStateEvent>()
 
     static create(lspAuth: LanguageClientAuth) {
         return (this.#instance ??= new this(lspAuth))
@@ -85,7 +97,6 @@ export class AuthUtil implements IAuthProvider {
     }
 
     private constructor(private readonly lspAuth: LanguageClientAuth) {
-        this.session = new SsoLogin(this.profileName, this.lspAuth)
         this.onDidChangeConnectionState((e: AuthStateEvent) => this.stateChangeHandler(e))
 
         this.regionProfileManager = new RegionProfileManager(this)
@@ -101,7 +112,11 @@ export class AuthUtil implements IAuthProvider {
     }
 
     isSsoSession() {
-        return this.session.loginType === LoginTypes.SSO
+        return this.session?.loginType === LoginTypes.SSO
+    }
+
+    isIamSession() {
+        return this.session?.loginType === LoginTypes.IAM
     }
 
     /**
@@ -113,7 +128,23 @@ export class AuthUtil implements IAuthProvider {
     didStartSignedIn = false
 
     async restore() {
-        await this.session.restore()
+        // If a session exists, restore it
+        if (this.session) {
+            await this.session.restore()
+        } else {
+            // Try to restore an SSO session
+            this.session = new SsoLogin(this.profileName, this.lspAuth, this.eventEmitter)
+            await this.session.restore()
+            if (!this.isConnected()) {
+                // Try to restore an IAM session
+                this.session = new IamLogin(this.profileName, this.lspAuth, this.eventEmitter)
+                await this.session.restore()
+                if (!this.isConnected()) {
+                    // If both fail, reset the session
+                    this.session = undefined
+                }
+            }
+        }
         this.didStartSignedIn = this.isConnected()
 
         // HACK: We noticed that if calling `refreshState()` here when the user was already signed in, something broke.
@@ -133,10 +164,22 @@ export class AuthUtil implements IAuthProvider {
         }
     }
 
-    async login(startUrl: string, region: string) {
-        const response = await this.session.login({ startUrl, region, scopes: amazonQScopes })
-        await showAmazonQWalkthroughOnce()
+    // Log into the desired session type using the authentication parameters
+    async login(accessKey: string, secretKey: string, loginType: 'iam'): Promise<GetSsoTokenResult | undefined>
+    async login(startUrl: string, region: string, loginType: 'sso'): Promise<GetSsoTokenResult | undefined>
+    async login(first: string, second: string, loginType: 'iam' | 'sso'): Promise<GetSsoTokenResult | undefined> {
+        let response: GetSsoTokenResult | undefined
 
+        // Start session if the current session type does not match the desired type
+        if (loginType === 'sso' && !this.isSsoSession()) {
+            this.session = new SsoLogin(this.profileName, this.lspAuth, this.eventEmitter)
+            response = await this.session.login({ startUrl: first, region: second, scopes: amazonQScopes })
+        } else if (loginType === 'iam' && !this.isIamSession()) {
+            this.session = new IamLogin(this.profileName, this.lspAuth, this.eventEmitter)
+            response = await this.session.login({ accessKey: first, secretKey: second })
+        }
+
+        await showAmazonQWalkthroughOnce()
         return response
     }
 
@@ -145,7 +188,7 @@ export class AuthUtil implements IAuthProvider {
             throw new ToolkitError('Cannot reauthenticate non-SSO session.')
         }
 
-        return this.session.reauthenticate()
+        return this.session?.reauthenticate()
     }
 
     logout() {
@@ -154,23 +197,29 @@ export class AuthUtil implements IAuthProvider {
             return
         }
         this.lspAuth.deleteBearerToken()
-        return this.session.logout()
+        const response = this.session?.logout()
+        this.session = undefined
+        return response
     }
 
     async getToken() {
         if (this.isSsoSession()) {
-            return (await this.session.getToken()).token
+            return (await this.session!.getToken()).token
         } else {
             throw new ToolkitError('Cannot get token for non-SSO session.')
         }
     }
 
     get connection() {
-        return this.session.data
+        return this.session?.data
     }
 
     getAuthState() {
-        return this.session.getConnectionState()
+        if (this.session) {
+            return this.session.getConnectionState()
+        } else {
+            return 'notConnected'
+        }
     }
 
     isConnected() {
@@ -194,7 +243,7 @@ export class AuthUtil implements IAuthProvider {
     }
 
     onDidChangeConnectionState(handler: (e: AuthStateEvent) => any) {
-        return this.session.onDidChangeConnectionState(handler)
+        return this.eventEmitter.event(handler)
     }
 
     public async setVscodeContextProps(state = this.getAuthState()) {
@@ -290,7 +339,7 @@ export class AuthUtil implements IAuthProvider {
 
     private async stateChangeHandler(e: AuthStateEvent) {
         if (e.state === 'refreshed') {
-            const params = this.isSsoSession() ? (await this.session.getToken()).updateCredentialsParams : undefined
+            const params = this.isSsoSession() ? (await this.session!.getToken()).updateCredentialsParams : undefined
             await this.lspAuth.updateBearerToken(params!)
             return
         } else {
@@ -308,7 +357,7 @@ export class AuthUtil implements IAuthProvider {
             }
         }
         if (state === 'connected') {
-            const bearerTokenParams = (await this.session.getToken()).updateCredentialsParams
+            const bearerTokenParams = (await this.session!.getToken()).updateCredentialsParams
             await this.lspAuth.updateBearerToken(bearerTokenParams)
 
             if (this.isIdcConnection()) {
@@ -345,7 +394,7 @@ export class AuthUtil implements IAuthProvider {
         }
 
         if (this.isSsoSession()) {
-            const ssoSessionDetails = (await this.session.getProfile()).ssoSession?.settings
+            const ssoSessionDetails = (await this.session!.getProfile()).ssoSession?.settings
             return {
                 authScopes: ssoSessionDetails?.sso_registration_scopes?.join(','),
                 credentialSourceId: AuthUtil.instance.isBuilderIdConnection() ? 'awsId' : 'iamIdentityCenter',
@@ -376,7 +425,7 @@ export class AuthUtil implements IAuthProvider {
             connType = 'builderId'
         } else if (this.isIdcConnection()) {
             connType = 'identityCenter'
-            const ssoSessionDetails = (await this.session.getProfile()).ssoSession?.settings
+            const ssoSessionDetails = (await this.session!.getProfile()).ssoSession?.settings
             if (hasScopes(ssoSessionDetails?.sso_registration_scopes ?? [], scopesSsoAccountAccess)) {
                 authIds.push('identityCenterExplorer')
             }
@@ -446,7 +495,7 @@ export class AuthUtil implements IAuthProvider {
                 scopes: amazonQScopes,
             }
 
-            await this.session.updateProfile(registrationKey)
+            await this.session?.updateProfile(registrationKey)
 
             const cacheDir = getCacheDir()
 

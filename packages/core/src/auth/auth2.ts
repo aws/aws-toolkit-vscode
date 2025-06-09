@@ -70,15 +70,18 @@ export const LoginTypes = {
 } as const
 export type LoginType = (typeof LoginTypes)[keyof typeof LoginTypes]
 
+export type cacheChangedEvent = 'delete' | 'create'
+
+export type Login = SsoLogin | IamLogin
+
+export type TokenSource = IamIdentityCenterSsoTokenSource | AwsBuilderIdSsoTokenSource
+
+/**
+ * Interface for authentication management
+ */
 interface BaseLogin {
     readonly loginType: LoginType
 }
-
-export type cacheChangedEvent = 'delete' | 'create'
-
-export type Login = SsoLogin // TODO: add IamLogin type when supported
-
-export type TokenSource = IamIdentityCenterSsoTokenSource | AwsBuilderIdSsoTokenSource
 
 /**
  * Handles auth requests to the Identity Server in the Amazon Q LSP.
@@ -188,7 +191,6 @@ export class LanguageClientAuth {
  */
 export class SsoLogin implements BaseLogin {
     readonly loginType = LoginTypes.SSO
-    private readonly eventEmitter = new vscode.EventEmitter<AuthStateEvent>()
 
     // Cached information from the identity server for easy reference
     private ssoTokenId: string | undefined
@@ -199,7 +201,8 @@ export class SsoLogin implements BaseLogin {
 
     constructor(
         public readonly profileName: string,
-        private readonly lspAuth: LanguageClientAuth
+        private readonly lspAuth: LanguageClientAuth,
+        private readonly eventEmitter: vscode.EventEmitter<AuthStateEvent>
     ) {
         lspAuth.registerSsoTokenChangedHandler((params: SsoTokenChangedParams) => this.ssoTokenChangedHandler(params))
     }
@@ -341,8 +344,184 @@ export class SsoLogin implements BaseLogin {
         return this.connectionState
     }
 
-    onDidChangeConnectionState(handler: (e: AuthStateEvent) => any) {
-        return this.eventEmitter.event(handler)
+    private updateConnectionState(state: AuthState) {
+        const oldState = this.connectionState
+        const newState = state
+
+        this.connectionState = newState
+
+        if (oldState !== newState) {
+            this.eventEmitter.fire({ id: this.profileName, state: this.connectionState })
+        }
+    }
+
+    private ssoTokenChangedHandler(params: SsoTokenChangedParams) {
+        if (params.ssoTokenId === this.ssoTokenId) {
+            if (params.kind === SsoTokenChangedKind.Expired) {
+                this.updateConnectionState('expired')
+                return
+            } else if (params.kind === SsoTokenChangedKind.Refreshed) {
+                this.eventEmitter.fire({ id: this.profileName, state: 'refreshed' })
+            }
+        }
+    }
+}
+
+/**
+ * Manages an IAM credentials connection.
+ */
+export class IamLogin implements BaseLogin {
+    readonly loginType = LoginTypes.IAM
+
+    // Cached information from the identity server for easy reference
+    private ssoTokenId: string | undefined
+    private connectionState: AuthState = 'notConnected'
+    private _data: { startUrl: string; region: string } | undefined
+
+    private cancellationToken: CancellationTokenSource | undefined
+
+    constructor(
+        public readonly profileName: string,
+        private readonly lspAuth: LanguageClientAuth,
+        private readonly eventEmitter: vscode.EventEmitter<AuthStateEvent>
+    ) {
+        lspAuth.registerSsoTokenChangedHandler((params: SsoTokenChangedParams) => this.ssoTokenChangedHandler(params))
+    }
+
+    get data() {
+        return this._data
+    }
+
+    async login(opts: { accessKey: string; secretKey: string }) {
+        // await this.updateProfile(opts)
+        return this._getSsoToken(true)
+    }
+
+    async reauthenticate() {
+        if (this.connectionState === 'notConnected') {
+            throw new ToolkitError('Cannot reauthenticate when not connected.')
+        }
+        return this._getSsoToken(true)
+    }
+
+    async logout() {
+        if (this.ssoTokenId) {
+            await this.lspAuth.invalidateSsoToken(this.ssoTokenId)
+        }
+        this.updateConnectionState('notConnected')
+        this._data = undefined
+        // TODO: DeleteProfile api in Identity Service (this doesn't exist yet)
+    }
+
+    async getProfile() {
+        return await this.lspAuth.getProfile(this.profileName)
+    }
+
+    async updateProfile(opts: { startUrl: string; region: string; scopes: string[] }) {
+        await this.lspAuth.updateProfile(this.profileName, opts.startUrl, opts.region, opts.scopes)
+        this._data = {
+            startUrl: opts.startUrl,
+            region: opts.region,
+        }
+    }
+
+    /**
+     * Restore the connection state and connection details to memory, if they exist.
+     */
+    async restore() {
+        // const sessionData = await this.getProfile()
+        // const ssoSession = sessionData?.ssoSession?.settings
+        // if (ssoSession?.sso_region && ssoSession?.sso_start_url) {
+        //     this._data = {
+        //         startUrl: ssoSession.sso_start_url,
+        //         region: ssoSession.sso_region,
+        //     }
+        // }
+        // try {
+        //     await this._getSsoToken(false)
+        // } catch (err) {
+        //     getLogger().error('Restoring connection failed: %s', err)
+        // }
+    }
+
+    /**
+     * Cancels running active login flows.
+     */
+    cancelLogin() {
+        this.cancellationToken?.cancel()
+        this.cancellationToken?.dispose()
+        this.cancellationToken = undefined
+    }
+
+    /**
+     * Returns both the decrypted access token and the payload to send to the `updateCredentials` LSP API
+     * with encrypted token
+     */
+    async getToken() {
+        const response = await this._getSsoToken(false)
+        const decryptedKey = await jose.compactDecrypt(response.ssoToken.accessToken, this.lspAuth.encryptionKey)
+        return {
+            token: decryptedKey.plaintext.toString().replaceAll('"', ''),
+            updateCredentialsParams: response.updateCredentialsParams,
+        }
+    }
+
+    /**
+     * Returns the response from `getSsoToken` LSP API and sets the connection state based on the errors/result
+     * of the call.
+     */
+    private async _getSsoToken(login: boolean) {
+        let response: GetSsoTokenResult
+        this.cancellationToken = new CancellationTokenSource()
+
+        try {
+            response = await this.lspAuth.getSsoToken(
+                {
+                    /**
+                     * Note that we do not use SsoTokenSourceKind.AwsBuilderId here.
+                     * This is because it does not leave any state behind on disk, so
+                     * we cannot infer that a builder ID connection exists via the
+                     * Identity Server alone.
+                     */
+                    kind: SsoTokenSourceKind.IamIdentityCenter,
+                    profileName: this.profileName,
+                } satisfies IamIdentityCenterSsoTokenSource,
+                login,
+                this.cancellationToken.token
+            )
+        } catch (err: any) {
+            switch (err.data?.awsErrorCode) {
+                case AwsErrorCodes.E_CANCELLED:
+                case AwsErrorCodes.E_SSO_SESSION_NOT_FOUND:
+                case AwsErrorCodes.E_PROFILE_NOT_FOUND:
+                case AwsErrorCodes.E_INVALID_SSO_TOKEN:
+                    this.updateConnectionState('notConnected')
+                    break
+                case AwsErrorCodes.E_CANNOT_REFRESH_SSO_TOKEN:
+                    this.updateConnectionState('expired')
+                    break
+                // TODO: implement when identity server emits E_NETWORK_ERROR, E_FILESYSTEM_ERROR
+                // case AwsErrorCodes.E_NETWORK_ERROR:
+                // case AwsErrorCodes.E_FILESYSTEM_ERROR:
+                //     // do stuff, probably nothing at all
+                //     break
+                default:
+                    getLogger().error('SsoLogin: unknown error when requesting token: %s', err)
+                    break
+            }
+            throw err
+        } finally {
+            this.cancellationToken?.dispose()
+            this.cancellationToken = undefined
+        }
+
+        this.ssoTokenId = response.ssoToken.id
+        this.updateConnectionState('connected')
+        return response
+    }
+
+    getConnectionState() {
+        return this.connectionState
     }
 
     private updateConnectionState(state: AuthState) {
