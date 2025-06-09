@@ -254,6 +254,7 @@ export class DiffAnimationController {
 
         // Split new content into lines for accurate mapping
         let currentLineInNew = 0
+        let currentLineInOld = 0
 
         getLogger().info(`[DiffAnimationController] 📊 Document has ${document.lineCount} lines`)
 
@@ -287,15 +288,29 @@ export class DiffAnimationController {
                     }
                 }
             } else if (change.removed) {
-                // For deletions, we track them but can't show in new content
+                // For deletions, create decorations at the current line position
                 for (let j = 0; j < lineCount; j++) {
-                    getLogger().info(
-                        `[DiffAnimationController] ➖ Removed line: "${changeLines[j]?.substring(0, 50) || ''}..."`
-                    )
+                    try {
+                        // Use the current line position for the deletion decoration
+                        const line = document.lineAt(currentLineInNew)
+                        deletions.push({
+                            range: line.range,
+                            hoverMessage: `Removed: ${changeLines[j]}`,
+                        })
+                        getLogger().info(
+                            `[DiffAnimationController] ➖ Marked deletion at line ${currentLineInNew}: "${changeLines[j]?.substring(0, 50) || ''}..."`
+                        )
+                    } catch (error) {
+                        getLogger().warn(
+                            `[DiffAnimationController] ⚠️ Could not mark deletion at line ${currentLineInNew}: ${error}`
+                        )
+                    }
                 }
+                currentLineInOld += lineCount
             } else {
-                // Unchanged lines
+                // Unchanged lines - increment both counters
                 currentLineInNew += lineCount
+                currentLineInOld += lineCount
             }
         }
 
@@ -313,24 +328,32 @@ export class DiffAnimationController {
         decorations: DiffAnimation['decorations'],
         filePath: string
     ): Promise<void> {
-        const { additions } = decorations
+        const { additions, deletions } = decorations
         const timeouts: NodeJS.Timeout[] = []
 
-        getLogger().info(`[DiffAnimationController] 🎬 Starting animation with ${additions.length} additions`)
+        getLogger().info(
+            `[DiffAnimationController] 🎬 Starting animation with ${additions.length} additions, ${deletions.length} deletions`
+        )
 
         // Clear previous decorations
         editor.setDecorations(this.additionDecorationType, [])
         editor.setDecorations(this.deletionDecorationType, [])
         editor.setDecorations(this.currentLineDecorationType, [])
 
+        // Show all deletions immediately with red background
+        if (deletions.length > 0) {
+            editor.setDecorations(this.deletionDecorationType, deletions)
+            getLogger().info(`[DiffAnimationController] 🔴 Applied ${deletions.length} deletion decorations`)
+        }
+
         // Group additions by proximity for smoother scrolling
         const additionGroups = this.groupAdditionsByProximity(additions)
         let currentGroupIndex = 0
         let additionsShown = 0
 
-        // If no additions, just show a completion message
-        if (additions.length === 0) {
-            getLogger().info(`[DiffAnimationController] ℹ️ No additions to animate`)
+        // If no changes to animate, show completion message
+        if (additions.length === 0 && deletions.length === 0) {
+            getLogger().info(`[DiffAnimationController] ℹ️ No changes to animate`)
             return
         }
 
@@ -356,6 +379,9 @@ export class DiffAnimationController {
                 setTimeout(() => {
                     editor.setDecorations(this.currentLineDecorationType, [])
                 }, this.animationSpeed * 0.8)
+
+                // Keep deletions visible throughout the animation
+                editor.setDecorations(this.deletionDecorationType, deletions)
 
                 // Smart scrolling logic
                 const currentGroup = additionGroups[currentGroupIndex]
@@ -405,7 +431,8 @@ export class DiffAnimationController {
 
                 // Gradually fade out decorations
                 editor.setDecorations(this.additionDecorationType, [])
-                editor.setDecorations(this.fadeDecorationType, additions)
+                editor.setDecorations(this.deletionDecorationType, [])
+                editor.setDecorations(this.fadeDecorationType, [...additions, ...deletions])
 
                 // Remove all decorations after fade
                 setTimeout(() => {
@@ -431,26 +458,38 @@ export class DiffAnimationController {
         decorations: DiffAnimation['decorations'],
         filePath: string
     ): Promise<void> {
-        const { additions } = decorations
+        const { additions, deletions } = decorations
 
-        if (additions.length === 0) {
+        if (additions.length === 0 && deletions.length === 0) {
             getLogger().info(`[DiffAnimationController] ℹ️ No incremental changes to animate`)
             return
         }
 
-        // For incremental updates, show all changes immediately with a flash effect
-        editor.setDecorations(this.currentLineDecorationType, additions)
+        // Clear previous decorations
+        editor.setDecorations(this.additionDecorationType, [])
+        editor.setDecorations(this.deletionDecorationType, [])
+        editor.setDecorations(this.currentLineDecorationType, [])
+
+        // Show all changes immediately with a flash effect
+        const allChanges = [...additions, ...deletions]
+        editor.setDecorations(this.currentLineDecorationType, allChanges)
 
         // Flash effect
         setTimeout(() => {
             editor.setDecorations(this.currentLineDecorationType, [])
-            editor.setDecorations(this.additionDecorationType, additions)
+            if (additions.length > 0) {
+                editor.setDecorations(this.additionDecorationType, additions)
+            }
+            if (deletions.length > 0) {
+                editor.setDecorations(this.deletionDecorationType, deletions)
+            }
         }, 200)
 
         // Fade after a shorter delay for incremental updates
         setTimeout(() => {
             editor.setDecorations(this.additionDecorationType, [])
-            editor.setDecorations(this.fadeDecorationType, additions)
+            editor.setDecorations(this.deletionDecorationType, [])
+            editor.setDecorations(this.fadeDecorationType, allChanges)
 
             setTimeout(() => {
                 editor.setDecorations(this.fadeDecorationType, [])
@@ -458,8 +497,9 @@ export class DiffAnimationController {
         }, 1000)
 
         // Scroll to first change
-        if (additions.length > 0 && this.shouldScrollToLine(editor, additions[0].range)) {
-            editor.revealRange(additions[0].range, vscode.TextEditorRevealType.InCenterIfOutsideViewport)
+        const firstChange = allChanges[0]
+        if (firstChange && this.shouldScrollToLine(editor, firstChange.range)) {
+            editor.revealRange(firstChange.range, vscode.TextEditorRevealType.InCenterIfOutsideViewport)
         }
     }
 
