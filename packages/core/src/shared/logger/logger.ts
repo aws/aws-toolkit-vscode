@@ -22,6 +22,7 @@ export type LogTopic =
     | 'resourceCache'
     | 'telemetry'
     | 'amazonqAuth'
+    | 'proxyUtil'
 
 class ErrorLog {
     constructor(

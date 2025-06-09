@@ -39,6 +39,8 @@ import {
     Experiments,
     isSageMaker,
     Commands,
+    isAmazonLinux2,
+    ProxyUtil,
 } from 'aws-core-vscode/shared'
 import { ExtStartUpSources } from 'aws-core-vscode/telemetry'
 import { VSCODE_EXTENSION_ID } from 'aws-core-vscode/utils'
@@ -127,7 +129,10 @@ export async function activateAmazonQCommon(context: vscode.ExtensionContext, is
     // Auth is dependent on LSP, needs to be activated before CW and Inline
     await activateAmazonqLsp(context)
 
-    // This contains every lsp agnostic things (security scan, code scan)
+    // Configure proxy settings early
+    ProxyUtil.configureProxyForLanguageServer()
+
+    // This contains every lsp agnostic things (auth, security scan, code scan)
     await activateCodeWhisperer(extContext as ExtContext)
     if (!Experiments.instance.get('amazonqLSPInline', false)) {
         await activateInlineCompletion()
@@ -170,7 +175,9 @@ export async function activateAmazonQCommon(context: vscode.ExtensionContext, is
         // Give time for the extension to finish initializing.
         globals.clock.setTimeout(async () => {
             CommonAuthWebview.authSource = ExtStartUpSources.firstStartUp
-            void focusAmazonQPanel.execute(placeholder, ExtStartUpSources.firstStartUp)
+            focusAmazonQPanel.execute(placeholder, ExtStartUpSources.firstStartUp).catch((e) => {
+                getLogger().error('focusAmazonQPanel failed: %s', e)
+            })
         }, 1000)
     }
 

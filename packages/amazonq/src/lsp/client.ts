@@ -151,7 +151,6 @@ export async function startLanguageServer(
                 awsClientCapabilities: {
                     q: {
                         developerProfiles: true,
-                        mcp: true,
                     },
                     window: {
                         notifications: true,
@@ -305,9 +304,20 @@ async function postStartLanguageServer(
             const uri = vscode.Uri.parse(params.uri)
             getLogger().info(`Processing ShowDocumentRequest for URI scheme: ${uri.scheme}`)
             try {
-                if (uri.scheme.startsWith('http')) {
+                if (params.external) {
                     getLogger().info('Opening URL...')
-                    await openUrl(vscode.Uri.parse(params.uri))
+
+                    // Note: Not using openUrl() because we probably don't want telemetry for these URLs.
+                    // Also it doesn't yet support the required HACK below.
+
+                    // HACK: workaround vscode bug: https://github.com/microsoft/vscode/issues/85930
+                    vscode.env.openExternal(params.uri as any).then(undefined, (e) => {
+                        // TODO: getLogger('?').error('failed vscode.env.openExternal: %O', e)
+                        vscode.env.openExternal(uri).then(undefined, (e) => {
+                            // TODO: getLogger('?').error('failed vscode.env.openExternal: %O', e)
+                        })
+                    })
+                    return params
                 } else {
                     getLogger().info('Opening text document...')
                     const doc = await vscode.workspace.openTextDocument(uri)
