@@ -3,12 +3,16 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { diffLines } from 'diff'
+import { diffChars } from 'diff'
 import * as vscode from 'vscode'
 import { applyUnifiedDiff } from './diffUtils'
-import { getLogger, isWeb } from 'aws-core-vscode/shared'
+import { ToolkitError, getLogger, isWeb } from 'aws-core-vscode/shared'
+import { diffUtilities } from 'aws-core-vscode/shared'
+
+type Range = { line: number; start: number; end: number }
 
 const logger = getLogger('nextEditPrediction')
+export const imageVerticalOffset = 1
 
 export class SvgGenerationService {
     /**
@@ -19,52 +23,55 @@ export class SvgGenerationService {
      * @param offSet The margin to add to the left of the image
      */
     public async generateDiffSvg(
-        originalCode: string,
+        filePath: string,
         udiff: string
     ): Promise<{
         svgImage: vscode.Uri
         startLine: number
         newCode: string
+        origionalCodeHighlightRange: Range[]
         addedCharacterCount: number
         deletedCharacterCount: number
     }> {
-        const { newCode, addedCharacterCount, deletedCharacterCount } = applyUnifiedDiff(originalCode, udiff)
+        const textDoc = await vscode.workspace.openTextDocument(filePath)
+        const originalCode = textDoc.getText()
+        if (originalCode === '') {
+            logger.error(`udiff format error`)
+            throw new ToolkitError('udiff format erro')
+        }
+        const { addedCharacterCount, deletedCharacterCount } = applyUnifiedDiff(originalCode, udiff)
+        const newCode = await diffUtilities.getPatchedCode(filePath, udiff)
+        const modifiedLines = diffUtilities.getModifiedLinesFromUnifiedDiff(udiff)
+        // eslint-disable-next-line aws-toolkits/no-json-stringify-in-log
+        logger.info(`Line mapping: ${JSON.stringify(modifiedLines)}`)
 
-        // Abort SVG generation if we're in web mode
         if (isWeb() || !process.versions?.node) {
             logger.info('Skipping SVG generation in web mode')
-            // Return a placeholder URI and the new code
             return {
                 svgImage: vscode.Uri.parse(
                     'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMCIgaGVpZ2h0PSIxMCI+PC9zdmc+'
                 ),
                 startLine: 0,
                 newCode: newCode,
+                origionalCodeHighlightRange: [{ line: 0, start: 0, end: 0 }],
                 addedCharacterCount: 0,
                 deletedCharacterCount: 0,
             }
         }
-        // Import required libraries - make sure we load svgdom before svg.js
-        // These need to be imported in sequence, not in parallel, to avoid initialization issues
         const { createSVGWindow } = await import('svgdom')
 
-        // Only import svg.js after svgdom is fully initialized
-        let svgjs
-        let SVG, registerWindow
-        try {
-            svgjs = await import('@svgdotjs/svg.js')
-            SVG = svgjs.SVG
-            registerWindow = svgjs.registerWindow
-        } catch (error) {
-            logger.error(`Failed to import @svgdotjs/svg.js: ${error}`)
-            throw error
-        }
+        const svgjs = await import('@svgdotjs/svg.js')
+        const SVG = svgjs.SVG
+        const registerWindow = svgjs.registerWindow
 
         // Get editor theme info
         const currentTheme = this.getEditorTheme()
 
         // Get edit diffs with highlight
-        const diffWithHighlight = this.getHighlightEdit(originalCode.split('\n'), newCode.split('\n'))
+        const { addedLines, removedLines } = this.getEditedLinesFromDiff(udiff)
+        // const diffWithHighlight = this.getHighlightEdit(addedLines, modifiedLines)
+        const highlightRanges = this.generateHighlightRanges(removedLines, addedLines, modifiedLines)
+        const diffAddedWithHighlight = this.getHighlightEdit(addedLines, highlightRanges.addedRanges)
 
         // Create SVG window, document, and container
         const window = createSVGWindow()
@@ -73,34 +80,34 @@ export class SvgGenerationService {
         const draw = SVG(document.documentElement) as any
 
         // Calculate dimensions based on code content
-        const diffLines = this.getEditedLinesFromDiff(udiff)
         const { offset, editStartLine } = this.calculatePosition(
             originalCode.split('\n'),
             newCode.split('\n'),
-            diffLines,
+            addedLines,
             currentTheme
         )
-        const { width, height } = this.calculateDimensions(diffLines, currentTheme)
+        const { width, height } = this.calculateDimensions(addedLines, currentTheme)
         draw.size(width + offset, height)
 
         // Generate CSS for syntax highlighting based on theme
         const styles = this.generateStyles(currentTheme)
 
         // Generate HTML content with syntax highlighting
-        const htmlContent = this.generateHtmlContent(diffWithHighlight, styles, offset)
+        const htmlContent = this.generateHtmlContent(diffAddedWithHighlight, styles, offset)
 
         // Create foreignObject to embed HTML
         const foreignObject = draw.foreignObject(width + offset, height)
         foreignObject.node.innerHTML = htmlContent.trim()
 
-        // Convert SVG to data URI
         const svgData = draw.svg()
         const svgResult = `data:image/svg+xml;base64,${Buffer.from(svgData).toString('base64')}`
+        // const adjustedStartLine = editStartLine > 0 ? editStartLine - 1 : editStartLine
 
         return {
             svgImage: vscode.Uri.parse(svgResult),
             startLine: editStartLine,
             newCode: newCode,
+            origionalCodeHighlightRange: highlightRanges.removedRanges,
             addedCharacterCount,
             deletedCharacterCount,
         }
@@ -117,7 +124,7 @@ export class SvgGenerationService {
 
         // Calculate height based on diff line count and line height
         const totalLines = newLines.length + 1 // +1 for header
-        const height = totalLines * currentTheme.lingHeight + 20 // +10 for padding TODO, change to 10
+        const height = totalLines * currentTheme.lingHeight + 25 // +10 for padding TODO, change to 10
 
         return { width, height }
     }
@@ -139,14 +146,17 @@ export class SvgGenerationService {
                 font-size: ${fontSize}px;
                 line-height: ${lineHeight}px;
                 background-color: ${background};
-                border: 1px solid ${bordeColor}40;
-                border-radius: 1px;
-                padding: 1px;
+                border: 1px solid ${bordeColor};
+                border-radius: 0px;
+                padding-top: 3px;
+                padding-bottom: 5px;
+                padding-left: 10px;
             }
             .diff-header {
                 color: ${theme.foreground || '#d4d4d4'};
                 margin: 0;
                 font-size: ${headerFrontSize}px;
+                padding: 0px;
             }
             .diff-removed {
                 background-color: ${diffRemoved};
@@ -174,11 +184,13 @@ export class SvgGenerationService {
     }
 
     /**
-     * Extract added lines from the unified diff
-     * Only lines marked as added (+) in the diff will be included
+     * Extract added and removed lines from the unified diff
+     * @param unifiedDiff The unified diff string
+     * @returns Object containing arrays of added and removed lines
      */
-    private getEditedLinesFromDiff(unifiedDiff: string): string[] {
+    private getEditedLinesFromDiff(unifiedDiff: string): { addedLines: string[]; removedLines: string[] } {
         const addedLines: string[] = []
+        const removedLines: string[] = []
         const diffLines = unifiedDiff.split('\n')
 
         // Find all hunks in the diff
@@ -186,7 +198,7 @@ export class SvgGenerationService {
             .map((line, index) => (line.startsWith('@@ ') ? index : -1))
             .filter((index) => index !== -1)
 
-        // Process each hunk to find added lines
+        // Process each hunk to find added and removed lines
         for (const hunkStart of hunkStarts) {
             // Parse the hunk header
             const hunkHeader = diffLines[hunkStart]
@@ -199,37 +211,82 @@ export class SvgGenerationService {
             // Extract the content lines for this hunk
             let i = hunkStart + 1
             while (i < diffLines.length && !diffLines[i].startsWith('@@')) {
-                // Only include lines that were added (start with '+')
-                if (diffLines[i].startsWith('+')) {
+                // Include lines that were added (start with '+')
+                if (diffLines[i].startsWith('+') && !diffLines[i].startsWith('+++')) {
                     const lineContent = diffLines[i].substring(1)
                     addedLines.push(lineContent)
+                }
+                // Include lines that were removed (start with '-')
+                else if (diffLines[i].startsWith('-') && !diffLines[i].startsWith('---')) {
+                    const lineContent = diffLines[i].substring(1)
+                    removedLines.push(lineContent)
                 }
                 i++
             }
         }
 
-        return addedLines
+        return { addedLines, removedLines }
     }
 
-    private getHighlightEdit(originalLines: string[], newLines: string[]): string[] {
+    /**
+     * Applies highlighting to code lines based on the specified ranges
+     * @param newLines Array of code lines to highlight
+     * @param highlightRanges Array of ranges specifying which parts of the lines to highlight
+     * @returns Array of HTML strings with appropriate spans for highlighting
+     */
+    private getHighlightEdit(newLines: string[], highlightRanges: Range[]): string[] {
         const result: string[] = []
 
-        // Get line-level diffs between original and new content
-        const originalContent = originalLines.join('\n')
-        const newContent = newLines.join('\n')
-        const changes = diffLines(originalContent, newContent)
-
-        // Only collect added lines for display in the SVG
-        for (const part of changes) {
-            if (part.added) {
-                const lines = part.value.split('\n')
-                for (const line of lines) {
-                    // Skip empty lines that might be from the last newline
-                    if (line.length > 0) {
-                        result.push(`<span class="diff-changed">${this.escapeHtml(line)}</span>`)
-                    }
-                }
+        // Group ranges by line for easier lookup
+        const rangesByLine = new Map<number, Range[]>()
+        for (const range of highlightRanges) {
+            if (!rangesByLine.has(range.line)) {
+                rangesByLine.set(range.line, [])
             }
+            rangesByLine.get(range.line)!.push(range)
+        }
+
+        // Process each line of code
+        for (let lineIndex = 0; lineIndex < newLines.length; lineIndex++) {
+            const line = newLines[lineIndex]
+            // Get ranges for this line
+            const lineRanges = rangesByLine.get(lineIndex) || []
+
+            // If no ranges for this line, leave it as-is with HTML escaping
+            if (lineRanges.length === 0) {
+                result.push(this.escapeHtml(line))
+                continue
+            }
+
+            // Sort ranges by start position to ensure correct ordering
+            lineRanges.sort((a, b) => a.start - b.start)
+
+            // Build the highlighted line
+            let highlightedLine = ''
+            let currentPos = 0
+
+            for (const range of lineRanges) {
+                // Add text before the current range (with HTML escaping)
+                if (range.start > currentPos) {
+                    const beforeText = line.substring(currentPos, range.start)
+                    highlightedLine += this.escapeHtml(beforeText)
+                }
+
+                // Add the highlighted part (with HTML escaping)
+                const highlightedText = line.substring(range.start, range.end)
+                highlightedLine += `<span class="diff-changed">${this.escapeHtml(highlightedText)}</span>`
+
+                // Update current position
+                currentPos = range.end
+            }
+
+            // Add any remaining text after the last range (with HTML escaping)
+            if (currentPos < line.length) {
+                const afterText = line.substring(currentPos)
+                highlightedLine += this.escapeHtml(afterText)
+            }
+
+            result.push(highlightedLine)
         }
 
         return result
@@ -338,9 +395,10 @@ export class SvgGenerationService {
                 break
             }
         }
+        const shiftedStartLine = Math.max(0, editStartLineInOldFile - imageVerticalOffset)
 
         // Determine the range to consider
-        const startLine = editStartLineInOldFile
+        const startLine = shiftedStartLine
         const endLine = Math.min(editStartLineInOldFile + diffLines.length, originalLines.length)
 
         // Find the longest line within the specified range
@@ -366,6 +424,154 @@ export class SvgGenerationService {
             .replace(/>/g, '&gt;')
             .replace(/"/g, '&quot;')
             .replace(/'/g, '&#039;')
+    }
+
+    /**
+     * Generates character-level highlight ranges for both original and modified code.
+     * @param originalCode Array of original code lines
+     * @param afterCode Array of code lines after modification
+     * @param modifiedLines Map of original lines to modified lines
+     * @returns Object containing ranges for original and after code character level highlighting
+     */
+    private generateHighlightRanges(
+        originalCode: string[],
+        afterCode: string[],
+        modifiedLines: Map<string, string>
+    ): { removedRanges: Range[]; addedRanges: Range[] } {
+        const originalRanges: Range[] = []
+        const afterRanges: Range[] = []
+
+        /**
+         * Merges ranges on the same line that are separated by only one character
+         */
+        const mergeAdjacentRanges = (ranges: Range[]): Range[] => {
+            const sortedRanges = [...ranges].sort((a, b) => {
+                if (a.line !== b.line) {
+                    return a.line - b.line
+                }
+                return a.start - b.start
+            })
+
+            const result: Range[] = []
+
+            // Process all ranges
+            for (let i = 0; i < sortedRanges.length; i++) {
+                const current = sortedRanges[i]
+
+                // If this is the last range or ranges are on different lines, add it directly
+                if (i === sortedRanges.length - 1 || current.line !== sortedRanges[i + 1].line) {
+                    result.push(current)
+                    continue
+                }
+
+                // Check if current range and next range can be merged
+                const next = sortedRanges[i + 1]
+                if (current.line === next.line && next.start - current.end <= 1) {
+                    // Merge the ranges
+                    sortedRanges[i + 1] = {
+                        line: current.line,
+                        start: current.start,
+                        end: Math.max(current.end, next.end),
+                    }
+                    // Skip the current range (we merged it with the next one)
+                } else {
+                    result.push(current)
+                }
+            }
+
+            return result
+        }
+
+        // Create reverse mapping for quicker lookups
+        const reverseMap = new Map<string, string>()
+        for (const [original, modified] of modifiedLines.entries()) {
+            reverseMap.set(modified, original)
+        }
+
+        // Process original code lines
+        for (let lineIndex = 0; lineIndex < originalCode.length; lineIndex++) {
+            const line = originalCode[lineIndex]
+
+            // If line exists in modifiedLines as a key, process character diffs
+            if (Array.from(modifiedLines.keys()).includes(line)) {
+                // Get the corresponding modified line
+                const modifiedLine = modifiedLines.get(line)!
+
+                // Get character-level diffs
+                const changes = diffChars(line, modifiedLine)
+
+                // Add ranges for removed parts
+                let charPos = 0
+                for (const part of changes) {
+                    if (part.removed) {
+                        originalRanges.push({
+                            line: lineIndex,
+                            start: charPos,
+                            end: charPos + part.value.length,
+                        })
+                    }
+
+                    // Only advance position for parts that exist in original
+                    if (!part.added) {
+                        charPos += part.value.length
+                    }
+                }
+            } else {
+                // Line doesn't exist in modifiedLines keys, highlight entire line
+                originalRanges.push({
+                    line: lineIndex,
+                    start: 0,
+                    end: line.length,
+                })
+            }
+        }
+
+        // Process after code lines
+        for (let lineIndex = 0; lineIndex < afterCode.length; lineIndex++) {
+            const line = afterCode[lineIndex]
+
+            // If line exists in reverseMap (is a value in modifiedLines), process character diffs
+            if (reverseMap.has(line)) {
+                // Get the corresponding original line
+                const originalLine = reverseMap.get(line)!
+
+                // Get character-level diffs
+                const changes = diffChars(originalLine, line)
+
+                // Add ranges for added parts
+                let charPos = 0
+                for (const part of changes) {
+                    if (part.added) {
+                        afterRanges.push({
+                            line: lineIndex,
+                            start: charPos,
+                            end: charPos + part.value.length,
+                        })
+                    }
+
+                    // Only advance position for parts that exist in the modified version
+                    if (!part.removed) {
+                        charPos += part.value.length
+                    }
+                }
+            } else {
+                // Line doesn't exist in modifiedLines values, highlight entire line
+                afterRanges.push({
+                    line: lineIndex,
+                    start: 0,
+                    end: line.length,
+                })
+            }
+        }
+
+        // Apply post-processing to merge adjacent ranges
+        const mergedOriginalRanges = mergeAdjacentRanges(originalRanges)
+        const mergedAfterRanges = mergeAdjacentRanges(afterRanges)
+
+        return {
+            removedRanges: mergedOriginalRanges,
+            addedRanges: mergedAfterRanges,
+        }
     }
 }
 

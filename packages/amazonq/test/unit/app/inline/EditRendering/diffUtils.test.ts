@@ -27,10 +27,10 @@ describe('diffUtils', function () {
             const expectedResult = 'function add(a, b) {\n  // Add two numbers\n  return a + b; // Return the sum\n}'
 
             // Apply the diff
-            const { newCode } = applyUnifiedDiff(originalCode, unifiedDiff)
+            const { appliedCode } = applyUnifiedDiff(originalCode, unifiedDiff)
 
             // Verify the result
-            assert.strictEqual(newCode, expectedResult)
+            assert.strictEqual(appliedCode, expectedResult)
         })
     })
 
@@ -96,10 +96,10 @@ describe('diffUtils', function () {
                 '}'
 
             // Apply the diff
-            const { newCode } = applyUnifiedDiff(originalCode, unifiedDiff)
+            const { appliedCode } = applyUnifiedDiff(originalCode, unifiedDiff)
 
             // Verify the result
-            assert.strictEqual(newCode, expectedResult)
+            assert.strictEqual(appliedCode, expectedResult)
         })
     })
 })

@@ -275,7 +275,7 @@ describe('RecommendationService', () => {
             const options = { showUi: true }
 
             // Stub the UI methods to avoid errors
-            sandbox.stub(activeStateController, 'showGenerating').resolves()
+            // const showGeneratingStub = sandbox.stub(activeStateController, 'showGenerating').resolves()
             const hideGeneratingStub = sandbox.stub(activeStateController, 'hideGenerating')
 
             // Temporarily replace console.error with a no-op function to prevent test failure

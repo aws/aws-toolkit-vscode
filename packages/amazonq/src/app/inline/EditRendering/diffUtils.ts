@@ -2,6 +2,7 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
+// TODO: deprecate this file in favor of core/shared/utils/diffUtils
 import { applyPatch } from 'diff'
 
 export type LineDiff =
@@ -18,7 +19,7 @@ export type LineDiff =
 export function applyUnifiedDiff(
     docText: string,
     unifiedDiff: string
-): { newCode: string; addedCharacterCount: number; deletedCharacterCount: number } {
+): { appliedCode: string; addedCharacterCount: number; deletedCharacterCount: number } {
     try {
         const { addedCharacterCount, deletedCharacterCount } = getAddedAndDeletedCharCount(unifiedDiff)
         // First try the standard diff package
@@ -26,7 +27,7 @@ export function applyUnifiedDiff(
             const result = applyPatch(docText, unifiedDiff)
             if (result !== false) {
                 return {
-                    newCode: result,
+                    appliedCode: result,
                     addedCharacterCount: addedCharacterCount,
                     deletedCharacterCount: deletedCharacterCount,
                 }
@@ -94,54 +95,17 @@ export function applyUnifiedDiff(
             result = result.replace(textToReplace, newText)
         }
         return {
-            newCode: result,
+            appliedCode: result,
             addedCharacterCount: addedCharacterCount,
             deletedCharacterCount: deletedCharacterCount,
         }
     } catch (error) {
         return {
-            newCode: docText, // Return original text if all methods fail
+            appliedCode: docText, // Return original text if all methods fail
             addedCharacterCount: 0,
             deletedCharacterCount: 0,
         }
     }
-}
-
-export function parseUnifiedDiff(diff: string): LineDiff[] {
-    const lines = diff.split('\n')
-    const result: LineDiff[] = []
-    let i = 0
-    while (i < lines.length) {
-        const line = lines[i]
-
-        if (line.startsWith('-')) {
-            const removedLine = line.slice(1)
-            const next = lines[i + 1]
-
-            if (next && next.startsWith('+')) {
-                const addedLine = next.slice(1)
-                // const similarity = jaroWinkler(removedLine, addedLine)
-                const similarity = 0
-
-                if (similarity > 0.5) {
-                    result.push({ type: 'modified', before: removedLine, after: addedLine })
-                    i += 2
-                    continue
-                }
-            }
-
-            result.push({ type: 'removed', content: removedLine })
-            i++
-        } else if (line.startsWith('+')) {
-            result.push({ type: 'added', content: line.slice(1) })
-            i++
-        } else {
-            // Ignore context lines and hunk headers
-            i++
-        }
-    }
-
-    return result
 }
 
 export function getAddedAndDeletedCharCount(diff: string): {

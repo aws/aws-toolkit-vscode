@@ -341,253 +341,63 @@ export class NextEditPredictionPanel implements vscode.Disposable {
      * Generate HTML content for the webview
      */
     private getWebviewContent(customContent?: string): string {
-        return `<!DOCTYPE html>
-        <html lang="en">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Next Edit Prediction</title>
-            <style>
-                body {
-                    font-family: var(--vscode-editor-font-family);
-                    font-size: var(--vscode-editor-font-size);
-                    padding: 10px;
-                    color: var(--vscode-editor-foreground);
-                    background-color: var(--vscode-editor-background);
-                }
-                .timestamp {
-                    font-size: 12px;
-                    color: var(--vscode-editorLineNumber-foreground);
-                    margin-bottom: 10px;
-                }
-                .content {
-                    white-space: pre-wrap;
-                    font-family: var(--vscode-editor-font-family);
-                    background-color: var(--vscode-editor-inactiveSelectionBackground);
-                    padding: 10px;
-                    border-radius: 3px;
-                    overflow: auto;
-                    margin-bottom: 20px;
-                }
-                h3 {
-                    margin-top: 0;
-                    color: var(--vscode-editorLightBulb-foreground);
-                }
-                .section {
-                    margin-bottom: 20px;
-                }
-                details {
-                    margin-bottom: 10px;
-                    border: 1px solid var(--vscode-panel-border);
-                    border-radius: 3px;
-                }
-                details summary {
-                    padding: 8px;
-                    background-color: var(--vscode-editor-inactiveSelectionBackground);
-                    cursor: pointer;
-                }
-                details .details-content {
-                    padding: 8px;
-                }
-                .request-meta {
-                    display: flex;
-                    flex-wrap: wrap;
-                    gap: 10px;
-                    margin-bottom: 8px;
-                    font-size: 12px;
-                }
-                .request-meta div {
-                    background-color: var(--vscode-badge-background);
-                    color: var(--vscode-badge-foreground);
-                    padding: 2px 6px;
-                    border-radius: 3px;
-                }
-                .error {
-                    color: var(--vscode-errorForeground);
-                }
-                .json-key {
-                    color: var(--vscode-debugTokenExpression-name);
-                }
-                .json-string {
-                    color: var(--vscode-debugTokenExpression-string);
-                }
-                .json-number {
-                    color: var(--vscode-debugTokenExpression-number);
-                }
-                .json-boolean {
-                    color: var(--vscode-debugTokenExpression-boolean);
-                }
-                .json-null {
-                    color: var(--vscode-debugTokenExpression-error);
-                }
-                .tabs {
-                    display: flex;
-                    margin-bottom: 10px;
-                }
-                .tab {
-                    padding: 5px 10px;
-                    cursor: pointer;
-                    background-color: var(--vscode-tab-inactiveBackground);
-                    color: var(--vscode-tab-inactiveForeground);
-                    border: 1px solid var(--vscode-panel-border);
-                    border-bottom: none;
-                    border-radius: 3px 3px 0 0;
-                    margin-right: 5px;
-                }
-                .tab.active {
-                    background-color: var(--vscode-tab-activeBackground);
-                    color: var(--vscode-tab-activeForeground);
-                    border-bottom: 1px solid var(--vscode-tab-activeBackground);
-                }
-                .tab-content {
-                    display: none;
-                    border: 1px solid var(--vscode-panel-border);
-                    padding: 10px;
-                    border-radius: 0 3px 3px 3px;
-                }
-                .tab-content.active {
-                    display: block;
-                }
-                button {
-                    background-color: var(--vscode-button-background);
-                    color: var(--vscode-button-foreground);
-                    border: none;
-                    padding: 5px 10px;
-                    border-radius: 3px;
-                    cursor: pointer;
-                    margin-bottom: 10px;
-                }
-                button:hover {
-                    background-color: var(--vscode-button-hoverBackground);
-                }
-            </style>
-        </head>
-        <body>
-            <h3>Next Edit Prediction</h3>
-            <div class="timestamp">Updated: ${new Date().toLocaleTimeString()}</div>
-            <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                <button id="refresh">Refresh Logs</button>
-                <button id="clear">Clear Logs</button>
-            </div>
+        // Path to the debug.html file
+        const debugHtmlPath = vscode.Uri.file(
+            vscode.Uri.joinPath(
+                vscode.Uri.file(__dirname),
+                '..',
+                '..',
+                '..',
+                'app',
+                'inline',
+                'EditRendering',
+                'debug.html'
+            ).fsPath
+        )
 
-            <div class="tabs">
-                <div class="tab active" data-tab="content">Content</div>
-                <div class="tab" data-tab="logs">Request Logs (${this.requestLogs.length})</div>
-            </div>
+        // Read the HTML file content
+        try {
+            const htmlContent = fs.readFileSync(debugHtmlPath.fsPath, 'utf8')
+            getLogger('nextEditPrediction').info(`Successfully loaded debug.html from ${debugHtmlPath.fsPath}`)
 
-            <div id="content-tab" class="tab-content active">
-                <div class="content">${customContent ? this.escapeHtml(customContent) : 'No prediction data yet'}</div>
-            </div>
-
-            <div id="logs-tab" class="tab-content">
-                <div class="section request-logs">
-                    ${this.generateRequestLogsHtml()}
-                </div>
-            </div>
-
-            <script>
-                // Function to toggle JSON collapse/expand
-                function setupCollapsibles() {
-                    // Setup tab switching
-                    const tabs = document.querySelectorAll('.tab');
-                    const tabContents = document.querySelectorAll('.tab-content');
+            // Modify the HTML to add vscode API initialization
+            return htmlContent.replace(
+                '</body>',
+                `
+                <script>
+                    // Initialize vscode API
+                    const vscode = acquireVsCodeApi();
                     
-                    tabs.forEach(tab => {
-                        tab.addEventListener('click', () => {
-                            const tabName = tab.getAttribute('data-tab');
-                            
-                            // Make all tabs inactive
-                            tabs.forEach(t => t.classList.remove('active'));
-                            tabContents.forEach(content => content.classList.remove('active'));
-                            
-                            // Make selected tab active
-                            tab.classList.add('active');
-                            document.getElementById(tabName + '-tab').classList.add('active');
-                        });
-                    });
-
-                    // Setup refresh button
-                    document.getElementById('refresh').addEventListener('click', () => {
-                        // Send message to extension
-                        vscode.postMessage({
-                            command: 'refresh'
-                        });
+                    // Set up message handlers for communication with extension
+                    window.addEventListener('message', event => {
+                        const message = event.data;
+                        // Handle messages from extension if needed
                     });
                     
-                    // Setup clear logs button
-                    document.getElementById('clear').addEventListener('click', () => {
-                        vscode.postMessage({
-                            command: 'clear'
-                        });
+                    // Set up button handlers for clear and refresh
+                    document.getElementById('clearBtn')?.addEventListener('click', () => {
+                        vscode.postMessage({ command: 'clear' });
                     });
-                }
-
-                // Initialize collapsible elements when the page loads
-                document.addEventListener('DOMContentLoaded', setupCollapsibles);
-                
-                // Initialize vscode API
-                const vscode = acquireVsCodeApi();
-                
-                // Call setup immediately as we might be loading after DOMContentLoaded
-                setupCollapsibles();
-            </script>
-        </body>
-        </html>`
+                    
+                    document.getElementById('reconnectBtn')?.addEventListener('click', () => {
+                        vscode.postMessage({ command: 'refresh' });
+                    });
+                </script>
+            </body>`
+            )
+        } catch (error) {
+            getLogger('nextEditPrediction').error(`Error loading debug.html: ${error}`)
+            return `
+                <html>
+                <body>
+                    <h1>Error loading visualization</h1>
+                    <p>Failed to load debug.html file: ${error}</p>
+                </body>
+                </html>
+            `
+        }
     }
 
-    /**
-     * Generate HTML for the request logs
-     */
-    private generateRequestLogsHtml(): string {
-        if (this.requestLogs.length === 0) {
-            return '<div>No request logs available.</div>'
-        }
-
-        let html = ''
-
-        // Display each request log as a collapsible section
-        for (let i = 0; i < this.requestLogs.length; i++) {
-            const log = this.requestLogs[i]
-            const date = new Date(log.timestamp).toLocaleString()
-            const status = log.responseCode === 200 ? 'Succeeded' : 'Failed'
-
-            html += `
-            <details>
-                <summary>Request ${i + 1} --- id: ${log.requestId || 'N/A'} --- status: ${status}</summary>
-                <div class="details-content">
-                    <div class="request-meta">
-                        <div>Time: ${date}</div>
-                        <div>Request ID: ${log.requestId || 'N/A'}</div>
-                        <div>Status: ${log.responseCode || 'N/A'} (${status})</div>
-                        ${log.latency ? `<div>Latency: ${log.latency}ms</div>` : ''}
-                        ${log.error ? `<div class="error">Error: ${this.escapeHtml(log.error)}</div>` : ''}
-                    </div>
-                    
-                    <details>
-                        <summary>Request</summary>
-                        <div class="details-content">
-                            <pre class="content">${this.escapeHtml(JSON.stringify(log.request, undefined, 2))}</pre>
-                        </div>
-                    </details>
-                    
-                    <details>
-                        <summary>Response</summary>
-                        <div class="details-content">
-                            <pre class="content">${this.escapeHtml(JSON.stringify(log.response, undefined, 2))}</pre>
-                        </div>
-                    </details>
-                    
-                    ${this.generateMiscellaneousHtml(log, i)}
-                </div>
-            </details>`
-        }
-
-        return html
-    }
-
-    /**
-     * Generate HTML for application logs
-     */
     /**
      * Clear the log file and update the panel
      */
@@ -610,105 +420,6 @@ export class NextEditPredictionPanel implements vscode.Disposable {
         } catch (error) {
             getLogger('nextEditPrediction').error(`Error clearing log file: ${error}`)
         }
-    }
-
-    /**
-     * Format JSON object as HTML with syntax highlighting
-     */
-    private formatJsonHtml(obj: any): string {
-        if (obj === null) {
-            return '<span class="json-null">null</span>'
-        }
-
-        if (obj === undefined) {
-            return '<span class="json-null">undefined</span>'
-        }
-
-        if (typeof obj === 'boolean') {
-            return `<span class="json-boolean">${obj}</span>`
-        }
-
-        if (typeof obj === 'number') {
-            return `<span class="json-number">${obj}</span>`
-        }
-
-        if (typeof obj === 'string') {
-            return `<span class="json-string">"${this.escapeHtml(obj)}"</span>`
-        }
-
-        if (Array.isArray(obj)) {
-            if (obj.length === 0) {
-                return '[]'
-            }
-
-            let html = '['
-            for (let i = 0; i < obj.length; i++) {
-                html += '<details open><summary>Item ' + i + '</summary><div class="details-content">'
-                html += this.formatJsonHtml(obj[i])
-                html += '</div></details>'
-
-                if (i < obj.length - 1) {
-                    html += ', '
-                }
-            }
-            html += ']'
-            return html
-        }
-
-        if (typeof obj === 'object') {
-            const keys = Object.keys(obj)
-            if (keys.length === 0) {
-                return '{}'
-            }
-
-            let html = '{'
-            for (let i = 0; i < keys.length; i++) {
-                const key = keys[i]
-                html += '<details open><summary>'
-                html += `<span class="json-key">"${this.escapeHtml(key)}"</span>:`
-                html += '</summary><div class="details-content">'
-                html += this.formatJsonHtml(obj[key])
-                html += '</div></details>'
-
-                if (i < keys.length - 1) {
-                    html += ', '
-                }
-            }
-            html += '}'
-            return html
-        }
-
-        return this.escapeHtml(String(obj))
-    }
-
-    /**
-     * Generate HTML for miscellaneous field in the log entry
-     */
-    private generateMiscellaneousHtml(log: RequestLogEntry, index: number): string {
-        // Only check for the specific "miscellaneous" field
-        if (!log.miscellaneous) {
-            return ''
-        }
-
-        return `
-        <details>
-            <summary>Miscellaneous</summary>
-            <div class="details-content">
-                <div class="content">${this.formatJsonHtml(log.miscellaneous)}</div>
-            </div>
-        </details>`
-    }
-
-    /**
-     * Escape HTML characters to prevent XSS
-     */
-    private escapeHtml(text: string): string {
-        return text
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#039;')
     }
 
     /**

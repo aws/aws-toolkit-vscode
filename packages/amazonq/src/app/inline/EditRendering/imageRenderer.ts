@@ -22,10 +22,16 @@ export async function showEdits(
     }
     try {
         const svgGenerationService = new SvgGenerationService()
-        // Generate your SVG image with the file contents ?
-        const originalCode = editor.document.getText()
-        const { svgImage, startLine, newCode, addedCharacterCount, deletedCharacterCount } =
-            await svgGenerationService.generateDiffSvg(originalCode, item.insertText as string)
+        // Generate your SVG image with the file contents
+        const currentFile = editor.document.uri.fsPath
+        const {
+            svgImage,
+            startLine,
+            newCode,
+            origionalCodeHighlightRange,
+            addedCharacterCount,
+            deletedCharacterCount,
+        } = await svgGenerationService.generateDiffSvg(currentFile, item.insertText as string)
 
         if (svgImage) {
             // display the SVG image
@@ -34,6 +40,7 @@ export async function showEdits(
                 svgImage,
                 startLine,
                 newCode,
+                origionalCodeHighlightRange,
                 session,
                 languageClient,
                 item,

@@ -10,6 +10,8 @@ import { LanguageClient } from 'vscode-languageclient'
 import { CodeWhispererSession } from '../sessionManager'
 import { LogInlineCompletionSessionResultsParams } from '@aws/language-server-runtimes/protocol'
 import { InlineCompletionItemWithReferences } from '@aws/language-server-runtimes/protocol'
+import path from 'path'
+import { imageVerticalOffset } from './svgGenerator'
 
 export class EditDecorationManager {
     private imageDecorationType: vscode.TextEditorDecorationType
@@ -18,6 +20,7 @@ export class EditDecorationManager {
     private currentRemovedCodeDecorations: vscode.DecorationOptions[] = []
     private acceptHandler: (() => void) | undefined
     private rejectHandler: (() => void) | undefined
+    private disposables: vscode.Disposable[] = []
 
     constructor() {
         this.imageDecorationType = vscode.window.createTextEditorDecorationType({
@@ -27,8 +30,6 @@ export class EditDecorationManager {
         this.removedCodeDecorationType = vscode.window.createTextEditorDecorationType({
             backgroundColor: 'rgba(255, 0, 0, 0.2)',
         })
-
-        this.registerCommandHandlers()
     }
 
     /**
@@ -51,39 +52,70 @@ export class EditDecorationManager {
     }
 
     /**
-     * Highlights lines that will be removed with a red background
+     * Highlights code that will be removed using the provided highlight ranges
+     * @param editor The active text editor
+     * @param startLine The line where the edit starts
+     * @param highlightRanges Array of ranges specifying which parts to highlight
+     * @returns Array of decoration options
      */
     private highlightRemovedLines(
         editor: vscode.TextEditor,
-        originalCode: string,
-        newCode: string
+        startLine: number,
+        highlightRanges: Array<{ line: number; start: number; end: number }>
     ): vscode.DecorationOptions[] {
         const decorations: vscode.DecorationOptions[] = []
-        const changes = diffLines(originalCode, newCode)
 
-        let lineOffset = 0
+        // Group ranges by line for more efficient processing
+        const rangesByLine = new Map<number, Array<{ start: number; end: number }>>()
 
-        for (const part of changes) {
-            if (part.removed) {
-                const lines = part.value.split('\n')
-                for (let i = 0; i < lines.length; i++) {
-                    // Skip empty lines that might be from the last newline
-                    if (lines[i].length > 0 || i < lines.length - 1) {
-                        const lineNumber = lineOffset + i
-                        if (lineNumber < editor.document.lineCount) {
-                            const range = new vscode.Range(
-                                new vscode.Position(lineNumber, 0),
-                                new vscode.Position(lineNumber, editor.document.lineAt(lineNumber).text.length)
-                            )
-                            decorations.push({ range })
-                        }
-                    }
-                }
+        // Process each range and adjust line numbers relative to document
+        for (const range of highlightRanges) {
+            const documentLine = startLine + range.line
+
+            // Skip if line is out of bounds
+            if (documentLine >= editor.document.lineCount) {
+                continue
             }
 
-            // Update line offset for unchanged and added parts (not for removed parts)
-            if (!part.removed) {
-                lineOffset += part.value.split('\n').length - 1
+            // Add to ranges map, grouped by line
+            if (!rangesByLine.has(documentLine)) {
+                rangesByLine.set(documentLine, [])
+            }
+            rangesByLine.get(documentLine)!.push({
+                start: range.start,
+                end: range.end,
+            })
+        }
+
+        // Process each line with ranges
+        for (const [lineNumber, ranges] of rangesByLine.entries()) {
+            const lineLength = editor.document.lineAt(lineNumber).text.length
+
+            if (ranges.length === 0) {
+                continue
+            }
+
+            // Check if we should highlight the entire line
+            if (ranges.length === 1 && ranges[0].start === 0 && ranges[0].end >= lineLength) {
+                // Highlight entire line
+                const range = new vscode.Range(
+                    new vscode.Position(lineNumber, 0),
+                    new vscode.Position(lineNumber, lineLength)
+                )
+                decorations.push({ range })
+            } else {
+                // Create individual decorations for each range on this line
+                for (const range of ranges) {
+                    // Ensure end doesn't exceed line length
+                    const end = Math.min(range.end, lineLength)
+                    if (range.start < end) {
+                        const vsRange = new vscode.Range(
+                            new vscode.Position(lineNumber, range.start),
+                            new vscode.Position(lineNumber, end)
+                        )
+                        decorations.push({ range: vsRange })
+                    }
+                }
             }
         }
 
@@ -100,9 +132,11 @@ export class EditDecorationManager {
         onAccept: () => void,
         onReject: () => void,
         originalCode: string,
-        newCode: string
+        newCode: string,
+        originalCodeHighlightRanges: Array<{ line: number; start: number; end: number }>
     ): void {
         // Clear any existing decorations
+        this.registerCommandHandlers()
         this.clearDecorations(editor)
 
         // Set context to enable the Tab key handler
@@ -113,8 +147,8 @@ export class EditDecorationManager {
         this.rejectHandler = onReject
 
         // Get the line text to determine the end position
-        const lineText = editor.document.lineAt(startLine).text
-        const endPosition = new vscode.Position(startLine, lineText.length)
+        const lineText = editor.document.lineAt(Math.max(0, startLine - imageVerticalOffset)).text
+        const endPosition = new vscode.Position(Math.max(0, startLine - imageVerticalOffset), lineText.length)
         const range = new vscode.Range(endPosition, endPosition)
 
         // Create decoration options using the existing image2decoration function
@@ -123,8 +157,8 @@ export class EditDecorationManager {
         // Apply image decoration
         editor.setDecorations(this.imageDecorationType, [this.currentImageDecoration])
 
-        // Highlight removed lines with red background
-        this.currentRemovedCodeDecorations = this.highlightRemovedLines(editor, originalCode, newCode)
+        // Highlight removed code with red background using the provided ranges
+        this.currentRemovedCodeDecorations = this.highlightRemovedLines(editor, startLine, originalCodeHighlightRanges)
         editor.setDecorations(this.removedCodeDecorationType, this.currentRemovedCodeDecorations)
     }
 
@@ -146,24 +180,30 @@ export class EditDecorationManager {
      */
     public registerCommandHandlers(): void {
         // Register Tab key handler for accepting suggestion
-        vscode.commands.registerCommand('aws.amazonq.inline.acceptEdit', () => {
+        const acceptDisposable = vscode.commands.registerCommand('aws.amazonq.inline.acceptEdit', () => {
             if (this.acceptHandler) {
                 this.acceptHandler()
             }
         })
+        this.disposables.push(acceptDisposable)
 
         // Register Esc key handler for rejecting suggestion
-        vscode.commands.registerCommand('aws.amazonq.inline.rejectEdit', () => {
+        const rejectDisposable = vscode.commands.registerCommand('aws.amazonq.inline.rejectEdit', () => {
             if (this.rejectHandler) {
                 this.rejectHandler()
             }
         })
+        this.disposables.push(rejectDisposable)
     }
 
     /**
      * Disposes resources
      */
     public dispose(): void {
+        for (const disposable of this.disposables) {
+            disposable.dispose()
+        }
+        this.disposables = []
         this.imageDecorationType.dispose()
         this.removedCodeDecorationType.dispose()
     }
@@ -218,7 +258,6 @@ function getEndOfEditPosition(originalCode: string, newCode: string): vscode.Pos
 
         // Update line offset (skip removed parts)
         if (!part.removed) {
-            // Safely calculate line count from the part's value
             const partLineCount = part.value.split('\n').length
             lineOffset += partLineCount - 1
         }
@@ -242,6 +281,7 @@ export async function displaySvgDecoration(
     svgImage: vscode.Uri,
     startLine: number,
     newCode: string,
+    originalCodeHighlightRanges: Array<{ line: number; start: number; end: number }>,
     session: CodeWhispererSession,
     languageClient: LanguageClient,
     item: InlineCompletionItemWithReferences,
@@ -258,11 +298,12 @@ export async function displaySvgDecoration(
             // Handle accept
             getLogger().info('Edit suggestion accepted')
 
-            // Calculate cursor position before replacing content
-            const endPosition = getEndOfEditPosition(originalCode, newCode)
-
             // Replace content
             replaceEditorContent(editor, newCode)
+
+            // Move cursor to end of the actual changed content
+            const endPosition = getEndOfEditPosition(originalCode, newCode)
+            editor.selection = new vscode.Selection(endPosition, endPosition)
 
             // Move cursor to end of the actual changed content
             editor.selection = new vscode.Selection(endPosition, endPosition)
@@ -279,8 +320,8 @@ export async function displaySvgDecoration(
                 },
                 totalSessionDisplayTime: Date.now() - session.requestStartTime,
                 firstCompletionDisplayLatency: session.firstCompletionDisplayLatency,
-                addedCharacterCount: addedCharacterCount,
-                deletedCharacterCount: deletedCharacterCount,
+                // addedCharacterCount: addedCharacterCount,
+                // deletedCharacterCount: deletedCharacterCount,
             }
             languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
         },
@@ -297,17 +338,45 @@ export async function displaySvgDecoration(
                         discarded: false,
                     },
                 },
-                addedCharacterCount: addedCharacterCount,
-                deletedCharacterCount: deletedCharacterCount,
+                // addedCharacterCount: addedCharacterCount,
+                // deletedCharacterCount: deletedCharacterCount,
             }
             languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
         },
         originalCode,
-        newCode
+        newCode,
+        originalCodeHighlightRanges
     )
 }
 
-// Make sure to dispose of the decoration manager when the extension deactivates
 export function deactivate() {
     decorationManager.dispose()
+}
+
+let decorationType: vscode.TextEditorDecorationType | undefined
+
+export function decorateLinesWithGutterIcon(lineNumbers: number[]) {
+    const editor = vscode.window.activeTextEditor
+    if (!editor) {
+        return
+    }
+
+    // Dispose previous decoration if it exists
+    if (decorationType) {
+        decorationType.dispose()
+    }
+
+    // Create a new gutter decoration with a small green dot
+    decorationType = vscode.window.createTextEditorDecorationType({
+        gutterIconPath: vscode.Uri.file(
+            path.join(__dirname, 'media', 'green-dot.svg') // put your svg file in a `media` folder
+        ),
+        gutterIconSize: 'contain',
+    })
+
+    const decorations: vscode.DecorationOptions[] = lineNumbers.map((line) => ({
+        range: new vscode.Range(new vscode.Position(line, 0), new vscode.Position(line, 0)),
+    }))
+
+    editor.setDecorations(decorationType, decorations)
 }
