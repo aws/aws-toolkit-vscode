@@ -392,6 +392,8 @@ dependencyManagement:
             const manifestText = manifestBuffer.toString('utf8')
             const manifest = JSON.parse(manifestText)
             assert.strictEqual(manifest.customBuildCommand, CodeWhispererConstants.skipUnitTestsBuildCommand)
+            assert.strictEqual(manifest.noInteractiveMode, true)
+            assert.strictEqual(manifest.transformCapabilities.includes('SELECTIVE_TRANSFORMATION_V2'), true)
         })
     })
 
