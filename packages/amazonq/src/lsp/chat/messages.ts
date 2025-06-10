@@ -316,7 +316,7 @@ export function registerMessageListeners(
                 )
                 if (!buttonResult.success) {
                     languageClient.error(
-                        `[VSCode Client] Failed to execute action associated with button with reason: ${buttonResult.failureReason}`
+                        `[VSCode Client] Failed to execute button action: ${buttonResult.failureReason}`
                     )
                 }
                 break

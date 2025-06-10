@@ -388,14 +388,19 @@
                     "group": "0_topAmazonQ@1"
                 },
                 {
-                    "command": "aws.amazonq.learnMore",
-                    "when": "view =~ /^aws\\.amazonq/",
-                    "group": "1_amazonQ@1"
-                },
-                {
                     "command": "aws.amazonq.selectRegionProfile",
                     "when": "view == aws.amazonq.AmazonQChatView && aws.amazonq.connectedSsoIdc == true",
                     "group": "1_amazonQ@1"
+                },
+                {
+                    "command": "aws.amazonq.manageSubscription",
+                    "when": "(view == aws.amazonq.AmazonQChatView) && aws.codewhisperer.connected",
+                    "group": "1_amazonQ@2"
+                },
+                {
+                    "command": "aws.amazonq.learnMore",
+                    "when": "view =~ /^aws\\.amazonq/",
+                    "group": "1_amazonQ@3"
                 },
                 {
                     "command": "aws.amazonq.signout",
@@ -677,6 +682,13 @@
                 "title": "%AWS.command.codewhisperer.introduction%",
                 "category": "%AWS.amazonq.title%",
                 "icon": "$(question)"
+            },
+            {
+                "command": "aws.amazonq.manageSubscription",
+                "title": "%AWS.command.manageSubscription%",
+                "category": "%AWS.amazonq.title%",
+                "icon": "$(gear)",
+                "enablement": "aws.codewhisperer.connected && !aws.amazonq.connectedSsoIdc"
             },
             {
                 "command": "aws.amazonq.signout",
