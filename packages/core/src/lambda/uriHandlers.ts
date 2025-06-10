@@ -31,7 +31,8 @@ export function registerLambdaUriHandler() {
         globals.uriHandler.onPath('/lambda/load-function', openFunctionHandler, parseOpenParams)
     )
 }
-function parseOpenParams(query: SearchParams) {
+
+export function parseOpenParams(query: SearchParams) {
     return {
         functionName: query.getOrThrow(
             'functionName',
