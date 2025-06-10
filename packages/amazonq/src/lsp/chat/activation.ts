@@ -90,6 +90,18 @@ export async function activate(languageClient: LanguageClient, encryptionKey: Bu
                     getLogger('amazonqLsp').error('failed request: aws/chat/manageSubscription: %O', e)
                 })
         }),
+        Commands.register('aws.amazonq.manageSubscription', () => {
+            focusAmazonQPanel().catch((e) => languageClient.error(`[VSCode Client] focusAmazonQPanel() failed`))
+
+            languageClient
+                .sendRequest('workspace/executeCommand', {
+                    command: 'aws/chat/manageSubscription',
+                    // arguments: [],
+                })
+                .catch((e) => {
+                    getLogger('amazonqLsp').error('failed request: aws/chat/manageSubscription: %O', e)
+                })
+        }),
         globals.logOutputChannel.onDidChangeLogLevel((logLevel) => {
             getLogger('amazonqLsp').info(`Local log level changed to ${logLevel}, notifying LSP`)
             void pushConfigUpdate(languageClient, {
