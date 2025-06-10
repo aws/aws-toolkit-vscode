@@ -676,8 +676,8 @@ export class ZipManifest {
     version: string = '1.0'
     hilCapabilities: string[] = ['HIL_1pDependency_VersionUpgrade']
     // TO-DO: add 'CLIENT_SIDE_BUILD' here when releasing
-    // TO-DO: add something like AGENTIC_PLAN_V1 here when BE allowlists everyone
-    transformCapabilities: string[] = ['EXPLAINABILITY_V1']
+    transformCapabilities: string[] = ['EXPLAINABILITY_V1', 'SELECTIVE_TRANSFORMATION_V2']
+    noInteractiveMode: boolean = true
     customBuildCommand: string = 'clean test'
     requestedConversions?: {
         sqlConversion?: {
