@@ -7,20 +7,24 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 
 import { SearchParams } from '../shared/vscode/uriHandler'
-import { showMessage } from '../shared/utilities/messages'
+import { showConfirmationMessage } from '../shared/utilities/messages'
 import globals from '../shared/extensionGlobals'
+import { VSCODE_EXTENSION_ID } from '../shared/extensions'
 
 const localize = nls.loadMessageBundle()
 
 export function registerLambdaUriHandler() {
     async function openFunctionHandler(params: ReturnType<typeof parseOpenParams>) {
-        await showMessage(
-            'warn',
-            localize(
+        const response = await showConfirmationMessage({
+            prompt: localize(
                 'AWS.lambda.uriUnavailable',
-                'The URI handler you are attempting to open is not handled in this version of the toolkit, try installing the latest version'
-            )
-        )
+                'The URI you are attempting to access is not in this version of the Toolkit'
+            ),
+            confirm: localize('AWS.installLatest', 'Install latest'),
+        })
+        if (response) {
+            await vscode.commands.executeCommand('extension.open', VSCODE_EXTENSION_ID.awstoolkit)
+        }
     }
 
     return vscode.Disposable.from(
