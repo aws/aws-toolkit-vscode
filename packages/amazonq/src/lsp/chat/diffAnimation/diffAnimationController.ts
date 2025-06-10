@@ -3,9 +3,28 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+/**
+ * DiffAnimationController - Provides Cline-style streaming animations with GitHub diff visualization
+ *
+ * Key Optimizations:
+ * 1. Region-based animation: Only animates changed lines instead of entire file
+ * 2. Smart diff calculation: Uses efficient diff algorithm to find change boundaries
+ * 3. Viewport limiting: Caps animation to 100 lines max for performance
+ * 4. Context awareness: Includes 3 lines before/after changes for better visibility
+ * 5. Dynamic speed: Faster animation for larger changes (20ms vs 30ms per line)
+ * 6. Efficient scrolling: Only scrolls when necessary (line not visible)
+ *
+ * Animation Flow:
+ * - Calculate changed region using diffLines
+ * - Apply new content immediately
+ * - Overlay only the changed region
+ * - Animate line-by-line reveal with yellow highlight
+ * - Show GitHub-style diff after completion
+ */
+
 import * as vscode from 'vscode'
 import { getLogger } from 'aws-core-vscode/shared'
-import { diffLines } from 'diff'
+import { diffLines, Change } from 'diff'
 
 // Decoration controller to manage decoration states
 class DecorationController {
@@ -21,7 +40,7 @@ class DecorationController {
         this.editor = editor
     }
 
-    getDecoration() {
+    getDecoration(): vscode.TextEditorDecorationType {
         switch (this.decorationType) {
             case 'fadedOverlay':
                 return fadedOverlayDecorationType
@@ -36,7 +55,7 @@ class DecorationController {
         }
     }
 
-    addLines(startIndex: number, numLines: number) {
+    addLines(startIndex: number, numLines: number): void {
         // Guard against invalid inputs
         if (startIndex < 0 || numLines <= 0) {
             return
@@ -53,12 +72,12 @@ class DecorationController {
         this.editor.setDecorations(this.getDecoration(), this.ranges)
     }
 
-    clear() {
+    clear(): void {
         this.ranges = []
         this.editor.setDecorations(this.getDecoration(), this.ranges)
     }
 
-    updateOverlayAfterLine(line: number, totalLines: number) {
+    updateOverlayAfterLine(line: number, totalLines: number): void {
         // Remove any existing ranges that start at or after the current line
         this.ranges = this.ranges.filter((range) => range.end.line < line)
 
@@ -76,12 +95,12 @@ class DecorationController {
         this.editor.setDecorations(this.getDecoration(), this.ranges)
     }
 
-    setActiveLine(line: number) {
+    setActiveLine(line: number): void {
         this.ranges = [new vscode.Range(line, 0, line, Number.MAX_SAFE_INTEGER)]
         this.editor.setDecorations(this.getDecoration(), this.ranges)
     }
 
-    setRanges(ranges: vscode.Range[]) {
+    setRanges(ranges: vscode.Range[]): void {
         this.ranges = ranges
         this.editor.setDecorations(this.getDecoration(), this.ranges)
     }
@@ -174,7 +193,8 @@ export class DiffAnimationController {
      * Start a diff animation for a file using Cline's streaming approach
      */
     public async startDiffAnimation(filePath: string, originalContent: string, newContent: string): Promise<void> {
-        getLogger().info(`[DiffAnimationController] 🎬 Starting Cline-style animation for: ${filePath}`)
+        const isNewFile = originalContent === ''
+        getLogger().info(`[DiffAnimationController] 🎬 Starting animation for: ${filePath} (new file: ${isNewFile})`)
 
         try {
             // Cancel any existing animation for this file
@@ -201,6 +221,7 @@ export class DiffAnimationController {
                 if (openEditor) {
                     editor = openEditor
                     document = openEditor.document
+                    getLogger().info(`[DiffAnimationController] Found existing editor for: ${filePath}`)
                 } else {
                     document = await vscode.workspace.openTextDocument(uri)
                     editor = await vscode.window.showTextDocument(document, {
@@ -208,11 +229,22 @@ export class DiffAnimationController {
                         preserveFocus: false,
                         viewColumn: vscode.ViewColumn.Active,
                     })
+                    getLogger().info(`[DiffAnimationController] Opened new editor for: ${filePath}`)
                 }
             } catch (error) {
-                // Create new file if it doesn't exist
+                // File doesn't exist - this shouldn't happen as handler creates it
+                getLogger().warn(`[DiffAnimationController] File not found, creating: ${filePath}`)
                 await vscode.workspace.fs.writeFile(uri, Buffer.from(''))
                 document = await vscode.workspace.openTextDocument(uri)
+                editor = await vscode.window.showTextDocument(document, {
+                    preview: false,
+                    preserveFocus: false,
+                    viewColumn: vscode.ViewColumn.Active,
+                })
+            }
+
+            // Ensure editor is active and visible
+            if (editor !== vscode.window.activeTextEditor) {
                 editor = await vscode.window.showTextDocument(document, {
                     preview: false,
                     preserveFocus: false,
@@ -238,20 +270,20 @@ export class DiffAnimationController {
             this.shouldAutoScroll.set(filePath, true)
             this.lastFirstVisibleLine.set(filePath, 0)
 
-            // For new files, set content to empty instead of original
+            // For new files, ensure we start with empty content
             const isNewFile = originalContent === ''
-            const startContent = isNewFile ? '' : originalContent
 
-            // Apply initial content
+            // Apply initial content (empty for new files, original for existing)
             const edit = new vscode.WorkspaceEdit()
             const fullRange = new vscode.Range(document.positionAt(0), document.positionAt(document.getText().length))
-            edit.replace(uri, fullRange, startContent)
+            edit.replace(uri, fullRange, originalContent)
             await vscode.workspace.applyEdit(edit)
 
             // Wait for document to update
             await new Promise((resolve) => setTimeout(resolve, 100))
 
-            // Apply faded overlay to all lines initially (for new files, this will be minimal)
+            // For new files, we'll stream from empty
+            // For existing files, apply overlay to original content
             if (!isNewFile && editor.document.lineCount > 0) {
                 fadedOverlayController.addLines(0, editor.document.lineCount)
             }
@@ -452,7 +484,7 @@ export class DiffAnimationController {
     }
 
     /**
-     * Stream content in Cline style
+     * Stream content in Cline style - optimized for changed regions only
      */
     private async streamContent(filePath: string, editor: vscode.TextEditor, newContent: string): Promise<void> {
         const animation = this.activeAnimations.get(filePath)
@@ -460,8 +492,6 @@ export class DiffAnimationController {
             return
         }
 
-        const lines = newContent.split('\n')
-        const streamedLines: string[] = []
         const fadedOverlayController = this.fadedOverlayControllers.get(filePath)
         const activeLineController = this.activeLineControllers.get(filePath)
         const timeouts: NodeJS.Timeout[] = []
@@ -472,27 +502,103 @@ export class DiffAnimationController {
 
         this.animationTimeouts.set(filePath, timeouts)
 
-        // For new files, apply the entire content immediately then animate
+        // For new files, animate everything
         const isNewFile = animation.originalContent === ''
-        if (isNewFile) {
-            const edit = new vscode.WorkspaceEdit()
-            edit.replace(editor.document.uri, new vscode.Range(0, 0, 0, 0), newContent)
-            await vscode.workspace.applyEdit(edit)
-            await new Promise((resolve) => setTimeout(resolve, 100))
 
-            // Apply faded overlay to all lines
-            fadedOverlayController.addLines(0, editor.document.lineCount)
+        let firstChangedLine = 0
+        let lastChangedLine = 0
+
+        if (!isNewFile) {
+            // Calculate the actual changes for existing files
+            const changeInfo = this.calculateChangeRegions(animation.originalContent, newContent)
+            firstChangedLine = changeInfo.firstChangedLine
+            lastChangedLine = changeInfo.lastChangedLine
+
+            // If no changes detected, skip animation
+            if (firstChangedLine === -1 || lastChangedLine === -1) {
+                getLogger().info(`[DiffAnimationController] No changes detected, skipping animation`)
+                // Clear any existing decorations
+                fadedOverlayController.clear()
+                activeLineController.clear()
+                await this.finalizeAnimation(filePath, editor)
+                return
+            }
+
+            // Store the changes for later use in diff view
+            animation.diffViewContent = this.buildDiffViewContent(changeInfo.changes)
+        } else {
+            // For new files, all lines are "changed"
+            const newLines = newContent.split('\n')
+            firstChangedLine = 0
+            lastChangedLine = newLines.length - 1
         }
 
-        // Simulate streaming by updating decorations progressively
-        for (let i = 0; i < lines.length; i++) {
+        getLogger().info(
+            `[DiffAnimationController] Animating lines ${firstChangedLine} to ${lastChangedLine} ` +
+                `(${lastChangedLine - firstChangedLine + 1} lines)`
+        )
+
+        // Apply the new content immediately
+        const edit = new vscode.WorkspaceEdit()
+        const fullRange = new vscode.Range(
+            editor.document.positionAt(0),
+            editor.document.positionAt(editor.document.getText().length)
+        )
+        edit.replace(editor.document.uri, fullRange, newContent)
+        await vscode.workspace.applyEdit(edit)
+        await new Promise((resolve) => setTimeout(resolve, 100))
+
+        // Apply faded overlay only to the changed region
+        if (!isNewFile) {
+            fadedOverlayController.clear()
+            if (lastChangedLine >= firstChangedLine && lastChangedLine >= 0) {
+                // Apply overlay from first changed line to last
+                const overlayStart = firstChangedLine
+                const overlayLines = Math.min(
+                    lastChangedLine - firstChangedLine + 1,
+                    editor.document.lineCount - overlayStart
+                )
+                if (overlayLines > 0 && overlayStart < editor.document.lineCount) {
+                    fadedOverlayController.addLines(overlayStart, overlayLines)
+                }
+            }
+        } else {
+            // For new files, overlay everything
+            if (editor.document.lineCount > 0) {
+                fadedOverlayController.addLines(0, editor.document.lineCount)
+            }
+        }
+
+        // Scroll to the first change immediately
+        this.scrollEditorToLine(editor, firstChangedLine)
+
+        // Animate only the changed region with viewport limits
+        const maxAnimationLines = 100 // Maximum lines to animate at once
+        const contextLines = 3 // Lines of context before/after changes
+
+        const animationStartLine = Math.max(0, firstChangedLine - contextLines)
+        let animationEndLine = Math.min(lastChangedLine + contextLines, editor.document.lineCount - 1)
+
+        // If the change region is too large, focus on the beginning
+        if (animationEndLine - animationStartLine + 1 > maxAnimationLines) {
+            animationEndLine = animationStartLine + maxAnimationLines - 1
+            getLogger().info(
+                `[DiffAnimationController] Large change region detected, limiting animation to ${maxAnimationLines} lines`
+            )
+        }
+
+        const totalAnimationLines = Math.max(1, animationEndLine - animationStartLine + 1)
+
+        // Adjust animation speed based on number of lines
+        const animationSpeed = totalAnimationLines > 50 ? 20 : 30 // Faster for large changes
+
+        for (let i = 0; i < totalAnimationLines; i++) {
             if (animation.animationCancelled) {
                 getLogger().info(`[DiffAnimationController] Animation cancelled for: ${filePath}`)
                 return
             }
 
-            streamedLines.push(lines[i])
-            this.streamedLines.set(filePath, [...streamedLines])
+            const currentLine = animationStartLine + i
 
             const timeout = setTimeout(async () => {
                 if (animation.animationCancelled) {
@@ -500,52 +606,146 @@ export class DiffAnimationController {
                 }
 
                 // Update decorations for streaming effect
-                await this.updateStreamingDecorations(filePath, editor, i, lines.length)
-            }, i * 50) // 50ms delay between lines
+                await this.updateStreamingDecorationsForRegion(
+                    filePath,
+                    editor,
+                    currentLine,
+                    animationStartLine,
+                    animationEndLine
+                )
+            }, i * animationSpeed)
 
             timeouts.push(timeout)
         }
 
-        // Final cleanup after all lines are processed
+        // Final cleanup after animation
         const finalTimeout = setTimeout(
             async () => {
                 if (!animation.animationCancelled) {
                     await this.finalizeAnimation(filePath, editor)
                 }
             },
-            lines.length * 50 + 100
+            totalAnimationLines * animationSpeed + 100
         )
 
         timeouts.push(finalTimeout)
     }
 
     /**
-     * Update decorations during streaming
+     * Build diff view content from changes
      */
-    private async updateStreamingDecorations(
+    private buildDiffViewContent(changes: Change[]): string {
+        let diffViewContent = ''
+
+        for (const change of changes) {
+            const lines = change.value.split('\n').filter((line) => line !== '')
+            for (const line of lines) {
+                diffViewContent += line + '\n'
+            }
+        }
+
+        return diffViewContent.trimEnd()
+    }
+
+    /**
+     * Calculate change regions for efficient animation
+     */
+    private calculateChangeRegions(
+        originalContent: string,
+        newContent: string
+    ): {
+        firstChangedLine: number
+        lastChangedLine: number
+        changes: Change[]
+    } {
+        const changes = diffLines(originalContent, newContent)
+        let currentLine = 0
+        let firstChangedLine = -1
+        let lastChangedLine = -1
+
+        for (const change of changes) {
+            const lines = change.value.split('\n').filter((line) => line !== '')
+
+            if (change.added || change.removed) {
+                if (firstChangedLine === -1) {
+                    firstChangedLine = currentLine
+                }
+                // For removed lines, don't advance currentLine, but track as changed
+                if (change.removed) {
+                    lastChangedLine = Math.max(lastChangedLine, currentLine)
+                } else {
+                    lastChangedLine = currentLine + lines.length - 1
+                }
+            }
+
+            // Only advance line counter for non-removed content
+            if (!change.removed) {
+                currentLine += lines.length
+            }
+        }
+
+        return {
+            firstChangedLine,
+            lastChangedLine,
+            changes,
+        }
+    }
+
+    /**
+     * Update decorations during streaming for a specific region
+     */
+    private async updateStreamingDecorationsForRegion(
         filePath: string,
         editor: vscode.TextEditor,
-        currentLineIndex: number,
-        totalLines: number
+        currentLine: number,
+        startLine: number,
+        endLine: number
     ): Promise<void> {
         const fadedOverlayController = this.fadedOverlayControllers.get(filePath)
         const activeLineController = this.activeLineControllers.get(filePath)
         const shouldAutoScroll = this.shouldAutoScroll.get(filePath) ?? true
+        const animation = this.activeAnimations.get(filePath)
 
-        if (!fadedOverlayController || !activeLineController) {
+        if (!fadedOverlayController || !activeLineController || !animation) {
             return
         }
 
-        // Update decorations
-        activeLineController.setActiveLine(currentLineIndex)
-        fadedOverlayController.updateOverlayAfterLine(currentLineIndex, editor.document.lineCount)
+        // Clear previous active line
+        activeLineController.clear()
 
-        // Handle scrolling
+        // Highlight the current line
+        activeLineController.setActiveLine(currentLine)
+
+        // Update overlay - only for the animated region
+        fadedOverlayController.clear()
+        if (currentLine < endLine) {
+            const remainingLines = endLine - currentLine
+            fadedOverlayController.addLines(currentLine + 1, remainingLines)
+        }
+
+        // Smart scrolling - only when needed
         if (shouldAutoScroll) {
-            if (currentLineIndex % 5 === 0 || currentLineIndex === totalLines - 1) {
-                this.scrollEditorToLine(editor, currentLineIndex)
+            const visibleRanges = editor.visibleRanges
+            const isLineVisible = visibleRanges.some(
+                (range) => currentLine >= range.start.line && currentLine <= range.end.line
+            )
+
+            // Only scroll if line is not visible or at edges
+            if (!isLineVisible || currentLine === startLine || currentLine === endLine) {
+                this.scrollEditorToLine(editor, currentLine)
             }
         }
+    }
+
+    /**
+     * Scroll editor to line
+     */
+    private scrollEditorToLine(editor: vscode.TextEditor, line: number): void {
+        const scrollLine = Math.max(0, line - 5)
+        editor.revealRange(
+            new vscode.Range(scrollLine, 0, scrollLine, 0),
+            vscode.TextEditorRevealType.InCenterIfOutsideViewport
+        )
     }
 
     /**
@@ -568,17 +768,6 @@ export class DiffAnimationController {
         this.animationTimeouts.delete(filePath)
 
         getLogger().info(`[DiffAnimationController] ✅ Animation completed with diff view for: ${filePath}`)
-    }
-
-    /**
-     * Scroll editor to line
-     */
-    private scrollEditorToLine(editor: vscode.TextEditor, line: number): void {
-        const scrollLine = Math.max(0, line - 5)
-        editor.revealRange(
-            new vscode.Range(scrollLine, 0, scrollLine, 0),
-            vscode.TextEditorRevealType.InCenterIfOutsideViewport
-        )
     }
 
     /**
@@ -678,16 +867,9 @@ export class DiffAnimationController {
                     editor.document.positionAt(editor.document.getText().length)
                 )
                 edit.replace(editor.document.uri, fullRange, animation.newContent)
-                void vscode.workspace.applyEdit(edit).then(
-                    () => {
-                        getLogger().info(`[DiffAnimationController] Restored final content for: ${filePath}`)
-                    },
-                    (error) => {
-                        getLogger().error(
-                            `[DiffAnimationController] Failed to restore final content for: ${filePath}: ${error}`
-                        )
-                    }
-                )
+                void vscode.workspace.applyEdit(edit).then(() => {
+                    getLogger().info(`[DiffAnimationController] Restored final content for: ${filePath}`)
+                })
             }
         }
 
