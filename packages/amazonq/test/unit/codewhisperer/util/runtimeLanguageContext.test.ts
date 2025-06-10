@@ -4,13 +4,18 @@
  */
 
 import assert from 'assert'
-import { resetCodeWhispererGlobalVariables, toTextDocument } from 'aws-core-vscode/test'
+import { resetCodeWhispererGlobalVariables, TestFolder, toTextDocument } from 'aws-core-vscode/test'
 import { runtimeLanguageContext, RuntimeLanguageContext, PlatformLanguageId } from 'aws-core-vscode/codewhisperer'
 import * as codewhispererClient from 'aws-core-vscode/codewhisperer'
 import { CodewhispererLanguage } from 'aws-core-vscode/shared'
 
 describe('runtimeLanguageContext', function () {
     const languageContext = new RuntimeLanguageContext()
+    let tempFolder: TestFolder
+
+    before(async function () {
+        tempFolder = await TestFolder.create()
+    })
 
     describe('test isLanguageSupported', function () {
         const cases: [string, boolean][] = [
@@ -104,13 +109,12 @@ describe('runtimeLanguageContext', function () {
                 ['helloUnknown', false],
                 ['helloFoo.foo', false],
             ]
-
             for (const tuple of cases) {
                 const fileName = tuple[0]
                 const expected = tuple[1]
 
                 it(`pass document ${fileName} as argument should first try determine by languageId then file extensions`, async function () {
-                    const doc = await toTextDocument('', fileName)
+                    const doc = await toTextDocument('', fileName, tempFolder.path)
                     const actual = languageContext.isLanguageSupported(doc)
                     assert.strictEqual(actual, expected)
                 })
@@ -173,7 +177,6 @@ describe('runtimeLanguageContext', function () {
             'jsx',
             'kotlin',
             'php',
-            'plaintext',
             'python',
             'ruby',
             'rust',
@@ -284,7 +287,6 @@ describe('runtimeLanguageContext', function () {
             ['jsx', 'jsx'],
             ['kotlin', 'kt'],
             ['php', 'php'],
-            ['plaintext', 'txt'],
             ['python', 'py'],
             ['ruby', 'rb'],
             ['rust', 'rs'],
@@ -327,6 +329,40 @@ describe('runtimeLanguageContext', function () {
                 assert.strictEqual(actual, undefined)
             })
         }
+    })
+
+    describe('getSingleLineCommentPrefix', function () {
+        it('should return the correct comment prefix for supported languages', function () {
+            assert.strictEqual(languageContext.getSingleLineCommentPrefix('java'), '// ')
+            assert.strictEqual(languageContext.getSingleLineCommentPrefix('javascript'), '// ')
+            assert.strictEqual(languageContext.getSingleLineCommentPrefix('jsonc'), '// ')
+            assert.strictEqual(languageContext.getSingleLineCommentPrefix('kotlin'), '// ')
+            assert.strictEqual(languageContext.getSingleLineCommentPrefix('lua'), '-- ')
+            assert.strictEqual(languageContext.getSingleLineCommentPrefix('python'), '# ')
+            assert.strictEqual(languageContext.getSingleLineCommentPrefix('ruby'), '# ')
+            assert.strictEqual(languageContext.getSingleLineCommentPrefix('sql'), '-- ')
+            assert.strictEqual(languageContext.getSingleLineCommentPrefix('tf'), '# ')
+            assert.strictEqual(languageContext.getSingleLineCommentPrefix('typescript'), '// ')
+            assert.strictEqual(languageContext.getSingleLineCommentPrefix('vue'), '')
+            assert.strictEqual(languageContext.getSingleLineCommentPrefix('yaml'), '# ')
+        })
+
+        it('should normalize language ID before getting comment prefix', function () {
+            assert.strictEqual(languageContext.getSingleLineCommentPrefix('hcl'), '# ')
+            assert.strictEqual(languageContext.getSingleLineCommentPrefix('javascriptreact'), '// ')
+            assert.strictEqual(languageContext.getSingleLineCommentPrefix('shellscript'), '# ')
+            assert.strictEqual(languageContext.getSingleLineCommentPrefix('typescriptreact'), '// ')
+            assert.strictEqual(languageContext.getSingleLineCommentPrefix('yml'), '# ')
+        })
+
+        it('should return empty string for unsupported languages', function () {
+            assert.strictEqual(languageContext.getSingleLineCommentPrefix('nonexistent'), '')
+            assert.strictEqual(languageContext.getSingleLineCommentPrefix(undefined), '')
+        })
+
+        it('should return empty string for plaintext', function () {
+            assert.strictEqual(languageContext.getSingleLineCommentPrefix('plaintext'), '')
+        })
     })
 
     // for now we will only jsx mapped to javascript, tsx mapped to typescript, all other language should remain the same

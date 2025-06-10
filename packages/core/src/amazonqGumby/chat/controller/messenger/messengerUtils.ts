@@ -5,7 +5,7 @@
  */
 
 import * as os from 'os'
-import { transformByQState, JDKVersion } from '../../../../codewhisperer/models/model'
+import { JDKVersion } from '../../../../codewhisperer/models/model'
 import * as CodeWhispererConstants from '../../../../codewhisperer/models/constants'
 import DependencyVersions from '../../../models/dependencies'
 
@@ -18,8 +18,9 @@ export enum ButtonActions {
     CONFIRM_SQL_CONVERSION_TRANSFORMATION_FORM = 'gumbySQLConversionTransformFormConfirm',
     CANCEL_TRANSFORMATION_FORM = 'gumbyTransformFormCancel', // shared between Language Upgrade & SQL Conversion
     CONFIRM_SKIP_TESTS_FORM = 'gumbyTransformSkipTestsFormConfirm',
-    CONFIRM_SELECTIVE_TRANSFORMATION_FORM = 'gumbyTransformOneOrMultipleDiffsFormConfirm',
     SELECT_SQL_CONVERSION_METADATA_FILE = 'gumbySQLConversionMetadataTransformFormConfirm',
+    SELECT_CUSTOM_DEPENDENCY_VERSION_FILE = 'gumbyCustomDependencyVersionTransformFormConfirm',
+    CONTINUE_TRANSFORMATION_FORM = 'gumbyTransformFormContinue',
     CONFIRM_DEPENDENCY_FORM = 'gumbyTransformDependencyFormConfirm',
     CANCEL_DEPENDENCY_FORM = 'gumbyTransformDependencyFormCancel',
     CONFIRM_JAVA_HOME_FORM = 'gumbyJavaHomeFormConfirm',
@@ -35,14 +36,11 @@ export enum GumbyCommands {
 }
 
 export default class MessengerUtils {
-    static createJavaHomePrompt = (): string => {
-        let javaHomePrompt = `${
-            CodeWhispererConstants.enterJavaHomeChatMessage
-        } ${transformByQState.getSourceJDKVersion()}. \n`
+    static createJavaHomePrompt = (jdkVersion: JDKVersion | undefined): string => {
+        let javaHomePrompt = `${CodeWhispererConstants.enterJavaHomeChatMessage} ${jdkVersion}. \n`
         if (os.platform() === 'win32') {
             javaHomePrompt += CodeWhispererConstants.windowsJavaHomeHelpChatMessage
         } else if (os.platform() === 'darwin') {
-            const jdkVersion = transformByQState.getSourceJDKVersion()
             if (jdkVersion === JDKVersion.JDK8) {
                 javaHomePrompt += ` ${CodeWhispererConstants.macJavaVersionHomeHelpChatMessage(1.8)}`
             } else if (jdkVersion === JDKVersion.JDK11) {

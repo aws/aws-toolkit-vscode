@@ -41,6 +41,9 @@ import {
     setMaven,
     parseBuildFile,
     validateSQLMetadataFile,
+    createLocalBuildUploadZip,
+    validateCustomVersionsFile,
+    extractOriginalProjectSources,
 } from '../../../codewhisperer/service/transformByQ/transformFileHandler'
 import { uploadArtifactToS3 } from '../../../codewhisperer/indexNode'
 import request from '../../../shared/request'
@@ -49,6 +52,19 @@ import * as nodefs from 'fs' // eslint-disable-line no-restricted-imports
 describe('transformByQ', function () {
     let fetchStub: sinon.SinonStub
     let tempDir: string
+    const validCustomVersionsFile = `name: "custom-dependency-management"
+description: "Custom dependency version management for Java migration from JDK 8/11/17 to JDK 17/21"
+dependencyManagement:
+  dependencies:
+    - identifier: "com.example:library1"
+        targetVersion: "2.1.0"
+        versionProperty: "library1.version"
+        originType: "FIRST_PARTY"
+  plugins:
+    - identifier: "com.example.plugin"
+        targetVersion: "1.2.0"
+        versionProperty: "plugin.version"`
+
     const validSctFile = `<?xml version="1.0" encoding="UTF-8"?>
     <tree>
     <instances>
@@ -231,7 +247,25 @@ describe('transformByQ', function () {
             },
             transformationJob: { status: 'COMPLETED' },
         }
+        const mockPlanResponse = {
+            $response: {
+                data: {
+                    transformationPlan: { transformationSteps: [] },
+                },
+                requestId: 'requestId',
+                hasNextPage: () => false,
+                error: undefined,
+                nextPage: () => null, // eslint-disable-line unicorn/no-null
+                redirectCount: 0,
+                retryCount: 0,
+                httpResponse: new HttpResponse(),
+            },
+            transformationPlan: { transformationSteps: [] },
+        }
         sinon.stub(codeWhisperer.codeWhispererClient, 'codeModernizerGetCodeTransformation').resolves(mockJobResponse)
+        sinon
+            .stub(codeWhisperer.codeWhispererClient, 'codeModernizerGetCodeTransformationPlan')
+            .resolves(mockPlanResponse)
         transformByQState.setToSucceeded()
         const status = await pollTransformationJob(
             'dummyId',
@@ -284,8 +318,55 @@ describe('transformByQ', function () {
         const tempFilePath = path.join(tempDir, tempFileName)
         await toFile('', tempFilePath)
         transformByQState.setProjectPath(tempDir)
-        await setMaven()
-        assert.strictEqual(transformByQState.getMavenName(), '.\\mvnw.cmd')
+        setMaven()
+        // mavenName should always be 'mvn'
+        assert.strictEqual(transformByQState.getMavenName(), 'mvn')
+    })
+
+    it(`WHEN local build zip created THEN zip contains all expected files and no unexpected files`, async function () {
+        const zipPath = await createLocalBuildUploadZip(tempDir, 0, 'sample stdout after running local build')
+        const zip = new AdmZip(zipPath)
+        const manifestEntry = zip.getEntry('manifest.json')
+        if (!manifestEntry) {
+            fail('manifest.json not found in the zip')
+        }
+        const manifestBuffer = manifestEntry.getData()
+        const manifestText = manifestBuffer.toString('utf8')
+        const manifest = JSON.parse(manifestText)
+        assert.strictEqual(manifest.capability, 'CLIENT_SIDE_BUILD')
+        assert.strictEqual(manifest.exitCode, 0)
+        assert.strictEqual(manifest.commandLogFileName, 'build-output.log')
+        assert.strictEqual(zip.getEntries().length, 2) // expecting only manifest.json and build-output.log
+    })
+
+    it('WHEN extractOriginalProjectSources THEN only source files are extracted to destination', async function () {
+        const tempDir = (await TestFolder.create()).path
+        const destinationPath = path.join(tempDir, 'originalCopy_jobId_artifactId')
+        await fs.mkdir(destinationPath)
+
+        const zip = new AdmZip()
+        const testFiles = [
+            { path: 'sources/file1.java', content: 'test content 1' },
+            { path: 'sources/dir/file2.java', content: 'test content 2' },
+            { path: 'dependencies/file3.jar', content: 'should not extract' },
+            { path: 'manifest.json', content: '{"version": "1.0"}' },
+        ]
+
+        for (const file of testFiles) {
+            zip.addFile(file.path, Buffer.from(file.content))
+        }
+
+        const zipPath = path.join(tempDir, 'test.zip')
+        zip.writeZip(zipPath)
+
+        transformByQState.setPayloadFilePath(zipPath)
+
+        await extractOriginalProjectSources(destinationPath)
+
+        const extractedFiles = getFilesRecursively(destinationPath, false)
+        assert.strictEqual(extractedFiles.length, 2)
+        assert(extractedFiles.includes(path.join(destinationPath, 'sources', 'file1.java')))
+        assert(extractedFiles.includes(path.join(destinationPath, 'sources', 'dir', 'file2.java')))
     })
 
     it(`WHEN zip created THEN manifest.json contains test-compile custom build command`, async function () {
@@ -425,12 +506,18 @@ describe('transformByQ', function () {
 
         const actual = getTableMapping(stepZeroProgressUpdates)
         const expected = {
-            '0': '{"columnNames":["name","value"],"rows":[{"name":"Lines of code in your application","value":"3000"},{"name":"Dependencies to be replaced","value":"5"},{"name":"Deprecated code instances to be replaced","value":"10"},{"name":"Files to be updated","value":"7"}]}',
-            '1-dependency-change-abc':
+            '0': [
+                '{"columnNames":["name","value"],"rows":[{"name":"Lines of code in your application","value":"3000"},{"name":"Dependencies to be replaced","value":"5"},{"name":"Deprecated code instances to be replaced","value":"10"},{"name":"Files to be updated","value":"7"}]}',
+            ],
+            '1-dependency-change-abc': [
                 '{"columnNames":["dependencyName","action","currentVersion","targetVersion"],"rows":[{"dependencyName":"org.springboot.com","action":"Update","currentVersion":"2.1","targetVersion":"2.4"}, {"dependencyName":"com.lombok.java","action":"Remove","currentVersion":"1.7","targetVersion":"-"}]}',
-            '2-deprecated-code-xyz':
+            ],
+            '2-deprecated-code-xyz': [
                 '{"columnNames":["apiFullyQualifiedName","numChangedFiles"],“rows”:[{"apiFullyQualifiedName":"java.lang.Thread.stop()","numChangedFiles":"6"}, {"apiFullyQualifiedName":"java.math.bad()","numChangedFiles":"3"}]}',
-            '-1': '{"columnNames":["relativePath","action"],"rows":[{"relativePath":"pom.xml","action":"Update"}, {"relativePath":"src/main/java/com/bhoruka/bloodbank/BloodbankApplication.java","action":"Update"}]}',
+            ],
+            '-1': [
+                '{"columnNames":["relativePath","action"],"rows":[{"relativePath":"pom.xml","action":"Update"}, {"relativePath":"src/main/java/com/bhoruka/bloodbank/BloodbankApplication.java","action":"Update"}]}',
+            ],
         }
         assert.deepStrictEqual(actual, expected)
     })
@@ -451,6 +538,17 @@ describe('transformByQ', function () {
             'I detected 1 potential absolute file path(s) in your pom.xml file: **system/**. Absolute file paths might cause issues when I build your code. Any errors will show up in the build log.'
         const warningMessage = await parseBuildFile()
         assert.strictEqual(expectedWarning, warningMessage)
+    })
+
+    it(`WHEN validateCustomVersionsFile on fully valid .yaml file THEN passes validation`, async function () {
+        const isValidFile = await validateCustomVersionsFile(validCustomVersionsFile)
+        assert.strictEqual(isValidFile, true)
+    })
+
+    it(`WHEN validateCustomVersionsFile on invalid .yaml file THEN fails validation`, async function () {
+        const invalidFile = validCustomVersionsFile.replace('dependencyManagement', 'invalidKey')
+        const isValidFile = await validateCustomVersionsFile(invalidFile)
+        assert.strictEqual(isValidFile, false)
     })
 
     it(`WHEN validateMetadataFile on fully valid .sct file THEN passes validation`, async function () {

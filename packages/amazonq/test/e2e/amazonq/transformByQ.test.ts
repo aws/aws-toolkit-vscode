@@ -75,6 +75,9 @@ describe('Amazon Q Code Transformation', function () {
                 },
             ])
 
+            transformByQState.setSourceJDKVersion(JDKVersion.JDK8)
+            transformByQState.setTargetJDKVersion(JDKVersion.JDK17)
+
             tab.addChatMessage({ command: '/transform' })
 
             // wait for /transform to respond with some intro messages and the first user input form
@@ -120,38 +123,35 @@ describe('Amazon Q Code Transformation', function () {
                 formItemValues: skipTestsFormValues,
             })
 
-            // 3 additional chat messages (including message with 3rd form) get sent after 2nd form submitted; wait for all of them
-            await tab.waitForEvent(() => tab.getChatItems().length > 9, {
+            // 2 additional chat messages get sent after 3rd form submitted; wait for both of them
+            await tab.waitForEvent(() => tab.getChatItems().length > 8, {
                 waitTimeoutInMs: 5000,
                 waitIntervalInMs: 1000,
             })
-            const multipleDiffsForm = tab.getChatItems().pop()
+
+            // TO-DO: add this back when releasing CSB
+            /*
+            const customDependencyVersionPrompt = tab.getChatItems().pop()
             assert.strictEqual(
-                multipleDiffsForm?.formItems?.[0]?.id ?? undefined,
-                'GumbyTransformOneOrMultipleDiffsForm'
+                customDependencyVersionPrompt?.body?.includes('You can optionally upload a YAML file'),
+                true
             )
+            tab.clickCustomFormButton({ id: 'gumbyTransformFormContinue' })
 
-            const oneOrMultipleDiffsFormItemValues = {
-                GumbyTransformOneOrMultipleDiffsForm: 'One diff',
-            }
-            const oneOrMultipleDiffsFormValues: Record<string, string> = { ...oneOrMultipleDiffsFormItemValues }
-            tab.clickCustomFormButton({
-                id: 'gumbyTransformOneOrMultipleDiffsFormConfirm',
-                text: 'Confirm',
-                formItemValues: oneOrMultipleDiffsFormValues,
-            })
-
-            // 2 additional chat messages (including message with 4th form) get sent after 3rd form submitted; wait for both of them
-            await tab.waitForEvent(() => tab.getChatItems().length > 11, {
+            // 2 additional chat messages get sent after Continue button clicked; wait for both of them
+            await tab.waitForEvent(() => tab.getChatItems().length > 13, {
                 waitTimeoutInMs: 5000,
                 waitIntervalInMs: 1000,
             })
-            const jdkPathPrompt = tab.getChatItems().pop()
-            assert.strictEqual(jdkPathPrompt?.body?.includes('Enter the path to JDK'), true)
+            */
 
-            // 2 additional chat messages get sent after 4th form submitted; wait for both of them
+            const sourceJdkPathPrompt = tab.getChatItems().pop()
+            assert.strictEqual(sourceJdkPathPrompt?.body?.includes('Enter the path to JDK 8'), true)
+
             tab.addChatMessage({ prompt: '/dummy/path/to/jdk8' })
-            await tab.waitForEvent(() => tab.getChatItems().length > 13, {
+
+            // 2 additional chat messages get sent after JDK path submitted; wait for both of them
+            await tab.waitForEvent(() => tab.getChatItems().length > 10, {
                 waitTimeoutInMs: 5000,
                 waitIntervalInMs: 1000,
             })
@@ -173,7 +173,7 @@ describe('Amazon Q Code Transformation', function () {
                 text: 'View summary',
             })
 
-            await tab.waitForEvent(() => tab.getChatItems().length > 14, {
+            await tab.waitForEvent(() => tab.getChatItems().length > 11, {
                 waitTimeoutInMs: 5000,
                 waitIntervalInMs: 1000,
             })
@@ -401,7 +401,7 @@ describe('Amazon Q Code Transformation', function () {
 
         it('WHEN transforming a Java 8 project E2E THEN job is successful', async function () {
             transformByQState.setTransformationType(TransformationType.LANGUAGE_UPGRADE)
-            await setMaven()
+            setMaven()
             await startTransformByQ.processLanguageUpgradeTransformFormInput(tempDir, JDKVersion.JDK8, JDKVersion.JDK17)
             await startTransformByQ.startTransformByQ()
             assert.strictEqual(transformByQState.getPolledJobStatus(), 'COMPLETED')

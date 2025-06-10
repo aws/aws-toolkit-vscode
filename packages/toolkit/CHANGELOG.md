@@ -1,3 +1,43 @@
+## 3.64.0 2025-06-04
+
+- Miscellaneous non-user-facing changes
+
+## 3.63.0 2025-05-22
+
+- Miscellaneous non-user-facing changes
+
+## 3.62.0 2025-05-15
+
+- Miscellaneous non-user-facing changes
+
+## 3.61.0 2025-05-14
+
+- Miscellaneous non-user-facing changes
+
+## 3.60.0 2025-05-06
+
+- Miscellaneous non-user-facing changes
+
+## 3.59.0 2025-05-05
+
+- Miscellaneous non-user-facing changes
+
+## 3.58.0 2025-05-02
+
+- Miscellaneous non-user-facing changes
+
+## 3.57.0 2025-05-01
+
+- **Feature** AppBuilder: unchecking the 'Attach a debugger' checkbox in local invoke webview invokes the function without a debugger
+
+## 3.56.0 2025-04-25
+
+- Miscellaneous non-user-facing changes
+
+## 3.55.0 2025-04-18
+
+- Miscellaneous non-user-facing changes
+
 ## 3.54.0 2025-04-09
 
 - Miscellaneous non-user-facing changes

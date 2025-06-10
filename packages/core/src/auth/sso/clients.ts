@@ -36,6 +36,7 @@ import { StandardRetryStrategy, defaultRetryDecider } from '@smithy/middleware-r
 import { AuthenticationFlow } from './model'
 import { toSnakeCase } from '../../shared/utilities/textUtilities'
 import { getUserAgent, withTelemetryContext } from '../../shared/telemetry/util'
+import { oneSecond } from '../../shared/datetime'
 
 export class OidcClient {
     public constructor(
@@ -124,7 +125,9 @@ export class OidcClient {
             requestHandler: {
                 // This field may have a bug: https://github.com/aws/aws-sdk-js-v3/issues/6271
                 // If the bug is real but is fixed, then we can probably remove this field and just have no timeout by default
-                requestTimeout: 5000,
+                //
+                // Also, we bump this higher due to ticket V1761315147, so that SSO does not timeout
+                requestTimeout: oneSecond * 12,
             },
         })
 
@@ -258,7 +261,7 @@ function addLoggingMiddleware(client: SSOOIDCClient) {
                     args.input as unknown as Record<string, unknown>,
                     3,
                     ['clientSecret', 'accessToken', 'refreshToken'],
-                    '[omitted]'
+                    { replacement: '[omitted]' }
                 )
                 getLogger().debug('API request (%s %s): %O', hostname, path, input)
             }
@@ -288,7 +291,7 @@ function addLoggingMiddleware(client: SSOOIDCClient) {
                     result.output as unknown as Record<string, unknown>,
                     3,
                     ['clientSecret', 'accessToken', 'refreshToken'],
-                    '[omitted]'
+                    { replacement: '[omitted]' }
                 )
                 getLogger().debug('API response (%s %s): %O', hostname, path, output)
             }

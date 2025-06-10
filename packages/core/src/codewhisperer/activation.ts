@@ -72,7 +72,7 @@ import { AuthUtil } from './util/authUtil'
 import { ImportAdderProvider } from './service/importAdderProvider'
 import { TelemetryHelper } from './util/telemetryHelper'
 import { openUrl } from '../shared/utilities/vsCodeUtils'
-import { notifyNewCustomizations } from './util/customizationUtil'
+import { notifyNewCustomizations, onProfileChangedListener } from './util/customizationUtil'
 import { CodeWhispererCommandBackend, CodeWhispererCommandDeclarations } from './commands/gettingStartedPageCommands'
 import { SecurityIssueHoverProvider } from './service/securityIssueHoverProvider'
 import { SecurityIssueCodeActionProvider } from './service/securityIssueCodeActionProvider'
@@ -90,6 +90,8 @@ import { SecurityIssueTreeViewProvider } from './service/securityIssueTreeViewPr
 import { setContext } from '../shared/vscode/setContext'
 import { syncSecurityIssueWebview } from './views/securityIssue/securityIssueWebview'
 import { detectCommentAboveLine } from '../shared/utilities/commentUtils'
+import { activateEditTracking } from './nextEditPrediction/activation'
+import { notifySelectDeveloperProfile } from './region/utils'
 
 let localize: nls.LocalizeFunc
 
@@ -337,7 +339,8 @@ export async function activate(context: ExtContext): Promise<void> {
             [...CodeWhispererConstants.securityScanLanguageIds],
             SecurityIssueCodeActionProvider.instance
         ),
-        vscode.commands.registerCommand('aws.amazonq.openEditorAtRange', openEditorAtRange)
+        vscode.commands.registerCommand('aws.amazonq.openEditorAtRange', openEditorAtRange),
+        auth.regionProfileManager.onDidChangeRegionProfile(onProfileChangedListener)
     )
 
     // run the auth startup code with context for telemetry
@@ -354,6 +357,10 @@ export async function activate(context: ExtContext): Promise<void> {
                 if (auth.isEnterpriseSsoInUse()) {
                     await auth.notifySessionConfiguration()
                 }
+            }
+
+            if (auth.requireProfileSelection()) {
+                await notifySelectDeveloperProfile()
             }
         },
         { emit: false, functionId: { name: 'activateCwCore' } }
@@ -499,6 +506,8 @@ export async function activate(context: ExtContext): Promise<void> {
             })
         )
     }
+
+    activateEditTracking(context)
 }
 
 export async function shutdown() {

@@ -20,6 +20,7 @@
 import * as child_process from 'child_process' // eslint-disable-line no-restricted-imports
 import * as nodefs from 'fs' // eslint-disable-line no-restricted-imports
 import * as path from 'path'
+import { downloadLanguageServer } from './lspArtifact'
 
 function parseArgs() {
     // Invoking this script with argument "foo":
@@ -105,7 +106,7 @@ function getVersionSuffix(feature: string, debug: boolean): string {
     return `${debugSuffix}${featureSuffix}${commitSuffix}`
 }
 
-function main() {
+async function main() {
     const args = parseArgs()
     // It is expected that this will package from a packages/{subproject} folder.
     // There is a base config in packages/
@@ -155,6 +156,12 @@ function main() {
         }
 
         nodefs.writeFileSync(packageJsonFile, JSON.stringify(packageJson, undefined, '    '))
+
+        // add language server bundle
+        if (packageJson.name === 'amazon-q-vscode') {
+            await downloadLanguageServer()
+        }
+
         child_process.execFileSync(
             'vsce',
             [

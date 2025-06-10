@@ -13,19 +13,31 @@ import { TargetContent, logger, LspResult, LspVersion, Manifest } from './types'
 import { createHash } from '../crypto'
 import { lspSetupStage, StageResolver, tryStageResolvers } from './utils/setupStage'
 import { HttpResourceFetcher } from '../resourcefetcher/httpResourceFetcher'
-import { showMessageWithCancel } from '../../shared/utilities/messages'
+import { showProgressWithTimeout } from '../../shared/utilities/messages'
 import { Timeout } from '../utilities/timeoutUtils'
+import { oneMinute } from '../datetime'
+import vscode from 'vscode'
 
-// max timeout for downloading remote LSP assets progress, the lowest possible is 3000, bounded by httpResourceFetcher's waitUntil
-const remoteDownloadTimeout = 5000
+// max timeout for downloading remote LSP assets. Some asserts are large (100+ MB) so this needs to be large for slow connections.
+// Since the user can cancel this one we can let it run very long.
+const remoteDownloadTimeout = oneMinute * 30
 
 export class LanguageServerResolver {
+    private readonly downloadMessage: string
+
     constructor(
         private readonly manifest: Manifest,
         private readonly lsName: string,
         private readonly versionRange: semver.Range,
+        private readonly manifestUrl: string,
+        /**
+         * Custom message to show user when downloading, if undefined it will use the default.
+         */
+        downloadMessage?: string,
         private readonly _defaultDownloadFolder?: string
-    ) {}
+    ) {
+        this.downloadMessage = downloadMessage ?? `Updating '${this.lsName}' language server`
+    }
 
     /**
      * Downloads and sets up the Language Server, attempting different locations in order:
@@ -40,34 +52,61 @@ export class LanguageServerResolver {
                 languageServerVersion: result.version,
             }
         }
-        try {
-            const latestVersion = this.latestCompatibleLspVersion()
-            const targetContents = this.getLSPTargetContents(latestVersion)
-            const cacheDirectory = this.getDownloadDirectory(latestVersion.serverVersion)
+        const latestVersion = this.latestCompatibleLspVersion()
+        const targetContents = this.getLSPTargetContents(latestVersion)
+        const cacheDirectory = this.getDownloadDirectory(latestVersion.serverVersion)
 
-            const serverResolvers: StageResolver<LspResult>[] = [
-                {
-                    resolve: async () => await this.getLocalServer(cacheDirectory, latestVersion, targetContents),
-                    telemetryMetadata: { id: this.lsName, languageServerLocation: 'cache' },
-                },
-                {
-                    resolve: async () => await this.fetchRemoteServer(cacheDirectory, latestVersion, targetContents),
-                    telemetryMetadata: { id: this.lsName, languageServerLocation: 'remote' },
-                },
-                {
-                    resolve: async () => await this.getFallbackServer(latestVersion),
-                    telemetryMetadata: { id: this.lsName, languageServerLocation: 'fallback' },
-                },
-            ]
+        const serverResolvers: StageResolver<LspResult>[] = [
+            {
+                // 1: Use the current local ("cached") LSP server bundle, if any.
+                resolve: async () => await this.getLocalServer(cacheDirectory, latestVersion, targetContents),
+                telemetryMetadata: { id: this.lsName, languageServerLocation: 'cache' },
+            },
+            {
+                // 2: Download the latest LSP server bundle.
+                resolve: async () => await this.fetchRemoteServer(cacheDirectory, latestVersion, targetContents),
+                telemetryMetadata: { id: this.lsName, languageServerLocation: 'remote' },
+            },
+            {
+                // 3: If the download fails, try an older, cached version.
+                resolve: async () => await this.getFallbackServer(latestVersion),
+                telemetryMetadata: { id: this.lsName, languageServerLocation: 'fallback' },
+            },
+        ]
 
-            return await tryStageResolvers('getServer', serverResolvers, getServerVersion)
-        } finally {
-            logger.info(`Finished setting up LSP server`)
-        }
+        /**
+         * Example:
+         * ```
+         * LspResult {
+         *   assetDirectory = "<cachedir>/aws/toolkits/language-servers/AmazonQ/3.3.0"
+         *   location = 'cache'
+         *   version = '3.3.0'
+         * }
+         * ```
+         */
+        const resolved = await tryStageResolvers('getServer', serverResolvers, getServerVersion)
+        logger.info('Finished preparing "%s" LSP server: %O', this.lsName, resolved.assetDirectory)
+        return resolved
     }
 
+    /** Finds an older, cached version of the LSP server bundle. */
     private async getFallbackServer(latestVersion: LspVersion): Promise<LspResult> {
-        const fallbackDirectory = await this.getFallbackDir(latestVersion.serverVersion)
+        const cachedVersions = await this.getCachedVersions()
+        if (cachedVersions.length === 0) {
+            /**
+             * at this point the latest version doesn't exist locally, lsp download (with retries) failed, and there are no cached fallback versions.
+             * This _probably_ only happens when the user hit a firewall/proxy issue, since otherwise they would probably have at least
+             * one other language server locally
+             */
+            throw new ToolkitError(
+                `Unable to download dependencies from ${this.manifestUrl}. Check your network connectivity or firewall configuration and then try again.`,
+                {
+                    code: 'NetworkConnectivityError',
+                }
+            )
+        }
+
+        const fallbackDirectory = await this.getFallbackDir(latestVersion.serverVersion, cachedVersions)
         if (!fallbackDirectory) {
             throw new ToolkitError('Unable to find a compatible version of the Language Server', {
                 code: 'IncompatibleVersion',
@@ -92,10 +131,19 @@ export class LanguageServerResolver {
      */
     private async showDownloadProgress() {
         const timeout = new Timeout(remoteDownloadTimeout)
-        await showMessageWithCancel(`Downloading '${this.lsName}' language server`, timeout)
+        void showProgressWithTimeout(
+            {
+                title: this.downloadMessage,
+                location: vscode.ProgressLocation.Notification,
+                cancellable: false,
+            },
+            timeout,
+            0
+        )
         return timeout
     }
 
+    /** Downloads the latest LSP server bundle. */
     private async fetchRemoteServer(
         cacheDirectory: string,
         latestVersion: LspVersion,
@@ -103,13 +151,14 @@ export class LanguageServerResolver {
     ): Promise<LspResult> {
         const timeout = await this.showDownloadProgress()
         try {
-            if (await this.downloadRemoteTargetContent(targetContents, latestVersion.serverVersion, timeout)) {
+            if (await this.downloadRemoteTargetContent(targetContents, latestVersion, timeout)) {
                 return {
                     location: 'remote',
                     version: latestVersion.serverVersion,
                     assetDirectory: cacheDirectory,
                 }
             } else {
+                await this.cleanupVersion(latestVersion.serverVersion)
                 throw new ToolkitError('Failed to download server from remote', { code: 'RemoteDownloadFailed' })
             }
         } finally {
@@ -117,6 +166,15 @@ export class LanguageServerResolver {
         }
     }
 
+    private async cleanupVersion(version: string) {
+        // clean up the X.X.X download directory since the download failed
+        const downloadDirectory = this.getDownloadDirectory(version)
+        if (await fs.existsDir(downloadDirectory)) {
+            await fs.delete(downloadDirectory)
+        }
+    }
+
+    /** Gets the current local ("cached") LSP server bundle. */
     private async getLocalServer(
         cacheDirectory: string,
         latestVersion: LspVersion,
@@ -130,11 +188,7 @@ export class LanguageServerResolver {
             }
         } else {
             // Delete the cached directory since it's invalid
-            if (await fs.existsDir(cacheDirectory)) {
-                await fs.delete(cacheDirectory, {
-                    recursive: true,
-                })
-            }
+            await fs.delete(cacheDirectory, { force: true, recursive: true })
             throw new ToolkitError('Failed to retrieve server from cache', { code: 'InvalidCache' })
         }
     }
@@ -149,15 +203,8 @@ export class LanguageServerResolver {
     /**
      * Returns the path to the most compatible cached LSP version that can serve as a fallback
      **/
-    private async getFallbackDir(version: string) {
+    private async getFallbackDir(version: string, cachedVersions: string[]) {
         const compatibleLspVersions = this.compatibleManifestLspVersion()
-
-        // determine all folders containing lsp versions in the fallback parent folder
-        const cachedVersions = (await fs.readdir(this.defaultDownloadFolder()))
-            .filter(([_, filetype]) => filetype === FileType.Directory)
-            .map(([pathName, _]) => semver.parse(pathName))
-            .filter((ver): ver is semver.SemVer => ver !== null)
-            .map((x) => x.version)
 
         const expectedVersion = semver.parse(version)
         if (!expectedVersion) {
@@ -172,6 +219,15 @@ export class LanguageServerResolver {
             await Promise.all(sortedCachedLspVersions.map((ver) => this.getValidLocalCacheDirectory(ver)))
         ).filter((v) => v !== undefined)
         return fallbackDir.length > 0 ? fallbackDir[0] : undefined
+    }
+
+    private async getCachedVersions() {
+        // determine all folders containing lsp versions in the parent folder
+        return (await fs.readdir(this.defaultDownloadFolder()))
+            .filter(([_, filetype]) => filetype === FileType.Directory)
+            .map(([pathName, _]) => semver.parse(pathName))
+            .filter((ver): ver is semver.SemVer => ver !== null)
+            .map((x) => x.version)
     }
 
     /**
@@ -207,8 +263,8 @@ export class LanguageServerResolver {
      *  true, if all of the contents were successfully downloaded and unzipped
      *  false, if any of the contents failed to download or unzip
      */
-    private async downloadRemoteTargetContent(contents: TargetContent[], version: string, timeout: Timeout) {
-        const downloadDirectory = this.getDownloadDirectory(version)
+    private async downloadRemoteTargetContent(contents: TargetContent[], lspVersion: LspVersion, timeout: Timeout) {
+        const downloadDirectory = this.getDownloadDirectory(lspVersion.serverVersion)
 
         if (!(await fs.existsDir(downloadDirectory))) {
             await fs.mkdir(downloadDirectory)
@@ -243,6 +299,12 @@ export class LanguageServerResolver {
         }
 
         const filesToDownload = await lspSetupStage('validate', async () => (await Promise.all(verifyTasks)).flat())
+
+        // We were instructed by legal to show this message
+        const thirdPartyLicenses = lspVersion.thirdPartyLicenses
+        logger.info(
+            `Installing '${this.lsName}' Language Server v${lspVersion.serverVersion} to: ${downloadDirectory}${thirdPartyLicenses ? ` (Attribution notice can be found at ${thirdPartyLicenses})` : ''}`
+        )
 
         for (const file of filesToDownload) {
             await fs.writeFile(`${downloadDirectory}/${file.filename}`, file.data)
@@ -417,13 +479,17 @@ export class LanguageServerResolver {
         return version.targets.find((x) => x.arch === arch && x.platform === platform)
     }
 
-    // lazy calls to `getApplicationSupportFolder()` to avoid failure on windows.
-    public static get defaultDir() {
+    /**
+     * Gets platform-specific "cache" dir ("$LOCALAPPDATA/aws/…" or "~/.cache/aws/…").
+     *
+     * Lazy-calls `getCacheDir()` to avoid failure on Windows.
+     */
+    public static defaultDir() {
         return path.join(fs.getCacheDir(), `aws/toolkits/language-servers`)
     }
 
     defaultDownloadFolder() {
-        return path.join(LanguageServerResolver.defaultDir, `${this.lsName}`)
+        return path.join(LanguageServerResolver.defaultDir(), `${this.lsName}`)
     }
 
     private getDownloadDirectory(version: string) {

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { AuthUtils, CredentialsStore, LoginManager, initializeAuth } from 'aws-core-vscode/auth'
+import { Auth, AuthUtils, CredentialsStore, LoginManager, initializeAuth } from 'aws-core-vscode/auth'
 import { activate as activateCodeWhisperer, shutdown as shutdownCodeWhisperer } from 'aws-core-vscode/codewhisperer'
 import { makeEndpointsProvider, registerGenericCommands } from 'aws-core-vscode'
 import { CommonAuthWebview } from 'aws-core-vscode/login'
@@ -33,6 +33,8 @@ import {
     maybeShowMinVscodeWarning,
     Experiments,
     isSageMaker,
+    isAmazonLinux2,
+    ProxyUtil,
 } from 'aws-core-vscode/shared'
 import { ExtStartUpSources } from 'aws-core-vscode/telemetry'
 import { VSCODE_EXTENSION_ID } from 'aws-core-vscode/utils'
@@ -43,6 +45,7 @@ import { registerCommands } from './commands'
 import { focusAmazonQPanel } from 'aws-core-vscode/codewhispererChat'
 import { activate as activateAmazonqLsp } from './lsp/activation'
 import { activate as activateInlineCompletion } from './app/inline/activation'
+import { hasGlibcPatch } from './lsp/client'
 
 export const amazonQContextPrefix = 'amazonq'
 
@@ -117,12 +120,20 @@ export async function activateAmazonQCommon(context: vscode.ExtensionContext, is
     const extContext = {
         extensionContext: context,
     }
+
+    // Configure proxy settings early
+    ProxyUtil.configureProxyForLanguageServer()
+
     // This contains every lsp agnostic things (auth, security scan, code scan)
     await activateCodeWhisperer(extContext as ExtContext)
-    if (Experiments.instance.get('amazonqLSP', false)) {
+    if (
+        (Experiments.instance.get('amazonqLSP', true) || Auth.instance.isInternalAmazonUser()) &&
+        (!isAmazonLinux2() || hasGlibcPatch())
+    ) {
+        // start the Amazon Q LSP for internal users first
+        // for AL2, start LSP if glibc patch is found
         await activateAmazonqLsp(context)
     }
-
     if (!Experiments.instance.get('amazonqLSPInline', false)) {
         await activateInlineCompletion()
     }
@@ -160,7 +171,9 @@ export async function activateAmazonQCommon(context: vscode.ExtensionContext, is
         // Give time for the extension to finish initializing.
         globals.clock.setTimeout(async () => {
             CommonAuthWebview.authSource = ExtStartUpSources.firstStartUp
-            void focusAmazonQPanel.execute(placeholder, ExtStartUpSources.firstStartUp)
+            focusAmazonQPanel.execute(placeholder, ExtStartUpSources.firstStartUp).catch((e) => {
+                getLogger().error('focusAmazonQPanel failed: %s', e)
+            })
         }, 1000)
     }
 

@@ -41,17 +41,21 @@ import { calculateTotalLatency } from '../../../amazonqGumby/telemetry/codeTrans
 import { MetadataResult } from '../../../shared/telemetry/telemetryClient'
 import request from '../../../shared/request'
 import { JobStoppedError, ZipExceedsSizeLimitError } from '../../../amazonqGumby/errors'
-import { writeLogs } from './transformFileHandler'
+import { createLocalBuildUploadZip, extractOriginalProjectSources, writeAndShowBuildLogs } from './transformFileHandler'
 import { createCodeWhispererChatStreamingClient } from '../../../shared/clients/codewhispererChatClient'
 import { downloadExportResultArchive } from '../../../shared/utilities/download'
-import { ExportIntent, TransformationDownloadArtifactType } from '@amzn/codewhisperer-streaming'
+import { ExportContext, ExportIntent, TransformationDownloadArtifactType } from '@amzn/codewhisperer-streaming'
 import fs from '../../../shared/fs/fs'
 import { ChatSessionManager } from '../../../amazonqGumby/chat/storages/chatSession'
 import { encodeHTML } from '../../../shared/utilities/textUtilities'
 import { convertToTimeString } from '../../../shared/datetime'
 import { getAuthType } from '../../../auth/utils'
 import { UserWrittenCodeTracker } from '../../tracker/userWrittenCodeTracker'
+import { setContext } from '../../../shared/vscode/setContext'
 import { AuthUtil } from '../../util/authUtil'
+import { DiffModel } from './transformationResultsViewProvider'
+import { spawnSync } from 'child_process' // eslint-disable-line no-restricted-imports
+import { isClientSideBuildEnabled } from '../../../dev/config'
 
 export function getSha256(buffer: Buffer) {
     const hasher = crypto.createHash('sha256')
@@ -167,10 +171,10 @@ export async function resumeTransformationJob(jobId: string, userActionStatus: T
             transformationJobId: jobId,
             userActionStatus, // can be "COMPLETED" or "REJECTED"
         })
-        if (response) {
-            // always store request ID, but it will only show up in a notification if an error occurs
-            return response.transformationStatus
-        }
+        getLogger().info(
+            `CodeTransformation: resumeTransformation API status code = ${response.$response.httpResponse.statusCode}`
+        )
+        return response.transformationStatus
     } catch (e: any) {
         const errorMessage = `Resuming the job failed due to: ${(e as Error).message}`
         getLogger().error(`CodeTransformation: ResumeTransformation error = %O`, e)
@@ -219,6 +223,8 @@ export async function uploadPayload(
         throw new Error(errorMessage)
     }
 
+    getLogger().info('CodeTransformation: created upload URL successfully')
+
     try {
         await uploadArtifactToS3(payloadFileName, response, sha256, buffer)
     } catch (e: any) {
@@ -251,7 +257,8 @@ export async function uploadPayload(
  */
 const mavenExcludedExtensions = ['.repositories', '.sha1']
 
-const sourceExcludedExtensions = ['.DS_Store']
+// exclude .DS_Store (not relevant) and Maven executables (can cause permissions issues when building if user has not ran 'chmod')
+const sourceExcludedExtensions = ['.DS_Store', 'mvnw', 'mvnw.cmd']
 
 /**
  * Determines if the specified file path corresponds to a Maven metadata file
@@ -341,10 +348,6 @@ export async function zipCode(
             getLogger().info(`CodeTransformation: source code files size = ${sourceFilesSize}`)
         }
 
-        if (transformByQState.getMultipleDiffs() && zipManifest instanceof ZipManifest) {
-            zipManifest.transformCapabilities.push('SELECTIVE_TRANSFORMATION_V1')
-        }
-
         if (
             transformByQState.getTransformationType() === TransformationType.SQL_CONVERSION &&
             zipManifest instanceof ZipManifest
@@ -360,7 +363,6 @@ export async function zipCode(
                     sctFileName: metadataZip.getEntries().filter((entry) => entry.name.endsWith('.sct'))[0].name,
                 },
             }
-            // TO-DO: later consider making this add to path.join(zipManifest.dependenciesRoot, 'qct-sct-metadata', entry.entryName) so that it's more organized
             for (const entry of metadataZip.getEntries()) {
                 zip.addFile(path.join(zipManifest.dependenciesRoot, entry.name), entry.getData())
             }
@@ -391,12 +393,21 @@ export async function zipCode(
             dependenciesCopied = true
         }
 
+        // TO-DO: decide where exactly to put the YAML file / what to name it
+        if (transformByQState.getCustomDependencyVersionFilePath() && zipManifest instanceof ZipManifest) {
+            zip.addLocalFile(
+                transformByQState.getCustomDependencyVersionFilePath(),
+                'custom-upgrades',
+                'dependency-versions.yaml'
+            )
+        }
+
         zip.addFile('manifest.json', Buffer.from(JSON.stringify(zipManifest)), 'utf-8')
 
         throwIfCancelled()
 
         // add text file with logs from mvn clean install and mvn copy-dependencies
-        logFilePath = await writeLogs()
+        logFilePath = await writeAndShowBuildLogs()
         // We don't add build-logs.txt file to the manifest if we are
         // uploading HIL artifacts
         if (!humanInTheLoopFlag) {
@@ -507,20 +518,33 @@ export function getFormattedString(s: string) {
     return CodeWhispererConstants.formattedStringMap.get(s) ?? s
 }
 
-export function addTableMarkdown(plan: string, stepId: string, tableMapping: { [key: string]: string }) {
-    const tableObj = tableMapping[stepId]
-    if (!tableObj) {
-        // no table present for this step
+export function addTableMarkdown(plan: string, stepId: string, tableMapping: { [key: string]: string[] }) {
+    const tableObjects = tableMapping[stepId]
+    if (!tableObjects || tableObjects.length === 0 || tableObjects.every((table: string) => table === '')) {
+        // no tables for this stepId
         return plan
     }
-    const table = JSON.parse(tableObj)
-    if (table.rows.length === 0) {
-        // empty table
-        plan += `\n\nThere are no ${table.name.toLowerCase()} to display.\n\n`
+    const tables: any[] = []
+    // eslint-disable-next-line unicorn/no-array-for-each
+    tableObjects.forEach((tableObj: string) => {
+        try {
+            const table = JSON.parse(tableObj)
+            if (table) {
+                tables.push(table)
+            }
+        } catch (e) {
+            getLogger().error(`CodeTransformation: Failed to parse table JSON, skipping: ${e}`)
+        }
+    })
+
+    if (tables.every((table: any) => table.rows.length === 0)) {
+        // empty tables for this stepId
+        plan += `\n\nThere are no ${tables[0].name.toLowerCase()} to display.\n\n`
         return plan
     }
-    plan += `\n\n\n${table.name}\n|`
-    const columns = table.columnNames
+    // table name and columns are shared, so only add to plan once
+    plan += `\n\n\n${tables[0].name}\n|`
+    const columns = tables[0].columnNames
     // eslint-disable-next-line unicorn/no-array-for-each
     columns.forEach((columnName: string) => {
         plan += ` ${getFormattedString(columnName)} |`
@@ -530,16 +554,21 @@ export function addTableMarkdown(plan: string, stepId: string, tableMapping: { [
     columns.forEach((_: any) => {
         plan += '-----|'
     })
+    // add all rows of all tables
     // eslint-disable-next-line unicorn/no-array-for-each
-    table.rows.forEach((row: any) => {
-        plan += '\n|'
+    tables.forEach((table: any) => {
         // eslint-disable-next-line unicorn/no-array-for-each
-        columns.forEach((columnName: string) => {
-            if (columnName === 'relativePath') {
-                plan += ` [${row[columnName]}](${row[columnName]}) |` // add MD link only for files
-            } else {
-                plan += ` ${row[columnName]} |`
-            }
+        table.rows.forEach((row: any) => {
+            plan += '\n|'
+            // eslint-disable-next-line unicorn/no-array-for-each
+            columns.forEach((columnName: string) => {
+                if (columnName === 'relativePath') {
+                    // add markdown link only for file paths
+                    plan += ` [${row[columnName]}](${row[columnName]}) |`
+                } else {
+                    plan += ` ${row[columnName]} |`
+                }
+            })
         })
     })
     plan += '\n\n'
@@ -547,11 +576,13 @@ export function addTableMarkdown(plan: string, stepId: string, tableMapping: { [
 }
 
 export function getTableMapping(stepZeroProgressUpdates: ProgressUpdates) {
-    const map: { [key: string]: string } = {}
+    const map: { [key: string]: string[] } = {}
     for (const update of stepZeroProgressUpdates) {
-        // description should never be undefined since even if no data we show an empty table
-        // but just in case, empty string allows us to skip this table without errors when rendering
-        map[update.name] = update.description ?? ''
+        if (!map[update.name]) {
+            map[update.name] = []
+        }
+        // empty string allows us to skip this table when rendering
+        map[update.name].push(update.description ?? '')
     }
     return map
 }
@@ -590,7 +621,7 @@ export async function getTransformationPlan(jobId: string, profile: RegionProfil
         // gets a mapping between the ID ('name' field) of each progressUpdate (substep) and the associated table
         const tableMapping = getTableMapping(stepZeroProgressUpdates)
 
-        const jobStatistics = JSON.parse(tableMapping['0']).rows // ID of '0' reserved for job statistics table
+        const jobStatistics = JSON.parse(tableMapping['0'][0]).rows // ID of '0' reserved for job statistics table; only 1 table there
 
         // get logo directly since we only use one logo regardless of color theme
         const logoIcon = getTransformationIcon('transformLogo')
@@ -617,7 +648,7 @@ export async function getTransformationPlan(jobId: string, profile: RegionProfil
         }
         plan += `</div><br>`
         plan += `<p style="font-size: 18px; margin-bottom: 4px;"><b>Appendix</b><br><a href="#top" style="float: right; font-size: 14px;">Scroll to top <img src="${arrowIcon}" style="vertical-align: middle;"></a></p><br>`
-        plan = addTableMarkdown(plan, '-1', tableMapping) // ID of '-1' reserved for appendix table
+        plan = addTableMarkdown(plan, '-1', tableMapping) // ID of '-1' reserved for appendix table; only 1 table there
         return plan
     } catch (e: any) {
         const errorMessage = (e as Error).message
@@ -633,16 +664,8 @@ export async function getTransformationPlan(jobId: string, profile: RegionProfil
     }
 }
 
-export async function getTransformationSteps(
-    jobId: string,
-    handleThrottleFlag: boolean,
-    profile: RegionProfile | undefined
-) {
+export async function getTransformationSteps(jobId: string, profile: RegionProfile | undefined) {
     try {
-        // prevent ThrottlingException
-        if (handleThrottleFlag) {
-            await sleep(2000)
-        }
         const response = await codeWhisperer.codeWhispererClient.codeModernizerGetCodeTransformationPlan({
             transformationJobId: jobId,
             profileArn: profile?.arn,
@@ -657,6 +680,7 @@ export async function getTransformationSteps(
 
 export async function pollTransformationJob(jobId: string, validStates: string[], profile: RegionProfile | undefined) {
     let status: string = ''
+    let isPlanComplete = false
     while (true) {
         throwIfCancelled()
         try {
@@ -683,6 +707,9 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
 
             const errorMessage = response.transformationJob.reason
             if (errorMessage !== undefined) {
+                getLogger().error(
+                    `CodeTransformation: GetTransformation returned transformation error reason = ${errorMessage}`
+                )
                 transformByQState.setJobFailureErrorChatMessage(
                     `${CodeWhispererConstants.failedToCompleteJobGenericChatMessage} ${errorMessage}`
                 )
@@ -690,9 +717,33 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
                     `${CodeWhispererConstants.failedToCompleteJobGenericNotification} ${errorMessage}`
                 )
             }
+
+            if (
+                CodeWhispererConstants.validStatesForPlanGenerated.includes(status) &&
+                transformByQState.getTransformationType() === TransformationType.LANGUAGE_UPGRADE &&
+                !isPlanComplete
+            ) {
+                const plan = await openTransformationPlan(jobId, profile)
+                if (plan?.toLowerCase().includes('dependency changes')) {
+                    // final plan is complete; show to user
+                    isPlanComplete = true
+                }
+            }
+
             if (validStates.includes(status)) {
                 break
             }
+
+            // TO-DO: remove isClientSideBuildEnabled when releasing CSB
+            if (
+                isClientSideBuildEnabled &&
+                status === 'TRANSFORMING' &&
+                transformByQState.getTransformationType() === TransformationType.LANGUAGE_UPGRADE
+            ) {
+                // client-side build is N/A for SQL conversions
+                await attemptLocalBuild()
+            }
+
             /**
              * If we find a paused state, we need the user to take action. We will set the global
              * state for polling status and early exit.
@@ -718,7 +769,137 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
     return status
 }
 
-export function getArtifactsFromProgressUpdate(progressUpdate?: TransformationProgressUpdate) {
+async function openTransformationPlan(jobId: string, profile?: RegionProfile) {
+    let plan = undefined
+    try {
+        plan = await getTransformationPlan(jobId, profile)
+    } catch (error) {
+        // means API call failed
+        getLogger().error(`CodeTransformation: ${CodeWhispererConstants.failedToCompleteJobNotification}`, error)
+        transformByQState.setJobFailureErrorNotification(
+            `${CodeWhispererConstants.failedToGetPlanNotification} ${(error as Error).message}`
+        )
+        transformByQState.setJobFailureErrorChatMessage(
+            `${CodeWhispererConstants.failedToGetPlanChatMessage} ${(error as Error).message}`
+        )
+        throw new Error('Get plan failed')
+    }
+
+    if (plan) {
+        const planFilePath = path.join(transformByQState.getProjectPath(), 'transformation-plan.md')
+        nodefs.writeFileSync(planFilePath, plan)
+        await vscode.commands.executeCommand('markdown.showPreview', vscode.Uri.file(planFilePath))
+        transformByQState.setPlanFilePath(planFilePath)
+        await setContext('gumby.isPlanAvailable', true)
+    }
+    return plan
+}
+
+async function attemptLocalBuild() {
+    const jobId = transformByQState.getJobId()
+    let artifactId
+    try {
+        artifactId = await getClientInstructionArtifactId(jobId)
+        getLogger().info(`CodeTransformation: found artifactId = ${artifactId}`)
+    } catch (e: any) {
+        // don't throw error so that we can try to get progress updates again in next polling cycle
+        getLogger().error(`CodeTransformation: failed to get client instruction artifact ID = %O`, e)
+    }
+    if (artifactId) {
+        const clientInstructionsPath = await downloadClientInstructions(jobId, artifactId)
+        getLogger().info(
+            `CodeTransformation: downloaded clientInstructions with diff.patch at: ${clientInstructionsPath}`
+        )
+        await processClientInstructions(jobId, clientInstructionsPath, artifactId)
+    }
+}
+
+async function getClientInstructionArtifactId(jobId: string) {
+    const steps = await getTransformationSteps(jobId, AuthUtil.instance.regionProfileManager.activeRegionProfile)
+    const progressUpdate = findDownloadArtifactProgressUpdate(steps)
+
+    let artifactId = undefined
+    if (progressUpdate?.downloadArtifacts) {
+        artifactId = progressUpdate.downloadArtifacts[0].downloadArtifactId
+    }
+    return artifactId
+}
+
+async function downloadClientInstructions(jobId: string, artifactId: string) {
+    const exportDestination = `downloadClientInstructions_${jobId}_${artifactId}`
+    const exportZipPath = path.join(os.tmpdir(), exportDestination)
+
+    const exportContext: ExportContext = {
+        transformationExportContext: {
+            downloadArtifactType: TransformationDownloadArtifactType.CLIENT_INSTRUCTIONS,
+            downloadArtifactId: artifactId,
+        },
+    }
+
+    await downloadAndExtractResultArchive(jobId, exportZipPath, exportContext)
+    return path.join(exportZipPath, 'diff.patch')
+}
+
+async function processClientInstructions(jobId: string, clientInstructionsPath: any, artifactId: string) {
+    const destinationPath = path.join(os.tmpdir(), `originalCopy_${jobId}_${artifactId}`)
+    await extractOriginalProjectSources(destinationPath)
+    getLogger().info(`CodeTransformation: copied project to ${destinationPath}`)
+    const diffModel = new DiffModel()
+    diffModel.parseDiff(clientInstructionsPath, path.join(destinationPath, 'sources'), true)
+    // show user the diff.patch
+    const doc = await vscode.workspace.openTextDocument(clientInstructionsPath)
+    await vscode.window.showTextDocument(doc, { viewColumn: vscode.ViewColumn.One })
+    await runClientSideBuild(transformByQState.getProjectCopyFilePath(), artifactId)
+}
+
+export async function runClientSideBuild(projectCopyPath: string, clientInstructionArtifactId: string) {
+    const baseCommand = transformByQState.getMavenName()
+    const args = []
+    if (transformByQState.getCustomBuildCommand() === CodeWhispererConstants.skipUnitTestsBuildCommand) {
+        args.push('test-compile')
+    } else {
+        args.push('test')
+    }
+    const environment = { ...process.env, JAVA_HOME: transformByQState.getTargetJavaHome() }
+
+    const argString = args.join(' ')
+    const spawnResult = spawnSync(baseCommand, args, {
+        cwd: projectCopyPath,
+        shell: true,
+        encoding: 'utf-8',
+        env: environment,
+    })
+
+    const buildLogs = `Intermediate build result from running ${baseCommand} ${argString}:\n\n${spawnResult.stdout}`
+    transformByQState.clearBuildLog()
+    transformByQState.appendToBuildLog(buildLogs)
+    await writeAndShowBuildLogs()
+
+    const uploadZipBaseDir = path.join(
+        os.tmpdir(),
+        `clientInstructionsResult_${transformByQState.getJobId()}_${clientInstructionArtifactId}`
+    )
+    const uploadZipPath = await createLocalBuildUploadZip(uploadZipBaseDir, spawnResult.status, spawnResult.stdout)
+
+    // upload build results
+    const uploadContext: UploadContext = {
+        transformationUploadContext: {
+            jobId: transformByQState.getJobId(),
+            uploadArtifactType: 'ClientBuildResult',
+        },
+    }
+    getLogger().info(`CodeTransformation: uploading client build results at ${uploadZipPath} and resuming job now`)
+    try {
+        await uploadPayload(uploadZipPath, AuthUtil.instance.regionProfileManager.activeRegionProfile, uploadContext)
+        await resumeTransformationJob(transformByQState.getJobId(), 'COMPLETED')
+    } finally {
+        await fs.delete(projectCopyPath, { recursive: true })
+        await fs.delete(uploadZipBaseDir, { recursive: true })
+        getLogger().info(`CodeTransformation: Just deleted project copy and uploadZipBaseDir after client-side build`)
+    }
+}
+
+export function getArtifactsFromProgressUpdate(progressUpdate: TransformationProgressUpdate) {
     const artifactType = progressUpdate?.downloadArtifacts?.[0]?.downloadArtifactType
     const artifactId = progressUpdate?.downloadArtifacts?.[0]?.downloadArtifactId
     return {
@@ -727,6 +908,16 @@ export function getArtifactsFromProgressUpdate(progressUpdate?: TransformationPr
     }
 }
 
+// used for client-side build
+export function findDownloadArtifactProgressUpdate(transformationSteps: TransformationSteps) {
+    return transformationSteps
+        .flatMap((step) => step.progressUpdates ?? [])
+        .find(
+            (update) => update.status === 'AWAITING_CLIENT_ACTION' && update.downloadArtifacts?.[0]?.downloadArtifactId
+        )
+}
+
+// used for HIL
 export function findDownloadArtifactStep(transformationSteps: TransformationSteps) {
     for (let i = 0; i < transformationSteps.length; i++) {
         const progressUpdates = transformationSteps[i].progressUpdates
@@ -750,21 +941,23 @@ export function findDownloadArtifactStep(transformationSteps: TransformationStep
     }
 }
 
-export async function downloadResultArchive(
-    jobId: string,
-    downloadArtifactId: string | undefined,
-    pathToArchive: string,
-    downloadArtifactType: TransformationDownloadArtifactType
-) {
+export async function downloadResultArchive(jobId: string, pathToArchive: string, exportContext?: ExportContext) {
     const cwStreamingClient = await createCodeWhispererChatStreamingClient()
 
     try {
+        const args = exportContext
+            ? {
+                  exportId: jobId,
+                  exportIntent: ExportIntent.TRANSFORMATION,
+                  exportContext: exportContext,
+              }
+            : {
+                  exportId: jobId,
+                  exportIntent: ExportIntent.TRANSFORMATION,
+              }
         await downloadExportResultArchive(
             cwStreamingClient,
-            {
-                exportId: jobId,
-                exportIntent: ExportIntent.TRANSFORMATION,
-            },
+            args,
             pathToArchive,
             AuthUtil.instance.regionProfileManager.activeRegionProfile
         )
@@ -779,9 +972,8 @@ export async function downloadResultArchive(
 
 export async function downloadAndExtractResultArchive(
     jobId: string,
-    downloadArtifactId: string | undefined,
     pathToArchiveDir: string,
-    downloadArtifactType: TransformationDownloadArtifactType
+    exportContext?: ExportContext
 ) {
     const archivePathExists = await fs.existsDir(pathToArchiveDir)
     if (!archivePathExists) {
@@ -793,9 +985,10 @@ export async function downloadAndExtractResultArchive(
     let downloadErrorMessage = undefined
     try {
         // Download and deserialize the zip
-        await downloadResultArchive(jobId, downloadArtifactId, pathToArchive, downloadArtifactType)
+        await downloadResultArchive(jobId, pathToArchive, exportContext)
         const zip = new AdmZip(pathToArchive)
         zip.extractAllTo(pathToArchiveDir)
+        getLogger().info(`CodeTransformation: downloaded result archive to: ${pathToArchiveDir}`)
     } catch (e) {
         downloadErrorMessage = (e as Error).message
         getLogger().error(`CodeTransformation: ExportResultArchive error = %O`, e)
@@ -804,12 +997,7 @@ export async function downloadAndExtractResultArchive(
 }
 
 export async function downloadHilResultArchive(jobId: string, downloadArtifactId: string, pathToArchiveDir: string) {
-    await downloadAndExtractResultArchive(
-        jobId,
-        downloadArtifactId,
-        pathToArchiveDir,
-        TransformationDownloadArtifactType.CLIENT_INSTRUCTIONS
-    )
+    await downloadAndExtractResultArchive(jobId, pathToArchiveDir)
 
     // manifest.json
     // pomFolder/pom.xml or manifest has pomFolderName path

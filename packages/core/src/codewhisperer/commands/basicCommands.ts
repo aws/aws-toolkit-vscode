@@ -369,6 +369,9 @@ export const openSecurityIssuePanel = Commands.declare(
         const targetFilePath: string = issue instanceof IssueItem ? issue.filePath : filePath
         await showSecurityIssueWebview(context.extensionContext, targetIssue, targetFilePath)
 
+        if (targetIssue.suggestedFixes.length === 0) {
+            await generateFix.execute(targetIssue, targetFilePath, 'webview', true, false)
+        }
         telemetry.codewhisperer_codeScanIssueViewDetails.emit({
             findingId: targetIssue.findingId,
             detectorId: targetIssue.detectorId,
@@ -387,9 +390,6 @@ export const openSecurityIssuePanel = Commands.declare(
             undefined,
             !!targetIssue.suggestedFixes.length
         )
-        if (targetIssue.suggestedFixes.length === 0) {
-            await generateFix.execute(targetIssue, targetFilePath, 'webview', true, false)
-        }
     }
 )
 
@@ -405,7 +405,9 @@ export const notifyNewCustomizationsCmd = Commands.declare(
 function focusQAfterDelay() {
     // this command won't work without a small delay after install
     globals.clock.setTimeout(() => {
-        void focusAmazonQPanel.execute(placeholder, 'startDelay')
+        focusAmazonQPanel.execute(placeholder, 'startDelay').catch((e) => {
+            getLogger().error('focusAmazonQPanel failed: %s', e)
+        })
     }, 1000)
 }
 
@@ -597,7 +599,10 @@ export const signoutCodeWhisperer = Commands.declare(
     (auth: AuthUtil) => async (_: VsCodeCommandArg, source: CodeWhispererSource) => {
         await auth.secondaryAuth.deleteConnection()
         SecurityIssueTreeViewProvider.instance.refresh()
-        return focusAmazonQPanel.execute(placeholder, source)
+        return focusAmazonQPanel.execute(placeholder, source).catch((e) => {
+            getLogger().error('focusAmazonQPanel failed: %s', e)
+            return undefined
+        })
     }
 )
 

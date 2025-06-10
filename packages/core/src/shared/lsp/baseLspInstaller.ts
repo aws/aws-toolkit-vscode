@@ -41,24 +41,47 @@ export abstract class BaseLspInstaller<T extends ResourcePaths = ResourcePaths, 
         const manifest = await new ManifestResolver(manifestUrl, id, suppressPromptPrefix).resolve()
         const installationResult = await new LanguageServerResolver(
             manifest,
-            id,
+            id, // TODO: We may want a display name instead of the ID
             new Range(supportedVersions, {
                 includePrerelease: true,
-            })
+            }),
+            manifestUrl,
+            this.downloadMessageOverride
         ).resolve()
 
         const assetDirectory = installationResult.assetDirectory
 
         await this.postInstall(assetDirectory)
 
-        const deletedVersions = await cleanLspDownloads(manifest.versions, nodePath.dirname(assetDirectory))
-        this.logger.debug(`cleaning old LSP versions deleted ${deletedVersions.length} versions`)
+        const deletedVersions = await cleanLspDownloads(
+            installationResult.version,
+            manifest.versions,
+            nodePath.dirname(assetDirectory)
+        )
+        if (deletedVersions.length > 0) {
+            this.logger.debug(`cleaning old LSP versions: deleted ${deletedVersions.length} versions`)
+        }
 
-        return {
+        const r = {
             ...installationResult,
+            // Example:
+            // ```
+            // resourcePaths = {
+            //     lsp = '<cachedir>/aws/toolkits/language-servers/AmazonQ/3.3.0/servers/aws-lsp-codewhisperer.js'
+            //     node = '<cachedir>/aws/toolkits/language-servers/AmazonQ/3.3.0/servers/node'
+            //     ui = '<cachedir>/aws/toolkits/language-servers/AmazonQ/3.3.0/clients/amazonq-ui.js'
+            // }
+            // ```
             resourcePaths: this.resourcePaths(assetDirectory),
         }
+        return r
     }
+
+    /**
+     * Allows implementations of this class to set a custom message to show users
+     * when the artifacts are being downloaded. If not set, a default message will be shown.
+     */
+    protected downloadMessageOverride: string | undefined = undefined
 
     protected abstract postInstall(assetDirectory: string): Promise<void>
     protected abstract resourcePaths(assetDirectory?: string): T

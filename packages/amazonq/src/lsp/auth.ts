@@ -4,10 +4,12 @@
  */
 
 import {
+    bearerCredentialsUpdateRequestType,
     ConnectionMetadata,
     NotificationType,
     RequestType,
     ResponseMessage,
+    UpdateCredentialsParams,
 } from '@aws/language-server-runtimes/protocol'
 import * as jose from 'jose'
 import * as crypto from 'crypto'
@@ -16,6 +18,7 @@ import { AuthUtil } from 'aws-core-vscode/codewhisperer'
 import { Writable } from 'stream'
 import { onceChanged } from 'aws-core-vscode/utils'
 import { getLogger, oneMinute } from 'aws-core-vscode/shared'
+import { isSsoConnection } from 'aws-core-vscode/auth'
 
 export const encryptionKey = crypto.randomBytes(32)
 
@@ -64,15 +67,27 @@ export const notificationTypes = {
  * Facade over our VSCode Auth that does crud operations on the language server auth
  */
 export class AmazonQLspAuth {
-    constructor(private readonly client: LanguageClient) {}
+    #logErrorIfChanged = onceChanged((s) => getLogger('amazonqLsp').error(s))
+    constructor(
+        private readonly client: LanguageClient,
+        private readonly authUtil: AuthUtil = AuthUtil.instance
+    ) {}
 
-    async refreshConnection() {
-        const activeConnection = AuthUtil.instance.auth.activeConnection
-        if (activeConnection?.type === 'sso') {
+    /**
+     * @param force bypass memoization, and forcefully update the bearer token
+     */
+    async refreshConnection(force: boolean = false) {
+        const activeConnection = this.authUtil.conn
+        if (this.authUtil.isConnectionValid() && isSsoConnection(activeConnection)) {
             // send the token to the language server
-            const token = await AuthUtil.instance.getBearerToken()
-            await this.updateBearerToken(token)
+            const token = await this.authUtil.getBearerToken()
+            await (force ? this._updateBearerToken(token) : this.updateBearerToken(token))
         }
+    }
+
+    async logRefreshError(e: unknown) {
+        const err = e as Error
+        this.#logErrorIfChanged(`Unable to update bearer token: ${err.name}:${err.message}`)
     }
 
     public updateBearerToken = onceChanged(this._updateBearerToken.bind(this))
@@ -81,22 +96,21 @@ export class AmazonQLspAuth {
             token,
         })
 
-        await this.client.sendRequest(notificationTypes.updateBearerToken.method, request)
+        // "aws/credentials/token/update"
+        // https://github.com/aws/language-servers/blob/44d81f0b5754747d77bda60b40cc70950413a737/core/aws-lsp-core/src/credentials/credentialsProvider.ts#L27
+        await this.client.sendRequest(bearerCredentialsUpdateRequestType.method, request)
 
         this.client.info(`UpdateBearerToken: ${JSON.stringify(request)}`)
     }
 
-    public startTokenRefreshInterval(pollingTime: number = oneMinute) {
+    public startTokenRefreshInterval(pollingTime: number = oneMinute / 2) {
         const interval = setInterval(async () => {
-            await this.refreshConnection().catch((e) => {
-                getLogger('amazonqLsp').error('Unable to update bearer token: %s', (e as Error).message)
-                clearInterval(interval)
-            })
+            await this.refreshConnection().catch((e) => this.logRefreshError(e))
         }, pollingTime)
         return interval
     }
 
-    private async createUpdateCredentialsRequest(data: any) {
+    private async createUpdateCredentialsRequest(data: any): Promise<UpdateCredentialsParams> {
         const payload = new TextEncoder().encode(JSON.stringify({ data }))
 
         const jwt = await new jose.CompactEncrypt(payload)
@@ -105,6 +119,11 @@ export class AmazonQLspAuth {
 
         return {
             data: jwt,
+            metadata: {
+                sso: {
+                    startUrl: AuthUtil.instance.startUrl,
+                },
+            },
             encrypted: true,
         }
     }

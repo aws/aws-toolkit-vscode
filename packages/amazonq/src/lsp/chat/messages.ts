@@ -11,6 +11,11 @@ import {
     COPY_TO_CLIPBOARD,
     AuthFollowUpType,
     DISCLAIMER_ACKNOWLEDGED,
+    UiMessageResultParams,
+    CHAT_PROMPT_OPTION_ACKNOWLEDGED,
+    ChatPromptOptionAcknowledgedMessage,
+    STOP_CHAT_RESPONSE,
+    StopChatResponseMessage,
 } from '@aws/chat-client-ui-types'
 import {
     ChatResult,
@@ -21,35 +26,98 @@ import {
     QuickActionResult,
     QuickActionParams,
     insertToCursorPositionNotificationType,
+    ErrorCodes,
+    ResponseError,
+    openTabRequestType,
+    getSerializedChatRequestType,
+    listConversationsRequestType,
+    conversationClickRequestType,
+    listMcpServersRequestType,
+    mcpServerClickRequestType,
+    ShowSaveFileDialogRequestType,
+    ShowSaveFileDialogParams,
+    LSPErrorCodes,
+    tabBarActionRequestType,
+    ShowDocumentParams,
+    ShowDocumentResult,
+    ShowDocumentRequest,
+    contextCommandsNotificationType,
+    ContextCommandParams,
+    openFileDiffNotificationType,
+    OpenFileDiffParams,
+    LINK_CLICK_NOTIFICATION_METHOD,
+    LinkClickParams,
+    INFO_LINK_CLICK_NOTIFICATION_METHOD,
+    buttonClickRequestType,
+    ButtonClickResult,
+    CancellationTokenSource,
+    chatUpdateNotificationType,
+    ChatUpdateParams,
+    chatOptionsUpdateType,
+    ChatOptionsUpdateParams,
 } from '@aws/language-server-runtimes/protocol'
 import { v4 as uuidv4 } from 'uuid'
 import * as vscode from 'vscode'
-import { Disposable, LanguageClient, Position, State, TextDocumentIdentifier } from 'vscode-languageclient'
+import { Disposable, LanguageClient, Position, TextDocumentIdentifier } from 'vscode-languageclient'
 import * as jose from 'jose'
 import { AmazonQChatViewProvider } from './webviewProvider'
-import { AuthUtil } from 'aws-core-vscode/codewhisperer'
-import { AmazonQPromptSettings, messages } from 'aws-core-vscode/shared'
+import { AuthUtil, ReferenceLogViewProvider } from 'aws-core-vscode/codewhisperer'
+import { amazonQDiffScheme, AmazonQPromptSettings, messages, openUrl } from 'aws-core-vscode/shared'
+import {
+    DefaultAmazonQAppInitContext,
+    messageDispatcher,
+    EditorContentController,
+    ViewDiffMessage,
+    referenceLogText,
+} from 'aws-core-vscode/amazonq'
+import { telemetry, TelemetryBase } from 'aws-core-vscode/telemetry'
+import { isValidResponseError } from './error'
+import { focusAmazonQPanel } from './commands'
 
 export function registerLanguageServerEventListener(languageClient: LanguageClient, provider: AmazonQChatViewProvider) {
-    languageClient.onDidChangeState(({ oldState, newState }) => {
-        if (oldState === State.Starting && newState === State.Running) {
-            languageClient.info(
-                'Language client received initializeResult from server:',
-                JSON.stringify(languageClient.initializeResult)
-            )
+    languageClient.info(
+        'Language client received initializeResult from server:',
+        JSON.stringify(languageClient.initializeResult)
+    )
 
-            const chatOptions = languageClient.initializeResult?.awsServerCapabilities?.chatOptions
+    const chatOptions = languageClient.initializeResult?.awsServerCapabilities?.chatOptions
 
-            void provider.webview?.postMessage({
-                command: CHAT_OPTIONS,
-                params: chatOptions,
-            })
+    // overide the quick action commands provided by flare server initialization, which doesn't provide the group header
+    if (chatOptions?.quickActions?.quickActionsCommandGroups?.[0]) {
+        chatOptions.quickActions.quickActionsCommandGroups[0].groupName = 'Quick Actions'
+    }
+
+    provider.onDidResolveWebview(() => {
+        void provider.webview?.postMessage({
+            command: CHAT_OPTIONS,
+            params: chatOptions,
+        })
+    })
+
+    // This passes through metric data from LSP events to Toolkit telemetry with all fields from the LSP server
+    languageClient.onTelemetry((e) => {
+        const telemetryName: string = e.name
+
+        if (telemetryName in telemetry) {
+            languageClient.info(`[Telemetry] Emitting ${telemetryName} telemetry: ${JSON.stringify(e.data)}`)
+            telemetry[telemetryName as keyof TelemetryBase].emit(e.data)
         }
     })
+}
 
-    languageClient.onTelemetry((e) => {
-        languageClient.info(`[VSCode Client] Received telemetry event from server ${JSON.stringify(e)}`)
-    })
+function getCursorState(selection: readonly vscode.Selection[]) {
+    return selection.map((s) => ({
+        range: {
+            start: {
+                line: s.start.line,
+                character: s.start.character,
+            },
+            end: {
+                line: s.end.line,
+                character: s.end.character,
+            },
+        },
+    }))
 }
 
 export function registerMessageListeners(
@@ -57,9 +125,20 @@ export function registerMessageListeners(
     provider: AmazonQChatViewProvider,
     encryptionKey: Buffer
 ) {
+    const chatStreamTokens = new Map<string, CancellationTokenSource>() // tab id -> token
     provider.webview?.onDidReceiveMessage(async (message) => {
         languageClient.info(`[VSCode Client]  Received ${JSON.stringify(message)} from chat`)
 
+        if ((message.tabType && message.tabType !== 'cwc') || messageDispatcher.isLegacyEvent(message.command)) {
+            // handle the mynah ui -> agent legacy flow
+            messageDispatcher.handleWebviewEvent(
+                message,
+                DefaultAmazonQAppInitContext.instance.getWebViewToAppsMessagePublishers()
+            )
+            return
+        }
+
+        const webview = provider.webview
         switch (message.command) {
             case COPY_TO_CLIPBOARD:
                 languageClient.info('[VSCode Client] Copy to clipboard event received')
@@ -113,35 +192,100 @@ export function registerMessageListeners(
                 break
             }
             case DISCLAIMER_ACKNOWLEDGED: {
-                void AmazonQPromptSettings.instance.disablePrompt('amazonQChatDisclaimer')
+                void AmazonQPromptSettings.instance.update('amazonQChatDisclaimer', true)
+                break
+            }
+            case CHAT_PROMPT_OPTION_ACKNOWLEDGED: {
+                const acknowledgedMessage = message as ChatPromptOptionAcknowledgedMessage
+                switch (acknowledgedMessage.params.messageId) {
+                    case 'programmerModeCardId': {
+                        void AmazonQPromptSettings.instance.disablePrompt('amazonQChatPairProgramming')
+                    }
+                }
+                break
+            }
+            case INFO_LINK_CLICK_NOTIFICATION_METHOD:
+            case LINK_CLICK_NOTIFICATION_METHOD: {
+                const linkParams = message.params as LinkClickParams
+                void openUrl(vscode.Uri.parse(linkParams.link))
+                break
+            }
+            case STOP_CHAT_RESPONSE: {
+                const tabId = (message as StopChatResponseMessage).params.tabId
+                const token = chatStreamTokens.get(tabId)
+                token?.cancel()
+                token?.dispose()
+                chatStreamTokens.delete(tabId)
                 break
             }
             case chatRequestType.method: {
+                const chatParams: ChatParams = { ...message.params }
                 const partialResultToken = uuidv4()
-                const chatDisposable = languageClient.onProgress(chatRequestType, partialResultToken, (partialResult) =>
-                    handlePartialResult<ChatResult>(partialResult, encryptionKey, provider, message.params.tabId)
+                let lastPartialResult: ChatResult | undefined
+                const cancellationToken = new CancellationTokenSource()
+                chatStreamTokens.set(chatParams.tabId, cancellationToken)
+
+                const chatDisposable = languageClient.onProgress(
+                    chatRequestType,
+                    partialResultToken,
+                    (partialResult) => {
+                        // Store the latest partial result
+                        if (typeof partialResult === 'string' && encryptionKey) {
+                            void decodeRequest<ChatResult>(partialResult, encryptionKey).then(
+                                (decoded) => (lastPartialResult = decoded)
+                            )
+                        } else {
+                            lastPartialResult = partialResult as ChatResult
+                        }
+
+                        void handlePartialResult<ChatResult>(partialResult, encryptionKey, provider, chatParams.tabId)
+                    }
                 )
 
                 const editor =
                     vscode.window.activeTextEditor ||
                     vscode.window.visibleTextEditors.find((editor) => editor.document.languageId !== 'Log')
                 if (editor) {
-                    message.params.cursorPosition = [editor.selection.active]
-                    message.params.textDocument = { uri: editor.document.uri.toString() }
+                    chatParams.cursorState = getCursorState(editor.selections)
+                    chatParams.textDocument = { uri: editor.document.uri.toString() }
                 }
 
-                const chatRequest = await encryptRequest<ChatParams>(message.params, encryptionKey)
-                const chatResult = (await languageClient.sendRequest(chatRequestType.method, {
-                    ...chatRequest,
-                    partialResultToken,
-                })) as string | ChatResult
-                void handleCompleteResult<ChatResult>(
-                    chatResult,
-                    encryptionKey,
-                    provider,
-                    message.params.tabId,
-                    chatDisposable
-                )
+                const chatRequest = await encryptRequest<ChatParams>(chatParams, encryptionKey)
+                try {
+                    const chatResult = await languageClient.sendRequest<string | ChatResult>(
+                        chatRequestType.method,
+                        {
+                            ...chatRequest,
+                            partialResultToken,
+                        },
+                        cancellationToken.token
+                    )
+                    await handleCompleteResult<ChatResult>(
+                        chatResult,
+                        encryptionKey,
+                        provider,
+                        chatParams.tabId,
+                        chatDisposable
+                    )
+                } catch (e) {
+                    const errorMsg = `Error occurred during chat request: ${e}`
+                    languageClient.info(errorMsg)
+                    languageClient.info(
+                        `Last result from langauge server: ${JSON.stringify(lastPartialResult, undefined, 2)}`
+                    )
+                    if (!isValidResponseError(e)) {
+                        throw e
+                    }
+                    await handleCompleteResult<ChatResult>(
+                        e.data,
+                        encryptionKey,
+                        provider,
+                        chatParams.tabId,
+                        chatDisposable
+                    )
+                } finally {
+                    chatStreamTokens.delete(chatParams.tabId)
+                }
                 break
             }
             case quickActionRequestType.method: {
@@ -172,11 +316,30 @@ export function registerMessageListeners(
                 )
                 break
             }
+            case listConversationsRequestType.method:
+            case conversationClickRequestType.method:
+            case listMcpServersRequestType.method:
+            case mcpServerClickRequestType.method:
+            case tabBarActionRequestType.method:
+                await resolveChatResponse(message.command, message.params, languageClient, webview)
+                break
             case followUpClickNotificationType.method:
                 if (!isValidAuthFollowUpType(message.params.followUp.type)) {
                     languageClient.sendNotification(followUpClickNotificationType.method, message.params)
                 }
                 break
+            case buttonClickRequestType.method: {
+                const buttonResult = await languageClient.sendRequest<ButtonClickResult>(
+                    buttonClickRequestType.method,
+                    message.params
+                )
+                if (!buttonResult.success) {
+                    languageClient.error(
+                        `[VSCode Client] Failed to execute button action: ${buttonResult.failureReason}`
+                    )
+                }
+                break
+            }
             default:
                 if (isServerEvent(message.command)) {
                     languageClient.sendNotification(message.command, message.params)
@@ -184,6 +347,172 @@ export function registerMessageListeners(
                 break
         }
     }, undefined)
+
+    const registerHandlerWithResponseRouter = (command: string) => {
+        const handler = async (params: any, _: any) => {
+            const mapErrorType = (type: string | undefined): number => {
+                switch (type) {
+                    case 'InvalidRequest':
+                        return ErrorCodes.InvalidRequest
+                    case 'InternalError':
+                        return ErrorCodes.InternalError
+                    case 'UnknownError':
+                    default:
+                        return ErrorCodes.UnknownErrorCode
+                }
+            }
+            const requestId = uuidv4()
+
+            void provider.webview?.postMessage({
+                requestId: requestId,
+                command: command,
+                params: params,
+            })
+            const responsePromise = new Promise<UiMessageResultParams | undefined>((resolve, reject) => {
+                const timeout = setTimeout(() => {
+                    disposable?.dispose()
+                    reject(new Error('Request timed out'))
+                }, 30000)
+
+                const disposable = provider.webview?.onDidReceiveMessage((message: any) => {
+                    if (message.requestId === requestId) {
+                        clearTimeout(timeout)
+                        disposable?.dispose()
+                        resolve(message.params)
+                    }
+                })
+            })
+
+            const result = await responsePromise
+
+            if (result?.success) {
+                return result.result
+            } else {
+                return new ResponseError(
+                    mapErrorType(result?.error.type),
+                    result?.error.message ?? 'No response from client'
+                )
+            }
+        }
+
+        languageClient.onRequest(command, handler)
+    }
+
+    registerHandlerWithResponseRouter(openTabRequestType.method)
+    registerHandlerWithResponseRouter(getSerializedChatRequestType.method)
+
+    languageClient.onRequest(ShowSaveFileDialogRequestType.method, async (params: ShowSaveFileDialogParams) => {
+        const filters: Record<string, string[]> = {}
+        const formatMappings = [
+            { format: 'markdown', key: 'Markdown', extensions: ['md'] },
+            { format: 'html', key: 'HTML', extensions: ['html'] },
+        ]
+
+        for (const format of params.supportedFormats ?? []) {
+            const mapping = formatMappings.find((m) => m.format === format)
+            if (mapping) {
+                filters[mapping.key] = mapping.extensions
+            }
+        }
+
+        const saveAtUri = params.defaultUri ? vscode.Uri.parse(params.defaultUri) : vscode.Uri.file('export-chat.md')
+        const targetUri = await vscode.window.showSaveDialog({
+            filters,
+            defaultUri: saveAtUri,
+            title: 'Export',
+        })
+
+        if (!targetUri) {
+            return new ResponseError(LSPErrorCodes.RequestFailed, 'Export failed')
+        }
+
+        return {
+            targetUri: targetUri.toString(),
+        }
+    })
+
+    languageClient.onRequest<ShowDocumentParams, ShowDocumentResult>(
+        ShowDocumentRequest.method,
+        async (params: ShowDocumentParams): Promise<ShowDocumentParams | ResponseError<ShowDocumentResult>> => {
+            focusAmazonQPanel().catch((e) => languageClient.error(`[VSCode Client] focusAmazonQPanel() failed`))
+
+            try {
+                const uri = vscode.Uri.parse(params.uri)
+
+                if (params.external) {
+                    // Note: Not using openUrl() because we probably don't want telemetry for these URLs.
+                    // Also it doesn't yet support the required HACK below.
+
+                    // HACK: workaround vscode bug: https://github.com/microsoft/vscode/issues/85930
+                    vscode.env.openExternal(params.uri as any).then(undefined, (e) => {
+                        // TODO: getLogger('?').error('failed vscode.env.openExternal: %O', e)
+                        vscode.env.openExternal(uri).then(undefined, (e) => {
+                            // TODO: getLogger('?').error('failed vscode.env.openExternal: %O', e)
+                        })
+                    })
+                    return params
+                }
+
+                const doc = await vscode.workspace.openTextDocument(uri)
+                await vscode.window.showTextDocument(doc, { preview: false })
+                return params
+            } catch (e) {
+                return new ResponseError(
+                    LSPErrorCodes.RequestFailed,
+                    `Failed to open document: ${(e as Error).message}`
+                )
+            }
+        }
+    )
+
+    languageClient.onNotification(contextCommandsNotificationType.method, (params: ContextCommandParams) => {
+        void provider.webview?.postMessage({
+            command: contextCommandsNotificationType.method,
+            params: params,
+        })
+    })
+
+    languageClient.onNotification(openFileDiffNotificationType.method, async (params: OpenFileDiffParams) => {
+        const ecc = new EditorContentController()
+        const uri = params.originalFileUri
+        const doc = await vscode.workspace.openTextDocument(uri)
+        const entireDocumentSelection = new vscode.Selection(
+            new vscode.Position(0, 0),
+            new vscode.Position(doc.lineCount - 1, doc.lineAt(doc.lineCount - 1).text.length)
+        )
+        const viewDiffMessage: ViewDiffMessage = {
+            context: {
+                activeFileContext: {
+                    filePath: params.originalFileUri,
+                    fileText: params.originalFileContent ?? '',
+                    fileLanguage: undefined,
+                    matchPolicy: undefined,
+                },
+                focusAreaContext: {
+                    selectionInsideExtendedCodeBlock: entireDocumentSelection,
+                    codeBlock: '',
+                    extendedCodeBlock: '',
+                    names: undefined,
+                },
+            },
+            code: params.fileContent ?? '',
+        }
+        await ecc.viewDiff(viewDiffMessage, amazonQDiffScheme)
+    })
+
+    languageClient.onNotification(chatUpdateNotificationType.method, (params: ChatUpdateParams) => {
+        void provider.webview?.postMessage({
+            command: chatUpdateNotificationType.method,
+            params: params,
+        })
+    })
+
+    languageClient.onNotification(chatOptionsUpdateType.method, (params: ChatOptionsUpdateParams) => {
+        void provider.webview?.postMessage({
+            command: chatOptionsUpdateType.method,
+            params: params,
+        })
+    })
 }
 
 function isServerEvent(command: string) {
@@ -227,7 +556,7 @@ async function handlePartialResult<T extends ChatResult>(
             ? await decodeRequest<T>(partialResult, encryptionKey)
             : (partialResult as T)
 
-    if (decryptedMessage.body) {
+    if (decryptedMessage.body !== undefined) {
         void provider.webview?.postMessage({
             command: chatRequestType.method,
             params: decryptedMessage,
@@ -241,7 +570,7 @@ async function handlePartialResult<T extends ChatResult>(
  * Decodes the final chat responses from the language server before sending it to mynah UI.
  * Once this is called the answer response is finished
  */
-async function handleCompleteResult<T>(
+async function handleCompleteResult<T extends ChatResult>(
     result: string | T,
     encryptionKey: Buffer | undefined,
     provider: AmazonQChatViewProvider,
@@ -249,12 +578,29 @@ async function handleCompleteResult<T>(
     disposable: Disposable
 ) {
     const decryptedMessage =
-        typeof result === 'string' && encryptionKey ? await decodeRequest(result, encryptionKey) : result
-
+        typeof result === 'string' && encryptionKey ? await decodeRequest<T>(result, encryptionKey) : (result as T)
     void provider.webview?.postMessage({
         command: chatRequestType.method,
         params: decryptedMessage,
         tabId: tabId,
     })
+
+    // only add the reference log once the request is complete, otherwise we will get duplicate log items
+    for (const ref of decryptedMessage.codeReference ?? []) {
+        ReferenceLogViewProvider.instance.addReferenceLog(referenceLogText(ref))
+    }
     disposable.dispose()
+}
+
+async function resolveChatResponse(
+    requestMethod: string,
+    params: any,
+    languageClient: LanguageClient,
+    webview: vscode.Webview | undefined
+) {
+    const result = await languageClient.sendRequest(requestMethod, params)
+    void webview?.postMessage({
+        command: requestMethod,
+        params: result,
+    })
 }

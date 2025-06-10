@@ -10,13 +10,7 @@ import { parsePatch, applyPatches, ParsedDiff } from 'diff'
 import path from 'path'
 import vscode from 'vscode'
 import { ExportIntent } from '@amzn/codewhisperer-streaming'
-import {
-    TransformByQReviewStatus,
-    transformByQState,
-    PatchInfo,
-    DescriptionContent,
-    TransformationType,
-} from '../../models/model'
+import { TransformByQReviewStatus, transformByQState, TransformationType } from '../../models/model'
 import { ExportResultArchiveStructure, downloadExportResultArchive } from '../../../shared/utilities/download'
 import { getLogger } from '../../../shared/logger/logger'
 import { telemetry } from '../../../shared/telemetry/telemetry'
@@ -119,11 +113,9 @@ export class PatchFileNode {
     readonly patchFilePath: string
     children: ProposedChangeNode[] = []
 
-    constructor(description: PatchInfo | undefined = undefined, patchFilePath: string) {
+    constructor(patchFilePath: string) {
         this.patchFilePath = patchFilePath
-        this.label = description
-            ? `${description.name} (${description.isSuccessful ? 'Success' : 'Failure'})`
-            : path.basename(patchFilePath)
+        this.label = path.basename(patchFilePath)
     }
 }
 
@@ -164,12 +156,7 @@ export class DiffModel {
      * @param pathToWorkspace Path to the project that was transformed
      * @returns List of nodes containing the paths of files that were modified, added, or removed
      */
-    public parseDiff(
-        pathToDiff: string,
-        pathToWorkspace: string,
-        diffDescription: PatchInfo | undefined,
-        totalDiffPatches: number
-    ): PatchFileNode {
+    public parseDiff(pathToDiff: string, pathToWorkspace: string, isIntermediateBuild: boolean = false): PatchFileNode {
         this.patchFileNodes = []
         const diffContents = fs.readFileSync(pathToDiff, 'utf8')
 
@@ -180,8 +167,9 @@ export class DiffModel {
 
         const changedFiles = parsePatch(diffContents)
         getLogger().info('CodeTransformation: parsed patch file successfully')
-        // path to the directory containing copy of the changed files in the transformed project
-        const pathToTmpSrcDir = this.copyProject(pathToWorkspace, changedFiles)
+        // if doing intermediate client-side build, pathToWorkspace is the path to the unzipped project's 'sources' directory (re-using upload ZIP)
+        // otherwise, we are at the very end of the transformation and need to copy the changed files in the project to show the diff(s)
+        const pathToTmpSrcDir = isIntermediateBuild ? pathToWorkspace : this.copyProject(pathToWorkspace, changedFiles)
         transformByQState.setProjectCopyFilePath(pathToTmpSrcDir)
 
         applyPatches(changedFiles, {
@@ -212,8 +200,7 @@ export class DiffModel {
                 }
             },
         })
-        const patchFileNode = new PatchFileNode(diffDescription, pathToDiff)
-        patchFileNode.label = `Patch ${this.currentPatchIndex + 1} of ${totalDiffPatches}: ${patchFileNode.label}`
+        const patchFileNode = new PatchFileNode(pathToDiff)
         patchFileNode.children = changedFiles.flatMap((file) => {
             /* ex. file.oldFileName = 'a/src/java/com/project/component/MyFile.java'
              * ex. file.newFileName = 'b/src/java/com/project/component/MyFile.java'
@@ -329,7 +316,6 @@ export class ProposedTransformationExplorer {
 
         let patchFiles: string[] = []
         let singlePatchFile: string = ''
-        let patchFilesDescriptions: DescriptionContent | undefined = undefined
 
         const reset = async () => {
             await setContext('gumby.transformationProposalReviewInProgress', false)
@@ -444,45 +430,9 @@ export class ProposedTransformationExplorer {
                 const zip = new AdmZip(pathToArchive)
                 zip.extractAllTo(pathContainingArchive)
                 const files = fs.readdirSync(path.join(pathContainingArchive, ExportResultArchiveStructure.PathToPatch))
-                if (files.length === 1) {
-                    singlePatchFile = path.join(
-                        pathContainingArchive,
-                        ExportResultArchiveStructure.PathToPatch,
-                        files[0]
-                    )
-                } else {
-                    const jsonFile = files.find((file) => file.endsWith('.json'))
-                    if (!jsonFile) {
-                        throw new Error('Expected JSON file not found')
-                    }
-                    const filePath = path.join(
-                        pathContainingArchive,
-                        ExportResultArchiveStructure.PathToPatch,
-                        jsonFile
-                    )
-                    const jsonData = fs.readFileSync(filePath, 'utf-8')
-                    patchFilesDescriptions = JSON.parse(jsonData)
-                }
-                if (patchFilesDescriptions !== undefined) {
-                    for (const patchInfo of patchFilesDescriptions.content) {
-                        patchFiles.push(
-                            path.join(
-                                pathContainingArchive,
-                                ExportResultArchiveStructure.PathToPatch,
-                                patchInfo.filename
-                            )
-                        )
-                    }
-                } else {
-                    patchFiles.push(singlePatchFile)
-                }
-                // Because multiple patches are returned once the ZIP is downloaded, we want to show the first one to start
-                diffModel.parseDiff(
-                    patchFiles[0],
-                    transformByQState.getProjectPath(),
-                    patchFilesDescriptions ? patchFilesDescriptions.content[0] : undefined,
-                    patchFiles.length
-                )
+                singlePatchFile = path.join(pathContainingArchive, ExportResultArchiveStructure.PathToPatch, files[0])
+                patchFiles.push(singlePatchFile)
+                diffModel.parseDiff(patchFiles[0], transformByQState.getProjectPath())
 
                 await setContext('gumby.reviewState', TransformByQReviewStatus.InReview)
                 transformDataProvider.refresh()
@@ -546,51 +496,16 @@ export class ProposedTransformationExplorer {
                 telemetry.record({
                     codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
                     codeTransformJobId: transformByQState.getJobId(),
-                    userChoice: `acceptChanges-${patchFilesDescriptions?.content[diffModel.currentPatchIndex].name}`,
+                    userChoice: 'acceptChanges',
                 })
             })
-            if (transformByQState.getMultipleDiffs()) {
-                void vscode.window.showInformationMessage(
-                    CodeWhispererConstants.changesAppliedNotificationMultipleDiffs(
-                        diffModel.currentPatchIndex,
-                        patchFiles.length
-                    )
-                )
-            } else {
-                void vscode.window.showInformationMessage(CodeWhispererConstants.changesAppliedNotificationOneDiff)
-            }
-
-            // We do this to ensure that the changesAppliedChatMessage is only sent to user when they accept the first diff.patch
+            void vscode.window.showInformationMessage(CodeWhispererConstants.changesAppliedNotificationOneDiff)
             transformByQState.getChatControllers()?.transformationFinished.fire({
-                message: CodeWhispererConstants.changesAppliedChatMessageMultipleDiffs(
-                    diffModel.currentPatchIndex,
-                    patchFiles.length,
-                    patchFilesDescriptions
-                        ? patchFilesDescriptions.content[diffModel.currentPatchIndex].name
-                        : undefined
-                ),
+                message: CodeWhispererConstants.changesAppliedChatMessageOneDiff,
                 tabID: ChatSessionManager.Instance.getSession().tabID,
-                includeStartNewTransformationButton: diffModel.currentPatchIndex === patchFiles.length - 1,
             })
-
-            // Load the next patch file
-            diffModel.currentPatchIndex++
-            if (diffModel.currentPatchIndex < patchFiles.length) {
-                const nextPatchFile = patchFiles[diffModel.currentPatchIndex]
-                const nextPatchFileDescription = patchFilesDescriptions
-                    ? patchFilesDescriptions.content[diffModel.currentPatchIndex]
-                    : undefined
-                diffModel.parseDiff(
-                    nextPatchFile,
-                    transformByQState.getProjectPath(),
-                    nextPatchFileDescription,
-                    patchFiles.length
-                )
-                transformDataProvider.refresh()
-            } else {
-                // All patches have been applied, reset the state
-                await reset()
-            }
+            // reset after applying the patch
+            await reset()
         })
 
         vscode.commands.registerCommand('aws.amazonq.transformationHub.reviewChanges.rejectChanges', async () => {

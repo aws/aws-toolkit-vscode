@@ -8,6 +8,7 @@
  * As much as possible, all strings used in the experience should originate here.
  */
 
+import vscode from 'vscode'
 import { AuthFollowUpType, AuthMessageDataMap } from '../../../../amazonq/auth/model'
 import { JDKVersion, TransformationCandidateProject, transformByQState } from '../../../../codewhisperer/models/model'
 import { FeatureAuthState } from '../../../../codewhisperer/util/authUtil'
@@ -49,6 +50,7 @@ export type UnrecoverableErrorType =
     | 'job-start-failed'
     | 'unsupported-source-db'
     | 'unsupported-target-db'
+    | 'invalid-custom-versions-file'
     | 'error-parsing-sct-file'
     | 'invalid-zip-no-sct-file'
     | 'invalid-from-to-jdk'
@@ -149,47 +151,6 @@ export class Messenger {
                     formItems: formItems,
                 },
                 'TransformSkipTestsForm',
-                tabID,
-                false
-            )
-        )
-    }
-
-    public async sendOneOrMultipleDiffsPrompt(tabID: string) {
-        const formItems: ChatItemFormItem[] = []
-        formItems.push({
-            id: 'GumbyTransformOneOrMultipleDiffsForm',
-            type: 'select',
-            title: CodeWhispererConstants.selectiveTransformationFormTitle,
-            mandatory: true,
-            options: [
-                {
-                    value: CodeWhispererConstants.oneDiffMessage,
-                    label: CodeWhispererConstants.oneDiffMessage,
-                },
-                {
-                    value: CodeWhispererConstants.multipleDiffsMessage,
-                    label: CodeWhispererConstants.multipleDiffsMessage,
-                },
-            ],
-        })
-
-        this.dispatcher.sendAsyncEventProgress(
-            new AsyncEventProgressMessage(tabID, {
-                inProgress: true,
-                message: CodeWhispererConstants.userPatchDescriptionChatMessage(
-                    transformByQState.getTargetJDKVersion() ?? ''
-                ),
-            })
-        )
-
-        this.dispatcher.sendChatPrompt(
-            new ChatPrompt(
-                {
-                    message: 'Q Code Transformation',
-                    formItems: formItems,
-                },
-                'TransformOneOrMultipleDiffsForm',
                 tabID,
                 false
             )
@@ -416,38 +377,12 @@ export class Messenger {
         this.dispatcher.sendChatMessage(jobSubmittedMessage)
     }
 
-    public sendUserPrompt(prompt: string, tabID: string) {
+    public sendMessage(prompt: string, tabID: string, type: 'prompt' | 'ai-prompt') {
         this.dispatcher.sendChatMessage(
             new ChatMessage(
                 {
                     message: prompt,
-                    messageType: 'prompt',
-                },
-                tabID
-            )
-        )
-    }
-
-    public sendStaticTextResponse(messageType: StaticTextResponseType, tabID: string) {
-        let message = '...'
-
-        switch (messageType) {
-            case 'java-home-not-set':
-                message = MessengerUtils.createJavaHomePrompt()
-                break
-            case 'end-HIL-early':
-                message = 'I will continue transforming your code without upgrading this dependency.'
-                break
-            case 'choose-transformation-objective':
-                message = CodeWhispererConstants.chooseTransformationObjective
-                break
-        }
-
-        this.dispatcher.sendChatMessage(
-            new ChatMessage(
-                {
-                    message,
-                    messageType: 'ai-prompt',
+                    messageType: type,
                 },
                 tabID
             )
@@ -486,6 +421,9 @@ export class Messenger {
             case 'unsupported-target-db':
                 message = CodeWhispererConstants.invalidMetadataFileUnsupportedTargetDB
                 break
+            case 'invalid-custom-versions-file':
+                message = CodeWhispererConstants.invalidCustomVersionsFileMessage
+                break
             case 'error-parsing-sct-file':
                 message = CodeWhispererConstants.invalidMetadataFileErrorParsing
                 break
@@ -522,16 +460,14 @@ export class Messenger {
         this.dispatcher.sendCommandMessage(new SendCommandMessage(message.command, message.tabID, message.eventId))
     }
 
-    public sendJobFinishedMessage(tabID: string, message: string, includeStartNewTransformationButton: boolean = true) {
+    public sendJobFinishedMessage(tabID: string, message: string) {
         const buttons: ChatItemButton[] = []
-        if (includeStartNewTransformationButton) {
-            buttons.push({
-                keepCardAfterClick: false,
-                text: CodeWhispererConstants.startTransformationButtonText,
-                id: ButtonActions.CONFIRM_START_TRANSFORMATION_FLOW,
-                disabled: false,
-            })
-        }
+        buttons.push({
+            keepCardAfterClick: false,
+            text: CodeWhispererConstants.startTransformationButtonText,
+            id: ButtonActions.CONFIRM_START_TRANSFORMATION_FLOW,
+            disabled: false,
+        })
 
         if (transformByQState.isPartiallySucceeded() || transformByQState.isSucceeded()) {
             buttons.push({
@@ -619,11 +555,6 @@ export class Messenger {
         this.dispatcher.sendChatMessage(new ChatMessage({ message, messageType: 'ai-prompt' }, tabID))
     }
 
-    public sendOneOrMultipleDiffsMessage(selectiveTransformationSelection: string, tabID: string) {
-        const message = `Okay, I will create ${selectiveTransformationSelection.toLowerCase()} with my proposed changes.`
-        this.dispatcher.sendChatMessage(new ChatMessage({ message, messageType: 'ai-prompt' }, tabID))
-    }
-
     public sendHumanInTheLoopInitialMessage(tabID: string, codeSnippet: string) {
         let message = `I was not able to upgrade all dependencies. To resolve it, I will try to find an updated depedency in your local Maven repository. I will need additional information from you to continue.`
 
@@ -668,7 +599,7 @@ ${codeSnippet}
         this.sendInProgressMessage(tabID, message)
     }
 
-    public sendInProgressMessage(tabID: string, message: string, messageName?: string) {
+    public sendInProgressMessage(tabID: string, message: string) {
         this.dispatcher.sendAsyncEventProgress(
             new AsyncEventProgressMessage(tabID, { inProgress: true, message: undefined })
         )
@@ -772,7 +703,56 @@ ${codeSnippet}
         )
     }
 
-    public async sendSelectSQLMetadataFileMessage(tabID: string) {
+    public async sendCustomDependencyVersionMessage(tabID: string) {
+        const message = CodeWhispererConstants.chooseYamlMessage
+        const buttons: ChatItemButton[] = []
+
+        buttons.push({
+            keepCardAfterClick: true,
+            text: 'Select .yaml file',
+            id: ButtonActions.SELECT_CUSTOM_DEPENDENCY_VERSION_FILE,
+            disabled: false,
+        })
+
+        buttons.push({
+            keepCardAfterClick: false,
+            text: 'Continue without this',
+            id: ButtonActions.CONTINUE_TRANSFORMATION_FORM,
+            disabled: false,
+        })
+
+        this.dispatcher.sendChatMessage(
+            new ChatMessage(
+                {
+                    message,
+                    messageType: 'ai-prompt',
+                    buttons,
+                },
+                tabID
+            )
+        )
+        const sampleYAML = `name: "custom-dependency-management"
+description: "Custom dependency version management for Java migration from JDK 8/11/17 to JDK 17/21"
+
+dependencyManagement:
+  dependencies:
+    - identifier: "com.example:library1"
+      targetVersion: "2.1.0"
+      versionProperty: "library1.version"  # Optional
+      originType: "FIRST_PARTY" # or "THIRD_PARTY"  # Optional
+    - identifier: "com.example:library2"
+      targetVersion: "3.0.0"
+      originType: "THIRD_PARTY"
+  plugins:
+    - identifier: "com.example.plugin"
+      targetVersion: "1.2.0"
+      versionProperty: "plugin.version"  # Optional`
+
+        const doc = await vscode.workspace.openTextDocument({ content: sampleYAML, language: 'yaml' })
+        await vscode.window.showTextDocument(doc)
+    }
+
+    public sendSelectSQLMetadataFileMessage(tabID: string) {
         const message = CodeWhispererConstants.selectSQLMetadataFileHelpMessage
         const buttons: ChatItemButton[] = []
 

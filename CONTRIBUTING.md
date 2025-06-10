@@ -382,11 +382,14 @@ If you need to report an issue attach these to give the most detailed informatio
     - ![](./docs/images/logsView.png)
 2. Click the gear icon on the bottom right and select `Debug`
     - ![](./docs/images/logsSetDebug.png)
-3. Click the gear icon again and select `Set As Default`. This will ensure we stay in `Debug` until explicitly changed
+3. Click the gear icon again and select `Set As Default`. This will ensure we stay in `Debug` until explicitly changed.
     - ![](./docs/images/logsSetDefault.png)
 4. Open the Command Palette again and select `Reload Window`.
 5. Now you should see additional `[debug]` prefixed logs in the output.
     - ![](./docs/images/logsDebugLog.png)
+6. To export logs, click the kebab (`...`), select `Export Logs`, and then select the appropriate channel (`Amazon Q Logs` for Amazon Q)
+    - ![](./docs/images/openExportLogs.png)
+    - ![](./docs/images/exportAmazonQLogs.png)
 
 ### Telemetry
 
@@ -534,6 +537,7 @@ Unlike the user setting overrides, not all of these environment variables have t
 -   `AWS_TOOLKIT_TEST_NO_COLOR`: If the tests should include colour in their output
 -   `DEVELOPMENT_PATH`: The path to the aws toolkit vscode project
 -   `TEST_DIR` - The directory where the test runner should find the tests
+-   `AMAZONQ_FEATUREDEV_ITERATION_TEST` - Controls whether to enable multiple iteration testing for Amazon Q feature development
 
 ### SAM/CFN ("goformation") JSON schema
 
