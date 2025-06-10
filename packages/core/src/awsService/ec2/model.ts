@@ -345,7 +345,7 @@ export class Ec2Connecter implements vscode.Disposable {
         }
 
         const input = await vscode.window.showInputBox({
-            prompt: `Unrecognized OS "${os}". Please enter the username to use for instance ${instanceId}:`,
+            prompt: `Unrecognized OS "${os}". Enter the username for instance ${instanceId}:`,
         })
         if (input) {
             return { name: input, os }
