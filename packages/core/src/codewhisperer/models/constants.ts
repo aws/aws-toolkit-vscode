@@ -649,9 +649,11 @@ export const enterJavaHomePlaceholder = 'Enter the path to your Java installatio
 
 export const openNewTabPlaceholder = 'Open a new tab to chat with Q'
 
-export const jobCompletedChatMessage = `I completed your transformation. You can review the diff to see my proposed changes and accept or reject them. The transformation summary has details about the changes I'm proposing.`
+export const jobCompletedChatMessage = (version: string) =>
+    `I completed your transformation. You can review the diff to see my proposed changes and accept or reject them. The transformation summary has details about the changes I'm proposing. If you want to upgrade additional libraries and other dependencies, run /transform with the transformed code and specify ${version} as the source and target version.`
 
-export const jobCompletedNotification = `Amazon Q transformed your code. You can review the diff to see my proposed changes and accept or reject them. The transformation summary has details about the changes.`
+export const jobCompletedNotification = (version: string) =>
+    `Amazon Q transformed your code. You can review the diff to see my proposed changes and accept or reject them. The transformation summary has details about the changes. If you want to upgrade additional libraries and other dependencies, run /transform with the transformed code and specify ${version} as the source and target version.`
 
 export const jobPartiallyCompletedChatMessage = `I transformed part of your code. You can review the diff to see my proposed changes and accept or reject them. The transformation summary has details about the files I updated and the errors that prevented a complete transformation.`
 
