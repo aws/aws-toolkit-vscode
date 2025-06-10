@@ -76,7 +76,8 @@ describe('EditDecorationManager', function () {
             acceptHandler,
             rejectHandler,
             'Original code',
-            'New code'
+            'New code',
+            [{ line: 0, start: 0, end: 0 }]
         )
 
         // Verify decorations were set (we expect 4 calls because clearDecorations is called first)
@@ -108,7 +109,8 @@ describe('EditDecorationManager', function () {
             acceptHandler,
             rejectHandler,
             'Original code',
-            'New code'
+            'New code',
+            [{ line: 0, start: 0, end: 0 }]
         )
 
         // Find the command handler that was registered for accept
@@ -145,7 +147,8 @@ describe('EditDecorationManager', function () {
             acceptHandler,
             rejectHandler,
             'Original code',
-            'New code'
+            'New code',
+            [{ line: 0, start: 0, end: 0 }]
         )
 
         // Find the command handler that was registered for reject

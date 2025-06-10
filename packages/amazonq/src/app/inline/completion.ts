@@ -277,9 +277,7 @@ ${itemLog}
                             this.logger.info(logstr)
                         })
                         getLogger('nextEditPrediction').info('Received edit!')
-                        return []
                     }
-                    // If NEP is disabled, handle as regular completion
                 }
 
                 item.command = {
