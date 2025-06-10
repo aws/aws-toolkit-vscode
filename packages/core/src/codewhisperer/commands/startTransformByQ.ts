@@ -677,7 +677,7 @@ export async function postTransformationJob() {
 
     let chatMessage = transformByQState.getJobFailureErrorChatMessage()
     if (transformByQState.isSucceeded()) {
-        chatMessage = CodeWhispererConstants.jobCompletedChatMessage
+        chatMessage = CodeWhispererConstants.jobCompletedChatMessage(transformByQState.getTargetJDKVersion() ?? '')
     } else if (transformByQState.isPartiallySucceeded()) {
         chatMessage = CodeWhispererConstants.jobPartiallyCompletedChatMessage
     }
@@ -708,9 +708,12 @@ export async function postTransformationJob() {
     }
 
     if (transformByQState.isSucceeded()) {
-        void vscode.window.showInformationMessage(CodeWhispererConstants.jobCompletedNotification, {
-            title: localizedText.ok,
-        })
+        void vscode.window.showInformationMessage(
+            CodeWhispererConstants.jobCompletedNotification(transformByQState.getTargetJDKVersion() ?? ''),
+            {
+                title: localizedText.ok,
+            }
+        )
     } else if (transformByQState.isPartiallySucceeded()) {
         void vscode.window
             .showInformationMessage(
