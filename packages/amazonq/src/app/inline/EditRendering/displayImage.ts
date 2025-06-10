@@ -318,7 +318,8 @@ export async function displaySvgDecoration(
                 },
                 totalSessionDisplayTime: Date.now() - session.requestStartTime,
                 firstCompletionDisplayLatency: session.firstCompletionDisplayLatency,
-                isInlineEdit: true,
+                // addedCharacterCount: addedCharacterCount,
+                // deletedCharacterCount: deletedCharacterCount,
             }
             languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
         },
@@ -335,7 +336,8 @@ export async function displaySvgDecoration(
                         discarded: false,
                     },
                 },
-                isInlineEdit: true,
+                // addedCharacterCount: addedCharacterCount,
+                // deletedCharacterCount: deletedCharacterCount,
             }
             languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
         },
