@@ -109,7 +109,6 @@ describe('LanguageClientAuth', () => {
                     },
                 ],
                 ssoSessions: [ssoSession],
-                iamSessions: [],
             }
             client.sendRequest.resolves(mockListProfilesResult)
 
@@ -126,7 +125,6 @@ describe('LanguageClientAuth', () => {
             const mockListProfilesResult: ListProfilesResult = {
                 profiles: [],
                 ssoSessions: [],
-                iamSessions: [],
             }
             client.sendRequest.resolves(mockListProfilesResult)
 
