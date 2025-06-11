@@ -213,6 +213,7 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
             const isAutoTrigger = context.triggerKind === InlineCompletionTriggerKind.Automatic
             if (isAutoTrigger && !CodeSuggestionsState.instance.isSuggestionsEnabled()) {
                 // return early when suggestions are disabled with auto trigger
+                this.logger.debug('')
                 return []
             }
 
