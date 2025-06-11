@@ -107,7 +107,7 @@ export function getQuickPickItems(): DataQuickPickItem<string>[] {
         createSettingsNode(),
         ...(isUsingEnterpriseSso && regionProfile ? [createSelectRegionProfileNode(regionProfile)] : []),
         ...(AuthUtil.instance.isConnected() && !hasVendedIamCredentials() && !hasVendedCredentialsFromMetadata()
-            ? [createManageSubscription(), createSignout()]
+            ? [...(AuthUtil.instance.isBuilderIdInUse() ? [createManageSubscription()] : []), createSignout()]
             : []),
     ]
 
