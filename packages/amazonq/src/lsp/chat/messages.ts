@@ -513,12 +513,29 @@ export function registerMessageListeners(
     languageClient.onNotification(openFileDiffNotificationType.method, async (params: OpenFileDiffParams) => {
         // Try to use DiffAnimationHandler first
         try {
-            await animationHandler.processFileDiff({
-                originalFileUri: params.originalFileUri,
-                originalFileContent: params.originalFileContent,
-                fileContent: params.fileContent,
-            })
-            getLogger().info('[VSCode Client] Successfully triggered diff animation')
+            // Normalize the file path
+            const normalizedPath = params.originalFileUri.startsWith('file://')
+                ? vscode.Uri.parse(params.originalFileUri).fsPath
+                : params.originalFileUri
+
+            const newContent = params.fileContent || ''
+
+            getLogger().info(`[VSCode Client] OpenFileDiff notification for: ${normalizedPath}`)
+
+            // Check if we should show static diff (same content as last animation)
+            if (animationHandler.shouldShowStaticDiff(normalizedPath, newContent)) {
+                getLogger().info('[VSCode Client] Same content as last animation, showing static diff')
+                await animationHandler.showStaticDiffForFile(normalizedPath)
+            } else {
+                getLogger().info('[VSCode Client] New content detected, starting animation')
+                // This is from chat click, pass the flag
+                await animationHandler.processFileDiff({
+                    originalFileUri: params.originalFileUri,
+                    originalFileContent: params.originalFileContent,
+                    fileContent: params.fileContent,
+                    isFromChatClick: true,
+                })
+            }
         } catch (error) {
             // If animation fails, fall back to the original diff view
             getLogger().error(`[VSCode Client] Diff animation failed, falling back to standard diff view: ${error}`)
