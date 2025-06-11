@@ -1,3 +1,7 @@
+## 1.73.0 2025-06-11
+
+- **Feature** Add MCP Server Support
+
 ## 1.72.0 2025-06-11
 
 - **Feature** Launch LSP with bundled artifacts as fallback
