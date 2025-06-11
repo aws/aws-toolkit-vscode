@@ -5,7 +5,6 @@
 
 import { diffChars } from 'diff'
 import * as vscode from 'vscode'
-import { applyUnifiedDiff } from './diffUtils'
 import { ToolkitError, getLogger, isWeb } from 'aws-core-vscode/shared'
 import { diffUtilities } from 'aws-core-vscode/shared'
 
@@ -30,8 +29,6 @@ export class SvgGenerationService {
         startLine: number
         newCode: string
         origionalCodeHighlightRange: Range[]
-        addedCharacterCount: number
-        deletedCharacterCount: number
     }> {
         const textDoc = await vscode.workspace.openTextDocument(filePath)
         const originalCode = textDoc.getText()
@@ -39,7 +36,6 @@ export class SvgGenerationService {
             logger.error(`udiff format error`)
             throw new ToolkitError('udiff format erro')
         }
-        const { addedCharacterCount, deletedCharacterCount } = applyUnifiedDiff(originalCode, udiff)
         const newCode = await diffUtilities.getPatchedCode(filePath, udiff)
         const modifiedLines = diffUtilities.getModifiedLinesFromUnifiedDiff(udiff)
         // eslint-disable-next-line aws-toolkits/no-json-stringify-in-log
@@ -54,8 +50,6 @@ export class SvgGenerationService {
                 startLine: 0,
                 newCode: newCode,
                 origionalCodeHighlightRange: [{ line: 0, start: 0, end: 0 }],
-                addedCharacterCount: 0,
-                deletedCharacterCount: 0,
             }
         }
         const { createSVGWindow } = await import('svgdom')
@@ -108,8 +102,6 @@ export class SvgGenerationService {
             startLine: editStartLine,
             newCode: newCode,
             origionalCodeHighlightRange: highlightRanges.removedRanges,
-            addedCharacterCount,
-            deletedCharacterCount,
         }
     }
 
