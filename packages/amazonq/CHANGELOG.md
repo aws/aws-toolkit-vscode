@@ -1,3 +1,7 @@
+## 1.72.0 2025-06-11
+
+- **Feature** Launch LSP with bundled artifacts as fallback
+
 ## 1.71.0 2025-06-04
 
 - Miscellaneous non-user-facing changes
