@@ -11,6 +11,7 @@ import {
     createSelectCustomization,
     createReconnect,
     createGettingStarted,
+    createManageSubscription,
     createSignout,
     createSeparator,
     createSettingsNode,
@@ -106,7 +107,7 @@ export function getQuickPickItems(): DataQuickPickItem<string>[] {
         createSettingsNode(),
         ...(isUsingEnterpriseSso && regionProfile ? [createSelectRegionProfileNode(regionProfile)] : []),
         ...(AuthUtil.instance.isConnected() && !hasVendedIamCredentials() && !hasVendedCredentialsFromMetadata()
-            ? [createSignout()]
+            ? [...(AuthUtil.instance.isBuilderIdInUse() ? [createManageSubscription()] : []), createSignout()]
             : []),
     ]
 
