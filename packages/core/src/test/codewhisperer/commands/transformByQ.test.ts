@@ -247,7 +247,25 @@ dependencyManagement:
             },
             transformationJob: { status: 'COMPLETED' },
         }
+        const mockPlanResponse = {
+            $response: {
+                data: {
+                    transformationPlan: { transformationSteps: [] },
+                },
+                requestId: 'requestId',
+                hasNextPage: () => false,
+                error: undefined,
+                nextPage: () => null, // eslint-disable-line unicorn/no-null
+                redirectCount: 0,
+                retryCount: 0,
+                httpResponse: new HttpResponse(),
+            },
+            transformationPlan: { transformationSteps: [] },
+        }
         sinon.stub(codeWhisperer.codeWhispererClient, 'codeModernizerGetCodeTransformation').resolves(mockJobResponse)
+        sinon
+            .stub(codeWhisperer.codeWhispererClient, 'codeModernizerGetCodeTransformationPlan')
+            .resolves(mockPlanResponse)
         transformByQState.setToSucceeded()
         const status = await pollTransformationJob(
             'dummyId',
@@ -374,6 +392,8 @@ dependencyManagement:
             const manifestText = manifestBuffer.toString('utf8')
             const manifest = JSON.parse(manifestText)
             assert.strictEqual(manifest.customBuildCommand, CodeWhispererConstants.skipUnitTestsBuildCommand)
+            assert.strictEqual(manifest.noInteractiveMode, true)
+            assert.strictEqual(manifest.transformCapabilities.includes('SELECTIVE_TRANSFORMATION_V2'), true)
         })
     })
 
@@ -488,12 +508,18 @@ dependencyManagement:
 
         const actual = getTableMapping(stepZeroProgressUpdates)
         const expected = {
-            '0': '{"columnNames":["name","value"],"rows":[{"name":"Lines of code in your application","value":"3000"},{"name":"Dependencies to be replaced","value":"5"},{"name":"Deprecated code instances to be replaced","value":"10"},{"name":"Files to be updated","value":"7"}]}',
-            '1-dependency-change-abc':
+            '0': [
+                '{"columnNames":["name","value"],"rows":[{"name":"Lines of code in your application","value":"3000"},{"name":"Dependencies to be replaced","value":"5"},{"name":"Deprecated code instances to be replaced","value":"10"},{"name":"Files to be updated","value":"7"}]}',
+            ],
+            '1-dependency-change-abc': [
                 '{"columnNames":["dependencyName","action","currentVersion","targetVersion"],"rows":[{"dependencyName":"org.springboot.com","action":"Update","currentVersion":"2.1","targetVersion":"2.4"}, {"dependencyName":"com.lombok.java","action":"Remove","currentVersion":"1.7","targetVersion":"-"}]}',
-            '2-deprecated-code-xyz':
+            ],
+            '2-deprecated-code-xyz': [
                 '{"columnNames":["apiFullyQualifiedName","numChangedFiles"],“rows”:[{"apiFullyQualifiedName":"java.lang.Thread.stop()","numChangedFiles":"6"}, {"apiFullyQualifiedName":"java.math.bad()","numChangedFiles":"3"}]}',
-            '-1': '{"columnNames":["relativePath","action"],"rows":[{"relativePath":"pom.xml","action":"Update"}, {"relativePath":"src/main/java/com/bhoruka/bloodbank/BloodbankApplication.java","action":"Update"}]}',
+            ],
+            '-1': [
+                '{"columnNames":["relativePath","action"],"rows":[{"relativePath":"pom.xml","action":"Update"}, {"relativePath":"src/main/java/com/bhoruka/bloodbank/BloodbankApplication.java","action":"Update"}]}',
+            ],
         }
         assert.deepStrictEqual(actual, expected)
     })

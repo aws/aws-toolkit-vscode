@@ -153,7 +153,6 @@ export class RuntimeLanguageContext {
             psm1: 'powershell',
             r: 'r',
             abap: 'abap',
-            acds: 'abap',
         })
         this.languageSingleLineCommentPrefixMap = createConstantMap<CodewhispererLanguage, string>({
             c: '// ',
