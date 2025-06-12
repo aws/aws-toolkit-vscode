@@ -27,6 +27,7 @@ interface ManifestVersion {
 interface Manifest {
     versions: ManifestVersion[]
 }
+
 async function verifyFileHash(filePath: string, expectedHash: string): Promise<boolean> {
     return new Promise((resolve, reject) => {
         const hash = crypto.createHash('sha384')
@@ -51,6 +52,21 @@ async function ensureDirectoryExists(dirPath: string): Promise<void> {
     if (!fs.existsSync(dirPath)) {
         await fs.promises.mkdir(dirPath, { recursive: true })
     }
+}
+
+function compareVersions(v1: string, v2: string): number {
+    const parts1 = v1.split('.').map(Number)
+    const parts2 = v2.split('.').map(Number)
+
+    for (let i = 0; i < Math.max(parts1.length, parts2.length); i++) {
+        const part1 = parts1[i] || 0
+        const part2 = parts2[i] || 0
+
+        if (part1 > part2) return 1
+        if (part1 < part2) return -1
+    }
+
+    return 0
 }
 
 export async function downloadLanguageServer(): Promise<void> {
@@ -86,7 +102,7 @@ export async function downloadLanguageServer(): Promise<void> {
 
                         const latestVersion = manifest.versions
                             .filter((v) => !v.isDelisted)
-                            .sort((a, b) => b.serverVersion.localeCompare(a.serverVersion))[0]
+                            .sort((a, b) => compareVersions(b.serverVersion, a.serverVersion))[0]
 
                         if (!latestVersion) {
                             throw new Error('No valid version found in manifest')
