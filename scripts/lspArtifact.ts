@@ -3,6 +3,7 @@ import * as fs from 'fs'
 import * as crypto from 'crypto'
 import * as path from 'path'
 import * as os from 'os'
+import * as semver from 'semver'
 import AdmZip from 'adm-zip'
 
 interface ManifestContent {
@@ -27,6 +28,7 @@ interface ManifestVersion {
 interface Manifest {
     versions: ManifestVersion[]
 }
+
 async function verifyFileHash(filePath: string, expectedHash: string): Promise<boolean> {
     return new Promise((resolve, reject) => {
         const hash = crypto.createHash('sha384')
@@ -86,7 +88,7 @@ export async function downloadLanguageServer(): Promise<void> {
 
                         const latestVersion = manifest.versions
                             .filter((v) => !v.isDelisted)
-                            .sort((a, b) => b.serverVersion.localeCompare(a.serverVersion))[0]
+                            .sort((a, b) => semver.compare(b.serverVersion, a.serverVersion))[0]
 
                         if (!latestVersion) {
                             throw new Error('No valid version found in manifest')
