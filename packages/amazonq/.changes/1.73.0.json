@@ -1,0 +1,10 @@
+{
+	"date": "2025-06-11",
+	"version": "1.73.0",
+	"entries": [
+		{
+			"type": "Feature",
+			"description": "Add MCP Server Support"
+		}
+	]
+}
