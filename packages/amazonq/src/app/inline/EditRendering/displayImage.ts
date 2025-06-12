@@ -20,9 +20,9 @@ export class EditDecorationManager {
     private currentRemovedCodeDecorations: vscode.DecorationOptions[] = []
     private acceptHandler: (() => void) | undefined
     private rejectHandler: (() => void) | undefined
-    private disposables: vscode.Disposable[] = []
 
     constructor() {
+        this.registerCommandHandlers()
         this.imageDecorationType = vscode.window.createTextEditorDecorationType({
             isWholeLine: true,
         })
@@ -32,10 +32,7 @@ export class EditDecorationManager {
         })
     }
 
-    /**
-     * Converts image to decoration options with specific styling
-     */
-    private image2decoration(image: vscode.Uri, range: vscode.Range) {
+    private imageToDecoration(image: vscode.Uri, range: vscode.Range) {
         return {
             range,
             renderOptions: {
@@ -135,14 +132,10 @@ export class EditDecorationManager {
         newCode: string,
         originalCodeHighlightRanges: Array<{ line: number; start: number; end: number }>
     ): void {
-        // Clear any existing decorations
-        this.registerCommandHandlers()
         this.clearDecorations(editor)
 
-        // Set context to enable the Tab key handler
         void setContext('amazonq.editSuggestionActive' as any, true)
 
-        // Store handlers
         this.acceptHandler = onAccept
         this.rejectHandler = onReject
 
@@ -151,13 +144,12 @@ export class EditDecorationManager {
         const endPosition = new vscode.Position(Math.max(0, startLine - imageVerticalOffset), lineText.length)
         const range = new vscode.Range(endPosition, endPosition)
 
-        // Create decoration options using the existing image2decoration function
-        this.currentImageDecoration = this.image2decoration(svgImage, range)
+        this.currentImageDecoration = this.imageToDecoration(svgImage, range)
 
         // Apply image decoration
         editor.setDecorations(this.imageDecorationType, [this.currentImageDecoration])
 
-        // Highlight removed code with red background using the provided ranges
+        // Highlight removed code with red background
         this.currentRemovedCodeDecorations = this.highlightRemovedLines(editor, startLine, originalCodeHighlightRanges)
         editor.setDecorations(this.removedCodeDecorationType, this.currentRemovedCodeDecorations)
     }
@@ -180,30 +172,24 @@ export class EditDecorationManager {
      */
     public registerCommandHandlers(): void {
         // Register Tab key handler for accepting suggestion
-        const acceptDisposable = vscode.commands.registerCommand('aws.amazonq.inline.acceptEdit', () => {
+        vscode.commands.registerCommand('aws.amazonq.inline.acceptEdit', () => {
             if (this.acceptHandler) {
                 this.acceptHandler()
             }
         })
-        this.disposables.push(acceptDisposable)
 
         // Register Esc key handler for rejecting suggestion
-        const rejectDisposable = vscode.commands.registerCommand('aws.amazonq.inline.rejectEdit', () => {
+        vscode.commands.registerCommand('aws.amazonq.inline.rejectEdit', () => {
             if (this.rejectHandler) {
                 this.rejectHandler()
             }
         })
-        this.disposables.push(rejectDisposable)
     }
 
     /**
      * Disposes resources
      */
     public dispose(): void {
-        for (const disposable of this.disposables) {
-            disposable.dispose()
-        }
-        this.disposables = []
         this.imageDecorationType.dispose()
         this.removedCodeDecorationType.dispose()
     }
@@ -284,7 +270,9 @@ export async function displaySvgDecoration(
     originalCodeHighlightRanges: Array<{ line: number; start: number; end: number }>,
     session: CodeWhispererSession,
     languageClient: LanguageClient,
-    item: InlineCompletionItemWithReferences
+    item: InlineCompletionItemWithReferences,
+    addedCharacterCount: number,
+    deletedCharacterCount: number
 ) {
     const originalCode = editor.document.getText()
 
@@ -318,8 +306,8 @@ export async function displaySvgDecoration(
                 },
                 totalSessionDisplayTime: Date.now() - session.requestStartTime,
                 firstCompletionDisplayLatency: session.firstCompletionDisplayLatency,
-                // addedCharacterCount: addedCharacterCount,
-                // deletedCharacterCount: deletedCharacterCount,
+                addedCharacterCount: addedCharacterCount,
+                deletedCharacterCount: deletedCharacterCount,
             }
             languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
         },

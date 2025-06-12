@@ -43,7 +43,9 @@ export async function showEdits(
                 origionalCodeHighlightRange,
                 session,
                 languageClient,
-                item
+                item,
+                addedCharacterCount,
+                deletedCharacterCount
             )
         } else {
             getLogger('nextEditPrediction').error('SVG image generation returned an empty result.')

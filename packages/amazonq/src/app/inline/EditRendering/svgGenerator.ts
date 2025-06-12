@@ -41,6 +41,7 @@ export class SvgGenerationService {
         const { addedCharacterCount, deletedCharacterCount } = applyUnifiedDiff(originalCode, udiff)
         const newCode = await diffUtilities.getPatchedCode(filePath, udiff)
         const modifiedLines = diffUtilities.getModifiedLinesFromUnifiedDiff(udiff)
+        // TODO remove
         // eslint-disable-next-line aws-toolkits/no-json-stringify-in-log
         logger.info(`Line mapping: ${JSON.stringify(modifiedLines)}`)
 
