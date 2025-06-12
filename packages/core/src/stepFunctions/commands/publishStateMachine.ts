@@ -15,14 +15,21 @@ import { refreshStepFunctionsTree } from '../explorer/stepFunctionsNodes'
 import { PublishStateMachineWizard, PublishStateMachineWizardState } from '../wizards/publishStateMachineWizard'
 const localize = nls.loadMessageBundle()
 
-export async function publishStateMachine(
-    awsContext: AwsContext,
-    outputChannel: vscode.OutputChannel,
+interface publishStateMachineParams {
+    awsContext: AwsContext
+    outputChannel: vscode.OutputChannel
     region?: string
-) {
+    text?: vscode.TextDocument
+}
+export async function publishStateMachine(params: publishStateMachineParams) {
     const logger: Logger = getLogger()
+    let textDocument: vscode.TextDocument | undefined
 
-    const textDocument = vscode.window.activeTextEditor?.document
+    if (params.text) {
+        textDocument = params.text
+    } else {
+        textDocument = vscode.window.activeTextEditor?.document
+    }
 
     if (!textDocument) {
         logger.error('Could not get active text editor for state machine definition')
@@ -53,17 +60,17 @@ export async function publishStateMachine(
     }
 
     try {
-        const response = await new PublishStateMachineWizard(region).run()
+        const response = await new PublishStateMachineWizard(params.region).run()
         if (!response) {
             return
         }
         const client = new DefaultStepFunctionsClient(response.region)
 
         if (response?.createResponse) {
-            await createStateMachine(response.createResponse, text, outputChannel, response.region, client)
+            await createStateMachine(response.createResponse, text, params.outputChannel, response.region, client)
             refreshStepFunctionsTree(response.region)
         } else if (response?.updateResponse) {
-            await updateStateMachine(response.updateResponse, text, outputChannel, response.region, client)
+            await updateStateMachine(response.updateResponse, text, params.outputChannel, response.region, client)
         }
     } catch (err) {
         logger.error(err as Error)
