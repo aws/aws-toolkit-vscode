@@ -1,3 +1,7 @@
+## 1.74.0 2025-06-12
+
+- Miscellaneous non-user-facing changes
+
 ## 1.73.0 2025-06-11
 
 - **Feature** Add MCP Server Support
