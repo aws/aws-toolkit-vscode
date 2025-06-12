@@ -24,8 +24,14 @@ export async function showEdits(
         const svgGenerationService = new SvgGenerationService()
         // Generate your SVG image with the file contents
         const currentFile = editor.document.uri.fsPath
-        const { svgImage, startLine, newCode, origionalCodeHighlightRange } =
-            await svgGenerationService.generateDiffSvg(currentFile, item.insertText as string)
+        const {
+            svgImage,
+            startLine,
+            newCode,
+            origionalCodeHighlightRange,
+            addedCharacterCount,
+            deletedCharacterCount,
+        } = await svgGenerationService.generateDiffSvg(currentFile, item.insertText as string)
 
         if (svgImage) {
             // display the SVG image
@@ -37,7 +43,9 @@ export async function showEdits(
                 origionalCodeHighlightRange,
                 session,
                 languageClient,
-                item
+                item,
+                addedCharacterCount,
+                deletedCharacterCount
             )
         } else {
             getLogger('nextEditPrediction').error('SVG image generation returned an empty result.')

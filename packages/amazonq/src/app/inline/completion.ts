@@ -278,6 +278,7 @@ ${itemLog}
                         })
                         getLogger('nextEditPrediction').info('Received edit!')
                     }
+                    return []
                 }
 
                 item.command = {
