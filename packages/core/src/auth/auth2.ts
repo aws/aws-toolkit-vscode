@@ -9,9 +9,9 @@ import {
     GetSsoTokenParams,
     getSsoTokenRequestType,
     GetSsoTokenResult,
-    GetStsCredentialParams,
-    getStsCredentialRequestType,
-    GetStsCredentialResult,
+    GetIamCredentialParams,
+    getIamCredentialRequestType,
+    GetIamCredentialResult,
     IamIdentityCenterSsoTokenSource,
     InvalidateSsoTokenParams,
     invalidateSsoTokenRequestType,
@@ -19,9 +19,9 @@ import {
     UpdateProfileParams,
     updateProfileRequestType,
     SsoTokenChangedParams,
-    StsCredentialChangedParams,
+    // StsCredentialChangedParams,
     ssoTokenChangedRequestType,
-    stsCredentialChangedRequestType,
+    // stsCredentialChangedRequestType,
     AwsBuilderIdSsoTokenSource,
     UpdateCredentialsParams,
     AwsErrorCodes,
@@ -45,10 +45,9 @@ import {
     iamCredentialsUpdateRequestType,
     Profile,
     SsoSession,
-    IamSession,
-    invalidateStsCredentialRequestType,
-    InvalidateStsCredentialParams,
-    InvalidateStsCredentialResult,
+    // invalidateStsCredentialRequestType,
+    // InvalidateStsCredentialParams,
+    // InvalidateStsCredentialResult,
 } from '@aws/language-server-runtimes/protocol'
 import { LanguageClient } from 'vscode-languageclient'
 import { getLogger } from '../shared/logger/logger'
@@ -122,15 +121,15 @@ export class LanguageClientAuth {
         )
     }
 
-    getStsCredential(login: boolean = false, cancellationToken?: CancellationToken): Promise<GetStsCredentialResult> {
+    getIamCredential(login: boolean = false, cancellationToken?: CancellationToken): Promise<GetIamCredentialResult> {
         return this.client.sendRequest(
-            getStsCredentialRequestType.method,
+            getIamCredentialRequestType.method,
             {
                 clientName: this.clientName,
                 options: {
                     loginOnInvalidToken: login,
                 },
-            } satisfies GetStsCredentialParams,
+            } satisfies GetIamCredentialParams,
             cancellationToken
         )
     }
@@ -141,13 +140,16 @@ export class LanguageClientAuth {
         region: string,
         scopes: string[]
     ): Promise<UpdateProfileResult> {
+        // Add SSO settings and delete credentials from profile
         return this.client.sendRequest(updateProfileRequestType.method, {
             profile: {
                 kinds: [ProfileKind.SsoTokenProfile],
                 name: profileName,
                 settings: {
-                    region,
+                    region: region,
                     sso_session: profileName,
+                    aws_access_key_id: '',
+                    aws_secret_access_key: '',
                 },
             },
             ssoSession: {
@@ -162,18 +164,22 @@ export class LanguageClientAuth {
     }
 
     updateIamProfile(profileName: string, accessKey: string, secretKey: string): Promise<UpdateProfileResult> {
+        // Add credentials and delete SSO settings from profile
         return this.client.sendRequest(updateProfileRequestType.method, {
             profile: {
-                kinds: [ProfileKind.SsoTokenProfile],
+                kinds: [ProfileKind.IamCredentialProfile],
                 name: profileName,
-            },
-            iamSession: {
-                name: profileName,
-                credentials: {
-                    accessKeyId: accessKey,
-                    secretAccessKey: secretKey,
+                settings: {
+                    region: '',
+                    sso_session: '',
+                    aws_access_key_id: accessKey,
+                    aws_secret_access_key: secretKey,
                 },
             },
+            ssoSession: {
+                name: profileName,
+                settings: undefined,
+            }
         } satisfies UpdateProfileParams)
     }
 
@@ -191,12 +197,8 @@ export class LanguageClientAuth {
         const ssoSession = profile?.settings?.sso_session
             ? response.ssoSessions.find((session) => session.name === profile!.settings!.sso_session)
             : undefined
-        const iamSession = undefined
-        // const iamSession = profile?.settings?.sso_session
-        //     ? response.iamSessions?.find((session) => session.name === profile!.settings!.sso_session)
-        //     : undefined
 
-        return { profile, ssoSession, iamSession }
+        return { profile, ssoSession }
     }
 
     updateBearerToken(request: UpdateCredentialsParams) {
@@ -207,11 +209,11 @@ export class LanguageClientAuth {
         return this.client.sendNotification(bearerCredentialsDeleteNotificationType.method)
     }
 
-    updateStsCredential(request: UpdateCredentialsParams) {
+    updateIamCredential(request: UpdateCredentialsParams) {
         return this.client.sendRequest(iamCredentialsUpdateRequestType.method, request)
     }
 
-    deleteStsCredential() {
+    deleteIamCredential() {
         return this.client.sendNotification(iamCredentialsDeleteNotificationType.method)
     }
 
@@ -221,19 +223,19 @@ export class LanguageClientAuth {
         } satisfies InvalidateSsoTokenParams) as Promise<InvalidateSsoTokenResult>
     }
 
-    invalidateStsCredential(tokenId: string) {
-        return this.client.sendRequest(invalidateStsCredentialRequestType.method, {
-            stsCredentialId: tokenId,
-        } satisfies InvalidateStsCredentialParams) as Promise<InvalidateStsCredentialResult>
-    }
+    // invalidateStsCredential(tokenId: string) {
+    //     return this.client.sendRequest(invalidateStsCredentialRequestType.method, {
+    //         stsCredentialId: tokenId,
+    //     } satisfies InvalidateStsCredentialParams) as Promise<InvalidateStsCredentialResult>
+    // }
 
     registerSsoTokenChangedHandler(ssoTokenChangedHandler: (params: SsoTokenChangedParams) => any) {
         this.client.onNotification(ssoTokenChangedRequestType.method, ssoTokenChangedHandler)
     }
 
-    registerStsCredentialChangedHandler(stsCredentialChangedHandler: (params: StsCredentialChangedParams) => any) {
-        this.client.onNotification(stsCredentialChangedRequestType.method, stsCredentialChangedHandler)
-    }
+    // registerStsCredentialChangedHandler(stsCredentialChangedHandler: (params: StsCredentialChangedParams) => any) {
+    //     this.client.onNotification(stsCredentialChangedRequestType.method, stsCredentialChangedHandler)
+    // }
 
     registerCacheWatcher(cacheChangedHandler: (event: cacheChangedEvent) => any) {
         this.cacheWatcher.onDidCreate(() => cacheChangedHandler('create'))
@@ -255,8 +257,8 @@ export abstract class BaseLogin {
         protected readonly eventEmitter: vscode.EventEmitter<AuthStateEvent>
     ) {}
 
-    abstract login(opts: any): Promise<GetSsoTokenResult | GetStsCredentialResult | undefined>
-    abstract reauthenticate(): Promise<GetSsoTokenResult | GetStsCredentialResult | undefined>
+    abstract login(opts: any): Promise<GetSsoTokenResult | GetIamCredentialResult | undefined>
+    abstract reauthenticate(): Promise<GetSsoTokenResult | GetIamCredentialResult | undefined>
     abstract logout(): void
     abstract restore(): void
     abstract getToken(): Promise<{ token: string; updateCredentialsParams: UpdateCredentialsParams }>
@@ -280,7 +282,6 @@ export abstract class BaseLogin {
     async getProfile(): Promise<{
         profile: Profile | undefined
         ssoSession: SsoSession | undefined
-        iamSession: IamSession | undefined
     }> {
         return await this.lspAuth.getProfile(this.profileName)
     }
@@ -304,6 +305,14 @@ export abstract class BaseLogin {
         if (oldState !== newState) {
             this.eventEmitter.fire({ id: this.profileName, state: this.connectionState })
         }
+    }
+
+    /**
+     * Decrypts an encrypted string, removes its quotes, and returns the resulting string
+     */
+    protected async decrypt(encrypted: string): Promise<string> {
+        const decrypted = await jose.compactDecrypt(encrypted, this.lspAuth.encryptionKey)
+        return decrypted.plaintext.toString().replaceAll('"', '')
     }
 }
 
@@ -374,9 +383,9 @@ export class SsoLogin extends BaseLogin {
      */
     async getToken() {
         const response = await this._getSsoToken(false)
-        const decryptedKey = await jose.compactDecrypt(response.ssoToken.accessToken, this.lspAuth.encryptionKey)
+        const accessToken = await this.decrypt(response.ssoToken.accessToken)
         return {
-            token: decryptedKey.plaintext.toString().replaceAll('"', ''),
+            token: accessToken,
             updateCredentialsParams: response.updateCredentialsParams,
         }
     }
@@ -452,31 +461,31 @@ export class SsoLogin extends BaseLogin {
  */
 export class IamLogin extends BaseLogin {
     // Cached information from the identity server for easy reference
-    private stsCredentialId: string | undefined
+    // private iamCredentialId: string | undefined
 
     constructor(profileName: string, lspAuth: LanguageClientAuth, eventEmitter: vscode.EventEmitter<AuthStateEvent>) {
         super(profileName, lspAuth, eventEmitter)
-        lspAuth.registerStsCredentialChangedHandler((params: StsCredentialChangedParams) =>
-            this.stsCredentialChangedHandler(params)
-        )
+        // lspAuth.registerStsCredentialChangedHandler((params: StsCredentialChangedParams) =>
+        //     this.stsCredentialChangedHandler(params)
+        // )
     }
 
     async login(opts: { accessKey: string; secretKey: string }) {
         await this.updateProfile(opts)
-        return this._getStsCredential(true)
+        return this._getIamCredential(true)
     }
 
     async reauthenticate() {
         if (this.connectionState === 'notConnected') {
             throw new ToolkitError('Cannot reauthenticate when not connected.')
         }
-        return this._getStsCredential(true)
+        return this._getIamCredential(true)
     }
 
     async logout() {
-        if (this.stsCredentialId) {
-            await this.lspAuth.invalidateStsCredential(this.stsCredentialId)
-        }
+        // if (this.stsCredentialId) {
+        //     await this.lspAuth.invalidateStsCredential(this.iamCredentialId)
+        // }
         this.updateConnectionState('notConnected')
         this._data = undefined
         // TODO: DeleteProfile api in Identity Service (this doesn't exist yet)
@@ -494,16 +503,16 @@ export class IamLogin extends BaseLogin {
      * Restore the connection state and connection details to memory, if they exist.
      */
     async restore() {
-        const sessionData = await this.getProfile()
-        const credentials = sessionData?.iamSession?.credentials
-        if (credentials?.accessKeyId && credentials?.secretAccessKey) {
-            this._data = {
-                accessKey: credentials.accessKeyId,
-                secretKey: credentials.secretAccessKey,
-            }
-        }
+        // const sessionData = await this.getProfile()
+        // const credentials = sessionData?.iamSession?.credentials
+        // if (credentials?.accessKeyId && credentials?.secretAccessKey) {
+        //     this._data = {
+        //         accessKey: credentials.accessKeyId,
+        //         secretKey: credentials.secretAccessKey,
+        //     }
+        // }
         try {
-            await this._getStsCredential(false)
+            await this._getIamCredential(false)
         } catch (err) {
             getLogger().error('Restoring connection failed: %s', err)
         }
@@ -515,10 +524,18 @@ export class IamLogin extends BaseLogin {
      */
     async getToken() {
         // TODO: fix STS credential decryption
-        const response = await this._getStsCredential(false)
-        const decryptedKey = await jose.compactDecrypt(response.stsCredential.id, this.lspAuth.encryptionKey)
+        const response = await this._getIamCredential(false)
+        const accessKey = await this.decrypt(response.credentials.accessKeyId)
+        // const secretKey = await this.decrypt(response.credentials.secretAccessKey)
+        // let sessionToken: string | undefined
+        // if (response.credentials.sessionToken) {
+        //     sessionToken = await this.decrypt(response.credentials.sessionToken)
+        // }
         return {
-            token: decryptedKey.plaintext.toString().replaceAll('"', ''),
+            // accessKey: accessKey,
+            // secretKey: secretKey,
+            // sessionToken: sessionToken,
+            token: accessKey,
             updateCredentialsParams: response.updateCredentialsParams,
         }
     }
@@ -527,12 +544,12 @@ export class IamLogin extends BaseLogin {
      * Returns the response from `getSsoToken` LSP API and sets the connection state based on the errors/result
      * of the call.
      */
-    private async _getStsCredential(login: boolean) {
-        let response: GetStsCredentialResult
+    private async _getIamCredential(login: boolean) {
+        let response: GetIamCredentialResult
         this.cancellationToken = new CancellationTokenSource()
 
         try {
-            response = await this.lspAuth.getStsCredential(login, this.cancellationToken.token)
+            response = await this.lspAuth.getIamCredential(login, this.cancellationToken.token)
         } catch (err: any) {
             switch (err.data?.awsErrorCode) {
                 case AwsErrorCodes.E_CANCELLED:
@@ -559,19 +576,19 @@ export class IamLogin extends BaseLogin {
             this.cancellationToken = undefined
         }
 
-        this.stsCredentialId = response.stsCredential.id
+        // this.iamCredentialId = response.id
         this.updateConnectionState('connected')
         return response
     }
 
-    private stsCredentialChangedHandler(params: StsCredentialChangedParams) {
-        if (params.stsCredentialId === this.stsCredentialId) {
-            if (params.kind === CredentialChangedKind.Expired) {
-                this.updateConnectionState('expired')
-                return
-            } else if (params.kind === CredentialChangedKind.Refreshed) {
-                this.eventEmitter.fire({ id: this.profileName, state: 'refreshed' })
-            }
-        }
-    }
+    // private stsCredentialChangedHandler(params: StsCredentialChangedParams) {
+    //     if (params.stsCredentialId === this.iamCredentialId) {
+    //         if (params.kind === CredentialChangedKind.Expired) {
+    //             this.updateConnectionState('expired')
+    //             return
+    //         } else if (params.kind === CredentialChangedKind.Refreshed) {
+    //             this.eventEmitter.fire({ id: this.profileName, state: 'refreshed' })
+    //         }
+    //     }
+    // }
 }

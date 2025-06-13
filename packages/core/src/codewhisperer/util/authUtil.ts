@@ -42,7 +42,7 @@ import { once } from '../../shared/utilities/functionUtils'
 import {
     CancellationTokenSource,
     GetSsoTokenResult,
-    GetStsCredentialResult,
+    GetIamCredentialResult,
     SsoTokenSourceKind,
 } from '@aws/language-server-runtimes/server-interface'
 
@@ -158,14 +158,14 @@ export class AuthUtil implements IAuthProvider {
     }
 
     // Log into the desired session type using the authentication parameters
-    async login(accessKey: string, secretKey: string, loginType: 'iam'): Promise<GetStsCredentialResult | undefined>
+    async login(accessKey: string, secretKey: string, loginType: 'iam'): Promise<GetIamCredentialResult | undefined>
     async login(startUrl: string, region: string, loginType: 'sso'): Promise<GetSsoTokenResult | undefined>
     async login(
         first: string,
         second: string,
         loginType: 'iam' | 'sso'
-    ): Promise<GetSsoTokenResult | GetStsCredentialResult | undefined> {
-        let response: GetSsoTokenResult | GetStsCredentialResult | undefined
+    ): Promise<GetSsoTokenResult | GetIamCredentialResult | undefined> {
+        let response: GetSsoTokenResult | GetIamCredentialResult | undefined
 
         // Start session if the current session type does not match the desired type
         if (loginType === 'sso' && !this.isSsoSession()) {
