@@ -121,11 +121,15 @@ export class LanguageClientAuth {
         )
     }
 
-    getIamCredential(login: boolean = false, cancellationToken?: CancellationToken): Promise<GetIamCredentialResult> {
+    getIamCredential(
+        profileName: string,
+        login: boolean = false,
+        cancellationToken?: CancellationToken
+    ): Promise<GetIamCredentialResult> {
         return this.client.sendRequest(
             getIamCredentialRequestType.method,
             {
-                clientName: this.clientName,
+                profileName: profileName,
                 options: {
                     loginOnInvalidToken: login,
                 },
@@ -179,7 +183,7 @@ export class LanguageClientAuth {
             ssoSession: {
                 name: profileName,
                 settings: undefined,
-            }
+            },
         } satisfies UpdateProfileParams)
     }
 
@@ -261,7 +265,6 @@ export abstract class BaseLogin {
     abstract reauthenticate(): Promise<GetSsoTokenResult | GetIamCredentialResult | undefined>
     abstract logout(): void
     abstract restore(): void
-    abstract getToken(): Promise<{ token: string; updateCredentialsParams: UpdateCredentialsParams }>
 
     get data() {
         return this._data
@@ -503,14 +506,14 @@ export class IamLogin extends BaseLogin {
      * Restore the connection state and connection details to memory, if they exist.
      */
     async restore() {
-        // const sessionData = await this.getProfile()
-        // const credentials = sessionData?.iamSession?.credentials
-        // if (credentials?.accessKeyId && credentials?.secretAccessKey) {
-        //     this._data = {
-        //         accessKey: credentials.accessKeyId,
-        //         secretKey: credentials.secretAccessKey,
-        //     }
-        // }
+        const sessionData = await this.getProfile()
+        const credentials = sessionData?.profile?.settings
+        if (credentials?.aws_access_key_id && credentials?.aws_secret_access_key) {
+            this._data = {
+                accessKey: credentials.aws_access_key_id,
+                secretKey: credentials.aws_secret_access_key,
+            }
+        }
         try {
             await this._getIamCredential(false)
         } catch (err) {
@@ -519,23 +522,21 @@ export class IamLogin extends BaseLogin {
     }
 
     /**
-     * Returns both the decrypted access token and the payload to send to the `updateCredentials` LSP API
-     * with encrypted token
+     * Returns both the decrypted IAM credential and the payload to send to the `updateCredentials` LSP API
+     * with encrypted credential
      */
-    async getToken() {
-        // TODO: fix STS credential decryption
+    async getCredentials() {
         const response = await this._getIamCredential(false)
         const accessKey = await this.decrypt(response.credentials.accessKeyId)
-        // const secretKey = await this.decrypt(response.credentials.secretAccessKey)
-        // let sessionToken: string | undefined
-        // if (response.credentials.sessionToken) {
-        //     sessionToken = await this.decrypt(response.credentials.sessionToken)
-        // }
+        const secretKey = await this.decrypt(response.credentials.secretAccessKey)
+        let sessionToken: string | undefined
+        if (response.credentials.sessionToken) {
+            sessionToken = await this.decrypt(response.credentials.sessionToken)
+        }
         return {
-            // accessKey: accessKey,
-            // secretKey: secretKey,
-            // sessionToken: sessionToken,
-            token: accessKey,
+            accessKey: accessKey,
+            secretKey: secretKey,
+            sessionToken: sessionToken,
             updateCredentialsParams: response.updateCredentialsParams,
         }
     }
@@ -549,25 +550,16 @@ export class IamLogin extends BaseLogin {
         this.cancellationToken = new CancellationTokenSource()
 
         try {
-            response = await this.lspAuth.getIamCredential(login, this.cancellationToken.token)
+            response = await this.lspAuth.getIamCredential(this.profileName, login, this.cancellationToken.token)
         } catch (err: any) {
             switch (err.data?.awsErrorCode) {
                 case AwsErrorCodes.E_CANCELLED:
                 case AwsErrorCodes.E_SSO_SESSION_NOT_FOUND:
                 case AwsErrorCodes.E_PROFILE_NOT_FOUND:
-                case AwsErrorCodes.E_INVALID_SSO_TOKEN:
                     this.updateConnectionState('notConnected')
                     break
-                case AwsErrorCodes.E_CANNOT_REFRESH_SSO_TOKEN:
-                    this.updateConnectionState('expired')
-                    break
-                // TODO: implement when identity server emits E_NETWORK_ERROR, E_FILESYSTEM_ERROR
-                // case AwsErrorCodes.E_NETWORK_ERROR:
-                // case AwsErrorCodes.E_FILESYSTEM_ERROR:
-                //     // do stuff, probably nothing at all
-                //     break
                 default:
-                    getLogger().error('SsoLogin: unknown error when requesting token: %s', err)
+                    getLogger().error('IamLogin: unknown error when requesting token: %s', err)
                     break
             }
             throw err

@@ -201,7 +201,7 @@ export class AuthUtil implements IAuthProvider {
 
     async getToken() {
         if (this.isSsoSession()) {
-            return (await this.session!.getToken()).token
+            return (await (this.session as SsoLogin).getToken()).token
         } else {
             throw new ToolkitError('Cannot get token for non-SSO session.')
         }
@@ -336,7 +336,9 @@ export class AuthUtil implements IAuthProvider {
 
     private async stateChangeHandler(e: AuthStateEvent) {
         if (e.state === 'refreshed') {
-            const params = this.isSsoSession() ? (await this.session!.getToken()).updateCredentialsParams : undefined
+            const params = this.isSsoSession()
+                ? (await (this.session as SsoLogin).getToken()).updateCredentialsParams
+                : undefined
             await this.lspAuth.updateBearerToken(params!)
             return
         } else {
@@ -354,7 +356,7 @@ export class AuthUtil implements IAuthProvider {
             }
         }
         if (state === 'connected') {
-            const bearerTokenParams = (await this.session!.getToken()).updateCredentialsParams
+            const bearerTokenParams = (await (this.session as SsoLogin).getToken()).updateCredentialsParams
             await this.lspAuth.updateBearerToken(bearerTokenParams)
 
             if (this.isIdcConnection()) {
