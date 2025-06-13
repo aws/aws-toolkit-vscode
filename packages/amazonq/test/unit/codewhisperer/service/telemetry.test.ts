@@ -19,9 +19,7 @@ import {
     DefaultCodeWhispererClient,
     ListRecommendationsResponse,
     Recommendation,
-    invokeRecommendation,
     ConfigurationEntry,
-    RecommendationHandler,
     session,
     vsCodeCursorUpdateDelay,
     AuthUtil,
@@ -113,7 +111,6 @@ describe.skip('CodeWhisperer telemetry', async function () {
     })
 
     async function resetStates() {
-        await RecommendationHandler.instance.clearInlineCompletionStates()
         await resetCodeWhispererGlobalVariables()
     }
 
@@ -424,7 +421,6 @@ describe.skip('CodeWhisperer telemetry', async function () {
             assert.strictEqual(session.sessionId, 'session_id_1')
             assert.deepStrictEqual(session.requestIdList, ['request_id_1', 'request_id_1', 'request_id_1_2'])
 
-            await RecommendationHandler.instance.onEditorChange()
             assertSessionClean()
             await backspace(editor) // todo: without this, the following manual trigger will not be displayed in the test, investigate and fix it
 
@@ -500,7 +496,6 @@ describe.skip('CodeWhisperer telemetry', async function () {
             await manualTrigger(editor, client, config)
             await assertTextEditorContains('')
 
-            await RecommendationHandler.instance.onFocusChange()
             assertTelemetry('codewhisperer_userTriggerDecision', [
                 session1UserTriggerEvent({ codewhispererSuggestionState: 'Reject' }),
             ])
@@ -513,7 +508,6 @@ async function manualTrigger(
     client: DefaultCodeWhispererClient,
     config: ConfigurationEntry
 ) {
-    await invokeRecommendation(editor, client, config)
     await waitUntilSuggestionSeen()
 }
 

@@ -145,7 +145,7 @@ export const showReferenceLog = Commands.declare(
         if (_ !== placeholder) {
             source = 'ellipsesMenu'
         }
-        await vscode.commands.executeCommand('workbench.view.extension.aws-codewhisperer-reference-log')
+        await vscode.commands.executeCommand(`${ReferenceLogViewProvider.viewType}.focus`)
     }
 )
 

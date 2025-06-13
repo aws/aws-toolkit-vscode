@@ -34,6 +34,10 @@ interface VsCodeState {
      */
     isCodeWhispererEditing: boolean
     /**
+     * Keeps track of whether or not recommendations are currently running
+     */
+    isRecommendationsActive: boolean
+    /**
      * Timestamp of previous user edit
      */
     lastUserModificationTime: number
@@ -44,6 +48,9 @@ interface VsCodeState {
 export const vsCodeState: VsCodeState = {
     isIntelliSenseActive: false,
     isCodeWhispererEditing: false,
+    // hack to globally keep track of whether or not recommendations are currently running. This allows us to know
+    // when recommendations have ran during e2e tests
+    isRecommendationsActive: false,
     lastUserModificationTime: 0,
     isFreeTierLimitReached: false,
 }
