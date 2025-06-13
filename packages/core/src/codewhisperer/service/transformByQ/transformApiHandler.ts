@@ -595,9 +595,11 @@ export function getJobStatisticsHtml(jobStatistics: any) {
     htmlString += `<div style="flex: 1; margin-left: 20px; border: 1px solid #424750; border-radius: 8px; padding: 10px;">`
     // eslint-disable-next-line unicorn/no-array-for-each
     jobStatistics.forEach((stat: { name: string; value: string }) => {
-        htmlString += `<p style="margin-bottom: 4px"><img src="${getTransformationIcon(
-            stat.name
-        )}" style="vertical-align: middle;"> ${getFormattedString(stat.name)}: ${stat.value}</p>`
+        if (stat.name === 'linesOfCode') {
+            htmlString += `<p style="margin-bottom: 4px"><img src="${getTransformationIcon(
+                stat.name
+            )}" style="vertical-align: middle;"> ${getFormattedString(stat.name)}: ${stat.value}</p>`
+        }
     })
     htmlString += `</div>`
     return htmlString
@@ -647,8 +649,6 @@ export async function getTransformationPlan(jobId: string, profile: RegionProfil
             plan += `</div><br>`
         }
         plan += `</div><br>`
-        plan += `<p style="font-size: 18px; margin-bottom: 4px;"><b>Appendix</b><br><a href="#top" style="float: right; font-size: 14px;">Scroll to top <img src="${arrowIcon}" style="vertical-align: middle;"></a></p><br>`
-        plan = addTableMarkdown(plan, '-1', tableMapping) // ID of '-1' reserved for appendix table; only 1 table there
         return plan
     } catch (e: any) {
         const errorMessage = (e as Error).message
