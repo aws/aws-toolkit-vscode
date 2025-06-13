@@ -28,6 +28,7 @@ import {
     zipCode,
     getTableMapping,
     getFilesRecursively,
+    getJobStatisticsHtml,
 } from '../../../codewhisperer/service/transformByQ/transformApiHandler'
 import {
     validateOpenProjects,
@@ -310,6 +311,31 @@ dependencyManagement:
             'Content-Type': 'application/zip',
         }
         assert.deepStrictEqual(actual, expected)
+    })
+
+    it('WHEN showing plan statistics THEN correct labels appear', () => {
+        const mockJobStatistics = [
+            {
+                name: 'linesOfCode',
+                value: '1000',
+            },
+            {
+                name: 'plannedDependencyChanges',
+                value: '5',
+            },
+            {
+                name: 'plannedDeprecatedApiChanges',
+                value: '10',
+            },
+            {
+                name: 'plannedFileChanges',
+                value: '7',
+            },
+        ]
+        const result = getJobStatisticsHtml(mockJobStatistics)
+        assert.strictEqual(result.includes('Lines of code in your application'), true)
+        assert.strictEqual(result.includes('to be replaced'), false)
+        assert.strictEqual(result.includes('to be changed'), false)
     })
 
     it(`WHEN transforming a project with a Windows Maven executable THEN mavenName set correctly`, async function () {
