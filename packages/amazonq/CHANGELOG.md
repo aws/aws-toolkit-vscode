@@ -1,3 +1,7 @@
+## 1.75.0 2025-06-13
+
+- Miscellaneous non-user-facing changes
+
 ## 1.74.0 2025-06-12
 
 - Miscellaneous non-user-facing changes
