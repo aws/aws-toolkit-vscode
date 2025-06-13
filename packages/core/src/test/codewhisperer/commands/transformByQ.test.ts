@@ -317,19 +317,19 @@ dependencyManagement:
         const mockJobStatistics = [
             {
                 name: 'linesOfCode',
-                value: '1000',
+                value: '1234',
             },
             {
                 name: 'plannedDependencyChanges',
-                value: '5',
+                value: '0',
             },
             {
                 name: 'plannedDeprecatedApiChanges',
-                value: '10',
+                value: '0',
             },
             {
                 name: 'plannedFileChanges',
-                value: '7',
+                value: '0',
             },
         ]
         const result = getJobStatisticsHtml(mockJobStatistics)
