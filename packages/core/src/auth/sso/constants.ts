@@ -10,6 +10,7 @@
 
 export const builderIdStartUrl = 'https://view.awsapps.com/start'
 export const internalStartUrl = 'https://amzn.awsapps.com/start'
+export const builderIdRegion = 'us-east-1'
 
 /**
  * Doc: https://docs.aws.amazon.com/singlesignon/latest/userguide/howtochangeURL.html

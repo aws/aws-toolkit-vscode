@@ -255,6 +255,10 @@
                             "type": "boolean",
                             "default": false
                         },
+                        "amazonqLSPInlineChat": {
+                            "type": "boolean",
+                            "default": false
+                        },
                         "amazonqChatLSP": {
                             "type": "boolean",
                             "default": true

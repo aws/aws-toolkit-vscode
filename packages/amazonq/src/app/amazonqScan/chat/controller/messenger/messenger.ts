@@ -10,7 +10,6 @@
 
 import { AuthFollowUpType, AuthMessageDataMap } from 'aws-core-vscode/amazonq'
 import {
-    FeatureAuthState,
     SecurityScanError,
     CodeWhispererConstants,
     SecurityScanStep,
@@ -34,6 +33,7 @@ import {
 import { i18n } from 'aws-core-vscode/shared'
 import { ScanAction, scanProgressMessage } from '../../../models/constants'
 import path from 'path'
+import { auth2 } from 'aws-core-vscode/auth'
 
 export type UnrecoverableErrorType = 'no-project-found' | 'no-open-file-found' | 'invalid-file-type'
 
@@ -78,17 +78,13 @@ export class Messenger {
         this.dispatcher.sendUpdatePromptProgress(new UpdatePromptProgressMessage(tabID, progressField))
     }
 
-    public async sendAuthNeededExceptionMessage(credentialState: FeatureAuthState, tabID: string) {
+    public async sendAuthNeededExceptionMessage(credentialState: auth2.AuthState, tabID: string) {
         let authType: AuthFollowUpType = 'full-auth'
         let message = AuthMessageDataMap[authType].message
 
-        switch (credentialState.amazonQ) {
-            case 'disconnected':
+        switch (credentialState) {
+            case 'notConnected':
                 authType = 'full-auth'
-                message = AuthMessageDataMap[authType].message
-                break
-            case 'unsupported':
-                authType = 'use-supported-auth'
                 message = AuthMessageDataMap[authType].message
                 break
             case 'expired':

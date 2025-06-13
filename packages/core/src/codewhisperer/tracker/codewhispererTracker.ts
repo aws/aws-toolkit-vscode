@@ -111,7 +111,7 @@ export class CodeWhispererTracker {
                     cwsprChatConversationId: suggestion.conversationID,
                     cwsprChatMessageId: suggestion.messageID,
                     cwsprChatModificationPercentage: percentage ? percentage : 0,
-                    credentialStartUrl: AuthUtil.instance.startUrl,
+                    credentialStartUrl: AuthUtil.instance.connection?.startUrl,
                 }
 
                 telemetry.amazonq_modifyCode.emit(event)
@@ -138,7 +138,7 @@ export class CodeWhispererTracker {
                     codewhispererModificationPercentage: percentage ? percentage : 0,
                     codewhispererCompletionType: suggestion.completionType,
                     codewhispererLanguage: suggestion.language,
-                    credentialStartUrl: AuthUtil.instance.startUrl,
+                    credentialStartUrl: AuthUtil.instance.connection?.startUrl,
                     codewhispererCharactersAccepted: suggestion.originalString.length,
                     codewhispererCharactersModified: 0, // TODO: currently we don't have an accurate number for this field with existing implementation
                 })

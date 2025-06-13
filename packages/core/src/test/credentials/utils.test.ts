@@ -67,7 +67,6 @@ type SsoTestCase = { kind: SsoKind; connections: Connection[]; expected: boolean
 type BuilderIdTestCase = { kind: BuilderIdKind; connections: Connection[]; expected: boolean }
 
 describe('connection exists funcs', function () {
-    const cwIdcConnection: SsoConnection = { ...ssoConnection, scopes: amazonQScopes, label: 'codeWhispererSso' }
     const cwBuilderIdConnection: SsoConnection = {
         ...builderIdConnection,
         scopes: amazonQScopes,
@@ -81,7 +80,6 @@ describe('connection exists funcs', function () {
     const ssoConnections: Connection[] = [
         ssoConnection,
         builderIdConnection,
-        cwIdcConnection,
         cwBuilderIdConnection,
         ccBuilderIdConnection,
     ]
@@ -96,15 +94,13 @@ describe('connection exists funcs', function () {
         ].map((c) => {
             return { ...c, kind: 'any' }
         })
-        const cwIdcCases: SsoTestCase[] = [
-            { connections: [cwIdcConnection], expected: true },
-            { connections: allConnections, expected: true },
+        const ccIdcCases: SsoTestCase[] = [
             { connections: [], expected: false },
-            { connections: allConnections.filter((c) => c !== cwIdcConnection), expected: false },
+            { connections: allConnections, expected: false },
         ].map((c) => {
-            return { ...c, kind: 'codewhisperer' }
+            return { ...c, kind: 'codecatalyst' }
         })
-        const allCases = [...anyCases, ...cwIdcCases]
+        const allCases = [...anyCases, ...ccIdcCases]
 
         for (const args of allCases) {
             it(`ssoExists() returns '${args.expected}' when kind '${args.kind}' given [${args.connections
@@ -116,15 +112,6 @@ describe('connection exists funcs', function () {
     })
 
     describe('builderIdExists()', function () {
-        const cwBuilderIdCases: BuilderIdTestCase[] = [
-            { connections: [cwBuilderIdConnection], expected: true },
-            { connections: allConnections, expected: true },
-            { connections: [], expected: false },
-            { connections: allConnections.filter((c) => c !== cwBuilderIdConnection), expected: false },
-        ].map((c) => {
-            return { ...c, kind: 'codewhisperer' }
-        })
-
         const ccBuilderIdCases: BuilderIdTestCase[] = [
             { connections: [ccBuilderIdConnection], expected: true },
             { connections: allConnections, expected: true },
@@ -134,9 +121,7 @@ describe('connection exists funcs', function () {
             return { ...c, kind: 'codecatalyst' }
         })
 
-        const allCases = [...cwBuilderIdCases, ...ccBuilderIdCases]
-
-        for (const args of allCases) {
+        for (const args of ccBuilderIdCases) {
             it(`builderIdExists() returns '${args.expected}' when kind '${args.kind}' given [${args.connections
                 .map((c) => c.label)
                 .join(', ')}]`, async function () {

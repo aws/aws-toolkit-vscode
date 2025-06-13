@@ -8,6 +8,7 @@ import { GenerateAssistantResponseCommandOutput, GenerateAssistantResponseReques
 import { AuthUtil } from 'aws-core-vscode/codewhisperer'
 import { ChatSession } from 'aws-core-vscode/codewhispererChat'
 import { api } from 'aws-core-vscode/amazonq'
+import { getLogger } from 'aws-core-vscode/shared'
 
 export default {
     chatApi: {
@@ -26,8 +27,25 @@ export default {
                 await AuthUtil.instance.showReauthenticatePrompt()
             }
         },
+        /**
+         * @deprecated use getAuthState() instead
+         *
+         * Legacy function for callers who expect auth state to be granular amongst Q features.
+         * Auth state is consistent between features, so getAuthState() can be consumed safely for all features.
+         *
+         */
         async getChatAuthState() {
-            return AuthUtil.instance.getChatAuthState()
+            getLogger().warn('Warning: getChatAuthState() is deprecated. Use getAuthState() instead.')
+            const state = AuthUtil.instance.getAuthState()
+            const convertedState = state === 'notConnected' ? 'disconnected' : state
+            return {
+                codewhispererCore: convertedState,
+                codewhispererChat: convertedState,
+                amazonQ: convertedState,
+            }
+        },
+        getAuthState() {
+            return AuthUtil.instance.getAuthState()
         },
     },
 } satisfies api

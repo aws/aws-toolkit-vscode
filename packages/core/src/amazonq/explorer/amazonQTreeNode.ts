@@ -5,9 +5,9 @@
 
 import * as vscode from 'vscode'
 import { ResourceTreeDataProvider, TreeNode } from '../../shared/treeview/resourceTreeDataProvider'
-import { AuthState } from '../../codewhisperer/util/authUtil'
 import { createLearnMoreNode, createInstallQNode, createDismissNode } from './amazonQChildrenNodes'
 import { Commands } from '../../shared/vscode/commands2'
+import { auth2 } from 'aws-core-vscode/auth'
 
 export class AmazonQNode implements TreeNode {
     public readonly id = 'amazonq'
@@ -19,7 +19,7 @@ export class AmazonQNode implements TreeNode {
     private readonly onDidChangeVisibilityEmitter = new vscode.EventEmitter<void>()
     public readonly onDidChangeVisibility = this.onDidChangeVisibilityEmitter.event
 
-    public static amazonQState: AuthState
+    public static amazonQState: auth2.AuthState
 
     private constructor() {}
 

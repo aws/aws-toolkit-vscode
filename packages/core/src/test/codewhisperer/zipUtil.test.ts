@@ -16,7 +16,6 @@ import { ToolkitError } from '../../shared/errors'
 import { fs } from '../../shared/fs/fs'
 import { tempDirPath } from '../../shared/filesystemUtilities'
 import { CodeWhispererConstants } from '../../codewhisperer/indexNode'
-import { LspClient } from '../../amazonq/lsp/lspClient'
 
 describe('zipUtil', function () {
     const workspaceFolder = getTestWorkspaceFolder()
@@ -178,24 +177,6 @@ describe('zipUtil', function () {
             assert.strictEqual(result.lines, 150)
             assert.strictEqual(result.language, 'java')
             assert.strictEqual(result.scannedFiles.size, 4)
-        })
-
-        it('Should handle file system errors during directory creation', async function () {
-            sinon.stub(LspClient, 'instance').get(() => ({
-                getRepoMapJSON: sinon.stub().resolves('{"mock": "data"}'),
-            }))
-            sinon.stub(fs, 'mkdir').rejects(new Error('Directory creation failed'))
-
-            await assert.rejects(() => zipUtil.generateZipTestGen(appRoot, false), /Directory creation failed/)
-        })
-
-        it('Should handle zip project errors', async function () {
-            sinon.stub(LspClient, 'instance').get(() => ({
-                getRepoMapJSON: sinon.stub().resolves('{"mock": "data"}'),
-            }))
-            sinon.stub(zipUtil, 'zipProject' as keyof ZipUtil).rejects(new Error('Zip failed'))
-
-            await assert.rejects(() => zipUtil.generateZipTestGen(appRoot, false), /Zip failed/)
         })
     })
 })

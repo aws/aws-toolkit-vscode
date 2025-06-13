@@ -49,7 +49,7 @@ export function init(appContext: AmazonQAppInitContext) {
     appContext.registerWebViewToAppMessagePublisher(new MessagePublisher<any>(gumbyChatUIInputEventEmitter), 'gumby')
 
     const debouncedEvent = debounce(async () => {
-        const authenticated = (await AuthUtil.instance.getChatAuthState()).amazonQ === 'connected'
+        const authenticated = AuthUtil.instance.getAuthState() === 'connected'
         let authenticatingSessionID = ''
 
         if (authenticated) {
@@ -64,7 +64,7 @@ export function init(appContext: AmazonQAppInitContext) {
         messenger.sendAuthenticationUpdate(authenticated, [authenticatingSessionID])
     }, 500)
 
-    AuthUtil.instance.secondaryAuth.onDidChangeActiveConnection(() => {
+    AuthUtil.instance.onDidChangeConnectionState(() => {
         return debouncedEvent()
     })
     AuthUtil.instance.regionProfileManager.onDidChangeRegionProfile(() => {

@@ -8,7 +8,7 @@ import { LanguageClient } from 'vscode-languageclient'
 import { AuthUtil } from 'aws-core-vscode/codewhisperer'
 import { registerMessageListeners } from '../../../../../src/lsp/chat/messages'
 import { AmazonQChatViewProvider } from '../../../../../src/lsp/chat/webviewProvider'
-import { secondaryAuth, authConnection, AuthFollowUpType } from 'aws-core-vscode/amazonq'
+import { AuthFollowUpType } from 'aws-core-vscode/amazonq'
 import { messages } from 'aws-core-vscode/shared'
 
 describe('registerMessageListeners', () => {
@@ -50,7 +50,7 @@ describe('registerMessageListeners', () => {
 
     describe('AUTH_FOLLOW_UP_CLICKED', () => {
         let mockAuthUtil: AuthUtil
-        let deleteConnectionStub: sinon.SinonStub
+        let logoutStub: sinon.SinonStub
         let reauthenticateStub: sinon.SinonStub
 
         const authFollowUpClickedCommand = 'authFollowUpClicked'
@@ -76,14 +76,12 @@ describe('registerMessageListeners', () => {
         }
 
         beforeEach(() => {
-            deleteConnectionStub = sandbox.stub().resolves()
             reauthenticateStub = sandbox.stub().resolves()
+            logoutStub = sandbox.stub().resolves()
 
             mockAuthUtil = {
                 reauthenticate: reauthenticateStub,
-                secondaryAuth: {
-                    deleteConnection: deleteConnectionStub,
-                } as unknown as secondaryAuth.SecondaryAuth<authConnection.Connection>,
+                logout: logoutStub,
             } as unknown as AuthUtil
 
             sandbox.replaceGetter(AuthUtil, 'instance', () => mockAuthUtil)
@@ -98,7 +96,7 @@ describe('registerMessageListeners', () => {
             })
 
             sinon.assert.calledOnce(reauthenticateStub)
-            sinon.assert.notCalled(deleteConnectionStub)
+            sinon.assert.notCalled(logoutStub)
         })
 
         it('handles full authentication request', async () => {
@@ -110,7 +108,7 @@ describe('registerMessageListeners', () => {
             })
 
             sinon.assert.notCalled(reauthenticateStub)
-            sinon.assert.calledOnce(deleteConnectionStub)
+            sinon.assert.calledOnce(logoutStub)
         })
 
         it('logs error if re-authentication fails', async () => {
@@ -124,7 +122,7 @@ describe('registerMessageListeners', () => {
         it('logs error if full authentication fails', async () => {
             await testFailure({
                 authType: 'full-auth',
-                stubToReject: deleteConnectionStub,
+                stubToReject: logoutStub,
                 errorMessage: 'Failed to authenticate',
             })
         })

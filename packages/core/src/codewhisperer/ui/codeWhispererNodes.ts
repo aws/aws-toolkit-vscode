@@ -28,6 +28,7 @@ import { AuthUtil } from '../util/authUtil'
 import { submitFeedback } from '../../feedback/vue/submitFeedback'
 import { focusAmazonQPanel } from '../../codewhispererChat/commands/registerCommands'
 import { isWeb } from '../../shared/extensionGlobals'
+import { builderIdRegion, builderIdStartUrl } from '../../auth/sso/constants'
 import { getLogger } from '../../shared/logger/logger'
 
 export function createAutoSuggestions(running: boolean): DataQuickPickItem<'autoSuggestions'> {
@@ -191,7 +192,7 @@ export function createManageSubscription(): DataQuickPickItem<'manageSubscriptio
 export function createSignout(): DataQuickPickItem<'signout'> {
     const label = localize('AWS.codewhisperer.signoutNode.label', 'Sign Out')
     const icon = getIcon('vscode-export')
-    const connection = AuthUtil.instance.isBuilderIdInUse() ? 'AWS Builder ID' : 'IAM Identity Center'
+    const connection = AuthUtil.instance.isBuilderIdConnection() ? 'AWS Builder ID' : 'IAM Identity Center'
 
     return {
         data: 'signout',
@@ -270,7 +271,7 @@ export function createSignIn(): DataQuickPickItem<'signIn'> {
     if (isWeb()) {
         // TODO: nkomonen, call a Command instead
         onClick = () => {
-            void AuthUtil.instance.connectToAwsBuilderId()
+            void AuthUtil.instance.login(builderIdStartUrl, builderIdRegion)
         }
     }
 

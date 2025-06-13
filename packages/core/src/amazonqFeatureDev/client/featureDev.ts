@@ -51,7 +51,7 @@ const writeAPIRetryOptions = {
 
 // Create a client for featureDev proxy client based off of aws sdk v2
 export async function createFeatureDevProxyClient(options?: Partial<ServiceOptions>): Promise<FeatureDevProxyClient> {
-    const bearerToken = await AuthUtil.instance.getBearerToken()
+    const bearerToken = await AuthUtil.instance.getToken()
     const cwsprConfig = getCodewhispererConfig()
     return (await globals.sdkClientBuilder.createAwsService(
         Service,

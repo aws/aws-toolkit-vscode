@@ -9,7 +9,7 @@ import * as codewhispererClient from '../../codewhisperer/client/codewhisperer'
 import * as CodeWhispererConstants from '../../codewhisperer/models/constants'
 import * as path from 'path'
 import * as testutil from '../../test/testUtil'
-import { setValidConnection, skipTestIfNoValidConn } from '../util/connection'
+import { skipTestIfNoValidConn } from '../util/connection'
 import { resetCodeWhispererGlobalVariables } from '../../test/codewhisperer/testUtil'
 import { getTestWorkspaceFolder } from '../../testInteg/integrationTestsUtilities'
 import { closeAllEditors } from '../../test/testUtil'
@@ -23,6 +23,7 @@ import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import fs from '../../shared/fs/fs'
 import { ZipUtil } from '../../codewhisperer/util/zipUtil'
 import { randomUUID } from '../../shared/crypto'
+import { AuthUtil } from '../../codewhisperer'
 
 const filePromptWithSecurityIssues = `from flask import app
 
@@ -53,7 +54,7 @@ describe('CodeWhisperer security scan', async function () {
     const workspaceFolder = getTestWorkspaceFolder()
 
     before(async function () {
-        validConnection = await setValidConnection()
+        validConnection = AuthUtil.instance.isConnected()
     })
 
     beforeEach(function () {

@@ -32,10 +32,9 @@ async function clearCache() {
         return
     }
 
-    // SSO cache persists on disk, this should indirectly delete it
-    const conn = AuthUtil.instance.conn
-    if (conn) {
-        await AuthUtil.instance.auth.deleteConnection(conn)
+    // SSO cache persists on disk, this should log out
+    if (AuthUtil.instance.isConnected()) {
+        await AuthUtil.instance.logout()
     }
 
     await globals.globalState.clear()

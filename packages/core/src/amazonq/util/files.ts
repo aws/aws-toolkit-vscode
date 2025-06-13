@@ -278,7 +278,7 @@ export function registerNewFiles(
             telemetry.toolkit_trackScenario.emit({
                 count: 1,
                 amazonqConversationId: conversationId,
-                credentialStartUrl: AuthUtil.instance.startUrl,
+                credentialStartUrl: AuthUtil.instance.connection?.startUrl,
                 scenario: 'wsOrphanedDocuments',
             })
             getLogger().error(`No workspace folder found for file: ${zipFilePath} and prefix: ${prefix}`)

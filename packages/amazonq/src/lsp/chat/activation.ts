@@ -11,11 +11,19 @@ import { registerLanguageServerEventListener, registerMessageListeners } from '.
 import { Commands, getLogger, globals, undefinedIfEmpty } from 'aws-core-vscode/shared'
 import { activate as registerLegacyChatListeners } from '../../app/chat/activation'
 import { DefaultAmazonQAppInitContext } from 'aws-core-vscode/amazonq'
-import { AuthUtil, getSelectedCustomization } from 'aws-core-vscode/codewhisperer'
+import { AuthUtil, getSelectedCustomization, notifyNewCustomizations } from 'aws-core-vscode/codewhisperer'
 import { pushConfigUpdate } from '../config'
 
 export async function activate(languageClient: LanguageClient, encryptionKey: Buffer, mynahUIPath: string) {
     const disposables = globals.context.subscriptions
+
+    // Make sure we've sent an auth profile to the language server before even initializing the UI
+    await pushConfigUpdate(languageClient, {
+        type: 'profile',
+        profileArn: AuthUtil.instance.regionProfileManager.activeRegionProfile?.arn,
+    })
+
+    await initializeCustomizations()
 
     const provider = new AmazonQChatViewProvider(mynahUIPath)
 
@@ -68,10 +76,7 @@ export async function activate(languageClient: LanguageClient, encryptionKey: Bu
             await provider.refreshWebview()
         }),
         Commands.register('aws.amazonq.updateCustomizations', () => {
-            void pushConfigUpdate(languageClient, {
-                type: 'customization',
-                customization: undefinedIfEmpty(getSelectedCustomization().arn),
-            })
+            pushCustomizationToServer(languageClient)
         }),
         Commands.register('aws.amazonq.manageSubscription', () => {
             focusAmazonQPanel().catch((e) => languageClient.error(`[VSCode Client] focusAmazonQPanel() failed`))
@@ -92,4 +97,35 @@ export async function activate(languageClient: LanguageClient, encryptionKey: Bu
             })
         })
     )
+
+    /**
+     * Initialize customizations on extension startup
+     */
+    async function initializeCustomizations() {
+        /**
+         * Even though this function is called "notify", it has a side effect that first restores the
+         * cached customization. So for {@link getSelectedCustomization()} to work as expected, we must
+         * call {@link notifyNewCustomizations} first.
+         *
+         * TODO: Separate restoring and notifying, or just rename the function to something better
+         */
+        if (AuthUtil.instance.isIdcConnection() && AuthUtil.instance.isConnected()) {
+            await notifyNewCustomizations()
+        }
+
+        /**
+         * HACK: We must explicitly push the customization here since restoring the customization from cache
+         * does not currently trigger a push to server.
+         *
+         * TODO: Always push to server whenever restoring from cache.
+         */
+        pushCustomizationToServer(languageClient)
+    }
+
+    function pushCustomizationToServer(languageClient: LanguageClient) {
+        void pushConfigUpdate(languageClient, {
+            type: 'customization',
+            customization: undefinedIfEmpty(getSelectedCustomization().arn),
+        })
+    }
 }

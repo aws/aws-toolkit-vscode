@@ -9,7 +9,6 @@
  */
 
 import { AuthFollowUpType, AuthMessageDataMap } from '../../../../amazonq/auth/model'
-import { FeatureAuthState } from '../../../../codewhisperer/util/authUtil'
 import {
     AppToWebViewMessageDispatcher,
     AuthNeededException,
@@ -39,6 +38,7 @@ import { keys } from '../../../../shared/utilities/tsUtils'
 import { cancellingProgressField, testGenCompletedField } from '../../../models/constants'
 import { testGenState } from '../../../../codewhisperer/models/model'
 import { TelemetryHelper } from '../../../../codewhisperer/util/telemetryHelper'
+import { AuthState } from '../../../../auth/auth2'
 
 export type UnrecoverableErrorType = 'no-project-found' | 'no-open-file-found' | 'invalid-file-type'
 
@@ -122,17 +122,13 @@ export class Messenger {
         this.dispatcher.sendUpdatePromptProgress(new UpdatePromptProgressMessage(tabID, progressField))
     }
 
-    public async sendAuthNeededExceptionMessage(credentialState: FeatureAuthState, tabID: string) {
+    public async sendAuthNeededExceptionMessage(credentialState: AuthState, tabID: string) {
         let authType: AuthFollowUpType = 'full-auth'
         let message = AuthMessageDataMap[authType].message
 
-        switch (credentialState.amazonQ) {
-            case 'disconnected':
+        switch (credentialState) {
+            case 'notConnected':
                 authType = 'full-auth'
-                message = AuthMessageDataMap[authType].message
-                break
-            case 'unsupported':
-                authType = 'use-supported-auth'
                 message = AuthMessageDataMap[authType].message
                 break
             case 'expired':

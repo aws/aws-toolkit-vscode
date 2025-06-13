@@ -21,22 +21,17 @@ import {
 import { FeatureContext, globals } from '../../shared'
 import { resetCodeWhispererGlobalVariables } from '../codewhisperer/testUtil'
 import { createSsoProfile, createTestAuth } from '../credentials/testUtil'
-import { SsoConnection } from '../../auth'
+import { createTestAuthUtil } from '../testAuthUtil'
 
 const enterpriseSsoStartUrl = 'https://enterprise.awsapps.com/start'
 
 describe('customizationProvider', function () {
-    let auth: ReturnType<typeof createTestAuth>
-    let ssoConn: SsoConnection
     let regionProfileManager: RegionProfileManager
 
     beforeEach(async () => {
-        auth = createTestAuth(globals.globalState)
-        ssoConn = await auth.createInvalidSsoConnection(
-            createSsoProfile({ startUrl: enterpriseSsoStartUrl, scopes: amazonQScopes })
-        )
-
-        regionProfileManager = new RegionProfileManager(() => ssoConn)
+        createTestAuth(globals.globalState)
+        await createTestAuthUtil()
+        regionProfileManager = new RegionProfileManager(AuthUtil.instance)
     })
 
     afterEach(() => {
@@ -66,7 +61,6 @@ describe('customizationProvider', function () {
 
 describe('CodeWhisperer-customizationUtils', function () {
     let auth: ReturnType<typeof createTestAuth>
-    let ssoConn: SsoConnection
     let featureCustomization: FeatureContext
 
     before(async function () {
@@ -75,8 +69,10 @@ describe('CodeWhisperer-customizationUtils', function () {
     })
 
     beforeEach(async function () {
+        await createTestAuthUtil()
+
         auth = createTestAuth(globals.globalState)
-        ssoConn = await auth.createInvalidSsoConnection(
+        await auth.createInvalidSsoConnection(
             createSsoProfile({ startUrl: enterpriseSsoStartUrl, scopes: amazonQScopes })
         )
         featureCustomization = {
@@ -91,7 +87,6 @@ describe('CodeWhisperer-customizationUtils', function () {
         sinon.stub(AuthUtil.instance, 'isConnectionExpired').returns(false)
         sinon.stub(AuthUtil.instance, 'isConnected').returns(true)
         sinon.stub(AuthUtil.instance, 'isCustomizationFeatureEnabled').value(true)
-        sinon.stub(AuthUtil.instance, 'conn').value(ssoConn)
 
         await resetCodeWhispererGlobalVariables()
     })
@@ -101,14 +96,15 @@ describe('CodeWhisperer-customizationUtils', function () {
     })
 
     it('Returns baseCustomization when not SSO', async function () {
-        sinon.stub(AuthUtil.instance, 'isValidEnterpriseSsoInUse').returns(false)
+        sinon.stub(AuthUtil.instance, 'isIdcConnection').returns(false)
+
         const customization = getSelectedCustomization()
 
         assert.strictEqual(customization.name, baseCustomization.name)
     })
 
     it('Returns selectedCustomization when customization manually selected', async function () {
-        sinon.stub(AuthUtil.instance, 'isValidEnterpriseSsoInUse').returns(true)
+        sinon.stub(AuthUtil.instance, 'isIdcConnection').returns(true)
 
         const selectedCustomization: Customization = {
             arn: 'selectedCustomizationArn',
@@ -124,6 +120,8 @@ describe('CodeWhisperer-customizationUtils', function () {
     })
 
     it(`setSelectedCustomization should set to the customization provided if override option is false or not specified`, async function () {
+        sinon.stub(AuthUtil.instance, 'isIdcConnection').returns(true)
+
         await setSelectedCustomization({ arn: 'FOO' }, false)
         assert.strictEqual(getSelectedCustomization().arn, 'FOO')
 
@@ -138,6 +136,8 @@ describe('CodeWhisperer-customizationUtils', function () {
     })
 
     it(`setSelectedCustomization should only set to the customization provided once for override per customization arn if override is true`, async function () {
+        sinon.stub(AuthUtil.instance, 'isIdcConnection').returns(true)
+
         await setSelectedCustomization({ arn: 'OVERRIDE' }, true)
         assert.strictEqual(getSelectedCustomization().arn, 'OVERRIDE')
 

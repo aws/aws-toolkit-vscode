@@ -7,8 +7,13 @@ import vscode from 'vscode'
 import { VSCODE_EXTENSION_ID } from '../shared/extensions'
 import { SendMessageCommandOutput, SendMessageRequest } from '@amzn/amazon-q-developer-streaming-client'
 import { GenerateAssistantResponseCommandOutput, GenerateAssistantResponseRequest } from '@amzn/codewhisperer-streaming'
-import { FeatureAuthState } from '../codewhisperer/util/authUtil'
+import { auth2 } from 'aws-core-vscode/auth'
 import { ToolkitError } from '../shared/errors'
+
+/**
+ * @deprecated, for backwards comaptibility only.
+ */
+type OldAuthState = 'disconnected' | 'expired' | 'connected'
 
 /**
  * This interface is used and exported by the amazon q extension. If you make a change here then
@@ -21,7 +26,15 @@ export interface api {
     }
     authApi: {
         reauthIfNeeded(): Promise<void>
-        getChatAuthState(): Promise<FeatureAuthState>
+        /**
+         * @deprecated, for backwards comaptibility only.
+         */
+        getChatAuthState(): Promise<{
+            codewhispererCore: OldAuthState
+            codewhispererChat: OldAuthState
+            amazonQ: OldAuthState
+        }>
+        getAuthState(): auth2.AuthState
     }
 }
 

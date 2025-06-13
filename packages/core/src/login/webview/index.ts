@@ -5,3 +5,4 @@
 
 export { CommonAuthViewProvider } from './commonAuthViewProvider'
 export { CommonAuthWebview } from './vue/backend'
+export * as backendAmazonQ from './vue/amazonq/backend_amazonq'

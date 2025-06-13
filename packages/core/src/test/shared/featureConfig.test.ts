@@ -10,9 +10,12 @@ import { Features, FeatureConfigProvider, featureDefinitions, FeatureName } from
 import { ListFeatureEvaluationsResponse } from '../../codewhisperer'
 import { createSpyClient } from '../codewhisperer/testUtil'
 import { mockFeatureConfigsData } from '../fake/mockFeatureConfigData'
+import { createTestAuthUtil } from '../testAuthUtil'
 
 describe('FeatureConfigProvider', () => {
     beforeEach(async () => {
+        await createTestAuthUtil()
+
         const clientSpy = await createSpyClient()
         sinon.stub(clientSpy, 'listFeatureEvaluations').returns({
             promise: () =>
