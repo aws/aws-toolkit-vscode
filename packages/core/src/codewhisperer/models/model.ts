@@ -668,16 +668,17 @@ export enum BuildSystem {
     Unknown = 'Unknown',
 }
 
-// TO-DO: include the custom YAML file path here somewhere?
 export class ZipManifest {
     sourcesRoot: string = 'sources/'
     dependenciesRoot: string = 'dependencies/'
     buildLogs: string = 'build-logs.txt'
     version: string = '1.0'
     hilCapabilities: string[] = ['HIL_1pDependency_VersionUpgrade']
-    // TO-DO: add 'CLIENT_SIDE_BUILD' here when releasing
-    transformCapabilities: string[] = ['EXPLAINABILITY_V1', 'SELECTIVE_TRANSFORMATION_V2']
+    transformCapabilities: string[] = ['EXPLAINABILITY_V1', 'SELECTIVE_TRANSFORMATION_V2', 'CLIENT_SIDE_BUILD']
+    // TODO: make sure the below keys don't mess up SQL conversions when present
     noInteractiveMode: boolean = true
+    dependencyUpgradeConfigFile?: string = undefined
+    compilationsJsonFile: string = 'compilations.json'
     customBuildCommand: string = 'clean test'
     requestedConversions?: {
         sqlConversion?: {
@@ -774,8 +775,6 @@ export class TransformByQState {
     private projectCopyFilePath: string = ''
 
     private polledJobStatus: string = ''
-
-    private jobFailureMetadata: string = ''
 
     private payloadFilePath: string = ''
 
@@ -914,10 +913,6 @@ export class TransformByQState {
 
     public getProjectCopyFilePath() {
         return this.projectCopyFilePath
-    }
-
-    public getJobFailureMetadata() {
-        return this.jobFailureMetadata
     }
 
     public getPayloadFilePath() {
@@ -1084,10 +1079,6 @@ export class TransformByQState {
         this.projectCopyFilePath = filePath
     }
 
-    public setJobFailureMetadata(data: string) {
-        this.jobFailureMetadata = data
-    }
-
     public setPayloadFilePath(payloadFilePath: string) {
         this.payloadFilePath = payloadFilePath
     }
@@ -1148,7 +1139,6 @@ export class TransformByQState {
         this.setToNotStarted()
         this.jobFailureErrorNotification = undefined
         this.jobFailureErrorChatMessage = undefined
-        this.jobFailureMetadata = ''
         this.payloadFilePath = ''
         this.metadataPathSQL = ''
         this.customVersionPath = ''
