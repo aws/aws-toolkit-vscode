@@ -262,8 +262,6 @@ export class DiffAnimationHandler implements vscode.Disposable {
 
         // Open/create the file to make it visible
         try {
-            const uri = vscode.Uri.file(filePath)
-
             if (!fileExists) {
                 // Create directory if needed
                 const directory = path.dirname(filePath)
@@ -275,15 +273,10 @@ export class DiffAnimationHandler implements vscode.Disposable {
                     `[DiffAnimationHandler] 📁 Directory prepared, file will be created by write operation`
                 )
             } else {
-                // Open the document (but keep it in background)
-                const document = await vscode.workspace.openTextDocument(uri)
-                await vscode.window.showTextDocument(document, {
-                    preview: false,
-                    preserveFocus: true, // Keep focus on current editor
-                    viewColumn: vscode.ViewColumn.One, // Open in first column
-                })
-            }
+                // DON'T open the document visually - we'll use diff view instead
 
+                getLogger().info(`[DiffAnimationHandler] 📄 File exists and is accessible: ${filePath}`)
+            }
             getLogger().info(`[DiffAnimationHandler] ✅ File prepared: ${filePath}`)
         } catch (error) {
             getLogger().error(`[DiffAnimationHandler] ❌ Failed to prepare file: ${error}`)
@@ -292,6 +285,9 @@ export class DiffAnimationHandler implements vscode.Disposable {
         }
     }
 
+    /**
+     * Handle file changes - this is where we detect the actual write
+     */
     /**
      * Handle file changes - this is where we detect the actual write
      */
@@ -313,16 +309,21 @@ export class DiffAnimationHandler implements vscode.Disposable {
         await new Promise((resolve) => setTimeout(resolve, 50))
 
         try {
-            // Read the new content
+            // Read the new content that was just written
             const newContentBuffer = await vscode.workspace.fs.readFile(uri)
             const newContent = Buffer.from(newContentBuffer).toString('utf8')
 
             // Check if content actually changed
             if (pendingWrite.originalContent !== newContent) {
                 getLogger().info(
-                    `[DiffAnimationHandler] 🎬 Content changed, checking animation status - ` +
+                    `[DiffAnimationHandler] 🎬 Content changed - ` +
                         `original: ${pendingWrite.originalContent.length} chars, new: ${newContent.length} chars`
                 )
+
+                // Note: We do NOT restore the original content to the file
+                // The webview will show a virtual diff animation independently
+                // This avoids interfering with AI's file operations
+                getLogger().info(`[DiffAnimationHandler] 📝 File has new content, will show virtual diff animation`)
 
                 // If already animating, queue the change
                 if (this.animatingFiles.has(filePath)) {
@@ -340,7 +341,8 @@ export class DiffAnimationHandler implements vscode.Disposable {
                     return
                 }
 
-                // Start animation
+                // Start animation with the captured new content
+                // The controller will apply the new content after animation completes
                 await this.startAnimation(filePath, pendingWrite, newContent)
             } else {
                 getLogger().info(`[DiffAnimationHandler] ℹ️ No content change for: ${filePath}`)
@@ -566,7 +568,10 @@ export class DiffAnimationHandler implements vscode.Disposable {
     /**
      * Show static diff view for a file (when clicked from chat)
      */
-    public async showStaticDiffForFile(filePath: string): Promise<void> {
+    /**
+     * Show static diff view for a file (when clicked from chat)
+     */
+    public async showStaticDiffForFile(filePath: string, originalContent?: string, newContent?: string): Promise<void> {
         getLogger().info(`[DiffAnimationHandler] 👆 File clicked from chat: ${filePath}`)
 
         // Normalize the file path
@@ -576,8 +581,22 @@ export class DiffAnimationHandler implements vscode.Disposable {
             return
         }
 
-        // Show static diff view without animation
-        await this.diffAnimationController.showStaticDiffView(normalizedPath)
+        // Get animation data if it exists
+        const animation = this.diffAnimationController.getAnimationData(normalizedPath)
+
+        // Use provided content or animation data
+        const origContent = originalContent || animation?.originalContent
+        const newContentToUse = newContent || animation?.newContent
+
+        if (origContent !== undefined && newContentToUse !== undefined) {
+            // Show VS Code's built-in diff view
+            await this.diffAnimationController.showVSCodeDiff(normalizedPath, origContent, newContentToUse)
+        } else {
+            // If no content available, just open the file
+            getLogger().warn(`[DiffAnimationHandler] No diff content available, opening file normally`)
+            const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(normalizedPath))
+            await vscode.window.showTextDocument(doc)
+        }
     }
 
     /**

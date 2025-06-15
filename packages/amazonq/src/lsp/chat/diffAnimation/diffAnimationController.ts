@@ -4,186 +4,20 @@
  */
 
 /**
- * DiffAnimationController - Provides Cline-style streaming animations with GitHub diff visualization
+ * DiffAnimationController - Progressive Diff Animation with Smart Scanning
  *
- * Key Optimizations:
- * 1. Region-based animation: Only animates changed lines instead of entire file
- * 2. Smart diff calculation: Uses efficient diff algorithm to find change boundaries
- * 3. Viewport limiting: Caps animation to 100 lines max for performance
- * 4. Context awareness: Includes 3 lines before/after changes for better visibility
- * 5. Dynamic speed: Faster animation for larger changes (20ms vs 30ms per line)
- * 6. Efficient scrolling: Only scrolls when necessary (line not visible)
- *
- * Animation Flow:
- * - Calculate changed region using diffLines
- * - Apply new content immediately
- * - Overlay only the changed region
- * - Animate line-by-line reveal with yellow highlight
- * - Show GitHub-style diff after completion
+ * Key Features:
+ * 1. Progressive rendering - lines appear as they are scanned
+ * 2. Smart region detection - only scans changed areas + context
+ * 3. Yellow scanning line animation like Cline
+ * 4. Auto-scroll with user override detection
+ * 5. GitHub-style diff decorations
  */
 
 import * as vscode from 'vscode'
+import * as path from 'path'
 import { getLogger } from 'aws-core-vscode/shared'
 import { diffLines } from 'diff'
-
-const diffViewUriScheme = 'amazon-q-diff'
-
-// Decoration controller to manage decoration states
-class DecorationController {
-    private decorationType: 'fadedOverlay' | 'activeLine' | 'addition' | 'deletion' | 'deletionMarker'
-    private editor: vscode.TextEditor
-    private ranges: vscode.Range[] = []
-
-    constructor(
-        decorationType: 'fadedOverlay' | 'activeLine' | 'addition' | 'deletion' | 'deletionMarker',
-        editor: vscode.TextEditor
-    ) {
-        this.decorationType = decorationType
-        this.editor = editor
-    }
-
-    getDecoration(): vscode.TextEditorDecorationType {
-        switch (this.decorationType) {
-            case 'fadedOverlay':
-                return fadedOverlayDecorationType
-            case 'activeLine':
-                return activeLineDecorationType
-            case 'addition':
-                return githubAdditionDecorationType
-            case 'deletion':
-                return githubDeletionDecorationType
-            case 'deletionMarker':
-                return deletionMarkerDecorationType
-        }
-    }
-
-    addLines(startIndex: number, numLines: number): void {
-        // Guard against invalid inputs
-        if (startIndex < 0 || numLines <= 0) {
-            return
-        }
-
-        const lastRange = this.ranges[this.ranges.length - 1]
-        if (lastRange && lastRange.end.line === startIndex - 1) {
-            this.ranges[this.ranges.length - 1] = lastRange.with(undefined, lastRange.end.translate(numLines))
-        } else {
-            const endLine = startIndex + numLines - 1
-            this.ranges.push(new vscode.Range(startIndex, 0, endLine, Number.MAX_SAFE_INTEGER))
-        }
-
-        this.editor.setDecorations(this.getDecoration(), this.ranges)
-    }
-
-    clear(): void {
-        this.ranges = []
-        this.editor.setDecorations(this.getDecoration(), this.ranges)
-    }
-
-    updateOverlayAfterLine(line: number, totalLines: number): void {
-        // Remove any existing ranges that start at or after the current line
-        this.ranges = this.ranges.filter((range) => range.end.line < line)
-
-        // Add a new range for all lines after the current line
-        if (line < totalLines - 1) {
-            this.ranges.push(
-                new vscode.Range(
-                    new vscode.Position(line + 1, 0),
-                    new vscode.Position(totalLines - 1, Number.MAX_SAFE_INTEGER)
-                )
-            )
-        }
-
-        // Apply the updated decorations
-        this.editor.setDecorations(this.getDecoration(), this.ranges)
-    }
-
-    setActiveLine(line: number): void {
-        this.ranges = [new vscode.Range(line, 0, line, Number.MAX_SAFE_INTEGER)]
-        this.editor.setDecorations(this.getDecoration(), this.ranges)
-    }
-
-    setRanges(ranges: vscode.Range[]): void {
-        this.ranges = ranges
-        this.editor.setDecorations(this.getDecoration(), this.ranges)
-    }
-}
-
-// Decoration types matching Cline's style
-const fadedOverlayDecorationType = vscode.window.createTextEditorDecorationType({
-    backgroundColor: 'rgba(255, 255, 0, 0.1)',
-    opacity: '0.4',
-    isWholeLine: true,
-})
-
-const activeLineDecorationType = vscode.window.createTextEditorDecorationType({
-    backgroundColor: 'rgba(255, 255, 0, 0.3)',
-    opacity: '1',
-    isWholeLine: true,
-    border: '1px solid rgba(255, 255, 0, 0.5)',
-})
-
-// GitHub-style diff decorations
-const githubAdditionDecorationType = vscode.window.createTextEditorDecorationType({
-    backgroundColor: 'rgba(46, 160, 67, 0.15)',
-    isWholeLine: true,
-    before: {
-        contentText: '+',
-        color: 'rgb(46, 160, 67)',
-        fontWeight: 'bold',
-        width: '20px',
-        margin: '0 10px 0 0',
-    },
-    overviewRulerColor: 'rgba(46, 160, 67, 0.8)',
-    overviewRulerLane: vscode.OverviewRulerLane.Right,
-})
-
-const githubDeletionDecorationType = vscode.window.createTextEditorDecorationType({
-    backgroundColor: 'rgba(248, 81, 73, 0.15)',
-    isWholeLine: true,
-    textDecoration: 'line-through',
-    opacity: '0.7',
-    before: {
-        contentText: '-',
-        color: 'rgb(248, 81, 73)',
-        fontWeight: 'bold',
-        width: '20px',
-        margin: '0 10px 0 0',
-    },
-    overviewRulerColor: 'rgba(248, 81, 73, 0.8)',
-    overviewRulerLane: vscode.OverviewRulerLane.Right,
-})
-
-// Decoration for showing deletion markers
-const deletionMarkerDecorationType = vscode.window.createTextEditorDecorationType({
-    after: {
-        contentText: ' ← line(s) removed',
-        color: 'rgba(248, 81, 73, 0.7)',
-        fontStyle: 'italic',
-        margin: '0 0 0 20px',
-    },
-    overviewRulerColor: 'rgba(248, 81, 73, 0.8)',
-    overviewRulerLane: vscode.OverviewRulerLane.Left,
-})
-
-// Content provider for the left side of diff view
-class DiffContentProvider implements vscode.TextDocumentContentProvider {
-    private content = new Map<string, string>()
-    private _onDidChange = new vscode.EventEmitter<vscode.Uri>()
-    readonly onDidChange = this._onDidChange.event
-
-    setContent(uri: string, content: string): void {
-        this.content.set(uri, content)
-        this._onDidChange.fire(vscode.Uri.parse(uri))
-    }
-
-    provideTextDocumentContent(uri: vscode.Uri): string {
-        return this.content.get(uri.toString()) || ''
-    }
-
-    dispose(): void {
-        this._onDidChange.dispose()
-    }
-}
 
 export interface DiffAnimation {
     uri: vscode.Uri
@@ -191,8 +25,7 @@ export interface DiffAnimation {
     newContent: string
     isShowingStaticDiff?: boolean
     animationCancelled?: boolean
-    diffViewContent?: string // Store the diff view content
-    isFromChatClick?: boolean // Add this to track if opened from chat
+    isFromChatClick?: boolean
 }
 
 export interface PartialUpdateOptions {
@@ -202,26 +35,21 @@ export interface PartialUpdateOptions {
         startChar?: number
         endChar?: number
     }
-    searchContent?: string // The content being searched for
-    isPartialUpdate?: boolean // Whether this is a partial update vs full file
+    searchContent?: string
+    isPartialUpdate?: boolean
+}
+
+interface DiffLine {
+    type: 'unchanged' | 'added' | 'removed'
+    content: string
+    lineNumber: number
+    oldLineNumber?: number
+    newLineNumber?: number
 }
 
 export class DiffAnimationController {
     private activeAnimations = new Map<string, DiffAnimation>()
-    private fadedOverlayControllers = new Map<string, DecorationController>()
-    private activeLineControllers = new Map<string, DecorationController>()
-    private additionControllers = new Map<string, DecorationController>()
-    private deletionControllers = new Map<string, DecorationController>()
-    private deletionMarkerControllers = new Map<string, DecorationController>()
-    private streamedLines = new Map<string, string[]>()
-    private lastFirstVisibleLine = new Map<string, number>()
-    private shouldAutoScroll = new Map<string, boolean>()
-    private scrollListeners = new Map<string, vscode.Disposable>()
-    private animationTimeouts = new Map<string, NodeJS.Timeout[]>()
-    private fileSnapshots = new Map<string, string>() // Store file content before animation
-    private hiddenEditors = new Map<string, vscode.TextEditor>() // Store hidden editors for undo preservation
-
-    // Track file animation history for intelligent diff display
+    private diffWebviews = new Map<string, vscode.WebviewPanel>()
     private fileAnimationHistory = new Map<
         string,
         {
@@ -230,20 +58,19 @@ export class DiffAnimationController {
             isCurrentlyAnimating: boolean
         }
     >()
+    private animationTimeouts = new Map<string, NodeJS.Timeout[]>()
+    private fileSnapshots = new Map<string, string>()
 
-    // Content provider for diff view
-    private contentProvider: DiffContentProvider
-    private providerDisposable: vscode.Disposable
+    // Auto-scroll control
+    private shouldAutoScroll = new Map<string, boolean>()
+    private lastScrollPosition = new Map<string, number>()
 
     constructor() {
-        getLogger().info('[DiffAnimationController] 🚀 Initialized with Cline-style streaming and GitHub diff support')
+        getLogger().info('[DiffAnimationController] 🚀 Initialized with progressive scanning animation')
+    }
 
-        // Initialize content provider for diff view
-        this.contentProvider = new DiffContentProvider()
-        this.providerDisposable = vscode.workspace.registerTextDocumentContentProvider(
-            diffViewUriScheme,
-            this.contentProvider
-        )
+    public getAnimationData(filePath: string): DiffAnimation | undefined {
+        return this.activeAnimations.get(filePath)
     }
 
     /**
@@ -252,16 +79,14 @@ export class DiffAnimationController {
     public shouldShowStaticDiff(filePath: string, newContent: string): boolean {
         const history = this.fileAnimationHistory.get(filePath)
         if (!history) {
-            return false // Never animated before
+            return false
         }
 
-        // If currently animating, don't show static diff
         if (history.isCurrentlyAnimating) {
             return false
         }
 
-        // If content is the same as last animated content, show static diff
-        return history.lastAnimatedContent === newContent
+        return true
     }
 
     /**
@@ -288,184 +113,6 @@ export class DiffAnimationController {
             history.isCurrentlyAnimating = false
             history.lastAnimatedContent = finalContent
             this.fileAnimationHistory.set(filePath, history)
-        }
-    }
-
-    /**
-     * Start a diff animation for a file using Cline's streaming approach
-     */
-    /**
-     * Start a diff animation for a file using Cline's streaming approach
-     */
-    public async startDiffAnimation(
-        filePath: string,
-        originalContent: string,
-        newContent: string,
-        isFromChatClick: boolean = false
-    ): Promise<void> {
-        const isNewFile = originalContent === ''
-        getLogger().info(
-            `[DiffAnimationController] 🎬 Starting animation for: ${filePath} (new file: ${isNewFile}, from chat: ${isFromChatClick})`
-        )
-
-        // Check if we should show static diff instead
-        if (isFromChatClick && this.shouldShowStaticDiff(filePath, newContent)) {
-            getLogger().info(`[DiffAnimationController] Content unchanged, showing static diff`)
-            await this.showStaticDiffView(filePath)
-            return
-        }
-
-        try {
-            // Cancel any existing animation for this file
-            this.cancelAnimation(filePath)
-
-            // Mark animation as started
-            this.updateAnimationStart(filePath)
-
-            const uri = vscode.Uri.file(filePath)
-
-            // Store animation state
-            const animation: DiffAnimation = {
-                uri,
-                originalContent,
-                newContent,
-                isShowingStaticDiff: false,
-                animationCancelled: false,
-                isFromChatClick,
-            }
-            this.activeAnimations.set(filePath, animation)
-
-            // Ensure the file exists and apply the new content
-            let doc: vscode.TextDocument
-
-            try {
-                // Try to open existing file
-                doc = await vscode.workspace.openTextDocument(uri)
-                // Store current content as snapshot
-                this.fileSnapshots.set(filePath, doc.getText())
-            } catch {
-                // File doesn't exist, create it with empty content first
-                await vscode.workspace.fs.writeFile(uri, Buffer.from(''))
-                doc = await vscode.workspace.openTextDocument(uri)
-                this.fileSnapshots.set(filePath, '')
-                getLogger().info(`[DiffAnimationController] Created new file: ${filePath}`)
-            }
-
-            // Apply the new content using WorkspaceEdit (this preserves undo history)
-            // Do this WITHOUT opening a visible editor
-            const edit = new vscode.WorkspaceEdit()
-            const fullRange = new vscode.Range(
-                0,
-                0,
-                doc.lineCount > 0 ? doc.lineCount - 1 : 0,
-                doc.lineCount > 0 ? doc.lineAt(Math.max(0, doc.lineCount - 1)).text.length : 0
-            )
-            edit.replace(uri, fullRange, newContent)
-
-            // Apply edit with undo support
-            const success = await vscode.workspace.applyEdit(edit)
-            if (!success) {
-                throw new Error('Failed to apply edit to file')
-            }
-
-            // Save the document to ensure changes are persisted
-            await doc.save()
-
-            // Now open the diff view for animation
-            const diffEditor = await this.openClineDiffView(filePath, originalContent, isNewFile)
-            if (!diffEditor) {
-                throw new Error('Failed to open diff view')
-            }
-
-            // Initialize controllers
-            const fadedOverlayController = new DecorationController('fadedOverlay', diffEditor)
-            const activeLineController = new DecorationController('activeLine', diffEditor)
-
-            this.fadedOverlayControllers.set(filePath, fadedOverlayController)
-            this.activeLineControllers.set(filePath, activeLineController)
-
-            // Initialize state
-            this.streamedLines.set(filePath, [])
-            this.shouldAutoScroll.set(filePath, true)
-            this.lastFirstVisibleLine.set(filePath, 0)
-
-            // Add scroll detection
-            const scrollListener = vscode.window.onDidChangeTextEditorVisibleRanges((e) => {
-                if (e.textEditor === diffEditor) {
-                    const currentFirstVisibleLine = e.visibleRanges[0]?.start.line || 0
-                    const lastLine = this.lastFirstVisibleLine.get(filePath) || 0
-
-                    // If user scrolled up, disable auto-scroll
-                    if (currentFirstVisibleLine < lastLine) {
-                        this.shouldAutoScroll.set(filePath, false)
-                    }
-
-                    this.lastFirstVisibleLine.set(filePath, currentFirstVisibleLine)
-                }
-            })
-            this.scrollListeners.set(filePath, scrollListener)
-
-            // Calculate changed region for optimization
-            const changedRegion = this.calculateChangedRegion(originalContent, newContent)
-            getLogger().info(
-                `[DiffAnimationController] Changed region: lines ${changedRegion.startLine}-${changedRegion.endLine}`
-            )
-
-            // Start streaming animation (Cline style) - visual only
-            await this.streamContentClineStyle(filePath, diffEditor, newContent, animation, changedRegion)
-        } catch (error) {
-            getLogger().error(`[DiffAnimationController] ❌ Failed to start animation: ${error}`)
-            // Restore file content on error using WorkspaceEdit
-            const snapshot = this.fileSnapshots.get(filePath)
-            if (snapshot !== undefined) {
-                try {
-                    const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(filePath))
-                    const edit = new vscode.WorkspaceEdit()
-                    const fullRange = new vscode.Range(
-                        0,
-                        0,
-                        doc.lineCount > 0 ? doc.lineCount - 1 : 0,
-                        doc.lineCount > 0 ? doc.lineAt(Math.max(0, doc.lineCount - 1)).text.length : 0
-                    )
-                    edit.replace(doc.uri, fullRange, snapshot)
-                    await vscode.workspace.applyEdit(edit)
-                } catch (restoreError) {
-                    getLogger().error(`[DiffAnimationController] Failed to restore content: ${restoreError}`)
-                }
-            }
-            this.stopDiffAnimation(filePath)
-            throw error
-        }
-    }
-
-    /**
-     * Close the diff view and return to normal file view
-     */
-    private async closeDiffView(filePath: string): Promise<void> {
-        try {
-            // Find all visible editors
-            const editors = vscode.window.visibleTextEditors
-
-            // Find the diff editor (it will have the special URI scheme)
-            const diffEditor = editors.find(
-                (e) => e.document.uri.scheme === diffViewUriScheme || e.document.uri.fsPath === filePath
-            )
-
-            if (diffEditor) {
-                // Close the diff view
-                await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
-
-                // Open the file normally after diff view is closed
-                const uri = vscode.Uri.file(filePath)
-                const doc = await vscode.workspace.openTextDocument(uri)
-                await vscode.window.showTextDocument(doc, { preview: false })
-
-                getLogger().info(
-                    `[DiffAnimationController] Closed diff view and opened normal file view for: ${filePath}`
-                )
-            }
-        } catch (error) {
-            getLogger().error(`[DiffAnimationController] Error closing diff view: ${error}`)
         }
     }
 
@@ -542,350 +189,785 @@ export class DiffAnimationController {
     }
 
     /**
-     * Start partial diff animation for specific changes
+     * Start a diff animation for a file
      */
-    public async startPartialDiffAnimation(
+    public async startDiffAnimation(
         filePath: string,
         originalContent: string,
         newContent: string,
-        options: PartialUpdateOptions = {}
+        isFromChatClick: boolean = false
     ): Promise<void> {
-        const { changeLocation, searchContent, isPartialUpdate = false } = options
+        const isNewFile = originalContent === ''
+        getLogger().info(
+            `[DiffAnimationController] 🎬 Starting animation for: ${filePath} (new file: ${isNewFile}, from chat: ${isFromChatClick})`
+        )
 
-        getLogger().info(`[DiffAnimationController] 🎬 Starting partial animation for: ${filePath}`)
-
-        // If we have a specific change location, we can optimize the animation
-        if (changeLocation && isPartialUpdate) {
-            // Check if we already have a diff view open
-            const existingAnimation = this.activeAnimations.get(filePath)
-            const existingEditor = vscode.window.visibleTextEditors.find((e) => e.document.uri.fsPath === filePath)
-
-            if (existingAnimation && existingEditor) {
-                // Update only the changed portion
-                await this.updatePartialContent(
-                    filePath,
-                    existingEditor,
-                    existingAnimation,
-                    changeLocation,
-                    searchContent || '',
-                    newContent
-                )
-                return
-            }
+        if (isFromChatClick) {
+            getLogger().info(`[DiffAnimationController] File clicked from chat, showing VS Code diff`)
+            await this.showVSCodeDiff(filePath, originalContent, newContent)
+            return
         }
 
-        // Fall back to full animation if no optimization possible
-        return this.startDiffAnimation(filePath, originalContent, newContent)
+        try {
+            // Cancel any existing animation for this file
+            this.cancelAnimation(filePath)
+
+            // Mark animation as started
+            this.updateAnimationStart(filePath)
+
+            const uri = vscode.Uri.file(filePath)
+
+            // Store animation state
+            const animation: DiffAnimation = {
+                uri,
+                originalContent,
+                newContent,
+                isShowingStaticDiff: false,
+                animationCancelled: false,
+                isFromChatClick,
+            }
+            this.activeAnimations.set(filePath, animation)
+
+            // Ensure the file exists and has the new content
+            let doc: vscode.TextDocument
+            try {
+                doc = await vscode.workspace.openTextDocument(uri)
+                this.fileSnapshots.set(filePath, doc.getText())
+            } catch {
+                // Create new file
+                await vscode.workspace.fs.writeFile(uri, Buffer.from(''))
+                doc = await vscode.workspace.openTextDocument(uri)
+                this.fileSnapshots.set(filePath, '')
+            }
+
+            // Apply the new content
+            const edit = new vscode.WorkspaceEdit()
+            const fullRange = new vscode.Range(
+                0,
+                0,
+                doc.lineCount > 0 ? doc.lineCount - 1 : 0,
+                doc.lineCount > 0 ? doc.lineAt(Math.max(0, doc.lineCount - 1)).text.length : 0
+            )
+            edit.replace(uri, fullRange, newContent)
+            await vscode.workspace.applyEdit(edit)
+            await doc.save()
+
+            // Calculate changed region for optimization
+            const changedRegion = this.calculateChangedRegion(originalContent, newContent)
+            getLogger().info(
+                `[DiffAnimationController] Changed region: lines ${changedRegion.startLine}-${changedRegion.endLine}`
+            )
+
+            // Initialize scroll control
+            this.shouldAutoScroll.set(filePath, true)
+            this.lastScrollPosition.set(filePath, 0)
+
+            // Create or reuse webview for this file
+            const webview = await this.getOrCreateDiffWebview(filePath)
+
+            // Start the progressive animation
+            await this.animateDiffInWebview(filePath, webview, originalContent, newContent, animation, changedRegion)
+        } catch (error) {
+            getLogger().error(`[DiffAnimationController] ❌ Failed to start animation: ${error}`)
+            this.stopDiffAnimation(filePath)
+            throw error
+        }
     }
 
     /**
-     * Cancel ongoing animation for a file
+     * Get or create a webview panel for diff display
      */
-    private cancelAnimation(filePath: string): void {
-        const animation = this.activeAnimations.get(filePath)
-        if (animation && !animation.isShowingStaticDiff) {
-            animation.animationCancelled = true
+    private async getOrCreateDiffWebview(filePath: string): Promise<vscode.WebviewPanel> {
+        await vscode.commands.executeCommand('workbench.action.closeAllEditors')
+        // Check if we already have a webview for this file
+        let webview = this.diffWebviews.get(filePath)
+        if (webview) {
+            // Reveal existing webview
+            webview.reveal(vscode.ViewColumn.One)
+            return webview
+        }
 
-            // Clear any pending timeouts
-            const timeouts = this.animationTimeouts.get(filePath)
-            if (timeouts) {
-                for (const timeout of timeouts) {
-                    clearTimeout(timeout)
+        // Create new webview
+        const fileName = path.basename(filePath)
+        webview = vscode.window.createWebviewPanel('amazonQDiff', `Diff: ${fileName}`, vscode.ViewColumn.One, {
+            enableScripts: true,
+            retainContextWhenHidden: true,
+            localResourceRoots: [],
+        })
+
+        // Store webview
+        this.diffWebviews.set(filePath, webview)
+        // Handle webview disposal
+        webview.onDidDispose(() => {
+            this.diffWebviews.delete(filePath)
+            this.stopDiffAnimation(filePath)
+            // Reopen the original file editor after webview is disposed
+            Promise.resolve(
+                vscode.workspace.openTextDocument(vscode.Uri.file(filePath)).then((doc) => {
+                    void vscode.window.showTextDocument(doc, {
+                        preview: false,
+                        viewColumn: vscode.ViewColumn.One,
+                    })
+                })
+            ).catch((error) => {
+                getLogger().error(`[DiffAnimationController] Failed to reopen file after webview disposal: ${error}`)
+            })
+        })
+        // Handle messages from webview (including scroll events)
+        webview.webview.onDidReceiveMessage((message) => {
+            if (message.command === 'userScrolled') {
+                const currentPosition = message.scrollTop
+                const lastPosition = this.lastScrollPosition.get(filePath) || 0
+
+                // If user scrolled up, disable auto-scroll
+                if (currentPosition < lastPosition - 50) {
+                    // 50px threshold
+                    this.shouldAutoScroll.set(filePath, false)
+                    getLogger().info(`[DiffAnimationController] Auto-scroll disabled for: ${filePath}`)
                 }
-                this.animationTimeouts.delete(filePath)
+
+                this.lastScrollPosition.set(filePath, currentPosition)
             }
+        })
 
-            // Clear decorations
-            this.fadedOverlayControllers.get(filePath)?.clear()
-            this.activeLineControllers.get(filePath)?.clear()
+        // Set initial HTML
+        webview.webview.html = this.getDiffWebviewContent()
 
-            getLogger().info(`[DiffAnimationController] ⚠️ Cancelled ongoing animation for: ${filePath}`)
-        }
+        return webview
     }
 
     /**
-     * Open VS Code diff view (Cline style)
+     * Get the HTML content for the diff webview
      */
-    private async openClineDiffView(
+    private getDiffWebviewContent(): string {
+        return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diff View</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'source-code-pro', monospace;
+            font-size: 13px;
+            line-height: 1.5;
+            background: var(--vscode-editor-background);
+            color: var(--vscode-editor-foreground);
+        }
+        
+        .diff-container {
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .diff-pane {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: auto;
+            position: relative;
+        }
+        
+        .diff-pane.left {
+            border-right: 1px solid var(--vscode-panel-border);
+        }
+        
+        .diff-header {
+            position: sticky;
+            top: 0;
+            background: var(--vscode-editor-background);
+            border-bottom: 1px solid var(--vscode-panel-border);
+            padding: 8px 16px;
+            font-weight: bold;
+            z-index: 10;
+        }
+        
+        .diff-content {
+            padding: 8px 0;
+            min-height: 100%;
+        }
+        
+        .diff-line {
+            display: flex;
+            align-items: stretch;
+            min-height: 20px;
+            white-space: pre;
+            position: relative;
+            opacity: 0;
+            transform: translateY(2px);
+            transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+        
+        /* Line becomes visible when added */
+        .diff-line.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .line-number {
+            width: 50px;
+            text-align: right;
+            padding-right: 12px;
+            color: var(--vscode-editorLineNumber-foreground);
+            user-select: none;
+            flex-shrink: 0;
+        }
+        
+        .line-content {
+            flex: 1;
+            padding-left: 16px;
+            padding-right: 16px;
+        }
+        
+        /* Yellow scanning highlight - Cline style */
+        .diff-line.scanning {
+            background-color: rgba(255, 255, 0, 0.3) !important;
+            border: 1px solid rgba(255, 255, 0, 0.5);
+            box-shadow: 0 0 8px rgba(255, 255, 0, 0.3);
+        }
+        
+        /* GitHub-style diff decorations */
+        .diff-line.visible.added {
+            background-color: rgba(46, 160, 67, 0.15);
+        }
+        
+        .diff-line.visible.added::before {
+            content: '+';
+            position: absolute;
+            left: 8px;
+            color: rgb(46, 160, 67);
+            font-weight: bold;
+        }
+        
+        .diff-line.visible.removed {
+            background-color: rgba(248, 81, 73, 0.15);
+        }
+        
+        .diff-line.visible.removed::before {
+            content: '-';
+            position: absolute;
+            left: 8px;
+            color: rgb(248, 81, 73);
+            font-weight: bold;
+        }
+        
+        .diff-line.visible.removed .line-content {
+            text-decoration: line-through;
+            opacity: 0.7;
+        }
+        
+        .diff-line.visible.unchanged {
+            color: var(--vscode-editor-foreground);
+        }
+        
+        /* Loading state */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--vscode-descriptionForeground);
+        }
+        
+        /* Scanning indicator */
+        .scanning-indicator {
+            position: fixed;
+            top: 50px;
+            right: 20px;
+            padding: 8px 16px;
+            background: rgba(255, 255, 0, 0.2);
+            border: 1px solid rgba(255, 255, 0, 0.5);
+            border-radius: 4px;
+            font-size: 12px;
+            z-index: 100;
+            display: none;
+        }
+        
+        .scanning-indicator.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="diff-container">
+        <div class="diff-pane left" id="left-pane">
+            <div class="diff-header">Original</div>
+            <div class="diff-content" id="left-content">
+                <div class="loading">Scanning changes...</div>
+            </div>
+        </div>
+        <div class="diff-pane right" id="right-pane">
+            <div class="diff-header">AI's Changes</div>
+            <div class="diff-content" id="right-content">
+                <div class="loading">Scanning changes...</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="scanning-indicator" id="scanning-indicator">
+        Scanning line <span id="scan-progress">0</span>
+    </div>
+    
+    <script>
+        const vscode = acquireVsCodeApi();
+        let currentScanLine = 0;
+        let totalLines = 0;
+        let scrollTimeout = null;
+        
+        // Track scroll events
+        document.getElementById('right-pane').addEventListener('scroll', (e) => {
+            clearTimeout(scrollTimeout);
+            scrollTimeout = setTimeout(() => {
+                vscode.postMessage({
+                    command: 'userScrolled',
+                    scrollTop: e.target.scrollTop
+                });
+            }, 100);
+        });
+        
+        // Handle messages from extension
+        window.addEventListener('message', event => {
+            const message = event.data;
+            
+            switch (message.command) {
+                case 'startScan':
+                    startScan(message.totalLines);
+                    break;
+                    
+                case 'addLine':
+                    addLine(message);
+                    break;
+                    
+                case 'scanLine':
+                    scanLine(message);
+                    break;
+                    
+                case 'completeScan':
+                    completeScan();
+                    break;
+                    
+                case 'clear':
+                    clearContent();
+                    break;
+            }
+        });
+        
+        function startScan(total) {
+            totalLines = total;
+            currentScanLine = 0;
+            
+            // Clear loading messages
+            document.getElementById('left-content').innerHTML = '';
+            document.getElementById('right-content').innerHTML = '';
+            
+            // Show scanning indicator
+            document.getElementById('scanning-indicator').classList.add('active');
+        }
+        
+        function addLine(message) {
+            const { side, line, immediately } = message;
+            const container = document.getElementById(side + '-content');
+            
+            const lineEl = createLineElement(line, side);
+            container.appendChild(lineEl);
+            
+            if (immediately) {
+                // Show immediately without animation
+                setTimeout(() => lineEl.classList.add('visible'), 10);
+            }
+        }
+        
+        function createLineElement(line, side) {
+            const lineEl = document.createElement('div');
+            lineEl.className = 'diff-line ' + line.type;
+            lineEl.setAttribute('data-line-index', line.index);
+            
+            const lineNumEl = document.createElement('span');
+            lineNumEl.className = 'line-number';
+            lineNumEl.textContent = line[side + 'LineNumber'] || '';
+            
+            const contentEl = document.createElement('span');
+            contentEl.className = 'line-content';
+            contentEl.textContent = line.content;
+            
+            lineEl.appendChild(lineNumEl);
+            lineEl.appendChild(contentEl);
+            
+            return lineEl;
+        }
+        
+        async function scanLine(message) {
+            const { leftIndex, rightIndex, autoScroll } = message;
+            currentScanLine++;
+            
+            // Update progress
+            document.getElementById('scan-progress').textContent = currentScanLine + '/' + totalLines;
+            
+            // Find lines to scan
+            const leftLine = leftIndex !== undefined 
+                ? document.querySelector('#left-content .diff-line[data-line-index="' + leftIndex + '"]')
+                : undefined;
+            const rightLine = rightIndex !== undefined
+                ? document.querySelector('#right-content .diff-line[data-line-index="' + rightIndex + '"]')
+                : undefined;
+            
+            // Apply scanning highlight
+            if (leftLine) {
+                leftLine.classList.add('scanning', 'visible');
+            }
+            if (rightLine) {
+                rightLine.classList.add('scanning', 'visible');
+            }
+            
+            // Auto-scroll if enabled
+            if (autoScroll && rightLine) {
+                rightLine.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } else if (autoScroll && leftLine) {
+                leftLine.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+            
+            // Remove scanning highlight after delay
+            setTimeout(() => {
+                if (leftLine) leftLine.classList.remove('scanning');
+                if (rightLine) rightLine.classList.remove('scanning');
+            }, 100);
+        }
+        
+        function completeScan() {
+            // Hide scanning indicator
+            document.getElementById('scanning-indicator').classList.remove('active');
+            
+            // Ensure all lines are visible
+            document.querySelectorAll('.diff-line').forEach(line => {
+                line.classList.add('visible');
+                line.classList.remove('scanning');
+            });
+        }
+        
+        function clearContent() {
+            document.getElementById('left-content').innerHTML = '';
+            document.getElementById('right-content').innerHTML = '';
+            document.getElementById('scanning-indicator').classList.remove('active');
+        }
+    </script>
+</body>
+</html>`
+    }
+
+    /**
+     * Animate diff in webview progressively with smart scanning
+     */
+    private async animateDiffInWebview(
         filePath: string,
+        webview: vscode.WebviewPanel,
         originalContent: string,
-        isNewFile: boolean
-    ): Promise<vscode.TextEditor | undefined> {
-        const fileName = filePath.split(/[\\\/]/).pop() || 'file'
-        const leftUri = vscode.Uri.parse(`${diffViewUriScheme}:${fileName}`).with({
-            query: Buffer.from(originalContent).toString('base64'),
-        })
-
-        // Set content for left side
-        this.contentProvider.setContent(leftUri.toString(), originalContent)
-
-        // Right side is the actual file
-        const rightUri = vscode.Uri.file(filePath)
-
-        // DO NOT clear the right side content - it already has the final content
-        // This preserves the undo history
-        // await vscode.workspace.fs.writeFile(rightUri, Buffer.from(''))
-
-        const title = `${fileName}: ${isNewFile ? 'New File' : "Original ↔ AI's Changes"} (Streaming...)`
-
-        // Execute diff command
-        await vscode.commands.executeCommand('vscode.diff', leftUri, rightUri, title, {
-            preview: false,
-            preserveFocus: false,
-        })
-
-        // Wait a bit for the diff view to open
-        await new Promise((resolve) => setTimeout(resolve, 100))
-
-        // Find the editor for the right side (the actual file)
-        let editor = vscode.window.activeTextEditor
-        if (editor && editor.document.uri.fsPath === filePath) {
-            return editor
-        }
-
-        // Fallback: find editor by URI
-        editor = vscode.window.visibleTextEditors.find((e) => e.document.uri.fsPath === filePath)
-        if (editor) {
-            return editor
-        }
-
-        // Another attempt after a short delay
-        await new Promise((resolve) => setTimeout(resolve, 100))
-        return vscode.window.visibleTextEditors.find((e) => e.document.uri.fsPath === filePath)
-    }
-
-    /**
-     * Stream content line by line (Cline style) with optimization for changed region
-     */
-    private async streamContentClineStyle(
-        filePath: string,
-        editor: vscode.TextEditor,
         newContent: string,
         animation: DiffAnimation,
         changedRegion: { startLine: number; endLine: number; totalLines: number }
     ): Promise<void> {
-        const fadedOverlayController = this.fadedOverlayControllers.get(filePath)
-        const activeLineController = this.activeLineControllers.get(filePath)
+        try {
+            // Parse diff and create scan plan
+            const { leftLines, rightLines, scanPlan } = this.createScanPlan(originalContent, newContent, changedRegion)
 
-        if (!fadedOverlayController || !activeLineController || animation.animationCancelled) {
-            return
-        }
+            // Clear and start scan
+            await webview.webview.postMessage({ command: 'clear' })
+            await new Promise((resolve) => setTimeout(resolve, 50))
 
-        // The file already has the new content, we just animate the visual effect
-        const totalLines = editor.document.lineCount
+            await webview.webview.postMessage({
+                command: 'startScan',
+                totalLines: scanPlan.length,
+            })
 
-        // Apply initial faded overlay to simulate hidden content
-        fadedOverlayController.addLines(0, totalLines)
-
-        // Animate the reveal effect
-        for (let i = 0; i <= changedRegion.endLine && i < totalLines && !animation.animationCancelled; i++) {
-            // Update decorations to show line-by-line reveal
-            activeLineController.setActiveLine(i)
-            fadedOverlayController.updateOverlayAfterLine(i, totalLines)
-
-            // Auto-scroll if enabled
-            if (this.shouldAutoScroll.get(filePath) !== false && i >= changedRegion.startLine) {
-                this.scrollEditorToLine(editor, i)
+            // Pre-add lines that are before the scan region (context)
+            for (let i = 0; i < Math.min(changedRegion.startLine, 3); i++) {
+                if (leftLines[i]) {
+                    await webview.webview.postMessage({
+                        command: 'addLine',
+                        side: 'left',
+                        line: leftLines[i],
+                        immediately: true,
+                    })
+                }
+                if (rightLines[i]) {
+                    await webview.webview.postMessage({
+                        command: 'addLine',
+                        side: 'right',
+                        line: rightLines[i],
+                        immediately: true,
+                    })
+                }
             }
 
-            // Animation delay (only for changed region)
-            if (i >= changedRegion.startLine && i <= changedRegion.endLine) {
-                const delay = changedRegion.endLine - changedRegion.startLine > 50 ? 20 : 30
-                await new Promise((resolve) => setTimeout(resolve, delay))
+            // Calculate animation speed
+            const scanDelay = scanPlan.length > 50 ? 40 : 70
+
+            // Execute scan plan
+            for (const scanItem of scanPlan) {
+                if (animation.animationCancelled) {
+                    break
+                }
+
+                // Add lines if not already added
+                if (scanItem.leftLine && !scanItem.preAdded) {
+                    await webview.webview.postMessage({
+                        command: 'addLine',
+                        side: 'left',
+                        line: scanItem.leftLine,
+                        immediately: false,
+                    })
+                }
+
+                if (scanItem.rightLine && !scanItem.preAdded) {
+                    await webview.webview.postMessage({
+                        command: 'addLine',
+                        side: 'right',
+                        line: scanItem.rightLine,
+                        immediately: false,
+                    })
+                }
+
+                // Small delay to ensure lines are added
+                await new Promise((resolve) => setTimeout(resolve, 10))
+
+                // Scan the line
+                await webview.webview.postMessage({
+                    command: 'scanLine',
+                    leftIndex: scanItem.leftIndex,
+                    rightIndex: scanItem.rightIndex,
+                    autoScroll: this.shouldAutoScroll.get(filePath) !== false,
+                })
+
+                // Wait before next line
+                await new Promise((resolve) => setTimeout(resolve, scanDelay))
             }
-        }
 
-        // Clear decorations when done
-        fadedOverlayController.clear()
-        activeLineController.clear()
+            // Add any remaining lines after scan region
+            for (let i = changedRegion.endLine + 1; i < leftLines.length || i < rightLines.length; i++) {
+                if (i < leftLines.length) {
+                    await webview.webview.postMessage({
+                        command: 'addLine',
+                        side: 'left',
+                        line: leftLines[i],
+                        immediately: true,
+                    })
+                }
+                if (i < rightLines.length) {
+                    await webview.webview.postMessage({
+                        command: 'addLine',
+                        side: 'right',
+                        line: rightLines[i],
+                        immediately: true,
+                    })
+                }
+            }
 
-        // Apply GitHub-style diff decorations
-        await this.applyGitHubDiffDecorations(filePath, editor, animation.originalContent, animation.newContent)
+            // Complete animation
+            await webview.webview.postMessage({ command: 'completeScan' })
 
-        animation.animationCancelled = false
+            // Update animation history
+            this.updateAnimationComplete(filePath, newContent)
 
-        // Update animation history
-        this.updateAnimationComplete(filePath, animation.newContent)
+            getLogger().info(`[DiffAnimationController] ✅ Smart scanning completed for: ${filePath}`)
 
-        getLogger().info(`[DiffAnimationController] ✅ Animation completed for: ${filePath}`)
+            // Auto-close after a delay if not from chat click
+            // Auto-close after a delay if not from chat click
+            if (!animation.isFromChatClick) {
+                setTimeout(async () => {
+                    this.closeDiffWebview(filePath)
 
-        // Auto-close diff view after animation completes (unless opened from chat)
-        if (!animation.isFromChatClick) {
-            getLogger().info(`[DiffAnimationController] Auto-closing diff view for: ${filePath}`)
-            await this.closeDiffView(filePath)
+                    // ADD THIS: Optionally reopen the file in normal editor
+                    try {
+                        const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(filePath))
+                        await vscode.window.showTextDocument(doc, {
+                            preview: false,
+                            viewColumn: vscode.ViewColumn.One,
+                        })
+                        getLogger().info(`[DiffAnimationController] Reopened file after animation: ${filePath}`)
+                    } catch (error) {
+                        getLogger().error(`[DiffAnimationController] Failed to reopen file: ${error}`)
+                    }
+                }, 3000)
+            }
+        } catch (error) {
+            getLogger().error(`[DiffAnimationController] ❌ Animation failed: ${error}`)
+            throw error
         }
     }
 
     /**
-     * Update only a portion of the file
+     * Create a smart scan plan based on changed regions
      */
-    private async updatePartialContent(
-        filePath: string,
-        editor: vscode.TextEditor,
-        animation: DiffAnimation,
-        changeLocation: { startLine: number; endLine: number },
-        searchContent: string,
-        newContent: string
-    ): Promise<void> {
-        const fadedOverlayController = this.fadedOverlayControllers.get(filePath)
-        const activeLineController = this.activeLineControllers.get(filePath)
+    private createScanPlan(
+        originalContent: string,
+        newContent: string,
+        changedRegion: { startLine: number; endLine: number; totalLines: number }
+    ): {
+        leftLines: Array<DiffLine & { index: number }>
+        rightLines: Array<DiffLine & { index: number }>
+        scanPlan: Array<{
+            leftIndex: number | undefined
+            rightIndex: number | undefined
+            leftLine?: DiffLine & { index: number }
+            rightLine?: DiffLine & { index: number }
+            preAdded?: boolean
+        }>
+    } {
+        const changes = diffLines(originalContent, newContent)
+        const leftLines: Array<DiffLine & { index: number }> = []
+        const rightLines: Array<DiffLine & { index: number }> = []
+        const scanPlan: Array<{
+            leftIndex: number | undefined
+            rightIndex: number | undefined
+            leftLine?: DiffLine & { index: number }
+            rightLine?: DiffLine & { index: number }
+            preAdded?: boolean
+        }> = []
 
-        if (!fadedOverlayController || !activeLineController) {
-            return
-        }
+        let leftLineNum = 1
+        let rightLineNum = 1
+        let leftIndex = 0
+        let rightIndex = 0
 
-        getLogger().info(
-            `[DiffAnimationController] 📝 Partial update at lines ${changeLocation.startLine}-${changeLocation.endLine}`
-        )
-
-        // Find the exact location in the current document
-        const document = editor.document
-        let matchStartLine = -1
-
-        if (searchContent) {
-            // Search for the exact content in the document
-            const documentText = document.getText()
-            const searchIndex = documentText.indexOf(searchContent)
-
-            if (searchIndex !== -1) {
-                // Convert character index to line number
-                const textBefore = documentText.substring(0, searchIndex)
-                matchStartLine = (textBefore.match(/\n/g) || []).length
-            }
-        } else {
-            // Use the provided line number directly
-            matchStartLine = changeLocation.startLine
-        }
-
-        if (matchStartLine === -1) {
-            getLogger().warn(`[DiffAnimationController] Could not find search content, falling back to full scan`)
-            return this.startDiffAnimation(filePath, animation.originalContent, newContent)
-        }
-
-        // Calculate the replacement
-        const searchLines = searchContent.split('\n')
-        const replacementLines = this.extractReplacementContent(animation.originalContent, newContent, searchContent)
-
-        // Apply the edit using WorkspaceEdit for undo support
-        const edit = new vscode.WorkspaceEdit()
-        const startPos = new vscode.Position(matchStartLine, 0)
-        const endPos = new vscode.Position(matchStartLine + searchLines.length, 0)
-        const range = new vscode.Range(startPos, endPos)
-
-        edit.replace(editor.document.uri, range, replacementLines.join('\n') + '\n')
-        await vscode.workspace.applyEdit(edit)
-
-        // Animate only the changed lines
-        await this.animatePartialChange(
-            editor,
-            fadedOverlayController,
-            activeLineController,
-            matchStartLine,
-            replacementLines.length
-        )
-
-        // Scroll to the change
-        if (this.shouldAutoScroll.get(filePath) !== false) {
-            this.scrollEditorToLine(editor, matchStartLine)
-        }
-
-        // Update animation state
-        animation.newContent = document.getText()
-    }
-
-    /**
-     * Extract replacement content
-     */
-    private extractReplacementContent(originalContent: string, newContent: string, searchContent: string): string[] {
-        // This would use the SEARCH/REPLACE logic to extract just the replacement portion
-        const newLines = newContent.split('\n')
-        const searchLines = searchContent.split('\n')
-
-        // Find where the change starts in the new content
-        let startIndex = 0
-        for (let i = 0; i < newLines.length; i++) {
-            if (newLines.slice(i, i + searchLines.length).join('\n') !== searchContent) {
-                startIndex = i
-                break
-            }
-        }
-
-        // Extract the replacement lines
-        return newLines.slice(startIndex, startIndex + searchLines.length)
-    }
-
-    /**
-     * Animate only the changed portion
-     */
-    private async animatePartialChange(
-        editor: vscode.TextEditor,
-        fadedOverlayController: DecorationController,
-        activeLineController: DecorationController,
-        startLine: number,
-        lineCount: number
-    ): Promise<void> {
-        // Clear previous decorations
-        fadedOverlayController.clear()
-        activeLineController.clear()
-
-        // Apply overlay only to the changed region
-        fadedOverlayController.addLines(startLine, lineCount)
-
-        // Animate the changed lines
-        for (let i = 0; i < lineCount; i++) {
-            const currentLine = startLine + i
-
-            // Highlight current line
-            activeLineController.setActiveLine(currentLine)
-
-            // Update overlay
-            if (i < lineCount - 1) {
-                fadedOverlayController.clear()
-                fadedOverlayController.addLines(currentLine + 1, lineCount - i - 1)
+        for (const change of changes) {
+            const lines = change.value.split('\n').filter((l) => l !== undefined)
+            if (lines.length === 0 || (lines.length === 1 && lines[0] === '')) {
+                continue
             }
 
-            // Animation delay
-            await new Promise((resolve) => setTimeout(resolve, 30))
+            if (change.removed) {
+                // Removed lines only on left
+                for (const line of lines) {
+                    const diffLine = {
+                        type: 'removed' as const,
+                        content: line,
+                        lineNumber: leftLineNum,
+                        oldLineNumber: leftLineNum++,
+                        index: leftIndex,
+                        leftLineNumber: leftLineNum - 1,
+                    }
+                    leftLines.push(diffLine)
+
+                    // Add to scan plan if in changed region
+                    if (leftIndex >= changedRegion.startLine && leftIndex <= changedRegion.endLine) {
+                        scanPlan.push({
+                            leftIndex: leftIndex,
+                            rightIndex: undefined,
+                            leftLine: diffLine,
+                        })
+                    }
+                    leftIndex++
+                }
+            } else if (change.added) {
+                // Added lines only on right
+                for (const line of lines) {
+                    const diffLine = {
+                        type: 'added' as const,
+                        content: line,
+                        lineNumber: rightLineNum,
+                        newLineNumber: rightLineNum++,
+                        index: rightIndex,
+                        rightLineNumber: rightLineNum - 1,
+                    }
+                    rightLines.push(diffLine)
+
+                    // Add to scan plan if in changed region
+                    if (rightIndex >= changedRegion.startLine && rightIndex <= changedRegion.endLine) {
+                        scanPlan.push({
+                            leftIndex: undefined,
+                            rightIndex: rightIndex,
+                            rightLine: diffLine,
+                        })
+                    }
+                    rightIndex++
+                }
+            } else {
+                // Unchanged lines on both sides
+                for (const line of lines) {
+                    const leftDiffLine = {
+                        type: 'unchanged' as const,
+                        content: line,
+                        lineNumber: leftLineNum,
+                        oldLineNumber: leftLineNum++,
+                        index: leftIndex,
+                        leftLineNumber: leftLineNum - 1,
+                    }
+
+                    const rightDiffLine = {
+                        type: 'unchanged' as const,
+                        content: line,
+                        lineNumber: rightLineNum,
+                        newLineNumber: rightLineNum++,
+                        index: rightIndex,
+                        rightLineNumber: rightLineNum - 1,
+                    }
+
+                    leftLines.push(leftDiffLine)
+                    rightLines.push(rightDiffLine)
+
+                    // Add to scan plan if in changed region
+                    if (leftIndex >= changedRegion.startLine && leftIndex <= changedRegion.endLine) {
+                        scanPlan.push({
+                            leftIndex: leftIndex,
+                            rightIndex: rightIndex,
+                            leftLine: leftDiffLine,
+                            rightLine: rightDiffLine,
+                        })
+                    }
+
+                    leftIndex++
+                    rightIndex++
+                }
+            }
         }
 
-        // Clear decorations
-        fadedOverlayController.clear()
-        activeLineController.clear()
-
-        // Apply GitHub diff decorations to the changed region
-        await this.applyPartialGitHubDiffDecorations(editor, startLine, lineCount)
+        return { leftLines, rightLines, scanPlan }
     }
 
     /**
-     * Apply diff decorations only to changed region
+     * Show VS Code's built-in diff view (for file tab clicks)
      */
-    private async applyPartialGitHubDiffDecorations(
-        editor: vscode.TextEditor,
-        startLine: number,
-        lineCount: number
-    ): Promise<void> {
-        const additions: vscode.Range[] = []
+    public async showVSCodeDiff(filePath: string, originalContent: string, newContent: string): Promise<void> {
+        const fileName = path.basename(filePath)
 
-        // Mark all changed lines as additions
-        for (let i = 0; i < lineCount && startLine + i < editor.document.lineCount; i++) {
-            additions.push(new vscode.Range(startLine + i, 0, startLine + i, Number.MAX_SAFE_INTEGER))
+        // Close all editors first (Issue #3)
+        await vscode.commands.executeCommand('workbench.action.closeAllEditors')
+
+        // For new files, use empty content if original is empty
+        const leftContent = originalContent || ''
+
+        // Create temporary file for original content with a unique scheme
+        const leftUri = vscode.Uri.from({
+            scheme: 'amazon-q-diff-temp',
+            path: `${fileName}`,
+            query: `original=${Date.now()}`, // Add timestamp to make it unique
+        })
+
+        // Register a one-time content provider for this URI
+        const disposable = vscode.workspace.registerTextDocumentContentProvider('amazon-q-diff-temp', {
+            provideTextDocumentContent: (uri) => {
+                if (uri.toString() === leftUri.toString()) {
+                    return leftContent
+                }
+                return ''
+            },
+        })
+
+        try {
+            // Open diff view
+            const fileUri = vscode.Uri.file(filePath)
+            await vscode.commands.executeCommand(
+                'vscode.diff',
+                leftUri,
+                fileUri,
+                `${fileName}: ${leftContent ? 'Original' : 'New File'} ↔ Current`
+            )
+        } finally {
+            // Clean up the content provider after a delay
+            setTimeout(() => disposable.dispose(), 1000)
         }
-
-        // Get or create addition controller
-        let additionController = this.additionControllers.get(editor.document.uri.fsPath)
-        if (!additionController) {
-            additionController = new DecorationController('addition', editor)
-            this.additionControllers.set(editor.document.uri.fsPath, additionController)
-        }
-
-        // Apply decorations
-        additionController.setRanges(additions)
-
-        getLogger().info(`[DiffAnimationController] Applied partial diff decorations: ${additions.length} additions`)
     }
-
     /**
-     * Show static GitHub-style diff view for a file
+     * Show static diff view (reuse existing webview)
      */
     public async showStaticDiffView(filePath: string): Promise<void> {
         const animation = this.activeAnimations.get(filePath)
@@ -894,239 +976,51 @@ export class DiffAnimationController {
             return
         }
 
-        // Open diff view again (static, no animation)
-        const fileName = filePath.split(/[\\\/]/).pop() || 'file'
-        const leftUri = vscode.Uri.parse(`${diffViewUriScheme}:${fileName}`).with({
-            query: Buffer.from(animation.originalContent).toString('base64'),
-        })
-
-        // Set content for left side
-        this.contentProvider.setContent(leftUri.toString(), animation.originalContent)
-
-        // Right side is the actual file with final content
-        const rightUri = vscode.Uri.file(filePath)
-
-        // Ensure file has the final content
-        const doc = await vscode.workspace.openTextDocument(rightUri)
-        if (doc.getText() !== animation.newContent) {
-            const edit = new vscode.WorkspaceEdit()
-            const fullRange = new vscode.Range(
-                0,
-                0,
-                doc.lineCount > 0 ? doc.lineCount - 1 : 0,
-                doc.lineCount > 0 ? doc.lineAt(Math.max(0, doc.lineCount - 1)).text.length : 0
-            )
-            edit.replace(rightUri, fullRange, animation.newContent)
-            await vscode.workspace.applyEdit(edit)
-        }
-
-        const title = `${fileName}: Original ↔ AI's Changes`
-
-        // Execute diff command
-        await vscode.commands.executeCommand('vscode.diff', leftUri, rightUri, title, {
-            preview: false,
-            preserveFocus: false,
-        })
-
-        // Wait for diff view to open
-        await new Promise((resolve) => setTimeout(resolve, 100))
-
-        // Find the editor
-        const editor = vscode.window.visibleTextEditors.find((e) => e.document.uri.fsPath === filePath)
-        if (!editor) {
-            getLogger().warn(`[DiffAnimationController] No editor found for static diff view`)
-            return
-        }
-
-        // Apply GitHub-style diff decorations immediately (no animation)
-        await this.applyGitHubDiffDecorations(filePath, editor, animation.originalContent, animation.newContent)
-
-        animation.isShowingStaticDiff = true
-
-        getLogger().info(`[DiffAnimationController] Showing static diff view for: ${filePath}`)
+        // Show VS Code diff for static view
+        await this.showVSCodeDiff(filePath, animation.originalContent, animation.newContent)
     }
 
     /**
-     * Exit diff view and restore final content
+     * Start partial diff animation
      */
-    public async exitDiffView(filePath: string): Promise<void> {
-        const animation = this.activeAnimations.get(filePath)
-        if (!animation || !animation.isShowingStaticDiff) {
-            return
-        }
-
-        const editor = vscode.window.visibleTextEditors.find((e) => e.document.uri.fsPath === filePath)
-        if (!editor) {
-            return
-        }
-
-        // Clear all decorations
-        this.additionControllers.get(filePath)?.clear()
-        this.deletionControllers.get(filePath)?.clear()
-
-        // Restore the final content (without deleted lines)
-        const edit = new vscode.WorkspaceEdit()
-        const fullRange = new vscode.Range(
-            editor.document.positionAt(0),
-            editor.document.positionAt(editor.document.getText().length)
-        )
-        edit.replace(editor.document.uri, fullRange, animation.newContent)
-        await vscode.workspace.applyEdit(edit)
-
-        animation.isShowingStaticDiff = false
-        animation.diffViewContent = undefined
-
-        getLogger().info(`[DiffAnimationController] Exited diff view for: ${filePath}`)
-    }
-
-    /**
-     * Apply GitHub-style diff decorations with actual deletion lines
-     */
-    private async applyGitHubDiffDecorations(
+    public async startPartialDiffAnimation(
         filePath: string,
-        editor: vscode.TextEditor,
         originalContent: string,
-        newContent: string
+        newContent: string,
+        options: PartialUpdateOptions = {}
     ): Promise<void> {
-        let additionController = this.additionControllers.get(filePath)
-        let deletionController = this.deletionControllers.get(filePath)
+        // For now, fall back to full animation
+        // TODO: Implement partial updates in webview
+        return this.startDiffAnimation(filePath, originalContent, newContent)
+    }
 
-        if (!additionController) {
-            additionController = new DecorationController('addition', editor)
-            this.additionControllers.set(filePath, additionController)
+    /**
+     * Close diff webview for a file
+     */
+    private closeDiffWebview(filePath: string): void {
+        const webview = this.diffWebviews.get(filePath)
+        if (webview) {
+            webview.dispose()
+            this.diffWebviews.delete(filePath)
         }
+    }
 
-        if (!deletionController) {
-            deletionController = new DecorationController('deletion', editor)
-            this.deletionControllers.set(filePath, deletionController)
-        }
-
-        // Calculate diff
-        const changes = diffLines(originalContent, newContent)
-        const additions: vscode.Range[] = []
-        const deletions: vscode.Range[] = []
-
-        let currentLine = 0
-
-        for (const change of changes) {
-            const lines = change.value.split('\n').filter((line) => line !== '')
-
-            if (change.added) {
-                // Added lines
-                for (let i = 0; i < lines.length && currentLine + i < editor.document.lineCount; i++) {
-                    additions.push(new vscode.Range(currentLine + i, 0, currentLine + i, Number.MAX_SAFE_INTEGER))
-                }
-                currentLine += lines.length
-            } else if (change.removed) {
-                // Skip removed lines (they're shown in the left panel)
-            } else {
-                // Unchanged lines
-                currentLine += lines.length
-            }
-        }
-
-        // Apply decorations
-        additionController.setRanges(additions)
-        deletionController.setRanges(deletions)
-
-        getLogger().info(
-            `[DiffAnimationController] Applied GitHub diff: ${additions.length} additions, ${deletions.length} deletions`
-        )
-
-        // Store that we're showing diff view
+    /**
+     * Cancel ongoing animation
+     */
+    private cancelAnimation(filePath: string): void {
         const animation = this.activeAnimations.get(filePath)
-        if (animation) {
-            animation.isShowingStaticDiff = true
-        }
-    }
+        if (animation && !animation.isShowingStaticDiff) {
+            animation.animationCancelled = true
 
-    /**
-     * Scroll editor to line
-     */
-    private scrollEditorToLine(editor: vscode.TextEditor, line: number): void {
-        const scrollLine = Math.max(0, line - 5)
-        editor.revealRange(
-            new vscode.Range(scrollLine, 0, scrollLine, 0),
-            vscode.TextEditorRevealType.InCenterIfOutsideViewport
-        )
-    }
-
-    /**
-     * Support for incremental diff animation
-     */
-    public async startIncrementalDiffAnimation(
-        filePath: string,
-        previousContent: string,
-        currentContent: string,
-        isFirstUpdate: boolean = false
-    ): Promise<void> {
-        getLogger().info(`[DiffAnimationController] 🎬 Starting incremental animation for: ${filePath}`)
-
-        if (isFirstUpdate || previousContent === '') {
-            return this.startDiffAnimation(filePath, previousContent, currentContent)
-        }
-
-        // Cancel any ongoing animation
-        this.cancelAnimation(filePath)
-
-        // For incremental updates, apply changes immediately with flash effect
-        try {
-            const editor = vscode.window.visibleTextEditors.find((e) => e.document.uri.fsPath === filePath)
-            if (!editor) {
-                return this.startDiffAnimation(filePath, previousContent, currentContent)
-            }
-
-            const fadedOverlayController = this.fadedOverlayControllers.get(filePath)
-            const activeLineController = this.activeLineControllers.get(filePath)
-
-            if (!fadedOverlayController || !activeLineController) {
-                return this.startDiffAnimation(filePath, previousContent, currentContent)
-            }
-
-            // Apply content change using WorkspaceEdit
-            const edit = new vscode.WorkspaceEdit()
-            const fullRange = new vscode.Range(
-                editor.document.positionAt(0),
-                editor.document.positionAt(editor.document.getText().length)
-            )
-            edit.replace(editor.document.uri, fullRange, currentContent)
-            await vscode.workspace.applyEdit(edit)
-
-            // Flash effect for changed lines
-            const newLines = currentContent.split('\n')
-            const prevLines = previousContent.split('\n')
-            const changedLines: number[] = []
-
-            for (let i = 0; i < Math.max(newLines.length, prevLines.length); i++) {
-                if (newLines[i] !== prevLines[i]) {
-                    changedLines.push(i)
+            // Clear timeouts
+            const timeouts = this.animationTimeouts.get(filePath)
+            if (timeouts) {
+                for (const timeout of timeouts) {
+                    clearTimeout(timeout)
                 }
+                this.animationTimeouts.delete(filePath)
             }
-
-            // Apply flash effect
-            for (const line of changedLines) {
-                if (line < editor.document.lineCount) {
-                    activeLineController.setActiveLine(line)
-                    await new Promise((resolve) => setTimeout(resolve, 200))
-                }
-            }
-
-            // Clear decorations
-            activeLineController.clear()
-            fadedOverlayController.clear()
-
-            // Update animation data for the incremental change
-            const animation = this.activeAnimations.get(filePath)
-            if (animation) {
-                animation.originalContent = previousContent
-                animation.newContent = currentContent
-
-                // Show GitHub-style diff
-                await this.applyGitHubDiffDecorations(filePath, editor, previousContent, currentContent)
-            }
-        } catch (error) {
-            getLogger().error(`[DiffAnimationController] ❌ Incremental animation failed: ${error}`)
-            return this.startDiffAnimation(filePath, previousContent, currentContent)
         }
     }
 
@@ -1136,75 +1030,18 @@ export class DiffAnimationController {
     public stopDiffAnimation(filePath: string): void {
         getLogger().info(`[DiffAnimationController] 🛑 Stopping animation for: ${filePath}`)
 
-        // If showing diff view, exit it first
-        const animation = this.activeAnimations.get(filePath)
-        if (animation?.isShowingStaticDiff) {
-            // Restore final content before clearing using WorkspaceEdit
-            const editor = vscode.window.visibleTextEditors.find((e) => e.document.uri.fsPath === filePath)
-            if (editor && animation.newContent) {
-                const edit = new vscode.WorkspaceEdit()
-                const fullRange = new vscode.Range(
-                    editor.document.positionAt(0),
-                    editor.document.positionAt(editor.document.getText().length)
-                )
-                edit.replace(editor.document.uri, fullRange, animation.newContent)
-                void vscode.workspace.applyEdit(edit).then(() => {
-                    getLogger().info(`[DiffAnimationController] Restored final content for: ${filePath}`)
-                })
-            }
-        }
-
-        // Cancel animation if running
         this.cancelAnimation(filePath)
+        this.closeDiffWebview(filePath)
 
-        // Clear all state for this file
         this.activeAnimations.delete(filePath)
         this.fileSnapshots.delete(filePath)
-        this.hiddenEditors.delete(filePath)
-
-        const fadedOverlayController = this.fadedOverlayControllers.get(filePath)
-        if (fadedOverlayController) {
-            fadedOverlayController.clear()
-            this.fadedOverlayControllers.delete(filePath)
-        }
-
-        const activeLineController = this.activeLineControllers.get(filePath)
-        if (activeLineController) {
-            activeLineController.clear()
-            this.activeLineControllers.delete(filePath)
-        }
-
-        const additionController = this.additionControllers.get(filePath)
-        if (additionController) {
-            additionController.clear()
-            this.additionControllers.delete(filePath)
-        }
-
-        const deletionController = this.deletionControllers.get(filePath)
-        if (deletionController) {
-            deletionController.clear()
-            this.deletionControllers.delete(filePath)
-        }
-
-        const deletionMarkerController = this.deletionMarkerControllers.get(filePath)
-        if (deletionMarkerController) {
-            deletionMarkerController.clear()
-            this.deletionMarkerControllers.delete(filePath)
-        }
-
-        this.streamedLines.delete(filePath)
+        this.animationTimeouts.delete(filePath)
         this.shouldAutoScroll.delete(filePath)
-        this.lastFirstVisibleLine.delete(filePath)
-
-        const scrollListener = this.scrollListeners.get(filePath)
-        if (scrollListener) {
-            scrollListener.dispose()
-            this.scrollListeners.delete(filePath)
-        }
+        this.lastScrollPosition.delete(filePath)
     }
 
     /**
-     * Stop all active diff animations
+     * Stop all animations
      */
     public stopAllAnimations(): void {
         getLogger().info('[DiffAnimationController] 🛑 Stopping all animations')
@@ -1214,7 +1051,7 @@ export class DiffAnimationController {
     }
 
     /**
-     * Check if an animation is currently active for a file
+     * Check if animating
      */
     public isAnimating(filePath: string): boolean {
         const animation = this.activeAnimations.get(filePath)
@@ -1226,7 +1063,7 @@ export class DiffAnimationController {
     }
 
     /**
-     * Check if showing static diff for a file
+     * Check if showing static diff
      */
     public isShowingStaticDiff(filePath: string): boolean {
         const animation = this.activeAnimations.get(filePath)
@@ -1234,7 +1071,7 @@ export class DiffAnimationController {
     }
 
     /**
-     * Get animation statistics
+     * Get animation stats
      */
     public getAnimationStats(): { activeCount: number; filePaths: string[] } {
         return {
@@ -1243,19 +1080,17 @@ export class DiffAnimationController {
         }
     }
 
+    /**
+     * Dispose
+     */
     public dispose(): void {
         getLogger().info('[DiffAnimationController] 💥 Disposing controller')
         this.stopAllAnimations()
 
-        // Dispose content provider
-        this.providerDisposable.dispose()
-        this.contentProvider.dispose()
-
-        // Dispose decoration types
-        fadedOverlayDecorationType.dispose()
-        activeLineDecorationType.dispose()
-        githubAdditionDecorationType.dispose()
-        githubDeletionDecorationType.dispose()
-        deletionMarkerDecorationType.dispose()
+        // Close all webviews
+        for (const [_, webview] of this.diffWebviews) {
+            webview.dispose()
+        }
+        this.diffWebviews.clear()
     }
 }

@@ -522,17 +522,21 @@ export function registerMessageListeners(
 
             getLogger().info(`[VSCode Client] OpenFileDiff notification for: ${normalizedPath}`)
 
-            // Check if we should show static diff (same content as last animation)
+            // Check if we should show static diff
             if (animationHandler.shouldShowStaticDiff(normalizedPath, newContent)) {
-                getLogger().info('[VSCode Client] Same content as last animation, showing static diff')
-                await animationHandler.showStaticDiffForFile(normalizedPath)
+                getLogger().info('[VSCode Client] From ChatClick, showing static diff')
+                await animationHandler.showStaticDiffForFile(
+                    normalizedPath,
+                    params.originalFileContent || '',
+                    params.fileContent || ''
+                )
             } else {
                 getLogger().info('[VSCode Client] New content detected, starting animation')
                 // This is from chat click, pass the flag
                 await animationHandler.processFileDiff({
                     originalFileUri: params.originalFileUri,
-                    originalFileContent: params.originalFileContent,
-                    fileContent: params.fileContent,
+                    originalFileContent: params.originalFileContent || '',
+                    fileContent: params.fileContent || '',
                     isFromChatClick: true,
                 })
             }
