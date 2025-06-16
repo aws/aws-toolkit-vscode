@@ -58,6 +58,15 @@ describe('DiffAnimationController', function () {
         assert.strictEqual(stats.activeCount, 0)
     }
 
+    // Helper function to setup animation and stop it
+    async function setupAnimationAndStop(filePath: string, originalContent: string, newContent: string) {
+        setupStandardMocks(originalContent)
+        await controller.startDiffAnimation(filePath, originalContent, newContent, false)
+        controller.stopDiffAnimation(filePath)
+        const animationData = controller.getAnimationData(filePath)
+        assert.strictEqual(animationData, undefined)
+    }
+
     beforeEach(function () {
         sandbox = sinon.createSandbox()
 
@@ -265,17 +274,7 @@ describe('DiffAnimationController', function () {
 
     describe('stopDiffAnimation', function () {
         it('should stop animation for specific file', async function () {
-            const filePath = '/test/file.js'
-            const originalContent = 'original'
-            const newContent = 'new'
-
-            setupStandardMocks(originalContent)
-            await controller.startDiffAnimation(filePath, originalContent, newContent, false)
-
-            controller.stopDiffAnimation(filePath)
-
-            const animationData = controller.getAnimationData(filePath)
-            assert.strictEqual(animationData, undefined)
+            await setupAnimationAndStop('/test/file.js', 'original', 'new')
         })
 
         it('should handle stopping non-existent animation', function () {
