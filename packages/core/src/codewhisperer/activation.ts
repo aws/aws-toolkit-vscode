@@ -5,8 +5,6 @@
 
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-import { getTabSizeSetting } from '../shared/utilities/editorUtilities'
-import * as EditorContext from './util/editorContext'
 import * as CodeWhispererConstants from './models/constants'
 import {
     CodeSuggestionsState,
@@ -16,7 +14,6 @@ import {
     CodeScanIssue,
     CodeIssueGroupingStrategyState,
 } from './models/model'
-import { acceptSuggestion } from './commands/onInlineAcceptance'
 import { CodeWhispererSettings } from './util/codewhispererSettings'
 import { ExtContext } from '../shared/extensions'
 import { CodeWhispererTracker } from './tracker/codewhispererTracker'
@@ -30,7 +27,6 @@ import {
     showLearnMore,
     showSsoSignIn,
     showFreeTierLimit,
-    updateReferenceLog,
     showIntroduction,
     reconnect,
     openSecurityIssuePanel,
@@ -64,20 +60,15 @@ import {
     updateSecurityDiagnosticCollection,
 } from './service/diagnosticsProvider'
 import { SecurityPanelViewProvider, openEditorAtRange } from './views/securityPanelViewProvider'
-import { RecommendationHandler } from './service/recommendationHandler'
 import { Commands, registerCommandErrorHandler, registerDeclaredCommands } from '../shared/vscode/commands2'
-import { InlineCompletionService, refreshStatusBar } from './service/inlineCompletionService'
-import { isInlineCompletionEnabled } from './util/commonUtil'
 import { AuthUtil } from './util/authUtil'
 import { ImportAdderProvider } from './service/importAdderProvider'
-import { TelemetryHelper } from './util/telemetryHelper'
 import { openUrl } from '../shared/utilities/vsCodeUtils'
-import { notifyNewCustomizations, onProfileChangedListener } from './util/customizationUtil'
+import { onProfileChangedListener } from './util/customizationUtil'
 import { CodeWhispererCommandBackend, CodeWhispererCommandDeclarations } from './commands/gettingStartedPageCommands'
 import { SecurityIssueHoverProvider } from './service/securityIssueHoverProvider'
 import { SecurityIssueCodeActionProvider } from './service/securityIssueCodeActionProvider'
 import { listCodeWhispererCommands } from './ui/statusBarMenu'
-import { Container } from './service/serviceContainer'
 import { debounceStartSecurityScan } from './commands/startSecurityScan'
 import { securityScanLanguageContext } from './util/securityScanLanguageContext'
 import { registerWebviewErrorHandler } from '../webviews/server'
@@ -91,7 +82,6 @@ import { setContext } from '../shared/vscode/setContext'
 import { syncSecurityIssueWebview } from './views/securityIssue/securityIssueWebview'
 import { detectCommentAboveLine } from '../shared/utilities/commentUtils'
 import { activateEditTracking } from './nextEditPrediction/activation'
-import { notifySelectDeveloperProfile } from './region/utils'
 
 let localize: nls.LocalizeFunc
 
@@ -100,10 +90,6 @@ export async function activate(context: ExtContext): Promise<void> {
 
     // Import old CodeWhisperer settings into Amazon Q
     await CodeWhispererSettings.instance.importSettings()
-
-    // initialize AuthUtil earlier to make sure it can listen to connection change events.
-    const auth = AuthUtil.instance
-    auth.initCodeWhispererHooks()
 
     // TODO: is this indirection useful?
     registerDeclaredCommands(
@@ -137,25 +123,20 @@ export async function activate(context: ExtContext): Promise<void> {
     const client = new codewhispererClient.DefaultCodeWhispererClient()
 
     // Service initialization
-    const container = Container.instance
     ReferenceInlineProvider.instance
     ImportAdderProvider.instance
 
     context.extensionContext.subscriptions.push(
         // register toolkit api callback
         registerToolkitApiCallback.register(),
-        signoutCodeWhisperer.register(auth),
+        signoutCodeWhisperer.register(),
         /**
          * Configuration change
          */
         vscode.workspace.onDidChangeConfiguration(async (configurationChangeEvent) => {
-            if (configurationChangeEvent.affectsConfiguration('editor.tabSize')) {
-                EditorContext.updateTabSize(getTabSizeSetting())
-            }
-
             if (configurationChangeEvent.affectsConfiguration('amazonQ.showCodeWithReferences')) {
                 ReferenceLogViewProvider.instance.update()
-                if (auth.isEnterpriseSsoInUse()) {
+                if (AuthUtil.instance.isIdcConnection()) {
                     await vscode.window
                         .showInformationMessage(
                             CodeWhispererConstants.ssoConfigAlertMessage,
@@ -170,7 +151,7 @@ export async function activate(context: ExtContext): Promise<void> {
             }
 
             if (configurationChangeEvent.affectsConfiguration('amazonQ.shareContentWithAWS')) {
-                if (auth.isEnterpriseSsoInUse()) {
+                if (AuthUtil.instance.isIdcConnection()) {
                     await vscode.window
                         .showInformationMessage(
                             CodeWhispererConstants.ssoConfigAlertMessageShareData,
@@ -215,20 +196,21 @@ export async function activate(context: ExtContext): Promise<void> {
                 await openSettings('amazonQ')
             }
         }),
-        Commands.register('aws.amazonq.refreshAnnotation', async (forceProceed: boolean) => {
-            telemetry.record({
-                traceId: TelemetryHelper.instance.traceId,
-            })
+        // TODO port this to lsp
+        // Commands.register('aws.amazonq.refreshAnnotation', async (forceProceed: boolean) => {
+        //     telemetry.record({
+        //         traceId: TelemetryHelper.instance.traceId,
+        //     })
 
-            const editor = vscode.window.activeTextEditor
-            if (editor) {
-                if (forceProceed) {
-                    await container.lineAnnotationController.refresh(editor, 'codewhisperer', true)
-                } else {
-                    await container.lineAnnotationController.refresh(editor, 'codewhisperer')
-                }
-            }
-        }),
+        //     const editor = vscode.window.activeTextEditor
+        //     if (editor) {
+        //         if (forceProceed) {
+        //             await container.lineAnnotationController.refresh(editor, 'codewhisperer', true)
+        //         } else {
+        //             await container.lineAnnotationController.refresh(editor, 'codewhisperer')
+        //         }
+        //     }
+        // }),
         // show introduction
         showIntroduction.register(),
         // toggle code suggestions
@@ -251,10 +233,6 @@ export async function activate(context: ExtContext): Promise<void> {
         showLearnMore.register(),
         // show free tier limit
         showFreeTierLimit.register(),
-        // update reference log instance
-        updateReferenceLog.register(),
-        // refresh codewhisperer status bar
-        refreshStatusBar.register(),
         // generate code fix
         generateFix.register(client, context),
         // regenerate code fix
@@ -300,21 +278,9 @@ export async function activate(context: ExtContext): Promise<void> {
         // notify new customizations
         notifyNewCustomizationsCmd.register(),
         selectRegionProfileCommand.register(),
-        /**
-         * On recommendation acceptance
-         */
-        acceptSuggestion.register(context),
 
         // direct CodeWhisperer connection setup with customization
         connectWithCustomization.register(),
-
-        // on text document close.
-        vscode.workspace.onDidCloseTextDocument((e) => {
-            if (isInlineCompletionEnabled() && e.uri.fsPath !== InlineCompletionService.instance.filePath()) {
-                return
-            }
-            RecommendationHandler.instance.reportUserDecisions(-1)
-        }),
 
         vscode.languages.registerHoverProvider(
             [...CodeWhispererConstants.platformLanguageIds],
@@ -340,36 +306,26 @@ export async function activate(context: ExtContext): Promise<void> {
             SecurityIssueCodeActionProvider.instance
         ),
         vscode.commands.registerCommand('aws.amazonq.openEditorAtRange', openEditorAtRange),
-        auth.regionProfileManager.onDidChangeRegionProfile(onProfileChangedListener)
+        AuthUtil.instance.regionProfileManager.onDidChangeRegionProfile(onProfileChangedListener)
     )
 
     // run the auth startup code with context for telemetry
     await telemetry.function_call.run(
         async () => {
-            await auth.restore()
-            await auth.clearExtraConnections()
-
-            if (auth.isConnectionExpired()) {
-                auth.showReauthenticatePrompt().catch((e) => {
+            if (AuthUtil.instance.isConnectionExpired()) {
+                AuthUtil.instance.showReauthenticatePrompt().catch((e) => {
                     const defaulMsg = localize('AWS.generic.message.error', 'Failed to reauth:')
                     void logAndShowError(localize, e, 'showReauthenticatePrompt', defaulMsg)
                 })
-                if (auth.isEnterpriseSsoInUse()) {
-                    await auth.notifySessionConfiguration()
+                if (AuthUtil.instance.isIdcConnection()) {
+                    await AuthUtil.instance.notifySessionConfiguration()
                 }
-            }
-
-            if (auth.requireProfileSelection()) {
-                await notifySelectDeveloperProfile()
             }
         },
         { emit: false, functionId: { name: 'activateCwCore' } }
     )
 
-    if (auth.isValidEnterpriseSsoInUse()) {
-        await notifyNewCustomizations()
-    }
-    if (auth.isBuilderIdInUse()) {
+    if (AuthUtil.instance.isBuilderIdConnection()) {
         await CodeScansState.instance.setScansEnabled(false)
     }
 
@@ -384,8 +340,8 @@ export async function activate(context: ExtContext): Promise<void> {
         return (
             (isScansEnabled ?? CodeScansState.instance.isScansEnabled()) &&
             !CodeScansState.instance.isMonthlyQuotaExceeded() &&
-            auth.isConnectionValid() &&
-            !auth.isBuilderIdInUse() &&
+            AuthUtil.instance.isConnected() &&
+            !AuthUtil.instance.isBuilderIdConnection() &&
             editor &&
             editor.document.uri.scheme === 'file' &&
             securityScanLanguageContext.isLanguageSupported(editor.document.languageId)
@@ -473,7 +429,6 @@ export async function activate(context: ExtContext): Promise<void> {
     })
 
     await Commands.tryExecute('aws.amazonq.refreshConnectionCallback')
-    container.ready()
 
     function setSubscriptionsForCodeIssues() {
         context.extensionContext.subscriptions.push(
@@ -511,8 +466,8 @@ export async function activate(context: ExtContext): Promise<void> {
 }
 
 export async function shutdown() {
-    RecommendationHandler.instance.reportUserDecisions(-1)
     await CodeWhispererTracker.getTracker().shutdown()
+    AuthUtil.instance.regionProfileManager.globalStatePoller.kill()
 }
 
 function toggleIssuesVisibility(visibleCondition: (issue: CodeScanIssue, filePath: string) => boolean) {

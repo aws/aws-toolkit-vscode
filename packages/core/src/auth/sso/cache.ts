@@ -45,8 +45,8 @@ export function getCache(directory = getCacheDir()): SsoCache {
     }
 }
 
-export function getCacheFileWatcher(directory = getCacheDir()) {
-    const watcher = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(directory, '*.json'))
+export function getCacheFileWatcher(directory = getCacheDir(), file = '*.json') {
+    const watcher = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(directory, file))
     globals.context.subscriptions.push(watcher)
     return watcher
 }
@@ -126,7 +126,7 @@ export function getTokenCache(directory = getCacheDir()): KeyedCache<SsoAccess> 
     return mapCache(cache, read, write)
 }
 
-function getTokenCacheFile(ssoCacheDir: string, key: string): string {
+export function getTokenCacheFile(ssoCacheDir: string, key: string): string {
     const encoded = encodeURI(key)
     // Per the spec: 'SSO Login Token Flow' the access token must be
     // cached as the SHA1 hash of the bytes of the UTF-8 encoded
@@ -145,7 +145,7 @@ function getTokenCacheFile(ssoCacheDir: string, key: string): string {
     return path.join(ssoCacheDir, `${hashedKey}.json`)
 }
 
-function getRegistrationCacheFile(ssoCacheDir: string, key: RegistrationKey): string {
+export function getRegistrationCacheFile(ssoCacheDir: string, key: RegistrationKey): string {
     const hash = (startUrl: string, scopes: string[]) => {
         const shasum = crypto.createHash('sha256')
         shasum.update(startUrl)
@@ -157,4 +157,20 @@ function getRegistrationCacheFile(ssoCacheDir: string, key: RegistrationKey): st
 
     const suffix = `${key.region}${key.scopes && key.scopes.length > 0 ? `-${hash(key.startUrl, key.scopes)}` : ''}`
     return path.join(ssoCacheDir, `aws-toolkit-vscode-client-id-${suffix}.json`)
+}
+
+/**
+ * Returns the cache file name that Flare identity server uses for SSO token and registration
+ *
+ * @param key - The key to use for the new registration cache file.
+ * See https://github.com/aws/language-servers/blob/c10819ea2c25ce564c75fb43a6792f3c919b757a/server/aws-lsp-identity/src/sso/cache/fileSystemSsoCache.ts
+ * @returns File name of the Flare cache file
+ */
+export function getFlareCacheFileName(key: string) {
+    const hash = (str: string) => {
+        const hasher = crypto.createHash('sha1')
+        return hasher.update(str).digest('hex')
+    }
+
+    return hash(key) + '.json'
 }

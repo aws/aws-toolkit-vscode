@@ -7,28 +7,19 @@ import * as vscode from 'vscode'
 import { activateAmazonQCommon, amazonQContextPrefix, deactivateCommon } from './extension'
 import { DefaultAmazonQAppInitContext, AmazonQChatViewProvider } from 'aws-core-vscode/amazonq'
 import { activate as activateTransformationHub } from 'aws-core-vscode/amazonqGumby'
-import {
-    ExtContext,
-    globals,
-    CrashMonitoring,
-    getLogger,
-    isNetworkError,
-    isSageMaker,
-    Experiments,
-} from 'aws-core-vscode/shared'
+import { ExtContext, globals, CrashMonitoring, getLogger, isSageMaker, Experiments } from 'aws-core-vscode/shared'
 import { filetypes, SchemaService } from 'aws-core-vscode/sharedNode'
 import { updateDevMode } from 'aws-core-vscode/dev'
 import { CommonAuthViewProvider } from 'aws-core-vscode/login'
 import { isExtensionActive, VSCODE_EXTENSION_ID } from 'aws-core-vscode/utils'
 import { registerSubmitFeedback } from 'aws-core-vscode/feedback'
 import { DevOptions } from 'aws-core-vscode/dev'
-import { Auth, AuthUtils, getTelemetryMetadataForConn, isAnySsoConnection } from 'aws-core-vscode/auth'
+import { Auth, authUtils } from 'aws-core-vscode/auth'
 import api from './api'
 import { activate as activateCWChat } from './app/chat/activation'
-import { activate as activateInlineChat } from './inlineChat/activation'
 import { beta } from 'aws-core-vscode/dev'
 import { activate as activateNotifications, NotificationsController } from 'aws-core-vscode/notifications'
-import { AuthState, AuthUtil } from 'aws-core-vscode/codewhisperer'
+import { AuthUtil } from 'aws-core-vscode/codewhisperer'
 import { telemetry, AuthUserState } from 'aws-core-vscode/telemetry'
 import { activateAgents } from './app/chat/node/activateAgents'
 
@@ -73,7 +64,6 @@ async function activateAmazonQNode(context: vscode.ExtensionContext) {
     }
     activateAgents()
     await activateTransformationHub(extContext as ExtContext)
-    activateInlineChat(context)
 
     const authProvider = new CommonAuthViewProvider(
         context,
@@ -95,52 +85,30 @@ async function activateAmazonQNode(context: vscode.ExtensionContext) {
     await setupDevMode(context)
     await beta.activate(context)
 
-    // TODO: Should probably emit for web as well.
-    // Will the web metric look the same?
+    await getAuthState()
     telemetry.auth_userState.emit({
         passive: true,
         result: 'Succeeded',
-        source: AuthUtils.ExtensionUse.instance.sourceForTelemetry(),
-        ...(await getAuthState()),
+        source: authUtils.ExtensionUse.instance.sourceForTelemetry(),
+        authStatus: AuthUtil.instance.getAuthState(),
+        authEnabledConnections: (await AuthUtil.instance.getAuthFormIds()).join(','),
     })
 
     void activateNotifications(context, getAuthState)
 }
 
 async function getAuthState(): Promise<Omit<AuthUserState, 'source'>> {
-    let authState: AuthState = 'disconnected'
-    try {
-        // May call connection validate functions that try to refresh the token.
-        // This could result in network errors.
-        authState = (await AuthUtil.instance._getChatAuthState(false)).codewhispererChat
-    } catch (err) {
-        if (
-            isNetworkError(err) &&
-            AuthUtil.instance.conn &&
-            AuthUtil.instance.auth.getConnectionState(AuthUtil.instance.conn) === 'valid'
-        ) {
-            authState = 'connectedWithNetworkError'
-        } else {
-            throw err
-        }
-    }
-    const currConn = AuthUtil.instance.conn
-    if (currConn !== undefined && !(isAnySsoConnection(currConn) || isSageMaker())) {
-        getLogger().error(`Current Amazon Q connection is not SSO, type is: %s`, currConn?.type)
-    }
+    const state = AuthUtil.instance.getAuthState()
 
-    // Pending profile selection state means users already log in with Sso service
-    if (authState === 'pendingProfileSelection') {
-        authState = 'connected'
+    if (AuthUtil.instance.isConnected() && !(AuthUtil.instance.isSsoSession() || isSageMaker())) {
+        getLogger().error('Current Amazon Q connection is not SSO')
     }
 
     return {
-        authStatus:
-            authState === 'connected' || authState === 'expired' || authState === 'connectedWithNetworkError'
-                ? authState
-                : 'notConnected',
-        authEnabledConnections: AuthUtils.getAuthFormIdsFromConnection(currConn).join(','),
-        ...(await getTelemetryMetadataForConn(currConn)),
+        // @ts-ignore
+        authStatus: (state ?? 'notConnected') as AuthStatus,
+        authEnabledConnections: (await AuthUtil.instance.getAuthFormIds()).join(','),
+        ...AuthUtil.instance.getTelemetryMetadata(),
     }
 }
 

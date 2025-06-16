@@ -45,8 +45,8 @@ import { Commands, placeholder } from '../shared/vscode/commands2'
 import { Auth } from './auth'
 import { validateIsNewSsoUrl, validateSsoUrlFormat } from './sso/validation'
 import { getLogger } from '../shared/logger/logger'
-import { AuthUtil, isValidAmazonQConnection, isValidCodeWhispererCoreConnection } from '../codewhisperer/util/authUtil'
 import { AuthFormId } from '../login/webview/vue/types'
+import { amazonQScopes, AuthUtil } from '../codewhisperer/util/authUtil'
 import { extensionVersion } from '../shared/vscode/env'
 import { CommonAuthWebview } from '../login/webview/vue/backend'
 import { AuthSource } from '../login/webview/util'
@@ -585,7 +585,7 @@ export async function hasIamCredentials(
     return (await allConnections()).some(isIamConnection)
 }
 
-export type SsoKind = 'any' | 'codewhisperer' | 'codecatalyst'
+export type SsoKind = 'any' | 'codecatalyst'
 
 /**
  * Returns true if an Identity Center SSO connection exists.
@@ -606,11 +606,6 @@ export async function findSsoConnections(
 ): Promise<SsoConnection[]> {
     let predicate: (c?: Connection) => boolean
     switch (kind) {
-        case 'codewhisperer':
-            predicate = (conn?: Connection) => {
-                return isIdcSsoConnection(conn) && isValidCodeWhispererCoreConnection(conn)
-            }
-            break
         case 'codecatalyst':
             predicate = (conn?: Connection) => {
                 return isIdcSsoConnection(conn) && isValidCodeCatalystConnection(conn)
@@ -622,7 +617,7 @@ export async function findSsoConnections(
     return (await allConnections()).filter(predicate).filter(isIdcSsoConnection)
 }
 
-export type BuilderIdKind = 'any' | 'codewhisperer' | 'codecatalyst'
+export type BuilderIdKind = 'any' | 'codecatalyst'
 
 /**
  * Returns true if a Builder ID connection exists.
@@ -643,11 +638,6 @@ async function findBuilderIdConnections(
 ): Promise<SsoConnection[]> {
     let predicate: (c?: Connection) => boolean
     switch (kind) {
-        case 'codewhisperer':
-            predicate = (conn?: Connection) => {
-                return isBuilderIdConnection(conn) && isValidCodeWhispererCoreConnection(conn)
-            }
-            break
         case 'codecatalyst':
             predicate = (conn?: Connection) => {
                 return isBuilderIdConnection(conn) && isValidCodeCatalystConnection(conn)
@@ -656,7 +646,7 @@ async function findBuilderIdConnections(
         case 'any':
             predicate = isBuilderIdConnection
     }
-    return (await allConnections()).filter(predicate).filter(isAnySsoConnection)
+    return (await allConnections()).filter(predicate!).filter(isAnySsoConnection)
 }
 
 /**
@@ -803,7 +793,7 @@ export function getAuthFormIdsFromConnection(conn?: Connection): AuthFormId[] {
     if (isValidCodeCatalystConnection(conn)) {
         authIds.push(`${connType}CodeCatalyst`)
     }
-    if (isValidAmazonQConnection(conn)) {
+    if (hasScopes(conn, amazonQScopes)) {
         authIds.push(`${connType}CodeWhisperer`)
     }
 
@@ -818,9 +808,9 @@ export function initializeCredentialsProviderManager() {
 
 export async function getAuthType() {
     let authType: CredentialSourceId | undefined = undefined
-    if (AuthUtil.instance.isEnterpriseSsoInUse() && AuthUtil.instance.isConnectionValid()) {
+    if (AuthUtil.instance.isIdcConnection()) {
         authType = 'iamIdentityCenter'
-    } else if (AuthUtil.instance.isBuilderIdInUse() && AuthUtil.instance.isConnectionValid()) {
+    } else if (AuthUtil.instance.isBuilderIdConnection()) {
         authType = 'awsId'
     }
     return authType

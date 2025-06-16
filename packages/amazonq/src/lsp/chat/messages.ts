@@ -38,9 +38,6 @@ import {
     ShowSaveFileDialogParams,
     LSPErrorCodes,
     tabBarActionRequestType,
-    ShowDocumentParams,
-    ShowDocumentResult,
-    ShowDocumentRequest,
     contextCommandsNotificationType,
     ContextCommandParams,
     openFileDiffNotificationType,
@@ -59,9 +56,8 @@ import {
 import { v4 as uuidv4 } from 'uuid'
 import * as vscode from 'vscode'
 import { Disposable, LanguageClient, Position, TextDocumentIdentifier } from 'vscode-languageclient'
-import * as jose from 'jose'
 import { AmazonQChatViewProvider } from './webviewProvider'
-import { AuthUtil, ReferenceLogViewProvider } from 'aws-core-vscode/codewhisperer'
+import { AuthUtil, CodeWhispererSettings, ReferenceLogViewProvider } from 'aws-core-vscode/codewhisperer'
 import { amazonQDiffScheme, AmazonQPromptSettings, messages, openUrl } from 'aws-core-vscode/shared'
 import {
     DefaultAmazonQAppInitContext,
@@ -72,7 +68,8 @@ import {
 } from 'aws-core-vscode/amazonq'
 import { telemetry, TelemetryBase } from 'aws-core-vscode/telemetry'
 import { isValidResponseError } from './error'
-import { focusAmazonQPanel } from './commands'
+import { decryptResponse, encryptRequest } from '../encryption'
+import { getCursorState } from '../utils'
 
 export function registerLanguageServerEventListener(languageClient: LanguageClient, provider: AmazonQChatViewProvider) {
     languageClient.info(
@@ -99,25 +96,18 @@ export function registerLanguageServerEventListener(languageClient: LanguageClie
         const telemetryName: string = e.name
 
         if (telemetryName in telemetry) {
+            switch (telemetryName) {
+                case 'codewhisperer_serviceInvocation': {
+                    // this feature is entirely client side right now
+                    e.data.codewhispererImportRecommendationEnabled =
+                        CodeWhispererSettings.instance.isImportRecommendationEnabled()
+                    break
+                }
+            }
             languageClient.info(`[Telemetry] Emitting ${telemetryName} telemetry: ${JSON.stringify(e.data)}`)
             telemetry[telemetryName as keyof TelemetryBase].emit(e.data)
         }
     })
-}
-
-function getCursorState(selection: readonly vscode.Selection[]) {
-    return selection.map((s) => ({
-        range: {
-            start: {
-                line: s.start.line,
-                character: s.start.character,
-            },
-            end: {
-                line: s.end.line,
-                character: s.end.character,
-            },
-        },
-    }))
 }
 
 export function registerMessageListeners(
@@ -182,7 +172,7 @@ export function registerMessageListeners(
 
                 if (fullAuthTypes.includes(authType)) {
                     try {
-                        await AuthUtil.instance.secondaryAuth.deleteConnection()
+                        await AuthUtil.instance.logout()
                     } catch (e) {
                         languageClient.error(
                             `[VSCode Client] Failed to authenticate after AUTH_FOLLOW_UP_CLICKED: ${(e as Error).message}`
@@ -225,21 +215,12 @@ export function registerMessageListeners(
                 const cancellationToken = new CancellationTokenSource()
                 chatStreamTokens.set(chatParams.tabId, cancellationToken)
 
-                const chatDisposable = languageClient.onProgress(
-                    chatRequestType,
-                    partialResultToken,
-                    (partialResult) => {
-                        // Store the latest partial result
-                        if (typeof partialResult === 'string' && encryptionKey) {
-                            void decodeRequest<ChatResult>(partialResult, encryptionKey).then(
-                                (decoded) => (lastPartialResult = decoded)
-                            )
-                        } else {
-                            lastPartialResult = partialResult as ChatResult
+                const chatDisposable = languageClient.onProgress(chatRequestType, partialResultToken, (partialResult) =>
+                    handlePartialResult<ChatResult>(partialResult, encryptionKey, provider, chatParams.tabId).then(
+                        (result) => {
+                            lastPartialResult = result
                         }
-
-                        void handlePartialResult<ChatResult>(partialResult, encryptionKey, provider, chatParams.tabId)
-                    }
+                    )
                 )
 
                 const editor =
@@ -431,40 +412,6 @@ export function registerMessageListeners(
         }
     })
 
-    languageClient.onRequest<ShowDocumentParams, ShowDocumentResult>(
-        ShowDocumentRequest.method,
-        async (params: ShowDocumentParams): Promise<ShowDocumentParams | ResponseError<ShowDocumentResult>> => {
-            focusAmazonQPanel().catch((e) => languageClient.error(`[VSCode Client] focusAmazonQPanel() failed`))
-
-            try {
-                const uri = vscode.Uri.parse(params.uri)
-
-                if (params.external) {
-                    // Note: Not using openUrl() because we probably don't want telemetry for these URLs.
-                    // Also it doesn't yet support the required HACK below.
-
-                    // HACK: workaround vscode bug: https://github.com/microsoft/vscode/issues/85930
-                    vscode.env.openExternal(params.uri as any).then(undefined, (e) => {
-                        // TODO: getLogger('?').error('failed vscode.env.openExternal: %O', e)
-                        vscode.env.openExternal(uri).then(undefined, (e) => {
-                            // TODO: getLogger('?').error('failed vscode.env.openExternal: %O', e)
-                        })
-                    })
-                    return params
-                }
-
-                const doc = await vscode.workspace.openTextDocument(uri)
-                await vscode.window.showTextDocument(doc, { preview: false })
-                return params
-            } catch (e) {
-                return new ResponseError(
-                    LSPErrorCodes.RequestFailed,
-                    `Failed to open document: ${(e as Error).message}`
-                )
-            }
-        }
-    )
-
     languageClient.onNotification(contextCommandsNotificationType.method, (params: ContextCommandParams) => {
         void provider.webview?.postMessage({
             command: contextCommandsNotificationType.method,
@@ -519,29 +466,6 @@ function isServerEvent(command: string) {
     return command.startsWith('aws/chat/') || command === 'telemetry/event'
 }
 
-async function encryptRequest<T>(params: T, encryptionKey: Buffer): Promise<{ message: string } | T> {
-    const payload = new TextEncoder().encode(JSON.stringify(params))
-
-    const encryptedMessage = await new jose.CompactEncrypt(payload)
-        .setProtectedHeader({ alg: 'dir', enc: 'A256GCM' })
-        .encrypt(encryptionKey)
-
-    return { message: encryptedMessage }
-}
-
-async function decodeRequest<T>(request: string, key: Buffer): Promise<T> {
-    const result = await jose.jwtDecrypt(request, key, {
-        clockTolerance: 60, // Allow up to 60 seconds to account for clock differences
-        contentEncryptionAlgorithms: ['A256GCM'],
-        keyManagementAlgorithms: ['dir'],
-    })
-
-    if (!result.payload) {
-        throw new Error('JWT payload not found')
-    }
-    return result.payload as T
-}
-
 /**
  * Decodes partial chat responses from the language server before sending them to mynah UI
  */
@@ -551,10 +475,7 @@ async function handlePartialResult<T extends ChatResult>(
     provider: AmazonQChatViewProvider,
     tabId: string
 ) {
-    const decryptedMessage =
-        typeof partialResult === 'string' && encryptionKey
-            ? await decodeRequest<T>(partialResult, encryptionKey)
-            : (partialResult as T)
+    const decryptedMessage = await decryptResponse<T>(partialResult, encryptionKey)
 
     if (decryptedMessage.body !== undefined) {
         void provider.webview?.postMessage({
@@ -564,6 +485,7 @@ async function handlePartialResult<T extends ChatResult>(
             tabId: tabId,
         })
     }
+    return decryptedMessage
 }
 
 /**
@@ -577,8 +499,8 @@ async function handleCompleteResult<T extends ChatResult>(
     tabId: string,
     disposable: Disposable
 ) {
-    const decryptedMessage =
-        typeof result === 'string' && encryptionKey ? await decodeRequest<T>(result, encryptionKey) : (result as T)
+    const decryptedMessage = await decryptResponse<T>(result, encryptionKey)
+
     void provider.webview?.postMessage({
         command: chatRequestType.method,
         params: decryptedMessage,

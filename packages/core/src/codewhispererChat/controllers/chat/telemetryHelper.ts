@@ -2,7 +2,7 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import * as path from 'path'
+
 import { UserIntent } from '@amzn/codewhisperer-streaming'
 import {
     AmazonqAddMessage,
@@ -28,7 +28,6 @@ import {
     ResponseBodyLinkClickMessage,
     SourceLinkClickMessage,
     TriggerPayload,
-    AdditionalContextLengths,
     AdditionalContextInfo,
 } from './model'
 import { TriggerEvent, TriggerEventsStorage } from '../../storages/triggerEvents'
@@ -43,9 +42,6 @@ import { supportedLanguagesList } from '../chat/chatRequest/converter'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import { getSelectedCustomization } from '../../../codewhisperer/util/customizationUtil'
 import { undefinedIfEmpty } from '../../../shared/utilities/textUtilities'
-import { AdditionalContextPrompt } from '../../../amazonq/lsp/types'
-import { getUserPromptsDirectory, promptFileExtension } from '../../constants'
-import { isInDirectory } from '../../../shared/filesystemUtilities'
 import { sleep } from '../../../shared/utilities/timeoutUtils'
 import {
     FileDiagnostic,
@@ -71,7 +67,7 @@ export function recordTelemetryChatRunCommand(type: CwsprChatCommandType, comman
         result: 'Succeeded',
         cwsprChatCommandType: type,
         cwsprChatCommandName: command,
-        credentialStartUrl: AuthUtil.instance.startUrl,
+        credentialStartUrl: AuthUtil.instance.connection?.startUrl,
     })
 }
 
@@ -164,40 +160,6 @@ export class CWCTelemetryHelper {
         telemetry.amazonq_exitFocusChat.emit({ result: 'Succeeded', passive: true })
     }
 
-    public getContextType(prompt: AdditionalContextPrompt): string {
-        if (prompt.filePath.endsWith(promptFileExtension)) {
-            if (isInDirectory(path.join('.amazonq', 'rules'), prompt.relativePath)) {
-                return 'rule'
-            } else if (isInDirectory(getUserPromptsDirectory(), prompt.filePath)) {
-                return 'prompt'
-            }
-        }
-        return 'file'
-    }
-
-    public getContextLengths(prompts: AdditionalContextPrompt[]): AdditionalContextLengths {
-        let fileContextLength = 0
-        let promptContextLength = 0
-        let ruleContextLength = 0
-
-        for (const prompt of prompts) {
-            const type = this.getContextType(prompt)
-            switch (type) {
-                case 'rule':
-                    ruleContextLength += prompt.content.length
-                    break
-                case 'file':
-                    fileContextLength += prompt.content.length
-                    break
-                case 'prompt':
-                    promptContextLength += prompt.content.length
-                    break
-            }
-        }
-
-        return { fileContextLength, promptContextLength, ruleContextLength }
-    }
-
     public async recordFeedback(message: ChatItemFeedbackMessage) {
         const logger = getLogger()
         try {
@@ -255,7 +217,7 @@ export class CWCTelemetryHelper {
                 event = {
                     result,
                     cwsprChatConversationId: conversationId ?? '',
-                    credentialStartUrl: AuthUtil.instance.startUrl,
+                    credentialStartUrl: AuthUtil.instance.connection?.startUrl,
                     cwsprChatMessageId: message.messageId,
                     cwsprChatUserIntent: this.getUserIntentForTelemetry(message.userIntent),
                     cwsprChatInteractionType: 'insertAtCursor',
@@ -273,7 +235,7 @@ export class CWCTelemetryHelper {
                 event = {
                     result,
                     cwsprChatConversationId: conversationId ?? '',
-                    credentialStartUrl: AuthUtil.instance.startUrl,
+                    credentialStartUrl: AuthUtil.instance.connection?.startUrl,
                     cwsprChatMessageId: message.messageId,
                     cwsprChatUserIntent: this.getUserIntentForTelemetry(message.userIntent),
                     cwsprChatInteractionType: 'copySnippet',
@@ -292,7 +254,7 @@ export class CWCTelemetryHelper {
                     cwsprChatConversationId: conversationId ?? '',
                     cwsprChatMessageId: message.messageId,
                     cwsprChatInteractionType: 'acceptDiff',
-                    credentialStartUrl: AuthUtil.instance.startUrl,
+                    credentialStartUrl: AuthUtil.instance.connection?.startUrl,
                     cwsprChatAcceptedCharactersLength: message.code.length,
                     cwsprChatHasReference:
                         message.referenceTrackerInformation && message.referenceTrackerInformation.length > 0,
@@ -307,7 +269,7 @@ export class CWCTelemetryHelper {
                     cwsprChatConversationId: conversationId ?? '',
                     cwsprChatMessageId: message.messageId,
                     cwsprChatInteractionType: 'viewDiff',
-                    credentialStartUrl: AuthUtil.instance.startUrl,
+                    credentialStartUrl: AuthUtil.instance.connection?.startUrl,
                     cwsprChatAcceptedCharactersLength: message.code.length,
                     cwsprChatHasReference:
                         message.referenceTrackerInformation && message.referenceTrackerInformation.length > 0,
@@ -320,7 +282,7 @@ export class CWCTelemetryHelper {
                 event = {
                     result,
                     cwsprChatConversationId: conversationId ?? '',
-                    credentialStartUrl: AuthUtil.instance.startUrl,
+                    credentialStartUrl: AuthUtil.instance.connection?.startUrl,
                     cwsprChatMessageId: message.messageId,
                     cwsprChatInteractionType: 'clickFollowUp',
                 }
@@ -331,7 +293,7 @@ export class CWCTelemetryHelper {
                     result,
                     cwsprChatMessageId: message.messageId,
                     cwsprChatConversationId: conversationId ?? '',
-                    credentialStartUrl: AuthUtil.instance.startUrl,
+                    credentialStartUrl: AuthUtil.instance.connection?.startUrl,
                     cwsprChatInteractionType: message.vote,
                 }
                 break
@@ -341,7 +303,7 @@ export class CWCTelemetryHelper {
                     result,
                     cwsprChatMessageId: message.messageId,
                     cwsprChatConversationId: conversationId ?? '',
-                    credentialStartUrl: AuthUtil.instance.startUrl,
+                    credentialStartUrl: AuthUtil.instance.connection?.startUrl,
                     cwsprChatInteractionType: 'clickLink',
                     cwsprChatInteractionTarget: message.link,
                 }
@@ -352,7 +314,7 @@ export class CWCTelemetryHelper {
                     result,
                     cwsprChatMessageId: message.messageId,
                     cwsprChatConversationId: conversationId ?? '',
-                    credentialStartUrl: AuthUtil.instance.startUrl,
+                    credentialStartUrl: AuthUtil.instance.connection?.startUrl,
                     cwsprChatInteractionType: 'clickBodyLink',
                     cwsprChatInteractionTarget: message.link,
                 }
@@ -363,7 +325,7 @@ export class CWCTelemetryHelper {
                     result,
                     cwsprChatMessageId: 'footer',
                     cwsprChatConversationId: conversationId ?? '',
-                    credentialStartUrl: AuthUtil.instance.startUrl,
+                    credentialStartUrl: AuthUtil.instance.connection?.startUrl,
                     cwsprChatInteractionType: 'clickBodyLink',
                     cwsprChatInteractionTarget: message.link,
                 }
@@ -479,7 +441,7 @@ export class CWCTelemetryHelper {
             cwsprChatUserIntent: telemetryUserIntent,
             cwsprChatHasCodeSnippet: triggerPayload.codeSelection && !triggerPayload.codeSelection.isEmpty,
             cwsprChatProgrammingLanguage: triggerPayload.fileLanguage,
-            credentialStartUrl: AuthUtil.instance.startUrl,
+            credentialStartUrl: AuthUtil.instance.connection?.startUrl,
             cwsprChatHasProjectContext: triggerPayload.relevantTextDocuments
                 ? triggerPayload.relevantTextDocuments.length > 0 && triggerPayload.useRelevantDocuments === true
                 : false,
@@ -567,7 +529,7 @@ export class CWCTelemetryHelper {
             cwsprChatRequestLength: triggerPayload.message.length,
             cwsprChatResponseLength: message.messageLength,
             cwsprChatConversationType: 'Chat',
-            credentialStartUrl: AuthUtil.instance.startUrl,
+            credentialStartUrl: AuthUtil.instance.connection?.startUrl,
             codewhispererCustomizationArn: triggerPayload.customization.arn,
             cwsprChatHasProjectContext: hasProjectLevelContext,
             cwsprChatHasContextList: triggerPayload.documentReferences.length > 0,
@@ -641,7 +603,7 @@ export class CWCTelemetryHelper {
             cwsprChatResponseCode: responseCode,
             cwsprChatRequestLength: triggerPayload.message?.length ?? 0,
             cwsprChatConversationType: 'Chat',
-            credentialStartUrl: AuthUtil.instance.startUrl,
+            credentialStartUrl: AuthUtil.instance.connection?.startUrl,
         })
     }
 

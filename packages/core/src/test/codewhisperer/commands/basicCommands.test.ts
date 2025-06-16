@@ -57,7 +57,7 @@ import { waitUntil } from '../../../shared/utilities/timeoutUtils'
 import { listCodeWhispererCommands } from '../../../codewhisperer/ui/statusBarMenu'
 import { CodeScanIssue, CodeScansState, CodeSuggestionsState, codeScanState } from '../../../codewhisperer/models/model'
 import { cwQuickPickSource } from '../../../codewhisperer/commands/types'
-import { refreshStatusBar } from '../../../codewhisperer/service/inlineCompletionService'
+import { refreshStatusBar } from '../../../codewhisperer/service/statusBar'
 import { focusAmazonQPanel } from '../../../codewhispererChat/commands/registerCommands'
 import * as diagnosticsProvider from '../../../codewhisperer/service/diagnosticsProvider'
 import { randomUUID } from '../../../shared/crypto'
@@ -410,8 +410,8 @@ describe('CodeWhisperer-basicCommands', function () {
 
         it('includes the "source" in the command execution metric', async function () {
             tryRegister(focusAmazonQPanel)
-            sinon.stub(AuthUtil.instance.secondaryAuth, 'deleteConnection')
-            targetCommand = testCommand(signoutCodeWhisperer, AuthUtil.instance)
+            sinon.stub(AuthUtil.instance, 'logout')
+            targetCommand = testCommand(signoutCodeWhisperer)
             await targetCommand.execute(placeholder, cwQuickPickSource)
             assertTelemetry('vscode_executeCommand', [
                 { source: cwQuickPickSource, command: focusAmazonQPanel.id },
@@ -476,8 +476,9 @@ describe('CodeWhisperer-basicCommands', function () {
         it('also shows customizations when connected to valid sso', async function () {
             sinon.stub(AuthUtil.instance, 'isConnectionExpired').returns(false)
             sinon.stub(AuthUtil.instance, 'isConnected').returns(true)
-            sinon.stub(AuthUtil.instance, 'isValidEnterpriseSsoInUse').returns(true)
+            sinon.stub(AuthUtil.instance, 'isIdcConnection').returns(true)
             sinon.stub(AuthUtil.instance, 'isCustomizationFeatureEnabled').value(true)
+            sinon.stub(AuthUtil.instance.regionProfileManager, 'requireProfileSelection').returns(false)
             await CodeScansState.instance.setScansEnabled(false)
 
             getTestWindow().onDidShowQuickPick(async (e) => {
@@ -500,7 +501,7 @@ describe('CodeWhisperer-basicCommands', function () {
 
         it('should not show auto-scans if using builder id', async function () {
             sinon.stub(AuthUtil.instance, 'isConnected').returns(true)
-            sinon.stub(AuthUtil.instance, 'isBuilderIdInUse').returns(true)
+            sinon.stub(AuthUtil.instance, 'isBuilderIdConnection').returns(true)
 
             getTestWindow().onDidShowQuickPick(async (e) => {
                 e.assertItems([

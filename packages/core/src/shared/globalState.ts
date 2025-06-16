@@ -7,6 +7,7 @@ import * as vscode from 'vscode'
 import { getLogger } from './logger/logger'
 import * as redshift from '../awsService/redshift/models/models'
 import { TypeConstructor, cast } from './utilities/typeConstructors'
+import { Customization } from '../codewhisperer/client/codewhispereruserclient'
 
 type ToolId = 'codecatalyst' | 'codewhisperer' | 'testId'
 export type ToolIdStateKey = `${ToolId}.savedConnectionId`
@@ -230,6 +231,53 @@ export class GlobalState implements vscode.Memento {
     }
 
     /**
+     * Get the Amazon Q customization. If legacy (map of customizations) store the
+     * customization with label of profile name
+     *
+     * @param profileName name of profile, only used in case legacy customization is found
+     * @returns Amazon Q customization, or undefined if not found.
+     * If legacy, return the Amazon Q customization for the auth profile name
+     */
+    getAmazonQCustomization(profileName: string): Customization | undefined {
+        const result = this.tryGet('CODEWHISPERER_SELECTED_CUSTOMIZATION', Object, undefined)
+
+        // Legacy migration for old customization map of type { [label: string]: Customization[] }
+        if (typeof result === 'object' && Object.values(result).every(Array.isArray)) {
+            const selectedCustomization = result[profileName]
+            this.tryUpdate('CODEWHISPERER_SELECTED_CUSTOMIZATION', selectedCustomization)
+            return selectedCustomization
+        } else {
+            return result
+        }
+    }
+
+    /**
+     * Get the Amazon Q cached customizations. If legacy (map of customizations) store the
+     * customizations with label of profile name
+     *
+     * @param profileName name of profile, only used in case legacy customization is found
+     * @returns array of Amazon Q cached customizations, or empty array if not found.
+     * If legacy, return the Amazon Q persisted customizations for the auth profile name
+     */
+    getAmazonQCachedCustomization(profileName: string): Customization[] {
+        const result = this.tryGet<Customization[]>('CODEWHISPERER_PERSISTED_CUSTOMIZATIONS', Array, [])
+
+        // Legacy migration for old customization map of type { [label: string]: Customization[] }
+        if (result.length === 0) {
+            const customizations = this.tryGet<{ [label: string]: Customization[] }>(
+                'CODEWHISPERER_PERSISTED_CUSTOMIZATIONS',
+                Object,
+                {}
+            )
+            const cachedCustomizationsArray = customizations[profileName] || []
+            this.tryUpdate('CODEWHISPERER_PERSISTED_CUSTOMIZATIONS', cachedCustomizationsArray)
+            return cachedCustomizationsArray
+        } else {
+            return result
+        }
+    }
+
+    /**
      * Sets SSO session creation timestamp for the given session `id`.
      *
      * TODO: this never garbage-collects old connections, so the state will grow forever...
@@ -268,5 +316,70 @@ export class GlobalState implements vscode.Memento {
             return v
         })
         return all?.[id]
+    }
+}
+
+export interface GlobalStatePollerProps {
+    getState: () => any
+    changeHandler: () => void
+    pollIntervalInMs: number
+}
+
+/**
+ * Utility class that polls a state value at regular intervals and triggers a callback when the state changes.
+ *
+ * This class can be used to monitor changes in global state and react to those changes.
+ */
+export class GlobalStatePoller {
+    protected oldValue: any
+    protected pollIntervalInMs: number
+    protected getState: () => any
+    protected changeHandler: () => void
+    protected intervalId?: NodeJS.Timeout
+
+    constructor(props: GlobalStatePollerProps) {
+        this.getState = props.getState
+        this.changeHandler = props.changeHandler
+        this.pollIntervalInMs = props.pollIntervalInMs
+        this.oldValue = this.getState()
+    }
+
+    /**
+     * Factory method that creates and starts a GlobalStatePoller instance.
+     *
+     * @param getState - Function that returns the current state value to monitor, e.g. globals.globalState.tryGet
+     * @param changeHandler - Callback function that is invoked when the state changes
+     * @returns A new GlobalStatePoller instance that has already started polling
+     */
+    static create(props: GlobalStatePollerProps) {
+        const instance = new GlobalStatePoller(props)
+        instance.poll()
+        return instance
+    }
+
+    /**
+     * Starts polling the state value. When a change is detected, the changeHandler callback is invoked.
+     */
+    private poll() {
+        if (this.intervalId) {
+            this.kill()
+        }
+        this.intervalId = setInterval(() => {
+            const newValue = this.getState()
+            if (this.oldValue !== newValue) {
+                this.oldValue = newValue
+                this.changeHandler()
+            }
+        }, this.pollIntervalInMs)
+    }
+
+    /**
+     * Stops the polling interval.
+     */
+    kill() {
+        if (this.intervalId) {
+            clearInterval(this.intervalId)
+            this.intervalId = undefined
+        }
     }
 }

@@ -29,6 +29,8 @@ const validationExemptMetrics: Set<string> = new Set([
     'codewhisperer_codePercentage',
     'codewhisperer_userModification',
     'codewhisperer_userTriggerDecision',
+    'codewhisperer_perceivedLatency', // flare doesn't currently set result property
+    'codewhisperer_serviceInvocation', // flare doesn't currently set result property
     'dynamicresource_selectResources',
     'dynamicresource_copyIdentifier',
     'dynamicresource_mutateResource',
