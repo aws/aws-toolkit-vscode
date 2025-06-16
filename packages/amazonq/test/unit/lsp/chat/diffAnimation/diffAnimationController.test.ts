@@ -15,6 +15,40 @@ describe('DiffAnimationController', function () {
     let controller: DiffAnimationController
     let sandbox: sinon.SinonSandbox
 
+    // Helper function to create mock document
+    function createMockDocument(content: string, lineCount: number = 1) {
+        return {
+            getText: () => content,
+            lineCount,
+            lineAt: (line: number) => ({ text: content.split('\n')[line] || content }),
+            save: sandbox.stub().resolves(),
+        }
+    }
+
+    // Helper function to setup standard file operation mocks
+    function setupStandardMocks(content: string = 'original') {
+        const mockDoc = createMockDocument(content)
+        ;(vscode.workspace.openTextDocument as sinon.SinonStub).resolves(mockDoc)
+        ;(vscode.workspace.applyEdit as sinon.SinonStub).resolves(true)
+        ;(vscode.commands.executeCommand as sinon.SinonStub).resolves()
+        return mockDoc
+    }
+
+    // Helper function to setup new file mocks
+    function setupNewFileMocks() {
+        ;(vscode.workspace.openTextDocument as sinon.SinonStub)
+            .onFirstCall()
+            .rejects(new Error('File not found'))
+            .onSecondCall()
+            .resolves(createMockDocument('', 0))
+        ;(vscode.workspace.applyEdit as sinon.SinonStub).resolves(true)
+    }
+
+    // Helper function to setup error mocks
+    function setupErrorMocks(errorMessage: string = 'Test error') {
+        ;(vscode.workspace.openTextDocument as sinon.SinonStub).rejects(new Error(errorMessage))
+    }
+
     beforeEach(function () {
         sandbox = sinon.createSandbox()
 
@@ -44,7 +78,6 @@ describe('DiffAnimationController', function () {
     describe('constructor', function () {
         it('should initialize successfully', function () {
             assert.ok(controller)
-            // Controller should be initialized without errors
         })
     })
 
@@ -59,16 +92,7 @@ describe('DiffAnimationController', function () {
             const originalContent = 'original'
             const newContent = 'new'
 
-            // Mock file operations
-            const mockDoc = {
-                getText: () => originalContent,
-                lineCount: 1,
-                lineAt: () => ({ text: originalContent }),
-                save: sandbox.stub().resolves(),
-            }
-            ;(vscode.workspace.openTextDocument as sinon.SinonStub).resolves(mockDoc)
-            ;(vscode.workspace.applyEdit as sinon.SinonStub).resolves(true)
-
+            setupStandardMocks(originalContent)
             await controller.startDiffAnimation(filePath, originalContent, newContent)
 
             const result = controller.getAnimationData(filePath)
@@ -89,16 +113,7 @@ describe('DiffAnimationController', function () {
             const originalContent = 'original'
             const newContent = 'new'
 
-            // Mock file operations
-            const mockDoc = {
-                getText: () => originalContent,
-                lineCount: 1,
-                lineAt: () => ({ text: originalContent }),
-                save: sandbox.stub().resolves(),
-            }
-            ;(vscode.workspace.openTextDocument as sinon.SinonStub).resolves(mockDoc)
-            ;(vscode.workspace.applyEdit as sinon.SinonStub).resolves(true)
-
+            setupStandardMocks(originalContent)
             await controller.startDiffAnimation(filePath, originalContent, newContent)
 
             const result = controller.shouldShowStaticDiff(filePath, newContent)
@@ -112,21 +127,9 @@ describe('DiffAnimationController', function () {
             const originalContent = ''
             const newContent = 'console.log("hello")'
 
-            // Mock file operations for new file
-            ;(vscode.workspace.openTextDocument as sinon.SinonStub)
-                .onFirstCall()
-                .rejects(new Error('File not found'))
-                .onSecondCall()
-                .resolves({
-                    getText: () => '',
-                    lineCount: 0,
-                    save: sandbox.stub().resolves(),
-                })
-            ;(vscode.workspace.applyEdit as sinon.SinonStub).resolves(true)
-
+            setupNewFileMocks()
             await controller.startDiffAnimation(filePath, originalContent, newContent, false)
 
-            // Should complete without errors
             assert.ok(true)
         })
 
@@ -135,19 +138,9 @@ describe('DiffAnimationController', function () {
             const originalContent = 'console.log("old")'
             const newContent = 'console.log("new")'
 
-            // Mock file operations for existing file
-            const mockDoc = {
-                getText: () => originalContent,
-                lineCount: 1,
-                lineAt: () => ({ text: originalContent }),
-                save: sandbox.stub().resolves(),
-            }
-            ;(vscode.workspace.openTextDocument as sinon.SinonStub).resolves(mockDoc)
-            ;(vscode.workspace.applyEdit as sinon.SinonStub).resolves(true)
-
+            setupStandardMocks(originalContent)
             await controller.startDiffAnimation(filePath, originalContent, newContent, false)
 
-            // Should complete without errors
             assert.ok(true)
         })
 
@@ -156,12 +149,9 @@ describe('DiffAnimationController', function () {
             const originalContent = 'original'
             const newContent = 'new'
 
-            // Mock VS Code diff command
-            ;(vscode.commands.executeCommand as sinon.SinonStub).resolves()
-
+            setupStandardMocks()
             await controller.startDiffAnimation(filePath, originalContent, newContent, true)
 
-            // Should handle chat click without errors
             assert.ok(true)
         })
 
@@ -170,8 +160,7 @@ describe('DiffAnimationController', function () {
             const originalContent = 'original'
             const newContent = 'new'
 
-            // Mock error in file operations
-            ;(vscode.workspace.openTextDocument as sinon.SinonStub).rejects(new Error('File error'))
+            setupErrorMocks('File error')
 
             try {
                 await controller.startDiffAnimation(filePath, originalContent, newContent, false)
@@ -179,7 +168,6 @@ describe('DiffAnimationController', function () {
                 // Expected to throw
             }
 
-            // Should handle errors gracefully
             assert.ok(true)
         })
     })
@@ -197,19 +185,9 @@ describe('DiffAnimationController', function () {
                 isPartialUpdate: true,
             }
 
-            // Mock file operations
-            const mockDoc = {
-                getText: () => originalContent,
-                lineCount: 3,
-                lineAt: (line: number) => ({ text: `line${line + 1}` }),
-                save: sandbox.stub().resolves(),
-            }
-            ;(vscode.workspace.openTextDocument as sinon.SinonStub).resolves(mockDoc)
-            ;(vscode.workspace.applyEdit as sinon.SinonStub).resolves(true)
-
+            setupStandardMocks(originalContent)
             await controller.startPartialDiffAnimation(filePath, originalContent, newContent, options)
 
-            // Should complete without errors
             assert.ok(true)
         })
 
@@ -218,19 +196,9 @@ describe('DiffAnimationController', function () {
             const originalContent = 'original'
             const newContent = 'new'
 
-            // Mock file operations
-            const mockDoc = {
-                getText: () => originalContent,
-                lineCount: 1,
-                lineAt: () => ({ text: originalContent }),
-                save: sandbox.stub().resolves(),
-            }
-            ;(vscode.workspace.openTextDocument as sinon.SinonStub).resolves(mockDoc)
-            ;(vscode.workspace.applyEdit as sinon.SinonStub).resolves(true)
-
+            setupStandardMocks(originalContent)
             await controller.startPartialDiffAnimation(filePath, originalContent, newContent)
 
-            // Should complete without errors
             assert.ok(true)
         })
     })
@@ -241,12 +209,9 @@ describe('DiffAnimationController', function () {
             const originalContent = 'original'
             const newContent = 'new'
 
-            // Mock VS Code diff command
-            ;(vscode.commands.executeCommand as sinon.SinonStub).resolves()
-
+            setupStandardMocks()
             await controller.showVSCodeDiff(filePath, originalContent, newContent)
 
-            // Should execute diff command
             assert.ok(vscode.commands.executeCommand)
         })
 
@@ -255,7 +220,6 @@ describe('DiffAnimationController', function () {
             const originalContent = 'original'
             const newContent = 'new'
 
-            // Mock error in diff command
             ;(vscode.commands.executeCommand as sinon.SinonStub).rejects(new Error('Diff error'))
 
             try {
@@ -274,17 +238,7 @@ describe('DiffAnimationController', function () {
             const originalContent = 'original'
             const newContent = 'new'
 
-            // Mock file operations and start animation first
-            const mockDoc = {
-                getText: () => originalContent,
-                lineCount: 1,
-                lineAt: () => ({ text: originalContent }),
-                save: sandbox.stub().resolves(),
-            }
-            ;(vscode.workspace.openTextDocument as sinon.SinonStub).resolves(mockDoc)
-            ;(vscode.workspace.applyEdit as sinon.SinonStub).resolves(true)
-            ;(vscode.commands.executeCommand as sinon.SinonStub).resolves()
-
+            setupStandardMocks(originalContent)
             await controller.startDiffAnimation(filePath, originalContent, newContent, false)
             await controller.showStaticDiffView(filePath)
 
@@ -296,7 +250,6 @@ describe('DiffAnimationController', function () {
 
             await controller.showStaticDiffView(filePath)
 
-            // Should handle gracefully without errors
             assert.ok(true)
         })
     })
@@ -307,21 +260,11 @@ describe('DiffAnimationController', function () {
             const originalContent = 'original'
             const newContent = 'new'
 
-            // Mock file operations and start animation
-            const mockDoc = {
-                getText: () => originalContent,
-                lineCount: 1,
-                lineAt: () => ({ text: originalContent }),
-                save: sandbox.stub().resolves(),
-            }
-            ;(vscode.workspace.openTextDocument as sinon.SinonStub).resolves(mockDoc)
-            ;(vscode.workspace.applyEdit as sinon.SinonStub).resolves(true)
-
+            setupStandardMocks(originalContent)
             await controller.startDiffAnimation(filePath, originalContent, newContent, false)
 
             controller.stopDiffAnimation(filePath)
 
-            // Animation data should be removed
             const animationData = controller.getAnimationData(filePath)
             assert.strictEqual(animationData, undefined)
         })
@@ -331,7 +274,6 @@ describe('DiffAnimationController', function () {
 
             controller.stopDiffAnimation(filePath)
 
-            // Should handle gracefully
             assert.ok(true)
         })
     })
@@ -343,23 +285,13 @@ describe('DiffAnimationController', function () {
             const originalContent = 'original'
             const newContent = 'new'
 
-            // Mock file operations
-            const mockDoc = {
-                getText: () => originalContent,
-                lineCount: 1,
-                lineAt: () => ({ text: originalContent }),
-                save: sandbox.stub().resolves(),
-            }
-            ;(vscode.workspace.openTextDocument as sinon.SinonStub).resolves(mockDoc)
-            ;(vscode.workspace.applyEdit as sinon.SinonStub).resolves(true)
+            setupStandardMocks(originalContent)
 
-            // Start multiple animations
             await controller.startDiffAnimation(filePath1, originalContent, newContent, false)
             await controller.startDiffAnimation(filePath2, originalContent, newContent, false)
 
             controller.stopAllAnimations()
 
-            // All animation data should be removed
             assert.strictEqual(controller.getAnimationData(filePath1), undefined)
             assert.strictEqual(controller.getAnimationData(filePath2), undefined)
         })
@@ -367,7 +299,6 @@ describe('DiffAnimationController', function () {
         it('should handle stopping when no animations are active', function () {
             controller.stopAllAnimations()
 
-            // Should handle gracefully
             assert.ok(true)
         })
     })
@@ -383,16 +314,7 @@ describe('DiffAnimationController', function () {
             const originalContent = 'original'
             const newContent = 'new'
 
-            // Mock file operations
-            const mockDoc = {
-                getText: () => originalContent,
-                lineCount: 1,
-                lineAt: () => ({ text: originalContent }),
-                save: sandbox.stub().resolves(),
-            }
-            ;(vscode.workspace.openTextDocument as sinon.SinonStub).resolves(mockDoc)
-            ;(vscode.workspace.applyEdit as sinon.SinonStub).resolves(true)
-
+            setupStandardMocks(originalContent)
             await controller.startDiffAnimation(filePath, originalContent, newContent, false)
 
             const result = controller.isAnimating(filePath)
@@ -404,16 +326,7 @@ describe('DiffAnimationController', function () {
             const originalContent = 'original'
             const newContent = 'new'
 
-            // Mock file operations
-            const mockDoc = {
-                getText: () => originalContent,
-                lineCount: 1,
-                lineAt: () => ({ text: originalContent }),
-                save: sandbox.stub().resolves(),
-            }
-            ;(vscode.workspace.openTextDocument as sinon.SinonStub).resolves(mockDoc)
-            ;(vscode.workspace.applyEdit as sinon.SinonStub).resolves(true)
-
+            setupStandardMocks(originalContent)
             await controller.startDiffAnimation(filePath, originalContent, newContent, false)
             controller.stopDiffAnimation(filePath)
 
@@ -433,16 +346,7 @@ describe('DiffAnimationController', function () {
             const originalContent = 'original'
             const newContent = 'new'
 
-            // Mock file operations
-            const mockDoc = {
-                getText: () => originalContent,
-                lineCount: 1,
-                lineAt: () => ({ text: originalContent }),
-                save: sandbox.stub().resolves(),
-            }
-            ;(vscode.workspace.openTextDocument as sinon.SinonStub).resolves(mockDoc)
-            ;(vscode.workspace.applyEdit as sinon.SinonStub).resolves(true)
-
+            setupStandardMocks(originalContent)
             await controller.startDiffAnimation(filePath, originalContent, newContent, false)
 
             const result = controller.isShowingStaticDiff(filePath)
@@ -463,15 +367,7 @@ describe('DiffAnimationController', function () {
             const originalContent = 'original'
             const newContent = 'new'
 
-            // Mock file operations
-            const mockDoc = {
-                getText: () => originalContent,
-                lineCount: 1,
-                lineAt: () => ({ text: originalContent }),
-                save: sandbox.stub().resolves(),
-            }
-            ;(vscode.workspace.openTextDocument as sinon.SinonStub).resolves(mockDoc)
-            ;(vscode.workspace.applyEdit as sinon.SinonStub).resolves(true)
+            setupStandardMocks(originalContent)
 
             await controller.startDiffAnimation(filePath1, originalContent, newContent, false)
             await controller.startDiffAnimation(filePath2, originalContent, newContent, false)
@@ -487,7 +383,6 @@ describe('DiffAnimationController', function () {
         it('should dispose successfully', function () {
             controller.dispose()
 
-            // Should dispose without errors
             assert.ok(true)
         })
 
@@ -496,21 +391,11 @@ describe('DiffAnimationController', function () {
             const originalContent = 'original'
             const newContent = 'new'
 
-            // Mock file operations
-            const mockDoc = {
-                getText: () => originalContent,
-                lineCount: 1,
-                lineAt: () => ({ text: originalContent }),
-                save: sandbox.stub().resolves(),
-            }
-            ;(vscode.workspace.openTextDocument as sinon.SinonStub).resolves(mockDoc)
-            ;(vscode.workspace.applyEdit as sinon.SinonStub).resolves(true)
-
+            setupStandardMocks(originalContent)
             await controller.startDiffAnimation(filePath, originalContent, newContent, false)
 
             controller.dispose()
 
-            // Animation should be stopped
             const stats = controller.getAnimationStats()
             assert.strictEqual(stats.activeCount, 0)
         })
@@ -519,7 +404,6 @@ describe('DiffAnimationController', function () {
             controller.dispose()
             controller.dispose()
 
-            // Should not throw on multiple dispose calls
             assert.ok(true)
         })
     })
@@ -530,19 +414,9 @@ describe('DiffAnimationController', function () {
             const originalContent = 'x'.repeat(100000)
             const newContent = 'y'.repeat(100000)
 
-            // Mock file operations
-            const mockDoc = {
-                getText: () => originalContent,
-                lineCount: 1,
-                lineAt: () => ({ text: originalContent }),
-                save: sandbox.stub().resolves(),
-            }
-            ;(vscode.workspace.openTextDocument as sinon.SinonStub).resolves(mockDoc)
-            ;(vscode.workspace.applyEdit as sinon.SinonStub).resolves(true)
-
+            setupStandardMocks(originalContent)
             await controller.startDiffAnimation(filePath, originalContent, newContent, false)
 
-            // Should handle large content without errors
             assert.ok(true)
         })
 
@@ -551,16 +425,7 @@ describe('DiffAnimationController', function () {
             const originalContent = 'original'
             const newContent = 'new'
 
-            // Mock file operations
-            const mockDoc = {
-                getText: () => originalContent,
-                lineCount: 1,
-                lineAt: () => ({ text: originalContent }),
-                save: sandbox.stub().resolves(),
-            }
-            ;(vscode.workspace.openTextDocument as sinon.SinonStub).resolves(mockDoc)
-            ;(vscode.workspace.applyEdit as sinon.SinonStub).resolves(true)
-
+            setupStandardMocks(originalContent)
             await controller.startDiffAnimation(filePath, originalContent, newContent, false)
 
             const animationData = controller.getAnimationData(filePath)
@@ -572,21 +437,9 @@ describe('DiffAnimationController', function () {
             const originalContent = ''
             const newContent = ''
 
-            // Mock file operations for empty file
-            ;(vscode.workspace.openTextDocument as sinon.SinonStub)
-                .onFirstCall()
-                .rejects(new Error('File not found'))
-                .onSecondCall()
-                .resolves({
-                    getText: () => '',
-                    lineCount: 0,
-                    save: sandbox.stub().resolves(),
-                })
-            ;(vscode.workspace.applyEdit as sinon.SinonStub).resolves(true)
-
+            setupNewFileMocks()
             await controller.startDiffAnimation(filePath, originalContent, newContent, false)
 
-            // Should handle empty content without errors
             assert.ok(true)
         })
 
@@ -596,23 +449,13 @@ describe('DiffAnimationController', function () {
             const newContent1 = 'new1'
             const newContent2 = 'new2'
 
-            // Mock file operations
-            const mockDoc = {
-                getText: () => originalContent,
-                lineCount: 1,
-                lineAt: () => ({ text: originalContent }),
-                save: sandbox.stub().resolves(),
-            }
-            ;(vscode.workspace.openTextDocument as sinon.SinonStub).resolves(mockDoc)
-            ;(vscode.workspace.applyEdit as sinon.SinonStub).resolves(true)
+            setupStandardMocks(originalContent)
 
-            // Start concurrent animations
             const promise1 = controller.startDiffAnimation(filePath, originalContent, newContent1, false)
             const promise2 = controller.startDiffAnimation(filePath, originalContent, newContent2, false)
 
             await Promise.all([promise1, promise2])
 
-            // Should handle gracefully
             const animationData = controller.getAnimationData(filePath)
             assert.ok(animationData)
         })
