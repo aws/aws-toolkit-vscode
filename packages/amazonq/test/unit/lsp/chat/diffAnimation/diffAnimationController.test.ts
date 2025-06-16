@@ -334,15 +334,9 @@ describe('DiffAnimationController', function () {
         })
 
         it('should return false after stopping animation', async function () {
-            const filePath = '/test/file.js'
-            const originalContent = 'original'
-            const newContent = 'new'
+            await setupAnimationAndStop('/test/file.js', 'original', 'new')
 
-            setupStandardMocks(originalContent)
-            await controller.startDiffAnimation(filePath, originalContent, newContent, false)
-            controller.stopDiffAnimation(filePath)
-
-            const result = controller.isAnimating(filePath)
+            const result = controller.isAnimating('/test/file.js')
             assert.strictEqual(result, false)
         })
     })
