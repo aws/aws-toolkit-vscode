@@ -74,13 +74,6 @@ describe('DiffAnimationController', function () {
         assert.strictEqual(animationData, undefined)
     }
 
-    // Helper function to setup animation and check static diff status
-    async function setupAnimationAndCheckStaticDiff(filePath: string, originalContent: string, newContent: string) {
-        await setupAnimation(filePath, originalContent, newContent)
-        const result = controller.isShowingStaticDiff(filePath)
-        assert.strictEqual(typeof result, 'boolean')
-    }
-
     beforeEach(function () {
         sandbox = sinon.createSandbox()
 
@@ -396,7 +389,15 @@ describe('DiffAnimationController', function () {
         })
 
         it('should return correct static diff status', async function () {
-            await setupAnimationAndCheckStaticDiff('/test/file.js', 'original', 'new')
+            const filePath = '/test/file.js'
+            const originalContent = 'original'
+            const newContent = 'new'
+
+            setupStandardMocks(originalContent)
+            await controller.startDiffAnimation(filePath, originalContent, newContent, false)
+
+            const result = controller.isShowingStaticDiff(filePath)
+            assert.strictEqual(typeof result, 'boolean')
         })
     })
 
