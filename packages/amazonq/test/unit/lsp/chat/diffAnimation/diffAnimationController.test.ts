@@ -18,8 +18,30 @@ describe('DiffAnimationController', function () {
     let controller: DiffAnimationController
     let sandbox: sinon.SinonSandbox
 
-    // Helper function to create mock document
-    function createMockDocument(content: string, lineCount: number = 1) {
+    // Test data constants
+    const testPaths = {
+        existing: '/test/existing-file.js',
+        new: '/test/new-file.js',
+        nonexistent: '/test/non-existent.js',
+        specialChars: '/test/file with spaces & symbols!@#$.js',
+        large: '/test/large-file.js',
+        empty: '/test/empty-file.js',
+        multiple1: '/test/file1.js',
+        multiple2: '/test/file2.js',
+    }
+
+    const testContent = {
+        original: 'console.log("original")',
+        new: 'console.log("new")',
+        multiline: 'line1\nline2\nline3',
+        multilineModified: 'line1\nmodified line2\nline3',
+        empty: '',
+        large: 'x'.repeat(100000),
+        largeNew: 'y'.repeat(100000),
+    }
+
+    // Helper functions
+    function createMockDocument(content: string, lineCount: number = content.split('\n').length) {
         return {
             getText: () => content,
             lineCount,
@@ -28,33 +50,7 @@ describe('DiffAnimationController', function () {
         }
     }
 
-    // Helper function to setup standard file operation mocks
-    function setupStandardMocks(content: string = 'original') {
-        const mockDoc = createMockDocument(content)
-        ;(vscode.workspace.openTextDocument as sinon.SinonStub).resolves(mockDoc)
-        ;(vscode.workspace.applyEdit as sinon.SinonStub).resolves(true)
-        ;(vscode.commands.executeCommand as sinon.SinonStub).resolves()
-        return mockDoc
-    }
-
-    // Helper function to setup new file mocks
-    function setupNewFileMocks() {
-        ;(vscode.workspace.openTextDocument as sinon.SinonStub)
-            .onFirstCall()
-            .rejects(new Error('File not found'))
-            .onSecondCall()
-            .resolves(createMockDocument('', 0))
-        ;(vscode.workspace.applyEdit as sinon.SinonStub).resolves(true)
-    }
-
-    // Helper function to setup error mocks
-    function setupErrorMocks(errorMessage: string = 'Test error') {
-        ;(vscode.workspace.openTextDocument as sinon.SinonStub).rejects(new Error(errorMessage))
-    }
-
-    beforeEach(function () {
-        sandbox = sinon.createSandbox()
-
+    function setupVSCodeMocks() {
         // Mock vscode APIs
         sandbox.stub(vscode.workspace, 'openTextDocument')
         sandbox.stub(vscode.workspace, 'applyEdit')
@@ -64,15 +60,16 @@ describe('DiffAnimationController', function () {
         sandbox.stub(vscode.window, 'createWebviewPanel')
         sandbox.stub(vscode.workspace, 'registerTextDocumentContentProvider')
 
-        // Mock vscode.workspace.fs properly
+        // Mock vscode.workspace.fs
         const mockFs = {
             writeFile: sandbox.stub().resolves(),
             readFile: sandbox.stub().resolves(Buffer.from('')),
             stat: sandbox.stub().resolves({ type: vscode.FileType.File, ctime: 0, mtime: 0, size: 0 }),
         }
         sandbox.stub(vscode.workspace, 'fs').value(mockFs)
+    }
 
-        // Mock the component classes to prevent real instantiation
+    function setupComponentMocks() {
         const mockWebviewPanel = {
             reveal: sandbox.stub(),
             dispose: sandbox.stub(),
@@ -107,7 +104,39 @@ describe('DiffAnimationController', function () {
 
         sandbox.stub(VSCodeIntegration.prototype, 'showVSCodeDiff').resolves()
         sandbox.stub(VSCodeIntegration.prototype, 'openFileInEditor').resolves()
+    }
 
+    function setupFileOperationMocks(
+        scenario: 'existing' | 'new' | 'error',
+        content: string = testContent.original,
+        errorMessage?: string
+    ) {
+        switch (scenario) {
+            case 'existing': {
+                const mockDoc = createMockDocument(content)
+                ;(vscode.workspace.openTextDocument as sinon.SinonStub).resolves(mockDoc)
+                ;(vscode.workspace.applyEdit as sinon.SinonStub).resolves(true)
+                ;(vscode.commands.executeCommand as sinon.SinonStub).resolves()
+                return mockDoc
+            }
+            case 'new':
+                ;(vscode.workspace.openTextDocument as sinon.SinonStub)
+                    .onFirstCall()
+                    .rejects(new Error('File not found'))
+                    .onSecondCall()
+                    .resolves(createMockDocument('', 0))
+                ;(vscode.workspace.applyEdit as sinon.SinonStub).resolves(true)
+                break
+            case 'error':
+                ;(vscode.workspace.openTextDocument as sinon.SinonStub).rejects(new Error(errorMessage || 'Test error'))
+                break
+        }
+    }
+
+    beforeEach(function () {
+        sandbox = sinon.createSandbox()
+        setupVSCodeMocks()
+        setupComponentMocks()
         controller = new DiffAnimationController()
     })
 
@@ -116,277 +145,215 @@ describe('DiffAnimationController', function () {
         sandbox.restore()
     })
 
-    describe('constructor', function () {
+    describe('initialization', function () {
         it('should initialize successfully', function () {
             assert.ok(controller)
         })
     })
 
-    describe('getAnimationData', function () {
+    describe('animation data management', function () {
         it('should return undefined for non-existent file', function () {
-            const result = controller.getAnimationData('/non/existent/file.js')
+            const result = controller.getAnimationData(testPaths.nonexistent)
             assert.strictEqual(result, undefined)
         })
 
         it('should return animation data after starting animation', async function () {
-            const filePath = '/test/file.js'
-            const originalContent = 'original'
-            const newContent = 'new'
+            setupFileOperationMocks('existing', testContent.original)
+            await controller.startDiffAnimation(testPaths.existing, testContent.original, testContent.new)
 
-            setupStandardMocks(originalContent)
-            await controller.startDiffAnimation(filePath, originalContent, newContent)
-
-            const result = controller.getAnimationData(filePath)
+            const result = controller.getAnimationData(testPaths.existing)
             assert.ok(result)
-            assert.strictEqual(result.originalContent, originalContent)
-            assert.strictEqual(result.newContent, newContent)
+            assert.strictEqual(result.originalContent, testContent.original)
+            assert.strictEqual(result.newContent, testContent.new)
+        })
+
+        it('should handle multiple files independently', async function () {
+            setupFileOperationMocks('existing', testContent.original)
+
+            await controller.startDiffAnimation(testPaths.multiple1, testContent.original, testContent.new)
+            await controller.startDiffAnimation(testPaths.multiple2, testContent.original, testContent.new)
+
+            assert.ok(controller.getAnimationData(testPaths.multiple1))
+            assert.ok(controller.getAnimationData(testPaths.multiple2))
         })
     })
 
-    describe('shouldShowStaticDiff', function () {
+    describe('static diff detection', function () {
         it('should return false for new file without history', function () {
-            const result = controller.shouldShowStaticDiff('/new/file.js', 'content')
+            const result = controller.shouldShowStaticDiff(testPaths.new, testContent.new)
             assert.strictEqual(result, false)
         })
 
         it('should return true when animation data exists', async function () {
-            const filePath = '/test/file.js'
-            const originalContent = 'original'
-            const newContent = 'new'
+            setupFileOperationMocks('existing', testContent.original)
+            await controller.startDiffAnimation(testPaths.existing, testContent.original, testContent.new)
 
-            setupStandardMocks(originalContent)
-            await controller.startDiffAnimation(filePath, originalContent, newContent)
-
-            const result = controller.shouldShowStaticDiff(filePath, newContent)
+            const result = controller.shouldShowStaticDiff(testPaths.existing, testContent.new)
             assert.strictEqual(result, true)
         })
     })
 
-    describe('startDiffAnimation', function () {
-        it('should start animation for new file', async function () {
-            const filePath = '/test/new-file.js'
-            const originalContent = ''
-            const newContent = 'console.log("hello")'
+    describe('animation lifecycle', function () {
+        describe('startDiffAnimation', function () {
+            it('should start animation for new file', async function () {
+                setupFileOperationMocks('new')
+                await controller.startDiffAnimation(testPaths.new, testContent.empty, testContent.new, false)
+                assert.ok(controller.getAnimationData(testPaths.new))
+            })
 
-            setupNewFileMocks()
-            await controller.startDiffAnimation(filePath, originalContent, newContent, false)
+            it('should start animation for existing file', async function () {
+                setupFileOperationMocks('existing', testContent.original)
+                await controller.startDiffAnimation(testPaths.existing, testContent.original, testContent.new, false)
+                assert.ok(controller.getAnimationData(testPaths.existing))
+            })
 
-            assert.ok(true)
+            it('should handle chat click parameter', async function () {
+                setupFileOperationMocks('existing')
+                await controller.startDiffAnimation(testPaths.existing, testContent.original, testContent.new, true)
+                assert.ok(controller.getAnimationData(testPaths.existing))
+            })
+
+            it('should handle file operation errors', async function () {
+                setupFileOperationMocks('error', '', 'File access denied')
+
+                try {
+                    await controller.startDiffAnimation(
+                        testPaths.existing,
+                        testContent.original,
+                        testContent.new,
+                        false
+                    )
+                } catch (error) {
+                    // Expected to throw
+                }
+                // Should not have animation data on error
+                assert.strictEqual(controller.getAnimationData(testPaths.existing), undefined)
+            })
         })
 
-        it('should start animation for existing file', async function () {
-            const filePath = '/test/existing-file.js'
-            const originalContent = 'console.log("old")'
-            const newContent = 'console.log("new")'
+        describe('startPartialDiffAnimation', function () {
+            it('should start partial animation with options', async function () {
+                const options: PartialUpdateOptions = {
+                    changeLocation: { startLine: 1, endLine: 1 },
+                    isPartialUpdate: true,
+                }
 
-            setupStandardMocks(originalContent)
-            await controller.startDiffAnimation(filePath, originalContent, newContent, false)
+                setupFileOperationMocks('existing', testContent.multiline)
+                await controller.startPartialDiffAnimation(
+                    testPaths.existing,
+                    testContent.multiline,
+                    testContent.multilineModified,
+                    options
+                )
 
-            assert.ok(true)
+                assert.ok(controller.getAnimationData(testPaths.existing))
+            })
+
+            it('should handle partial animation without options', async function () {
+                setupFileOperationMocks('existing', testContent.original)
+                await controller.startPartialDiffAnimation(testPaths.existing, testContent.original, testContent.new)
+                assert.ok(controller.getAnimationData(testPaths.existing))
+            })
         })
 
-        it('should handle chat click differently', async function () {
-            const filePath = '/test/file.js'
-            const originalContent = 'original'
-            const newContent = 'new'
+        describe('stopDiffAnimation', function () {
+            it('should stop specific animation', async function () {
+                setupFileOperationMocks('existing', testContent.original)
+                await controller.startDiffAnimation(testPaths.existing, testContent.original, testContent.new, false)
 
-            setupStandardMocks()
-            await controller.startDiffAnimation(filePath, originalContent, newContent, true)
+                assert.strictEqual(controller.isAnimating(testPaths.existing), true)
+                controller.stopDiffAnimation(testPaths.existing)
+                assert.strictEqual(controller.isAnimating(testPaths.existing), false)
+            })
 
-            assert.ok(true)
+            it('should handle stopping non-existent animation', function () {
+                controller.stopDiffAnimation(testPaths.nonexistent)
+                // Should not throw
+                assert.ok(true)
+            })
         })
 
-        it('should handle errors gracefully', async function () {
-            const filePath = '/test/error-file.js'
-            const originalContent = 'original'
-            const newContent = 'new'
+        describe('stopAllAnimations', function () {
+            it('should stop all active animations', async function () {
+                setupFileOperationMocks('existing', testContent.original)
 
-            setupErrorMocks('File error')
+                await controller.startDiffAnimation(testPaths.multiple1, testContent.original, testContent.new, false)
+                await controller.startDiffAnimation(testPaths.multiple2, testContent.original, testContent.new, false)
 
-            try {
-                await controller.startDiffAnimation(filePath, originalContent, newContent, false)
-            } catch (error) {
-                // Expected to throw
-            }
+                controller.stopAllAnimations()
 
-            assert.ok(true)
-        })
-    })
+                assert.strictEqual(controller.getAnimationData(testPaths.multiple1), undefined)
+                assert.strictEqual(controller.getAnimationData(testPaths.multiple2), undefined)
+            })
 
-    describe('startPartialDiffAnimation', function () {
-        it('should start partial animation with options', async function () {
-            const filePath = '/test/file.js'
-            const originalContent = 'line1\nline2\nline3'
-            const newContent = 'line1\nmodified line2\nline3'
-            const options: PartialUpdateOptions = {
-                changeLocation: {
-                    startLine: 1,
-                    endLine: 1,
-                },
-                isPartialUpdate: true,
-            }
-
-            setupStandardMocks(originalContent)
-            await controller.startPartialDiffAnimation(filePath, originalContent, newContent, options)
-
-            assert.ok(true)
-        })
-
-        it('should handle partial animation without options', async function () {
-            const filePath = '/test/file.js'
-            const originalContent = 'original'
-            const newContent = 'new'
-
-            setupStandardMocks(originalContent)
-            await controller.startPartialDiffAnimation(filePath, originalContent, newContent)
-
-            assert.ok(true)
-        })
-    })
-
-    describe('showVSCodeDiff', function () {
-        it('should show VS Code diff view', async function () {
-            const filePath = '/test/file.js'
-            const originalContent = 'original'
-            const newContent = 'new'
-
-            setupStandardMocks()
-            await controller.showVSCodeDiff(filePath, originalContent, newContent)
-
-            assert.ok(vscode.commands.executeCommand)
-        })
-
-        it('should handle errors in diff view', async function () {
-            const filePath = '/test/file.js'
-            const originalContent = 'original'
-            const newContent = 'new'
-
-            ;(vscode.commands.executeCommand as sinon.SinonStub).rejects(new Error('Diff error'))
-
-            try {
-                await controller.showVSCodeDiff(filePath, originalContent, newContent)
-            } catch (error) {
-                // Expected to handle gracefully
-            }
-
-            assert.ok(vscode.commands.executeCommand)
+            it('should handle stopping when no animations are active', function () {
+                controller.stopAllAnimations()
+                assert.ok(true)
+            })
         })
     })
 
-    describe('showStaticDiffView', function () {
-        it('should show static diff view for existing animation', async function () {
-            const filePath = '/test/file.js'
-            const originalContent = 'original'
-            const newContent = 'new'
-
-            setupStandardMocks(originalContent)
-            await controller.startDiffAnimation(filePath, originalContent, newContent, false)
-            await controller.showStaticDiffView(filePath)
-
-            assert.ok(vscode.commands.executeCommand)
-        })
-
-        it('should handle missing animation data', async function () {
-            const filePath = '/test/non-existent-file.js'
-
-            await controller.showStaticDiffView(filePath)
-
-            assert.ok(true)
-        })
-    })
-
-    describe('stopDiffAnimation', function () {
-        it('should stop animation for specific file', async function () {
-            const filePath = '/test/specific-file.js'
-            const originalContent = 'test content'
-            const newContent = 'modified content'
-
-            setupStandardMocks(originalContent)
-            await controller.startDiffAnimation(filePath, originalContent, newContent, false)
-
-            // Verify animation is running
-            assert.strictEqual(controller.isAnimating(filePath), true)
-
-            // Stop the animation
-            controller.stopDiffAnimation(filePath)
-
-            // Verify animation is stopped
-            assert.strictEqual(controller.isAnimating(filePath), false)
-        })
-
-        it('should handle stopping non-existent animation', function () {
-            const filePath = '/test/non-existent.js'
-
-            controller.stopDiffAnimation(filePath)
-
-            assert.ok(true)
-        })
-    })
-
-    describe('stopAllAnimations', function () {
-        it('should stop all active animations', async function () {
-            const filePath1 = '/test/file1.js'
-            const filePath2 = '/test/file2.js'
-            const originalContent = 'original'
-            const newContent = 'new'
-
-            setupStandardMocks(originalContent)
-
-            await controller.startDiffAnimation(filePath1, originalContent, newContent, false)
-            await controller.startDiffAnimation(filePath2, originalContent, newContent, false)
-
-            controller.stopAllAnimations()
-
-            assert.strictEqual(controller.getAnimationData(filePath1), undefined)
-            assert.strictEqual(controller.getAnimationData(filePath2), undefined)
-        })
-
-        it('should handle stopping when no animations are active', function () {
-            controller.stopAllAnimations()
-
-            assert.ok(true)
-        })
-    })
-
-    describe('isAnimating', function () {
-        it('should return false for non-existent file', function () {
-            const result = controller.isAnimating('/non/existent/file.js')
-            assert.strictEqual(result, false)
+    describe('animation status queries', function () {
+        it('should return false for non-existent file animation status', function () {
+            assert.strictEqual(controller.isAnimating(testPaths.nonexistent), false)
         })
 
         it('should return true for active animation', async function () {
-            const filePath = '/test/file.js'
-            const originalContent = 'original'
-            const newContent = 'new'
+            setupFileOperationMocks('existing', testContent.original)
+            await controller.startDiffAnimation(testPaths.existing, testContent.original, testContent.new, false)
 
-            setupStandardMocks(originalContent)
-            await controller.startDiffAnimation(filePath, originalContent, newContent, false)
-
-            const result = controller.isAnimating(filePath)
-            assert.strictEqual(result, true)
+            assert.strictEqual(controller.isAnimating(testPaths.existing), true)
         })
-    })
 
-    describe('isShowingStaticDiff', function () {
-        it('should return false for non-existent file', function () {
-            const result = controller.isShowingStaticDiff('/non/existent/file.js')
-            assert.strictEqual(result, false)
+        it('should return false for non-existent static diff status', function () {
+            assert.strictEqual(controller.isShowingStaticDiff(testPaths.nonexistent), false)
         })
 
         it('should return correct static diff status', async function () {
-            const filePath = '/test/file.js'
-            const originalContent = 'original'
-            const newContent = 'new'
+            setupFileOperationMocks('existing', testContent.original)
+            await controller.startDiffAnimation(testPaths.existing, testContent.original, testContent.new, false)
 
-            setupStandardMocks(originalContent)
-            await controller.startDiffAnimation(filePath, originalContent, newContent, false)
-
-            const result = controller.isShowingStaticDiff(filePath)
+            const result = controller.isShowingStaticDiff(testPaths.existing)
             assert.strictEqual(typeof result, 'boolean')
         })
     })
 
-    describe('getAnimationStats', function () {
+    describe('diff view operations', function () {
+        it('should show VS Code diff view', async function () {
+            setupFileOperationMocks('existing')
+            await controller.showVSCodeDiff(testPaths.existing, testContent.original, testContent.new)
+
+            assert.ok((vscode.commands.executeCommand as sinon.SinonStub).called)
+        })
+
+        it('should handle diff view errors gracefully', async function () {
+            ;(vscode.commands.executeCommand as sinon.SinonStub).rejects(new Error('Diff error'))
+
+            try {
+                await controller.showVSCodeDiff(testPaths.existing, testContent.original, testContent.new)
+            } catch (error) {
+                // Should handle gracefully
+            }
+
+            assert.ok((vscode.commands.executeCommand as sinon.SinonStub).called)
+        })
+
+        it('should show static diff view for existing animation', async function () {
+            setupFileOperationMocks('existing', testContent.original)
+            await controller.startDiffAnimation(testPaths.existing, testContent.original, testContent.new, false)
+            await controller.showStaticDiffView(testPaths.existing)
+
+            assert.ok((vscode.commands.executeCommand as sinon.SinonStub).called)
+        })
+
+        it('should handle missing animation data in static diff view', async function () {
+            await controller.showStaticDiffView(testPaths.nonexistent)
+            // Should not throw
+            assert.ok(true)
+        })
+    })
+
+    describe('statistics and monitoring', function () {
         it('should return empty stats initially', function () {
             const stats = controller.getAnimationStats()
             assert.strictEqual(stats.activeCount, 0)
@@ -394,38 +361,30 @@ describe('DiffAnimationController', function () {
         })
 
         it('should return correct stats with active animations', async function () {
-            const filePath1 = '/test/file1.js'
-            const filePath2 = '/test/file2.js'
-            const originalContent = 'original'
-            const newContent = 'new'
+            setupFileOperationMocks('existing', testContent.original)
 
-            setupStandardMocks(originalContent)
-
-            await controller.startDiffAnimation(filePath1, originalContent, newContent, false)
-            await controller.startDiffAnimation(filePath2, originalContent, newContent, false)
+            await controller.startDiffAnimation(testPaths.multiple1, testContent.original, testContent.new, false)
+            await controller.startDiffAnimation(testPaths.multiple2, testContent.original, testContent.new, false)
 
             const stats = controller.getAnimationStats()
             assert.strictEqual(stats.activeCount, 2)
-            assert.ok(stats.filePaths.includes(filePath1))
-            assert.ok(stats.filePaths.includes(filePath2))
+            assert.ok(stats.filePaths.includes(testPaths.multiple1))
+            assert.ok(stats.filePaths.includes(testPaths.multiple2))
         })
     })
 
-    describe('dispose', function () {
+    describe('resource management', function () {
         it('should dispose successfully', function () {
             controller.dispose()
-
             assert.ok(true)
         })
 
         it('should stop all animations on dispose', async function () {
-            const filePath = '/test/file.js'
-            const originalContent = 'original'
-            const newContent = 'new'
+            setupFileOperationMocks('existing', testContent.original)
+            await controller.startDiffAnimation(testPaths.existing, testContent.original, testContent.new, false)
 
-            setupStandardMocks(originalContent)
-            await controller.startDiffAnimation(filePath, originalContent, newContent, false)
             controller.dispose()
+
             const stats = controller.getAnimationStats()
             assert.strictEqual(stats.activeCount, 0)
         })
@@ -433,60 +392,42 @@ describe('DiffAnimationController', function () {
         it('should handle multiple dispose calls', function () {
             controller.dispose()
             controller.dispose()
-
             assert.ok(true)
         })
     })
 
-    describe('edge cases', function () {
+    describe('edge cases and robustness', function () {
         it('should handle very large content', async function () {
-            const filePath = '/test/large-file.js'
-            const originalContent = 'x'.repeat(100000)
-            const newContent = 'y'.repeat(100000)
+            setupFileOperationMocks('existing', testContent.large)
+            await controller.startDiffAnimation(testPaths.large, testContent.large, testContent.largeNew, false)
 
-            setupStandardMocks(originalContent)
-            await controller.startDiffAnimation(filePath, originalContent, newContent, false)
-
-            assert.ok(true)
+            assert.ok(controller.getAnimationData(testPaths.large))
         })
 
         it('should handle special characters in file paths', async function () {
-            const filePath = '/test/file with spaces & symbols!@#$.js'
-            const originalContent = 'original'
-            const newContent = 'new'
+            setupFileOperationMocks('existing', testContent.original)
+            await controller.startDiffAnimation(testPaths.specialChars, testContent.original, testContent.new, false)
 
-            setupStandardMocks(originalContent)
-            await controller.startDiffAnimation(filePath, originalContent, newContent, false)
-
-            const animationData = controller.getAnimationData(filePath)
+            const animationData = controller.getAnimationData(testPaths.specialChars)
             assert.ok(animationData)
         })
 
         it('should handle empty content', async function () {
-            const filePath = '/test/empty-file.js'
-            const originalContent = ''
-            const newContent = ''
+            setupFileOperationMocks('new')
+            await controller.startDiffAnimation(testPaths.empty, testContent.empty, testContent.empty, false)
 
-            setupNewFileMocks()
-            await controller.startDiffAnimation(filePath, originalContent, newContent, false)
-
-            assert.ok(true)
+            assert.ok(controller.getAnimationData(testPaths.empty))
         })
 
         it('should handle concurrent animations on same file', async function () {
-            const filePath = '/test/file.js'
-            const originalContent = 'original'
-            const newContent1 = 'new1'
-            const newContent2 = 'new2'
+            setupFileOperationMocks('existing', testContent.original)
 
-            setupStandardMocks(originalContent)
-
-            const promise1 = controller.startDiffAnimation(filePath, originalContent, newContent1, false)
-            const promise2 = controller.startDiffAnimation(filePath, originalContent, newContent2, false)
+            const promise1 = controller.startDiffAnimation(testPaths.existing, testContent.original, 'new1', false)
+            const promise2 = controller.startDiffAnimation(testPaths.existing, testContent.original, 'new2', false)
 
             await Promise.all([promise1, promise2])
 
-            const animationData = controller.getAnimationData(filePath)
+            const animationData = controller.getAnimationData(testPaths.existing)
             assert.ok(animationData)
         })
     })
