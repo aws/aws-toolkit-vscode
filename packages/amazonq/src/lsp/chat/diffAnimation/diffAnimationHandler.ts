@@ -24,31 +24,10 @@ import * as path from 'path'
 import { ChatResult, ChatMessage, ChatUpdateParams } from '@aws/language-server-runtimes/protocol'
 import { getLogger } from 'aws-core-vscode/shared'
 import { DiffAnimationController, PartialUpdateOptions } from './diffAnimationController'
-
-interface PendingFileWrite {
-    filePath: string
-    originalContent: string
-    toolUseId: string
-    timestamp: number
-    changeLocation?: {
-        startLine: number
-        endLine: number
-        startChar?: number
-        endChar?: number
-    }
-}
-
-interface QueuedAnimation {
-    originalContent: string
-    newContent: string
-    toolUseId: string
-    changeLocation?: {
-        startLine: number
-        endLine: number
-        startChar?: number
-        endChar?: number
-    }
-}
+import { FileSystemManager } from './fileSystemManager'
+import { ChatProcessor } from './chatProcessor'
+import { AnimationQueueManager } from './animationQueueManager'
+import { PendingFileWrite } from './types'
 
 export class DiffAnimationHandler implements vscode.Disposable {
     /**
@@ -75,55 +54,25 @@ export class DiffAnimationHandler implements vscode.Disposable {
      */
 
     private diffAnimationController: DiffAnimationController
-    private disposables: vscode.Disposable[] = []
+    private fileSystemManager: FileSystemManager
+    private chatProcessor: ChatProcessor
+    private animationQueueManager: AnimationQueueManager
 
     // Track pending file writes by file path
     private pendingWrites = new Map<string, PendingFileWrite>()
-    // Track which files are being animated
-    private animatingFiles = new Set<string>()
-    // Track processed messages to avoid duplicates
-    private processedMessages = new Set<string>()
-    // File system watcher
-    private fileWatcher: vscode.FileSystemWatcher | undefined
-    // Animation queue for handling multiple changes
-    private animationQueue = new Map<string, QueuedAnimation[]>()
 
     constructor() {
         getLogger().info(`[DiffAnimationHandler] 🚀 Initializing DiffAnimationHandler with Cline-style diff view`)
+
+        // Initialize components
         this.diffAnimationController = new DiffAnimationController()
-
-        // Set up file system watcher for all files
-        this.fileWatcher = vscode.workspace.createFileSystemWatcher('**/*')
-
-        // Watch for file changes
-        this.fileWatcher.onDidChange(async (uri) => {
-            await this.handleFileChange(uri)
-        })
-
-        // Watch for file creation
-        this.fileWatcher.onDidCreate(async (uri) => {
-            await this.handleFileChange(uri)
-        })
-
-        this.disposables.push(this.fileWatcher)
-
-        // Also listen to text document changes for more immediate detection
-        const changeTextDocumentDisposable = vscode.workspace.onDidChangeTextDocument(async (event) => {
-            if (event.document.uri.scheme !== 'file' || event.contentChanges.length === 0) {
-                return
-            }
-
-            // Skip if we're currently animating this file
-            if (this.animatingFiles.has(event.document.uri.fsPath)) {
-                return
-            }
-
-            // Check if this is an external change (not from user typing)
-            if (event.reason === undefined) {
-                await this.handleFileChange(event.document.uri)
-            }
-        })
-        this.disposables.push(changeTextDocumentDisposable)
+        this.fileSystemManager = new FileSystemManager(this.handleFileChange.bind(this))
+        this.chatProcessor = new ChatProcessor(this.fileSystemManager, this.handleFileWritePreparation.bind(this))
+        this.animationQueueManager = new AnimationQueueManager(
+            this.fileSystemManager,
+            this.animateFileChangeWithDiff.bind(this),
+            this.animatePartialFileChange.bind(this)
+        )
     }
 
     /**
@@ -159,140 +108,43 @@ export class DiffAnimationHandler implements vscode.Disposable {
         tabId: string,
         isPartialResult?: boolean
     ): Promise<void> {
-        getLogger().info(
-            `[DiffAnimationHandler] 📨 Processing ChatResult for tab ${tabId}, isPartial: ${isPartialResult}`
-        )
-
-        try {
-            // Handle both ChatResult and ChatMessage types
-            if ('type' in chatResult && chatResult.type === 'tool') {
-                // This is a ChatMessage
-                await this.processChatMessage(chatResult as ChatMessage, tabId)
-            } else if ('additionalMessages' in chatResult && chatResult.additionalMessages) {
-                // This is a ChatResult with additional messages
-                for (const message of chatResult.additionalMessages) {
-                    await this.processChatMessage(message, tabId)
-                }
-            }
-        } catch (error) {
-            getLogger().error(`[DiffAnimationHandler] ❌ Failed to process chat result: ${error}`)
-        }
+        return this.chatProcessor.processChatResult(chatResult, tabId, isPartialResult)
     }
 
     /**
-     * Process individual chat messages
+     * Process ChatUpdateParams
      */
-    private async processChatMessage(message: ChatMessage, tabId: string): Promise<void> {
-        if (!message.messageId) {
-            return
-        }
-
-        // Deduplicate messages
-        const messageKey = `${message.messageId}_${message.type}`
-        if (this.processedMessages.has(messageKey)) {
-            getLogger().info(`[DiffAnimationHandler] ⏭️ Already processed message: ${messageKey}`)
-            return
-        }
-        this.processedMessages.add(messageKey)
-
-        // Check for fsWrite tool preparation (when tool is about to execute)
-        if (message.type === 'tool' && message.messageId.startsWith('progress_')) {
-            await this.processFsWritePreparation(message, tabId)
-        }
+    public async processChatUpdate(params: ChatUpdateParams): Promise<void> {
+        return this.chatProcessor.processChatUpdate(params)
     }
 
     /**
-     * Process fsWrite preparation - capture content BEFORE file is written
+     * Handle file write preparation callback
      */
-    private async processFsWritePreparation(message: ChatMessage, tabId: string): Promise<void> {
-        // Cast to any to access properties that might not be in the type definition
-        const messageAny = message as any
-
-        const fileList = messageAny.header?.fileList
-        if (!fileList?.filePaths || fileList.filePaths.length === 0) {
-            return
-        }
-
-        const fileName = fileList.filePaths[0]
-        const fileDetails = fileList.details?.[fileName]
-
-        if (!fileDetails?.description) {
-            return
-        }
-
-        const filePath = await this.resolveFilePath(fileDetails.description)
-        if (!filePath) {
-            return
-        }
-
-        // Extract toolUseId from progress message
-        const toolUseId = message.messageId!.replace('progress_', '')
-
-        getLogger().info(`[DiffAnimationHandler] 🎬 Preparing for fsWrite: ${filePath} (toolUse: ${toolUseId})`)
-
+    private async handleFileWritePreparation(pendingWrite: PendingFileWrite): Promise<void> {
         // Check if we already have a pending write for this file
-        if (this.pendingWrites.has(filePath)) {
-            getLogger().warn(`[DiffAnimationHandler] ⚠️ Already have pending write for ${filePath}, skipping`)
+        if (this.pendingWrites.has(pendingWrite.filePath)) {
+            getLogger().warn(
+                `[DiffAnimationHandler] ⚠️ Already have pending write for ${pendingWrite.filePath}, skipping`
+            )
             return
         }
 
-        // Capture current content IMMEDIATELY before the write happens
-        let originalContent = ''
-        let fileExists = false
-
-        try {
-            const uri = vscode.Uri.file(filePath)
-            const document = await vscode.workspace.openTextDocument(uri)
-            originalContent = document.getText()
-            fileExists = true
-            getLogger().info(`[DiffAnimationHandler] 📸 Captured existing content: ${originalContent.length} chars`)
-        } catch (error) {
-            // File doesn't exist yet
-            getLogger().info(`[DiffAnimationHandler] 🆕 File doesn't exist yet: ${filePath}`)
-            originalContent = ''
-        }
-
-        // Store pending write info
-        this.pendingWrites.set(filePath, {
-            filePath,
-            originalContent,
-            toolUseId,
-            timestamp: Date.now(),
-        })
-
-        // Open/create the file to make it visible
-        try {
-            if (!fileExists) {
-                // Create directory if needed
-                const directory = path.dirname(filePath)
-                await vscode.workspace.fs.createDirectory(vscode.Uri.file(directory))
-
-                // DON'T create the file yet - let the actual write create it
-                // This ensures we capture the transition from non-existent to new content
-                getLogger().info(
-                    `[DiffAnimationHandler] 📁 Directory prepared, file will be created by write operation`
-                )
-            } else {
-                // DON'T open the document visually - we'll use diff view instead
-
-                getLogger().info(`[DiffAnimationHandler] 📄 File exists and is accessible: ${filePath}`)
-            }
-            getLogger().info(`[DiffAnimationHandler] ✅ File prepared: ${filePath}`)
-        } catch (error) {
-            getLogger().error(`[DiffAnimationHandler] ❌ Failed to prepare file: ${error}`)
-            // Clean up on error
-            this.pendingWrites.delete(filePath)
-        }
+        // Store the pending write
+        this.pendingWrites.set(pendingWrite.filePath, pendingWrite)
+        getLogger().info(`[DiffAnimationHandler] 📝 Stored pending write for: ${pendingWrite.filePath}`)
     }
 
-    /**
-     * Handle file changes - this is where we detect the actual write
-     */
     /**
      * Handle file changes - this is where we detect the actual write
      */
     private async handleFileChange(uri: vscode.Uri): Promise<void> {
         const filePath = uri.fsPath
+
+        // Skip if we're currently animating this file
+        if (this.animationQueueManager.isAnimating(filePath)) {
+            return
+        }
 
         // Check if we have a pending write for this file
         const pendingWrite = this.pendingWrites.get(filePath)
@@ -310,8 +162,7 @@ export class DiffAnimationHandler implements vscode.Disposable {
 
         try {
             // Read the new content that was just written
-            const newContentBuffer = await vscode.workspace.fs.readFile(uri)
-            const newContent = Buffer.from(newContentBuffer).toString('utf8')
+            const newContent = await this.fileSystemManager.getCurrentFileContent(filePath)
 
             // Check if content actually changed
             if (pendingWrite.originalContent !== newContent) {
@@ -320,30 +171,8 @@ export class DiffAnimationHandler implements vscode.Disposable {
                         `original: ${pendingWrite.originalContent.length} chars, new: ${newContent.length} chars`
                 )
 
-                // Note: We do NOT restore the original content to the file
-                // The webview will show a virtual diff animation independently
-                // This avoids interfering with AI's file operations
-                getLogger().info(`[DiffAnimationHandler] 📝 File has new content, will show virtual diff animation`)
-
-                // If already animating, queue the change
-                if (this.animatingFiles.has(filePath)) {
-                    const queue = this.animationQueue.get(filePath) || []
-                    queue.push({
-                        originalContent: pendingWrite.originalContent,
-                        newContent,
-                        toolUseId: pendingWrite.toolUseId,
-                        changeLocation: pendingWrite.changeLocation,
-                    })
-                    this.animationQueue.set(filePath, queue)
-                    getLogger().info(
-                        `[DiffAnimationHandler] 📋 Queued animation for ${filePath} (queue size: ${queue.length})`
-                    )
-                    return
-                }
-
-                // Start animation with the captured new content
-                // The controller will apply the new content after animation completes
-                await this.startAnimation(filePath, pendingWrite, newContent)
+                // Start animation using the queue manager
+                await this.animationQueueManager.startAnimation(filePath, pendingWrite, newContent)
             } else {
                 getLogger().info(`[DiffAnimationHandler] ℹ️ No content change for: ${filePath}`)
             }
@@ -353,84 +182,19 @@ export class DiffAnimationHandler implements vscode.Disposable {
     }
 
     /**
-     * Start animation and process queue
-     */
-    private async startAnimation(filePath: string, pendingWrite: PendingFileWrite, newContent: string): Promise<void> {
-        // Check if we have change location for partial update
-        if (pendingWrite.changeLocation) {
-            // Use partial animation for targeted changes
-            await this.animatePartialFileChange(
-                filePath,
-                pendingWrite.originalContent,
-                newContent,
-                pendingWrite.changeLocation,
-                pendingWrite.toolUseId
-            )
-        } else {
-            // Use full file animation
-            await this.animateFileChangeWithDiff(
-                filePath,
-                pendingWrite.originalContent,
-                newContent,
-                pendingWrite.toolUseId
-            )
-        }
-
-        // Process queued animations
-        await this.processQueuedAnimations(filePath)
-    }
-
-    /**
-     * Process queued animations for a file
-     */
-    private async processQueuedAnimations(filePath: string): Promise<void> {
-        const queue = this.animationQueue.get(filePath)
-        if (!queue || queue.length === 0) {
-            return
-        }
-
-        const next = queue.shift()
-        if (!next) {
-            return
-        }
-
-        getLogger().info(
-            `[DiffAnimationHandler] 🎯 Processing queued animation for ${filePath} (${queue.length} remaining)`
-        )
-
-        // Use the current file content as the "original" for the next animation
-        const currentContent = await this.getCurrentFileContent(filePath)
-
-        await this.startAnimation(
-            filePath,
-            {
-                filePath,
-                originalContent: currentContent,
-                toolUseId: next.toolUseId,
-                timestamp: Date.now(),
-                changeLocation: next.changeLocation,
-            },
-            next.newContent
-        )
-    }
-
-    /**
-     * Get current file content
-     */
-    private async getCurrentFileContent(filePath: string): Promise<string> {
-        try {
-            const uri = vscode.Uri.file(filePath)
-            const content = await vscode.workspace.fs.readFile(uri)
-            return Buffer.from(content).toString('utf8')
-        } catch {
-            return ''
-        }
-    }
-
-    /**
      * Check if we should show static diff for a file
      */
     public shouldShowStaticDiff(filePath: string, content: string): boolean {
+        // Always show static diff when called from chat click
+        // This method is primarily called when user clicks on file tabs in chat
+        const animation = this.diffAnimationController.getAnimationData(filePath)
+
+        // If we have animation data, we should show static diff
+        if (animation) {
+            return true
+        }
+
+        // Check if the file has been animated before
         return this.diffAnimationController.shouldShowStaticDiff(filePath, content)
     }
 
@@ -443,12 +207,6 @@ export class DiffAnimationHandler implements vscode.Disposable {
         newContent: string,
         toolUseId: string
     ): Promise<void> {
-        if (this.animatingFiles.has(filePath)) {
-            getLogger().info(`[DiffAnimationHandler] ⏭️ Already animating: ${filePath}`)
-            return
-        }
-
-        this.animatingFiles.add(filePath)
         const animationId = `${path.basename(filePath)}_${Date.now()}`
 
         getLogger().info(`[DiffAnimationHandler] 🎬 Starting Cline-style diff animation ${animationId}`)
@@ -470,7 +228,6 @@ export class DiffAnimationHandler implements vscode.Disposable {
         } catch (error) {
             getLogger().error(`[DiffAnimationHandler] ❌ Failed to animate ${animationId}: ${error}`)
         } finally {
-            this.animatingFiles.delete(filePath)
             getLogger().info(`[DiffAnimationHandler] 🏁 Animation ${animationId} completed`)
         }
     }
@@ -485,12 +242,6 @@ export class DiffAnimationHandler implements vscode.Disposable {
         changeLocation: { startLine: number; endLine: number },
         toolUseId: string
     ): Promise<void> {
-        if (this.animatingFiles.has(filePath)) {
-            getLogger().info(`[DiffAnimationHandler] ⏭️ Already animating: ${filePath}`)
-            return
-        }
-
-        this.animatingFiles.add(filePath)
         const animationId = `${path.basename(filePath)}_partial_${Date.now()}`
 
         getLogger().info(
@@ -519,7 +270,6 @@ export class DiffAnimationHandler implements vscode.Disposable {
             // Fall back to full animation
             await this.animateFileChangeWithDiff(filePath, originalContent, newContent, toolUseId)
         } finally {
-            this.animatingFiles.delete(filePath)
             getLogger().info(`[DiffAnimationHandler] 🏁 Animation ${animationId} completed`)
         }
     }
@@ -536,12 +286,7 @@ export class DiffAnimationHandler implements vscode.Disposable {
         getLogger().info(`[DiffAnimationHandler] 🎨 Processing file diff for: ${params.originalFileUri}`)
 
         try {
-            const filePath = await this.normalizeFilePath(params.originalFileUri)
-            if (!filePath) {
-                getLogger().warn(`[DiffAnimationHandler] ⚠️ Could not normalize path for: ${params.originalFileUri}`)
-                return
-            }
-
+            const filePath = await this.fileSystemManager.normalizeFilePath(params.originalFileUri)
             const originalContent = params.originalFileContent || ''
             const newContent = params.fileContent || ''
 
@@ -568,18 +313,11 @@ export class DiffAnimationHandler implements vscode.Disposable {
     /**
      * Show static diff view for a file (when clicked from chat)
      */
-    /**
-     * Show static diff view for a file (when clicked from chat)
-     */
     public async showStaticDiffForFile(filePath: string, originalContent?: string, newContent?: string): Promise<void> {
         getLogger().info(`[DiffAnimationHandler] 👆 File clicked from chat: ${filePath}`)
 
         // Normalize the file path
-        const normalizedPath = await this.normalizeFilePath(filePath)
-        if (!normalizedPath) {
-            getLogger().warn(`[DiffAnimationHandler] ⚠️ Could not normalize path for: ${filePath}`)
-            return
-        }
+        const normalizedPath = await this.fileSystemManager.normalizeFilePath(filePath)
 
         // Get animation data if it exists
         const animation = this.diffAnimationController.getAnimationData(normalizedPath)
@@ -600,124 +338,14 @@ export class DiffAnimationHandler implements vscode.Disposable {
     }
 
     /**
-     * Process ChatUpdateParams
-     */
-    public async processChatUpdate(params: ChatUpdateParams): Promise<void> {
-        getLogger().info(`[DiffAnimationHandler] 🔄 Processing chat update for tab ${params.tabId}`)
-
-        if (params.data?.messages) {
-            for (const message of params.data.messages) {
-                await this.processChatMessage(message, params.tabId)
-            }
-        }
-    }
-
-    /**
-     * Resolve file path to absolute path
-     */
-    private async resolveFilePath(filePath: string): Promise<string | undefined> {
-        getLogger().info(`[DiffAnimationHandler] 🔍 Resolving file path: ${filePath}`)
-
-        try {
-            // If already absolute, return as is
-            if (path.isAbsolute(filePath)) {
-                getLogger().info(`[DiffAnimationHandler] ✅ Path is already absolute: ${filePath}`)
-                return filePath
-            }
-
-            // Try to resolve relative to workspace folders
-            const workspaceFolders = vscode.workspace.workspaceFolders
-            if (!workspaceFolders || workspaceFolders.length === 0) {
-                getLogger().warn('[DiffAnimationHandler] ⚠️ No workspace folders found')
-                return filePath
-            }
-
-            // Try each workspace folder
-            for (const folder of workspaceFolders) {
-                const absolutePath = path.join(folder.uri.fsPath, filePath)
-                getLogger().info(`[DiffAnimationHandler] 🔍 Trying: ${absolutePath}`)
-
-                try {
-                    await vscode.workspace.fs.stat(vscode.Uri.file(absolutePath))
-                    getLogger().info(`[DiffAnimationHandler] ✅ File exists at: ${absolutePath}`)
-                    return absolutePath
-                } catch {
-                    // File doesn't exist in this workspace folder, try next
-                }
-            }
-
-            // If file doesn't exist yet, return path relative to first workspace
-            const defaultPath = path.join(workspaceFolders[0].uri.fsPath, filePath)
-            getLogger().info(`[DiffAnimationHandler] 🆕 Using default path for new file: ${defaultPath}`)
-            return defaultPath
-        } catch (error) {
-            getLogger().error(`[DiffAnimationHandler] ❌ Error resolving file path: ${error}`)
-            return undefined
-        }
-    }
-
-    /**
-     * Normalize file path from URI or path string
-     */
-    private async normalizeFilePath(pathOrUri: string): Promise<string> {
-        getLogger().info(`[DiffAnimationHandler] 🔧 Normalizing path: ${pathOrUri}`)
-
-        try {
-            // Handle file:// protocol
-            if (pathOrUri.startsWith('file://')) {
-                const fsPath = vscode.Uri.parse(pathOrUri).fsPath
-                getLogger().info(`[DiffAnimationHandler] ✅ Converted file:// URI to: ${fsPath}`)
-                return fsPath
-            }
-
-            // Check if it's already a file path
-            if (path.isAbsolute(pathOrUri)) {
-                getLogger().info(`[DiffAnimationHandler] ✅ Already absolute path: ${pathOrUri}`)
-                return pathOrUri
-            }
-
-            // Try to parse as URI
-            try {
-                const uri = vscode.Uri.parse(pathOrUri)
-                if (uri.scheme === 'file') {
-                    getLogger().info(`[DiffAnimationHandler] ✅ Parsed as file URI: ${uri.fsPath}`)
-                    return uri.fsPath
-                }
-            } catch {
-                // Not a valid URI, treat as path
-            }
-
-            // Return as-is if we can't normalize
-            getLogger().info(`[DiffAnimationHandler] ⚠️ Using as-is: ${pathOrUri}`)
-            return pathOrUri
-        } catch (error) {
-            getLogger().error(`[DiffAnimationHandler] ❌ Error normalizing file path: ${error}`)
-            return pathOrUri
-        }
-    }
-
-    /**
      * Clear caches for a specific tab
      */
     public clearTabCache(tabId: string): void {
-        // Clean up old pending writes (older than 5 minutes)
-        const now = Date.now()
-        const timeout = 5 * 60 * 1000 // 5 minutes
-
-        let cleanedWrites = 0
-        for (const [filePath, write] of this.pendingWrites) {
-            if (now - write.timestamp > timeout) {
-                this.pendingWrites.delete(filePath)
-                cleanedWrites++
-            }
-        }
+        // Clean up old pending writes
+        const cleanedWrites = this.fileSystemManager.cleanupOldPendingWrites(this.pendingWrites)
 
         // Clear processed messages to prevent memory leak
-        if (this.processedMessages.size > 1000) {
-            const oldSize = this.processedMessages.size
-            this.processedMessages.clear()
-            getLogger().info(`[DiffAnimationHandler] 🧹 Cleared ${oldSize} processed messages`)
-        }
+        this.chatProcessor.clearProcessedMessages()
 
         if (cleanedWrites > 0) {
             getLogger().info(`[DiffAnimationHandler] 🧹 Cleared ${cleanedWrites} old pending writes`)
@@ -729,21 +357,11 @@ export class DiffAnimationHandler implements vscode.Disposable {
 
         // Clear all tracking sets and maps
         this.pendingWrites.clear()
-        this.processedMessages.clear()
-        this.animatingFiles.clear()
-        this.animationQueue.clear()
 
-        // Dispose the diff animation controller
+        // Dispose components
         this.diffAnimationController.dispose()
-
-        if (this.fileWatcher) {
-            this.fileWatcher.dispose()
-        }
-
-        // Dispose all event listeners
-        for (const disposable of this.disposables) {
-            disposable.dispose()
-        }
-        this.disposables = []
+        this.fileSystemManager.dispose()
+        this.animationQueueManager.clearAll()
+        this.chatProcessor.clearAll()
     }
 }

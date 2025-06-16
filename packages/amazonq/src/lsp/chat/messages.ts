@@ -518,28 +518,25 @@ export function registerMessageListeners(
                 ? vscode.Uri.parse(params.originalFileUri).fsPath
                 : params.originalFileUri
 
+            const originalContent = params.originalFileContent || ''
             const newContent = params.fileContent || ''
 
             getLogger().info(`[VSCode Client] OpenFileDiff notification for: ${normalizedPath}`)
+            getLogger().info(
+                `[VSCode Client] Original content length: ${originalContent.length}, New content length: ${newContent.length}`
+            )
 
-            // Check if we should show static diff
-            if (animationHandler.shouldShowStaticDiff(normalizedPath, newContent)) {
-                getLogger().info('[VSCode Client] From ChatClick, showing static diff')
-                await animationHandler.showStaticDiffForFile(
-                    normalizedPath,
-                    params.originalFileContent || '',
-                    params.fileContent || ''
-                )
-            } else {
-                getLogger().info('[VSCode Client] New content detected, starting animation')
-                // This is from chat click, pass the flag
-                await animationHandler.processFileDiff({
-                    originalFileUri: params.originalFileUri,
-                    originalFileContent: params.originalFileContent || '',
-                    fileContent: params.fileContent || '',
-                    isFromChatClick: true,
-                })
-            }
+            // For file tab clicks from chat, we should ALWAYS show the static diff view
+            // This is the key fix - don't rely on shouldShowStaticDiff logic for chat clicks
+            getLogger().info('[VSCode Client] File tab clicked from chat, showing static diff view')
+
+            // Use processFileDiff with isFromChatClick=true, which will trigger showVSCodeDiff
+            await animationHandler.processFileDiff({
+                originalFileUri: params.originalFileUri,
+                originalFileContent: originalContent,
+                fileContent: newContent,
+                isFromChatClick: true, // This ensures it goes to showVSCodeDiff
+            })
         } catch (error) {
             // If animation fails, fall back to the original diff view
             getLogger().error(`[VSCode Client] Diff animation failed, falling back to standard diff view: ${error}`)
