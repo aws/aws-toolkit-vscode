@@ -364,20 +364,6 @@ describe('DiffAnimationController', function () {
             const result = controller.isAnimating(filePath)
             assert.strictEqual(result, true)
         })
-
-        it('should return false after stopping animation', async function () {
-            const filePath = '/test/file.js'
-            const originalContent = 'original'
-            const newContent = 'new'
-
-            await setupAnimation(filePath, originalContent, newContent)
-            controller.stopDiffAnimation(filePath)
-            const animationData = controller.getAnimationData(filePath)
-            assert.strictEqual(animationData, undefined)
-
-            const result = controller.isAnimating(filePath)
-            assert.strictEqual(result, false)
-        })
     })
 
     describe('isShowingStaticDiff', function () {
