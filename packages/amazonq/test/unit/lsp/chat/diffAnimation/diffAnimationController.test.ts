@@ -49,6 +49,15 @@ describe('DiffAnimationController', function () {
         ;(vscode.workspace.openTextDocument as sinon.SinonStub).rejects(new Error(errorMessage))
     }
 
+    // Helper function to setup animation and verify disposal
+    async function setupAnimationAndDispose(filePath: string, originalContent: string, newContent: string) {
+        setupStandardMocks(originalContent)
+        await controller.startDiffAnimation(filePath, originalContent, newContent, false)
+        controller.dispose()
+        const stats = controller.getAnimationStats()
+        assert.strictEqual(stats.activeCount, 0)
+    }
+
     beforeEach(function () {
         sandbox = sinon.createSandbox()
 
@@ -387,17 +396,7 @@ describe('DiffAnimationController', function () {
         })
 
         it('should stop all animations on dispose', async function () {
-            const filePath = '/test/file.js'
-            const originalContent = 'original'
-            const newContent = 'new'
-
-            setupStandardMocks(originalContent)
-            await controller.startDiffAnimation(filePath, originalContent, newContent, false)
-
-            controller.dispose()
-
-            const stats = controller.getAnimationStats()
-            assert.strictEqual(stats.activeCount, 0)
+            await setupAnimationAndDispose('/test/file.js', 'original', 'new')
         })
 
         it('should handle multiple dispose calls', function () {
