@@ -10,6 +10,9 @@ import {
     DiffAnimationController,
     PartialUpdateOptions,
 } from '../../../../../src/lsp/chat/diffAnimation/diffAnimationController'
+import { WebviewManager } from '../../../../../src/lsp/chat/diffAnimation/webviewManager'
+import { DiffAnalyzer } from '../../../../../src/lsp/chat/diffAnimation/diffAnalyzer'
+import { VSCodeIntegration } from '../../../../../src/lsp/chat/diffAnimation/vscodeIntegration'
 
 describe('DiffAnimationController', function () {
     let controller: DiffAnimationController
@@ -87,6 +90,8 @@ describe('DiffAnimationController', function () {
         sandbox.stub(vscode.window, 'showTextDocument')
         sandbox.stub(vscode.commands, 'executeCommand')
         sandbox.stub(vscode.window, 'setStatusBarMessage')
+        sandbox.stub(vscode.window, 'createWebviewPanel')
+        sandbox.stub(vscode.workspace, 'registerTextDocumentContentProvider')
 
         // Mock vscode.workspace.fs properly
         const mockFs = {
@@ -95,6 +100,42 @@ describe('DiffAnimationController', function () {
             stat: sandbox.stub().resolves({ type: vscode.FileType.File, ctime: 0, mtime: 0, size: 0 }),
         }
         sandbox.stub(vscode.workspace, 'fs').value(mockFs)
+
+        // Mock the component classes to prevent real instantiation
+        const mockWebviewPanel = {
+            reveal: sandbox.stub(),
+            dispose: sandbox.stub(),
+            onDidDispose: sandbox.stub().returns({ dispose: sandbox.stub() }),
+            webview: {
+                html: '',
+                onDidReceiveMessage: sandbox.stub().returns({ dispose: sandbox.stub() }),
+                postMessage: sandbox.stub().resolves(),
+            },
+        }
+
+        sandbox.stub(WebviewManager.prototype, 'getOrCreateDiffWebview').resolves(mockWebviewPanel as any)
+        sandbox.stub(WebviewManager.prototype, 'sendMessageToWebview').resolves()
+        sandbox.stub(WebviewManager.prototype, 'shouldAutoScrollForFile').returns(true)
+        sandbox.stub(WebviewManager.prototype, 'closeDiffWebview')
+        sandbox.stub(WebviewManager.prototype, 'dispose')
+
+        sandbox.stub(DiffAnalyzer.prototype, 'calculateChangedRegion').returns({
+            startLine: 0,
+            endLine: 5,
+            totalLines: 10,
+        })
+        sandbox.stub(DiffAnalyzer.prototype, 'createScanPlan').returns({
+            leftLines: [],
+            rightLines: [],
+            scanPlan: [],
+        })
+        sandbox.stub(DiffAnalyzer.prototype, 'calculateAnimationTiming').returns({
+            scanDelay: 50,
+            totalDuration: 1000,
+        })
+
+        sandbox.stub(VSCodeIntegration.prototype, 'showVSCodeDiff').resolves()
+        sandbox.stub(VSCodeIntegration.prototype, 'openFileInEditor').resolves()
 
         controller = new DiffAnimationController()
     })
