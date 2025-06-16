@@ -52,12 +52,6 @@ describe('DiffAnimationController', function () {
         ;(vscode.workspace.openTextDocument as sinon.SinonStub).rejects(new Error(errorMessage))
     }
 
-    // Helper function to setup animation
-    async function setupAnimation(filePath: string, originalContent: string, newContent: string) {
-        setupStandardMocks(originalContent)
-        await controller.startDiffAnimation(filePath, originalContent, newContent, false)
-    }
-
     beforeEach(function () {
         sandbox = sinon.createSandbox()
 
@@ -303,14 +297,21 @@ describe('DiffAnimationController', function () {
 
     describe('stopDiffAnimation', function () {
         it('should stop animation for specific file', async function () {
-            const filePath = '/test/file.js'
-            const originalContent = 'original'
-            const newContent = 'new'
+            const filePath = '/test/specific-file.js'
+            const originalContent = 'test content'
+            const newContent = 'modified content'
 
-            await setupAnimation(filePath, originalContent, newContent)
+            setupStandardMocks(originalContent)
+            await controller.startDiffAnimation(filePath, originalContent, newContent, false)
+
+            // Verify animation is running
+            assert.strictEqual(controller.isAnimating(filePath), true)
+
+            // Stop the animation
             controller.stopDiffAnimation(filePath)
-            const animationData = controller.getAnimationData(filePath)
-            assert.strictEqual(animationData, undefined)
+
+            // Verify animation is stopped
+            assert.strictEqual(controller.isAnimating(filePath), false)
         })
 
         it('should handle stopping non-existent animation', function () {
