@@ -139,6 +139,8 @@ export class InlineCompletionManager implements Disposable {
                 await ImportAdderProvider.instance.onAcceptRecommendation(editor, item, startLine)
             }
             this.sessionManager.incrementSuggestionCount()
+            // clear session manager states once accepted
+            this.sessionManager.clear()
         }
         commands.registerCommand('aws.amazonq.acceptInline', onInlineAcceptance)
 
@@ -166,6 +168,8 @@ export class InlineCompletionManager implements Disposable {
                 },
             }
             this.languageClient.sendNotification(this.logSessionResultMessageName, params)
+            // clear session manager states once rejected
+            this.sessionManager.clear()
         }
         commands.registerCommand('aws.amazonq.rejectCodeSuggestion', onInlineRejection)
     }
@@ -179,6 +183,7 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
         private readonly inlineTutorialAnnotation: InlineTutorialAnnotation
     ) {}
 
+    private readonly logSessionResultMessageName = 'aws/logInlineCompletionSessionResults'
     provideInlineCompletionItems = debounce(
         this._provideInlineCompletionItems.bind(this),
         inlineCompletionsDebounceDelay,
@@ -191,12 +196,35 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
         context: InlineCompletionContext,
         token: CancellationToken
     ): Promise<InlineCompletionItem[]> {
+        console.log(`_provideInlineCompletionItems`)
+        // prevent concurrent API calls and write to shared state variables
+        if (vsCodeState.isRecommendationsActive) {
+            return []
+        }
         try {
             vsCodeState.isRecommendationsActive = true
             const isAutoTrigger = context.triggerKind === InlineCompletionTriggerKind.Automatic
             if (isAutoTrigger && !CodeSuggestionsState.instance.isSuggestionsEnabled()) {
                 // return early when suggestions are disabled with auto trigger
                 return []
+            }
+
+            // report suggestion state for previous suggestions if they exist
+            const sessionId = this.sessionManager.getActiveSession()?.sessionId
+            const itemId = this.sessionManager.getActiveRecommendation()?.[0]?.itemId
+            if (sessionId && itemId) {
+                const params: LogInlineCompletionSessionResultsParams = {
+                    sessionId: sessionId,
+                    completionSessionResult: {
+                        [itemId]: {
+                            seen: true,
+                            accepted: false,
+                            discarded: false,
+                        },
+                    },
+                }
+                this.languageClient.sendNotification(this.logSessionResultMessageName, params)
+                this.sessionManager.clear()
             }
 
             // tell the tutorial that completions has been triggered
@@ -229,24 +257,72 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
             }
 
             const cursorPosition = document.validatePosition(position)
-            for (const item of items) {
-                item.command = {
-                    command: 'aws.amazonq.acceptInline',
-                    title: 'On acceptance',
-                    arguments: [
-                        session.sessionId,
-                        item,
-                        editor,
-                        session.requestStartTime,
-                        cursorPosition.line,
-                        session.firstCompletionDisplayLatency,
-                    ],
+
+            if (position.isAfter(editor.selection.active)) {
+                getLogger().debug(`Cursor moved behind trigger position. Discarding suggestion`)
+                const params: LogInlineCompletionSessionResultsParams = {
+                    sessionId: session.sessionId,
+                    completionSessionResult: {
+                        [itemId]: {
+                            seen: false,
+                            accepted: false,
+                            discarded: true,
+                        },
+                    },
                 }
-                item.range = new Range(cursorPosition, cursorPosition)
-                item.insertText = typeof item.insertText === 'string' ? item.insertText : item.insertText.value
-                ImportAdderProvider.instance.onShowRecommendation(document, cursorPosition.line, item)
+                this.languageClient.sendNotification(this.logSessionResultMessageName, params)
+                this.sessionManager.clear()
+                return []
             }
-            return items as InlineCompletionItem[]
+
+            // the user typed characters from invoking suggestion cursor position to receiving suggestion position
+            const typeahead = document.getText(new Range(position, editor.selection.active))
+
+            const itemsMatchingTypeahead = []
+
+            for (const item of items) {
+                item.insertText = typeof item.insertText === 'string' ? item.insertText : item.insertText.value
+                if (item.insertText.startsWith(typeahead)) {
+                    item.command = {
+                        command: 'aws.amazonq.acceptInline',
+                        title: 'On acceptance',
+                        arguments: [
+                            session.sessionId,
+                            item,
+                            editor,
+                            session.requestStartTime,
+                            cursorPosition.line,
+                            session.firstCompletionDisplayLatency,
+                        ],
+                    }
+                    item.range = new Range(cursorPosition, cursorPosition)
+                    itemsMatchingTypeahead.push(item)
+                    ImportAdderProvider.instance.onShowRecommendation(document, cursorPosition.line, item)
+                }
+            }
+
+            // report discard if none of suggestions match typeahead
+            if (itemsMatchingTypeahead.length === 0) {
+                getLogger().debug(
+                    `Suggestion does not match user typed new characters during generation. Discarding suggestion`
+                )
+                const params: LogInlineCompletionSessionResultsParams = {
+                    sessionId: session.sessionId,
+                    completionSessionResult: {
+                        [itemId]: {
+                            seen: false,
+                            accepted: false,
+                            discarded: true,
+                        },
+                    },
+                }
+                this.languageClient.sendNotification(this.logSessionResultMessageName, params)
+                this.sessionManager.clear()
+                return []
+            }
+
+            // suggestions returned here will be displayed on screen
+            return itemsMatchingTypeahead as InlineCompletionItem[]
         } catch (e) {
             getLogger('amazonqLsp').error('Failed to provide completion items: %O', e)
             return []

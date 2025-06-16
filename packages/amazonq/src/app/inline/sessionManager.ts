@@ -18,7 +18,6 @@ interface CodeWhispererSession {
 export class SessionManager {
     private activeSession?: CodeWhispererSession
     private _acceptedSuggestionCount: number = 0
-
     constructor() {}
 
     public startSession(
