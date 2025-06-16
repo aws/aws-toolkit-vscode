@@ -102,7 +102,10 @@ describe('DiffAnimationController', function () {
             totalDuration: 1000,
         })
 
-        sandbox.stub(VSCodeIntegration.prototype, 'showVSCodeDiff').resolves()
+        // Mock VSCodeIntegration to call vscode.commands.executeCommand so tests can verify it
+        sandbox.stub(VSCodeIntegration.prototype, 'showVSCodeDiff').callsFake(async () => {
+            await (vscode.commands.executeCommand as sinon.SinonStub)('vscode.diff')
+        })
         sandbox.stub(VSCodeIntegration.prototype, 'openFileInEditor').resolves()
     }
 
@@ -152,12 +155,11 @@ describe('DiffAnimationController', function () {
     })
 
     describe('animation data management', function () {
-        it('should return undefined for non-existent file', function () {
-            const result = controller.getAnimationData(testPaths.nonexistent)
-            assert.strictEqual(result, undefined)
-        })
+        it('should handle animation data lifecycle', async function () {
+            // Should return undefined for non-existent file
+            assert.strictEqual(controller.getAnimationData(testPaths.nonexistent), undefined)
 
-        it('should return animation data after starting animation', async function () {
+            // Should return animation data after starting animation
             setupFileOperationMocks('existing', testContent.original)
             await controller.startDiffAnimation(testPaths.existing, testContent.original, testContent.new)
 
@@ -210,7 +212,13 @@ describe('DiffAnimationController', function () {
             it('should handle chat click parameter', async function () {
                 setupFileOperationMocks('existing')
                 await controller.startDiffAnimation(testPaths.existing, testContent.original, testContent.new, true)
-                assert.ok(controller.getAnimationData(testPaths.existing))
+
+                // When isFromChatClick is true, it calls showVSCodeDiff and returns early
+                // So no animation data should be stored
+                assert.strictEqual(controller.getAnimationData(testPaths.existing), undefined)
+
+                // But vscode.commands.executeCommand should have been called
+                assert.ok((vscode.commands.executeCommand as sinon.SinonStub).called)
             })
 
             it('should handle file operation errors', async function () {
@@ -294,27 +302,18 @@ describe('DiffAnimationController', function () {
     })
 
     describe('animation status queries', function () {
-        it('should return false for non-existent file animation status', function () {
+        it('should handle animation status queries', async function () {
+            // Should return false for non-existent files
             assert.strictEqual(controller.isAnimating(testPaths.nonexistent), false)
-        })
+            assert.strictEqual(controller.isShowingStaticDiff(testPaths.nonexistent), false)
 
-        it('should return true for active animation', async function () {
+            // Should return correct status for active animation
             setupFileOperationMocks('existing', testContent.original)
             await controller.startDiffAnimation(testPaths.existing, testContent.original, testContent.new, false)
 
             assert.strictEqual(controller.isAnimating(testPaths.existing), true)
-        })
-
-        it('should return false for non-existent static diff status', function () {
-            assert.strictEqual(controller.isShowingStaticDiff(testPaths.nonexistent), false)
-        })
-
-        it('should return correct static diff status', async function () {
-            setupFileOperationMocks('existing', testContent.original)
-            await controller.startDiffAnimation(testPaths.existing, testContent.original, testContent.new, false)
-
-            const result = controller.isShowingStaticDiff(testPaths.existing)
-            assert.strictEqual(typeof result, 'boolean')
+            const staticDiffResult = controller.isShowingStaticDiff(testPaths.existing)
+            assert.strictEqual(typeof staticDiffResult, 'boolean')
         })
     })
 
