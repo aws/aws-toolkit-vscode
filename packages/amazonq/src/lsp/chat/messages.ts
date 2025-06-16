@@ -62,7 +62,7 @@ import { Disposable, LanguageClient, Position, TextDocumentIdentifier } from 'vs
 import * as jose from 'jose'
 import { AmazonQChatViewProvider } from './webviewProvider'
 import { AuthUtil, ReferenceLogViewProvider } from 'aws-core-vscode/codewhisperer'
-import { amazonQDiffScheme, AmazonQPromptSettings, messages, openUrl } from 'aws-core-vscode/shared'
+import { amazonQDiffScheme, AmazonQPromptSettings, messages, openUrl, isTextEditor } from 'aws-core-vscode/shared'
 import {
     DefaultAmazonQAppInitContext,
     messageDispatcher,
@@ -73,6 +73,30 @@ import {
 import { telemetry, TelemetryBase } from 'aws-core-vscode/telemetry'
 import { isValidResponseError } from './error'
 import { focusAmazonQPanel } from './commands'
+
+export function registerActiveEditorChangeListener(languageClient: LanguageClient) {
+    let debounceTimer: NodeJS.Timeout | undefined
+    vscode.window.onDidChangeActiveTextEditor((editor) => {
+        if (debounceTimer) {
+            clearTimeout(debounceTimer)
+        }
+        debounceTimer = setTimeout(() => {
+            let textDocument = undefined
+            let cursorState = undefined
+            if (editor) {
+                textDocument = {
+                    uri: editor.document.uri.toString(),
+                }
+                cursorState = getCursorState(editor.selections)
+            }
+            // todo: replace with message from lsp once consuming latest language-server-runtimes
+            languageClient.sendNotification('aws/chat/activeEditorChanged', {
+                textDocument,
+                cursorState,
+            })
+        }, 100)
+    })
+}
 
 export function registerLanguageServerEventListener(languageClient: LanguageClient, provider: AmazonQChatViewProvider) {
     languageClient.info(
@@ -316,6 +340,8 @@ export function registerMessageListeners(
                 )
                 break
             }
+            case 'aws/chat/listRules': // todo: switch to imported methods from language-server-runtimes
+            case 'aws/chat/ruleClick':
             case listConversationsRequestType.method:
             case conversationClickRequestType.method:
             case listMcpServersRequestType.method:
@@ -471,6 +497,20 @@ export function registerMessageListeners(
             params: params,
         })
     })
+    languageClient.onNotification(
+        'aws/chat/sendPinnedContext', // todo: switch to type from language-server-runtimes
+        (params: ContextCommandParams & { tabId: string; textDocument?: TextDocumentIdentifier }) => {
+            const editor = vscode.window.activeTextEditor
+            let textDocument = undefined
+            if (editor && isTextEditor(editor)) {
+                textDocument = { uri: vscode.workspace.asRelativePath(editor.document.uri) }
+            }
+            void provider.webview?.postMessage({
+                command: 'aws/chat/sendPinnedContext', // todo: switch to type from language-server-runtimes
+                params: { ...params, textDocument },
+            })
+        }
+    )
 
     languageClient.onNotification(openFileDiffNotificationType.method, async (params: OpenFileDiffParams) => {
         const ecc = new EditorContentController()
