@@ -11,9 +11,10 @@ import { showConfirmationMessage } from '../../shared/utilities/messages'
 import globals from '../../shared/extensionGlobals'
 import { once } from '../../shared/utilities/functionUtils'
 import CodeWhispererUserClient from '../client/codewhispereruserclient'
-import { Credentials, Service } from 'aws-sdk'
+import { Credentials, HttpRequest, Service } from 'aws-sdk'
 import { ServiceOptions } from '../../shared/awsClientBuilder'
-import userApiConfig = require('../client/user-service-2.json')
+import tokenApiConfig = require('../client/user-service-2.json')
+import iamApiConfig = require('../client/service-2.json')
 import { createConstantMap } from '../../shared/utilities/tsUtils'
 import { getLogger } from '../../shared/logger/logger'
 import { pageableToCollection } from '../../shared/utilities/collectionUtils'
@@ -425,19 +426,31 @@ export class RegionProfileManager {
 
     // Visible for testing only, do not use this directly, please use createQClient(profile)
     async _createQClient(region: string, endpoint: string): Promise<CodeWhispererUserClient> {
-        const token = await this.authProvider.getToken()
+        const credential = await this.authProvider.getCredential()
+        const authConfig: ServiceOptions =
+            typeof credential === 'string'
+                ? {
+                      onRequestSetup: [
+                          (req: any) => {
+                              req.on('build', ({ httpRequest }: { httpRequest: HttpRequest }) => {
+                                  httpRequest.headers['Authorization'] = `Bearer ${credential}`
+                              })
+                          },
+                      ],
+                  }
+                : {
+                      credentials: new Credentials({
+                          accessKeyId: credential.accessKeyId,
+                          secretAccessKey: credential.secretAccessKey,
+                          sessionToken: credential.sessionToken,
+                      }),
+                  }
+        const apiConfig = typeof credential === 'string' ? tokenApiConfig : iamApiConfig
         const serviceOption: ServiceOptions = {
-            apiConfig: userApiConfig,
+            apiConfig: apiConfig,
             region: region,
             endpoint: endpoint,
-            credentials: new Credentials({ accessKeyId: 'xxx', secretAccessKey: 'xxx' }),
-            onRequestSetup: [
-                (req) => {
-                    req.on('build', ({ httpRequest }) => {
-                        httpRequest.headers['Authorization'] = `Bearer ${token}`
-                    })
-                },
-            ],
+            ...authConfig,
         } as ServiceOptions
 
         const c = (await globals.sdkClientBuilder.createAwsService(

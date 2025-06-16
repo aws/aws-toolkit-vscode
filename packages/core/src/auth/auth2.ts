@@ -61,6 +61,7 @@ import { ToolkitError } from '../shared/errors'
 import { useDeviceFlow } from './sso/ssoAccessTokenProvider'
 import { getCacheDir, getCacheFileWatcher, getFlareCacheFileName } from './sso/cache'
 import { VSCODE_EXTENSION_ID } from '../shared/extensions'
+import { IamCredentials } from '@aws/language-server-runtimes-types'
 
 export const notificationTypes = {
     updateIamCredential: new RequestType<UpdateCredentialsParams, ResponseMessage, Error>(
@@ -217,7 +218,7 @@ export class LanguageClientAuth {
         return { profile, ssoSession }
     }
 
-    updateBearerToken(request: UpdateCredentialsParams) {
+    updateBearerToken(request: UpdateCredentialsParams | undefined) {
         return this.client.sendRequest(bearerCredentialsUpdateRequestType.method, request)
     }
 
@@ -225,7 +226,7 @@ export class LanguageClientAuth {
         return this.client.sendNotification(bearerCredentialsDeleteNotificationType.method)
     }
 
-    updateIamCredential(request: UpdateCredentialsParams) {
+    updateIamCredential(request: UpdateCredentialsParams | undefined) {
         return this.client.sendRequest(iamCredentialsUpdateRequestType.method, request)
     }
 
@@ -283,6 +284,10 @@ export abstract class BaseLogin {
     abstract reauthenticate(): Promise<GetSsoTokenResult | GetIamCredentialResult | undefined>
     abstract logout(): void
     abstract restore(): void
+    abstract getCredential(): Promise<{
+        credential: string | IamCredentials
+        updateCredentialsParams: UpdateCredentialsParams
+    }>
 
     get data() {
         return this._data
@@ -402,11 +407,11 @@ export class SsoLogin extends BaseLogin {
      * Returns both the decrypted access token and the payload to send to the `updateCredentials` LSP API
      * with encrypted token
      */
-    async getToken() {
+    async getCredential() {
         const response = await this._getSsoToken(false)
         const accessToken = await this.decrypt(response.ssoToken.accessToken)
         return {
-            token: accessToken,
+            credential: accessToken,
             updateCredentialsParams: response.updateCredentialsParams,
         }
     }
@@ -548,18 +553,17 @@ export class IamLogin extends BaseLogin {
      * Returns both the decrypted IAM credential and the payload to send to the `updateCredentials` LSP API
      * with encrypted credential
      */
-    async getCredentials() {
+    async getCredential() {
         const response = await this._getIamCredential(false)
-        const accessKey = await this.decrypt(response.credentials.accessKeyId)
-        const secretKey = await this.decrypt(response.credentials.secretAccessKey)
-        let sessionToken: string | undefined
-        if (response.credentials.sessionToken) {
-            sessionToken = await this.decrypt(response.credentials.sessionToken)
+        const credentials: IamCredentials = {
+            accessKeyId: await this.decrypt(response.credentials.accessKeyId),
+            secretAccessKey: await this.decrypt(response.credentials.secretAccessKey),
+            sessionToken: response.credentials.sessionToken
+                ? await this.decrypt(response.credentials.sessionToken)
+                : undefined,
         }
         return {
-            accessKey: accessKey,
-            secretKey: secretKey,
-            sessionToken: sessionToken,
+            credential: credentials,
             updateCredentialsParams: response.updateCredentialsParams,
         }
     }

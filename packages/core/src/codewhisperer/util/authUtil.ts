@@ -44,6 +44,7 @@ import {
     GetSsoTokenResult,
     GetIamCredentialResult,
     SsoTokenSourceKind,
+    IamCredentials,
 } from '@aws/language-server-runtimes/server-interface'
 
 const localize = nls.loadMessageBundle()
@@ -59,7 +60,8 @@ export interface IAuthProvider {
     isBuilderIdConnection(): boolean
     isIdcConnection(): boolean
     isSsoSession(): boolean
-    getToken(): Promise<string>
+    isIamSession(): boolean
+    getCredential(): Promise<string | IamCredentials>
     readonly profileName: string
     readonly connection?: { startUrl?: string; region?: string; accessKey?: string; secretKey?: string }
 }
@@ -199,11 +201,11 @@ export class AuthUtil implements IAuthProvider {
         return response
     }
 
-    async getToken() {
-        if (this.isSsoSession()) {
-            return (await (this.session as SsoLogin).getToken()).token
+    async getCredential() {
+        if (this.session) {
+            return (await this.session.getCredential()).credential
         } else {
-            throw new ToolkitError('Cannot get token for non-SSO session.')
+            throw new ToolkitError('Cannot get credential without logging in.')
         }
     }
 
@@ -336,11 +338,12 @@ export class AuthUtil implements IAuthProvider {
 
     private async stateChangeHandler(e: AuthStateEvent) {
         if (e.state === 'refreshed') {
-            const params = this.isSsoSession()
-                ? (await (this.session as SsoLogin).getToken()).updateCredentialsParams
-                : undefined
-            await this.lspAuth.updateBearerToken(params!)
-            return
+            const params = this.session ? (await this.session.getCredential()).updateCredentialsParams : undefined
+            if (this.isSsoSession()) {
+                await this.lspAuth.updateBearerToken(params)
+            } else if (this.isIamSession()) {
+                await this.lspAuth.updateIamCredential(params)
+            }
         } else {
             this.logger.info(`codewhisperer: connection changed to ${e.state}`)
             await this.refreshState(e.state)
@@ -356,8 +359,12 @@ export class AuthUtil implements IAuthProvider {
             }
         }
         if (state === 'connected') {
-            const bearerTokenParams = (await (this.session as SsoLogin).getToken()).updateCredentialsParams
-            await this.lspAuth.updateBearerToken(bearerTokenParams)
+            const params = this.session ? (await this.session.getCredential()).updateCredentialsParams : undefined
+            if (this.isSsoSession()) {
+                await this.lspAuth.updateBearerToken(params)
+            } else if (this.isIamSession()) {
+                await this.lspAuth.updateIamCredential(params)
+            }
 
             if (this.isIdcConnection()) {
                 await this.regionProfileManager.restoreProfileSelection()
@@ -400,7 +407,7 @@ export class AuthUtil implements IAuthProvider {
                 credentialStartUrl: AuthUtil.instance.connection?.startUrl,
                 awsRegion: AuthUtil.instance.connection?.region,
             }
-        } else if (!AuthUtil.instance.isSsoSession) {
+        } else if (this.isIamSession()) {
             return {
                 credentialSourceId: 'sharedCredentials',
             }

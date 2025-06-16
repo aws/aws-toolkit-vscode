@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { AWSError, Credentials, Service } from 'aws-sdk'
+import { AWSError, HttpRequest, Service } from 'aws-sdk'
 import globals from '../../shared/extensionGlobals'
 import * as CodeWhispererClient from './codewhispererclient'
 import * as CodeWhispererUserClient from './codewhispereruserclient'
@@ -13,8 +13,8 @@ import { hasVendedIamCredentials } from '../../auth/auth'
 import { CodeWhispererSettings } from '../util/codewhispererSettings'
 import { PromiseResult } from 'aws-sdk/lib/request'
 import { AuthUtil } from '../util/authUtil'
-import apiConfig = require('./service-2.json')
 import userApiConfig = require('./user-service-2.json')
+import apiConfig = require('./service-2.json')
 import { session } from '../util/codeWhispererSession'
 import { getLogger } from '../../shared/logger/logger'
 import { getClientId, getOptOutPreference, getOperatingSystem } from '../../shared/telemetry/util'
@@ -83,8 +83,6 @@ export type Imports = CodeWhispererUserClient.Imports
 
 export class DefaultCodeWhispererClient {
     private async createSdkClient(): Promise<CodeWhispererClient> {
-        throw new Error('Do not call this function until IAM is supported by LSP identity server')
-
         const isOptedOut = CodeWhispererSettings.instance.isOptoutEnabled()
         const cwsprConfig = getCodewhispererConfig()
         return (await globals.sdkClientBuilder.createAwsService(
@@ -127,7 +125,11 @@ export class DefaultCodeWhispererClient {
     async createUserSdkClient(maxRetries?: number): Promise<CodeWhispererUserClient> {
         const isOptedOut = CodeWhispererSettings.instance.isOptoutEnabled()
         session.setFetchCredentialStart()
-        const bearerToken = await AuthUtil.instance.getToken()
+        const credential = await AuthUtil.instance.getCredential()
+        if (typeof credential !== 'string') {
+            throw new TypeError('Cannot create user SDK client from IAM credentials')
+        }
+
         session.setSdkApiCallStart()
         const cwsprConfig = getCodewhispererConfig()
         return (await globals.sdkClientBuilder.createAwsService(
@@ -137,11 +139,10 @@ export class DefaultCodeWhispererClient {
                 region: cwsprConfig.region,
                 endpoint: cwsprConfig.endpoint,
                 maxRetries: maxRetries,
-                credentials: new Credentials({ accessKeyId: 'xxx', secretAccessKey: 'xxx' }),
                 onRequestSetup: [
-                    (req) => {
-                        req.on('build', ({ httpRequest }) => {
-                            httpRequest.headers['Authorization'] = `Bearer ${bearerToken}`
+                    (req: any) => {
+                        req.on('build', ({ httpRequest }: { httpRequest: HttpRequest }) => {
+                            httpRequest.headers['Authorization'] = `Bearer ${credential}`
                         })
                         if (req.operation === 'generateCompletions') {
                             req.on('build', () => {
@@ -159,6 +160,88 @@ export class DefaultCodeWhispererClient {
     private isBearerTokenAuth(): boolean {
         return AuthUtil.instance.isConnected() // TODO: Handle IAM credentials
     }
+
+    // private async createServiceSdkClient(credential: IamCredentials): Promise<CodeWhispererClient> {
+    //     const isOptedOut = CodeWhispererSettings.instance.isOptoutEnabled()
+    //     const cwsprConfig = getCodewhispererConfig()
+    //     return (await globals.sdkClientBuilder.createAwsService(
+    //         Service,
+    //         {
+    //             apiConfig: apiConfig,
+    //             region: cwsprConfig.region,
+    //             credentials: undefined,
+    //             endpoint: cwsprConfig.endpoint,
+    //             onRequestSetup: [
+    //                 (req) => {
+    //                     if (req.operation === 'listRecommendations') {
+    //                         req.on('build', () => {
+    //                             req.httpRequest.headers['x-amzn-codewhisperer-optout'] = `${isOptedOut}`
+    //                         })
+    //                     }
+    //                     // This logic is for backward compatability with legacy SDK v2 behavior for refreshing
+    //                     // credentials. Once the Toolkit adds a file watcher for credentials it won't be needed.
+
+    //                     if (hasVendedIamCredentials()) {
+    //                         req.on('retry', (resp) => {
+    //                             if (
+    //                                 resp.error?.code === 'AccessDeniedException' &&
+    //                                 resp.error.message.match(/expired/i)
+    //                             ) {
+    //                                 // AuthUtil.instance.reauthenticate().catch((e) => {
+    //                                 //     getLogger().error('reauthenticate failed: %s', (e as Error).message)
+    //                                 // })
+    //                                 resp.error.retryable = true
+    //                             }
+    //                         })
+    //                     }
+    //                 },
+    //             ],
+    //         } as ServiceOptions,
+    //         undefined
+    //     )) as CodeWhispererClient
+    // }
+
+    // private async createUserServiceSdkClient(
+    //     credential: string,
+    //     maxRetries?: number
+    // ): Promise<CodeWhispererUserClient> {
+    //     const isOptedOut = CodeWhispererSettings.instance.isOptoutEnabled()
+    //     session.setFetchCredentialStart()
+    //     session.setSdkApiCallStart()
+    //     const cwsprConfig = getCodewhispererConfig()
+    //     return (await globals.sdkClientBuilder.createAwsService(
+    //         Service,
+    //         {
+    //             apiConfig: userApiConfig,
+    //             region: cwsprConfig.region,
+    //             endpoint: cwsprConfig.endpoint,
+    //             maxRetries: maxRetries,
+    //             onRequestSetup: [
+    //                 (req: any) => {
+    //                     req.on('build', ({ httpRequest }: { httpRequest: HttpRequest }) => {
+    //                         httpRequest.headers['Authorization'] = `Bearer ${credential}`
+    //                     })
+    //                     if (req.operation === 'generateCompletions') {
+    //                         req.on('build', () => {
+    //                             req.httpRequest.headers['x-amzn-codewhisperer-optout'] = `${isOptedOut}`
+    //                             req.httpRequest.headers['Connection'] = keepAliveHeader
+    //                         })
+    //                     }
+    //                 },
+    //             ],
+    //         } as ServiceOptions,
+    //         undefined
+    //     )) as CodeWhispererUserClient
+    // }
+
+    // async createSdkClient(maxRetries?: number): Promise<CodeWhispererUserClient | CodeWhispererClient> {
+    //     const credential = await AuthUtil.instance.getCredential()
+    //     if (typeof credential === 'string') {
+    //         return this.createUserServiceSdkClient(credential, maxRetries)
+    //     } else {
+    //         return this.createServiceSdkClient(credential)
+    //     }
+    // }
 
     public async generateRecommendations(
         request: GenerateRecommendationsRequest
