@@ -49,10 +49,15 @@ describe('DiffAnimationController', function () {
         ;(vscode.workspace.openTextDocument as sinon.SinonStub).rejects(new Error(errorMessage))
     }
 
-    // Helper function to setup animation and verify disposal
-    async function setupAnimationAndDispose(filePath: string, originalContent: string, newContent: string) {
+    // Helper function to setup animation
+    async function setupAnimation(filePath: string, originalContent: string, newContent: string) {
         setupStandardMocks(originalContent)
         await controller.startDiffAnimation(filePath, originalContent, newContent, false)
+    }
+
+    // Helper function to setup animation and verify disposal
+    async function setupAnimationAndDispose(filePath: string, originalContent: string, newContent: string) {
+        await setupAnimation(filePath, originalContent, newContent)
         controller.dispose()
         const stats = controller.getAnimationStats()
         assert.strictEqual(stats.activeCount, 0)
@@ -60,8 +65,7 @@ describe('DiffAnimationController', function () {
 
     // Helper function to setup animation and stop it
     async function setupAnimationAndStop(filePath: string, originalContent: string, newContent: string) {
-        setupStandardMocks(originalContent)
-        await controller.startDiffAnimation(filePath, originalContent, newContent, false)
+        await setupAnimation(filePath, originalContent, newContent)
         controller.stopDiffAnimation(filePath)
         const animationData = controller.getAnimationData(filePath)
         assert.strictEqual(animationData, undefined)
