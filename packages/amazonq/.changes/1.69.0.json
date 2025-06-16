@@ -1,0 +1,14 @@
+{
+	"date": "2025-05-22",
+	"version": "1.69.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "/transform: avoid prompting user for target JDK path unnecessarily"
+		},
+		{
+			"type": "Removal",
+			"description": "/transform: remove option to select multiple diffs"
+		}
+	]
+}

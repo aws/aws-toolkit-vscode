@@ -21,6 +21,7 @@ export type LogTopic =
     | 'nextEditPrediction'
     | 'resourceCache'
     | 'telemetry'
+    | 'proxyUtil'
 
 class ErrorLog {
     constructor(

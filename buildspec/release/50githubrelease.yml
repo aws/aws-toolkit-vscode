@@ -36,10 +36,13 @@ phases:
             - echo "posting $VERSION with sha384 hash $HASH to GitHub"
             - PKG_DISPLAY_NAME=$(grep -m 1 displayName packages/${TARGET_EXTENSION}/package.json | grep -o '[a-zA-z][^\"]\+' | tail -n1)
             - RELEASE_MESSAGE="${PKG_DISPLAY_NAME} for VS Code $VERSION"
+            # Only set amazonq as "latest" release. This ensures https://api.github.com/repos/aws/aws-toolkit-vscode/releases/latest
+            # consistently points to the amazonq artifact, instead of being "random".
+            - LATEST="$([ "$TARGET_EXTENSION" = amazonq ] && echo '--latest' || echo '--latest=false' )"
             - |
                 if [ "$STAGE" = "prod" ]; then
                   # note: the tag arg passed here should match what is in 10changeversion.yml
-                  gh release create --repo $REPO --title "$PKG_DISPLAY_NAME $VERSION" --notes "$RELEASE_MESSAGE" -- "${TARGET_EXTENSION}/v${VERSION}" "$UPLOAD_TARGET" "$HASH_UPLOAD_TARGET"
+                  gh release create "$LATEST" --repo $REPO --title "$PKG_DISPLAY_NAME $VERSION" --notes "$RELEASE_MESSAGE" -- "${TARGET_EXTENSION}/v${VERSION}" "$UPLOAD_TARGET" "$HASH_UPLOAD_TARGET"
                 else
                   echo "SKIPPED (stage=${STAGE}): 'gh release create --repo $REPO'"
                 fi

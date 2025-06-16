@@ -6,21 +6,13 @@
 import * as vscode from 'vscode'
 import { ExtensionContext } from 'vscode'
 import { telemetry } from 'aws-core-vscode/telemetry'
-import { AuthUtil, CodeWhispererSettings } from 'aws-core-vscode/codewhisperer'
-import { Commands, placeholder, funcUtil } from 'aws-core-vscode/shared'
+import { AuthUtil } from 'aws-core-vscode/codewhisperer'
+import { Commands, getLogger, placeholder } from 'aws-core-vscode/shared'
 import * as amazonq from 'aws-core-vscode/amazonq'
 
 export async function activate(context: ExtensionContext) {
     const appInitContext = amazonq.DefaultAmazonQAppInitContext.instance
     await amazonq.TryChatCodeLensProvider.register(appInitContext.onDidChangeAmazonQVisibility.event)
-
-    const setupLsp = funcUtil.debounce(async () => {
-        void amazonq.LspController.instance.trySetupLsp(context, {
-            startUrl: AuthUtil.instance.startUrl,
-            maxIndexSize: CodeWhispererSettings.instance.getMaxIndexSize(),
-            isVectorIndexEnabled: false,
-        })
-    }, 5000)
 
     context.subscriptions.push(
         amazonq.focusAmazonQChatWalkthrough.register(),
@@ -37,7 +29,6 @@ export async function activate(context: ExtensionContext) {
         void vscode.env.openExternal(vscode.Uri.parse(amazonq.amazonQHelpUrl))
     })
 
-    void setupLsp()
     void setupAuthNotification()
 }
 
@@ -76,7 +67,9 @@ async function setupAuthNotification() {
         const selection = await vscode.window.showWarningMessage('Start using Amazon Q', buttonAction)
 
         if (selection === buttonAction) {
-            void amazonq.focusAmazonQPanel.execute(placeholder, source)
+            amazonq.focusAmazonQPanel.execute(placeholder, source).catch((e) => {
+                getLogger().error('focusAmazonQPanel failed: %s', e)
+            })
         }
     }
 }

@@ -4,7 +4,7 @@
  */
 
 import { AuthUtil } from 'aws-core-vscode/codewhisperer'
-import { Commands, globals } from 'aws-core-vscode/shared'
+import { Commands, fs, globals, LanguageServerResolver } from 'aws-core-vscode/shared'
 import vscode from 'vscode'
 
 /**
@@ -39,6 +39,9 @@ async function clearCache() {
     }
 
     await globals.globalState.clear()
+
+    // Clear the Language Server Cache
+    await fs.delete(LanguageServerResolver.defaultDir(), { recursive: true, force: true })
 
     // Make the IDE reload so all new changes take effect
     void vscode.commands.executeCommand('workbench.action.reloadWindow')

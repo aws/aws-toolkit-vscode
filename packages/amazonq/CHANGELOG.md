@@ -1,3 +1,32 @@
+## 1.75.0 2025-06-13
+
+- Miscellaneous non-user-facing changes
+
+## 1.74.0 2025-06-12
+
+- Miscellaneous non-user-facing changes
+
+## 1.73.0 2025-06-11
+
+- **Feature** Add MCP Server Support
+
+## 1.72.0 2025-06-11
+
+- **Feature** Launch LSP with bundled artifacts as fallback
+
+## 1.71.0 2025-06-04
+
+- Miscellaneous non-user-facing changes
+
+## 1.70.0 2025-05-28
+
+- **Removal** Disable local workspace LSP
+
+## 1.69.0 2025-05-22
+
+- **Bug Fix** /transform: avoid prompting user for target JDK path unnecessarily
+- **Removal** /transform: remove option to select multiple diffs
+
 ## 1.68.0 2025-05-15
 
 - **Bug Fix** Fix Error: 'Amazon Q service is not signed in'

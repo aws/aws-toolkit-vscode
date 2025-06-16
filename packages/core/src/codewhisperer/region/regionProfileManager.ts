@@ -177,9 +177,17 @@ export class RegionProfileManager {
             }
         }
 
-        // Only throw error if all regions fail
-        if (failedRegions.length === endpoints.size) {
-            throw new Error(`Failed to list profiles for all regions: ${failedRegions.join(', ')}`)
+        // Throw error if any regional API calls failed and no profiles are available
+        if (failedRegions.length > 0 && availableProfiles.length === 0) {
+            throw new ToolkitError(`Failed to list Q Developer profiles for regions: ${failedRegions.join(', ')}`, {
+                code: 'ListQDeveloperProfilesFailed',
+            })
+        }
+
+        // Throw an error if all listAvailableProfile calls succeeded, but user has no Q developer profiles
+        // This is not an expected state
+        if (failedRegions.length === 0 && availableProfiles.length === 0) {
+            throw new ToolkitError('This user has no Q Developer profiles', { code: 'QDeveloperProfileNotFound' })
         }
 
         this._profiles = availableProfiles
