@@ -58,22 +58,6 @@ describe('DiffAnimationController', function () {
         await controller.startDiffAnimation(filePath, originalContent, newContent, false)
     }
 
-    // Helper function to setup animation and verify disposal
-    async function setupAnimationAndDispose(filePath: string, originalContent: string, newContent: string) {
-        await setupAnimation(filePath, originalContent, newContent)
-        controller.dispose()
-        const stats = controller.getAnimationStats()
-        assert.strictEqual(stats.activeCount, 0)
-    }
-
-    // Helper function to setup animation and stop it
-    async function setupAnimationAndStop(filePath: string, originalContent: string, newContent: string) {
-        await setupAnimation(filePath, originalContent, newContent)
-        controller.stopDiffAnimation(filePath)
-        const animationData = controller.getAnimationData(filePath)
-        assert.strictEqual(animationData, undefined)
-    }
-
     beforeEach(function () {
         sandbox = sinon.createSandbox()
 
@@ -319,7 +303,14 @@ describe('DiffAnimationController', function () {
 
     describe('stopDiffAnimation', function () {
         it('should stop animation for specific file', async function () {
-            await setupAnimationAndStop('/test/file.js', 'original', 'new')
+            const filePath = '/test/file.js'
+            const originalContent = 'original'
+            const newContent = 'new'
+
+            await setupAnimation(filePath, originalContent, newContent)
+            controller.stopDiffAnimation(filePath)
+            const animationData = controller.getAnimationData(filePath)
+            assert.strictEqual(animationData, undefined)
         })
 
         it('should handle stopping non-existent animation', function () {
@@ -375,9 +366,16 @@ describe('DiffAnimationController', function () {
         })
 
         it('should return false after stopping animation', async function () {
-            await setupAnimationAndStop('/test/file.js', 'original', 'new')
+            const filePath = '/test/file.js'
+            const originalContent = 'original'
+            const newContent = 'new'
 
-            const result = controller.isAnimating('/test/file.js')
+            await setupAnimation(filePath, originalContent, newContent)
+            controller.stopDiffAnimation(filePath)
+            const animationData = controller.getAnimationData(filePath)
+            assert.strictEqual(animationData, undefined)
+
+            const result = controller.isAnimating(filePath)
             assert.strictEqual(result, false)
         })
     })
@@ -434,7 +432,14 @@ describe('DiffAnimationController', function () {
         })
 
         it('should stop all animations on dispose', async function () {
-            await setupAnimationAndDispose('/test/file.js', 'original', 'new')
+            const filePath = '/test/file.js'
+            const originalContent = 'original'
+            const newContent = 'new'
+
+            await setupAnimation(filePath, originalContent, newContent)
+            controller.dispose()
+            const stats = controller.getAnimationStats()
+            assert.strictEqual(stats.activeCount, 0)
         })
 
         it('should handle multiple dispose calls', function () {
