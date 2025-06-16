@@ -362,8 +362,7 @@ export class QuickActionHandler {
                 cancelButtonWhenLoading: false,
             })
         } else {
-            // todo: remove type cast once updated to latest prod mynah that includes promptTopBarTitle
-            this.mynahUI.updateStore(affectedTabId, { promptInputOptions: [], promptTopBarTitle: '' } as any)
+            this.mynahUI.updateStore(affectedTabId, { promptInputOptions: [], promptTopBarTitle: '' })
         }
 
         if (affectedTabId && this.isHybridChatEnabled) {

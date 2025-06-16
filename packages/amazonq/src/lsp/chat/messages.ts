@@ -55,6 +55,10 @@ import {
     ChatUpdateParams,
     chatOptionsUpdateType,
     ChatOptionsUpdateParams,
+    listRulesRequestType,
+    ruleClickRequestType,
+    pinnedContextNotificationType,
+    activeEditorChangedNotificationType,
 } from '@aws/language-server-runtimes/protocol'
 import { v4 as uuidv4 } from 'uuid'
 import * as vscode from 'vscode'
@@ -89,8 +93,7 @@ export function registerActiveEditorChangeListener(languageClient: LanguageClien
                 }
                 cursorState = getCursorState(editor.selections)
             }
-            // todo: replace with message from lsp once consuming latest language-server-runtimes
-            languageClient.sendNotification('aws/chat/activeEditorChanged', {
+            languageClient.sendNotification(activeEditorChangedNotificationType.method, {
                 textDocument,
                 cursorState,
             })
@@ -340,8 +343,8 @@ export function registerMessageListeners(
                 )
                 break
             }
-            case 'aws/chat/listRules': // todo: switch to imported methods from language-server-runtimes
-            case 'aws/chat/ruleClick':
+            case listRulesRequestType.method:
+            case ruleClickRequestType.method:
             case listConversationsRequestType.method:
             case conversationClickRequestType.method:
             case listMcpServersRequestType.method:
@@ -498,7 +501,7 @@ export function registerMessageListeners(
         })
     })
     languageClient.onNotification(
-        'aws/chat/sendPinnedContext', // todo: switch to type from language-server-runtimes
+        pinnedContextNotificationType.method,
         (params: ContextCommandParams & { tabId: string; textDocument?: TextDocumentIdentifier }) => {
             const editor = vscode.window.activeTextEditor
             let textDocument = undefined
@@ -506,7 +509,7 @@ export function registerMessageListeners(
                 textDocument = { uri: vscode.workspace.asRelativePath(editor.document.uri) }
             }
             void provider.webview?.postMessage({
-                command: 'aws/chat/sendPinnedContext', // todo: switch to type from language-server-runtimes
+                command: pinnedContextNotificationType.method,
                 params: { ...params, textDocument },
             })
         }
