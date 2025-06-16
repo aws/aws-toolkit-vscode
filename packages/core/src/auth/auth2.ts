@@ -12,12 +12,17 @@ import {
     GetIamCredentialParams,
     getIamCredentialRequestType,
     GetIamCredentialResult,
+    InvalidateIamCredentialResult,
     IamIdentityCenterSsoTokenSource,
     InvalidateSsoTokenParams,
+    InvalidateIamCredentialParams,
     invalidateSsoTokenRequestType,
+    invalidateIamCredentialRequestType,
     ProfileKind,
     UpdateProfileParams,
     updateProfileRequestType,
+    DeleteProfileParams,
+    deleteProfileRequestType,
     SsoTokenChangedParams,
     // StsCredentialChangedParams,
     ssoTokenChangedRequestType,
@@ -45,6 +50,7 @@ import {
     iamCredentialsUpdateRequestType,
     Profile,
     SsoSession,
+    DeleteProfileResult,
     // invalidateStsCredentialRequestType,
     // InvalidateStsCredentialParams,
     // InvalidateStsCredentialResult,
@@ -187,6 +193,12 @@ export class LanguageClientAuth {
         } satisfies UpdateProfileParams)
     }
 
+    deleteIamProfile(name: string): Promise<DeleteProfileResult> {
+        return this.client.sendRequest(deleteProfileRequestType.method, {
+            profileName: name,
+        } satisfies DeleteProfileParams)
+    }
+
     listProfiles() {
         return this.client.sendRequest(listProfilesRequestType.method, {}) as Promise<ListProfilesResult>
     }
@@ -225,6 +237,12 @@ export class LanguageClientAuth {
         return this.client.sendRequest(invalidateSsoTokenRequestType.method, {
             ssoTokenId: tokenId,
         } satisfies InvalidateSsoTokenParams) as Promise<InvalidateSsoTokenResult>
+    }
+
+    invalidateIamCredential(tokenId: string) {
+        return this.client.sendRequest(invalidateIamCredentialRequestType.method, {
+            iamCredentialsId: tokenId,
+        } satisfies InvalidateIamCredentialParams) as Promise<InvalidateIamCredentialResult>
     }
 
     // invalidateStsCredential(tokenId: string) {
@@ -464,7 +482,7 @@ export class SsoLogin extends BaseLogin {
  */
 export class IamLogin extends BaseLogin {
     // Cached information from the identity server for easy reference
-    // private iamCredentialId: string | undefined
+    private iamCredentialId: string | undefined
 
     constructor(profileName: string, lspAuth: LanguageClientAuth, eventEmitter: vscode.EventEmitter<AuthStateEvent>) {
         super(profileName, lspAuth, eventEmitter)
@@ -486,9 +504,10 @@ export class IamLogin extends BaseLogin {
     }
 
     async logout() {
-        // if (this.stsCredentialId) {
-        //     await this.lspAuth.invalidateStsCredential(this.iamCredentialId)
-        // }
+        if (this.iamCredentialId) {
+            await this.lspAuth.invalidateIamCredential(this.iamCredentialId)
+        }
+        await this.deleteProfile(this.profileName)
         this.updateConnectionState('notConnected')
         this._data = undefined
         // TODO: DeleteProfile api in Identity Service (this doesn't exist yet)
@@ -500,6 +519,10 @@ export class IamLogin extends BaseLogin {
             accessKey: opts.accessKey,
             secretKey: opts.secretKey,
         }
+    }
+
+    async deleteProfile(profileName: string) {
+        await this.lspAuth.deleteIamProfile(profileName)
     }
 
     /**

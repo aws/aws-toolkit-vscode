@@ -13,10 +13,10 @@
             "path": "packages/amazonq",
         },
         {
-            "path": "../language-servers",
+            "path": "../language-server-runtimes",
         },
         {
-            "path": "../language-server-runtimes",
+            "path": "../language-servers",
         },
     ],
     "settings": {
