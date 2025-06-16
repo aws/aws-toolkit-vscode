@@ -28,6 +28,7 @@ import {
     zipCode,
     getTableMapping,
     getFilesRecursively,
+    getJobStatisticsHtml,
 } from '../../../codewhisperer/service/transformByQ/transformApiHandler'
 import {
     validateOpenProjects,
@@ -312,6 +313,31 @@ dependencyManagement:
         assert.deepStrictEqual(actual, expected)
     })
 
+    it('WHEN showing plan statistics THEN correct labels appear', () => {
+        const mockJobStatistics = [
+            {
+                name: 'linesOfCode',
+                value: '1234',
+            },
+            {
+                name: 'plannedDependencyChanges',
+                value: '0',
+            },
+            {
+                name: 'plannedDeprecatedApiChanges',
+                value: '0',
+            },
+            {
+                name: 'plannedFileChanges',
+                value: '0',
+            },
+        ]
+        const result = getJobStatisticsHtml(mockJobStatistics)
+        assert.strictEqual(result.includes('Lines of code in your application'), true)
+        assert.strictEqual(result.includes('to be replaced'), false)
+        assert.strictEqual(result.includes('to be changed'), false)
+    })
+
     it(`WHEN transforming a project with a Windows Maven executable THEN mavenName set correctly`, async function () {
         sinon.stub(env, 'isWin').returns(true)
         const tempFileName = 'mvnw.cmd'
@@ -392,6 +418,8 @@ dependencyManagement:
             const manifestText = manifestBuffer.toString('utf8')
             const manifest = JSON.parse(manifestText)
             assert.strictEqual(manifest.customBuildCommand, CodeWhispererConstants.skipUnitTestsBuildCommand)
+            assert.strictEqual(manifest.noInteractiveMode, true)
+            assert.strictEqual(manifest.transformCapabilities.includes('SELECTIVE_TRANSFORMATION_V2'), true)
         })
     })
 

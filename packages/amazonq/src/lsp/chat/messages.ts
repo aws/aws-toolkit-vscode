@@ -50,6 +50,8 @@ import {
     CancellationTokenSource,
     chatUpdateNotificationType,
     ChatUpdateParams,
+    chatOptionsUpdateType,
+    ChatOptionsUpdateParams,
 } from '@aws/language-server-runtimes/protocol'
 import { v4 as uuidv4 } from 'uuid'
 import * as vscode from 'vscode'
@@ -314,7 +316,7 @@ export function registerMessageListeners(
                 )
                 if (!buttonResult.success) {
                     languageClient.error(
-                        `[VSCode Client] Failed to execute action associated with button with reason: ${buttonResult.failureReason}`
+                        `[VSCode Client] Failed to execute button action: ${buttonResult.failureReason}`
                     )
                 }
                 break
@@ -448,6 +450,13 @@ export function registerMessageListeners(
     languageClient.onNotification(chatUpdateNotificationType.method, (params: ChatUpdateParams) => {
         void provider.webview?.postMessage({
             command: chatUpdateNotificationType.method,
+            params: params,
+        })
+    })
+
+    languageClient.onNotification(chatOptionsUpdateType.method, (params: ChatOptionsUpdateParams) => {
+        void provider.webview?.postMessage({
+            command: chatOptionsUpdateType.method,
             params: params,
         })
     })

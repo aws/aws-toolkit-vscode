@@ -1,0 +1,10 @@
+{
+	"date": "2025-06-11",
+	"version": "1.72.0",
+	"entries": [
+		{
+			"type": "Feature",
+			"description": "Launch LSP with bundled artifacts as fallback"
+		}
+	]
+}

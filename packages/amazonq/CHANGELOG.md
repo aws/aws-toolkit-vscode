@@ -1,3 +1,23 @@
+## 1.75.0 2025-06-13
+
+- Miscellaneous non-user-facing changes
+
+## 1.74.0 2025-06-12
+
+- Miscellaneous non-user-facing changes
+
+## 1.73.0 2025-06-11
+
+- **Feature** Add MCP Server Support
+
+## 1.72.0 2025-06-11
+
+- **Feature** Launch LSP with bundled artifacts as fallback
+
+## 1.71.0 2025-06-04
+
+- Miscellaneous non-user-facing changes
+
 ## 1.70.0 2025-05-28
 
 - **Removal** Disable local workspace LSP

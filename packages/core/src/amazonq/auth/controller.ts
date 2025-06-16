@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { getLogger } from '../../shared/logger/logger'
 import { reconnect } from '../../codewhisperer/commands/basicCommands'
 import { amazonQChatSource } from '../../codewhisperer/commands/types'
 import { focusAmazonQPanel } from '../../codewhispererChat/commands/registerCommands'
@@ -27,7 +28,9 @@ export class AuthController {
     }
 
     private handleFullAuth() {
-        void focusAmazonQPanel.execute(placeholder, 'amazonQChat')
+        focusAmazonQPanel.execute(placeholder, 'amazonQChat').catch((e) => {
+            getLogger().error('focusAmazonQPanel failed: %s', e)
+        })
     }
 
     private handleReAuth() {

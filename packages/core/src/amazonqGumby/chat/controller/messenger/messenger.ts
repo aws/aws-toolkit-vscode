@@ -735,7 +735,7 @@ dependencyManagement:
     - identifier: "com.example:library1"
       targetVersion: "2.1.0"
       versionProperty: "library1.version"  # Optional
-      originType: "FIRST_PARTY" # or "THIRD_PARTY"  # Optional
+      originType: "FIRST_PARTY" # or "THIRD_PARTY"
     - identifier: "com.example:library2"
       targetVersion: "3.0.0"
       originType: "THIRD_PARTY"

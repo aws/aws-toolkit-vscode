@@ -29,6 +29,7 @@ import { submitFeedback } from '../../feedback/vue/submitFeedback'
 import { focusAmazonQPanel } from '../../codewhispererChat/commands/registerCommands'
 import { isWeb } from '../../shared/extensionGlobals'
 import { builderIdRegion, builderIdStartUrl } from '../../auth/sso/constants'
+import { getLogger } from '../../shared/logger/logger'
 
 export function createAutoSuggestions(running: boolean): DataQuickPickItem<'autoSuggestions'> {
     const labelResume = localize('AWS.codewhisperer.resumeCodeWhispererNode.label', 'Resume Auto-Suggestions')
@@ -176,6 +177,18 @@ export function createGettingStarted(): DataQuickPickItem<'gettingStarted'> {
     } as DataQuickPickItem<'gettingStarted'>
 }
 
+export function createManageSubscription(): DataQuickPickItem<'manageSubscription'> {
+    const label = localize('AWS.command.manageSubscription', 'Manage Q Developer Pro Subscription')
+    // const kind = AuthUtil.instance.isBuilderIdInUse() ? 'AWS Builder ID' : 'IAM Identity Center'
+
+    return {
+        data: 'manageSubscription',
+        label: label,
+        iconPath: getIcon('vscode-link-external'),
+        onClick: () => Commands.tryExecute('aws.amazonq.manageSubscription'),
+    } as DataQuickPickItem<'manageSubscription'>
+}
+
 export function createSignout(): DataQuickPickItem<'signout'> {
     const label = localize('AWS.codewhisperer.signoutNode.label', 'Sign Out')
     const icon = getIcon('vscode-export')
@@ -239,7 +252,10 @@ export function switchToAmazonQNode(): DataQuickPickItem<'openChatPanel'> {
         data: 'openChatPanel',
         label: 'Open Chat Panel',
         iconPath: getIcon('vscode-comment'),
-        onClick: () => focusAmazonQPanel.execute(placeholder, 'codewhispererQuickPick'),
+        onClick: () =>
+            focusAmazonQPanel.execute(placeholder, 'codewhispererQuickPick').catch((e) => {
+                getLogger().error('focusAmazonQPanel failed: %s', e)
+            }),
     }
 }
 
@@ -248,7 +264,9 @@ export function createSignIn(): DataQuickPickItem<'signIn'> {
     const icon = getIcon('vscode-account')
 
     let onClick = () => {
-        void focusAmazonQPanel.execute(placeholder, 'codewhispererQuickPick')
+        focusAmazonQPanel.execute(placeholder, 'codewhispererQuickPick').catch((e) => {
+            getLogger().error('focusAmazonQPanel failed: %s', e)
+        })
     }
     if (isWeb()) {
         // TODO: nkomonen, call a Command instead
