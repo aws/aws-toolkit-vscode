@@ -422,7 +422,8 @@ describe('DiffAnimationController', function () {
             const originalContent = 'original'
             const newContent = 'new'
 
-            await setupAnimation(filePath, originalContent, newContent)
+            setupStandardMocks(originalContent)
+            await controller.startDiffAnimation(filePath, originalContent, newContent, false)
             controller.dispose()
             const stats = controller.getAnimationStats()
             assert.strictEqual(stats.activeCount, 0)
