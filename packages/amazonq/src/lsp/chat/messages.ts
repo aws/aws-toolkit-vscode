@@ -73,6 +73,11 @@ import {
 import { telemetry, TelemetryBase } from 'aws-core-vscode/telemetry'
 import { isValidResponseError } from './error'
 import { focusAmazonQPanel } from './commands'
+import { DiffAnimationHandler } from './diffAnimation/diffAnimationHandler'
+import { getLogger } from 'aws-core-vscode/shared'
+
+// Create a singleton instance of DiffAnimationHandler
+let diffAnimationHandler: DiffAnimationHandler | undefined
 
 export function registerLanguageServerEventListener(languageClient: LanguageClient, provider: AmazonQChatViewProvider) {
     languageClient.info(
@@ -120,12 +125,24 @@ function getCursorState(selection: readonly vscode.Selection[]) {
     }))
 }
 
+// Initialize DiffAnimationHandler on first use
+function getDiffAnimationHandler(): DiffAnimationHandler {
+    if (!diffAnimationHandler) {
+        diffAnimationHandler = new DiffAnimationHandler()
+    }
+    return diffAnimationHandler
+}
+
 export function registerMessageListeners(
     languageClient: LanguageClient,
     provider: AmazonQChatViewProvider,
     encryptionKey: Buffer
 ) {
     const chatStreamTokens = new Map<string, CancellationTokenSource>() // tab id -> token
+
+    // Initialize DiffAnimationHandler
+    const animationHandler = getDiffAnimationHandler()
+
     provider.webview?.onDidReceiveMessage(async (message) => {
         languageClient.info(`[VSCode Client]  Received ${JSON.stringify(message)} from chat`)
 
@@ -228,14 +245,27 @@ export function registerMessageListeners(
                 const chatDisposable = languageClient.onProgress(
                     chatRequestType,
                     partialResultToken,
-                    (partialResult) => {
+                    async (partialResult) => {
                         // Store the latest partial result
                         if (typeof partialResult === 'string' && encryptionKey) {
-                            void decodeRequest<ChatResult>(partialResult, encryptionKey).then(
-                                (decoded) => (lastPartialResult = decoded)
-                            )
+                            const decoded = await decodeRequest<ChatResult>(partialResult, encryptionKey)
+                            lastPartialResult = decoded
+
+                            // Process partial results for diff animations
+                            try {
+                                await animationHandler.processChatResult(decoded, chatParams.tabId, true)
+                            } catch (error) {
+                                getLogger().error(`Failed to process partial result for animations: ${error}`)
+                            }
                         } else {
                             lastPartialResult = partialResult as ChatResult
+
+                            // Process partial results for diff animations
+                            try {
+                                await animationHandler.processChatResult(lastPartialResult, chatParams.tabId, true)
+                            } catch (error) {
+                                getLogger().error(`Failed to process partial result for animations: ${error}`)
+                            }
                         }
 
                         void handlePartialResult<ChatResult>(partialResult, encryptionKey, provider, chatParams.tabId)
@@ -267,6 +297,17 @@ export function registerMessageListeners(
                         chatParams.tabId,
                         chatDisposable
                     )
+
+                    // Process final result for animations
+                    const finalResult =
+                        typeof chatResult === 'string' && encryptionKey
+                            ? await decodeRequest<ChatResult>(chatResult, encryptionKey)
+                            : (chatResult as ChatResult)
+                    try {
+                        await animationHandler.processChatResult(finalResult, chatParams.tabId, false)
+                    } catch (error) {
+                        getLogger().error(`Failed to process final result for animations: ${error}`)
+                    }
                 } catch (e) {
                     const errorMsg = `Error occurred during chat request: ${e}`
                     languageClient.info(errorMsg)
@@ -473,34 +514,76 @@ export function registerMessageListeners(
     })
 
     languageClient.onNotification(openFileDiffNotificationType.method, async (params: OpenFileDiffParams) => {
-        const ecc = new EditorContentController()
-        const uri = params.originalFileUri
-        const doc = await vscode.workspace.openTextDocument(uri)
-        const entireDocumentSelection = new vscode.Selection(
-            new vscode.Position(0, 0),
-            new vscode.Position(doc.lineCount - 1, doc.lineAt(doc.lineCount - 1).text.length)
-        )
-        const viewDiffMessage: ViewDiffMessage = {
-            context: {
-                activeFileContext: {
-                    filePath: params.originalFileUri,
-                    fileText: params.originalFileContent ?? '',
-                    fileLanguage: undefined,
-                    matchPolicy: undefined,
+        // Try to use DiffAnimationHandler first
+        try {
+            // Normalize the file path
+            const normalizedPath = params.originalFileUri.startsWith('file://')
+                ? vscode.Uri.parse(params.originalFileUri).fsPath
+                : params.originalFileUri
+
+            const originalContent = params.originalFileContent || ''
+            const newContent = params.fileContent || ''
+
+            getLogger().info(`[VSCode Client] OpenFileDiff notification for: ${normalizedPath}`)
+            getLogger().info(
+                `[VSCode Client] Original content length: ${originalContent.length}, New content length: ${newContent.length}`
+            )
+
+            // For file tab clicks from chat, we should ALWAYS show the static diff view
+            // This is the key fix - don't rely on shouldShowStaticDiff logic for chat clicks
+            getLogger().info('[VSCode Client] File tab clicked from chat, showing static diff view')
+
+            // Use processFileDiff with isFromChatClick=true, which will trigger showVSCodeDiff
+            await animationHandler.processFileDiff({
+                originalFileUri: params.originalFileUri,
+                originalFileContent: originalContent,
+                fileContent: newContent,
+                isFromChatClick: true, // This ensures it goes to showVSCodeDiff
+            })
+        } catch (error) {
+            // If animation fails, fall back to the original diff view
+            getLogger().error(`[VSCode Client] Diff animation failed, falling back to standard diff view: ${error}`)
+
+            const ecc = new EditorContentController()
+            const uri = params.originalFileUri
+            const doc = await vscode.workspace.openTextDocument(uri)
+            const entireDocumentSelection = new vscode.Selection(
+                new vscode.Position(0, 0),
+                new vscode.Position(doc.lineCount - 1, doc.lineAt(doc.lineCount - 1).text.length)
+            )
+            const viewDiffMessage: ViewDiffMessage = {
+                context: {
+                    activeFileContext: {
+                        filePath: params.originalFileUri,
+                        fileText: params.originalFileContent ?? '',
+                        fileLanguage: undefined,
+                        matchPolicy: undefined,
+                    },
+                    focusAreaContext: {
+                        selectionInsideExtendedCodeBlock: entireDocumentSelection,
+                        codeBlock: '',
+                        extendedCodeBlock: '',
+                        names: undefined,
+                    },
                 },
-                focusAreaContext: {
-                    selectionInsideExtendedCodeBlock: entireDocumentSelection,
-                    codeBlock: '',
-                    extendedCodeBlock: '',
-                    names: undefined,
-                },
-            },
-            code: params.fileContent ?? '',
+                code: params.fileContent ?? '',
+            }
+            await ecc.viewDiff(viewDiffMessage, amazonQDiffScheme)
         }
-        await ecc.viewDiff(viewDiffMessage, amazonQDiffScheme)
     })
 
-    languageClient.onNotification(chatUpdateNotificationType.method, (params: ChatUpdateParams) => {
+    languageClient.onNotification(chatUpdateNotificationType.method, async (params: ChatUpdateParams) => {
+        // Process chat updates for diff animations
+        if (params.data?.messages) {
+            for (const message of params.data.messages) {
+                try {
+                    await animationHandler.processChatResult(message, params.tabId, false)
+                } catch (error) {
+                    getLogger().error(`Failed to process chat update for animations: ${error}`)
+                }
+            }
+        }
+
         void provider.webview?.postMessage({
             command: chatUpdateNotificationType.method,
             params: params,
@@ -513,6 +596,14 @@ export function registerMessageListeners(
             params: params,
         })
     })
+}
+
+// Clean up on extension deactivation
+export function dispose() {
+    if (diffAnimationHandler) {
+        void diffAnimationHandler.dispose()
+        diffAnimationHandler = undefined
+    }
 }
 
 function isServerEvent(command: string) {
