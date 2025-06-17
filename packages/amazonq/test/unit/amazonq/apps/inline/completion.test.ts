@@ -3,18 +3,32 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import sinon from 'sinon'
-import { CancellationToken, commands, languages, Position } from 'vscode'
+import {
+    CancellationToken,
+    commands,
+    InlineCompletionItem,
+    languages,
+    Position,
+    window,
+    Range,
+    InlineCompletionTriggerKind,
+} from 'vscode'
 import assert from 'assert'
 import { LanguageClient } from 'vscode-languageclient'
+import { StringValue } from 'vscode-languageserver-types'
 import { AmazonQInlineCompletionItemProvider, InlineCompletionManager } from '../../../../../src/app/inline/completion'
 import { RecommendationService } from '../../../../../src/app/inline/recommendationService'
 import { SessionManager } from '../../../../../src/app/inline/sessionManager'
-import { createMockDocument, createMockTextEditor } from 'aws-core-vscode/test'
+import { createMockDocument, createMockTextEditor, getTestWindow, installFakeClock } from 'aws-core-vscode/test'
 import {
+    noInlineSuggestionsMsg,
     ReferenceHoverProvider,
-    ReferenceInlineProvider,
     ReferenceLogViewProvider,
+    vsCodeState,
 } from 'aws-core-vscode/codewhisperer'
+import { InlineGeneratingMessage } from '../../../../../src/app/inline/inlineGeneratingMessage'
+import { LineTracker } from '../../../../../src/app/inline/stateTracker/lineTracker'
+import { InlineTutorialAnnotation } from '../../../../../src/app/inline/tutorials/inlineTutorialAnnotation'
 
 describe('InlineCompletionManager', () => {
     let manager: InlineCompletionManager
@@ -32,7 +46,7 @@ describe('InlineCompletionManager', () => {
     let hoverReferenceStub: sinon.SinonStub
     const mockDocument = createMockDocument()
     const mockEditor = createMockTextEditor()
-    const mockPosition = { line: 0, character: 0 } as Position
+    const mockPosition = new Position(0, 0)
     const mockContext = { triggerKind: 1, selectedCompletionInfo: undefined }
     const mockToken = { isCancellationRequested: false } as CancellationToken
     const fakeReferences = [
@@ -50,6 +64,11 @@ describe('InlineCompletionManager', () => {
         {
             itemId: 'test-item',
             insertText: 'test',
+            references: fakeReferences,
+        },
+        {
+            itemId: 'test-item2',
+            insertText: 'import math\ndef two_sum(nums, target):\n',
             references: fakeReferences,
         },
     ]
@@ -72,7 +91,10 @@ describe('InlineCompletionManager', () => {
             sendNotification: sendNotificationStub,
         } as unknown as LanguageClient
 
-        manager = new InlineCompletionManager(languageClient)
+        const sessionManager = new SessionManager()
+        const lineTracker = new LineTracker()
+        const inlineTutorialAnnotation = new InlineTutorialAnnotation(lineTracker, sessionManager)
+        manager = new InlineCompletionManager(languageClient, sessionManager, lineTracker, inlineTutorialAnnotation)
         getActiveSessionStub = sandbox.stub(manager['sessionManager'], 'getActiveSession')
         getActiveRecommendationStub = sandbox.stub(manager['sessionManager'], 'getActiveRecommendation')
         getReferenceStub = sandbox.stub(ReferenceLogViewProvider, 'getReferenceLog')
@@ -213,46 +235,6 @@ describe('InlineCompletionManager', () => {
                 assert(registerProviderStub.calledTwice) // Once in constructor, once after rejection
             })
         })
-
-        describe('previous command', () => {
-            it('should register and handle previous command correctly', async () => {
-                const prevCommandCall = registerCommandStub
-                    .getCalls()
-                    .find((call) => call.args[0] === 'editor.action.inlineSuggest.showPrevious')
-
-                assert(prevCommandCall, 'Previous command should be registered')
-
-                if (prevCommandCall) {
-                    const handler = prevCommandCall.args[1]
-                    await handler()
-
-                    assert(executeCommandStub.calledWith('editor.action.inlineSuggest.hide'))
-                    assert(disposableStub.calledOnce)
-                    assert(registerProviderStub.calledTwice)
-                    assert(executeCommandStub.calledWith('editor.action.inlineSuggest.trigger'))
-                }
-            })
-        })
-
-        describe('next command', () => {
-            it('should register and handle next command correctly', async () => {
-                const nextCommandCall = registerCommandStub
-                    .getCalls()
-                    .find((call) => call.args[0] === 'editor.action.inlineSuggest.showNext')
-
-                assert(nextCommandCall, 'Next command should be registered')
-
-                if (nextCommandCall) {
-                    const handler = nextCommandCall.args[1]
-                    await handler()
-
-                    assert(executeCommandStub.calledWith('editor.action.inlineSuggest.hide'))
-                    assert(disposableStub.calledOnce)
-                    assert(registerProviderStub.calledTwice)
-                    assert(executeCommandStub.calledWith('editor.action.inlineSuggest.trigger'))
-                }
-            })
-        })
     })
 
     describe('AmazonQInlineCompletionItemProvider', () => {
@@ -261,15 +243,18 @@ describe('InlineCompletionManager', () => {
             let provider: AmazonQInlineCompletionItemProvider
             let getAllRecommendationsStub: sinon.SinonStub
             let recommendationService: RecommendationService
-            let setInlineReferenceStub: sinon.SinonStub
+            let inlineTutorialAnnotation: InlineTutorialAnnotation
 
             beforeEach(() => {
-                recommendationService = new RecommendationService(mockSessionManager)
-                setInlineReferenceStub = sandbox.stub(ReferenceInlineProvider.instance, 'setInlineReference')
-
+                const lineTracker = new LineTracker()
+                const activeStateController = new InlineGeneratingMessage(lineTracker)
+                inlineTutorialAnnotation = new InlineTutorialAnnotation(lineTracker, mockSessionManager)
+                recommendationService = new RecommendationService(mockSessionManager, activeStateController)
+                vsCodeState.isRecommendationsActive = false
                 mockSessionManager = {
                     getActiveSession: getActiveSessionStub,
                     getActiveRecommendation: getActiveRecommendationStub,
+                    clear: () => {},
                 } as unknown as SessionManager
 
                 getActiveSessionStub.returns({
@@ -281,12 +266,14 @@ describe('InlineCompletionManager', () => {
                 getActiveRecommendationStub.returns(mockSuggestions)
                 getAllRecommendationsStub = sandbox.stub(recommendationService, 'getAllRecommendations')
                 getAllRecommendationsStub.resolves()
+                sandbox.stub(window, 'activeTextEditor').value(createMockTextEditor())
             }),
-                it('should call recommendation service to get new suggestions for new sessions', async () => {
+                it('should call recommendation service to get new suggestions(matching typeahead) for new sessions', async () => {
                     provider = new AmazonQInlineCompletionItemProvider(
                         languageClient,
                         recommendationService,
-                        mockSessionManager
+                        mockSessionManager,
+                        inlineTutorialAnnotation
                     )
                     const items = await provider.provideInlineCompletionItems(
                         mockDocument,
@@ -295,41 +282,135 @@ describe('InlineCompletionManager', () => {
                         mockToken
                     )
                     assert(getAllRecommendationsStub.calledOnce)
-                    assert.deepStrictEqual(items, mockSuggestions)
-                }),
-                it('should not call recommendation service for existing sessions', async () => {
-                    provider = new AmazonQInlineCompletionItemProvider(
-                        languageClient,
-                        recommendationService,
-                        mockSessionManager,
-                        false
-                    )
-                    const items = await provider.provideInlineCompletionItems(
-                        mockDocument,
-                        mockPosition,
-                        mockContext,
-                        mockToken
-                    )
-                    assert(getAllRecommendationsStub.notCalled)
-                    assert.deepStrictEqual(items, mockSuggestions)
+                    assert.deepStrictEqual(items, [mockSuggestions[1]])
                 }),
                 it('should handle reference if there is any', async () => {
                     provider = new AmazonQInlineCompletionItemProvider(
                         languageClient,
                         recommendationService,
                         mockSessionManager,
-                        false
+                        inlineTutorialAnnotation
                     )
                     await provider.provideInlineCompletionItems(mockDocument, mockPosition, mockContext, mockToken)
-                    assert(setInlineReferenceStub.calledOnce)
-                    assert(
-                        setInlineReferenceStub.calledWithExactly(
-                            mockPosition.line,
-                            mockSuggestions[0].insertText,
-                            fakeReferences
-                        )
+                }),
+                it('should add a range to the completion item when missing', async function () {
+                    provider = new AmazonQInlineCompletionItemProvider(
+                        languageClient,
+                        recommendationService,
+                        mockSessionManager,
+                        inlineTutorialAnnotation
                     )
+                    getActiveRecommendationStub.returns([
+                        {
+                            insertText: 'testText',
+                            itemId: 'itemId',
+                        },
+                        {
+                            insertText: 'testText2',
+                            itemId: 'itemId2',
+                            range: undefined,
+                        },
+                    ])
+                    const cursorPosition = new Position(5, 6)
+                    const result = await provider.provideInlineCompletionItems(
+                        mockDocument,
+                        cursorPosition,
+                        mockContext,
+                        mockToken
+                    )
+
+                    for (const item of result) {
+                        assert.deepStrictEqual(item.range, new Range(cursorPosition, cursorPosition))
+                    }
+                }),
+                it('should handle StringValue instead of strings', async function () {
+                    provider = new AmazonQInlineCompletionItemProvider(
+                        languageClient,
+                        recommendationService,
+                        mockSessionManager,
+                        inlineTutorialAnnotation
+                    )
+                    const expectedText = `${mockSuggestions[1].insertText}this is my text`
+                    getActiveRecommendationStub.returns([
+                        {
+                            insertText: {
+                                kind: 'snippet',
+                                value: `${mockSuggestions[1].insertText}this is my text`,
+                            } satisfies StringValue,
+                            itemId: 'itemId',
+                        },
+                    ])
+                    const result = await provider.provideInlineCompletionItems(
+                        mockDocument,
+                        mockPosition,
+                        mockContext,
+                        mockToken
+                    )
+
+                    assert.strictEqual(result[0].insertText, expectedText)
+                }),
+                it('shows message to user when manual invoke fails to produce results', async function () {
+                    provider = new AmazonQInlineCompletionItemProvider(
+                        languageClient,
+                        recommendationService,
+                        mockSessionManager,
+                        inlineTutorialAnnotation
+                    )
+                    getActiveRecommendationStub.returns([])
+                    const messageShown = new Promise((resolve) =>
+                        getTestWindow().onDidShowMessage((e) => {
+                            assert.strictEqual(e.message, noInlineSuggestionsMsg)
+                            resolve(true)
+                        })
+                    )
+                    await provider.provideInlineCompletionItems(
+                        mockDocument,
+                        mockPosition,
+                        { triggerKind: InlineCompletionTriggerKind.Invoke, selectedCompletionInfo: undefined },
+                        mockToken
+                    )
+                    await messageShown
                 })
+            describe('debounce behavior', function () {
+                let clock: ReturnType<typeof installFakeClock>
+
+                beforeEach(function () {
+                    clock = installFakeClock()
+                })
+
+                after(function () {
+                    clock.uninstall()
+                })
+
+                it('should only trigger once on rapid events', async () => {
+                    provider = new AmazonQInlineCompletionItemProvider(
+                        languageClient,
+                        recommendationService,
+                        mockSessionManager,
+                        inlineTutorialAnnotation
+                    )
+                    const p1 = provider.provideInlineCompletionItems(mockDocument, mockPosition, mockContext, mockToken)
+                    const p2 = provider.provideInlineCompletionItems(mockDocument, mockPosition, mockContext, mockToken)
+                    const p3 = provider.provideInlineCompletionItems(
+                        mockDocument,
+                        new Position(1, 26),
+                        mockContext,
+                        mockToken
+                    )
+
+                    await clock.tickAsync(1000)
+
+                    // All promises should be the same object when debounced properly.
+                    assert.strictEqual(p1, p2)
+                    assert.strictEqual(p1, p3)
+                    await p1
+                    await p2
+                    const r3 = await p3
+
+                    // calls the function with the latest provided args.
+                    assert.deepStrictEqual((r3 as InlineCompletionItem[])[0].range?.end, new Position(1, 26))
+                })
+            })
         })
     })
 })

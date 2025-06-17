@@ -8,7 +8,6 @@ import {
     InlineCompletionContext,
     InlineCompletionItem,
     InlineCompletionItemProvider,
-    InlineCompletionList,
     Position,
     TextDocument,
     commands,
@@ -16,6 +15,8 @@ import {
     Disposable,
     window,
     TextEditor,
+    InlineCompletionTriggerKind,
+    Range,
 } from 'vscode'
 import { LanguageClient } from 'vscode-languageclient'
 import {
@@ -27,10 +28,20 @@ import { RecommendationService } from './recommendationService'
 import {
     CodeWhispererConstants,
     ReferenceHoverProvider,
-    ReferenceInlineProvider,
     ReferenceLogViewProvider,
     ImportAdderProvider,
+    CodeSuggestionsState,
+    vsCodeState,
+    inlineCompletionsDebounceDelay,
+    noInlineSuggestionsMsg,
+    ReferenceInlineProvider,
 } from 'aws-core-vscode/codewhisperer'
+import { InlineGeneratingMessage } from './inlineGeneratingMessage'
+import { LineTracker } from './stateTracker/lineTracker'
+import { InlineTutorialAnnotation } from './tutorials/inlineTutorialAnnotation'
+import { TelemetryHelper } from './telemetryHelper'
+import { getLogger } from 'aws-core-vscode/shared'
+import { debounce, messageUtils } from 'aws-core-vscode/utils'
 
 export class InlineCompletionManager implements Disposable {
     private disposable: Disposable
@@ -38,26 +49,42 @@ export class InlineCompletionManager implements Disposable {
     private languageClient: LanguageClient
     private sessionManager: SessionManager
     private recommendationService: RecommendationService
+    private lineTracker: LineTracker
+    private incomingGeneratingMessage: InlineGeneratingMessage
+    private inlineTutorialAnnotation: InlineTutorialAnnotation
     private readonly logSessionResultMessageName = 'aws/logInlineCompletionSessionResults'
 
-    constructor(languageClient: LanguageClient) {
+    constructor(
+        languageClient: LanguageClient,
+        sessionManager: SessionManager,
+        lineTracker: LineTracker,
+        inlineTutorialAnnotation: InlineTutorialAnnotation
+    ) {
         this.languageClient = languageClient
-        this.sessionManager = new SessionManager()
-        this.recommendationService = new RecommendationService(this.sessionManager)
+        this.sessionManager = sessionManager
+        this.lineTracker = lineTracker
+        this.incomingGeneratingMessage = new InlineGeneratingMessage(this.lineTracker)
+        this.recommendationService = new RecommendationService(this.sessionManager, this.incomingGeneratingMessage)
+        this.inlineTutorialAnnotation = inlineTutorialAnnotation
         this.inlineCompletionProvider = new AmazonQInlineCompletionItemProvider(
             languageClient,
             this.recommendationService,
-            this.sessionManager
+            this.sessionManager,
+            this.inlineTutorialAnnotation
         )
         this.disposable = languages.registerInlineCompletionItemProvider(
             CodeWhispererConstants.platformLanguageIds,
             this.inlineCompletionProvider
         )
+
+        this.lineTracker.ready()
     }
 
     public dispose(): void {
         if (this.disposable) {
             this.disposable.dispose()
+            this.incomingGeneratingMessage.dispose()
+            this.lineTracker.dispose()
         }
     }
 
@@ -97,10 +124,23 @@ export class InlineCompletionManager implements Disposable {
                 )
                 ReferenceLogViewProvider.instance.addReferenceLog(referenceLog)
                 ReferenceHoverProvider.instance.addCodeReferences(item.insertText as string, item.references)
+
+                // Show codelense for 5 seconds.
+                ReferenceInlineProvider.instance.setInlineReference(
+                    startLine,
+                    item.insertText as string,
+                    item.references
+                )
+                setTimeout(() => {
+                    ReferenceInlineProvider.instance.removeInlineReference()
+                }, 5000)
             }
             if (item.mostRelevantMissingImports?.length) {
                 await ImportAdderProvider.instance.onAcceptRecommendation(editor, item, startLine)
             }
+            this.sessionManager.incrementSuggestionCount()
+            // clear session manager states once accepted
+            this.sessionManager.clear()
         }
         commands.registerCommand('aws.amazonq.acceptInline', onInlineAcceptance)
 
@@ -128,40 +168,10 @@ export class InlineCompletionManager implements Disposable {
                 },
             }
             this.languageClient.sendNotification(this.logSessionResultMessageName, params)
+            // clear session manager states once rejected
+            this.sessionManager.clear()
         }
         commands.registerCommand('aws.amazonq.rejectCodeSuggestion', onInlineRejection)
-
-        /*
-            We have to overwrite the prev. and next. commands because the inlineCompletionProvider only contained the current item
-            To show prev. and next. recommendation we need to re-register a new provider with the previous or next item
-        */
-
-        const swapProviderAndShow = async () => {
-            await commands.executeCommand('editor.action.inlineSuggest.hide')
-            this.disposable.dispose()
-            this.disposable = languages.registerInlineCompletionItemProvider(
-                CodeWhispererConstants.platformLanguageIds,
-                new AmazonQInlineCompletionItemProvider(
-                    this.languageClient,
-                    this.recommendationService,
-                    this.sessionManager,
-                    false
-                )
-            )
-            await commands.executeCommand('editor.action.inlineSuggest.trigger')
-        }
-
-        const prevCommandHandler = async () => {
-            this.sessionManager.decrementActiveIndex()
-            await swapProviderAndShow()
-        }
-        commands.registerCommand('editor.action.inlineSuggest.showPrevious', prevCommandHandler)
-
-        const nextCommandHandler = async () => {
-            this.sessionManager.incrementActiveIndex()
-            await swapProviderAndShow()
-        }
-        commands.registerCommand('editor.action.inlineSuggest.showNext', nextCommandHandler)
     }
 }
 
@@ -170,17 +180,57 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
         private readonly languageClient: LanguageClient,
         private readonly recommendationService: RecommendationService,
         private readonly sessionManager: SessionManager,
-        private readonly isNewSession: boolean = true
+        private readonly inlineTutorialAnnotation: InlineTutorialAnnotation
     ) {}
 
-    async provideInlineCompletionItems(
+    private readonly logSessionResultMessageName = 'aws/logInlineCompletionSessionResults'
+    provideInlineCompletionItems = debounce(
+        this._provideInlineCompletionItems.bind(this),
+        inlineCompletionsDebounceDelay,
+        true
+    )
+
+    private async _provideInlineCompletionItems(
         document: TextDocument,
         position: Position,
         context: InlineCompletionContext,
         token: CancellationToken
-    ): Promise<InlineCompletionItem[] | InlineCompletionList> {
-        if (this.isNewSession) {
-            // make service requests if it's a new session
+    ): Promise<InlineCompletionItem[]> {
+        // prevent concurrent API calls and write to shared state variables
+        if (vsCodeState.isRecommendationsActive) {
+            return []
+        }
+        try {
+            vsCodeState.isRecommendationsActive = true
+            const isAutoTrigger = context.triggerKind === InlineCompletionTriggerKind.Automatic
+            if (isAutoTrigger && !CodeSuggestionsState.instance.isSuggestionsEnabled()) {
+                // return early when suggestions are disabled with auto trigger
+                return []
+            }
+
+            // report suggestion state for previous suggestions if they exist
+            const prevSessionId = this.sessionManager.getActiveSession()?.sessionId
+            const prevItemId = this.sessionManager.getActiveRecommendation()?.[0]?.itemId
+            if (prevSessionId && prevItemId) {
+                const params: LogInlineCompletionSessionResultsParams = {
+                    sessionId: prevSessionId,
+                    completionSessionResult: {
+                        [prevItemId]: {
+                            seen: true,
+                            accepted: false,
+                            discarded: false,
+                        },
+                    },
+                }
+                this.languageClient.sendNotification(this.logSessionResultMessageName, params)
+                this.sessionManager.clear()
+            }
+
+            // tell the tutorial that completions has been triggered
+            await this.inlineTutorialAnnotation.triggered(context.triggerKind)
+            TelemetryHelper.instance.setInvokeSuggestionStartTime()
+            TelemetryHelper.instance.setTriggerType(context.triggerKind)
+
             await this.recommendationService.getAllRecommendations(
                 this.languageClient,
                 document,
@@ -188,34 +238,96 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
                 context,
                 token
             )
-        }
-        // get active item from session for displaying
-        const items = this.sessionManager.getActiveRecommendation()
-        const session = this.sessionManager.getActiveSession()
-        if (!session || !items.length) {
-            return []
-        }
-        const editor = window.activeTextEditor
-        for (const item of items) {
-            item.command = {
-                command: 'aws.amazonq.acceptInline',
-                title: 'On acceptance',
-                arguments: [
-                    session.sessionId,
-                    item,
-                    editor,
-                    session.requestStartTime,
-                    position.line,
-                    session.firstCompletionDisplayLatency,
-                ],
+            // get active item from session for displaying
+            const items = this.sessionManager.getActiveRecommendation()
+            const itemId = this.sessionManager.getActiveRecommendation()?.[0]?.itemId
+            const session = this.sessionManager.getActiveSession()
+            const editor = window.activeTextEditor
+
+            // Show message to user when manual invoke fails to produce results.
+            if (items.length === 0 && context.triggerKind === InlineCompletionTriggerKind.Invoke) {
+                void messageUtils.showTimedMessage(noInlineSuggestionsMsg, 2000)
             }
-            ReferenceInlineProvider.instance.setInlineReference(
-                position.line,
-                item.insertText as string,
-                item.references
-            )
-            ImportAdderProvider.instance.onShowRecommendation(document, position.line, item)
+
+            if (!session || !items.length || !editor) {
+                getLogger().debug(
+                    `Failed to produce inline suggestion results. Received ${items.length} items from service`
+                )
+                return []
+            }
+
+            const cursorPosition = document.validatePosition(position)
+
+            if (position.isAfter(editor.selection.active)) {
+                getLogger().debug(`Cursor moved behind trigger position. Discarding suggestion...`)
+                const params: LogInlineCompletionSessionResultsParams = {
+                    sessionId: session.sessionId,
+                    completionSessionResult: {
+                        [itemId]: {
+                            seen: false,
+                            accepted: false,
+                            discarded: true,
+                        },
+                    },
+                }
+                this.languageClient.sendNotification(this.logSessionResultMessageName, params)
+                this.sessionManager.clear()
+                return []
+            }
+
+            // the user typed characters from invoking suggestion cursor position to receiving suggestion position
+            const typeahead = document.getText(new Range(position, editor.selection.active))
+
+            const itemsMatchingTypeahead = []
+
+            for (const item of items) {
+                item.insertText = typeof item.insertText === 'string' ? item.insertText : item.insertText.value
+                if (item.insertText.startsWith(typeahead)) {
+                    item.command = {
+                        command: 'aws.amazonq.acceptInline',
+                        title: 'On acceptance',
+                        arguments: [
+                            session.sessionId,
+                            item,
+                            editor,
+                            session.requestStartTime,
+                            cursorPosition.line,
+                            session.firstCompletionDisplayLatency,
+                        ],
+                    }
+                    item.range = new Range(cursorPosition, cursorPosition)
+                    itemsMatchingTypeahead.push(item)
+                    ImportAdderProvider.instance.onShowRecommendation(document, cursorPosition.line, item)
+                }
+            }
+
+            // report discard if none of suggestions match typeahead
+            if (itemsMatchingTypeahead.length === 0) {
+                getLogger().debug(
+                    `Suggestion does not match user typeahead from insertion position. Discarding suggestion...`
+                )
+                const params: LogInlineCompletionSessionResultsParams = {
+                    sessionId: session.sessionId,
+                    completionSessionResult: {
+                        [itemId]: {
+                            seen: false,
+                            accepted: false,
+                            discarded: true,
+                        },
+                    },
+                }
+                this.languageClient.sendNotification(this.logSessionResultMessageName, params)
+                this.sessionManager.clear()
+                return []
+            }
+
+            // suggestions returned here will be displayed on screen
+            return itemsMatchingTypeahead as InlineCompletionItem[]
+        } catch (e) {
+            getLogger('amazonqLsp').error('Failed to provide completion items: %O', e)
+            return []
+        } finally {
+            vsCodeState.isRecommendationsActive = false
         }
-        return items as InlineCompletionItem[]
     }
 }
