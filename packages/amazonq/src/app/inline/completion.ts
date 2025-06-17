@@ -241,7 +241,7 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
                     getLogger().debug(`Re-using suggestions that match user typed characters`)
                     return prevItemMatchingPrefix
                 }
-                getLogger().debug(`Auto rejecting previous suggestion in session`)
+                getLogger().debug(`Auto rejecting suggestions from previous session`)
                 // if no such suggestions, report the previous suggestion as Reject
                 const params: LogInlineCompletionSessionResultsParams = {
                     sessionId: prevSessionId,
