@@ -772,13 +772,7 @@ async function attemptLocalBuild() {
         getLogger().info(
             `CodeTransformation: downloaded clientInstructions with diff.patch at: ${clientInstructionsPath}`
         )
-        const diffContents = await fs.readFileText(clientInstructionsPath)
-        // make sure diff.patch is not empty
-        if (diffContents.trim()) {
-            await processClientInstructions(jobId, clientInstructionsPath, artifactId)
-        } else {
-            getLogger().info('CodeTransformation: diff.patch is empty, skipping client-side build for this iteration')
-        }
+        await processClientInstructions(jobId, clientInstructionsPath, artifactId)
     }
 }
 
@@ -812,11 +806,18 @@ async function processClientInstructions(jobId: string, clientInstructionsPath: 
     const destinationPath = path.join(os.tmpdir(), `originalCopy_${jobId}_${artifactId}`)
     await extractOriginalProjectSources(destinationPath)
     getLogger().info(`CodeTransformation: copied project to ${destinationPath}`)
-    const diffModel = new DiffModel()
-    diffModel.parseDiff(clientInstructionsPath, path.join(destinationPath, 'sources'), true)
-    // show user the diff.patch
-    const doc = await vscode.workspace.openTextDocument(clientInstructionsPath)
-    await vscode.window.showTextDocument(doc, { viewColumn: vscode.ViewColumn.One })
+    const diffContents = await fs.readFileText(clientInstructionsPath)
+    if (diffContents.trim()) {
+        const diffModel = new DiffModel()
+        diffModel.parseDiff(clientInstructionsPath, path.join(destinationPath, 'sources'), true)
+        // show user the diff.patch
+        const doc = await vscode.workspace.openTextDocument(clientInstructionsPath)
+        await vscode.window.showTextDocument(doc, { viewColumn: vscode.ViewColumn.One })
+    } else {
+        // still need to set the project copy so that we can use it below
+        transformByQState.setProjectCopyFilePath(path.join(destinationPath, 'sources'))
+        getLogger().info(`CodeTransformation: diff.patch is empty`)
+    }
     await runClientSideBuild(transformByQState.getProjectCopyFilePath(), artifactId)
 }
 
