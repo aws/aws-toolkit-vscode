@@ -61,7 +61,8 @@ export interface IAuthProvider {
     isIdcConnection(): boolean
     isSsoSession(): boolean
     isIamSession(): boolean
-    getCredential(): Promise<string | IamCredentials>
+    getBearerToken(): Promise<string>
+    getIamCredential(): Promise<IamCredentials>
     readonly profileName: string
     readonly connection?: { startUrl?: string; region?: string; accessKey?: string; secretKey?: string }
 }
@@ -201,9 +202,17 @@ export class AuthUtil implements IAuthProvider {
         return response
     }
 
-    async getCredential() {
+    async getBearerToken() {
+        if (this.isSsoSession()) {
+            return (await (this.session as SsoLogin).getCredential()).credential
+        } else {
+            throw new ToolkitError('Cannot get credential without logging in.')
+        }
+    }
+
+    async getIamCredential() {
         if (this.session) {
-            return (await this.session.getCredential()).credential
+            return (await (this.session as IamLogin).getCredential()).credential
         } else {
             throw new ToolkitError('Cannot get credential without logging in.')
         }

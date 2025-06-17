@@ -51,11 +51,7 @@ const writeAPIRetryOptions = {
 
 // Create a client for featureDev proxy client based off of aws sdk v2
 export async function createFeatureDevProxyClient(options?: Partial<ServiceOptions>): Promise<FeatureDevProxyClient> {
-    const credential = await AuthUtil.instance.getCredential()
-    // TODO: handle IAM credentials when IAM version of API JSON file is generated
-    if (credential !== 'string') {
-        throw new Error('Feature dev does not support IAM credentials')
-    }
+    const bearerToken = await AuthUtil.instance.getBearerToken()
     const cwsprConfig = getCodewhispererConfig()
     return (await globals.sdkClientBuilder.createAwsService(
         Service,
@@ -63,10 +59,10 @@ export async function createFeatureDevProxyClient(options?: Partial<ServiceOptio
             apiConfig: apiConfig,
             region: cwsprConfig.region,
             endpoint: cwsprConfig.endpoint,
+            token: new Token({ token: bearerToken }),
             httpOptions: {
                 connectTimeout: 10000, // 10 seconds, 3 times P99 API latency
             },
-            token: new Token({ token: credential }),
             ...options,
         } as ServiceOptions,
         undefined
