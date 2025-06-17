@@ -716,7 +716,7 @@ export async function postTransformationJob() {
     if (transformByQState.isSucceeded()) {
         notificationMessage = CodeWhispererConstants.jobCompletedNotification
         if (transformByQState.getSourceJDKVersion() !== transformByQState.getTargetJDKVersion()) {
-            chatMessage += CodeWhispererConstants.upgradeLibrariesMessage
+            notificationMessage += CodeWhispererConstants.upgradeLibrariesMessage
         }
         void vscode.window.showInformationMessage(notificationMessage, {
             title: localizedText.ok,
@@ -724,7 +724,7 @@ export async function postTransformationJob() {
     } else if (transformByQState.isPartiallySucceeded()) {
         notificationMessage = CodeWhispererConstants.jobPartiallyCompletedNotification
         if (transformByQState.getSourceJDKVersion() !== transformByQState.getTargetJDKVersion()) {
-            chatMessage += CodeWhispererConstants.upgradeLibrariesMessage
+            notificationMessage += CodeWhispererConstants.upgradeLibrariesMessage
         }
         void vscode.window
             .showInformationMessage(notificationMessage, CodeWhispererConstants.amazonQFeedbackText)
