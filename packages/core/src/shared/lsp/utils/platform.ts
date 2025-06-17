@@ -8,6 +8,7 @@ import { Logger } from '../../logger/logger'
 import { ChildProcess } from '../../utilities/processUtils'
 import { waitUntil } from '../../utilities/timeoutUtils'
 import { isDebugInstance } from '../../vscode/env'
+import * as vscode from 'vscode'
 
 export function getNodeExecutableName(): string {
     return process.platform === 'win32' ? 'node.exe' : 'node'
@@ -81,18 +82,75 @@ export async function validateNodeExe(nodePath: string[], lsp: string, args: str
     }
 }
 
+/**
+ * Gets proxy settings from VS Code configuration
+ */
+export function getVSCodeProxySettings(): { proxyUrl?: string; proxyBypassRules?: string; certificatePath?: string } {
+    try {
+        const result: { proxyUrl?: string; proxyBypassRules?: string; certificatePath?: string } = {}
+
+        // Get proxy settings from VS Code configuration
+        const httpConfig = vscode.workspace.getConfiguration('http')
+        const proxy = httpConfig.get<string>('proxy')
+
+        if (proxy) {
+            result.proxyUrl = proxy
+        }
+
+        // Try to get system certificates
+        try {
+            // @ts-ignore - This is a valid access pattern in VSCode extensions
+            const electron = require('electron')
+            if (electron?.net?.getCACertificates) {
+                const certs = electron.net.getCACertificates()
+                if (certs && certs.length > 0) {
+                    // Create a temporary file with the certificates
+                    const os = require('os')
+                    const fs = require('fs')
+                    const path = require('path')
+
+                    const certContent = certs
+                        .map((cert: any) => cert.pemEncoded)
+                        .filter(Boolean)
+                        .join('\\n')
+
+                    if (certContent) {
+                        const tempDir = path.join(os.tmpdir(), 'aws-toolkit-vscode')
+                        if (!fs.existsSync(tempDir)) {
+                            fs.mkdirSync(tempDir, { recursive: true })
+                        }
+
+                        const certPath = path.join(tempDir, 'vscode-ca-certs.pem')
+                        fs.writeFileSync(certPath, certContent)
+                        result.certificatePath = certPath
+                    }
+                }
+            }
+        } catch (err) {
+            // Silently fail if we can't access certificates
+        }
+
+        return result
+    } catch (err) {
+        // Silently fail if we can't access VS Code configuration
+        return {}
+    }
+}
+
 export function createServerOptions({
     encryptionKey,
     executable,
     serverModule,
     execArgv,
     warnThresholds,
+    env,
 }: {
     encryptionKey: Buffer
     executable: string[]
     serverModule: string
     execArgv: string[]
     warnThresholds?: { cpu?: number; memory?: number }
+    env?: Record<string, string>
 }) {
     return async () => {
         const bin = executable[0]
@@ -100,7 +158,49 @@ export function createServerOptions({
         if (isDebugInstance()) {
             args.unshift('--inspect=6080')
         }
-        const lspProcess = new ChildProcess(bin, args, { warnThresholds })
+
+        // Merge environment variables
+        const processEnv = { ...process.env }
+        if (env) {
+            Object.assign(processEnv, env)
+        }
+
+        // Get proxy settings from VS Code
+        const proxySettings = getVSCodeProxySettings()
+
+        // Add proxy settings to the Node.js process
+        if (proxySettings.proxyUrl) {
+            processEnv.HTTPS_PROXY = proxySettings.proxyUrl
+            processEnv.HTTP_PROXY = proxySettings.proxyUrl
+            processEnv.https_proxy = proxySettings.proxyUrl
+            processEnv.http_proxy = proxySettings.proxyUrl
+        }
+
+        // Add certificate path if available
+        if (proxySettings.certificatePath) {
+            processEnv.NODE_EXTRA_CA_CERTS = proxySettings.certificatePath
+        }
+
+        // Enable Node.js to use system CA certificates as a fallback
+        if (!processEnv.NODE_EXTRA_CA_CERTS) {
+            processEnv.NODE_TLS_USE_SYSTEM_CA_STORE = '1'
+        }
+
+        // Get SSL verification settings
+        const httpConfig = vscode.workspace.getConfiguration('http')
+        const strictSSL = httpConfig.get<boolean>('proxyStrictSSL', true)
+
+        // Handle SSL certificate verification
+        if (!strictSSL) {
+            processEnv.NODE_TLS_REJECT_UNAUTHORIZED = '0'
+        }
+
+        const lspProcess = new ChildProcess(bin, args, {
+            warnThresholds,
+            spawnOptions: {
+                env: processEnv,
+            },
+        })
 
         // this is a long running process, awaiting it will never resolve
         void lspProcess.run()
