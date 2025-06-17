@@ -210,13 +210,13 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
             }
 
             // report suggestion state for previous suggestions if they exist
-            const sessionId = this.sessionManager.getActiveSession()?.sessionId
-            const itemId = this.sessionManager.getActiveRecommendation()?.[0]?.itemId
-            if (sessionId && itemId) {
+            const prevSessionId = this.sessionManager.getActiveSession()?.sessionId
+            const prevItemId = this.sessionManager.getActiveRecommendation()?.[0]?.itemId
+            if (prevSessionId && prevItemId) {
                 const params: LogInlineCompletionSessionResultsParams = {
-                    sessionId: sessionId,
+                    sessionId: prevSessionId,
                     completionSessionResult: {
-                        [itemId]: {
+                        [prevItemId]: {
                             seen: true,
                             accepted: false,
                             discarded: false,
@@ -241,6 +241,7 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
             )
             // get active item from session for displaying
             const items = this.sessionManager.getActiveRecommendation()
+            const itemId = this.sessionManager.getActiveRecommendation()?.[0]?.itemId
             const session = this.sessionManager.getActiveSession()
             const editor = window.activeTextEditor
 
@@ -259,7 +260,7 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
             const cursorPosition = document.validatePosition(position)
 
             if (position.isAfter(editor.selection.active)) {
-                getLogger().debug(`Cursor moved behind trigger position. Discarding suggestion`)
+                getLogger().debug(`Cursor moved behind trigger position. Discarding suggestion...`)
                 const params: LogInlineCompletionSessionResultsParams = {
                     sessionId: session.sessionId,
                     completionSessionResult: {
@@ -304,7 +305,7 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
             // report discard if none of suggestions match typeahead
             if (itemsMatchingTypeahead.length === 0) {
                 getLogger().debug(
-                    `Suggestion does not match user typed new characters during generation. Discarding suggestion`
+                    `Suggestion does not match user typeahead from insertion position. Discarding suggestion...`
                 )
                 const params: LogInlineCompletionSessionResultsParams = {
                     sessionId: session.sessionId,
