@@ -133,6 +133,7 @@ export async function startLanguageServer(
                 awsClientCapabilities: {
                     q: {
                         developerProfiles: true,
+                        pinnedContextEnabled: true,
                         mcp: true,
                     },
                     window: {

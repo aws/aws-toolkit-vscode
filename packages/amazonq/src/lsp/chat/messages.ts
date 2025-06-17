@@ -55,13 +55,17 @@ import {
     ChatUpdateParams,
     chatOptionsUpdateType,
     ChatOptionsUpdateParams,
+    listRulesRequestType,
+    ruleClickRequestType,
+    pinnedContextNotificationType,
+    activeEditorChangedNotificationType,
 } from '@aws/language-server-runtimes/protocol'
 import { v4 as uuidv4 } from 'uuid'
 import * as vscode from 'vscode'
 import { Disposable, LanguageClient, Position, TextDocumentIdentifier } from 'vscode-languageclient'
 import { AmazonQChatViewProvider } from './webviewProvider'
-import { AuthUtil, CodeWhispererSettings, ReferenceLogViewProvider } from 'aws-core-vscode/codewhisperer'
-import { amazonQDiffScheme, AmazonQPromptSettings, messages, openUrl } from 'aws-core-vscode/shared'
+import { AuthUtil, ReferenceLogViewProvider } from 'aws-core-vscode/codewhisperer'
+import { amazonQDiffScheme, AmazonQPromptSettings, messages, openUrl, isTextEditor } from 'aws-core-vscode/shared'
 import {
     DefaultAmazonQAppInitContext,
     messageDispatcher,
@@ -74,6 +78,29 @@ import { isValidResponseError } from './error'
 import { decryptResponse, encryptRequest } from '../encryption'
 import { getCursorState } from '../utils'
 import { focusAmazonQPanel } from './commands'
+
+export function registerActiveEditorChangeListener(languageClient: LanguageClient) {
+    let debounceTimer: NodeJS.Timeout | undefined
+    vscode.window.onDidChangeActiveTextEditor((editor) => {
+        if (debounceTimer) {
+            clearTimeout(debounceTimer)
+        }
+        debounceTimer = setTimeout(() => {
+            let textDocument = undefined
+            let cursorState = undefined
+            if (editor) {
+                textDocument = {
+                    uri: editor.document.uri.toString(),
+                }
+                cursorState = getCursorState(editor.selections)
+            }
+            languageClient.sendNotification(activeEditorChangedNotificationType.method, {
+                textDocument,
+                cursorState,
+            })
+        }, 100)
+    })
+}
 
 export function registerLanguageServerEventListener(languageClient: LanguageClient, provider: AmazonQChatViewProvider) {
     languageClient.info(
@@ -100,14 +127,6 @@ export function registerLanguageServerEventListener(languageClient: LanguageClie
         const telemetryName: string = e.name
 
         if (telemetryName in telemetry) {
-            switch (telemetryName) {
-                case 'codewhisperer_serviceInvocation': {
-                    // this feature is entirely client side right now
-                    e.data.codewhispererImportRecommendationEnabled =
-                        CodeWhispererSettings.instance.isImportRecommendationEnabled()
-                    break
-                }
-            }
             languageClient.info(`[Telemetry] Emitting ${telemetryName} telemetry: ${JSON.stringify(e.data)}`)
             telemetry[telemetryName as keyof TelemetryBase].emit(e.data)
         }
@@ -301,6 +320,8 @@ export function registerMessageListeners(
                 )
                 break
             }
+            case listRulesRequestType.method:
+            case ruleClickRequestType.method:
             case listConversationsRequestType.method:
             case conversationClickRequestType.method:
             case listMcpServersRequestType.method:
@@ -456,6 +477,20 @@ export function registerMessageListeners(
             params: params,
         })
     })
+    languageClient.onNotification(
+        pinnedContextNotificationType.method,
+        (params: ContextCommandParams & { tabId: string; textDocument?: TextDocumentIdentifier }) => {
+            const editor = vscode.window.activeTextEditor
+            let textDocument = undefined
+            if (editor && isTextEditor(editor)) {
+                textDocument = { uri: vscode.workspace.asRelativePath(editor.document.uri) }
+            }
+            void provider.webview?.postMessage({
+                command: pinnedContextNotificationType.method,
+                params: { ...params, textDocument },
+            })
+        }
+    )
 
     languageClient.onNotification(openFileDiffNotificationType.method, async (params: OpenFileDiffParams) => {
         const ecc = new EditorContentController()
