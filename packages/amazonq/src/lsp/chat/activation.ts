@@ -21,7 +21,7 @@ import { pushConfigUpdate } from '../config'
 export async function activate(languageClient: LanguageClient, encryptionKey: Buffer, mynahUIPath: string) {
     const disposables = globals.context.subscriptions
 
-    const provider = new AmazonQChatViewProvider(mynahUIPath)
+    const provider = new AmazonQChatViewProvider(mynahUIPath, languageClient)
 
     disposables.push(
         window.registerWebviewViewProvider(AmazonQChatViewProvider.viewType, provider, {
