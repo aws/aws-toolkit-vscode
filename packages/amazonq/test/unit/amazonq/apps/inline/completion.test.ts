@@ -20,7 +20,12 @@ import { AmazonQInlineCompletionItemProvider, InlineCompletionManager } from '..
 import { RecommendationService } from '../../../../../src/app/inline/recommendationService'
 import { SessionManager } from '../../../../../src/app/inline/sessionManager'
 import { createMockDocument, createMockTextEditor, getTestWindow, installFakeClock } from 'aws-core-vscode/test'
-import { noInlineSuggestionsMsg, ReferenceHoverProvider, ReferenceLogViewProvider } from 'aws-core-vscode/codewhisperer'
+import {
+    noInlineSuggestionsMsg,
+    ReferenceHoverProvider,
+    ReferenceLogViewProvider,
+    vsCodeState,
+} from 'aws-core-vscode/codewhisperer'
 import { InlineGeneratingMessage } from '../../../../../src/app/inline/inlineGeneratingMessage'
 import { LineTracker } from '../../../../../src/app/inline/stateTracker/lineTracker'
 import { InlineTutorialAnnotation } from '../../../../../src/app/inline/tutorials/inlineTutorialAnnotation'
@@ -41,7 +46,7 @@ describe('InlineCompletionManager', () => {
     let hoverReferenceStub: sinon.SinonStub
     const mockDocument = createMockDocument()
     const mockEditor = createMockTextEditor()
-    const mockPosition = { line: 0, character: 0 } as Position
+    const mockPosition = new Position(0, 0)
     const mockContext = { triggerKind: 1, selectedCompletionInfo: undefined }
     const mockToken = { isCancellationRequested: false } as CancellationToken
     const fakeReferences = [
@@ -59,6 +64,11 @@ describe('InlineCompletionManager', () => {
         {
             itemId: 'test-item',
             insertText: 'test',
+            references: fakeReferences,
+        },
+        {
+            itemId: 'test-item2',
+            insertText: 'import math\ndef two_sum(nums, target):\n',
             references: fakeReferences,
         },
     ]
@@ -240,10 +250,11 @@ describe('InlineCompletionManager', () => {
                 const activeStateController = new InlineGeneratingMessage(lineTracker)
                 inlineTutorialAnnotation = new InlineTutorialAnnotation(lineTracker, mockSessionManager)
                 recommendationService = new RecommendationService(mockSessionManager, activeStateController)
-
+                vsCodeState.isRecommendationsActive = false
                 mockSessionManager = {
                     getActiveSession: getActiveSessionStub,
                     getActiveRecommendation: getActiveRecommendationStub,
+                    clear: () => {},
                 } as unknown as SessionManager
 
                 getActiveSessionStub.returns({
@@ -257,7 +268,7 @@ describe('InlineCompletionManager', () => {
                 getAllRecommendationsStub.resolves()
                 sandbox.stub(window, 'activeTextEditor').value(createMockTextEditor())
             }),
-                it('should call recommendation service to get new suggestions for new sessions', async () => {
+                it('should call recommendation service to get new suggestions(matching typeahead) for new sessions', async () => {
                     provider = new AmazonQInlineCompletionItemProvider(
                         languageClient,
                         recommendationService,
@@ -271,7 +282,7 @@ describe('InlineCompletionManager', () => {
                         mockToken
                     )
                     assert(getAllRecommendationsStub.calledOnce)
-                    assert.deepStrictEqual(items, mockSuggestions)
+                    assert.deepStrictEqual(items, [mockSuggestions[1]])
                 }),
                 it('should handle reference if there is any', async () => {
                     provider = new AmazonQInlineCompletionItemProvider(
@@ -319,10 +330,13 @@ describe('InlineCompletionManager', () => {
                         mockSessionManager,
                         inlineTutorialAnnotation
                     )
-                    const expectedText = 'this is my text'
+                    const expectedText = `${mockSuggestions[1].insertText}this is my text`
                     getActiveRecommendationStub.returns([
                         {
-                            insertText: { kind: 'snippet', value: 'this is my text' } satisfies StringValue,
+                            insertText: {
+                                kind: 'snippet',
+                                value: `${mockSuggestions[1].insertText}this is my text`,
+                            } satisfies StringValue,
                             itemId: 'itemId',
                         },
                     ])
@@ -379,7 +393,7 @@ describe('InlineCompletionManager', () => {
                     const p2 = provider.provideInlineCompletionItems(mockDocument, mockPosition, mockContext, mockToken)
                     const p3 = provider.provideInlineCompletionItems(
                         mockDocument,
-                        new Position(2, 2),
+                        new Position(1, 26),
                         mockContext,
                         mockToken
                     )
@@ -394,7 +408,7 @@ describe('InlineCompletionManager', () => {
                     const r3 = await p3
 
                     // calls the function with the latest provided args.
-                    assert.deepStrictEqual((r3 as InlineCompletionItem[])[0].range?.end, new Position(2, 2))
+                    assert.deepStrictEqual((r3 as InlineCompletionItem[])[0].range?.end, new Position(1, 26))
                 })
             })
         })
