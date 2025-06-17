@@ -196,7 +196,6 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
         context: InlineCompletionContext,
         token: CancellationToken
     ): Promise<InlineCompletionItem[]> {
-        console.log(`_provideInlineCompletionItems`)
         // prevent concurrent API calls and write to shared state variables
         if (vsCodeState.isRecommendationsActive) {
             return []
