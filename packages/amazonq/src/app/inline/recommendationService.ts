@@ -66,6 +66,7 @@ export class RecommendationService {
                 firstResult.sessionId,
                 firstResult.items,
                 requestStartTime,
+                position,
                 firstCompletionDisplayLatency
             )
 
