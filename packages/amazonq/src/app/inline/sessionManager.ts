@@ -2,7 +2,7 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-
+import * as vscode from 'vscode'
 import { InlineCompletionItemWithReferences } from '@aws/language-server-runtimes-types'
 
 // TODO: add more needed data to the session interface
@@ -13,6 +13,7 @@ interface CodeWhispererSession {
     isRequestInProgress: boolean
     requestStartTime: number
     firstCompletionDisplayLatency?: number
+    startPosition: vscode.Position
 }
 
 export class SessionManager {
@@ -25,6 +26,7 @@ export class SessionManager {
         sessionId: string,
         suggestions: InlineCompletionItemWithReferences[],
         requestStartTime: number,
+        startPosition: vscode.Position,
         firstCompletionDisplayLatency?: number
     ) {
         this.activeSession = {
@@ -32,6 +34,7 @@ export class SessionManager {
             suggestions,
             isRequestInProgress: true,
             requestStartTime,
+            startPosition,
             firstCompletionDisplayLatency,
         }
     }

@@ -208,10 +208,41 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
                 return []
             }
 
-            // report suggestion state for previous suggestions if they exist
-            const prevSessionId = this.sessionManager.getActiveSession()?.sessionId
+            // handling previous session
+            const prevSession = this.sessionManager.getActiveSession()
+            const prevSessionId = prevSession?.sessionId
             const prevItemId = this.sessionManager.getActiveRecommendation()?.[0]?.itemId
-            if (prevSessionId && prevItemId) {
+            const prevStartPosition = prevSession?.startPosition
+            const editor = window.activeTextEditor
+            if (prevSession && prevSessionId && prevItemId && prevStartPosition) {
+                const prefix = document.getText(new Range(prevStartPosition, position))
+                const prevItemMatchingPrefix = []
+                for (const item of this.sessionManager.getActiveRecommendation()) {
+                    const text = typeof item.insertText === 'string' ? item.insertText : item.insertText.value
+                    if (text.startsWith(prefix) && position.isAfterOrEqual(prevStartPosition)) {
+                        item.command = {
+                            command: 'aws.amazonq.acceptInline',
+                            title: 'On acceptance',
+                            arguments: [
+                                prevSessionId,
+                                item,
+                                editor,
+                                prevSession?.requestStartTime,
+                                position.line,
+                                prevSession?.firstCompletionDisplayLatency,
+                            ],
+                        }
+                        item.range = new Range(prevStartPosition, position)
+                        prevItemMatchingPrefix.push(item as InlineCompletionItem)
+                    }
+                }
+                // re-use previous suggestions as long as new typed prefix matches
+                if (prevItemMatchingPrefix.length > 0) {
+                    getLogger().debug(`Re-using suggestions that match user typed characters`)
+                    return prevItemMatchingPrefix
+                }
+                getLogger().debug(`Auto rejecting suggestions from previous session`)
+                // if no such suggestions, report the previous suggestion as Reject
                 const params: LogInlineCompletionSessionResultsParams = {
                     sessionId: prevSessionId,
                     completionSessionResult: {
@@ -242,7 +273,6 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
             const items = this.sessionManager.getActiveRecommendation()
             const itemId = this.sessionManager.getActiveRecommendation()?.[0]?.itemId
             const session = this.sessionManager.getActiveSession()
-            const editor = window.activeTextEditor
 
             // Show message to user when manual invoke fails to produce results.
             if (items.length === 0 && context.triggerKind === InlineCompletionTriggerKind.Invoke) {
