@@ -677,9 +677,13 @@ export async function postTransformationJob() {
 
     let chatMessage = transformByQState.getJobFailureErrorChatMessage()
     if (transformByQState.isSucceeded()) {
-        chatMessage = CodeWhispererConstants.jobCompletedChatMessage(transformByQState.getTargetJDKVersion() ?? '')
+        chatMessage = CodeWhispererConstants.jobCompletedChatMessage
     } else if (transformByQState.isPartiallySucceeded()) {
         chatMessage = CodeWhispererConstants.jobPartiallyCompletedChatMessage
+    }
+
+    if (transformByQState.getSourceJDKVersion() !== transformByQState.getTargetJDKVersion()) {
+        chatMessage += CodeWhispererConstants.upgradeLibrariesMessage
     }
 
     transformByQState.getChatControllers()?.transformationFinished.fire({
@@ -707,19 +711,23 @@ export async function postTransformationJob() {
         })
     }
 
+    let notificationMessage = ''
+
     if (transformByQState.isSucceeded()) {
-        void vscode.window.showInformationMessage(
-            CodeWhispererConstants.jobCompletedNotification(transformByQState.getTargetJDKVersion() ?? ''),
-            {
-                title: localizedText.ok,
-            }
-        )
+        notificationMessage = CodeWhispererConstants.jobCompletedNotification
+        if (transformByQState.getSourceJDKVersion() !== transformByQState.getTargetJDKVersion()) {
+            notificationMessage += CodeWhispererConstants.upgradeLibrariesMessage
+        }
+        void vscode.window.showInformationMessage(notificationMessage, {
+            title: localizedText.ok,
+        })
     } else if (transformByQState.isPartiallySucceeded()) {
+        notificationMessage = CodeWhispererConstants.jobPartiallyCompletedNotification
+        if (transformByQState.getSourceJDKVersion() !== transformByQState.getTargetJDKVersion()) {
+            notificationMessage += CodeWhispererConstants.upgradeLibrariesMessage
+        }
         void vscode.window
-            .showInformationMessage(
-                CodeWhispererConstants.jobPartiallyCompletedNotification,
-                CodeWhispererConstants.amazonQFeedbackText
-            )
+            .showInformationMessage(notificationMessage, CodeWhispererConstants.amazonQFeedbackText)
             .then((choice) => {
                 if (choice === CodeWhispererConstants.amazonQFeedbackText) {
                     void submitFeedback(
