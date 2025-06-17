@@ -64,6 +64,7 @@ export async function startLanguageServer(
         '--stdio',
         '--pre-init-encryption',
         '--set-credentials-encryption-key',
+        '--max-old-space-size=8192',
     ]
 
     const documentSelector = [{ scheme: 'file', language: '*' }]
