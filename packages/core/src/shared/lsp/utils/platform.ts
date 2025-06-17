@@ -4,7 +4,7 @@
  */
 
 import { ToolkitError } from '../../errors'
-import { Logger } from '../../logger/logger'
+import { Logger, getLogger } from '../../logger/logger'
 import { ChildProcess } from '../../utilities/processUtils'
 import { waitUntil } from '../../utilities/timeoutUtils'
 import { isDebugInstance } from '../../vscode/env'
@@ -83,57 +83,65 @@ export async function validateNodeExe(nodePath: string[], lsp: string, args: str
 }
 
 /**
- * Gets proxy settings from VS Code configuration
+ * Gets proxy settings and certificates from VS Code
  */
-export function getVSCodeProxySettings(): { proxyUrl?: string; proxyBypassRules?: string; certificatePath?: string } {
+export function getVSCodeSettings(): { proxyUrl?: string; certificatePath?: string } {
+    const result: { proxyUrl?: string; certificatePath?: string } = {}
+    const logger = getLogger('amazonqLsp')
+
     try {
-        const result: { proxyUrl?: string; proxyBypassRules?: string; certificatePath?: string } = {}
+        // Check if user already has NODE_EXTRA_CA_CERTS set
+        const userCerts = process.env.NODE_EXTRA_CA_CERTS
+        if (userCerts) {
+            logger.info(`User already has NODE_EXTRA_CA_CERTS set: ${userCerts}`)
+            return result
+        }
 
         // Get proxy settings from VS Code configuration
         const httpConfig = vscode.workspace.getConfiguration('http')
         const proxy = httpConfig.get<string>('proxy')
-
         if (proxy) {
             result.proxyUrl = proxy
+            logger.info(`Using proxy from VS Code settings: ${proxy}`)
         }
 
-        // Try to get system certificates
         try {
             // @ts-ignore - This is a valid access pattern in VSCode extensions
             const electron = require('electron')
             if (electron?.net?.getCACertificates) {
                 const certs = electron.net.getCACertificates()
                 if (certs && certs.length > 0) {
-                    // Create a temporary file with the certificates
-                    const os = require('os')
+                    logger.info(`Found ${certs.length} certificates in VS Code's trust store`)
+
+                    // Create a temporary file with certificates
                     const fs = require('fs')
+                    const os = require('os')
                     const path = require('path')
 
-                    const certContent = certs
-                        .map((cert: any) => cert.pemEncoded)
-                        .filter(Boolean)
-                        .join('\\n')
-
-                    if (certContent) {
-                        const tempDir = path.join(os.tmpdir(), 'aws-toolkit-vscode')
-                        if (!fs.existsSync(tempDir)) {
-                            fs.mkdirSync(tempDir, { recursive: true })
-                        }
-
-                        const certPath = path.join(tempDir, 'vscode-ca-certs.pem')
-                        fs.writeFileSync(certPath, certContent)
-                        result.certificatePath = certPath
+                    const tempDir = path.join(os.tmpdir(), 'aws-toolkit-vscode')
+                    if (!fs.existsSync(tempDir)) {
+                        fs.mkdirSync(tempDir, { recursive: true })
                     }
+
+                    const certPath = path.join(tempDir, 'vscode-ca-certs.pem')
+                    const certContent = certs
+                        .filter((cert: any) => cert.pemEncoded)
+                        .map((cert: any) => cert.pemEncoded)
+                        .join('\n')
+
+                    fs.writeFileSync(certPath, certContent)
+                    result.certificatePath = certPath
+                    logger.info(`Created certificate file at: ${certPath}`)
                 }
             }
         } catch (err) {
-            // Silently fail if we can't access certificates
+            logger.error(`Failed to extract certificates: ${err}`)
         }
 
         return result
     } catch (err) {
-        // Silently fail if we can't access VS Code configuration
-        return {}
+        logger.error(`Failed to get VS Code settings: ${err}`)
+        return result
     }
 }
 
@@ -165,25 +173,22 @@ export function createServerOptions({
             Object.assign(processEnv, env)
         }
 
-        // Get proxy settings from VS Code
-        const proxySettings = getVSCodeProxySettings()
+        // Get settings from VS Code
+        const settings = getVSCodeSettings()
+        const logger = getLogger('amazonqLsp')
 
         // Add proxy settings to the Node.js process
-        if (proxySettings.proxyUrl) {
-            processEnv.HTTPS_PROXY = proxySettings.proxyUrl
-            processEnv.HTTP_PROXY = proxySettings.proxyUrl
-            processEnv.https_proxy = proxySettings.proxyUrl
-            processEnv.http_proxy = proxySettings.proxyUrl
+        if (settings.proxyUrl) {
+            processEnv.HTTPS_PROXY = settings.proxyUrl
+            processEnv.HTTP_PROXY = settings.proxyUrl
+            processEnv.https_proxy = settings.proxyUrl
+            processEnv.http_proxy = settings.proxyUrl
         }
 
         // Add certificate path if available
-        if (proxySettings.certificatePath) {
-            processEnv.NODE_EXTRA_CA_CERTS = proxySettings.certificatePath
-        }
-
-        // Enable Node.js to use system CA certificates as a fallback
-        if (!processEnv.NODE_EXTRA_CA_CERTS) {
-            processEnv.NODE_TLS_USE_SYSTEM_CA_STORE = '1'
+        if (settings.certificatePath) {
+            processEnv.NODE_EXTRA_CA_CERTS = settings.certificatePath
+            logger.info(`Using certificate file: ${settings.certificatePath}`)
         }
 
         // Get SSL verification settings
@@ -193,6 +198,7 @@ export function createServerOptions({
         // Handle SSL certificate verification
         if (!strictSSL) {
             processEnv.NODE_TLS_REJECT_UNAUTHORIZED = '0'
+            logger.info('SSL verification disabled via VS Code settings')
         }
 
         const lspProcess = new ChildProcess(bin, args, {
