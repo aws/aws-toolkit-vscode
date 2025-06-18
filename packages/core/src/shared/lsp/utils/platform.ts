@@ -12,7 +12,6 @@ import { tmpdir } from 'os'
 import { join } from 'path'
 import * as nodefs from 'fs' // eslint-disable-line no-restricted-imports
 import * as vscode from 'vscode'
-import * as tls from 'tls'
 
 export function getNodeExecutableName(): string {
     return process.platform === 'win32' ? 'node.exe' : 'node'
@@ -89,18 +88,11 @@ export async function validateNodeExe(nodePath: string[], lsp: string, args: str
 /**
  * Gets proxy settings and certificates from VS Code
  */
-export function getVSCodeSettings(): { proxyUrl?: string; certificatePath?: string } {
+export async function getVSCodeSettings(): Promise<{ proxyUrl?: string; certificatePath?: string }> {
     const result: { proxyUrl?: string; certificatePath?: string } = {}
     const logger = getLogger('amazonqLsp')
 
     try {
-        // Check if user already has NODE_EXTRA_CA_CERTS set
-        const userCerts = process.env.NODE_EXTRA_CA_CERTS
-        if (userCerts) {
-            logger.info(`User already has NODE_EXTRA_CA_CERTS set: ${userCerts}`)
-            return result
-        }
-
         // Get proxy settings from VS Code configuration
         const httpConfig = vscode.workspace.getConfiguration('http')
         const proxy = httpConfig.get<string>('proxy')
@@ -110,10 +102,18 @@ export function getVSCodeSettings(): { proxyUrl?: string; certificatePath?: stri
         }
 
         try {
-            // @ts-ignore - we need this function to access certs
-            const certs = tls.getCACertificates()
-            if (certs && certs.length > 0) {
-                logger.info(`Found ${certs.length} certificates in VS Code's trust store`)
+            const tls = await import('node:tls')
+
+            // @ts-ignore Get system certificates
+            const systemCerts = tls.getCACertificates('system')
+
+            // @ts-ignore Get any existing extra certificates
+            const extraCerts = tls.getCACertificates('extra')
+
+            // Combine all certificates
+            const allCerts = [...systemCerts, ...extraCerts]
+            if (allCerts && allCerts.length > 0) {
+                logger.info(`Found ${allCerts.length} certificates in system's trust store`)
 
                 // Create a temporary file with certificates
                 const tempDir = join(tmpdir(), 'aws-toolkit-vscode')
@@ -122,7 +122,7 @@ export function getVSCodeSettings(): { proxyUrl?: string; certificatePath?: stri
                 }
 
                 const certPath = join(tempDir, 'vscode-ca-certs.pem')
-                const certContent = certs.join('\n')
+                const certContent = allCerts.join('\n')
 
                 nodefs.writeFileSync(certPath, certContent)
                 result.certificatePath = certPath
@@ -168,15 +168,12 @@ export function createServerOptions({
         }
 
         // Get settings from VS Code
-        const settings = getVSCodeSettings()
+        const settings = await getVSCodeSettings()
         const logger = getLogger('amazonqLsp')
 
         // Add proxy settings to the Node.js process
         if (settings.proxyUrl) {
             processEnv.HTTPS_PROXY = settings.proxyUrl
-            processEnv.HTTP_PROXY = settings.proxyUrl
-            processEnv.https_proxy = settings.proxyUrl
-            processEnv.http_proxy = settings.proxyUrl
         }
 
         // Add certificate path if available
