@@ -2,7 +2,7 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-
+import * as vscode from 'vscode'
 import { InlineCompletionItemWithReferences } from '@aws/language-server-runtimes-types'
 
 // TODO: add more needed data to the session interface
@@ -13,17 +13,20 @@ interface CodeWhispererSession {
     isRequestInProgress: boolean
     requestStartTime: number
     firstCompletionDisplayLatency?: number
+    startPosition: vscode.Position
 }
 
 export class SessionManager {
     private activeSession?: CodeWhispererSession
-    private activeIndex: number = 0
+    private _acceptedSuggestionCount: number = 0
+
     constructor() {}
 
     public startSession(
         sessionId: string,
         suggestions: InlineCompletionItemWithReferences[],
         requestStartTime: number,
+        startPosition: vscode.Position,
         firstCompletionDisplayLatency?: number
     ) {
         this.activeSession = {
@@ -31,9 +34,9 @@ export class SessionManager {
             suggestions,
             isRequestInProgress: true,
             requestStartTime,
+            startPosition,
             firstCompletionDisplayLatency,
         }
-        this.activeIndex = 0
     }
 
     public closeSession() {
@@ -54,49 +57,19 @@ export class SessionManager {
         this.activeSession.suggestions = [...this.activeSession.suggestions, ...suggestions]
     }
 
-    public incrementActiveIndex() {
-        const suggestionCount = this.activeSession?.suggestions?.length
-        if (!suggestionCount) {
-            return
-        }
-        this.activeIndex === suggestionCount - 1 ? suggestionCount - 1 : this.activeIndex++
-    }
-
-    public decrementActiveIndex() {
-        this.activeIndex === 0 ? 0 : this.activeIndex--
-    }
-
-    /*
-        We have to maintain the active suggestion index ourselves because VS Code doesn't expose which suggestion it's currently showing
-        In order to keep track of the right suggestion state, and for features such as reference tracker, this hack is still needed
-     */
-
     public getActiveRecommendation(): InlineCompletionItemWithReferences[] {
-        let suggestionCount = this.activeSession?.suggestions.length
-        if (!suggestionCount) {
-            return []
-        }
-        if (suggestionCount === 1 && this.activeSession?.isRequestInProgress) {
-            suggestionCount += 1
-        }
+        return this.activeSession?.suggestions ?? []
+    }
 
-        const activeSuggestion = this.activeSession?.suggestions[this.activeIndex]
-        if (!activeSuggestion) {
-            return []
-        }
-        const items = [activeSuggestion]
-        // to make the total number of suggestions match the actual number
-        for (let i = 1; i < suggestionCount; i++) {
-            items.push({
-                ...activeSuggestion,
-                insertText: `${i}`,
-            })
-        }
-        return items
+    public get acceptedSuggestionCount(): number {
+        return this._acceptedSuggestionCount
+    }
+
+    public incrementSuggestionCount() {
+        this._acceptedSuggestionCount += 1
     }
 
     public clear() {
         this.activeSession = undefined
-        this.activeIndex = 0
     }
 }
