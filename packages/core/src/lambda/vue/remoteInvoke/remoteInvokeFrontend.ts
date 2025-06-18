@@ -9,7 +9,7 @@
 import { defineComponent } from 'vue'
 import { WebviewClientFactory } from '../../../webviews/client'
 import saveData from '../../../webviews/mixins/saveData'
-import { RemoteInvokeData, RemoteInvokeWebview } from './invokeLambda'
+import { RemoteInvokeData, RemoteInvokeWebview } from './remoteInvokeBackend'
 
 const client = WebviewClientFactory.create<RemoteInvokeWebview>()
 const defaultInitialData = {
@@ -21,6 +21,7 @@ const defaultInitialData = {
     TestEvents: [],
     FunctionStack: '',
     Source: '',
+    invokeInProgress: false,
 }
 
 export default defineComponent({
@@ -46,6 +47,7 @@ export default defineComponent({
             showNameInput: false,
             newTestEventName: '',
             selectedFunction: 'selectedFunction',
+            invokeInProgress: false,
         }
     },
     methods: {
@@ -105,7 +107,7 @@ export default defineComponent({
 
         async sendInput() {
             let event = ''
-
+            this.invokeInProgress = true
             if (this.payload === 'sampleEvents' || this.payload === 'savedEvents') {
                 event = this.sampleText
             } else if (this.payload === 'localFile') {
@@ -117,6 +119,7 @@ export default defineComponent({
                 }
             }
             await client.invokeLambda(event, this.initialData.Source)
+            this.invokeInProgress = false
         },
 
         loadSampleEvent() {
