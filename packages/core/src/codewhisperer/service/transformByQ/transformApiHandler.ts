@@ -654,6 +654,9 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
             if (CodeWhispererConstants.validStatesForBuildSucceeded.includes(status)) {
                 jobPlanProgress['buildCode'] = StepProgress.Succeeded
             }
+            if (status === 'TRANSFORMING') {
+                transformByQState.setHasSeenTransforming(true)
+            }
             // emit metric when job status changes
             if (status !== transformByQState.getPolledJobStatus()) {
                 telemetry.codeTransform_jobStatusChanged.emit({
@@ -696,11 +699,9 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
                 break
             }
 
-            // TO-DO: make sure we are not in AWAITING_CLIENT_ACTION while job is in PLANNING state
-            // (that should only happen in interactive mode; IDE is always non-interactive)
-            // otherwise below need to change *status === 'TRANSFORMING'* to *jobPlanProgress['generatePlan'] === StepProgress.Succeeded*
+            // TO-DO: later, handle case where PlannerAgent needs to run mvn dependency:tree during PLANNING stage; not needed for now
             if (
-                status === 'TRANSFORMING' &&
+                transformByQState.getHasSeenTransforming() &&
                 transformByQState.getTransformationType() === TransformationType.LANGUAGE_UPGRADE
             ) {
                 // client-side build is N/A for SQL conversions

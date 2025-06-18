@@ -641,6 +641,7 @@ export async function setTransformationToRunningState() {
     transformByQState.resetSessionJobHistory()
     transformByQState.setJobId('') // so that details for last job are not overwritten when running one job after another
     transformByQState.setPolledJobStatus('') // so that previous job's status does not display at very beginning of this job
+    transformByQState.setHasSeenTransforming(false)
 
     CodeTransformTelemetryState.instance.setStartTime()
     transformByQState.setStartTime(

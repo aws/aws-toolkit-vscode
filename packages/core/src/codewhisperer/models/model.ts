@@ -783,6 +783,8 @@ export class TransformByQState {
 
     private polledJobStatus: string = ''
 
+    private hasSeenTransforming: boolean = false
+
     private payloadFilePath: string = ''
 
     private jobFailureErrorNotification: string | undefined = undefined
@@ -828,6 +830,10 @@ export class TransformByQState {
 
     public isPartiallySucceeded() {
         return this.transformByQState === TransformByQStatus.PartiallySucceeded
+    }
+
+    public getHasSeenTransforming() {
+        return this.hasSeenTransforming
     }
 
     public getTransformationType() {
@@ -1002,6 +1008,10 @@ export class TransformByQState {
         this.transformByQState = TransformByQStatus.PartiallySucceeded
     }
 
+    public setHasSeenTransforming(hasSeen: boolean) {
+        this.hasSeenTransforming = hasSeen
+    }
+
     public setTransformationType(type: TransformationType) {
         this.transformationType = type
     }
@@ -1144,6 +1154,7 @@ export class TransformByQState {
 
     public setJobDefaults() {
         this.setToNotStarted()
+        this.hasSeenTransforming = false
         this.jobFailureErrorNotification = undefined
         this.jobFailureErrorChatMessage = undefined
         this.payloadFilePath = ''
