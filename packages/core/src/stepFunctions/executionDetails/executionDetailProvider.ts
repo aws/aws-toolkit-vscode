@@ -90,7 +90,6 @@ export class ExecutionDetailProvider {
      * Gets the webview content for Execution Details.
      * @private
      */
-    // executionArn: string
     private getWebviewContent = async (): Promise<string> => {
         const htmlFileSplit = this.webviewHtml.split('<head>')
 
@@ -109,12 +108,8 @@ export class ExecutionDetailProvider {
         // Set component type to ExecutionDetails
         const componentTypeTag = `<meta name="component-type" content="ExecutionDetails" />`
 
-        // Add execution ARN to load the specific execution
-        // const executionArnTag = `<meta name="execution-arn" content="${executionArn}" />`
-
         // Set to read-only mode as this is just displaying execution details
         const modeTag = `<meta name="workflow-mode" content="${WorkflowMode.Readonly}" />`
-        // const modeTag = `<meta name="workflow-mode" content="${mode}" />`
 
         return `${htmlFileSplit[0]} <head> ${baseTag} ${localeTag} ${darkModeTag} ${tabSizeTag} ${modeTag} ${componentTypeTag} ${htmlFileSplit[1]}`
     }
@@ -135,7 +130,6 @@ export class ExecutionDetailProvider {
             }
 
             // Set up the content
-            // panel.webview.html = await this.getWebviewContent(executionArn)
             panel.webview.html = await this.getWebviewContent()
 
             // Handle messages from the webview
