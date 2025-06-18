@@ -1,3 +1,9 @@
+## 1.76.0 2025-06-18
+
+- **Bug Fix** /transform: only show lines of code statistic in plan
+- **Feature** Add model selection feature
+- **Feature** Pin context items in chat and manage workspace rules
+
 ## 1.75.0 2025-06-13
 
 - Miscellaneous non-user-facing changes
