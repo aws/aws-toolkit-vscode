@@ -281,7 +281,7 @@
     "AWS.command.q.transform.rejectChanges": "Reject",
     "AWS.command.q.transform.stopJobInHub": "Stop job",
     "AWS.command.q.transform.viewJobProgress": "View job progress",
-    "AWS.command.q.transform.viewJobStatus": "View job status",
+    "AWS.command.q.transform.viewJobHistory": "View job history",
     "AWS.command.q.transform.showTransformationPlan": "View plan",
     "AWS.command.q.transform.showChangeSummary": "View summary",
     "AWS.command.threatComposer.createNew": "Create New Threat Composer File",

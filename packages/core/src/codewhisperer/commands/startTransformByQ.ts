@@ -20,6 +20,7 @@ import {
     TransformationType,
     TransformationCandidateProject,
     RegionProfile,
+    sessionJobHistory,
 } from '../models/model'
 import {
     createZipManifest,
@@ -78,6 +79,7 @@ import { convertDateToTimestamp } from '../../shared/datetime'
 import { findStringInDirectory } from '../../shared/utilities/workspaceUtils'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import { AuthUtil } from '../util/authUtil'
+import { homedir } from 'os'
 
 export function getFeedbackCommentData() {
     const jobId = transformByQState.getJobId()
@@ -738,6 +740,33 @@ export async function postTransformationJob() {
     // TODO: refactor as explained here https://github.com/aws/aws-toolkit-vscode/pull/6519/files#r1946873107
     if (transformByQState.isSucceeded() || transformByQState.isPartiallySucceeded()) {
         await vscode.commands.executeCommand('aws.amazonq.transformationHub.reviewChanges.startReview')
+    }
+
+    // store job details and diff path locally (history)
+    // TODO: ideally when job is cancelled, should be stored as CANCELLED instead of FAILED (remove this if statement after bug is fixed)
+    if (!transformByQState.isCancelled()) {
+        const jobHistoryFilePath = path.join(homedir(), '.aws', 'transform', 'transformation-history.tsv')
+        // create transform folder if necessary
+        if (!fs.existsSync(jobHistoryFilePath)) {
+            fs.mkdirSync(path.dirname(jobHistoryFilePath), { recursive: true })
+            // create headers of new transformation history file
+            fs.writeFileSync(jobHistoryFilePath, 'date\tproject_name\tstatus\tduration\tdiff_path\tjob_id\n')
+        }
+        const latest = sessionJobHistory[transformByQState.getJobId()]
+        const jobDetails: string =
+            latest.startTime +
+            '\t' +
+            latest.projectName +
+            '\t' +
+            latest.status +
+            '\t' +
+            latest.duration +
+            '\t' +
+            transformByQState.getDiffPatchFilePath() +
+            '\t' +
+            transformByQState.getJobId() +
+            '\n'
+        fs.writeFileSync(jobHistoryFilePath, jobDetails, { flag: 'a' })
     }
 }
 

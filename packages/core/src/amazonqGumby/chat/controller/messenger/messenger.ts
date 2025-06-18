@@ -377,6 +377,27 @@ export class Messenger {
         this.dispatcher.sendChatMessage(jobSubmittedMessage)
     }
 
+    public sendViewHistoryMessage(tabID: string) {
+        const buttons: ChatItemButton[] = []
+
+        buttons.push({
+            keepCardAfterClick: true,
+            text: 'Open job history',
+            id: ButtonActions.VIEW_JOB_HISTORY,
+            disabled: false,
+        })
+
+        const message = new ChatMessage(
+            {
+                message: 'View previous transformations run from the IDE',
+                messageType: 'ai-prompt',
+                buttons,
+            },
+            tabID
+        )
+        this.dispatcher.sendChatMessage(message)
+    }
+
     public sendMessage(prompt: string, tabID: string, type: 'prompt' | 'ai-prompt') {
         this.dispatcher.sendChatMessage(
             new ChatMessage(

@@ -57,6 +57,7 @@ import {
 } from '../../../codewhisperer/service/transformByQ/transformFileHandler'
 import { getAuthType } from '../../../auth/utils'
 import fs from '../../../shared/fs/fs'
+import { setContext } from '../../../shared/vscode/setContext'
 
 // These events can be interactions within the chat,
 // or elsewhere in the IDE
@@ -188,6 +189,8 @@ export class GumbyController {
     }
 
     private async transformInitiated(message: any) {
+        this.messenger.sendViewHistoryMessage(message.tabID)
+
         // silently check for projects eligible for SQL conversion
         let embeddedSQLProjects: TransformationCandidateProject[] = []
         try {
@@ -382,6 +385,11 @@ export class GumbyController {
                 break
             case ButtonActions.VIEW_TRANSFORMATION_HUB:
                 await vscode.commands.executeCommand(GumbyCommands.FOCUS_TRANSFORMATION_HUB, CancelActionPositions.Chat)
+                break
+            case ButtonActions.VIEW_JOB_HISTORY:
+                await setContext('gumby.wasQCodeTransformationUsed', true)
+                await vscode.commands.executeCommand(GumbyCommands.FOCUS_TRANSFORMATION_HUB)
+                await vscode.commands.executeCommand(GumbyCommands.FOCUS_JOB_HISTORY, CancelActionPositions.Chat)
                 break
             case ButtonActions.VIEW_SUMMARY:
                 await vscode.commands.executeCommand('aws.amazonq.transformationHub.summary.reveal')

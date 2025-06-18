@@ -730,6 +730,7 @@ export class TransformByQState {
     private planFilePath: string = ''
     private summaryFilePath: string = ''
     private preBuildLogFilePath: string = ''
+    private diffPatchFilePath: string = ''
 
     private resultArchiveFilePath: string = ''
     private projectCopyFilePath: string = ''
@@ -879,6 +880,10 @@ export class TransformByQState {
 
     public getSummaryFilePath() {
         return this.summaryFilePath
+    }
+
+    public getDiffPatchFilePath() {
+        return this.diffPatchFilePath
     }
 
     public getResultArchiveFilePath() {
@@ -1053,6 +1058,10 @@ export class TransformByQState {
 
     public setSummaryFilePath(filePath: string) {
         this.summaryFilePath = filePath
+    }
+
+    public setDiffPatchFilePath(filePath: string) {
+        return (this.diffPatchFilePath = filePath)
     }
 
     public setResultArchiveFilePath(filePath: string) {
