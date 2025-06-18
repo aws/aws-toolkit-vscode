@@ -23,6 +23,7 @@ import { ASLLanguageClient } from './asl/client'
 import { WorkflowStudioEditorProvider } from './workflowStudio/workflowStudioEditorProvider'
 import { StateMachineNode } from './explorer/stepFunctionsNodes'
 import { downloadStateMachineDefinition } from './commands/downloadStateMachineDefinition'
+import { ExecutionDetailProvider } from './executionDetails/executionDetailProvider'
 
 /**
  * Activate Step Functions related functionality for the extension.
@@ -97,6 +98,9 @@ async function registerStepFunctionCommands(
         Commands.register('aws.stepfunctions.publishStateMachine', async (node?: any) => {
             const region: string | undefined = node?.regionCode
             await publishStateMachine(awsContext, outputChannel, region)
+        }),
+        Commands.register('aws.stepfunctions.viewExecutionDetailsByExecutionARN', async () => {
+            await ExecutionDetailProvider.openExecutionDetails('')
         })
     )
 }
