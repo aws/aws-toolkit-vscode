@@ -428,12 +428,12 @@ export class RegionProfileManager {
     async _createQClient(region: string, endpoint: string): Promise<CodeWhispererUserClient> {
         let authConfig: ServiceOptions = {}
         if (this.authProvider.isSsoSession()) {
-            const credential = await this.authProvider.getBearerToken()
+            const token = await this.authProvider.getToken()
             authConfig = {
                 onRequestSetup: [
                     (req: any) => {
                         req.on('build', ({ httpRequest }: { httpRequest: HttpRequest }) => {
-                            httpRequest.headers['Authorization'] = `Bearer ${credential}`
+                            httpRequest.headers['Authorization'] = `Bearer ${token}`
                         })
                     },
                 ],

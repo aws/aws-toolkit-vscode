@@ -61,7 +61,7 @@ export interface IAuthProvider {
     isIdcConnection(): boolean
     isSsoSession(): boolean
     isIamSession(): boolean
-    getBearerToken(): Promise<string>
+    getToken(): Promise<string>
     getIamCredential(): Promise<IamCredentials>
     readonly profileName: string
     readonly connection?: { startUrl?: string; region?: string; accessKey?: string; secretKey?: string }
@@ -202,7 +202,7 @@ export class AuthUtil implements IAuthProvider {
         return response
     }
 
-    async getBearerToken() {
+    async getToken() {
         if (this.isSsoSession()) {
             return (await (this.session as SsoLogin).getCredential()).credential
         } else {

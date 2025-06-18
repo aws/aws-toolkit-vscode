@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { AWSError, HttpRequest, Service } from 'aws-sdk'
+import { AWSError, Credentials, Service } from 'aws-sdk'
 import globals from '../../shared/extensionGlobals'
 import * as CodeWhispererClient from './codewhispererclient'
 import * as CodeWhispererUserClient from './codewhispereruserclient'
@@ -13,8 +13,8 @@ import { hasVendedIamCredentials } from '../../auth/auth'
 import { CodeWhispererSettings } from '../util/codewhispererSettings'
 import { PromiseResult } from 'aws-sdk/lib/request'
 import { AuthUtil } from '../util/authUtil'
-import userApiConfig = require('./user-service-2.json')
 import apiConfig = require('./service-2.json')
+import userApiConfig = require('./user-service-2.json')
 import { session } from '../util/codeWhispererSession'
 import { getLogger } from '../../shared/logger/logger'
 import { getClientId, getOptOutPreference, getOperatingSystem } from '../../shared/telemetry/util'
@@ -84,13 +84,14 @@ export type Imports = CodeWhispererUserClient.Imports
 export class DefaultCodeWhispererClient {
     private async createSdkClient(): Promise<CodeWhispererClient> {
         const isOptedOut = CodeWhispererSettings.instance.isOptoutEnabled()
+        const credential = await AuthUtil.instance.getIamCredential()
         const cwsprConfig = getCodewhispererConfig()
         return (await globals.sdkClientBuilder.createAwsService(
             Service,
             {
                 apiConfig: apiConfig,
                 region: cwsprConfig.region,
-                credentials: undefined,
+                credentials: new Credentials({ accessKeyId: credential.accessKeyId, secretAccessKey: credential.secretAccessKey }),
                 endpoint: cwsprConfig.endpoint,
                 onRequestSetup: [
                     (req) => {
@@ -108,9 +109,9 @@ export class DefaultCodeWhispererClient {
                                     resp.error?.code === 'AccessDeniedException' &&
                                     resp.error.message.match(/expired/i)
                                 ) {
-                                    // AuthUtil.instance.reauthenticate().catch((e) => {
-                                    //     getLogger().error('reauthenticate failed: %s', (e as Error).message)
-                                    // })
+                                    AuthUtil.instance.reauthenticate()?.catch((e) => {
+                                        getLogger().error('reauthenticate failed: %s', (e as Error).message)
+                                    })
                                     resp.error.retryable = true
                                 }
                             })
@@ -125,7 +126,7 @@ export class DefaultCodeWhispererClient {
     async createUserSdkClient(maxRetries?: number): Promise<CodeWhispererUserClient> {
         const isOptedOut = CodeWhispererSettings.instance.isOptoutEnabled()
         session.setFetchCredentialStart()
-        const credential = await AuthUtil.instance.getBearerToken()
+        const bearerToken = await AuthUtil.instance.getToken()
 
         session.setSdkApiCallStart()
         const cwsprConfig = getCodewhispererConfig()
@@ -137,9 +138,9 @@ export class DefaultCodeWhispererClient {
                 endpoint: cwsprConfig.endpoint,
                 maxRetries: maxRetries,
                 onRequestSetup: [
-                    (req: any) => {
-                        req.on('build', ({ httpRequest }: { httpRequest: HttpRequest }) => {
-                            httpRequest.headers['Authorization'] = `Bearer ${credential}`
+                    (req) => {
+                        req.on('build', ({ httpRequest }) => {
+                            httpRequest.headers['Authorization'] = `Bearer ${bearerToken}`
                         })
                         if (req.operation === 'generateCompletions') {
                             req.on('build', () => {

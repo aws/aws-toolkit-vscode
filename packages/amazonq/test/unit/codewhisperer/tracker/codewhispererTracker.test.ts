@@ -6,7 +6,7 @@
 import assert from 'assert'
 import * as sinon from 'sinon'
 import { assertTelemetryCurried } from 'aws-core-vscode/test'
-import { CodeWhispererTracker } from 'aws-core-vscode/codewhisperer'
+import { AuthUtil, CodeWhispererTracker } from 'aws-core-vscode/codewhisperer'
 import { resetCodeWhispererGlobalVariables, createAcceptedSuggestionEntry } from 'aws-core-vscode/test'
 import { globals } from 'aws-core-vscode/shared'
 
@@ -93,8 +93,7 @@ describe('codewhispererTracker', function () {
                 codewhispererModificationPercentage: 1,
                 codewhispererCompletionType: 'Line',
                 codewhispererLanguage: 'java',
-                // TODO: fix this
-                // credentialStartUrl: AuthUtil.instance.connection?.startUrl,
+                credentialStartUrl: AuthUtil.instance.connection?.startUrl,
                 codewhispererCharactersAccepted: suggestion.originalString.length,
                 codewhispererCharactersModified: 0,
             })
