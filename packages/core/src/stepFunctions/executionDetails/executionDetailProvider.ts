@@ -10,6 +10,8 @@ import { ToolkitError } from '../../shared/errors'
 import { i18n } from '../../shared/i18n-helper'
 import { ComponentType } from '../workflowStudio/types'
 import { isLocalDev, localhost, cdn } from '../constants/webviewResources'
+import { ComponentType } from '../workflowStudio/types'
+import { isLocalDev, localhost, cdn } from '../constants/webviewResources'
 
 /**
  * Provider for Execution Details panels.
@@ -39,23 +41,21 @@ export class ExecutionDetailProvider {
                 ...params,
             }
         )
+        // Create and show the webview panel
+        const panel = vscode.window.createWebviewPanel(
+            ExecutionDetailProvider.viewType,
+            `Execution: ${executionArn.split(':').pop() || executionArn}`,
+            vscode.ViewColumn.Beside,
+            {
+                enableScripts: true,
+                retainContextWhenHidden: true,
+                ...params,
+            }
+        )
 
         // Create the provider and initialize the panel
         const provider = new ExecutionDetailProvider()
         await provider.initializePanel(panel, executionArn)
-    }
-
-    /**
-     * Registers the command to open execution details.
-     * @remarks This should only be called once per extension.
-     */
-    public static register(): vscode.Disposable {
-        return vscode.commands.registerCommand(
-            'aws.stepFunctions.viewExecutionDetails',
-            async (executionArn: string) => {
-                await ExecutionDetailProvider.openExecutionDetails(executionArn)
-            }
-        )
     }
 
     protected webviewHtml: string
@@ -95,7 +95,9 @@ export class ExecutionDetailProvider {
 
         // Set component type to ExecutionDetails
         const componentTypeTag = `<meta name="component-type" content="${ComponentType.ExecutionDetails}" />`
+        const componentTypeTag = `<meta name="component-type" content="${ComponentType.ExecutionDetails}" />`
 
+        return `${htmlFileSplit[0]} <head> ${baseTag} ${localeTag} ${darkModeTag} ${componentTypeTag} ${htmlFileSplit[1]}`
         return `${htmlFileSplit[0]} <head> ${baseTag} ${localeTag} ${darkModeTag} ${componentTypeTag} ${htmlFileSplit[1]}`
     }
 
