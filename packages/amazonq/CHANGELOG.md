@@ -1,3 +1,7 @@
+## 1.77.0 2025-06-18
+
+- Miscellaneous non-user-facing changes
+
 ## 1.76.0 2025-06-18
 
 - **Bug Fix** /transform: only show lines of code statistic in plan
