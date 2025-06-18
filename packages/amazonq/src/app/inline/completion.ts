@@ -43,7 +43,6 @@ import { TelemetryHelper } from './telemetryHelper'
 import { Experiments, getLogger } from 'aws-core-vscode/shared'
 import { debounce, messageUtils } from 'aws-core-vscode/utils'
 import { showEdits } from './EditRendering/imageRenderer'
-import { NextEditPredictionPanel } from './webViewPanel'
 import { ICursorUpdateRecorder } from './cursorUpdateManager'
 
 export class InlineCompletionManager implements Disposable {
@@ -64,7 +63,6 @@ export class InlineCompletionManager implements Disposable {
         inlineTutorialAnnotation: InlineTutorialAnnotation,
         cursorUpdateRecorder?: ICursorUpdateRecorder
     ) {
-        NextEditPredictionPanel.getInstance()
         this.languageClient = languageClient
         this.sessionManager = sessionManager
         this.lineTracker = lineTracker
@@ -269,14 +267,11 @@ ${itemLog}
                 if (item.isInlineEdit) {
                     // Check if Next Edit Prediction feature flag is enabled
                     if (Experiments.instance.isExperimentEnabled('amazonqLSPNEP')) {
-                        const panel = NextEditPredictionPanel.getInstance()
-                        panel.updateContent(item.insertText as string)
                         void showEdits(item, editor, session, this.languageClient).then(() => {
                             const t3 = performance.now()
                             logstr = logstr + `- duration since trigger to NEP suggestion is displayed: ${t3 - t0}ms`
                             this.logger.info(logstr)
                         })
-                        getLogger('nextEditPrediction').info('Received edit!')
                     }
                     return []
                 }

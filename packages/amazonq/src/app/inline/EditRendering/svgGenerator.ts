@@ -5,7 +5,7 @@
 
 import { diffChars } from 'diff'
 import * as vscode from 'vscode'
-import { ToolkitError, getLogger, isWeb } from 'aws-core-vscode/shared'
+import { ToolkitError, getLogger } from 'aws-core-vscode/shared'
 import { diffUtilities } from 'aws-core-vscode/shared'
 import { applyUnifiedDiff } from './diffUtils'
 type Range = { line: number; start: number; end: number }
@@ -36,7 +36,7 @@ export class SvgGenerationService {
         const originalCode = textDoc.getText()
         if (originalCode === '') {
             logger.error(`udiff format error`)
-            throw new ToolkitError('udiff format erro')
+            throw new ToolkitError('udiff format error')
         }
         const { addedCharacterCount, deletedCharacterCount } = applyUnifiedDiff(originalCode, udiff)
         const newCode = await diffUtilities.getPatchedCode(filePath, udiff)
@@ -45,19 +45,6 @@ export class SvgGenerationService {
         // eslint-disable-next-line aws-toolkits/no-json-stringify-in-log
         logger.info(`Line mapping: ${JSON.stringify(modifiedLines)}`)
 
-        if (isWeb() || !process.versions?.node) {
-            logger.info('Skipping SVG generation in web mode')
-            return {
-                svgImage: vscode.Uri.parse(
-                    'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMCIgaGVpZ2h0PSIxMCI+PC9zdmc+'
-                ),
-                startLine: 0,
-                newCode: newCode,
-                origionalCodeHighlightRange: [{ line: 0, start: 0, end: 0 }],
-                addedCharacterCount: 0,
-                deletedCharacterCount: 0,
-            }
-        }
         const { createSVGWindow } = await import('svgdom')
 
         const svgjs = await import('@svgdotjs/svg.js')
@@ -69,7 +56,6 @@ export class SvgGenerationService {
 
         // Get edit diffs with highlight
         const { addedLines, removedLines } = this.getEditedLinesFromDiff(udiff)
-        // const diffWithHighlight = this.getHighlightEdit(addedLines, modifiedLines)
         const highlightRanges = this.generateHighlightRanges(removedLines, addedLines, modifiedLines)
         const diffAddedWithHighlight = this.getHighlightEdit(addedLines, highlightRanges.addedRanges)
 
@@ -89,10 +75,8 @@ export class SvgGenerationService {
         const { width, height } = this.calculateDimensions(addedLines, currentTheme)
         draw.size(width + offset, height)
 
-        // Generate CSS for syntax highlighting based on theme
+        // Generate CSS for syntax highlighting HTML content based on theme
         const styles = this.generateStyles(currentTheme)
-
-        // Generate HTML content with syntax highlighting
         const htmlContent = this.generateHtmlContent(diffAddedWithHighlight, styles, offset)
 
         // Create foreignObject to embed HTML
@@ -101,7 +85,6 @@ export class SvgGenerationService {
 
         const svgData = draw.svg()
         const svgResult = `data:image/svg+xml;base64,${Buffer.from(svgData).toString('base64')}`
-        // const adjustedStartLine = editStartLine > 0 ? editStartLine - 1 : editStartLine
 
         return {
             svgImage: vscode.Uri.parse(svgResult),
@@ -200,7 +183,6 @@ export class SvgGenerationService {
 
         // Process each hunk to find added and removed lines
         for (const hunkStart of hunkStarts) {
-            // Parse the hunk header
             const hunkHeader = diffLines[hunkStart]
             const match = hunkHeader.match(/@@ -(\d+),(\d+) \+(\d+),(\d+) @@/)
 
@@ -312,10 +294,7 @@ export class SvgGenerationService {
             effectiveLineHeight = Math.round(1.5 * fontSize)
         }
 
-        // Get current theme name
         const themeName = vscode.workspace.getConfiguration('workbench').get<string>('colorTheme', 'Default')
-
-        // Define theme colors
         const themeColors = this.getThemeColors(themeName)
 
         return {
@@ -347,7 +326,16 @@ export class SvgGenerationService {
             diffRemoved: 'rgba(255, 199, 206, 0.5)',
         }
 
-        // Define colors for specific themes
+        // For dark and light modes
+        const themeNameLower = themeName.toLowerCase()
+
+        if (themeNameLower.includes('dark')) {
+            return darkThemeColors
+        } else if (themeNameLower.includes('light')) {
+            return lightThemeColors
+        }
+
+        // Define colors for specific themes, add more if needed.
         const themeColorMap: {
             [key: string]: { foreground: string; background: string; diffAdded: string; diffRemoved: string }
         } = {
@@ -363,16 +351,6 @@ export class SvgGenerationService {
                 diffAdded: 'rgba(255, 100, 100, 0.2)',
                 diffRemoved: 'rgba(255, 0, 0, 0.5)',
             },
-            // Add more themes as needed
-        }
-
-        // Check if theme name contains "dark" or "light"
-        const themeNameLower = themeName.toLowerCase()
-
-        if (themeNameLower.includes('dark')) {
-            return darkThemeColors
-        } else if (themeNameLower.includes('light')) {
-            return lightThemeColors
         }
 
         // Return colors for the specific theme or default to light theme
@@ -467,13 +445,11 @@ export class SvgGenerationService {
                 // Check if current range and next range can be merged
                 const next = sortedRanges[i + 1]
                 if (current.line === next.line && next.start - current.end <= 1) {
-                    // Merge the ranges
                     sortedRanges[i + 1] = {
                         line: current.line,
                         start: current.start,
                         end: Math.max(current.end, next.end),
                     }
-                    // Skip the current range (we merged it with the next one)
                 } else {
                     result.push(current)
                 }
@@ -488,19 +464,15 @@ export class SvgGenerationService {
             reverseMap.set(modified, original)
         }
 
-        // Process original code lines
+        // Process original code lines - produces highlight ranges in current editor text
         for (let lineIndex = 0; lineIndex < originalCode.length; lineIndex++) {
             const line = originalCode[lineIndex]
 
             // If line exists in modifiedLines as a key, process character diffs
             if (Array.from(modifiedLines.keys()).includes(line)) {
-                // Get the corresponding modified line
                 const modifiedLine = modifiedLines.get(line)!
-
-                // Get character-level diffs
                 const changes = diffChars(line, modifiedLine)
 
-                // Add ranges for removed parts
                 let charPos = 0
                 for (const part of changes) {
                     if (part.removed) {
@@ -511,13 +483,12 @@ export class SvgGenerationService {
                         })
                     }
 
-                    // Only advance position for parts that exist in original
                     if (!part.added) {
                         charPos += part.value.length
                     }
                 }
             } else {
-                // Line doesn't exist in modifiedLines keys, highlight entire line
+                // Line doesn't exist in modifiedLines values, highlight entire line
                 originalRanges.push({
                     line: lineIndex,
                     start: 0,
@@ -526,19 +497,14 @@ export class SvgGenerationService {
             }
         }
 
-        // Process after code lines
+        // Process after code lines - used for highlight in SVG image
         for (let lineIndex = 0; lineIndex < afterCode.length; lineIndex++) {
             const line = afterCode[lineIndex]
 
-            // If line exists in reverseMap (is a value in modifiedLines), process character diffs
             if (reverseMap.has(line)) {
-                // Get the corresponding original line
                 const originalLine = reverseMap.get(line)!
-
-                // Get character-level diffs
                 const changes = diffChars(originalLine, line)
 
-                // Add ranges for added parts
                 let charPos = 0
                 for (const part of changes) {
                     if (part.added) {
@@ -549,13 +515,11 @@ export class SvgGenerationService {
                         })
                     }
 
-                    // Only advance position for parts that exist in the modified version
                     if (!part.removed) {
                         charPos += part.value.length
                     }
                 }
             } else {
-                // Line doesn't exist in modifiedLines values, highlight entire line
                 afterRanges.push({
                     line: lineIndex,
                     start: 0,
@@ -564,7 +528,6 @@ export class SvgGenerationService {
             }
         }
 
-        // Apply post-processing to merge adjacent ranges
         const mergedOriginalRanges = mergeAdjacentRanges(originalRanges)
         const mergedAfterRanges = mergeAdjacentRanges(afterRanges)
 
