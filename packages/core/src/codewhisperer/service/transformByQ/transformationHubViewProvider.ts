@@ -24,6 +24,9 @@ import { startInterval } from '../../commands/startTransformByQ'
 import { CodeTransformTelemetryState } from '../../../amazonqGumby/telemetry/codeTransformTelemetryState'
 import { convertToTimeString } from '../../../shared/datetime'
 import { AuthUtil } from '../../util/authUtil'
+import fs from 'fs'
+import path from 'path'
+import { homedir } from 'os'
 
 export class TransformationHubViewProvider implements vscode.WebviewViewProvider {
     public static readonly viewType = 'aws.amazonq.transformationHub'
@@ -88,6 +91,48 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
     }
 
     private showJobHistory(): string {
+        const history: {
+            startTime: string
+            projectName: string
+            status: string
+            duration: string
+            diffPath: string
+            jobId: string
+        }[] = []
+        const jobHistoryFilePath = path.join(homedir(), '.aws', 'transform', 'transformation-history.tsv')
+        if (fs.existsSync(jobHistoryFilePath)) {
+            const historyFile = fs.readFileSync(jobHistoryFilePath, { encoding: 'utf8', flag: 'r' })
+            const jobs = historyFile.split('\n')
+            jobs.shift() // removes headers
+            if (jobs.length > 0) {
+                jobs.forEach((job) => {
+                    if (job) {
+                        const jobInfo = job.split('\t')
+                        const jobObject = {
+                            startTime: jobInfo[0],
+                            projectName: jobInfo[1],
+                            status: jobInfo[2],
+                            duration: jobInfo[3],
+                            diffPath: jobInfo[4],
+                            jobId: jobInfo[5],
+                        }
+                        history.push(jobObject)
+                    }
+                })
+            }
+        }
+        if (transformByQState.isRunning()) {
+            const current = sessionJobHistory[transformByQState.getJobId()]
+            history.push({
+                startTime: current.startTime,
+                projectName: current.projectName,
+                status: current.status,
+                duration: current.duration,
+                diffPath: transformByQState.getDiffPatchFilePath(),
+                jobId: transformByQState.getJobId(),
+            })
+        }
+        history.reverse() // to show in descending order, chronologically
         return `<!DOCTYPE html>
             <html lang="en">
             <head>
@@ -99,17 +144,26 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
             </style>
             </head>
             <body>
-            <p><b>Transformation Status</b></p>
+            <p><b>Transformation History</b></p>
             ${
-                Object.keys(sessionJobHistory).length === 0
+                history.length === 0
                     ? `<p>${CodeWhispererConstants.nothingToShowMessage}</p>`
-                    : this.getTableMarkup(sessionJobHistory[transformByQState.getJobId()])
+                    : this.getTableMarkup(history)
             }
             </body>
             </html>`
     }
 
-    private getTableMarkup(job: { startTime: string; projectName: string; status: string; duration: string }) {
+    private getTableMarkup(
+        history: {
+            startTime: string
+            projectName: string
+            status: string
+            duration: string
+            diffPath: string
+            jobId: string
+        }[]
+    ) {
         return `
             <table border="1" style="border-collapse:collapse">
                 <thead>
@@ -118,17 +172,25 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                         <th>Project</th>
                         <th>Status</th>
                         <th>Duration</th>
-                        <th>Id</th>
+                        <th>Diff Path</th>
+                        <th>Job Id</th>
                     </tr>
                 </thead>
                 <tbody>
-                <tr>
-                    <td>${job.startTime}</td>
-                    <td>${job.projectName}</td>
-                    <td>${job.status}</td>
-                    <td>${job.duration}</td>
-                    <td>${transformByQState.getJobId()}</td>
-                </tr>
+                ${history
+                    .map(
+                        (job) => `
+                    <tr>
+                        <td>${job.startTime}</td>
+                        <td>${job.projectName}</td>
+                        <td>${job.status}</td>
+                        <td>${job.duration}</td>
+                        <td><a href="vscode://file${job.diffPath}">${job.diffPath}</a></td>
+                        <td>${job.jobId}</td>
+                    </tr>
+                `
+                    )
+                    .join('')}
                 </tbody>
             </table>
         `
