@@ -1,4 +1,4 @@
 {
 	"type": "Feature",
-	"description": "View By Execution ARN command launches a webview panel for Execution Details"
+	"description": "Added view by execution ARN command to visualize an execution"
 }

@@ -6,19 +6,10 @@
 import * as vscode from 'vscode'
 import { getLogger } from '../../shared/logger/logger'
 import request from '../../shared/request'
-import { getClientId } from '../../shared/telemetry/util'
-import { telemetry } from '../../shared/telemetry/telemetry'
-import globals from '../../shared/extensionGlobals'
-// import { getStringHash } from '../../shared/utilities/textUtilities'
 import { ToolkitError } from '../../shared/errors'
-import { getTabSizeSetting } from '../../shared/utilities/editorUtilities'
 import { i18n } from '../../shared/i18n-helper'
-import { WorkflowMode } from '../workflowStudio/types'
-
-const isLocalDev = true
-const localhost = 'http://127.0.0.1:3002'
-const cdn = 'https://d5t62uwepi9lu.cloudfront.net'
-let clientId = ''
+import { ComponentType } from '../workflowStudio/types'
+import { isLocalDev, localhost, cdn } from '../constants/webviewResources'
 
 /**
  * Provider for Execution Details panels.
@@ -37,23 +28,21 @@ export class ExecutionDetailProvider {
         executionArn: string,
         params?: vscode.WebviewPanelOptions & vscode.WebviewOptions
     ): Promise<void> {
-        await telemetry.stepfunctions_openWorkflowStudio.run(async () => {
-            // Create and show the webview panel
-            const panel = vscode.window.createWebviewPanel(
-                ExecutionDetailProvider.viewType,
-                `Execution: ${executionArn.split(':').pop() || executionArn}`,
-                vscode.ViewColumn.Beside,
-                {
-                    enableScripts: true,
-                    retainContextWhenHidden: true,
-                    ...params,
-                }
-            )
+        // Create and show the webview panel
+        const panel = vscode.window.createWebviewPanel(
+            ExecutionDetailProvider.viewType,
+            `Execution: ${executionArn.split(':').pop() || executionArn}`,
+            vscode.ViewColumn.Beside,
+            {
+                enableScripts: true,
+                retainContextWhenHidden: true,
+                ...params,
+            }
+        )
 
-            // Create the provider and initialize the panel
-            const provider = new ExecutionDetailProvider()
-            await provider.initializePanel(panel, executionArn)
-        })
+        // Create the provider and initialize the panel
+        const provider = new ExecutionDetailProvider()
+        await provider.initializePanel(panel, executionArn)
     }
 
     /**
@@ -102,16 +91,12 @@ export class ExecutionDetailProvider {
         const localeTag = `<meta name='locale' content='${locale}'>`
         const theme = vscode.window.activeColorTheme.kind
         const isDarkMode = theme === vscode.ColorThemeKind.Dark || theme === vscode.ColorThemeKind.HighContrast
-        const tabSizeTag = `<meta name='tab-size' content='${getTabSizeSetting()}'>`
         const darkModeTag = `<meta name='dark-mode' content='${isDarkMode}'>`
 
         // Set component type to ExecutionDetails
-        const componentTypeTag = `<meta name="component-type" content="ExecutionDetails" />`
+        const componentTypeTag = `<meta name="component-type" content="${ComponentType.ExecutionDetails}" />`
 
-        // Set to read-only mode as this is just displaying execution details
-        const modeTag = `<meta name="workflow-mode" content="${WorkflowMode.Readonly}" />`
-
-        return `${htmlFileSplit[0]} <head> ${baseTag} ${localeTag} ${darkModeTag} ${tabSizeTag} ${modeTag} ${componentTypeTag} ${htmlFileSplit[1]}`
+        return `${htmlFileSplit[0]} <head> ${baseTag} ${localeTag} ${darkModeTag} ${componentTypeTag} ${htmlFileSplit[1]}`
     }
 
     /**
@@ -123,10 +108,6 @@ export class ExecutionDetailProvider {
         try {
             if (!this.webviewHtml) {
                 await this.fetchWebviewHtml()
-            }
-
-            if (clientId === '') {
-                clientId = getClientId(globals.globalState)
             }
 
             // Set up the content
