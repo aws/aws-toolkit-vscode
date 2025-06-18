@@ -38,9 +38,6 @@ module.exports = (env = {}, argv = {}) => {
         externals: {
             vscode: 'commonjs vscode',
             vue: 'root Vue',
-            fs: 'commonjs fs',
-            path: 'commonjs path',
-            os: 'commonjs os',
             tls: 'commonjs tls',
         },
         resolve: {

@@ -10,8 +10,7 @@ import { waitUntil } from '../../utilities/timeoutUtils'
 import { isDebugInstance } from '../../vscode/env'
 import { tmpdir } from 'os'
 import { join } from 'path'
-// eslint-disable-next-line no-restricted-imports
-import * as fs from 'fs'
+import * as nodefs from 'fs' // eslint-disable-line no-restricted-imports
 import * as vscode from 'vscode'
 import * as tls from 'tls'
 
@@ -118,14 +117,14 @@ export function getVSCodeSettings(): { proxyUrl?: string; certificatePath?: stri
 
                 // Create a temporary file with certificates
                 const tempDir = join(tmpdir(), 'aws-toolkit-vscode')
-                if (!fs.existsSync(tempDir)) {
-                    fs.mkdirSync(tempDir, { recursive: true })
+                if (!nodefs.existsSync(tempDir)) {
+                    nodefs.mkdirSync(tempDir, { recursive: true })
                 }
 
                 const certPath = join(tempDir, 'vscode-ca-certs.pem')
                 const certContent = certs.join('\n')
 
-                fs.writeFileSync(certPath, certContent)
+                nodefs.writeFileSync(certPath, certContent)
                 result.certificatePath = certPath
                 logger.info(`Created certificate file at: ${certPath}`)
             }
