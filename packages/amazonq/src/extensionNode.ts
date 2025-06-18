@@ -25,7 +25,6 @@ import { DevOptions } from 'aws-core-vscode/dev'
 import { Auth, AuthUtils, getTelemetryMetadataForConn, isAnySsoConnection } from 'aws-core-vscode/auth'
 import api from './api'
 import { activate as activateCWChat } from './app/chat/activation'
-import { activate as activateInlineChat } from './inlineChat/activation'
 import { beta } from 'aws-core-vscode/dev'
 import { activate as activateNotifications, NotificationsController } from 'aws-core-vscode/notifications'
 import { AuthState, AuthUtil } from 'aws-core-vscode/codewhisperer'
@@ -73,7 +72,6 @@ async function activateAmazonQNode(context: vscode.ExtensionContext) {
     }
     activateAgents()
     await activateTransformationHub(extContext as ExtContext)
-    activateInlineChat(context)
 
     const authProvider = new CommonAuthViewProvider(
         context,
