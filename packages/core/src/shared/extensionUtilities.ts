@@ -370,9 +370,15 @@ export async function initializeComputeRegion(
 
 export function getComputeRegion(): string | undefined {
     if (computeRegion === notInitialized) {
-        throw new Error('Attempted to get compute region without initializing.')
+        // Set a default value immediately to prevent future calls from throwing error
+        const isC9 = isCloud9()
+        const isSM = isSageMaker()
+        computeRegion = isC9 || isSM ? 'unknown' : undefined
+        // Start async initialization in the background
+        initializeComputeRegion(undefined, isC9, isSM).catch((e) => {
+            getLogger().error('Failed to initialize compute region: %s and using a default value: %s', e, computeRegion)
+        })
     }
-
     return computeRegion
 }
 
