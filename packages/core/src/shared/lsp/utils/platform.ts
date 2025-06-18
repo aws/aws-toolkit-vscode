@@ -8,7 +8,11 @@ import { Logger, getLogger } from '../../logger/logger'
 import { ChildProcess } from '../../utilities/processUtils'
 import { waitUntil } from '../../utilities/timeoutUtils'
 import { isDebugInstance } from '../../vscode/env'
+import { tmpdir } from 'os'
+import { join } from 'path'
+import * as fs from 'fs'
 import * as vscode from 'vscode'
+import * as tls from 'tls'
 
 export function getNodeExecutableName(): string {
     return process.platform === 'win32' ? 'node.exe' : 'node'
@@ -106,33 +110,23 @@ export function getVSCodeSettings(): { proxyUrl?: string; certificatePath?: stri
         }
 
         try {
-            // @ts-ignore - This is a valid access pattern in VSCode extensions
-            const electron = require('electron')
-            if (electron?.net?.getCACertificates) {
-                const certs = electron.net.getCACertificates()
-                if (certs && certs.length > 0) {
-                    logger.info(`Found ${certs.length} certificates in VS Code's trust store`)
+            // @ts-ignore - we need this function to access certs
+            const certs = tls.getCACertificates()
+            if (certs && certs.length > 0) {
+                logger.info(`Found ${certs.length} certificates in VS Code's trust store`)
 
-                    // Create a temporary file with certificates
-                    const fs = require('fs')
-                    const os = require('os')
-                    const path = require('path')
-
-                    const tempDir = path.join(os.tmpdir(), 'aws-toolkit-vscode')
-                    if (!fs.existsSync(tempDir)) {
-                        fs.mkdirSync(tempDir, { recursive: true })
-                    }
-
-                    const certPath = path.join(tempDir, 'vscode-ca-certs.pem')
-                    const certContent = certs
-                        .filter((cert: any) => cert.pemEncoded)
-                        .map((cert: any) => cert.pemEncoded)
-                        .join('\n')
-
-                    fs.writeFileSync(certPath, certContent)
-                    result.certificatePath = certPath
-                    logger.info(`Created certificate file at: ${certPath}`)
+                // Create a temporary file with certificates
+                const tempDir = join(tmpdir(), 'aws-toolkit-vscode')
+                if (!fs.existsSync(tempDir)) {
+                    fs.mkdirSync(tempDir, { recursive: true })
                 }
+
+                const certPath = join(tempDir, 'vscode-ca-certs.pem')
+                const certContent = certs.join('\n')
+
+                fs.writeFileSync(certPath, certContent)
+                result.certificatePath = certPath
+                logger.info(`Created certificate file at: ${certPath}`)
             }
         } catch (err) {
             logger.error(`Failed to extract certificates: ${err}`)
