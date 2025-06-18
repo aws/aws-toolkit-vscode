@@ -100,43 +100,36 @@ export async function getVSCodeSettings(): Promise<{ proxyUrl?: string; certific
             result.proxyUrl = proxy
             logger.info(`Using proxy from VS Code settings: ${proxy}`)
         }
-
-        try {
-            const tls = await import('tls')
-
-            // @ts-ignore Get system certificates
-            const systemCerts = tls.getCACertificates('system')
-
-            // @ts-ignore Get any existing extra certificates
-            const extraCerts = tls.getCACertificates('extra')
-
-            // Combine all certificates
-            const allCerts = [...systemCerts, ...extraCerts]
-            if (allCerts && allCerts.length > 0) {
-                logger.info(`Found ${allCerts.length} certificates in system's trust store`)
-
-                // Create a temporary file with certificates
-                const tempDir = join(tmpdir(), 'aws-toolkit-vscode')
-                if (!nodefs.existsSync(tempDir)) {
-                    nodefs.mkdirSync(tempDir, { recursive: true })
-                }
-
-                const certPath = join(tempDir, 'vscode-ca-certs.pem')
-                const certContent = allCerts.join('\n')
-
-                nodefs.writeFileSync(certPath, certContent)
-                result.certificatePath = certPath
-                logger.info(`Created certificate file at: ${certPath}`)
-            }
-        } catch (err) {
-            logger.error(`Failed to extract certificates: ${err}`)
-        }
-
-        return result
     } catch (err) {
         logger.error(`Failed to get VS Code settings: ${err}`)
         return result
     }
+    try {
+        const tls = await import('tls')
+        // @ts-ignore Get system certificates
+        const systemCerts = tls.getCACertificates('system')
+        // @ts-ignore Get any existing extra certificates
+        const extraCerts = tls.getCACertificates('extra')
+        const allCerts = [...systemCerts, ...extraCerts]
+        if (allCerts && allCerts.length > 0) {
+            logger.info(`Found ${allCerts.length} certificates in system's trust store`)
+
+            const tempDir = join(tmpdir(), 'aws-toolkit-vscode')
+            if (!nodefs.existsSync(tempDir)) {
+                nodefs.mkdirSync(tempDir, { recursive: true })
+            }
+
+            const certPath = join(tempDir, 'vscode-ca-certs.pem')
+            const certContent = allCerts.join('\n')
+
+            nodefs.writeFileSync(certPath, certContent)
+            result.certificatePath = certPath
+            logger.info(`Created certificate file at: ${certPath}`)
+        }
+    } catch (err) {
+        logger.error(`Failed to extract certificates: ${err}`)
+    }
+    return result
 }
 
 export function createServerOptions({
