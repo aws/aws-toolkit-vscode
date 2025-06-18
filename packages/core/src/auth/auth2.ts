@@ -367,6 +367,7 @@ export class SsoLogin extends BaseLogin {
     }
 
     async logout() {
+        this.lspAuth.deleteBearerToken()
         if (this.ssoTokenId) {
             await this.lspAuth.invalidateSsoToken(this.ssoTokenId)
         }

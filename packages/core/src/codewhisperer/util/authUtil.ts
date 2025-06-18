@@ -192,11 +192,6 @@ export class AuthUtil implements IAuthProvider {
     }
 
     logout() {
-        if (!this.isSsoSession()) {
-            // Only SSO requires logout
-            return
-        }
-        this.lspAuth.deleteBearerToken()
         const response = this.session?.logout()
         this.session = undefined
         return response
