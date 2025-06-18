@@ -10,6 +10,7 @@ import { waitUntil } from '../../utilities/timeoutUtils'
 import { isDebugInstance } from '../../vscode/env'
 import { tmpdir } from 'os'
 import { join } from 'path'
+// eslint-disable-next-line no-restricted-imports
 import * as fs from 'fs'
 import * as vscode from 'vscode'
 import * as tls from 'tls'
