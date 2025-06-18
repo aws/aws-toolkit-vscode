@@ -165,7 +165,9 @@ export class DiffModel {
             throw new Error(CodeWhispererConstants.noChangesMadeMessage)
         }
 
-        const changedFiles = parsePatch(diffContents)
+        let changedFiles = parsePatch(diffContents)
+        // exclude dependency_upgrade.yml from patch application
+        changedFiles = changedFiles.filter((file) => !file.oldFileName?.includes('dependency_upgrade'))
         getLogger().info('CodeTransformation: parsed patch file successfully')
         // if doing intermediate client-side build, pathToWorkspace is the path to the unzipped project's 'sources' directory (re-using upload ZIP)
         // otherwise, we are at the very end of the transformation and need to copy the changed files in the project to show the diff(s)
