@@ -115,10 +115,34 @@ export function registerLanguageServerEventListener(languageClient: LanguageClie
     }
 
     provider.onDidResolveWebview(() => {
-        void provider.webview?.postMessage({
-            command: CHAT_OPTIONS,
-            params: chatOptions,
-        })
+        // Give the webview a moment to fully initialize before sending messages
+        setTimeout(() => {
+            if (provider.webview) {
+                // Ensure webview is ready and properly initialized
+                const sendPromise = provider.webview
+                    .postMessage({
+                        command: CHAT_OPTIONS,
+                        params: chatOptions,
+                    })
+                    .then(() => {
+                        // Log success only after message is confirmed sent
+                        const quickActionCommands =
+                            chatOptions?.quickActions?.quickActionsCommandGroups?.[0]?.commands || []
+                        const quickActionsDisplay = quickActionCommands.map((cmd: any) => cmd.command).join(', ')
+                        languageClient.info(
+                            `[VSCode Client] Chat options flags: mcpServers=${chatOptions?.mcpServers}, history=${chatOptions?.history}, export=${chatOptions?.export}, quickActions=[${quickActionsDisplay}]`
+                        )
+                    })
+
+                // Handle potential errors separately since PromiseLike might not have catch
+                sendPromise.then(undefined, (err: Error) => {
+                    // Log any errors that occur during message sending
+                    languageClient.error(`[VSCode Client] Failed to send CHAT_OPTIONS: ${err.message}`)
+                })
+            } else {
+                languageClient.warn(`[VSCode Client] Cannot send CHAT_OPTIONS: webview is not available`)
+            }
+        }, 100) // Short delay of 100ms to ensure webview is ready
     })
 
     // This passes through metric data from LSP events to Toolkit telemetry with all fields from the LSP server
@@ -126,7 +150,7 @@ export function registerLanguageServerEventListener(languageClient: LanguageClie
         const telemetryName: string = e.name
 
         if (telemetryName in telemetry) {
-            languageClient.info(`[Telemetry] Emitting ${telemetryName} telemetry: ${JSON.stringify(e.data)}`)
+            languageClient.info(`[VSCode Telemetry] Emitting ${telemetryName} telemetry: ${JSON.stringify(e.data)}`)
             telemetry[telemetryName as keyof TelemetryBase].emit(e.data)
         }
     })
