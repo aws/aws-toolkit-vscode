@@ -184,7 +184,7 @@ jobs:
     windows:
         needs: lint-commits
         name: test Windows
-        runs-on: windows-2019
+        runs-on: windows-latest
         strategy:
             fail-fast: false
             matrix:
