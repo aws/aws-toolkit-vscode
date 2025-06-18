@@ -185,6 +185,8 @@ export async function stopJob(jobId: string) {
         return
     }
 
+    getLogger().info(`CodeTransformation: Stopping transformation job with ID: ${jobId}`)
+
     try {
         await codeWhisperer.codeWhispererClient.codeModernizerStopCodeTransformation({
             transformationJobId: jobId,

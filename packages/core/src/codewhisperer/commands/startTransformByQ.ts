@@ -744,6 +744,7 @@ export async function postTransformationJob() {
 export async function transformationJobErrorHandler(error: any) {
     if (!transformByQState.isCancelled()) {
         // means some other error occurred; cancellation already handled by now with stopTransformByQ
+        await stopJob(transformByQState.getJobId())
         transformByQState.setToFailed()
         transformByQState.setPolledJobStatus('FAILED')
         // jobFailureErrorNotification should always be defined here
