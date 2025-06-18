@@ -102,7 +102,7 @@ export async function getVSCodeSettings(): Promise<{ proxyUrl?: string; certific
         }
 
         try {
-            const tls = await import('node:tls')
+            const tls = await import('tls')
 
             // @ts-ignore Get system certificates
             const systemCerts = tls.getCACertificates('system')
