@@ -1,0 +1,18 @@
+{
+	"date": "2025-06-18",
+	"version": "1.76.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "/transform: only show lines of code statistic in plan"
+		},
+		{
+			"type": "Feature",
+			"description": "Add model selection feature"
+		},
+		{
+			"type": "Feature",
+			"description": "Pin context items in chat and manage workspace rules"
+		}
+	]
+}
