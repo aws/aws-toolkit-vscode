@@ -62,7 +62,7 @@ describe('RegionProfileManager', async function () {
             const mockClient = {
                 listAvailableProfiles: listProfilesStub,
             }
-            const createClientStub = sinon.stub(regionProfileManager, '_createQClient').resolves(mockClient)
+            const createClientStub = sinon.stub(regionProfileManager, '_createQUserClient').resolves(mockClient)
 
             const profileList = await regionProfileManager.listRegionProfile()
 
@@ -272,11 +272,11 @@ describe('RegionProfileManager', async function () {
         })
     })
 
-    describe('createQClient', function () {
+    describe('createQUserClient', function () {
         it(`should configure the endpoint and region from a profile`, async function () {
             await setupConnection('idc')
 
-            const iadClient = await regionProfileManager.createQClient({
+            const iadClient = await regionProfileManager.createQUserClient({
                 name: 'foo',
                 region: 'us-east-1',
                 arn: 'arn',
@@ -286,7 +286,7 @@ describe('RegionProfileManager', async function () {
             assert.deepStrictEqual(iadClient.config.region, 'us-east-1')
             assert.deepStrictEqual(iadClient.endpoint.href, 'https://q.us-east-1.amazonaws.com/')
 
-            const fraClient = await regionProfileManager.createQClient({
+            const fraClient = await regionProfileManager.createQUserClient({
                 name: 'bar',
                 region: 'eu-central-1',
                 arn: 'arn',
@@ -302,7 +302,7 @@ describe('RegionProfileManager', async function () {
 
             await assert.rejects(
                 async () => {
-                    await regionProfileManager.createQClient({
+                    await regionProfileManager.createQUserClient({
                         name: 'foo',
                         region: 'ap-east-1',
                         arn: 'arn',
@@ -314,7 +314,7 @@ describe('RegionProfileManager', async function () {
 
             await assert.rejects(
                 async () => {
-                    await regionProfileManager.createQClient({
+                    await regionProfileManager.createQUserClient({
                         name: 'foo',
                         region: 'unknown-somewhere',
                         arn: 'arn',
@@ -330,7 +330,7 @@ describe('RegionProfileManager', async function () {
             await regionProfileManager.switchRegionProfile(profileFoo, 'user')
             assert.deepStrictEqual(regionProfileManager.activeRegionProfile, profileFoo)
 
-            const client = await regionProfileManager._createQClient('eu-central-1', 'https://amazon.com/')
+            const client = await regionProfileManager._createQUserClient('eu-central-1', 'https://amazon.com/')
 
             assert.deepStrictEqual(client.config.region, 'eu-central-1')
             assert.deepStrictEqual(client.endpoint.href, 'https://amazon.com/')

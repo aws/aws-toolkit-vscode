@@ -192,12 +192,17 @@ export class AuthUtil implements IAuthProvider {
     }
 
     logout() {
+        // session will be nullified the next time refreshState() is called
         return this.session?.logout()
     }
 
     async getToken() {
         if (this.isSsoSession()) {
-            return (await (this.session as SsoLogin).getCredential()).credential
+            const token = (await this.session!.getCredential()).credential
+            if (typeof token !== 'string') {
+                throw new ToolkitError('Cannot get token with IAM session')
+            }
+            return token
         } else {
             throw new ToolkitError('Cannot get credential without logging in.')
         }
@@ -205,7 +210,11 @@ export class AuthUtil implements IAuthProvider {
 
     async getIamCredential() {
         if (this.session) {
-            return (await (this.session as IamLogin).getCredential()).credential
+            const credential = (await this.session.getCredential()).credential
+            if (typeof credential !== 'object') {
+                throw new ToolkitError('Cannot get token with SSO session')
+            }
+            return credential
         } else {
             throw new ToolkitError('Cannot get credential without logging in.')
         }

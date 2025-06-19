@@ -174,10 +174,6 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
 
     @withTelemetryContext({ name: 'signout', class: className })
     override async signout(): Promise<void> {
-        if (!AuthUtil.instance.isSsoSession()) {
-            throw new ToolkitError(`Cannot signout non-SSO connection`)
-        }
-
         this.storeMetricMetadata({
             authEnabledFeatures: 'codewhisperer',
             isReAuth: true,
