@@ -103,7 +103,6 @@ export class EditDecorationManager {
             } else {
                 // Create individual decorations for each range on this line
                 for (const range of ranges) {
-                    // Ensure end doesn't exceed line length
                     const end = Math.min(range.end, lineLength)
                     if (range.start < end) {
                         const vsRange = new vscode.Range(
