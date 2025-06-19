@@ -225,6 +225,7 @@
     "AWS.command.s3.createFolder": "Create Folder...",
     "AWS.command.s3.uploadFile": "Upload Files...",
     "AWS.command.s3.uploadFileToParent": "Upload to Parent...",
+    "AWS.command.sagemaker.filterSpaces": "Filter Sagemaker Spaces",
     "AWS.command.stepFunctions.createStateMachineFromTemplate": "Create a new Step Functions state machine",
     "AWS.command.stepFunctions.publishStateMachine": "Publish state machine to Step Functions",
     "AWS.command.stepFunctions.openWithWorkflowStudio": "Open with Workflow Studio",

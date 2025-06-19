@@ -4,6 +4,17 @@
  */
 
 import { AppStatus, SpaceStatus } from '@aws-sdk/client-sagemaker'
+import { SagemakerSpaceApp } from '../../shared/clients/sagemaker'
+
+export const DomainKeyDelimiter = '__'
+
+export function getDomainSpaceKey(domainId: string, spaceName: string): string {
+    return `${domainId}${DomainKeyDelimiter}${spaceName}`
+}
+
+export function getDomainUserProfileKey(domainId: string, userProfileName: string): string {
+    return `${domainId}${DomainKeyDelimiter}${userProfileName}`
+}
 
 export function generateSpaceStatus(spaceStatus?: string, appStatus?: string) {
     if (
@@ -40,4 +51,28 @@ export function generateSpaceStatus(spaceStatus?: string, appStatus?: string) {
     }
 
     return 'Unknown'
+}
+
+export interface RemoteAppMetadata {
+    DomainId: string
+    UserProfileName: string
+}
+
+export function getRemoteAppMetadata(): RemoteAppMetadata {
+    return {
+        DomainId: 'd-abcdefg123456',
+        UserProfileName: 'dernewtz-jorus',
+    }
+}
+
+export function getSpaceAppsForUserProfile(spaceApps: SagemakerSpaceApp[], userProfilePrefix: string): string[] {
+    return spaceApps.reduce((result: string[], app: SagemakerSpaceApp) => {
+        if (app.OwnershipSettingsSummary?.OwnerUserProfileName?.startsWith(userProfilePrefix)) {
+            result.push(
+                getDomainUserProfileKey(app.DomainId || '', app.OwnershipSettingsSummary?.OwnerUserProfileName || '')
+            )
+        }
+
+        return result
+    }, [] as string[])
 }

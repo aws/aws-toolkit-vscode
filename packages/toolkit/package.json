@@ -295,6 +295,11 @@
                     "default": "",
                     "description": "A JSON formatted file that specifies template parameter values, a stack policy, and tags. Only parameters are used from this file.",
                     "scope": "machine-overridable"
+                },
+                "aws.sagemaker.studio.spaces.enableIdentityFiltering": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Enable automatic filtration of spaces based on your AWS identity."
                 }
             }
         },
@@ -1240,6 +1245,10 @@
                 {
                     "command": "aws.newThreatComposerFile",
                     "when": "false"
+                },
+                {
+                    "command": "aws.sagemaker.filterSpaceApps",
+                    "when": "false"
                 }
             ],
             "editor/title": [
@@ -1602,6 +1611,11 @@
                     "group": "0@1"
                 },
                 {
+                    "command": "aws.sagemaker.filterSpaceApps",
+                    "when": "view == aws.explorer && viewItem == awsSagemakerParentNode",
+                    "group": "inline@1"
+                },
+                {
                     "command": "aws.toolkit.lambda.createServerlessLandProject",
                     "when": "view == aws.explorer && viewItem == awsLambdaNode || viewItem == awsRegionNode",
                     "group": "1@1"
@@ -1769,6 +1783,11 @@
                 {
                     "command": "aws.iot.attachPolicy",
                     "when": "view == aws.explorer && viewItem =~ /^awsIotCertificateNode.(Things|Policies)/",
+                    "group": "0@1"
+                },
+                {
+                    "command": "aws.sagemaker.filterSpaceApps",
+                    "when": "view == aws.explorer && viewItem == awsSagemakerParentNode",
                     "group": "0@1"
                 },
                 {
@@ -2555,6 +2574,18 @@
                 "icon": "$(remote-explorer)",
                 "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.sagemaker.filterSpaceApps",
+                "title": "%AWS.command.sagemaker.filterSpaces%",
+                "category": "%AWS.title%",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
+                "icon": "$(extensions-filter)",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -4645,25 +4676,39 @@
                     "fontCharacter": "\\f1dc"
                 }
             },
-            "aws-schemas-registry": {
+            "aws-sagemaker-code-editor": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1dd"
                 }
             },
-            "aws-schemas-schema": {
+            "aws-sagemaker-jupyter-lab": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1de"
                 }
             },
-            "aws-stepfunctions-preview": {
+            "aws-schemas-registry": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1df"
+                }
+            },
+            "aws-schemas-schema": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\f1e0"
+                }
+            },
+            "aws-stepfunctions-preview": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\f1e1"
                 }
             }
         },
