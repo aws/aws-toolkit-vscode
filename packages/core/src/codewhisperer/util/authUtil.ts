@@ -192,9 +192,7 @@ export class AuthUtil implements IAuthProvider {
     }
 
     logout() {
-        const response = this.session?.logout()
-        this.session = undefined
-        return response
+        return this.session?.logout()
     }
 
     async getToken() {
@@ -361,6 +359,8 @@ export class AuthUtil implements IAuthProvider {
                 await this.regionProfileManager.invalidateProfile(this.regionProfileManager.activeRegionProfile?.arn)
                 await this.regionProfileManager.clearCache()
             }
+            // Session should only be nullified after all methods dependent on session are evaluated
+            this.session = undefined
         }
         if (state === 'connected') {
             const params = this.session ? (await this.session.getCredential()).updateCredentialsParams : undefined

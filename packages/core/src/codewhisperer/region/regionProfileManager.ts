@@ -11,7 +11,7 @@ import { showConfirmationMessage } from '../../shared/utilities/messages'
 import globals from '../../shared/extensionGlobals'
 import { once } from '../../shared/utilities/functionUtils'
 import CodeWhispererUserClient from '../client/codewhispereruserclient'
-import { Credentials, HttpRequest, Service } from 'aws-sdk'
+import { Credentials, Service } from 'aws-sdk'
 import { ServiceOptions } from '../../shared/awsClientBuilder'
 import userApiConfig = require('../client/user-service-2.json')
 import apiConfig = require('../client/service-2.json')
@@ -426,34 +426,35 @@ export class RegionProfileManager {
 
     // Visible for testing only, do not use this directly, please use createQClient(profile)
     async _createQClient(region: string, endpoint: string): Promise<CodeWhispererUserClient> {
-        let authConfig: ServiceOptions = {}
+        let serviceOption: ServiceOptions = {}
         if (this.authProvider.isSsoSession()) {
             const token = await this.authProvider.getToken()
-            authConfig = {
+            serviceOption = {
+                apiConfig: userApiConfig,
+                region: region,
+                endpoint: endpoint,
+                credentials: new Credentials({ accessKeyId: 'xxx', secretAccessKey: 'xxx' }),
                 onRequestSetup: [
-                    (req: any) => {
-                        req.on('build', ({ httpRequest }: { httpRequest: HttpRequest }) => {
+                    (req) => {
+                        req.on('build', ({ httpRequest }) => {
                             httpRequest.headers['Authorization'] = `Bearer ${token}`
                         })
                     },
                 ],
-            }
+            } as ServiceOptions
         } else if (this.authProvider.isIamSession()) {
             const credential = await this.authProvider.getIamCredential()
-            authConfig = {
+            serviceOption = {
+                apiConfig: apiConfig,
+                region: region,
+                endpoint: endpoint,
                 credentials: new Credentials({
                     accessKeyId: credential.accessKeyId,
                     secretAccessKey: credential.secretAccessKey,
                     sessionToken: credential.sessionToken,
                 }),
-            }
+            } as ServiceOptions
         }
-        const serviceOption: ServiceOptions = {
-            apiConfig: this.authProvider.isSsoSession() ? userApiConfig : apiConfig,
-            region: region,
-            endpoint: endpoint,
-            ...authConfig,
-        } as ServiceOptions
 
         const c = (await globals.sdkClientBuilder.createAwsService(
             Service,
