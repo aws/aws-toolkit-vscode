@@ -107,7 +107,7 @@ export class SvgGenerationService {
 
         // Calculate height based on diff line count and line height
         const totalLines = newLines.length + 1 // +1 for header
-        const height = totalLines * currentTheme.lingHeight + 25 // +10 for padding TODO, change to 10
+        const height = totalLines * currentTheme.lingHeight + 25 // +25 for padding
 
         return { width, height }
     }

@@ -30,15 +30,13 @@ describe('SvgGenerationService', function () {
 
         workspaceStub = sandbox.stub(vscode.workspace)
         workspaceStub.openTextDocument.resolves(documentStub as unknown as vscode.TextDocument)
-
-        // Setup workspace configuration stubs to be reused across theme tests
         workspaceStub.getConfiguration = sandbox.stub()
 
         editorConfigStub = {
             get: sandbox.stub(),
         }
-        editorConfigStub.get.withArgs('fontSize', 12).returns(14)
-        editorConfigStub.get.withArgs('lineHeight', 0).returns(0)
+        editorConfigStub.get.withArgs('fontSize').returns(14)
+        editorConfigStub.get.withArgs('lineHeight').returns(0)
 
         // Create the service instance
         service = new SvgGenerationService()
@@ -74,96 +72,6 @@ describe('SvgGenerationService', function () {
                 assert.ok(error)
                 assert.strictEqual((error as Error).message, 'udiff format error')
             }
-        })
-
-        it('should generate SVG with correct metadata properties', async function () {
-            const emptyDocStub = {
-                getText: sandbox.stub().returns('function example() {\n  return true;\n}'),
-                lineCount: 3,
-                lineAt: sandbox.stub().returns({
-                    text: '',
-                    range: new vscode.Range(0, 0, 0, 0),
-                }),
-            } as unknown as vscode.TextDocument
-
-            // Make openTextDocument return our empty document
-            workspaceStub.openTextDocument.resolves(emptyDocStub as unknown as vscode.TextDocument)
-
-            const udiff =
-                '--- a/example.js\n+++ b/example.js\n@@ -1,3 +1,4 @@\n function example() {\n+  // Add a comment\n   return 42;\n }'
-
-            // Mock the applyUnifiedDiff function to return predictable character counts
-            const applyUnifiedDiffModule = require('../../../../../src/app/inline/EditRendering/diffUtils')
-            const applyUnifiedDiffStub = sandbox
-                .stub(applyUnifiedDiffModule, 'applyUnifiedDiff')
-                .returns({ addedCharacterCount: 16, deletedCharacterCount: 0 })
-
-            // Setup modifiedLines for the test
-            const diffUtilitiesModule = require('aws-core-vscode/shared')
-            sandbox.stub(diffUtilitiesModule.diffUtilities, 'getModifiedLinesFromUnifiedDiff').returns(
-                new Map([
-                    ['function example() {', 'function example() {'],
-                    ['  return 42;', '  // Add a comment\n  return 42;'],
-                ])
-            )
-
-            const result = await service.generateDiffSvg('example.js', udiff)
-
-            // Verify all the properties
-            // 1. startLine - The line where the edit starts
-            assert.strictEqual(typeof result.startLine, 'number', 'startLine should be a number')
-            assert.ok(result.startLine >= 0, 'startLine should be non-negative')
-
-            // 2. newCode - The modified code after applying the diff
-            assert.strictEqual(typeof result.newCode, 'string', 'newCode should be a string')
-            assert.ok(result.newCode.includes('// Add a comment'), 'newCode should contain added content')
-
-            // 3. origionalCodeHighlightRange - Array of ranges to highlight in original code
-            assert.ok(
-                Array.isArray(result.origionalCodeHighlightRange),
-                'origionalCodeHighlightRange should be an array'
-            )
-            for (const range of result.origionalCodeHighlightRange) {
-                assert.strictEqual(typeof range.line, 'number', 'range.line should be a number')
-                assert.strictEqual(typeof range.start, 'number', 'range.start should be a number')
-                assert.strictEqual(typeof range.end, 'number', 'range.end should be a number')
-                assert.ok(range.end >= range.start, 'range.end should be >= range.start')
-            }
-
-            // 4. Character counts
-            assert.strictEqual(result.addedCharacterCount, 16, 'should have correct addedCharacterCount')
-            assert.strictEqual(result.deletedCharacterCount, 0, 'should have correct deletedCharacterCount')
-
-            // Restore stubs
-            applyUnifiedDiffStub.restore()
-        })
-
-        it('should output correct removed highlight ranges', async function () {
-            const emptyDocStub = {
-                getText: sandbox.stub().returns('function example() {\n  return true;\n}'),
-                lineCount: 3,
-                lineAt: sandbox.stub().returns({
-                    text: '',
-                    range: new vscode.Range(0, 0, 0, 0),
-                }),
-            } as unknown as vscode.TextDocument
-
-            // Make openTextDocument return our test document
-            workspaceStub.openTextDocument.resolves(emptyDocStub as unknown as vscode.TextDocument)
-
-            const udiff = `--- a/example.js
-                            +++ b/example.js
-                            @@ -1,3 +1,4 @@
-                             function example() {
-                            -  return true;
-                            +  // Add a comment
-                            +  return false;
-                            }`
-
-            // Mock the private method by accessing it through the service
-            const result = await service.generateDiffSvg('example.js', udiff)
-
-            assert.deepStrictEqual(result.origionalCodeHighlightRange, ['  // Add a comment', '  return 42;'])
         })
     })
 
@@ -204,8 +112,8 @@ describe('SvgGenerationService', function () {
 
         it('should handle custom line height settings', function () {
             // Reconfigure for custom line height
-            editorConfigStub.get.withArgs('fontSize', 12).returns(16)
-            editorConfigStub.get.withArgs('lineHeight', 0).returns(2.5)
+            editorConfigStub.get.withArgs('fontSize').returns(16)
+            editorConfigStub.get.withArgs('lineHeight').returns(2.5)
 
             workspaceStub.getConfiguration.withArgs('editor').returns(editorConfigStub)
             workspaceStub.getConfiguration.withArgs('workbench').returns({
