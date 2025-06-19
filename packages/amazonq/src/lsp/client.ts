@@ -160,7 +160,7 @@ export async function startLanguageServer(
                     },
                     textDocument: {
                         inlineCompletionWithReferences: {
-                            inlineEditSupport: true,
+                            inlineEditSupport: Experiments.instance.isExperimentEnabled('amazonqLSPNEP'),
                         },
                     },
                 },
