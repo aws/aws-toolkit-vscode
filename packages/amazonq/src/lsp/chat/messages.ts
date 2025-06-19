@@ -48,6 +48,7 @@ import {
     LINK_CLICK_NOTIFICATION_METHOD,
     LinkClickParams,
     INFO_LINK_CLICK_NOTIFICATION_METHOD,
+    READY_NOTIFICATION_METHOD,
     buttonClickRequestType,
     ButtonClickResult,
     CancellationTokenSource,
@@ -115,19 +116,12 @@ export function registerLanguageServerEventListener(languageClient: LanguageClie
         chatOptions.quickActions.quickActionsCommandGroups[0].groupName = 'Quick Actions'
     }
 
-    provider.onDidResolveWebview(() => {
-        void provider.webview?.postMessage({
-            command: CHAT_OPTIONS,
-            params: chatOptions,
-        })
-    })
-
     // This passes through metric data from LSP events to Toolkit telemetry with all fields from the LSP server
     languageClient.onTelemetry((e) => {
         const telemetryName: string = e.name
 
         if (telemetryName in telemetry) {
-            languageClient.info(`[Telemetry] Emitting ${telemetryName} telemetry: ${JSON.stringify(e.data)}`)
+            languageClient.info(`[VSCode Telemetry] Emitting ${telemetryName} telemetry: ${JSON.stringify(e.data)}`)
             telemetry[telemetryName as keyof TelemetryBase].emit(e.data)
         }
     })
@@ -139,6 +133,10 @@ export function registerMessageListeners(
     encryptionKey: Buffer
 ) {
     const chatStreamTokens = new Map<string, CancellationTokenSource>() // tab id -> token
+
+    // Keep track of pending chat options to send when webview UI is ready
+    const pendingChatOptions = languageClient.initializeResult?.awsServerCapabilities?.chatOptions
+
     provider.webview?.onDidReceiveMessage(async (message) => {
         languageClient.info(`[VSCode Client]  Received ${JSON.stringify(message)} from chat`)
 
@@ -152,7 +150,32 @@ export function registerMessageListeners(
         }
 
         const webview = provider.webview
+
         switch (message.command) {
+            // Handle "aws/chat/ready" event
+            case READY_NOTIFICATION_METHOD:
+                languageClient.info(`[VSCode Client] "aws/chat/ready" event is received, sending chat options`)
+                if (webview && pendingChatOptions) {
+                    try {
+                        await webview.postMessage({
+                            command: CHAT_OPTIONS,
+                            params: pendingChatOptions,
+                        })
+
+                        // Display a more readable representation of quick actions
+                        const quickActionCommands =
+                            pendingChatOptions?.quickActions?.quickActionsCommandGroups?.[0]?.commands || []
+                        const quickActionsDisplay = quickActionCommands.map((cmd: any) => cmd.command).join(', ')
+                        languageClient.info(
+                            `[VSCode Client] Chat options flags: mcpServers=${pendingChatOptions?.mcpServers}, history=${pendingChatOptions?.history}, export=${pendingChatOptions?.export}, quickActions=[${quickActionsDisplay}]`
+                        )
+                    } catch (err) {
+                        languageClient.error(
+                            `[VSCode Client] Failed to send CHAT_OPTIONS after "aws/chat/ready" event: ${(err as Error).message}`
+                        )
+                    }
+                }
+                break
             case COPY_TO_CLIPBOARD:
                 languageClient.info('[VSCode Client] Copy to clipboard event received')
                 try {
