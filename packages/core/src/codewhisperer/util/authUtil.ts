@@ -355,7 +355,7 @@ export class AuthUtil implements IAuthProvider {
     private async refreshState(state = this.getAuthState()) {
         if (state === 'expired' || state === 'notConnected') {
             this.lspAuth.deleteBearerToken()
-            if (this.isIdcConnection()) {
+            if (this.isIdcConnection() || this.isIamSession()) {
                 await this.regionProfileManager.invalidateProfile(this.regionProfileManager.activeRegionProfile?.arn)
                 await this.regionProfileManager.clearCache()
             }
@@ -370,7 +370,7 @@ export class AuthUtil implements IAuthProvider {
                 await this.lspAuth.updateIamCredential(params)
             }
 
-            if (this.isIdcConnection()) {
+            if (this.isIdcConnection() || this.isIamSession()) {
                 await this.regionProfileManager.restoreProfileSelection()
             }
         }

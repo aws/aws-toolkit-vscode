@@ -145,7 +145,7 @@ export class RegionProfileManager {
     async listRegionProfile(): Promise<RegionProfile[]> {
         this._profiles = []
 
-        if (!this.authProvider.isConnected() || !this.authProvider.isSsoSession()) {
+        if (!this.authProvider.isConnected()) {
             return []
         }
         const availableProfiles: RegionProfile[] = []
@@ -405,7 +405,7 @@ export class RegionProfileManager {
         if (this.authProvider.isBuilderIdConnection()) {
             return false
         }
-        return this.authProvider.isIdcConnection() && this.activeRegionProfile === undefined
+        return (this.authProvider.isIdcConnection() || this.authProvider.isIamSession()) && this.activeRegionProfile === undefined
     }
 
     async clearCache() {
@@ -414,8 +414,8 @@ export class RegionProfileManager {
 
     // TODO: Should maintain sdk client in a better way
     async createQClient(profile: RegionProfile): Promise<CodeWhispererUserClient> {
-        if (!this.authProvider.isConnected() || !this.authProvider.isSsoSession()) {
-            throw new Error('No valid SSO connection')
+        if (!this.authProvider.isConnected()) {
+            throw new Error('No valid connection')
         }
         const endpoint = endpoints.get(profile.region)
         if (!endpoint) {

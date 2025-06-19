@@ -203,13 +203,10 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
         secretKey: string
     ): Promise<AuthError | undefined> {
         getLogger().debug(`called startIamCredentialSetup()`)
-        // Defining separate auth function to emit telemetry before returning from setup
+        // Defining separate auth function to emit telemetry before returning from this method
         const runAuth = async (): Promise<AuthError | undefined> => {
             try {
                 await AuthUtil.instance.login(accessKey, secretKey, 'iam')
-                // Add auth telemetry
-                this.storeMetricMetadata(await AuthUtil.instance.getTelemetryMetadata())
-                void vscode.window.showInformationMessage('AmazonQ: Successfully connected to AWS IAM Credentials')
             } catch (e) {
                 getLogger().error('Failed submitting credentials %O', e)
                 return { id: this.id, text: e as string }
@@ -217,11 +214,13 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
             // Enable code suggestions
             vsCodeState.isFreeTierLimitReached = false
             await Commands.tryExecute('aws.amazonq.enableCodeSuggestions')
+
+            this.storeMetricMetadata(await AuthUtil.instance.getTelemetryMetadata())
+
+            void vscode.window.showInformationMessage('AmazonQ: Successfully connected to AWS IAM Credentials')
         }
 
         const result = await runAuth()
-
-        // Emit telemetry
         this.storeMetricMetadata({
             credentialSourceId: 'sharedCredentials',
             authEnabledFeatures: 'codewhisperer',
