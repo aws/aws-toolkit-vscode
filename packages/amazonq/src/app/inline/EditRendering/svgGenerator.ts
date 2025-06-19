@@ -44,7 +44,7 @@ export class SvgGenerationService {
         // TODO remove
         // eslint-disable-next-line aws-toolkits/no-json-stringify-in-log
         logger.info(`Line mapping: ${JSON.stringify(modifiedLines)}`)
-
+      
         const { createSVGWindow } = await import('svgdom')
 
         const svgjs = await import('@svgdotjs/svg.js')
