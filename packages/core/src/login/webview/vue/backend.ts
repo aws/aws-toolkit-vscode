@@ -19,6 +19,7 @@ import {
     scopesCodeWhispererChat,
     scopesSsoAccountAccess,
     SsoConnection,
+    IamProfile,
     TelemetryMetadata,
 } from '../../../auth/connection'
 import { Auth } from '../../../auth/auth'
@@ -207,6 +208,8 @@ export abstract class CommonAuthWebview extends VueWebview {
 
     abstract listRegionProfiles(): Promise<RegionProfile[] | string>
 
+    abstract listIamCredentialProfiles(): Promise<IamProfile[]>
+
     abstract selectRegionProfile(profile: RegionProfile, source: ProfileSwitchIntent): Promise<void>
 
     /**
@@ -294,6 +297,15 @@ export abstract class CommonAuthWebview extends VueWebview {
         }
 
         return globals.globalState.tryGet('recentSso', Object, { startUrl: '', region: 'us-east-1' })
+    }
+
+    getDefaultIamKeys(): { accessKey: string; secretKey: string } {
+        const devSettings = DevSettings.instance.get('autofillAccessKey', '')
+        if (devSettings) {
+            return { accessKey: devSettings, secretKey: '' }
+        }
+
+        return globals.globalState.tryGet('recentIamKeys', Object, { accessKey: '', secretKey: '' })
     }
 
     cancelAuthFlow() {

@@ -330,6 +330,10 @@ interface ImportedLogin {
     type: number
     startUrl: string
     region: string
+    // Add IAM credential fields
+    profileName?: string
+    accessKey?: string
+    secretKey?: string // Note: storing secrets has security implications
 }
 
 export default defineComponent({
@@ -349,6 +353,7 @@ export default defineComponent({
     data() {
         return {
             existingStartUrls: [] as string[],
+            existingIamAccessKeys: [] as string[],
             importedLogins: [] as ImportedLogin[],
             selectedLoginOption: LoginOption.NONE,
             stage: 'START' as Stage,
@@ -366,6 +371,8 @@ export default defineComponent({
     },
     async created() {
         const defaultSso = await this.getDefaultSso()
+        const defaultIamAccessKey = await this.getDefaultIamAccessKey()
+        this.accessKey = defaultIamAccessKey.accessKey
         this.startUrl = defaultSso.startUrl
         this.selectedRegion = defaultSso.region
         await this.emitUpdate('created')
@@ -437,17 +444,44 @@ export default defineComponent({
                     const selectedConnection =
                         this.importedLogins[this.selectedLoginOption - LoginOption.IMPORTED_LOGINS]
 
-                    // Imported connections cannot be Builder IDs, they are filtered out in the client.
-                    const error = await client.startEnterpriseSetup(
-                        selectedConnection.startUrl,
-                        selectedConnection.region,
-                        this.app
-                    )
-                    if (error) {
-                        this.stage = 'START'
-                        void client.errorNotification(error)
-                    } else {
-                        this.stage = 'CONNECTED'
+                    // // Imported connections cannot be Builder IDs, they are filtered out in the client.
+                    // const error = await client.startEnterpriseSetup(
+                    //     selectedConnection.startUrl,
+                    //     selectedConnection.region,
+                    //     this.app
+                    // )
+                    // if (error) {
+                    //     this.stage = 'START'
+                    //     void client.errorNotification(error)
+                    // } else {
+                    //     this.stage = 'CONNECTED'
+                    // }
+                    // Handle both SSO and IAM imported connections
+                    if (selectedConnection.type === LoginOption.ENTERPRISE_SSO) {
+                        const error = await client.startEnterpriseSetup(
+                            selectedConnection.startUrl,
+                            selectedConnection.region,
+                            this.app
+                        )
+                        if (error) {
+                            this.stage = 'START'
+                            void client.errorNotification(error)
+                        } else {
+                            this.stage = 'CONNECTED'
+                        }
+                    } else if (selectedConnection.type === LoginOption.IAM_CREDENTIAL) {
+                        // Use stored IAM credentials
+                        const error = await client.startIamCredentialSetup(
+                            selectedConnection.profileName || '',
+                            selectedConnection.accessKey || '',
+                            selectedConnection.secretKey || ''
+                        )
+                        if (error) {
+                            this.stage = 'START'
+                            void client.errorNotification(error)
+                        } else {
+                            this.stage = 'CONNECTED'
+                        }
                     }
                 } else if (this.selectedLoginOption === LoginOption.IAM_CREDENTIAL) {
                     this.stage = 'AWS_PROFILE'
@@ -580,6 +614,9 @@ export default defineComponent({
         },
         async getDefaultSso() {
             return await client.getDefaultSsoProfile()
+        },
+        async getDefaultIamAccessKey() {
+            return await client.getDefaultIamKeys()
         },
         handleHelpLinkClick() {
             void client.emitUiClick('auth_helpLink')
