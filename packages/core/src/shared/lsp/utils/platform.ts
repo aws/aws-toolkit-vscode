@@ -120,7 +120,7 @@ export async function getVSCodeSettings(): Promise<{ proxyUrl?: string; certific
             }
 
             const certPath = join(tempDir, 'vscode-ca-certs.pem')
-            const certContent = allCerts.join('')
+            const certContent = allCerts.join('\n')
 
             nodefs.writeFileSync(certPath, certContent)
             result.certificatePath = certPath
