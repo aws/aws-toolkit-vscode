@@ -41,7 +41,7 @@ import {
     iamCredentialsDeleteNotificationType,
     bearerCredentialsDeleteNotificationType,
     bearerCredentialsUpdateRequestType,
-    CredentialChangedKind,
+    SsoTokenChangedKind,
     RequestType,
     ResponseMessage,
     NotificationType,
@@ -473,10 +473,10 @@ export class SsoLogin extends BaseLogin {
 
     private ssoTokenChangedHandler(params: SsoTokenChangedParams) {
         if (params.ssoTokenId === this.ssoTokenId) {
-            if (params.kind === CredentialChangedKind.Expired) {
+            if (params.kind === SsoTokenChangedKind.Expired) {
                 this.updateConnectionState('expired')
                 return
-            } else if (params.kind === CredentialChangedKind.Refreshed) {
+            } else if (params.kind === SsoTokenChangedKind.Refreshed) {
                 this.eventEmitter.fire({ id: this.profileName, state: 'refreshed' })
             }
         }
@@ -603,10 +603,10 @@ export class IamLogin extends BaseLogin {
 
     // private stsCredentialChangedHandler(params: StsCredentialChangedParams) {
     //     if (params.stsCredentialId === this.iamCredentialId) {
-    //         if (params.kind === CredentialChangedKind.Expired) {
+    //         if (params.kind === StsCredentialChangedKind.Expired) {
     //             this.updateConnectionState('expired')
     //             return
-    //         } else if (params.kind === CredentialChangedKind.Refreshed) {
+    //         } else if (params.kind === StsCredentialChangedKind.Refreshed) {
     //             this.eventEmitter.fire({ id: this.profileName, state: 'refreshed' })
     //         }
     //     }

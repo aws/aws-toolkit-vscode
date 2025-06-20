@@ -17,7 +17,7 @@ import {
     bearerCredentialsUpdateRequestType,
     bearerCredentialsDeleteNotificationType,
     ssoTokenChangedRequestType,
-    CredentialChangedKind,
+    SsoTokenChangedKind,
     invalidateSsoTokenRequestType,
     AwsErrorCodes,
 } from '@aws/language-server-runtimes/protocol'
@@ -180,7 +180,7 @@ describe('LanguageClientAuth', () => {
 
             // Simulate a token changed notification
             const tokenChangedParams: SsoTokenChangedParams = {
-                kind: CredentialChangedKind.Refreshed,
+                kind: SsoTokenChangedKind.Refreshed,
                 ssoTokenId: tokenId,
             }
             const registeredHandler = client.onNotification.firstCall.args[1]
