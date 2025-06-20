@@ -169,6 +169,7 @@ export function registerMessageListeners(
                         languageClient.info(
                             `[VSCode Client] Chat options flags: mcpServers=${pendingChatOptions?.mcpServers}, history=${pendingChatOptions?.history}, export=${pendingChatOptions?.export}, quickActions=[${quickActionsDisplay}]`
                         )
+                        languageClient.sendNotification(message.command, message.params)
                     } catch (err) {
                         languageClient.error(
                             `[VSCode Client] Failed to send CHAT_OPTIONS after "aws/chat/ready" event: ${(err as Error).message}`
