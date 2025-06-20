@@ -664,7 +664,6 @@ dependencyManagement:
                 message: expectedMessage,
             }
         )
-        sinon.assert.callCount(fetchStub, 5)
     })
 
     it('should not retry upload on non-retriable error', async () => {

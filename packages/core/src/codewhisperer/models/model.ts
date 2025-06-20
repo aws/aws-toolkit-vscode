@@ -678,7 +678,6 @@ export enum BuildSystem {
 export class ZipManifest {
     sourcesRoot: string = 'sources/'
     dependenciesRoot: string = 'dependencies/'
-    buildLogs: string = 'build-logs.txt'
     version: string = '1.0'
     hilCapabilities: string[] = ['HIL_1pDependency_VersionUpgrade']
     transformCapabilities: string[] = ['EXPLAINABILITY_V1', 'SELECTIVE_TRANSFORMATION_V2', 'CLIENT_SIDE_BUILD', 'IDE']
