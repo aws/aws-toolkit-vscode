@@ -286,7 +286,10 @@ export class RegionProfileManager {
             return
         }
 
+        await this.switchRegionProfile(previousSelected, 'reload')
+
         // cross-validation
+        // jitter of 0 ~ 5 second
         const jitterInSec = Math.floor(Math.random() * 6)
         const jitterInMs = jitterInSec * 1000
         setTimeout(async () => {
@@ -315,8 +318,6 @@ export class RegionProfileManager {
                         result: 'Failed',
                     })
                 })
-
-            await this.switchRegionProfile(previousSelected, 'reload')
         }, jitterInMs)
     }
 
