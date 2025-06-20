@@ -872,7 +872,13 @@ export async function runClientSideBuild(projectCopyDir: string, clientInstructi
         transformByQState.setJobFailureErrorNotification(
             `${CodeWhispererConstants.failedToCompleteJobGenericNotification} ${err.message}`
         )
-        throw err
+        // in case server-side execution times out, still call resumeTransformationJob
+        if (err.message.includes('find a step in desired state:AWAITING_CLIENT_ACTION')) {
+            getLogger().info('CodeTransformation: resuming job after server-side execution timeout')
+            await resumeTransformationJob(transformByQState.getJobId(), 'COMPLETED')
+        } else {
+            throw err
+        }
     } finally {
         await fs.delete(projectCopyDir, { recursive: true })
         await fs.delete(uploadZipDir, { recursive: true })
