@@ -11,11 +11,9 @@ import { showConfirmationMessage } from '../../shared/utilities/messages'
 import globals from '../../shared/extensionGlobals'
 import { once } from '../../shared/utilities/functionUtils'
 import CodeWhispererUserClient from '../client/codewhispereruserclient'
-import CodeWhispererClient from '../client/codewhispererclient'
 import { Credentials, Service } from 'aws-sdk'
 import { ServiceOptions } from '../../shared/awsClientBuilder'
 import userApiConfig = require('../client/user-service-2.json')
-import apiConfig = require('../client/service-2.json')
 import { createConstantMap } from '../../shared/utilities/tsUtils'
 import { getLogger } from '../../shared/logger/logger'
 import { pageableToCollection } from '../../shared/utilities/collectionUtils'
@@ -146,70 +144,37 @@ export class RegionProfileManager {
     async listRegionProfile(): Promise<RegionProfile[]> {
         this._profiles = []
 
-        if (!this.authProvider.isConnected()) {
+        if (!this.authProvider.isConnected() || !this.authProvider.isSsoSession()) {
             return []
         }
         const availableProfiles: RegionProfile[] = []
         const failedRegions: string[] = []
 
         for (const [region, endpoint] of endpoints.entries()) {
+            const client = await this._createQClient(region, endpoint)
+            const requester = async (request: CodeWhispererUserClient.ListAvailableProfilesRequest) =>
+                client.listAvailableProfiles(request).promise()
+            const request: CodeWhispererUserClient.ListAvailableProfilesRequest = {}
             try {
-                // Get region profiles (Q developer profiles) from Q client and authenticate with SSO token
-                if (this.authProvider.isIdcConnection()) {
-                    const client = await this._createQUserClient(region, endpoint)
-                    const requester = async (request: CodeWhispererUserClient.ListAvailableProfilesRequest) => {
-                        return client.listAvailableProfiles(request).promise()
+                const profiles = await pageableToCollection(requester, request, 'nextToken', 'profiles')
+                    .flatten()
+                    .promise()
+                const mappedPfs = profiles.map((it) => {
+                    let accntId = ''
+                    try {
+                        accntId = parse(it.arn).accountId
+                    } catch (e) {}
+
+                    return {
+                        name: it.profileName,
+                        region: region,
+                        arn: it.arn,
+                        description: accntId,
                     }
-                    const request: CodeWhispererUserClient.ListAvailableProfilesRequest = {}
-                    const profiles = await pageableToCollection(requester, request, 'nextToken', 'profiles')
-                        .flatten()
-                        .promise()
-                    const mappedPfs = profiles.map((it) => {
-                        let accntId = ''
-                        try {
-                            accntId = parse(it.arn).accountId
-                        } catch (e) {}
+                })
 
-                        return {
-                            name: it.profileName,
-                            region: region,
-                            arn: it.arn,
-                            description: accntId,
-                        }
-                    })
-
-                    availableProfiles.push(...mappedPfs)
-                    RegionProfileManager.logger.debug(`Found ${mappedPfs.length} profiles in region ${region}`)
-                }
-                // Get region profiles (Q developer profiles) from Q client and authenticate with IAM credentials
-                else if (this.authProvider.isIamSession()) {
-                    const client = await this._createQServiceClient(region, endpoint)
-                    const requester = async (request: CodeWhispererClient.ListProfilesRequest) => {
-                        return client.listProfiles(request).promise()
-                    }
-                    const request: CodeWhispererClient.ListProfilesRequest = {}
-                    const profiles = await pageableToCollection(requester, request, 'nextToken', 'profiles')
-                        .flatten()
-                        .promise()
-                    const mappedPfs = profiles.map((it) => {
-                        let accntId = ''
-                        try {
-                            accntId = parse(it.arn).accountId
-                        } catch (e) {}
-
-                        return {
-                            name: it.profileName,
-                            region: region,
-                            arn: it.arn,
-                            description: accntId,
-                        }
-                    })
-
-                    availableProfiles.push(...mappedPfs)
-                    RegionProfileManager.logger.debug(`Found ${mappedPfs.length} profiles in region ${region}`)
-                } else {
-                    throw new ToolkitError('Failed to list profiles when signed out of identity center and IAM credentials')
-                }
+                availableProfiles.push(...mappedPfs)
+                RegionProfileManager.logger.debug(`Found ${mappedPfs.length} profiles in region ${region}`)
             } catch (e) {
                 const logMsg = isAwsError(e) ? `requestId=${e.requestId}; message=${e.message}` : (e as Error).message
                 RegionProfileManager.logger.error(`Failed to list profiles for region ${region}: ${logMsg}`)
@@ -235,7 +200,7 @@ export class RegionProfileManager {
     }
 
     async switchRegionProfile(regionProfile: RegionProfile | undefined, source: ProfileSwitchIntent) {
-        if (!this.authProvider.isConnected()) {
+        if (!this.authProvider.isConnected() || !this.authProvider.isIdcConnection()) {
             return
         }
 
@@ -439,7 +404,7 @@ export class RegionProfileManager {
         if (this.authProvider.isBuilderIdConnection()) {
             return false
         }
-        return (this.authProvider.isIdcConnection() || this.authProvider.isIamSession()) && this.activeRegionProfile === undefined
+        return this.authProvider.isIdcConnection() && this.activeRegionProfile === undefined
     }
 
     async clearCache() {
@@ -447,32 +412,19 @@ export class RegionProfileManager {
     }
 
     // TODO: Should maintain sdk client in a better way
-    // Create a Q user client compatible with SSO tokens
-    async createQUserClient(profile: RegionProfile): Promise<CodeWhispererUserClient> {
-        if (!this.authProvider.isConnected()) {
-            throw new Error('No valid connection')
+    async createQClient(profile: RegionProfile): Promise<CodeWhispererUserClient> {
+        if (!this.authProvider.isConnected() || !this.authProvider.isSsoSession()) {
+            throw new Error('No valid SSO connection')
         }
         const endpoint = endpoints.get(profile.region)
         if (!endpoint) {
             throw new Error(`trying to initiatize Q client with unrecognizable region ${profile.region}`)
         }
-        return this._createQUserClient(profile.region, endpoint)
+        return this._createQClient(profile.region, endpoint)
     }
 
-    // Create a Q service client compatible with IAM credentials
-    async createQServiceClient(profile: RegionProfile): Promise<CodeWhispererClient> {
-        if (!this.authProvider.isConnected()) {
-            throw new Error('No valid connection')
-        }
-        const endpoint = endpoints.get(profile.region)
-        if (!endpoint) {
-            throw new Error(`trying to initiatize Q client with unrecognizable region ${profile.region}`)
-        }
-        return this._createQServiceClient(profile.region, endpoint)
-    }
-
-    // Visible for testing only, do not use this directly, please use createQUserClient(profile)
-    async _createQUserClient(region: string, endpoint: string): Promise<CodeWhispererUserClient> {
+    // Visible for testing only, do not use this directly, please use createQClient(profile)
+    async _createQClient(region: string, endpoint: string): Promise<CodeWhispererUserClient> {
         const token = await this.authProvider.getToken()
         const serviceOption: ServiceOptions = {
             apiConfig: userApiConfig,
@@ -487,32 +439,13 @@ export class RegionProfileManager {
                 },
             ],
         } as ServiceOptions
-        
-        return (await globals.sdkClientBuilder.createAwsService(
+
+        const c = (await globals.sdkClientBuilder.createAwsService(
             Service,
             serviceOption,
             undefined
         )) as CodeWhispererUserClient
-    }
 
-    // Visible for testing only, do not use this directly, please use createQServiceClient(profile)
-    async _createQServiceClient(region: string, endpoint: string): Promise<CodeWhispererClient> {
-        const credential = await this.authProvider.getIamCredential()
-        const serviceOption: ServiceOptions = {
-            apiConfig: apiConfig,
-            region: region,
-            endpoint: endpoint,
-            credentials: new Credentials({
-                accessKeyId: credential.accessKeyId,
-                secretAccessKey: credential.secretAccessKey,
-                sessionToken: credential.sessionToken,
-            }),
-        } as ServiceOptions
-
-        return (await globals.sdkClientBuilder.createAwsService(
-            Service,
-            serviceOption,
-            undefined
-        )) as CodeWhispererClient
+        return c
     }
 }

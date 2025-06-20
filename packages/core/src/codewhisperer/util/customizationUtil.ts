@@ -49,7 +49,7 @@ export class CustomizationProvider {
     }
 
     static async init(profile: RegionProfile): Promise<CustomizationProvider> {
-        const client = await AuthUtil.instance.regionProfileManager.createQUserClient(profile)
+        const client = await AuthUtil.instance.regionProfileManager.createQClient(profile)
         return new CustomizationProvider(client, profile)
     }
 }

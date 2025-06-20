@@ -43,7 +43,7 @@ describe('customizationProvider', function () {
             regionProfileManager: regionProfileManager,
         }
         sinon.stub(AuthUtil, 'instance').get(() => mockAuthUtil)
-        const createClientStub = sinon.stub(regionProfileManager, 'createQUserClient')
+        const createClientStub = sinon.stub(regionProfileManager, 'createQClient')
         const mockProfile = {
             name: 'foo',
             region: 'us-east-1',
