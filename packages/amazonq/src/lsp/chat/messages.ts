@@ -635,22 +635,23 @@ function handleSecurityFindings(
     decryptedMessage: { additionalMessages?: ChatMessage[] },
     languageClient: LanguageClient
 ): void {
-    if (decryptedMessage.additionalMessages == undefined || decryptedMessage.additionalMessages.length == 0) {
+    if (decryptedMessage.additionalMessages === undefined || decryptedMessage.additionalMessages.length === 0) {
         return
     }
-    for (let i = decryptedMessage.additionalMessages.length; i >= 0; i--) {
+    for (let i = decryptedMessage.additionalMessages.length - 1; i >= 0; i--) {
         const message = decryptedMessage.additionalMessages[i]
         if (message.messageId !== undefined && message.messageId.endsWith(CodeWhispererConstants.findingsSuffix)) {
-            if (message.body != null) {
+            if (message.body !== undefined) {
                 try {
-                    const aggregatedCodeScanIssue: AggregatedCodeScanIssue = JSON.parse(message.body)
-                    for (const issue of aggregatedCodeScanIssue.issues) {
-                        issue.visible = !CodeWhispererSettings.instance.getIgnoredSecurityIssues().includes(issue.title)
-                        if (issue.suggestedFixes == undefined) {
-                            issue.suggestedFixes = []
+                    const aggregatedCodeScanIssues: AggregatedCodeScanIssue[] = JSON.parse(message.body)
+                    for (const aggregatedCodeScanIssue of aggregatedCodeScanIssues) {
+                        for (const issue of aggregatedCodeScanIssue.issues) {
+                            issue.visible = !CodeWhispererSettings.instance
+                                .getIgnoredSecurityIssues()
+                                .includes(issue.title)
                         }
                     }
-                    initSecurityScanRender([aggregatedCodeScanIssue], undefined, CodeAnalysisScope.PROJECT)
+                    initSecurityScanRender(aggregatedCodeScanIssues, undefined, CodeAnalysisScope.PROJECT)
                     SecurityIssueTreeViewProvider.focus()
                 } catch (e) {
                     languageClient.info('Failed to parse findings')
