@@ -29,7 +29,7 @@ export const getStartUrl = async () => {
 
 export async function connectToEnterpriseSso(startUrl: string, region: Region['id']) {
     try {
-        await AuthUtil.instance.login(startUrl, region)
+        await AuthUtil.instance.login(startUrl, region, 'sso')
     } catch (e) {
         throw ToolkitError.chain(e, CodeWhispererConstants.failedToConnectIamIdentityCenter, {
             code: 'FailedToConnect',
