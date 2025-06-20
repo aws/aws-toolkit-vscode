@@ -1,0 +1,10 @@
+{
+	"date": "2025-06-20",
+	"version": "1.78.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Resolve missing chat options in Amazon Q chat interface."
+		}
+	]
+}
