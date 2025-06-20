@@ -285,32 +285,33 @@ export class RegionProfileManager {
         if (!previousSelected) {
             return
         }
+        // Comment these out until we have a better way to deal with throttling issue, currently service can only take 1 tps
         // cross-validation
-        this.getProfiles()
-            .then(async (profiles) => {
-                const r = profiles.find((it) => it.arn === previousSelected.arn)
-                if (!r) {
-                    telemetry.amazonq_profileState.emit({
-                        source: 'reload',
-                        amazonQProfileRegion: 'not-set',
-                        reason: 'profile could not be selected',
-                        result: 'Failed',
-                    })
+        // this.getProfiles()
+        //     .then(async (profiles) => {
+        //         const r = profiles.find((it) => it.arn === previousSelected.arn)
+        //         if (!r) {
+        //             telemetry.amazonq_profileState.emit({
+        //                 source: 'reload',
+        //                 amazonQProfileRegion: 'not-set',
+        //                 reason: 'profile could not be selected',
+        //                 result: 'Failed',
+        //             })
 
-                    await this.invalidateProfile(previousSelected.arn)
-                    RegionProfileManager.logger.warn(
-                        `invlaidating ${previousSelected.name} profile, arn=${previousSelected.arn}`
-                    )
-                }
-            })
-            .catch((e) => {
-                telemetry.amazonq_profileState.emit({
-                    source: 'reload',
-                    amazonQProfileRegion: 'not-set',
-                    reason: (e as Error).message,
-                    result: 'Failed',
-                })
-            })
+        //             await this.invalidateProfile(previousSelected.arn)
+        //             RegionProfileManager.logger.warn(
+        //                 `invlaidating ${previousSelected.name} profile, arn=${previousSelected.arn}`
+        //             )
+        //         }
+        //     })
+        //     .catch((e) => {
+        //         telemetry.amazonq_profileState.emit({
+        //             source: 'reload',
+        //             amazonQProfileRegion: 'not-set',
+        //             reason: (e as Error).message,
+        //             result: 'Failed',
+        //         })
+        //     })
 
         await this.switchRegionProfile(previousSelected, 'reload')
     }
