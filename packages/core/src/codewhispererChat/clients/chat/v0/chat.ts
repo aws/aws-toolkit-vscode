@@ -41,7 +41,6 @@ export class ChatSession {
     }
     async chatIam(chatRequest: SendMessageRequest): Promise<SendMessageCommandOutput> {
         const client = await createQDeveloperStreamingClient()
-
         const response = await client.sendMessage(chatRequest)
         if (!response.sendMessageResponse) {
             throw new ToolkitError(

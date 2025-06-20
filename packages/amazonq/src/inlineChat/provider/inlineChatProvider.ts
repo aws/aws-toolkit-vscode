@@ -143,7 +143,7 @@ export class InlineChatProvider {
     private async generateResponse(
         triggerPayload: TriggerPayload & { projectContextQueryLatencyMs?: number },
         triggerID: string
-    ) {
+    ): Promise<GenerateAssistantResponseCommandOutput | undefined> {
         const triggerEvent = this.triggerEventsStorage.getTriggerEvent(triggerID)
         if (triggerEvent === undefined) {
             return
@@ -182,7 +182,18 @@ export class InlineChatProvider {
         let response: GenerateAssistantResponseCommandOutput | undefined = undefined
         session.createNewTokenSource()
         try {
-            response = await session.chatSso(request)
+            if (AuthUtil.instance.isSsoSession()) {
+                response = await session.chatSso(request)
+            } else {
+                // Call sendMessage because Q Developer Streaming Client does not have generateAssistantResponse
+                const { sendMessageResponse, ...rest } = await session.chatIam(request)
+                // Convert sendMessageCommandOutput to GenerateAssistantResponseCommandOutput
+                response = {
+                    generateAssistantResponseResponse: sendMessageResponse,
+                    conversationId: session.sessionIdentifier,
+                    ...rest
+                }
+            }
             getLogger().info(
                 `response to tab: ${tabID} conversationID: ${session.sessionIdentifier} requestID: ${response.$metadata.requestId} metadata: %O`,
                 response.$metadata

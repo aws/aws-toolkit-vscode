@@ -197,8 +197,8 @@ export class AuthUtil implements IAuthProvider {
     }
 
     async getToken() {
-        if (this.isSsoSession()) {
-            const token = (await this.session!.getCredential()).credential
+        if (this.session) {
+            const token = (await this.session.getCredential()).credential
             if (typeof token !== 'string') {
                 throw new ToolkitError('Cannot get token with IAM session')
             }
