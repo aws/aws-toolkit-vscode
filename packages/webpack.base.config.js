@@ -38,6 +38,7 @@ module.exports = (env = {}, argv = {}) => {
         externals: {
             vscode: 'commonjs vscode',
             vue: 'root Vue',
+            tls: 'commonjs tls',
         },
         resolve: {
             extensions: ['.ts', '.js'],
