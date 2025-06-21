@@ -5,6 +5,11 @@
 import { IAM, StepFunctions } from 'aws-sdk'
 import * as vscode from 'vscode'
 
+export enum ComponentType {
+    WorkflowStudio = 'WorkflowStudio',
+    ExecutionDetails = 'ExecutionDetails',
+}
+
 export enum WorkflowMode {
     Editable = 'toolkit',
     Readonly = 'readonly',
