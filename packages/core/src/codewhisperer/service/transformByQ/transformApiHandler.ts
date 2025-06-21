@@ -378,7 +378,15 @@ export async function zipCode(
                     continue
                 }
                 const relativePath = path.relative(dependenciesFolder.path, file)
-                zip.addLocalFile(file, path.dirname(relativePath))
+                if (relativePath.includes('compilations.json')) {
+                    let fileContents = await nodefs.promises.readFile(file, 'utf-8')
+                    if (os.platform() === 'win32') {
+                        fileContents = fileContents.replace(/\\\\/g, '/')
+                    }
+                    zip.addFile('compilations.json', Buffer.from(fileContents, 'utf-8'))
+                } else {
+                    zip.addLocalFile(file, path.dirname(relativePath))
+                }
                 dependencyFilesSize += (await nodefs.promises.stat(file)).size
             }
             getLogger().info(`CodeTransformation: dependency files size = ${dependencyFilesSize}`)
