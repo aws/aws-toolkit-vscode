@@ -900,3 +900,5 @@ export const predictionTrackerDefaultConfig = {
     maxAgeMs: 30000,
     maxSupplementalContext: 15,
 }
+
+export const findingsSuffix = '_qCodeScanFindings'
