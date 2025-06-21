@@ -5,6 +5,7 @@
 
 import * as vscode from 'vscode'
 import { AggregatedCodeScanIssue, CodeScanIssue, SuggestedFix } from '../models/model'
+import { randomUUID } from '../../shared/crypto'
 export class SecurityIssueProvider {
     static #instance: SecurityIssueProvider
     public static get instance() {
@@ -18,6 +19,15 @@ export class SecurityIssueProvider {
 
     public set issues(issues: AggregatedCodeScanIssue[]) {
         this._issues = issues
+    }
+
+    private _id: string = randomUUID()
+    public get id() {
+        return this._id
+    }
+
+    public set id(id: string) {
+        this._id = id
     }
 
     public handleDocumentChange(event: vscode.TextDocumentChangeEvent) {
