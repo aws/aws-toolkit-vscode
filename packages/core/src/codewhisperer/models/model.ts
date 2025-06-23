@@ -680,7 +680,7 @@ export class ZipManifest {
     dependenciesRoot: string = 'dependencies/'
     version: string = '1.0'
     hilCapabilities: string[] = ['HIL_1pDependency_VersionUpgrade']
-    transformCapabilities: string[] = ['EXPLAINABILITY_V1', 'SELECTIVE_TRANSFORMATION_V2', 'CLIENT_SIDE_BUILD', 'IDE']
+    transformCapabilities: string[] = ['EXPLAINABILITY_V1', 'SELECTIVE_TRANSFORMATION_V2', 'CLIENT_SIDE_BUILD']
     noInteractiveMode: boolean = true
     dependencyUpgradeConfigFile?: string = undefined
     compilationsJsonFile: string = 'compilations.json'
