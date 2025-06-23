@@ -14,7 +14,6 @@ import {
 } from '../../codewhisperer/models/model'
 import { MockDocument } from '../fake/fakeDocument'
 import { getLogger } from '../../shared/logger'
-import { CodeWhispererCodeCoverageTracker } from '../../codewhisperer/tracker/codewhispererCodeCoverageTracker'
 import globals from '../../shared/extensionGlobals'
 import { session } from '../../codewhisperer/util/codeWhispererSession'
 import { DefaultAWSClientBuilder, ServiceOptions } from '../../shared/awsClientBuilder'
@@ -23,7 +22,6 @@ import { HttpResponse, Service } from 'aws-sdk'
 import userApiConfig = require('./../../codewhisperer/client/user-service-2.json')
 import CodeWhispererUserClient = require('../../codewhisperer/client/codewhispereruserclient')
 import { codeWhispererClient } from '../../codewhisperer/client/codewhisperer'
-import { RecommendationHandler } from '../../codewhisperer/service/recommendationHandler'
 import * as model from '../../codewhisperer/models/model'
 import { stub } from '../utilities/stubber'
 import { Dirent } from 'fs' // eslint-disable-line no-restricted-imports
@@ -31,12 +29,10 @@ import { Dirent } from 'fs' // eslint-disable-line no-restricted-imports
 export async function resetCodeWhispererGlobalVariables() {
     vsCodeState.isIntelliSenseActive = false
     vsCodeState.isCodeWhispererEditing = false
-    CodeWhispererCodeCoverageTracker.instances.clear()
     globals.telemetry.logger.clear()
     session.reset()
     await globals.globalState.clear()
     await CodeSuggestionsState.instance.setSuggestionsEnabled(true)
-    await RecommendationHandler.instance.clearInlineCompletionStates()
 }
 
 export function createMockDocument(

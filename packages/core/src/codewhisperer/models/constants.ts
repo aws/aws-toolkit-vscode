@@ -138,7 +138,7 @@ export const runningSecurityScan = 'Reviewing project for code issues...'
 
 export const runningFileScan = 'Reviewing current file for code issues...'
 
-export const noSuggestions = 'No suggestions from Amazon Q'
+export const noInlineSuggestionsMsg = 'No suggestions from Amazon Q'
 
 export const licenseFilter = 'Amazon Q suggestions were filtered due to reference settings'
 
@@ -180,15 +180,9 @@ export const securityScanLearnMoreUri = 'https://docs.aws.amazon.com/amazonq/lat
 export const identityPoolID = 'us-east-1:70717e99-906f-4add-908c-bd9074a2f5b9'
 
 /**
- * the interval of the background thread invocation, which is triggered by the timer
+ * Delay for making requests once the user stops typing. Without a delay, inline suggestions request is triggered every keystroke.
  */
-export const defaultCheckPeriodMillis = 1000 * 60 * 5
-
-// suggestion show delay, in milliseconds
-export const suggestionShowDelay = 250
-
-// add 200ms more delay on top of inline default 30-50ms
-export const inlineSuggestionShowDelay = 200
+export const inlineCompletionsDebounceDelay = 200
 
 export const referenceLog = 'Code Reference Log'
 
@@ -655,15 +649,18 @@ export const enterJavaHomePlaceholder = 'Enter the path to your Java installatio
 
 export const openNewTabPlaceholder = 'Open a new tab to chat with Q'
 
-export const jobCompletedChatMessage = (version: string) =>
-    `I completed your transformation. You can review the diff to see my proposed changes and accept or reject them. The transformation summary has details about the changes I'm proposing. If you want to upgrade additional libraries and other dependencies, run /transform with the transformed code and specify ${version} as the source and target version.`
+export const jobCompletedChatMessage =
+    'I completed your transformation. You can review the diff to see my proposed changes and accept or reject them. The transformation summary has details about the changes I am proposing. '
 
-export const jobCompletedNotification = (version: string) =>
-    `Amazon Q transformed your code. You can review the diff to see my proposed changes and accept or reject them. The transformation summary has details about the changes. If you want to upgrade additional libraries and other dependencies, run /transform with the transformed code and specify ${version} as the source and target version.`
+export const jobCompletedNotification =
+    'Amazon Q transformed your code. You can review the diff to see my proposed changes and accept or reject them. The transformation summary has details about the changes. '
 
-export const jobPartiallyCompletedChatMessage = `I transformed part of your code. You can review the diff to see my proposed changes and accept or reject them. The transformation summary has details about the files I updated and the errors that prevented a complete transformation.`
+export const upgradeLibrariesMessage =
+    'After successfully building in Java 17 or 21, an additional transformation is required to upgrade your libraries and dependencies. Choose the same source code version and target code version (for example, 17 to 17) to do this.'
 
-export const jobPartiallyCompletedNotification = `Amazon Q transformed part of your code. You can review the diff to see my proposed changes and accept or reject them. The transformation summary has details about the files I updated and the errors that prevented a complete transformation.`
+export const jobPartiallyCompletedChatMessage = `I transformed part of your code. You can review the diff to see my proposed changes and accept or reject them. The transformation summary has details about the files I updated and the errors that prevented a complete transformation. `
+
+export const jobPartiallyCompletedNotification = `Amazon Q transformed part of your code. You can review the diff to see my proposed changes and accept or reject them. The transformation summary has details about the files I updated and the errors that prevented a complete transformation. `
 
 export const noPomXmlFoundChatMessage = `I couldn\'t find a project that I can upgrade. I couldn\'t find a pom.xml file in any of your open projects, nor could I find any embedded SQL statements. Currently, I can upgrade Java 8, 11, or 17 projects built on Maven, or Oracle SQL to PostgreSQL statements in Java projects. For more information, see the [Amazon Q documentation](${codeTransformPrereqDoc}).`
 
@@ -730,7 +727,7 @@ export const cleanInstallErrorNotification = `Amazon Q could not run the Maven c
 export const enterJavaHomeChatMessage = 'Enter the path to JDK'
 
 export const projectPromptChatMessage =
-    'I can upgrade your Java project. To start the transformation, I need some information from you. Choose the project you want to upgrade and the target code version to upgrade to. Then, choose Confirm.'
+    'I can upgrade your Java project. To start the transformation, I need some information from you. Choose the project you want to upgrade and the target code version to upgrade to. Then, choose Confirm.\n\nAfter successfully building in Java 17 or 21, an additional transformation is required to upgrade your libraries and dependencies. Choose the same source code version and target code version (for example, 17 to 17) to do this.'
 
 export const windowsJavaHomeHelpChatMessage =
     'To find the JDK path, run the following commands in a new terminal: `cd "C:/Program Files/Java"` and then `dir`. If you see your JDK version, run `cd <version>` and then `cd` to show the path.'

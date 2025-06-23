@@ -9,18 +9,13 @@ import { LineSelection, LinesChangeEvent } from '../tracker/lineTracker'
 import { isTextEditor } from '../../shared/utilities/editorUtilities'
 import { cancellableDebounce } from '../../shared/utilities/functionUtils'
 import { subscribeOnce } from '../../shared/utilities/vsCodeUtils'
-import { RecommendationService } from '../service/recommendationService'
 import { AnnotationChangeSource, inlinehintKey } from '../models/constants'
 import globals from '../../shared/extensionGlobals'
 import { Container } from '../service/serviceContainer'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { getLogger } from '../../shared/logger/logger'
-import { Commands } from '../../shared/vscode/commands2'
-import { session } from '../util/codeWhispererSession'
-import { RecommendationHandler } from '../service/recommendationHandler'
 import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { setContext } from '../../shared/vscode/setContext'
-import { TelemetryHelper } from '../util/telemetryHelper'
 
 const case3TimeWindow = 30000 // 30 seconds
 
@@ -75,13 +70,7 @@ export class AutotriggerState implements AnnotationState {
     static acceptedCount = 0
 
     updateState(changeSource: AnnotationChangeSource, force: boolean): AnnotationState | undefined {
-        if (AutotriggerState.acceptedCount < RecommendationService.instance.acceptedSuggestionCount) {
-            return new ManualtriggerState()
-        } else if (session.recommendations.length > 0 && RecommendationHandler.instance.isSuggestionVisible()) {
-            return new PressTabState()
-        } else {
-            return this
-        }
+        return undefined
     }
 
     isNextState(state: AnnotationState | undefined): boolean {
@@ -268,28 +257,6 @@ export class LineAnnotationController implements vscode.Disposable {
             subscribeOnce(this.container.lineTracker.onReady)(async (_) => {
                 await this.onReady()
             }),
-            RecommendationService.instance.suggestionActionEvent(async (e) => {
-                await telemetry.withTraceId(async () => {
-                    if (!this._isReady) {
-                        return
-                    }
-
-                    if (this._currentState instanceof ManualtriggerState) {
-                        if (e.triggerType === 'OnDemand' && this._currentState.hasManualTrigger === false) {
-                            this._currentState.hasManualTrigger = true
-                        }
-                        if (
-                            e.response?.recommendationCount !== undefined &&
-                            e.response?.recommendationCount > 0 &&
-                            this._currentState.hasValidResponse === false
-                        ) {
-                            this._currentState.hasValidResponse = true
-                        }
-                    }
-
-                    await this.refresh(e.editor, 'codewhisperer')
-                }, TelemetryHelper.instance.traceId)
-            }),
             this.container.lineTracker.onDidChangeActiveLines(async (e) => {
                 await this.onActiveLinesChanged(e)
             }),
@@ -300,17 +267,6 @@ export class LineAnnotationController implements vscode.Disposable {
             }),
             this.container.auth.secondaryAuth.onDidChangeActiveConnection(async () => {
                 await this.refresh(vscode.window.activeTextEditor, 'editor')
-            }),
-            Commands.register('aws.amazonq.dismissTutorial', async () => {
-                const editor = vscode.window.activeTextEditor
-                if (editor) {
-                    this.clear()
-                    try {
-                        telemetry.ui_click.emit({ elementId: `dismiss_${this._currentState.id}` })
-                    } catch (_) {}
-                    await this.dismissTutorial()
-                    getLogger().debug(`codewhisperer: user dismiss tutorial.`)
-                }
             })
         )
     }
@@ -484,7 +440,7 @@ export class LineAnnotationController implements vscode.Disposable {
         source: AnnotationChangeSource,
         force?: boolean
     ): Partial<vscode.DecorationOptions> | undefined {
-        const isCWRunning = RecommendationService.instance.isRunning
+        const isCWRunning = true
 
         const textOptions: vscode.ThemableDecorationAttachmentRenderOptions = {
             contentText: '',
@@ -517,9 +473,9 @@ export class LineAnnotationController implements vscode.Disposable {
         this._currentState = updatedState
 
         // take snapshot of accepted session so that we can compre if there is delta -> users accept 1 suggestion after seeing this state
-        AutotriggerState.acceptedCount = RecommendationService.instance.acceptedSuggestionCount
+        AutotriggerState.acceptedCount = 0
         // take snapshot of total trigger count so that we can compare if there is delta -> users accept/reject suggestions after seeing this state
-        TryMoreExState.triggerCount = RecommendationService.instance.totalValidTriggerCount
+        TryMoreExState.triggerCount = 0
 
         textOptions.contentText = this._currentState.text()
 

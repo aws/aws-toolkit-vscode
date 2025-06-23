@@ -93,9 +93,10 @@ export function memoize<T, U extends any[]>(fn: (...args: U) => T): (...args: U)
  */
 export function debounce<Input extends any[], Output>(
     cb: (...args: Input) => Output | Promise<Output>,
-    delay: number = 0
+    delay: number = 0,
+    useLastCall: boolean = false
 ): (...args: Input) => Promise<Output> {
-    return cancellableDebounce(cb, delay).promise
+    return cancellableDebounce(cb, delay, useLastCall).promise
 }
 
 /**
@@ -104,10 +105,12 @@ export function debounce<Input extends any[], Output>(
  */
 export function cancellableDebounce<Input extends any[], Output>(
     cb: (...args: Input) => Output | Promise<Output>,
-    delay: number = 0
+    delay: number = 0,
+    useLastCall: boolean = false
 ): { promise: (...args: Input) => Promise<Output>; cancel: () => void } {
     let timeout: Timeout | undefined
     let promise: Promise<Output> | undefined
+    let lastestArgs: Input | undefined
 
     const cancel = (): void => {
         if (timeout) {
@@ -119,6 +122,7 @@ export function cancellableDebounce<Input extends any[], Output>(
 
     return {
         promise: (...args: Input) => {
+            lastestArgs = args
             timeout?.refresh()
 
             return (promise ??= new Promise<Output>((resolve, reject) => {
@@ -126,7 +130,8 @@ export function cancellableDebounce<Input extends any[], Output>(
                 timeout.onCompletion(async () => {
                     timeout = promise = undefined
                     try {
-                        resolve(await cb(...args))
+                        const argsToUse = useLastCall ? lastestArgs! : args
+                        resolve(await cb(...argsToUse))
                     } catch (err) {
                         reject(err)
                     }

@@ -7,7 +7,11 @@ import { window } from 'vscode'
 import { LanguageClient } from 'vscode-languageclient'
 import { AmazonQChatViewProvider } from './webviewProvider'
 import { focusAmazonQPanel, registerCommands } from './commands'
-import { registerLanguageServerEventListener, registerMessageListeners } from './messages'
+import {
+    registerActiveEditorChangeListener,
+    registerLanguageServerEventListener,
+    registerMessageListeners,
+} from './messages'
 import { Commands, getLogger, globals, undefinedIfEmpty } from 'aws-core-vscode/shared'
 import { activate as registerLegacyChatListeners } from '../../app/chat/activation'
 import { DefaultAmazonQAppInitContext } from 'aws-core-vscode/amazonq'
@@ -17,7 +21,7 @@ import { pushConfigUpdate } from '../config'
 export async function activate(languageClient: LanguageClient, encryptionKey: Buffer, mynahUIPath: string) {
     const disposables = globals.context.subscriptions
 
-    const provider = new AmazonQChatViewProvider(mynahUIPath)
+    const provider = new AmazonQChatViewProvider(mynahUIPath, languageClient)
 
     disposables.push(
         window.registerWebviewViewProvider(AmazonQChatViewProvider.viewType, provider, {
@@ -33,6 +37,7 @@ export async function activate(languageClient: LanguageClient, encryptionKey: Bu
      **/
     registerCommands(provider)
     registerLanguageServerEventListener(languageClient, provider)
+    registerActiveEditorChangeListener(languageClient)
 
     provider.onDidResolveWebview(() => {
         const disposable = DefaultAmazonQAppInitContext.instance.getAppsToWebViewMessageListener().onMessage((msg) => {
