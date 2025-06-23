@@ -90,6 +90,7 @@ export class ProxyUtil {
         if (!strictSSL) {
             process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
             this.logger.info('SSL verification disabled via VS Code settings')
+            return // No need to set CA certs when SSL verification is disabled
         }
 
         // Set certificate bundle environment variables if user configured
