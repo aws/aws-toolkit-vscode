@@ -3385,6 +3385,17 @@
                 }
             },
             {
+                "command": "aws.stepfunctions.viewExecutionDetailsByExecutionARN",
+                "title": "%AWS.command.stepFunctions.viewExecutionDetailsByExecutionARN%",
+                "category": "%AWS.title%",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
                 "command": "aws.cdk.renderStateMachineGraph",
                 "title": "%AWS.command.cdk.previewStateMachine%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",

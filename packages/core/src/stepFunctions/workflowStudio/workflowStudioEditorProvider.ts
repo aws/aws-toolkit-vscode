@@ -15,11 +15,9 @@ import { getTabSizeSetting } from '../../shared/utilities/editorUtilities'
 import { WorkflowStudioEditor } from './workflowStudioEditor'
 import { i18n } from '../../shared/i18n-helper'
 import { isInvalidJsonFile, isInvalidYamlFile } from '../utils'
-import { WorkflowMode } from './types'
+import { ComponentType, WorkflowMode } from './types'
+import { isLocalDev, localhost, cdn } from '../constants/webviewResources'
 
-const isLocalDev = false
-const localhost = 'http://127.0.0.1:3002'
-const cdn = 'https://d5t62uwepi9lu.cloudfront.net'
 let clientId = ''
 
 /**
@@ -133,7 +131,11 @@ export class WorkflowStudioEditorProvider implements vscode.CustomTextEditorProv
         const darkModeTag = `<meta name='dark-mode' content='${isDarkMode}'>`
 
         const modeTag = `<meta name="workflow-mode" content="${mode}" />`
-        return `${htmlFileSplit[0]} <head> ${baseTag} ${localeTag} ${darkModeTag} ${tabSizeTag} ${modeTag} ${htmlFileSplit[1]}`
+
+        // Set component type to WorkflowStudio
+        const componentTypeTag = `<meta name="component-type" content="${ComponentType.WorkflowStudio}" />`
+
+        return `${htmlFileSplit[0]} <head> ${baseTag} ${localeTag} ${darkModeTag} ${tabSizeTag} ${modeTag} ${componentTypeTag} ${htmlFileSplit[1]}`
     }
 
     /**
