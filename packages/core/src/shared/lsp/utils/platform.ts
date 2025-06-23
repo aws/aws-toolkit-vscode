@@ -4,7 +4,7 @@
  */
 
 import { ToolkitError } from '../../errors'
-import { Logger, getLogger } from '../../logger/logger'
+import { Logger } from '../../logger/logger'
 import { ChildProcess } from '../../utilities/processUtils'
 import { waitUntil } from '../../utilities/timeoutUtils'
 import { isDebugInstance } from '../../vscode/env'
@@ -87,14 +87,12 @@ export function createServerOptions({
     serverModule,
     execArgv,
     warnThresholds,
-    env,
 }: {
     encryptionKey: Buffer
     executable: string[]
     serverModule: string
     execArgv: string[]
     warnThresholds?: { cpu?: number; memory?: number }
-    env?: Record<string, string>
 }) {
     return async () => {
         const bin = executable[0]
@@ -103,18 +101,7 @@ export function createServerOptions({
             args.unshift('--inspect=6080')
         }
 
-        // Merge environment variables
-        const processEnv = { ...process.env }
-        if (env) {
-            Object.assign(processEnv, env)
-        }
-
-        const lspProcess = new ChildProcess(bin, args, {
-            warnThresholds,
-            spawnOptions: {
-                env: processEnv,
-            },
-        })
+        const lspProcess = new ChildProcess(bin, args, { warnThresholds })
 
         // this is a long running process, awaiting it will never resolve
         void lspProcess.run()
