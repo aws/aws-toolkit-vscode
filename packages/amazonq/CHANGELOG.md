@@ -1,3 +1,7 @@
+## 1.78.0 2025-06-20
+
+- **Bug Fix** Resolve missing chat options in Amazon Q chat interface.
+
 ## 1.77.0 2025-06-18
 
 - Miscellaneous non-user-facing changes
