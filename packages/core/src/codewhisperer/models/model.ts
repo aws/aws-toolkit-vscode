@@ -675,16 +675,15 @@ export enum BuildSystem {
     Unknown = 'Unknown',
 }
 
-// TO-DO: include the custom YAML file path here somewhere?
 export class ZipManifest {
     sourcesRoot: string = 'sources/'
     dependenciesRoot: string = 'dependencies/'
-    buildLogs: string = 'build-logs.txt'
     version: string = '1.0'
     hilCapabilities: string[] = ['HIL_1pDependency_VersionUpgrade']
-    // TO-DO: add 'CLIENT_SIDE_BUILD' here when releasing
-    transformCapabilities: string[] = ['EXPLAINABILITY_V1', 'SELECTIVE_TRANSFORMATION_V2']
+    transformCapabilities: string[] = ['EXPLAINABILITY_V1', 'SELECTIVE_TRANSFORMATION_V2', 'CLIENT_SIDE_BUILD']
     noInteractiveMode: boolean = true
+    dependencyUpgradeConfigFile?: string = undefined
+    compilationsJsonFile: string = 'compilations.json'
     customBuildCommand: string = 'clean test'
     requestedConversions?: {
         sqlConversion?: {
@@ -782,7 +781,7 @@ export class TransformByQState {
 
     private polledJobStatus: string = ''
 
-    private jobFailureMetadata: string = ''
+    private hasSeenTransforming: boolean = false
 
     private payloadFilePath: string = ''
 
@@ -829,6 +828,10 @@ export class TransformByQState {
 
     public isPartiallySucceeded() {
         return this.transformByQState === TransformByQStatus.PartiallySucceeded
+    }
+
+    public getHasSeenTransforming() {
+        return this.hasSeenTransforming
     }
 
     public getTransformationType() {
@@ -923,10 +926,6 @@ export class TransformByQState {
         return this.projectCopyFilePath
     }
 
-    public getJobFailureMetadata() {
-        return this.jobFailureMetadata
-    }
-
     public getPayloadFilePath() {
         return this.payloadFilePath
     }
@@ -1005,6 +1004,10 @@ export class TransformByQState {
 
     public setToPartiallySucceeded() {
         this.transformByQState = TransformByQStatus.PartiallySucceeded
+    }
+
+    public setHasSeenTransforming(hasSeen: boolean) {
+        this.hasSeenTransforming = hasSeen
     }
 
     public setTransformationType(type: TransformationType) {
@@ -1091,10 +1094,6 @@ export class TransformByQState {
         this.projectCopyFilePath = filePath
     }
 
-    public setJobFailureMetadata(data: string) {
-        this.jobFailureMetadata = data
-    }
-
     public setPayloadFilePath(payloadFilePath: string) {
         this.payloadFilePath = payloadFilePath
     }
@@ -1153,9 +1152,9 @@ export class TransformByQState {
 
     public setJobDefaults() {
         this.setToNotStarted()
+        this.hasSeenTransforming = false
         this.jobFailureErrorNotification = undefined
         this.jobFailureErrorChatMessage = undefined
-        this.jobFailureMetadata = ''
         this.payloadFilePath = ''
         this.metadataPathSQL = ''
         this.customVersionPath = ''
