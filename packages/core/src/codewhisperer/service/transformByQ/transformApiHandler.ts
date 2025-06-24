@@ -703,6 +703,14 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
                     // final plan is complete; show to user
                     isPlanComplete = true
                 }
+                // for JDK upgrades without a YAML file, we show a static plan so no need to keep refreshing it
+                if (
+                    plan &&
+                    transformByQState.getSourceJDKVersion() !== transformByQState.getTargetJDKVersion() &&
+                    !transformByQState.getCustomDependencyVersionFilePath()
+                ) {
+                    isPlanComplete = true
+                }
             }
 
             if (validStates.includes(status)) {
