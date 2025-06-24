@@ -122,7 +122,7 @@ export async function activateAmazonQCommon(context: vscode.ExtensionContext, is
     }
 
     // Configure proxy settings early
-    ProxyUtil.configureProxyForLanguageServer()
+    await ProxyUtil.configureProxyForLanguageServer()
 
     // This contains every lsp agnostic things (auth, security scan, code scan)
     await activateCodeWhisperer(extContext as ExtContext)
