@@ -8,8 +8,6 @@ import { CodeScanIssue, AggregatedCodeScanIssue } from '../models/model'
 import { CodeAnalysisScope, codewhispererDiagnosticSourceLabel } from '../models/constants'
 import { SecurityIssueTreeViewProvider } from './securityIssueTreeViewProvider'
 import { SecurityIssueProvider } from './securityIssueProvider'
-import fs = require('fs')
-import path from 'path'
 
 export interface SecurityDiagnostic extends vscode.Diagnostic {
     findingId?: string
@@ -41,15 +39,7 @@ export function initSecurityScanRender(
         updateSecurityIssuesForProviders(securityRecommendation, scope === CodeAnalysisScope.FILE_AUTO)
     }
     securityScanRender.initialized = true
-    const issuesJson = JSON.stringify(SecurityIssueProvider.instance.issues)
-    const filePath = path.join(__dirname, '..', '..', '..', '..', '..', '..', 'findings')
-    fs.existsSync(filePath) || fs.mkdirSync(filePath)
-    fs.writeFileSync(
-        path.join(filePath, `SecurityIssues-${SecurityIssueProvider.instance.id}.json`),
-        issuesJson,
-        'utf8'
-    )
-    cleanOldFiles(filePath)
+    SecurityIssueProvider.instance.cleanOldFiles()
 }
 
 function updateSecurityIssuesForProviders(securityRecommendation: AggregatedCodeScanIssue, isAutoScope?: boolean) {
@@ -65,26 +55,6 @@ function updateSecurityIssuesForProviders(securityRecommendation: AggregatedCode
         SecurityIssueProvider.instance.issues = updatedSecurityRecommendationList
     }
     SecurityIssueTreeViewProvider.instance.refresh()
-}
-
-function cleanOldFiles(dirPath: string, maxfiles = 100) {
-    const files = fs.readdirSync(dirPath)
-    if (files.length > maxfiles) {
-        type Stat = { fileName: string; mtime: number }
-        const stats: Stat[] = []
-        for (const file of files) {
-            const stat = fs.statSync(path.join(dirPath, file[0]))
-            stats.push({
-                fileName: file[0],
-                mtime: stat.mtime.getTime(),
-            })
-        }
-        const sortedStats = stats.sort((a: Stat, b: Stat) => a.mtime - b.mtime)
-        const numberToDelete = files.length - maxfiles
-        for (let i = 0; i < numberToDelete; i++) {
-            fs.rmSync(path.join(dirPath, sortedStats[i].fileName))
-        }
-    }
 }
 
 export function updateSecurityDiagnosticCollection(securityRecommendation: AggregatedCodeScanIssue) {

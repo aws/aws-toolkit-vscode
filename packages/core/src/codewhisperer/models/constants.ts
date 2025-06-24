@@ -901,4 +901,4 @@ export const predictionTrackerDefaultConfig = {
     maxSupplementalContext: 15,
 }
 
-export const findingsSuffix = '_qCodeScanFindings'
+export const findingsSuffix = '_qCodeReviewFindings'
