@@ -36,7 +36,6 @@ import {
     undefinedIfEmpty,
     getOptOutPreference,
     isAmazonLinux2,
-    fs,
     getClientId,
     extensionVersion,
 } from 'aws-core-vscode/shared'
