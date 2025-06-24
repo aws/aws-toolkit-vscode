@@ -61,7 +61,7 @@ export async function hasGlibcPatch(): Promise<boolean> {
         return false // Return false to ensure SageMaker doesn't try to use GLIBC patching
     }
 
-    // Check for environment variables first (for CDM)
+    // Check for environment variables (for CDM)
     const glibcLinker = process.env.VSCODE_SERVER_CUSTOM_GLIBC_LINKER || ''
     const glibcPath = process.env.VSCODE_SERVER_CUSTOM_GLIBC_PATH || ''
 
@@ -70,8 +70,8 @@ export async function hasGlibcPatch(): Promise<boolean> {
         return true
     }
 
-    // Fall back to file check for other environments
-    return await fs.exists('/opt/vsc-sysroot/lib64/ld-linux-x86-64.so.2')
+    // No environment variables, no patching needed
+    return false
 }
 
 export async function startLanguageServer(
@@ -110,16 +110,9 @@ export async function startLanguageServer(
                 resourcePaths.node,
             ]
             getLogger('amazonqLsp').info(`Patched node runtime with GLIBC using env vars to ${executable}`)
-        }
-        // Fall back to hardcoded path
-        else {
-            executable = [
-                '/opt/vsc-sysroot/lib64/ld-linux-x86-64.so.2',
-                '--library-path',
-                '/opt/vsc-sysroot/lib64',
-                resourcePaths.node,
-            ]
-            getLogger('amazonqLsp').info(`Patched node runtime with GLIBC using hardcoded path to ${executable}`)
+        } else {
+            // No environment variables, use the node executable directly
+            executable = [resourcePaths.node]
         }
     } else {
         executable = [resourcePaths.node]
