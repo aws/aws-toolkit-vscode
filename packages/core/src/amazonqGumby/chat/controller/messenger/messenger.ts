@@ -410,7 +410,7 @@ export class Messenger {
                 message = CodeWhispererConstants.noPomXmlFoundChatMessage
                 break
             case 'could-not-compile-project':
-                message = CodeWhispererConstants.cleanInstallErrorChatMessage
+                message = CodeWhispererConstants.cleanTestCompileErrorChatMessage
                 break
             case 'invalid-java-home':
                 message = CodeWhispererConstants.noJavaHomeFoundChatMessage
@@ -704,7 +704,7 @@ ${codeSnippet}
     }
 
     public async sendCustomDependencyVersionMessage(tabID: string) {
-        const message = CodeWhispererConstants.chooseYamlMessage
+        const message = CodeWhispererConstants.chooseConfigFileMessage
         const buttons: ChatItemButton[] = []
 
         buttons.push({
@@ -731,7 +731,7 @@ ${codeSnippet}
                 tabID
             )
         )
-        const sampleYAML = `name: "custom-dependency-management"
+        const sampleYAML = `name: "dependency-upgrade"
 description: "Custom dependency version management for Java migration from JDK 8/11/17 to JDK 17/21"
 
 dependencyManagement:
@@ -744,7 +744,7 @@ dependencyManagement:
       targetVersion: "3.0.0"
       originType: "THIRD_PARTY"
   plugins:
-    - identifier: "com.example.plugin"
+    - identifier: "com.example:plugin"
       targetVersion: "1.2.0"
       versionProperty: "plugin.version"  # Optional`
 
