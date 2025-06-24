@@ -126,12 +126,15 @@ export async function activateAmazonQCommon(context: vscode.ExtensionContext, is
 
     // This contains every lsp agnostic things (auth, security scan, code scan)
     await activateCodeWhisperer(extContext as ExtContext)
-    if (
+
+    // Always activate LSP for SageMaker environments
+    const shouldActivateLsp =
         (Experiments.instance.get('amazonqLSP', true) || Auth.instance.isInternalAmazonUser()) &&
-        (!isAmazonLinux2() || hasGlibcPatch())
-    ) {
+        (isSageMaker() || !isAmazonLinux2() || (await hasGlibcPatch()))
+
+    if (shouldActivateLsp) {
         // start the Amazon Q LSP for internal users first
-        // for AL2, start LSP if glibc patch is found
+        // for AL2, start LSP if glibc patch is found or if it's a SageMaker environment
         await activateAmazonqLsp(context)
     }
     if (!Experiments.instance.get('amazonqLSPInline', true)) {
