@@ -147,16 +147,18 @@ export class WorkflowStudioEditor {
 
                     // The text document acts as our model, thus we send and event to the webview on file save to trigger update
                     contextObject.disposables.push(
-                        vscode.workspace.onDidSaveTextDocument(async () => {
-                            await telemetry.stepfunctions_saveFile.run(async (span) => {
-                                span.record({
-                                    id: contextObject.fileId,
-                                    saveType: 'MANUAL_SAVE',
-                                    source: 'VSCODE',
-                                    isInvalidJson: isInvalidJsonFile(contextObject.textDocument),
+                        vscode.workspace.onDidSaveTextDocument(async (savedDocument) => {
+                            if (savedDocument.uri.toString() === this.documentUri.toString()) {
+                                await telemetry.stepfunctions_saveFile.run(async (span) => {
+                                    span.record({
+                                        id: contextObject.fileId,
+                                        saveType: 'MANUAL_SAVE',
+                                        source: 'VSCODE',
+                                        isInvalidJson: isInvalidJsonFile(contextObject.textDocument),
+                                    })
+                                    await broadcastFileChange(contextObject, 'MANUAL_SAVE')
                                 })
-                                await broadcastFileChange(contextObject, 'MANUAL_SAVE')
-                            })
+                            }
                         })
                     )
 
