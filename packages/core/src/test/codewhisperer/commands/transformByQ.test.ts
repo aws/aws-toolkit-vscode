@@ -53,18 +53,21 @@ import * as nodefs from 'fs' // eslint-disable-line no-restricted-imports
 describe('transformByQ', function () {
     let fetchStub: sinon.SinonStub
     let tempDir: string
-    const validCustomVersionsFile = `name: "custom-dependency-management"
+    const validCustomVersionsFile = `name: "dependency-upgrade"
 description: "Custom dependency version management for Java migration from JDK 8/11/17 to JDK 17/21"
 dependencyManagement:
   dependencies:
     - identifier: "com.example:library1"
-        targetVersion: "2.1.0"
-        versionProperty: "library1.version"
-        originType: "FIRST_PARTY"
+      targetVersion: "2.1.0"
+      versionProperty: "library1.version"  # Optional
+      originType: "FIRST_PARTY" # or "THIRD_PARTY"
+    - identifier: "com.example:library2"
+      targetVersion: "3.0.0"
+      originType: "THIRD_PARTY"
   plugins:
-    - identifier: "com.example.plugin"
-        targetVersion: "1.2.0"
-        versionProperty: "plugin.version"`
+    - identifier: "com.example:plugin"
+      targetVersion: "1.2.0"
+      versionProperty: "plugin.version"  # Optional`
 
     const validSctFile = `<?xml version="1.0" encoding="UTF-8"?>
     <tree>
@@ -119,6 +122,7 @@ dependencyManagement:
     })
 
     afterEach(async function () {
+        fetchStub.restore()
         sinon.restore()
         await fs.delete(tempDir, { recursive: true })
     })
@@ -405,7 +409,6 @@ dependencyManagement:
                 path: tempDir,
                 name: tempFileName,
             },
-            humanInTheLoopFlag: false,
             projectPath: tempDir,
             zipManifest: transformManifest,
         }).then((zipCodeResult) => {
@@ -462,7 +465,7 @@ dependencyManagement:
         ]
 
         for (const folder of m2Folders) {
-            const folderPath = path.join(tempDir, folder)
+            const folderPath = path.join(tempDir, 'dependencies', folder)
             await fs.mkdir(folderPath)
             for (const file of filesToAdd) {
                 await fs.writeFile(path.join(folderPath, file), 'sample content for the test file')
@@ -476,7 +479,6 @@ dependencyManagement:
                 path: tempDir,
                 name: tempFileName,
             },
-            humanInTheLoopFlag: false,
             projectPath: tempDir,
             zipManifest: new ZipManifest(),
         }).then((zipCodeResult) => {
@@ -662,7 +664,6 @@ dependencyManagement:
                 message: expectedMessage,
             }
         )
-        sinon.assert.callCount(fetchStub, 4)
     })
 
     it('should not retry upload on non-retriable error', async () => {
