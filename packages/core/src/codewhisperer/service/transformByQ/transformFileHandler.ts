@@ -9,7 +9,7 @@ import * as os from 'os'
 import xml2js = require('xml2js')
 import * as CodeWhispererConstants from '../../models/constants'
 import { existsSync, readFileSync, writeFileSync } from 'fs' // eslint-disable-line no-restricted-imports
-import { BuildSystem, DB, FolderInfo, TransformationType, transformByQState } from '../../models/model'
+import { BuildSystem, DB, FolderInfo, transformByQState } from '../../models/model'
 import { IManifestFile } from '../../../amazonqFeatureDev/models'
 import fs from '../../../shared/fs/fs'
 import globals from '../../../shared/extensionGlobals'
@@ -18,9 +18,10 @@ import { AbsolutePathDetectedError } from '../../../amazonqGumby/errors'
 import { getLogger } from '../../../shared/logger/logger'
 import AdmZip from 'adm-zip'
 
-export function getDependenciesFolderInfo(): FolderInfo {
+export async function getDependenciesFolderInfo(): Promise<FolderInfo> {
     const dependencyFolderName = `${CodeWhispererConstants.dependencyFolderName}${globals.clock.Date.now()}`
     const dependencyFolderPath = path.join(os.tmpdir(), dependencyFolderName)
+    await fs.mkdir(dependencyFolderPath)
     return {
         name: dependencyFolderName,
         path: dependencyFolderPath,
@@ -31,15 +32,12 @@ export async function writeAndShowBuildLogs(isLocalInstall: boolean = false) {
     const logFilePath = path.join(os.tmpdir(), 'build-logs.txt')
     writeFileSync(logFilePath, transformByQState.getBuildLog())
     const doc = await vscode.workspace.openTextDocument(logFilePath)
-    if (
-        !transformByQState.getBuildLog().includes('clean install succeeded') &&
-        transformByQState.getTransformationType() !== TransformationType.SQL_CONVERSION
-    ) {
+    const logs = transformByQState.getBuildLog().toLowerCase()
+    if (logs.includes('intermediate build result') || logs.includes('maven jar failed')) {
         // only show the log if the build failed; show it in second column for intermediate builds only
         const options = isLocalInstall ? undefined : { viewColumn: vscode.ViewColumn.Two }
         await vscode.window.showTextDocument(doc, options)
     }
-    return logFilePath
 }
 
 export async function createLocalBuildUploadZip(baseDir: string, exitCode: number | null, stdout: string) {
@@ -174,8 +172,7 @@ export async function validateSQLMetadataFile(fileContents: string, message: any
 }
 
 export function setMaven() {
-    // for now, just use regular Maven since the Maven executables can
-    // cause permissions issues when building if user has not ran 'chmod'
+    // avoid using maven wrapper since we can run into permissions issues
     transformByQState.setMavenName('mvn')
 }
 
@@ -214,7 +211,6 @@ export async function getJsonValuesFromManifestFile(
     return {
         hilCapability: jsonValues?.hilType,
         pomFolderName: jsonValues?.pomFolderName,
-        // TODO remove this forced version
         sourcePomVersion: jsonValues?.sourcePomVersion || '1.0',
         pomArtifactId: jsonValues?.pomArtifactId,
         pomGroupId: jsonValues?.pomGroupId,
