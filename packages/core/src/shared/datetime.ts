@@ -154,3 +154,25 @@ export function formatDateTimestamp(forceUTC: boolean, d: Date = new Date()): st
     // trim 'Z' (last char of iso string) and add offset string
     return `${iso.substring(0, iso.length - 1)}${offsetString}`
 }
+
+/**
+ * Checks if a given timestamp is within 30 days of the current day
+ * @param timeStamp
+ * @returns true if timeStamp is within 30 days, false otherwise
+ */
+export function isWithin30Days(timeStamp: string): boolean {
+    if (!timeStamp) {
+        return false // No timestamp given
+    }
+
+    const startDate = new Date(timeStamp)
+    const currentDate = new Date()
+
+    // Calculate the difference in milliseconds
+    const timeDifference = currentDate.getTime() - startDate.getTime()
+
+    // Convert milliseconds to days (1000ms * 60s * 60min * 24hr)
+    const daysDifference = timeDifference / (1000 * 60 * 60 * 24)
+
+    return daysDifference <= 30
+}
