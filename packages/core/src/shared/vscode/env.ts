@@ -125,6 +125,25 @@ export function isRemoteWorkspace(): boolean {
 }
 
 /**
+ * Checks if the current environment has SageMaker-specific environment variables
+ * @returns true if SageMaker environment variables are detected
+ */
+export function hasSageMakerEnvVars(): boolean {
+    // Check both old and new environment variable names
+    // SageMaker is renaming their environment variables in their Docker images
+    return (
+        // Original environment variables
+        process.env.SAGEMAKER_APP_TYPE !== undefined ||
+        process.env.SAGEMAKER_INTERNAL_IMAGE_URI !== undefined ||
+        process.env.STUDIO_LOGGING_DIR?.includes('/var/log/studio') === true ||
+        // New environment variables (update these with the actual new names)
+        process.env.SM_APP_TYPE !== undefined ||
+        process.env.SM_INTERNAL_IMAGE_URI !== undefined ||
+        process.env.SERVICE_NAME === 'SageMakerUnifiedStudio'
+    )
+}
+
+/**
  * Checks if the current environment is running on Amazon Linux 2.
  *
  * This function attempts to detect if we're running in a container on an AL2 host
@@ -135,11 +154,7 @@ export function isRemoteWorkspace(): boolean {
 export function isAmazonLinux2() {
     // First check if we're in a SageMaker environment, which should not be treated as AL2
     // even if the underlying host is AL2
-    if (
-        process.env.SAGEMAKER_APP_TYPE ||
-        process.env.SERVICE_NAME === 'SageMakerUnifiedStudio' ||
-        process.env.SAGEMAKER_INTERNAL_IMAGE_URI
-    ) {
+    if (hasSageMakerEnvVars()) {
         return false
     }
 
