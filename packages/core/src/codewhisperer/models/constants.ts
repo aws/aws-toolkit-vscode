@@ -646,8 +646,11 @@ export const continueWithoutConfigFileMessage =
 export const receivedValidConfigFileMessage =
     'The dependency upgrade file looks good. I will use this information to upgrade the dependencies you specified.'
 
-export const chooseConfigFileMessage =
-    'Would you like to provide a custom dependency upgrade file? You can specify first-party dependencies to upgrade in a YAML file, and I will upgrade them during the JDK upgrade (for example, Java 8 to 17). You can initiate a separate transformation (17 to 17 or 21 to 21) after the initial JDK upgrade to transform third-party dependencies.\n\nWithout a YAML file, I can perform a minimum JDK upgrade, and then you can initiate a separate transformation to upgrade all third-party dependencies as part of a maximum transformation. For an example dependency upgrade file, see the [documentation](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/code-transformation.html#dependency-upgrade-file).'
+export const chooseConfigFileMessageJdkUpgrade =
+    'Would you like to provide a dependency upgrade file? You can specify first party dependencies and their versions in a YAML file, and I will upgrade them during the JDK upgrade transformation. For an example dependency upgrade file, see the [documentation](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/code-transformation.html#dependency-upgrade-file).'
+
+export const chooseConfigFileMessageLibraryUpgrade =
+    'Would you like to provide a dependency upgrade file? You can specify third party dependencies and their versions in a YAML file, and I will only upgrade these dependencies during the library upgrade transformation. For an example dependency upgrade file, see the [documentation](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/code-transformation.html#dependency-upgrade-file).'
 
 export const enterJavaHomePlaceholder = 'Enter the path to your Java installation'
 
