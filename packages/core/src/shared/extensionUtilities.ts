@@ -171,11 +171,30 @@ export function isCloud9(flavor: 'classic' | 'codecatalyst' | 'any' = 'any'): bo
 }
 
 /**
+ * Checks if the current environment has SageMaker-specific environment variables
+ * @returns true if SageMaker environment variables are detected
+ */
+function hasSageMakerEnvVars(): boolean {
+    return (
+        process.env.SAGEMAKER_APP_TYPE !== undefined ||
+        process.env.SAGEMAKER_INTERNAL_IMAGE_URI !== undefined ||
+        process.env.STUDIO_LOGGING_DIR?.includes('/var/log/studio') === true
+    )
+}
+
+/**
  *
  * @param appName to identify the proper SM instance
  * @returns true if the current system is SageMaker(SMAI or SMUS)
  */
 export function isSageMaker(appName: 'SMAI' | 'SMUS' = 'SMAI'): boolean {
+    // Check for SageMaker-specific environment variables first
+    if (hasSageMakerEnvVars() || process.env.SERVICE_NAME === sageMakerUnifiedStudio) {
+        getLogger().debug('SageMaker environment detected via environment variables')
+        return true
+    }
+
+    // Fall back to app name checks
     switch (appName) {
         case 'SMAI':
             return vscode.env.appName === sageMakerAppname
