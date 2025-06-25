@@ -442,6 +442,11 @@
                 },
                 {
                     "command": "aws.amazonq.openSecurityIssuePanel",
+                    "when": "false && view == aws.amazonq.SecurityIssuesTree && (viewItem == issueWithoutFix || viewItem == issueWithFix || viewItem == issueWithFixDisabled)",
+                    "group": "inline@4"
+                },
+                {
+                    "command": "aws.amazonq.security.explain",
                     "when": "view == aws.amazonq.SecurityIssuesTree && (viewItem == issueWithoutFix || viewItem == issueWithFix || viewItem == issueWithFixDisabled)",
                     "group": "inline@4"
                 },
@@ -452,7 +457,7 @@
                 },
                 {
                     "command": "aws.amazonq.security.generateFix",
-                    "when": "view == aws.amazonq.SecurityIssuesTree && viewItem == issueWithoutFix",
+                    "when": "false && view == aws.amazonq.SecurityIssuesTree && viewItem == issueWithoutFix",
                     "group": "inline@6"
                 },
                 {
@@ -535,16 +540,17 @@
             "aws.amazonq.submenu.securityIssueMoreActions": [
                 {
                     "command": "aws.amazonq.security.explain",
+                    "when": "false",
                     "group": "1_more@1"
                 },
                 {
                     "command": "aws.amazonq.applySecurityFix",
-                    "when": "view == aws.amazonq.SecurityIssuesTree && viewItem == issueWithFix",
+                    "when": "false && view == aws.amazonq.SecurityIssuesTree && viewItem == issueWithFix",
                     "group": "1_more@3"
                 },
                 {
                     "command": "aws.amazonq.security.regenerateFix",
-                    "when": "view == aws.amazonq.SecurityIssuesTree && viewItem == issueWithFix",
+                    "when": "false && view == aws.amazonq.SecurityIssuesTree && viewItem == issueWithFix",
                     "group": "1_more@4"
                 },
                 {
@@ -778,6 +784,7 @@
             {
                 "command": "aws.amazonq.security.explain",
                 "title": "%AWS.command.amazonq.explainIssue%",
+                "icon": "$(search)",
                 "enablement": "view == aws.amazonq.SecurityIssuesTree"
             },
             {
