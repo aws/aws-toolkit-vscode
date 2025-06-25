@@ -704,7 +704,10 @@ ${codeSnippet}
     }
 
     public async sendCustomDependencyVersionMessage(tabID: string) {
-        const message = CodeWhispererConstants.chooseConfigFileMessage
+        let message = CodeWhispererConstants.chooseConfigFileMessageLibraryUpgrade
+        if (transformByQState.getSourceJDKVersion() !== transformByQState.getTargetJDKVersion()) {
+            message = CodeWhispererConstants.chooseConfigFileMessageJdkUpgrade
+        }
         const buttons: ChatItemButton[] = []
 
         buttons.push({
