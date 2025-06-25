@@ -251,19 +251,19 @@ async function setupInline(
     // Create and start the CursorUpdateManager with the provider from InlineManager
     const cursorUpdateManager = new CursorUpdateManager(client, inlineCompletionProvider)
 
+    // TODO: Comment [CursorUpdateManager] out for now before NEP feature works sufficiently stable
     // Start the CursorUpdateManager
-    await cursorUpdateManager.start()
+    // await cursorUpdateManager.start()
 
     // Track cursor position changes
-    const cursorUpdateDisposable = vscode.window.onDidChangeTextEditorSelection(
-        (e: vscode.TextEditorSelectionChangeEvent) => {
-            if (e.textEditor === vscode.window.activeTextEditor) {
-                cursorUpdateManager.updatePosition(e.selections[0].active, e.textEditor.document.uri.toString())
-            }
-        }
-    )
-
-    toDispose.push(cursorUpdateDisposable)
+    // const cursorUpdateDisposable = vscode.window.onDidChangeTextEditorSelection(
+    //     (e: vscode.TextEditorSelectionChangeEvent) => {
+    //         if (e.textEditor === vscode.window.activeTextEditor) {
+    //             cursorUpdateManager.updatePosition(e.selections[0].active, e.textEditor.document.uri.toString())
+    //         }
+    //     }
+    // )
+    // toDispose.push(cursorUpdateDisposable)
 
     activeInlineChat(extensionContext, client, encryptionKey, inlineChatTutorialAnnotation)
 
