@@ -1,4 +1,4 @@
 {
 	"type": "Bug Fix",
-	"description": "Cannot call TestState with variables in Workflow Studio"
+	"description": "[StepFunctions]: Cannot call TestState with variables in Workflow Studio"
 }
