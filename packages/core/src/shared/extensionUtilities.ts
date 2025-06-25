@@ -11,7 +11,7 @@ import { getLogger } from './logger/logger'
 import { VSCODE_EXTENSION_ID, extensionAlphaVersion } from './extensions'
 import { Ec2MetadataClient } from './clients/ec2MetadataClient'
 import { DefaultEc2MetadataClient } from './clients/ec2MetadataClient'
-import { extensionVersion, getCodeCatalystDevEnvId } from './vscode/env'
+import { extensionVersion, getCodeCatalystDevEnvId, hasSageMakerEnvVars } from './vscode/env'
 import globals from './extensionGlobals'
 import { once } from './utilities/functionUtils'
 import {
@@ -176,6 +176,13 @@ export function isCloud9(flavor: 'classic' | 'codecatalyst' | 'any' = 'any'): bo
  * @returns true if the current system is SageMaker(SMAI or SMUS)
  */
 export function isSageMaker(appName: 'SMAI' | 'SMUS' = 'SMAI'): boolean {
+    // Check for SageMaker-specific environment variables first
+    if (hasSageMakerEnvVars()) {
+        getLogger().debug('SageMaker environment detected via environment variables')
+        return true
+    }
+
+    // Fall back to app name checks
     switch (appName) {
         case 'SMAI':
             return vscode.env.appName === sageMakerAppname
