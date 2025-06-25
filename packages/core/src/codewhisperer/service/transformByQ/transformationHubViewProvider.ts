@@ -14,12 +14,13 @@ import {
     transformByQState,
 } from '../../models/model'
 import { getLogger } from '../../../shared/logger/logger'
-import { getTransformationSteps } from './transformApiHandler'
+import { getTransformationSteps, downloadAndExtractResultArchive } from './transformApiHandler'
 import {
     TransformationSteps,
     ProgressUpdates,
     TransformationStatus,
 } from '../../../codewhisperer/client/codewhispereruserclient'
+import { codeWhispererClient } from '../../../codewhisperer/client/codewhisperer'
 import { startInterval } from '../../commands/startTransformByQ'
 import { CodeTransformTelemetryState } from '../../../amazonqGumby/telemetry/codeTransformTelemetryState'
 import { convertToTimeString } from '../../../shared/datetime'
@@ -71,6 +72,14 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
         token: vscode.CancellationToken
     ): void | Thenable<void> {
         this._view = webviewView
+
+        this._view.webview.onDidReceiveMessage((message) => {
+            if (message.command === 'refreshJob') {
+                this.refreshJob(message.jobId, message.currentStatus, message.projectName).catch((error) => {
+                    getLogger().error('refreshJob failed: %s', (error as Error).message)
+                })
+            }
+        })
 
         this._view.webview.options = {
             enableScripts: true,
@@ -150,6 +159,23 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                     ? `<p>${CodeWhispererConstants.nothingToShowMessage}</p>`
                     : this.getTableMarkup(history)
             }
+            <script>
+                const vscode = acquireVsCodeApi();
+                
+                document.addEventListener('click', (event) => {
+                    if (event.target.classList.contains('refresh-btn')) {
+                        const jobId = event.target.getAttribute('row-id');
+                        const projectName = event.target.getAttribute('proj-name');
+                        const status = event.target.getAttribute('status');
+                        vscode.postMessage({
+                            command: 'refreshJob',
+                            jobId: jobId,
+                            projectName: projectName,
+                            currentStatus: status
+                        });
+                    }
+                });
+            </script>
             </body>
             </html>`
     }
@@ -165,6 +191,18 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
         }[]
     ) {
         return `
+            <style>
+            .refresh-btn {
+                border: none;
+                background: none;
+                cursor: pointer;
+                font-size: 16px;
+            }
+            .refresh-btn:disabled {
+                opacity: 0.3;
+                cursor: not-allowed;
+            }
+            </style>
             <table border="1" style="border-collapse:collapse">
                 <thead>
                     <tr>
@@ -187,6 +225,17 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                         <td>${job.duration}</td>
                         <td><a href="vscode://file${job.diffPath}">${job.diffPath}</a></td>
                         <td>${job.jobId}</td>
+                        <td>
+                            <button 
+                                class="refresh-btn" 
+                                row-id="${job.jobId}"
+                                proj-name="${job.projectName}"
+                                status="${job.status}"
+                                ${!CodeWhispererConstants.validStatesForCheckingDownloadUrl.includes(job.status) ? 'disabled' : ''}
+                            >
+                                ↻
+                            </button>
+                        </td>
                     </tr>
                 `
                     )
@@ -194,6 +243,124 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                 </tbody>
             </table>
         `
+    }
+
+    private async refreshJob(jobId: string, currentStatus: string, projectName: string) {
+        console.log('refreshing job id: %s', jobId)
+
+        // fetch status from server
+        let status = ''
+        let duration = ''
+        try {
+            const response = await codeWhispererClient.codeModernizerGetCodeTransformation({
+                transformationJobId: jobId,
+                profileArn: undefined,
+            })
+            status = response.transformationJob.status!
+            if (response.transformationJob.endExecutionTime && response.transformationJob.creationTime) {
+                duration = convertToTimeString(
+                    response.transformationJob.endExecutionTime.getTime() -
+                        response.transformationJob.creationTime.getTime()
+                )
+            }
+            // status = await pollTransformationJob(jobId, CodeWhispererConstants.validStatesForCheckingDownloadUrl, undefined)
+
+            console.log('status returned: %s', status)
+            console.log('duration returned: %s', duration)
+        } catch (error) {
+            console.error('error fetching status: %s', (error as Error).message)
+            return
+        }
+
+        // retrieve artifacts and updated duration if available
+        let jobDiffPath: string = ''
+        if (
+            CodeWhispererConstants.validStatesForCheckingDownloadUrl.includes(status) &&
+            !CodeWhispererConstants.failureStates.includes(status)
+        ) {
+            // status is COMPLETED or PARTIALLY_COMPLETED on sertver side
+            console.log('valid successful status')
+
+            // artifacts should be available to download
+            jobDiffPath = await this.retrieveArtifacts(jobId, projectName)
+        } else {
+            console.log('no artifacts available')
+        }
+
+        if (status === currentStatus && !jobDiffPath) {
+            // no changes, no need to update file/table
+            return
+        }
+
+        // update local file and history table
+        this.updateHistoryFile(status, duration, jobDiffPath, jobId)
+    }
+
+    private async retrieveArtifacts(jobId: string, projectName: string) {
+        const resultsPath = path.join(homedir(), '.aws', 'transform', projectName, 'results')
+        let jobDiffPath = path.join(homedir(), '.aws', 'transform', projectName, jobId, 'diff.patch')
+
+        if (fs.existsSync(jobDiffPath)) {
+            console.log('diff patch already exists')
+            jobDiffPath = ''
+        } else {
+            try {
+                await downloadAndExtractResultArchive(jobId, resultsPath)
+                console.log('artifacts downloaded')
+
+                if (!fs.existsSync(path.dirname(jobDiffPath))) {
+                    fs.mkdirSync(path.dirname(jobDiffPath), { recursive: true })
+                }
+                fs.copyFileSync(path.join(resultsPath, 'patch', 'diff.patch'), jobDiffPath)
+            } catch (error) {
+                console.error('error downloading artifacts: %s', (error as Error).message)
+                jobDiffPath = ''
+            } finally {
+                if (fs.existsSync(resultsPath)) {
+                    fs.rmSync(resultsPath, { recursive: true, force: true })
+                }
+                console.log('deleted temporary extraction directory')
+            }
+        }
+        return jobDiffPath
+    }
+
+    private updateHistoryFile(status: string, duration: string, diffPath: string, jobId: string) {
+        const history: string[][] = []
+        const jobHistoryFilePath = path.join(homedir(), '.aws', 'transform', 'transformation-history.tsv')
+        if (fs.existsSync(jobHistoryFilePath)) {
+            const historyFile = fs.readFileSync(jobHistoryFilePath, { encoding: 'utf8', flag: 'r' })
+            const jobs = historyFile.split('\n')
+            jobs.shift() // removes headers
+            if (jobs.length > 0) {
+                jobs.forEach((job) => {
+                    if (job) {
+                        const jobInfo = job.split('\t')
+                        // startTime: jobInfo[0], projectName: jobInfo[1], status: jobInfo[2], duration: jobInfo[3], diffPath: jobInfo[4], jobId: jobInfo[5]
+                        if (jobInfo[5] === jobId) {
+                            // update any values if applicable
+                            jobInfo[2] = status
+                            if (duration) {
+                                jobInfo[3] = duration
+                            }
+                            if (diffPath) {
+                                jobInfo[4] = diffPath
+                            }
+                        }
+                        history.push(jobInfo)
+                    }
+                })
+            }
+        }
+        if (history.length > 0) {
+            // rewrite file
+            fs.writeFileSync(jobHistoryFilePath, 'date\tproject_name\tstatus\tduration\tdiff_path\tjob_id\n')
+            const tsvContent = history.map((row) => row.join('\t')).join('\n')
+            fs.writeFileSync(jobHistoryFilePath, tsvContent, { flag: 'a' })
+
+            // update table content
+            this.updateContent('job history')
+        }
     }
 
     private generateTransformationStepMarkup(
