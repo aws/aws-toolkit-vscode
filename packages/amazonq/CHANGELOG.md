@@ -1,3 +1,9 @@
+## 1.79.0 2025-06-25
+
+- **Bug Fix** Added automatic system certificate detection and VSCode proxy settings support
+- **Bug Fix** Improved Amazon Linux 2 support with better SageMaker environment detection
+- **Feature** /transform: run all builds client-side
+
 ## 1.78.0 2025-06-20
 
 - **Bug Fix** Resolve missing chat options in Amazon Q chat interface.
