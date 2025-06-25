@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Improved Amazon Linux 2 support with better SageMaker environment detection"
+}
