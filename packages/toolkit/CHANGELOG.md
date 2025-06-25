@@ -1,3 +1,9 @@
+## 3.67.0 2025-06-25
+
+- **Bug Fix** State Machine deployments can now be initiated directly from Workflow Studio without closing the editor
+- **Bug Fix** Step Function performance metrics now accurately reflect only Workflow Studio document activity
+- **Feature** AccessAnalyzer: CheckNoPublicAccess custom policy check supports additional resource types.
+
 ## 3.66.0 2025-06-18
 
 - Miscellaneous non-user-facing changes
