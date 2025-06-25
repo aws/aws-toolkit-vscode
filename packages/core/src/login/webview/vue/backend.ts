@@ -299,13 +299,13 @@ export abstract class CommonAuthWebview extends VueWebview {
         return globals.globalState.tryGet('recentSso', Object, { startUrl: '', region: 'us-east-1' })
     }
 
-    getDefaultIamKeys(): { accessKey: string; secretKey: string } {
+    getDefaultIamKeys(): { accessKey: string } {
         const devSettings = DevSettings.instance.get('autofillAccessKey', '')
         if (devSettings) {
-            return { accessKey: devSettings, secretKey: '' }
+            return { accessKey: devSettings }
         }
 
-        return globals.globalState.tryGet('recentIamKeys', Object, { accessKey: '', secretKey: '' })
+        return globals.globalState.tryGet('recentIamKeys', Object, { accessKey: '' })
     }
 
     cancelAuthFlow() {

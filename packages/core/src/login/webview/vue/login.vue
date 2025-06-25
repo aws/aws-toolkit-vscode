@@ -371,10 +371,10 @@ export default defineComponent({
     },
     async created() {
         const defaultSso = await this.getDefaultSso()
-        const defaultIamAccessKey = await this.getDefaultIamAccessKey()
-        this.accessKey = defaultIamAccessKey.accessKey
         this.startUrl = defaultSso.startUrl
         this.selectedRegion = defaultSso.region
+        const defaultIamAccessKey = await this.getDefaultIamAccessKey()
+        this.accessKey = defaultIamAccessKey.accessKey
         await this.emitUpdate('created')
     },
 
