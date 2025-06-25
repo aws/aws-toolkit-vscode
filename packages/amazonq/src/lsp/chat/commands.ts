@@ -7,8 +7,9 @@ import { Commands, globals } from 'aws-core-vscode/shared'
 import { window } from 'vscode'
 import { AmazonQChatViewProvider } from './webviewProvider'
 import { CodeScanIssue } from 'aws-core-vscode/codewhisperer'
-import { EditorContextExtractor } from 'aws-core-vscode/codewhispererChat'
 import { DefaultAmazonQAppInitContext } from 'aws-core-vscode/amazonq'
+import * as vscode from 'vscode'
+import * as path from 'path'
 
 /**
  * TODO: Re-enable these once we can figure out which path they're going to live in
@@ -27,25 +28,35 @@ export function registerCommands(provider: AmazonQChatViewProvider) {
                 type: 'chatMessage',
             })
         }),
-        Commands.register('aws.amazonq.explainIssue', async (issue: CodeScanIssue) => {
+        Commands.register('aws.amazonq.explainIssue', async (issue: CodeScanIssue, filePath: string) => {
             void focusAmazonQPanel().then(async () => {
-                const editorContextExtractor = new EditorContextExtractor()
-                const extractedContext = await editorContextExtractor.extractContextForTrigger('ContextMenu')
-                const selectedCode =
-                    extractedContext?.activeFileContext?.fileText
-                        ?.split('\n')
-                        .slice(issue.startLine, issue.endLine)
-                        .join('\n') ?? ''
-
-                // The message that gets sent to the UI
-                const uiMessage = [
-                    'Explain the ',
-                    issue.title,
-                    ' issue in the following code:',
-                    '\n```\n',
-                    selectedCode,
-                    '\n```',
-                ].join('')
+                let selectedCode: string | undefined = undefined
+                if (issue && filePath) {
+                    const range = new vscode.Range(issue.startLine, 0, issue.endLine, 0)
+                    await vscode.workspace.openTextDocument(filePath).then((doc) => {
+                        void vscode.window.showTextDocument(doc, {
+                            selection: range,
+                            viewColumn: vscode.ViewColumn.One,
+                            preview: true,
+                        })
+                        selectedCode = stripIndent(doc.getText(range))
+                    })
+                }
+                const uiMessageComponents = [`## ${issue.title}`]
+                if (filePath) {
+                    uiMessageComponents.push(`File: ${path.basename(filePath)}`)
+                }
+                if (issue.relatedVulnerabilities !== undefined && issue.relatedVulnerabilities.length > 0) {
+                    uiMessageComponents.push(
+                        `Common Weakness Enumeration (CWE): ${issue.relatedVulnerabilities.map((cwe) => `[${cwe}](https://cwe.mitre.org/data/definitions/${cwe}.html)`).join(', ')}`
+                    )
+                }
+                if (issue.detectorName !== undefined) {
+                    uiMessageComponents.push(`Detector Library: [${issue.detectorName}](${issue.recommendation.url})`)
+                }
+                if (selectedCode) {
+                    uiMessageComponents.push(`\`\`\`\n${selectedCode}\n\`\`\``)
+                }
 
                 // The message that gets sent to the backend
                 const contextMessage = `Explain the issue "${issue.title}" (${JSON.stringify(
@@ -58,7 +69,7 @@ export function registerCommands(provider: AmazonQChatViewProvider) {
                         selection: '',
                         triggerType: 'contextMenu',
                         prompt: {
-                            prompt: uiMessage, // what gets sent to the user
+                            prompt: uiMessageComponents.join('\n'), // what gets sent to the user
                             escapedPrompt: contextMessage, // what gets sent to the backend
                         },
                         autoSubmit: true,
@@ -117,6 +128,14 @@ function registerGenericCommand(commandName: string, genericCommand: string, pro
             })
         })
     })
+}
+
+function stripIndent(text: string): string {
+    const lines = text.split('\n')
+    const minIndent = Math.min(
+        ...lines.filter((line) => line.trim()).map((line) => line.length - line.trimStart().length)
+    )
+    return lines.map((line) => line.slice(minIndent)).join('\n')
 }
 
 /**

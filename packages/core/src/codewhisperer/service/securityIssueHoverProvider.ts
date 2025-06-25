@@ -79,23 +79,24 @@ export class SecurityIssueHoverProvider implements vscode.HoverProvider {
             `${suggestedFix?.code && suggestedFix.description !== '' ? suggestedFix.description : issue.recommendation.text}\n\n`
         )
 
-        const viewDetailsCommand = this._getCommandMarkdown(
-            'aws.amazonq.openSecurityIssuePanel',
-            [issue, filePath],
-            'eye',
-            'View Details',
-            `Open "${amazonqCodeIssueDetailsTabTitle}"`
-        )
-        markdownString.appendMarkdown(viewDetailsCommand)
+        // Commenting out view details button as we are deprecating the Code Issue Details page
+        // const viewDetailsCommand = this._getCommandMarkdown(
+        //     'aws.amazonq.openSecurityIssuePanel',
+        //     [issue, filePath],
+        //     'eye',
+        //     'View Details',
+        //     `Open "${amazonqCodeIssueDetailsTabTitle}"`
+        // )
+        // markdownString.appendMarkdown(viewDetailsCommand)
 
         const explainWithQCommand = this._getCommandMarkdown(
             'aws.amazonq.explainIssue',
-            [issue],
+            [issue, filePath],
             'comment',
             'Explain',
             'Explain with Amazon Q'
         )
-        markdownString.appendMarkdown(' | ' + explainWithQCommand)
+        markdownString.appendMarkdown(explainWithQCommand)
 
         const ignoreIssueCommand = this._getCommandMarkdown(
             'aws.amazonq.security.ignore',
@@ -115,21 +116,22 @@ export class SecurityIssueHoverProvider implements vscode.HoverProvider {
         )
         markdownString.appendMarkdown(' | ' + ignoreSimilarIssuesCommand)
 
-        if (suggestedFix && suggestedFix.code) {
-            const applyFixCommand = this._getCommandMarkdown(
-                'aws.amazonq.applySecurityFix',
-                [issue, filePath, 'hover'],
-                'wrench',
-                'Fix',
-                'Fix with Amazon Q'
-            )
-            markdownString.appendMarkdown(' | ' + applyFixCommand)
+        // Commenting out fix related options as we are deprecating Code Issue Details page
+        // if (suggestedFix && suggestedFix.code) {
+        //     const applyFixCommand = this._getCommandMarkdown(
+        //         'aws.amazonq.applySecurityFix',
+        //         [issue, filePath, 'hover'],
+        //         'wrench',
+        //         'Fix',
+        //         'Fix with Amazon Q'
+        //     )
+        //     markdownString.appendMarkdown(' | ' + applyFixCommand)
 
-            markdownString.appendMarkdown('### Suggested Fix Preview\n')
-            markdownString.appendMarkdown(
-                `${this._makeCodeBlock(suggestedFix.code, issue.detectorId.split('/').shift())}\n`
-            )
-        }
+        //     markdownString.appendMarkdown('### Suggested Fix Preview\n')
+        //     markdownString.appendMarkdown(
+        //         `${this._makeCodeBlock(suggestedFix.code, issue.detectorId.split('/').shift())}\n`
+        //     )
+        // }
 
         return markdownString
     }
