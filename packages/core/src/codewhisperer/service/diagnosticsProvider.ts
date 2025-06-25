@@ -39,7 +39,7 @@ export function initSecurityScanRender(
         updateSecurityIssuesForProviders(securityRecommendation, scope === CodeAnalysisScope.FILE_AUTO)
     }
     securityScanRender.initialized = true
-    SecurityIssueProvider.instance.cleanOldFiles()
+    // SecurityIssueProvider.instance.cleanOldFiles()
 }
 
 function updateSecurityIssuesForProviders(securityRecommendation: AggregatedCodeScanIssue, isAutoScope?: boolean) {
