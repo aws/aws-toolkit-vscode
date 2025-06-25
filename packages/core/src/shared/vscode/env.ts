@@ -125,13 +125,41 @@ export function isRemoteWorkspace(): boolean {
 }
 
 /**
- * There is Amazon Linux 2.
+ * Checks if the current environment is running on Amazon Linux 2.
  *
- * Use {@link isCloudDesktop()} to know if we are specifically using internal Amazon Linux 2.
+ * This function attempts to detect if we're running in a container on an AL2 host
+ * by checking both the OS release and container-specific indicators.
  *
  * Example: `5.10.220-188.869.amzn2int.x86_64` or `5.10.236-227.928.amzn2.x86_64` (Cloud Dev Machine)
  */
 export function isAmazonLinux2() {
+    // First check if we're in a SageMaker environment, which should not be treated as AL2
+    // even if the underlying host is AL2
+    if (
+        process.env.SAGEMAKER_APP_TYPE ||
+        process.env.SERVICE_NAME === 'SageMakerUnifiedStudio' ||
+        process.env.SAGEMAKER_INTERNAL_IMAGE_URI
+    ) {
+        return false
+    }
+
+    // Check if we're in a container environment that's not AL2
+    if (process.env.container === 'docker' || process.env.DOCKER_HOST || process.env.DOCKER_BUILDKIT) {
+        // Additional check for container OS - if we can determine it's not AL2
+        try {
+            const fs = require('fs')
+            if (fs.existsSync('/etc/os-release')) {
+                const osRelease = fs.readFileSync('/etc/os-release', 'utf8')
+                if (!osRelease.includes('Amazon Linux 2') && !osRelease.includes('amzn2')) {
+                    return false
+                }
+            }
+        } catch (e) {
+            // If we can't read the file, fall back to the os.release() check
+        }
+    }
+
+    // Standard check for AL2 in the OS release string
     return (os.release().includes('.amzn2int.') || os.release().includes('.amzn2.')) && process.platform === 'linux'
 }
 
