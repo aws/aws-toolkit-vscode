@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Added automatic system certificate detection and VSCode proxy settings support"
-}

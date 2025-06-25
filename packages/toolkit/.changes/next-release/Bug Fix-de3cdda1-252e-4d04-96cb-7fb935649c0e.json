@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Step Function performance metrics now accurately reflect only Workflow Studio document activity"
-}
