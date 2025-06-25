@@ -780,6 +780,7 @@ const devSettings = {
     amazonqWorkspaceLsp: Record(String, String),
     ssoCacheDirectory: String,
     autofillStartUrl: String,
+    autofillAccessKey: String,
     webAuth: Boolean,
     notificationsPollInterval: Number,
 }
