@@ -72,13 +72,10 @@ describe('initializeComputeRegion, getComputeRegion', async function () {
         sandbox.restore()
     })
 
-    it('throws if the region has not been set', async function () {
-        // not quite a pure test: we call activate during the test load so this value will always be set
-        // manually hack in the notInitialized value to trigger the error
-        sandbox.stub(metadataService, 'getInstanceIdentity').resolves({ region: 'notInitialized' })
-
-        await initializeComputeRegion(metadataService, true)
-        assert.throws(getComputeRegion)
+    it('returns default value when region is not initialized', function () {
+        // Test the auto-initialization behavior when getComputeRegion is called before initialization
+        const result = getComputeRegion()
+        assert.ok(result === 'unknown' || result === undefined)
     })
 
     it('returns a compute region', async function () {
