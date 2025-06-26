@@ -192,10 +192,20 @@ export class EditDecorationManager {
         this.imageDecorationType.dispose()
         this.removedCodeDecorationType.dispose()
     }
+
+    // Use process-wide singleton to prevent multiple instances on Windows
+    static readonly decorationManagerKey = Symbol.for('aws.amazonq.decorationManager')
+
+    static getDecorationManager(): EditDecorationManager {
+        const globalObj = global as any
+        if (!globalObj[this.decorationManagerKey]) {
+            globalObj[this.decorationManagerKey] = new EditDecorationManager()
+        }
+        return globalObj[this.decorationManagerKey]
+    }
 }
 
-// Create a singleton instance of the decoration manager
-export const decorationManager = new EditDecorationManager()
+export const decorationManager = EditDecorationManager.getDecorationManager()
 
 /**
  * Function to replace editor's content with new code

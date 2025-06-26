@@ -15,7 +15,7 @@ import { InlineGeneratingMessage } from './inlineGeneratingMessage'
 import { CodeWhispererStatusBarManager } from 'aws-core-vscode/codewhisperer'
 import { TelemetryHelper } from './telemetryHelper'
 import { ICursorUpdateRecorder } from './cursorUpdateManager'
-import { globals } from 'aws-core-vscode/shared'
+import { globals, getLogger } from 'aws-core-vscode/shared'
 
 export interface GetAllRecommendationsOptions {
     emitTelemetry?: boolean
@@ -70,11 +70,31 @@ export class RecommendationService {
             }
 
             // Handle first request
+            getLogger().info('Sending inline completion request: %O', {
+                method: inlineCompletionWithReferencesRequestType.method,
+                request: {
+                    textDocument: request.textDocument,
+                    position: request.position,
+                    context: request.context,
+                },
+            })
             let result: InlineCompletionListWithReferences = await languageClient.sendRequest(
                 inlineCompletionWithReferencesRequestType.method,
                 request,
                 token
             )
+            getLogger().info('Received inline completion response: %O', {
+                sessionId: result.sessionId,
+                itemCount: result.items?.length || 0,
+                items: result.items?.map((item) => ({
+                    itemId: item.itemId,
+                    insertText:
+                        (typeof item.insertText === 'string' ? item.insertText : String(item.insertText))?.substring(
+                            0,
+                            50
+                        ) + '...',
+                })),
+            })
 
             TelemetryHelper.instance.setSdkApiCallEndTime()
             TelemetryHelper.instance.setSessionId(result.sessionId)
@@ -112,7 +132,7 @@ export class RecommendationService {
             TelemetryHelper.instance.setAllPaginationEndTime()
             options.emitTelemetry && TelemetryHelper.instance.tryRecordClientComponentLatency()
         } catch (error) {
-            console.error('Error getting recommendations:', error)
+            getLogger().error('Error getting recommendations: %O', error)
             return []
         } finally {
             // Remove all UI indicators if UI is enabled

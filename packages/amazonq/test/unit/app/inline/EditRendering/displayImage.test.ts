@@ -93,7 +93,8 @@ describe('EditDecorationManager', function () {
         assert.strictEqual(removedCodeCall.args[0], manager['removedCodeDecorationType'])
     })
 
-    it('should trigger accept handler when command is executed', function () {
+    // Helper function to setup edit suggestion test
+    function setupEditSuggestionTest() {
         // Create a fake SVG image URI
         const svgUri = vscode.Uri.parse('file:///path/to/image.svg')
 
@@ -112,6 +113,12 @@ describe('EditDecorationManager', function () {
             'New code',
             [{ line: 0, start: 0, end: 0 }]
         )
+
+        return { acceptHandler, rejectHandler }
+    }
+
+    it('should trigger accept handler when command is executed', function () {
+        const { acceptHandler, rejectHandler } = setupEditSuggestionTest()
 
         // Find the command handler that was registered for accept
         const acceptCommandArgs = commandsStub.registerCommand.args.find(
@@ -132,24 +139,7 @@ describe('EditDecorationManager', function () {
     })
 
     it('should trigger reject handler when command is executed', function () {
-        // Create a fake SVG image URI
-        const svgUri = vscode.Uri.parse('file:///path/to/image.svg')
-
-        // Create accept and reject handlers
-        const acceptHandler = sandbox.stub()
-        const rejectHandler = sandbox.stub()
-
-        // Display the edit suggestion
-        manager.displayEditSuggestion(
-            editorStub as unknown as vscode.TextEditor,
-            svgUri,
-            0,
-            acceptHandler,
-            rejectHandler,
-            'Original code',
-            'New code',
-            [{ line: 0, start: 0, end: 0 }]
-        )
+        const { acceptHandler, rejectHandler } = setupEditSuggestionTest()
 
         // Find the command handler that was registered for reject
         const rejectCommandArgs = commandsStub.registerCommand.args.find(

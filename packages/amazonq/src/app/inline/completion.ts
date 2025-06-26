@@ -209,8 +209,16 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
         token: CancellationToken,
         getAllRecommendationsOptions?: GetAllRecommendationsOptions
     ): Promise<InlineCompletionItem[]> {
+        getLogger().info('_provideInlineCompletionItems called with: %O', {
+            documentUri: document.uri.toString(),
+            position,
+            context,
+            triggerKind: context.triggerKind === InlineCompletionTriggerKind.Automatic ? 'Automatic' : 'Invoke',
+        })
+
         // prevent concurrent API calls and write to shared state variables
         if (vsCodeState.isRecommendationsActive) {
+            getLogger().info('Recommendations already active, returning empty')
             return []
         }
         let logstr = `GenerateCompletion metadata:\\n`

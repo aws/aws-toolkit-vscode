@@ -211,7 +211,8 @@ describe('RecommendationService', () => {
             sinon.assert.calledOnce(cursorUpdateManager.recordCompletionRequest as sinon.SinonStub)
         })
 
-        it('should not show UI indicators when showUi option is false', async () => {
+        // Helper function to setup UI test
+        function setupUITest() {
             const mockFirstResult = {
                 sessionId: 'test-session',
                 items: [mockInlineCompletionItemOne],
@@ -223,6 +224,12 @@ describe('RecommendationService', () => {
             // Spy on the UI methods
             const showGeneratingStub = sandbox.stub(activeStateController, 'showGenerating').resolves()
             const hideGeneratingStub = sandbox.stub(activeStateController, 'hideGenerating')
+
+            return { showGeneratingStub, hideGeneratingStub }
+        }
+
+        it('should not show UI indicators when showUi option is false', async () => {
+            const { showGeneratingStub, hideGeneratingStub } = setupUITest()
 
             // Call with showUi: false option
             await service.getAllRecommendations(languageClient, mockDocument, mockPosition, mockContext, mockToken, {
@@ -238,17 +245,7 @@ describe('RecommendationService', () => {
         })
 
         it('should show UI indicators when showUi option is true (default)', async () => {
-            const mockFirstResult = {
-                sessionId: 'test-session',
-                items: [mockInlineCompletionItemOne],
-                partialResultToken: undefined,
-            }
-
-            sendRequestStub.resolves(mockFirstResult)
-
-            // Spy on the UI methods
-            const showGeneratingStub = sandbox.stub(activeStateController, 'showGenerating').resolves()
-            const hideGeneratingStub = sandbox.stub(activeStateController, 'hideGenerating')
+            const { showGeneratingStub, hideGeneratingStub } = setupUITest()
 
             // Call with default options (showUi: true)
             await service.getAllRecommendations(languageClient, mockDocument, mockPosition, mockContext, mockToken)

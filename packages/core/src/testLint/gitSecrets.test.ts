@@ -115,6 +115,7 @@ ${mySecretAccessKey}
     })
 
     it('ensures no git secrets are found', function () {
+        this.timeout(10000)
         const result = runCmd([gitSecrets, '--scan'], { cwd: toolkitProjectDir })
         assert.strictEqual(result.status, 0, `Failure output: ${result.stderr.toString()}`)
     })

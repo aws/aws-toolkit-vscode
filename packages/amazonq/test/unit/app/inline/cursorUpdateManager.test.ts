@@ -129,7 +129,8 @@ describe('CursorUpdateManager', () => {
         assert.ok(stopSpy.called)
     })
 
-    it('should send cursor update requests at intervals', () => {
+    // Helper function to setup cursor update test
+    function setupCursorUpdateTest() {
         // Setup test data
         const position = new vscode.Position(1, 2)
         const uri = 'file:///test.ts'
@@ -156,8 +157,14 @@ describe('CursorUpdateManager', () => {
             provideInlineCompletionItems: provideStub,
         }
 
+        return { provideStub, position, uri }
+    }
+
+    it('should send cursor update requests at intervals', () => {
+        const { provideStub } = setupCursorUpdateTest()
+
         // Start the manager - we're not awaiting this since we're just setting up the test
-        cursorUpdateManager.start()
+        void cursorUpdateManager.start()
 
         // Reset the sendRequestStub to clear the call from start()
         sendRequestStub.resetHistory()
@@ -173,18 +180,7 @@ describe('CursorUpdateManager', () => {
     })
 
     it('should not send cursor update if a regular request was made recently', async () => {
-        // Setup test data
-        const position = new vscode.Position(1, 2)
-        const uri = 'file:///test.ts'
-        cursorUpdateManager.updatePosition(position, uri)
-
-        // Mock the active editor
-        const mockEditor = {
-            document: {
-                uri: { toString: () => uri },
-            },
-        }
-        sinon.stub(vscode.window, 'activeTextEditor').get(() => mockEditor as any)
+        setupCursorUpdateTest()
 
         // Start the manager
         await cursorUpdateManager.start()
@@ -206,32 +202,8 @@ describe('CursorUpdateManager', () => {
         assert.strictEqual(sendRequestStub.called, false)
     })
 
-    it.only('should not send cursor update if position has not changed since last update', async () => {
-        // Setup test data
-        const position = new vscode.Position(1, 2)
-        const uri = 'file:///test.ts'
-        cursorUpdateManager.updatePosition(position, uri)
-
-        // Mock the active editor
-        const mockEditor = {
-            document: {
-                uri: { toString: () => uri },
-            },
-        }
-        sinon.stub(vscode.window, 'activeTextEditor').get(() => mockEditor as any)
-
-        // Create a mock cancellation token source
-        const mockCancellationTokenSource = {
-            token: {} as vscode.CancellationToken,
-            dispose: sinon.stub(),
-        }
-        sinon.stub(cursorUpdateManager as any, 'createCancellationTokenSource').returns(mockCancellationTokenSource)
-
-        // Mock the provideInlineCompletionItems method
-        const provideStub = sinon.stub().resolves([])
-        ;(cursorUpdateManager as any).inlineCompletionProvider = {
-            provideInlineCompletionItems: provideStub,
-        }
+    it('should not send cursor update if position has not changed since last update', async () => {
+        const { provideStub } = setupCursorUpdateTest()
 
         // Start the manager
         await cursorUpdateManager.start()
@@ -256,7 +228,7 @@ describe('CursorUpdateManager', () => {
 
         // Now change the position
         const newPosition = new vscode.Position(1, 3)
-        cursorUpdateManager.updatePosition(newPosition, uri)
+        cursorUpdateManager.updatePosition(newPosition, 'file:///test.ts')
 
         // Third call to sendCursorUpdate with changed position - should send update
         await (cursorUpdateManager as any).sendCursorUpdate()
