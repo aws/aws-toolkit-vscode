@@ -21,7 +21,7 @@ export class SagemakerSpaceNode extends AWSTreeNodeBase implements AWSResourceNo
     ) {
         super('')
         this.updateSpace(spaceApp)
-        this.contextValue = 'awsSagemakerSpaceRunningNode'
+        this.contextValue = this.getContext()
     }
 
     public updateSpace(spaceApp: SagemakerSpaceApp) {
@@ -50,6 +50,15 @@ export class SagemakerSpaceNode extends AWSTreeNodeBase implements AWSResourceNo
         return appDetails.AppArn
     }
 
+    public async getSpaceArn() {
+        const appDetails = await this.client.describeSpace({
+            DomainId: this.spaceApp.DomainId,
+            SpaceName: this.spaceApp.SpaceName,
+        })
+
+        return appDetails.SpaceArn
+    }
+
     private buildLabel(): string {
         const status = generateSpaceStatus(this.spaceApp.Status, this.spaceApp.App?.Status)
         return `${this.name} (${status})`
@@ -75,5 +84,13 @@ export class SagemakerSpaceNode extends AWSTreeNodeBase implements AWSResourceNo
         if (this.spaceApp.SpaceSettingsSummary?.AppType === AppType.JupyterLab) {
             return getIcon('aws-sagemaker-jupyter-lab')
         }
+    }
+
+    private getContext() {
+        const status = generateSpaceStatus(this.spaceApp.Status, this.spaceApp.App?.Status)
+        if (status === 'Running' && this.spaceApp.SpaceSettingsSummary?.RemoteAccess === 'ENABLED') {
+            return 'awsSagemakerSpaceRunningRemoteEnabledNode'
+        }
+        return 'awsSagemakerSpaceNode'
     }
 }

@@ -516,6 +516,7 @@
         "@amzn/amazon-q-developer-streaming-client": "file:../../src.gen/@amzn/amazon-q-developer-streaming-client",
         "@amzn/codewhisperer-streaming": "file:../../src.gen/@amzn/codewhisperer-streaming",
         "@amzn/sagemaker-client": "file:../../src.gen/@amzn/sagemaker-client/1.0.0.tgz",
+        "@aws-sdk/credential-providers": "<3.731.0",
         "@aws-sdk/client-api-gateway": "<3.731.0",
         "@aws-sdk/client-apprunner": "<3.731.0",
         "@aws-sdk/client-cloudcontrol": "<3.731.0",

@@ -12,6 +12,9 @@ import {
     DescribeDomainCommandInput,
     DescribeDomainCommandOutput,
     DescribeDomainResponse,
+    DescribeSpaceCommand,
+    DescribeSpaceCommandInput,
+    DescribeSpaceCommandOutput,
     ListAppsCommandInput,
     ListSpacesCommandInput,
     SageMakerClient,
@@ -51,6 +54,9 @@ export class SagemakerClient extends ClientWrapper<SageMakerClient> {
     public describeDomain(request: DescribeDomainCommandInput): Promise<DescribeDomainCommandOutput> {
         return this.makeRequest(DescribeDomainCommand, request)
     }
+    public describeSpace(request: DescribeSpaceCommandInput): Promise<DescribeSpaceCommandOutput> {
+        return this.makeRequest(DescribeSpaceCommand, request)
+    }
 
     public async fetchSpaceAppsAndDomains(): Promise<
         [Map<string, SagemakerSpaceApp>, Map<string, DescribeDomainResponse>]
@@ -59,6 +65,7 @@ export class SagemakerClient extends ClientWrapper<SageMakerClient> {
             const appMap: Map<string, AppDetails> = await this.listApps()
                 .flatten()
                 .filter((app) => !!app.DomainId && !!app.SpaceName)
+                .filter((app) => app.AppType === 'JupyterLab' || app.AppType === 'CodeEditor')
                 .toMap((app) => getDomainSpaceKey(app.DomainId || '', app.SpaceName || ''))
 
             const spaceApps: Map<string, SagemakerSpaceApp> = await this.listSpaces()

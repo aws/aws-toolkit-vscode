@@ -255,13 +255,13 @@
                             "type": "boolean",
                             "default": false
                         },
-                        "amazonqChatLSP": {
-                            "type": "boolean",
-                            "default": true
-                        },
                         "amazonqLSPInlineChat": {
                             "type": "boolean",
                             "default": false
+                        },
+                        "amazonqChatLSP": {
+                            "type": "boolean",
+                            "default": true
                         }
                     },
                     "additionalProperties": false
@@ -1456,6 +1456,11 @@
             ],
             "view/item/context": [
                 {
+                    "command": "aws.sagemaker.openRemoteConnection",
+                    "group": "inline@0",
+                    "when": "viewItem =~ /^(awsSagemakerSpaceRunningRemoteEnabledNode)$/"
+                },
+                {
                     "command": "_aws.toolkit.notifications.dismiss",
                     "when": "viewItem == toolkitNotificationStartUp",
                     "group": "inline@1"
@@ -2586,6 +2591,18 @@
                 "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "icon": "$(extensions-filter)",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.sagemaker.openRemoteConnection",
+                "title": "Connect to Sagemaker Space",
+                "icon": "$(remote-explorer)",
+                "category": "%AWS.title%",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"

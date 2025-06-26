@@ -3,8 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as cp from 'child_process' // eslint-disable-line no-restricted-imports
 import { AppStatus, SpaceStatus } from '@aws-sdk/client-sagemaker'
 import { SagemakerSpaceApp } from '../../shared/clients/sagemaker'
+import { sshLogFileLocation } from '../../shared/sshConfig'
 
 export const DomainKeyDelimiter = '__'
 
@@ -75,4 +77,28 @@ export function getSpaceAppsForUserProfile(spaceApps: SagemakerSpaceApp[], userP
 
         return result
     }, [] as string[])
+}
+
+export function getSmSsmEnv(ssmPath: string, sagemakerLocalServerPath: string): NodeJS.ProcessEnv {
+    return Object.assign(
+        {
+            AWS_SSM_CLI: ssmPath,
+            SAGEMAKER_LOCAL_SERVER_FILE_PATH: sagemakerLocalServerPath,
+            LOF_FILE_LOCATION: sshLogFileLocation('sagemaker', 'blah'),
+        },
+        process.env
+    )
+}
+
+export function spawnDetachedServer(...args: Parameters<typeof cp.spawn>) {
+    return cp.spawn(...args)
+}
+
+export function parseRegionFromArn(arn: string): string {
+    const parts = arn.split(':')
+    if (parts.length < 4) {
+        throw new Error(`Invalid ARN: "${arn}"`)
+    }
+
+    return parts[3] // region is the 4th part
 }

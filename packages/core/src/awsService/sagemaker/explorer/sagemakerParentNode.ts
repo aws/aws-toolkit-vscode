@@ -37,7 +37,7 @@ export class SagemakerParentNode extends AWSTreeNodeBase {
         public override readonly regionCode: string,
         protected readonly sagemakerClient: SagemakerClient
     ) {
-        super('Sagemaker', vscode.TreeItemCollapsibleState.Collapsed)
+        super('SageMaker', vscode.TreeItemCollapsibleState.Collapsed)
         this.sagemakerSpaceNodes = new Map<string, SagemakerSpaceNode>()
         this.stsClient = new DefaultStsClient(regionCode)
     }

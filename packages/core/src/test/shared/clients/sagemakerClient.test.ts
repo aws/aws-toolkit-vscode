@@ -16,9 +16,9 @@ describe('SagemakerClient.fetchSpaceAppsAndDomains', function () {
     let listAppsStub: sinon.SinonStub
 
     const appDetails: AppDetails[] = [
-        { AppName: 'app1', DomainId: 'domain1', SpaceName: 'space1' },
-        { AppName: 'app2', DomainId: 'domain2', SpaceName: 'space2' },
-        { AppName: 'app3', DomainId: 'domain2', SpaceName: 'space3' },
+        { AppName: 'app1', DomainId: 'domain1', SpaceName: 'space1', AppType: 'CodeEditor' },
+        { AppName: 'app2', DomainId: 'domain2', SpaceName: 'space2', AppType: 'CodeEditor' },
+        { AppName: 'app3', DomainId: 'domain2', SpaceName: 'space3', AppType: 'JupyterLab' },
     ]
 
     const spaceDetails: SpaceDetails[] = [
