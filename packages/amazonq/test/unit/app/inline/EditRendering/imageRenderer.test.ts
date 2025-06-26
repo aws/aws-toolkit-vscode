@@ -24,6 +24,19 @@ describe('showEdits', function () {
     let sessionStub: any
     let itemStub: InlineCompletionItemWithReferences
 
+    // Helper function to create mock SVG result
+    function createMockSvgResult(overrides: Partial<any> = {}) {
+        return {
+            svgImage: vscode.Uri.file('/path/to/generated.svg'),
+            startLine: 5,
+            newCode: 'console.log("Hello World");',
+            origionalCodeHighlightRange: [{ line: 5, start: 0, end: 10 }],
+            addedCharacterCount: 25,
+            deletedCharacterCount: 0,
+            ...overrides,
+        }
+    }
+
     beforeEach(function () {
         sandbox = sinon.createSandbox()
 
@@ -54,7 +67,7 @@ describe('showEdits', function () {
             id: sharedModuleId,
             filename: sharedModuleId,
             loaded: true,
-            parent: null,
+            parent: undefined,
             children: [],
             exports: mockSharedModule,
             paths: [],
@@ -133,14 +146,7 @@ describe('showEdits', function () {
 
     it('should successfully generate and display SVG when all parameters are valid', async function () {
         // Setup successful SVG generation
-        const mockSvgResult = {
-            svgImage: vscode.Uri.file('/path/to/generated.svg'),
-            startLine: 5,
-            newCode: 'console.log("Hello World");',
-            origionalCodeHighlightRange: [{ line: 5, start: 0, end: 10 }],
-            addedCharacterCount: 25,
-            deletedCharacterCount: 0,
-        }
+        const mockSvgResult = createMockSvgResult()
         svgGenerationServiceStub.generateDiffSvg.resolves(mockSvgResult)
 
         await showEdits(itemStub, editorStub as unknown as vscode.TextEditor, sessionStub, languageClientStub)
@@ -175,14 +181,7 @@ describe('showEdits', function () {
 
     it('should log error when SVG generation returns empty result', async function () {
         // Setup SVG generation to return undefined svgImage
-        const mockSvgResult = {
-            svgImage: undefined as any,
-            startLine: 5,
-            newCode: 'console.log("Hello World");',
-            origionalCodeHighlightRange: [{ line: 5, start: 0, end: 10 }],
-            addedCharacterCount: 25,
-            deletedCharacterCount: 0,
-        }
+        const mockSvgResult = createMockSvgResult({ svgImage: undefined as any })
         svgGenerationServiceStub.generateDiffSvg.resolves(mockSvgResult)
 
         await showEdits(itemStub, editorStub as unknown as vscode.TextEditor, sessionStub, languageClientStub)
@@ -219,14 +218,7 @@ describe('showEdits', function () {
 
     it('should catch and log error when displaySvgDecoration throws exception', async function () {
         // Setup successful SVG generation
-        const mockSvgResult = {
-            svgImage: vscode.Uri.file('/path/to/generated.svg'),
-            startLine: 5,
-            newCode: 'console.log("Hello World");',
-            origionalCodeHighlightRange: [{ line: 5, start: 0, end: 10 }],
-            addedCharacterCount: 25,
-            deletedCharacterCount: 0,
-        }
+        const mockSvgResult = createMockSvgResult()
         svgGenerationServiceStub.generateDiffSvg.resolves(mockSvgResult)
 
         // Setup displaySvgDecoration to throw an error
@@ -262,14 +254,7 @@ describe('showEdits', function () {
         } as any
 
         // Setup successful SVG generation
-        const mockSvgResult = {
-            svgImage: vscode.Uri.file('/path/to/generated.svg'),
-            startLine: 5,
-            newCode: 'console.log("Hello World");',
-            origionalCodeHighlightRange: [{ line: 5, start: 0, end: 10 }],
-            addedCharacterCount: 25,
-            deletedCharacterCount: 0,
-        }
+        const mockSvgResult = createMockSvgResult()
         svgGenerationServiceStub.generateDiffSvg.resolves(mockSvgResult)
 
         await showEdits(
