@@ -23,6 +23,9 @@ export async function activate(languageClient: LanguageClient, encryptionKey: Bu
 
     const provider = new AmazonQChatViewProvider(mynahUIPath, languageClient)
 
+    // Store the provider globally so AutoDebug can access it
+    ;(global as any).amazonQChatViewProvider = provider
+
     disposables.push(
         window.registerWebviewViewProvider(AmazonQChatViewProvider.viewType, provider, {
             webviewOptions: {

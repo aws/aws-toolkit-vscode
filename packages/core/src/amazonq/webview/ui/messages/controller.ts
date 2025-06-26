@@ -85,6 +85,8 @@ export class MessageController {
             return
         }
 
+        let targetTabId: string
+
         if (
             selectedTab !== undefined &&
             [tabType, 'unknown'].includes(selectedTab.type) &&
@@ -105,20 +107,20 @@ export class MessageController {
                 body: '',
             })
 
-            return selectedTab.id
-        }
-
-        const newTabID: string | undefined = this.mynahUI.updateStore(
-            '',
-            this.tabDataGenerator.getTabData('cwc', false)
-        )
-        if (newTabID === undefined) {
-            this.mynahUI.notify({
-                content: uiComponentsTexts.noMoreTabsTooltip,
-                type: NotificationType.WARNING,
-            })
-            return undefined
+            targetTabId = selectedTab.id
         } else {
+            const newTabID: string | undefined = this.mynahUI.updateStore(
+                '',
+                this.tabDataGenerator.getTabData('cwc', false)
+            )
+            if (newTabID === undefined) {
+                this.mynahUI.notify({
+                    content: uiComponentsTexts.noMoreTabsTooltip,
+                    type: NotificationType.WARNING,
+                })
+                return undefined
+            }
+
             this.tabsStorage.updateTabLastCommand(newTabID, command)
             this.mynahUI.addChatItem(newTabID, message)
             this.mynahUI.addChatItem(newTabID, {
@@ -146,8 +148,10 @@ export class MessageController {
             this.connector.onUpdateTabType(newTabID)
             this.tabsStorage.updateTabStatus(newTabID, 'busy')
 
-            return newTabID
+            targetTabId = newTabID
         }
+
+        return targetTabId
     }
 
     private get mynahUI(): MynahUI | undefined {
