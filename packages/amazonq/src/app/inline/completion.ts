@@ -45,6 +45,7 @@ import { InlineTutorialAnnotation } from './tutorials/inlineTutorialAnnotation'
 import { TelemetryHelper } from './telemetryHelper'
 import { getLogger } from 'aws-core-vscode/shared'
 import { debounce, messageUtils } from 'aws-core-vscode/utils'
+import { sleep } from 'aws-core-vscode/shared'
 
 export class InlineCompletionManager implements Disposable {
     private disposable: Disposable
@@ -102,8 +103,8 @@ export class InlineCompletionManager implements Disposable {
         ) => {
             // TODO: also log the seen state for other suggestions in session
             // Calculate timing metrics before diagnostic delay
-            const totalSessionDisplayTime = Date.now() - requestStartTime
-            await new Promise((resolve) => setTimeout(resolve, 1000))
+            const totalSessionDisplayTime = performance.now() - requestStartTime
+            await sleep(1000)
             const diagnosticDiff = getDiagnosticsDifferences(
                 this.sessionManager.getActiveSession()?.diagnosticsBeforeAccept,
                 getDiagnosticsOfCurrentFile()
