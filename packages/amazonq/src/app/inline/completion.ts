@@ -127,8 +127,8 @@ export class InlineCompletionManager implements Disposable {
         ) => {
             // TODO: also log the seen state for other suggestions in session
             // Calculate timing metrics before diagnostic delay
-            const totalSessionDisplayTime = Date.now() - requestStartTime
-            await new Promise((resolve) => setTimeout(resolve, 1000))
+            const totalSessionDisplayTime = performance.now() - requestStartTime
+            await sleep(1000)
             const diagnosticDiff = getDiagnosticsDifferences(
                 this.sessionManager.getActiveSession()?.diagnosticsBeforeAccept,
                 getDiagnosticsOfCurrentFile()
