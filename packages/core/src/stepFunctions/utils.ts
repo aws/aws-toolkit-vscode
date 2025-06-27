@@ -5,10 +5,10 @@
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
-import { StepFunctions } from 'aws-sdk'
+import * as StepFunctions from '@aws-sdk/client-sfn'
 import * as yaml from 'js-yaml'
 import * as vscode from 'vscode'
-import { StepFunctionsClient } from '../shared/clients/stepFunctionsClient'
+import { StepFunctionsClient } from '../shared/clients/stepFunctions'
 import {
     DiagnosticSeverity,
     DocumentLanguageSettings,

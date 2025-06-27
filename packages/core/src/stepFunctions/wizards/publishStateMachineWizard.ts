@@ -22,7 +22,7 @@ import { Wizard, WIZARD_BACK } from '../../shared/wizards/wizard'
 import { isStepFunctionsRole } from '../utils'
 import { createRolePrompter } from '../../shared/ui/common/roles'
 import { IamClient } from '../../shared/clients/iam'
-import { DefaultStepFunctionsClient } from '../../shared/clients/stepFunctionsClient'
+import { StepFunctionsClient } from '../../shared/clients/stepFunctions'
 
 export enum PublishStateMachineAction {
     QuickCreate,
@@ -109,14 +109,14 @@ function createStepFunctionsRolePrompter(region: string) {
 }
 
 async function* listStateMachines(region: string) {
-    const client = new DefaultStepFunctionsClient(region)
+    const client = new StepFunctionsClient(region)
 
     for await (const machine of client.listStateMachines()) {
         yield [
             {
-                label: machine.name,
-                data: machine.stateMachineArn,
-                description: machine.stateMachineArn,
+                label: machine.name || '',
+                data: machine.stateMachineArn || '',
+                description: machine.stateMachineArn || '',
             },
         ]
     }
