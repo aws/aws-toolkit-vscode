@@ -5,8 +5,7 @@
 
 import * as vscode from 'vscode'
 /* eslint-disable no-restricted-imports */
-import fs from 'fs'
-import { getLogger } from 'aws-core-vscode/shared'
+import { fs, getLogger } from 'aws-core-vscode/shared'
 
 /**
  * Interface for JSON request log data
@@ -59,8 +58,8 @@ export class NextEditPredictionPanel implements vscode.Disposable {
 
         // Register command for toggling the panel
         this.disposables.push(
-            vscode.commands.registerCommand('aws.amazonq.toggleNextEditPredictionPanel', () => {
-                this.toggle()
+            vscode.commands.registerCommand('aws.amazonq.toggleNextEditPredictionPanel', async () => {
+                await this.toggle()
             })
         )
     }
@@ -78,7 +77,7 @@ export class NextEditPredictionPanel implements vscode.Disposable {
     /**
      * Setup file watcher to monitor the request log file
      */
-    private setupFileWatcher(): void {
+    private async setupFileWatcher(): Promise<void> {
         if (this.fileWatcher) {
             return
         }
@@ -100,7 +99,7 @@ export class NextEditPredictionPanel implements vscode.Disposable {
             this.disposables.push(this.fileWatcher)
 
             // Initial read of the file if it exists
-            if (fs.existsSync(this.logFilePath)) {
+            if (await fs.exists(this.logFilePath)) {
                 this.scheduleFileRead()
             }
 
@@ -120,23 +119,23 @@ export class NextEditPredictionPanel implements vscode.Disposable {
         }
 
         // Schedule new read after 1 second delay
-        this.fileReadTimeout = setTimeout(() => {
-            this.readRequestLogFile()
+        this.fileReadTimeout = setTimeout(async () => {
+            await this.readRequestLogFile()
         }, 1000)
     }
 
     /**
      * Read the request log file and update the panel content
      */
-    private readRequestLogFile(): void {
+    private async readRequestLogFile(): Promise<void> {
         getLogger('nextEditPrediction').info(`Attempting to read log file: ${this.logFilePath}`)
         try {
-            if (!fs.existsSync(this.logFilePath)) {
+            if (!fs.exists(this.logFilePath)) {
                 getLogger('nextEditPrediction').info(`Log file does not exist: ${this.logFilePath}`)
                 return
             }
 
-            const content = fs.readFileSync(this.logFilePath, 'utf8')
+            const content = await fs.readFileText(this.logFilePath)
             this.requestLogs = []
 
             // Process JSONL format (one JSON object per line)
@@ -212,9 +211,9 @@ export class NextEditPredictionPanel implements vscode.Disposable {
     /**
      * Update the panel with request logs data
      */
-    private updateRequestLogsView(): void {
+    private async updateRequestLogsView(): Promise<void> {
         if (this.panel) {
-            this.panel.webview.html = this.getWebviewContent()
+            this.panel.webview.html = await this.getWebviewContent()
             getLogger('nextEditPrediction').info('Webview panel updated with request logs')
         }
     }
@@ -222,7 +221,7 @@ export class NextEditPredictionPanel implements vscode.Disposable {
     /**
      * Toggle the panel visibility
      */
-    public toggle(): void {
+    public async toggle(): Promise<void> {
         if (this.isVisible) {
             this.hide()
         } else {
@@ -233,7 +232,7 @@ export class NextEditPredictionPanel implements vscode.Disposable {
     /**
      * Show the panel
      */
-    public show(): void {
+    public async show(): Promise<void> {
         if (!this.panel) {
             // Create the webview panel
             this.panel = vscode.window.createWebviewPanel(
@@ -247,7 +246,7 @@ export class NextEditPredictionPanel implements vscode.Disposable {
             )
 
             // Set initial content
-            this.panel.webview.html = this.getWebviewContent()
+            this.panel.webview.html = await this.getWebviewContent()
 
             // Handle panel disposal
             this.panel.onDidDispose(
@@ -322,14 +321,14 @@ export class NextEditPredictionPanel implements vscode.Disposable {
     /**
      * Update the panel content with new text
      */
-    public updateContent(text: string): void {
+    public async updateContent(text: string): Promise<void> {
         if (this.panel) {
             try {
                 // Store the text for display in a separate section
                 const customContent = text
 
                 // Update the panel with both the custom content and the request logs
-                this.panel.webview.html = this.getWebviewContent(customContent)
+                this.panel.webview.html = await this.getWebviewContent(customContent)
                 getLogger('nextEditPrediction').info('Webview panel content updated')
             } catch (error) {
                 getLogger('nextEditPrediction').error(`Error updating webview: ${error}`)
@@ -340,7 +339,7 @@ export class NextEditPredictionPanel implements vscode.Disposable {
     /**
      * Generate HTML content for the webview
      */
-    private getWebviewContent(customContent?: string): string {
+    private async getWebviewContent(customContent?: string): Promise<string> {
         // Path to the debug.html file
         const debugHtmlPath = vscode.Uri.file(
             vscode.Uri.joinPath(
@@ -357,7 +356,7 @@ export class NextEditPredictionPanel implements vscode.Disposable {
 
         // Read the HTML file content
         try {
-            const htmlContent = fs.readFileSync(debugHtmlPath.fsPath, 'utf8')
+            const htmlContent = await fs.readFileText(debugHtmlPath.fsPath)
             getLogger('nextEditPrediction').info(`Successfully loaded debug.html from ${debugHtmlPath.fsPath}`)
 
             // Modify the HTML to add vscode API initialization
@@ -401,12 +400,12 @@ export class NextEditPredictionPanel implements vscode.Disposable {
     /**
      * Clear the log file and update the panel
      */
-    private clearLogFile(): void {
+    private async clearLogFile(): Promise<void> {
         try {
             getLogger('nextEditPrediction').info(`Clearing log file: ${this.logFilePath}`)
 
             // Write an empty string to clear the file
-            fs.writeFileSync(this.logFilePath, '')
+            await fs.writeFile(this.logFilePath, '')
 
             // Clear the in-memory logs
             this.requestLogs = []
