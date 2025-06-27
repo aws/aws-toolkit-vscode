@@ -518,6 +518,7 @@
         "@aws-sdk/client-ssm": "<3.731.0",
         "@aws-sdk/client-sso": "<3.731.0",
         "@aws-sdk/client-sso-oidc": "<3.731.0",
+        "@aws-sdk/client-sfn": "<3.731.0",
         "@aws-sdk/credential-provider-env": "<3.731.0",
         "@aws-sdk/credential-provider-process": "<3.731.0",
         "@aws-sdk/credential-provider-sso": "<3.731.0",
