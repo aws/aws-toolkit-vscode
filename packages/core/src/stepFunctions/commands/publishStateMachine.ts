@@ -7,7 +7,7 @@ import { load } from 'js-yaml'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { AwsContext } from '../../shared/awsContext'
-import { DefaultStepFunctionsClient, StepFunctionsClient } from '../../shared/clients/stepFunctionsClient'
+import { StepFunctionsClient } from '../../shared/clients/stepFunctions'
 import { getLogger, Logger } from '../../shared/logger/logger'
 import { showViewLogsMessage } from '../../shared/utilities/messages'
 import { VALID_SFN_PUBLISH_FORMATS, YAML_FORMATS } from '../constants/aslFormats'
@@ -64,7 +64,7 @@ export async function publishStateMachine(params: publishStateMachineParams) {
         if (!response) {
             return
         }
-        const client = new DefaultStepFunctionsClient(response.region)
+        const client = new StepFunctionsClient(response.region)
 
         if (response?.createResponse) {
             await createStateMachine(response.createResponse, text, params.outputChannel, response.region, client)
@@ -109,7 +109,7 @@ async function createStateMachine(
                 wizardResponse.name
             )
         )
-        outputChannel.appendLine(result.stateMachineArn)
+        outputChannel.appendLine(result.stateMachineArn || '')
         logger.info(`Created "${result.stateMachineArn}"`)
     } catch (err) {
         const msg = localize(
