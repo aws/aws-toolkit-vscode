@@ -14,12 +14,11 @@ import {
     vsCodeState,
 } from 'aws-core-vscode/codewhisperer'
 import { globals, sleep } from 'aws-core-vscode/shared'
-import { NextEditPredictionPanel } from './webViewPanel'
 
 export async function activate() {
     if (isInlineCompletionEnabled()) {
-        // Initialize NextEditPredictionPanel
-        NextEditPredictionPanel.getInstance()
+        // Debugging purpose: only initialize NextEditPredictionPanel when development
+        // NextEditPredictionPanel.getInstance()
 
         await setSubscriptionsforInlineCompletion()
         await AuthUtil.instance.setVscodeContextProps()
