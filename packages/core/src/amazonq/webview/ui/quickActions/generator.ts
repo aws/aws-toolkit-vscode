@@ -42,7 +42,7 @@ export class QuickActionGenerator {
         // TODO: Update acc to UX
         const quickActionCommands = [
             {
-                groupName: `Q Developer agentic capabilities`,
+                // groupName: `Q Developer agentic capabilities`,
                 commands: [
                     ...(this.isFeatureDevEnabled && !this.disabledCommands.includes('/dev')
                         ? [
