@@ -16,7 +16,7 @@ import {
 } from '../../../stepFunctions/workflowStudio/types'
 import * as vscode from 'vscode'
 import { assertTelemetry } from '../../testUtil'
-import { DefaultStepFunctionsClient } from '../../../shared/clients/stepFunctionsClient'
+import { StepFunctionsClient } from '../../../shared/clients/stepFunctions'
 import { IamClient } from '../../../shared/clients/iam'
 
 describe('WorkflowStudioApiHandler', function () {
@@ -64,7 +64,7 @@ describe('WorkflowStudioApiHandler', function () {
             fileId: '',
         }
 
-        const sfnClient = new DefaultStepFunctionsClient('us-east-1')
+        const sfnClient = new StepFunctionsClient('us-east-1')
         apiHandler = new WorkflowStudioApiHandler('us-east-1', context, {
             sfn: sfnClient,
             iam: new IamClient('us-east-1'),
