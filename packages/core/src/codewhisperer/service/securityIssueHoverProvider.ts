@@ -10,7 +10,7 @@ import path from 'path'
 import { AuthUtil } from '../util/authUtil'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { SecurityIssueProvider } from './securityIssueProvider'
-import { amazonqCodeIssueDetailsTabTitle } from '../models/constants'
+// import { amazonqCodeIssueDetailsTabTitle } from '../models/constants'
 
 export class SecurityIssueHoverProvider implements vscode.HoverProvider {
     static #instance: SecurityIssueHoverProvider
@@ -158,6 +158,8 @@ export class SecurityIssueHoverProvider implements vscode.HoverProvider {
      * @param language The language for syntax highlighting
      * @returns The markdown string
      */
+
+    /*
     private _makeCodeBlock(code: string, language?: string) {
         const lines = code
             .replaceAll('\n\\ No newline at end of file', '')
@@ -203,4 +205,5 @@ ${section}
             )
             .join('<br />')
     }
+            */
 }

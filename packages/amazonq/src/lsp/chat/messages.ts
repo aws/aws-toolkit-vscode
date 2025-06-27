@@ -72,7 +72,7 @@ import {
     CodeWhispererSettings,
     initSecurityScanRender,
     ReferenceLogViewProvider,
-    SecurityIssueProvider,
+    // SecurityIssueProvider,
     SecurityIssueTreeViewProvider,
     CodeWhispererConstants,
 } from 'aws-core-vscode/codewhisperer'
@@ -90,7 +90,7 @@ import { decryptResponse, encryptRequest } from '../encryption'
 import { getCursorState } from '../utils'
 import { focusAmazonQPanel } from './commands'
 import { ChatMessage } from '@aws/language-server-runtimes/server-interface'
-import path from 'path'
+// import path from 'path'
 
 export function registerActiveEditorChangeListener(languageClient: LanguageClient) {
     let debounceTimer: NodeJS.Timeout | undefined
