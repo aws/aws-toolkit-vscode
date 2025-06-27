@@ -5,6 +5,9 @@
 
 import * as vscode from 'vscode'
 import { AggregatedCodeScanIssue, CodeScanIssue, SuggestedFix } from '../models/model'
+import { randomUUID } from '../../shared/crypto'
+import fs = require('fs')
+import path from 'path'
 export class SecurityIssueProvider {
     static #instance: SecurityIssueProvider
     public static get instance() {
@@ -18,6 +21,15 @@ export class SecurityIssueProvider {
 
     public set issues(issues: AggregatedCodeScanIssue[]) {
         this._issues = issues
+    }
+
+    private _id: string = randomUUID()
+    public get id() {
+        return this._id
+    }
+
+    public set id(id: string) {
+        this._id = id
     }
 
     public handleDocumentChange(event: vscode.TextDocumentChangeEvent) {
@@ -156,5 +168,29 @@ export class SecurityIssueProvider {
             ?.issues.find(
                 (i) => i.title === issue.title && i.startLine === issue.startLine && i.endLine === issue.endLine
             )
+    }
+
+    public cleanOldFiles(maxfiles = 100): void {
+        const issuesJson = JSON.stringify(this._issues)
+        const dirPath = path.join(__dirname, '..', '..', '..', '..', '..', '..', 'findings')
+        fs.existsSync(dirPath) || fs.mkdirSync(dirPath)
+        fs.writeFileSync(path.join(dirPath, `SecurityIssues-${this._id}.json`), issuesJson, 'utf8')
+        const files = fs.readdirSync(dirPath)
+        if (files.length > maxfiles) {
+            type Stat = { fileName: string; mtime: number }
+            const stats: Stat[] = []
+            for (const file of files) {
+                const stat = fs.statSync(path.join(dirPath, file[0]))
+                stats.push({
+                    fileName: file[0],
+                    mtime: stat.mtime.getTime(),
+                })
+            }
+            const sortedStats = stats.sort((a: Stat, b: Stat) => a.mtime - b.mtime)
+            const numberToDelete = files.length - maxfiles
+            for (let i = 0; i < numberToDelete; i++) {
+                fs.rmSync(path.join(dirPath, sortedStats[i].fileName))
+            }
+        }
     }
 }

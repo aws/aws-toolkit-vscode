@@ -401,7 +401,7 @@ export function showSecurityScanResults(
     zipMetadata: ZipMetadata,
     totalIssues: number
 ) {
-    initSecurityScanRender(securityRecommendationCollection, context, editor, scope)
+    initSecurityScanRender(securityRecommendationCollection, editor, scope)
 
     if (scope === CodeWhispererConstants.CodeAnalysisScope.PROJECT) {
         populateCodeScanLogStream(zipMetadata.scannedFiles)
@@ -439,7 +439,7 @@ export function showScanResultsInChat(
             break
     }
 
-    initSecurityScanRender(securityRecommendationCollection, context, editor, scope)
+    initSecurityScanRender(securityRecommendationCollection, editor, scope)
     if (totalIssues > 0) {
         SecurityIssueTreeViewProvider.focus()
     }

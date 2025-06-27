@@ -836,7 +836,7 @@ export const regenerateFix = Commands.declare(
 export const explainIssue = Commands.declare(
     { id: 'aws.amazonq.security.explain' },
     () => async (issueItem: IssueItem) => {
-        await vscode.commands.executeCommand('aws.amazonq.explainIssue', issueItem.issue)
+        await vscode.commands.executeCommand('aws.amazonq.explainIssue', issueItem.issue, issueItem.filePath)
     }
 )
 
