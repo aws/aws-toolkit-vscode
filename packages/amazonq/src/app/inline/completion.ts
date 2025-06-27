@@ -35,6 +35,9 @@ import {
     inlineCompletionsDebounceDelay,
     noInlineSuggestionsMsg,
     ReferenceInlineProvider,
+    getDiagnosticsDifferences,
+    getDiagnosticsOfCurrentFile,
+    toIdeDiagnostics,
 } from 'aws-core-vscode/codewhisperer'
 import { InlineGeneratingMessage } from './inlineGeneratingMessage'
 import { LineTracker } from './stateTracker/lineTracker'
@@ -42,6 +45,7 @@ import { InlineTutorialAnnotation } from './tutorials/inlineTutorialAnnotation'
 import { TelemetryHelper } from './telemetryHelper'
 import { getLogger } from 'aws-core-vscode/shared'
 import { debounce, messageUtils } from 'aws-core-vscode/utils'
+import { sleep } from 'aws-core-vscode/shared'
 
 export class InlineCompletionManager implements Disposable {
     private disposable: Disposable
@@ -98,6 +102,13 @@ export class InlineCompletionManager implements Disposable {
             firstCompletionDisplayLatency?: number
         ) => {
             // TODO: also log the seen state for other suggestions in session
+            // Calculate timing metrics before diagnostic delay
+            const totalSessionDisplayTime = performance.now() - requestStartTime
+            await sleep(1000)
+            const diagnosticDiff = getDiagnosticsDifferences(
+                this.sessionManager.getActiveSession()?.diagnosticsBeforeAccept,
+                getDiagnosticsOfCurrentFile()
+            )
             const params: LogInlineCompletionSessionResultsParams = {
                 sessionId: sessionId,
                 completionSessionResult: {
@@ -107,8 +118,10 @@ export class InlineCompletionManager implements Disposable {
                         discarded: false,
                     },
                 },
-                totalSessionDisplayTime: Date.now() - requestStartTime,
+                totalSessionDisplayTime: totalSessionDisplayTime,
                 firstCompletionDisplayLatency: firstCompletionDisplayLatency,
+                addedDiagnostics: diagnosticDiff.added.map((it) => toIdeDiagnostics(it)),
+                removedDiagnostics: diagnosticDiff.removed.map((it) => toIdeDiagnostics(it)),
             }
             this.languageClient.sendNotification(this.logSessionResultMessageName, params)
             this.disposable.dispose()
