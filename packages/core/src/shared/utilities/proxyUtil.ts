@@ -73,9 +73,6 @@ export class ProxyUtil {
         // Always enable experimental proxy support for better handling of both explicit and transparent proxies
         process.env.EXPERIMENTAL_HTTP_PROXY_SUPPORT = 'true'
 
-        // Load built-in bundle and system OS trust store
-        process.env.NODE_OPTIONS = '--use-system-ca'
-
         const proxyUrl = config.proxyUrl
         // Set proxy environment variables
         if (proxyUrl) {
