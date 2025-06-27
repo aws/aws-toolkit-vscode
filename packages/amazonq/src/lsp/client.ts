@@ -135,6 +135,7 @@ export async function startLanguageServer(
                         developerProfiles: true,
                         pinnedContextEnabled: true,
                         mcp: true,
+                        reroute: true,
                     },
                     window: {
                         notifications: true,
