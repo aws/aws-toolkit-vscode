@@ -7,9 +7,9 @@ import * as os from 'os'
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
-import { StepFunctions } from 'aws-sdk'
+import * as StepFunctions from '@aws-sdk/client-sfn'
 import * as vscode from 'vscode'
-import { DefaultStepFunctionsClient } from '../../shared/clients/stepFunctionsClient'
+import { StepFunctionsClient } from '../../shared/clients/stepFunctions'
 
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
@@ -40,7 +40,7 @@ export class StepFunctionsNode extends AWSTreeNodeBase {
 
     public constructor(
         public override readonly regionCode: string,
-        private readonly client = new DefaultStepFunctionsClient(regionCode)
+        private readonly client = new StepFunctionsClient(regionCode)
     ) {
         super('Step Functions', vscode.TreeItemCollapsibleState.Collapsed)
         this.stateMachineNodes = new Map<string, StateMachineNode>()
@@ -101,7 +101,7 @@ export class StateMachineNode extends AWSTreeNodeBase implements AWSResourceNode
     }
 
     public get arn(): string {
-        return this.details.stateMachineArn
+        return this.details.stateMachineArn || ''
     }
 
     public get name(): string {
