@@ -3,9 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { StepFunctions } from 'aws-sdk'
+import * as StepFunctions from '@aws-sdk/client-sfn'
 import { IamClient, IamRole } from '../../shared/clients/iam'
-import { DefaultStepFunctionsClient } from '../../shared/clients/stepFunctionsClient'
+import { StepFunctionsClient } from '../../shared/clients/stepFunctions'
 import { ApiAction, ApiCallRequestMessage, Command, MessageType, WebviewContext } from './types'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { ListRolesRequest } from '@aws-sdk/client-iam'
@@ -15,7 +15,7 @@ export class WorkflowStudioApiHandler {
         region: string,
         private readonly context: WebviewContext,
         private readonly clients = {
-            sfn: new DefaultStepFunctionsClient(region),
+            sfn: new StepFunctionsClient(region),
             iam: new IamClient(region),
         }
     ) {}
