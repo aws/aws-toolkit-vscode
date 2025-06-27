@@ -133,7 +133,7 @@ export class EditDecorationManager {
     ): void {
         this.clearDecorations(editor)
 
-        void setContext('amazonq.editSuggestionActive' as any, true)
+        void setContext('aws.amazonq.editSuggestionActive' as any, true)
 
         this.acceptHandler = onAccept
         this.rejectHandler = onReject
@@ -163,7 +163,7 @@ export class EditDecorationManager {
         this.currentRemovedCodeDecorations = []
         this.acceptHandler = undefined
         this.rejectHandler = undefined
-        void setContext('amazonq.editSuggestionActive' as any, false)
+        void setContext('aws.amazonq.editSuggestionActive' as any, false)
     }
 
     /**

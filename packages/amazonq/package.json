@@ -945,12 +945,12 @@
             {
                 "command": "aws.amazonq.inline.acceptEdit",
                 "key": "tab",
-                "when": "editorTextFocus && amazonq.editSuggestionActive"
+                "when": "editorTextFocus && aws.amazonq.editSuggestionActive"
             },
             {
                 "command": "aws.amazonq.inline.rejectEdit",
                 "key": "escape",
-                "when": "editorTextFocus && amazonq.editSuggestionActive"
+                "when": "editorTextFocus && aws.amazonq.editSuggestionActive"
             }
         ],
         "icons": {
