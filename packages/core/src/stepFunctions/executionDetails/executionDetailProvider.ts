@@ -8,8 +8,9 @@ import { getLogger } from '../../shared/logger/logger'
 import request from '../../shared/request'
 import { ToolkitError } from '../../shared/errors'
 import { i18n } from '../../shared/i18n-helper'
-import { ComponentType } from '../workflowStudio/types'
+import { ComponentType, WorkflowMode } from '../workflowStudio/types'
 import { isLocalDev, localhost, cdn } from '../constants/webviewResources'
+import { handleMessage, ExecutionDetailsContext } from './handleMessage'
 
 /**
  * Provider for Execution Details panels.
@@ -99,10 +100,26 @@ export class ExecutionDetailProvider {
             // Set up the content
             panel.webview.html = await this.getWebviewContent()
 
+            // Create execution details context
+            const context: ExecutionDetailsContext = {
+                stateMachineName: executionArn.split(':').pop() || 'Unknown',
+                mode: WorkflowMode.Readonly, // Execution details are typically read-only
+                panel,
+                textDocument: {} as vscode.TextDocument, // Not applicable for execution details
+                disposables: [],
+                workSpacePath: '',
+                defaultTemplatePath: '',
+                defaultTemplateName: '',
+                fileStates: {},
+                loaderNotification: undefined,
+                fileId: executionArn,
+                executionArn,
+            }
+
             // Handle messages from the webview
             panel.webview.onDidReceiveMessage(async (message) => {
                 this.logger.debug('Received message from execution details webview: %O', message)
-                // Add message handlers as needed
+                await handleMessage(message, context)
             })
         } catch (err) {
             void vscode.window.showErrorMessage(i18n('AWS.stepFunctions.executionDetails.failed'))
