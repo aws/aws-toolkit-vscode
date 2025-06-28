@@ -11,6 +11,7 @@ import { amazonQDiffScheme } from '../constants'
 import { ContentProvider } from '../../amazonq/commons/controllers/contentController'
 import { disposeOnEditorClose } from './editorUtilities'
 import { getLogger } from '../logger/logger'
+import jaroWinkler from 'jaro-winkler'
 
 /**
  * Get the patched code from a file and a patch.
@@ -148,4 +149,53 @@ export function getDiffCharsAndLines(
         addedChars,
         addedLines,
     }
+}
+
+/**
+ * Extracts modified lines from a unified diff string.
+ * @param unifiedDiff The unified diff patch as a string.
+ * @returns A Map where keys are removed lines and values are the corresponding modified (added) lines.
+ */
+export function getModifiedLinesFromUnifiedDiff(unifiedDiff: string): Map<string, string> {
+    const removedLines: string[] = []
+    const addedLines: string[] = []
+
+    // Parse the unified diff to extract removed and added lines
+    const lines = unifiedDiff.split('\n')
+    for (const line of lines) {
+        if (line.startsWith('-') && !line.startsWith('---')) {
+            removedLines.push(line.slice(1))
+        } else if (line.startsWith('+') && !line.startsWith('+++')) {
+            addedLines.push(line.slice(1))
+        }
+    }
+
+    const modifiedMap = new Map<string, string>()
+    let addedIndex = 0
+
+    // For each removed line, find the most similar added line
+    for (const removedLine of removedLines) {
+        let bestMatchIndex = -1
+
+        for (let i = addedIndex; i < addedLines.length; i++) {
+            const addedLine = addedLines[i]
+            const score = jaroWinkler(removedLine, addedLine)
+            if (score > 0.5) {
+                bestMatchIndex = i
+                break
+            }
+        }
+
+        if (bestMatchIndex !== -1) {
+            // Map the removed line to the most similar added line
+            modifiedMap.set(removedLine, addedLines[bestMatchIndex])
+            // Move addedIndex to the next line after the match
+            addedIndex = bestMatchIndex + 1
+        } else {
+            // No match found for this removed line, move on
+            continue
+        }
+    }
+
+    return modifiedMap
 }
