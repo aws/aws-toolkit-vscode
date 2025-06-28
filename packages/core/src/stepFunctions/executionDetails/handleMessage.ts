@@ -8,20 +8,15 @@ import {
     Command,
     Message,
     MessageType,
-    WebviewContext,
+    ExecutionDetailsContext,
     ApiCallRequestMessage,
-    UnsupportedMessage,
     InitResponseMessage,
-} from '../workflowStudio/types'
-
-import { WorkflowStudioApiHandler } from '../workflowStudio/workflowStudioApiHandler'
-import globals from '../../shared/extensionGlobals'
-import { getLogger } from '../../shared/logger/logger'
-
-// Extended context for execution details
-export interface ExecutionDetailsContext extends WebviewContext {
-    executionArn?: string
-}
+} from '../messageHandlers/types'
+import {
+    loadStageMessageHandler,
+    handleUnsupportedMessage,
+    apiCallMessageHandler,
+} from '../messageHandlers/handleMessageHelpers'
 
 /**
  * Handles messages received from the ExecutionDetails webview. Depending on the message type and command,
@@ -78,6 +73,7 @@ async function initMessageHandler(context: ExecutionDetailsContext) {
         } as InitResponseMessage)
     }
 }
+<<<<<<< HEAD
 
 /**
  * Handler for managing webview stage load, which updates load notifications.
@@ -118,3 +114,5 @@ async function handleUnsupportedMessage(context: ExecutionDetailsContext, origin
         originalMessage,
     } as UnsupportedMessage)
 }
+=======
+>>>>>>> 5aa458d7d (feat(stepfunctions): enable hardcoded execution details page)

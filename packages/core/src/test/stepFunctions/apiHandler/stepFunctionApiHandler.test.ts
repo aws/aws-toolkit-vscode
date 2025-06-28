@@ -5,7 +5,7 @@
 
 import assert from 'assert'
 import sinon from 'sinon'
-import { WorkflowStudioApiHandler } from '../../../stepFunctions/workflowStudio/workflowStudioApiHandler'
+import { stepFunctionApiHandler } from '../../../stepFunctions/messageHandlers/stepFunctionApiHandler'
 import { MockDocument } from '../../fake/fakeDocument'
 import {
     ApiAction,
@@ -13,15 +13,15 @@ import {
     MessageType,
     WebviewContext,
     WorkflowMode,
-} from '../../../stepFunctions/workflowStudio/types'
+} from '../../../stepFunctions/messageHandlers/types'
 import * as vscode from 'vscode'
 import { assertTelemetry } from '../../testUtil'
 import { StepFunctionsClient } from '../../../shared/clients/stepFunctions'
 import { IamClient } from '../../../shared/clients/iam'
 
-describe('WorkflowStudioApiHandler', function () {
+describe('stepFunctionApiHandler', function () {
     let postMessageStub: sinon.SinonStub
-    let apiHandler: WorkflowStudioApiHandler
+    let apiHandler: stepFunctionApiHandler
     let testState: sinon.SinonStub
 
     async function assertTestApiResponse(expectedResponse: any) {
@@ -65,7 +65,7 @@ describe('WorkflowStudioApiHandler', function () {
         }
 
         const sfnClient = new StepFunctionsClient('us-east-1')
-        apiHandler = new WorkflowStudioApiHandler('us-east-1', context, {
+        apiHandler = new stepFunctionApiHandler('us-east-1', context, {
             sfn: sfnClient,
             iam: new IamClient('us-east-1'),
         })

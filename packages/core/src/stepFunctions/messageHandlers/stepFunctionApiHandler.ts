@@ -6,14 +6,21 @@
 import * as StepFunctions from '@aws-sdk/client-sfn'
 import { IamClient, IamRole } from '../../shared/clients/iam'
 import { StepFunctionsClient } from '../../shared/clients/stepFunctions'
-import { ApiAction, ApiCallRequestMessage, Command, MessageType, WebviewContext } from './types'
+import {
+    ApiAction,
+    ApiCallRequestMessage,
+    Command,
+    MessageType,
+    WebviewContext,
+    ExecutionDetailsContext,
+} from './types'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { ListRolesRequest } from '@aws-sdk/client-iam'
 
-export class WorkflowStudioApiHandler {
+export class stepFunctionApiHandler {
     public constructor(
         region: string,
-        private readonly context: WebviewContext,
+        private readonly context: WebviewContext | ExecutionDetailsContext,
         private readonly clients = {
             sfn: new StepFunctionsClient(region),
             iam: new IamClient(region),

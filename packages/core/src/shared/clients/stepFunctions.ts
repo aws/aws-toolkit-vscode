@@ -26,6 +26,7 @@ import {
     UpdateStateMachineCommandOutput,
 } from '@aws-sdk/client-sfn'
 import { ClientWrapper } from './clientWrapper'
+// import { StopExecutionInput } from 'aws-sdk/clients/stepfunctions'
 
 export class StepFunctionsClient extends ClientWrapper<SFNClient> {
     public constructor(regionCode: string) {

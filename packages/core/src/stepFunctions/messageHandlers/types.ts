@@ -30,6 +30,14 @@ export type WebviewContext = {
     fileId: string
 }
 
+export type ExecutionDetailsContext = {
+    stateMachineName: string
+    panel: vscode.WebviewPanel
+    fileId: string
+    loaderNotification: undefined | LoaderNotification
+    executionArn: string
+}
+
 export type LoaderNotification = {
     progress: vscode.Progress<{
         message?: string | undefined

@@ -8,9 +8,10 @@ import { getLogger } from '../../shared/logger/logger'
 import request from '../../shared/request'
 import { ToolkitError } from '../../shared/errors'
 import { i18n } from '../../shared/i18n-helper'
-import { ComponentType, WorkflowMode } from '../workflowStudio/types'
+import { ComponentType } from '../messageHandlers/types'
 import { isLocalDev, localhost, cdn } from '../constants/webviewResources'
-import { handleMessage, ExecutionDetailsContext } from './handleMessage'
+import { handleMessage } from './handleMessage'
+import { ExecutionDetailsContext } from '../messageHandlers/types'
 
 /**
  * Provider for Execution Details panels.
@@ -99,6 +100,13 @@ export class ExecutionDetailProvider {
 
             // Set up the content
             panel.webview.html = await this.getWebviewContent()
+            const context: ExecutionDetailsContext = {
+                stateMachineName: executionArn.split(':').pop() || 'Unknown',
+                panel,
+                loaderNotification: undefined,
+                fileId: executionArn,
+                executionArn,
+            }
 
             // Create execution details context
             const context: ExecutionDetailsContext = {
