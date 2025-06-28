@@ -486,7 +486,7 @@ export function registerMessageListeners(
             defaultUri: params.defaultUri ? vscode.Uri.parse(params.defaultUri) : undefined,
             title: params.title,
         })
-        const urisString = uris?.map((uri) => uri.toString())
+        const urisString = uris?.map((uri) => uri.fsPath)
         return { uris: urisString || [] }
     })
 
