@@ -50,7 +50,6 @@ import { SessionManager } from '../app/inline/sessionManager'
 import { LineTracker } from '../app/inline/stateTracker/lineTracker'
 import { InlineTutorialAnnotation } from '../app/inline/tutorials/inlineTutorialAnnotation'
 import { InlineChatTutorialAnnotation } from '../app/inline/tutorials/inlineChatTutorialAnnotation'
-import { CursorUpdateManager } from '../app/inline/cursorUpdateManager'
 
 const localize = nls.loadMessageBundle()
 const logger = getLogger('amazonqLsp.lspClient')
@@ -247,13 +246,7 @@ async function onLanguageServerReady(
         await activate(client, encryptionKey, resourcePaths.ui)
     }
 
-    // Get the provider from the manager
-    const inlineCompletionProvider = inlineManager.getInlineCompletionProvider()
-
     const refreshInterval = auth.startTokenRefreshInterval(10 * oneSecond)
-
-    // Create and start the CursorUpdateManager with the provider from InlineManager
-    const cursorUpdateManager = new CursorUpdateManager(client, inlineCompletionProvider)
 
     // We manually push the cached values the first time since event handlers, which should push, may not have been setup yet.
     // Execution order is weird and should be fixed in the flare implementation.
@@ -261,28 +254,14 @@ async function onLanguageServerReady(
     if (AuthUtil.instance.isConnectionValid()) {
         await sendProfileToLsp(client)
 
-        // Start the CursorUpdateManager
-        await cursorUpdateManager.start()
-
         await pushConfigUpdate(client, {
             type: 'customization',
             customization: getSelectedCustomization(),
         })
     }
 
-    // Track cursor position changes
-    const cursorUpdateDisposable = vscode.window.onDidChangeTextEditorSelection(
-        (e: vscode.TextEditorSelectionChangeEvent) => {
-            if (e.textEditor === vscode.window.activeTextEditor) {
-                cursorUpdateManager.updatePosition(e.selections[0].active, e.textEditor.document.uri.toString())
-            }
-        }
-    )
-
     toDispose.push(
         inlineManager,
-        cursorUpdateManager, // Add CursorUpdateManager to disposables
-        cursorUpdateDisposable,
         Commands.register({ id: 'aws.amazonq.invokeInlineCompletion', autoconnect: true }, async () => {
             await vscode.commands.executeCommand('editor.action.inlineSuggest.trigger')
         }),
