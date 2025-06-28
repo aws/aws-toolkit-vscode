@@ -95,11 +95,27 @@ export interface SyncFileRequestMessage extends SaveFileRequestMessage {
 export enum ApiAction {
     IAMListRoles = 'iam:ListRoles',
     SFNTestState = 'sfn:TestState',
+    SFNDescribeStateMachine = 'sfn:describeStateMachine',
+    SFNDescribeStateMachineForExecution = 'sfn:describeStateMachineForExecution',
+    SFNDescribeExecution = 'sfn:describeExecution',
+    SFNDescribeMapRun = 'sfn:describeMapRun',
+    SFNGetExecutionHistory = 'sfn:getExecutionHistory',
+    SFNRedriveExecution = 'sfn:redriveExecution',
+    SFNStartExecution = 'sfn:startExecution',
+    SFNStopExecution = 'sfn:stopExecution',
 }
 
 type ApiCallRequestMapping = {
     [ApiAction.IAMListRoles]: IAM.ListRolesRequest
     [ApiAction.SFNTestState]: StepFunctions.TestStateInput
+    [ApiAction.SFNDescribeStateMachine]: StepFunctions.DescribeStateMachineInput
+    [ApiAction.SFNDescribeStateMachineForExecution]: StepFunctions.DescribeStateMachineForExecutionInput
+    [ApiAction.SFNDescribeExecution]: StepFunctions.DescribeExecutionInput
+    [ApiAction.SFNDescribeMapRun]: StepFunctions.DescribeMapRunInput
+    [ApiAction.SFNGetExecutionHistory]: StepFunctions.GetExecutionHistoryInput
+    [ApiAction.SFNRedriveExecution]: StepFunctions.RedriveExecutionInput
+    [ApiAction.SFNStartExecution]: StepFunctions.StartExecutionInput
+    [ApiAction.SFNStopExecution]: StepFunctions.StopExecutionInput
 }
 
 interface ApiCallRequestMessageBase<ApiName extends ApiAction> extends Message {
@@ -114,3 +130,11 @@ interface ApiCallRequestMessageBase<ApiName extends ApiAction> extends Message {
 export type ApiCallRequestMessage =
     | ApiCallRequestMessageBase<ApiAction.IAMListRoles>
     | ApiCallRequestMessageBase<ApiAction.SFNTestState>
+    | ApiCallRequestMessageBase<ApiAction.SFNDescribeStateMachine>
+    | ApiCallRequestMessageBase<ApiAction.SFNDescribeStateMachineForExecution>
+    | ApiCallRequestMessageBase<ApiAction.SFNDescribeExecution>
+    | ApiCallRequestMessageBase<ApiAction.SFNDescribeMapRun>
+    | ApiCallRequestMessageBase<ApiAction.SFNGetExecutionHistory>
+    | ApiCallRequestMessageBase<ApiAction.SFNRedriveExecution>
+    | ApiCallRequestMessageBase<ApiAction.SFNStartExecution>
+    | ApiCallRequestMessageBase<ApiAction.SFNStopExecution>

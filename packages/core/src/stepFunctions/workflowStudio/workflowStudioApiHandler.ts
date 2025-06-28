@@ -33,6 +33,30 @@ export class WorkflowStudioApiHandler {
                 case ApiAction.SFNTestState:
                     response = await this.testState(params)
                     break
+                case ApiAction.SFNDescribeStateMachine:
+                    response = await this.clients.sfn.getStateMachineDetails(params.stateMachineArn)
+                    break
+                case ApiAction.SFNDescribeStateMachineForExecution:
+                    response = await this.clients.sfn.getStateMachineDetailsForExecution(params.executionArn)
+                    break
+                case ApiAction.SFNDescribeExecution:
+                    response = await this.clients.sfn.getExecutionDetails(params.executionArn)
+                    break
+                case ApiAction.SFNDescribeMapRun:
+                    response = await this.clients.sfn.getMapRunDetails(params.mapRunArn)
+                    break
+                case ApiAction.SFNGetExecutionHistory:
+                    response = await this.clients.sfn.getExecutionHistory(params.executionArn)
+                    break
+                case ApiAction.SFNRedriveExecution:
+                    response = await this.clients.sfn.reDriveExecution(params.executionArn)
+                    break
+                case ApiAction.SFNStartExecution:
+                    response = await this.clients.sfn.executeStateMachine(params.stateMachineArn, params.input)
+                    break
+                case ApiAction.SFNStopExecution:
+                    response = await this.clients.sfn.stopExecution(params.executionArn)
+                    break
                 default:
                     throw new Error(`Unknown API: ${apiName}`)
             }

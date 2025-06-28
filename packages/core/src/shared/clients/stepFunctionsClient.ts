@@ -21,7 +21,6 @@ export class DefaultStepFunctionsClient {
             if (response.stateMachines) {
                 yield* response.stateMachines
             }
-
             request.nextToken = response.nextToken
         } while (request.nextToken)
     }
@@ -32,8 +31,77 @@ export class DefaultStepFunctionsClient {
         const request: StepFunctions.DescribeStateMachineInput = {
             stateMachineArn: arn,
         }
-
         const response: StepFunctions.DescribeStateMachineOutput = await client.describeStateMachine(request).promise()
+
+        return response
+    }
+
+    public async getStateMachineDetailsForExecution(
+        arn: string
+    ): Promise<StepFunctions.DescribeStateMachineForExecutionOutput> {
+        const client = await this.createSdkClient()
+
+        const request: StepFunctions.DescribeStateMachineForExecutionInput = {
+            executionArn: arn,
+        }
+        const response: StepFunctions.DescribeStateMachineForExecutionOutput = await client
+            .describeStateMachineForExecution(request)
+            .promise()
+
+        return response
+    }
+
+    public async getExecutionDetails(arn: string): Promise<StepFunctions.DescribeExecutionOutput> {
+        const client = await this.createSdkClient()
+
+        const request: StepFunctions.DescribeExecutionInput = {
+            executionArn: arn,
+        }
+        const response: StepFunctions.DescribeExecutionOutput = await client.describeExecution(request).promise()
+
+        return response
+    }
+
+    public async getMapRunDetails(arn: string): Promise<StepFunctions.DescribeMapRunOutput> {
+        const client = await this.createSdkClient()
+
+        const request: StepFunctions.DescribeMapRunInput = {
+            mapRunArn: arn,
+        }
+        const response: StepFunctions.DescribeMapRunOutput = await client.describeMapRun(request).promise()
+
+        return response
+    }
+
+    public async getExecutionHistory(arn: string): Promise<StepFunctions.GetExecutionHistoryOutput> {
+        const client = await this.createSdkClient()
+
+        const request: StepFunctions.GetExecutionHistoryInput = {
+            executionArn: arn,
+        }
+        const response: StepFunctions.GetExecutionHistoryOutput = await client.getExecutionHistory(request).promise()
+
+        return response
+    }
+
+    public async reDriveExecution(arn: string): Promise<StepFunctions.RedriveExecutionOutput> {
+        const client = await this.createSdkClient()
+
+        const request: StepFunctions.RedriveExecutionInput = {
+            executionArn: arn,
+        }
+        const response: StepFunctions.RedriveExecutionOutput = await client.redriveExecution(request).promise()
+
+        return response
+    }
+
+    public async stopExecution(arn: string): Promise<StepFunctions.StopExecutionOutput> {
+        const client = await this.createSdkClient()
+
+        const request: StepFunctions.StopExecutionInput = {
+            executionArn: arn,
+        }
+        const response: StepFunctions.StopExecutionOutput = await client.stopExecution(request).promise()
 
         return response
     }
@@ -45,7 +113,6 @@ export class DefaultStepFunctionsClient {
             stateMachineArn: arn,
             input: input,
         }
-
         const response: StepFunctions.StartExecutionOutput = await client.startExecution(request).promise()
 
         return response
