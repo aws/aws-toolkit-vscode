@@ -7,7 +7,12 @@
     <div class="Icontainer">
         <div><h1>Remote invoke configuration</h1></div>
         <div class="form-row" style="justify-content: space-between; height: 28px">
-            <div><button class="button-theme-primary" v-on:click="sendInput">Remote Invoke</button></div>
+            <div>
+                <button class="button-theme-primary" v-on:click="sendInput" :disabled="invokeInProgress">
+                    <span v-if="invokeInProgress">Invoking...</span>
+                    <span v-else>Remote Invoke</span>
+                </button>
+            </div>
             <div>
                 <span
                     :style="{
