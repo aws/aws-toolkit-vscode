@@ -9,6 +9,7 @@ import assert from 'assert'
 import { handleGetSession } from '../../../../../awsService/sagemaker/detached-server/routes/getSession'
 import * as credentials from '../../../../../awsService/sagemaker/detached-server/credentials'
 import * as utils from '../../../../../awsService/sagemaker/detached-server/utils'
+import * as errorPage from '../../../../../awsService/sagemaker/detached-server/errorPage'
 
 describe('handleGetSession', () => {
     let req: Partial<http.IncomingMessage>
@@ -24,6 +25,7 @@ describe('handleGetSession', () => {
             writeHead: resWriteHead,
             end: resEnd,
         }
+        sinon.stub(errorPage, 'openErrorPage')
     })
 
     it('responds with 400 if connection_identifier is missing', async () => {

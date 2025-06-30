@@ -10,6 +10,7 @@ import { AppType } from '@aws-sdk/client-sagemaker'
 import { SagemakerClient, SagemakerSpaceApp } from '../../../../shared/clients/sagemaker'
 import { SagemakerSpaceNode } from '../../../../awsService/sagemaker/explorer/sagemakerSpaceNode'
 import { SagemakerParentNode } from '../../../../awsService/sagemaker/explorer/sagemakerParentNode'
+import { PollingSet } from '../../../../shared/utilities/pollingSet'
 
 describe('SagemakerSpaceNode', function () {
     const testRegion = 'testRegion'
@@ -17,11 +18,9 @@ describe('SagemakerSpaceNode', function () {
     let testParent: SagemakerParentNode
     let testSpaceApp: SagemakerSpaceApp
     let describeAppStub: sinon.SinonStub
+    let testSpaceAppNode: SagemakerSpaceNode
 
     beforeEach(function () {
-        client = new SagemakerClient(testRegion)
-        testParent = new SagemakerParentNode(testRegion, client)
-
         testSpaceApp = {
             SpaceName: 'TestSpace',
             DomainId: 'd-12345',
@@ -30,9 +29,15 @@ describe('SagemakerSpaceNode', function () {
             OwnershipSettingsSummary: { OwnerUserProfileName: 'test-user' },
             SpaceSharingSettingsSummary: { SharingType: 'Private' },
             Status: 'InService',
+            DomainSpaceKey: '123',
         }
 
+        sinon.stub(PollingSet.prototype, 'add')
+        client = new SagemakerClient(testRegion)
+        testParent = new SagemakerParentNode(testRegion, client)
+
         describeAppStub = sinon.stub(SagemakerClient.prototype, 'describeApp')
+        testSpaceAppNode = new SagemakerSpaceNode(testParent, client, testRegion, testSpaceApp)
     })
 
     afterEach(function () {
@@ -53,6 +58,7 @@ describe('SagemakerSpaceNode', function () {
             SpaceName: undefined,
             DomainId: 'domainId',
             Status: 'Failed',
+            DomainSpaceKey: '123',
         }
 
         const node = new SagemakerSpaceNode(testParent, client, testRegion, partialApp)
@@ -76,5 +82,12 @@ describe('SagemakerSpaceNode', function () {
             AppType: AppType.JupyterLab,
             SpaceName: 'TestSpace',
         })
+    })
+
+    it('updates status with new spaceApp', async function () {
+        const newStatus = 'Starting'
+        const newSpaceApp = { ...testSpaceApp, App: { AppName: 'TestApp', Status: 'Pending' } } as SagemakerSpaceApp
+        testSpaceAppNode.updateSpace(newSpaceApp)
+        assert.strictEqual(testSpaceAppNode.getStatus(), newStatus)
     })
 })

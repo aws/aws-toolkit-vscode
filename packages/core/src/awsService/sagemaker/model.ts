@@ -6,7 +6,7 @@
 // Disabled: detached server files cannot import vscode.
 /* eslint-disable no-restricted-imports */
 import * as vscode from 'vscode'
-import { sshAgentSocketVariable, startSshAgent } from '../../shared/extensions/ssh'
+import { sshAgentSocketVariable, startSshAgent, startVscodeRemote } from '../../shared/extensions/ssh'
 import { createBoundProcess, ensureDependencies } from '../../shared/remoteSession'
 import { SshConfig } from '../../shared/sshConfig'
 import * as path from 'path'
@@ -19,8 +19,29 @@ import { getSmSsmEnv, spawnDetachedServer } from './utils'
 import { getLogger } from '../../shared/logger/logger'
 import { DevSettings } from '../../shared/settings'
 import { ToolkitError } from '../../shared/errors'
+import { SagemakerSpaceNode } from './explorer/sagemakerSpaceNode'
+import { sleep } from '../../shared/utilities/timeoutUtils'
 
 const logger = getLogger('sagemaker')
+
+export async function tryRemoteConnection(node: SagemakerSpaceNode, ctx: vscode.ExtensionContext) {
+    const spaceArn = (await node.getSpaceArn()) as string
+    const remoteEnv = await prepareDevEnvConnection(spaceArn, ctx, 'sm_lc')
+
+    try {
+        await startVscodeRemote(
+            remoteEnv.SessionProcess,
+            remoteEnv.hostname,
+            '/home/sagemaker-user',
+            remoteEnv.vscPath,
+            'sagemaker-user'
+        )
+    } catch (err) {
+        getLogger().info(
+            `sm:OpenRemoteConnect: Unable to connect to target space with arn: ${await node.getAppArn()} error: ${err}`
+        )
+    }
+}
 
 export async function prepareDevEnvConnection(
     appArn: string,
@@ -37,10 +58,10 @@ export async function prepareDevEnvConnection(
     // Check timeout setting for remote SSH connections
     const remoteSshConfig = vscode.workspace.getConfiguration('remote.SSH')
     const current = remoteSshConfig.get<number>('connectTimeout')
-    if (typeof current === 'number' && current < 300) {
-        await remoteSshConfig.update('connectTimeout', 300, vscode.ConfigurationTarget.Global)
+    if (typeof current === 'number' && current < 120) {
+        await remoteSshConfig.update('connectTimeout', 120, vscode.ConfigurationTarget.Global)
         void vscode.window.showInformationMessage(
-            'Updated "remote.SSH.connectTimeout" to 300 seconds to improve stability.'
+            'Updated "remote.SSH.connectTimeout" to 120 seconds to improve stability.'
         )
     }
 
@@ -118,6 +139,19 @@ export async function startLocalServer(ctx: vscode.ExtensionContext) {
     })
 
     child.unref()
+
+    // Wait for the info file to appear (timeout after 10 seconds)
+    const maxRetries = 20
+    const delayMs = 500
+    for (let i = 0; i < maxRetries; i++) {
+        if (await fs.existsFile(infoFilePath)) {
+            logger.debug('Detected server info file.')
+            return
+        }
+        await sleep(delayMs)
+    }
+
+    throw new ToolkitError(`Timed out waiting for local server info file: ${infoFilePath}`)
 }
 
 interface LocalServerInfo {

@@ -9,6 +9,8 @@ import { IncomingMessage, ServerResponse } from 'http'
 import { startSagemakerSession, parseArn } from '../utils'
 import { resolveCredentialsFor } from '../credentials'
 import url from 'url'
+import { SageMakerServiceException } from '@amzn/sagemaker-client'
+import { getVSCodeErrorText, getVSCodeErrorTitle, openErrorPage } from '../errorPage'
 
 export async function handleGetSession(req: IncomingMessage, res: ServerResponse): Promise<void> {
     const parsedUrl = url.parse(req.url || '', true)
@@ -27,6 +29,7 @@ export async function handleGetSession(req: IncomingMessage, res: ServerResponse
         console.error('Failed to resolve credentials:', err)
         res.writeHead(500, { 'Content-Type': 'text/plain' })
         res.end((err as Error).message)
+        return
     }
 
     const { region } = parseArn(connectionIdentifier)
@@ -42,7 +45,11 @@ export async function handleGetSession(req: IncomingMessage, res: ServerResponse
             })
         )
     } catch (err) {
+        const error = err as SageMakerServiceException
         console.error(`Failed to start SageMaker session for ${connectionIdentifier}:`, err)
+        const errorTitle = getVSCodeErrorTitle(error)
+        const errorText = getVSCodeErrorText(error)
+        await openErrorPage(errorTitle, errorText)
         res.writeHead(500, { 'Content-Type': 'text/plain' })
         res.end('Failed to start SageMaker session')
         return

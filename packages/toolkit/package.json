@@ -1456,9 +1456,14 @@
             ],
             "view/item/context": [
                 {
-                    "command": "aws.sagemaker.openRemoteConnection",
+                    "command": "aws.sagemaker.stopSpace",
                     "group": "inline@0",
-                    "when": "viewItem =~ /^(awsSagemakerSpaceRunningRemoteEnabledNode)$/"
+                    "when": "viewItem =~ /^(awsSagemakerSpaceRunningRemoteEnabledNode|awsSagemakerSpaceRunningRemoteDisabledNode)$/"
+                },
+                {
+                    "command": "aws.sagemaker.openRemoteConnection",
+                    "group": "inline@1",
+                    "when": "viewItem =~ /^(awsSagemakerSpaceRunningRemoteEnabledNode|awsSagemakerSpaceStoppedRemoteEnabledNode|awsSagemakerSpaceStoppedRemoteDisabledNode)$/"
                 },
                 {
                     "command": "_aws.toolkit.notifications.dismiss",
@@ -2599,8 +2604,20 @@
             },
             {
                 "command": "aws.sagemaker.openRemoteConnection",
-                "title": "Connect to Sagemaker Space",
+                "title": "Connect to SageMaker Space",
                 "icon": "$(remote-explorer)",
+                "category": "%AWS.title%",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.sagemaker.stopSpace",
+                "title": "Stop SageMaker Space",
+                "icon": "$(debug-stop)",
                 "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {

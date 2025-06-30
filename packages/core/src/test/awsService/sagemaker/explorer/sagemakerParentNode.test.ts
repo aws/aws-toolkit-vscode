@@ -46,10 +46,8 @@ describe('sagemakerParentNode', function () {
     afterEach(function () {
         fetchSpaceAppsAndDomainsStub.restore()
         getCallerIdentityStub.restore()
-        sinon.restore()
-    })
-
-    after(function () {
+        testNode.pollingSet.clear()
+        testNode.pollingSet.clearTimer()
         sinon.restore()
     })
 
@@ -78,6 +76,7 @@ describe('sagemakerParentNode', function () {
                     DomainId: 'domain1',
                     OwnershipSettingsSummary: { OwnerUserProfileName: 'user1-abcd' },
                     Status: 'InService',
+                    DomainSpaceKey: 'domain1__name1',
                 },
             ],
             [
@@ -87,6 +86,7 @@ describe('sagemakerParentNode', function () {
                     DomainId: 'domain2',
                     OwnershipSettingsSummary: { OwnerUserProfileName: 'user2-efgh' },
                     Status: 'InService',
+                    DomainSpaceKey: 'domain2__name2',
                 },
             ],
         ])
@@ -109,6 +109,50 @@ describe('sagemakerParentNode', function () {
         assert.strictEqual(childNodes[1].label, 'name2 (Stopped)', 'Unexpected node label')
     })
 
+    it('adds pending nodes to polling nodes set', async function () {
+        const spaceAppsMap: Map<string, SagemakerSpaceApp> = new Map([
+            [
+                'domain1__name3',
+                {
+                    SpaceName: 'name3',
+                    DomainId: 'domain1',
+                    OwnershipSettingsSummary: { OwnerUserProfileName: 'user1-abcd' },
+                    Status: 'InService',
+                    DomainSpaceKey: 'domain1__name3',
+                    App: {
+                        Status: 'InService',
+                    },
+                },
+            ],
+            [
+                'domain2__name4',
+                {
+                    SpaceName: 'name4',
+                    DomainId: 'domain2',
+                    OwnershipSettingsSummary: { OwnerUserProfileName: 'user2-efgh' },
+                    Status: 'InService',
+                    DomainSpaceKey: 'domain2__name4',
+                    App: {
+                        Status: 'Pending',
+                    },
+                },
+            ],
+        ])
+
+        fetchSpaceAppsAndDomainsStub.returns(Promise.resolve([spaceAppsMap, domainsMap]))
+        getCallerIdentityStub.returns(
+            Promise.resolve({
+                UserId: 'test-userId',
+                Account: '123456789012',
+                Arn: 'arn:aws:iam::123456789012:user/test-user',
+            })
+        )
+
+        await testNode.updateChildren()
+        assert.strictEqual(testNode.pollingSet.size, 1)
+        fetchSpaceAppsAndDomainsStub.restore()
+    })
+
     it('filters spaces owned by user profiles that match the IAM user', async function () {
         const spaceAppsMap: Map<string, SagemakerSpaceApp> = new Map([
             [
@@ -118,6 +162,7 @@ describe('sagemakerParentNode', function () {
                     DomainId: 'domain1',
                     OwnershipSettingsSummary: { OwnerUserProfileName: 'user1-abcd' },
                     Status: 'InService',
+                    DomainSpaceKey: 'domain1__name1',
                 },
             ],
             [
@@ -127,6 +172,7 @@ describe('sagemakerParentNode', function () {
                     DomainId: 'domain2',
                     OwnershipSettingsSummary: { OwnerUserProfileName: 'user2-efgh' },
                     Status: 'InService',
+                    DomainSpaceKey: 'domain2__name2',
                 },
             ],
         ])
@@ -157,6 +203,7 @@ describe('sagemakerParentNode', function () {
                     DomainId: 'domain1',
                     OwnershipSettingsSummary: { OwnerUserProfileName: 'user1-abcd' },
                     Status: 'InService',
+                    DomainSpaceKey: 'domain1__name1',
                 },
             ],
             [
@@ -166,6 +213,7 @@ describe('sagemakerParentNode', function () {
                     DomainId: 'domain2',
                     OwnershipSettingsSummary: { OwnerUserProfileName: 'user2-efgh' },
                     Status: 'InService',
+                    DomainSpaceKey: 'domain2__name2',
                 },
             ],
         ])
@@ -196,6 +244,7 @@ describe('sagemakerParentNode', function () {
                     DomainId: 'domain1',
                     OwnershipSettingsSummary: { OwnerUserProfileName: 'user1-abcd' },
                     Status: 'InService',
+                    DomainSpaceKey: 'domain1__name1',
                 },
             ],
             [
@@ -205,6 +254,7 @@ describe('sagemakerParentNode', function () {
                     DomainId: 'domain2',
                     OwnershipSettingsSummary: { OwnerUserProfileName: 'user2-efgh' },
                     Status: 'InService',
+                    DomainSpaceKey: 'domain2__name2',
                 },
             ],
         ])
@@ -234,6 +284,7 @@ describe('sagemakerParentNode', function () {
             OwnershipSettingsSummary: {
                 OwnerUserProfileName: ownerName,
             },
+            DomainSpaceKey: 'domain1__name1',
         })
 
         beforeEach(function () {

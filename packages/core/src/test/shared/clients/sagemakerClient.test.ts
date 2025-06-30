@@ -103,4 +103,108 @@ describe('SagemakerClient.fetchSpaceAppsAndDomains', function () {
         assert.strictEqual(spaceApps.get(spaceAppKey2)?.App, undefined)
         assert.strictEqual(spaceApps.get(spaceAppKey3)?.App, undefined)
     })
+
+    describe('SagemakerClient.startSpace', function () {
+        const region = 'test-region'
+        let client: SagemakerClient
+        let describeSpaceStub: sinon.SinonStub
+        let updateSpaceStub: sinon.SinonStub
+        let waitForSpaceStub: sinon.SinonStub
+        let createAppStub: sinon.SinonStub
+
+        beforeEach(function () {
+            client = new SagemakerClient(region)
+            describeSpaceStub = sinon.stub(client, 'describeSpace')
+            updateSpaceStub = sinon.stub(client, 'updateSpace')
+            waitForSpaceStub = sinon.stub<any, any>(client as any, 'waitForSpaceInService')
+            createAppStub = sinon.stub(client, 'createApp')
+        })
+
+        afterEach(function () {
+            sinon.restore()
+        })
+
+        it('enables remote access and starts the app', async function () {
+            describeSpaceStub.resolves({
+                SpaceSettings: {
+                    RemoteAccess: 'DISABLED',
+                    AppType: 'CodeEditor',
+                    CodeEditorAppSettings: {
+                        DefaultResourceSpec: {
+                            InstanceType: 'ml.t3.medium',
+                            SageMakerImageArn: 'arn:aws:sagemaker:us-west-2:img',
+                            SageMakerImageVersionAlias: '1.0.0',
+                        },
+                    },
+                },
+            })
+
+            updateSpaceStub.resolves({})
+            waitForSpaceStub.resolves()
+            createAppStub.resolves({})
+
+            await client.startSpace('my-space', 'my-domain')
+
+            sinon.assert.calledOnce(updateSpaceStub)
+            sinon.assert.calledOnce(waitForSpaceStub)
+            sinon.assert.calledOnce(createAppStub)
+        })
+
+        it('skips enabling remote access if already enabled', async function () {
+            describeSpaceStub.resolves({
+                SpaceSettings: {
+                    RemoteAccess: 'ENABLED',
+                    AppType: 'CodeEditor',
+                    CodeEditorAppSettings: {},
+                },
+            })
+
+            createAppStub.resolves({})
+
+            await client.startSpace('my-space', 'my-domain')
+
+            sinon.assert.notCalled(updateSpaceStub)
+            sinon.assert.notCalled(waitForSpaceStub)
+            sinon.assert.calledOnce(createAppStub)
+        })
+
+        it('throws error on unsupported app type', async function () {
+            describeSpaceStub.resolves({
+                SpaceSettings: {
+                    RemoteAccess: 'ENABLED',
+                    AppType: 'Studio',
+                },
+            })
+
+            await assert.rejects(client.startSpace('my-space', 'my-domain'), /Unsupported AppType "Studio"/)
+        })
+
+        it('uses fallback resource spec when none provided', async function () {
+            describeSpaceStub.resolves({
+                SpaceSettings: {
+                    RemoteAccess: 'ENABLED',
+                    AppType: 'JupyterLab',
+                    JupyterLabAppSettings: {},
+                },
+            })
+
+            createAppStub.resolves({})
+
+            await client.startSpace('my-space', 'my-domain')
+
+            sinon.assert.calledOnceWithExactly(
+                createAppStub,
+                sinon.match.hasNested('ResourceSpec.InstanceType', 'ml.t3.medium')
+            )
+        })
+
+        it('handles AccessDeniedException gracefully', async function () {
+            describeSpaceStub.rejects({ name: 'AccessDeniedException', message: 'no access' })
+
+            await assert.rejects(
+                client.startSpace('my-space', 'my-domain'),
+                /You do not have permission to start spaces/
+            )
+        })
+    })
 })

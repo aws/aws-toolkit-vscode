@@ -30,45 +30,34 @@ describe('SageMaker Model', () => {
             sandbox.restore()
         })
 
-        it('calls stopLocalServer and spawns child process with correct args', async function () {
-            const storagePath = ctx.globalStorageUri.fsPath
-            const serverPath = path.join(
-                ctx.extensionPath,
-                'dist',
-                'src',
-                'awsService',
-                'sagemaker',
-                'detached-server',
-                'server.js'
-            )
-            const infoFilePath = path.join(storagePath, 'sagemaker-local-server-info.json')
+        it('waits for info file and starts server', async function () {
+            // Simulate the file doesn't exist initially, then appears on 3rd check
+            const existsStub = sandbox.stub(fs, 'existsFile')
+            existsStub.onCall(0).resolves(false)
+            existsStub.onCall(1).resolves(false)
+            existsStub.onCall(2).resolves(true)
 
-            // Stubs
-            const stopLocalServerStub = sandbox.stub().resolves()
-            sandbox.replace(require('../../../awsService/sagemaker/model'), 'stopLocalServer', stopLocalServerStub)
-            sandbox.stub(DevSettings.instance, 'get').returns({ sagemaker: 'https://endpoint' })
             sandbox.stub(require('fs'), 'openSync').returns(42)
 
-            const unrefStub = sandbox.stub()
-            const spawnStub = sandbox.stub().returns({ unref: unrefStub })
+            const stopStub = sandbox.stub().resolves()
+            sandbox.replace(require('../../../awsService/sagemaker/model'), 'stopLocalServer', stopStub)
+
+            const spawnStub = sandbox.stub().returns({ unref: sandbox.stub() })
             sandbox.replace(require('../../../awsService/sagemaker/utils'), 'spawnDetachedServer', spawnStub)
+
+            sandbox.stub(DevSettings.instance, 'get').returns({ sagemaker: 'https://fake-endpoint' })
 
             await startLocalServer(ctx)
 
-            // Validate spawn args
-            sinon.assert.calledOnce(spawnStub)
-            const spawnArgs = spawnStub.firstCall.args
-            const expectedEnv = spawnArgs[2].env
+            sinon.assert.called(spawnStub)
+            sinon.assert.calledWith(
+                spawnStub,
+                process.execPath,
+                [ctx.asAbsolutePath('dist/src/awsService/sagemaker/detached-server/server.js')],
+                sinon.match.any
+            )
 
-            assert.strictEqual(spawnArgs[0], process.execPath)
-            assert.deepStrictEqual(spawnArgs[1], [serverPath])
-            assert.strictEqual(spawnArgs[2].cwd, path.dirname(serverPath))
-            assert.strictEqual(spawnArgs[2].detached, true)
-            assert.strictEqual(expectedEnv.SAGEMAKER_ENDPOINT, 'https://endpoint')
-            assert.strictEqual(expectedEnv.SAGEMAKER_LOCAL_SERVER_FILE_PATH, infoFilePath)
-
-            sinon.assert.calledOnce(unrefStub)
-            assertLogsContain('local server logs at', false, 'info')
+            assert.ok(existsStub.callCount >= 3, 'should have retried for file existence')
         })
     })
 

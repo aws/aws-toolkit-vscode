@@ -17,6 +17,7 @@ import { isRemoteWorkspace } from '../../../shared/vscode/env'
 import { SagemakerConstants } from './constants'
 import { SagemakerSpaceNode } from './sagemakerSpaceNode'
 import { getDomainSpaceKey, getDomainUserProfileKey, getRemoteAppMetadata, getSpaceAppsForUserProfile } from '../utils'
+import { PollingSet } from '../../../shared/utilities/pollingSet'
 
 export const parentContextValue = 'awsSagemakerParentNode'
 
@@ -32,12 +33,13 @@ export class SagemakerParentNode extends AWSTreeNodeBase {
     domainUserProfiles: Map<string, UserProfileMetadata> = new Map()
     spaceApps: Map<string, SagemakerSpaceApp> = new Map()
     callerIdentity: GetCallerIdentityResponse = {}
+    public readonly pollingSet: PollingSet<string> = new PollingSet(5000, this.updatePendingNodes.bind(this))
 
     public constructor(
         public override readonly regionCode: string,
         protected readonly sagemakerClient: SagemakerClient
     ) {
-        super('SageMaker', vscode.TreeItemCollapsibleState.Collapsed)
+        super('SageMaker AI', vscode.TreeItemCollapsibleState.Collapsed)
         this.sagemakerSpaceNodes = new Map<string, SagemakerSpaceNode>()
         this.stsClient = new DefaultStsClient(regionCode)
     }
@@ -53,6 +55,34 @@ export class SagemakerParentNode extends AWSTreeNodeBase {
         })
 
         return result
+    }
+
+    public trackPendingNode(domainSpaceKey: string) {
+        this.pollingSet.add(domainSpaceKey)
+    }
+
+    private async updatePendingNodes() {
+        for (const spaceKey of this.pollingSet.values()) {
+            const childNode = this.getSpaceNodes(spaceKey)
+            await this.updatePendingSpaceNode(childNode)
+        }
+    }
+
+    private async updatePendingSpaceNode(node: SagemakerSpaceNode) {
+        await node.updateSpaceAppStatus()
+        if (!node.isPending()) {
+            this.pollingSet.delete(node.DomainSpaceKey)
+            await node.refreshNode()
+        }
+    }
+
+    public getSpaceNodes(spaceKey: string): SagemakerSpaceNode {
+        const childNode = this.sagemakerSpaceNodes.get(spaceKey)
+        if (childNode) {
+            return childNode
+        } else {
+            throw new Error(`Node with id ${spaceKey} from polling set not found`)
+        }
     }
 
     public async getLocalSelectedDomainUsers(): Promise<string[]> {
@@ -160,5 +190,14 @@ export class SagemakerParentNode extends AWSTreeNodeBase {
             (key) => this.sagemakerSpaceNodes.get(key)!.updateSpace(spaceApps.get(key)!),
             (key) => new SagemakerSpaceNode(this, this.sagemakerClient, this.regionCode, spaceApps.get(key)!)
         )
+    }
+
+    public async clearChildren() {
+        this.sagemakerSpaceNodes = new Map<string, SagemakerSpaceNode>()
+    }
+
+    public async refreshNode(): Promise<void> {
+        await this.clearChildren()
+        await vscode.commands.executeCommand('aws.refreshAwsExplorerNode', this)
     }
 }

@@ -13,6 +13,9 @@ _get_ssm_session_info() {
     response=$(curl -s -w "%{http_code}" -o /tmp/ssm_session_response.json "$url_to_get_session_info")
     http_status="${response: -3}"
     session_json=$(cat /tmp/ssm_session_response.json)
+    
+    # Clean up temporary file
+    rm -f /tmp/ssm_session_response.json
 
     if [[ "$http_status" -ne 200 ]]; then
         echo "Error: Failed to get SSM session info. HTTP status: $http_status"
