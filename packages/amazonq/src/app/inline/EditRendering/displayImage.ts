@@ -279,9 +279,7 @@ export async function displaySvgDecoration(
     originalCodeHighlightRanges: Array<{ line: number; start: number; end: number }>,
     session: CodeWhispererSession,
     languageClient: LanguageClient,
-    item: InlineCompletionItemWithReferences,
-    addedCharacterCount: number,
-    deletedCharacterCount: number
+    item: InlineCompletionItemWithReferences
 ) {
     const originalCode = editor.document.getText()
 
@@ -315,8 +313,6 @@ export async function displaySvgDecoration(
                 },
                 totalSessionDisplayTime: Date.now() - session.requestStartTime,
                 firstCompletionDisplayLatency: session.firstCompletionDisplayLatency,
-                addedCharacterCount: addedCharacterCount,
-                deletedCharacterCount: deletedCharacterCount,
             }
             languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
         },
@@ -333,8 +329,6 @@ export async function displaySvgDecoration(
                         discarded: false,
                     },
                 },
-                // addedCharacterCount: addedCharacterCount,
-                // deletedCharacterCount: deletedCharacterCount,
             }
             languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
         },

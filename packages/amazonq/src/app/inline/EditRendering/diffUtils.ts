@@ -16,21 +16,13 @@ export type LineDiff =
  * @param unifiedDiff The unified diff content
  * @returns The modified code after applying the diff
  */
-export function applyUnifiedDiff(
-    docText: string,
-    unifiedDiff: string
-): { appliedCode: string; addedCharacterCount: number; deletedCharacterCount: number } {
+export function applyUnifiedDiff(docText: string, unifiedDiff: string): string {
     try {
-        const { addedCharacterCount, deletedCharacterCount } = getAddedAndDeletedCharCount(unifiedDiff)
         // First try the standard diff package
         try {
             const result = applyPatch(docText, unifiedDiff)
             if (result !== false) {
-                return {
-                    appliedCode: result,
-                    addedCharacterCount: addedCharacterCount,
-                    deletedCharacterCount: deletedCharacterCount,
-                }
+                return result
             }
         } catch (error) {}
 
@@ -94,49 +86,8 @@ export function applyUnifiedDiff(
             // Replace the text
             result = result.replace(textToReplace, newText)
         }
-        return {
-            appliedCode: result,
-            addedCharacterCount: addedCharacterCount,
-            deletedCharacterCount: deletedCharacterCount,
-        }
+        return result
     } catch (error) {
-        return {
-            appliedCode: docText, // Return original text if all methods fail
-            addedCharacterCount: 0,
-            deletedCharacterCount: 0,
-        }
-    }
-}
-
-export function getAddedAndDeletedCharCount(diff: string): {
-    addedCharacterCount: number
-    deletedCharacterCount: number
-} {
-    let addedCharacterCount = 0
-    let deletedCharacterCount = 0
-    let i = 0
-    const lines = diff.split('\n')
-    while (i < lines.length) {
-        const line = lines[i]
-        if (line.startsWith('+') && !line.startsWith('+++')) {
-            addedCharacterCount += line.length - 1
-        } else if (line.startsWith('-') && !line.startsWith('---')) {
-            const removedLine = line.substring(1)
-            deletedCharacterCount += removedLine.length
-
-            // Check if this is a modified line rather than a pure deletion
-            const nextLine = lines[i + 1]
-            if (nextLine && nextLine.startsWith('+') && !nextLine.startsWith('+++') && nextLine.includes(removedLine)) {
-                // This is a modified line, not a pure deletion
-                // We've already counted the deletion, so we'll just increment i to skip the next line
-                // since we'll process the addition on the next iteration
-                i += 1
-            }
-        }
-        i += 1
-    }
-    return {
-        addedCharacterCount,
-        deletedCharacterCount,
+        return docText // Return original text if all methods fail
     }
 }
