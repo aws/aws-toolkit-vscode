@@ -2,7 +2,7 @@
     "name": "amazon-q-vscode",
     "displayName": "Amazon Q",
     "description": "The most capable generative AI-powered assistant for building, operating, and transforming software, with advanced capabilities for managing data and AI",
-    "version": "1.79.0-SNAPSHOT",
+    "version": "1.80.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
     ],
@@ -828,6 +828,18 @@
                 "command": "aws.amazonq.clearCache",
                 "title": "%AWS.amazonq.clearCache%",
                 "category": "%AWS.amazonq.title%"
+            },
+            {
+                "command": "aws.amazonq.inline.acceptEdit",
+                "title": "%aws.amazonq.inline.acceptEdit%"
+            },
+            {
+                "command": "aws.amazonq.inline.rejectEdit",
+                "title": "%aws.amazonq.inline.rejectEdit%"
+            },
+            {
+                "command": "aws.amazonq.toggleNextEditPredictionPanel",
+                "title": "%aws.amazonq.toggleNextEditPredictionPanel%"
             }
         ],
         "keybindings": [
@@ -836,6 +848,18 @@
                 "win": "win+alt+i",
                 "mac": "cmd+alt+i",
                 "linux": "meta+alt+i"
+            },
+            {
+                "command": "aws.amazonq.inline.debugAcceptEdit",
+                "key": "ctrl+alt+a",
+                "mac": "cmd+alt+a",
+                "when": "editorTextFocus"
+            },
+            {
+                "command": "aws.amazonq.inline.debugRejectEdit",
+                "key": "ctrl+alt+r",
+                "mac": "cmd+alt+r",
+                "when": "editorTextFocus"
             },
             {
                 "command": "aws.amazonq.explainCode",
@@ -917,6 +941,16 @@
                 "command": "aws.amazonq.inline.waitForUserDecisionRejectAll",
                 "key": "escape",
                 "when": "editorTextFocus && aws.codewhisperer.connected && amazonq.inline.codelensShortcutEnabled"
+            },
+            {
+                "command": "aws.amazonq.inline.acceptEdit",
+                "key": "tab",
+                "when": "editorTextFocus && aws.amazonq.editSuggestionActive"
+            },
+            {
+                "command": "aws.amazonq.inline.rejectEdit",
+                "key": "escape",
+                "when": "editorTextFocus && aws.amazonq.editSuggestionActive"
             }
         ],
         "icons": {

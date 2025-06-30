@@ -97,7 +97,7 @@ async function registerStepFunctionCommands(
         }),
         Commands.register('aws.stepfunctions.publishStateMachine', async (node?: any) => {
             const region: string | undefined = node?.regionCode
-            await publishStateMachine(awsContext, outputChannel, region)
+            await publishStateMachine({ awsContext: awsContext, outputChannel: outputChannel, region: region })
         }),
         Commands.register('aws.stepfunctions.viewExecutionDetailsByExecutionARN', async () => {
             await ExecutionDetailProvider.openExecutionDetails('')

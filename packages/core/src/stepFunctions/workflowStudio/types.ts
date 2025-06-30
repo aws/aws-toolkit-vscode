@@ -2,7 +2,8 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import { IAM, StepFunctions } from 'aws-sdk'
+import { IAM } from 'aws-sdk'
+import * as StepFunctions from '@aws-sdk/client-sfn'
 import * as vscode from 'vscode'
 
 export enum ComponentType {

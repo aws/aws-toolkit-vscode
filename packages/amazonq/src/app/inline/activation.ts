@@ -17,6 +17,9 @@ import { globals, sleep } from 'aws-core-vscode/shared'
 
 export async function activate() {
     if (isInlineCompletionEnabled()) {
+        // Debugging purpose: only initialize NextEditPredictionPanel when development
+        // NextEditPredictionPanel.getInstance()
+
         await setSubscriptionsforInlineCompletion()
         await AuthUtil.instance.setVscodeContextProps()
     }
