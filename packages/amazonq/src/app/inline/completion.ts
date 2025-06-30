@@ -280,7 +280,7 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
                 this.sessionManager.clear()
             }
 
-            // TODO: comment this out for now as it's slow, will take ~200ms each trigger, need to investigate more
+            // TODO: this line will take ~200ms each trigger, need to root cause and maybe better to disable it for now
             // tell the tutorial that completions has been triggered
             await this.inlineTutorialAnnotation.triggered(context.triggerKind)
 
