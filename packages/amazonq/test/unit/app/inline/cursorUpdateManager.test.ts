@@ -236,4 +236,66 @@ describe('CursorUpdateManager', () => {
         // Verify the provider was called again
         assert.strictEqual(provideStub.callCount, 1, 'Update should be sent when position has changed')
     })
+
+    describe('autotrigger state handling', () => {
+        let codeSuggestionsStateStub: sinon.SinonStubbedInstance<any>
+        let onDidChangeStateStub: sinon.SinonStub
+        let mockDisposable: { dispose: sinon.SinonStub }
+
+        beforeEach(() => {
+            // Mock the disposable returned by onDidChangeState
+            mockDisposable = { dispose: sinon.stub() }
+            onDidChangeStateStub = sinon.stub().returns(mockDisposable)
+
+            codeSuggestionsStateStub = {
+                isSuggestionsEnabled: sinon.stub().returns(true),
+                onDidChangeState: onDidChangeStateStub,
+            }
+
+            // Mock the CodeSuggestionsState import
+            const CodeSuggestionsState = require('aws-core-vscode/codewhisperer')
+            sinon.stub(CodeSuggestionsState, 'CodeSuggestionsState').value({
+                instance: codeSuggestionsStateStub,
+            })
+        })
+
+        it('should not start timer when autotrigger is disabled', async () => {
+            // Test the new behavior: timer doesn't start when autotrigger is disabled
+            codeSuggestionsStateStub.isSuggestionsEnabled.returns(false)
+            sendRequestStub.resolves({})
+
+            await cursorUpdateManager.start()
+
+            // Manager should be active but timer should not be started
+            assert.strictEqual((cursorUpdateManager as any).isActive, true)
+            assert.ok(!setIntervalStub.called, 'Timer should NOT be started when autotrigger is disabled')
+        })
+
+        it('should start/stop timer when autotrigger state changes', async () => {
+            // Start with autotrigger enabled
+            codeSuggestionsStateStub.isSuggestionsEnabled.returns(true)
+            sendRequestStub.resolves({})
+            await cursorUpdateManager.start()
+
+            // Get the state change callback
+            const stateChangeCallback = onDidChangeStateStub.firstCall.args[0]
+
+            // Reset stubs to test state changes
+            setIntervalStub.resetHistory()
+            clearIntervalStub.resetHistory()
+
+            // Simulate autotrigger being disabled
+            stateChangeCallback(false)
+            assert.ok(clearIntervalStub.called, 'Timer should be stopped when autotrigger is disabled')
+
+            // Simulate autotrigger being enabled again
+            stateChangeCallback(true)
+            assert.ok(setIntervalStub.called, 'Timer should be started when autotrigger is re-enabled')
+        })
+
+        it('should dispose autotrigger state listener on dispose', () => {
+            cursorUpdateManager.dispose()
+            assert.ok(mockDisposable.dispose.called, 'Autotrigger state listener should be disposed')
+        })
+    })
 })
