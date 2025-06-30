@@ -177,15 +177,6 @@ export class QuickActionHandler {
             return
         }
 
-        /**
-         * right click -> generate test has no tab id
-         * we have to manually create one if a testgen tab
-         * wasn't previously created
-         */
-        // if (!tabID) {
-        //     tabID = this.mynahUI.updateStore('', {})
-        // }
-
         // if there is no test tab, open a new one
         const affectedTabId: string | undefined = this.addTab(tabID)
 
