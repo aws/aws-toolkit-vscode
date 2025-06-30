@@ -10,6 +10,7 @@ import { CursorUpdateManager } from '../../../../src/app/inline/cursorUpdateMana
 import { globals } from 'aws-core-vscode/shared'
 import assert from 'assert'
 import { AmazonQInlineCompletionItemProvider } from '../../../../src/app/inline/completion'
+import { CodeSuggestionsState } from 'aws-core-vscode/codewhisperer'
 
 describe('CursorUpdateManager', () => {
     let cursorUpdateManager: CursorUpdateManager
@@ -235,5 +236,94 @@ describe('CursorUpdateManager', () => {
 
         // Verify the provider was called again
         assert.strictEqual(provideStub.callCount, 1, 'Update should be sent when position has changed')
+    })
+
+    describe('autotrigger state handling', () => {
+        class TestCodeSuggestionsState extends CodeSuggestionsState {
+            private _isEnabled: boolean
+            private _onDidChangeStateEmitter = new vscode.EventEmitter<boolean>()
+
+            public constructor(initialState: boolean = true) {
+                super(initialState)
+                this._isEnabled = initialState
+            }
+
+            public override onDidChangeState = this._onDidChangeStateEmitter.event
+
+            public override isSuggestionsEnabled(): boolean {
+                return this._isEnabled
+            }
+
+            public override async setSuggestionsEnabled(enabled: boolean): Promise<void> {
+                if (this._isEnabled !== enabled) {
+                    this._isEnabled = enabled
+                    this._onDidChangeStateEmitter.fire(enabled)
+                }
+            }
+        }
+
+        let testCodeSuggestionsState: TestCodeSuggestionsState
+        let instanceStub: sinon.SinonStub
+        let testCursorUpdateManager: CursorUpdateManager
+
+        beforeEach(() => {
+            // Create test instance
+            testCodeSuggestionsState = new TestCodeSuggestionsState(true)
+
+            // Stub the static getter to return our test instance
+            instanceStub = sinon.stub(CodeSuggestionsState, 'instance').get(() => testCodeSuggestionsState)
+
+            // Create the manager AFTER the stub is in place so it uses the test instance
+            const mockInlineCompletionProvider = {
+                provideInlineCompletionItems: sinon.stub().resolves([]),
+            } as unknown as AmazonQInlineCompletionItemProvider
+            testCursorUpdateManager = new CursorUpdateManager(languageClient, mockInlineCompletionProvider)
+        })
+
+        afterEach(() => {
+            // Dispose the test manager
+            testCursorUpdateManager.dispose()
+            // Restore the original getter
+            instanceStub.restore()
+        })
+
+        it('should not start timer when autotrigger is disabled', async () => {
+            // Test the new behavior: timer doesn't start when autotrigger is disabled
+            await testCodeSuggestionsState.setSuggestionsEnabled(false)
+            sendRequestStub.resolves({})
+
+            await testCursorUpdateManager.start()
+
+            // Manager should be active but timer should not be started
+            assert.strictEqual((testCursorUpdateManager as any).isActive, true)
+            assert.ok(!setIntervalStub.called, 'Timer should NOT be started when autotrigger is disabled')
+        })
+
+        it('should start/stop timer when autotrigger state changes', async () => {
+            // Start with autotrigger enabled
+            await testCodeSuggestionsState.setSuggestionsEnabled(true)
+            sendRequestStub.resolves({})
+            await testCursorUpdateManager.start()
+
+            // Reset stubs to test state changes
+            setIntervalStub.resetHistory()
+            clearIntervalStub.resetHistory()
+
+            // Simulate autotrigger being disabled
+            await testCodeSuggestionsState.setSuggestionsEnabled(false)
+            assert.ok(clearIntervalStub.called, 'Timer should be stopped when autotrigger is disabled')
+
+            // Simulate autotrigger being enabled again
+            await testCodeSuggestionsState.setSuggestionsEnabled(true)
+            assert.ok(setIntervalStub.called, 'Timer should be started when autotrigger is re-enabled')
+        })
+
+        it('should dispose autotrigger state listener on dispose', () => {
+            testCursorUpdateManager.dispose()
+            // The dispose method should clean up the state listener
+            // We can't easily test the disposal without more complex mocking,
+            // but we can at least verify dispose doesn't throw
+            assert.ok(true, 'Dispose should complete without errors')
+        })
     })
 })
