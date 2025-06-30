@@ -8,6 +8,7 @@ import { LanguageClient } from 'vscode-languageclient'
 import { getLogger } from 'aws-core-vscode/shared'
 import { globals } from 'aws-core-vscode/shared'
 import { AmazonQInlineCompletionItemProvider } from './completion'
+import { CodeSuggestionsState } from 'aws-core-vscode/codewhisperer'
 
 // Configuration section for cursor updates
 export const cursorUpdateConfigurationSection = 'aws.q.cursorUpdate'
@@ -32,11 +33,23 @@ export class CursorUpdateManager implements vscode.Disposable, ICursorUpdateReco
     private lastSentDocumentUri?: string
     private isActive = false
     private lastRequestTime = 0
+    private autotriggerStateDisposable?: vscode.Disposable
 
     constructor(
         private readonly languageClient: LanguageClient,
         private readonly inlineCompletionProvider?: AmazonQInlineCompletionItemProvider
-    ) {}
+    ) {
+        // Listen for autotrigger state changes to enable/disable the timer
+        this.autotriggerStateDisposable = CodeSuggestionsState.instance.onDidChangeState((isEnabled: boolean) => {
+            if (isEnabled && this.isActive) {
+                // If autotrigger is enabled and we're active, ensure timer is running
+                this.setupUpdateTimer()
+            } else {
+                // If autotrigger is disabled, clear the timer but keep isActive state
+                this.clearUpdateTimer()
+            }
+        })
+    }
 
     /**
      * Start tracking cursor positions and sending periodic updates
@@ -66,7 +79,9 @@ export class CursorUpdateManager implements vscode.Disposable, ICursorUpdateReco
         }
 
         this.isActive = true
-        this.setupUpdateTimer()
+        if (CodeSuggestionsState.instance.isSuggestionsEnabled()) {
+            this.setupUpdateTimer()
+        }
     }
 
     /**
@@ -130,7 +145,7 @@ export class CursorUpdateManager implements vscode.Disposable, ICursorUpdateReco
     }
 
     /**
-     * Send a cursor position update to the language server
+     * Request LSP generate a completion for the current cursor position.
      */
     private async sendCursorUpdate(): Promise<void> {
         // Don't send an update if a regular request was made recently
@@ -185,6 +200,12 @@ export class CursorUpdateManager implements vscode.Disposable, ICursorUpdateReco
      * Dispose of resources
      */
     public dispose(): void {
+        // Dispose of the autotrigger state change listener
+        if (this.autotriggerStateDisposable) {
+            this.autotriggerStateDisposable.dispose()
+            this.autotriggerStateDisposable = undefined
+        }
+
         this.stop()
     }
 }
