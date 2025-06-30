@@ -24,7 +24,7 @@ import {
     LogInlineCompletionSessionResultsParams,
 } from '@aws/language-server-runtimes/protocol'
 import { SessionManager } from './sessionManager'
-import { RecommendationService } from './recommendationService'
+import { GetAllRecommendationsOptions, RecommendationService } from './recommendationService'
 import {
     CodeWhispererConstants,
     ReferenceHoverProvider,
@@ -40,8 +40,10 @@ import { InlineGeneratingMessage } from './inlineGeneratingMessage'
 import { LineTracker } from './stateTracker/lineTracker'
 import { InlineTutorialAnnotation } from './tutorials/inlineTutorialAnnotation'
 import { TelemetryHelper } from './telemetryHelper'
-import { getLogger } from 'aws-core-vscode/shared'
+import { Experiments, getLogger } from 'aws-core-vscode/shared'
 import { debounce, messageUtils } from 'aws-core-vscode/utils'
+import { showEdits } from './EditRendering/imageRenderer'
+import { ICursorUpdateRecorder } from './cursorUpdateManager'
 
 export class InlineCompletionManager implements Disposable {
     private disposable: Disposable
@@ -58,13 +60,18 @@ export class InlineCompletionManager implements Disposable {
         languageClient: LanguageClient,
         sessionManager: SessionManager,
         lineTracker: LineTracker,
-        inlineTutorialAnnotation: InlineTutorialAnnotation
+        inlineTutorialAnnotation: InlineTutorialAnnotation,
+        cursorUpdateRecorder?: ICursorUpdateRecorder
     ) {
         this.languageClient = languageClient
         this.sessionManager = sessionManager
         this.lineTracker = lineTracker
         this.incomingGeneratingMessage = new InlineGeneratingMessage(this.lineTracker)
-        this.recommendationService = new RecommendationService(this.sessionManager, this.incomingGeneratingMessage)
+        this.recommendationService = new RecommendationService(
+            this.sessionManager,
+            this.incomingGeneratingMessage,
+            cursorUpdateRecorder
+        )
         this.inlineTutorialAnnotation = inlineTutorialAnnotation
         this.inlineCompletionProvider = new AmazonQInlineCompletionItemProvider(
             languageClient,
@@ -78,6 +85,10 @@ export class InlineCompletionManager implements Disposable {
         )
 
         this.lineTracker.ready()
+    }
+
+    public getInlineCompletionProvider(): AmazonQInlineCompletionItemProvider {
+        return this.inlineCompletionProvider
     }
 
     public dispose(): void {
@@ -176,6 +187,7 @@ export class InlineCompletionManager implements Disposable {
 }
 
 export class AmazonQInlineCompletionItemProvider implements InlineCompletionItemProvider {
+    private logger = getLogger('nextEditPrediction')
     constructor(
         private readonly languageClient: LanguageClient,
         private readonly recommendationService: RecommendationService,
@@ -194,13 +206,24 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
         document: TextDocument,
         position: Position,
         context: InlineCompletionContext,
-        token: CancellationToken
+        token: CancellationToken,
+        getAllRecommendationsOptions?: GetAllRecommendationsOptions
     ): Promise<InlineCompletionItem[]> {
+        getLogger().info('_provideInlineCompletionItems called with: %O', {
+            documentUri: document.uri.toString(),
+            position,
+            context,
+            triggerKind: context.triggerKind === InlineCompletionTriggerKind.Automatic ? 'Automatic' : 'Invoke',
+        })
+
         // prevent concurrent API calls and write to shared state variables
         if (vsCodeState.isRecommendationsActive) {
+            getLogger().info('Recommendations already active, returning empty')
             return []
         }
+        let logstr = `GenerateCompletion metadata:\\n`
         try {
+            const t0 = performance.now()
             vsCodeState.isRecommendationsActive = true
             const isAutoTrigger = context.triggerKind === InlineCompletionTriggerKind.Automatic
             if (isAutoTrigger && !CodeSuggestionsState.instance.isSuggestionsEnabled()) {
@@ -257,21 +280,38 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
                 this.sessionManager.clear()
             }
 
+            // TODO: this line will take ~200ms each trigger, need to root cause and maybe better to disable it for now
             // tell the tutorial that completions has been triggered
             await this.inlineTutorialAnnotation.triggered(context.triggerKind)
+
             TelemetryHelper.instance.setInvokeSuggestionStartTime()
             TelemetryHelper.instance.setTriggerType(context.triggerKind)
+
+            const t1 = performance.now()
 
             await this.recommendationService.getAllRecommendations(
                 this.languageClient,
                 document,
                 position,
                 context,
-                token
+                token,
+                getAllRecommendationsOptions
             )
             // get active item from session for displaying
             const items = this.sessionManager.getActiveRecommendation()
             const itemId = this.sessionManager.getActiveRecommendation()?.[0]?.itemId
+
+            // eslint-disable-next-line @typescript-eslint/no-base-to-string
+            const itemLog = items[0] ? `${items[0].insertText.toString()}` : `no suggestion`
+
+            const t2 = performance.now()
+
+            logstr = logstr += `- number of suggestions: ${items.length}
+- first suggestion content (next line):
+${itemLog}
+- duration since trigger to before sending Flare call: ${t1 - t0}ms
+- duration since trigger to receiving responses from Flare: ${t2 - t0}ms
+`
             const session = this.sessionManager.getActiveSession()
 
             // Show message to user when manual invoke fails to produce results.
@@ -311,6 +351,18 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
             const itemsMatchingTypeahead = []
 
             for (const item of items) {
+                if (item.isInlineEdit) {
+                    // Check if Next Edit Prediction feature flag is enabled
+                    if (Experiments.instance.isExperimentEnabled('amazonqLSPNEP')) {
+                        void showEdits(item, editor, session, this.languageClient).then(() => {
+                            const t3 = performance.now()
+                            logstr = logstr + `- duration since trigger to NEP suggestion is displayed: ${t3 - t0}ms`
+                            this.logger.info(logstr)
+                        })
+                    }
+                    return []
+                }
+
                 item.insertText = typeof item.insertText === 'string' ? item.insertText : item.insertText.value
                 if (item.insertText.startsWith(typeahead)) {
                     item.command = {
