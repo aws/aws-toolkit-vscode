@@ -9,8 +9,6 @@ import { DiagnosticsMonitor, DiagnosticSnapshot } from './diagnostics/diagnostic
 import { ProblemDetector, Problem, CategorizedProblems } from './diagnostics/problemDetector'
 import { ErrorContextFormatter, ErrorContext } from './diagnostics/errorContext'
 import { AutoDebugLspClient } from './lsp/autoDebugLspClient'
-import { focusAmazonQPanel } from '../../codewhispererChat/commands/registerCommands'
-import { placeholder } from '../../shared/vscode/commands2'
 import { randomUUID } from '../../shared/crypto'
 
 export interface AutoDebugConfig {
@@ -44,7 +42,6 @@ export class AutoDebugController implements vscode.Disposable {
 
     private currentSession: AutoDebugSession | undefined
     private config: AutoDebugConfig
-    private isProcessing = false
 
     public readonly onProblemsDetected = new vscode.EventEmitter<Problem[]>()
     public readonly onSessionStarted = new vscode.EventEmitter<AutoDebugSession>()
@@ -238,7 +235,169 @@ export class AutoDebugController implements vscode.Disposable {
      */
     public async sendChatMessage(message: string, source: string): Promise<void> {
         this.logger.debug('AutoDebugController: Public sendChatMessage called from source: %s', source)
+
         await this.sendMessageToChat(message)
+    }
+
+    /**
+     * Marks that Amazon Q has responded (called when response is received)
+     */
+    public markAmazonQResponse(): void {
+        this.logger.debug('AutoDebugController: Amazon Q response received')
+    }
+
+    /**
+     * Called when Amazon Q completes a chat session and has potentially written code
+     */
+    public markAmazonQChatComplete(hasWrittenCode: boolean = false): void {
+        if (hasWrittenCode) {
+            this.logger.debug('AutoDebugController: Amazon Q chat completed with code changes')
+        } else {
+            this.logger.debug('AutoDebugController: Amazon Q chat completed without code changes')
+        }
+    }
+
+    /**
+     * Fix with Amazon Q - sends up to 15 error messages one time when user clicks the button
+     */
+    public async fixAllProblemsInFile(maxProblems: number = 15): Promise<void> {
+        this.logger.debug('AutoDebugController: Starting single Fix with Amazon Q request')
+
+        const editor = vscode.window.activeTextEditor
+        if (!editor) {
+            void vscode.window.showWarningMessage('No active editor found')
+            return
+        }
+
+        const filePath = editor.document.uri.fsPath
+        const fileName = editor.document.fileName
+
+        try {
+            // Start session if not active
+            if (!this.currentSession) {
+                await this.startSession()
+            }
+
+            // Get all diagnostics for the current file
+            const allDiagnostics = vscode.languages.getDiagnostics(editor.document.uri)
+
+            // Filter to only errors (not warnings/info)
+            const errorDiagnostics = allDiagnostics.filter((d) => d.severity === vscode.DiagnosticSeverity.Error)
+
+            if (errorDiagnostics.length === 0) {
+                void vscode.window.showInformationMessage(`✅ No errors found in ${fileName}`)
+                this.logger.debug('AutoDebugController: No errors found in current file')
+                return
+            }
+
+            // Take up to maxProblems errors (15 by default)
+            const diagnosticsToFix = errorDiagnostics.slice(0, maxProblems)
+            const totalErrors = errorDiagnostics.length
+            const errorsBeingSent = diagnosticsToFix.length
+
+            this.logger.debug(
+                `AutoDebugController: Found ${totalErrors} total errors, sending ${errorsBeingSent} to Amazon Q`
+            )
+
+            // Convert diagnostics to problems
+            const problems = diagnosticsToFix.map((diagnostic) => ({
+                uri: editor.document.uri,
+                diagnostic,
+                severity: this.mapDiagnosticSeverity(diagnostic.severity),
+                source: diagnostic.source || 'unknown',
+                isNew: false,
+            }))
+
+            // Get the code range that covers all the errors
+            const problemRange = this.getProblemsRange(problems)
+            const codeWithErrors = editor.document.getText(problemRange)
+            const languageId = editor.document.languageId
+
+            // Create fix message
+            const fixMessage = this.createFixMessage(
+                codeWithErrors,
+                filePath,
+                languageId,
+                problems,
+                totalErrors,
+                errorsBeingSent
+            )
+
+            // Show progress message
+            void vscode.window.showInformationMessage(
+                `🔧 Sending ${errorsBeingSent} error${errorsBeingSent !== 1 ? 's' : ''} to Amazon Q for fixing...`
+            )
+
+            await this.sendChatMessage(fixMessage, 'singleFix')
+
+            this.logger.debug('AutoDebugController: Fix request sent successfully')
+        } catch (error) {
+            this.logger.error('AutoDebugController: Error in fix process: %s', error)
+            void vscode.window.showErrorMessage(
+                `Error during fix process: ${error instanceof Error ? error.message : 'Unknown error'}`
+            )
+        }
+    }
+
+    private mapDiagnosticSeverity(severity: vscode.DiagnosticSeverity): 'error' | 'warning' | 'info' | 'hint' {
+        switch (severity) {
+            case vscode.DiagnosticSeverity.Error:
+                return 'error'
+            case vscode.DiagnosticSeverity.Warning:
+                return 'warning'
+            case vscode.DiagnosticSeverity.Information:
+                return 'info'
+            case vscode.DiagnosticSeverity.Hint:
+                return 'hint'
+            default:
+                return 'error'
+        }
+    }
+
+    private createFixMessage(
+        selectedText: string,
+        filePath: string,
+        languageId: string,
+        problems: any[],
+        totalErrors: number,
+        errorsBeingSent: number
+    ): string {
+        const parts = [
+            `Please help me fix the following code issues:`,
+            '',
+            `**File:** ${filePath}`,
+            `**Language:** ${languageId}`,
+            `**Errors being sent:** ${errorsBeingSent}`,
+            totalErrors > errorsBeingSent ? `**Total errors in file:** ${totalErrors}` : '',
+            '',
+            '**Code:**',
+            `\`\`\`${languageId}`,
+            selectedText,
+            '```',
+            '',
+            '**Issues to fix:**',
+        ]
+
+        for (const problem of problems) {
+            parts.push(`- **ERROR**: ${problem.diagnostic.message}`)
+            parts.push(
+                `  Location: Line ${problem.diagnostic.range.start.line + 1}, Column ${problem.diagnostic.range.start.character + 1}`
+            )
+            if (problem.source !== 'unknown') {
+                parts.push(`  Source: ${problem.source}`)
+            }
+        }
+
+        parts.push('')
+        parts.push('Please fix the error in place in the file.')
+
+        if (totalErrors > errorsBeingSent) {
+            parts.push(
+                `Note: This file has ${totalErrors} total errors, but I'm only sending ${errorsBeingSent} errors at a time to avoid overwhelming the system.`
+            )
+        }
+
+        return parts.filter(Boolean).join('\n')
     }
 
     /**
@@ -271,38 +430,6 @@ export class AutoDebugController implements vscode.Disposable {
 
             if (success) {
                 this.logger.debug('AutoDebugController: Chat message sent successfully through LSP client')
-
-                // Also update the UI to show the message if possible
-                try {
-                    const mynahUiInstance = (global as any).mynahUiInstance
-                    if (mynahUiInstance) {
-                        const tabId = mynahUiInstance.getSelectedTabId() || mynahUiInstance.updateStore('', {})
-                        if (tabId) {
-                            // Add the user prompt to the UI to show what AutoDebug sent
-                            mynahUiInstance.addChatItem(tabId, {
-                                type: 'prompt',
-                                body: message,
-                            })
-
-                            // Set loading state
-                            mynahUiInstance.updateStore(tabId, {
-                                loadingChat: true,
-                                cancelButtonWhenLoading: true,
-                                promptInputDisabledState: false,
-                            })
-
-                            // Add initial empty response
-                            mynahUiInstance.addChatItem(tabId, {
-                                type: 'answer-stream',
-                            })
-
-                            this.logger.debug('AutoDebugController: Updated UI to show AutoDebug message')
-                        }
-                    }
-                } catch (uiError) {
-                    // UI update is optional - don't fail if it doesn't work
-                    this.logger.warn('AutoDebugController: Could not update UI, but message was sent: %s', uiError)
-                }
             } else {
                 this.logger.error('AutoDebugController: Failed to send chat message through LSP client')
                 throw new Error('Failed to send message through LSP client')
@@ -447,162 +574,81 @@ You can manually apply these fixes or use the "Apply Fixes" option from the noti
     private setupEventHandlers(): void {
         this.logger.debug('AutoDebugController: Setting up event handlers')
 
-        // Listen for diagnostic changes
-        this.disposables.push(
-            this.diagnosticsMonitor.onDiagnosticsChanged(async (diagnostics) => {
-                if (this.isProcessing || !this.config.enabled || !this.currentSession) {
-                    return
-                }
+        // **ONLY trigger on specific file events (save/open) - NO continuous monitoring during typing**
+        // This prevents notification spam while you're actively coding
 
-                this.isProcessing = true
-                try {
-                    await this.handleDiagnosticChange(diagnostics)
-                } catch (error) {
-                    this.logger.error('AutoDebugController: Error handling diagnostic change: %s', error)
-                } finally {
-                    this.isProcessing = false
-                }
+        // Listen for file saves and check for errors
+        this.disposables.push(
+            vscode.workspace.onDidSaveTextDocument(async (document) => {
+                await this.handleFileEvent(document, 'save')
             })
         )
 
-        // Listen for workspace changes that might affect diagnostics
+        // Listen for file opens and check for errors
         this.disposables.push(
-            vscode.workspace.onDidSaveTextDocument(async (document) => {
-                if (this.config.enabled && this.currentSession) {
-                    this.logger.debug(
-                        'AutoDebugController: Document saved, checking for problems: %s',
-                        document.fileName
-                    )
-                    // Debounce the problem detection
-                    setTimeout(() => {
-                        this.detectProblems().catch((error) => {
-                            this.logger.error('AutoDebugController: Error detecting problems after save: %s', error)
-                        })
-                    }, this.config.debounceMs)
-                }
+            vscode.workspace.onDidOpenTextDocument(async (document) => {
+                await this.handleFileEvent(document, 'open')
             })
         )
     }
 
-    private async handleDiagnosticChange(diagnostics: any): Promise<void> {
-        this.logger.debug(
-            'AutoDebugController: handleDiagnosticChange called - session exists: %s, enabled: %s',
-            !!this.currentSession,
-            this.config.enabled
-        )
-
-        if (!this.currentSession) {
-            this.logger.debug('AutoDebugController: No current session, skipping diagnostic change')
+    /**
+     * Handles file events (save/open) and checks for errors that should trigger auto-debug
+     */
+    private async handleFileEvent(document: vscode.TextDocument, eventType: 'save' | 'open'): Promise<void> {
+        if (!this.config.enabled) {
             return
         }
 
-        this.logger.debug('AutoDebugController: Handling diagnostic change')
-
-        const currentSnapshot: DiagnosticSnapshot = {
-            diagnostics,
-            captureTime: Date.now(),
-            id: this.generateSnapshotId(),
+        // **FIX #1: Ensure session exists - create one if needed**
+        if (!this.currentSession) {
+            this.logger.debug('AutoDebugController: No active session, starting new one for file event')
+            await this.startSession()
         }
 
-        const newProblems = this.problemDetector.detectNewProblems(this.currentSession.baseline, currentSnapshot)
-        this.logger.debug('AutoDebugController: Detected %d new problems before filtering', newProblems.length)
+        this.logger.debug('AutoDebugController: Document %s, checking for errors: %s', eventType, document.fileName)
 
-        const filteredProblems = this.filterProblems(newProblems)
-        this.logger.debug(
-            'AutoDebugController: %d problems after filtering (threshold: %d)',
-            filteredProblems.length,
-            this.config.autoReportThreshold
-        )
+        // **Only trigger auto-notification if there are actual errors after file event**
+        setTimeout(async () => {
+            try {
+                // Check if there are errors in the file
+                const diagnostics = vscode.languages.getDiagnostics(document.uri)
+                const errorDiagnostics = diagnostics.filter((d) => d.severity === vscode.DiagnosticSeverity.Error)
 
-        if (filteredProblems.length >= this.config.autoReportThreshold) {
-            this.logger.debug('AutoDebugController: Auto-reporting %d problems', filteredProblems.length)
+                if (errorDiagnostics.length > 0) {
+                    this.logger.debug(`AutoDebugController: Found ${errorDiagnostics.length} errors after ${eventType}`)
 
-            // Update session with new problems
-            this.currentSession = {
-                ...this.currentSession,
-                problems: [...this.currentSession.problems, ...filteredProblems],
+                    // **FIX #1: Always show notification when errors are found (removed Amazon Q activity requirement)**
+                    this.logger.debug(`AutoDebugController: Showing notification for errors found after ${eventType}`)
+
+                    // Convert diagnostics to problems
+                    const problems = errorDiagnostics.map((diagnostic) => ({
+                        uri: document.uri,
+                        diagnostic,
+                        severity: this.mapDiagnosticSeverity(diagnostic.severity),
+                        source: diagnostic.source || 'unknown',
+                        isNew: true,
+                    }))
+
+                    // Update session with new problems
+                    if (this.currentSession) {
+                        this.currentSession = {
+                            ...this.currentSession,
+                            problems: [...this.currentSession.problems, ...problems],
+                        }
+                    }
+
+                    // Fire the problems detected event - this triggers the notification in AutoDebugFeature
+                    this.onProblemsDetected.fire(problems)
+
+                    this.logger.debug('AutoDebugController: Problems detected event fired for notification')
+                } else {
+                    this.logger.debug(`AutoDebugController: No errors found after ${eventType}`)
+                }
+            } catch (error) {
+                this.logger.error(`AutoDebugController: Error checking problems after ${eventType}: %s`, error)
             }
-
-            // **NEW: Auto-send to chat instead of just emitting event**
-            await this.autoSendProblemsToChat(filteredProblems)
-
-            this.onProblemsDetected.fire(filteredProblems)
-        } else {
-            this.logger.debug('AutoDebugController: Not enough problems to trigger auto-report')
-        }
-    }
-
-    /**
-     * Automatically sends detected problems to Amazon Q chat for fixing
-     */
-    private async autoSendProblemsToChat(problems: Problem[]): Promise<void> {
-        try {
-            const editor = vscode.window.activeTextEditor
-            if (!editor) {
-                this.logger.warn('AutoDebugController: No active editor for auto-send to chat')
-                return
-            }
-
-            const filePath = editor.document.uri.fsPath
-            const languageId = editor.document.languageId
-
-            // Get the problematic code section
-            const problemRange = this.getProblemsRange(problems)
-            const selectedText = editor.document.getText(problemRange)
-
-            // Format problems for chat
-            const formattedProblems = this.formatProblemsForChat(problems)
-
-            // Create auto-debug specific message
-            const autoDebugMessage = this.createAutoDebugChatMessage(
-                selectedText,
-                filePath,
-                languageId,
-                formattedProblems
-            )
-
-            // Focus Amazon Q chat and send the message
-            await focusAmazonQPanel.execute(placeholder, 'autoDebug')
-            await this.sendMessageToChat(autoDebugMessage)
-
-            this.logger.debug('AutoDebugController: Successfully auto-sent problems to chat')
-
-            // Show notification to user
-            void vscode.window.showInformationMessage(
-                `Amazon Q is analyzing ${problems.length} error${problems.length !== 1 ? 's' : ''} in your code...`
-            )
-        } catch (error) {
-            this.logger.error('AutoDebugController: Error auto-sending problems to chat: %s', error)
-        }
-    }
-
-    /**
-     * Creates a chat message specifically for auto-debug scenarios
-     */
-    private createAutoDebugChatMessage(
-        selectedText: string,
-        filePath: string,
-        languageId: string,
-        problems: string
-    ): string {
-        const parts = [
-            '🔧 **Auto Debug**: I detected some errors in your code. Please help me fix them:',
-            '',
-            `**File:** ${filePath}`,
-            `**Language:** ${languageId}`,
-            '',
-            '**Code with errors:**',
-            `\`\`\`${languageId}`,
-            selectedText,
-            '```',
-            '',
-            '**Detected Issues:**',
-            problems,
-            '',
-            'Please fix the error in place in the file.',
-        ]
-
-        return parts.join('\n')
+        }, this.config.debounceMs)
     }
 
     /**

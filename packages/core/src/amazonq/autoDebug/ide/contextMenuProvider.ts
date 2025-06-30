@@ -9,8 +9,6 @@ import { Commands } from '../../../shared/vscode/commands2'
 import { AutoDebugController } from '../autoDebugController'
 import { focusAmazonQPanel } from '../../../codewhispererChat/commands/registerCommands'
 import { placeholder } from '../../../shared/vscode/commands2'
-import { DefaultAmazonQAppInitContext } from '../../../amazonq/apps/initContext'
-import { randomUUID } from '../../../shared/crypto'
 
 /**
  * Provides context menu integration for Amazon Q Auto Debug features.
@@ -100,6 +98,7 @@ export class ContextMenuProvider implements vscode.Disposable {
 
     /**
      * Adds selected code with diagnostic context to Amazon Q chat
+     * **Fixed to use working LSP integration like AutoDebug flow**
      */
     private async addToAmazonQ(range?: vscode.Range, diagnostics?: vscode.Diagnostic[]): Promise<void> {
         this.logger.debug('ContextMenuProvider: Adding code to Amazon Q chat')
@@ -131,11 +130,11 @@ export class ContextMenuProvider implements vscode.Disposable {
             const formattedProblems = this.autoDebugController.formatProblemsForChat(problems)
             const contextMessage = this.createChatMessage(selectedText, filePath, languageId, formattedProblems)
 
-            // Focus Amazon Q chat and add the context
+            // **FIXED: Use working AutoDebugController LSP integration instead of broken webview approach**
             await focusAmazonQPanel.execute(placeholder, 'autoDebug')
-            await this.addMessageToChat(contextMessage)
+            await this.autoDebugController.sendChatMessage(contextMessage, 'addToChat')
 
-            this.logger.debug('ContextMenuProvider: Successfully added code to Amazon Q chat')
+            this.logger.debug('ContextMenuProvider: Successfully added code to Amazon Q chat using LSP integration')
         } catch (error) {
             this.logger.error('ContextMenuProvider: Error adding code to Amazon Q: %s', error)
             void vscode.window.showErrorMessage('Failed to add code to Amazon Q chat')
@@ -143,56 +142,76 @@ export class ContextMenuProvider implements vscode.Disposable {
     }
 
     /**
-     * Initiates a focused debugging session with Amazon Q
+     * Enhanced Fix with Amazon Q - processes all errors in the file iteratively
      */
     private async fixWithAmazonQ(range?: vscode.Range, diagnostics?: vscode.Diagnostic[]): Promise<void> {
-        this.logger.debug('ContextMenuProvider: Starting fix with Amazon Q')
+        this.logger.debug('ContextMenuProvider: Starting enhanced Fix with Amazon Q')
 
         try {
             const editor = vscode.window.activeTextEditor
             if (!editor) {
                 this.logger.warn('ContextMenuProvider: No active editor for fixWithAmazonQ')
+                void vscode.window.showWarningMessage('No active editor found')
                 return
             }
 
-            const selectedText = this.getSelectedText(editor, range)
-            const filePath = editor.document.uri.fsPath
-            const languageId = editor.document.languageId
-
-            // Get diagnostics for the current location if not provided
-            const contextDiagnostics = diagnostics || this.getDiagnosticsForRange(editor.document.uri, range)
-
-            if (contextDiagnostics.length === 0) {
-                void vscode.window.showInformationMessage('No problems found in the selected code')
-                return
+            // If specific range/diagnostics provided, use focused fix
+            if (range || diagnostics) {
+                await this.fixSpecificProblems(range, diagnostics)
+            } else {
+                // Use the enhanced fix-all-problems method
+                this.logger.debug('ContextMenuProvider: Using enhanced fix-all-problems method')
+                await this.autoDebugController.fixAllProblemsInFile(10) // 10 errors per batch
             }
 
-            // Convert diagnostics to problems
-            const problems = contextDiagnostics.map((diagnostic) => ({
-                uri: editor.document.uri,
-                diagnostic,
-                severity: this.mapDiagnosticSeverity(diagnostic.severity),
-                source: diagnostic.source || 'unknown',
-                isNew: false,
-            }))
-
-            // Skip the broken LSP auto-fix and go directly to chat assistance
-            const errorContexts = await this.autoDebugController.createErrorContexts(problems)
-            const fixMessage = this.createFixMessage(selectedText, filePath, languageId, errorContexts)
-
-            // Use the AutoDebugController to send the message through LSP
-            // This will trigger the language server methods directly
-            await this.autoDebugController.sendChatMessage(fixMessage, 'contextMenu')
-
-            this.logger.debug('ContextMenuProvider: Successfully started fix session with Amazon Q')
+            this.logger.debug('ContextMenuProvider: Successfully completed enhanced fix with Amazon Q')
         } catch (error) {
-            this.logger.error('ContextMenuProvider: Error starting fix with Amazon Q: %s', error)
-            void vscode.window.showErrorMessage('Failed to start fix session with Amazon Q')
+            this.logger.error('ContextMenuProvider: Error in enhanced fix with Amazon Q: %s', error)
+            void vscode.window.showErrorMessage(
+                `Enhanced fix failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+            )
         }
     }
 
     /**
+     * Fixes specific problems when range or diagnostics are provided
+     */
+    private async fixSpecificProblems(range?: vscode.Range, diagnostics?: vscode.Diagnostic[]): Promise<void> {
+        const editor = vscode.window.activeTextEditor!
+        const selectedText = this.getSelectedText(editor, range)
+        const filePath = editor.document.uri.fsPath
+        const languageId = editor.document.languageId
+
+        // Get diagnostics for the current location if not provided
+        const contextDiagnostics = diagnostics || this.getDiagnosticsForRange(editor.document.uri, range)
+
+        if (contextDiagnostics.length === 0) {
+            void vscode.window.showInformationMessage('No problems found in the selected code')
+            return
+        }
+
+        // Convert diagnostics to problems
+        const problems = contextDiagnostics.map((diagnostic) => ({
+            uri: editor.document.uri,
+            diagnostic,
+            severity: this.mapDiagnosticSeverity(diagnostic.severity),
+            source: diagnostic.source || 'unknown',
+            isNew: false,
+        }))
+
+        // Create focused fix message for specific problems
+        const errorContexts = await this.autoDebugController.createErrorContexts(problems)
+        const fixMessage = this.createFixMessage(selectedText, filePath, languageId, errorContexts)
+
+        // Use the working AutoDebugController pipeline
+        await this.autoDebugController.sendChatMessage(fixMessage, 'focusedFix')
+
+        this.logger.debug('ContextMenuProvider: Successfully sent focused fix request')
+    }
+
+    /**
      * Explains the problem using Amazon Q
+     * **Fixed to use working LSP integration like AutoDebug flow**
      */
     private async explainProblem(range?: vscode.Range, diagnostics?: vscode.Diagnostic[]): Promise<void> {
         this.logger.debug('ContextMenuProvider: Explaining problem with Amazon Q')
@@ -224,11 +243,11 @@ export class ContextMenuProvider implements vscode.Disposable {
             // Create explanation message
             const explanationMessage = this.createExplanationMessage(problems)
 
-            // Focus Amazon Q chat and ask for explanation
+            // **FIXED: Use working AutoDebugController LSP integration instead of broken webview approach**
             await focusAmazonQPanel.execute(placeholder, 'autoDebug')
-            await this.addMessageToChat(explanationMessage)
+            await this.autoDebugController.sendChatMessage(explanationMessage, 'explainProblem')
 
-            this.logger.debug('ContextMenuProvider: Successfully requested problem explanation')
+            this.logger.debug('ContextMenuProvider: Successfully requested problem explanation using LSP integration')
         } catch (error) {
             this.logger.error('ContextMenuProvider: Error explaining problem: %s', error)
             void vscode.window.showErrorMessage('Failed to explain problem with Amazon Q')
@@ -370,64 +389,6 @@ export class ContextMenuProvider implements vscode.Disposable {
         }
 
         return parts.join('\n')
-    }
-
-    private async addMessageToChat(message: string): Promise<void> {
-        const triggerID = randomUUID()
-        this.logger.debug('ContextMenuProvider: Adding message to chat with triggerID: %s', triggerID)
-        this.logger.debug('ContextMenuProvider: Message content: %s', message.substring(0, 200))
-
-        try {
-            // Use the apps-to-webview publisher to send the message TO the webview
-            // This will be processed by cwChatConnector.handleMessageReceive
-            const appsToWebViewPublisher = DefaultAmazonQAppInitContext.instance.getAppsToWebViewMessagePublisher()
-
-            this.logger.debug(
-                'ContextMenuProvider: Apps-to-webview publisher found, sending editor context command message'
-            )
-
-            // Send the message in the format expected by cwChatConnector.handleMessageReceive
-            // with type: 'editorContextCommandMessage' to trigger processEditorContextCommandMessage
-            const editorContextMessage = {
-                sender: 'CWChat', // Required for cwChatConnector routing
-                type: 'editorContextCommandMessage',
-                message: message,
-                command: 'aws.amazonq.autoDebug.sendMessage',
-                triggerID: triggerID,
-                tabID: '', // Will be handled by the current selected tab
-            }
-
-            this.logger.debug('ContextMenuProvider: Publishing editor context message: %O', editorContextMessage)
-
-            appsToWebViewPublisher.publish(editorContextMessage)
-
-            this.logger.debug(
-                'ContextMenuProvider: Editor context message published successfully with triggerID: %s',
-                triggerID
-            )
-            this.logger.debug('ContextMenuProvider: Message sent to webview for processing')
-
-            // Add a small delay to allow the message to be processed
-            await new Promise((resolve) => setTimeout(resolve, 500))
-
-            this.logger.debug('ContextMenuProvider: Successfully started fix session with Amazon Q')
-        } catch (error) {
-            this.logger.error(
-                'ContextMenuProvider: Error sending message to chat with triggerID %s: %s',
-                triggerID,
-                error
-            )
-            this.logger.error(
-                'ContextMenuProvider: Error stack: %s',
-                error instanceof Error ? error.stack : 'No stack trace'
-            )
-
-            // Fallback: show detailed error message to user
-            void vscode.window.showErrorMessage(
-                `Failed to send message to Amazon Q chat (ID: ${triggerID.substring(0, 8)}...): ${error instanceof Error ? error.message : 'Unknown error'}`
-            )
-            throw error
-        }
     }
 
     public dispose(): void {

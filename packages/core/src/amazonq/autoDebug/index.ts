@@ -127,10 +127,10 @@ export class AutoDebugFeature implements vscode.Disposable {
     }
 
     /**
-     * Triggers automatic fixing of problems
+     * Triggers Fix with Amazon Q - opens panel and starts the automated fixing process
      */
-    private async triggerAutoFix(problems: any[]): Promise<void> {
-        this.logger.debug('AutoDebugFeature: Triggering auto fix for %d problems', problems.length)
+    private async triggerFixWithAmazonQ(): Promise<void> {
+        this.logger.debug('AutoDebugFeature: Triggering Fix with Amazon Q')
 
         if (!this.autoDebugController) {
             this.logger.warn('AutoDebugFeature: Auto debug controller not initialized')
@@ -138,36 +138,17 @@ export class AutoDebugFeature implements vscode.Disposable {
         }
 
         try {
-            // Group problems by file
-            const problemsByFile = new Map<string, any[]>()
+            // Focus Amazon Q panel first
+            await focusAmazonQPanel.execute(placeholder, 'autoDebug')
 
-            for (const problem of problems) {
-                const filePath = problem.uri.fsPath
-                if (!problemsByFile.has(filePath)) {
-                    problemsByFile.set(filePath, [])
-                }
-                problemsByFile.get(filePath)!.push(problem)
-            }
+            // Then trigger the automated fix process
+            await this.autoDebugController.fixAllProblemsInFile(10)
 
-            // Process each file
-            for (const [filePath, fileProblems] of problemsByFile) {
-                this.logger.debug('AutoDebugFeature: Auto-fixing %d problems in %s', fileProblems.length, filePath)
-
-                try {
-                    const success = await this.autoDebugController.autoFixProblems(fileProblems, filePath, false)
-                    if (success) {
-                        this.logger.debug('AutoDebugFeature: Successfully auto-fixed problems in %s', filePath)
-                    } else {
-                        this.logger.debug('AutoDebugFeature: Auto-fix was not applied for %s', filePath)
-                    }
-                } catch (error) {
-                    this.logger.error('AutoDebugFeature: Error auto-fixing problems in %s: %s', filePath, error)
-                }
-            }
+            this.logger.debug('AutoDebugFeature: Fix with Amazon Q process started')
         } catch (error) {
-            this.logger.error('AutoDebugFeature: Error during auto-fix trigger: %s', error)
+            this.logger.error('AutoDebugFeature: Error triggering Fix with Amazon Q: %s', error)
             void vscode.window.showErrorMessage(
-                `Failed to trigger auto-fix: ${error instanceof Error ? error.message : 'Unknown error'}`
+                `Failed to start Fix with Amazon Q: ${error instanceof Error ? error.message : 'Unknown error'}`
             )
         }
     }
@@ -241,15 +222,11 @@ export class AutoDebugFeature implements vscode.Disposable {
                 const criticalProblems = problems.filter((p) => p.severity === 'error')
                 if (criticalProblems.length > 0) {
                     const message = `Amazon Q detected ${criticalProblems.length} error${criticalProblems.length !== 1 ? 's' : ''} in your code`
-                    void vscode.window
-                        .showWarningMessage(message, 'Auto Fix', 'Fix with Amazon Q', 'Dismiss')
-                        .then((selection) => {
-                            if (selection === 'Auto Fix') {
-                                void this.triggerAutoFix(criticalProblems)
-                            } else if (selection === 'Fix with Amazon Q') {
-                                void focusAmazonQPanel.execute(placeholder, 'autoDebug')
-                            }
-                        })
+                    void vscode.window.showWarningMessage(message, 'Fix with Amazon Q', 'Dismiss').then((selection) => {
+                        if (selection === 'Fix with Amazon Q') {
+                            void this.triggerFixWithAmazonQ()
+                        }
+                    })
                 }
             })
         )
