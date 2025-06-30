@@ -29,6 +29,7 @@ export type contextKey =
     | 'aws.toolkit.amazonqInstall.dismissed'
     | 'aws.stepFunctions.isWorkflowStudioFocused'
     | 'aws.toolkit.notifications.show'
+    | 'aws.amazonq.editSuggestionActive'
     // Deprecated/legacy names. New keys should start with "aws.".
     | 'codewhisperer.activeLine'
     | 'gumby.isPlanAvailable'
