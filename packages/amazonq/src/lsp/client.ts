@@ -170,6 +170,11 @@ export async function startLanguageServer(
                         notifications: true,
                         showSaveFileDialog: true,
                     },
+                    textDocument: {
+                        inlineCompletionWithReferences: {
+                            inlineEditSupport: Experiments.instance.isExperimentEnabled('amazonqLSPNEP'),
+                        },
+                    },
                 },
                 contextConfiguration: {
                     workspaceIdentifier: extensionContext.storageUri?.path,

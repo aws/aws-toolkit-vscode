@@ -262,6 +262,10 @@
                         "amazonqLSPInlineChat": {
                             "type": "boolean",
                             "default": false
+                        },
+                        "amazonqLSPNEP": {
+                            "type": "boolean",
+                            "default": false
                         }
                     },
                     "additionalProperties": false

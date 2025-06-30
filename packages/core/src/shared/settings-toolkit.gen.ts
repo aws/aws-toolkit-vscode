@@ -44,8 +44,9 @@ export const toolkitSettings = {
         "jsonResourceModification": {},
         "amazonqLSP": {},
         "amazonqLSPInline": {},
+        "amazonqChatLSP": {},
         "amazonqLSPInlineChat": {},
-        "amazonqChatLSP": {}
+        "amazonqLSPNEP": {}
     },
     "aws.resources.enabledResources": {},
     "aws.lambda.recentlyUploaded": {},
