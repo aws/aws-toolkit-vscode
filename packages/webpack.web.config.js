@@ -50,6 +50,9 @@ module.exports = (env, argv) => {
             new webpack.IgnorePlugin({
                 resourceRegExp: /ps-list/, // matches the path in the require() statement
             }),
+            new webpack.IgnorePlugin({
+                resourceRegExp: /svgdom/, // matches the path in the require() statement
+            }),
         ],
         resolve: {
             extensions: ['.ts', '.js'],

@@ -474,6 +474,7 @@
         "@types/uuid": "^9.0.1",
         "@types/whatwg-url": "^11.0.4",
         "@types/xml2js": "^0.4.11",
+        "@types/svgdom": "^0.1.2",
         "@vue/compiler-sfc": "^3.3.2",
         "c8": "^9.0.0",
         "circular-dependency-plugin": "^5.2.2",
@@ -578,7 +579,10 @@
         "winston": "^3.11.0",
         "winston-transport": "^4.6.0",
         "xml2js": "^0.6.1",
-        "yaml-cfn": "^0.3.2"
+        "yaml-cfn": "^0.3.2",
+        "@svgdotjs/svg.js": "^3.0.16",
+        "svgdom": "^0.1.0",
+        "jaro-winkler": "^0.2.8"
     },
     "overrides": {
         "webfont": {
