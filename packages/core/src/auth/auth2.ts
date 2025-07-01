@@ -21,8 +21,6 @@ import {
     ProfileKind,
     UpdateProfileParams,
     updateProfileRequestType,
-    DeleteProfileParams,
-    deleteProfileRequestType,
     SsoTokenChangedParams,
     // StsCredentialChangedParams,
     ssoTokenChangedRequestType,
@@ -50,7 +48,6 @@ import {
     iamCredentialsUpdateRequestType,
     Profile,
     SsoSession,
-    DeleteProfileResult,
     // invalidateStsCredentialRequestType,
     // InvalidateStsCredentialParams,
     // InvalidateStsCredentialResult,
@@ -175,10 +172,12 @@ export class LanguageClientAuth {
     }
 
     updateIamProfile(profileName: string, accessKey: string, secretKey: string, sessionToken?: string): Promise<UpdateProfileResult> {
+        // Use unknown profile type if invalidating all IAM fields
+        const kind = !accessKey && !secretKey && !sessionToken ? ProfileKind.EmptyProfile : ProfileKind.IamCredentialProfile
         // Add credentials and delete SSO settings from profile
         return this.client.sendRequest(updateProfileRequestType.method, {
             profile: {
-                kinds: [ProfileKind.IamCredentialProfile],
+                kinds: [kind],
                 name: profileName,
                 settings: {
                     region: '',
@@ -193,12 +192,6 @@ export class LanguageClientAuth {
                 settings: undefined,
             },
         } satisfies UpdateProfileParams)
-    }
-
-    deleteIamProfile(name: string): Promise<DeleteProfileResult> {
-        return this.client.sendRequest(deleteProfileRequestType.method, {
-            profileName: name,
-        } satisfies DeleteProfileParams)
     }
 
     listProfiles() {
@@ -514,7 +507,7 @@ export class IamLogin extends BaseLogin {
         if (this.iamCredentialId) {
             await this.lspAuth.invalidateIamCredential(this.iamCredentialId)
         }
-        await this.deleteProfile(this.profileName)
+        await this.lspAuth.updateIamProfile(this.profileName, '', '', '')
         this.updateConnectionState('notConnected')
         this._data = undefined
         // TODO: DeleteProfile api in Identity Service (this doesn't exist yet)
@@ -527,10 +520,6 @@ export class IamLogin extends BaseLogin {
             secretKey: opts.secretKey,
             sessionToken: opts.sessionToken
         }
-    }
-
-    async deleteProfile(profileName: string) {
-        await this.lspAuth.deleteIamProfile(profileName)
     }
 
     /**
