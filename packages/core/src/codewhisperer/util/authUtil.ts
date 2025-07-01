@@ -64,7 +64,7 @@ export interface IAuthProvider {
     getToken(): Promise<string>
     getIamCredential(): Promise<IamCredentials>
     readonly profileName: string
-    readonly connection?: { startUrl?: string; region?: string; accessKey?: string; secretKey?: string }
+    readonly connection?: { startUrl?: string; region?: string; accessKey?: string; secretKey?: string; sessionToken?: string }
 }
 
 /**
@@ -132,12 +132,13 @@ export class AuthUtil implements IAuthProvider {
             this.session = new SsoLogin(this.profileName, this.lspAuth, this.eventEmitter)
             await this.session.restore()
             if (!this.isConnected()) {
+                this.session?.logout()
                 // Try to restore an IAM session
                 this.session = new IamLogin(this.profileName, this.lspAuth, this.eventEmitter)
                 await this.session.restore()
                 if (!this.isConnected()) {
                     // If both fail, reset the session
-                    this.session = undefined
+                    this.session?.logout()
                 }
             }
         }

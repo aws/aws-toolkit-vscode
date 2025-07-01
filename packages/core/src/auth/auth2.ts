@@ -273,7 +273,7 @@ export class LanguageClientAuth {
 export abstract class BaseLogin {
     protected connectionState: AuthState = 'notConnected'
     protected cancellationToken: CancellationTokenSource | undefined
-    protected _data: { startUrl?: string; region?: string; accessKey?: string; secretKey?: string } | undefined
+    protected _data: { startUrl?: string; region?: string; accessKey?: string; secretKey?: string; sessionToken?: string } | undefined
 
     constructor(
         public readonly profileName: string,
@@ -525,6 +525,7 @@ export class IamLogin extends BaseLogin {
         this._data = {
             accessKey: opts.accessKey,
             secretKey: opts.secretKey,
+            sessionToken: opts.sessionToken
         }
     }
 
@@ -542,6 +543,7 @@ export class IamLogin extends BaseLogin {
             this._data = {
                 accessKey: credentials.aws_access_key_id,
                 secretKey: credentials.aws_secret_access_key,
+                sessionToken: credentials.aws_session_token
             }
         }
         try {
