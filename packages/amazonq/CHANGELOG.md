@@ -1,3 +1,7 @@
+## 1.80.0 2025-07-01
+
+- Miscellaneous non-user-facing changes
+
 ## 1.79.0 2025-06-25
 
 - **Bug Fix** Added automatic system certificate detection and VSCode proxy settings support
