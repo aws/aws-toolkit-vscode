@@ -19,11 +19,11 @@ import {
     getProjectUri,
     downloadPatternCode,
 } from '../../../../awsService/appBuilder/serverlessLand/main'
-import { getTestWindow } from '../../../shared/vscode/window'
 import { fs } from '../../../../shared/fs/fs'
 import * as downloadPatterns from '../../../../shared/utilities/downloadPatterns'
 import { ExtContext } from '../../../../shared/extensions'
 import { workspaceUtils } from '../../../../shared'
+import * as messages from '../../../../shared/utilities/messages'
 import * as downloadPattern from '../../../../shared/utilities/downloadPatterns'
 import * as wizardModule from '../../../../awsService/appBuilder/serverlessLand/wizard'
 
@@ -116,19 +116,27 @@ describe('downloadPatternCode', () => {
         sandbox.restore()
         getPatternStub.restore()
     })
-
     it('successfully downloads pattern code', async () => {
+        sandbox.stub(messages, 'confirmOverwriteIfExists').resolves(true)
+
         await downloadPatternCode(mockConfig, mockConfig.assetName)
         assertDownloadPatternCall(getPatternStub, mockConfig)
     })
-
     it('downloads pattern when directory exists and user confirms overwrite', async function () {
-        getTestWindow().onDidShowMessage((message) => {
-            message.selectItem('Yes')
-        })
+        sandbox.stub(messages, 'confirmOverwriteIfExists').resolves(true)
+        sandbox.stub(fs, 'delete').resolves()
 
         await downloadPatternCode(mockConfig, mockConfig.assetName)
         assertDownloadPatternCall(getPatternStub, mockConfig)
+    })
+    it('throws error when directory exists and user cancels overwrite', async function () {
+        sandbox.stub(fs, 'exists').resolves(true)
+        sandbox.stub(messages, 'confirmOverwriteIfExists').resolves(false)
+
+        await assert.rejects(
+            () => downloadPatternCode(mockConfig, mockConfig.assetName),
+            /Folder already exists: test-project/
+        )
     })
 })
 

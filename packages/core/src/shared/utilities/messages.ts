@@ -14,6 +14,7 @@ import { Timeout } from './timeoutUtils'
 import { addCodiconToString } from './textUtilities'
 import { getIcon, codicon } from '../icons'
 import globals from '../extensionGlobals'
+import { fs } from '../../shared/fs/fs'
 import { openUrl } from './vsCodeUtils'
 import { AmazonQPromptSettings, ToolkitPromptSettings } from '../../shared/settings'
 import { telemetry, ToolkitShowNotification } from '../telemetry/telemetry'
@@ -137,6 +138,29 @@ export async function showViewLogsMessage(
             globals.logOutputChannel.show(true)
         }
         return selection
+    })
+}
+
+/**
+ * Checks if a path exists and prompts user for overwrite confirmation if it does.
+ * @param path The file or directory path to check
+ * @param itemName The name of the item for display in the message
+ * @returns Promise<boolean> - true if should proceed (path doesn't exist or user confirmed overwrite)
+ */
+export async function confirmOverwriteIfExists(path: vscode.Uri, itemName: string): Promise<boolean> {
+    if (!(await fs.exists(path))) {
+        return true
+    }
+
+    return showConfirmationMessage({
+        prompt: localize(
+            'AWS.toolkit.confirmOverwrite',
+            '{0} already exists in the selected directory, overwrite?',
+            itemName
+        ),
+        confirm: localize('AWS.generic.overwrite', 'Yes'),
+        cancel: localize('AWS.generic.cancel', 'No'),
+        type: 'warning',
     })
 }
 
