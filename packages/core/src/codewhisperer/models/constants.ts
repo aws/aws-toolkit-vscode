@@ -515,7 +515,7 @@ If you'd like to update and test your code with fewer changes at a time, I can d
 
 export const uploadingCodeStepMessage = 'Upload your code'
 
-export const buildCodeStepMessage = 'Build uploaded code in secure build environment'
+export const buildCodeStepMessage = 'Analyze uploaded code in secure environment'
 
 export const generatePlanStepMessage = 'Generate transformation plan'
 
@@ -734,7 +734,7 @@ export const cleanTestCompileErrorNotification = `Amazon Q could not run \`mvn c
 export const enterJavaHomeChatMessage = 'Enter the path to JDK'
 
 export const projectPromptChatMessage =
-    "I can upgrade your Java project. To start the transformation, I need some information from you. Choose the project you want to upgrade and the target code version to upgrade to. Then, choose Confirm.\n\nAfter successfully transforming to Java 17 or 21, an additional transformation is required to upgrade your libraries and dependencies. Choose the same source code version and target code version (for example, 17 to 17) to do this.\n\nI will perform the transformation based on your project's requests, descriptions, and content. To maintain security, avoid including external, unvetted artifacts in your project repository prior to starting the transformation and always validate transformed code for both functionality and security."
+    "I can upgrade your Java project. To start the transformation, I need some information from you. Choose the project you want to upgrade and the target code version to upgrade to. Then, choose Confirm.\n\nAfter successfully transforming to Java 17 or 21, an additional transformation is required to upgrade your libraries and dependencies. Choose the same source code version and target code version (for example, 17 to 17) to do this.\n\nI will perform the transformation based on your project's requests, descriptions, and content. To maintain security, avoid including external, unvetted artifacts in your project repository prior to starting the transformation and always validate transformed code for both functionality and security. Do not turn off or close your machine during the transformation because a stable network connection is required."
 
 export const windowsJavaHomeHelpChatMessage =
     'To find the JDK path, run the following commands in a new terminal: `cd "C:/Program Files/Java"` and then `dir`. If you see your JDK version, run `cd <version>` and then `cd` to show the path.'
