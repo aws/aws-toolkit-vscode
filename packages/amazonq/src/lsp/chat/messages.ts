@@ -60,6 +60,7 @@ import {
     ruleClickRequestType,
     pinnedContextNotificationType,
     activeEditorChangedNotificationType,
+    listAvailableModelsRequestType,
 } from '@aws/language-server-runtimes/protocol'
 import { v4 as uuidv4 } from 'uuid'
 import * as vscode from 'vscode'
@@ -351,6 +352,7 @@ export function registerMessageListeners(
             case listMcpServersRequestType.method:
             case mcpServerClickRequestType.method:
             case tabBarActionRequestType.method:
+            case listAvailableModelsRequestType.method:
                 await resolveChatResponse(message.command, message.params, languageClient, webview)
                 break
             case followUpClickNotificationType.method:
