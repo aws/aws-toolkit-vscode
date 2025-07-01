@@ -60,16 +60,16 @@ export interface RemoteAppMetadata {
     UserProfileName: string
 }
 
-export function getRemoteAppMetadata(): RemoteAppMetadata {
-    return {
-        DomainId: 'd-abcdefg123456',
-        UserProfileName: 'dernewtz-jorus',
-    }
-}
-
-export function getSpaceAppsForUserProfile(spaceApps: SagemakerSpaceApp[], userProfilePrefix: string): string[] {
+export function getSpaceAppsForUserProfile(
+    spaceApps: SagemakerSpaceApp[],
+    userProfilePrefix: string,
+    domainId?: string
+): string[] {
     return spaceApps.reduce((result: string[], app: SagemakerSpaceApp) => {
         if (app.OwnershipSettingsSummary?.OwnerUserProfileName?.startsWith(userProfilePrefix)) {
+            if (domainId && app.DomainId !== domainId) {
+                return result
+            }
             result.push(
                 getDomainUserProfileKey(app.DomainId || '', app.OwnershipSettingsSummary?.OwnerUserProfileName || '')
             )

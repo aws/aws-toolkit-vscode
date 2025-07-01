@@ -16,8 +16,9 @@ import { updateInPlace } from '../../../shared/utilities/collectionUtils'
 import { isRemoteWorkspace } from '../../../shared/vscode/env'
 import { SagemakerConstants } from './constants'
 import { SagemakerSpaceNode } from './sagemakerSpaceNode'
-import { getDomainSpaceKey, getDomainUserProfileKey, getRemoteAppMetadata, getSpaceAppsForUserProfile } from '../utils'
+import { getDomainSpaceKey, getDomainUserProfileKey, getSpaceAppsForUserProfile } from '../utils'
 import { PollingSet } from '../../../shared/utilities/pollingSet'
+import { getRemoteAppMetadata } from '../remoteUtils'
 
 export const parentContextValue = 'awsSagemakerParentNode'
 
@@ -115,10 +116,12 @@ export class SagemakerParentNode extends AWSTreeNodeBase {
     }
 
     public async getRemoteSelectedDomainUsers(): Promise<string[]> {
-        const remoteAppMetadata = getRemoteAppMetadata()
-        const userProfilePrefix = `${remoteAppMetadata.UserProfileName}-`
-
-        return getSpaceAppsForUserProfile([...this.spaceApps.values()], userProfilePrefix)
+        const remoteAppMetadata = await getRemoteAppMetadata()
+        return getSpaceAppsForUserProfile(
+            [...this.spaceApps.values()],
+            remoteAppMetadata.UserProfileName,
+            remoteAppMetadata.DomainId
+        )
     }
 
     public async getDefaultSelectedDomainUsers(): Promise<string[]> {
@@ -136,12 +139,13 @@ export class SagemakerParentNode extends AWSTreeNodeBase {
 
         const defaultSelectedDomainUsers = await this.getDefaultSelectedDomainUsers()
 
-        // Get selectedDomainUsers from globalState.  If it doesn't exist, then default to defaultSelectedDomainUsers
-        const selectedDomainUsers = new Set(
-            selectedDomainUsersMap?.get(this.callerIdentity?.Arn || '') || defaultSelectedDomainUsers
-        )
+        const cachedDomainUsers = selectedDomainUsersMap.get(this.callerIdentity.Arn || '')
 
-        return selectedDomainUsers
+        if (cachedDomainUsers && cachedDomainUsers.length > 0) {
+            return new Set(cachedDomainUsers)
+        } else {
+            return new Set(defaultSelectedDomainUsers)
+        }
     }
 
     public saveSelectedDomainUsers(selectedDomainUsers: string[]) {
