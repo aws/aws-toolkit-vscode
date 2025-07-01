@@ -12,6 +12,7 @@ import { LogInlineCompletionSessionResultsParams } from '@aws/language-server-ru
 import { InlineCompletionItemWithReferences } from '@aws/language-server-runtimes/protocol'
 import path from 'path'
 import { imageVerticalOffset } from './svgGenerator'
+import { AmazonQInlineCompletionItemProvider } from '../completion'
 
 export class EditDecorationManager {
     private imageDecorationType: vscode.TextEditorDecorationType
@@ -279,7 +280,8 @@ export async function displaySvgDecoration(
     originalCodeHighlightRanges: Array<{ line: number; start: number; end: number }>,
     session: CodeWhispererSession,
     languageClient: LanguageClient,
-    item: InlineCompletionItemWithReferences
+    item: InlineCompletionItemWithReferences,
+    inlineCompletionProvider?: AmazonQInlineCompletionItemProvider
 ) {
     const originalCode = editor.document.getText()
 
@@ -287,7 +289,7 @@ export async function displaySvgDecoration(
         editor,
         svgImage,
         startLine,
-        () => {
+        async () => {
             // Handle accept
             getLogger().info('Edit suggestion accepted')
 
@@ -315,6 +317,18 @@ export async function displaySvgDecoration(
                 firstCompletionDisplayLatency: session.firstCompletionDisplayLatency,
             }
             languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
+            if (inlineCompletionProvider) {
+                await inlineCompletionProvider.provideInlineCompletionItems(
+                    editor.document,
+                    endPosition,
+                    {
+                        triggerKind: vscode.InlineCompletionTriggerKind.Automatic,
+                        selectedCompletionInfo: undefined,
+                    },
+                    new vscode.CancellationTokenSource().token,
+                    { emitTelemetry: false, showUi: false }
+                )
+            }
         },
         () => {
             // Handle reject
