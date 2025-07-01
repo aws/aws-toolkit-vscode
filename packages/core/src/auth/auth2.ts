@@ -174,7 +174,7 @@ export class LanguageClientAuth {
         } satisfies UpdateProfileParams)
     }
 
-    updateIamProfile(profileName: string, accessKey: string, secretKey: string): Promise<UpdateProfileResult> {
+    updateIamProfile(profileName: string, accessKey: string, secretKey: string, sessionToken?: string): Promise<UpdateProfileResult> {
         // Add credentials and delete SSO settings from profile
         return this.client.sendRequest(updateProfileRequestType.method, {
             profile: {
@@ -185,6 +185,7 @@ export class LanguageClientAuth {
                     sso_session: '',
                     aws_access_key_id: accessKey,
                     aws_secret_access_key: secretKey,
+                    aws_session_token: sessionToken,
                 },
             },
             ssoSession: {
@@ -497,7 +498,7 @@ export class IamLogin extends BaseLogin {
         // )
     }
 
-    async login(opts: { accessKey: string; secretKey: string }) {
+    async login(opts: { accessKey: string; secretKey: string, sessionToken?: string }) {
         await this.updateProfile(opts)
         return this._getIamCredential(true)
     }
@@ -519,8 +520,8 @@ export class IamLogin extends BaseLogin {
         // TODO: DeleteProfile api in Identity Service (this doesn't exist yet)
     }
 
-    async updateProfile(opts: { accessKey: string; secretKey: string }) {
-        await this.lspAuth.updateIamProfile(this.profileName, opts.accessKey, opts.secretKey)
+    async updateProfile(opts: { accessKey: string; secretKey: string, sessionToken?: string }) {
+        await this.lspAuth.updateIamProfile(this.profileName, opts.accessKey, opts.secretKey, opts.sessionToken)
         this._data = {
             accessKey: opts.accessKey,
             secretKey: opts.secretKey,

@@ -279,6 +279,17 @@
                 v-model="secretKey"
                 @keydown.enter="handleContinueClick()"
             />
+            <div v-if="app === 'AMAZONQ'">
+                <div class="title">Session Token (Optional)</div>
+                <input
+                    class="iamInput bottomMargin"
+                    type="text"
+                    id="sessionToken"
+                    name="sessionToken"
+                    v-model="sessionToken"
+                    @keydown.enter="handleContinueClick()"
+                />
+            </div>
             <button class="continue-button" :disabled="shouldDisableIamContinue()" v-on:click="handleContinueClick()">
                 Continue
             </button>
@@ -367,6 +378,7 @@ export default defineComponent({
             profileName: '',
             accessKey: '',
             secretKey: '',
+            sessionToken: '',
         }
     },
     async created() {
@@ -505,7 +517,7 @@ export default defineComponent({
                     return
                 }
                 this.stage = 'AUTHENTICATING'
-                const error = await client.startIamCredentialSetup(this.profileName, this.accessKey, this.secretKey)
+                const error = await client.startIamCredentialSetup(this.profileName, this.accessKey, this.secretKey, this.sessionToken)
                 if (error) {
                     this.stage = 'START'
                     void client.errorNotification(error)
