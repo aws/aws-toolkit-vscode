@@ -135,7 +135,7 @@ export class LanguageClientAuth {
             {
                 profileName: profileName,
                 options: {
-                    loginOnInvalidToken: login,
+                    loginOnInvalidStsCredential: login,
                 },
             } satisfies GetIamCredentialParams,
             cancellationToken
