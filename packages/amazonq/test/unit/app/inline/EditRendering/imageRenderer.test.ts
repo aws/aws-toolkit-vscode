@@ -31,8 +31,6 @@ describe('showEdits', function () {
             startLine: 5,
             newCode: 'console.log("Hello World");',
             origionalCodeHighlightRange: [{ line: 5, start: 0, end: 10 }],
-            addedCharacterCount: 25,
-            deletedCharacterCount: 0,
             ...overrides,
         }
     }
@@ -170,9 +168,7 @@ describe('showEdits', function () {
             mockSvgResult.origionalCodeHighlightRange,
             sessionStub,
             languageClientStub,
-            itemStub,
-            mockSvgResult.addedCharacterCount,
-            mockSvgResult.deletedCharacterCount
+            itemStub
         )
 
         // Verify no errors were logged
