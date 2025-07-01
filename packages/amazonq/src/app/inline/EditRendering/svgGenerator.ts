@@ -7,7 +7,6 @@ import { diffChars } from 'diff'
 import * as vscode from 'vscode'
 import { ToolkitError, getLogger } from 'aws-core-vscode/shared'
 import { diffUtilities } from 'aws-core-vscode/shared'
-import { applyUnifiedDiff } from './diffUtils'
 type Range = { line: number; start: number; end: number }
 
 const logger = getLogger('nextEditPrediction')
@@ -29,8 +28,6 @@ export class SvgGenerationService {
         startLine: number
         newCode: string
         origionalCodeHighlightRange: Range[]
-        addedCharacterCount: number
-        deletedCharacterCount: number
     }> {
         const textDoc = await vscode.workspace.openTextDocument(filePath)
         const originalCode = textDoc.getText()
@@ -38,7 +35,6 @@ export class SvgGenerationService {
             logger.error(`udiff format error`)
             throw new ToolkitError('udiff format error')
         }
-        const { addedCharacterCount, deletedCharacterCount } = applyUnifiedDiff(originalCode, udiff)
         const newCode = await diffUtilities.getPatchedCode(filePath, udiff)
         const modifiedLines = diffUtilities.getModifiedLinesFromUnifiedDiff(udiff)
         // TODO remove
@@ -91,8 +87,6 @@ export class SvgGenerationService {
             startLine: editStartLine,
             newCode: newCode,
             origionalCodeHighlightRange: highlightRanges.removedRanges,
-            addedCharacterCount,
-            deletedCharacterCount,
         }
     }
 
