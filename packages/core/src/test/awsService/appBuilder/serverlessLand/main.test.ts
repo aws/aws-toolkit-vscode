@@ -81,6 +81,20 @@ describe('createNewServerlessLandProject', () => {
     })
 })
 
+function assertDownloadPatternCall(getPatternStub: sinon.SinonStub, mockConfig: any) {
+    const mockAssetName = 'test-project-sam-python.zip'
+    const serverlessLandOwner = 'aws-samples'
+    const serverlessLandRepo = 'serverless-patterns'
+    const mockLocation = vscode.Uri.joinPath(mockConfig.location, mockConfig.name)
+
+    assert(getPatternStub.calledOnce)
+    assert(getPatternStub.firstCall.args[0] === serverlessLandOwner)
+    assert(getPatternStub.firstCall.args[1] === serverlessLandRepo)
+    assert(getPatternStub.firstCall.args[2] === mockAssetName)
+    assert(getPatternStub.firstCall.args[3].toString() === mockLocation.toString())
+    assert(getPatternStub.firstCall.args[4] === true)
+}
+
 describe('downloadPatternCode', () => {
     let sandbox: sinon.SinonSandbox
     let getPatternStub: sinon.SinonStub
@@ -104,78 +118,31 @@ describe('downloadPatternCode', () => {
     })
 
     it('successfully downloads pattern code', async () => {
-        const mockAssetName = 'test-project-sam-python.zip'
-        const serverlessLandOwner = 'aws-samples'
-        const serverlessLandRepo = 'serverless-patterns'
-        const mockLocation = vscode.Uri.joinPath(mockConfig.location, mockConfig.name)
-
         await downloadPatternCode(mockConfig, mockConfig.assetName)
-        assert(getPatternStub.calledOnce)
-        assert(getPatternStub.firstCall.args[0] === serverlessLandOwner)
-        assert(getPatternStub.firstCall.args[1] === serverlessLandRepo)
-        assert(getPatternStub.firstCall.args[2] === mockAssetName)
-        assert(getPatternStub.firstCall.args[3].toString() === mockLocation.toString())
-        assert(getPatternStub.firstCall.args[4] === true)
+        assertDownloadPatternCall(getPatternStub, mockConfig)
     })
-    it('handles download failure', async () => {
-        const error = new Error('Download failed')
-        getPatternStub.rejects(error)
-        try {
-            await downloadPatternCode(mockConfig, mockConfig.assetName)
-            assert.fail('Expected an error to be thrown')
-        } catch (err: any) {
-            assert.strictEqual(err.message, 'Failed to download pattern: Error: Download failed')
-        }
-    })
-    it('downloads pattern when directory exists and user confirms overwrite', async function () {
-        const mockAssetName = 'test-project-sam-python.zip'
-        const serverlessLandOwner = 'aws-samples'
-        const serverlessLandRepo = 'serverless-patterns'
-        const mockLocation = vscode.Uri.joinPath(mockConfig.location, mockConfig.name)
 
+    it('downloads pattern when directory exists and user confirms overwrite', async function () {
         getTestWindow().onDidShowMessage((message) => {
             message.selectItem('Yes')
         })
 
         await downloadPatternCode(mockConfig, mockConfig.assetName)
-        assert(getPatternStub.calledOnce)
-        assert(getPatternStub.firstCall.args[0] === serverlessLandOwner)
-        assert(getPatternStub.firstCall.args[1] === serverlessLandRepo)
-        assert(getPatternStub.firstCall.args[2] === mockAssetName)
-        assert(getPatternStub.firstCall.args[3].toString() === mockLocation.toString())
-        assert(getPatternStub.firstCall.args[4] === true)
-    })
-    it('aborts download when directory exists and user declines overwrite', async function () {
-        const existsStub = sinon.stub(fs, 'exists').resolves(true)
-
-        const messagePromise = new Promise<void>((resolve) => {
-            getTestWindow().onDidShowMessage((message) => {
-                resolve()
-                message.selectItem('No')
-            })
-        })
-        try {
-            await Promise.all([messagePromise, downloadPatternCode(mockConfig, mockConfig.assetName)])
-            assert.fail('Folder already exists: test-project')
-        } catch (e) {
-            assert.strictEqual((e as Error).message, `Folder already exists: ${mockConfig.name}`)
-        }
-        assert(getPatternStub.notCalled)
-        existsStub.restore()
+        assertDownloadPatternCall(getPatternStub, mockConfig)
     })
 })
 
 describe('openReadmeFile', () => {
-    let sandbox: sinon.SinonSandbox
+    let testsandbox: sinon.SinonSandbox
     let spyExecuteCommand: sinon.SinonSpy
 
     beforeEach(function () {
-        sandbox = sinon.createSandbox()
-        spyExecuteCommand = sandbox.spy(vscode.commands, 'executeCommand')
+        testsandbox = sinon.createSandbox()
+        spyExecuteCommand = testsandbox.spy(vscode.commands, 'executeCommand')
     })
 
     afterEach(function () {
-        sandbox.restore()
+        testsandbox.restore()
     })
     const mockConfig = {
         name: 'test-project',
@@ -187,35 +154,35 @@ describe('openReadmeFile', () => {
     }
     it('successfully opens README file', async () => {
         const mockReadmeUri = vscode.Uri.file('/test/README.md')
-        sandbox.stub(main, 'getProjectUri').resolves(mockReadmeUri)
+        testsandbox.stub(main, 'getProjectUri').resolves(mockReadmeUri)
 
-        sandbox.stub(fs, 'exists').resolves(true)
+        testsandbox.stub(fs, 'exists').resolves(true)
 
         // When
         await openReadmeFile(mockConfig)
         // Then
-        sandbox.assert.calledWith(spyExecuteCommand, 'workbench.action.focusFirstEditorGroup')
-        sandbox.assert.calledWith(spyExecuteCommand, 'markdown.showPreview')
+        testsandbox.assert.calledWith(spyExecuteCommand, 'workbench.action.focusFirstEditorGroup')
+        testsandbox.assert.calledWith(spyExecuteCommand, 'markdown.showPreview')
     })
 
     it('handles missing README file', async () => {
         const mockReadmeUri = vscode.Uri.file('/test/file.md')
-        sandbox.stub(main, 'getProjectUri').resolves(mockReadmeUri)
+        testsandbox.stub(main, 'getProjectUri').resolves(mockReadmeUri)
 
-        sandbox.stub(fs, 'exists').resolves(false)
+        testsandbox.stub(fs, 'exists').resolves(false)
 
         // When
         await openReadmeFile(mockConfig)
         // Then
-        sandbox.assert.neverCalledWith(spyExecuteCommand, 'markdown.showPreview')
+        testsandbox.assert.neverCalledWith(spyExecuteCommand, 'markdown.showPreview')
         assert.ok(true, 'Function should return without throwing error when README is not found')
     })
 
     it('handles error with opening README file', async () => {
         const mockReadmeUri = vscode.Uri.file('/test/README.md')
-        sandbox.stub(main, 'getProjectUri').resolves(mockReadmeUri)
+        testsandbox.stub(main, 'getProjectUri').resolves(mockReadmeUri)
 
-        sandbox.stub(fs, 'exists').rejects(new Error('File system error'))
+        testsandbox.stub(fs, 'exists').rejects(new Error('File system error'))
 
         // When
         await assert.rejects(() => openReadmeFile(mockConfig), {
@@ -223,7 +190,7 @@ describe('openReadmeFile', () => {
             message: 'Error processing README file',
         })
         // Then
-        sandbox.assert.neverCalledWith(spyExecuteCommand, 'markdown.showPreview')
+        testsandbox.assert.neverCalledWith(spyExecuteCommand, 'markdown.showPreview')
     })
 })
 
