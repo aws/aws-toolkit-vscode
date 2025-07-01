@@ -10,12 +10,14 @@ import { getLogger } from 'aws-core-vscode/shared'
 import { LanguageClient } from 'vscode-languageclient'
 import { InlineCompletionItemWithReferences } from '@aws/language-server-runtimes/protocol'
 import { CodeWhispererSession } from '../sessionManager'
+import { AmazonQInlineCompletionItemProvider } from '../completion'
 
 export async function showEdits(
     item: InlineCompletionItemWithReferences,
     editor: vscode.TextEditor | undefined,
     session: CodeWhispererSession,
-    languageClient: LanguageClient
+    languageClient: LanguageClient,
+    inlineCompletionProvider?: AmazonQInlineCompletionItemProvider
 ) {
     if (!editor) {
         return
@@ -37,7 +39,8 @@ export async function showEdits(
                 origionalCodeHighlightRange,
                 session,
                 languageClient,
-                item
+                item,
+                inlineCompletionProvider
             )
         } else {
             getLogger('nextEditPrediction').error('SVG image generation returned an empty result.')
