@@ -8,7 +8,6 @@
 import { IncomingMessage, ServerResponse } from 'http'
 import url from 'url'
 import { SessionStore } from '../sessionStore'
-import { readServerInfo, open } from '../utils'
 
 export async function handleGetSessionAsync(req: IncomingMessage, res: ServerResponse): Promise<void> {
     const parsedUrl = url.parse(req.url || '', true)
@@ -38,29 +37,38 @@ export async function handleGetSessionAsync(req: IncomingMessage, res: ServerRes
                 })
             )
             return
-        }
-
-        const status = await store.getStatus(connectionIdentifier, requestId)
-        if (status === 'pending') {
-            res.writeHead(204)
-            res.end()
-            return
-        } else if (status === 'not-started') {
-            const serverInfo = await readServerInfo()
-            const refreshUrl = await store.getRefreshUrl(connectionIdentifier)
-
-            const url = `${refreshUrl}?connection_identifier=${encodeURIComponent(
-                connectionIdentifier
-            )}&request_id=${encodeURIComponent(requestId)}&call_back_url=${encodeURIComponent(
-                `http://localhost:${serverInfo.port}/refresh_token`
-            )}`
-
-            await open(url)
-            res.writeHead(202, { 'Content-Type': 'text/plain' })
-            res.end('Session is not ready yet. Please retry in a few seconds.')
-            await store.markPending(connectionIdentifier, requestId)
+        } else {
+            res.writeHead(200, { 'Content-Type': 'text/plain' })
+            res.end(
+                `No session found for connection identifier: ${connectionIdentifier}. Reconnecting for deeplink is not supported yet.`
+            )
             return
         }
+
+        // Temporarily disabling reconnect logic for the 7/3 Phase 1 launch.
+        // Will re-enable in the next release around 7/14.
+
+        // const status = await store.getStatus(connectionIdentifier, requestId)
+        // if (status === 'pending') {
+        //     res.writeHead(204)
+        //     res.end()
+        //     return
+        // } else if (status === 'not-started') {
+        //     const serverInfo = await readServerInfo()
+        //     const refreshUrl = await store.getRefreshUrl(connectionIdentifier)
+
+        //     const url = `${refreshUrl}?connection_identifier=${encodeURIComponent(
+        //         connectionIdentifier
+        //     )}&request_id=${encodeURIComponent(requestId)}&call_back_url=${encodeURIComponent(
+        //         `http://localhost:${serverInfo.port}/refresh_token`
+        //     )}`
+
+        //     await open(url)
+        //     res.writeHead(202, { 'Content-Type': 'text/plain' })
+        //     res.end('Session is not ready yet. Please retry in a few seconds.')
+        //     await store.markPending(connectionIdentifier, requestId)
+        //     return
+        // }
     } catch (err) {
         console.error('Error handling session async request:', err)
         res.writeHead(500, { 'Content-Type': 'text/plain' })

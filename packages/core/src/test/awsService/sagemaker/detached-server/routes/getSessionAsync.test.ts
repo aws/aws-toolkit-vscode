@@ -8,7 +8,6 @@ import * as sinon from 'sinon'
 import assert from 'assert'
 import { SessionStore } from '../../../../../awsService/sagemaker/detached-server/sessionStore'
 import { handleGetSessionAsync } from '../../../../../awsService/sagemaker/detached-server/routes/getSessionAsync'
-import * as utils from '../../../../../awsService/sagemaker/detached-server/utils'
 
 describe('handleGetSessionAsync', () => {
     let req: Partial<http.IncomingMessage>
@@ -52,43 +51,46 @@ describe('handleGetSessionAsync', () => {
         })
     })
 
-    it('responds with 204 if session is pending', async () => {
-        req = { url: '/session_async?connection_identifier=abc&request_id=req123' }
-        storeStub.getFreshEntry.returns(Promise.resolve(undefined))
-        storeStub.getStatus.returns(Promise.resolve('pending'))
+    // Temporarily disabling reconnect logic for the 7/3 Phase 1 launch.
+    // Will re-enable in the next release around 7/14.
 
-        await handleGetSessionAsync(req as http.IncomingMessage, res as http.ServerResponse)
+    // it('responds with 204 if session is pending', async () => {
+    //     req = { url: '/session_async?connection_identifier=abc&request_id=req123' }
+    //     storeStub.getFreshEntry.returns(Promise.resolve(undefined))
+    //     storeStub.getStatus.returns(Promise.resolve('pending'))
 
-        assert(resWriteHead.calledWith(204))
-        assert(resEnd.calledOnce)
-    })
+    //     await handleGetSessionAsync(req as http.IncomingMessage, res as http.ServerResponse)
 
-    it('responds with 202 if status is not-started and opens browser', async () => {
-        req = { url: '/session_async?connection_identifier=abc&request_id=req123' }
+    //     assert(resWriteHead.calledWith(204))
+    //     assert(resEnd.calledOnce)
+    // })
 
-        storeStub.getFreshEntry.returns(Promise.resolve(undefined))
-        storeStub.getStatus.returns(Promise.resolve('not-started'))
-        storeStub.getRefreshUrl.returns(Promise.resolve('https://example.com/refresh'))
-        storeStub.markPending.returns(Promise.resolve())
+    // it('responds with 202 if status is not-started and opens browser', async () => {
+    //     req = { url: '/session_async?connection_identifier=abc&request_id=req123' }
 
-        sinon.stub(utils, 'readServerInfo').resolves({ pid: 1234, port: 4567 })
-        sinon.stub(utils, 'open').resolves()
-        await handleGetSessionAsync(req as http.IncomingMessage, res as http.ServerResponse)
+    //     storeStub.getFreshEntry.returns(Promise.resolve(undefined))
+    //     storeStub.getStatus.returns(Promise.resolve('not-started'))
+    //     storeStub.getRefreshUrl.returns(Promise.resolve('https://example.com/refresh'))
+    //     storeStub.markPending.returns(Promise.resolve())
 
-        assert(resWriteHead.calledWith(202))
-        assert(resEnd.calledWithMatch(/Session is not ready yet/))
-        assert(storeStub.markPending.calledWith('abc', 'req123'))
-    })
+    //     sinon.stub(utils, 'readServerInfo').resolves({ pid: 1234, port: 4567 })
+    //     sinon.stub(utils, 'open').resolves()
+    //     await handleGetSessionAsync(req as http.IncomingMessage, res as http.ServerResponse)
 
-    it('responds with 500 if unexpected error occurs', async () => {
-        req = { url: '/session_async?connection_identifier=abc&request_id=req123' }
-        storeStub.getFreshEntry.throws(new Error('fail'))
+    //     assert(resWriteHead.calledWith(202))
+    //     assert(resEnd.calledWithMatch(/Session is not ready yet/))
+    //     assert(storeStub.markPending.calledWith('abc', 'req123'))
+    // })
 
-        await handleGetSessionAsync(req as http.IncomingMessage, res as http.ServerResponse)
+    // it('responds with 500 if unexpected error occurs', async () => {
+    //     req = { url: '/session_async?connection_identifier=abc&request_id=req123' }
+    //     storeStub.getFreshEntry.throws(new Error('fail'))
 
-        assert(resWriteHead.calledWith(500))
-        assert(resEnd.calledWith('Unexpected error'))
-    })
+    //     await handleGetSessionAsync(req as http.IncomingMessage, res as http.ServerResponse)
+
+    //     assert(resWriteHead.calledWith(500))
+    //     assert(resEnd.calledWith('Unexpected error'))
+    // })
 
     afterEach(() => {
         sinon.restore()

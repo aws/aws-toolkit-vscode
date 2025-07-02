@@ -104,19 +104,19 @@ export async function openErrorPage(title: string, message: string) {
         }
 
         .error-icon {
-            font-size: 48px;
+            font-size: 25px;
             color: #f44336;
             margin-bottom: 20px;
         }
 
         .title {
-            font-size: 20px;
-            font-weight: 600;
+            font-size: 14px;
+            font-weight: 700;
             margin-bottom: 12px;
         }
 
         .message {
-            font-size: 15px;
+            font-size: 14px;
             color: #cccccc;
         }
     </style>
