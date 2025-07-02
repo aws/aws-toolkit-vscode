@@ -14,6 +14,7 @@ import { Timeout } from './timeoutUtils'
 import { addCodiconToString } from './textUtilities'
 import { getIcon, codicon } from '../icons'
 import globals from '../extensionGlobals'
+import { ToolkitError } from '../../shared/errors'
 import { fs } from '../../shared/fs/fs'
 import { openUrl } from './vsCodeUtils'
 import { AmazonQPromptSettings, ToolkitPromptSettings } from '../../shared/settings'
@@ -147,12 +148,12 @@ export async function showViewLogsMessage(
  * @param itemName The name of the item for display in the message
  * @returns Promise<boolean> - true if should proceed (path doesn't exist or user confirmed overwrite)
  */
-export async function confirmOverwriteIfExists(path: vscode.Uri, itemName: string): Promise<boolean> {
+export async function handleOverwriteConflict(path: vscode.Uri, itemName: string): Promise<boolean> {
     if (!(await fs.exists(path))) {
         return true
     }
 
-    return showConfirmationMessage({
+    const choice = showConfirmationMessage({
         prompt: localize(
             'AWS.toolkit.confirmOverwrite',
             '{0} already exists in the selected directory, overwrite?',
@@ -162,6 +163,13 @@ export async function confirmOverwriteIfExists(path: vscode.Uri, itemName: strin
         cancel: localize('AWS.generic.cancel', 'No'),
         type: 'warning',
     })
+
+    if (!choice) {
+        throw new ToolkitError(`Folder already exists: ${itemName}`)
+    }
+
+    await fs.delete(path, { recursive: true, force: true })
+    return true
 }
 
 /**
