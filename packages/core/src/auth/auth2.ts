@@ -48,9 +48,6 @@ import {
     iamCredentialsUpdateRequestType,
     Profile,
     SsoSession,
-    // invalidateStsCredentialRequestType,
-    // InvalidateStsCredentialParams,
-    // InvalidateStsCredentialResult,
 } from '@aws/language-server-runtimes/protocol'
 import { LanguageClient } from 'vscode-languageclient'
 import { getLogger } from '../shared/logger/logger'
