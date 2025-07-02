@@ -286,17 +286,6 @@ export function registerMessageListeners(
                 if (editor) {
                     chatParams.cursorState = getCursorState(editor.selections)
                     chatParams.textDocument = { uri: editor.document.uri.toString() }
-                    // chatParams.findingsPath = path.join(
-                    //     __dirname,
-                    //     '..',
-                    //     '..',
-                    //     '..',
-                    //     '..',
-                    //     '..',
-                    //     '..',
-                    //     'findings',
-                    //     `SecurityIssues-${SecurityIssueProvider.instance.id}.json`
-                    // )
                 }
 
                 const chatRequest = await encryptRequest<ChatParams>(chatParams, encryptionKey)
