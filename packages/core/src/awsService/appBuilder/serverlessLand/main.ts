@@ -15,7 +15,7 @@ import { ExtContext } from '../../../shared/extensions'
 import { addFolderToWorkspace } from '../../../shared/utilities/workspaceUtils'
 import { ToolkitError } from '../../../shared/errors'
 import { fs } from '../../../shared/fs/fs'
-import { confirmOverwriteIfExists } from '../../../shared/utilities/messages'
+import { handleOverwriteConflict } from '../../../shared/utilities/messages'
 import { getPattern } from '../../../shared/utilities/downloadPatterns'
 import { MetadataManager } from './metadataManager'
 
@@ -91,14 +91,8 @@ export async function downloadPatternCode(config: CreateServerlessLandWizardForm
     const fullAssetName = assetName + '.zip'
     const location = vscode.Uri.joinPath(config.location, config.name)
 
-    const shouldProceed = await confirmOverwriteIfExists(location, config.name)
-    if (!shouldProceed) {
-        throw new ToolkitError(`Folder already exists: ${config.name}`)
-    }
+    await handleOverwriteConflict(location)
 
-    if (await fs.exists(location)) {
-        await fs.delete(location, { recursive: true, force: true })
-    }
     try {
         await getPattern(serverlessLandOwner, serverlessLandRepo, fullAssetName, location, true)
     } catch (error) {

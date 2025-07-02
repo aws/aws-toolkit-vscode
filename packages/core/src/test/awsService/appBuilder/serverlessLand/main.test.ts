@@ -117,21 +117,20 @@ describe('downloadPatternCode', () => {
         getPatternStub.restore()
     })
     it('successfully downloads pattern code', async () => {
-        sandbox.stub(messages, 'confirmOverwriteIfExists').resolves(true)
+        sandbox.stub(messages, 'handleOverwriteConflict').resolves(true)
 
         await downloadPatternCode(mockConfig, mockConfig.assetName)
         assertDownloadPatternCall(getPatternStub, mockConfig)
     })
     it('downloads pattern when directory exists and user confirms overwrite', async function () {
-        sandbox.stub(messages, 'confirmOverwriteIfExists').resolves(true)
-        sandbox.stub(fs, 'delete').resolves()
+        sandbox.stub(messages, 'handleOverwriteConflict').resolves(true)
 
         await downloadPatternCode(mockConfig, mockConfig.assetName)
         assertDownloadPatternCall(getPatternStub, mockConfig)
     })
     it('throws error when directory exists and user cancels overwrite', async function () {
-        sandbox.stub(fs, 'exists').resolves(true)
-        sandbox.stub(messages, 'confirmOverwriteIfExists').resolves(false)
+        const handleOverwriteStub = sandbox.stub(messages, 'handleOverwriteConflict')
+        handleOverwriteStub.rejects(new Error('Folder already exists: test-project'))
 
         await assert.rejects(
             () => downloadPatternCode(mockConfig, mockConfig.assetName),

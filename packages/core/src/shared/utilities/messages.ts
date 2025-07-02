@@ -5,6 +5,7 @@
 
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
+import * as path from 'path'
 import * as localizedText from '../localizedText'
 import { getLogger } from '../../shared/logger/logger'
 import { ProgressEntry } from '../../shared/vscode/window'
@@ -14,6 +15,7 @@ import { Timeout } from './timeoutUtils'
 import { addCodiconToString } from './textUtilities'
 import { getIcon, codicon } from '../icons'
 import globals from '../extensionGlobals'
+import { ToolkitError } from '../../shared/errors'
 import { fs } from '../../shared/fs/fs'
 import { openUrl } from './vsCodeUtils'
 import { AmazonQPromptSettings, ToolkitPromptSettings } from '../../shared/settings'
@@ -147,21 +149,33 @@ export async function showViewLogsMessage(
  * @param itemName The name of the item for display in the message
  * @returns Promise<boolean> - true if should proceed (path doesn't exist or user confirmed overwrite)
  */
-export async function confirmOverwriteIfExists(path: vscode.Uri, itemName: string): Promise<boolean> {
-    if (!(await fs.exists(path))) {
+export async function handleOverwriteConflict(location: vscode.Uri): Promise<boolean> {
+    if (!(await fs.exists(location))) {
         return true
     }
 
-    return showConfirmationMessage({
+    const choice = showConfirmationMessage({
         prompt: localize(
             'AWS.toolkit.confirmOverwrite',
             '{0} already exists in the selected directory, overwrite?',
-            itemName
+            location.fsPath
         ),
         confirm: localize('AWS.generic.overwrite', 'Yes'),
         cancel: localize('AWS.generic.cancel', 'No'),
         type: 'warning',
     })
+
+    if (!choice) {
+        throw new ToolkitError(`Folder already exists: ${path.basename(location.fsPath)}`)
+    }
+
+    try {
+        await fs.delete(location, { recursive: true, force: true })
+    } catch (error) {
+        throw ToolkitError.chain(error, `Failed to delete existing folder: ${path.basename(location.fsPath)}`)
+    }
+
+    return true
 }
 
 /**
