@@ -135,7 +135,6 @@ export class LanguageClientAuth {
             {
                 profileName: profileName,
                 options: {
-                    assumeRole: false,
                     generateOnInvalidStsCredential: login,
                 },
             } satisfies GetIamCredentialParams,
