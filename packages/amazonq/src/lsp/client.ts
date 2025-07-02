@@ -38,6 +38,7 @@ import {
     getClientId,
     extensionVersion,
     isSageMaker,
+    Experiments,
 } from 'aws-core-vscode/shared'
 import { processUtils } from 'aws-core-vscode/shared'
 import { activate } from './chat/activation'
