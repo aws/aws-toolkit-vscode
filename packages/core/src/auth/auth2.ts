@@ -12,12 +12,12 @@ import {
     GetIamCredentialParams,
     getIamCredentialRequestType,
     GetIamCredentialResult,
-    InvalidateIamCredentialResult,
+    InvalidateStsCredentialResult,
     IamIdentityCenterSsoTokenSource,
     InvalidateSsoTokenParams,
-    InvalidateIamCredentialParams,
+    InvalidateStsCredentialParams,
     invalidateSsoTokenRequestType,
-    invalidateIamCredentialRequestType,
+    invalidateStsCredentialRequestType,
     ProfileKind,
     UpdateProfileParams,
     updateProfileRequestType,
@@ -234,17 +234,17 @@ export class LanguageClientAuth {
         } satisfies InvalidateSsoTokenParams) as Promise<InvalidateSsoTokenResult>
     }
 
-    invalidateIamCredential(tokenId: string) {
-        return this.client.sendRequest(invalidateIamCredentialRequestType.method, {
-            iamCredentialsId: tokenId,
-        } satisfies InvalidateIamCredentialParams) as Promise<InvalidateIamCredentialResult>
-    }
-
     // invalidateStsCredential(tokenId: string) {
     //     return this.client.sendRequest(invalidateStsCredentialRequestType.method, {
-    //         stsCredentialId: tokenId,
+    //         iamCredentialsId: tokenId,
     //     } satisfies InvalidateStsCredentialParams) as Promise<InvalidateStsCredentialResult>
     // }
+
+    invalidateStsCredential(tokenId: string) {
+        return this.client.sendRequest(invalidateStsCredentialRequestType.method, {
+            profileName: tokenId,
+        } satisfies InvalidateStsCredentialParams) as Promise<InvalidateStsCredentialResult>
+    }
 
     registerSsoTokenChangedHandler(ssoTokenChangedHandler: (params: SsoTokenChangedParams) => any) {
         this.client.onNotification(ssoTokenChangedRequestType.method, ssoTokenChangedHandler)
@@ -505,7 +505,7 @@ export class IamLogin extends BaseLogin {
 
     async logout() {
         if (this.iamCredentialId) {
-            await this.lspAuth.invalidateIamCredential(this.iamCredentialId)
+            await this.lspAuth.invalidateStsCredential(this.iamCredentialId)
         }
         await this.lspAuth.updateIamProfile(this.profileName, '', '', '')
         this.updateConnectionState('notConnected')
@@ -588,19 +588,19 @@ export class IamLogin extends BaseLogin {
             this.cancellationToken = undefined
         }
 
-        // this.iamCredentialId = response.id
+        this.iamCredentialId = response.id
         this.updateConnectionState('connected')
         return response
     }
 
-    // private stsCredentialChangedHandler(params: StsCredentialChangedParams) {
-    //     if (params.stsCredentialId === this.iamCredentialId) {
-    //         if (params.kind === StsCredentialChangedKind.Expired) {
-    //             this.updateConnectionState('expired')
-    //             return
-    //         } else if (params.kind === StsCredentialChangedKind.Refreshed) {
-    //             this.eventEmitter.fire({ id: this.profileName, state: 'refreshed' })
-    //         }
-    //     }
-    // }
+//     private stsCredentialChangedHandler(params: StsCredentialChangedParams) {
+//         if (params.stsCredentialId === this.iamCredentialId) {
+//             if (params.kind === StsCredentialChangedKind.Expired) {
+//                 this.updateConnectionState('expired')
+//                 return
+//             } else if (params.kind === StsCredentialChangedKind.Refreshed) {
+//                 this.eventEmitter.fire({ id: this.profileName, state: 'refreshed' })
+//             }
+//         }
+//     }
 }

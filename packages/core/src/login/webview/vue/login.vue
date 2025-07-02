@@ -230,7 +230,7 @@
 
         <template v-if="stage === 'AUTHENTICATING'">
             <div class="auth-container-section">
-                <div v-if="app === 'TOOLKIT' && profileName.length > 0" class="header bottomMargin">
+                <div v-if="(app === 'TOOLKIT' && profileName.length > 0) || (app === 'AMAZONQ' && accessKey.length > 0)" class="header bottomMargin">
                     Connecting to IAM...
                 </div>
                 <div v-else class="header bottomMargin">Authenticating in browser...</div>
