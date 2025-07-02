@@ -70,7 +70,9 @@
         "generateSettings": "ts-node ../../scripts/generateSettings.ts"
     },
     "dependencies": {
-        "aws-core-vscode": "file:../core/"
+        "aws-core-vscode": "file:../core/",
+        "mocha": "^11.7.1",
+        "vscode-extension-tester": "^8.15.0"
     },
     "contributesComments": {
         "configuration": {

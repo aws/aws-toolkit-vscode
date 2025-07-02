@@ -1,0 +1,13 @@
+
+
+Writing code settings to /var/folders/2_/2gq5dx0523d60tk4_xn6_pnr0000gq/T/test-resources/settings/User/settings.json
+Launching browser...
+Browser ready in 1648 ms
+Launching tests...
+  Amazon Q Login Flow
+    ✔ Should click through the Amazon Q login screen (7343ms)
+
+Shutting down the browser
+
+  1 passing (26s)
+
