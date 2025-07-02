@@ -2,7 +2,7 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-
+import * as vscode from 'vscode'
 import {
     CancellationToken,
     InlineCompletionContext,
@@ -40,10 +40,13 @@ import { InlineGeneratingMessage } from './inlineGeneratingMessage'
 import { LineTracker } from './stateTracker/lineTracker'
 import { InlineTutorialAnnotation } from './tutorials/inlineTutorialAnnotation'
 import { TelemetryHelper } from './telemetryHelper'
-import { Experiments, getLogger } from 'aws-core-vscode/shared'
+import { Experiments, getLogger, sleep } from 'aws-core-vscode/shared'
 import { debounce, messageUtils } from 'aws-core-vscode/utils'
 import { showEdits } from './EditRendering/imageRenderer'
 import { ICursorUpdateRecorder } from './cursorUpdateManager'
+
+let lastDocumentDeleteEvent: vscode.TextDocumentChangeEvent | undefined = undefined
+let lastDocumentDeleteTime = 0
 
 export class InlineCompletionManager implements Disposable {
     private disposable: Disposable
@@ -55,6 +58,7 @@ export class InlineCompletionManager implements Disposable {
     private incomingGeneratingMessage: InlineGeneratingMessage
     private inlineTutorialAnnotation: InlineTutorialAnnotation
     private readonly logSessionResultMessageName = 'aws/logInlineCompletionSessionResults'
+    private documentChangeListener: Disposable
 
     constructor(
         languageClient: LanguageClient,
@@ -79,6 +83,13 @@ export class InlineCompletionManager implements Disposable {
             this.sessionManager,
             this.inlineTutorialAnnotation
         )
+
+        this.documentChangeListener = vscode.workspace.onDidChangeTextDocument((e) => {
+            if (e.contentChanges.length === 1 && e.contentChanges[0].text === '') {
+                lastDocumentDeleteEvent = e
+                lastDocumentDeleteTime = performance.now()
+            }
+        })
         this.disposable = languages.registerInlineCompletionItemProvider(
             CodeWhispererConstants.platformLanguageIds,
             this.inlineCompletionProvider
@@ -96,6 +107,9 @@ export class InlineCompletionManager implements Disposable {
             this.disposable.dispose()
             this.incomingGeneratingMessage.dispose()
             this.lineTracker.dispose()
+        }
+        if (this.documentChangeListener) {
+            this.documentChangeListener.dispose()
         }
     }
 
@@ -221,6 +235,16 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
             getLogger().info('Recommendations already active, returning empty')
             return []
         }
+        // yield event loop to let the document listen catch updates
+        await sleep(1)
+        // prevent user deletion invoking auto trigger
+        // this is a best effort estimate of deletion
+        const timeDiff = Math.abs(performance.now() - lastDocumentDeleteTime)
+        if (timeDiff < 500 && lastDocumentDeleteEvent && lastDocumentDeleteEvent.document.uri === document.uri) {
+            getLogger().debug('Skip auto trigger when deleting code')
+            return []
+        }
+
         let logstr = `GenerateCompletion metadata:\\n`
         try {
             const t0 = performance.now()
