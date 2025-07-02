@@ -255,13 +255,17 @@
                             "type": "boolean",
                             "default": false
                         },
+                        "amazonqChatLSP": {
+                            "type": "boolean",
+                            "default": true
+                        },
                         "amazonqLSPInlineChat": {
                             "type": "boolean",
                             "default": false
                         },
-                        "amazonqChatLSP": {
+                        "amazonqLSPNEP": {
                             "type": "boolean",
-                            "default": true
+                            "default": false
                         }
                     },
                     "additionalProperties": false

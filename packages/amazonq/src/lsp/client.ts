@@ -164,10 +164,16 @@ export async function startLanguageServer(
                         developerProfiles: true,
                         pinnedContextEnabled: true,
                         mcp: true,
+                        workspaceFilePath: vscode.workspace.workspaceFile?.fsPath,
                     },
                     window: {
                         notifications: true,
                         showSaveFileDialog: true,
+                    },
+                    textDocument: {
+                        inlineCompletionWithReferences: {
+                            inlineEditSupport: Experiments.instance.isExperimentEnabled('amazonqLSPNEP'),
+                        },
                     },
                 },
                 contextConfiguration: {

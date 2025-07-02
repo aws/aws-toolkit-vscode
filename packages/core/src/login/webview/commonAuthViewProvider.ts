@@ -148,6 +148,10 @@ export class CommonAuthViewProvider implements WebviewViewProvider {
         const entrypoint =
             serverHostname !== undefined ? Uri.parse(serverHostname).with({ path: `/${this.source}` }) : scriptUri
 
+        // Get Vue.js from dist/libs directory
+        const vueUri = Uri.joinPath(assetsPath, 'dist', 'libs', 'vue.min.js')
+        const vueScript = webview.asWebviewUri(vueUri)
+
         return `
             <!DOCTYPE html>
             <html lang="en">
@@ -158,7 +162,7 @@ export class CommonAuthViewProvider implements WebviewViewProvider {
                     <title>Base View Extension</title>
                 </head>
                 <body>
-                    <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.4.4/vue.global.prod.min.js"></script>  
+                    <script src="${vueScript.toString()}"></script>  
                     <script>
                         const vscode = acquireVsCodeApi();
                     </script>
