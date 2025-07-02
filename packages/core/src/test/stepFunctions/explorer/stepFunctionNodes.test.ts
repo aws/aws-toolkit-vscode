@@ -15,14 +15,14 @@ import {
 } from '../../utilities/explorerNodeAssertions'
 import { asyncGenerator } from '../../../shared/utilities/collectionUtils'
 import globals from '../../../shared/extensionGlobals'
-import { DefaultStepFunctionsClient } from '../../../shared/clients/stepFunctionsClient'
+import { StepFunctionsClient } from '../../../shared/clients/stepFunctions'
 import { stub } from '../../utilities/stubber'
 
 const regionCode = 'someregioncode'
 
 describe('StepFunctionsNode', function () {
     function createStatesClient(...stateMachineNames: string[]) {
-        const client = stub(DefaultStepFunctionsClient, { regionCode })
+        const client = stub(StepFunctionsClient, { regionCode })
         client.listStateMachines.returns(
             asyncGenerator(
                 stateMachineNames.map((name) => {
