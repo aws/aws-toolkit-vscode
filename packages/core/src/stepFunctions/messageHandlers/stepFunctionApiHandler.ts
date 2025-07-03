@@ -17,7 +17,7 @@ import {
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { ListRolesRequest } from '@aws-sdk/client-iam'
 
-export class stepFunctionApiHandler {
+export class StepFunctionApiHandler {
     public constructor(
         region: string,
         private readonly context: WebviewContext | ExecutionDetailsContext,
@@ -44,13 +44,13 @@ export class stepFunctionApiHandler {
                     response = await this.clients.sfn.getStateMachineDetails(params)
                     break
                 case ApiAction.SFNDescribeStateMachineForExecution:
-                    response = await this.clients.sfn.getStateMachineDetailsForExecution(params)
+                    response = await this.clients.sfn.describeStateMachineForExecution(params)
                     break
                 case ApiAction.SFNDescribeExecution:
-                    response = await this.clients.sfn.getExecutionDetails(params)
+                    response = await this.clients.sfn.describeExecution(params)
                     break
                 case ApiAction.SFNDescribeMapRun:
-                    response = await this.clients.sfn.getMapRunDetails(params)
+                    response = await this.clients.sfn.describeMapRun(params)
                     break
                 case ApiAction.SFNGetExecutionHistory:
                     response = await this.clients.sfn.getExecutionHistory(params)

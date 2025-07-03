@@ -13,7 +13,7 @@ import {
     ApiCallRequestMessage,
     UnsupportedMessage,
 } from './types'
-import { stepFunctionApiHandler } from './stepFunctionApiHandler'
+import { StepFunctionApiHandler } from './stepFunctionApiHandler'
 import globals from '../../shared/extensionGlobals'
 import { getLogger } from '../../shared/logger/logger'
 
@@ -38,7 +38,7 @@ export function apiCallMessageHandler(
     context: WebviewContext | ExecutionDetailsContext
 ) {
     const logger = getLogger('stepfunctions')
-    const apiHandler = new stepFunctionApiHandler(globals.awsContext.getCredentialDefaultRegion(), context)
+    const apiHandler = new StepFunctionApiHandler(globals.awsContext.getCredentialDefaultRegion(), context)
     apiHandler.performApiCall(request).catch((error) => logger.error('%s API call failed: %O', request.apiName, error))
 }
 

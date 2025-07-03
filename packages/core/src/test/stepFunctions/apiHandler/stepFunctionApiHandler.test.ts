@@ -5,7 +5,7 @@
 
 import assert from 'assert'
 import sinon from 'sinon'
-import { stepFunctionApiHandler } from '../../../stepFunctions/messageHandlers/stepFunctionApiHandler'
+import { StepFunctionApiHandler } from '../../../stepFunctions/messageHandlers/stepFunctionApiHandler'
 import { MockDocument } from '../../fake/fakeDocument'
 import {
     ApiAction,
@@ -21,7 +21,7 @@ import { IamClient } from '../../../shared/clients/iam'
 
 describe('stepFunctionApiHandler', function () {
     let postMessageStub: sinon.SinonStub
-    let apiHandler: stepFunctionApiHandler
+    let apiHandler: StepFunctionApiHandler
     let testState: sinon.SinonStub
 
     async function assertTestApiResponse(expectedResponse: any) {
@@ -65,7 +65,7 @@ describe('stepFunctionApiHandler', function () {
         }
 
         const sfnClient = new StepFunctionsClient('us-east-1')
-        apiHandler = new stepFunctionApiHandler('us-east-1', context, {
+        apiHandler = new StepFunctionApiHandler('us-east-1', context, {
             sfn: sfnClient,
             iam: new IamClient('us-east-1'),
         })

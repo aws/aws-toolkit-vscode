@@ -35,6 +35,7 @@ import {
     StateMachineListItem,
     StopExecutionCommand,
     StopExecutionCommandInput,
+    StopExecutionCommandOutput,
     TestStateCommand,
     TestStateCommandInput,
     TestStateCommandOutput,
@@ -43,8 +44,6 @@ import {
     UpdateStateMachineCommandOutput,
 } from '@aws-sdk/client-sfn'
 import { ClientWrapper } from './clientWrapper'
-import { StopAccessLoggingOutput } from 'aws-sdk/clients/mediastore'
-// import { StopExecutionInput } from 'aws-sdk/clients/stepfunctions'
 
 export class StepFunctionsClient extends ClientWrapper<SFNClient> {
     public constructor(regionCode: string) {
@@ -69,17 +68,17 @@ export class StepFunctionsClient extends ClientWrapper<SFNClient> {
         return this.makeRequest(DescribeStateMachineCommand, request)
     }
 
-    public async getStateMachineDetailsForExecution(
+    public async describeStateMachineForExecution(
         request: DescribeStateMachineForExecutionCommandInput
     ): Promise<DescribeStateMachineForExecutionCommandOutput> {
         return this.makeRequest(DescribeStateMachineForExecutionCommand, request)
     }
 
-    public async getExecutionDetails(request: DescribeExecutionCommandInput): Promise<DescribeExecutionCommandOutput> {
+    public async describeExecution(request: DescribeExecutionCommandInput): Promise<DescribeExecutionCommandOutput> {
         return this.makeRequest(DescribeExecutionCommand, request)
     }
 
-    public async getMapRunDetails(request: DescribeMapRunCommandInput): Promise<DescribeMapRunCommandOutput> {
+    public async describeMapRun(request: DescribeMapRunCommandInput): Promise<DescribeMapRunCommandOutput> {
         return this.makeRequest(DescribeMapRunCommand, request)
     }
 
@@ -97,7 +96,7 @@ export class StepFunctionsClient extends ClientWrapper<SFNClient> {
         return this.makeRequest(StartExecutionCommand, request)
     }
 
-    public async stopExecution(request: StopExecutionCommandInput): Promise<StopAccessLoggingOutput> {
+    public async stopExecution(request: StopExecutionCommandInput): Promise<StopExecutionCommandOutput> {
         return this.makeRequest(StopExecutionCommand, request)
     }
 
