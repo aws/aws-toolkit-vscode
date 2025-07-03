@@ -319,6 +319,7 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
                 position,
                 context,
                 token,
+                isAutoTrigger,
                 getAllRecommendationsOptions
             )
             // get active item from session for displaying
