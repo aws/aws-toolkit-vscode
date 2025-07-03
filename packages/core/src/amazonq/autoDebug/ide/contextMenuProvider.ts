@@ -9,6 +9,7 @@ import { Commands } from '../../../shared/vscode/commands2'
 import { AutoDebugController } from '../autoDebugController'
 import { focusAmazonQPanel } from '../../../codewhispererChat/commands/registerCommands'
 import { placeholder } from '../../../shared/vscode/commands2'
+import { mapDiagnosticSeverity, getDiagnosticsForRange } from '../shared/diagnosticUtils'
 
 /**
  * Provides context menu integration for Amazon Q Auto Debug features.
@@ -115,13 +116,13 @@ export class ContextMenuProvider implements vscode.Disposable {
             const languageId = editor.document.languageId
 
             // Get diagnostics for the current location if not provided
-            const contextDiagnostics = diagnostics || this.getDiagnosticsForRange(editor.document.uri, range)
+            const contextDiagnostics = diagnostics || getDiagnosticsForRange(editor.document.uri, range)
 
             // Convert diagnostics to problems for formatting
             const problems = contextDiagnostics.map((diagnostic) => ({
                 uri: editor.document.uri,
                 diagnostic,
-                severity: this.mapDiagnosticSeverity(diagnostic.severity),
+                severity: mapDiagnosticSeverity(diagnostic.severity),
                 source: diagnostic.source || 'unknown',
                 isNew: false,
             }))
@@ -183,7 +184,7 @@ export class ContextMenuProvider implements vscode.Disposable {
         const languageId = editor.document.languageId
 
         // Get diagnostics for the current location if not provided
-        const contextDiagnostics = diagnostics || this.getDiagnosticsForRange(editor.document.uri, range)
+        const contextDiagnostics = diagnostics || getDiagnosticsForRange(editor.document.uri, range)
 
         if (contextDiagnostics.length === 0) {
             void vscode.window.showInformationMessage('No problems found in the selected code')
@@ -194,7 +195,7 @@ export class ContextMenuProvider implements vscode.Disposable {
         const problems = contextDiagnostics.map((diagnostic) => ({
             uri: editor.document.uri,
             diagnostic,
-            severity: this.mapDiagnosticSeverity(diagnostic.severity),
+            severity: mapDiagnosticSeverity(diagnostic.severity),
             source: diagnostic.source || 'unknown',
             isNew: false,
         }))
@@ -224,7 +225,7 @@ export class ContextMenuProvider implements vscode.Disposable {
             }
 
             // Get diagnostics for the current location if not provided
-            const contextDiagnostics = diagnostics || this.getDiagnosticsForRange(editor.document.uri, range)
+            const contextDiagnostics = diagnostics || getDiagnosticsForRange(editor.document.uri, range)
 
             if (contextDiagnostics.length === 0) {
                 void vscode.window.showInformationMessage('No problems found at the current location')
@@ -235,7 +236,7 @@ export class ContextMenuProvider implements vscode.Disposable {
             const problems = contextDiagnostics.map((diagnostic) => ({
                 uri: editor.document.uri,
                 diagnostic,
-                severity: this.mapDiagnosticSeverity(diagnostic.severity),
+                severity: mapDiagnosticSeverity(diagnostic.severity),
                 source: diagnostic.source || 'unknown',
                 isNew: false,
             }))
@@ -301,31 +302,6 @@ export class ContextMenuProvider implements vscode.Disposable {
         // If no selection, get the current line
         const currentLine = editor.document.lineAt(editor.selection.active.line)
         return currentLine.text
-    }
-
-    private getDiagnosticsForRange(uri: vscode.Uri, range?: vscode.Range): vscode.Diagnostic[] {
-        const allDiagnostics = vscode.languages.getDiagnostics(uri)
-
-        if (!range) {
-            return allDiagnostics
-        }
-
-        return allDiagnostics.filter((diagnostic) => diagnostic.range.intersection(range) !== undefined)
-    }
-
-    private mapDiagnosticSeverity(severity: vscode.DiagnosticSeverity): 'error' | 'warning' | 'info' | 'hint' {
-        switch (severity) {
-            case vscode.DiagnosticSeverity.Error:
-                return 'error'
-            case vscode.DiagnosticSeverity.Warning:
-                return 'warning'
-            case vscode.DiagnosticSeverity.Information:
-                return 'info'
-            case vscode.DiagnosticSeverity.Hint:
-                return 'hint'
-            default:
-                return 'info'
-        }
     }
 
     private createChatMessage(selectedText: string, filePath: string, languageId: string, problems: string): string {

@@ -7,6 +7,7 @@ import * as vscode from 'vscode'
 import * as path from 'path'
 import { getLogger } from '../../../shared/logger/logger'
 import { DiagnosticCollection, DiagnosticSnapshot } from './diagnosticsMonitor'
+import { mapDiagnosticSeverity } from '../shared/diagnosticUtils'
 
 export interface Problem {
     readonly uri: vscode.Uri
@@ -212,24 +213,9 @@ export class ProblemDetector {
         return {
             uri,
             diagnostic,
-            severity: this.mapSeverity(diagnostic.severity),
+            severity: mapDiagnosticSeverity(diagnostic.severity),
             source: diagnostic.source || 'unknown',
             isNew,
-        }
-    }
-
-    private mapSeverity(severity: vscode.DiagnosticSeverity): 'error' | 'warning' | 'info' | 'hint' {
-        switch (severity) {
-            case vscode.DiagnosticSeverity.Error:
-                return 'error'
-            case vscode.DiagnosticSeverity.Warning:
-                return 'warning'
-            case vscode.DiagnosticSeverity.Information:
-                return 'info'
-            case vscode.DiagnosticSeverity.Hint:
-                return 'hint'
-            default:
-                return 'info'
         }
     }
 

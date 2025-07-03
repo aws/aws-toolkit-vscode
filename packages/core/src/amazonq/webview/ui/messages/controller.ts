@@ -3,12 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ChatItem, ChatItemType, MynahUI, NotificationType } from '@aws/mynah-ui'
+import { ChatItem, ChatItemType, MynahUI } from '@aws/mynah-ui'
 import { Connector } from '../connector'
 import { TabType, TabsStorage } from '../storages/tabsStorage'
 import { TabDataGenerator } from '../tabs/generator'
-import { uiComponentsTexts } from '../texts/constants'
 import { MynahUIRef } from '../../../commons/types'
+import { TabCreationUtils } from './tabCreationUtils'
 
 export interface MessageControllerProps {
     mynahUIRef: MynahUIRef
@@ -54,15 +54,8 @@ export class MessageController {
             ['featuredev', 'gumby', 'review', 'testgen', 'doc'].includes(selectedTab.type)
         ) {
             // Create a new tab if there's none
-            const newTabID: string | undefined = this.mynahUI.updateStore(
-                '',
-                this.tabDataGenerator.getTabData('cwc', false)
-            )
+            const newTabID = TabCreationUtils.createNewTab(this.mynahUI, this.tabDataGenerator, 'cwc')
             if (newTabID === undefined) {
-                this.mynahUI.notify({
-                    content: uiComponentsTexts.noMoreTabsTooltip,
-                    type: NotificationType.WARNING,
-                })
                 return undefined
             }
             this.tabsStorage.addTab({
@@ -109,15 +102,8 @@ export class MessageController {
 
             targetTabId = selectedTab.id
         } else {
-            const newTabID: string | undefined = this.mynahUI.updateStore(
-                '',
-                this.tabDataGenerator.getTabData('cwc', false)
-            )
+            const newTabID = TabCreationUtils.createNewTab(this.mynahUI, this.tabDataGenerator, 'cwc')
             if (newTabID === undefined) {
-                this.mynahUI.notify({
-                    content: uiComponentsTexts.noMoreTabsTooltip,
-                    type: NotificationType.WARNING,
-                })
                 return undefined
             }
 

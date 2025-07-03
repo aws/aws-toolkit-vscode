@@ -10,6 +10,7 @@ import { ProblemDetector, Problem, CategorizedProblems } from './diagnostics/pro
 import { ErrorContextFormatter, ErrorContext } from './diagnostics/errorContext'
 import { AutoDebugLspClient } from './lsp/autoDebugLspClient'
 import { randomUUID } from '../../shared/crypto'
+import { mapDiagnosticSeverity } from './shared/diagnosticUtils'
 
 export interface AutoDebugConfig {
     readonly enabled: boolean
@@ -56,7 +57,7 @@ export class AutoDebugController implements vscode.Disposable {
             includedSources: [], // Empty means include all
             excludedSources: ['spell-checker'], // Common sources to exclude
             severityFilter: ['error'], // Only auto-fix errors, not warnings
-            debounceMs: 2000, // Wait 2 seconds before auto-sending to avoid spam
+            debounceMs: 500, // Wait 0.5 seconds before auto-sending to avoid spam
             ...config,
         }
 
@@ -303,7 +304,7 @@ export class AutoDebugController implements vscode.Disposable {
             const problems = diagnosticsToFix.map((diagnostic) => ({
                 uri: editor.document.uri,
                 diagnostic,
-                severity: this.mapDiagnosticSeverity(diagnostic.severity),
+                severity: mapDiagnosticSeverity(diagnostic.severity),
                 source: diagnostic.source || 'unknown',
                 isNew: false,
             }))
@@ -336,21 +337,6 @@ export class AutoDebugController implements vscode.Disposable {
             void vscode.window.showErrorMessage(
                 `Error during fix process: ${error instanceof Error ? error.message : 'Unknown error'}`
             )
-        }
-    }
-
-    private mapDiagnosticSeverity(severity: vscode.DiagnosticSeverity): 'error' | 'warning' | 'info' | 'hint' {
-        switch (severity) {
-            case vscode.DiagnosticSeverity.Error:
-                return 'error'
-            case vscode.DiagnosticSeverity.Warning:
-                return 'warning'
-            case vscode.DiagnosticSeverity.Information:
-                return 'info'
-            case vscode.DiagnosticSeverity.Hint:
-                return 'hint'
-            default:
-                return 'error'
         }
     }
 
@@ -625,7 +611,7 @@ You can manually apply these fixes or use the "Apply Fixes" option from the noti
                     const problems = errorDiagnostics.map((diagnostic) => ({
                         uri: document.uri,
                         diagnostic,
-                        severity: this.mapDiagnosticSeverity(diagnostic.severity),
+                        severity: mapDiagnosticSeverity(diagnostic.severity),
                         source: diagnostic.source || 'unknown',
                         isNew: true,
                     }))
