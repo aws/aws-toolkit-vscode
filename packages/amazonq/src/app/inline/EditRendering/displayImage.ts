@@ -326,7 +326,8 @@ export async function displaySvgDecoration(
                         selectedCompletionInfo: undefined,
                     },
                     new vscode.CancellationTokenSource().token,
-                    { emitTelemetry: false, showUi: false }
+                    { emitTelemetry: false, showUi: false },
+                    session.editsStreakPartialResultToken
                 )
             }
         },

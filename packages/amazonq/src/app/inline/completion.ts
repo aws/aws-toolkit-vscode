@@ -221,7 +221,8 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
         position: Position,
         context: InlineCompletionContext,
         token: CancellationToken,
-        getAllRecommendationsOptions?: GetAllRecommendationsOptions
+        getAllRecommendationsOptions?: GetAllRecommendationsOptions,
+        editsStreakPartialResultToken?: number | string
     ): Promise<InlineCompletionItem[]> {
         getLogger().info('_provideInlineCompletionItems called with: %O', {
             documentUri: document.uri.toString(),
@@ -323,7 +324,8 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
                 position,
                 context,
                 token,
-                getAllRecommendationsOptions
+                getAllRecommendationsOptions,
+                editsStreakPartialResultToken
             )
             // get active item from session for displaying
             const items = this.sessionManager.getActiveRecommendation()
