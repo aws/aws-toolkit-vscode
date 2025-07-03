@@ -115,17 +115,8 @@ export class ContextMenuProvider implements vscode.Disposable {
             const filePath = editor.document.uri.fsPath
             const languageId = editor.document.languageId
 
-            // Get diagnostics for the current location if not provided
-            const contextDiagnostics = diagnostics || getDiagnosticsForRange(editor.document.uri, range)
-
-            // Convert diagnostics to problems for formatting
-            const problems = contextDiagnostics.map((diagnostic) => ({
-                uri: editor.document.uri,
-                diagnostic,
-                severity: mapDiagnosticSeverity(diagnostic.severity),
-                source: diagnostic.source || 'unknown',
-                isNew: false,
-            }))
+            // Use shared helper to get diagnostics and convert to problems
+            const problems = this.getDiagnosticsAsProblems(editor, range, diagnostics) || []
 
             // Format the context for chat
             const formattedProblems = this.autoDebugController.formatProblemsForChat(problems)
@@ -183,22 +174,17 @@ export class ContextMenuProvider implements vscode.Disposable {
         const filePath = editor.document.uri.fsPath
         const languageId = editor.document.languageId
 
-        // Get diagnostics for the current location if not provided
-        const contextDiagnostics = diagnostics || getDiagnosticsForRange(editor.document.uri, range)
+        // Use shared helper to get diagnostics and convert to problems
+        const problems = this.getDiagnosticsAsProblems(
+            editor,
+            range,
+            diagnostics,
+            'No problems found in the selected code'
+        )
 
-        if (contextDiagnostics.length === 0) {
-            void vscode.window.showInformationMessage('No problems found in the selected code')
+        if (!problems) {
             return
         }
-
-        // Convert diagnostics to problems
-        const problems = contextDiagnostics.map((diagnostic) => ({
-            uri: editor.document.uri,
-            diagnostic,
-            severity: mapDiagnosticSeverity(diagnostic.severity),
-            source: diagnostic.source || 'unknown',
-            isNew: false,
-        }))
 
         // Create focused fix message for specific problems
         const errorContexts = await this.autoDebugController.createErrorContexts(problems)
@@ -224,22 +210,17 @@ export class ContextMenuProvider implements vscode.Disposable {
                 return
             }
 
-            // Get diagnostics for the current location if not provided
-            const contextDiagnostics = diagnostics || getDiagnosticsForRange(editor.document.uri, range)
+            // Use shared helper to get diagnostics and convert to problems
+            const problems = this.getDiagnosticsAsProblems(
+                editor,
+                range,
+                diagnostics,
+                'No problems found at the current location'
+            )
 
-            if (contextDiagnostics.length === 0) {
-                void vscode.window.showInformationMessage('No problems found at the current location')
+            if (!problems) {
                 return
             }
-
-            // Convert diagnostics to problems
-            const problems = contextDiagnostics.map((diagnostic) => ({
-                uri: editor.document.uri,
-                diagnostic,
-                severity: mapDiagnosticSeverity(diagnostic.severity),
-                source: diagnostic.source || 'unknown',
-                isNew: false,
-            }))
 
             // Create explanation message
             const explanationMessage = this.createExplanationMessage(problems)
@@ -302,6 +283,35 @@ export class ContextMenuProvider implements vscode.Disposable {
         // If no selection, get the current line
         const currentLine = editor.document.lineAt(editor.selection.active.line)
         return currentLine.text
+    }
+
+    /**
+     * Shared helper to get diagnostics and convert them to problems
+     */
+    private getDiagnosticsAsProblems(
+        editor: vscode.TextEditor,
+        range?: vscode.Range,
+        diagnostics?: vscode.Diagnostic[],
+        noProblemsMessage?: string
+    ): any[] | undefined {
+        // Get diagnostics for the current location if not provided
+        const contextDiagnostics = diagnostics || getDiagnosticsForRange(editor.document.uri, range)
+
+        if (contextDiagnostics.length === 0) {
+            if (noProblemsMessage) {
+                void vscode.window.showInformationMessage(noProblemsMessage)
+            }
+            return undefined
+        }
+
+        // Convert diagnostics to problems
+        return contextDiagnostics.map((diagnostic) => ({
+            uri: editor.document.uri,
+            diagnostic,
+            severity: mapDiagnosticSeverity(diagnostic.severity),
+            source: diagnostic.source || 'unknown',
+            isNew: false,
+        }))
     }
 
     private createChatMessage(selectedText: string, filePath: string, languageId: string, problems: string): string {
