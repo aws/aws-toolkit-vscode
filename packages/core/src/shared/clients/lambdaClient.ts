@@ -10,6 +10,11 @@ import globals from '../extensionGlobals'
 import { getLogger } from '../logger/logger'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
 
+import { LambdaClient as LambdaSdkClient, GetFunctionCommand, GetFunctionCommandOutput } from '@aws-sdk/client-lambda'
+import { CancellationError } from '../utilities/timeoutUtils'
+import { fromSSO } from '@aws-sdk/credential-provider-sso'
+import { getIAMConnection } from '../../auth/utils'
+
 export type LambdaClient = ClassToInterfaceType<DefaultLambdaClient>
 
 export class DefaultLambdaClient {
@@ -80,6 +85,39 @@ export class DefaultLambdaClient {
         }
     }
 
+    public async getLayerVersion(name: string, version: number): Promise<Lambda.GetLayerVersionResponse> {
+        getLogger().debug(`getLayerVersion called for LayerName: ${name}, VersionNumber ${version}`)
+        const client = await this.createSdkClient()
+
+        try {
+            const response = await client.getLayerVersion({ LayerName: name, VersionNumber: version }).promise()
+            // prune `Code` from logs so we don't reveal a signed link to customer resources.
+            getLogger().debug('getLayerVersion returned response (code section pruned): %O', {
+                ...response,
+                Code: 'Pruned',
+            })
+            return response
+        } catch (e) {
+            getLogger().error('Failed to get function: %s', e)
+            throw e
+        }
+    }
+
+    public async *listLayerVersions(name: string): AsyncIterableIterator<Lambda.LayerVersionsListItem> {
+        const client = await this.createSdkClient()
+
+        const request: Lambda.ListLayerVersionsRequest = { LayerName: name }
+        do {
+            const response: Lambda.ListLayerVersionsResponse = await client.listLayerVersions(request).promise()
+
+            if (response.LayerVersions) {
+                yield* response.LayerVersions
+            }
+
+            request.Marker = response.NextMarker
+        } while (request.Marker)
+    }
+
     public async getFunctionUrlConfigs(name: string): Promise<Lambda.FunctionUrlConfigList> {
         getLogger().debug(`GetFunctionUrlConfig called for function: ${name}`)
         const client = await this.createSdkClient()
@@ -127,4 +165,22 @@ export class DefaultLambdaClient {
             this.regionCode
         )
     }
+}
+
+export async function getFunctionWithCredentials(region: string, name: string): Promise<GetFunctionCommandOutput> {
+    const connection = await getIAMConnection({
+        prompt: true,
+        messageText: 'Opening a Lambda Function requires you to be authenticated.',
+    })
+
+    if (!connection) {
+        throw new CancellationError('user')
+    }
+
+    const credentials =
+        connection.type === 'iam' ? await connection.getCredentials() : fromSSO({ profile: connection.id })
+    const client = new LambdaSdkClient({ region, credentials })
+
+    const command = new GetFunctionCommand({ FunctionName: name })
+    return client.send(command)
 }

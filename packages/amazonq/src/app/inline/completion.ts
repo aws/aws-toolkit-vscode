@@ -324,6 +324,7 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
                 position,
                 context,
                 token,
+                isAutoTrigger,
                 getAllRecommendationsOptions,
                 editsStreakPartialResultToken
             )

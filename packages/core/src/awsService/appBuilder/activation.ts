@@ -24,6 +24,7 @@ import { getSyncWizard, runSync } from '../../shared/sam/sync'
 import { getDeployWizard, runDeploy } from '../../shared/sam/deploy'
 import { DeployTypeWizard } from './wizards/deployTypeWizard'
 import { createNewServerlessLandProject } from './serverlessLand/main'
+import { lambdaToSam } from './lambda2sam/lambda2sam'
 export const templateToOpenAppComposer = 'aws.toolkit.appComposer.templateToOpenOnStart'
 
 /**
@@ -126,6 +127,12 @@ async function setWalkthrough(walkthroughSelected: string = 'S3'): Promise<void>
 async function registerAppBuilderCommands(context: ExtContext): Promise<void> {
     const source = 'AppBuilderWalkthrough'
     context.extensionContext.subscriptions.push(
+        Commands.register({ id: 'aws.toolkit.lambda.convertToSam', autoconnect: true }, async (lambdaNode) => {
+            await telemetry.appbuilder_lambda2sam.run(async () => {
+                telemetry.record({ source: 'explorer' })
+                await lambdaToSam(lambdaNode)
+            })
+        }),
         Commands.register('aws.toolkit.installSAMCLI', async () => {
             await getOrInstallCliWrapper('sam-cli', source)
         }),

@@ -138,7 +138,14 @@ describe('RecommendationService', () => {
 
             sendRequestStub.resolves(mockFirstResult)
 
-            await service.getAllRecommendations(languageClient, mockDocument, mockPosition, mockContext, mockToken)
+            await service.getAllRecommendations(
+                languageClient,
+                mockDocument,
+                mockPosition,
+                mockContext,
+                mockToken,
+                true
+            )
 
             // Verify sendRequest was called with correct parameters
             assert(sendRequestStub.calledOnce)
@@ -172,7 +179,14 @@ describe('RecommendationService', () => {
             sendRequestStub.onFirstCall().resolves(mockFirstResult)
             sendRequestStub.onSecondCall().resolves(mockSecondResult)
 
-            await service.getAllRecommendations(languageClient, mockDocument, mockPosition, mockContext, mockToken)
+            await service.getAllRecommendations(
+                languageClient,
+                mockDocument,
+                mockPosition,
+                mockContext,
+                mockToken,
+                true
+            )
 
             // Verify sendRequest was called with correct parameters
             assert(sendRequestStub.calledTwice)
@@ -204,7 +218,14 @@ describe('RecommendationService', () => {
 
             sendRequestStub.resolves(mockFirstResult)
 
-            await service.getAllRecommendations(languageClient, mockDocument, mockPosition, mockContext, mockToken)
+            await service.getAllRecommendations(
+                languageClient,
+                mockDocument,
+                mockPosition,
+                mockContext,
+                mockToken,
+                true
+            )
 
             // Verify recordCompletionRequest was called
             // eslint-disable-next-line @typescript-eslint/unbound-method
@@ -232,10 +253,18 @@ describe('RecommendationService', () => {
             const { showGeneratingStub, hideGeneratingStub } = setupUITest()
 
             // Call with showUi: false option
-            await service.getAllRecommendations(languageClient, mockDocument, mockPosition, mockContext, mockToken, {
-                showUi: false,
-                emitTelemetry: true,
-            })
+            await service.getAllRecommendations(
+                languageClient,
+                mockDocument,
+                mockPosition,
+                mockContext,
+                mockToken,
+                true,
+                {
+                    showUi: false,
+                    emitTelemetry: true,
+                }
+            )
 
             // Verify UI methods were not called
             sinon.assert.notCalled(showGeneratingStub)
@@ -248,7 +277,14 @@ describe('RecommendationService', () => {
             const { showGeneratingStub, hideGeneratingStub } = setupUITest()
 
             // Call with default options (showUi: true)
-            await service.getAllRecommendations(languageClient, mockDocument, mockPosition, mockContext, mockToken)
+            await service.getAllRecommendations(
+                languageClient,
+                mockDocument,
+                mockPosition,
+                mockContext,
+                mockToken,
+                true
+            )
 
             // Verify UI methods were called
             sinon.assert.calledOnce(showGeneratingStub)
@@ -284,6 +320,7 @@ describe('RecommendationService', () => {
                     mockPosition,
                     mockContext,
                     mockToken,
+                    true,
                     options
                 )
 

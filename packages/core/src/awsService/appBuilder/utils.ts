@@ -19,7 +19,478 @@ import fs from '../../shared/fs/fs'
 import { getLogger } from '../../shared/logger/logger'
 import { RuntimeFamily, getFamily } from '../../lambda/models/samLambdaRuntime'
 import { showMessage } from '../../shared/utilities/messages'
+import { DefaultLambdaClient } from '../../shared/clients/lambdaClient'
+import AdmZip from 'adm-zip'
+import { CloudFormation, Lambda } from 'aws-sdk'
+import { isAwsError, UnknownError } from '../../shared/errors'
 const localize = nls.loadMessageBundle()
+
+/**
+ * Interface for mapping AWS service actions to their required permissions
+ */
+interface PermissionMapping {
+    service: 'cloudformation' | 'lambda'
+    action: string
+    requiredPermissions: string[]
+    documentation?: string
+}
+
+/**
+ * Comprehensive mapping of AWS service actions to their required permissions
+ */
+const PermissionMappings: PermissionMapping[] = [
+    // CloudFormation permissions
+    {
+        service: 'cloudformation',
+        action: 'describeStacks',
+        requiredPermissions: ['cloudformation:DescribeStacks'],
+        documentation: 'https://docs.aws.amazon.com/AWSCloudFormation/latest/APIReference/API_DescribeStacks.html',
+    },
+    {
+        service: 'cloudformation',
+        action: 'getTemplate',
+        requiredPermissions: ['cloudformation:GetTemplate'],
+        documentation: 'https://docs.aws.amazon.com/AWSCloudFormation/latest/APIReference/API_GetTemplate.html',
+    },
+    {
+        service: 'cloudformation',
+        action: 'createChangeSet',
+        requiredPermissions: ['cloudformation:CreateChangeSet'],
+        documentation: 'https://docs.aws.amazon.com/AWSCloudFormation/latest/APIReference/API_CreateChangeSet.html',
+    },
+    {
+        service: 'cloudformation',
+        action: 'executeChangeSet',
+        requiredPermissions: ['cloudformation:ExecuteChangeSet'],
+        documentation: 'https://docs.aws.amazon.com/AWSCloudFormation/latest/APIReference/API_ExecuteChangeSet.html',
+    },
+    {
+        service: 'cloudformation',
+        action: 'describeChangeSet',
+        requiredPermissions: ['cloudformation:DescribeChangeSet'],
+        documentation: 'https://docs.aws.amazon.com/AWSCloudFormation/latest/APIReference/API_DescribeChangeSet.html',
+    },
+    {
+        service: 'cloudformation',
+        action: 'describeStackResources',
+        requiredPermissions: ['cloudformation:DescribeStackResources'],
+        documentation:
+            'https://docs.aws.amazon.com/AWSCloudFormation/latest/APIReference/API_DescribeStackResources.html',
+    },
+    {
+        service: 'cloudformation',
+        action: 'describeStackResource',
+        requiredPermissions: ['cloudformation:DescribeStackResource'],
+        documentation:
+            'https://docs.aws.amazon.com/AWSCloudFormation/latest/APIReference/API_DescribeStackResource.html',
+    },
+    {
+        service: 'cloudformation',
+        action: 'getGeneratedTemplate',
+        requiredPermissions: ['cloudformation:GetGeneratedTemplate'],
+        documentation:
+            'https://docs.aws.amazon.com/AWSCloudFormation/latest/APIReference/API_GetGeneratedTemplate.html',
+    },
+    {
+        service: 'cloudformation',
+        action: 'describeGeneratedTemplate',
+        requiredPermissions: ['cloudformation:DescribeGeneratedTemplate'],
+        documentation:
+            'https://docs.aws.amazon.com/AWSCloudFormation/latest/APIReference/API_DescribeGeneratedTemplate.html',
+    },
+    // Lambda permissions
+    {
+        service: 'lambda',
+        action: 'getFunction',
+        requiredPermissions: ['lambda:GetFunction'],
+        documentation: 'https://docs.aws.amazon.com/lambda/latest/api/API_GetFunction.html',
+    },
+    {
+        service: 'lambda',
+        action: 'listFunctions',
+        requiredPermissions: ['lambda:ListFunctions'],
+        documentation: 'https://docs.aws.amazon.com/lambda/latest/api/API_ListFunctions.html',
+    },
+    {
+        service: 'lambda',
+        action: 'getLayerVersion',
+        requiredPermissions: ['lambda:GetLayerVersion'],
+        documentation: 'https://docs.aws.amazon.com/lambda/latest/api/API_GetLayerVersion.html',
+    },
+    {
+        service: 'lambda',
+        action: 'listLayerVersions',
+        requiredPermissions: ['lambda:ListLayerVersions'],
+        documentation: 'https://docs.aws.amazon.com/lambda/latest/api/API_ListLayerVersions.html',
+    },
+    {
+        service: 'lambda',
+        action: 'listFunctionUrlConfigs',
+        requiredPermissions: ['lambda:GetFunctionUrlConfig'],
+        documentation: 'https://docs.aws.amazon.com/lambda/latest/api/API_GetFunctionUrlConfig.html',
+    },
+    {
+        service: 'lambda',
+        action: 'updateFunctionCode',
+        requiredPermissions: ['lambda:UpdateFunctionCode'],
+        documentation: 'https://docs.aws.amazon.com/lambda/latest/api/API_UpdateFunctionCode.html',
+    },
+    {
+        service: 'lambda',
+        action: 'deleteFunction',
+        requiredPermissions: ['lambda:DeleteFunction'],
+        documentation: 'https://docs.aws.amazon.com/lambda/latest/api/API_DeleteFunction.html',
+    },
+    {
+        service: 'lambda',
+        action: 'invoke',
+        requiredPermissions: ['lambda:InvokeFunction'],
+        documentation: 'https://docs.aws.amazon.com/lambda/latest/api/API_Invoke.html',
+    },
+]
+
+/**
+ * Creates an enhanced error message for permission-related failures
+ */
+function createEnhancedPermissionError(
+    originalError: unknown,
+    service: 'cloudformation' | 'lambda',
+    action: string,
+    resourceArn?: string
+): ToolkitError {
+    const mapping = PermissionMappings.find((m) => m.service === service && m.action === action)
+
+    if (!mapping) {
+        return ToolkitError.chain(originalError, `Permission denied for ${service}:${action}`)
+    }
+
+    const permissionsList = mapping.requiredPermissions.map((p) => `  - ${p}`).join('\n')
+    const resourceInfo = resourceArn ? `\nResource: ${resourceArn}` : ''
+
+    const message = `Permission denied: Missing required permissions for ${service}:${action}
+
+Required permissions:
+${permissionsList}${resourceInfo}
+
+To fix this issue:
+1. Contact your AWS administrator to add the missing permissions
+2. Add these permissions to your IAM user/role policy
+3. If using IAM roles, ensure the role has these permissions attached
+
+${mapping.documentation ? `Documentation: ${mapping.documentation}` : ''}`
+
+    return new ToolkitError(message, {
+        code: 'InsufficientPermissions',
+        cause: UnknownError.cast(originalError),
+        details: {
+            service,
+            action,
+            requiredPermissions: mapping.requiredPermissions,
+            resourceArn,
+        },
+    })
+}
+
+/**
+ * Checks if an error is a permission-related error
+ */
+export function isPermissionError(error: unknown): boolean {
+    return (
+        isAwsError(error) &&
+        (error.code === 'AccessDeniedException' ||
+            error.code === 'UnauthorizedOperation' ||
+            error.code === 'Forbidden' ||
+            error.code === 'AccessDenied' ||
+            (error as any).statusCode === 403)
+    )
+}
+
+/**
+ * Enhanced Lambda client wrapper that provides better error messages for permission issues
+ */
+export class EnhancedLambdaClient {
+    constructor(
+        private readonly client: DefaultLambdaClient,
+        private readonly regionCode: string
+    ) {}
+
+    async deleteFunction(name: string): Promise<void> {
+        try {
+            return await this.client.deleteFunction(name)
+        } catch (error) {
+            if (isPermissionError(error)) {
+                throw createEnhancedPermissionError(
+                    error,
+                    'lambda',
+                    'deleteFunction',
+                    `arn:aws:lambda:${this.regionCode}:*:function:${name}`
+                )
+            }
+            throw error
+        }
+    }
+
+    async invoke(name: string, payload?: Lambda.InvocationRequest['Payload']): Promise<Lambda.InvocationResponse> {
+        try {
+            return await this.client.invoke(name, payload)
+        } catch (error) {
+            if (isPermissionError(error)) {
+                throw createEnhancedPermissionError(
+                    error,
+                    'lambda',
+                    'invoke',
+                    `arn:aws:lambda:${this.regionCode}:*:function:${name}`
+                )
+            }
+            throw error
+        }
+    }
+
+    async *listFunctions(): AsyncIterableIterator<Lambda.FunctionConfiguration> {
+        try {
+            yield* this.client.listFunctions()
+        } catch (error) {
+            if (isPermissionError(error)) {
+                throw createEnhancedPermissionError(error, 'lambda', 'listFunctions')
+            }
+            throw error
+        }
+    }
+
+    async getFunction(name: string): Promise<Lambda.GetFunctionResponse> {
+        try {
+            return await this.client.getFunction(name)
+        } catch (error) {
+            if (isPermissionError(error)) {
+                throw createEnhancedPermissionError(
+                    error,
+                    'lambda',
+                    'getFunction',
+                    `arn:aws:lambda:${this.regionCode}:*:function:${name}`
+                )
+            }
+            throw error
+        }
+    }
+
+    async getLayerVersion(name: string, version: number): Promise<Lambda.GetLayerVersionResponse> {
+        try {
+            return await this.client.getLayerVersion(name, version)
+        } catch (error) {
+            if (isPermissionError(error)) {
+                throw createEnhancedPermissionError(
+                    error,
+                    'lambda',
+                    'getLayerVersion',
+                    `arn:aws:lambda:${this.regionCode}:*:layer:${name}:${version}`
+                )
+            }
+            throw error
+        }
+    }
+
+    async *listLayerVersions(name: string): AsyncIterableIterator<Lambda.LayerVersionsListItem> {
+        try {
+            yield* this.client.listLayerVersions(name)
+        } catch (error) {
+            if (isPermissionError(error)) {
+                throw createEnhancedPermissionError(
+                    error,
+                    'lambda',
+                    'listLayerVersions',
+                    `arn:aws:lambda:${this.regionCode}:*:layer:${name}`
+                )
+            }
+            throw error
+        }
+    }
+
+    async getFunctionUrlConfigs(name: string): Promise<Lambda.FunctionUrlConfigList> {
+        try {
+            return await this.client.getFunctionUrlConfigs(name)
+        } catch (error) {
+            if (isPermissionError(error)) {
+                throw createEnhancedPermissionError(
+                    error,
+                    'lambda',
+                    'listFunctionUrlConfigs',
+                    `arn:aws:lambda:${this.regionCode}:*:function:${name}`
+                )
+            }
+            throw error
+        }
+    }
+
+    async updateFunctionCode(name: string, zipFile: Uint8Array): Promise<Lambda.FunctionConfiguration> {
+        try {
+            return await this.client.updateFunctionCode(name, zipFile)
+        } catch (error) {
+            if (isPermissionError(error)) {
+                throw createEnhancedPermissionError(
+                    error,
+                    'lambda',
+                    'updateFunctionCode',
+                    `arn:aws:lambda:${this.regionCode}:*:function:${name}`
+                )
+            }
+            throw error
+        }
+    }
+}
+
+/**
+ * Enhanced CloudFormation client wrapper that provides better error messages for permission issues
+ */
+export class EnhancedCloudFormationClient {
+    constructor(
+        private readonly client: CloudFormation,
+        private readonly regionCode: string
+    ) {}
+
+    async describeStacks(params: CloudFormation.DescribeStacksInput): Promise<CloudFormation.DescribeStacksOutput> {
+        try {
+            return await this.client.describeStacks(params).promise()
+        } catch (error) {
+            if (isPermissionError(error)) {
+                const stackArn = params.StackName
+                    ? `arn:aws:cloudformation:${this.regionCode}:*:stack/${params.StackName}/*`
+                    : undefined
+                throw createEnhancedPermissionError(error, 'cloudformation', 'describeStacks', stackArn)
+            }
+            throw error
+        }
+    }
+
+    async getTemplate(params: CloudFormation.GetTemplateInput): Promise<CloudFormation.GetTemplateOutput> {
+        try {
+            return await this.client.getTemplate(params).promise()
+        } catch (error) {
+            if (isPermissionError(error)) {
+                const stackArn = params.StackName
+                    ? `arn:aws:cloudformation:${this.regionCode}:*:stack/${params.StackName}/*`
+                    : undefined
+                throw createEnhancedPermissionError(error, 'cloudformation', 'getTemplate', stackArn)
+            }
+            throw error
+        }
+    }
+
+    async createChangeSet(params: CloudFormation.CreateChangeSetInput): Promise<CloudFormation.CreateChangeSetOutput> {
+        try {
+            return await this.client.createChangeSet(params).promise()
+        } catch (error) {
+            if (isPermissionError(error)) {
+                const stackArn = params.StackName
+                    ? `arn:aws:cloudformation:${this.regionCode}:*:stack/${params.StackName}/*`
+                    : undefined
+                throw createEnhancedPermissionError(error, 'cloudformation', 'createChangeSet', stackArn)
+            }
+            throw error
+        }
+    }
+
+    async executeChangeSet(
+        params: CloudFormation.ExecuteChangeSetInput
+    ): Promise<CloudFormation.ExecuteChangeSetOutput> {
+        try {
+            return await this.client.executeChangeSet(params).promise()
+        } catch (error) {
+            if (isPermissionError(error)) {
+                const stackArn = params.StackName
+                    ? `arn:aws:cloudformation:${this.regionCode}:*:stack/${params.StackName}/*`
+                    : undefined
+                throw createEnhancedPermissionError(error, 'cloudformation', 'executeChangeSet', stackArn)
+            }
+            throw error
+        }
+    }
+
+    async describeChangeSet(
+        params: CloudFormation.DescribeChangeSetInput
+    ): Promise<CloudFormation.DescribeChangeSetOutput> {
+        try {
+            return await this.client.describeChangeSet(params).promise()
+        } catch (error) {
+            if (isPermissionError(error)) {
+                const stackArn = params.StackName
+                    ? `arn:aws:cloudformation:${this.regionCode}:*:stack/${params.StackName}/*`
+                    : undefined
+                throw createEnhancedPermissionError(error, 'cloudformation', 'describeChangeSet', stackArn)
+            }
+            throw error
+        }
+    }
+
+    async describeStackResources(
+        params: CloudFormation.DescribeStackResourcesInput
+    ): Promise<CloudFormation.DescribeStackResourcesOutput> {
+        try {
+            return await this.client.describeStackResources(params).promise()
+        } catch (error) {
+            if (isPermissionError(error)) {
+                const stackArn = params.StackName
+                    ? `arn:aws:cloudformation:${this.regionCode}:*:stack/${params.StackName}/*`
+                    : undefined
+                throw createEnhancedPermissionError(error, 'cloudformation', 'describeStackResources', stackArn)
+            }
+            throw error
+        }
+    }
+
+    async describeStackResource(
+        params: CloudFormation.DescribeStackResourceInput
+    ): Promise<CloudFormation.DescribeStackResourceOutput> {
+        try {
+            return await this.client.describeStackResource(params).promise()
+        } catch (error) {
+            if (isPermissionError(error)) {
+                const stackArn = params.StackName
+                    ? `arn:aws:cloudformation:${this.regionCode}:*:stack/${params.StackName}/*`
+                    : undefined
+                throw createEnhancedPermissionError(error, 'cloudformation', 'describeStackResource', stackArn)
+            }
+            throw error
+        }
+    }
+
+    async getGeneratedTemplate(
+        params: CloudFormation.GetGeneratedTemplateInput
+    ): Promise<CloudFormation.GetGeneratedTemplateOutput> {
+        try {
+            return await this.client.getGeneratedTemplate(params).promise()
+        } catch (error) {
+            if (isPermissionError(error)) {
+                throw createEnhancedPermissionError(error, 'cloudformation', 'getGeneratedTemplate')
+            }
+            throw error
+        }
+    }
+
+    async describeGeneratedTemplate(
+        params: CloudFormation.DescribeGeneratedTemplateInput
+    ): Promise<CloudFormation.DescribeGeneratedTemplateOutput> {
+        try {
+            return await this.client.describeGeneratedTemplate(params).promise()
+        } catch (error) {
+            if (isPermissionError(error)) {
+                throw createEnhancedPermissionError(error, 'cloudformation', 'describeGeneratedTemplate')
+            }
+            throw error
+        }
+    }
+
+    async waitFor(state: string, params: any): Promise<any> {
+        try {
+            return await this.client.waitFor(state as any, params).promise()
+        } catch (error) {
+            if (isPermissionError(error)) {
+                // For waitFor operations, we'll provide a generic permission error since the specific action varies
+                throw createEnhancedPermissionError(error, 'cloudformation', 'describeStacks')
+            }
+            throw error
+        }
+    }
+}
 
 export async function runOpenTemplate(arg?: TreeNode) {
     const templateUri = arg ? (arg.resource as SamAppLocation).samTemplateUri : await promptUserForTemplate()
@@ -198,4 +669,36 @@ export async function deployTypePrompt() {
         return
     }
     return selected
+}
+
+export async function downloadUnzip(url: string, destination: vscode.Uri) {
+    const response = await fetch(url)
+    if (!response.ok) {
+        throw new Error(`Failed to download Lambda layer code: ${response.statusText}`)
+    }
+
+    // Get the response as an ArrayBuffer
+    const arrayBuffer = await response.arrayBuffer()
+    const zipBuffer = Buffer.from(arrayBuffer)
+
+    // Create AdmZip instance with the buffer
+    const zip = new AdmZip(zipBuffer)
+
+    // Create output directory if it doesn't exist
+    if (!(await fs.exists(destination))) {
+        await fs.mkdir(destination)
+    }
+
+    // Extract zip contents to output path
+    zip.extractAllTo(destination.fsPath, true)
+}
+
+export function getLambdaClient(region: string): EnhancedLambdaClient {
+    const originalClient = new DefaultLambdaClient(region)
+    return new EnhancedLambdaClient(originalClient, region)
+}
+
+export async function getCFNClient(regionCode: string): Promise<EnhancedCloudFormationClient> {
+    const originalClient = await globals.sdkClientBuilder.createAwsService(CloudFormation, {}, regionCode)
+    return new EnhancedCloudFormationClient(originalClient, regionCode)
 }

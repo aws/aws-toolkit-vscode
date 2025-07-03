@@ -192,8 +192,21 @@ Host ${this.configHostName}
     `
     }
 
+    private getSageMakerSSHConfig(proxyCommand: string): string {
+        return `
+# Created by AWS Toolkit for VSCode. https://github.com/aws/aws-toolkit-vscode
+Host ${this.configHostName}
+    ForwardAgent yes
+    AddKeysToAgent yes
+    StrictHostKeyChecking accept-new
+    ProxyCommand ${proxyCommand}
+    `
+    }
+
     protected createSSHConfigSection(proxyCommand: string): string {
-        if (this.keyPath) {
+        if (this.scriptPrefix === 'sagemaker_connect') {
+            return `${this.getSageMakerSSHConfig(proxyCommand)}User '%r'\n`
+        } else if (this.keyPath) {
             return `${this.getBaseSSHConfig(proxyCommand)}IdentityFile '${this.keyPath}'\n    User '%r'\n`
         }
         return this.getBaseSSHConfig(proxyCommand)

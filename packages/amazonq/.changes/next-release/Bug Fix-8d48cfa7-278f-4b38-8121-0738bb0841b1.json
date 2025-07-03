@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Stop auto inline completion when deleting code"
-}

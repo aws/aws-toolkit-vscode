@@ -1,0 +1,10 @@
+{
+	"date": "2025-07-02",
+	"version": "1.81.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Stop auto inline completion when deleting code"
+		}
+	]
+}

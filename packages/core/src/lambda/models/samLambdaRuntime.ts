@@ -68,7 +68,7 @@ export const javaRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>([
     'java21',
 ])
 export const dotNetRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>(['dotnet6', 'dotnet8'])
-export const rubyRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>(['ruby3.2', 'ruby3.3'])
+export const rubyRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>(['ruby3.2', 'ruby3.3', 'ruby3.4'])
 
 /**
  * Deprecated runtimes can be found at https://docs.aws.amazon.com/lambda/latest/dg/runtime-support-policy.html
@@ -125,7 +125,11 @@ export const samArmLambdaRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>
 const cloud9SupportedRuntimes: ImmutableSet<Runtime> = ImmutableSet.union([nodeJsRuntimes, pythonRuntimes])
 
 // only interpreted languages are importable as compiled languages won't provide a useful artifact for editing.
-export const samLambdaImportableRuntimes: ImmutableSet<Runtime> = ImmutableSet.union([nodeJsRuntimes, pythonRuntimes])
+export const samLambdaImportableRuntimes: ImmutableSet<Runtime> = ImmutableSet.union([
+    nodeJsRuntimes,
+    pythonRuntimes,
+    rubyRuntimes,
+])
 
 export function samLambdaCreatableRuntimes(cloud9: boolean = isCloud9()): ImmutableSet<Runtime> {
     return cloud9 ? cloud9SupportedRuntimes : samZipLambdaRuntimes

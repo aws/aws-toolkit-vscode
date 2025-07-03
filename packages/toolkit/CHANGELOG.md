@@ -1,3 +1,9 @@
+## 3.68.0 2025-07-03
+
+- **Bug Fix** [StepFunctions]: Cannot call TestState with variables in Workflow Studio
+- **Feature** Lambda to SAM Transformation: AWS Toolkit Explorer now can convert existing Lambda functions into SAM (Serverless Application Model) projects. This conversion creates a project structure that's ready for local development and can be managed using Application Builder
+- **Feature** Lambda Quick Edit: AWS Toolkit Explorer now offers a streamlined editing experience for Lambda functions. Download a function's code with double-click, make local modifications, and easily synchronize changes back to the cloud.
+
 ## 3.67.0 2025-06-25
 
 - **Bug Fix** State Machine deployments can now be initiated directly from Workflow Studio without closing the editor

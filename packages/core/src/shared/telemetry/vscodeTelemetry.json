@@ -242,6 +242,33 @@
     ],
     "metrics": [
         {
+            "name": "sagemaker_openRemoteConnection",
+            "description": "Perform a connection to a SageMaker Space",
+            "metadata": [
+                {
+                    "type": "result"
+                }
+            ]
+        },
+        {
+            "name": "sagemaker_stopSpace",
+            "description": "Stop a SageMaker Space",
+            "metadata": [
+                {
+                    "type": "result"
+                }
+            ]
+        },
+        {
+            "name": "sagemaker_filterSpaces",
+            "description": "Filter SageMaker Spaces",
+            "metadata": [
+                {
+                    "type": "result"
+                }
+            ]
+        },
+        {
             "name": "amazonq_didSelectProfile",
             "description": "Emitted after the user's Q Profile has been set, whether the user was prompted with a dialog, or a profile was automatically assigned after signing in.",
             "metadata": [
@@ -1110,6 +1137,10 @@
         {
             "name": "docdb_addRegion",
             "description": "User clicked on add region command"
+        },
+        {
+            "name": "appbuilder_lambda2sam",
+            "description": "User click Convert a lambda function to SAM project"
         }
     ]
 }
