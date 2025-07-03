@@ -239,30 +239,41 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
             const editor = window.activeTextEditor
             if (prevSession && prevSessionId && prevItemId && prevStartPosition) {
                 const prefix = document.getText(new Range(prevStartPosition, position))
-                const prevItemMatchingPrefix = []
+                const prevItemMatchingPrefix: InlineCompletionItemWithReferences[] = []
                 for (const item of this.sessionManager.getActiveRecommendation()) {
                     const text = typeof item.insertText === 'string' ? item.insertText : item.insertText.value
-                    if (text.startsWith(prefix) && position.isAfterOrEqual(prevStartPosition)) {
-                        item.command = {
-                            command: 'aws.amazonq.acceptInline',
-                            title: 'On acceptance',
-                            arguments: [
-                                prevSessionId,
-                                item,
-                                editor,
-                                prevSession?.requestStartTime,
-                                position.line,
-                                prevSession?.firstCompletionDisplayLatency,
-                            ],
+                    if (prefix.length > 0 && text.startsWith(prefix) && position.isAfterOrEqual(prevStartPosition)) {
+                        if (item.isInlineEdit) {
+                            prevItemMatchingPrefix.push(item)
+                        } else {
+                            item.command = {
+                                command: 'aws.amazonq.acceptInline',
+                                title: 'On acceptance',
+                                arguments: [
+                                    prevSessionId,
+                                    item,
+                                    editor,
+                                    prevSession?.requestStartTime,
+                                    position.line,
+                                    prevSession?.firstCompletionDisplayLatency,
+                                ],
+                            }
+                            item.range = new Range(prevStartPosition, position)
+                            prevItemMatchingPrefix.push(item)
                         }
-                        item.range = new Range(prevStartPosition, position)
-                        prevItemMatchingPrefix.push(item as InlineCompletionItem)
                     }
                 }
                 // re-use previous suggestions as long as new typed prefix matches
                 if (prevItemMatchingPrefix.length > 0) {
+                    if (prevItemMatchingPrefix[0].isInlineEdit) {
+                        // Check if Next Edit Prediction feature flag is enabled
+                        if (Experiments.instance.isExperimentEnabled('amazonqLSPNEP')) {
+                            void showEdits(prevItemMatchingPrefix[0], editor, prevSession, this.languageClient).then()
+                        }
+                        return []
+                    }
                     getLogger().debug(`Re-using suggestions that match user typed characters`)
-                    return prevItemMatchingPrefix
+                    return prevItemMatchingPrefix as InlineCompletionItem[]
                 }
                 getLogger().debug(`Auto rejecting suggestions from previous session`)
                 // if no such suggestions, report the previous suggestion as Reject
