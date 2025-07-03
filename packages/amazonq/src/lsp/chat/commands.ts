@@ -30,7 +30,6 @@ export function registerCommands(provider: AmazonQChatViewProvider) {
         }),
         Commands.register('aws.amazonq.explainIssue', async (issue: CodeScanIssue, filePath: string) => {
             void focusAmazonQPanel().then(async () => {
-                let selectedCode: string | undefined = undefined
                 if (issue && filePath) {
                     const range = new vscode.Range(issue.startLine, 0, issue.endLine, 0)
                     await vscode.workspace.openTextDocument(filePath).then((doc) => {
@@ -39,29 +38,13 @@ export function registerCommands(provider: AmazonQChatViewProvider) {
                             viewColumn: vscode.ViewColumn.One,
                             preview: true,
                         })
-                        selectedCode = stripIndent(doc.getText(range))
                     })
                 }
-                const uiMessageComponents = [`## ${issue.title}`]
-                if (filePath) {
-                    uiMessageComponents.push(`File: ${path.basename(filePath)}`)
-                }
-                if (issue.relatedVulnerabilities !== undefined && issue.relatedVulnerabilities.length > 0) {
-                    uiMessageComponents.push(
-                        `Common Weakness Enumeration (CWE): ${issue.relatedVulnerabilities.map((cwe) => `[${cwe}](https://cwe.mitre.org/data/definitions/${cwe}.html)`).join(', ')}`
-                    )
-                }
-                if (issue.detectorName !== undefined) {
-                    uiMessageComponents.push(`Detector Library: [${issue.detectorName}](${issue.recommendation.url})`)
-                }
-                if (selectedCode) {
-                    uiMessageComponents.push(`\`\`\`\n${selectedCode}\n\`\`\``)
-                }
+
+                const visibleMessageInChat = `_Explain **${issue.title}** issue in **${path.basename(filePath)}** at \`(${issue.startLine}, ${issue.endLine})\`_`
 
                 // The message that gets sent to the backend
-                const contextMessage = `Explain the issue "${issue.title}" (${JSON.stringify(
-                    issue
-                )}) and generate code demonstrating the fix`
+                const contextMessage = `Provide a small description of the issue followed by a small description of the recommended fix for it. Code issue - ${JSON.stringify(issue)}`
 
                 void provider.webview?.postMessage({
                     command: 'sendToPrompt',
@@ -69,7 +52,7 @@ export function registerCommands(provider: AmazonQChatViewProvider) {
                         selection: '',
                         triggerType: 'contextMenu',
                         prompt: {
-                            prompt: uiMessageComponents.join('\n'), // what gets sent to the user
+                            prompt: visibleMessageInChat, // what gets sent to the user
                             escapedPrompt: contextMessage, // what gets sent to the backend
                         },
                         autoSubmit: true,
@@ -128,14 +111,6 @@ function registerGenericCommand(commandName: string, genericCommand: string, pro
             })
         })
     })
-}
-
-function stripIndent(text: string): string {
-    const lines = text.split('\n')
-    const minIndent = Math.min(
-        ...lines.filter((line) => line.trim()).map((line) => line.length - line.trimStart().length)
-    )
-    return lines.map((line) => line.slice(minIndent)).join('\n')
 }
 
 /**

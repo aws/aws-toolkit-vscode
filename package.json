@@ -41,10 +41,11 @@
         "skippedTestReport": "ts-node ./scripts/skippedTestReport.ts ./packages/amazonq/test/e2e/"
     },
     "devDependencies": {
-        "@aws-toolkits/telemetry": "^1.0.324",
+        "@aws-toolkits/telemetry": "^1.0.326",
         "@playwright/browser-chromium": "^1.43.1",
         "@stylistic/eslint-plugin": "^2.11.0",
         "@types/he": "^1.2.3",
+        "@types/jaro-winkler": "^0.2.4",
         "@types/vscode": "^1.68.0",
         "@types/vscode-webview": "^1.57.1",
         "@types/webpack-env": "^1.18.5",
@@ -74,6 +75,7 @@
     },
     "dependencies": {
         "@types/node": "^22.7.5",
+        "jaro-winkler": "^0.2.8",
         "vscode-nls": "^5.2.0",
         "vscode-nls-dev": "^4.0.4"
     }

@@ -100,6 +100,7 @@ export function createServerOptions({
         if (isDebugInstance()) {
             args.unshift('--inspect=6080')
         }
+
         const lspProcess = new ChildProcess(bin, args, { warnThresholds })
 
         // this is a long running process, awaiting it will never resolve

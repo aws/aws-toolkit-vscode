@@ -1,0 +1,18 @@
+{
+	"date": "2025-06-25",
+	"version": "1.79.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Added automatic system certificate detection and VSCode proxy settings support"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Improved Amazon Linux 2 support with better SageMaker environment detection"
+		},
+		{
+			"type": "Feature",
+			"description": "/transform: run all builds client-side"
+		}
+	]
+}
