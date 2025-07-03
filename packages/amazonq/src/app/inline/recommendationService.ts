@@ -42,17 +42,21 @@ export class RecommendationService {
         context: InlineCompletionContext,
         token: CancellationToken,
         isAutoTrigger: boolean,
-        options: GetAllRecommendationsOptions = { emitTelemetry: true, showUi: true }
+        options: GetAllRecommendationsOptions = { emitTelemetry: true, showUi: true },
+        editsStreakPartialResultToken?: number | string
     ) {
         // Record that a regular request is being made
         this.cursorUpdateRecorder?.recordCompletionRequest()
 
-        const request: InlineCompletionWithReferencesParams = {
+        let request: InlineCompletionWithReferencesParams = {
             textDocument: {
                 uri: document.uri.toString(),
             },
             position,
             context,
+        }
+        if (editsStreakPartialResultToken) {
+            request = { ...request, partialResultToken: editsStreakPartialResultToken }
         }
         const requestStartTime = globals.clock.Date.now()
         const statusBar = CodeWhispererStatusBarManager.instance
@@ -113,18 +117,26 @@ export class RecommendationService {
             )
 
             // If there are more results to fetch, handle them in the background
-            try {
-                while (result.partialResultToken) {
-                    const paginatedRequest = { ...request, partialResultToken: result.partialResultToken }
-                    result = await languageClient.sendRequest(
-                        inlineCompletionWithReferencesRequestType.method,
-                        paginatedRequest,
-                        token
-                    )
-                    this.sessionManager.updateSessionSuggestions(result.items)
+            const isInlineEdit = result.items.find((item) => item.isInlineEdit) ? true : false
+            // Skip fetching for more items if the suggesion is EDITS. If it is EDITS suggestion, only fetching for more
+            // suggestions when the user start to accept a suggesion.
+            if (!isInlineEdit) {
+                try {
+                    while (result.partialResultToken) {
+                        const paginatedRequest = { ...request, partialResultToken: result.partialResultToken }
+                        result = await languageClient.sendRequest(
+                            inlineCompletionWithReferencesRequestType.method,
+                            paginatedRequest,
+                            token
+                        )
+                        this.sessionManager.updateSessionSuggestions(result.items)
+                    }
+                } catch (error) {
+                    languageClient.warn(`Error when getting suggestions: ${error}`)
                 }
-            } catch (error) {
-                languageClient.warn(`Error when getting suggestions: ${error}`)
+            } else {
+                // save editsStreakPartialResultToken for the next EDITS suggestion trigger if user accepts
+                this.sessionManager.updateActiveEditsStreakPartialResultToken(result.partialResultToken)
             }
 
             // Close session and finalize telemetry regardless of pagination path
