@@ -12,7 +12,7 @@ import { CancellationToken, InlineCompletionContext, Position, TextDocument } fr
 import { LanguageClient } from 'vscode-languageclient'
 import { SessionManager } from './sessionManager'
 import { InlineGeneratingMessage } from './inlineGeneratingMessage'
-import { CodeWhispererStatusBarManager } from 'aws-core-vscode/codewhisperer'
+import { AuthUtil, CodeWhispererStatusBarManager } from 'aws-core-vscode/codewhisperer'
 import { TelemetryHelper } from './telemetryHelper'
 import { ICursorUpdateRecorder } from './cursorUpdateManager'
 import { globals, getLogger } from 'aws-core-vscode/shared'
@@ -28,7 +28,6 @@ export class RecommendationService {
         private readonly inlineGeneratingMessage: InlineGeneratingMessage,
         private cursorUpdateRecorder?: ICursorUpdateRecorder
     ) {}
-
     /**
      * Set the recommendation service
      */
@@ -42,6 +41,7 @@ export class RecommendationService {
         position: Position,
         context: InlineCompletionContext,
         token: CancellationToken,
+        isAutoTrigger: boolean,
         options: GetAllRecommendationsOptions = { emitTelemetry: true, showUi: true }
     ) {
         // Record that a regular request is being made
@@ -131,8 +131,20 @@ export class RecommendationService {
             this.sessionManager.closeSession()
             TelemetryHelper.instance.setAllPaginationEndTime()
             options.emitTelemetry && TelemetryHelper.instance.tryRecordClientComponentLatency()
-        } catch (error) {
+        } catch (error: any) {
             getLogger().error('Error getting recommendations: %O', error)
+            // bearer token expired
+            if (error.data && error.data.awsErrorCode === 'E_AMAZON_Q_CONNECTION_EXPIRED') {
+                // ref: https://github.com/aws/aws-toolkit-vscode/blob/amazonq/v1.74.0/packages/core/src/codewhisperer/service/inlineCompletionService.ts#L104
+                // show re-auth once if connection expired
+                if (AuthUtil.instance.isConnectionExpired()) {
+                    await AuthUtil.instance.notifyReauthenticate(isAutoTrigger)
+                } else {
+                    // get a new bearer token, if this failed, the connection will be marked as expired.
+                    // new tokens will be synced per 10 seconds in auth.startTokenRefreshInterval
+                    await AuthUtil.instance.getBearerToken()
+                }
+            }
             return []
         } finally {
             // Remove all UI indicators if UI is enabled
