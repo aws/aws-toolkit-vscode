@@ -101,10 +101,8 @@ export class ExecutionDetailProvider {
             // Set up the content
             panel.webview.html = await this.getWebviewContent()
             const context: ExecutionDetailsContext = {
-                stateMachineName: executionArn.split(':').pop() || 'Unknown',
                 panel,
                 loaderNotification: undefined,
-                fileId: executionArn,
                 executionArn,
             }
 

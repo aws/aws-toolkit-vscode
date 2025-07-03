@@ -31,9 +31,7 @@ export type WebviewContext = {
 }
 
 export type ExecutionDetailsContext = {
-    stateMachineName: string
     panel: vscode.WebviewPanel
-    fileId: string
     loaderNotification: undefined | LoaderNotification
     executionArn: string
 }
