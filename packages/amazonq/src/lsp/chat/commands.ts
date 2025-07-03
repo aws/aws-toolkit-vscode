@@ -44,7 +44,39 @@ export function registerCommands(provider: AmazonQChatViewProvider) {
                 const visibleMessageInChat = `_Explain **${issue.title}** issue in **${path.basename(filePath)}** at \`(${issue.startLine}, ${issue.endLine})\`_`
 
                 // The message that gets sent to the backend
-                const contextMessage = `Provide a small description of the issue followed by a small description of the recommended fix for it. Code issue - ${JSON.stringify(issue)}`
+                const contextMessage = `Provide a small description of the issue. Do not attempt to fix the issue, only explain it. Code issue - ${JSON.stringify(issue)}`
+
+                void provider.webview?.postMessage({
+                    command: 'sendToPrompt',
+                    params: {
+                        selection: '',
+                        triggerType: 'contextMenu',
+                        prompt: {
+                            prompt: visibleMessageInChat, // what gets sent to the user
+                            escapedPrompt: contextMessage, // what gets sent to the backend
+                        },
+                        autoSubmit: true,
+                    },
+                })
+            })
+        }),
+        Commands.register('aws.amazonq.generateFix', async (issue: CodeScanIssue, filePath: string) => {
+            void focusAmazonQPanel().then(async () => {
+                if (issue && filePath) {
+                    const range = new vscode.Range(issue.startLine, 0, issue.endLine, 0)
+                    await vscode.workspace.openTextDocument(filePath).then((doc) => {
+                        void vscode.window.showTextDocument(doc, {
+                            selection: range,
+                            viewColumn: vscode.ViewColumn.One,
+                            preview: true,
+                        })
+                    })
+                }
+
+                const visibleMessageInChat = `_Fix **${issue.title}** issue in **${path.basename(filePath)}** at \`(${issue.startLine}, ${issue.endLine})\`_`
+
+                // The message that gets sent to the backend
+                const contextMessage = `Generate a fix for the following code issue. Do not explain the issue, just generate and explain the fix. The user should have the option to accept or reject the fix before any code is changed. Code issue - ${JSON.stringify(issue)}`
 
                 void provider.webview?.postMessage({
                     command: 'sendToPrompt',

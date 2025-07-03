@@ -87,6 +87,15 @@ export class SecurityIssueHoverProvider implements vscode.HoverProvider {
         )
         markdownString.appendMarkdown(explainWithQCommand)
 
+        const generateFixCommand = this._getCommandMarkdown(
+            'aws.amazonq.generateFix',
+            [issue, filePath],
+            'comment',
+            'Fix',
+            'Generate Fix for Issue'
+        )
+        markdownString.appendMarkdown(' | ' + generateFixCommand)
+
         const ignoreIssueCommand = this._getCommandMarkdown(
             'aws.amazonq.security.ignore',
             [issue, filePath, 'hover'],
