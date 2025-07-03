@@ -17,13 +17,7 @@ describe('Amazon Q Login Flow', function () {
 
         await new Promise((resolve) => setTimeout(resolve, 15000))
         webviewView = new WebviewView()
-
-        try {
-            await webviewView.switchToFrame()
-        } catch (e) {
-            console.log('WE HIT AN ERROR OPEENING THE FRAME')
-            console.log(e)
-        }
+        await webviewView.switchToFrame()
     })
 
     after(async () => {
