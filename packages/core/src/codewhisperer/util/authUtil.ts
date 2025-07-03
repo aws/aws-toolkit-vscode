@@ -174,13 +174,13 @@ export class AuthUtil implements IAuthProvider {
     }
 
     // Log in using IAM or STS credentials
-    async login_iam(accessKey: string, secretKey: string, sessionToken?: string): Promise<GetIamCredentialResult | undefined> {
+    async login_iam(accessKey: string, secretKey: string, sessionToken?: string, roleArn?: string): Promise<GetIamCredentialResult | undefined> {
         let response: GetIamCredentialResult | undefined
         // Create IAM login session
         if (!this.isIamSession()) {
             this.session = new IamLogin(this.profileName, this.lspAuth, this.eventEmitter)
         }
-        response = await (this.session as IamLogin).login({ accessKey: accessKey, secretKey: secretKey, sessionToken: sessionToken })
+        response = await (this.session as IamLogin).login({ accessKey: accessKey, secretKey: secretKey, sessionToken: sessionToken, roleArn: roleArn })
         await showAmazonQWalkthroughOnce()
         return response
     }

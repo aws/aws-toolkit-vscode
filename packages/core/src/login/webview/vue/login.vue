@@ -289,6 +289,15 @@
                     v-model="sessionToken"
                     @keydown.enter="handleContinueClick()"
                 />
+                <div class="title">Role ARN (Optional)</div>
+                <input
+                    class="iamInput bottomMargin"
+                    type="text"
+                    id="roleArn"
+                    name="roleArn"
+                    v-model="roleArn"
+                    @keydown.enter="handleContinueClick()"
+                />
             </div>
             <button class="continue-button" :disabled="shouldDisableIamContinue()" v-on:click="handleContinueClick()">
                 Continue
@@ -379,6 +388,7 @@ export default defineComponent({
             accessKey: '',
             secretKey: '',
             sessionToken: '',
+            roleArn: '',
         }
     },
     async created() {
@@ -517,7 +527,7 @@ export default defineComponent({
                     return
                 }
                 this.stage = 'AUTHENTICATING'
-                const error = await client.startIamCredentialSetup(this.profileName, this.accessKey, this.secretKey, this.sessionToken)
+                const error = await client.startIamCredentialSetup(this.profileName, this.accessKey, this.secretKey, this.sessionToken, this.roleArn)
                 if (error) {
                     this.stage = 'START'
                     void client.errorNotification(error)

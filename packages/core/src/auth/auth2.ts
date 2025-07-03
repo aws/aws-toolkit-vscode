@@ -155,6 +155,7 @@ export class LanguageClientAuth {
                     sso_session: profileName,
                     aws_access_key_id: '',
                     aws_secret_access_key: '',
+                    role_arn: '',
                 },
             },
             ssoSession: {
@@ -168,9 +169,9 @@ export class LanguageClientAuth {
         } satisfies UpdateProfileParams)
     }
 
-    updateIamProfile(profileName: string, accessKey: string, secretKey: string, sessionToken?: string): Promise<UpdateProfileResult> {
-        // Use unknown profile type if invalidating all IAM fields
-        const kind = !accessKey && !secretKey && !sessionToken ? ProfileKind.EmptyProfile : ProfileKind.IamCredentialProfile
+    updateIamProfile(profileName: string, accessKey: string, secretKey: string, sessionToken?: string, roleArn?: string): Promise<UpdateProfileResult> {
+        // Use empty profile type if invalidating all IAM fields
+        const kind = !accessKey && !secretKey ? ProfileKind.EmptyProfile : ProfileKind.IamCredentialProfile
         // Add credentials and delete SSO settings from profile
         return this.client.sendRequest(updateProfileRequestType.method, {
             profile: {
@@ -182,6 +183,7 @@ export class LanguageClientAuth {
                     aws_access_key_id: accessKey,
                     aws_secret_access_key: secretKey,
                     aws_session_token: sessionToken,
+                    role_arn: roleArn,
                 },
             },
             ssoSession: {
@@ -488,7 +490,7 @@ export class IamLogin extends BaseLogin {
         // )
     }
 
-    async login(opts: { accessKey: string; secretKey: string, sessionToken?: string }) {
+    async login(opts: { accessKey: string; secretKey: string, sessionToken?: string, roleArn?: string }) {
         await this.updateProfile(opts)
         return this._getIamCredential(true)
     }
@@ -504,18 +506,18 @@ export class IamLogin extends BaseLogin {
         if (this.iamCredentialId) {
             await this.lspAuth.invalidateStsCredential(this.iamCredentialId)
         }
-        await this.lspAuth.updateIamProfile(this.profileName, '', '', '')
+        await this.lspAuth.updateIamProfile(this.profileName, '', '', '', '')
         this.updateConnectionState('notConnected')
         this._data = undefined
         // TODO: DeleteProfile api in Identity Service (this doesn't exist yet)
     }
 
-    async updateProfile(opts: { accessKey: string; secretKey: string, sessionToken?: string }) {
-        await this.lspAuth.updateIamProfile(this.profileName, opts.accessKey, opts.secretKey, opts.sessionToken)
+    async updateProfile(opts: { accessKey: string; secretKey: string, sessionToken?: string, roleArn?: string }) {
+        await this.lspAuth.updateIamProfile(this.profileName, opts.accessKey, opts.secretKey, opts.sessionToken, opts.roleArn)
         this._data = {
             accessKey: opts.accessKey,
             secretKey: opts.secretKey,
-            sessionToken: opts.sessionToken
+            sessionToken: opts.sessionToken,
         }
     }
 
@@ -585,7 +587,9 @@ export class IamLogin extends BaseLogin {
             this.cancellationToken = undefined
         }
 
-        this.iamCredentialId = response.id
+        if (response.credentials.sessionToken) {
+            this.iamCredentialId = response.id
+        }
         this.updateConnectionState('connected')
         return response
     }
