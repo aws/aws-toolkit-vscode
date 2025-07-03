@@ -41,6 +41,7 @@ import { activate as activateRedshift } from './awsService/redshift/activation'
 import { activate as activateDocumentDb } from './docdb/activation'
 import { activate as activateIamPolicyChecks } from './awsService/accessanalyzer/activation'
 import { activate as activateNotifications } from './notifications/activation'
+import { activate as activateSagemaker } from './awsService/sagemaker/activation'
 import { SchemaService } from './shared/schemas'
 import { AwsResourceManager } from './dynamicResources/awsResourceManager'
 import globals from './shared/extensionGlobals'
@@ -184,6 +185,8 @@ export async function activate(context: vscode.ExtensionContext) {
         await activateEcs(extContext)
 
         await activateSchemas(extContext)
+
+        await activateSagemaker(extContext)
 
         if (!isSageMaker()) {
             // Amazon Q Tree setup.
