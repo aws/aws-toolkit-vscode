@@ -1,3 +1,7 @@
+## 1.81.0 2025-07-02
+
+- **Bug Fix** Stop auto inline completion when deleting code
+
 ## 1.80.0 2025-07-01
 
 - Miscellaneous non-user-facing changes
