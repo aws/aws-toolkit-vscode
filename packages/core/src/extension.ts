@@ -27,6 +27,7 @@ import * as errors from './shared/errors'
 import { activate as activateLogger } from './shared/logger/activation'
 import { initializeComputeRegion } from './shared/extensionUtilities'
 import { activate as activateTelemetry } from './shared/telemetry/activation'
+import { activate as activateSageMakerUnifiedStudio } from './sagemakerunifiedstudio/activation'
 import { DefaultAwsContext } from './shared/awsContext'
 import { Settings } from './shared/settings'
 import { DefaultAWSClientBuilder } from './shared/awsClientBuilder'
@@ -164,6 +165,8 @@ export async function activateCommon(
     }
 
     await activateViewsShared(extContext.extensionContext)
+
+    await activateSageMakerUnifiedStudio(extContext.extensionContext)
 
     return extContext
 }
