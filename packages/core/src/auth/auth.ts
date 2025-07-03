@@ -182,6 +182,10 @@ export class Auth implements AuthService, ConnectionManager {
         return Object.values(this._declaredConnections)
     }
 
+    public getCurrentProfileId() {
+        return this.store.getCurrentProfileId()
+    }
+
     @withTelemetryContext({ name: 'restorePreviousSession', class: authClassName })
     public async restorePreviousSession(): Promise<Connection | undefined> {
         const id = this.store.getCurrentProfileId()
