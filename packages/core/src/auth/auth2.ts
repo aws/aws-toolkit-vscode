@@ -84,6 +84,8 @@ export type LoginType = (typeof LoginTypes)[keyof typeof LoginTypes]
 
 export type cacheChangedEvent = 'delete' | 'create'
 
+export type stsCacheChangedEvent = 'delete' | 'create'
+
 export type Login = SsoLogin | IamLogin
 
 export type TokenSource = IamIdentityCenterSsoTokenSource | AwsBuilderIdSsoTokenSource
@@ -251,6 +253,11 @@ export class LanguageClientAuth {
     registerCacheWatcher(cacheChangedHandler: (event: cacheChangedEvent) => any) {
         this.cacheWatcher.onDidCreate(() => cacheChangedHandler('create'))
         this.cacheWatcher.onDidDelete(() => cacheChangedHandler('delete'))
+    }
+
+    registerStsCacheWatcher(stsCacheChangedHandler: (event: stsCacheChangedEvent) => any) {
+        this.cacheWatcher.onDidCreate(() => stsCacheChangedHandler('create'))
+        this.cacheWatcher.onDidDelete(() => stsCacheChangedHandler('delete'))
     }
 }
 

@@ -30,7 +30,7 @@ import { showAmazonQWalkthroughOnce } from '../../amazonq/onboardingPage/walkthr
 import { setContext } from '../../shared/vscode/setContext'
 import { openUrl } from '../../shared/utilities/vsCodeUtils'
 import { telemetry } from '../../shared/telemetry/telemetry'
-import { AuthStateEvent, cacheChangedEvent, LanguageClientAuth, Login, SsoLogin, IamLogin } from '../../auth/auth2'
+import { AuthStateEvent, cacheChangedEvent, stsCacheChangedEvent, LanguageClientAuth, Login, SsoLogin, IamLogin } from '../../auth/auth2'
 import { builderIdStartUrl, internalStartUrl } from '../../auth/sso/constants'
 import { VSCODE_EXTENSION_ID } from '../../shared/extensions'
 import { RegionProfileManager } from '../region/regionProfileManager'
@@ -100,6 +100,7 @@ export class AuthUtil implements IAuthProvider {
             await this.setVscodeContextProps()
         })
         lspAuth.registerCacheWatcher(async (event: cacheChangedEvent) => await this.cacheChangedHandler(event))
+        lspAuth.registerStsCacheWatcher(async (event: stsCacheChangedEvent) => await this.stsCacheChangedHandler(event))
     }
 
     // Do NOT use this in production code, only used for testing
@@ -349,6 +350,15 @@ export class AuthUtil implements IAuthProvider {
         }
     }
 
+    private async stsCacheChangedHandler(event: stsCacheChangedEvent) {
+        this.logger.debug(`Sts Cache change event received: ${event}`)
+        if (event === 'delete') {
+            await this.logout()
+        } else if (event === 'create') {
+            await this.restore()
+        }
+    }
+
     private async stateChangeHandler(e: AuthStateEvent) {
         if (e.state === 'refreshed') {
             const params = this.session ? (await this.session.getCredential()).updateCredentialsParams : undefined
@@ -365,7 +375,12 @@ export class AuthUtil implements IAuthProvider {
 
     private async refreshState(state = this.getAuthState()) {
         if (state === 'expired' || state === 'notConnected') {
-            this.lspAuth.deleteBearerToken()
+            if (this.isSsoSession()){
+                this.lspAuth.deleteBearerToken()
+            }
+            else if (this.isIamSession()){
+                this.lspAuth.deleteIamCredential()
+            }
             if (this.isIdcConnection()) {
                 await this.regionProfileManager.invalidateProfile(this.regionProfileManager.activeRegionProfile?.arn)
                 await this.regionProfileManager.clearCache()
