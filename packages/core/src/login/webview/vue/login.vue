@@ -273,7 +273,7 @@
             <div class="title">Secret Key</div>
             <input
                 class="iamInput bottomMargin"
-                type="text"
+                type="password"
                 id="secretKey"
                 name="secretKey"
                 v-model="secretKey"
