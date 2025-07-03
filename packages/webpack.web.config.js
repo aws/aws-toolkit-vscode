@@ -53,6 +53,10 @@ module.exports = (env, argv) => {
             new webpack.IgnorePlugin({
                 resourceRegExp: /svgdom/, // matches the path in the require() statement
             }),
+            // Handle node: protocol imports by normalizing them
+            new webpack.NormalModuleReplacementPlugin(/^node:(.*)$/, (resource) => {
+                resource.request = resource.request.replace(/^node:/, '')
+            }),
         ],
         resolve: {
             extensions: ['.ts', '.js'],
@@ -65,10 +69,8 @@ module.exports = (env, argv) => {
                 crypto: require.resolve('crypto-browserify'),
                 'fs-extra': false,
                 perf_hooks: false, // should be using globalThis.performance instead
-
                 // *** If one of these modules actually gets used an error will be raised ***
                 // You may see something like: "TypeError: path_ignored_0.join is not a function"
-
                 // We don't need these yet, but as we start enabling functionality in the web
                 // we may need to polyfill.
                 http: false, // http: require.resolve('stream-http'),

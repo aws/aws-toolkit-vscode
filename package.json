@@ -63,11 +63,15 @@
         "eslint-plugin-security-node": "^1.1.4",
         "eslint-plugin-unicorn": "^54.0.0",
         "husky": "^9.0.7",
+        "path-browserify": "^1.0.1",
         "prettier": "^3.3.3",
         "prettier-plugin-sh": "^0.14.0",
         "pretty-quick": "^4.0.0",
+        "process": "^0.11.10",
         "ts-node": "^10.9.1",
         "typescript": "^5.0.4",
+        "util": "^0.12.5",
+        "vscode-extension-tester": "^8.15.0",
         "webpack": "^5.95.0",
         "webpack-cli": "^5.1.4",
         "webpack-dev-server": "^4.15.2",
@@ -75,8 +79,16 @@
     },
     "dependencies": {
         "@types/node": "^22.7.5",
+        "buffer": "^6.0.3",
         "jaro-winkler": "^0.2.8",
+        "mocha": "^11.7.1",
         "vscode-nls": "^5.2.0",
         "vscode-nls-dev": "^4.0.4"
+    },
+    "engines": {
+        "vscode": "^1.68.0"
+    },
+    "vsce": {
+        "dependencies": false
     }
 }
