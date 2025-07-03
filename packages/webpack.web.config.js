@@ -53,6 +53,10 @@ module.exports = (env, argv) => {
             new webpack.IgnorePlugin({
                 resourceRegExp: /svgdom/, // matches the path in the require() statement
             }),
+            // Handle node: protocol imports by normalizing them
+            new webpack.NormalModuleReplacementPlugin(/^node:(.*)$/, (resource) => {
+                resource.request = resource.request.replace(/^node:/, '')
+            }),
         ],
         resolve: {
             extensions: ['.ts', '.js'],
