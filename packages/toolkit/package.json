@@ -2,7 +2,7 @@
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit",
     "description": "Including CodeCatalyst, Infrastructure Composer, and support for Lambda, S3, CloudWatch Logs, CloudFormation, and many other services.",
-    "version": "3.68.0-SNAPSHOT",
+    "version": "3.68.0-g67e4600",
     "extensionKind": [
         "workspace"
     ],
@@ -299,6 +299,11 @@
                     "default": "",
                     "description": "A JSON formatted file that specifies template parameter values, a stack policy, and tags. Only parameters are used from this file.",
                     "scope": "machine-overridable"
+                },
+                "aws.sagemaker.studio.spaces.enableIdentityFiltering": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Enable automatic filtration of spaces based on your AWS identity."
                 }
             }
         },
@@ -1248,6 +1253,10 @@
                 {
                     "command": "aws.newThreatComposerFile",
                     "when": "false"
+                },
+                {
+                    "command": "aws.sagemaker.filterSpaceApps",
+                    "when": "false"
                 }
             ],
             "editor/title": [
@@ -1455,6 +1464,16 @@
             ],
             "view/item/context": [
                 {
+                    "command": "aws.sagemaker.stopSpace",
+                    "group": "inline@0",
+                    "when": "viewItem =~ /^(awsSagemakerSpaceRunningRemoteEnabledNode|awsSagemakerSpaceRunningRemoteDisabledNode)$/"
+                },
+                {
+                    "command": "aws.sagemaker.openRemoteConnection",
+                    "group": "inline@1",
+                    "when": "viewItem =~ /^(awsSagemakerSpaceRunningRemoteEnabledNode|awsSagemakerSpaceStoppedRemoteEnabledNode|awsSagemakerSpaceStoppedRemoteDisabledNode)$/"
+                },
+                {
                     "command": "_aws.toolkit.notifications.dismiss",
                     "when": "viewItem == toolkitNotificationStartUp",
                     "group": "inline@1"
@@ -1608,6 +1627,11 @@
                     "command": "aws.showRegion",
                     "when": "view == aws.explorer && viewItem == awsRegionNode",
                     "group": "0@1"
+                },
+                {
+                    "command": "aws.sagemaker.filterSpaceApps",
+                    "when": "view == aws.explorer && viewItem == awsSagemakerParentNode",
+                    "group": "inline@1"
                 },
                 {
                     "command": "aws.toolkit.lambda.createServerlessLandProject",
@@ -1787,6 +1811,11 @@
                 {
                     "command": "aws.iot.attachPolicy",
                     "when": "view == aws.explorer && viewItem =~ /^awsIotCertificateNode.(Things|Policies)/",
+                    "group": "0@1"
+                },
+                {
+                    "command": "aws.sagemaker.filterSpaceApps",
+                    "when": "view == aws.explorer && viewItem == awsSagemakerParentNode",
                     "group": "0@1"
                 },
                 {
@@ -2581,6 +2610,42 @@
                 "command": "aws.ec2.openRemoteConnection",
                 "title": "%AWS.command.ec2.openRemoteConnection%",
                 "icon": "$(remote-explorer)",
+                "category": "%AWS.title%",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.sagemaker.filterSpaceApps",
+                "title": "%AWS.command.sagemaker.filterSpaces%",
+                "category": "%AWS.title%",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
+                "icon": "$(extensions-filter)",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.sagemaker.openRemoteConnection",
+                "title": "Connect to SageMaker Space",
+                "icon": "$(remote-explorer)",
+                "category": "%AWS.title%",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.sagemaker.stopSpace",
+                "title": "Stop SageMaker Space",
+                "icon": "$(debug-stop)",
                 "category": "%AWS.title%",
                 "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
@@ -4733,25 +4798,39 @@
                     "fontCharacter": "\\f1de"
                 }
             },
-            "aws-schemas-registry": {
+            "aws-sagemaker-code-editor": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1df"
                 }
             },
-            "aws-schemas-schema": {
+            "aws-sagemaker-jupyter-lab": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1e0"
                 }
             },
-            "aws-stepfunctions-preview": {
+            "aws-schemas-registry": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1e1"
+                }
+            },
+            "aws-schemas-schema": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\f1e2"
+                }
+            },
+            "aws-stepfunctions-preview": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\f1e3"
                 }
             }
         },

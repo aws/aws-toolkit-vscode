@@ -79,6 +79,8 @@ export type globalKey =
     | 'aws.toolkit.lambda.walkthroughSelected'
     | 'aws.toolkit.lambda.walkthroughCompleted'
     | 'aws.toolkit.appComposer.templateToOpenOnStart'
+    // List of Domain-Users to show/hide Sagemaker SpaceApps in AWS Explorer.
+    | 'aws.sagemaker.selectedDomainUsers'
 
 /**
  * Extension-local (not visible to other vscode extensions) shared state which persists after IDE
