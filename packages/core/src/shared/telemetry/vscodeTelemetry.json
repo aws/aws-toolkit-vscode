@@ -1137,6 +1137,10 @@
         {
             "name": "docdb_addRegion",
             "description": "User clicked on add region command"
+        },
+        {
+            "name": "appbuilder_lambda2sam",
+            "description": "User click Convert a lambda function to SAM project"
         }
     ]
 }

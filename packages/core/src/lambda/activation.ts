@@ -3,18 +3,21 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as path from 'path'
 import * as vscode from 'vscode'
+import * as nls from 'vscode-nls'
+
 import { Lambda } from 'aws-sdk'
 import { deleteLambda } from './commands/deleteLambda'
 import { uploadLambdaCommand } from './commands/uploadLambda'
 import { LambdaFunctionNode } from './explorer/lambdaFunctionNode'
-import { downloadLambdaCommand } from './commands/downloadLambda'
+import { downloadLambdaCommand, openLambdaFile } from './commands/downloadLambda'
 import { tryRemoveFolder } from '../shared/filesystemUtilities'
 import { ExtContext } from '../shared/extensions'
 import { invokeRemoteLambda } from './vue/remoteInvoke/invokeLambda'
 import { registerSamDebugInvokeVueCommand, registerSamInvokeVueCommand } from './vue/configEditor/samInvokeBackend'
 import { Commands } from '../shared/vscode/commands2'
-import { DefaultLambdaClient } from '../shared/clients/lambdaClient'
+import { DefaultLambdaClient, getFunctionWithCredentials } from '../shared/clients/lambdaClient'
 import { copyLambdaUrl } from './commands/copyLambdaUrl'
 import { ResourceNode } from '../awsService/appBuilder/explorer/nodes/resourceNode'
 import { isTreeNode, TreeNode } from '../shared/treeview/resourceTreeDataProvider'
@@ -24,11 +27,50 @@ import { liveTailRegistry, liveTailCodeLensProvider } from '../awsService/cloudW
 import { getFunctionLogGroupName } from '../awsService/cloudWatchLogs/activation'
 import { ToolkitError, isError } from '../shared/errors'
 import { LogStreamFilterResponse } from '../awsService/cloudWatchLogs/wizard/liveTailLogStreamSubmenu'
+import { tempDirPath } from '../shared/filesystemUtilities'
+import fs from '../shared/fs/fs'
+import { deployFromTemp, editLambda, getReadme, openLambdaFolderForEdit } from './commands/editLambda'
+import { getTempLocation } from './utils'
+import { registerLambdaUriHandler } from './uriHandlers'
+
+const localize = nls.loadMessageBundle()
 
 /**
  * Activates Lambda components.
  */
 export async function activate(context: ExtContext): Promise<void> {
+    try {
+        if (vscode.workspace.workspaceFolders) {
+            for (const workspaceFolder of vscode.workspace.workspaceFolders) {
+                // Making the comparison case insensitive because Windows can have `C\` or `c\`
+                const workspacePath = workspaceFolder.uri.fsPath.toLowerCase()
+                const tempPath = path.join(tempDirPath, 'lambda').toLowerCase()
+                if (workspacePath.startsWith(tempPath)) {
+                    const name = path.basename(workspaceFolder.uri.fsPath)
+                    const region = path.basename(path.dirname(workspaceFolder.uri.fsPath))
+                    const getFunctionOutput = await getFunctionWithCredentials(region, name)
+                    const configuration = getFunctionOutput.Configuration
+                    await editLambda(
+                        {
+                            name,
+                            region,
+                            // Configuration as any due to the difference in types between sdkV2 and sdkV3
+                            configuration: configuration as any,
+                        },
+                        true
+                    )
+
+                    const readmeUri = vscode.Uri.file(await getReadme())
+                    await vscode.commands.executeCommand('markdown.showPreview', readmeUri, vscode.ViewColumn.Two)
+                }
+            }
+        }
+    } catch (e) {
+        void vscode.window.showWarningMessage(
+            localize('AWS.lambda.open.failure', `Unable to edit Lambda Function locally: ${e}`)
+        )
+    }
+
     context.extensionContext.subscriptions.push(
         Commands.register('aws.deleteLambda', async (node: LambdaFunctionNode | TreeNode) => {
             const sourceNode = getSourceNode<LambdaFunctionNode>(node)
@@ -47,6 +89,7 @@ export async function activate(context: ExtContext): Promise<void> {
                 source: source,
             })
         }),
+
         // Capture debug finished events, and delete the temporary directory if it exists
         vscode.debug.onDidTerminateDebugSession(async (session) => {
             if (
@@ -56,10 +99,12 @@ export async function activate(context: ExtContext): Promise<void> {
                 await tryRemoveFolder(session.configuration.baseBuildDir)
             }
         }),
+
         Commands.register('aws.downloadLambda', async (node: LambdaFunctionNode | TreeNode) => {
             const sourceNode = getSourceNode<LambdaFunctionNode>(node)
             await downloadLambdaCommand(sourceNode)
         }),
+
         Commands.register({ id: 'aws.uploadLambda', autoconnect: true }, async (arg?: unknown) => {
             if (arg instanceof LambdaFunctionNode) {
                 await uploadLambdaCommand({
@@ -73,6 +118,26 @@ export async function activate(context: ExtContext): Promise<void> {
                 await uploadLambdaCommand()
             }
         }),
+
+        Commands.register({ id: 'aws.quickDeployLambda' }, async (node: LambdaFunctionNode) => {
+            const functionName = node.configuration.FunctionName!
+            const region = node.regionCode
+            const lambda = { name: functionName, region, configuration: node.configuration }
+            const tempLocation = getTempLocation(functionName, region)
+
+            if (await fs.existsDir(tempLocation)) {
+                await deployFromTemp(lambda, vscode.Uri.file(tempLocation))
+            }
+        }),
+
+        Commands.register('aws.openLambdaFile', async (path: string) => {
+            await openLambdaFile(path)
+        }),
+
+        Commands.register('aws.lambda.openWorkspace', async (node: LambdaFunctionNode) => {
+            await openLambdaFolderForEdit(node.functionName, node.regionCode)
+        }),
+
         Commands.register('aws.copyLambdaUrl', async (node: LambdaFunctionNode | TreeNode) => {
             const sourceNode = getSourceNode<LambdaFunctionNode>(node)
             await copyLambdaUrl(sourceNode, new DefaultLambdaClient(sourceNode.regionCode))
@@ -116,6 +181,8 @@ export async function activate(context: ExtContext): Promise<void> {
                     throw err
                 }
             }
-        })
+        }),
+
+        registerLambdaUriHandler()
     )
 }
