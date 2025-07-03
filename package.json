@@ -76,6 +76,7 @@
     },
     "dependencies": {
         "@types/node": "^22.7.5",
+        "buffer": "^6.0.3",
         "jaro-winkler": "^0.2.8",
         "mocha": "^11.7.1",
         "vscode-nls": "^5.2.0",
