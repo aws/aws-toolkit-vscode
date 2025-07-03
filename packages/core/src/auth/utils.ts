@@ -71,7 +71,7 @@ export async function promptForConnection(auth: Auth, type?: 'iam' | 'iam-only' 
     if (resp === 'addNewConnection') {
         // We could call this command directly, but it either lives in packages/toolkit or will at some point.
         const source: AuthSource = 'addConnectionQuickPick' // enforcing type sanity check
-        await vscode.commands.executeCommand('aws.toolkit.auth.manageConnections', placeholder, source)
+        await vscode.commands.executeCommand('aws.toolkit.auth.manageConnections', placeholder, source, undefined, true)
         return undefined
     }
 
@@ -89,8 +89,9 @@ export async function promptForConnection(auth: Auth, type?: 'iam' | 'iam-only' 
 export async function promptAndUseConnection(...[auth, type]: Parameters<typeof promptForConnection>) {
     return telemetry.aws_setCredentials.run(async (span) => {
         let conn = await promptForConnection(auth, type)
+        // Returning because either conn is a valid connection, or the customer selected 'addNewConnection' or 'editCredentials'
         if (!conn) {
-            throw new CancellationError('user')
+            return
         }
 
         // HACK: We assume that if we are toolkit we want AWS account scopes.
@@ -113,7 +114,11 @@ export async function promptAndUseConnection(...[auth, type]: Parameters<typeof 
  * @param opts.prompt: controls if prompt is shown when no valid connection is found
  * @returns active iam connection, or undefined if not found/no prompt
  */
-export async function getIAMConnection(opts: { prompt: boolean } = { prompt: false }) {
+export async function getIAMConnection(
+    opts: { prompt: boolean; messageText?: string } = {
+        prompt: false,
+    }
+) {
     const connection = Auth.instance.activeConnection
     if (connection?.type === 'iam' && connection.state === 'valid') {
         return connection
@@ -121,22 +126,21 @@ export async function getIAMConnection(opts: { prompt: boolean } = { prompt: fal
     if (!opts.prompt) {
         return
     }
+    const authRequiredMessage = 'The current command requires authentication with IAM credentials.'
     let errorMessage = localize(
-        'aws.toolkit.auth.requireIAMmessage',
-        'The current command requires authentication with IAM credentials.'
+        'aws.toolkit.auth.requireAuthmessage',
+        opts.messageText ? opts.messageText : authRequiredMessage
     )
     if (connection?.state === 'valid') {
         errorMessage =
-            localize(
-                'aws.toolkit.auth.requireIAMInvalidAuth',
-                'Authentication through Builder ID or IAM Identity Center detected. '
-            ) + errorMessage
+            localize('aws.toolkit.auth.requireIAMInvalidAuth', 'Authentication through Builder ID detected.') +
+            errorMessage
     }
-    const acceptMessage = localize('aws.toolkit.auth.accept', 'Authenticate with IAM credentials')
+    const acceptMessage = localize('aws.toolkit.auth.accept', 'Select Connection')
     const modalResponse = await showMessageWithUrl(
         errorMessage,
         credentialHelpUrl,
-        localizedText.viewDocs,
+        localizedText.learnMore,
         'info',
         [acceptMessage],
         true
@@ -144,7 +148,7 @@ export async function getIAMConnection(opts: { prompt: boolean } = { prompt: fal
     if (modalResponse !== acceptMessage) {
         return
     }
-    await promptAndUseConnection(Auth.instance, 'iam-only')
+    await promptAndUseConnection(Auth.instance, 'iam')
     return Auth.instance.activeConnection
 }
 
