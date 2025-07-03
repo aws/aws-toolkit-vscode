@@ -310,6 +310,10 @@ export abstract class CommonAuthWebview extends VueWebview {
         return globals.globalState.tryGet('recentIamKeys', Object, { accessKey: '' })
     }
 
+    getDefaultRoleArn(): { roleArn: string } {
+        return globals.globalState.tryGet('recentRoleArn', Object, { roleArn: '' })
+    }
+
     cancelAuthFlow() {
         AuthSSOServer.lastInstance?.cancelCurrentFlow()
     }

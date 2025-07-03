@@ -72,6 +72,7 @@ export type globalKey =
     | 'recentCredentials'
     | 'recentSso'
     | 'recentIamKeys'
+    | 'recentRoleArn'
     // List of regions enabled in AWS Explorer.
     | 'region'
     // TODO: implement this via `PromptSettings` instead of globalState.

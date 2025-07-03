@@ -202,9 +202,8 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
     ): Promise<AuthError | undefined> {
         getLogger().debug(`called startIamCredentialSetup()`)
         // Defining separate auth function to emit telemetry before returning from this method
-        await globals.globalState.update('recentIamKeys', {
-            accessKey: accessKey,
-        })
+        await globals.globalState.update('recentIamKeys', { accessKey: accessKey })
+        await globals.globalState.update('recentRoleArn', { roleArn: roleArn })
         const runAuth = async (): Promise<AuthError | undefined> => {
             try {
                 await AuthUtil.instance.login_iam(accessKey, secretKey, sessionToken, roleArn)

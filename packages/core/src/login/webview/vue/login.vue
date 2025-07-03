@@ -396,7 +396,9 @@ export default defineComponent({
         this.startUrl = defaultSso.startUrl
         this.selectedRegion = defaultSso.region
         const defaultIamAccessKey = await this.getDefaultIamAccessKey()
+        const defaultRoleArn = await this.getDefaultRoleArn()
         this.accessKey = defaultIamAccessKey.accessKey
+        this.roleArn = defaultRoleArn.roleArn
         await this.emitUpdate('created')
     },
 
@@ -639,6 +641,9 @@ export default defineComponent({
         },
         async getDefaultIamAccessKey() {
             return await client.getDefaultIamKeys()
+        },
+        async getDefaultRoleArn() {
+            return await client.getDefaultRoleArn()
         },
         handleHelpLinkClick() {
             void client.emitUiClick('auth_helpLink')
