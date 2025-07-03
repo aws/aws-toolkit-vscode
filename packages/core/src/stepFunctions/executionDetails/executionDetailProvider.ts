@@ -108,22 +108,6 @@ export class ExecutionDetailProvider {
                 executionArn,
             }
 
-            // Create execution details context
-            const context: ExecutionDetailsContext = {
-                stateMachineName: executionArn.split(':').pop() || 'Unknown',
-                mode: WorkflowMode.Readonly, // Execution details are typically read-only
-                panel,
-                textDocument: {} as vscode.TextDocument, // Not applicable for execution details
-                disposables: [],
-                workSpacePath: '',
-                defaultTemplatePath: '',
-                defaultTemplateName: '',
-                fileStates: {},
-                loaderNotification: undefined,
-                fileId: executionArn,
-                executionArn,
-            }
-
             // Handle messages from the webview
             panel.webview.onDidReceiveMessage(async (message) => {
                 this.logger.debug('Received message from execution details webview: %O', message)

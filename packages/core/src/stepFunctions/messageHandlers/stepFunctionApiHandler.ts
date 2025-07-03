@@ -41,28 +41,28 @@ export class stepFunctionApiHandler {
                     response = await this.testState(params)
                     break
                 case ApiAction.SFNDescribeStateMachine:
-                    response = await this.clients.sfn.getStateMachineDetails(params.stateMachineArn)
+                    response = await this.clients.sfn.getStateMachineDetails(params)
                     break
                 case ApiAction.SFNDescribeStateMachineForExecution:
-                    response = await this.clients.sfn.getStateMachineDetailsForExecution(params.executionArn)
+                    response = await this.clients.sfn.getStateMachineDetailsForExecution(params)
                     break
                 case ApiAction.SFNDescribeExecution:
-                    response = await this.clients.sfn.getExecutionDetails(params.executionArn)
+                    response = await this.clients.sfn.getExecutionDetails(params)
                     break
                 case ApiAction.SFNDescribeMapRun:
-                    response = await this.clients.sfn.getMapRunDetails(params.mapRunArn)
+                    response = await this.clients.sfn.getMapRunDetails(params)
                     break
                 case ApiAction.SFNGetExecutionHistory:
-                    response = await this.clients.sfn.getExecutionHistory(params.executionArn)
+                    response = await this.clients.sfn.getExecutionHistory(params)
                     break
                 case ApiAction.SFNRedriveExecution:
-                    response = await this.clients.sfn.reDriveExecution(params.executionArn)
+                    response = await this.clients.sfn.reDriveExecution(params)
                     break
                 case ApiAction.SFNStartExecution:
-                    response = await this.clients.sfn.executeStateMachine(params.stateMachineArn, params.input)
+                    response = await this.clients.sfn.executeStateMachine(params)
                     break
                 case ApiAction.SFNStopExecution:
-                    response = await this.clients.sfn.stopExecution(params.executionArn)
+                    response = await this.clients.sfn.stopExecution(params)
                     break
                 default:
                     throw new Error(`Unknown API: ${apiName}`)
