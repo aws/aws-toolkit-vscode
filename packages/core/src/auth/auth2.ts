@@ -568,8 +568,10 @@ export class IamLogin extends BaseLogin {
         } catch (err: any) {
             switch (err.data?.awsErrorCode) {
                 case AwsErrorCodes.E_CANCELLED:
-                case AwsErrorCodes.E_SSO_SESSION_NOT_FOUND:
+                case AwsErrorCodes.E_INVALID_PROFILE:
                 case AwsErrorCodes.E_PROFILE_NOT_FOUND:
+                case AwsErrorCodes.E_CANNOT_CREATE_STS_CREDENTIAL:
+                case AwsErrorCodes.E_INVALID_STS_CREDENTIAL:
                     this.updateConnectionState('notConnected')
                     break
                 default:
