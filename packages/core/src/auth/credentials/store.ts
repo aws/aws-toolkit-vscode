@@ -18,7 +18,7 @@ export interface CachedCredentials {
  * Simple cache for credentials
  */
 export class CredentialsStore {
-    private readonly credentialsCache: { [key: string]: CachedCredentials }
+    public readonly credentialsCache: { [key: string]: CachedCredentials }
 
     public constructor() {
         this.credentialsCache = {}
