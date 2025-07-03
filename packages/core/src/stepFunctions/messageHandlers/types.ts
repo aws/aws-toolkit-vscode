@@ -16,23 +16,24 @@ export enum WorkflowMode {
     Readonly = 'readonly',
 }
 
-export type WebviewContext = {
+export interface BaseContext {
+    panel: vscode.WebviewPanel
+    loaderNotification: undefined | LoaderNotification
+}
+
+export interface WebviewContext extends BaseContext {
     stateMachineName: string
     mode: WorkflowMode
-    panel: vscode.WebviewPanel
     textDocument: vscode.TextDocument
     disposables: vscode.Disposable[]
     workSpacePath: string
     defaultTemplatePath: string
     defaultTemplateName: string
     fileStates: Record<string, FileWatchInfo>
-    loaderNotification: undefined | LoaderNotification
     fileId: string
 }
 
-export type ExecutionDetailsContext = {
-    panel: vscode.WebviewPanel
-    loaderNotification: undefined | LoaderNotification
+export interface ExecutionDetailsContext extends BaseContext {
     executionArn: string
 }
 
