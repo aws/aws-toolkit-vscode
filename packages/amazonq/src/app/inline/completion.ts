@@ -265,6 +265,9 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
                 const prefix = document.getText(new Range(prevStartPosition, position))
                 const prevItemMatchingPrefix = []
                 for (const item of this.sessionManager.getActiveRecommendation()) {
+                    if (item.isInlineEdit) {
+                        break
+                    }
                     const text = typeof item.insertText === 'string' ? item.insertText : item.insertText.value
                     if (text.startsWith(prefix) && position.isAfterOrEqual(prevStartPosition)) {
                         item.command = {
