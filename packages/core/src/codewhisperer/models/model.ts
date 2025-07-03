@@ -754,6 +754,8 @@ export class TransformByQState {
 
     private targetJDKVersion: JDKVersion | undefined = undefined
 
+    private jdkVersionToPath: Map<JDKVersion, string> = new Map()
+
     private customBuildCommand: string = ''
 
     private sourceDB: DB | undefined = undefined
@@ -874,6 +876,14 @@ export class TransformByQState {
         return this.targetJDKVersion
     }
 
+    public getPathFromJdkVersion(version: JDKVersion | undefined) {
+        if (version) {
+            return this.jdkVersionToPath.get(version)
+        } else {
+            return undefined
+        }
+    }
+
     public getSourceDB() {
         return this.sourceDB
     }
@@ -952,6 +962,12 @@ export class TransformByQState {
 
     public getTargetJavaHome() {
         return this.targetJavaHome
+    }
+
+    public setJdkVersionToPath(jdkVersion: JDKVersion | undefined, path: string) {
+        if (jdkVersion) {
+            this.jdkVersionToPath.set(jdkVersion, path)
+        }
     }
 
     public getChatControllers() {
