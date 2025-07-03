@@ -22,9 +22,10 @@ import {
     UpdateProfileParams,
     updateProfileRequestType,
     SsoTokenChangedParams,
-    // StsCredentialChangedParams,
+    StsCredentialChangedParams,
+    StsCredentialChangedKind,
     ssoTokenChangedRequestType,
-    // stsCredentialChangedRequestType,
+    stsCredentialChangedRequestType,
     AwsBuilderIdSsoTokenSource,
     UpdateCredentialsParams,
     AwsErrorCodes,
@@ -233,12 +234,6 @@ export class LanguageClientAuth {
         } satisfies InvalidateSsoTokenParams) as Promise<InvalidateSsoTokenResult>
     }
 
-    // invalidateStsCredential(tokenId: string) {
-    //     return this.client.sendRequest(invalidateStsCredentialRequestType.method, {
-    //         iamCredentialsId: tokenId,
-    //     } satisfies InvalidateStsCredentialParams) as Promise<InvalidateStsCredentialResult>
-    // }
-
     invalidateStsCredential(tokenId: string) {
         return this.client.sendRequest(invalidateStsCredentialRequestType.method, {
             profileName: tokenId,
@@ -249,9 +244,9 @@ export class LanguageClientAuth {
         this.client.onNotification(ssoTokenChangedRequestType.method, ssoTokenChangedHandler)
     }
 
-    // registerStsCredentialChangedHandler(stsCredentialChangedHandler: (params: StsCredentialChangedParams) => any) {
-    //     this.client.onNotification(stsCredentialChangedRequestType.method, stsCredentialChangedHandler)
-    // }
+    registerStsCredentialChangedHandler(stsCredentialChangedHandler: (params: StsCredentialChangedParams) => any) {
+        this.client.onNotification(stsCredentialChangedRequestType.method, stsCredentialChangedHandler)
+    }
 
     registerCacheWatcher(cacheChangedHandler: (event: cacheChangedEvent) => any) {
         this.cacheWatcher.onDidCreate(() => cacheChangedHandler('create'))
@@ -485,9 +480,9 @@ export class IamLogin extends BaseLogin {
 
     constructor(profileName: string, lspAuth: LanguageClientAuth, eventEmitter: vscode.EventEmitter<AuthStateEvent>) {
         super(profileName, lspAuth, eventEmitter)
-        // lspAuth.registerStsCredentialChangedHandler((params: StsCredentialChangedParams) =>
-        //     this.stsCredentialChangedHandler(params)
-        // )
+        lspAuth.registerStsCredentialChangedHandler((params: StsCredentialChangedParams) =>
+            this.stsCredentialChangedHandler(params)
+        )
     }
 
     async login(opts: { accessKey: string; secretKey: string, sessionToken?: string, roleArn?: string }) {
@@ -594,14 +589,14 @@ export class IamLogin extends BaseLogin {
         return response
     }
 
-//     private stsCredentialChangedHandler(params: StsCredentialChangedParams) {
-//         if (params.stsCredentialId === this.iamCredentialId) {
-//             if (params.kind === StsCredentialChangedKind.Expired) {
-//                 this.updateConnectionState('expired')
-//                 return
-//             } else if (params.kind === StsCredentialChangedKind.Refreshed) {
-//                 this.eventEmitter.fire({ id: this.profileName, state: 'refreshed' })
-//             }
-//         }
-//     }
+    private stsCredentialChangedHandler(params: StsCredentialChangedParams) {
+        if (params.stsCredentialId === this.iamCredentialId) {
+            if (params.kind === StsCredentialChangedKind.Expired) {
+                this.updateConnectionState('expired')
+                return
+            } else if (params.kind === StsCredentialChangedKind.Refreshed) {
+                this.eventEmitter.fire({ id: this.profileName, state: 'refreshed' })
+            }
+        }
+    }
 }
