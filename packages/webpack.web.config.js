@@ -71,15 +71,6 @@ module.exports = (env, argv) => {
                 perf_hooks: false, // should be using globalThis.performance instead
                 // *** If one of these modules actually gets used an error will be raised ***
                 // You may see something like: "TypeError: path_ignored_0.join is not a function"
-                // Handle node: protocol imports
-                'node:events': require.resolve('events'),
-                'node:fs': false,
-                'node:path': require.resolve('path-browserify'),
-                'node:util': require.resolve('util'),
-                'node:os': require.resolve('os-browserify/browser'),
-                'node:stream': require.resolve('stream-browserify'),
-                'node:crypto': require.resolve('crypto-browserify'),
-                'node:assert': require.resolve('assert'),
                 // We don't need these yet, but as we start enabling functionality in the web
                 // we may need to polyfill.
                 http: false, // http: require.resolve('stream-http'),
