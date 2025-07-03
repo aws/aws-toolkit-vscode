@@ -7,8 +7,9 @@ import { Commands, globals } from 'aws-core-vscode/shared'
 import { window } from 'vscode'
 import { AmazonQChatViewProvider } from './webviewProvider'
 import { CodeScanIssue } from 'aws-core-vscode/codewhisperer'
-import { EditorContextExtractor } from 'aws-core-vscode/codewhispererChat'
 import { DefaultAmazonQAppInitContext } from 'aws-core-vscode/amazonq'
+import * as vscode from 'vscode'
+import * as path from 'path'
 
 /**
  * TODO: Re-enable these once we can figure out which path they're going to live in
@@ -27,30 +28,23 @@ export function registerCommands(provider: AmazonQChatViewProvider) {
                 type: 'chatMessage',
             })
         }),
-        Commands.register('aws.amazonq.explainIssue', async (issue: CodeScanIssue) => {
+        Commands.register('aws.amazonq.explainIssue', async (issue: CodeScanIssue, filePath: string) => {
             void focusAmazonQPanel().then(async () => {
-                const editorContextExtractor = new EditorContextExtractor()
-                const extractedContext = await editorContextExtractor.extractContextForTrigger('ContextMenu')
-                const selectedCode =
-                    extractedContext?.activeFileContext?.fileText
-                        ?.split('\n')
-                        .slice(issue.startLine, issue.endLine)
-                        .join('\n') ?? ''
+                if (issue && filePath) {
+                    const range = new vscode.Range(issue.startLine, 0, issue.endLine, 0)
+                    await vscode.workspace.openTextDocument(filePath).then((doc) => {
+                        void vscode.window.showTextDocument(doc, {
+                            selection: range,
+                            viewColumn: vscode.ViewColumn.One,
+                            preview: true,
+                        })
+                    })
+                }
 
-                // The message that gets sent to the UI
-                const uiMessage = [
-                    'Explain the ',
-                    issue.title,
-                    ' issue in the following code:',
-                    '\n```\n',
-                    selectedCode,
-                    '\n```',
-                ].join('')
+                const visibleMessageInChat = `_Explain **${issue.title}** issue in **${path.basename(filePath)}** at \`(${issue.startLine}, ${issue.endLine})\`_`
 
                 // The message that gets sent to the backend
-                const contextMessage = `Explain the issue "${issue.title}" (${JSON.stringify(
-                    issue
-                )}) and generate code demonstrating the fix`
+                const contextMessage = `Provide a small description of the issue. Do not attempt to fix the issue, only explain it. Code issue - ${JSON.stringify(issue)}`
 
                 void provider.webview?.postMessage({
                     command: 'sendToPrompt',
@@ -58,7 +52,39 @@ export function registerCommands(provider: AmazonQChatViewProvider) {
                         selection: '',
                         triggerType: 'contextMenu',
                         prompt: {
-                            prompt: uiMessage, // what gets sent to the user
+                            prompt: visibleMessageInChat, // what gets sent to the user
+                            escapedPrompt: contextMessage, // what gets sent to the backend
+                        },
+                        autoSubmit: true,
+                    },
+                })
+            })
+        }),
+        Commands.register('aws.amazonq.generateFix', async (issue: CodeScanIssue, filePath: string) => {
+            void focusAmazonQPanel().then(async () => {
+                if (issue && filePath) {
+                    const range = new vscode.Range(issue.startLine, 0, issue.endLine, 0)
+                    await vscode.workspace.openTextDocument(filePath).then((doc) => {
+                        void vscode.window.showTextDocument(doc, {
+                            selection: range,
+                            viewColumn: vscode.ViewColumn.One,
+                            preview: true,
+                        })
+                    })
+                }
+
+                const visibleMessageInChat = `_Fix **${issue.title}** issue in **${path.basename(filePath)}** at \`(${issue.startLine}, ${issue.endLine})\`_`
+
+                // The message that gets sent to the backend
+                const contextMessage = `Generate a fix for the following code issue. Do not explain the issue, just generate and explain the fix. The user should have the option to accept or reject the fix before any code is changed. Code issue - ${JSON.stringify(issue)}`
+
+                void provider.webview?.postMessage({
+                    command: 'sendToPrompt',
+                    params: {
+                        selection: '',
+                        triggerType: 'contextMenu',
+                        prompt: {
+                            prompt: visibleMessageInChat, // what gets sent to the user
                             escapedPrompt: contextMessage, // what gets sent to the backend
                         },
                         autoSubmit: true,

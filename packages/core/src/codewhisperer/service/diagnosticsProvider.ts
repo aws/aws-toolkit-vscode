@@ -25,7 +25,6 @@ export const securityScanRender: SecurityScanRender = {
 
 export function initSecurityScanRender(
     securityRecommendationList: AggregatedCodeScanIssue[],
-    context: vscode.ExtensionContext,
     editor: vscode.TextEditor | undefined,
     scope: CodeAnalysisScope
 ) {
@@ -40,6 +39,7 @@ export function initSecurityScanRender(
         updateSecurityIssuesForProviders(securityRecommendation, scope === CodeAnalysisScope.FILE_AUTO)
     }
     securityScanRender.initialized = true
+    // SecurityIssueProvider.instance.cleanOldFiles()
 }
 
 function updateSecurityIssuesForProviders(securityRecommendation: AggregatedCodeScanIssue, isAutoScope?: boolean) {
