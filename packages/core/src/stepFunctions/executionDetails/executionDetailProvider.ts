@@ -8,8 +8,10 @@ import { getLogger } from '../../shared/logger/logger'
 import request from '../../shared/request'
 import { ToolkitError } from '../../shared/errors'
 import { i18n } from '../../shared/i18n-helper'
-import { ComponentType } from '../workflowStudio/types'
+import { ComponentType } from '../messageHandlers/types'
 import { isLocalDev, localhost, cdn } from '../constants/webviewResources'
+import { handleMessage } from './handleMessage'
+import { ExecutionDetailsContext } from '../messageHandlers/types'
 
 /**
  * Provider for Execution Details panels.
@@ -98,11 +100,16 @@ export class ExecutionDetailProvider {
 
             // Set up the content
             panel.webview.html = await this.getWebviewContent()
+            const context: ExecutionDetailsContext = {
+                panel,
+                loaderNotification: undefined,
+                executionArn,
+            }
 
             // Handle messages from the webview
             panel.webview.onDidReceiveMessage(async (message) => {
                 this.logger.debug('Received message from execution details webview: %O', message)
-                // Add message handlers as needed
+                await handleMessage(message, context)
             })
         } catch (err) {
             void vscode.window.showErrorMessage(i18n('AWS.stepFunctions.executionDetails.failed'))

@@ -15,7 +15,7 @@ import { getTabSizeSetting } from '../../shared/utilities/editorUtilities'
 import { WorkflowStudioEditor } from './workflowStudioEditor'
 import { i18n } from '../../shared/i18n-helper'
 import { isInvalidJsonFile, isInvalidYamlFile } from '../utils'
-import { ComponentType, WorkflowMode } from './types'
+import { ComponentType, WorkflowMode } from '../messageHandlers/types'
 import { isLocalDev, localhost, cdn } from '../constants/webviewResources'
 
 let clientId = ''

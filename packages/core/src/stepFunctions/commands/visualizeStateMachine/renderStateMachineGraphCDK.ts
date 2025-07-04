@@ -12,7 +12,7 @@ import { isTreeNode } from '../../../shared/treeview/resourceTreeDataProvider'
 import { unboxTreeNode } from '../../../shared/treeview/utils'
 import { Commands } from '../../../shared/vscode/commands2'
 import { PreviewStateMachineCDKWizard } from '../../wizards/previewStateMachineCDKWizard'
-import { WorkflowMode } from '../../workflowStudio/types'
+import { WorkflowMode } from '../../messageHandlers/types'
 import { WorkflowStudioEditorProvider } from '../../workflowStudio/workflowStudioEditorProvider'
 import { getStateMachineDefinitionFromCfnTemplate } from './getStateMachineDefinitionFromCfnTemplate'
 

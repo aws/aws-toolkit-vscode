@@ -14,23 +14,25 @@ import {
     FileChangeEventTrigger,
     SyncFileRequestMessage,
     ApiCallRequestMessage,
-    UnsupportedMessage,
     WorkflowMode,
-} from './types'
+} from '../messageHandlers/types'
 import { submitFeedback } from '../../feedback/vue/submitFeedback'
 import { placeholder } from '../../shared/vscode/commands2'
 import * as nls from 'vscode-nls'
 import vscode from 'vscode'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { ToolkitError } from '../../shared/errors'
-import { WorkflowStudioApiHandler } from './workflowStudioApiHandler'
 import globals from '../../shared/extensionGlobals'
-import { getLogger } from '../../shared/logger/logger'
 import { publishStateMachine } from '../commands/publishStateMachine'
 import {
     getStateMachineDefinitionFromCfnTemplate,
     toUnescapedAslJsonString,
 } from '../commands/visualizeStateMachine/getStateMachineDefinitionFromCfnTemplate'
+import {
+    loadStageMessageHandler,
+    handleUnsupportedMessage,
+    apiCallMessageHandler,
+} from '../messageHandlers/handleMessageHelpers'
 
 const localize = nls.loadMessageBundle()
 
@@ -144,18 +146,6 @@ export async function broadcastFileChange(context: WebviewContext, trigger: File
 }
 
 /**
- * Handler for managing webview stage load, which updates load notifications.
- * @param message The message containing the load stage.
- * @param context The context object containing the necessary information for the webview.
- */
-async function loadStageMessageHandler(context: WebviewContext) {
-    context.loaderNotification?.progress.report({ increment: 25 })
-    setTimeout(() => {
-        context.loaderNotification?.resolve()
-    }, 100)
-}
-
-/**
  * Handler for closing WFS custom editor. When called, disposes webview panel and opens default VSCode editor
  * @param context The context object containing the necessary information for the webview.
  */
@@ -249,30 +239,4 @@ async function autoSyncFileMessageHandler(request: SyncFileRequestMessage, conte
             })
         }
     })
-}
-
-/**
- * Handler for making API calls from the webview and returning the response.
- * @param request The request message containing the API to call and the parameters
- * @param context The webview context used for returning the API response to the webview
- */
-function apiCallMessageHandler(request: ApiCallRequestMessage, context: WebviewContext) {
-    const logger = getLogger('stepfunctions')
-    const apiHandler = new WorkflowStudioApiHandler(globals.awsContext.getCredentialDefaultRegion(), context)
-    apiHandler.performApiCall(request).catch((error) => logger.error('%s API call failed: %O', request.apiName, error))
-}
-
-/**
- * Handles unsupported or unrecognized messages by sending a response to the webview. Ensures compatibility with future
- * commands and message types, preventing issues if the user has an outdated extension version.
- * @param context The context object containing information about the webview environment
- * @param command The command received from the webview
- * @param messageType The type of the message received
- */
-async function handleUnsupportedMessage(context: WebviewContext, originalMessage: Message) {
-    await context.panel.webview.postMessage({
-        messageType: MessageType.RESPONSE,
-        command: Command.UNSUPPORTED_COMMAND,
-        originalMessage,
-    } as UnsupportedMessage)
 }

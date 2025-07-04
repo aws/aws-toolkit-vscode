@@ -6,14 +6,14 @@
 import * as StepFunctions from '@aws-sdk/client-sfn'
 import { IamClient, IamRole } from '../../shared/clients/iam'
 import { StepFunctionsClient } from '../../shared/clients/stepFunctions'
-import { ApiAction, ApiCallRequestMessage, Command, MessageType, WebviewContext } from './types'
+import { ApiAction, ApiCallRequestMessage, Command, MessageType, BaseContext } from './types'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { ListRolesRequest } from '@aws-sdk/client-iam'
 
-export class WorkflowStudioApiHandler {
+export class StepFunctionApiHandler {
     public constructor(
         region: string,
-        private readonly context: WebviewContext,
+        private readonly context: BaseContext,
         private readonly clients = {
             sfn: new StepFunctionsClient(region),
             iam: new IamClient(region),
@@ -32,6 +32,30 @@ export class WorkflowStudioApiHandler {
                     break
                 case ApiAction.SFNTestState:
                     response = await this.testState(params)
+                    break
+                case ApiAction.SFNDescribeStateMachine:
+                    response = await this.clients.sfn.getStateMachineDetails(params)
+                    break
+                case ApiAction.SFNDescribeStateMachineForExecution:
+                    response = await this.clients.sfn.describeStateMachineForExecution(params)
+                    break
+                case ApiAction.SFNDescribeExecution:
+                    response = await this.clients.sfn.describeExecution(params)
+                    break
+                case ApiAction.SFNDescribeMapRun:
+                    response = await this.clients.sfn.describeMapRun(params)
+                    break
+                case ApiAction.SFNGetExecutionHistory:
+                    response = await this.clients.sfn.getExecutionHistory(params)
+                    break
+                case ApiAction.SFNRedriveExecution:
+                    response = await this.clients.sfn.reDriveExecution(params)
+                    break
+                case ApiAction.SFNStartExecution:
+                    response = await this.clients.sfn.executeStateMachine(params)
+                    break
+                case ApiAction.SFNStopExecution:
+                    response = await this.clients.sfn.stopExecution(params)
                     break
                 default:
                     throw new Error(`Unknown API: ${apiName}`)
