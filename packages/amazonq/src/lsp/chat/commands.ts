@@ -44,7 +44,7 @@ export function registerCommands(provider: AmazonQChatViewProvider) {
                 const visibleMessageInChat = `_Explain **${issue.title}** issue in **${path.basename(filePath)}** at \`(${issue.startLine}, ${issue.endLine})\`_`
 
                 // The message that gets sent to the backend
-                const contextMessage = `Provide a small description of the issue. Do not attempt to fix the issue, only explain it. Code issue - ${JSON.stringify(issue)}`
+                const contextMessage = `Provide a small description of the issue. Do not attempt to fix the issue, only give a small summary of it. Code issue - ${JSON.stringify(issue)}`
 
                 void provider.webview?.postMessage({
                     command: 'sendToPrompt',
