@@ -28,6 +28,7 @@ import { FileSystemManager } from './fileSystemManager'
 import { ChatProcessor } from './chatProcessor'
 import { AnimationQueueManager } from './animationQueueManager'
 import { PendingFileWrite } from './types'
+import { StreamingDiffController } from './streamingDiffController'
 
 export class DiffAnimationHandler implements vscode.Disposable {
     /**
@@ -57,9 +58,21 @@ export class DiffAnimationHandler implements vscode.Disposable {
     private fileSystemManager: FileSystemManager
     private chatProcessor: ChatProcessor
     private animationQueueManager: AnimationQueueManager
+    private streamingDiffController: StreamingDiffController
 
     // Track pending file writes by file path
     private pendingWrites = new Map<string, PendingFileWrite>()
+
+    // Track streaming diff sessions by tool use ID
+    private streamingSessions = new Map<
+        string,
+        {
+            toolUseId: string
+            filePath: string
+            originalContent: string
+            startTime: number
+        }
+    >()
 
     constructor() {
         getLogger().info(`[DiffAnimationHandler] 🚀 Initializing DiffAnimationHandler with Cline-style diff view`)
@@ -73,6 +86,7 @@ export class DiffAnimationHandler implements vscode.Disposable {
             this.animateFileChangeWithDiff.bind(this),
             this.animatePartialFileChange.bind(this)
         )
+        this.streamingDiffController = new StreamingDiffController()
     }
 
     /**
@@ -334,6 +348,92 @@ export class DiffAnimationHandler implements vscode.Disposable {
             getLogger().warn(`[DiffAnimationHandler] No diff content available, opening file normally`)
             const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(normalizedPath))
             await vscode.window.showTextDocument(doc)
+        }
+    }
+
+    /**
+     * Start streaming diff session for a tool use (called when fsWrite/fsReplace is detected)
+     */
+    public async startStreamingDiffSession(toolUseId: string, filePath: string): Promise<void> {
+        getLogger().info(`[DiffAnimationHandler] 🎬 Starting streaming diff session for ${toolUseId} at ${filePath}`)
+
+        try {
+            // Read original content before any changes
+            const originalContent = await this.fileSystemManager.getCurrentFileContent(filePath).catch(() => '')
+
+            // Store the streaming session
+            this.streamingSessions.set(toolUseId, {
+                toolUseId,
+                filePath,
+                originalContent,
+                startTime: Date.now(),
+            })
+
+            // Open the streaming diff view immediately
+            await this.streamingDiffController.openStreamingDiffView(toolUseId, filePath, originalContent)
+
+            getLogger().info(`[DiffAnimationHandler] ✅ Streaming diff session started for ${toolUseId}`)
+        } catch (error) {
+            getLogger().error(`[DiffAnimationHandler] ❌ Failed to start streaming session for ${toolUseId}: ${error}`)
+        }
+    }
+
+    /**
+     * Stream content updates to the diff view (called from language server)
+     */
+    public async streamContentUpdate(
+        toolUseId: string,
+        partialContent: string,
+        isFinal: boolean = false
+    ): Promise<void> {
+        const session = this.streamingSessions.get(toolUseId)
+        if (!session) {
+            getLogger().warn(`[DiffAnimationHandler] ⚠️ No streaming session found for ${toolUseId}`)
+            return
+        }
+
+        getLogger().info(
+            `[DiffAnimationHandler] ⚡ Streaming content update for ${toolUseId}: ${partialContent.length} chars (final: ${isFinal})`
+        )
+
+        try {
+            // Stream the content to the diff view
+            await this.streamingDiffController.streamContentUpdate(toolUseId, partialContent, isFinal)
+
+            if (isFinal) {
+                // Calculate session duration
+                const duration = Date.now() - session.startTime
+                getLogger().info(
+                    `[DiffAnimationHandler] 🏁 Streaming session completed for ${toolUseId} in ${duration}ms`
+                )
+
+                // Clean up the session
+                this.streamingSessions.delete(toolUseId)
+            }
+        } catch (error) {
+            getLogger().error(`[DiffAnimationHandler] ❌ Failed to stream content for ${toolUseId}: ${error}`)
+        }
+    }
+
+    /**
+     * Check if a streaming session is active
+     */
+    public isStreamingActive(toolUseId: string): boolean {
+        return this.streamingSessions.has(toolUseId) && this.streamingDiffController.isStreamingActive(toolUseId)
+    }
+
+    /**
+     * Get streaming statistics for debugging
+     */
+    public getStreamingStats(toolUseId: string): any {
+        const session = this.streamingSessions.get(toolUseId)
+        const streamingStats = this.streamingDiffController.getStreamingStats(toolUseId)
+
+        return {
+            sessionExists: !!session,
+            sessionDuration: session ? Date.now() - session.startTime : 0,
+            filePath: session?.filePath,
+            ...streamingStats,
         }
     }
 

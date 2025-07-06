@@ -573,6 +573,39 @@ export function registerMessageListeners(
     })
 
     languageClient.onNotification(chatUpdateNotificationType.method, async (params: ChatUpdateParams) => {
+        // Process streaming chunks for real-time diff animations
+        if ((params.data as any)?.streamingChunk) {
+            const streamingChunk = (params.data as any).streamingChunk
+            try {
+                getLogger().info(
+                    `[VSCode Client] 🌊 Received streaming chunk for ${streamingChunk.toolUseId}: ${streamingChunk.content?.length || 0} chars (complete: ${streamingChunk.isComplete})`
+                )
+
+                // Process streaming chunk with DiffAnimationHandler
+                const animationHandler = getDiffAnimationHandler()
+
+                // Check if this is the first chunk for this toolUseId - if so, initialize streaming session
+                if (!animationHandler.isStreamingActive(streamingChunk.toolUseId) && streamingChunk.filePath) {
+                    getLogger().info(
+                        `[VSCode Client] 🎬 Initializing streaming session for ${streamingChunk.toolUseId} at ${streamingChunk.filePath}`
+                    )
+                    await animationHandler.startStreamingDiffSession(streamingChunk.toolUseId, streamingChunk.filePath)
+                }
+
+                await animationHandler.streamContentUpdate(
+                    streamingChunk.toolUseId,
+                    streamingChunk.content || '',
+                    streamingChunk.isComplete || false
+                )
+
+                getLogger().info(`[VSCode Client] ✅ Streaming chunk processed successfully`)
+            } catch (error) {
+                getLogger().error(`[VSCode Client] ❌ Failed to process streaming chunk: ${error}`)
+            }
+            // Don't forward streaming chunks to the webview - they're handled by the animation handler
+            return
+        }
+
         // Process chat updates for diff animations
         if (params.data?.messages) {
             for (const message of params.data.messages) {
@@ -596,6 +629,26 @@ export function registerMessageListeners(
             params: params,
         })
     })
+
+    // Handle streaming diff updates from language server
+    languageClient.onNotification(
+        'aws/chat/streamingDiffUpdate',
+        async (params: { toolUseId: string; partialContent: string; isFinal: boolean }) => {
+            try {
+                getLogger().info(
+                    `[VSCode Client] 📡 Received streaming diff update for ${params.toolUseId}: ${params.partialContent.length} chars (final: ${params.isFinal})`
+                )
+
+                // Get the DiffAnimationHandler and stream the update
+                const animationHandler = getDiffAnimationHandler()
+                await animationHandler.streamContentUpdate(params.toolUseId, params.partialContent, params.isFinal)
+
+                getLogger().info(`[VSCode Client] ✅ Streaming diff update processed successfully`)
+            } catch (error) {
+                getLogger().error(`[VSCode Client] ❌ Failed to process streaming diff update: ${error}`)
+            }
+        }
+    )
 }
 
 // Clean up on extension deactivation
