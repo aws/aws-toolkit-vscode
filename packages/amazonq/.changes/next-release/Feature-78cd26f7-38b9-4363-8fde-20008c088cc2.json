@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "disable generating message while waiting for inline suggestion"
+}

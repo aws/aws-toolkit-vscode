@@ -25,7 +25,8 @@ export interface GetAllRecommendationsOptions {
 export class RecommendationService {
     constructor(
         private readonly sessionManager: SessionManager,
-        private readonly inlineGeneratingMessage: InlineGeneratingMessage,
+        // uncomment the below line to re-enable generating message
+        // private readonly inlineGeneratingMessage: InlineGeneratingMessage,
         private cursorUpdateRecorder?: ICursorUpdateRecorder
     ) {}
     /**
@@ -65,7 +66,8 @@ export class RecommendationService {
         try {
             // Show UI indicators only if UI is enabled
             if (options.showUi) {
-                await this.inlineGeneratingMessage.showGenerating(context.triggerKind)
+                // uncomment the below line to re-enable generating message
+                // await this.inlineGeneratingMessage.showGenerating(context.triggerKind)
                 await statusBar.setLoading()
             }
 
@@ -149,7 +151,8 @@ export class RecommendationService {
         } finally {
             // Remove all UI indicators if UI is enabled
             if (options.showUi) {
-                this.inlineGeneratingMessage.hideGenerating()
+                // uncomment the below line to re-enable generating message
+                // this.inlineGeneratingMessage.hideGenerating()
                 void statusBar.refreshStatusBar() // effectively "stop loading"
             }
         }
