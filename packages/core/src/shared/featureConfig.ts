@@ -118,7 +118,7 @@ export class FeatureConfigProvider {
     }
 
     async fetchFeatureConfigs(): Promise<void> {
-        if (AuthUtil.instance.isConnectionExpired()) {
+        if (AuthUtil.instance.isConnectionExpired() || AuthUtil.instance.isIamSession()) {
             return
         }
 

@@ -209,7 +209,8 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
                 await AuthUtil.instance.login_iam(accessKey, secretKey, sessionToken, roleArn)
             } catch (e) {
                 getLogger().error('Failed submitting credentials %O', e)
-                return { id: this.id, text: e as string }
+                const message = e instanceof Error ? e.message : e as string
+                return { id: this.id, text: message }
             }
             // Enable code suggestions
             vsCodeState.isFreeTierLimitReached = false
