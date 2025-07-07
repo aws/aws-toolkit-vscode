@@ -36,7 +36,6 @@ import {
     noInlineSuggestionsMsg,
     ReferenceInlineProvider,
 } from 'aws-core-vscode/codewhisperer'
-import { InlineGeneratingMessage } from './inlineGeneratingMessage'
 import { LineTracker } from './stateTracker/lineTracker'
 import { InlineTutorialAnnotation } from './tutorials/inlineTutorialAnnotation'
 import { TelemetryHelper } from './telemetryHelper'
@@ -55,7 +54,7 @@ export class InlineCompletionManager implements Disposable {
     private sessionManager: SessionManager
     private recommendationService: RecommendationService
     private lineTracker: LineTracker
-    private incomingGeneratingMessage: InlineGeneratingMessage
+
     private inlineTutorialAnnotation: InlineTutorialAnnotation
     private readonly logSessionResultMessageName = 'aws/logInlineCompletionSessionResults'
     private documentChangeListener: Disposable
@@ -70,12 +69,7 @@ export class InlineCompletionManager implements Disposable {
         this.languageClient = languageClient
         this.sessionManager = sessionManager
         this.lineTracker = lineTracker
-        this.incomingGeneratingMessage = new InlineGeneratingMessage(this.lineTracker)
-        this.recommendationService = new RecommendationService(
-            this.sessionManager,
-            this.incomingGeneratingMessage,
-            cursorUpdateRecorder
-        )
+        this.recommendationService = new RecommendationService(this.sessionManager, cursorUpdateRecorder)
         this.inlineTutorialAnnotation = inlineTutorialAnnotation
         this.inlineCompletionProvider = new AmazonQInlineCompletionItemProvider(
             languageClient,
@@ -105,7 +99,6 @@ export class InlineCompletionManager implements Disposable {
     public dispose(): void {
         if (this.disposable) {
             this.disposable.dispose()
-            this.incomingGeneratingMessage.dispose()
             this.lineTracker.dispose()
         }
         if (this.documentChangeListener) {
