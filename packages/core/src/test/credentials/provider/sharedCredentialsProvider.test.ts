@@ -516,6 +516,47 @@ describe('SharedCredentialsProvider', async function () {
             assert.strictEqual(creds.sessionToken, 'token')
         })
 
+        it('assumes role with SSO source profile', async function () {
+            const sections = await createTestSections(`
+                [profile default]
+                sso_account_id = 012345678910
+                sso_role_name = admin
+                sso_region = us-east-1
+                sso_registration_scopes = sso:account:access
+                sso_start_url = https://d-xxxxxxxxx.awsapps.com/start
+                region = us-east-1
+                output = json
+                
+                [profile test]
+                source_profile = default
+                role_arn = testarn
+                region = us-east-1
+                `)
+
+            // Mock SSO credentials for the source profile
+            const ssoClient = stub(SsoClient, { region: 'us-east-1' })
+            ssoClient.getRoleCredentials.callsFake(async (request) => {
+                assert.strictEqual(request.accountId, '012345678910')
+                assert.strictEqual(request.roleName, 'admin')
+
+                return {
+                    accessKeyId: 'sso-access-key',
+                    secretAccessKey: 'sso-secret-key',
+                    sessionToken: 'sso-session-token',
+                    expiration: new Date(Date.now() + oneDay),
+                }
+            })
+            sandbox.stub(SsoClient, 'create').returns(ssoClient)
+            sandbox.stub(SsoAccessTokenProvider.prototype, 'getToken').resolves()
+            sandbox.stub(SsoAccessTokenProvider.prototype, 'createToken').resolves()
+
+            const sut = new SharedCredentialsProvider('test', sections)
+            const creds = await sut.getCredentials()
+            assert.strictEqual(creds.accessKeyId, 'id')
+            assert.strictEqual(creds.secretAccessKey, 'secret')
+            assert.strictEqual(creds.sessionToken, 'token')
+        })
+
         it('does not assume role when no roleArn is present', async function () {
             const sut = new SharedCredentialsProvider('default', await createTestSections(defaultSection))
             const creds = await sut.getCredentials()
