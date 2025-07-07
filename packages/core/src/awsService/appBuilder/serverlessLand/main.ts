@@ -15,6 +15,7 @@ import { ExtContext } from '../../../shared/extensions'
 import { addFolderToWorkspace } from '../../../shared/utilities/workspaceUtils'
 import { ToolkitError } from '../../../shared/errors'
 import { fs } from '../../../shared/fs/fs'
+import { handleOverwriteConflict } from '../../../shared/utilities/messages'
 import { getPattern } from '../../../shared/utilities/downloadPatterns'
 import { MetadataManager } from './metadataManager'
 
@@ -89,6 +90,9 @@ export async function launchProjectCreationWizard(
 export async function downloadPatternCode(config: CreateServerlessLandWizardForm, assetName: string): Promise<void> {
     const fullAssetName = assetName + '.zip'
     const location = vscode.Uri.joinPath(config.location, config.name)
+
+    await handleOverwriteConflict(location)
+
     try {
         await getPattern(serverlessLandOwner, serverlessLandRepo, fullAssetName, location, true)
     } catch (error) {
