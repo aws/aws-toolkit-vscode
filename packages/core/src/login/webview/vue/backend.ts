@@ -34,6 +34,7 @@ import { getLogger } from '../../../shared/logger/logger'
 import { isValidUrl } from '../../../shared/utilities/uriUtils'
 import { RegionProfile } from '../../../codewhisperer/models/model'
 import { ProfileSwitchIntent } from '../../../codewhisperer/region/regionProfileManager'
+import { showMessage } from '../../../shared/utilities/messages'
 
 export abstract class CommonAuthWebview extends VueWebview {
     private readonly className = 'CommonAuthWebview'
@@ -186,7 +187,7 @@ export abstract class CommonAuthWebview extends VueWebview {
     abstract fetchConnections(): Promise<AwsConnection[] | undefined>
 
     async errorNotification(e: AuthError) {
-        void vscode.window.showErrorMessage(`${e.text}`)
+        showMessage('error', e.text)
     }
 
     abstract quitLoginScreen(): Promise<void>

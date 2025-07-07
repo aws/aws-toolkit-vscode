@@ -1,23 +1,23 @@
 {
     "folders": [
         {
-            "path": ".",
+            "path": "."
         },
         {
-            "path": "packages/toolkit",
+            "path": "packages/toolkit"
         },
         {
-            "path": "packages/core",
+            "path": "packages/core"
         },
         {
-            "path": "packages/amazonq",
+            "path": "packages/amazonq"
         },
         {
-            "path": "../language-server-runtimes",
+            "path": "../language-servers"
         },
         {
-            "path": "../language-servers",
-        },
+            "path": "../language-server-runtimes"
+        }
     ],
     "settings": {
         "typescript.tsdk": "node_modules/typescript/lib",

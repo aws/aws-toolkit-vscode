@@ -230,7 +230,7 @@
 
         <template v-if="stage === 'AUTHENTICATING'">
             <div class="auth-container-section">
-                <div v-if="(app === 'TOOLKIT' && profileName.length > 0) || (app === 'AMAZONQ' && accessKey.length > 0)" class="header bottomMargin">
+                <div v-if="selectedLoginOption === LoginOption.IAM_CREDENTIAL" class="header bottomMargin">
                     Connecting to IAM...
                 </div>
                 <div v-else class="header bottomMargin">Authenticating in browser...</div>
@@ -428,6 +428,10 @@ export default defineComponent({
             }
         },
         handleDocumentClick(event: any) {
+            // Only reset selection when in START stage to avoid clearing during authentication
+            if (this.stage !== 'START') {
+                return
+            }
             const isClickInsideSelectableItems = event.target.closest('.selectable-item')
             if (!isClickInsideSelectableItems) {
                 this.selectedLoginOption = 0
