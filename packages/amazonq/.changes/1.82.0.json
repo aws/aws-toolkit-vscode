@@ -1,0 +1,10 @@
+{
+	"date": "2025-07-07",
+	"version": "1.82.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Prompt re-authenticate if auto trigger failed with expired token"
+		}
+	]
+}
