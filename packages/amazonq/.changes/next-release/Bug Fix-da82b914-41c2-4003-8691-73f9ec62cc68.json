@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "Prompt re-authenticate if auto trigger failed with expired token"
-}
