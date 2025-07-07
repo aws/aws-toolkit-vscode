@@ -1,3 +1,7 @@
+## 1.82.0 2025-07-07
+
+- **Bug Fix** Prompt re-authenticate if auto trigger failed with expired token
+
 ## 1.81.0 2025-07-02
 
 - **Bug Fix** Stop auto inline completion when deleting code
