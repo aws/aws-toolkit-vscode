@@ -315,6 +315,7 @@ export async function displaySvgDecoration(
                 },
                 totalSessionDisplayTime: Date.now() - session.requestStartTime,
                 firstCompletionDisplayLatency: session.firstCompletionDisplayLatency,
+                isInlineEdit: true,
             }
             languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
             if (inlineCompletionProvider) {
@@ -343,6 +344,7 @@ export async function displaySvgDecoration(
                         discarded: false,
                     },
                 },
+                isInlineEdit: true,
             }
             languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
         },
