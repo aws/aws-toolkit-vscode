@@ -100,7 +100,14 @@ async function registerStepFunctionCommands(
             await publishStateMachine({ awsContext: awsContext, outputChannel: outputChannel, region: region })
         }),
         Commands.register('aws.stepfunctions.viewExecutionDetailsByExecutionARN', async () => {
-            await ExecutionDetailProvider.openExecutionDetails('')
+            const arn = await vscode.window.showInputBox({
+                prompt: 'Enter Execution ARN',
+                placeHolder: 'Execution ARN',
+            })
+
+            if (arn) {
+                await ExecutionDetailProvider.openExecutionDetails(arn)
+            }
         })
     )
 }
