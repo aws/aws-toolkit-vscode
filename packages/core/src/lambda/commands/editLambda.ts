@@ -159,8 +159,14 @@ export async function editLambda(lambda: LambdaFunction, onActivation?: boolean)
         // This record tells us if they're attempting to edit a function they've edited before
         telemetry.record({ action: localExists ? 'existingEdit' : 'newEdit' })
 
+        const isDirectoryEmpty = (await fs.existsDir(downloadLocation))
+            ? (await fs.readdir(downloadLocation)).length === 0
+            : true
+
         const overwriteChanges =
-            !localExists || (!(await compareCodeSha(lambda)) ? await confirmOutdatedChanges(prompt) : false)
+            !localExists ||
+            isDirectoryEmpty ||
+            (!(await compareCodeSha(lambda)) ? await confirmOutdatedChanges(prompt) : false)
 
         if (overwriteChanges) {
             try {
