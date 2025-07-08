@@ -8,6 +8,7 @@ import { window } from 'vscode'
 import { AmazonQChatViewProvider } from './webviewProvider'
 import { CodeScanIssue } from 'aws-core-vscode/codewhisperer'
 import { DefaultAmazonQAppInitContext } from 'aws-core-vscode/amazonq'
+import { EditorContextExtractor } from 'aws-core-vscode/codewhispererChat'
 import * as vscode from 'vscode'
 import * as path from 'path'
 
@@ -21,13 +22,8 @@ export function registerCommands(provider: AmazonQChatViewProvider) {
         registerGenericCommand('aws.amazonq.refactorCode', 'Refactor', provider),
         registerGenericCommand('aws.amazonq.fixCode', 'Fix', provider),
         registerGenericCommand('aws.amazonq.optimizeCode', 'Optimize', provider),
-        Commands.register('aws.amazonq.generateUnitTests', async () => {
-            DefaultAmazonQAppInitContext.instance.getAppsToWebViewMessagePublisher().publish({
-                sender: 'testChat',
-                command: 'test',
-                type: 'chatMessage',
-            })
-        }),
+        registerGenericCommand('aws.amazonq.generateUnitTests', 'Generate Tests', provider),
+
         Commands.register('aws.amazonq.explainIssue', async (issue: CodeScanIssue, filePath: string) => {
             void focusAmazonQPanel().then(async () => {
                 if (issue && filePath) {

@@ -11,7 +11,6 @@ import {
 import { CancellationToken, InlineCompletionContext, Position, TextDocument } from 'vscode'
 import { LanguageClient } from 'vscode-languageclient'
 import { SessionManager } from './sessionManager'
-import { InlineGeneratingMessage } from './inlineGeneratingMessage'
 import { AuthUtil, CodeWhispererStatusBarManager } from 'aws-core-vscode/codewhisperer'
 import { TelemetryHelper } from './telemetryHelper'
 import { ICursorUpdateRecorder } from './cursorUpdateManager'
@@ -26,7 +25,6 @@ export interface GetAllRecommendationsOptions {
 export class RecommendationService {
     constructor(
         private readonly sessionManager: SessionManager,
-        private readonly inlineGeneratingMessage: InlineGeneratingMessage,
         private cursorUpdateRecorder?: ICursorUpdateRecorder
     ) {}
     /**
@@ -69,7 +67,6 @@ export class RecommendationService {
         try {
             // Show UI indicators only if UI is enabled
             if (options.showUi) {
-                await this.inlineGeneratingMessage.showGenerating(context.triggerKind)
                 await statusBar.setLoading()
             }
 
@@ -165,7 +162,6 @@ export class RecommendationService {
         } finally {
             // Remove all UI indicators if UI is enabled
             if (options.showUi) {
-                this.inlineGeneratingMessage.hideGenerating()
                 void statusBar.refreshStatusBar() // effectively "stop loading"
             }
         }
