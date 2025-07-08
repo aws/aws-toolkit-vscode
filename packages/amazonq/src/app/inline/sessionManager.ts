@@ -14,6 +14,8 @@ export interface CodeWhispererSession {
     requestStartTime: number
     firstCompletionDisplayLatency?: number
     startPosition: vscode.Position
+    // partialResultToken for the next trigger if user accepts an EDITS suggestion
+    editsStreakPartialResultToken?: number | string
 }
 
 export class SessionManager {
@@ -67,6 +69,13 @@ export class SessionManager {
 
     public incrementSuggestionCount() {
         this._acceptedSuggestionCount += 1
+    }
+
+    public updateActiveEditsStreakToken(partialResultToken?: number | string) {
+        if (!this.activeSession || !partialResultToken) {
+            return
+        }
+        this.activeSession.editsStreakPartialResultToken = partialResultToken
     }
 
     public clear() {

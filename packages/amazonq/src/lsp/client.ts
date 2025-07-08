@@ -164,6 +164,8 @@ export async function startLanguageServer(
                         developerProfiles: true,
                         pinnedContextEnabled: true,
                         mcp: true,
+                        reroute: true,
+                        modelSelection: true,
                         workspaceFilePath: vscode.workspace.workspaceFile?.fsPath,
                     },
                     window: {
