@@ -26,7 +26,6 @@ import {
     ReferenceLogViewProvider,
     vsCodeState,
 } from 'aws-core-vscode/codewhisperer'
-import { InlineGeneratingMessage } from '../../../../../src/app/inline/inlineGeneratingMessage'
 import { LineTracker } from '../../../../../src/app/inline/stateTracker/lineTracker'
 import { InlineTutorialAnnotation } from '../../../../../src/app/inline/tutorials/inlineTutorialAnnotation'
 
@@ -247,9 +246,8 @@ describe('InlineCompletionManager', () => {
 
             beforeEach(() => {
                 const lineTracker = new LineTracker()
-                const activeStateController = new InlineGeneratingMessage(lineTracker)
                 inlineTutorialAnnotation = new InlineTutorialAnnotation(lineTracker, mockSessionManager)
-                recommendationService = new RecommendationService(mockSessionManager, activeStateController)
+                recommendationService = new RecommendationService(mockSessionManager)
                 vsCodeState.isRecommendationsActive = false
                 mockSessionManager = {
                     getActiveSession: getActiveSessionStub,
