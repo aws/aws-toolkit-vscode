@@ -7,8 +7,6 @@ import { Commands, globals } from 'aws-core-vscode/shared'
 import { window } from 'vscode'
 import { AmazonQChatViewProvider } from './webviewProvider'
 import { CodeScanIssue } from 'aws-core-vscode/codewhisperer'
-import { DefaultAmazonQAppInitContext } from 'aws-core-vscode/amazonq'
-import { EditorContextExtractor } from 'aws-core-vscode/codewhispererChat'
 import * as vscode from 'vscode'
 import * as path from 'path'
 
