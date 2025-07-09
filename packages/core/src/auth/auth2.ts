@@ -54,7 +54,7 @@ import { LanguageClient } from 'vscode-languageclient'
 import { getLogger } from '../shared/logger/logger'
 import { ToolkitError } from '../shared/errors'
 import { useDeviceFlow } from './sso/ssoAccessTokenProvider'
-import { getCacheDir, getCacheFileWatcher, getFlareCacheFileName } from './sso/cache'
+import { getCacheDir, getCacheFileWatcher, getFlareCacheFileName, getStsCacheDir } from './sso/cache'
 import { VSCODE_EXTENSION_ID } from '../shared/extensions'
 import { IamCredentials } from '@aws/language-server-runtimes-types'
 
@@ -95,6 +95,7 @@ export type TokenSource = IamIdentityCenterSsoTokenSource | AwsBuilderIdSsoToken
  */
 export class LanguageClientAuth {
     readonly #ssoCacheWatcher = getCacheFileWatcher(getCacheDir(), getFlareCacheFileName(VSCODE_EXTENSION_ID.amazonq))
+    readonly #stsCacheWatcher = getCacheFileWatcher(getStsCacheDir(), getFlareCacheFileName(VSCODE_EXTENSION_ID.amazonq))
 
     constructor(
         private readonly client: LanguageClient,
@@ -104,6 +105,10 @@ export class LanguageClientAuth {
 
     public get cacheWatcher() {
         return this.#ssoCacheWatcher
+    }
+
+    public get stsCacheWatcher() {
+        return this.#stsCacheWatcher
     }
 
     getSsoToken(
@@ -256,8 +261,8 @@ export class LanguageClientAuth {
     }
 
     registerStsCacheWatcher(stsCacheChangedHandler: (event: stsCacheChangedEvent) => any) {
-        this.cacheWatcher.onDidCreate(() => stsCacheChangedHandler('create'))
-        this.cacheWatcher.onDidDelete(() => stsCacheChangedHandler('delete'))
+        this.stsCacheWatcher.onDidCreate(() => stsCacheChangedHandler('create'))
+        this.stsCacheWatcher.onDidDelete(() => stsCacheChangedHandler('delete'))
     }
 }
 
@@ -265,6 +270,7 @@ export class LanguageClientAuth {
  * Abstract class for connection management
  */
 export abstract class BaseLogin {
+    protected loginType: LoginType | undefined
     protected connectionState: AuthState = 'notConnected'
     protected cancellationToken: CancellationTokenSource | undefined
     protected _data: { startUrl?: string; region?: string; accessKey?: string; secretKey?: string; sessionToken?: string } | undefined
@@ -342,6 +348,7 @@ export abstract class BaseLogin {
  */
 export class SsoLogin extends BaseLogin {
     // Cached information from the identity server for easy reference
+    override readonly loginType = LoginTypes.SSO
     private ssoTokenId: string | undefined
 
     constructor(profileName: string, lspAuth: LanguageClientAuth, eventEmitter: vscode.EventEmitter<AuthStateEvent>) {
@@ -483,6 +490,7 @@ export class SsoLogin extends BaseLogin {
  */
 export class IamLogin extends BaseLogin {
     // Cached information from the identity server for easy reference
+    override readonly loginType = LoginTypes.IAM
     private iamCredentialId: string | undefined
 
     constructor(profileName: string, lspAuth: LanguageClientAuth, eventEmitter: vscode.EventEmitter<AuthStateEvent>) {
