@@ -35,7 +35,11 @@ export function registerCommands(provider: AmazonQChatViewProvider) {
                     })
                 }
 
-                const visibleMessageInChat = `_Explain **${issue.title}** issue in **${path.basename(filePath)}** at \`(${issue.startLine}, ${issue.endLine})\`_`
+                const lineRange =
+                    issue.startLine === issue.endLine - 1
+                        ? `[${issue.startLine + 1}]`
+                        : `[${issue.startLine + 1}, ${issue.endLine}]`
+                const visibleMessageInChat = `_Explain **${issue.title}** issue in **${path.basename(filePath)}** at \`${lineRange}\`_`
 
                 // The message that gets sent to the backend
                 const contextMessage = `Provide a small description of the issue. Do not attempt to fix the issue, only give a small summary of it. Code issue - ${JSON.stringify(issue)}`
@@ -67,7 +71,11 @@ export function registerCommands(provider: AmazonQChatViewProvider) {
                     })
                 }
 
-                const visibleMessageInChat = `_Fix **${issue.title}** issue in **${path.basename(filePath)}** at \`(${issue.startLine}, ${issue.endLine})\`_`
+                const lineRange =
+                    issue.startLine === issue.endLine - 1
+                        ? `[${issue.startLine + 1}]`
+                        : `[${issue.startLine + 1}, ${issue.endLine}]`
+                const visibleMessageInChat = `_Fix **${issue.title}** issue in **${path.basename(filePath)}** at \`${lineRange}\`_`
 
                 // The message that gets sent to the backend
                 const contextMessage = `Generate a fix for the following code issue. Do not explain the issue, just generate and explain the fix. The user should have the option to accept or reject the fix before any code is changed. Code issue - ${JSON.stringify(issue)}`
