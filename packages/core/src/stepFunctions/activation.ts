@@ -107,14 +107,12 @@ async function registerStepFunctionCommands(
                     'arn:aws:states:us-east-1:123456789012:execution:MyStateMachine:12345678-1234-1234-1234-123456789012',
             })
 
-            if (arn) {
-                if (validate(arn)) {
-                    await ExecutionDetailProvider.openExecutionDetails(arn)
-                } else {
-                    void vscode.window.showErrorMessage(
-                        'Invalid ARN format. Please provide a valid Step Functions execution ARN (e.g., arn:aws:states:us-east-1:123456789012:execution:MyStateMachine:12345678-1234-1234-1234-123456789012)'
-                    )
-                }
+            if (validate(arn)) {
+                await ExecutionDetailProvider.openExecutionDetails(arn!)
+            } else {
+                void vscode.window.showErrorMessage(
+                    'Invalid ARN format. Please provide a valid Step Functions execution ARN (e.g., arn:aws:states:us-east-1:123456789012:execution:MyStateMachine:12345678-1234-1234-1234-123456789012)'
+                )
             }
         })
     )
