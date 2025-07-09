@@ -40,6 +40,7 @@ describe('editLambda', function () {
     let existsDirStub: sinon.SinonStub
     let mkdirStub: sinon.SinonStub
     let promptDeployStub: sinon.SinonStub
+    let readdirStub: sinon.SinonStub
 
     beforeEach(function () {
         mockLambda = {
@@ -71,12 +72,12 @@ describe('editLambda', function () {
         executeCommandStub = sinon.stub(vscode.commands, 'executeCommand').resolves()
         existsDirStub = sinon.stub(fs, 'existsDir').resolves(true)
         mkdirStub = sinon.stub(fs, 'mkdir').resolves()
+        readdirStub = sinon.stub(fs, 'readdir').resolves([['file', vscode.FileType.File]])
         promptDeployStub = sinon.stub().resolves(true)
         sinon.replace(require('../../../lambda/commands/editLambda'), 'promptDeploy', promptDeployStub)
 
         // Other stubs
         sinon.stub(utils, 'getLambdaDetails').returns({ fileName: 'index.js', functionName: 'test-function' })
-        sinon.stub(fs, 'readdir').resolves([])
         sinon.stub(fs, 'delete').resolves()
         sinon.stub(fs, 'stat').resolves({ ctime: Date.now() } as any)
         sinon.stub(vscode.workspace, 'saveAll').resolves(true)
@@ -124,6 +125,26 @@ describe('editLambda', function () {
             await editLambda(mockLambda)
 
             assert(openLambdaFileStub.calledOnce)
+        })
+
+        it('downloads lambda when directory exists but is empty', async function () {
+            getFunctionInfoStub.resolves('old-sha')
+            readdirStub.resolves([])
+
+            await editLambda(mockLambda)
+
+            assert(downloadLambdaStub.calledOnce)
+            assert(showConfirmationMessageStub.notCalled)
+        })
+
+        it('downloads lambda when directory does not exist', async function () {
+            getFunctionInfoStub.resolves('old-sha')
+            existsDirStub.resolves(false)
+
+            await editLambda(mockLambda)
+
+            assert(downloadLambdaStub.calledOnce)
+            assert(showConfirmationMessageStub.notCalled)
         })
 
         it('sets up file watcher after download', async function () {
