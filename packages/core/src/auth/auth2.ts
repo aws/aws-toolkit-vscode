@@ -173,12 +173,10 @@ export class LanguageClientAuth {
     }
 
     updateIamProfile(profileName: string, accessKey: string, secretKey: string, sessionToken?: string, roleArn?: string): Promise<UpdateProfileResult> {
-        // Use empty profile type if invalidating all IAM fields
-        const kind = !accessKey && !secretKey ? ProfileKind.EmptyProfile : ProfileKind.IamCredentialProfile
         // Add credentials and delete SSO settings from profile
         return this.client.sendRequest(updateProfileRequestType.method, {
             profile: {
-                kinds: [kind],
+                kinds: [ProfileKind.IamCredentialProfile],
                 name: profileName,
                 settings: {
                     region: '',
