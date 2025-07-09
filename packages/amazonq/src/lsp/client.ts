@@ -165,6 +165,7 @@ export async function startLanguageServer(
                         pinnedContextEnabled: true,
                         mcp: true,
                         workspaceFilePath: vscode.workspace.workspaceFile?.fsPath,
+                        agenticReviewer: true,
                     },
                     window: {
                         notifications: true,
