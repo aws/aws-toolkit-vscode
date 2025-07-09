@@ -79,7 +79,6 @@ import { convertDateToTimestamp } from '../../shared/datetime'
 import { findStringInDirectory } from '../../shared/utilities/workspaceUtils'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import { AuthUtil } from '../util/authUtil'
-import { homedir } from 'os'
 
 export function getFeedbackCommentData() {
     const jobId = transformByQState.getJobId()
@@ -476,6 +475,30 @@ export async function startTransformationJob(
                 codeTransformRunTimeLatency: calculateTotalLatency(transformStartTime),
             })
         })
+
+        // create local history folder(s) and store metadata
+        const jobHistoryPath = path.join(os.homedir(), '.aws', 'transform', transformByQState.getProjectName(), jobId)
+        if (!fs.existsSync(jobHistoryPath)) {
+            fs.mkdirSync(jobHistoryPath, { recursive: true })
+        }
+        transformByQState.setJobHistoryPath(jobHistoryPath)
+        // save a copy of the upload zip
+        fs.copyFileSync(transformByQState.getPayloadFilePath(), path.join(jobHistoryPath, 'zipped-code.zip'))
+
+        const fields = [
+            jobId,
+            transformByQState.getTransformationType(),
+            transformByQState.getSourceJDKVersion(),
+            transformByQState.getTargetJDKVersion(),
+            transformByQState.getCustomDependencyVersionFilePath(),
+            transformByQState.getCustomBuildCommand(),
+            transformByQState.getTargetJavaHome(),
+            transformByQState.getProjectPath(),
+            transformByQState.getStartTime(),
+        ]
+
+        const jobDetails = fields.join('\t')
+        fs.writeFileSync(path.join(jobHistoryPath, 'metadata.txt'), jobDetails)
     } catch (error) {
         getLogger().error(`CodeTransformation: ${CodeWhispererConstants.failedToStartJobNotification}`, error)
         const errorMessage = (error as Error).message.toLowerCase()
@@ -726,9 +749,19 @@ export async function postTransformationJob() {
             })
     }
 
-    if (transformByQState.getPayloadFilePath()) {
-        // delete original upload ZIP at very end of transformation
-        fs.rmSync(transformByQState.getPayloadFilePath(), { force: true })
+    if (
+        transformByQState.isSucceeded() ||
+        transformByQState.isPartiallySucceeded() ||
+        transformByQState.isCancelled()
+    ) {
+        if (transformByQState.getPayloadFilePath()) {
+            // delete original upload ZIP at very end of transformation
+            fs.rmSync(transformByQState.getPayloadFilePath(), { force: true })
+            // delete the copy of the upload ZIP
+            fs.rmSync(path.join(transformByQState.getJobHistoryPath(), 'zipped-code.zip'), { force: true })
+        }
+        // delete transformation job metadata file (no longer needed)
+        fs.rmSync(path.join(transformByQState.getJobHistoryPath(), 'metadata.txt'), { force: true })
     }
     // delete temporary build logs file
     const logFilePath = path.join(os.tmpdir(), 'build-logs.txt')
@@ -745,28 +778,30 @@ export async function postTransformationJob() {
     // store job details and diff path locally (history)
     // TODO: ideally when job is cancelled, should be stored as CANCELLED instead of FAILED (remove this if statement after bug is fixed)
     if (!transformByQState.isCancelled()) {
-        const jobHistoryFilePath = path.join(homedir(), '.aws', 'transform', 'transformation-history.tsv')
+        const historyLogFilePath = path.join(os.homedir(), '.aws', 'transform', 'transformation-history.tsv')
         // create transform folder if necessary
-        if (!fs.existsSync(jobHistoryFilePath)) {
-            fs.mkdirSync(path.dirname(jobHistoryFilePath), { recursive: true })
+        if (!fs.existsSync(historyLogFilePath)) {
+            fs.mkdirSync(path.dirname(historyLogFilePath), { recursive: true })
             // create headers of new transformation history file
-            fs.writeFileSync(jobHistoryFilePath, 'date\tproject_name\tstatus\tduration\tdiff_path\tjob_id\n')
+            fs.writeFileSync(historyLogFilePath, 'date\tproject_name\tstatus\tduration\tdiff_patch\tsummary\tjob_id\n')
         }
         const latest = sessionJobHistory[transformByQState.getJobId()]
-        const jobDetails: string =
-            latest.startTime +
-            '\t' +
-            latest.projectName +
-            '\t' +
-            latest.status +
-            '\t' +
-            latest.duration +
-            '\t' +
-            transformByQState.getDiffPatchFilePath() +
-            '\t' +
-            transformByQState.getJobId() +
-            '\n'
-        fs.writeFileSync(jobHistoryFilePath, jobDetails, { flag: 'a' })
+        const fields = [
+            latest.startTime,
+            latest.projectName,
+            latest.status,
+            latest.duration,
+            transformByQState.isSucceeded() || transformByQState.isPartiallySucceeded()
+                ? path.join(transformByQState.getJobHistoryPath(), 'diff.patch')
+                : '',
+            transformByQState.isSucceeded() || transformByQState.isPartiallySucceeded()
+                ? path.join(transformByQState.getJobHistoryPath(), 'summary', 'summary.md')
+                : '',
+            transformByQState.getJobId(),
+        ]
+
+        const jobDetails = fields.join('\t') + '\n'
+        fs.writeFileSync(historyLogFilePath, jobDetails, { flag: 'a' })
     }
 }
 

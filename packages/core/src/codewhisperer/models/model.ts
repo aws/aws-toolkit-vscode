@@ -730,7 +730,7 @@ export class TransformByQState {
     private planFilePath: string = ''
     private summaryFilePath: string = ''
     private preBuildLogFilePath: string = ''
-    private diffPatchFilePath: string = ''
+    private jobHistoryPath: string = ''
 
     private resultArchiveFilePath: string = ''
     private projectCopyFilePath: string = ''
@@ -762,6 +762,9 @@ export class TransformByQState {
 
     private intervalId: NodeJS.Timeout | undefined = undefined
 
+    private refreshInProgress: boolean = false
+    private blockedByRefresh: boolean = false
+
     public isNotStarted() {
         return this.transformByQState === TransformByQStatus.NotStarted
     }
@@ -784,6 +787,14 @@ export class TransformByQState {
 
     public isPartiallySucceeded() {
         return this.transformByQState === TransformByQStatus.PartiallySucceeded
+    }
+
+    public isRefreshInProgress() {
+        return this.refreshInProgress
+    }
+
+    public wasBlockedByRefresh() {
+        return this.blockedByRefresh
     }
 
     public getHasSeenTransforming() {
@@ -882,8 +893,8 @@ export class TransformByQState {
         return this.summaryFilePath
     }
 
-    public getDiffPatchFilePath() {
-        return this.diffPatchFilePath
+    public getJobHistoryPath() {
+        return this.jobHistoryPath
     }
 
     public getResultArchiveFilePath() {
@@ -980,6 +991,14 @@ export class TransformByQState {
         this.transformByQState = TransformByQStatus.PartiallySucceeded
     }
 
+    public setRefreshInProgress(inProgress: boolean) {
+        this.refreshInProgress = inProgress
+    }
+
+    public setBlockedByRefresh(blocked: boolean): void {
+        this.blockedByRefresh = blocked
+    }
+
     public setHasSeenTransforming(hasSeen: boolean) {
         this.hasSeenTransforming = hasSeen
     }
@@ -1060,8 +1079,8 @@ export class TransformByQState {
         this.summaryFilePath = filePath
     }
 
-    public setDiffPatchFilePath(filePath: string) {
-        return (this.diffPatchFilePath = filePath)
+    public setJobHistoryPath(filePath: string) {
+        this.jobHistoryPath = filePath
     }
 
     public setResultArchiveFilePath(filePath: string) {
@@ -1130,6 +1149,7 @@ export class TransformByQState {
 
     public setJobDefaults() {
         this.setToNotStarted()
+        this.refreshInProgress = false
         this.hasSeenTransforming = false
         this.jobFailureErrorNotification = undefined
         this.jobFailureErrorChatMessage = undefined

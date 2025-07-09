@@ -190,6 +190,15 @@ export class GumbyController {
 
     private async transformInitiated(message: any) {
         this.messenger.sendViewHistoryMessage(message.tabID)
+        if (transformByQState.isRefreshInProgress()) {
+            transformByQState.setBlockedByRefresh(true)
+            this.messenger.sendMessage(
+                'A job refresh is currently in progress. Please wait for it to complete.',
+                message.tabID,
+                'ai-prompt'
+            )
+            return
+        }
 
         // silently check for projects eligible for SQL conversion
         let embeddedSQLProjects: TransformationCandidateProject[] = []
@@ -460,6 +469,15 @@ export class GumbyController {
     }
 
     private async handleUserLanguageUpgradeProjectChoice(message: any) {
+        if (transformByQState.isRefreshInProgress()) {
+            transformByQState.setBlockedByRefresh(true)
+            this.messenger.sendMessage(
+                'A job refresh is currently in progress. Please wait for it to complete.',
+                message.tabID,
+                'ai-prompt'
+            )
+            return
+        }
         await telemetry.codeTransform_submitSelection.run(async () => {
             const pathToProject: string = message.formSelectedValues['GumbyTransformLanguageUpgradeProjectForm']
             const toJDKVersion: JDKVersion = message.formSelectedValues['GumbyTransformJdkToForm']
@@ -492,6 +510,15 @@ export class GumbyController {
     }
 
     private async handleUserSQLConversionProjectSelection(message: any) {
+        if (transformByQState.isRefreshInProgress()) {
+            transformByQState.setBlockedByRefresh(true)
+            this.messenger.sendMessage(
+                'A job refresh is currently in progress. Please wait for it to complete.',
+                message.tabID,
+                'ai-prompt'
+            )
+            return
+        }
         await telemetry.codeTransform_submitSelection.run(async () => {
             const pathToProject: string = message.formSelectedValues['GumbyTransformSQLConversionProjectForm']
             const schema: string = message.formSelectedValues['GumbyTransformSQLSchemaForm']
