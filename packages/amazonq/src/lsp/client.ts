@@ -163,6 +163,7 @@ export async function startLanguageServer(
                     q: {
                         developerProfiles: true,
                         pinnedContextEnabled: true,
+                        imageContextEnabled: true,
                         mcp: true,
                         reroute: true,
                         modelSelection: true,
