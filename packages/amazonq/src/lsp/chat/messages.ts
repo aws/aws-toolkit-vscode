@@ -322,6 +322,8 @@ export function registerMessageListeners(
                 break
             }
             case OPEN_FILE_DIALOG: {
+                // openFileDialog is the event emitted from webView to open
+                // file system
                 const result = await languageClient.sendRequest<OpenFileDialogResult>(
                     openFileDialogRequestType.method,
                     message.params
@@ -478,16 +480,21 @@ export function registerMessageListeners(
     })
 
     languageClient.onRequest(ShowOpenDialogRequestType.method, async (params: ShowOpenDialogParams) => {
-        const uris = await vscode.window.showOpenDialog({
-            canSelectFiles: params.canSelectFiles ?? true,
-            canSelectFolders: params.canSelectFolders ?? false,
-            canSelectMany: params.canSelectMany ?? false,
-            filters: params.filters,
-            defaultUri: params.defaultUri ? vscode.Uri.parse(params.defaultUri) : undefined,
-            title: params.title,
-        })
-        const urisString = uris?.map((uri) => uri.fsPath)
-        return { uris: urisString || [] }
+        try {
+            const uris = await vscode.window.showOpenDialog({
+                canSelectFiles: params.canSelectFiles ?? true,
+                canSelectFolders: params.canSelectFolders ?? false,
+                canSelectMany: params.canSelectMany ?? false,
+                filters: params.filters,
+                defaultUri: params.defaultUri ? vscode.Uri.parse(params.defaultUri, false) : undefined,
+                title: params.title,
+            })
+            const urisString = uris?.map((uri) => uri.fsPath)
+            return { uris: urisString || [] }
+        } catch (err) {
+            languageClient.error(`[VSCode Client] Failed to open file dialog: ${(err as Error).message}`)
+            return { uris: [] }
+        }
     })
 
     languageClient.onRequest<ShowDocumentParams, ShowDocumentResult>(
