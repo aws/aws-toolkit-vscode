@@ -427,20 +427,6 @@ export class ProposedTransformationExplorer {
             let pathContainingArchive = ''
             patchFiles = [] // reset patchFiles if there was a previous transformation
 
-            // create transform, project, and job folders if needed (to store diff patch)
-            const jobDiffPath = path.join(
-                os.homedir(),
-                '.aws',
-                'transform',
-                transformByQState.getProjectName(),
-                transformByQState.getJobId(),
-                'diff.patch'
-            )
-            if (!fs.existsSync(jobDiffPath)) {
-                fs.mkdirSync(path.dirname(jobDiffPath), { recursive: true })
-            }
-            transformByQState.setDiffPatchFilePath(jobDiffPath)
-
             try {
                 // Download and deserialize the zip
                 pathContainingArchive = path.dirname(pathToArchive)
@@ -448,7 +434,7 @@ export class ProposedTransformationExplorer {
                 zip.extractAllTo(pathContainingArchive)
                 const files = fs.readdirSync(path.join(pathContainingArchive, ExportResultArchiveStructure.PathToPatch))
                 singlePatchFile = path.join(pathContainingArchive, ExportResultArchiveStructure.PathToPatch, files[0])
-                fs.copyFileSync(singlePatchFile, transformByQState.getDiffPatchFilePath()) // store diff patch locally
+                fs.copyFileSync(singlePatchFile, path.join(transformByQState.getJobHistoryPath(), 'diff.patch')) // store diff patch locally
                 patchFiles.push(singlePatchFile)
                 diffModel.parseDiff(patchFiles[0], transformByQState.getProjectPath())
 
@@ -457,6 +443,19 @@ export class ProposedTransformationExplorer {
                 transformByQState.setSummaryFilePath(
                     path.join(pathContainingArchive, ExportResultArchiveStructure.PathToSummary)
                 )
+                // store summary and build log locally for history
+                if (!fs.existsSync(path.join(transformByQState.getJobHistoryPath(), 'summary'))) {
+                    fs.mkdirSync(path.join(transformByQState.getJobHistoryPath(), 'summary'))
+                }
+                fs.copyFileSync(
+                    transformByQState.getSummaryFilePath(),
+                    path.join(transformByQState.getJobHistoryPath(), 'summary', 'summary.md')
+                )
+                fs.copyFileSync(
+                    path.join(path.dirname(transformByQState.getSummaryFilePath()), 'buildCommandOutput.log'),
+                    path.join(transformByQState.getJobHistoryPath(), 'summary', 'buildCommandOutput.log')
+                )
+
                 transformByQState.setResultArchiveFilePath(pathContainingArchive)
                 await setContext('gumby.isSummaryAvailable', true)
 
