@@ -324,7 +324,7 @@ export async function displaySvgDecoration(
                 isInlineEdit: true,
             }
             languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
-            if (inlineCompletionProvider && session.editsStreakPartialResultToken) {
+            if (inlineCompletionProvider) {
                 await inlineCompletionProvider.provideInlineCompletionItems(
                     editor.document,
                     endPosition,
