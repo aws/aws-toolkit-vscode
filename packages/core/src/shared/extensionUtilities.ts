@@ -195,10 +195,14 @@ export function isSageMaker(appName: 'SMAI' | 'SMUS' = 'SMAI'): boolean {
 
 export function isCn(): boolean {
     try {
-        return getComputeRegion()?.startsWith('cn') ?? false
-    } catch (e) {
-        // If compute region isn't initialized yet, assume we're not in a CN region
-        getLogger().debug('isCn called before compute region initialized, defaulting to false')
+        const region = getComputeRegion()
+        if (!region || region === 'notInitialized') {
+            getLogger().debug('isCn called before compute region initialized, defaulting to false')
+            return false
+        }
+        return region.startsWith('cn')
+    } catch (err) {
+        getLogger().error(`Error in isCn method: ${err}`)
         return false
     }
 }
