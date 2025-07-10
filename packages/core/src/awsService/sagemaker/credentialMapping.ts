@@ -10,9 +10,11 @@ import globals from '../../shared/extensionGlobals'
 import { ToolkitError } from '../../shared/errors'
 import { DevSettings } from '../../shared/settings'
 import { Auth } from '../../auth/auth'
-import { parseRegionFromArn } from './utils'
 import { SpaceMappings, SsmConnectionInfo } from './types'
 import { getLogger } from '../../shared/logger/logger'
+import { SagemakerClient } from '../../shared/clients/sagemaker'
+import { AppType } from '@amzn/sagemaker-client'
+import { parseArn } from './detached-server/utils'
 
 const mappingFileName = '.sagemaker-space-profiles'
 const mappingFilePath = path.join(os.homedir(), '.aws', mappingFileName)
@@ -81,8 +83,25 @@ export async function persistSSMConnection(
     wsUrl?: string,
     token?: string
 ): Promise<void> {
-    const region = parseRegionFromArn(appArn)
+    const { region, spaceName } = parseArn(appArn)
     const endpoint = DevSettings.instance.get('endpoints', {})['sagemaker'] ?? ''
+    const client = new SagemakerClient(region)
+
+    const spaceDetails = await client.describeSpace({
+        DomainId: domain,
+        SpaceName: spaceName,
+    })
+
+    let appSubDomain: string
+    if (spaceDetails.SpaceSettings?.AppType === AppType.JupyterLab) {
+        appSubDomain = '/jupyterlab'
+    } else if (spaceDetails.SpaceSettings?.AppType === AppType.CodeEditor) {
+        appSubDomain = '/code-editor'
+    } else {
+        throw new ToolkitError(
+            `Unsupported or missing app type for space. Expected JupyterLab or CodeEditor, got: ${spaceDetails.SpaceSettings?.AppType ?? 'undefined'}`
+        )
+    }
 
     let envSubdomain: string
 
@@ -101,8 +120,7 @@ export async function persistSSMConnection(
             ? `studio.${region}.sagemaker.aws`
             : `${envSubdomain}.studio.${region}.asfiovnxocqpcry.com`
 
-    const refreshUrl = `https://studio-${domain}.${baseDomain}/api/remoteaccess/token`
-
+    const refreshUrl = `https://studio-${domain}.${baseDomain}/${appSubDomain}`
     await setSpaceCredentials(appArn, refreshUrl, {
         sessionId: session ?? '-',
         url: wsUrl ?? '-',

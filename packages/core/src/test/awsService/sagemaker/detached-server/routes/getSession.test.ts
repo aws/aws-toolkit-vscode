@@ -42,6 +42,7 @@ describe('handleGetSession', () => {
         sinon.stub(utils, 'parseArn').returns({
             region: 'us-west-2',
             accountId: '123456789012',
+            spaceName: 'space-name',
         })
 
         await handleGetSession(req as http.IncomingMessage, res as http.ServerResponse)
@@ -56,6 +57,7 @@ describe('handleGetSession', () => {
         sinon.stub(utils, 'parseArn').returns({
             region: 'us-west-2',
             accountId: '123456789012',
+            spaceName: 'space-name',
         })
         sinon.stub(utils, 'startSagemakerSession').rejects(new Error('session error'))
 
@@ -71,6 +73,7 @@ describe('handleGetSession', () => {
         sinon.stub(utils, 'parseArn').returns({
             region: 'us-west-2',
             accountId: '123456789012',
+            spaceName: 'space-name',
         })
         sinon.stub(utils, 'startSagemakerSession').resolves({
             SessionId: 'abc123',

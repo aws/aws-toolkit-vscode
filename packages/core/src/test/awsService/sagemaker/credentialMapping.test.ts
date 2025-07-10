@@ -12,7 +12,7 @@ import globals from '../../../shared/extensionGlobals'
 
 describe('credentialMapping', () => {
     describe('persistLocalCredentials', () => {
-        const appArn = 'arn:aws:sagemaker:us-west-2:123456789012:app/domain/space'
+        const appArn = 'arn:aws:sagemaker:us-west-2:123456789012:space/d-f0lwireyzpjp/test-space'
 
         let sandbox: sinon.SinonSandbox
 
@@ -78,8 +78,8 @@ describe('credentialMapping', () => {
     })
 
     describe('persistSSMConnection', () => {
-        const appArn = 'arn:aws:sagemaker:us-west-2:123456789012:app/domain/space'
-        const domain = 'my-domain'
+        const appArn = 'arn:aws:sagemaker:us-west-2:123456789012:space/d-f0lwireyzpjp/test-space'
+        const domain = 'd-f0lwireyzpjp'
         let sandbox: sinon.SinonSandbox
 
         beforeEach(() => {
@@ -102,6 +102,16 @@ describe('credentialMapping', () => {
             sandbox.stub(fs, 'existsFile').resolves(false)
             const writeStub = sandbox.stub(fs, 'writeFile').resolves()
 
+            // Stub the AWS API call
+            const mockDescribeSpace = sandbox.stub().resolves({
+                SpaceSettings: {
+                    AppType: 'JupyterLab',
+                },
+            })
+            sandbox.stub(require('../../../shared/clients/sagemaker'), 'SagemakerClient').returns({
+                describeSpace: mockDescribeSpace,
+            })
+
             await persistSSMConnection(appArn, domain)
 
             const raw = writeStub.firstCall.args[1]
@@ -120,6 +130,16 @@ describe('credentialMapping', () => {
             sandbox.stub(DevSettings.instance, 'get').returns({ sagemaker: 'https://beta.whatever' })
             sandbox.stub(fs, 'existsFile').resolves(false)
             const writeStub = sandbox.stub(fs, 'writeFile').resolves()
+
+            // Stub the AWS API call
+            const mockDescribeSpace = sandbox.stub().resolves({
+                SpaceSettings: {
+                    AppType: 'JupyterLab',
+                },
+            })
+            sandbox.stub(require('../../../shared/clients/sagemaker'), 'SagemakerClient').returns({
+                describeSpace: mockDescribeSpace,
+            })
 
             await persistSSMConnection(appArn, domain, 'sess', 'wss://ws', 'token')
 
@@ -140,6 +160,16 @@ describe('credentialMapping', () => {
             sandbox.stub(fs, 'existsFile').resolves(false)
             const writeStub = sandbox.stub(fs, 'writeFile').resolves()
 
+            // Stub the AWS API call
+            const mockDescribeSpace = sandbox.stub().resolves({
+                SpaceSettings: {
+                    AppType: 'JupyterLab',
+                },
+            })
+            sandbox.stub(require('../../../shared/clients/sagemaker'), 'SagemakerClient').returns({
+                describeSpace: mockDescribeSpace,
+            })
+
             await persistSSMConnection(appArn, domain)
 
             const raw = writeStub.firstCall.args[1]
@@ -149,6 +179,27 @@ describe('credentialMapping', () => {
                 data.deepLink?.[appArn]?.refreshUrl,
                 'loadtest.studio.us-west-2.asfiovnxocqpcry.com'
             )
+        })
+
+        it('throws error when app type is unsupported', async () => {
+            sandbox.stub(DevSettings.instance, 'get').returns({})
+            sandbox.stub(fs, 'existsFile').resolves(false)
+
+            // Stub the AWS API call to return an unsupported app type
+            const mockDescribeSpace = sandbox.stub().resolves({
+                SpaceSettings: {
+                    AppType: 'UnsupportedApp',
+                },
+            })
+            sandbox.stub(require('../../../shared/clients/sagemaker'), 'SagemakerClient').returns({
+                describeSpace: mockDescribeSpace,
+            })
+
+            await assert.rejects(() => persistSSMConnection(appArn, domain), {
+                name: 'Error',
+                message:
+                    'Unsupported or missing app type for space. Expected JupyterLab or CodeEditor, got: UnsupportedApp',
+            })
         })
     })
 })

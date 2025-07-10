@@ -93,12 +93,3 @@ export function getSmSsmEnv(ssmPath: string, sagemakerLocalServerPath: string): 
 export function spawnDetachedServer(...args: Parameters<typeof cp.spawn>) {
     return cp.spawn(...args)
 }
-
-export function parseRegionFromArn(arn: string): string {
-    const parts = arn.split(':')
-    if (parts.length < 4) {
-        throw new Error(`Invalid ARN: "${arn}"`)
-    }
-
-    return parts[3] // region is the 4th part
-}
