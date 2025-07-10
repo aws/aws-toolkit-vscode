@@ -13,6 +13,7 @@ import { InlineCompletionItemWithReferences } from '@aws/language-server-runtime
 import path from 'path'
 import { imageVerticalOffset } from './svgGenerator'
 import { AmazonQInlineCompletionItemProvider } from '../completion'
+import { vsCodeState } from 'aws-core-vscode/codewhisperer'
 
 export class EditDecorationManager {
     private imageDecorationType: vscode.TextEditorDecorationType
@@ -211,7 +212,7 @@ export const decorationManager = EditDecorationManager.getDecorationManager()
 /**
  * Function to replace editor's content with new code
  */
-function replaceEditorContent(editor: vscode.TextEditor, newCode: string): void {
+async function replaceEditorContent(editor: vscode.TextEditor, newCode: string): Promise<void> {
     const document = editor.document
     const fullRange = new vscode.Range(
         0,
@@ -220,7 +221,7 @@ function replaceEditorContent(editor: vscode.TextEditor, newCode: string): void 
         document.lineAt(document.lineCount - 1).text.length
     )
 
-    void editor.edit((editBuilder) => {
+    await editor.edit((editBuilder) => {
         editBuilder.replace(fullRange, newCode)
     })
 }
@@ -294,7 +295,12 @@ export async function displaySvgDecoration(
             getLogger().info('Edit suggestion accepted')
 
             // Replace content
-            replaceEditorContent(editor, newCode)
+            try {
+                vsCodeState.isCodeWhispererEditing = true
+                await replaceEditorContent(editor, newCode)
+            } finally {
+                vsCodeState.isCodeWhispererEditing = false
+            }
 
             // Move cursor to end of the actual changed content
             const endPosition = getEndOfEditPosition(originalCode, newCode)
@@ -318,7 +324,7 @@ export async function displaySvgDecoration(
                 isInlineEdit: true,
             }
             languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
-            if (inlineCompletionProvider) {
+            if (inlineCompletionProvider && session.editsStreakPartialResultToken) {
                 await inlineCompletionProvider.provideInlineCompletionItems(
                     editor.document,
                     endPosition,
