@@ -23,6 +23,7 @@ import { getRemoteAppMetadata } from '../remoteUtils'
 export const parentContextValue = 'awsSagemakerParentNode'
 
 export type SelectedDomainUsers = [string, string[]][]
+export type SelectedDomainUsersByRegion = [string, SelectedDomainUsers][]
 
 export interface UserProfileMetadata {
     domain: DescribeDomainResponse
@@ -133,12 +134,12 @@ export class SagemakerParentNode extends AWSTreeNodeBase {
     }
 
     public async getSelectedDomainUsers(): Promise<Set<string>> {
-        const selectedDomainUsersMap = new Map(
-            globals.globalState.get<SelectedDomainUsers>(SagemakerConstants.SelectedDomainUsersState, [])
+        const selectedDomainUsersByRegionMap = new Map(
+            globals.globalState.get<SelectedDomainUsersByRegion>(SagemakerConstants.SelectedDomainUsersState, [])
         )
 
+        const selectedDomainUsersMap = new Map(selectedDomainUsersByRegionMap.get(this.regionCode))
         const defaultSelectedDomainUsers = await this.getDefaultSelectedDomainUsers()
-
         const cachedDomainUsers = selectedDomainUsersMap.get(this.callerIdentity.Arn || '')
 
         if (cachedDomainUsers && cachedDomainUsers.length > 0) {
@@ -149,13 +150,19 @@ export class SagemakerParentNode extends AWSTreeNodeBase {
     }
 
     public saveSelectedDomainUsers(selectedDomainUsers: string[]) {
-        const selectedDomainUsersMap = new Map(
-            globals.globalState.get<SelectedDomainUsers>(SagemakerConstants.SelectedDomainUsersState, [])
+        const selectedDomainUsersByRegionMap = new Map(
+            globals.globalState.get<SelectedDomainUsersByRegion>(SagemakerConstants.SelectedDomainUsersState, [])
         )
+
+        const selectedDomainUsersMap = new Map(selectedDomainUsersByRegionMap.get(this.regionCode))
 
         if (this.callerIdentity.Arn) {
             selectedDomainUsersMap?.set(this.callerIdentity.Arn, selectedDomainUsers)
-            globals.globalState.tryUpdate(SagemakerConstants.SelectedDomainUsersState, [...selectedDomainUsersMap])
+            selectedDomainUsersByRegionMap?.set(this.regionCode, [...selectedDomainUsersMap])
+
+            globals.globalState.tryUpdate(SagemakerConstants.SelectedDomainUsersState, [
+                ...selectedDomainUsersByRegionMap,
+            ])
         }
     }
 
