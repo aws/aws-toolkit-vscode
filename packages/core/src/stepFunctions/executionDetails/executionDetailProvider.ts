@@ -67,7 +67,7 @@ export class ExecutionDetailProvider {
      * Gets the webview content for Execution Details.
      * @private
      */
-    private getWebviewContent = async (): Promise<string> => {
+    private getWebviewContent = async (executionArn: string): Promise<string> => {
         const htmlFileSplit = this.webviewHtml.split('<head>')
 
         // Set asset source to CDN
@@ -83,8 +83,9 @@ export class ExecutionDetailProvider {
 
         // Set component type to ExecutionDetails
         const componentTypeTag = `<meta name="component-type" content="${ComponentType.ExecutionDetails}" />`
+        const executionArnTag = `<meta name="execution-arn" content="${executionArn}" />`
 
-        return `${htmlFileSplit[0]} <head> ${baseTag} ${localeTag} ${darkModeTag} ${componentTypeTag} ${htmlFileSplit[1]}`
+        return `${htmlFileSplit[0]} <head> ${baseTag} ${localeTag} ${darkModeTag} ${componentTypeTag} ${executionArnTag} ${htmlFileSplit[1]}`
     }
 
     /**
@@ -99,7 +100,7 @@ export class ExecutionDetailProvider {
             }
 
             // Set up the content
-            panel.webview.html = await this.getWebviewContent()
+            panel.webview.html = await this.getWebviewContent(executionArn)
             const context: ExecutionDetailsContext = {
                 panel,
                 loaderNotification: undefined,
