@@ -177,11 +177,23 @@ export class LanguageClientAuth {
         } satisfies UpdateProfileParams)
     }
 
-    updateIamProfile(profileName: string, accessKey: string, secretKey: string, sessionToken?: string, roleArn?: string): Promise<UpdateProfileResult> {
+    updateIamProfile(profileName: string, accessKey: string, secretKey: string, sessionToken?: string, roleArn?: string, sourceProfile?: string): Promise<UpdateProfileResult> {
         // Add credentials and delete SSO settings from profile
-        return this.client.sendRequest(updateProfileRequestType.method, {
-            profile: {
-                kinds: [ProfileKind.IamCredentialProfile],
+        let profile: Profile
+        if (roleArn) {
+            profile = {
+                kinds: [ProfileKind.RoleSourceProfile],
+                name: profileName,
+                settings: {
+                    region: '',
+                    sso_session: '',
+                    role_arn: roleArn,
+                    source_profile: sourceProfile,
+                },
+            }
+        } else if (accessKey && secretKey) {
+            profile = {
+                kinds: [ProfileKind.IamUserProfile],
                 name: profileName,
                 settings: {
                     region: '',
@@ -189,9 +201,25 @@ export class LanguageClientAuth {
                     aws_access_key_id: accessKey,
                     aws_secret_access_key: secretKey,
                     aws_session_token: sessionToken,
-                    role_arn: roleArn,
                 },
-            },
+            }
+        } else {
+            profile = {
+                kinds: [ProfileKind.Unknown],
+                name: profileName,
+                settings: {
+                    region: '',
+                    sso_session: '',
+                    aws_access_key_id: '',
+                    aws_secret_access_key: '',
+                    aws_session_token: '',
+                    role_arn: '',
+                    source_profile: '',
+                },
+            }
+        }
+        return this.client.sendRequest(updateProfileRequestType.method, {
+            profile: profile,
             ssoSession: {
                 name: profileName,
                 settings: undefined,
@@ -514,18 +542,20 @@ export class IamLogin extends BaseLogin {
         if (this.iamCredentialId) {
             await this.lspAuth.invalidateStsCredential(this.iamCredentialId)
         }
-        await this.lspAuth.updateIamProfile(this.profileName, '', '', '', '')
+        await this.lspAuth.updateIamProfile(this.profileName, '', '', '', '', '')
+        await this.lspAuth.updateIamProfile(this.profileName + '-source', '', '', '', '', '')
         this.updateConnectionState('notConnected')
         this._data = undefined
         // TODO: DeleteProfile api in Identity Service (this doesn't exist yet)
     }
 
     async updateProfile(opts: { accessKey: string; secretKey: string, sessionToken?: string, roleArn?: string }) {
-        await this.lspAuth.updateIamProfile(this.profileName, opts.accessKey, opts.secretKey, opts.sessionToken, opts.roleArn)
-        this._data = {
-            accessKey: opts.accessKey,
-            secretKey: opts.secretKey,
-            sessionToken: opts.sessionToken,
+        if (opts.roleArn) {
+            const sourceProfile = this.profileName + '-source'
+            await this.lspAuth.updateIamProfile(sourceProfile, opts.accessKey, opts.secretKey, opts.sessionToken, '', '')
+            await this.lspAuth.updateIamProfile(this.profileName, '', '', '', opts.roleArn, sourceProfile)
+        } else {
+            await this.lspAuth.updateIamProfile(this.profileName, opts.accessKey, opts.secretKey, opts.sessionToken, '', '')
         }
     }
 
@@ -533,15 +563,6 @@ export class IamLogin extends BaseLogin {
      * Restore the connection state and connection details to memory, if they exist.
      */
     async restore() {
-        const sessionData = await this.getProfile()
-        const credentials = sessionData?.profile?.settings
-        if (credentials?.aws_access_key_id && credentials?.aws_secret_access_key) {
-            this._data = {
-                accessKey: credentials.aws_access_key_id,
-                secretKey: credentials.aws_secret_access_key,
-                sessionToken: credentials.aws_session_token
-            }
-        }
         try {
             await this._getIamCredential(false)
         } catch (err) {
@@ -597,7 +618,13 @@ export class IamLogin extends BaseLogin {
             this.cancellationToken = undefined
         }
 
-        if (response.credentials.sessionToken) {
+        // Update cached credentials and credential ID
+        if (response.credentials.accessKeyId && response.credentials.secretAccessKey) {
+            this._data = {
+                accessKey: response.credentials.accessKeyId,
+                secretKey: response.credentials.secretAccessKey,
+                sessionToken: response.credentials.sessionToken,
+            }
             this.iamCredentialId = response.id
         }
         this.updateConnectionState('connected')
