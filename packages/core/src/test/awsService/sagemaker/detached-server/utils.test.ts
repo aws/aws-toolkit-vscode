@@ -8,29 +8,22 @@ import { parseArn } from '../../../../awsService/sagemaker/detached-server/utils
 
 describe('parseArn', () => {
     it('parses a standard SageMaker ARN with forward slash', () => {
-        const arn = 'arn:aws:sagemaker:us-west-2:123456789012:space/my-space-name'
+        const arn = 'arn:aws:sagemaker:us-west-2:123456789012:space/domain-name/my-space-name'
         const result = parseArn(arn)
         assert.deepStrictEqual(result, {
             region: 'us-west-2',
             accountId: '123456789012',
-        })
-    })
-
-    it('parses a standard SageMaker ARN with colon', () => {
-        const arn = 'arn:aws:sagemaker:eu-central-1:123456789012:space:space-name'
-        const result = parseArn(arn)
-        assert.deepStrictEqual(result, {
-            region: 'eu-central-1',
-            accountId: '123456789012',
+            spaceName: 'my-space-name',
         })
     })
 
     it('parses an ARN prefixed with sagemaker-user@', () => {
-        const arn = 'sagemaker-user@arn:aws:sagemaker:ap-southeast-1:123456789012:space/foo'
+        const arn = 'sagemaker-user@arn:aws:sagemaker:ap-southeast-1:123456789012:space/foo/my-space-name'
         const result = parseArn(arn)
         assert.deepStrictEqual(result, {
             region: 'ap-southeast-1',
             accountId: '123456789012',
+            spaceName: 'my-space-name',
         })
     })
 
