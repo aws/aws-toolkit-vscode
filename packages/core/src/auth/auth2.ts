@@ -182,7 +182,7 @@ export class LanguageClientAuth {
         let profile: Profile
         if (roleArn) {
             profile = {
-                kinds: [ProfileKind.RoleSourceProfile],
+                kinds: [ProfileKind.IamRoleSourceProfile],
                 name: profileName,
                 settings: {
                     region: '',
