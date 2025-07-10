@@ -28,7 +28,7 @@ export async function createTestAuthUtil() {
 
     const mockLspAuth: Partial<LanguageClientAuth> = {
         registerSsoTokenChangedHandler: sinon.stub().resolves(),
-        updateProfile: sinon.stub().resolves(),
+        updateSsoProfile: sinon.stub().resolves(),
         getSsoToken: sinon.stub().resolves(fakeToken),
         getProfile: sinon.stub().resolves({
             sso_registration_scopes: ['codewhisperer'],

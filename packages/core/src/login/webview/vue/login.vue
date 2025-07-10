@@ -124,6 +124,16 @@
                     class="selectable-item bottomMargin"
                 ></SelectableItem>
                 <SelectableItem
+                    v-if="app === 'AMAZONQ'"
+                    @toggle="toggleItemSelection"
+                    :isSelected="selectedLoginOption === LoginOption.IAM_CREDENTIAL"
+                    :itemId="LoginOption.IAM_CREDENTIAL"
+                    :itemText="''"
+                    :itemTitle="'Use with IAM Credentials'"
+                    :itemType="LoginOption.IAM_CREDENTIAL"
+                    class="selectable-item bottomMargin"
+                ></SelectableItem>
+                <SelectableItem
                     v-if="app === 'TOOLKIT'"
                     @toggle="toggleItemSelection"
                     :isSelected="selectedLoginOption === LoginOption.ENTERPRISE_SSO"
@@ -238,17 +248,19 @@
                 </svg>
             </button>
             <div class="header">IAM Credentials:</div>
-            <div class="hint">Credentials will be added to the appropriate ~/.aws/ files</div>
-            <div class="title topMargin">Profile Name</div>
-            <div class="hint">The identifier for these credentials</div>
-            <input
-                class="iamInput bottomMargin"
-                type="text"
-                id="profileName"
-                name="profileName"
-                v-model="profileName"
-                @keydown.enter="handleContinueClick()"
-            />
+            <div v-if="app === 'TOOLKIT'">
+                <div class="hint">Credentials will be added to the appropriate ~/.aws/ files</div>
+                <div class="title topMargin">Profile Name</div>
+                <div class="hint">The identifier for these credentials</div>
+                <input
+                    class="iamInput bottomMargin"
+                    type="text"
+                    id="profileName"
+                    name="profileName"
+                    v-model="profileName"
+                    @keydown.enter="handleContinueClick()"
+                />
+            </div>
             <div class="title">Access Key</div>
             <input
                 class="iamInput bottomMargin"
@@ -318,6 +330,10 @@ interface ImportedLogin {
     type: number
     startUrl: string
     region: string
+    // Add IAM credential fields
+    profileName?: string
+    accessKey?: string
+    secretKey?: string // Note: storing secrets has security implications
 }
 
 export default defineComponent({
@@ -337,6 +353,7 @@ export default defineComponent({
     data() {
         return {
             existingStartUrls: [] as string[],
+            existingIamAccessKeys: [] as string[],
             importedLogins: [] as ImportedLogin[],
             selectedLoginOption: LoginOption.NONE,
             stage: 'START' as Stage,
@@ -356,6 +373,8 @@ export default defineComponent({
         const defaultSso = await this.getDefaultSso()
         this.startUrl = defaultSso.startUrl
         this.selectedRegion = defaultSso.region
+        const defaultIamAccessKey = await this.getDefaultIamAccessKey()
+        this.accessKey = defaultIamAccessKey.accessKey
         await this.emitUpdate('created')
     },
 
@@ -425,17 +444,44 @@ export default defineComponent({
                     const selectedConnection =
                         this.importedLogins[this.selectedLoginOption - LoginOption.IMPORTED_LOGINS]
 
-                    // Imported connections cannot be Builder IDs, they are filtered out in the client.
-                    const error = await client.startEnterpriseSetup(
-                        selectedConnection.startUrl,
-                        selectedConnection.region,
-                        this.app
-                    )
-                    if (error) {
-                        this.stage = 'START'
-                        void client.errorNotification(error)
-                    } else {
-                        this.stage = 'CONNECTED'
+                    // // Imported connections cannot be Builder IDs, they are filtered out in the client.
+                    // const error = await client.startEnterpriseSetup(
+                    //     selectedConnection.startUrl,
+                    //     selectedConnection.region,
+                    //     this.app
+                    // )
+                    // if (error) {
+                    //     this.stage = 'START'
+                    //     void client.errorNotification(error)
+                    // } else {
+                    //     this.stage = 'CONNECTED'
+                    // }
+                    // Handle both SSO and IAM imported connections
+                    if (selectedConnection.type === LoginOption.ENTERPRISE_SSO) {
+                        const error = await client.startEnterpriseSetup(
+                            selectedConnection.startUrl,
+                            selectedConnection.region,
+                            this.app
+                        )
+                        if (error) {
+                            this.stage = 'START'
+                            void client.errorNotification(error)
+                        } else {
+                            this.stage = 'CONNECTED'
+                        }
+                    } else if (selectedConnection.type === LoginOption.IAM_CREDENTIAL) {
+                        // Use stored IAM credentials
+                        const error = await client.startIamCredentialSetup(
+                            selectedConnection.profileName || '',
+                            selectedConnection.accessKey || '',
+                            selectedConnection.secretKey || ''
+                        )
+                        if (error) {
+                            this.stage = 'START'
+                            void client.errorNotification(error)
+                        } else {
+                            this.stage = 'CONNECTED'
+                        }
                     }
                 } else if (this.selectedLoginOption === LoginOption.IAM_CREDENTIAL) {
                     this.stage = 'AWS_PROFILE'
@@ -569,6 +615,9 @@ export default defineComponent({
         async getDefaultSso() {
             return await client.getDefaultSsoProfile()
         },
+        async getDefaultIamAccessKey() {
+            return await client.getDefaultIamKeys()
+        },
         handleHelpLinkClick() {
             void client.emitUiClick('auth_helpLink')
         },
@@ -587,7 +636,11 @@ export default defineComponent({
             return this.startUrl.length == 0 || this.startUrlError.length > 0 || !this.selectedRegion
         },
         shouldDisableIamContinue() {
-            return this.profileName.length <= 0 || this.accessKey.length <= 0 || this.secretKey.length <= 0
+            if (this.app === 'TOOLKIT') {
+                return this.profileName.length <= 0 || this.accessKey.length <= 0 || this.secretKey.length <= 0
+            } else {
+                return this.accessKey.length <= 0 || this.secretKey.length <= 0
+            }
         },
     },
 })
