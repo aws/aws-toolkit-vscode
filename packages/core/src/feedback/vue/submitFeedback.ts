@@ -41,6 +41,10 @@ export class FeedbackWebview extends VueWebview {
             return 'Choose a reaction (smile/frown)'
         }
 
+        if (message.comment.length < 188) {
+            return 'Please add atleast 100 characters in the template describing your issue.'
+        }
+
         if (this.commentData) {
             message.comment = `${message.comment}\n\n${this.commentData}`
         }
