@@ -1,0 +1,325 @@
+},
+
+"typeVersion": 1
+
+},
+
+{
+
+"id": "510196ec-adaf-4e6c-aac0-8ca8b754438a",
+
+"name": "Sticky Note11",
+
+"type": "n8n-nodes-base.stickyNote",
+
+"position": [
+
+-1100,
+
+940
+
+],
+
+"parameters": {
+
+"color": 3,
+
+"width": 540,
+
+"height": 260,
+
+"content": "# How it works\nThis workflow automates the handling of incoming emails, summarizes their content, generates appropriate responses and validate it through send IMAP email with \"Human in the loop\" system. \n\nYou can quickly integrate Gmail and Outlook via the appropriate nodes"
+
+},
+
+"typeVersion": 1
+
+},
+
+{
+
+"id": "c4c9157d-4d05-47a1-a5eb-63865e838d39",
+
+"name": "Approved?",
+
+"type": "n8n-nodes-base.if",
+
+"position": [
+
+680,
+
+1340
+
+],
+
+"parameters": {
+
+"options": {},
+
+"conditions": {
+
+"options": {
+
+"version": 2,
+
+"leftValue": "",
+
+"caseSensitive": true,
+
+"typeValidation": "strict"
+
+},
+
+"combinator": "and",
+
+"conditions": [
+
+{
+
+"id": "62e26bc5-1732-4699-a602-99490c7406fd",
+
+"operator": {
+
+"type": "boolean",
+
+"operation": "true",
+
+"singleValue": true
+
+},
+
+"leftValue": "={{ $json.data.approved }}",
+
+"rightValue": ""
+
+}
+
+]
+
+}
+
+},
+
+"typeVersion": 2.2
+
+}
+
+],
+
+"active": false,
+
+"pinData": {},
+
+"settings": {
+
+"executionOrder": "v1"
+
+},
+
+"versionId": "47e79286-00f4-48e8-a0d1-e0f56d9ba0d5",
+
+"connections": {
+
+"OpenAI": {
+
+"ai_languageModel": [
+
+[
+
+{
+
+"node": "Write email",
+
+"type": "ai_languageModel",
+
+"index": 0
+
+}
+
+]
+
+]
+
+},
+
+"Markdown": {
+
+"main": [
+
+[
+
+{
+
+"node": "Email Summarization Chain",
+
+"type": "main",
+
+"index": 0
+
+}
+
+]
+
+]
+
+},
+
+"Approved?": {
+
+"main": [
+
+[
+
+{
+
+"node": "Send Email",
+
+"type": "main",
+
+"index": 0
+
+}
+
+],
+
+[]
+
+]
+
+},
+
+"Write email": {
+
+"main": [
+
+[
+
+{
+
+"node": "Set Email text",
+
+"type": "main",
+
+"index": 0
+
+}
+
+]
+
+]
+
+},
+
+"Approve Email": {
+
+"main": [
+
+[
+
+{
+
+"node": "Approved?",
+
+"type": "main",
+
+"index": 0
+
+}
+
+]
+
+]
+
+},
+
+"Set Email text": {
+
+"main": [
+
+[
+
+{
+
+"node": "Approve Email",
+
+"type": "main",
+
+"index": 0
+
+}
+
+]
+
+]
+
+},
+
+"OpenAI Chat Model": {
+
+"ai_languageModel": [
+
+[
+
+{
+
+"node": "Email Summarization Chain",
+
+"type": "ai_languageModel",
+
+"index": 0
+
+}
+
+]
+
+]
+
+},
+
+"Email Trigger (IMAP)": {
+
+"main": [
+
+[
+
+{
+
+"node": "Markdown",
+
+"type": "main",
+
+"index": 0
+
+}
+
+]
+
+]
+
+},
+
+"Email Summarization Chain": {
+
+"main": [
+
+[
+
+{
+
+"node": "Write email",
+
+"type": "main",
+
+"index": 0
+
+}
+
+]
+
+]
+
+}
+
+}
+
+}
