@@ -147,7 +147,7 @@ describe('isCn', function () {
         sandbox.restore()
     })
 
-    it('returns false when compute region is not initialized', async function () {
+    it('returns false when compute region is not defined', async function () {
         // Reset the compute region to undefined first
         const utils = require('../../shared/extensionUtilities')
         Object.defineProperty(utils, 'computeRegion', {
@@ -157,7 +157,20 @@ describe('isCn', function () {
 
         const result = isCn()
 
-        assert.strictEqual(result, false, 'isCn() should return false when compute region is not initialized')
+        assert.strictEqual(result, false, 'isCn() should return false when compute region is undefined')
+    })
+
+    it('returns false when compute region is not initialized', async function () {
+        // Set the compute region to "notInitialized"
+        const utils = require('../../shared/extensionUtilities')
+        Object.defineProperty(utils, 'computeRegion', {
+            value: 'notInitialized',
+            configurable: true,
+        })
+
+        const result = isCn()
+
+        assert.strictEqual(result, false, 'isCn() should return false when compute region is notInitialized')
     })
 
     it('returns true for CN regions', async function () {
@@ -180,11 +193,6 @@ describe('isCn', function () {
 
     it('returns false when an error occurs', async function () {
         const utils = require('../../shared/extensionUtilities')
-
-        // Restore original getComputeRegion if it was stubbed
-        if (utils.getComputeRegion.restore) {
-            utils.getComputeRegion.restore()
-        }
 
         sandbox.stub(utils, 'getComputeRegion').throws(new Error('Test error'))
 
