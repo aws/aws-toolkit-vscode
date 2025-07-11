@@ -185,7 +185,6 @@ export class LanguageClientAuth {
                 kinds: [ProfileKind.IamRoleSourceProfile],
                 name: profileName,
                 settings: {
-                    region: '',
                     sso_session: '',
                     role_arn: roleArn,
                     source_profile: sourceProfile,
@@ -196,7 +195,6 @@ export class LanguageClientAuth {
                 kinds: [ProfileKind.IamUserProfile],
                 name: profileName,
                 settings: {
-                    region: '',
                     sso_session: '',
                     aws_access_key_id: accessKey,
                     aws_secret_access_key: secretKey,
@@ -208,8 +206,6 @@ export class LanguageClientAuth {
                 kinds: [ProfileKind.Unknown],
                 name: profileName,
                 settings: {
-                    region: '',
-                    sso_session: '',
                     aws_access_key_id: '',
                     aws_secret_access_key: '',
                     aws_session_token: '',
