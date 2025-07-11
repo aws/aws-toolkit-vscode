@@ -12,7 +12,6 @@ import {
     getFunctionInfo,
     getLambdaDetails,
     getTempLocation,
-    lambdaEdits,
     lambdaTempPath,
     setFunctionInfo,
 } from '../utils'
@@ -138,7 +137,6 @@ export async function editLambdaCommand(functionNode: LambdaFunctionNode) {
 export async function editLambda(lambda: LambdaFunction, onActivation?: boolean) {
     return await telemetry.lambda_quickEditFunction.run(async () => {
         telemetry.record({ source: onActivation ? 'workspace' : 'explorer' })
-        const { name, region, configuration } = lambda
         const downloadLocation = getTempLocation(lambda.name, lambda.region)
         const downloadLocationName = vscode.workspace.asRelativePath(downloadLocation, true)
 
@@ -200,9 +198,6 @@ export async function editLambda(lambda: LambdaFunction, onActivation?: boolean)
             await openLambdaFile(lambdaLocation)
             watchForUpdates(lambda, vscode.Uri.file(downloadLocation))
         }
-
-        const newEdit = { location: downloadLocationName, region, functionName: name, configuration }
-        lambdaEdits.push(newEdit)
 
         return downloadLocation
     })
