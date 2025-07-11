@@ -5,6 +5,7 @@
 
 import {
     bearerCredentialsUpdateRequestType,
+    iamCredentialsUpdateRequestType,
     ConnectionMetadata,
     NotificationType,
     RequestType,
@@ -17,8 +18,8 @@ import { LanguageClient } from 'vscode-languageclient'
 import { AuthUtil } from 'aws-core-vscode/codewhisperer'
 import { Writable } from 'stream'
 import { onceChanged } from 'aws-core-vscode/utils'
-import { getLogger, oneMinute } from 'aws-core-vscode/shared'
-import { isSsoConnection } from 'aws-core-vscode/auth'
+import { getLogger, oneMinute, isSageMaker } from 'aws-core-vscode/shared'
+import { isSsoConnection, isIamConnection } from 'aws-core-vscode/auth'
 
 export const encryptionKey = crypto.randomBytes(32)
 
@@ -78,10 +79,16 @@ export class AmazonQLspAuth {
      */
     async refreshConnection(force: boolean = false) {
         const activeConnection = this.authUtil.conn
-        if (this.authUtil.isConnectionValid() && isSsoConnection(activeConnection)) {
-            // send the token to the language server
-            const token = await this.authUtil.getBearerToken()
-            await (force ? this._updateBearerToken(token) : this.updateBearerToken(token))
+        if (this.authUtil.isConnectionValid()) {
+            if (isSsoConnection(activeConnection)) {
+                // Existing SSO path
+                const token = await this.authUtil.getBearerToken()
+                await (force ? this._updateBearerToken(token) : this.updateBearerToken(token))
+            } else if (isSageMaker() && isIamConnection(activeConnection)) {
+                // New SageMaker IAM path
+                const credentials = await this.authUtil.getCredentials()
+                await (force ? this._updateIamCredentials(credentials) : this.updateIamCredentials(credentials))
+            }
         }
     }
 
@@ -92,15 +99,33 @@ export class AmazonQLspAuth {
 
     public updateBearerToken = onceChanged(this._updateBearerToken.bind(this))
     private async _updateBearerToken(token: string) {
-        const request = await this.createUpdateCredentialsRequest({
-            token,
-        })
+        const request = await this.createUpdateBearerCredentialsRequest(token)
 
         // "aws/credentials/token/update"
         // https://github.com/aws/language-servers/blob/44d81f0b5754747d77bda60b40cc70950413a737/core/aws-lsp-core/src/credentials/credentialsProvider.ts#L27
         await this.client.sendRequest(bearerCredentialsUpdateRequestType.method, request)
 
         this.client.info(`UpdateBearerToken: ${JSON.stringify(request)}`)
+    }
+
+    public updateIamCredentials = onceChanged(this._updateIamCredentials.bind(this))
+    private async _updateIamCredentials(credentials: any) {
+        getLogger().info(
+            `[SageMaker Debug] Updating IAM credentials - credentials received: ${credentials ? 'YES' : 'NO'}`
+        )
+        if (credentials) {
+            getLogger().info(
+                `[SageMaker Debug] IAM credentials structure: accessKeyId=${credentials.accessKeyId ? 'present' : 'missing'}, secretAccessKey=${credentials.secretAccessKey ? 'present' : 'missing'}, sessionToken=${credentials.sessionToken ? 'present' : 'missing'}`
+            )
+        }
+
+        const request = await this.createUpdateIamCredentialsRequest(credentials)
+
+        // "aws/credentials/iam/update"
+        await this.client.sendRequest(iamCredentialsUpdateRequestType.method, request)
+
+        this.client.info(`UpdateIamCredentials: ${JSON.stringify(request)}`)
+        getLogger().info(`[SageMaker Debug] IAM credentials update request sent successfully`)
     }
 
     public startTokenRefreshInterval(pollingTime: number = oneMinute / 2) {
@@ -110,8 +135,9 @@ export class AmazonQLspAuth {
         return interval
     }
 
-    private async createUpdateCredentialsRequest(data: any): Promise<UpdateCredentialsParams> {
-        const payload = new TextEncoder().encode(JSON.stringify({ data }))
+    private async createUpdateBearerCredentialsRequest(token: string): Promise<UpdateCredentialsParams> {
+        const bearerCredentials = { token }
+        const payload = new TextEncoder().encode(JSON.stringify({ data: bearerCredentials }))
 
         const jwt = await new jose.CompactEncrypt(payload)
             .setProtectedHeader({ alg: 'dir', enc: 'A256GCM' })
@@ -124,6 +150,26 @@ export class AmazonQLspAuth {
                     startUrl: AuthUtil.instance.startUrl,
                 },
             },
+            encrypted: true,
+        }
+    }
+
+    private async createUpdateIamCredentialsRequest(credentials: any): Promise<UpdateCredentialsParams> {
+        // Extract IAM credentials structure
+        const iamCredentials = {
+            accessKeyId: credentials.accessKeyId,
+            secretAccessKey: credentials.secretAccessKey,
+            sessionToken: credentials.sessionToken,
+        }
+        const payload = new TextEncoder().encode(JSON.stringify({ data: iamCredentials }))
+
+        const jwt = await new jose.CompactEncrypt(payload)
+            .setProtectedHeader({ alg: 'dir', enc: 'A256GCM' })
+            .encrypt(encryptionKey)
+
+        return {
+            data: jwt,
+            // Omit metadata for IAM credentials since startUrl is undefined for non-SSO connections
             encrypted: true,
         }
     }
