@@ -75,7 +75,6 @@ describe('editLambda', function () {
         sinon.replace(require('../../../lambda/commands/editLambda'), 'promptDeploy', promptDeployStub)
 
         // Other stubs
-        sinon.stub(utils, 'lambdaEdits').value([])
         sinon.stub(utils, 'getLambdaDetails').returns({ fileName: 'index.js', functionName: 'test-function' })
         sinon.stub(fs, 'readdir').resolves([])
         sinon.stub(fs, 'delete').resolves()
