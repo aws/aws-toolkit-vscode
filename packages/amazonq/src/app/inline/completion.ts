@@ -35,8 +35,10 @@ import {
     inlineCompletionsDebounceDelay,
     noInlineSuggestionsMsg,
     ReferenceInlineProvider,
+    getDiagnosticsDifferences,
+    getDiagnosticsOfCurrentFile,
+    toIdeDiagnostics,
 } from 'aws-core-vscode/codewhisperer'
-import { InlineGeneratingMessage } from './inlineGeneratingMessage'
 import { LineTracker } from './stateTracker/lineTracker'
 import { InlineTutorialAnnotation } from './tutorials/inlineTutorialAnnotation'
 import { TelemetryHelper } from './telemetryHelper'
@@ -55,7 +57,7 @@ export class InlineCompletionManager implements Disposable {
     private sessionManager: SessionManager
     private recommendationService: RecommendationService
     private lineTracker: LineTracker
-    private incomingGeneratingMessage: InlineGeneratingMessage
+
     private inlineTutorialAnnotation: InlineTutorialAnnotation
     private readonly logSessionResultMessageName = 'aws/logInlineCompletionSessionResults'
     private documentChangeListener: Disposable
@@ -70,12 +72,7 @@ export class InlineCompletionManager implements Disposable {
         this.languageClient = languageClient
         this.sessionManager = sessionManager
         this.lineTracker = lineTracker
-        this.incomingGeneratingMessage = new InlineGeneratingMessage(this.lineTracker)
-        this.recommendationService = new RecommendationService(
-            this.sessionManager,
-            this.incomingGeneratingMessage,
-            cursorUpdateRecorder
-        )
+        this.recommendationService = new RecommendationService(this.sessionManager, cursorUpdateRecorder)
         this.inlineTutorialAnnotation = inlineTutorialAnnotation
         this.inlineCompletionProvider = new AmazonQInlineCompletionItemProvider(
             languageClient,
@@ -105,7 +102,6 @@ export class InlineCompletionManager implements Disposable {
     public dispose(): void {
         if (this.disposable) {
             this.disposable.dispose()
-            this.incomingGeneratingMessage.dispose()
             this.lineTracker.dispose()
         }
         if (this.documentChangeListener) {
@@ -123,6 +119,13 @@ export class InlineCompletionManager implements Disposable {
             firstCompletionDisplayLatency?: number
         ) => {
             // TODO: also log the seen state for other suggestions in session
+            // Calculate timing metrics before diagnostic delay
+            const totalSessionDisplayTime = performance.now() - requestStartTime
+            await sleep(1000)
+            const diagnosticDiff = getDiagnosticsDifferences(
+                this.sessionManager.getActiveSession()?.diagnosticsBeforeAccept,
+                getDiagnosticsOfCurrentFile()
+            )
             const params: LogInlineCompletionSessionResultsParams = {
                 sessionId: sessionId,
                 completionSessionResult: {
@@ -132,8 +135,10 @@ export class InlineCompletionManager implements Disposable {
                         discarded: false,
                     },
                 },
-                totalSessionDisplayTime: Date.now() - requestStartTime,
+                totalSessionDisplayTime: totalSessionDisplayTime,
                 firstCompletionDisplayLatency: firstCompletionDisplayLatency,
+                addedDiagnostics: diagnosticDiff.added.map((it) => toIdeDiagnostics(it)),
+                removedDiagnostics: diagnosticDiff.removed.map((it) => toIdeDiagnostics(it)),
             }
             this.languageClient.sendNotification(this.logSessionResultMessageName, params)
             this.disposable.dispose()

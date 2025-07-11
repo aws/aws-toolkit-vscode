@@ -12,7 +12,6 @@ import {
     CreateFilesParams,
     DeleteFilesParams,
     DidChangeWorkspaceFoldersParams,
-    DidSaveTextDocumentParams,
     GetConfigurationFromServerParams,
     RenameFilesParams,
     ResponseMessage,
@@ -164,8 +163,11 @@ export async function startLanguageServer(
                     q: {
                         developerProfiles: true,
                         pinnedContextEnabled: true,
+                        imageContextEnabled: true,
                         mcp: true,
                         shortcut: true,
+                        reroute: true,
+                        modelSelection: true,
                         workspaceFilePath: vscode.workspace.workspaceFile?.fsPath,
                     },
                     window: {
@@ -343,13 +345,6 @@ async function onLanguageServerReady(
                     return { oldUri: it.oldUri.fsPath, newUri: it.newUri.fsPath }
                 }),
             } as RenameFilesParams)
-        }),
-        vscode.workspace.onDidSaveTextDocument((e) => {
-            client.sendNotification('workspace/didSaveTextDocument', {
-                textDocument: {
-                    uri: e.uri.fsPath,
-                },
-            } as DidSaveTextDocumentParams)
         }),
         vscode.workspace.onDidChangeWorkspaceFolders((e) => {
             client.sendNotification('workspace/didChangeWorkspaceFolder', {

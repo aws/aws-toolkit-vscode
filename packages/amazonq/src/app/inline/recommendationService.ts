@@ -11,7 +11,6 @@ import {
 import { CancellationToken, InlineCompletionContext, Position, TextDocument } from 'vscode'
 import { LanguageClient } from 'vscode-languageclient'
 import { SessionManager } from './sessionManager'
-import { InlineGeneratingMessage } from './inlineGeneratingMessage'
 import { AuthUtil, CodeWhispererStatusBarManager } from 'aws-core-vscode/codewhisperer'
 import { TelemetryHelper } from './telemetryHelper'
 import { ICursorUpdateRecorder } from './cursorUpdateManager'
@@ -20,12 +19,12 @@ import { globals, getLogger } from 'aws-core-vscode/shared'
 export interface GetAllRecommendationsOptions {
     emitTelemetry?: boolean
     showUi?: boolean
+    editsStreakToken?: number | string
 }
 
 export class RecommendationService {
     constructor(
         private readonly sessionManager: SessionManager,
-        private readonly inlineGeneratingMessage: InlineGeneratingMessage,
         private cursorUpdateRecorder?: ICursorUpdateRecorder
     ) {}
     /**
@@ -47,12 +46,15 @@ export class RecommendationService {
         // Record that a regular request is being made
         this.cursorUpdateRecorder?.recordCompletionRequest()
 
-        const request: InlineCompletionWithReferencesParams = {
+        let request: InlineCompletionWithReferencesParams = {
             textDocument: {
                 uri: document.uri.toString(),
             },
             position,
             context,
+        }
+        if (options.editsStreakToken) {
+            request = { ...request, partialResultToken: options.editsStreakToken }
         }
         const requestStartTime = globals.clock.Date.now()
         const statusBar = CodeWhispererStatusBarManager.instance
@@ -65,7 +67,6 @@ export class RecommendationService {
         try {
             // Show UI indicators only if UI is enabled
             if (options.showUi) {
-                await this.inlineGeneratingMessage.showGenerating(context.triggerKind)
                 await statusBar.setLoading()
             }
 
@@ -112,19 +113,31 @@ export class RecommendationService {
                 firstCompletionDisplayLatency
             )
 
-            // If there are more results to fetch, handle them in the background
-            try {
-                while (result.partialResultToken) {
-                    const paginatedRequest = { ...request, partialResultToken: result.partialResultToken }
-                    result = await languageClient.sendRequest(
-                        inlineCompletionWithReferencesRequestType.method,
-                        paginatedRequest,
-                        token
-                    )
-                    this.sessionManager.updateSessionSuggestions(result.items)
+            const isInlineEdit = result.items.some((item) => item.isInlineEdit)
+            if (!isInlineEdit) {
+                // If the suggestion is COMPLETIONS and there are more results to fetch, handle them in the background
+                getLogger().info(
+                    'Suggestion type is COMPLETIONS. Start fetching for more items if partialResultToken exists.'
+                )
+                try {
+                    while (result.partialResultToken) {
+                        const paginatedRequest = { ...request, partialResultToken: result.partialResultToken }
+                        result = await languageClient.sendRequest(
+                            inlineCompletionWithReferencesRequestType.method,
+                            paginatedRequest,
+                            token
+                        )
+                        this.sessionManager.updateSessionSuggestions(result.items)
+                    }
+                } catch (error) {
+                    languageClient.warn(`Error when getting suggestions: ${error}`)
                 }
-            } catch (error) {
-                languageClient.warn(`Error when getting suggestions: ${error}`)
+            } else {
+                // Skip fetching for more items if the suggesion is EDITS. If it is EDITS suggestion, only fetching for more
+                // suggestions when the user start to accept a suggesion.
+                // Save editsStreakPartialResultToken for the next EDITS suggestion trigger if user accepts.
+                getLogger().info('Suggestion type is EDITS. Skip fetching for more items.')
+                this.sessionManager.updateActiveEditsStreakToken(result.partialResultToken)
             }
 
             // Close session and finalize telemetry regardless of pagination path
@@ -149,7 +162,6 @@ export class RecommendationService {
         } finally {
             // Remove all UI indicators if UI is enabled
             if (options.showUi) {
-                this.inlineGeneratingMessage.hideGenerating()
                 void statusBar.refreshStatusBar() // effectively "stop loading"
             }
         }
