@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "fix increased latency due to inline completion API is called in a blocking manner"
+}
