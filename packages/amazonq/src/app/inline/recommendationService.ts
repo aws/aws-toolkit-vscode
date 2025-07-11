@@ -80,7 +80,7 @@ export class RecommendationService {
                     nextToken: request.partialResultToken,
                 },
             })
-            let result: InlineCompletionListWithReferences = await languageClient.sendRequest(
+            const result: InlineCompletionListWithReferences = await languageClient.sendRequest(
                 inlineCompletionWithReferencesRequestType.method,
                 request,
                 token
@@ -120,18 +120,10 @@ export class RecommendationService {
                 getLogger().info(
                     'Suggestion type is COMPLETIONS. Start fetching for more items if partialResultToken exists.'
                 )
-                try {
-                    while (result.partialResultToken) {
-                        const paginatedRequest = { ...request, partialResultToken: result.partialResultToken }
-                        result = await languageClient.sendRequest(
-                            inlineCompletionWithReferencesRequestType.method,
-                            paginatedRequest,
-                            token
-                        )
-                        this.sessionManager.updateSessionSuggestions(result.items)
-                    }
-                } catch (error) {
-                    languageClient.warn(`Error when getting suggestions: ${error}`)
+                if (result.partialResultToken) {
+                    this.processRemainingRequests(languageClient, request, result, token).catch((error) => {
+                        languageClient.warn(`Error when getting suggestions: ${error}`)
+                    })
                 }
             } else {
                 // Skip fetching for more items if the suggesion is EDITS. If it is EDITS suggestion, only fetching for more
@@ -166,5 +158,32 @@ export class RecommendationService {
                 void statusBar.refreshStatusBar() // effectively "stop loading"
             }
         }
+    }
+
+    private async processRemainingRequests(
+        languageClient: LanguageClient,
+        initialRequest: InlineCompletionWithReferencesParams,
+        firstResult: InlineCompletionListWithReferences,
+        token: CancellationToken
+    ): Promise<void> {
+        let nextToken = firstResult.partialResultToken
+        while (nextToken) {
+            const request = { ...initialRequest, partialResultToken: nextToken }
+
+            const result: InlineCompletionListWithReferences = await languageClient.sendRequest(
+                inlineCompletionWithReferencesRequestType.method,
+                request,
+                token
+            )
+
+            this.sessionManager.updateSessionSuggestions(result.items)
+            nextToken = result.partialResultToken
+        }
+
+        this.sessionManager.closeSession()
+
+        // All pagination requests completed
+        TelemetryHelper.instance.setAllPaginationEndTime()
+        TelemetryHelper.instance.tryRecordClientComponentLatency()
     }
 }
