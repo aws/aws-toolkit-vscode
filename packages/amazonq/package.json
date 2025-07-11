@@ -860,9 +860,9 @@
         "keybindings": [
             {
                 "command": "aws.amazonq.stopCmdExecution",
-                "key": "ctrl+backspace",
-                "mac": "cmd+backspace",
-                "linux": "meta+backspace",
+                "key": "ctrl+c",
+                "mac": "ctrl+c",
+                "linux": "meta+c",
                 "when": "aws.amazonq.amazonqChatLSP.isRunning"
             },
             {
@@ -870,6 +870,13 @@
                 "key": "ctrl+r",
                 "mac": "cmd+r",
                 "linux": "meta+r",
+                "when": "aws.amazonq.amazonqChatLSP.isRunning"
+            },
+            {
+                "command": "aws.amazonq.rejectCmdExecution",
+                "key": "ctrl+e",
+                "mac": "cmd+e",
+                "linux": "meta+e",
                 "when": "aws.amazonq.amazonqChatLSP.isRunning"
             },
             {
