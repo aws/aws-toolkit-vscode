@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import { Workbench, By, WebviewView, WebElement } from 'vscode-extension-tester'
+import { until } from 'selenium-webdriver'
 
 describe('Amazon Q E2E UI Test', function () {
     // need this timeout because Amazon Q takes awhile to load
@@ -19,12 +20,13 @@ describe('Amazon Q E2E UI Test', function () {
         webviewView = new WebviewView()
         await webviewView.switchToFrame()
 
-        // Login flow, i've gotten rid of the timeouts to make it run super fast
-        await new Promise((resolve) => setTimeout(resolve, 8000))
+        const driver = webviewView.getDriver()
+        await driver.wait(until.elementsLocated(By.css('.selectable-item')), 30000)
         const selectableItems = await webviewView.findWebElements(By.css('.selectable-item'))
         if (selectableItems.length === 0) {
             throw new Error('No selectable login options found')
         }
+
         const companyItem = await findItemByText(selectableItems, 'Company account')
         await companyItem.click()
         const signInContinue = await webviewView.findWebElement(By.css('#connection-selection-continue-button'))
@@ -61,11 +63,12 @@ describe('Amazon Q E2E UI Test', function () {
         // const chatHtml = (await webviewView.getDriver().executeScript('return document.body.innerHTML')) as string
         // console.log('Chat Title:', chatTitle)
         // console.log('Chat HTML:', chatHtml.replace(/></g, '>\n<'))
-
+        const driver = webviewView.getDriver()
+        await driver.wait(until.elementsLocated(By.css('.mynah-chat-prompt-input')), 300000)
         // In order to test the chat prompt, we need to find the input field and send keys
         const chatInput = await webviewView.findWebElement(By.css('.mynah-chat-prompt-input'))
         await chatInput.sendKeys('Hello, Amazon Q!')
-
+        await driver.wait(until.elementsLocated(By.css('.mynah-chat-prompt-button')), 300000)
         // In order to submit the chat prompt, we need to find the send button and click it
         const sendButton = await webviewView.findWebElement(By.css('.mynah-chat-prompt-button'))
         await sendButton.click()
@@ -80,18 +83,6 @@ describe('Amazon Q E2E UI Test', function () {
 
         console.log('Chat response detected successfully')
     })
-
-    // it('fsRead Tool Test', async () => {
-    //     // stop working with the webview
-    //     await webviewView.switchBack()
-    //     const bottomBar = new BottomBarPanel()
-    //     await bottomBar.toggle(true)
-    //     const terminalView = await bottomBar.openTerminalView()
-    //     await terminalView.executeCommand('touch testfile.txt && code testfile.txt')
-    //     await new Promise((resolve) => setTimeout(resolve, 12000))
-    // })
-
-    // Helper to wait for selectable items to load
 
     // Helper to find item by text content
     async function findItemByText(items: WebElement[], text: string) {

@@ -1,0 +1,19 @@
+
+
+Writing code settings to /var/folders/2_/2gq5dx0523d60tk4_xn6_pnr0000gq/T/test-resources/settings/User/settings.json
+Launching browser...
+Browser ready in 1404 ms
+Launching tests...
+  Amazon Q E2E UI Test
+Waiting for manual authentication...
+Manual authentication should be done
+editorview successfully created
+Closed all editors
+Reopened webview view
+Chat response detected successfully
+    ✔ Chat Prompt Test (12165ms)
+
+Shutting down the browser
+
+  1 passing (37s)
+
