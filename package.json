@@ -74,6 +74,7 @@
         "webpack-merge": "^5.10.0"
     },
     "dependencies": {
+        "@aws-sdk/client-datazone": "^3.835.0",
         "@types/node": "^22.7.5",
         "jaro-winkler": "^0.2.8",
         "vscode-nls": "^5.2.0",

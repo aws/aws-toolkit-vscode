@@ -294,6 +294,7 @@
     "AWS.appcomposer.explorerTitle": "Infrastructure Composer",
     "AWS.cdk.explorerTitle": "CDK",
     "AWS.codecatalyst.explorerTitle": "CodeCatalyst",
+    "AWS.sagemakerunifiedstudio.explorerTitle": "SageMaker Unified Studio",
     "AWS.cwl.limit.desc": "Maximum amount of log entries pulled per request from CloudWatch Logs. For LiveTail, when the limit is reached, the oldest events will be removed to accomodate new events. (max 10000)",
     "AWS.samcli.deploy.bucket.recentlyUsed": "Buckets recently used for SAM deployments",
     "AWS.submenu.amazonqEditorContextSubmenu.title": "Amazon Q",

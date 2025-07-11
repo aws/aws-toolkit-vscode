@@ -780,6 +780,11 @@
                     "when": "(!isCloud9 && !aws.isSageMaker || isCloud9CodeCatalyst) && !aws.explorer.showAuthView"
                 },
                 {
+                    "id": "aws.smus.projectsView",
+                    "name": "%AWS.sagemakerunifiedstudio.explorerTitle%",
+                    "when": "!aws.explorer.showAuthView"
+                },
+                {
                     "type": "webview",
                     "id": "aws.toolkit.AmazonCommonAuth",
                     "name": "%AWS.amazonq.login%",
