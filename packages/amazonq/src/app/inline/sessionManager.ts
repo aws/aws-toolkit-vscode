@@ -4,6 +4,7 @@
  */
 import * as vscode from 'vscode'
 import { InlineCompletionItemWithReferences } from '@aws/language-server-runtimes-types'
+import { FileDiagnostic, getDiagnosticsOfCurrentFile } from 'aws-core-vscode/codewhisperer'
 
 // TODO: add more needed data to the session interface
 export interface CodeWhispererSession {
@@ -14,6 +15,7 @@ export interface CodeWhispererSession {
     requestStartTime: number
     firstCompletionDisplayLatency?: number
     startPosition: vscode.Position
+    diagnosticsBeforeAccept: FileDiagnostic | undefined
     // partialResultToken for the next trigger if user accepts an EDITS suggestion
     editsStreakPartialResultToken?: number | string
     triggerOnAcceptance?: boolean
@@ -32,6 +34,7 @@ export class SessionManager {
         startPosition: vscode.Position,
         firstCompletionDisplayLatency?: number
     ) {
+        const diagnosticsBeforeAccept = getDiagnosticsOfCurrentFile()
         this.activeSession = {
             sessionId,
             suggestions,
@@ -39,6 +42,7 @@ export class SessionManager {
             requestStartTime,
             startPosition,
             firstCompletionDisplayLatency,
+            diagnosticsBeforeAccept,
         }
     }
 
