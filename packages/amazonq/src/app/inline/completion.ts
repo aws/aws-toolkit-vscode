@@ -207,12 +207,15 @@ export class InlineCompletionManager implements Disposable {
 
 export class AmazonQInlineCompletionItemProvider implements InlineCompletionItemProvider {
     private logger = getLogger('nextEditPrediction')
+    private isGcInProgress: boolean = false
     constructor(
         private readonly languageClient: LanguageClient,
         private readonly recommendationService: RecommendationService,
         private readonly sessionManager: SessionManager,
         private readonly inlineTutorialAnnotation: InlineTutorialAnnotation
-    ) {}
+    ) {
+        this.inlineTutorialAnnotation
+    }
 
     private readonly logSessionResultMessageName = 'aws/logInlineCompletionSessionResults'
     provideInlineCompletionItems = debounce(
@@ -221,7 +224,7 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
         true
     )
 
-    private async _provideInlineCompletionItems(
+    async _provideInlineCompletionItems(
         document: TextDocument,
         position: Position,
         context: InlineCompletionContext,
@@ -320,24 +323,35 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
                 this.sessionManager.clear()
             }
 
+            if (this.isGcInProgress) {
+                getLogger().info(`there is inflight generateCompletion request, exit generateCompletion flow`)
+                return []
+            }
+
             // TODO: this line will take ~200ms each trigger, need to root cause and maybe better to disable it for now
             // tell the tutorial that completions has been triggered
-            await this.inlineTutorialAnnotation.triggered(context.triggerKind)
+            // await this.inlineTutorialAnnotation.triggered(context.triggerKind)
 
             TelemetryHelper.instance.setInvokeSuggestionStartTime()
             TelemetryHelper.instance.setTriggerType(context.triggerKind)
 
             const t1 = performance.now()
 
-            await this.recommendationService.getAllRecommendations(
-                this.languageClient,
-                document,
-                position,
-                context,
-                token,
-                isAutoTrigger,
-                getAllRecommendationsOptions
-            )
+            try {
+                this.isGcInProgress = true
+                await this.recommendationService.getAllRecommendations(
+                    this.languageClient,
+                    document,
+                    position,
+                    context,
+                    token,
+                    isAutoTrigger,
+                    getAllRecommendationsOptions
+                )
+            } finally {
+                this.isGcInProgress = false
+            }
+
             // get active item from session for displaying
             const items = this.sessionManager.getActiveRecommendation()
             const itemId = this.sessionManager.getActiveRecommendation()?.[0]?.itemId

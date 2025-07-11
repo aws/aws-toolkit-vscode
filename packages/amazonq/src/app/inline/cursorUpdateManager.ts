@@ -140,9 +140,9 @@ export class CursorUpdateManager implements vscode.Disposable, ICursorUpdateReco
      * Creates a cancellation token source
      * This method exists to make testing easier by allowing it to be stubbed
      */
-    private createCancellationTokenSource(): vscode.CancellationTokenSource {
-        return new vscode.CancellationTokenSource()
-    }
+    // private createCancellationTokenSource(): vscode.CancellationTokenSource {
+    //     return new vscode.CancellationTokenSource()
+    // }
 
     /**
      * Request LSP generate a completion for the current cursor position.
@@ -176,16 +176,16 @@ export class CursorUpdateManager implements vscode.Disposable, ICursorUpdateReco
 
             // Call the inline completion provider instead of directly calling getAllRecommendations
             try {
-                await this.inlineCompletionProvider.provideInlineCompletionItems(
-                    editor.document,
-                    position,
-                    {
-                        triggerKind: vscode.InlineCompletionTriggerKind.Automatic,
-                        selectedCompletionInfo: undefined,
-                    },
-                    this.createCancellationTokenSource().token,
-                    { emitTelemetry: false, showUi: false }
-                )
+                // await this.inlineCompletionProvider.provideInlineCompletionItems(
+                //     editor.document,
+                //     position,
+                //     {
+                //         triggerKind: vscode.InlineCompletionTriggerKind.Automatic,
+                //         selectedCompletionInfo: undefined,
+                //     },
+                //     this.createCancellationTokenSource().token,
+                //     { emitTelemetry: false, showUi: false }
+                // )
 
                 // Only update the last sent position after successfully sending the request
                 this.lastSentPosition = position
