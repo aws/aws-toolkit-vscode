@@ -86,7 +86,6 @@ export function registerCommands(provider: AmazonQChatViewProvider) {
             })
         }),
         registerShellCommandShortCut('aws.amazonq.runCmdExecution', 'run-shell-command', provider),
-        registerShellCommandShortCut('aws.amazonq.rejectCmdExecution', 'reject-shell-command', provider),
         registerShellCommandShortCut('aws.amazonq.stopCmdExecution', 'stop-shell-command', provider)
     )
 }

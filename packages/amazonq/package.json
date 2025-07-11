@@ -860,20 +860,16 @@
         "keybindings": [
             {
                 "command": "aws.amazonq.stopCmdExecution",
-                "key": "cmd+alt+s",
-                "mac": "cmd+alt+s",
+                "key": "ctrl+backspace",
+                "mac": "cmd+backspace",
+                "linux": "meta+backspace",
                 "when": "aws.amazonq.amazonqChatLSP.isRunning"
             },
             {
                 "command": "aws.amazonq.runCmdExecution",
-                "key": "cmd+alt+r",
-                "mac": "cmd+alt+r",
-                "when": "aws.amazonq.amazonqChatLSP.isRunning"
-            },
-            {
-                "command": "aws.amazonq.rejectCmdExecution",
-                "key": "cmd+alt+h",
-                "mac": "cmd+alt+h",
+                "key": "ctrl+r",
+                "mac": "cmd+r",
+                "linux": "meta+r",
                 "when": "aws.amazonq.amazonqChatLSP.isRunning"
             },
             {
