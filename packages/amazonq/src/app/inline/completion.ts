@@ -233,6 +233,7 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
             position,
             context,
             triggerKind: context.triggerKind === InlineCompletionTriggerKind.Automatic ? 'Automatic' : 'Invoke',
+            options: JSON.stringify(getAllRecommendationsOptions),
         })
 
         // prevent concurrent API calls and write to shared state variables
@@ -240,6 +241,12 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
             getLogger().info('Recommendations already active, returning empty')
             return []
         }
+
+        if (vsCodeState.isCodeWhispererEditing) {
+            getLogger().info('Q is editing, returning empty')
+            return []
+        }
+
         // yield event loop to let the document listen catch updates
         await sleep(1)
         // prevent user deletion invoking auto trigger
@@ -341,6 +348,7 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
             const t2 = performance.now()
 
             logstr = logstr += `- number of suggestions: ${items.length}
+- sessionId: ${this.sessionManager.getActiveSession()?.sessionId}
 - first suggestion content (next line):
 ${itemLog}
 - duration since trigger to before sending Flare call: ${t1 - t0}ms
@@ -388,11 +396,10 @@ ${itemLog}
                 if (item.isInlineEdit) {
                     // Check if Next Edit Prediction feature flag is enabled
                     if (Experiments.instance.isExperimentEnabled('amazonqLSPNEP')) {
-                        void showEdits(item, editor, session, this.languageClient, this).then(() => {
-                            const t3 = performance.now()
-                            logstr = logstr + `- duration since trigger to NEP suggestion is displayed: ${t3 - t0}ms`
-                            this.logger.info(logstr)
-                        })
+                        await showEdits(item, editor, session, this.languageClient, this)
+                        const t3 = performance.now()
+                        logstr = logstr + `- duration since trigger to NEP suggestion is displayed: ${t3 - t0}ms`
+                        this.logger.info(logstr)
                     }
                     return []
                 }
