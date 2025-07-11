@@ -54,15 +54,44 @@ describe('Amazon Q E2E UI Test', function () {
     })
 
     after(async () => {
+        // TO-DO: Close all the chat windows after the test is done so that when the test runs again it does not have memory
+        // from the previous test
+
+        /* 
+        mynah-tabs-container is the css that contains all the mynah ui tabs
+        inside that there are two spans that have key values
+        inside those spans there is a div with the css mynah-tab-item-label
+        and finally INSIDE THAT there is a button with the css mynah-tabs-close-button, we need to click that button and close all the tabs after the test is done
+
+
+        Logic:
+        Find all the tahs by looking for the close buttons and then close them one by one. To check if all the tabs are closed, we can check if the mynah-tabs-container is empty.
+        */
+        try {
+            // find all the close buttons and click them
+            const closeButtons = await webviewView.findWebElements(By.css('.mynah-tabs-close-button'))
+
+            for (const button of closeButtons) {
+                await button.click()
+                // small delay to ensure the tab closes properly
+                await new Promise((resolve) => setTimeout(resolve, 500))
+            }
+
+            // double check that all tabs are closed by checking if the mynah-tabs-container is empty
+            const tabsContainer = await webviewView.findWebElements(By.css('.mynah-tabs-container'))
+            if (
+                tabsContainer.length === 0 ||
+                (await tabsContainer[0].findElements(By.css('.mynah-tab-item-label'))).length === 0
+            ) {
+                console.log('All chat tabs successfully closed')
+            }
+        } catch (error) {
+            console.log('Error closing tabs:', error)
+        }
         await webviewView.switchBack()
     })
 
     it('Chat Prompt Test', async () => {
-        // Debug consoles to look at the html of the current webview
-        // const chatTitle = await webviewView.getDriver().getTitle()
-        // const chatHtml = (await webviewView.getDriver().executeScript('return document.body.innerHTML')) as string
-        // console.log('Chat Title:', chatTitle)
-        // console.log('Chat HTML:', chatHtml.replace(/></g, '>\n<'))
         const driver = webviewView.getDriver()
         await driver.wait(until.elementsLocated(By.css('.mynah-chat-prompt-input')), 300000)
         // In order to test the chat prompt, we need to find the input field and send keys
@@ -73,7 +102,6 @@ describe('Amazon Q E2E UI Test', function () {
         const sendButton = await webviewView.findWebElement(By.css('.mynah-chat-prompt-button'))
         await sendButton.click()
 
-        // TO-DO: Find out a way to check if the chat response is the expected response
         await new Promise((resolve) => setTimeout(resolve, 12000))
         // Wait for response using conversation container check
         const responseReceived = await waitForChatResponse(webviewView)
