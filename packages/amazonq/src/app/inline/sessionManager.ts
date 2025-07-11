@@ -16,6 +16,7 @@ export interface CodeWhispererSession {
     startPosition: vscode.Position
     // partialResultToken for the next trigger if user accepts an EDITS suggestion
     editsStreakPartialResultToken?: number | string
+    triggerOnAcceptance?: boolean
 }
 
 export class SessionManager {

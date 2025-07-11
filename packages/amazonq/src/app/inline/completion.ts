@@ -253,6 +253,12 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
             const prevSessionId = prevSession?.sessionId
             const prevItemId = this.sessionManager.getActiveRecommendation()?.[0]?.itemId
             const prevStartPosition = prevSession?.startPosition
+            if (prevSession?.triggerOnAcceptance) {
+                getAllRecommendationsOptions = {
+                    ...getAllRecommendationsOptions,
+                    editsStreakToken: prevSession?.editsStreakPartialResultToken,
+                }
+            }
             const editor = window.activeTextEditor
             if (prevSession && prevSessionId && prevItemId && prevStartPosition) {
                 const prefix = document.getText(new Range(prevStartPosition, position))

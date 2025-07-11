@@ -77,6 +77,7 @@ export class RecommendationService {
                     textDocument: request.textDocument,
                     position: request.position,
                     context: request.context,
+                    partialResultToken: request.partialResultToken,
                 },
             })
             let result: InlineCompletionListWithReferences = await languageClient.sendRequest(

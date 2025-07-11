@@ -318,18 +318,20 @@ export async function displaySvgDecoration(
                 isInlineEdit: true,
             }
             languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
-            if (inlineCompletionProvider) {
-                await inlineCompletionProvider.provideInlineCompletionItems(
-                    editor.document,
-                    endPosition,
-                    {
-                        triggerKind: vscode.InlineCompletionTriggerKind.Automatic,
-                        selectedCompletionInfo: undefined,
-                    },
-                    new vscode.CancellationTokenSource().token,
-                    { emitTelemetry: false, showUi: false, editsStreakToken: session.editsStreakPartialResultToken }
-                )
-            }
+            session.triggerOnAcceptance = true
+            // VS Code triggers suggestion on every keystroke, temporarily disable trigger on acceptance
+            // if (inlineCompletionProvider) {
+            //     await inlineCompletionProvider.provideInlineCompletionItems(
+            //         editor.document,
+            //         endPosition,
+            //         {
+            //             triggerKind: vscode.InlineCompletionTriggerKind.Automatic,
+            //             selectedCompletionInfo: undefined,
+            //         },
+            //         new vscode.CancellationTokenSource().token,
+            //         { emitTelemetry: false, showUi: false, editsStreakToken: session.editsStreakPartialResultToken }
+            //     )
+            // }
         },
         async () => {
             // Handle reject
