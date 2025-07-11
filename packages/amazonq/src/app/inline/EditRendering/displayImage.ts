@@ -326,6 +326,9 @@ export async function displaySvgDecoration(
             languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
             // Only auto trigger on acceptance if there is a nextToken
             if (inlineCompletionProvider && session.editsStreakPartialResultToken) {
+                getLogger('nextEditPrediction').info(
+                    `on acceptance trigger with nextToken ${session.editsStreakPartialResultToken}`
+                )
                 await inlineCompletionProvider.provideInlineCompletionItems(
                     editor.document,
                     endPosition,
