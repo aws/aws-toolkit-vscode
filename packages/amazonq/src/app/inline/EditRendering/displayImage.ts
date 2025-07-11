@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { getLogger, setContext } from 'aws-core-vscode/shared'
+import { getLogger, setContext, waitUntil } from 'aws-core-vscode/shared'
 import * as vscode from 'vscode'
 import { diffLines } from 'diff'
 import { LanguageClient } from 'vscode-languageclient'
@@ -292,22 +292,42 @@ export async function displaySvgDecoration(
         startLine,
         async () => {
             // Handle accept
+            session.isAccepted = true
             getLogger().info('Edit suggestion accepted')
 
-            // Replace content
+            const endPosition = getEndOfEditPosition(originalCode, newCode)
+
+            let isEditDone: boolean | undefined
             try {
                 vsCodeState.isCodeWhispererEditing = true
+                getLogger().info('set isEditing to TRUE')
+                // Replace content
                 await replaceEditorContent(editor, newCode)
+
+                // Move cursor to end of the actual changed content
+                editor.selection = new vscode.Selection(endPosition, endPosition)
+
+                // Move cursor to end of the actual changed content
+                // editor.selection = new vscode.Selection(endPosition, endPosition)
+
+                isEditDone = await waitUntil(
+                    async () => {
+                        return editor.document.getText() === newCode
+                    },
+                    {
+                        timeout: 1000,
+                        interval: 50,
+                        truthy: true,
+                    }
+                )
             } finally {
+                getLogger().info('set isEditing to FALSE')
                 vsCodeState.isCodeWhispererEditing = false
             }
 
-            // Move cursor to end of the actual changed content
-            const endPosition = getEndOfEditPosition(originalCode, newCode)
-            editor.selection = new vscode.Selection(endPosition, endPosition)
-
-            // Move cursor to end of the actual changed content
-            editor.selection = new vscode.Selection(endPosition, endPosition)
+            if (!isEditDone) {
+                console.log()
+            }
 
             await decorationManager.clearDecorations(editor)
             const params: LogInlineCompletionSessionResultsParams = {
@@ -326,19 +346,19 @@ export async function displaySvgDecoration(
             languageClient.sendNotification('aws/logInlineCompletionSessionResults', params)
             // Only auto trigger on acceptance if there is a nextToken
             if (inlineCompletionProvider && session.editsStreakPartialResultToken) {
-                getLogger('nextEditPrediction').info(
-                    `on acceptance trigger with nextToken ${session.editsStreakPartialResultToken}`
-                )
-                await inlineCompletionProvider.provideInlineCompletionItems(
-                    editor.document,
-                    endPosition,
-                    {
-                        triggerKind: vscode.InlineCompletionTriggerKind.Automatic,
-                        selectedCompletionInfo: undefined,
-                    },
-                    new vscode.CancellationTokenSource().token,
-                    { emitTelemetry: false, showUi: false, editsStreakToken: session.editsStreakPartialResultToken }
-                )
+                // getLogger('nextEditPrediction').info(
+                //     `on acceptance trigger with nextToken ${session.editsStreakPartialResultToken}`
+                // )
+                // await inlineCompletionProvider._provideInlineCompletionItems(
+                //     editor.document,
+                //     endPosition,
+                //     {
+                //         triggerKind: vscode.InlineCompletionTriggerKind.Automatic,
+                //         selectedCompletionInfo: undefined,
+                //     },
+                //     new vscode.CancellationTokenSource().token,
+                //     { emitTelemetry: false, showUi: false, editsStreakToken: session.editsStreakPartialResultToken }
+                // )
             }
         },
         async () => {

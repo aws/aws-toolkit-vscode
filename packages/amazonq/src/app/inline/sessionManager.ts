@@ -5,6 +5,7 @@
 import * as vscode from 'vscode'
 import { InlineCompletionItemWithReferences } from '@aws/language-server-runtimes-types'
 import { FileDiagnostic, getDiagnosticsOfCurrentFile } from 'aws-core-vscode/codewhisperer'
+import { getLogger } from 'aws-core-vscode/shared'
 
 // TODO: add more needed data to the session interface
 export interface CodeWhispererSession {
@@ -18,10 +19,12 @@ export interface CodeWhispererSession {
     diagnosticsBeforeAccept: FileDiagnostic | undefined
     // partialResultToken for the next trigger if user accepts an EDITS suggestion
     editsStreakPartialResultToken?: number | string
+    isAccepted: boolean
 }
 
 export class SessionManager {
     private activeSession?: CodeWhispererSession
+    previousSession?: CodeWhispererSession
     private _acceptedSuggestionCount: number = 0
 
     constructor() {}
@@ -42,6 +45,7 @@ export class SessionManager {
             startPosition,
             firstCompletionDisplayLatency,
             diagnosticsBeforeAccept,
+            isAccepted: false,
         }
     }
 
@@ -83,6 +87,11 @@ export class SessionManager {
     }
 
     public clear() {
+        getLogger().info(`sessionManager sets previousSession with previousSessionId=${this.activeSession?.sessionId}`)
+        this.previousSession = this.getActiveSession()
+        getLogger().info(
+            `sessionManager sets activeSession to undefined; previousSessionId=${this.activeSession?.sessionId}`
+        )
         this.activeSession = undefined
     }
 }

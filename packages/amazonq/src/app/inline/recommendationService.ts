@@ -70,6 +70,21 @@ export class RecommendationService {
                 await statusBar.setLoading()
             }
 
+            const prevSession = this.sessionManager.previousSession
+            getLogger.info(`
+                - prevSessionId = ${prevSession?.sessionId},
+                - prevSession !== undefined = ${prevSession !== undefined},
+                - prevSession.isAccepted = ${prevSession?.isAccepted},
+                - prevSession.nextToken = ${prevSession?.editsStreakPartialResultToken}
+            `)
+            if (prevSession && prevSession.isAccepted && prevSession.editsStreakPartialResultToken) {
+                getLogger().info(
+                    `previous session; sessionId=${prevSession.sessionId}; nextToken=${prevSession.editsStreakPartialResultToken}`
+                )
+                request.partialResultToken = prevSession.editsStreakPartialResultToken
+                getLogger().info(`set request nextToken to ${request.partialResultToken}`)
+            }
+
             // Handle first request
             getLogger().info('Sending inline completion request: %O', {
                 method: inlineCompletionWithReferencesRequestType.method,
@@ -85,8 +100,14 @@ export class RecommendationService {
                 request,
                 token
             )
+
+            if (!result.partialResultToken) {
+                console.log()
+            }
+
             getLogger().info('Received inline completion response: %O', {
                 sessionId: result.sessionId,
+                nextToken: result.partialResultToken ?? '',
                 itemCount: result.items?.length || 0,
                 items: result.items?.map((item) => ({
                     itemId: item.itemId,
@@ -137,7 +158,7 @@ export class RecommendationService {
                 // Skip fetching for more items if the suggesion is EDITS. If it is EDITS suggestion, only fetching for more
                 // suggestions when the user start to accept a suggesion.
                 // Save editsStreakPartialResultToken for the next EDITS suggestion trigger if user accepts.
-                getLogger().info('Suggestion type is EDITS. Skip fetching for more items.')
+                getLogger('nextEditPrediction').info(`setting editstreak nextToken: ${result.partialResultToken}`)
                 this.sessionManager.updateActiveEditsStreakToken(result.partialResultToken)
             }
 
