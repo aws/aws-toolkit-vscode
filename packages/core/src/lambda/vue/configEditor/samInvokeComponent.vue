@@ -12,8 +12,10 @@
                     class="button-theme-primary"
                     :style="{ width: '20%', marginRight: '27%' }"
                     v-on:click.prevent="launch"
+                    :disabled="invokeInProgress"
                 >
-                    Invoke
+                    <span v-if="invokeInProgress">Invoking...</span>
+                    <span v-else>Invoke</span>
                 </button>
                 <button class="button-theme-secondary" :style="{ marginLeft: '15px' }" v-on:click.prevent="loadConfig">
                     Load Debug Config

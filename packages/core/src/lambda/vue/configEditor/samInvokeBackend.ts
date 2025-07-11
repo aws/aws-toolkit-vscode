@@ -345,9 +345,10 @@ export class SamInvokeWebview extends VueWebview {
     }
 
     /**
-     * Validate and execute the provided launch config.
+     * Validate and execute the provided launch config with a progress indicator in the VS Code window.
      * TODO: Post validation failures back to webview?
      * @param config Config to invoke
+     * @param source Optional source identifier
      */
     public async invokeLaunchConfig(config: AwsSamDebuggerConfiguration, source?: string): Promise<void> {
         const finalConfig = finalizeConfig(
@@ -357,9 +358,39 @@ export class SamInvokeWebview extends VueWebview {
         const targetUri = await this.getUriFromLaunchConfig(finalConfig)
         const folder = targetUri ? vscode.workspace.getWorkspaceFolder(targetUri) : undefined
 
-        // startDebugging on VS Code goes through the whole resolution chain
-        await vscode.debug.startDebugging(folder, finalConfig)
+        // Get function name to display in progress message
+        let functionName = 'Function'
+        if (config.invokeTarget.target === 'template' || config.invokeTarget.target === 'api') {
+            functionName = config.invokeTarget.logicalId
+        } else if (config.invokeTarget.target === 'code') {
+            functionName = config.name || config.invokeTarget.lambdaHandler
+        }
+
+        // Use withProgress in the extension host context
+        await vscode.window.withProgress(
+            {
+                location: vscode.ProgressLocation.Window,
+                title: localize('AWS.lambda.local.invoke.progressTitle', 'Local Invoke Function'),
+                cancellable: false,
+            },
+            async (progress) => {
+                // Start debugging
+                progress.report({
+                    message: `${functionName}`,
+                })
+                return await vscode.debug.startDebugging(folder, finalConfig)
+            }
+        )
+        vscode.window.setStatusBarMessage(
+            localize(
+                'AWS.lambda.invoke.completed.statusBarMessage',
+                '$(testing-passed-icon) Invoke completed: {0}',
+                functionName
+            ),
+            5000
+        )
     }
+
     public async getLaunchConfigQuickPickItems(
         launchConfig: LaunchConfiguration,
         uri: vscode.Uri

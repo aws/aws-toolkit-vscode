@@ -61,6 +61,7 @@ export interface RemoteInvokeData {
     showNameInput: boolean
     newTestEventName: string
     selectedFunction: string
+    invokeInProgress: boolean
 }
 interface SampleQuickPickItem extends vscode.QuickPickItem {
     filename: string
@@ -83,32 +84,59 @@ export class RemoteInvokeWebview extends VueWebview {
     }
 
     public async invokeLambda(input: string, source?: string): Promise<void> {
-        let result: Result = 'Succeeded'
+        await vscode.window.withProgress(
+            {
+                location: vscode.ProgressLocation.Window,
+                title: localize('AWS.lambda.remote.invoke.progressTitle', 'Remote Invoke Function'),
+                cancellable: false,
+            },
+            async (progress) => {
+                let result: Result = 'Succeeded'
 
-        this.channel.show()
-        this.channel.appendLine('Loading response...')
+                progress.report({
+                    message: `${this.data.FunctionName}`,
+                })
 
-        try {
-            const funcResponse = await this.client.invoke(this.data.FunctionArn, input)
-            const logs = funcResponse.LogResult ? decodeBase64(funcResponse.LogResult) : ''
-            const payload = funcResponse.Payload ? funcResponse.Payload : JSON.stringify({})
+                this.channel.show()
+                this.channel.appendLine('Loading response...')
 
-            this.channel.appendLine(`Invocation result for ${this.data.FunctionArn}`)
-            this.channel.appendLine('Logs:')
-            this.channel.appendLine(logs)
-            this.channel.appendLine('')
-            this.channel.appendLine('Payload:')
-            this.channel.appendLine(String(payload))
-            this.channel.appendLine('')
-        } catch (e) {
-            const error = e as Error
-            this.channel.appendLine(`There was an error invoking ${this.data.FunctionArn}`)
-            this.channel.appendLine(error.toString())
-            this.channel.appendLine('')
-            result = 'Failed'
-        } finally {
-            telemetry.lambda_invokeRemote.emit({ result, passive: false, source: source })
-        }
+                try {
+                    const funcResponse = await this.client.invoke(this.data.FunctionArn, input)
+                    const logs = funcResponse.LogResult ? decodeBase64(funcResponse.LogResult) : ''
+                    const payload = funcResponse.Payload ? funcResponse.Payload : JSON.stringify({})
+
+                    this.channel.appendLine(`Invocation result for ${this.data.FunctionArn}`)
+                    this.channel.appendLine('Logs:')
+                    this.channel.appendLine(logs)
+                    this.channel.appendLine('')
+                    this.channel.appendLine('Payload:')
+                    this.channel.appendLine(String(payload))
+                    this.channel.appendLine('')
+                } catch (e) {
+                    const error = e as Error
+                    this.channel.appendLine(`There was an error invoking ${this.data.FunctionArn}`)
+                    this.channel.appendLine(error.toString())
+                    this.channel.appendLine('')
+                    result = 'Failed'
+                } finally {
+                    vscode.window.setStatusBarMessage(
+                        result === 'Succeeded'
+                            ? localize(
+                                  'AWS.lambda.invoke.succeeded.statusBarMessage',
+                                  '$(testing-passed-icon) Invoke succeeded: {0}',
+                                  this.data.FunctionName
+                              )
+                            : localize(
+                                  'AWS.lambda.invoke.fail.statusBarMessage',
+                                  '$(testing-failed-icon) Invoke failed: {0}',
+                                  this.data.FunctionName
+                              ),
+                        5000
+                    )
+                    telemetry.lambda_invokeRemote.emit({ result, passive: false, source: source })
+                }
+            }
+        )
     }
 
     public async promptFile() {
