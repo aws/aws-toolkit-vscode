@@ -186,6 +186,9 @@ export class LanguageClientAuth {
                 name: profileName,
                 settings: {
                     sso_session: '',
+                    aws_access_key_id: '',
+                    aws_secret_access_key: '',
+                    aws_session_token: '',
                     role_arn: roleArn,
                     source_profile: sourceProfile,
                 },
@@ -199,6 +202,8 @@ export class LanguageClientAuth {
                     aws_access_key_id: accessKey,
                     aws_secret_access_key: secretKey,
                     aws_session_token: sessionToken,
+                    role_arn: '',
+                    source_profile: '',
                 },
             }
         } else {
