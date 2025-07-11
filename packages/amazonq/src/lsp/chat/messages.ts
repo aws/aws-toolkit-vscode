@@ -285,6 +285,31 @@ export function registerMessageListeners(
                 }
 
                 const chatRequest = await encryptRequest<ChatParams>(chatParams, encryptionKey)
+
+                // Add detailed logging for SageMaker debugging
+                if (process.env.USE_IAM_AUTH === 'true') {
+                    languageClient.info(`[SageMaker Debug] Making chat request with IAM auth`)
+                    languageClient.info(`[SageMaker Debug] Chat request method: ${chatRequestType.method}`)
+                    languageClient.info(
+                        `[SageMaker Debug] Original chat params: ${JSON.stringify(
+                            {
+                                tabId: chatParams.tabId,
+                                prompt: chatParams.prompt,
+                                // Don't log full textDocument content, just metadata
+                                textDocument: chatParams.textDocument
+                                    ? { uri: chatParams.textDocument.uri }
+                                    : undefined,
+                                context: chatParams.context ? `${chatParams.context.length} context items` : undefined,
+                            },
+                            null,
+                            2
+                        )}`
+                    )
+                    languageClient.info(
+                        `[SageMaker Debug] Environment context: USE_IAM_AUTH=${process.env.USE_IAM_AUTH}, AWS_REGION=${process.env.AWS_REGION}`
+                    )
+                }
+
                 try {
                     const chatResult = await languageClient.sendRequest<string | ChatResult>(
                         chatRequestType.method,
@@ -294,6 +319,26 @@ export function registerMessageListeners(
                         },
                         cancellationToken.token
                     )
+
+                    // Add response content logging for SageMaker debugging
+                    if (process.env.USE_IAM_AUTH === 'true') {
+                        languageClient.info(`[SageMaker Debug] Chat response received - type: ${typeof chatResult}`)
+                        if (typeof chatResult === 'string') {
+                            languageClient.info(
+                                `[SageMaker Debug] Chat response (string): ${chatResult.substring(0, 200)}...`
+                            )
+                        } else if (chatResult && typeof chatResult === 'object') {
+                            languageClient.info(
+                                `[SageMaker Debug] Chat response (object keys): ${Object.keys(chatResult)}`
+                            )
+                            if ('message' in chatResult) {
+                                languageClient.info(
+                                    `[SageMaker Debug] Chat response message: ${JSON.stringify(chatResult.message).substring(0, 200)}...`
+                                )
+                            }
+                        }
+                    }
+
                     await handleCompleteResult<ChatResult>(
                         chatResult,
                         encryptionKey,

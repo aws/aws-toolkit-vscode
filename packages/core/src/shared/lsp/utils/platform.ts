@@ -3,11 +3,18 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as vscode from 'vscode'
 import { ToolkitError } from '../../errors'
 import { Logger } from '../../logger/logger'
 import { ChildProcess } from '../../utilities/processUtils'
 import { waitUntil } from '../../utilities/timeoutUtils'
 import { isDebugInstance } from '../../vscode/env'
+import { isSageMaker } from '../../extensionUtilities'
+import { getLogger } from '../../logger'
+
+interface SagemakerCookie {
+    authMode?: 'Sso' | 'Iam'
+}
 
 export function getNodeExecutableName(): string {
     return process.platform === 'win32' ? 'node.exe' : 'node'
@@ -101,7 +108,44 @@ export function createServerOptions({
             args.unshift('--inspect=6080')
         }
 
-        const lspProcess = new ChildProcess(bin, args, { warnThresholds })
+        // Set USE_IAM_AUTH environment variable for SageMaker environments based on cookie detection
+        // This tells the language server to use IAM authentication mode instead of SSO mode
+        const env = { ...process.env }
+        if (isSageMaker()) {
+            try {
+                // The command `sagemaker.parseCookies` is registered in VS Code SageMaker environment
+                const result = (await vscode.commands.executeCommand('sagemaker.parseCookies')) as SagemakerCookie
+                if (result.authMode !== 'Sso') {
+                    env.USE_IAM_AUTH = 'true'
+                    getLogger().info(
+                        `[SageMaker Debug] Setting USE_IAM_AUTH=true for language server process (authMode: ${result.authMode})`
+                    )
+                } else {
+                    getLogger().info(`[SageMaker Debug] Using SSO auth mode, not setting USE_IAM_AUTH`)
+                }
+            } catch (err) {
+                getLogger().warn(`[SageMaker Debug] Failed to parse SageMaker cookies, defaulting to IAM auth: ${err}`)
+                env.USE_IAM_AUTH = 'true'
+            }
+
+            // Enable verbose logging for Mynah backend to help debug the generic error response
+            env.RUST_LOG = 'debug'
+
+            // Log important environment variables for debugging
+            getLogger().info(`[SageMaker Debug] Environment variables for language server:`)
+            getLogger().info(`[SageMaker Debug] USE_IAM_AUTH: ${env.USE_IAM_AUTH}`)
+            getLogger().info(
+                `[SageMaker Debug] AWS_CONTAINER_CREDENTIALS_RELATIVE_URI: ${env.AWS_CONTAINER_CREDENTIALS_RELATIVE_URI}`
+            )
+            getLogger().info(`[SageMaker Debug] AWS_DEFAULT_REGION: ${env.AWS_DEFAULT_REGION}`)
+            getLogger().info(`[SageMaker Debug] AWS_REGION: ${env.AWS_REGION}`)
+            getLogger().info(`[SageMaker Debug] RUST_LOG: ${env.RUST_LOG}`)
+        }
+
+        const lspProcess = new ChildProcess(bin, args, {
+            warnThresholds,
+            spawnOptions: { env },
+        })
 
         // this is a long running process, awaiting it will never resolve
         void lspProcess.run()
