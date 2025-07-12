@@ -281,6 +281,62 @@ export class WebviewUIHandler {
 
                 if (command === 'aws.amazonq.sendToPrompt') {
                     return this.messageController?.sendSelectedCodeToTab(message, command)
+                } else if (command === 'aws.amazonq.autoDebug.sendMessage') {
+                    // **CRITICAL FIX**: Handle AutoDebug messages using the exact same flow as normal user messages
+                    // This ensures the complete message processing pipeline is used, including language server requests
+
+                    // Generate a proper event ID for the chat prompt
+                    const eventID = `autoDebug-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+
+                    // Get or create a tab for the AutoDebug message
+                    let targetTabId: string | undefined
+                    const selectedTab = this.tabsStorage.getSelectedTab()
+
+                    if (selectedTab && ['cwc', 'unknown'].includes(selectedTab.type) && selectedTab.status === 'free') {
+                        // Use existing tab
+                        targetTabId = selectedTab.id
+                    } else {
+                        // Create new tab
+                        const tabData = this.tabDataGenerator?.getTabData('cwc', false)
+                        if (tabData) {
+                            targetTabId = this.mynahUI?.updateStore('', tabData)
+                        }
+                        if (targetTabId) {
+                            this.tabsStorage.addTab({
+                                id: targetTabId,
+                                type: 'cwc',
+                                status: 'free',
+                                isSelected: true,
+                                lastCommand: command,
+                            })
+                        }
+                    }
+
+                    if (targetTabId) {
+                        // **KEY FIX**: Use ONLY the TextMessageHandler flow - don't duplicate with MessageController
+                        // This is the exact same flow as normal user messages
+                        this.textMessageHandler?.handle(
+                            {
+                                prompt: message.body as string,
+                                escapedPrompt: message.body as string,
+                                command: undefined,
+                                context: undefined,
+                            },
+                            targetTabId,
+                            eventID
+                        )
+
+                        this.postMessage(createOpenAgentTelemetry('cwc', 'right-click'))
+                        this.postMessage({
+                            command: 'start-chat-message-telemetry',
+                            trigger: 'onContextCommand',
+                            tabID: targetTabId,
+                            tabType: 'cwc',
+                            startTime: Date.now(),
+                            traceId: eventID,
+                        })
+                    }
+                    return targetTabId
                 } else {
                     const tabID = this.messageController?.sendMessageToTab(message, 'cwc', command)
                     if (tabID && command) {
