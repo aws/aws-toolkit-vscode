@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Profiles sourced from SSO profiles fail to authenticate with 'invalid security token' error"
+}

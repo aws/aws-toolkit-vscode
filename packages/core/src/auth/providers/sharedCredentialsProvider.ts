@@ -408,10 +408,23 @@ export class SharedCredentialsProvider implements CredentialsProvider {
             }
             // Use source profile to assume IAM role based on role ARN provided.
             const sourceProfile = iniData[profile.source_profile!]
-            const stsClient = new DefaultStsClient(this.getDefaultRegion() ?? 'us-east-1', {
-                accessKeyId: sourceProfile.aws_access_key_id!,
-                secretAccessKey: sourceProfile.aws_secret_access_key!,
-            })
+            
+            // Check if source profile has static credentials
+            let sourceCredentials: AWS.Credentials
+            if (sourceProfile.aws_access_key_id && sourceProfile.aws_secret_access_key) {
+                // Source profile has static credentials
+                sourceCredentials = {
+                    accessKeyId: sourceProfile.aws_access_key_id,
+                    secretAccessKey: sourceProfile.aws_secret_access_key,
+                    sessionToken: sourceProfile.aws_session_token,
+                }
+            } else {
+                // Source profile needs to be resolved (e.g., SSO profile)
+                const sourceProvider = new SharedCredentialsProvider(profile.source_profile!, this.sections)
+                sourceCredentials = await sourceProvider.getCredentials()
+            }
+            
+            const stsClient = new DefaultStsClient(this.getDefaultRegion() ?? 'us-east-1', sourceCredentials)
             // Prompt for MFA Token if needed.
             const assumeRoleReq = {
                 RoleArn: profile.role_arn,
