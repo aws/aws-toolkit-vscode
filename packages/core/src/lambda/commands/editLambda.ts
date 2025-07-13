@@ -231,15 +231,25 @@ export async function openLambdaFolderForEdit(name: string, region: string) {
 }
 
 export async function getReadme(): Promise<string> {
-    const readmeSource = 'resources/markdown/lambdaEdit.md'
+    const readmeSource = path.join('resources', 'markdown', 'lambdaEdit.md')
     const readmeDestination = path.join(lambdaTempPath, 'README.md')
     const readmeContent = await fs.readFileText(globals.context.asAbsolutePath(readmeSource))
     await fs.writeFile(readmeDestination, readmeContent)
 
-    // Put cloud deploy icon in the readme
-    const createStackIconSource = 'resources/icons/aws/lambda/create-stack-light.svg'
+    const createStackIconSource = path.join('resources', 'icons', 'aws', 'lambda', 'create-stack-light.svg')
     const createStackIconDestination = path.join(lambdaTempPath, 'create-stack.svg')
     await fs.copy(globals.context.asAbsolutePath(createStackIconSource), createStackIconDestination)
+
+    // Copy VS Code built-in icons
+    const vscodeIconPath = path.join('resources', 'icons', 'vscode', 'light')
+
+    const invokeIconSource = path.join(vscodeIconPath, 'run.svg')
+    const invokeIconDestination = path.join(lambdaTempPath, 'invoke.svg')
+    await fs.copy(globals.context.asAbsolutePath(invokeIconSource), invokeIconDestination)
+
+    const deployIconSource = path.join(vscodeIconPath, 'cloud-upload.svg')
+    const deployIconDestination = path.join(lambdaTempPath, 'deploy.svg')
+    await fs.copy(globals.context.asAbsolutePath(deployIconSource), deployIconDestination)
 
     return readmeDestination
 }

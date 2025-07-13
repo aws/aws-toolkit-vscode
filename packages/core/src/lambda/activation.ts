@@ -61,7 +61,7 @@ export async function activate(context: ExtContext): Promise<void> {
                     )
 
                     const readmeUri = vscode.Uri.file(await getReadme())
-                    await vscode.commands.executeCommand('markdown.showPreview', readmeUri, vscode.ViewColumn.Two)
+                    await vscode.commands.executeCommand('markdown.showPreviewToSide', readmeUri)
                 }
             }
         }
