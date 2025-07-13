@@ -12,6 +12,7 @@ import {
     promptForSync,
     deployFromTemp,
     openLambdaFolderForEdit,
+    getReadme,
 } from '../../../lambda/commands/editLambda'
 import { LambdaFunction } from '../../../lambda/commands/uploadLambda'
 import * as downloadLambda from '../../../lambda/commands/downloadLambda'
@@ -21,6 +22,8 @@ import * as messages from '../../../shared/utilities/messages'
 import fs from '../../../shared/fs/fs'
 import { LambdaFunctionNodeDecorationProvider } from '../../../lambda/explorer/lambdaFunctionNodeDecorationProvider'
 import path from 'path'
+import globals from '../../../shared/extensionGlobals'
+import { lambdaTempPath } from '../../../lambda/utils'
 
 describe('editLambda', function () {
     let mockLambda: LambdaFunction
@@ -41,6 +44,10 @@ describe('editLambda', function () {
     let mkdirStub: sinon.SinonStub
     let promptDeployStub: sinon.SinonStub
     let readdirStub: sinon.SinonStub
+    let readFileTextStub: sinon.SinonStub
+    let writeFileStub: sinon.SinonStub
+    let copyStub: sinon.SinonStub
+    let asAbsolutePathStub: sinon.SinonStub
 
     beforeEach(function () {
         mockLambda = {
@@ -75,6 +82,10 @@ describe('editLambda', function () {
         readdirStub = sinon.stub(fs, 'readdir').resolves([['file', vscode.FileType.File]])
         promptDeployStub = sinon.stub().resolves(true)
         sinon.replace(require('../../../lambda/commands/editLambda'), 'promptDeploy', promptDeployStub)
+        readFileTextStub = sinon.stub(fs, 'readFileText').resolves('# Lambda Edit README')
+        writeFileStub = sinon.stub(fs, 'writeFile').resolves()
+        copyStub = sinon.stub(fs, 'copy').resolves()
+        asAbsolutePathStub = sinon.stub(globals.context, 'asAbsolutePath').callsFake((p) => `/absolute/${p}`)
 
         // Other stubs
         sinon.stub(utils, 'getLambdaDetails').returns({ fileName: 'index.js', functionName: 'test-function' })
@@ -266,6 +277,23 @@ describe('editLambda', function () {
                     noRecentEntry: true,
                 })
             )
+        })
+    })
+
+    describe('getReadme', function () {
+        it('reads markdown file and writes README.md to temp path', async function () {
+            const result = await getReadme()
+
+            assert(readFileTextStub.calledOnce)
+            assert(asAbsolutePathStub.calledWith(path.join('resources', 'markdown', 'lambdaEdit.md')))
+            assert(writeFileStub.calledWith(path.join(lambdaTempPath, 'README.md'), '# Lambda Edit README'))
+            assert.strictEqual(result, path.join(lambdaTempPath, 'README.md'))
+        })
+
+        it('copies all required icon files', async function () {
+            await getReadme()
+
+            assert.strictEqual(copyStub.callCount, 3)
         })
     })
 })
