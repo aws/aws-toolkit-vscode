@@ -9,7 +9,7 @@ import { AWSError } from 'aws-sdk'
 import * as sinon from 'sinon'
 import { DefaultEc2MetadataClient } from '../../shared/clients/ec2MetadataClient'
 import * as vscode from 'vscode'
-import { UserActivity, getComputeRegion, initializeComputeRegion } from '../../shared/extensionUtilities'
+import { UserActivity, getComputeRegion, initializeComputeRegion, isCn } from '../../shared/extensionUtilities'
 import { isDifferentVersion, setMostRecentVersion } from '../../shared/extensionUtilities'
 import { InstanceIdentity } from '../../shared/clients/ec2MetadataClient'
 import { extensionVersion } from '../../shared/vscode/env'
@@ -132,6 +132,73 @@ describe('initializeComputeRegion, getComputeRegion', async function () {
 
     it('handles invalid endpoint or invalid response', async function () {
         await assert.rejects(metadataService.invoke('/bogus/path'))
+    })
+})
+
+describe('isCn', function () {
+    let sandbox: sinon.SinonSandbox
+    const metadataService = new DefaultEc2MetadataClient()
+
+    beforeEach(function () {
+        sandbox = sinon.createSandbox()
+    })
+
+    afterEach(function () {
+        sandbox.restore()
+    })
+
+    it('returns false when compute region is not defined', async function () {
+        // Reset the compute region to undefined first
+        const utils = require('../../shared/extensionUtilities')
+        Object.defineProperty(utils, 'computeRegion', {
+            value: undefined,
+            configurable: true,
+        })
+
+        const result = isCn()
+
+        assert.strictEqual(result, false, 'isCn() should return false when compute region is undefined')
+    })
+
+    it('returns false when compute region is not initialized', async function () {
+        // Set the compute region to "notInitialized"
+        const utils = require('../../shared/extensionUtilities')
+        Object.defineProperty(utils, 'computeRegion', {
+            value: 'notInitialized',
+            configurable: true,
+        })
+
+        const result = isCn()
+
+        assert.strictEqual(result, false, 'isCn() should return false when compute region is notInitialized')
+    })
+
+    it('returns true for CN regions', async function () {
+        sandbox.stub(metadataService, 'getInstanceIdentity').resolves({ region: 'cn-north-1' })
+        await initializeComputeRegion(metadataService, false, true)
+
+        const result = isCn()
+
+        assert.strictEqual(result, true, 'isCn() should return true for China regions')
+    })
+
+    it('returns false for non-CN regions', async function () {
+        sandbox.stub(metadataService, 'getInstanceIdentity').resolves({ region: 'us-east-1' })
+        await initializeComputeRegion(metadataService, false, true)
+
+        const result = isCn()
+
+        assert.strictEqual(result, false, 'isCn() should return false for non-China regions')
+    })
+
+    it('returns false when an error occurs', async function () {
+        const utils = require('../../shared/extensionUtilities')
+
+        sandbox.stub(utils, 'getComputeRegion').throws(new Error('Test error'))
+
+        const result = isCn()
+
+        assert.strictEqual(result, false, 'isCn() should return false when an error occurs')
     })
 })
 
