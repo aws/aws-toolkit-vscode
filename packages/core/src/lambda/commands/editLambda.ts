@@ -23,6 +23,7 @@ import path from 'path'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { ToolkitError } from '../../shared/errors'
 import { getFunctionWithCredentials } from '../../shared/clients/lambdaClient'
+import { getLogger } from '../../shared/logger/logger'
 
 const localize = nls.loadMessageBundle()
 
@@ -246,23 +247,31 @@ export async function openLambdaFolderForEdit(name: string, region: string) {
 export async function getReadme(): Promise<string> {
     const readmeSource = path.join('resources', 'markdown', 'lambdaEdit.md')
     const readmeDestination = path.join(lambdaTempPath, 'README.md')
-    const readmeContent = await fs.readFileText(globals.context.asAbsolutePath(readmeSource))
-    await fs.writeFile(readmeDestination, readmeContent)
+    try {
+        const readmeContent = await fs.readFileText(globals.context.asAbsolutePath(readmeSource))
+        await fs.writeFile(readmeDestination, readmeContent)
+    } catch (e) {
+        getLogger().info(`Failed to copy content for Lambda README: ${e}`)
+    }
 
-    const createStackIconSource = path.join('resources', 'icons', 'aws', 'lambda', 'create-stack-light.svg')
-    const createStackIconDestination = path.join(lambdaTempPath, 'create-stack.svg')
-    await fs.copy(globals.context.asAbsolutePath(createStackIconSource), createStackIconDestination)
+    try {
+        const createStackIconSource = path.join('resources', 'icons', 'aws', 'lambda', 'create-stack-light.svg')
+        const createStackIconDestination = path.join(lambdaTempPath, 'create-stack.svg')
+        await fs.copy(globals.context.asAbsolutePath(createStackIconSource), createStackIconDestination)
 
-    // Copy VS Code built-in icons
-    const vscodeIconPath = path.join('resources', 'icons', 'vscode', 'light')
+        // Copy VS Code built-in icons
+        const vscodeIconPath = path.join('resources', 'icons', 'vscode', 'light')
 
-    const invokeIconSource = path.join(vscodeIconPath, 'run.svg')
-    const invokeIconDestination = path.join(lambdaTempPath, 'invoke.svg')
-    await fs.copy(globals.context.asAbsolutePath(invokeIconSource), invokeIconDestination)
+        const invokeIconSource = path.join(vscodeIconPath, 'run.svg')
+        const invokeIconDestination = path.join(lambdaTempPath, 'invoke.svg')
+        await fs.copy(globals.context.asAbsolutePath(invokeIconSource), invokeIconDestination)
 
-    const deployIconSource = path.join(vscodeIconPath, 'cloud-upload.svg')
-    const deployIconDestination = path.join(lambdaTempPath, 'deploy.svg')
-    await fs.copy(globals.context.asAbsolutePath(deployIconSource), deployIconDestination)
+        const deployIconSource = path.join(vscodeIconPath, 'cloud-upload.svg')
+        const deployIconDestination = path.join(lambdaTempPath, 'deploy.svg')
+        await fs.copy(globals.context.asAbsolutePath(deployIconSource), deployIconDestination)
+    } catch (e) {
+        getLogger().info(`Failed to copy content for Lambda README: ${e}`)
+    }
 
     return readmeDestination
 }
