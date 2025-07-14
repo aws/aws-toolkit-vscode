@@ -30,6 +30,9 @@ import {
     ResponseError,
     LSPErrorCodes,
     updateConfigurationRequestType,
+    GetMfaCodeParams,
+    GetMfaCodeResult,
+    getMfaCodeRequestType,
 } from '@aws/language-server-runtimes/protocol'
 import {
     AuthUtil,
@@ -339,6 +342,15 @@ async function postStartLanguageServer(
                     `Failed to process ShowDocumentRequest: ${(e as Error).message}`
                 )
             }
+        }
+    )
+
+    // Handler for when Flare needs to assume a role with MFA code
+    client.onRequest<GetMfaCodeParams, GetMfaCodeResult>(
+        getMfaCodeRequestType.method,
+        async (params: GetMfaCodeParams): Promise<GetMfaCodeResult> => {
+            const mfaCode = await vscode.window.showInputBox({ title: 'Enter MFA Code' })
+            return { code: mfaCode ?? '' }
         }
     )
 
