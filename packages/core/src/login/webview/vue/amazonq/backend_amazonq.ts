@@ -15,8 +15,9 @@ import { debounce } from 'lodash'
 import { AuthError, AuthFlowState, userCancelled } from '../types'
 import { ToolkitError } from '../../../../shared/errors'
 import { withTelemetryContext } from '../../../../shared/telemetry/util'
+import { Commands } from '../../../../shared/vscode/commands2'
 import { builderIdStartUrl } from '../../../../auth/sso/constants'
-import { RegionProfile } from '../../../../codewhisperer/models/model'
+import { RegionProfile, vsCodeState } from '../../../../codewhisperer/models/model'
 import { randomUUID } from '../../../../shared/crypto'
 import globals from '../../../../shared/extensionGlobals'
 import { telemetry } from '../../../../shared/telemetry/telemetry'
@@ -173,10 +174,6 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
 
     @withTelemetryContext({ name: 'signout', class: className })
     override async signout(): Promise<void> {
-        if (!AuthUtil.instance.isSsoSession()) {
-            throw new ToolkitError(`Cannot signout non-SSO connection`)
-        }
-
         this.storeMetricMetadata({
             authEnabledFeatures: 'codewhisperer',
             isReAuth: true,
@@ -196,12 +193,38 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
         return []
     }
 
-    override startIamCredentialSetup(
+    async startIamCredentialSetup(
         profileName: string,
         accessKey: string,
         secretKey: string
     ): Promise<AuthError | undefined> {
-        throw new Error('Method not implemented.')
+        getLogger().debug(`called startIamCredentialSetup()`)
+        // Defining separate auth function to emit telemetry before returning from this method
+        const runAuth = async (): Promise<AuthError | undefined> => {
+            try {
+                await AuthUtil.instance.login(accessKey, secretKey, 'iam')
+            } catch (e) {
+                getLogger().error('Failed submitting credentials %O', e)
+                return { id: this.id, text: e as string }
+            }
+            // Enable code suggestions
+            vsCodeState.isFreeTierLimitReached = false
+            await Commands.tryExecute('aws.amazonq.enableCodeSuggestions')
+
+            this.storeMetricMetadata(await AuthUtil.instance.getTelemetryMetadata())
+
+            void vscode.window.showInformationMessage('AmazonQ: Successfully connected to AWS IAM Credentials')
+        }
+
+        const result = await runAuth()
+        this.storeMetricMetadata({
+            credentialSourceId: 'sharedCredentials',
+            authEnabledFeatures: 'codewhisperer',
+            ...this.getResultForMetrics(result),
+        })
+        this.emitAuthMetric()
+
+        return result
     }
 
     /** If users are unauthenticated in Q/CW, we should always display the auth screen. */

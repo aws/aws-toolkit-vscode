@@ -30,7 +30,7 @@ import { showAmazonQWalkthroughOnce } from '../../amazonq/onboardingPage/walkthr
 import { setContext } from '../../shared/vscode/setContext'
 import { openUrl } from '../../shared/utilities/vsCodeUtils'
 import { telemetry } from '../../shared/telemetry/telemetry'
-import { AuthStateEvent, cacheChangedEvent, LanguageClientAuth, LoginTypes, SsoLogin } from '../../auth/auth2'
+import { AuthStateEvent, cacheChangedEvent, LanguageClientAuth, Login, SsoLogin, IamLogin } from '../../auth/auth2'
 import { builderIdStartUrl, internalStartUrl } from '../../auth/sso/constants'
 import { VSCODE_EXTENSION_ID } from '../../shared/extensions'
 import { RegionProfileManager } from '../region/regionProfileManager'
@@ -39,7 +39,13 @@ import { getEnvironmentSpecificMemento } from '../../shared/utilities/mementos'
 import { getCacheDir, getFlareCacheFileName, getRegistrationCacheFile, getTokenCacheFile } from '../../auth/sso/cache'
 import { notifySelectDeveloperProfile } from '../region/utils'
 import { once } from '../../shared/utilities/functionUtils'
-import { CancellationTokenSource, SsoTokenSourceKind } from '@aws/language-server-runtimes/server-interface'
+import {
+    CancellationTokenSource,
+    GetSsoTokenResult,
+    GetIamCredentialResult,
+    SsoTokenSourceKind,
+    IamCredentials,
+} from '@aws/language-server-runtimes/server-interface'
 
 const localize = nls.loadMessageBundle()
 
@@ -54,9 +60,11 @@ export interface IAuthProvider {
     isBuilderIdConnection(): boolean
     isIdcConnection(): boolean
     isSsoSession(): boolean
+    isIamSession(): boolean
     getToken(): Promise<string>
+    getIamCredential(): Promise<IamCredentials>
     readonly profileName: string
-    readonly connection?: { region: string; startUrl: string }
+    readonly connection?: { startUrl?: string; region?: string; accessKey?: string; secretKey?: string }
 }
 
 /**
@@ -69,8 +77,8 @@ export class AuthUtil implements IAuthProvider {
 
     public readonly regionProfileManager: RegionProfileManager
 
-    // IAM login currently not supported
-    private session: SsoLogin
+    private session?: Login
+    private readonly eventEmitter = new vscode.EventEmitter<AuthStateEvent>()
 
     static create(lspAuth: LanguageClientAuth) {
         return (this.#instance ??= new this(lspAuth))
@@ -85,7 +93,6 @@ export class AuthUtil implements IAuthProvider {
     }
 
     private constructor(private readonly lspAuth: LanguageClientAuth) {
-        this.session = new SsoLogin(this.profileName, this.lspAuth)
         this.onDidChangeConnectionState((e: AuthStateEvent) => this.stateChangeHandler(e))
 
         this.regionProfileManager = new RegionProfileManager(this)
@@ -100,8 +107,12 @@ export class AuthUtil implements IAuthProvider {
         this.#instance = undefined as any
     }
 
-    isSsoSession() {
-        return this.session.loginType === LoginTypes.SSO
+    isSsoSession(): boolean {
+        return this.session instanceof SsoLogin
+    }
+
+    isIamSession(): boolean {
+        return this.session instanceof IamLogin
     }
 
     /**
@@ -113,7 +124,23 @@ export class AuthUtil implements IAuthProvider {
     didStartSignedIn = false
 
     async restore() {
-        await this.session.restore()
+        // If a session exists, restore it
+        if (this.session) {
+            await this.session.restore()
+        } else {
+            // Try to restore an SSO session
+            this.session = new SsoLogin(this.profileName, this.lspAuth, this.eventEmitter)
+            await this.session.restore()
+            if (!this.isConnected()) {
+                // Try to restore an IAM session
+                this.session = new IamLogin(this.profileName, this.lspAuth, this.eventEmitter)
+                // await this.session.restore()
+                if (!this.isConnected()) {
+                    // If both fail, reset the session
+                    this.session = undefined
+                }
+            }
+        }
         this.didStartSignedIn = this.isConnected()
 
         // HACK: We noticed that if calling `refreshState()` here when the user was already signed in, something broke.
@@ -133,10 +160,26 @@ export class AuthUtil implements IAuthProvider {
         }
     }
 
-    async login(startUrl: string, region: string) {
-        const response = await this.session.login({ startUrl, region, scopes: amazonQScopes })
-        await showAmazonQWalkthroughOnce()
+    // Log into the desired session type using the authentication parameters
+    async login(accessKey: string, secretKey: string, loginType: 'iam'): Promise<GetIamCredentialResult | undefined>
+    async login(startUrl: string, region: string, loginType: 'sso'): Promise<GetSsoTokenResult | undefined>
+    async login(
+        first: string,
+        second: string,
+        loginType: 'iam' | 'sso'
+    ): Promise<GetSsoTokenResult | GetIamCredentialResult | undefined> {
+        let response: GetSsoTokenResult | GetIamCredentialResult | undefined
 
+        // Start session if the current session type does not match the desired type
+        if (loginType === 'sso' && !this.isSsoSession()) {
+            this.session = new SsoLogin(this.profileName, this.lspAuth, this.eventEmitter)
+            response = await this.session.login({ startUrl: first, region: second, scopes: amazonQScopes })
+        } else if (loginType === 'iam' && !this.isIamSession()) {
+            this.session = new IamLogin(this.profileName, this.lspAuth, this.eventEmitter)
+            response = await this.session.login({ accessKey: first, secretKey: second })
+        }
+
+        await showAmazonQWalkthroughOnce()
         return response
     }
 
@@ -145,32 +188,48 @@ export class AuthUtil implements IAuthProvider {
             throw new ToolkitError('Cannot reauthenticate non-SSO session.')
         }
 
-        return this.session.reauthenticate()
+        return this.session?.reauthenticate()
     }
 
     logout() {
-        if (!this.isSsoSession()) {
-            // Only SSO requires logout
-            return
-        }
-        this.lspAuth.deleteBearerToken()
-        return this.session.logout()
+        // session will be nullified the next time refreshState() is called
+        return this.session?.logout()
     }
 
     async getToken() {
         if (this.isSsoSession()) {
-            return (await this.session.getToken()).token
+            const token = (await this.session!.getCredential()).credential
+            if (typeof token !== 'string') {
+                throw new ToolkitError('Cannot get token with IAM session')
+            }
+            return token
         } else {
-            throw new ToolkitError('Cannot get token for non-SSO session.')
+            throw new ToolkitError('Cannot get credential without logging in.')
+        }
+    }
+
+    async getIamCredential() {
+        if (this.session) {
+            const credential = (await this.session.getCredential()).credential
+            if (typeof credential !== 'object') {
+                throw new ToolkitError('Cannot get token with SSO session')
+            }
+            return credential
+        } else {
+            throw new ToolkitError('Cannot get credential without logging in.')
         }
     }
 
     get connection() {
-        return this.session.data
+        return this.session?.data
     }
 
     getAuthState() {
-        return this.session.getConnectionState()
+        if (this.session) {
+            return this.session.getConnectionState()
+        } else {
+            return 'notConnected'
+        }
     }
 
     isConnected() {
@@ -194,7 +253,7 @@ export class AuthUtil implements IAuthProvider {
     }
 
     onDidChangeConnectionState(handler: (e: AuthStateEvent) => any) {
-        return this.session.onDidChangeConnectionState(handler)
+        return this.eventEmitter.event(handler)
     }
 
     public async setVscodeContextProps(state = this.getAuthState()) {
@@ -290,9 +349,12 @@ export class AuthUtil implements IAuthProvider {
 
     private async stateChangeHandler(e: AuthStateEvent) {
         if (e.state === 'refreshed') {
-            const params = this.isSsoSession() ? (await this.session.getToken()).updateCredentialsParams : undefined
-            await this.lspAuth.updateBearerToken(params!)
-            return
+            const params = this.session ? (await this.session.getCredential()).updateCredentialsParams : undefined
+            if (this.isSsoSession()) {
+                await this.lspAuth.updateBearerToken(params)
+            } else if (this.isIamSession()) {
+                await this.lspAuth.updateIamCredential(params)
+            }
         } else {
             this.logger.info(`codewhisperer: connection changed to ${e.state}`)
             await this.refreshState(e.state)
@@ -306,10 +368,16 @@ export class AuthUtil implements IAuthProvider {
                 await this.regionProfileManager.invalidateProfile(this.regionProfileManager.activeRegionProfile?.arn)
                 await this.regionProfileManager.clearCache()
             }
+            // Session should only be nullified after all methods dependent on session are evaluated
+            this.session = undefined
         }
         if (state === 'connected') {
-            const bearerTokenParams = (await this.session.getToken()).updateCredentialsParams
-            await this.lspAuth.updateBearerToken(bearerTokenParams)
+            const params = this.session ? (await this.session.getCredential()).updateCredentialsParams : undefined
+            if (this.isSsoSession()) {
+                await this.lspAuth.updateBearerToken(params)
+            } else if (this.isIamSession()) {
+                await this.lspAuth.updateIamCredential(params)
+            }
 
             if (this.isIdcConnection()) {
                 await this.regionProfileManager.restoreProfileSelection()
@@ -345,14 +413,14 @@ export class AuthUtil implements IAuthProvider {
         }
 
         if (this.isSsoSession()) {
-            const ssoSessionDetails = (await this.session.getProfile()).ssoSession?.settings
+            const ssoSessionDetails = (await this.session!.getProfile()).ssoSession?.settings
             return {
                 authScopes: ssoSessionDetails?.sso_registration_scopes?.join(','),
                 credentialSourceId: AuthUtil.instance.isBuilderIdConnection() ? 'awsId' : 'iamIdentityCenter',
                 credentialStartUrl: AuthUtil.instance.connection?.startUrl,
                 awsRegion: AuthUtil.instance.connection?.region,
             }
-        } else if (!AuthUtil.instance.isSsoSession) {
+        } else if (this.isIamSession()) {
             return {
                 credentialSourceId: 'sharedCredentials',
             }
@@ -376,7 +444,7 @@ export class AuthUtil implements IAuthProvider {
             connType = 'builderId'
         } else if (this.isIdcConnection()) {
             connType = 'identityCenter'
-            const ssoSessionDetails = (await this.session.getProfile()).ssoSession?.settings
+            const ssoSessionDetails = (await this.session!.getProfile()).ssoSession?.settings
             if (hasScopes(ssoSessionDetails?.sso_registration_scopes ?? [], scopesSsoAccountAccess)) {
                 authIds.push('identityCenterExplorer')
             }
@@ -446,7 +514,9 @@ export class AuthUtil implements IAuthProvider {
                 scopes: amazonQScopes,
             }
 
-            await this.session.updateProfile(registrationKey)
+            if (this.session instanceof SsoLogin) {
+                await this.session.updateProfile(registrationKey)
+            }
 
             const cacheDir = getCacheDir()
 
