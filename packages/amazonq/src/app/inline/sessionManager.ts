@@ -97,6 +97,9 @@ export class SessionManager {
         ) {
             await vscode.commands.executeCommand('editor.action.inlineSuggest.hide')
             await vscode.commands.executeCommand('editor.action.inlineSuggest.trigger')
+            if (this._refreshedSessions.size > 1000) {
+                this._refreshedSessions.clear()
+            }
             this._refreshedSessions.add(this.activeSession.sessionId)
         }
     }
