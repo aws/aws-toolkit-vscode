@@ -10,7 +10,6 @@ import { SearchParams } from '../shared/vscode/uriHandler'
 import { openLambdaFolderForEdit } from './commands/editLambda'
 import { showConfirmationMessage } from '../shared/utilities/messages'
 import globals from '../shared/extensionGlobals'
-import { getFunctionWithCredentials } from '../shared/clients/lambdaClient'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { ToolkitError } from '../shared/errors'
 
@@ -20,9 +19,6 @@ export function registerLambdaUriHandler() {
     async function openFunctionHandler(params: ReturnType<typeof parseOpenParams>) {
         await telemetry.lambda_uriHandler.run(async () => {
             try {
-                // We just want to be able to get the function - if it fails we abort and throw the error
-                await getFunctionWithCredentials(params.region, params.functionName)
-
                 if (params.isCfn === 'true') {
                     const response = await showConfirmationMessage({
                         prompt: localize(
