@@ -22,6 +22,7 @@ import { LambdaFunctionNodeDecorationProvider } from '../explorer/lambdaFunction
 import path from 'path'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { ToolkitError } from '../../shared/errors'
+import { getFunctionWithCredentials } from '../../shared/clients/lambdaClient'
 
 const localize = nls.loadMessageBundle()
 
@@ -84,7 +85,7 @@ export async function promptForSync(lambda: LambdaFunction, projectUri: vscode.U
     }
 }
 
-async function confirmOutdatedChanges(prompt: string): Promise<boolean> {
+export async function confirmOutdatedChanges(prompt: string): Promise<boolean> {
     return await showConfirmationMessage({
         prompt,
         confirm: localize('AWS.lambda.upload.overwrite', 'Overwrite'),
@@ -128,28 +129,62 @@ export async function deployFromTemp(lambda: LambdaFunction, projectUri: vscode.
     })
 }
 
+export async function deleteFilesInFolder(location: string) {
+    const entries = await fs.readdir(location)
+    await Promise.all(
+        entries.map((entry) => fs.delete(path.join(location, entry[0]), { recursive: true, force: true }))
+    )
+}
+
 export async function editLambdaCommand(functionNode: LambdaFunctionNode) {
     const region = functionNode.regionCode
     const functionName = functionNode.configuration.FunctionName!
-    return await editLambda({ name: functionName, region, configuration: functionNode.configuration })
+    return await editLambda({ name: functionName, region, configuration: functionNode.configuration }, 'explorer')
 }
 
-export async function editLambda(lambda: LambdaFunction, onActivation?: boolean) {
+export async function overwriteChangesForEdit(lambda: LambdaFunction, downloadLocation: string) {
+    try {
+        // Clear directory contents instead of deleting to avoid Windows EBUSY errors
+        if (await fs.existsDir(downloadLocation)) {
+            await deleteFilesInFolder(downloadLocation)
+        } else {
+            await fs.mkdir(downloadLocation)
+        }
+
+        await downloadLambdaInLocation(lambda, 'local', downloadLocation)
+
+        // Watching for updates, then setting info, then removing the badges must be done in this order
+        // This is because the files creating can throw the watcher, which sometimes leads to changes being marked as undeployed
+        watchForUpdates(lambda, vscode.Uri.file(downloadLocation))
+
+        await setFunctionInfo(lambda, {
+            lastDeployed: globals.clock.Date.now(),
+            undeployed: false,
+            sha: lambda.configuration!.CodeSha256,
+            handlerFile: getLambdaDetails(lambda.configuration!).fileName,
+        })
+        await LambdaFunctionNodeDecorationProvider.getInstance().removeBadge(
+            vscode.Uri.file(downloadLocation),
+            vscode.Uri.from({ scheme: 'lambda', path: `${lambda.region}/${lambda.name}` })
+        )
+    } catch {
+        throw new ToolkitError('Failed to download Lambda function', { code: 'failedDownload' })
+    }
+}
+
+export async function editLambda(lambda: LambdaFunction, source?: 'workspace' | 'explorer') {
     return await telemetry.lambda_quickEditFunction.run(async () => {
-        telemetry.record({ source: onActivation ? 'workspace' : 'explorer' })
+        telemetry.record({ source })
         const downloadLocation = getTempLocation(lambda.name, lambda.region)
-        const downloadLocationName = vscode.workspace.asRelativePath(downloadLocation, true)
 
         // We don't want to do anything if the folder already exists as a workspace folder, it means it's already being edited
-        if (
-            vscode.workspace.workspaceFolders?.some((folder) => folder.uri.fsPath === downloadLocation && !onActivation)
-        ) {
+        if (vscode.workspace.workspaceFolders?.some((folder) => folder.uri.fsPath === downloadLocation)) {
             return downloadLocation
         }
 
         const prompt = localize(
             'AWS.lambda.download.confirmOutdatedSync',
-            'There are changes to your Function in the cloud since you last edited locally, do you want to overwrite your local changes?'
+            'There are changes to your function in the cloud since you last edited locally, do you want to overwrite your local changes?'
         )
 
         // We want to overwrite changes in the following cases:
@@ -169,37 +204,9 @@ export async function editLambda(lambda: LambdaFunction, onActivation?: boolean)
             (!(await compareCodeSha(lambda)) ? await confirmOutdatedChanges(prompt) : false)
 
         if (overwriteChanges) {
-            try {
-                // Clear directory contents instead of deleting to avoid Windows EBUSY errors
-                if (await fs.existsDir(downloadLocation)) {
-                    const entries = await fs.readdir(downloadLocation)
-                    await Promise.all(
-                        entries.map((entry) =>
-                            fs.delete(path.join(downloadLocation, entry[0]), { recursive: true, force: true })
-                        )
-                    )
-                } else {
-                    await fs.mkdir(downloadLocation)
-                }
-
-                await downloadLambdaInLocation(lambda, downloadLocationName, downloadLocation)
-
-                // Watching for updates, then setting info, then removing the badges must be done in this order
-                // This is because the files creating can throw the watcher, which sometimes leads to changes being marked as undeployed
-                watchForUpdates(lambda, vscode.Uri.file(downloadLocation))
-                await setFunctionInfo(lambda, {
-                    lastDeployed: globals.clock.Date.now(),
-                    undeployed: false,
-                    sha: lambda.configuration!.CodeSha256,
-                })
-                await LambdaFunctionNodeDecorationProvider.getInstance().removeBadge(
-                    vscode.Uri.file(downloadLocation),
-                    vscode.Uri.from({ scheme: 'lambda', path: `${lambda.region}/${lambda.name}` })
-                )
-            } catch {
-                throw new ToolkitError('Failed to download Lambda function', { code: 'failedDownload' })
-            }
-        } else {
+            await overwriteChangesForEdit(lambda, downloadLocation)
+        } else if (source === 'explorer') {
+            // If the source is the explorer, we want to open, otherwise we just wait to open in the workspace
             const lambdaLocation = path.join(downloadLocation, getLambdaDetails(lambda.configuration!).fileName)
             await openLambdaFile(lambdaLocation)
             watchForUpdates(lambda, vscode.Uri.file(downloadLocation))
@@ -212,22 +219,24 @@ export async function editLambda(lambda: LambdaFunction, onActivation?: boolean)
 export async function openLambdaFolderForEdit(name: string, region: string) {
     const downloadLocation = getTempLocation(name, region)
 
-    if (
-        vscode.workspace.workspaceFolders?.some((workspaceFolder) =>
-            workspaceFolder.uri.fsPath.toLowerCase().startsWith(downloadLocation.toLowerCase())
-        )
-    ) {
-        // If the folder already exists in the workspace, show that folder
-        await vscode.commands.executeCommand('workbench.action.focusSideBar')
-        await vscode.commands.executeCommand('workbench.view.explorer')
-    } else {
-        await fs.mkdir(downloadLocation)
+    // Do all authentication work before opening workspace to avoid race condition
+    const getFunctionOutput = await getFunctionWithCredentials(region, name)
+    const configuration = getFunctionOutput.Configuration
 
-        await vscode.commands.executeCommand('vscode.openFolder', vscode.Uri.file(downloadLocation), {
-            newWindow: true,
-            noRecentEntry: true,
-        })
-    }
+    // Download and set up Lambda code before opening workspace
+    await editLambda(
+        {
+            name,
+            region,
+            configuration: configuration as any,
+        },
+        'workspace'
+    )
+
+    await vscode.commands.executeCommand('vscode.openFolder', vscode.Uri.file(downloadLocation), {
+        newWindow: true,
+        noRecentEntry: true,
+    })
 }
 
 export async function getReadme(): Promise<string> {

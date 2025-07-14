@@ -166,26 +166,31 @@ export async function compareCodeSha(lambda: LambdaFunction): Promise<boolean> {
     return local === remote
 }
 
-export async function getFunctionInfo(lambda: LambdaFunction, field?: 'lastDeployed' | 'undeployed' | 'sha') {
+export interface FunctionInfo {
+    lastDeployed?: number
+    undeployed?: boolean
+    sha?: string
+    handlerFile?: string
+}
+
+export async function getFunctionInfo<K extends keyof FunctionInfo>(lambda: LambdaFunction, field?: K) {
     try {
         const data = JSON.parse(await fs.readFileText(getInfoLocation(lambda)))
         getLogger().debug('Data returned from getFunctionInfo for %s: %O', lambda.name, data)
         return field ? data[field] : data
     } catch {
-        return field ? undefined : {}
+        return field ? undefined : ({} as any)
     }
 }
 
-export async function setFunctionInfo(
-    lambda: LambdaFunction,
-    info: { lastDeployed?: number; undeployed?: boolean; sha?: string }
-) {
+export async function setFunctionInfo(lambda: LambdaFunction, info: Partial<FunctionInfo>) {
     try {
         const existing = await getFunctionInfo(lambda)
-        const updated = {
+        const updated: FunctionInfo = {
             lastDeployed: info.lastDeployed ?? existing.lastDeployed,
             undeployed: info.undeployed ?? true,
             sha: info.sha ?? (await getCodeShaLive(lambda)),
+            handlerFile: info.handlerFile ?? existing.handlerFile,
         }
         await fs.writeFile(getInfoLocation(lambda), JSON.stringify(updated))
     } catch (err) {
