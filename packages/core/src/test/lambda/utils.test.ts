@@ -132,7 +132,7 @@ describe('lambda utils', function () {
         })
 
         it('merges with existing data', async function () {
-            const existingData = { lastDeployed: 123456, undeployed: true, sha: 'old-sha' }
+            const existingData = { lastDeployed: 123456, undeployed: true, sha: 'old-sha', handlerFile: 'index.js' }
             sinon.stub(fs, 'readFileText').resolves(JSON.stringify(existingData))
             const writeStub = sinon.stub(fs, 'writeFile').resolves()
             sinon.stub(DefaultLambdaClient.prototype, 'getFunction').resolves({
@@ -146,6 +146,7 @@ describe('lambda utils', function () {
             assert.strictEqual(writtenData.lastDeployed, 123456)
             assert.strictEqual(writtenData.undeployed, false)
             assert.strictEqual(writtenData.sha, 'new-sha')
+            assert.strictEqual(writtenData.handlerFile, 'index.js')
         })
     })
 
