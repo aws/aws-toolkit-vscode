@@ -79,6 +79,7 @@ import { convertDateToTimestamp } from '../../shared/datetime'
 import { findStringInDirectory } from '../../shared/utilities/workspaceUtils'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import { AuthUtil } from '../util/authUtil'
+import { updateHistoryTable } from '../service/transformByQ/transformationHubViewProvider'
 
 export function getFeedbackCommentData() {
     const jobId = transformByQState.getJobId()
@@ -802,6 +803,7 @@ export async function postTransformationJob() {
 
         const jobDetails = fields.join('\t') + '\n'
         fs.writeFileSync(historyLogFilePath, jobDetails, { flag: 'a' })
+        await updateHistoryTable(true)
     }
 }
 
