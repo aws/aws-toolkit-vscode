@@ -7,22 +7,21 @@ import { until } from 'selenium-webdriver'
 
 describe('Amazon Q E2E UI Test', function () {
     // need this timeout because Amazon Q takes awhile to load
+
+    // need this timeout
     this.timeout(150000)
     let webviewView: WebviewView
     let workbench: Workbench
-    // NOTE: I tested all the timeouts and they are necessary for the webview to load properly
     before(async function () {
-        this.timeout(120000)
         workbench = new Workbench()
         await workbench.executeCommand('Amazon Q: Open Chat')
 
+        // need this timeout
         await new Promise((resolve) => setTimeout(resolve, 5000))
         webviewView = new WebviewView()
         await webviewView.switchToFrame()
 
-        const driver = webviewView.getDriver()
-        await driver.wait(until.elementsLocated(By.css('.selectable-item')), 30000)
-        const selectableItems = await webviewView.findWebElements(By.css('.selectable-item'))
+        const selectableItems = await waitForElement(webviewView, By.css('.selectable-item'), true)
         if (selectableItems.length === 0) {
             throw new Error('No selectable login options found')
         }
@@ -37,6 +36,7 @@ describe('Amazon Q E2E UI Test', function () {
         const UrlContinue = await webviewView.findWebElement(By.css('button.continue-button.topMargin'))
         await UrlContinue.click()
         console.log('Waiting for manual authentication...')
+        // need this timeout
         await new Promise((resolve) => setTimeout(resolve, 12000))
         console.log('Manual authentication should be done')
         await webviewView.switchBack()
@@ -46,23 +46,17 @@ describe('Amazon Q E2E UI Test', function () {
         console.log('editorview successfully created')
         await editorView.closeAllEditors()
         console.log('Closed all editors')
-        await new Promise((resolve) => setTimeout(resolve, 1500))
         webviewView = new WebviewView()
         console.log('Reopened webview view')
         await webviewView.switchToFrame()
-        await new Promise((resolve) => setTimeout(resolve, 1200))
     })
 
     after(async () => {
-        // TO-DO: Close all the chat windows after the test is done so that when the test runs again it does not have memory
-        // from the previous test
-
         /* 
         mynah-tabs-container is the css that contains all the mynah ui tabs
         inside that there are two spans that have key values
         inside those spans there is a div with the css mynah-tab-item-label
         and finally INSIDE THAT there is a button with the css mynah-tabs-close-button, we need to click that button and close all the tabs after the test is done
-
 
         Logic:
         Find all the tahs by looking for the close buttons and then close them one by one. To check if all the tabs are closed, we can check if the mynah-tabs-container is empty.
@@ -92,18 +86,13 @@ describe('Amazon Q E2E UI Test', function () {
     })
 
     it('Chat Prompt Test', async () => {
-        const driver = webviewView.getDriver()
-        await driver.wait(until.elementsLocated(By.css('.mynah-chat-prompt-input')), 300000)
-        // In order to test the chat prompt, we need to find the input field and send keys
-        const chatInput = await webviewView.findWebElement(By.css('.mynah-chat-prompt-input'))
+        const chatInput = await waitForElement(webviewView, By.css('.mynah-chat-prompt-input'))
         await chatInput.sendKeys('Hello, Amazon Q!')
-        await driver.wait(until.elementsLocated(By.css('.mynah-chat-prompt-button')), 300000)
-        // In order to submit the chat prompt, we need to find the send button and click it
-        const sendButton = await webviewView.findWebElement(By.css('.mynah-chat-prompt-button'))
+        const sendButton = await waitForElement(webviewView, By.css('.mynah-chat-prompt-button'))
         await sendButton.click()
 
-        await new Promise((resolve) => setTimeout(resolve, 12000))
-        // Wait for response using conversation container check
+        // await new Promise((resolve) => setTimeout(resolve, 12000))
+        // wait for response using conversation container check
         const responseReceived = await waitForChatResponse(webviewView)
         if (!responseReceived) {
             throw new Error('Chat response not received within timeout')
@@ -111,6 +100,30 @@ describe('Amazon Q E2E UI Test', function () {
 
         console.log('Chat response detected successfully')
     })
+
+    // Helper to wait for ui elements to load, utilizes typescript function overloading to account for all possible edge cases
+    async function waitForElement(
+        webview: WebviewView,
+        locator: By,
+        multiple: true,
+        timeout?: number
+    ): Promise<WebElement[]>
+    async function waitForElement(
+        webview: WebviewView,
+        locator: By,
+        multiple?: false,
+        timeout?: number
+    ): Promise<WebElement>
+    async function waitForElement(
+        webview: WebviewView,
+        locator: By,
+        multiple = false,
+        timeout = 15000
+    ): Promise<WebElement | WebElement[]> {
+        const driver = webview.getDriver()
+        await driver.wait(until.elementsLocated(locator), timeout)
+        return multiple ? await webview.findWebElements(locator) : await webview.findWebElement(locator)
+    }
 
     // Helper to find item by text content
     async function findItemByText(items: WebElement[], text: string) {
@@ -130,9 +143,8 @@ describe('Amazon Q E2E UI Test', function () {
         Instead of looking for a specific message like how we look for other elements in the test,
         I can check how many elements there are in our specific conversation container. If there is 2 elements,
         we can assume that the chat response has been generated. The challenge is, we must grab the latest
-        conversation container, as there can be multiple conversations in the webview.
-*/
-    async function waitForChatResponse(webview: WebviewView, timeout = 30000): Promise<boolean> {
+        conversation container, as there can be multiple conversations in the webview. */
+    async function waitForChatResponse(webview: WebviewView, timeout = 15000): Promise<boolean> {
         const startTime = Date.now()
 
         while (Date.now() - startTime < timeout) {
