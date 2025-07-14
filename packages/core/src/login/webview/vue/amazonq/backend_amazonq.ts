@@ -202,7 +202,7 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
         // Defining separate auth function to emit telemetry before returning from this method
         const runAuth = async (): Promise<AuthError | undefined> => {
             try {
-                await AuthUtil.instance.login(accessKey, secretKey, 'iam')
+                await AuthUtil.instance.login_iam(accessKey, secretKey)
             } catch (e) {
                 getLogger().error('Failed submitting credentials %O', e)
                 return { id: this.id, text: e as string }

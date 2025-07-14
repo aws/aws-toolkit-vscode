@@ -47,7 +47,7 @@ export const showCodeWhispererConnectionPrompt = async () => {
 export async function awsIdSignIn() {
     getLogger().info('selected AWS ID sign in')
     try {
-        await AuthUtil.instance.login(builderIdStartUrl, builderIdRegion, 'sso')
+        await AuthUtil.instance.login_sso(builderIdStartUrl, builderIdRegion)
     } catch (e) {
         throw ToolkitError.chain(e, failedToConnectAwsBuilderId, { code: 'FailedToConnect' })
     }

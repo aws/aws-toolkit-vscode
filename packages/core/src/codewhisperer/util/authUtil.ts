@@ -30,7 +30,7 @@ import { showAmazonQWalkthroughOnce } from '../../amazonq/onboardingPage/walkthr
 import { setContext } from '../../shared/vscode/setContext'
 import { openUrl } from '../../shared/utilities/vsCodeUtils'
 import { telemetry } from '../../shared/telemetry/telemetry'
-import { AuthStateEvent, cacheChangedEvent, LanguageClientAuth, Login, SsoLogin, IamLogin } from '../../auth/auth2'
+import { AuthStateEvent, cacheChangedEvent, LanguageClientAuth, Login, SsoLogin, IamLogin, LoginTypes } from '../../auth/auth2'
 import { builderIdStartUrl, internalStartUrl } from '../../auth/sso/constants'
 import { VSCODE_EXTENSION_ID } from '../../shared/extensions'
 import { RegionProfileManager } from '../region/regionProfileManager'
@@ -108,11 +108,11 @@ export class AuthUtil implements IAuthProvider {
     }
 
     isSsoSession(): boolean {
-        return this.session instanceof SsoLogin
+        return this.session?.loginType === LoginTypes.SSO || this.session instanceof SsoLogin
     }
 
     isIamSession(): boolean {
-        return this.session instanceof IamLogin
+        return this.session?.loginType === LoginTypes.IAM || this.session instanceof IamLogin
     }
 
     /**
@@ -134,7 +134,7 @@ export class AuthUtil implements IAuthProvider {
             if (!this.isConnected()) {
                 // Try to restore an IAM session
                 this.session = new IamLogin(this.profileName, this.lspAuth, this.eventEmitter)
-                // await this.session.restore()
+                await this.session.restore()
                 if (!this.isConnected()) {
                     // If both fail, reset the session
                     this.session = undefined
@@ -160,25 +160,26 @@ export class AuthUtil implements IAuthProvider {
         }
     }
 
-    // Log into the desired session type using the authentication parameters
-    async login(accessKey: string, secretKey: string, loginType: 'iam'): Promise<GetIamCredentialResult | undefined>
-    async login(startUrl: string, region: string, loginType: 'sso'): Promise<GetSsoTokenResult | undefined>
-    async login(
-        first: string,
-        second: string,
-        loginType: 'iam' | 'sso'
-    ): Promise<GetSsoTokenResult | GetIamCredentialResult | undefined> {
-        let response: GetSsoTokenResult | GetIamCredentialResult | undefined
-
-        // Start session if the current session type does not match the desired type
-        if (loginType === 'sso' && !this.isSsoSession()) {
+    // Log in using SSO
+    async login_sso(startUrl: string, region: string): Promise<GetSsoTokenResult | undefined> {
+        let response: GetSsoTokenResult | undefined
+        // Create SSO login session
+        if (!this.isSsoSession()) {
             this.session = new SsoLogin(this.profileName, this.lspAuth, this.eventEmitter)
-            response = await this.session.login({ startUrl: first, region: second, scopes: amazonQScopes })
-        } else if (loginType === 'iam' && !this.isIamSession()) {
-            this.session = new IamLogin(this.profileName, this.lspAuth, this.eventEmitter)
-            response = await this.session.login({ accessKey: first, secretKey: second })
         }
+        response = await (this.session as SsoLogin).login({ startUrl: startUrl, region: region, scopes: amazonQScopes })
+        await showAmazonQWalkthroughOnce()
+        return response
+    }
 
+    // Log in using IAM or STS credentials
+    async login_iam(accessKey: string, secretKey: string, sessionToken?: string): Promise<GetIamCredentialResult | undefined> {
+        let response: GetIamCredentialResult | undefined
+        // Create IAM login session
+        if (!this.isIamSession()) {
+            this.session = new IamLogin(this.profileName, this.lspAuth, this.eventEmitter)
+        }
+        response = await (this.session as IamLogin).login({ accessKey: accessKey, secretKey: secretKey })
         await showAmazonQWalkthroughOnce()
         return response
     }
@@ -197,8 +198,8 @@ export class AuthUtil implements IAuthProvider {
     }
 
     async getToken() {
-        if (this.isSsoSession()) {
-            const token = (await this.session!.getCredential()).credential
+        if (this.session) {
+            const token = (await this.session.getCredential()).credential
             if (typeof token !== 'string') {
                 throw new ToolkitError('Cannot get token with IAM session')
             }

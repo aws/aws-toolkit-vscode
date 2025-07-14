@@ -283,6 +283,7 @@ export class LanguageClientAuth {
  * Abstract class for connection management
  */
 export abstract class BaseLogin {
+    protected loginType: LoginType | undefined
     protected connectionState: AuthState = 'notConnected'
     protected cancellationToken: CancellationTokenSource | undefined
     protected _data: { startUrl?: string; region?: string; accessKey?: string; secretKey?: string } | undefined
@@ -360,6 +361,7 @@ export abstract class BaseLogin {
  */
 export class SsoLogin extends BaseLogin {
     // Cached information from the identity server for easy reference
+    override readonly loginType = LoginTypes.SSO
     private ssoTokenId: string | undefined
 
     constructor(profileName: string, lspAuth: LanguageClientAuth, eventEmitter: vscode.EventEmitter<AuthStateEvent>) {
@@ -501,6 +503,7 @@ export class SsoLogin extends BaseLogin {
  */
 export class IamLogin extends BaseLogin {
     // Cached information from the identity server for easy reference
+    override readonly loginType = LoginTypes.IAM
     // private iamCredentialId: string | undefined
 
     constructor(profileName: string, lspAuth: LanguageClientAuth, eventEmitter: vscode.EventEmitter<AuthStateEvent>) {
