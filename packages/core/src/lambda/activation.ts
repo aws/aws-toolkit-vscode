@@ -112,16 +112,6 @@ async function quickEditActivation() {
                         // Delete all files in the directory
                         await deleteFilesInFolder(workspacePath)
 
-                        // Remove workspace folder
-                        const workspaceIndex = vscode.workspace.workspaceFolders?.findIndex(
-                            (folder) => folder.uri.fsPath.toLowerCase() === workspacePath
-                        )
-                        if (workspaceIndex !== undefined && workspaceIndex >= 0) {
-                            vscode.workspace.updateWorkspaceFolders(workspaceIndex, 1)
-                        }
-
-                        await setFunctionInfo(lambda, { undeployed: false })
-
                         // Show message to user about next steps
                         void vscode.window.showInformationMessage(
                             localize(
@@ -129,6 +119,16 @@ async function quickEditActivation() {
                                 'Local workspace cleared. Navigate to the Toolkit explorer to get fresh code from the cloud.'
                             )
                         )
+
+                        await setFunctionInfo(lambda, { undeployed: false })
+
+                        // Remove workspace folder
+                        const workspaceIndex = vscode.workspace.workspaceFolders?.findIndex(
+                            (folder) => folder.uri.fsPath.toLowerCase() === workspacePath
+                        )
+                        if (workspaceIndex !== undefined && workspaceIndex >= 0) {
+                            vscode.workspace.updateWorkspaceFolders(workspaceIndex, 1)
+                        }
                     }
                 } catch (e) {
                     void vscode.window.showWarningMessage(
@@ -147,7 +147,7 @@ async function quickEditActivation() {
  * Activates Lambda components.
  */
 export async function activate(context: ExtContext): Promise<void> {
-    await quickEditActivation()
+    void quickEditActivation()
 
     context.extensionContext.subscriptions.push(
         Commands.register('aws.deleteLambda', async (node: LambdaFunctionNode | TreeNode) => {

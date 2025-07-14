@@ -47,9 +47,17 @@ export function watchForUpdates(lambda: LambdaFunction, projectUri: vscode.Uri):
     })
 
     watcher.onDidDelete(async (fileUri) => {
-        // We don't want to sync if the whole directory has been deleted
+        // We don't want to sync if the whole directory has been deleted or emptied
         if (fileUri.fsPath !== projectUri.fsPath) {
-            await promptForSync(lambda, projectUri, fileUri)
+            // Check if directory is empty before prompting for sync
+            try {
+                const entries = await fs.readdir(projectUri.fsPath)
+                if (entries.length > 0) {
+                    await promptForSync(lambda, projectUri, fileUri)
+                }
+            } catch (err) {
+                getLogger().debug(`Failed to check Lambda directory contents: ${err}`)
+            }
         }
     })
 }
