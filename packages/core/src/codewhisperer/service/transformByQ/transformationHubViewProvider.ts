@@ -30,20 +30,40 @@ import fs from 'fs'
 import path from 'path'
 import os from 'os'
 import { ChatSessionManager } from '../../../amazonqGumby/chat/storages/chatSession'
+import { setMaven, readHistoryFile } from './transformFileHandler'
+
+export interface HistoryObject {
+    startTime: string
+    projectName: string
+    status: string
+    duration: string
+    diffPath: string
+    summaryPath: string
+    jobId: string
+}
+
+export async function updateHistoryTable(historyFileUpdated?: boolean) {
+    await TransformationHubViewProvider.instance.updateContent('job history', undefined, historyFileUpdated)
+}
 
 export class TransformationHubViewProvider implements vscode.WebviewViewProvider {
     public static readonly viewType = 'aws.amazonq.transformationHub'
     private _view?: vscode.WebviewView
     private lastClickedButton: string = ''
     private _extensionUri: vscode.Uri = globals.context.extensionUri
+    private transformationHistory: HistoryObject[] = []
     constructor() {}
     static #instance: TransformationHubViewProvider
 
     public async updateContent(
         button: 'job history' | 'plan progress',
-        startTime: number = CodeTransformTelemetryState.instance.getStartTime()
+        startTime: number = CodeTransformTelemetryState.instance.getStartTime(),
+        historyFileUpdated?: boolean
     ) {
         this.lastClickedButton = button
+        if (historyFileUpdated) {
+            this.transformationHistory = readHistoryFile()
+        }
         if (this._view) {
             if (this.lastClickedButton === 'job history') {
                 clearInterval(transformByQState.getIntervalId())
@@ -94,6 +114,7 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
             localResourceRoots: [this._extensionUri],
         }
 
+        this.transformationHistory = readHistoryFile()
         if (this.lastClickedButton === 'job history') {
             this._view!.webview.html = this.showJobHistory()
         } else {
@@ -108,41 +129,10 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
     }
 
     private showJobHistory(): string {
-        const history: {
-            startTime: string
-            projectName: string
-            status: string
-            duration: string
-            diffPath: string
-            summaryPath: string
-            jobId: string
-        }[] = []
-        const jobHistoryFilePath = path.join(os.homedir(), '.aws', 'transform', 'transformation-history.tsv')
-        if (fs.existsSync(jobHistoryFilePath)) {
-            const historyFile = fs.readFileSync(jobHistoryFilePath, { encoding: 'utf8', flag: 'r' })
-            const jobs = historyFile.split('\n')
-            jobs.shift() // removes headers
-            if (jobs.length > 0) {
-                jobs.forEach((job) => {
-                    if (job) {
-                        const jobInfo = job.split('\t')
-                        const jobObject = {
-                            startTime: jobInfo[0],
-                            projectName: jobInfo[1],
-                            status: jobInfo[2],
-                            duration: jobInfo[3],
-                            diffPath: jobInfo[4],
-                            summaryPath: jobInfo[5],
-                            jobId: jobInfo[6],
-                        }
-                        history.push(jobObject)
-                    }
-                })
-            }
-        }
+        const jobsToDisplay: HistoryObject[] = [...this.transformationHistory]
         if (transformByQState.isRunning()) {
             const current = sessionJobHistory[transformByQState.getJobId()]
-            history.push({
+            jobsToDisplay.unshift({
                 startTime: current.startTime,
                 projectName: current.projectName,
                 status: current.status,
@@ -152,7 +142,6 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                 jobId: transformByQState.getJobId(),
             })
         }
-        history.reverse() // to show in descending order, chronologically
         return `<!DOCTYPE html>
             <html lang="en">
             <head>
@@ -165,14 +154,14 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
             </head>
             <body>
             <p><b>Transformation History</b></p>
-            <p>This table lists the jobs that you have run in the past 30 days. 
+            <p>This table lists the most recent jobs that you have run in the past 30 days. 
             To open the diff patch and summary files, choose the provided links. To get an updated job status, choose the refresh icon. 
             The diff path and summary will appear once they are available.
             </p>
             ${
-                history.length === 0
+                jobsToDisplay.length === 0
                     ? `<p>${CodeWhispererConstants.nothingToShowMessage}</p>`
-                    : this.getTableMarkup(history)
+                    : this.getTableMarkup(jobsToDisplay)
             }
             <script>
                 const vscode = acquireVsCodeApi();
@@ -213,17 +202,7 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
             </html>`
     }
 
-    private getTableMarkup(
-        history: {
-            startTime: string
-            projectName: string
-            status: string
-            duration: string
-            diffPath: string
-            summaryPath: string
-            jobId: string
-        }[]
-    ) {
+    private getTableMarkup(history: HistoryObject[]) {
         return `
             <style>
             .refresh-btn {
@@ -301,33 +280,33 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
         // fetch status from server
         let status = ''
         let duration = ''
-        try {
-            const response = await codeWhispererClient.codeModernizerGetCodeTransformation({
-                transformationJobId: jobId,
-                profileArn: undefined,
-            })
-            status = response.transformationJob.status!
-            if (response.transformationJob.endExecutionTime && response.transformationJob.creationTime) {
-                duration = convertToTimeString(
-                    response.transformationJob.endExecutionTime.getTime() -
-                        response.transformationJob.creationTime.getTime()
-                )
-            }
+        if (currentStatus === 'COMPLETED' || currentStatus === 'PARTIALLY_COMPLETED') {
+            // job is already completed, no need to fetch status
+            status = currentStatus
+        } else {
+            try {
+                const response = await codeWhispererClient.codeModernizerGetCodeTransformation({
+                    transformationJobId: jobId,
+                    profileArn: undefined,
+                })
+                status = response.transformationJob.status!
+                if (response.transformationJob.endExecutionTime && response.transformationJob.creationTime) {
+                    duration = convertToTimeString(
+                        response.transformationJob.endExecutionTime.getTime() -
+                            response.transformationJob.creationTime.getTime()
+                    )
+                }
 
-            console.log('status returned: %s', status)
-            console.log('duration returned: %s', duration)
-        } catch (error) {
-            console.error('error fetching status: %s', (error as Error).message)
-            return
+                console.log('status returned: %s\nduration returned: %s', status, duration)
+            } catch (error) {
+                console.error('error fetching status: %s', (error as Error).message)
+                return
+            }
         }
 
         // retrieve artifacts and updated duration if available
         let jobHistoryPath: string = ''
-        if (
-            CodeWhispererConstants.validStatesForCheckingDownloadUrl.includes(status) &&
-            !CodeWhispererConstants.failureStates.includes(status)
-        ) {
-            // status is COMPLETED or PARTIALLY_COMPLETED on server side
+        if (status === 'COMPLETED' || status === 'PARTIALLY_COMPLETED') {
             console.log('valid successful status')
 
             // artifacts should be available to download
@@ -363,7 +342,7 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                 transformByQState.setPayloadFilePath(
                     path.join(os.homedir(), '.aws', 'transform', projectName, jobId, 'zipped-code.zip')
                 )
-                transformByQState.setMavenName('mvn')
+                setMaven()
                 transformByQState.setCustomBuildCommand(metadata[5])
                 transformByQState.setTargetJavaHome(metadata[6])
                 transformByQState.setProjectPath(metadata[7])
@@ -388,7 +367,7 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
 
             // resume polling job
             try {
-                this.updateContent('job history') // refreshing the table disables all jobs' refresh buttons while this one is polling
+                updateHistoryTable() // refreshing the table disables all jobs' refresh buttons while this one is polling
                 status = await pollTransformationStatusUntilComplete(
                     jobId,
                     AuthUtil.instance.regionProfileManager.activeRegionProfile
@@ -426,6 +405,7 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                     // just show notification
                     void vscode.window.showErrorMessage(`There was an error refreshing this job. Job Id: ${jobId}`)
                 }
+                updateHistoryTable() // re-enable refresh buttons
                 return
             }
 
@@ -453,7 +433,7 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
         }
 
         // update local file and history table
-        this.updateHistoryFile(status, duration, jobHistoryPath, jobId)
+        await this.updateHistoryFile(status, duration, jobHistoryPath, jobId)
     }
 
     private async retrieveArtifacts(jobId: string, projectName: string) {
@@ -493,7 +473,7 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
         return jobHistoryPath
     }
 
-    private updateHistoryFile(status: string, duration: string, jobHistoryPath: string, jobId: string) {
+    private async updateHistoryFile(status: string, duration: string, jobHistoryPath: string, jobId: string) {
         const history: string[][] = []
         const historyLogFilePath = path.join(os.homedir(), '.aws', 'transform', 'transformation-history.tsv')
         if (fs.existsSync(historyLogFilePath)) {
@@ -528,7 +508,7 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
             fs.writeFileSync(historyLogFilePath, tsvContent, { flag: 'a' })
 
             // update table content
-            this.updateContent('job history')
+            await updateHistoryTable(true)
         }
     }
 
