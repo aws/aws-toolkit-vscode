@@ -22,7 +22,6 @@ import {
     generateFix,
     rejectFix,
     ignoreIssue,
-    regenerateFix,
     ignoreAllIssues,
 } from '../../../codewhisperer/commands/basicCommands'
 import { FakeExtensionContext } from '../../fakeExtensionContext'
@@ -1148,53 +1147,6 @@ def execute_input_compliant():
                 ruleId: codeScanIssue.ruleId,
                 result: 'Succeeded',
             })
-        })
-    })
-
-    describe('regenerateFix', function () {
-        let sandbox: sinon.SinonSandbox
-        let filePath: string
-        let codeScanIssue: CodeScanIssue
-        let issueItem: IssueItem
-        let rejectFixMock: sinon.SinonStub
-        let generateFixMock: sinon.SinonStub
-
-        beforeEach(function () {
-            sandbox = sinon.createSandbox()
-            filePath = 'dummy/file.py'
-            codeScanIssue = createCodeScanIssue({
-                findingId: randomUUID(),
-                suggestedFixes: [{ code: 'diff', description: 'description' }],
-            })
-            issueItem = new IssueItem(filePath, codeScanIssue)
-            rejectFixMock = sinon.stub()
-            generateFixMock = sinon.stub()
-        })
-
-        afterEach(function () {
-            sandbox.restore()
-        })
-
-        it('should call regenerateFix command successfully', async function () {
-            const updatedIssue = createCodeScanIssue({ findingId: 'updatedIssue' })
-            sinon.stub(rejectFix, 'execute').value(rejectFixMock.resolves(updatedIssue))
-            sinon.stub(generateFix, 'execute').value(generateFixMock)
-            targetCommand = testCommand(regenerateFix)
-            await targetCommand.execute(codeScanIssue, filePath)
-
-            assert.ok(rejectFixMock.calledWith(codeScanIssue, filePath))
-            assert.ok(generateFixMock.calledWith(updatedIssue, filePath))
-        })
-
-        it('should call regenerateFix from tree view item', async function () {
-            const updatedIssue = createCodeScanIssue({ findingId: 'updatedIssue' })
-            sinon.stub(rejectFix, 'execute').value(rejectFixMock.resolves(updatedIssue))
-            sinon.stub(generateFix, 'execute').value(generateFixMock)
-            targetCommand = testCommand(regenerateFix)
-            await targetCommand.execute(issueItem, filePath)
-
-            assert.ok(rejectFixMock.calledWith(codeScanIssue, filePath))
-            assert.ok(generateFixMock.calledWith(updatedIssue, filePath))
         })
     })
 })

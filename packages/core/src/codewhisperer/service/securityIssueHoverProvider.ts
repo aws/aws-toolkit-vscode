@@ -92,7 +92,7 @@ export class SecurityIssueHoverProvider implements vscode.HoverProvider {
             [issue, filePath],
             'comment',
             'Fix',
-            'Generate Fix for Issue'
+            'Fix with Amazon Q'
         )
         markdownString.appendMarkdown(' | ' + generateFixCommand)
 
