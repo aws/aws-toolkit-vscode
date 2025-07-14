@@ -132,7 +132,11 @@ export class LanguageClientAuth {
             {
                 profileName: profileName,
                 options: {
+<<<<<<< HEAD
                     callStsOnInvalidIamCredential: login,
+=======
+                    generateOnInvalidStsCredential: login,
+>>>>>>> 962aaee10b (add iam login)
                 },
             } satisfies GetIamCredentialParams,
             cancellationToken
@@ -168,6 +172,7 @@ export class LanguageClientAuth {
         } satisfies UpdateProfileParams)
     }
 
+<<<<<<< HEAD
     updateIamProfile(
         profileName: string,
         accessKey: string,
@@ -181,6 +186,14 @@ export class LanguageClientAuth {
         if (roleArn && sourceProfile) {
             profile = {
                 kinds: [ProfileKind.IamSourceProfileProfile],
+=======
+    updateIamProfile(profileName: string, accessKey: string, secretKey: string, sessionToken?: string, roleArn?: string, sourceProfile?: string): Promise<UpdateProfileResult> {
+        // Add credentials and delete SSO settings from profile
+        let profile: Profile
+        if (roleArn) {
+            profile = {
+                kinds: [ProfileKind.IamRoleSourceProfile],
+>>>>>>> 962aaee10b (add iam login)
                 name: profileName,
                 settings: {
                     sso_session: '',
@@ -193,7 +206,11 @@ export class LanguageClientAuth {
             }
         } else if (accessKey && secretKey) {
             profile = {
+<<<<<<< HEAD
                 kinds: [ProfileKind.IamCredentialsProfile],
+=======
+                kinds: [ProfileKind.IamUserProfile],
+>>>>>>> 962aaee10b (add iam login)
                 name: profileName,
                 settings: {
                     sso_session: '',
@@ -219,6 +236,13 @@ export class LanguageClientAuth {
         }
         return this.client.sendRequest(updateProfileRequestType.method, {
             profile: profile,
+<<<<<<< HEAD
+=======
+            ssoSession: {
+                name: profileName,
+                settings: undefined,
+            },
+>>>>>>> 962aaee10b (add iam login)
         } satisfies UpdateProfileParams)
     }
 
@@ -262,9 +286,19 @@ export class LanguageClientAuth {
         } satisfies InvalidateSsoTokenParams) as Promise<InvalidateSsoTokenResult>
     }
 
+    // invalidateStsCredential(tokenId: string) {
+    //     return this.client.sendRequest(invalidateStsCredentialRequestType.method, {
+    //         stsCredentialId: tokenId,
+    //     } satisfies InvalidateStsCredentialParams) as Promise<InvalidateStsCredentialResult>
+    // }
+
     registerSsoTokenChangedHandler(ssoTokenChangedHandler: (params: SsoTokenChangedParams) => any) {
         this.client.onNotification(ssoTokenChangedRequestType.method, ssoTokenChangedHandler)
     }
+
+    // registerStsCredentialChangedHandler(stsCredentialChangedHandler: (params: StsCredentialChangedParams) => any) {
+    //     this.client.onNotification(stsCredentialChangedRequestType.method, stsCredentialChangedHandler)
+    // }
 
     registerCacheWatcher(cacheChangedHandler: (event: cacheChangedEvent) => any) {
         this.cacheWatcher.onDidCreate(() => cacheChangedHandler('create'))
@@ -354,7 +388,10 @@ export abstract class BaseLogin {
  */
 export class SsoLogin extends BaseLogin {
     // Cached information from the identity server for easy reference
+<<<<<<< HEAD
     override readonly loginType = LoginTypes.SSO
+=======
+>>>>>>> 962aaee10b (add iam login)
     private ssoTokenId: string | undefined
 
     constructor(profileName: string, lspAuth: LanguageClientAuth, eventEmitter: vscode.EventEmitter<AuthStateEvent>) {
@@ -496,7 +533,10 @@ export class SsoLogin extends BaseLogin {
  */
 export class IamLogin extends BaseLogin {
     // Cached information from the identity server for easy reference
+<<<<<<< HEAD
     override readonly loginType = LoginTypes.IAM
+=======
+>>>>>>> 962aaee10b (add iam login)
     // private iamCredentialId: string | undefined
 
     constructor(profileName: string, lspAuth: LanguageClientAuth, eventEmitter: vscode.EventEmitter<AuthStateEvent>) {
