@@ -24,6 +24,7 @@ export interface CodeWhispererSession {
 export class SessionManager {
     private activeSession?: CodeWhispererSession
     private _acceptedSuggestionCount: number = 0
+    private _refreshedSessions = new Set<string>()
 
     constructor() {}
 
@@ -85,5 +86,21 @@ export class SessionManager {
 
     public clear() {
         this.activeSession = undefined
+    }
+
+    // re-render the session ghost text to display paginated responses once per completed session
+    public async maybeRefreshSessionUx() {
+        if (
+            this.activeSession &&
+            !this.activeSession.isRequestInProgress &&
+            !this._refreshedSessions.has(this.activeSession.sessionId)
+        ) {
+            await vscode.commands.executeCommand('editor.action.inlineSuggest.hide')
+            await vscode.commands.executeCommand('editor.action.inlineSuggest.trigger')
+            if (this._refreshedSessions.size > 1000) {
+                this._refreshedSessions.clear()
+            }
+            this._refreshedSessions.add(this.activeSession.sessionId)
+        }
     }
 }
