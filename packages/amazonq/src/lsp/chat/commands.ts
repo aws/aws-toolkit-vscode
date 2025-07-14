@@ -22,78 +22,24 @@ export function registerCommands(provider: AmazonQChatViewProvider) {
         registerGenericCommand('aws.amazonq.optimizeCode', 'Optimize', provider),
         registerGenericCommand('aws.amazonq.generateUnitTests', 'Generate Tests', provider),
 
-        Commands.register('aws.amazonq.explainIssue', async (issue: CodeScanIssue, filePath: string) => {
-            void focusAmazonQPanel().then(async () => {
-                if (issue && filePath) {
-                    const range = new vscode.Range(issue.startLine, 0, issue.endLine, 0)
-                    await vscode.workspace.openTextDocument(filePath).then((doc) => {
-                        void vscode.window.showTextDocument(doc, {
-                            selection: range,
-                            viewColumn: vscode.ViewColumn.One,
-                            preview: true,
-                        })
-                    })
-                }
-
-                const lineRange =
-                    issue.startLine === issue.endLine - 1
-                        ? `[${issue.startLine + 1}]`
-                        : `[${issue.startLine + 1}, ${issue.endLine}]`
-                const visibleMessageInChat = `_Explain **${issue.title}** issue in **${path.basename(filePath)}** at \`${lineRange}\`_`
-
-                // The message that gets sent to the backend
-                const contextMessage = `Provide a small description of the issue. You must not attempt to fix the issue. You should only give a small summary of it to the user. Code issue - ${JSON.stringify(issue)}`
-
-                void provider.webview?.postMessage({
-                    command: 'sendToPrompt',
-                    params: {
-                        selection: '',
-                        triggerType: 'contextMenu',
-                        prompt: {
-                            prompt: visibleMessageInChat, // what gets sent to the user
-                            escapedPrompt: contextMessage, // what gets sent to the backend
-                        },
-                        autoSubmit: true,
-                    },
-                })
-            })
-        }),
-        Commands.register('aws.amazonq.generateFix', async (issue: CodeScanIssue, filePath: string) => {
-            void focusAmazonQPanel().then(async () => {
-                if (issue && filePath) {
-                    const range = new vscode.Range(issue.startLine, 0, issue.endLine, 0)
-                    await vscode.workspace.openTextDocument(filePath).then((doc) => {
-                        void vscode.window.showTextDocument(doc, {
-                            selection: range,
-                            viewColumn: vscode.ViewColumn.One,
-                            preview: true,
-                        })
-                    })
-                }
-
-                const lineRange =
-                    issue.startLine === issue.endLine - 1
-                        ? `[${issue.startLine + 1}]`
-                        : `[${issue.startLine + 1}, ${issue.endLine}]`
-                const visibleMessageInChat = `_Fix **${issue.title}** issue in **${path.basename(filePath)}** at \`${lineRange}\`_`
-
-                // The message that gets sent to the backend
-                const contextMessage = `Generate a fix for the following code issue. You must not explain the issue, just generate and explain the fix. The user should have the option to accept or reject the fix before any code is changed. Code issue - ${JSON.stringify(issue)}`
-
-                void provider.webview?.postMessage({
-                    command: 'sendToPrompt',
-                    params: {
-                        selection: '',
-                        triggerType: 'contextMenu',
-                        prompt: {
-                            prompt: visibleMessageInChat, // what gets sent to the user
-                            escapedPrompt: contextMessage, // what gets sent to the backend
-                        },
-                        autoSubmit: true,
-                    },
-                })
-            })
-        }),
+        Commands.register('aws.amazonq.explainIssue', (issue: CodeScanIssue, filePath: string) =>
+            handleIssueCommand(
+                issue,
+                filePath,
+                'Explain',
+                'Provide a small description of the issue. You must not attempt to fix the issue. You should only give a small summary of it to the user.',
+                provider
+            )
+        ),
+        Commands.register('aws.amazonq.generateFix', (issue: CodeScanIssue, filePath: string) =>
+            handleIssueCommand(
+                issue,
+                filePath,
+                'Fix',
+                'Generate a fix for the following code issue. You must not explain the issue, just generate and explain the fix. The user should have the option to accept or reject the fix before any code is changed.',
+                provider
+            )
+        ),
         Commands.register('aws.amazonq.sendToPrompt', (data) => {
             const triggerType = getCommandTriggerType(data)
             const selection = getSelectedText()
@@ -116,6 +62,53 @@ export function registerCommands(provider: AmazonQChatViewProvider) {
     )
 }
 
+async function handleIssueCommand(
+    issue: CodeScanIssue,
+    filePath: string,
+    action: string,
+    contextPrompt: string,
+    provider: AmazonQChatViewProvider
+) {
+    await focusAmazonQPanel()
+
+    if (issue && filePath) {
+        await openFileWithSelection(issue, filePath)
+    }
+
+    const lineRange = createLineRangeText(issue)
+    const visibleMessageInChat = `_${action} **${issue.title}** issue in **${path.basename(filePath)}** at \`${lineRange}\`_`
+    const contextMessage = `${contextPrompt} Code issue - ${JSON.stringify(issue)}`
+
+    void provider.webview?.postMessage({
+        command: 'sendToPrompt',
+        params: {
+            selection: '',
+            triggerType: 'contextMenu',
+            prompt: {
+                prompt: visibleMessageInChat,
+                escapedPrompt: contextMessage,
+            },
+            autoSubmit: true,
+        },
+    })
+}
+
+async function openFileWithSelection(issue: CodeScanIssue, filePath: string) {
+    const range = new vscode.Range(issue.startLine, 0, issue.endLine, 0)
+    const doc = await vscode.workspace.openTextDocument(filePath)
+    await vscode.window.showTextDocument(doc, {
+        selection: range,
+        viewColumn: vscode.ViewColumn.One,
+        preview: true,
+    })
+}
+
+function createLineRangeText(issue: CodeScanIssue): string {
+    return issue.startLine === issue.endLine - 1
+        ? `[${issue.startLine + 1}]`
+        : `[${issue.startLine + 1}, ${issue.endLine}]`
+}
+
 function getSelectedText(): string {
     const editor = window.activeTextEditor
     if (editor) {
@@ -134,15 +127,14 @@ function getCommandTriggerType(data: any): string {
 }
 
 function registerGenericCommand(commandName: string, genericCommand: string, provider: AmazonQChatViewProvider) {
-    return Commands.register(commandName, (data) => {
+    return Commands.register(commandName, async (data) => {
         const triggerType = getCommandTriggerType(data)
         const selection = getSelectedText()
 
-        void focusAmazonQPanel().then(() => {
-            void provider.webview?.postMessage({
-                command: 'genericCommand',
-                params: { genericCommand, selection, triggerType },
-            })
+        await focusAmazonQPanel()
+        void provider.webview?.postMessage({
+            command: 'genericCommand',
+            params: { genericCommand, selection, triggerType },
         })
     })
 }
