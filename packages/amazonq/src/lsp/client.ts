@@ -266,6 +266,14 @@ async function onLanguageServerReady(
 
     toDispose.push(
         inlineManager,
+        Commands.register('aws.amazonq.showPrev', async () => {
+            await sessionManager.maybeRefreshSessionUx()
+            await vscode.commands.executeCommand('editor.action.inlineSuggest.showPrevious')
+        }),
+        Commands.register('aws.amazonq.showNext', async () => {
+            await sessionManager.maybeRefreshSessionUx()
+            await vscode.commands.executeCommand('editor.action.inlineSuggest.showNext')
+        }),
         Commands.register({ id: 'aws.amazonq.invokeInlineCompletion', autoconnect: true }, async () => {
             await vscode.commands.executeCommand('editor.action.inlineSuggest.trigger')
         }),

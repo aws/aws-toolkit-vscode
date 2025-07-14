@@ -924,12 +924,12 @@
             },
             {
                 "key": "right",
-                "command": "editor.action.inlineSuggest.showNext",
+                "command": "aws.amazonq.showNext",
                 "when": "inlineSuggestionVisible && !editorReadonly && aws.codewhisperer.connected"
             },
             {
                 "key": "left",
-                "command": "editor.action.inlineSuggest.showPrevious",
+                "command": "aws.amazonq.showPrev",
                 "when": "inlineSuggestionVisible && !editorReadonly && aws.codewhisperer.connected"
             },
             {
