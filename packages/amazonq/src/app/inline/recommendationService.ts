@@ -2,7 +2,6 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-
 import {
     InlineCompletionListWithReferences,
     InlineCompletionWithReferencesParams,
@@ -80,7 +79,7 @@ export class RecommendationService {
                     nextToken: request.partialResultToken,
                 },
             })
-            let result: InlineCompletionListWithReferences = await languageClient.sendRequest(
+            const result: InlineCompletionListWithReferences = await languageClient.sendRequest(
                 inlineCompletionWithReferencesRequestType.method,
                 request,
                 token
@@ -120,18 +119,10 @@ export class RecommendationService {
                 getLogger().info(
                     'Suggestion type is COMPLETIONS. Start fetching for more items if partialResultToken exists.'
                 )
-                try {
-                    while (result.partialResultToken) {
-                        const paginatedRequest = { ...request, partialResultToken: result.partialResultToken }
-                        result = await languageClient.sendRequest(
-                            inlineCompletionWithReferencesRequestType.method,
-                            paginatedRequest,
-                            token
-                        )
-                        this.sessionManager.updateSessionSuggestions(result.items)
-                    }
-                } catch (error) {
-                    languageClient.warn(`Error when getting suggestions: ${error}`)
+                if (result.partialResultToken) {
+                    this.processRemainingRequests(languageClient, request, result, token).catch((error) => {
+                        languageClient.warn(`Error when getting suggestions: ${error}`)
+                    })
                 }
             } else {
                 // Skip fetching for more items if the suggesion is EDITS. If it is EDITS suggestion, only fetching for more
@@ -140,11 +131,6 @@ export class RecommendationService {
                 getLogger().info('Suggestion type is EDITS. Skip fetching for more items.')
                 this.sessionManager.updateActiveEditsStreakToken(result.partialResultToken)
             }
-
-            // Close session and finalize telemetry regardless of pagination path
-            this.sessionManager.closeSession()
-            TelemetryHelper.instance.setAllPaginationEndTime()
-            options.emitTelemetry && TelemetryHelper.instance.tryRecordClientComponentLatency()
         } catch (error: any) {
             getLogger().error('Error getting recommendations: %O', error)
             // bearer token expired
@@ -166,5 +152,32 @@ export class RecommendationService {
                 void statusBar.refreshStatusBar() // effectively "stop loading"
             }
         }
+    }
+
+    private async processRemainingRequests(
+        languageClient: LanguageClient,
+        initialRequest: InlineCompletionWithReferencesParams,
+        firstResult: InlineCompletionListWithReferences,
+        token: CancellationToken
+    ): Promise<void> {
+        let nextToken = firstResult.partialResultToken
+        while (nextToken) {
+            const request = { ...initialRequest, partialResultToken: nextToken }
+
+            const result: InlineCompletionListWithReferences = await languageClient.sendRequest(
+                inlineCompletionWithReferencesRequestType.method,
+                request,
+                token
+            )
+            this.sessionManager.updateSessionSuggestions(result.items)
+            nextToken = result.partialResultToken
+        }
+
+        this.sessionManager.closeSession()
+
+        // refresh inline completion items to render paginated responses
+        // All pagination requests completed
+        TelemetryHelper.instance.setAllPaginationEndTime()
+        TelemetryHelper.instance.tryRecordClientComponentLatency()
     }
 }
