@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { getLogger } from 'aws-core-vscode/shared'
 import { QueuedAnimation, PendingFileWrite } from './types'
 import { FileSystemManager } from './fileSystemManager'
 
@@ -58,7 +57,6 @@ export class AnimationQueueManager {
         const queue = this.animationQueue.get(filePath) || []
         queue.push(animation)
         this.animationQueue.set(filePath, queue)
-        getLogger().info(`[AnimationQueueManager] 📋 Queued animation for ${filePath} (queue size: ${queue.length})`)
     }
 
     /**
@@ -121,11 +119,6 @@ export class AnimationQueueManager {
         if (!next) {
             return
         }
-
-        getLogger().info(
-            `[AnimationQueueManager] 🎯 Processing queued animation for ${filePath} (${queue.length} remaining)`
-        )
-
         // Use the current file content as the "original" for the next animation
         const currentContent = await this.fileSystemManager.getCurrentFileContent(filePath)
 
@@ -164,7 +157,6 @@ export class AnimationQueueManager {
     public clearAll(): void {
         this.animatingFiles.clear()
         this.animationQueue.clear()
-        getLogger().info('[AnimationQueueManager] 🧹 Cleared all animation queues and state')
     }
 
     /**
@@ -173,6 +165,5 @@ export class AnimationQueueManager {
     public clearFileQueue(filePath: string): void {
         this.animationQueue.delete(filePath)
         this.markAsNotAnimating(filePath)
-        getLogger().info(`[AnimationQueueManager] 🧹 Cleared queue for ${filePath}`)
     }
 }

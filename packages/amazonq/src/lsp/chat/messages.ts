@@ -751,7 +751,16 @@ export function registerMessageListeners(
                     streamingChunk.isComplete || false
                 )
 
-                getLogger().info(`[VSCode Client] ✅ Streaming chunk processed successfully`)
+                // **CRITICAL FIX**: Add explicit logging for final chunks
+                if (streamingChunk.isComplete) {
+                    getLogger().info(
+                        `[VSCode Client] ✅ FINAL streaming chunk processed for ${streamingChunk.toolUseId} - cleanup should be triggered`
+                    )
+                } else {
+                    getLogger().debug(
+                        `[VSCode Client] ⚡ Partial streaming chunk processed for ${streamingChunk.toolUseId}`
+                    )
+                }
             } catch (error) {
                 getLogger().error(`[VSCode Client] ❌ Failed to process streaming chunk: ${error}`)
             }

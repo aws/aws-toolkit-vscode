@@ -765,39 +765,27 @@ export class StreamingDiffController implements vscode.Disposable {
      * Clean up all temporary files for a chat session
      */
     async cleanupChatSession(): Promise<void> {
-        getLogger().info(`[StreamingDiffController] 🧹 Cleaning up temporary files for chat session`)
-
         const tempFilesToCleanup: string[] = []
 
-        // Collect all temp file paths
         for (const [, session] of this.activeStreamingSessions.entries()) {
             if (session.tempFilePath) {
                 tempFilesToCleanup.push(session.tempFilePath)
             }
         }
 
-        // Clean up all temporary files
         for (const tempFilePath of tempFilesToCleanup) {
             try {
                 await this.cleanupTempFile(tempFilePath)
-                getLogger().info(`[StreamingDiffController] ✅ Cleaned up temp file: ${tempFilePath}`)
             } catch (error) {
                 getLogger().warn(`[StreamingDiffController] ⚠️ Failed to cleanup temp file ${tempFilePath}: ${error}`)
             }
         }
-
-        getLogger().info(
-            `[StreamingDiffController] 🧹 Chat session cleanup complete: ${tempFilesToCleanup.length} temp files removed`
-        )
     }
 
     /**
      * Dispose all resources
      */
     dispose(): void {
-        getLogger().info(`[StreamingDiffController] 💥 Disposing streaming diff controller`)
-
-        // Clean up all temporary files before disposing
         void this.cleanupChatSession()
 
         for (const [toolUseId, session] of this.activeStreamingSessions.entries()) {
@@ -811,7 +799,6 @@ export class StreamingDiffController implements vscode.Disposable {
         }
 
         this.activeStreamingSessions.clear()
-        getLogger().info(`[StreamingDiffController] ✅ Disposed all streaming sessions`)
     }
 }
 

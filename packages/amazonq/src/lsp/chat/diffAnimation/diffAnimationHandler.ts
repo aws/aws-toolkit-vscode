@@ -73,9 +73,6 @@ export class DiffAnimationHandler implements vscode.Disposable {
     >()
 
     constructor() {
-        getLogger().info(`[DiffAnimationHandler] 🚀 Initializing DiffAnimationHandler with streaming-only approach`)
-
-        // Initialize components
         this.diffAnimationController = new DiffAnimationController()
         this.fileSystemManager = new FileSystemManager(this.handleFileChange.bind(this))
         this.chatProcessor = new ChatProcessor(this.fileSystemManager, this.handleFileWritePreparation.bind(this))
@@ -101,7 +98,6 @@ export class DiffAnimationHandler implements vscode.Disposable {
             vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || path.resolve('.'),
             'test_animation.js'
         )
-        getLogger().info(`[DiffAnimationHandler] 🧪 Running test animation for: ${testFilePath}`)
 
         // Run the animation using Cline-style diff view
         await this.animateFileChangeWithDiff(testFilePath, originalContent, newContent, 'test')
@@ -125,91 +121,34 @@ export class DiffAnimationHandler implements vscode.Disposable {
         return this.chatProcessor.processChatUpdate(params)
     }
 
-    /**
-     * Handle file write preparation callback
-     */
     private async handleFileWritePreparation(pendingWrite: PendingFileWrite): Promise<void> {
-        // Check if we already have a pending write for this file
         if (this.pendingWrites.has(pendingWrite.filePath)) {
-            getLogger().warn(
-                `[DiffAnimationHandler] ⚠️ Already have pending write for ${pendingWrite.filePath}, skipping`
-            )
             return
         }
-
-        // Store the pending write
         this.pendingWrites.set(pendingWrite.filePath, pendingWrite)
-        getLogger().info(`[DiffAnimationHandler] 📝 Stored pending write for: ${pendingWrite.filePath}`)
     }
 
-    /**
-     * Handle file changes - this is where we detect the actual write
-     */
     private async handleFileChange(uri: vscode.Uri): Promise<void> {
         const filePath = uri.fsPath
-
-        // Check if we have a pending write for this file
         const pendingWrite = this.pendingWrites.get(filePath)
         if (!pendingWrite) {
             return
         }
 
-        // CRITICAL FIX: Check if streaming is active for this toolUseId
-        // If streaming is active, let the streaming system handle it entirely
         if (this.isStreamingActive(pendingWrite.toolUseId)) {
-            getLogger().info(
-                `[DiffAnimationHandler] 🌊 Streaming is active for ${pendingWrite.toolUseId}, skipping post-write animation`
-            )
-            // Remove from pending writes but don't start animation
             this.pendingWrites.delete(filePath)
             return
         }
 
-        // Remove from pending writes
         this.pendingWrites.delete(filePath)
-
-        getLogger().info(`[DiffAnimationHandler] 📝 Detected file write: ${filePath}`)
-
-        // Small delay to ensure the write is complete
         await new Promise((resolve) => setTimeout(resolve, 50))
-
-        try {
-            // Read the new content that was just written
-            const newContent = await this.fileSystemManager.getCurrentFileContent(filePath)
-
-            // Check if content actually changed
-            if (pendingWrite.originalContent !== newContent) {
-                getLogger().info(
-                    `[DiffAnimationHandler] 🎬 Content changed - ` +
-                        `original: ${pendingWrite.originalContent.length} chars, new: ${newContent.length} chars`
-                )
-
-                // Store animation data for later static diff view
-                this.diffAnimationController.storeAnimationData(filePath, pendingWrite.originalContent, newContent)
-
-                getLogger().info(`[DiffAnimationHandler] ✅ Animation data stored for future diff view`)
-            } else {
-                getLogger().info(`[DiffAnimationHandler] ℹ️ No content change for: ${filePath}`)
-            }
-        } catch (error) {
-            getLogger().error(`[DiffAnimationHandler] ❌ Failed to process file change: ${error}`)
-        }
     }
 
-    /**
-     * Check if we should show static diff for a file
-     */
     public shouldShowStaticDiff(filePath: string, content: string): boolean {
-        // Always show static diff when called from chat click
-        // This method is primarily called when user clicks on file tabs in chat
         const animation = this.diffAnimationController.getAnimationData(filePath)
-
-        // If we have animation data, we should show static diff
         if (animation) {
             return true
         }
-
-        // Check if the file has been animated before
         return this.diffAnimationController.shouldShowStaticDiff(filePath, content)
     }
 
@@ -224,11 +163,6 @@ export class DiffAnimationHandler implements vscode.Disposable {
     ): Promise<void> {
         const animationId = `${path.basename(filePath)}_${Date.now()}`
 
-        getLogger().info(`[DiffAnimationHandler] 🎬 Starting Cline-style diff animation ${animationId}`)
-        getLogger().info(
-            `[DiffAnimationHandler] 📊 Animation details: from ${originalContent.length} chars to ${newContent.length} chars`
-        )
-
         try {
             // Show a status message
             vscode.window.setStatusBarMessage(`🎬 Showing changes for ${path.basename(filePath)}...`, 5000)
@@ -236,14 +170,10 @@ export class DiffAnimationHandler implements vscode.Disposable {
             // Use the DiffAnimationController with Cline-style diff view
             await this.diffAnimationController.startDiffAnimation(filePath, originalContent, newContent, false)
 
-            getLogger().info(`[DiffAnimationHandler] ✅ Animation started successfully`)
-
             // Show completion message
             vscode.window.setStatusBarMessage(`✅ Showing changes for ${path.basename(filePath)}`, 3000)
         } catch (error) {
             getLogger().error(`[DiffAnimationHandler] ❌ Failed to animate ${animationId}: ${error}`)
-        } finally {
-            getLogger().info(`[DiffAnimationHandler] 🏁 Animation ${animationId} completed`)
         }
     }
 
@@ -256,26 +186,16 @@ export class DiffAnimationHandler implements vscode.Disposable {
         fileContent?: string
         isFromChatClick?: boolean
     }): Promise<void> {
-        getLogger().info(`[DiffAnimationHandler] 🎨 Processing file diff for: ${params.originalFileUri}`)
-
         try {
             const filePath = await this.fileSystemManager.normalizeFilePath(params.originalFileUri)
             const originalContent = params.originalFileContent || ''
             const newContent = params.fileContent || ''
 
-            // **CRITICAL FIX: Handle chat clicks differently - show static diff view**
             if (params.isFromChatClick) {
-                getLogger().info(`[DiffAnimationHandler] 👆 File clicked from chat - showing static diff view`)
-
-                // For chat clicks, always show the static diff view using VSCode's built-in diff
                 await this.showStaticDiffForFile(filePath, originalContent, newContent)
                 return
             }
-
-            // For non-chat clicks, use the animation system
             if (originalContent !== newContent) {
-                getLogger().info(`[DiffAnimationHandler] ✨ Content differs, starting diff animation`)
-
                 await this.diffAnimationController.startDiffAnimation(
                     filePath,
                     originalContent,
@@ -294,51 +214,30 @@ export class DiffAnimationHandler implements vscode.Disposable {
      * Show static diff view for a file (when clicked from chat)
      */
     public async showStaticDiffForFile(filePath: string, originalContent?: string, newContent?: string): Promise<void> {
-        getLogger().info(`[DiffAnimationHandler] 👆 File clicked from chat: ${filePath}`)
-
         // Normalize the file path
         const normalizedPath = await this.fileSystemManager.normalizeFilePath(filePath)
 
         // Get animation data if it exists
         const animation = this.diffAnimationController.getAnimationData(normalizedPath)
 
-        // **CRITICAL FIX: Prioritize animation data over notification parameters**
-        // The notification parameters are often incorrect (same content for both original and new)
-        // Animation data contains the actual original content from when streaming started
         let origContent: string | undefined
         let newContentToUse: string | undefined
 
         if (animation) {
-            // Use animation data first (most reliable)
             origContent = animation.originalContent
             newContentToUse = animation.newContent
-            getLogger().info(
-                `[DiffAnimationHandler] Using animation data - original: ${origContent?.length || 0} chars, new: ${newContentToUse?.length || 0} chars`
-            )
         } else {
-            // Fall back to provided parameters
             origContent = originalContent
             newContentToUse = newContent
-            getLogger().info(
-                `[DiffAnimationHandler] Using provided parameters - original: ${origContent?.length || 0} chars, new: ${newContentToUse?.length || 0} chars`
-            )
         }
 
-        // **ADDITIONAL FIX: If still identical, try reading the actual file from disk**
         if (origContent === newContentToUse && origContent !== undefined) {
-            getLogger().warn(`[DiffAnimationHandler] Content is identical, trying to read actual file from disk`)
             try {
                 const fileUri = vscode.Uri.file(normalizedPath)
                 const doc = await vscode.workspace.openTextDocument(fileUri)
                 const actualFileContent = doc.getText()
-
                 if (actualFileContent !== origContent) {
                     newContentToUse = actualFileContent
-                    getLogger().info(
-                        `[DiffAnimationHandler] Found different content on disk: ${actualFileContent.length} chars vs ${origContent.length} chars`
-                    )
-                } else {
-                    getLogger().warn(`[DiffAnimationHandler] File content on disk is also identical to original`)
                 }
             } catch (error) {
                 getLogger().error(`[DiffAnimationHandler] Failed to read file from disk: ${error}`)
@@ -346,51 +245,31 @@ export class DiffAnimationHandler implements vscode.Disposable {
         }
 
         if (origContent !== undefined && newContentToUse !== undefined && origContent !== newContentToUse) {
-            // Show VS Code's built-in diff view
             await this.diffAnimationController.showVSCodeDiff(normalizedPath, origContent, newContentToUse)
         } else {
-            // If no meaningful diff available, just open the file
-            getLogger().warn(`[DiffAnimationHandler] No meaningful diff available, opening file normally`)
             const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(normalizedPath))
             await vscode.window.showTextDocument(doc)
         }
     }
 
-    /**
-     * Start streaming diff session for a tool use (called when fsWrite/fsReplace is detected)
-     */
     public async startStreamingDiffSession(toolUseId: string, filePath: string): Promise<void> {
-        getLogger().info(`[DiffAnimationHandler] 🎬 Starting streaming diff session for ${toolUseId} at ${filePath}`)
-
         try {
-            // Use original content that was already captured by ChatProcessor
             let originalContent = ''
-
-            // Find the pending write that contains the correct original content
             const pendingWrite = Array.from(this.pendingWrites.values()).find(
                 (write) => write.toolUseId === toolUseId && write.filePath === filePath
             )
 
             if (pendingWrite) {
                 originalContent = pendingWrite.originalContent
-                getLogger().info(
-                    `[DiffAnimationHandler] ✅ Using pre-captured original content: ${originalContent.length} chars`
-                )
             } else {
-                // Fallback: try to read file if no pending write found
                 try {
                     const document = await vscode.workspace.openTextDocument(vscode.Uri.file(filePath))
                     originalContent = document.getText()
-                    getLogger().warn(
-                        `[DiffAnimationHandler] ⚠️ Fallback: Reading current file content: ${originalContent.length} chars`
-                    )
                 } catch {
                     originalContent = ''
-                    getLogger().info(`[DiffAnimationHandler] 🆕 File doesn't exist, original content is empty`)
                 }
             }
 
-            // Store the streaming session
             this.streamingSessions.set(toolUseId, {
                 toolUseId,
                 filePath,
@@ -398,49 +277,30 @@ export class DiffAnimationHandler implements vscode.Disposable {
                 startTime: Date.now(),
             })
 
-            // Open the streaming diff view with the correctly captured original content
             await this.streamingDiffController.openStreamingDiffView(toolUseId, filePath, originalContent)
-
-            getLogger().info(`[DiffAnimationHandler] ✅ Streaming diff session started for ${toolUseId}`)
         } catch (error) {
             getLogger().error(`[DiffAnimationHandler] ❌ Failed to start streaming session for ${toolUseId}: ${error}`)
         }
     }
 
-    /**
-     * Start streaming diff session with pre-captured original content
-     * (called from messages.ts when first streaming chunk arrives)
-     */
     public async startStreamingWithOriginalContent(
         toolUseId: string,
         filePath: string,
         originalContent: string
     ): Promise<void> {
-        getLogger().info(
-            `[DiffAnimationHandler] 🎬 Starting streaming diff session with original content for ${toolUseId} at ${filePath}`
-        )
-
         try {
-            // Store the streaming session with the provided original content
             this.streamingSessions.set(toolUseId, {
                 toolUseId,
                 filePath,
                 originalContent,
                 startTime: Date.now(),
             })
-
-            // Open the streaming diff view with the provided original content
             await this.streamingDiffController.openStreamingDiffView(toolUseId, filePath, originalContent)
-
-            getLogger().info(`[DiffAnimationHandler] ✅ Streaming diff session started for ${toolUseId}`)
         } catch (error) {
             getLogger().error(`[DiffAnimationHandler] ❌ Failed to start streaming session for ${toolUseId}: ${error}`)
         }
     }
 
-    /**
-     * Stream content updates to the diff view (called from language server)
-     */
     public async streamContentUpdate(
         toolUseId: string,
         partialContent: string,
@@ -448,34 +308,17 @@ export class DiffAnimationHandler implements vscode.Disposable {
     ): Promise<void> {
         const session = this.streamingSessions.get(toolUseId)
         if (!session) {
-            getLogger().warn(`[DiffAnimationHandler] ⚠️ No streaming session found for ${toolUseId}`)
             return
         }
 
-        // **CRITICAL FIX: Don't process empty content unless it's the final chunk**
-        // This prevents the streaming diff controller from replacing file content with empty string
-        // But we still want to allow the streaming session to be active for animation setup
         if (!isFinal && partialContent.trim() === '') {
-            getLogger().debug(
-                `[DiffAnimationHandler] ⏳ Skipping empty content chunk for ${toolUseId} - waiting for actual content (session remains active)`
-            )
             return
         }
-
-        getLogger().info(
-            `[DiffAnimationHandler] ⚡ Streaming content update for ${toolUseId}: ${partialContent.length} chars (final: ${isFinal})`
-        )
 
         try {
-            // Stream the content to the diff view
             await this.streamingDiffController.streamContentUpdate(toolUseId, partialContent, isFinal)
 
             if (isFinal) {
-                // **CRITICAL FIX: Store animation data when streaming completes**
-                // This ensures we have the original and final content for static diff view later
-                getLogger().info(`[DiffAnimationHandler] 📦 Storing animation data for future static diff view`)
-
-                // Create animation data to store for later diff view clicks
                 const animationData = {
                     uri: vscode.Uri.file(session.filePath),
                     originalContent: session.originalContent,
@@ -485,21 +328,7 @@ export class DiffAnimationHandler implements vscode.Disposable {
                     isFromChatClick: false,
                 }
 
-                // Store in diffAnimationController for later retrieval using proper method
-                // Access the private activeAnimations map through bracket notation since it's private
                 ;(this.diffAnimationController as any).activeAnimations.set(session.filePath, animationData)
-
-                getLogger().info(
-                    `[DiffAnimationHandler] ✅ Animation data stored - original: ${session.originalContent.length} chars, final: ${partialContent.length} chars`
-                )
-
-                // Calculate session duration
-                const duration = Date.now() - session.startTime
-                getLogger().info(
-                    `[DiffAnimationHandler] 🏁 Streaming session completed for ${toolUseId} in ${duration}ms`
-                )
-
-                // Clean up the session
                 this.streamingSessions.delete(toolUseId)
             }
         } catch (error) {
@@ -507,20 +336,13 @@ export class DiffAnimationHandler implements vscode.Disposable {
         }
     }
 
-    /**
-     * Check if a streaming session is active
-     */
     public isStreamingActive(toolUseId: string): boolean {
         return this.streamingSessions.has(toolUseId) && this.streamingDiffController.isStreamingActive(toolUseId)
     }
 
-    /**
-     * Get streaming statistics for debugging
-     */
     public getStreamingStats(toolUseId: string): any {
         const session = this.streamingSessions.get(toolUseId)
         const streamingStats = this.streamingDiffController.getStreamingStats(toolUseId)
-
         return {
             sessionExists: !!session,
             sessionDuration: session ? Date.now() - session.startTime : 0,
@@ -530,13 +352,8 @@ export class DiffAnimationHandler implements vscode.Disposable {
     }
 
     public async dispose(): Promise<void> {
-        getLogger().info(`[DiffAnimationHandler] 💥 Disposing DiffAnimationHandler`)
-
-        // Clear all tracking sets and maps
         this.pendingWrites.clear()
         this.streamingSessions.clear()
-
-        // Dispose components
         this.diffAnimationController.dispose()
         this.fileSystemManager.dispose()
         this.streamingDiffController.dispose()
