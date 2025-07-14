@@ -22,5 +22,9 @@ export async function loginToIdC() {
         )
     }
 
+<<<<<<< HEAD
     await AuthUtil.instance.loginSso(startUrl, region)
+=======
+    await AuthUtil.instance.login_sso(startUrl, region)
+>>>>>>> 337b30bd7d (rename login to login_sso and login_iam)
 }

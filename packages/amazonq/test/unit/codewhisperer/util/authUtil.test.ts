@@ -26,19 +26,31 @@ describe('AuthUtil', async function () {
 
     describe('Auth state', function () {
         it('login with BuilderId', async function () {
+<<<<<<< HEAD
             await auth.loginSso(constants.builderIdStartUrl, constants.builderIdRegion)
+=======
+            await auth.login_sso(constants.builderIdStartUrl, constants.builderIdRegion)
+>>>>>>> 337b30bd7d (rename login to login_sso and login_iam)
             assert.ok(auth.isConnected())
             assert.ok(auth.isBuilderIdConnection())
         })
 
         it('login with IDC', async function () {
+<<<<<<< HEAD
             await auth.loginSso('https://example.awsapps.com/start', 'us-east-1')
+=======
+            await auth.login_sso('https://example.awsapps.com/start', 'us-east-1')
+>>>>>>> 337b30bd7d (rename login to login_sso and login_iam)
             assert.ok(auth.isConnected())
             assert.ok(auth.isIdcConnection())
         })
 
         it('identifies internal users', async function () {
+<<<<<<< HEAD
             await auth.loginSso(constants.internalStartUrl, 'us-east-1')
+=======
+            await auth.login_sso(constants.internalStartUrl, 'us-east-1')
+>>>>>>> 337b30bd7d (rename login to login_sso and login_iam)
             assert.ok(auth.isInternalAmazonUser())
         })
 
@@ -55,7 +67,11 @@ describe('AuthUtil', async function () {
 
     describe('Token management', function () {
         it('can get token when connected with SSO', async function () {
+<<<<<<< HEAD
             await auth.loginSso(constants.builderIdStartUrl, constants.builderIdRegion)
+=======
+            await auth.login_sso(constants.builderIdStartUrl, constants.builderIdRegion)
+>>>>>>> 337b30bd7d (rename login to login_sso and login_iam)
             const token = await auth.getToken()
             assert.ok(token)
         })
@@ -68,14 +84,22 @@ describe('AuthUtil', async function () {
 
     describe('getTelemetryMetadata', function () {
         it('returns valid metadata for BuilderId connection', async function () {
+<<<<<<< HEAD
             await auth.loginSso(constants.builderIdStartUrl, constants.builderIdRegion)
+=======
+            await auth.login_sso(constants.builderIdStartUrl, constants.builderIdRegion)
+>>>>>>> 337b30bd7d (rename login to login_sso and login_iam)
             const metadata = await auth.getTelemetryMetadata()
             assert.strictEqual(metadata.credentialSourceId, 'awsId')
             assert.strictEqual(metadata.credentialStartUrl, constants.builderIdStartUrl)
         })
 
         it('returns valid metadata for IDC connection', async function () {
+<<<<<<< HEAD
             await auth.loginSso('https://example.awsapps.com/start', 'us-east-1')
+=======
+            await auth.login_sso('https://example.awsapps.com/start', 'us-east-1')
+>>>>>>> 337b30bd7d (rename login to login_sso and login_iam)
             const metadata = await auth.getTelemetryMetadata()
             assert.strictEqual(metadata.credentialSourceId, 'iamIdentityCenter')
             assert.strictEqual(metadata.credentialStartUrl, 'https://example.awsapps.com/start')
@@ -96,28 +120,44 @@ describe('AuthUtil', async function () {
         })
 
         it('returns BuilderId forms when using BuilderId', async function () {
+<<<<<<< HEAD
             await auth.loginSso(constants.builderIdStartUrl, constants.builderIdRegion)
+=======
+            await auth.login_sso(constants.builderIdStartUrl, constants.builderIdRegion)
+>>>>>>> 337b30bd7d (rename login to login_sso and login_iam)
             const forms = await auth.getAuthFormIds()
             assert.deepStrictEqual(forms, ['builderIdCodeWhisperer'])
         })
 
         it('returns IDC forms when using IDC without SSO account access', async function () {
             const session = (auth as any).session
+<<<<<<< HEAD
             session &&
                 sinon.stub(session, 'getProfile').resolves({
                     ssoSession: {
                         settings: {
                             sso_registration_scopes: ['codewhisperer:*'],
                         },
+=======
+            session && sinon.stub(session, 'getProfile').resolves({
+                ssoSession: {
+                    settings: {
+                        sso_registration_scopes: ['codewhisperer:*'],
+>>>>>>> 337b30bd7d (rename login to login_sso and login_iam)
                     },
                 })
 
+<<<<<<< HEAD
             await auth.loginSso('https://example.awsapps.com/start', 'us-east-1')
+=======
+            await auth.login_sso('https://example.awsapps.com/start', 'us-east-1')
+>>>>>>> 337b30bd7d (rename login to login_sso and login_iam)
             const forms = await auth.getAuthFormIds()
             assert.deepStrictEqual(forms, ['identityCenterCodeWhisperer'])
         })
 
         it('returns IDC forms with explorer when using IDC with SSO account access', async function () {
+<<<<<<< HEAD
             await auth.loginSso('https://example.awsapps.com/start', 'us-east-1')
             const session = (auth as any).session
 
@@ -130,6 +170,19 @@ describe('AuthUtil', async function () {
                     },
                 })
 
+=======
+            await auth.login_sso('https://example.awsapps.com/start', 'us-east-1')
+            const session = (auth as any).session
+
+            session && sinon.stub(session, 'getProfile').resolves({
+                ssoSession: {
+                    settings: {
+                        sso_registration_scopes: ['codewhisperer:*', 'sso:account:access'],
+                    },
+                },
+            })
+
+>>>>>>> 337b30bd7d (rename login to login_sso and login_iam)
             const forms = await auth.getAuthFormIds()
             assert.deepStrictEqual(forms.sort(), ['identityCenterCodeWhisperer', 'identityCenterExplorer'].sort())
         })
@@ -182,7 +235,11 @@ describe('AuthUtil', async function () {
         })
 
         it('updates bearer token when state is refreshed', async function () {
+<<<<<<< HEAD
             await auth.loginSso(constants.builderIdStartUrl, 'us-east-1')
+=======
+            await auth.login_sso(constants.builderIdStartUrl, 'us-east-1')
+>>>>>>> 337b30bd7d (rename login to login_sso and login_iam)
 
             await (auth as any).stateChangeHandler({ state: 'refreshed' })
 
@@ -191,7 +248,11 @@ describe('AuthUtil', async function () {
         })
 
         it('cleans up when connection expires', async function () {
+<<<<<<< HEAD
             await auth.loginSso(constants.builderIdStartUrl, 'us-east-1')
+=======
+            await auth.login_sso(constants.builderIdStartUrl, 'us-east-1')
+>>>>>>> 337b30bd7d (rename login to login_sso and login_iam)
 
             await (auth as any).stateChangeHandler({ state: 'expired' })
 
@@ -201,7 +262,11 @@ describe('AuthUtil', async function () {
         it('deletes bearer token when disconnected', async function () {
             await (auth as any).stateChangeHandler({ state: 'notConnected' })
 
+<<<<<<< HEAD
             if (auth.isSsoSession(auth.session)) {
+=======
+            if (auth.isSsoSession(auth.session)){
+>>>>>>> 337b30bd7d (rename login to login_sso and login_iam)
                 assert.ok(mockLspAuth.deleteBearerToken.called)
             }
         })
@@ -209,7 +274,11 @@ describe('AuthUtil', async function () {
         it('updates bearer token and restores profile on reconnection', async function () {
             const restoreProfileSelectionSpy = sinon.spy(regionProfileManager, 'restoreProfileSelection')
 
+<<<<<<< HEAD
             await auth.loginSso('https://example.awsapps.com/start', 'us-east-1')
+=======
+            await auth.login_sso('https://example.awsapps.com/start', 'us-east-1')
+>>>>>>> 337b30bd7d (rename login to login_sso and login_iam)
 
             await (auth as any).stateChangeHandler({ state: 'connected' })
 
@@ -221,7 +290,11 @@ describe('AuthUtil', async function () {
             const invalidateProfileSpy = sinon.spy(regionProfileManager, 'invalidateProfile')
             const clearCacheSpy = sinon.spy(regionProfileManager, 'clearCache')
 
+<<<<<<< HEAD
             await auth.loginSso('https://example.awsapps.com/start', 'us-east-1')
+=======
+            await auth.login_sso('https://example.awsapps.com/start', 'us-east-1')
+>>>>>>> 337b30bd7d (rename login to login_sso and login_iam)
 
             await (auth as any).stateChangeHandler({ state: 'expired' })
 
@@ -293,7 +366,11 @@ describe('AuthUtil', async function () {
             memento.get.returns({ profile1: validProfile })
             mockLspAuth.getSsoToken.rejects(new Error('Token check failed'))
 
+<<<<<<< HEAD
             if (!(auth as any).session) {
+=======
+            if (!(auth as any).session){
+>>>>>>> 337b30bd7d (rename login to login_sso and login_iam)
                 auth.session = new auth2.SsoLogin(auth.profileName, auth.lspAuth, auth.eventEmitter)
             }
             const updateProfileStub = sinon.stub((auth as any).session, 'updateProfile').resolves()
@@ -363,11 +440,19 @@ describe('AuthUtil', async function () {
             }
             memento.get.returns(mockProfiles)
 
+<<<<<<< HEAD
             if (!(auth as any).session) {
                 auth.session = new auth2.SsoLogin(auth.profileName, auth.lspAuth, auth.eventEmitter)
             }
 
             const updateProfileStubNew = sinon.stub((auth as any).session, 'updateProfile').resolves()
+=======
+            if (!(auth as any).session){
+                auth.session = new auth2.SsoLogin(auth.profileName, auth.lspAuth, auth.eventEmitter)
+            }
+
+            const updateProfileStub = sinon.stub((auth as any).session, 'updateProfile').resolves()
+>>>>>>> 337b30bd7d (rename login to login_sso and login_iam)
 
             await auth.migrateSsoConnectionToLsp('test-client')
 
@@ -392,11 +477,19 @@ describe('AuthUtil', async function () {
             }
             memento.get.returns(mockProfiles)
 
+<<<<<<< HEAD
             if (!(auth as any).session) {
                 auth.session = new auth2.SsoLogin(auth.profileName, auth.lspAuth, auth.eventEmitter)
             }
 
             const updateProfileStubNext = sinon.stub((auth as any).session, 'updateProfile').resolves()
+=======
+            if (!(auth as any).session){
+                auth.session = new auth2.SsoLogin(auth.profileName, auth.lspAuth, auth.eventEmitter)
+            }
+
+            const updateProfileStub = sinon.stub((auth as any).session, 'updateProfile').resolves()
+>>>>>>> 337b30bd7d (rename login to login_sso and login_iam)
 
             await auth.migrateSsoConnectionToLsp('test-client')
 
@@ -409,6 +502,7 @@ describe('AuthUtil', async function () {
             )
         })
     })
+<<<<<<< HEAD
 
     describe('loginIam', function () {
         it('creates IAM session and logs in', async function () {
@@ -543,3 +637,6 @@ describe('AuthUtil', async function () {
         })
     })
 })
+=======
+})
+>>>>>>> 337b30bd7d (rename login to login_sso and login_iam)

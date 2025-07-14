@@ -389,9 +389,13 @@ export abstract class BaseLogin {
 export class SsoLogin extends BaseLogin {
     // Cached information from the identity server for easy reference
 <<<<<<< HEAD
+<<<<<<< HEAD
     override readonly loginType = LoginTypes.SSO
 =======
 >>>>>>> 962aaee10b (add iam login)
+=======
+    override readonly loginType = LoginTypes.SSO
+>>>>>>> 337b30bd7d (rename login to login_sso and login_iam)
     private ssoTokenId: string | undefined
 
     constructor(profileName: string, lspAuth: LanguageClientAuth, eventEmitter: vscode.EventEmitter<AuthStateEvent>) {
@@ -534,9 +538,13 @@ export class SsoLogin extends BaseLogin {
 export class IamLogin extends BaseLogin {
     // Cached information from the identity server for easy reference
 <<<<<<< HEAD
+<<<<<<< HEAD
     override readonly loginType = LoginTypes.IAM
 =======
 >>>>>>> 962aaee10b (add iam login)
+=======
+    override readonly loginType = LoginTypes.IAM
+>>>>>>> 337b30bd7d (rename login to login_sso and login_iam)
     // private iamCredentialId: string | undefined
 
     constructor(profileName: string, lspAuth: LanguageClientAuth, eventEmitter: vscode.EventEmitter<AuthStateEvent>) {
