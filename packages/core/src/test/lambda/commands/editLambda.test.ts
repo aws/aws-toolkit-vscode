@@ -11,7 +11,9 @@ import {
     watchForUpdates,
     promptForSync,
     deployFromTemp,
-    openLambdaFolderForEdit,
+    getReadme,
+    deleteFilesInFolder,
+    overwriteChangesForEdit,
 } from '../../../lambda/commands/editLambda'
 import { LambdaFunction } from '../../../lambda/commands/uploadLambda'
 import * as downloadLambda from '../../../lambda/commands/downloadLambda'
@@ -21,6 +23,8 @@ import * as messages from '../../../shared/utilities/messages'
 import fs from '../../../shared/fs/fs'
 import { LambdaFunctionNodeDecorationProvider } from '../../../lambda/explorer/lambdaFunctionNodeDecorationProvider'
 import path from 'path'
+import globals from '../../../shared/extensionGlobals'
+import { lambdaTempPath } from '../../../lambda/utils'
 
 describe('editLambda', function () {
     let mockLambda: LambdaFunction
@@ -36,10 +40,15 @@ describe('editLambda', function () {
     let runUploadDirectoryStub: sinon.SinonStub
     let showConfirmationMessageStub: sinon.SinonStub
     let createFileSystemWatcherStub: sinon.SinonStub
-    let executeCommandStub: sinon.SinonStub
     let existsDirStub: sinon.SinonStub
     let mkdirStub: sinon.SinonStub
     let promptDeployStub: sinon.SinonStub
+    let readdirStub: sinon.SinonStub
+    let readFileTextStub: sinon.SinonStub
+    let writeFileStub: sinon.SinonStub
+    let copyStub: sinon.SinonStub
+    let asAbsolutePathStub: sinon.SinonStub
+    let deleteStub: sinon.SinonStub
 
     beforeEach(function () {
         mockLambda = {
@@ -68,16 +77,19 @@ describe('editLambda', function () {
             onDidDelete: sinon.stub(),
             dispose: sinon.stub(),
         } as any)
-        executeCommandStub = sinon.stub(vscode.commands, 'executeCommand').resolves()
         existsDirStub = sinon.stub(fs, 'existsDir').resolves(true)
         mkdirStub = sinon.stub(fs, 'mkdir').resolves()
+        readdirStub = sinon.stub(fs, 'readdir').resolves([['file', vscode.FileType.File]])
         promptDeployStub = sinon.stub().resolves(true)
         sinon.replace(require('../../../lambda/commands/editLambda'), 'promptDeploy', promptDeployStub)
+        readFileTextStub = sinon.stub(fs, 'readFileText').resolves('# Lambda Edit README')
+        writeFileStub = sinon.stub(fs, 'writeFile').resolves()
+        copyStub = sinon.stub(fs, 'copy').resolves()
+        asAbsolutePathStub = sinon.stub(globals.context, 'asAbsolutePath').callsFake((p) => `/absolute/${p}`)
+        deleteStub = sinon.stub(fs, 'delete').resolves()
 
         // Other stubs
         sinon.stub(utils, 'getLambdaDetails').returns({ fileName: 'index.js', functionName: 'test-function' })
-        sinon.stub(fs, 'readdir').resolves([])
-        sinon.stub(fs, 'delete').resolves()
         sinon.stub(fs, 'stat').resolves({ ctime: Date.now() } as any)
         sinon.stub(vscode.workspace, 'saveAll').resolves(true)
         sinon.stub(LambdaFunctionNodeDecorationProvider.prototype, 'addBadge').resolves()
@@ -121,9 +133,30 @@ describe('editLambda', function () {
             compareCodeShaStub.resolves(false)
             showConfirmationMessageStub.resolves(false)
 
-            await editLambda(mockLambda)
+            // Specify that it's from the explorer because otherwise there's no need to open
+            await editLambda(mockLambda, 'explorer')
 
             assert(openLambdaFileStub.calledOnce)
+        })
+
+        it('downloads lambda when directory exists but is empty', async function () {
+            getFunctionInfoStub.resolves('old-sha')
+            readdirStub.resolves([])
+
+            await editLambda(mockLambda)
+
+            assert(downloadLambdaStub.calledOnce)
+            assert(showConfirmationMessageStub.notCalled)
+        })
+
+        it('downloads lambda when directory does not exist', async function () {
+            getFunctionInfoStub.resolves('old-sha')
+            existsDirStub.resolves(false)
+
+            await editLambda(mockLambda)
+
+            assert(downloadLambdaStub.calledOnce)
+            assert(showConfirmationMessageStub.notCalled)
         })
 
         it('sets up file watcher after download', async function () {
@@ -222,29 +255,53 @@ describe('editLambda', function () {
         })
     })
 
-    describe('openLambdaFolderForEdit', function () {
-        it('focuses existing workspace folder if already open', async function () {
-            const subfolderPath = path.normalize(path.join(mockTemp, 'subfolder'))
-            sinon.stub(vscode.workspace, 'workspaceFolders').value([{ uri: vscode.Uri.file(subfolderPath) }])
+    describe('deleteFilesInFolder', function () {
+        it('deletes all files in the specified folder', async function () {
+            readdirStub.resolves([
+                ['file1.js', vscode.FileType.File],
+                ['file2.js', vscode.FileType.File],
+            ])
 
-            await openLambdaFolderForEdit('test-function', 'us-east-1')
+            await deleteFilesInFolder(path.join('test', 'folder'))
 
-            assert(executeCommandStub.calledWith('workbench.action.focusSideBar'))
-            assert(executeCommandStub.calledWith('workbench.view.explorer'))
+            assert(deleteStub.calledTwice)
+            assert(deleteStub.calledWith(path.join('test', 'folder', 'file1.js'), { recursive: true, force: true }))
+            assert(deleteStub.calledWith(path.join('test', 'folder', 'file2.js'), { recursive: true, force: true }))
+        })
+    })
+
+    describe('overwriteChangesForEdit', function () {
+        it('clears directory and downloads lambda code', async function () {
+            await overwriteChangesForEdit(mockLambda, mockTemp)
+
+            assert(readdirStub.calledWith(mockTemp))
+            assert(downloadLambdaStub.calledWith(mockLambda, 'local', mockTemp))
+            assert(setFunctionInfoStub.calledWith(mockLambda, sinon.match.object))
         })
 
-        it('opens new folder when not in workspace', async function () {
-            sinon.stub(vscode.workspace, 'workspaceFolders').value([])
+        it('creates directory if it does not exist', async function () {
+            existsDirStub.resolves(false)
 
-            await openLambdaFolderForEdit('test-function', 'us-east-1')
+            await overwriteChangesForEdit(mockLambda, mockTemp)
 
-            assert(mkdirStub.calledOnce)
-            assert(
-                executeCommandStub.calledWith('vscode.openFolder', sinon.match.any, {
-                    newWindow: true,
-                    noRecentEntry: true,
-                })
-            )
+            assert(mkdirStub.calledWith(mockTemp))
+        })
+    })
+
+    describe('getReadme', function () {
+        it('reads markdown file and writes README.md to temp path', async function () {
+            const result = await getReadme()
+
+            assert(readFileTextStub.calledOnce)
+            assert(asAbsolutePathStub.calledWith(path.join('resources', 'markdown', 'lambdaEdit.md')))
+            assert(writeFileStub.calledWith(path.join(lambdaTempPath, 'README.md'), '# Lambda Edit README'))
+            assert.strictEqual(result, path.join(lambdaTempPath, 'README.md'))
+        })
+
+        it('copies all required icon files', async function () {
+            await getReadme()
+
+            assert.strictEqual(copyStub.callCount, 3)
         })
     })
 })
