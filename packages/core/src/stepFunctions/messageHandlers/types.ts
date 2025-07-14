@@ -4,6 +4,8 @@
  */
 import { IAM } from 'aws-sdk'
 import * as StepFunctions from '@aws-sdk/client-sfn'
+import * as CloudWatchLogs from '@aws-sdk/client-cloudwatch-logs'
+import * as Lambda from '@aws-sdk/client-lambda'
 import * as vscode from 'vscode'
 
 export enum ComponentType {
@@ -35,6 +37,7 @@ export interface WebviewContext extends BaseContext {
 
 export interface ExecutionDetailsContext extends BaseContext {
     executionArn: string
+    startTime?: string
 }
 
 export type LoaderNotification = {
@@ -111,6 +114,8 @@ export enum ApiAction {
     SFNRedriveExecution = 'sfn:redriveExecution',
     SFNStartExecution = 'sfn:startExecution',
     SFNStopExecution = 'sfn:stopExecution',
+    CWlFilterLogEvents = 'cwl:filterLogEvents',
+    LambdaGetFunctionConfiguration = 'lambda:getFunctionConfiguration',
 }
 
 type ApiCallRequestMapping = {
@@ -124,6 +129,8 @@ type ApiCallRequestMapping = {
     [ApiAction.SFNRedriveExecution]: StepFunctions.RedriveExecutionInput
     [ApiAction.SFNStartExecution]: StepFunctions.StartExecutionInput
     [ApiAction.SFNStopExecution]: StepFunctions.StopExecutionInput
+    [ApiAction.CWlFilterLogEvents]: CloudWatchLogs.FilterLogEventsCommandInput
+    [ApiAction.LambdaGetFunctionConfiguration]: Lambda.GetFunctionConfigurationCommandInput
 }
 
 interface ApiCallRequestMessageBase<ApiName extends ApiAction> extends Message {
@@ -146,3 +153,5 @@ export type ApiCallRequestMessage =
     | ApiCallRequestMessageBase<ApiAction.SFNRedriveExecution>
     | ApiCallRequestMessageBase<ApiAction.SFNStartExecution>
     | ApiCallRequestMessageBase<ApiAction.SFNStopExecution>
+    | ApiCallRequestMessageBase<ApiAction.CWlFilterLogEvents>
+    | ApiCallRequestMessageBase<ApiAction.LambdaGetFunctionConfiguration>

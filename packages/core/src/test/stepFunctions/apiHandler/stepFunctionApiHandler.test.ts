@@ -17,6 +17,8 @@ import {
 import * as vscode from 'vscode'
 import { assertTelemetry } from '../../testUtil'
 import { StepFunctionsClient } from '../../../shared/clients/stepFunctions'
+import { CloudWatchLogsClient } from '../../../shared/clients/cloudWatchLogs'
+import { DefaultLambdaClient } from '../../../shared/clients/lambdaClient'
 import { IamClient } from '../../../shared/clients/iam'
 
 describe('stepFunctionApiHandler', function () {
@@ -68,6 +70,8 @@ describe('stepFunctionApiHandler', function () {
         apiHandler = new StepFunctionApiHandler('us-east-1', context, {
             sfn: sfnClient,
             iam: new IamClient('us-east-1'),
+            cwl: new CloudWatchLogsClient('us-east-1'),
+            lambda: new DefaultLambdaClient('us-east-1'),
         })
 
         testState = sinon.stub(sfnClient, 'testState')
