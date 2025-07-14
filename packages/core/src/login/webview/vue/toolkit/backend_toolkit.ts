@@ -9,6 +9,7 @@ import { getLogger } from '../../../../shared/logger/logger'
 import { CommonAuthWebview } from '../backend'
 import {
     AwsConnection,
+    IamProfile,
     SsoConnection,
     TelemetryMetadata,
     createSsoProfile,
@@ -90,6 +91,9 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
         secretKey: string
     ): Promise<AuthError | undefined> {
         getLogger().debug(`called startIamCredentialSetup()`)
+        await globals.globalState.update('recentIamKeys', {
+            accessKey: accessKey,
+        })
         // See submitData() in manageCredentials.vue
         const runAuth = async () => {
             const data = { aws_access_key_id: accessKey, aws_secret_access_key: secretKey }
@@ -155,6 +159,10 @@ export class ToolkitLoginWebview extends CommonAuthWebview {
 
     async listSsoConnections(): Promise<SsoConnection[]> {
         return (await Auth.instance.listConnections()).filter((conn) => isSsoConnection(conn)) as SsoConnection[]
+    }
+
+    async listIamCredentialProfiles(): Promise<IamProfile[]> {
+        return []
     }
 
     override reauthenticateConnection(): Promise<undefined> {

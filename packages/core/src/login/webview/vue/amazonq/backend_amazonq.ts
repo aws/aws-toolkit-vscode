@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as vscode from 'vscode'
-import { AwsConnection, SsoConnection } from '../../../../auth/connection'
+import { AwsConnection, IamProfile, SsoConnection } from '../../../../auth/connection'
 import { AuthUtil } from '../../../../codewhisperer/util/authUtil'
 import { CommonAuthWebview } from '../backend'
 import { awsIdSignIn } from '../../../../codewhisperer/util/showSsoPrompt'
@@ -196,16 +196,21 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
     async startIamCredentialSetup(
         profileName: string,
         accessKey: string,
-        secretKey: string
+        secretKey: string,
+        sessionToken?: string,
+        roleArn?: string
     ): Promise<AuthError | undefined> {
         getLogger().debug(`called startIamCredentialSetup()`)
         // Defining separate auth function to emit telemetry before returning from this method
+        await globals.globalState.update('recentIamKeys', { accessKey: accessKey })
+        await globals.globalState.update('recentRoleArn', { roleArn: roleArn })
         const runAuth = async (): Promise<AuthError | undefined> => {
             try {
                 await AuthUtil.instance.loginIam(accessKey, secretKey)
             } catch (e) {
                 getLogger().error('Failed submitting credentials %O', e)
-                return { id: this.id, text: e as string }
+                const message = e instanceof Error ? e.message : e as string
+                return { id: this.id, text: message }
             }
             // Enable code suggestions
             vsCodeState.isFreeTierLimitReached = false
@@ -225,6 +230,12 @@ export class AmazonQLoginWebview extends CommonAuthWebview {
         this.emitAuthMetric()
 
         return result
+    }
+
+    async listIamCredentialProfiles(): Promise<IamProfile[]> {
+        // Amazon Q only supports 1 connection at a time,
+        // so there isn't a need to de-duplicate connections.
+        return []
     }
 
     /** If users are unauthenticated in Q/CW, we should always display the auth screen. */

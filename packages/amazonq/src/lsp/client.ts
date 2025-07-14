@@ -164,6 +164,9 @@ export async function startLanguageServer(
             },
             credentials: {
                 providesBearerToken: true,
+                // Add IAM credentials support
+                providesIamCredentials: true,
+                supportsAssumeRole: true,
             },
         },
         /**
@@ -211,9 +214,10 @@ export async function startLanguageServer(
 
         /** All must be setup before {@link AuthUtil.restore} otherwise they may not trigger when expected */
         AuthUtil.instance.regionProfileManager.onDidChangeRegionProfile(async () => {
+            const activeProfile = AuthUtil.instance.regionProfileManager.activeRegionProfile
             void pushConfigUpdate(client, {
                 type: 'profile',
-                profileArn: AuthUtil.instance.regionProfileManager.activeRegionProfile?.arn,
+                profileArn: activeProfile?.arn,
             })
         })
 
@@ -285,6 +289,11 @@ async function postStartLanguageServer(
         return {
             sso: {
                 startUrl: AuthUtil.instance.connection?.startUrl,
+            },
+            // Add IAM credentials metadata
+            iam: {
+                region: AuthUtil.instance.connection?.region,
+                accesskey: AuthUtil.instance.connection?.accessKey,
             },
         }
     })
