@@ -8,7 +8,7 @@ import assert from 'assert'
 import * as sinon from 'sinon'
 import * as CodeWhispererConstants from '../../../codewhisperer/models/constants'
 import { createCodeScanIssue, createMockDocument, resetCodeWhispererGlobalVariables } from '../testUtil'
-import { assertNoTelemetryMatch, assertTelemetry, assertTelemetryCurried, tryRegister } from '../../testUtil'
+import { assertTelemetry, assertTelemetryCurried, tryRegister } from '../../testUtil'
 import {
     toggleCodeSuggestions,
     showSecurityScan,
@@ -19,7 +19,6 @@ import {
     reconnect,
     signoutCodeWhisperer,
     toggleCodeScans,
-    generateFix,
     rejectFix,
     ignoreIssue,
     ignoreAllIssues,
@@ -29,7 +28,7 @@ import { testCommand } from '../../shared/vscode/testUtils'
 import { Command, placeholder } from '../../../shared/vscode/commands2'
 import { SecurityPanelViewProvider } from '../../../codewhisperer/views/securityPanelViewProvider'
 import { DefaultCodeWhispererClient } from '../../../codewhisperer/client/codewhisperer'
-import { Stub, stub } from '../../utilities/stubber'
+import { stub } from '../../utilities/stubber'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import { getTestWindow } from '../../shared/vscode/window'
 import { ExtContext } from '../../../shared/extensions'
@@ -67,7 +66,6 @@ import { SecurityIssueProvider } from '../../../codewhisperer/service/securityIs
 import { CodeWhispererSettings } from '../../../codewhisperer/util/codewhispererSettings'
 import { confirm } from '../../../shared'
 import * as commentUtils from '../../../shared/utilities/commentUtils'
-import * as startCodeFixGeneration from '../../../codewhisperer/commands/startCodeFixGeneration'
 import * as extUtils from '../../../shared/extensionUtilities'
 
 describe('CodeWhisperer-basicCommands', function () {
