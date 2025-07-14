@@ -233,10 +233,14 @@ export async function openLambdaFolderForEdit(name: string, region: string) {
         'workspace'
     )
 
-    await vscode.commands.executeCommand('vscode.openFolder', vscode.Uri.file(downloadLocation), {
-        newWindow: true,
-        noRecentEntry: true,
-    })
+    try {
+        await vscode.commands.executeCommand('vscode.openFolder', vscode.Uri.file(downloadLocation), {
+            newWindow: true,
+            noRecentEntry: true,
+        })
+    } catch (e) {
+        throw new ToolkitError(`Failed to open your function as a workspace: ${e}`, { code: 'folderOpenFailure' })
+    }
 }
 
 export async function getReadme(): Promise<string> {
