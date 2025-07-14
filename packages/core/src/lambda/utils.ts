@@ -179,7 +179,7 @@ export async function getFunctionInfo<K extends keyof FunctionInfo>(lambda: Lamb
         getLogger().debug('Data returned from getFunctionInfo for %s: %O', lambda.name, data)
         return field ? data[field] : data
     } catch {
-        return field ? undefined : ({} as any)
+        return field ? undefined : {}
     }
 }
 
