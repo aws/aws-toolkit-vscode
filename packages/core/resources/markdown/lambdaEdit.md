@@ -1,6 +1,6 @@
-# Welcome to Lambda Local Development
+# Welcome to Lambda local development
 
-Learn how to view your Lambda Function locally, iterate, and deploy changes to the AWS Cloud.
+Learn how to view your Lambda function locally, iterate, and deploy changes to the AWS Cloud.
 
 ## Edit your Lambda function
 
@@ -9,11 +9,11 @@ Learn how to view your Lambda Function locally, iterate, and deploy changes to t
 
 ## Manage your Lambda functions
 
--   Select the AWS icon in the left sidebar and select **EXPLORER**
+-   Select the AWS Toolkit icon in the left sidebar and select **EXPLORER**
 -   In your desired region, select the Lambda dropdown menu:
-    -   To save and deploy a previously edited Lambda function, select the cloud deploy icon next to your Lambda function.
-    -   To remotely invoke a function, select the play icon next to your Lambda function.
+    -   To save and deploy a previously edited Lambda function, select the ![deploy](./deploy.svg) icon next to your Lambda function.
+    -   To remotely invoke a function, select the ![invoke](./invoke.svg) icon next to your Lambda function.
 
-## Advanced Features
+## Advanced features
 
 -   To convert to a Lambda function to an AWS SAM application, select the ![createStack](./create-stack.svg) icon next to your Lambda function. For details on what AWS SAM is and how it can help you, see the [AWS Serverless Application Model Developer Guide](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/what-is-sam.html).
