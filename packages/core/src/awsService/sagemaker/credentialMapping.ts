@@ -94,9 +94,9 @@ export async function persistSSMConnection(
 
     let appSubDomain: string
     if (spaceDetails.SpaceSettings?.AppType === AppType.JupyterLab) {
-        appSubDomain = '/jupyterlab'
+        appSubDomain = 'jupyterlab'
     } else if (spaceDetails.SpaceSettings?.AppType === AppType.CodeEditor) {
-        appSubDomain = '/code-editor'
+        appSubDomain = 'code-editor'
     } else {
         throw new ToolkitError(
             `Unsupported or missing app type for space. Expected JupyterLab or CodeEditor, got: ${spaceDetails.SpaceSettings?.AppType ?? 'undefined'}`
