@@ -16,6 +16,7 @@ import {
     ChatPromptOptionAcknowledgedMessage,
     STOP_CHAT_RESPONSE,
     StopChatResponseMessage,
+    OPEN_FILE_DIALOG,
 } from '@aws/chat-client-ui-types'
 import {
     ChatResult,
@@ -61,6 +62,10 @@ import {
     pinnedContextNotificationType,
     activeEditorChangedNotificationType,
     listAvailableModelsRequestType,
+    ShowOpenDialogRequestType,
+    ShowOpenDialogParams,
+    openFileDialogRequestType,
+    OpenFileDialogResult,
 } from '@aws/language-server-runtimes/protocol'
 import { v4 as uuidv4 } from 'uuid'
 import * as vscode from 'vscode'
@@ -317,6 +322,19 @@ export function registerMessageListeners(
                 }
                 break
             }
+            case OPEN_FILE_DIALOG: {
+                // openFileDialog is the event emitted from webView to open
+                // file system
+                const result = await languageClient.sendRequest<OpenFileDialogResult>(
+                    openFileDialogRequestType.method,
+                    message.params
+                )
+                void provider.webview?.postMessage({
+                    command: openFileDialogRequestType.method,
+                    params: result,
+                })
+                break
+            }
             case quickActionRequestType.method: {
                 const quickActionPartialResultToken = uuidv4()
                 const quickActionDisposable = languageClient.onProgress(
@@ -460,6 +478,24 @@ export function registerMessageListeners(
 
         return {
             targetUri: targetUri.toString(),
+        }
+    })
+
+    languageClient.onRequest(ShowOpenDialogRequestType.method, async (params: ShowOpenDialogParams) => {
+        try {
+            const uris = await vscode.window.showOpenDialog({
+                canSelectFiles: params.canSelectFiles ?? true,
+                canSelectFolders: params.canSelectFolders ?? false,
+                canSelectMany: params.canSelectMany ?? false,
+                filters: params.filters,
+                defaultUri: params.defaultUri ? vscode.Uri.parse(params.defaultUri, false) : undefined,
+                title: params.title,
+            })
+            const urisString = uris?.map((uri) => uri.fsPath)
+            return { uris: urisString || [] }
+        } catch (err) {
+            languageClient.error(`[VSCode Client] Failed to open file dialog: ${(err as Error).message}`)
+            return { uris: [] }
         }
     })
 

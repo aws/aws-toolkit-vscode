@@ -515,7 +515,7 @@ If you'd like to update and test your code with fewer changes at a time, I can d
 
 export const uploadingCodeStepMessage = 'Upload your code'
 
-export const buildCodeStepMessage = 'Build uploaded code in secure build environment'
+export const buildCodeStepMessage = 'Analyze uploaded code in secure environment'
 
 export const generatePlanStepMessage = 'Generate transformation plan'
 
@@ -580,7 +580,7 @@ export const invalidMetadataFileUnsupportedTargetDB =
     'I can only convert SQL for migrations to Aurora PostgreSQL or Amazon RDS for PostgreSQL target databases. The provided .sct file indicates another target database for this migration.'
 
 export const invalidCustomVersionsFileMessage =
-    'Your .YAML file is not formatted correctly. Make sure that the .YAML file you upload follows the format of the sample file provided.'
+    "I wasn't able to parse the dependency upgrade file. Check that it's configured properly and try again. For an example of the required dependency upgrade file format, see the [documentation](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/code-transformation.html#dependency-upgrade-file)."
 
 export const invalidMetadataFileErrorParsing =
     "It looks like the .sct file you provided isn't valid. Make sure that you've uploaded the .zip file you retrieved from your schema conversion in AWS DMS."
@@ -640,10 +640,17 @@ export const jobCancelledNotification = 'You cancelled the transformation.'
 
 export const continueWithoutHilMessage = 'I will continue transforming your code without upgrading this dependency.'
 
-export const continueWithoutYamlMessage = 'Ok, I will continue without this information.'
+export const continueWithoutConfigFileMessage =
+    'Ok, I will continue the transformation without additional dependency upgrade information.'
 
-export const chooseYamlMessage =
-    'You can optionally upload a YAML file to specify which dependency versions to upgrade to.'
+export const receivedValidConfigFileMessage =
+    'The dependency upgrade file looks good. I will use this information to upgrade the dependencies you specified.'
+
+export const chooseConfigFileMessageJdkUpgrade =
+    'Would you like to provide a dependency upgrade file? You can specify first party dependencies and their versions in a YAML file, and I will upgrade them during the JDK upgrade transformation. For an example dependency upgrade file, see the [documentation](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/code-transformation.html#dependency-upgrade-file).'
+
+export const chooseConfigFileMessageLibraryUpgrade =
+    'Would you like to provide a dependency upgrade file? You can specify third party dependencies and their versions in a YAML file, and I will only upgrade these dependencies during the library upgrade transformation. For an example dependency upgrade file, see the [documentation](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/code-transformation.html#dependency-upgrade-file).'
 
 export const enterJavaHomePlaceholder = 'Enter the path to your Java installation'
 
@@ -656,7 +663,7 @@ export const jobCompletedNotification =
     'Amazon Q transformed your code. You can review the diff to see my proposed changes and accept or reject them. The transformation summary has details about the changes. '
 
 export const upgradeLibrariesMessage =
-    'After successfully building in Java 17 or 21, an additional transformation is required to upgrade your libraries and dependencies. Choose the same source code version and target code version (for example, 17 to 17) to do this.'
+    'After successfully transforming to Java 17 or 21, an additional transformation is required to upgrade your libraries and dependencies. Choose the same source code version and target code version (for example, 17 to 17) to do this.'
 
 export const jobPartiallyCompletedChatMessage = `I transformed part of your code. You can review the diff to see my proposed changes and accept or reject them. The transformation summary has details about the files I updated and the errors that prevented a complete transformation. `
 
@@ -720,14 +727,14 @@ export const linkToBillingInfo = 'https://aws.amazon.com/q/developer/pricing/'
 
 export const dependencyFolderName = 'transformation_dependencies_temp_'
 
-export const cleanInstallErrorChatMessage = `Sorry, I couldn\'t run the Maven clean install command to build your project. For more information, see the [Amazon Q documentation](${codeTransformTroubleshootMvnFailure}).`
+export const cleanTestCompileErrorChatMessage = `I could not run \`mvn clean test-compile\` to build your project. For more information, see the [Amazon Q documentation](${codeTransformTroubleshootMvnFailure}).`
 
-export const cleanInstallErrorNotification = `Amazon Q could not run the Maven clean install command to build your project. For more information, see the [Amazon Q documentation](${codeTransformTroubleshootMvnFailure}).`
+export const cleanTestCompileErrorNotification = `Amazon Q could not run \`mvn clean test-compile\` to build your project. For more information, see the [Amazon Q documentation](${codeTransformTroubleshootMvnFailure}).`
 
 export const enterJavaHomeChatMessage = 'Enter the path to JDK'
 
 export const projectPromptChatMessage =
-    'I can upgrade your Java project. To start the transformation, I need some information from you. Choose the project you want to upgrade and the target code version to upgrade to. Then, choose Confirm.\n\nAfter successfully building in Java 17 or 21, an additional transformation is required to upgrade your libraries and dependencies. Choose the same source code version and target code version (for example, 17 to 17) to do this.'
+    "I can upgrade your Java project. To start the transformation, I need some information from you. Choose the project you want to upgrade and the target code version to upgrade to. Then, choose Confirm.\n\nAfter successfully transforming to Java 17 or 21, an additional transformation is required to upgrade your libraries and dependencies. Choose the same source code version and target code version (for example, 17 to 17) to do this.\n\nI will perform the transformation based on your project's requests, descriptions, and content. To maintain security, avoid including external, unvetted artifacts in your project repository prior to starting the transformation and always validate transformed code for both functionality and security. Do not turn off or close your machine during the transformation because a stable network connection is required."
 
 export const windowsJavaHomeHelpChatMessage =
     'To find the JDK path, run the following commands in a new terminal: `cd "C:/Program Files/Java"` and then `dir`. If you see your JDK version, run `cd <version>` and then `cd` to show the path.'
@@ -737,10 +744,6 @@ export const macJavaVersionHomeHelpChatMessage = (version: number) =>
 
 export const linuxJavaHomeHelpChatMessage =
     'To find the JDK path, run the following command in a new terminal: `update-java-alternatives --list`'
-
-export const projectSizeTooLargeChatMessage = `Sorry, your project size exceeds the Amazon Q Code Transformation upload limit of 2GB. For more information, see the [Amazon Q documentation](${codeTransformTroubleshootProjectSize}).`
-
-export const projectSizeTooLargeNotification = `Your project size exceeds the Amazon Q Code Transformation upload limit of 2GB. For more information, see the [Amazon Q documentation](${codeTransformTroubleshootProjectSize}).`
 
 export const JDK8VersionNumber = '52'
 
@@ -759,7 +762,7 @@ export const chooseProjectSchemaFormMessage = 'To continue, choose the project a
 export const skipUnitTestsFormTitle = 'Choose to skip unit tests'
 
 export const skipUnitTestsFormMessage =
-    'I will build your project using `mvn clean test` by default. If you would like me to build your project without running unit tests, I will use `mvn clean test-compile`.'
+    'I will build generated code in your local environment, not on the server side. For information on how I scan code to reduce security risks associated with building the code in your local environment, see the [documentation](https://docs.aws.amazon.com/amazonq/latest/qdeveloper-ug/code-transformation.html#java-local-builds).\n\nI will build your project using `mvn clean test` by default. If you would like me to build your project without running unit tests, I will use `mvn clean test-compile`.'
 
 export const runUnitTestsMessage = 'Run unit tests'
 

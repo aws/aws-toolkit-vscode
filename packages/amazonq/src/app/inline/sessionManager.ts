@@ -4,9 +4,10 @@
  */
 import * as vscode from 'vscode'
 import { InlineCompletionItemWithReferences } from '@aws/language-server-runtimes-types'
+import { FileDiagnostic, getDiagnosticsOfCurrentFile } from 'aws-core-vscode/codewhisperer'
 
 // TODO: add more needed data to the session interface
-interface CodeWhispererSession {
+export interface CodeWhispererSession {
     sessionId: string
     suggestions: InlineCompletionItemWithReferences[]
     // TODO: might need to convert to enum states
@@ -14,6 +15,10 @@ interface CodeWhispererSession {
     requestStartTime: number
     firstCompletionDisplayLatency?: number
     startPosition: vscode.Position
+    diagnosticsBeforeAccept: FileDiagnostic | undefined
+    // partialResultToken for the next trigger if user accepts an EDITS suggestion
+    editsStreakPartialResultToken?: number | string
+    triggerOnAcceptance?: boolean
 }
 
 export class SessionManager {
@@ -29,6 +34,7 @@ export class SessionManager {
         startPosition: vscode.Position,
         firstCompletionDisplayLatency?: number
     ) {
+        const diagnosticsBeforeAccept = getDiagnosticsOfCurrentFile()
         this.activeSession = {
             sessionId,
             suggestions,
@@ -36,6 +42,7 @@ export class SessionManager {
             requestStartTime,
             startPosition,
             firstCompletionDisplayLatency,
+            diagnosticsBeforeAccept,
         }
     }
 
@@ -67,6 +74,13 @@ export class SessionManager {
 
     public incrementSuggestionCount() {
         this._acceptedSuggestionCount += 1
+    }
+
+    public updateActiveEditsStreakToken(partialResultToken?: number | string) {
+        if (!this.activeSession || !partialResultToken) {
+            return
+        }
+        this.activeSession.editsStreakPartialResultToken = partialResultToken
     }
 
     public clear() {

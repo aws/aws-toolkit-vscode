@@ -12,7 +12,6 @@ import {
     CreateFilesParams,
     DeleteFilesParams,
     DidChangeWorkspaceFoldersParams,
-    DidSaveTextDocumentParams,
     GetConfigurationFromServerParams,
     RenameFilesParams,
     ResponseMessage,
@@ -38,6 +37,7 @@ import {
     isAmazonLinux2,
     getClientId,
     extensionVersion,
+    isSageMaker,
 } from 'aws-core-vscode/shared'
 import { processUtils } from 'aws-core-vscode/shared'
 import { activate } from './chat/activation'
@@ -53,11 +53,24 @@ import { InlineChatTutorialAnnotation } from '../app/inline/tutorials/inlineChat
 const localize = nls.loadMessageBundle()
 const logger = getLogger('amazonqLsp.lspClient')
 
-export const glibcLinker: string = process.env.VSCODE_SERVER_CUSTOM_GLIBC_LINKER || ''
-export const glibcPath: string = process.env.VSCODE_SERVER_CUSTOM_GLIBC_PATH || ''
-
 export function hasGlibcPatch(): boolean {
-    return glibcLinker.length > 0 && glibcPath.length > 0
+    // Skip GLIBC patching for SageMaker environments
+    if (isSageMaker()) {
+        getLogger('amazonqLsp').info('SageMaker environment detected in hasGlibcPatch, skipping GLIBC patching')
+        return false // Return false to ensure SageMaker doesn't try to use GLIBC patching
+    }
+
+    // Check for environment variables (for CDM)
+    const glibcLinker = process.env.VSCODE_SERVER_CUSTOM_GLIBC_LINKER || ''
+    const glibcPath = process.env.VSCODE_SERVER_CUSTOM_GLIBC_PATH || ''
+
+    if (glibcLinker.length > 0 && glibcPath.length > 0) {
+        getLogger('amazonqLsp').info('GLIBC patching environment variables detected')
+        return true
+    }
+
+    // No environment variables, no patching needed
+    return false
 }
 
 export async function startLanguageServer(
@@ -82,9 +95,24 @@ export async function startLanguageServer(
     const traceServerEnabled = Settings.instance.isSet(`${clientId}.trace.server`)
     let executable: string[] = []
     // apply the GLIBC 2.28 path to node js runtime binary
-    if (isAmazonLinux2() && hasGlibcPatch()) {
-        executable = [glibcLinker, '--library-path', glibcPath, resourcePaths.node]
-        getLogger('amazonqLsp').info(`Patched node runtime with GLIBC to ${executable}`)
+    if (isSageMaker()) {
+        // SageMaker doesn't need GLIBC patching
+        getLogger('amazonqLsp').info('SageMaker environment detected, skipping GLIBC patching')
+        executable = [resourcePaths.node]
+    } else if (isAmazonLinux2() && hasGlibcPatch()) {
+        // Use environment variables if available (for CDM)
+        if (process.env.VSCODE_SERVER_CUSTOM_GLIBC_LINKER && process.env.VSCODE_SERVER_CUSTOM_GLIBC_PATH) {
+            executable = [
+                process.env.VSCODE_SERVER_CUSTOM_GLIBC_LINKER,
+                '--library-path',
+                process.env.VSCODE_SERVER_CUSTOM_GLIBC_PATH,
+                resourcePaths.node,
+            ]
+            getLogger('amazonqLsp').info(`Patched node runtime with GLIBC using env vars to ${executable}`)
+        } else {
+            // No environment variables, use the node executable directly
+            executable = [resourcePaths.node]
+        }
     } else {
         executable = [resourcePaths.node]
     }
@@ -134,11 +162,20 @@ export async function startLanguageServer(
                     q: {
                         developerProfiles: true,
                         pinnedContextEnabled: true,
+                        imageContextEnabled: true,
                         mcp: true,
+                        reroute: true,
+                        modelSelection: true,
+                        workspaceFilePath: vscode.workspace.workspaceFile?.fsPath,
                     },
                     window: {
                         notifications: true,
                         showSaveFileDialog: true,
+                    },
+                    textDocument: {
+                        inlineCompletionWithReferences: {
+                            inlineEditSupport: Experiments.instance.isExperimentEnabled('amazonqLSPNEP'),
+                        },
                     },
                 },
                 contextConfiguration: {
@@ -295,13 +332,6 @@ async function onLanguageServerReady(
                     return { oldUri: it.oldUri.fsPath, newUri: it.newUri.fsPath }
                 }),
             } as RenameFilesParams)
-        }),
-        vscode.workspace.onDidSaveTextDocument((e) => {
-            client.sendNotification('workspace/didSaveTextDocument', {
-                textDocument: {
-                    uri: e.uri.fsPath,
-                },
-            } as DidSaveTextDocumentParams)
         }),
         vscode.workspace.onDidChangeWorkspaceFolders((e) => {
             client.sendNotification('workspace/didChangeWorkspaceFolder', {
