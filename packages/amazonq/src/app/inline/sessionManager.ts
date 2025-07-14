@@ -52,7 +52,6 @@ export class SessionManager {
             return
         }
         this.activeSession.isRequestInProgress = false
-        console.log(`session closed!`)
     }
 
     public getActiveSession() {
