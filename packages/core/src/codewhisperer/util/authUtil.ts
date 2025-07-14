@@ -161,44 +161,30 @@ export class AuthUtil implements IAuthProvider {
     }
 
     // Log in using SSO
-<<<<<<< HEAD
     async loginSso(startUrl: string, region: string): Promise<GetSsoTokenResult | undefined> {
-=======
-    async login_sso(startUrl: string, region: string): Promise<GetSsoTokenResult | undefined> {
->>>>>>> 337b30bd7d (rename login to login_sso and login_iam)
         let response: GetSsoTokenResult | undefined
         // Create SSO login session
         if (!this.isSsoSession()) {
             this.session = new SsoLogin(this.profileName, this.lspAuth, this.eventEmitter)
         }
-<<<<<<< HEAD
         // eslint-disable-next-line prefer-const
-=======
->>>>>>> 337b30bd7d (rename login to login_sso and login_iam)
         response = await (this.session as SsoLogin).login({ startUrl: startUrl, region: region, scopes: amazonQScopes })
         await showAmazonQWalkthroughOnce()
         return response
     }
 
     // Log in using IAM or STS credentials
-<<<<<<< HEAD
     async loginIam(
         accessKey: string,
         secretKey: string,
         sessionToken?: string
     ): Promise<GetIamCredentialResult | undefined> {
-=======
-    async login_iam(accessKey: string, secretKey: string, sessionToken?: string): Promise<GetIamCredentialResult | undefined> {
->>>>>>> 337b30bd7d (rename login to login_sso and login_iam)
         let response: GetIamCredentialResult | undefined
         // Create IAM login session
         if (!this.isIamSession()) {
             this.session = new IamLogin(this.profileName, this.lspAuth, this.eventEmitter)
         }
-<<<<<<< HEAD
         // eslint-disable-next-line prefer-const
-=======
->>>>>>> 337b30bd7d (rename login to login_sso and login_iam)
         response = await (this.session as IamLogin).login({ accessKey: accessKey, secretKey: secretKey })
         await showAmazonQWalkthroughOnce()
         return response

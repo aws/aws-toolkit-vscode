@@ -26,19 +26,11 @@ describe('RegionProfileManager', async function () {
 
     async function setupConnection(type: 'builderId' | 'idc') {
         if (type === 'builderId') {
-<<<<<<< HEAD
             await AuthUtil.instance.loginSso(constants.builderIdStartUrl, region)
             assert.ok(AuthUtil.instance.isSsoSession())
             assert.ok(AuthUtil.instance.isBuilderIdConnection())
         } else if (type === 'idc') {
             await AuthUtil.instance.loginSso(enterpriseSsoStartUrl, region)
-=======
-            await AuthUtil.instance.login_sso(constants.builderIdStartUrl, region)
-            assert.ok(AuthUtil.instance.isSsoSession())
-            assert.ok(AuthUtil.instance.isBuilderIdConnection())
-        } else if (type === 'idc') {
-            await AuthUtil.instance.login_sso(enterpriseSsoStartUrl, region)
->>>>>>> 337b30bd7d (rename login to login_sso and login_iam)
             assert.ok(AuthUtil.instance.isSsoSession())
             assert.ok(AuthUtil.instance.isIdcConnection())
         }
