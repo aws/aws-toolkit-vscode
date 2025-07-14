@@ -132,7 +132,7 @@ function registerShellCommandShortCut(commandName: string, buttonId: string, pro
         void focusAmazonQPanel().then(() => {
             void provider.webview?.postMessage({
                 command: 'executeShellCommandShortCut',
-                params: { buttonId },
+                params: { id: buttonId },
             })
         })
     })
