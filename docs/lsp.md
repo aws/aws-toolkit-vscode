@@ -25,7 +25,6 @@ sequenceDiagram
 ```
 
 ## Language Server Debugging
-
 If you want to connect a local version of language-servers to aws-toolkit-vscode, follow these steps:
 
 1. Clone https://github.com/aws/language-servers.git and set it up in the same workspace as this project by cmd+shift+p and "add folder to workspace" and selecting the language-servers folder that you just cloned. Your VS code folder structure should look like below.
@@ -58,16 +57,13 @@ If you want to connect a local version of language-servers to aws-toolkit-vscode
 6. (Optional): Enable `"amazonq.trace.server": "on"` or `"amazonq.trace.server": "verbose"` in your VSCode settings to view detailed log messages sent to/from the language server. These log messages will show up in the "Amazon Q Language Server" output channel
 
 ### Breakpoints Work-Around
-
 If the breakpoints in your language-servers project remain greyed out and do not trigger when you run `Launch LSP with Debugging`, your debugger may be attaching to the language server before it has launched. You can follow the work-around below to avoid this problem. If anyone fixes this issue, please remove this section.
-
 1. Set your breakpoints and click `Launch LSP with Debugging`
 2. Once the debugging session has started, click `Launch LSP with Debugging` again, then `Cancel` on any pop-ups that appear
 3. On the debug panel, click `Attach to Language Server (amazonq)` next to the red stop button
 4. Click `Launch LSP with Debugging` again, then `Cancel` on any pop-ups that appear
 
 ## Language Server Runtimes Debugging
-
 If you want to connect a local version of language-server-runtimes to aws-toolkit-vscode, follow these steps:
 
 1. Clone https://github.com/aws/language-server-runtimes.git and set it up in the same workspace as this project by cmd+shift+p and "add folder to workspace" and selecting the language-server-runtimes folder that you just cloned. Your VS code folder structure should look like below.
@@ -79,7 +75,6 @@ If you want to connect a local version of language-server-runtimes to aws-toolki
     /amazonq
     /language-server-runtimes
     ```
-
 2. Inside of the language-server-runtimes project run:
     ```
     npm install
