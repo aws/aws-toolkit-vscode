@@ -1,0 +1,32 @@
+# Source files
+src/**
+test/**
+*.ts
+*.map
+
+# Build artifacts
+node_modules/**
+out/test/**
+coverage/**
+.nyc_output/**
+
+# Development files
+.vscode/**
+.github/**
+scripts/**
+docs/**
+*.md
+!README.md
+
+# Config files
+.eslintrc*
+.prettierrc*
+tsconfig*.json
+webpack*.js
+jest.config*
+.gitignore
+
+# Logs and temp files
+*.log
+.DS_Store
+Thumbs.db

@@ -1,0 +1,266 @@
+
+> amazon-q-vscode@1.83.0-g8500b1e package
+> ts-node ../../scripts/package.ts
+
+Downloading servers.zip from https://aws-language-servers.us-east-1.amazonaws.com/c9964336-5826-4350-87fb-c44b4f1cd9b3/qAgenticChatServer/mac-arm64/servers.zip ...
+Verifying hash for servers.zip...
+Extracting servers.zip...
+Successfully processed servers.zip
+Downloading clients.zip from https://aws-language-servers.us-east-1.amazonaws.com/c9964336-5826-4350-87fb-c44b4f1cd9b3/clients.zip ...
+Verifying hash for clients.zip...
+Extracting clients.zip...
+Successfully processed clients.zip
+Download and extraction completed successfully
+Executing prepublish script 'npm run vscode:prepublish'...
+
+> amazon-q-vscode@1.83.0-g8500b1e vscode:prepublish
+> npm run clean && npm run buildScripts && webpack --mode production
+
+
+> amazon-q-vscode@1.83.0-g8500b1e clean
+> ts-node ../../scripts/clean.ts dist/ LICENSE NOTICE
+
+
+> amazon-q-vscode@1.83.0-g8500b1e buildScripts
+> npm run generateNonCodeFiles && npm run copyFiles && npm run generateIcons && npm run generateSettings && tsc -p ./ --noEmit
+
+
+> amazon-q-vscode@1.83.0-g8500b1e generateNonCodeFiles
+> ts-node ../../scripts/generateNonCodeFiles.ts
+
+
+> amazon-q-vscode@1.83.0-g8500b1e copyFiles
+> ts-node ./scripts/build/copyFiles.ts
+
+
+> amazon-q-vscode@1.83.0-g8500b1e generateIcons
+> ts-node ../../scripts/generateIcons.ts
+
+Found a clipPath element in the icon "aws-codewhisperer-icon-black" the result may be different than expected.
+Found a clipPath element in the icon "aws-codewhisperer-icon-white" the result may be different than expected.
+Found a clipPath element in the icon "aws-lambda-create-stack" the result may be different than expected.
+Found a clipPath element in the icon "aws-lambda-create-stack-light" the result may be different than expected.
+Font created
+Updated package.json
+
+> amazon-q-vscode@1.83.0-g8500b1e generateSettings
+> ts-node ../../scripts/generateSettings.ts
+
+main:
+  assets by chunk 1.66 MiB (id hint: vendors) 22 assets
+  + 19 assets
+  orphan modules 4.97 MiB [orphan] 4775 modules
+  runtime modules 2.43 KiB 8 modules
+  built modules 31.8 MiB [built]
+    javascript modules 20.6 MiB
+      modules by path ../../node_modules/ 15 MiB 1820 modules
+      modules by path ../core/ 4.09 MiB 460 modules
+      modules by path ../../src.gen/@amzn/ 1.07 MiB 105 modules
+      + 38 modules
+    json modules 11.2 MiB
+      modules by path ../../node_modules/aws-sdk/apis/*.json 9.86 MiB 892 modules
+      modules by path ../../node_modules/whatwg-encoding/ 92.3 KiB 10 modules
+      modules by path ../core/dist/ 652 KiB 8 modules
+      modules by path ../../node_modules/jsdom/ 6.57 KiB 2 modules
+      + 9 modules
+
+  WARNING in ../../node_modules/adm-zip/util/fileSystem.js 4:31-53
+  Module not found: Error: Can't resolve 'original-fs' in '/Users/surajrdy/Desktop/Coding/aws-toolkit-vscode/node_modules/adm-zip/util'
+   @ ../../node_modules/adm-zip/util/utils.js 1:16-47
+   @ ../../node_modules/adm-zip/util/index.js 1:0-35
+   @ ../../node_modules/adm-zip/adm-zip.js 1:14-31
+   @ ../core/dist/src/dev/beta.js 37:34-52
+   @ ../core/dist/src/dev/index.js 33:28-45
+   @ ./src/extensionNode.ts 18:0-52 25:0-43 75:8-21 109:8-21
+
+  WARNING in ../../node_modules/jsdom/lib/jsdom/utils.js 112:2-36
+  Module not found: Error: Can't resolve 'canvas' in '/Users/surajrdy/Desktop/Coding/aws-toolkit-vscode/node_modules/jsdom/lib/jsdom'
+   @ ../../node_modules/jsdom/lib/jsdom/browser/Window.js 7:26-45
+   @ ../../node_modules/jsdom/lib/api.js 13:25-61
+   @ ../core/dist/src/codewhispererChat/controllers/chat/messenger/messenger.js 16:16-32
+   @ ../core/dist/src/codewhispererChat/controllers/chat/controller.js 39:20-52
+   @ ../core/dist/src/codewhispererChat/app.js 9:21-80
+   @ ../core/dist/src/amazonq/indexNode.js 11:12-47
+   @ ./src/app/chat/node/activateAgents.ts 5:0-60 10:2-27 11:2-35 12:2-30 13:2-29 14:2-28
+   @ ./src/extensionNode.ts 29:0-64 57:2-16
+
+  WARNING in ../../node_modules/keyv/src/index.js 22:14-40
+  Critical dependency: the request of a dependency is an expression
+   @ ../../node_modules/cacheable-request/src/index.js 11:13-28
+   @ ../../node_modules/got/dist/source/core/index.js 13:25-53
+   @ ../../node_modules/got/dist/source/create.js 17:15-32
+   @ ../../node_modules/got/dist/source/index.js 14:17-36 131:13-32
+   @ ../core/dist/src/dev/beta.js 38:30-44
+   @ ../core/dist/src/dev/index.js 33:28-45
+   @ ./src/extensionNode.ts 18:0-52 25:0-43 75:8-21 109:8-21
+
+  WARNING in ../../node_modules/vscode-languageserver-types/lib/umd/main.js 3:24-31
+  Critical dependency: require function is used in a way in which dependencies cannot be statically extracted
+   @ ../../node_modules/@aws/language-server-runtimes-types/out/lsp.js 17:13-51
+   @ ../../node_modules/@aws/language-server-runtimes-types/out/index.js 21:13-29
+   @ ../../node_modules/@aws/language-server-runtimes/protocol/lsp.js 23:13-59
+   @ ../../node_modules/@aws/language-server-runtimes/protocol/index.js 26:13-29
+   @ ./src/lsp/config.ts 7:0-10:48 45:31-68 51:30-76 57:30-76
+   @ ./src/lsp/client.ts 34:0-88 104:15-35 145:18-38 187:10-26 291:10-26 337:14-34
+   @ ./src/extension.ts 46:0-45 97:118-131
+   @ ./src/extensionNode.ts 6:0-92 31:8-29 61:4-24 70:48-68 136:69-85
+
+  WARNING in ../../node_modules/ws/lib/buffer-util.js 117:23-44
+  Module not found: Error: Can't resolve 'bufferutil' in '/Users/surajrdy/Desktop/Coding/aws-toolkit-vscode/node_modules/ws/lib'
+   @ ../../node_modules/ws/lib/websocket.js 33:21-45
+   @ ../../node_modules/ws/index.js 3:18-44
+   @ ../../node_modules/jsdom/lib/jsdom/living/websockets/WebSocket-impl.js 7:18-31
+   @ ../../node_modules/jsdom/lib/jsdom/browser/Window.js 19:22-83
+   @ ../../node_modules/jsdom/lib/api.js 13:25-61
+   @ ../core/dist/src/codewhispererChat/controllers/chat/messenger/messenger.js 16:16-32
+   @ ../core/dist/src/codewhispererChat/controllers/chat/controller.js 39:20-52
+   @ ../core/dist/src/codewhispererChat/app.js 9:21-80
+   @ ../core/dist/src/amazonq/indexNode.js 11:12-47
+   @ ./src/app/chat/node/activateAgents.ts 5:0-60 10:2-27 11:2-35 12:2-30 13:2-29 14:2-28
+   @ ./src/extensionNode.ts 29:0-64 57:2-16
+
+  WARNING in ../../node_modules/ws/lib/validation.js 144:24-49
+  Module not found: Error: Can't resolve 'utf-8-validate' in '/Users/surajrdy/Desktop/Coding/aws-toolkit-vscode/node_modules/ws/lib'
+   @ ../../node_modules/ws/lib/websocket.js 17:19-42
+   @ ../../node_modules/ws/index.js 3:18-44
+   @ ../../node_modules/jsdom/lib/jsdom/living/websockets/WebSocket-impl.js 7:18-31
+   @ ../../node_modules/jsdom/lib/jsdom/browser/Window.js 19:22-83
+   @ ../../node_modules/jsdom/lib/api.js 13:25-61
+   @ ../core/dist/src/codewhispererChat/controllers/chat/messenger/messenger.js 16:16-32
+   @ ../core/dist/src/codewhispererChat/controllers/chat/controller.js 39:20-52
+   @ ../core/dist/src/codewhispererChat/app.js 9:21-80
+   @ ../core/dist/src/amazonq/indexNode.js 11:12-47
+   @ ./src/app/chat/node/activateAgents.ts 5:0-60 10:2-27 11:2-35 12:2-30 13:2-29 14:2-28
+   @ ./src/extensionNode.ts 29:0-64 57:2-16
+
+  6 warnings have detailed information that is not shown.
+  Use 'stats.errorDetails: true' resp. '--stats-error-details' to show it.
+
+  main (webpack 5.95.0) compiled with 6 warnings in 16011 ms
+
+webBase:
+  asset src/extensionWeb.js 10.6 MiB [emitted] [minimized] [big] (name: src/extensionWeb) (id hint: vendors)
+  asset test/web/testRunnerWebCore.js 6.81 MiB [emitted] [minimized] [big] (name: test/web/testRunnerWebCore)
+  orphan modules 2.26 MiB [orphan] 1996 modules
+  runtime modules 2.5 KiB 12 modules
+  built modules 17.7 MiB [built]
+    modules by path ../../ 13.7 MiB 1321 modules
+    modules by path ../core/ 3.58 MiB 363 modules
+    optional modules 2.44 KiB [optional]
+      modules by path ./ 2.29 KiB 5 modules
+      + 10 modules
+    modules by path ./nodejs/ 45 bytes
+      ./nodejs/esm-utils (ignored) 15 bytes [built] [code generated]
+      + 2 modules
+    modules by path fs/ 45 bytes
+      fs/promises (ignored) 15 bytes [built] [code generated]
+      + 2 modules
+    + 50 modules
+
+  WARNING in ../../node_modules/adm-zip/util/fileSystem.js 4:31-53
+  Module not found: Error: Can't resolve 'original-fs' in '/Users/surajrdy/Desktop/Coding/aws-toolkit-vscode/node_modules/adm-zip/util'
+   @ ../../node_modules/adm-zip/util/utils.js 1:16-47
+   @ ../../node_modules/adm-zip/util/index.js 1:0-35
+   @ ../../node_modules/adm-zip/adm-zip.js 1:14-31
+   @ ../core/dist/src/shared/lsp/lspResolver.js 39:34-52
+   @ ../core/dist/src/shared/index.js 128:13-41
+   @ ./src/extension.ts 9:0-36:32 49:2-12 50:28-35 51:9-37 53:2-13 53:14-28 53:32-48 54:8-31 55:2-23 71:10-19 77:7-32 78:2-19 78:28-40 79:2-20 79:27-44 80:2-26 80:33-56 80:57-75 81:2-33 82:2-24 82:27-63 84:8-22 85:2-26 86:2-22 86:42-60 88:4-13 90:8-25 90:35-53 90:55-72 91:23-43 95:8-49 97:7-31 97:98-112 100:7-31 105:2-23 106:18-35 108:30-47 109:8-25 111:8-18 112:8-18 112:38-49 113:8-18 113:51-62 116:4-28 118:32-43 119:8-17 124:4-36
+   @ ./src/extensionWeb.ts 6:0-70 9:8-29 12:8-24
+
+  WARNING in ./src/inlineChat/controller/inlineChatController.ts 202:17-27
+  export 'randomUUID' (imported as 'randomUUID') was not found in 'crypto' (possible exports: Cipher, Cipheriv, Decipher, Decipheriv, DiffieHellman, DiffieHellmanGroup, Hash, Hmac, Sign, Verify, constants, createCipher, createCipheriv, createCredentials, createDecipher, createDecipheriv, createDiffieHellman, createDiffieHellmanGroup, createECDH, createHash, createHmac, createSign, createVerify, getCiphers, getDiffieHellman, getHashes, listCiphers, pbkdf2, pbkdf2Sync, privateDecrypt, privateEncrypt, prng, pseudoRandomBytes, publicDecrypt, publicEncrypt, randomBytes, randomFill, randomFillSync, rng)
+   @ ./src/inlineChat/activation.ts 5:0-73 8:35-55
+   @ ./src/lsp/client.ts 35:0-74 180:2-20
+   @ ./src/extension.ts 46:0-45 97:118-131
+   @ ./src/extensionWeb.ts 6:0-70 9:8-29 12:8-24
+
+  WARNING in ./src/inlineChat/controller/inlineChatController.ts 232:17-27
+  export 'randomUUID' (imported as 'randomUUID') was not found in 'crypto' (possible exports: Cipher, Cipheriv, Decipher, Decipheriv, DiffieHellman, DiffieHellmanGroup, Hash, Hmac, Sign, Verify, constants, createCipher, createCipheriv, createCredentials, createDecipher, createDecipheriv, createDiffieHellman, createDiffieHellmanGroup, createECDH, createHash, createHmac, createSign, createVerify, getCiphers, getDiffieHellman, getHashes, listCiphers, pbkdf2, pbkdf2Sync, privateDecrypt, privateEncrypt, prng, pseudoRandomBytes, publicDecrypt, publicEncrypt, randomBytes, randomFill, randomFillSync, rng)
+   @ ./src/inlineChat/activation.ts 5:0-73 8:35-55
+   @ ./src/lsp/client.ts 35:0-74 180:2-20
+   @ ./src/extension.ts 46:0-45 97:118-131
+   @ ./src/extensionWeb.ts 6:0-70 9:8-29 12:8-24
+
+  WARNING in ./src/inlineChat/provider/inlineChatProvider.ts 64:24-34
+  export 'randomUUID' (imported as 'randomUUID') was not found in 'crypto' (possible exports: Cipher, Cipheriv, Decipher, Decipheriv, DiffieHellman, DiffieHellmanGroup, Hash, Hmac, Sign, Verify, constants, createCipher, createCipheriv, createCredentials, createDecipher, createDecipheriv, createDiffieHellman, createDiffieHellmanGroup, createECDH, createHash, createHmac, createSign, createVerify, getCiphers, getDiffieHellman, getHashes, listCiphers, pbkdf2, pbkdf2Sync, privateDecrypt, privateEncrypt, prng, pseudoRandomBytes, publicDecrypt, publicEncrypt, randomBytes, randomFill, randomFillSync, rng)
+   @ ./src/inlineChat/controller/inlineChatController.ts 8:0-68 33:34-52
+   @ ./src/inlineChat/activation.ts 5:0-73 8:35-55
+   @ ./src/lsp/client.ts 35:0-74 180:2-20
+   @ ./src/extension.ts 46:0-45 97:118-131
+   @ ./src/extensionWeb.ts 6:0-70 9:8-29 12:8-24
+
+  WARNING in ../../node_modules/http2/lib/protocol/index.js 46:12-19
+  Critical dependency: require function is used in a way in which dependencies cannot be statically extracted
+   @ ../../node_modules/http2/lib/http.js 136:15-36
+   @ ../../node_modules/http2/lib/index.js 18:0-36
+   @ ../core/node_modules/@smithy/node-http-handler/dist-es/node-http2-handler.js 3:0-34 90:17-44 91:17-46
+   @ ../core/node_modules/@smithy/node-http-handler/dist-es/index.js 2:0-37 2:0-37
+   @ ../core/dist/src/shared/awsClientBuilderV3.js
+   @ ../core/dist/src/extension.js 77:29-67
+   @ ./src/extension.ts 7:0-81 82:64-85 103:2-25
+   @ ./src/extensionWeb.ts 6:0-70 9:8-29 12:8-24
+
+  WARNING in ../core/node_modules/@smithy/node-http-handler/dist-es/node-http2-handler.js 90:17-44
+  export 'constants' (imported as 'constants') was not found in 'http2' (possible exports: Agent, ClientRequest, IncomingMessage, IncomingRequest, IncomingResponse, OutgoingMessage, OutgoingRequest, OutgoingResponse, STATUS_CODES, Server, ServerResponse, createServer, get, globalAgent, http, https, protocol, raw, request, serializers)
+   @ ../core/node_modules/@smithy/node-http-handler/dist-es/index.js 2:0-37 2:0-37
+   @ ../core/dist/src/shared/awsClientBuilderV3.js
+   @ ../core/dist/src/extension.js 77:29-67
+   @ ./src/extension.ts 7:0-81 82:64-85 103:2-25
+   @ ./src/extensionWeb.ts 6:0-70 9:8-29 12:8-24
+
+  WARNING in ../core/node_modules/@smithy/node-http-handler/dist-es/node-http2-handler.js 91:17-46
+  export 'constants' (imported as 'constants') was not found in 'http2' (possible exports: Agent, ClientRequest, IncomingMessage, IncomingRequest, IncomingResponse, OutgoingMessage, OutgoingRequest, OutgoingResponse, STATUS_CODES, Server, ServerResponse, createServer, get, globalAgent, http, https, protocol, raw, request, serializers)
+   @ ../core/node_modules/@smithy/node-http-handler/dist-es/index.js 2:0-37 2:0-37
+   @ ../core/dist/src/shared/awsClientBuilderV3.js
+   @ ../core/dist/src/extension.js 77:29-67
+   @ ./src/extension.ts 7:0-81 82:64-85 103:2-25
+   @ ./src/extensionWeb.ts 6:0-70 9:8-29 12:8-24
+
+  WARNING in ../../node_modules/mocha/lib/mocha.js 340:24-53
+  Critical dependency: the request of a dependency is an expression
+   @ ../../node_modules/mocha/browser-entry.js 14:12-34
+   @ ./test/web/testRunner.ts 6:0-15
+
+  WARNING in ../../node_modules/mocha/lib/mocha.js 341:19-41
+  Critical dependency: the request of a dependency is an expression
+   @ ../../node_modules/mocha/browser-entry.js 14:12-34
+   @ ./test/web/testRunner.ts 6:0-15
+
+  WARNING in ../../node_modules/mocha/lib/mocha.js 348:21-56
+  Critical dependency: the request of a dependency is an expression
+   @ ../../node_modules/mocha/browser-entry.js 14:12-34
+   @ ./test/web/testRunner.ts 6:0-15
+
+  WARNING in ../../node_modules/mocha/lib/mocha.js 382:24-35
+  Critical dependency: the request of a dependency is an expression
+   @ ../../node_modules/mocha/browser-entry.js 14:12-34
+   @ ./test/web/testRunner.ts 6:0-15
+
+  WARNING in ../../node_modules/mocha/lib/mocha.js 418:35-48
+  Critical dependency: the request of a dependency is an expression
+   @ ../../node_modules/mocha/browser-entry.js 14:12-34
+   @ ./test/web/testRunner.ts 6:0-15
+
+  WARNING in asset size limit: The following asset(s) exceed the recommended size limit (244 KiB).
+  This can impact web performance.
+  Assets: 
+    src/extensionWeb.js (10.6 MiB)
+    test/web/testRunnerWebCore.js (6.81 MiB)
+
+  WARNING in entrypoint size limit: The following entrypoint(s) combined asset size exceeds the recommended limit (244 KiB). This can impact web performance.
+  Entrypoints:
+    src/extensionWeb (10.6 MiB)
+        src/extensionWeb.js
+    test/web/testRunnerWebCore (6.81 MiB)
+        test/web/testRunnerWebCore.js
+
+  WARNING in webpack performance recommendations: 
+  You can limit the size of your bundles by using import() or require.ensure to lazy load some parts of your application.
+  For more info visit https://webpack.js.org/guides/code-splitting/
+
+  7 warnings have detailed information that is not shown.
+  Use 'stats.errorDetails: true' resp. '--stats-error-details' to show it.
+
+  webBase (webpack 5.95.0) compiled with 15 warnings in 9253 ms
+ DONE  Packaged: /Users/surajrdy/Desktop/Coding/aws-toolkit-vscode/packages/amazonq/amazon-q-vscode-1.83.0-g8500b1e.vsix (258 files, 17.79MB)
+VSIX Version: 1.83.0-g8500b1e
