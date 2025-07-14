@@ -4,9 +4,12 @@
  */
 
 import * as cp from 'child_process' // eslint-disable-line no-restricted-imports
+import * as path from 'path'
 import { AppStatus, SpaceStatus } from '@aws-sdk/client-sagemaker'
 import { SagemakerSpaceApp } from '../../shared/clients/sagemaker'
 import { sshLogFileLocation } from '../../shared/sshConfig'
+import { fs } from '../../shared/fs/fs'
+import { getLogger } from '../../shared/logger/logger'
 
 export const DomainKeyDelimiter = '__'
 
@@ -92,4 +95,62 @@ export function getSmSsmEnv(ssmPath: string, sagemakerLocalServerPath: string): 
 
 export function spawnDetachedServer(...args: Parameters<typeof cp.spawn>) {
     return cp.spawn(...args)
+}
+
+export const ActivityCheckInterval = 60000
+
+/**
+ * Updates the idle file with the current timestamp
+ */
+export async function updateIdleFile(idleFilePath: string): Promise<void> {
+    try {
+        const timestamp = new Date().toISOString()
+        await fs.writeFile(idleFilePath, timestamp)
+    } catch (error) {
+        getLogger().error(`Failed to update SMAI idle file: ${error}`)
+    }
+}
+
+/**
+ * Checks for terminal activity by reading the /dev/pts directory and comparing modification times of the files.
+ *
+ * The /dev/pts directory is used in Unix-like operating systems to represent pseudo-terminal (PTY) devices.
+ * Each active terminal session is assigned a PTY device. These devices are represented as files within the /dev/pts directory.
+ * When a terminal session has activity, such as when a user inputs commands or output is written to the terminal,
+ * the modification time (mtime) of the corresponding PTY device file is updated. By monitoring the modification
+ * times of the files in the /dev/pts directory, we can detect terminal activity.
+ *
+ * If activity is detected (i.e., if any PTY device file was modified within the CHECK_INTERVAL), this function
+ * updates the last activity timestamp.
+ */
+export async function checkTerminalActivity(idleFilePath: string): Promise<void> {
+    try {
+        const files = await fs.readdir('/dev/pts')
+        const now = Date.now()
+
+        for (const [fileName] of files) {
+            const filePath = path.join('/dev/pts', fileName)
+            try {
+                const stats = await fs.stat(filePath)
+                const mtime = new Date(stats.mtime).getTime()
+                if (now - mtime < ActivityCheckInterval) {
+                    await updateIdleFile(idleFilePath)
+                    return
+                }
+            } catch (err) {
+                getLogger().error(`Error reading file stats:`, err)
+            }
+        }
+    } catch (err) {
+        getLogger().error(`Error reading /dev/pts directory:`, err)
+    }
+}
+
+/**
+ * Starts monitoring terminal activity by setting an interval to check for activity in the /dev/pts directory.
+ */
+export function startMonitoringTerminalActivity(idleFilePath: string): NodeJS.Timeout {
+    return setInterval(async () => {
+        await checkTerminalActivity(idleFilePath)
+    }, ActivityCheckInterval)
 }

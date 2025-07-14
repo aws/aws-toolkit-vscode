@@ -3,13 +3,18 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as path from 'path'
 import { Commands } from '../../shared/vscode/commands2'
 import { SagemakerSpaceNode } from './explorer/sagemakerSpaceNode'
 import { SagemakerParentNode } from './explorer/sagemakerParentNode'
 import * as uriHandlers from './uriHandlers'
 import { openRemoteConnect, filterSpaceAppsByDomainUserProfiles, stopSpace } from './commands'
+import { updateIdleFile, startMonitoringTerminalActivity, ActivityCheckInterval } from './utils'
 import { ExtContext } from '../../shared/extensions'
 import { telemetry } from '../../shared/telemetry/telemetry'
+import { isSageMaker, UserActivity } from '../../shared/extensionUtilities'
+
+let terminalActivityInterval: NodeJS.Timeout | undefined
 
 export async function activate(ctx: ExtContext): Promise<void> {
     ctx.extensionContext.subscriptions.push(
@@ -32,4 +37,28 @@ export async function activate(ctx: ExtContext): Promise<void> {
             })
         })
     )
+
+    // If running in SageMaker AI Space, track user activity for autoshutdown feature
+    if (isSageMaker('SMAI')) {
+        // Use /tmp/ directory so the file is cleared on each reboot to prevent stale timestamps.
+        const tmpDirectory = '/tmp/'
+        const idleFilePath = path.join(tmpDirectory, '.sagemaker-last-active-timestamp')
+
+        const userActivity = new UserActivity(ActivityCheckInterval)
+        userActivity.onUserActivity(() => updateIdleFile(idleFilePath))
+
+        terminalActivityInterval = startMonitoringTerminalActivity(idleFilePath)
+
+        // Write initial timestamp
+        await updateIdleFile(idleFilePath)
+
+        ctx.extensionContext.subscriptions.push(userActivity, {
+            dispose: () => {
+                if (terminalActivityInterval) {
+                    clearInterval(terminalActivityInterval)
+                    terminalActivityInterval = undefined
+                }
+            },
+        })
+    }
 }
