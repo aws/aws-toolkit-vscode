@@ -107,6 +107,7 @@ export async function sessionWriteFile(session: Session, uri: vscode.Uri, encode
 export function createMockAuthUtil(sandbox: sinon.SinonSandbox) {
     const mockLspAuth: Partial<LanguageClientAuth> = {
         registerSsoTokenChangedHandler: sinon.stub().resolves(),
+        registerStsCredentialChangedHandler: sinon.stub().resolves(),
     }
     AuthUtil.create(mockLspAuth as LanguageClientAuth)
     sandbox.stub(AuthUtil.instance.regionProfileManager, 'onDidChangeRegionProfile').resolves()
