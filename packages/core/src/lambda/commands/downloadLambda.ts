@@ -194,7 +194,7 @@ async function downloadAndUnzipLambda(
     }
 }
 
-export async function openLambdaFile(lambdaLocation: string): Promise<void> {
+export async function openLambdaFile(lambdaLocation: string, viewColumn?: vscode.ViewColumn): Promise<void> {
     if (!(await fs.exists(lambdaLocation))) {
         const warning = localize(
             'AWS.lambda.download.fileNotFound',
@@ -206,7 +206,7 @@ export async function openLambdaFile(lambdaLocation: string): Promise<void> {
         throw new Error()
     }
     const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(lambdaLocation))
-    await vscode.window.showTextDocument(doc)
+    await vscode.window.showTextDocument(doc, viewColumn)
 }
 
 async function addLaunchConfigEntry(
