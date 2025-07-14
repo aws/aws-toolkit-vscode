@@ -71,19 +71,17 @@ import * as vscode from 'vscode'
 import { Disposable, LanguageClient, Position, TextDocumentIdentifier } from 'vscode-languageclient'
 import { AmazonQChatViewProvider } from './webviewProvider'
 import { AuthUtil, ReferenceLogViewProvider } from 'aws-core-vscode/codewhisperer'
-import { amazonQDiffScheme, AmazonQPromptSettings, messages, openUrl, isTextEditor } from 'aws-core-vscode/shared'
-import {
-    DefaultAmazonQAppInitContext,
-    messageDispatcher,
-    EditorContentController,
-    ViewDiffMessage,
-    referenceLogText,
-} from 'aws-core-vscode/amazonq'
+import { AmazonQPromptSettings, messages, openUrl, isTextEditor } from 'aws-core-vscode/shared'
+import { DefaultAmazonQAppInitContext, messageDispatcher, referenceLogText } from 'aws-core-vscode/amazonq'
 import { telemetry, TelemetryBase } from 'aws-core-vscode/telemetry'
 import { isValidResponseError } from './error'
 import { decryptResponse, encryptRequest } from '../encryption'
-import { getCursorState } from '../utils'
 import { focusAmazonQPanel } from './commands'
+import { DiffAnimationHandler } from './diffAnimation/diffAnimationHandler'
+import { getLogger } from 'aws-core-vscode/shared'
+
+// Create a singleton instance of DiffAnimationHandler
+let diffAnimationHandler: DiffAnimationHandler | undefined
 
 export function registerActiveEditorChangeListener(languageClient: LanguageClient) {
     let debounceTimer: NodeJS.Timeout | undefined
@@ -132,12 +130,38 @@ export function registerLanguageServerEventListener(languageClient: LanguageClie
     })
 }
 
+function getCursorState(selection: readonly vscode.Selection[]) {
+    return selection.map((s) => ({
+        range: {
+            start: {
+                line: s.start.line,
+                character: s.start.character,
+            },
+            end: {
+                line: s.end.line,
+                character: s.end.character,
+            },
+        },
+    }))
+}
+
+// Initialize DiffAnimationHandler on first use
+function getDiffAnimationHandler(): DiffAnimationHandler {
+    if (!diffAnimationHandler) {
+        diffAnimationHandler = new DiffAnimationHandler()
+    }
+    return diffAnimationHandler
+}
+
 export function registerMessageListeners(
     languageClient: LanguageClient,
     provider: AmazonQChatViewProvider,
     encryptionKey: Buffer
 ) {
     const chatStreamTokens = new Map<string, CancellationTokenSource>() // tab id -> token
+
+    // Initialize DiffAnimationHandler
+    const animationHandler = getDiffAnimationHandler()
 
     // Keep track of pending chat options to send when webview UI is ready
     const pendingChatOptions = languageClient.initializeResult?.awsServerCapabilities?.chatOptions
@@ -258,6 +282,19 @@ export function registerMessageListeners(
                 token?.cancel()
                 token?.dispose()
                 chatStreamTokens.delete(tabId)
+
+                // **CRITICAL FIX**: Clean up temp files when chat is stopped
+                // This ensures temp files are cleaned up when users stop ongoing operations
+                try {
+                    const animationHandler = getDiffAnimationHandler()
+                    const streamingController = (animationHandler as any).streamingDiffController
+                    if (streamingController && streamingController.cleanupChatSession) {
+                        await streamingController.cleanupChatSession()
+                        getLogger().info(`[VSCode Client] 🧹 Cleaned up temp files after stopping chat`)
+                    }
+                } catch (error) {
+                    getLogger().warn(`[VSCode Client] ⚠️ Failed to cleanup temp files after stopping chat: ${error}`)
+                }
                 break
             }
             case chatRequestType.method: {
@@ -267,12 +304,47 @@ export function registerMessageListeners(
                 const cancellationToken = new CancellationTokenSource()
                 chatStreamTokens.set(chatParams.tabId, cancellationToken)
 
-                const chatDisposable = languageClient.onProgress(chatRequestType, partialResultToken, (partialResult) =>
-                    handlePartialResult<ChatResult>(partialResult, encryptionKey, provider, chatParams.tabId).then(
-                        (result) => {
-                            lastPartialResult = result
+                // **CRITICAL FIX**: Clean up temp files from previous chat sessions
+                // This ensures temp files don't accumulate when users start new conversations
+                try {
+                    const animationHandler = getDiffAnimationHandler()
+                    const streamingController = (animationHandler as any).streamingDiffController
+                    if (streamingController && streamingController.cleanupChatSession) {
+                        await streamingController.cleanupChatSession()
+                        getLogger().info(`[VSCode Client] 🧹 Cleaned up temp files before starting new chat`)
+                    }
+                } catch (error) {
+                    getLogger().warn(`[VSCode Client] ⚠️ Failed to cleanup temp files before new chat: ${error}`)
+                }
+
+                const chatDisposable = languageClient.onProgress(
+                    chatRequestType,
+                    partialResultToken,
+                    async (partialResult) => {
+                        // Store the latest partial result
+                        if (typeof partialResult === 'string' && encryptionKey) {
+                            const decoded = await decryptResponse<ChatResult>(partialResult, encryptionKey)
+                            lastPartialResult = decoded
+
+                            // Process partial results for diff animations
+                            try {
+                                await animationHandler.processChatResult(decoded, chatParams.tabId, true)
+                            } catch (error) {
+                                getLogger().error(`Failed to process partial result for animations: ${error}`)
+                            }
+                        } else {
+                            lastPartialResult = partialResult as ChatResult
+
+                            // Process partial results for diff animations
+                            try {
+                                await animationHandler.processChatResult(lastPartialResult, chatParams.tabId, true)
+                            } catch (error) {
+                                getLogger().error(`Failed to process partial result for animations: ${error}`)
+                            }
                         }
-                    )
+
+                        void handlePartialResult<ChatResult>(partialResult, encryptionKey, provider, chatParams.tabId)
+                    }
                 )
 
                 const editor =
@@ -300,6 +372,17 @@ export function registerMessageListeners(
                         chatParams.tabId,
                         chatDisposable
                     )
+
+                    // Process final result for animations
+                    const finalResult =
+                        typeof chatResult === 'string' && encryptionKey
+                            ? await decryptResponse<ChatResult>(chatResult, encryptionKey)
+                            : (chatResult as ChatResult)
+                    try {
+                        await animationHandler.processChatResult(finalResult, chatParams.tabId, false)
+                    } catch (error) {
+                        getLogger().error(`Failed to process final result for animations: ${error}`)
+                    }
                 } catch (e) {
                     const errorMsg = `Error occurred during chat request: ${e}`
                     languageClient.info(errorMsg)
@@ -553,34 +636,135 @@ export function registerMessageListeners(
     )
 
     languageClient.onNotification(openFileDiffNotificationType.method, async (params: OpenFileDiffParams) => {
-        const ecc = new EditorContentController()
-        const uri = params.originalFileUri
-        const doc = await vscode.workspace.openTextDocument(uri)
-        const entireDocumentSelection = new vscode.Selection(
-            new vscode.Position(0, 0),
-            new vscode.Position(doc.lineCount - 1, doc.lineAt(doc.lineCount - 1).text.length)
+        // Normalize the file path
+        const normalizedPath = params.originalFileUri.startsWith('file://')
+            ? vscode.Uri.parse(params.originalFileUri).fsPath
+            : params.originalFileUri
+
+        const originalContent = params.originalFileContent || ''
+        const newContent = params.fileContent || ''
+
+        getLogger().info(`[VSCode Client] OpenFileDiff notification for: ${normalizedPath}`)
+        getLogger().info(
+            `[VSCode Client] Original content length: ${originalContent.length}, New content length: ${newContent.length}`
         )
-        const viewDiffMessage: ViewDiffMessage = {
-            context: {
-                activeFileContext: {
-                    filePath: params.originalFileUri,
-                    fileText: params.originalFileContent ?? '',
-                    fileLanguage: undefined,
-                    matchPolicy: undefined,
-                },
-                focusAreaContext: {
-                    selectionInsideExtendedCodeBlock: entireDocumentSelection,
-                    codeBlock: '',
-                    extendedCodeBlock: '',
-                    names: undefined,
-                },
-            },
-            code: params.fileContent ?? '',
+
+        // **CRITICAL FIX**: Check if this is a streaming-related notification
+        // Streaming notifications often have special markers or identical content
+        const animationHandler = getDiffAnimationHandler()
+
+        // Check if the content is identical (which often indicates redundant notification from streaming)
+        if (originalContent === newContent) {
+            getLogger().info(
+                '[VSCode Client] 🚫 Skipping redundant diff view - content is identical (likely from streaming)'
+            )
+            return
         }
-        await ecc.viewDiff(viewDiffMessage, amazonQDiffScheme)
+
+        // **CRITICAL FIX**: Check if this notification contains streaming markers
+        // The streaming system sends notifications with special content markers
+        if (newContent.includes('<!-- STREAMING_DIFF_START:') || newContent.includes('STREAMING_DIFF_START')) {
+            getLogger().info('[VSCode Client] 🌊 Skipping streaming marker notification - handled by streaming system')
+            return
+        }
+
+        // **CRITICAL FIX**: Check if both contents are empty or very small (likely streaming initialization)
+        if (originalContent.length === 0 && newContent.length < 100) {
+            getLogger().info('[VSCode Client] 🚫 Skipping likely streaming initialization notification')
+            return
+        }
+
+        // For legitimate file tab clicks from chat, we should show the static diff view
+        getLogger().info('[VSCode Client] File tab clicked from chat, showing static diff view')
+
+        // Use processFileDiff with isFromChatClick=true, which will trigger showVSCodeDiff
+        await animationHandler.processFileDiff({
+            originalFileUri: params.originalFileUri,
+            originalFileContent: originalContent,
+            fileContent: newContent,
+            isFromChatClick: true, // This ensures it goes to showVSCodeDiff
+        })
     })
 
-    languageClient.onNotification(chatUpdateNotificationType.method, (params: ChatUpdateParams) => {
+    languageClient.onNotification(chatUpdateNotificationType.method, async (params: ChatUpdateParams) => {
+        // Process fsReplace complete events for line-by-line diff animation
+        if ((params.data as any)?.fsReplaceComplete) {
+            const fsReplaceComplete = (params.data as any).fsReplaceComplete
+            try {
+                getLogger().info(
+                    `[VSCode Client] 🔄 Received fsReplace complete for ${fsReplaceComplete.toolUseId}: ${fsReplaceComplete.diffString?.length || 0} chars`
+                )
+
+                // Process fsReplace complete with StreamingDiffController
+                const animationHandler = getDiffAnimationHandler()
+                const streamingController = (animationHandler as any).streamingDiffController
+                if (streamingController && streamingController.processFsReplaceComplete) {
+                    await streamingController.processFsReplaceComplete(fsReplaceComplete)
+                } else {
+                    getLogger().warn(
+                        `[VSCode Client] ⚠️ StreamingDiffController not available for fsReplace processing`
+                    )
+                }
+
+                getLogger().info(`[VSCode Client] ✅ fsReplace complete processed successfully`)
+            } catch (error) {
+                getLogger().error(`[VSCode Client] ❌ Failed to process fsReplace complete: ${error}`)
+            }
+            // Don't forward fsReplaceComplete to the webview - it's handled by the animation
+            return
+        }
+
+        // Process streaming chunks for real-time diff animations (fsWrite only)
+        if ((params.data as any)?.streamingChunk) {
+            const streamingChunk = (params.data as any).streamingChunk
+            try {
+                getLogger().info(
+                    `[VSCode Client] 🌊 Received streaming chunk for ${streamingChunk.toolUseId}: ${streamingChunk.content?.length || 0} chars (complete: ${streamingChunk.isComplete})`
+                )
+
+                // Process streaming chunk with DiffAnimationHandler
+                const animationHandler = getDiffAnimationHandler()
+
+                // Check if this is the first chunk for this toolUseId - if so, initialize streaming session
+                if (!animationHandler.isStreamingActive(streamingChunk.toolUseId) && streamingChunk.filePath) {
+                    getLogger().info(
+                        `[VSCode Client] 🎬 Initializing streaming session for ${streamingChunk.toolUseId} at ${streamingChunk.filePath}`
+                    )
+                    await animationHandler.startStreamingDiffSession(streamingChunk.toolUseId, streamingChunk.filePath)
+                }
+
+                // Pass fsWrite parameters to streaming controller for correct region animation
+                if (streamingChunk.fsWriteParams) {
+                    getLogger().info(
+                        `[VSCode Client] 📝 Updating fsWrite params for ${streamingChunk.toolUseId}: command=${streamingChunk.fsWriteParams.command}`
+                    )
+                    // Access the streaming controller directly to update fsWrite params
+                    const streamingController = (animationHandler as any).streamingDiffController
+                    if (streamingController && streamingController.updateFsWriteParams) {
+                        streamingController.updateFsWriteParams(streamingChunk.toolUseId, streamingChunk.fsWriteParams)
+                    }
+                }
+
+                await animationHandler.streamContentUpdate(
+                    streamingChunk.toolUseId,
+                    streamingChunk.content || '',
+                    streamingChunk.isComplete || false
+                )
+
+                getLogger().info(`[VSCode Client] ✅ Streaming chunk processed successfully`)
+            } catch (error) {
+                getLogger().error(`[VSCode Client] ❌ Failed to process streaming chunk: ${error}`)
+            }
+            // Don't forward streaming chunks to the webview - they're handled by the animation handler
+            return
+        }
+
+        // **FIX: Don't process chat updates for diff animations here**
+        // This was causing duplicate streaming session creation attempts
+        // The chatRequestType.method handler already processes partial and final results
+        // Only streaming chunks should be processed here, not regular chat messages
+        getLogger().debug(`[VSCode Client] 📨 Chat update received (not processing for animations to avoid duplicates)`)
+
         void provider.webview?.postMessage({
             command: chatUpdateNotificationType.method,
             params: params,
@@ -593,6 +777,14 @@ export function registerMessageListeners(
             params: params,
         })
     })
+}
+
+// Clean up on extension deactivation
+export function dispose() {
+    if (diffAnimationHandler) {
+        void diffAnimationHandler.dispose()
+        diffAnimationHandler = undefined
+    }
 }
 
 function isServerEvent(command: string) {
