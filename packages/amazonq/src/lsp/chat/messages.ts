@@ -79,6 +79,7 @@ import { decryptResponse, encryptRequest } from '../encryption'
 import { focusAmazonQPanel } from './commands'
 import { DiffAnimationHandler } from './diffAnimation/diffAnimationHandler'
 import { getLogger } from 'aws-core-vscode/shared'
+import { getCursorState } from '../utils'
 
 // Create a singleton instance of DiffAnimationHandler
 let diffAnimationHandler: DiffAnimationHandler | undefined
@@ -130,27 +131,26 @@ export function registerLanguageServerEventListener(languageClient: LanguageClie
     })
 }
 
-function getCursorState(selection: readonly vscode.Selection[]) {
-    return selection.map((s) => ({
-        range: {
-            start: {
-                line: s.start.line,
-                character: s.start.character,
-            },
-            end: {
-                line: s.end.line,
-                character: s.end.character,
-            },
-        },
-    }))
-}
-
 // Initialize DiffAnimationHandler on first use
 function getDiffAnimationHandler(): DiffAnimationHandler {
     if (!diffAnimationHandler) {
         diffAnimationHandler = new DiffAnimationHandler()
     }
     return diffAnimationHandler
+}
+
+// Helper function to clean up temp files - eliminates code duplication
+async function cleanupTempFiles(context: string): Promise<void> {
+    try {
+        const animationHandler = getDiffAnimationHandler()
+        const streamingController = (animationHandler as any).streamingDiffController
+        if (streamingController && streamingController.cleanupChatSession) {
+            await streamingController.cleanupChatSession()
+            getLogger().info(`[VSCode Client] 🧹 Cleaned up temp files ${context}`)
+        }
+    } catch (error) {
+        getLogger().warn(`[VSCode Client] ⚠️ Failed to cleanup temp files ${context}: ${error}`)
+    }
 }
 
 export function registerMessageListeners(
@@ -285,16 +285,7 @@ export function registerMessageListeners(
 
                 // **CRITICAL FIX**: Clean up temp files when chat is stopped
                 // This ensures temp files are cleaned up when users stop ongoing operations
-                try {
-                    const animationHandler = getDiffAnimationHandler()
-                    const streamingController = (animationHandler as any).streamingDiffController
-                    if (streamingController && streamingController.cleanupChatSession) {
-                        await streamingController.cleanupChatSession()
-                        getLogger().info(`[VSCode Client] 🧹 Cleaned up temp files after stopping chat`)
-                    }
-                } catch (error) {
-                    getLogger().warn(`[VSCode Client] ⚠️ Failed to cleanup temp files after stopping chat: ${error}`)
-                }
+                await cleanupTempFiles('after stopping chat')
                 break
             }
             case chatRequestType.method: {
@@ -306,16 +297,7 @@ export function registerMessageListeners(
 
                 // **CRITICAL FIX**: Clean up temp files from previous chat sessions
                 // This ensures temp files don't accumulate when users start new conversations
-                try {
-                    const animationHandler = getDiffAnimationHandler()
-                    const streamingController = (animationHandler as any).streamingDiffController
-                    if (streamingController && streamingController.cleanupChatSession) {
-                        await streamingController.cleanupChatSession()
-                        getLogger().info(`[VSCode Client] 🧹 Cleaned up temp files before starting new chat`)
-                    }
-                } catch (error) {
-                    getLogger().warn(`[VSCode Client] ⚠️ Failed to cleanup temp files before new chat: ${error}`)
-                }
+                await cleanupTempFiles('before starting new chat')
 
                 const chatDisposable = languageClient.onProgress(
                     chatRequestType,

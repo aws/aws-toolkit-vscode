@@ -252,21 +252,28 @@ export class DiffAnimationHandler implements vscode.Disposable {
         }
     }
 
-    public async startStreamingDiffSession(toolUseId: string, filePath: string): Promise<void> {
+    public async startStreamingDiffSession(
+        toolUseId: string,
+        filePath: string,
+        providedOriginalContent?: string
+    ): Promise<void> {
         try {
-            let originalContent = ''
-            const pendingWrite = Array.from(this.pendingWrites.values()).find(
-                (write) => write.toolUseId === toolUseId && write.filePath === filePath
-            )
+            let originalContent = providedOriginalContent || ''
 
-            if (pendingWrite) {
-                originalContent = pendingWrite.originalContent
-            } else {
-                try {
-                    const document = await vscode.workspace.openTextDocument(vscode.Uri.file(filePath))
-                    originalContent = document.getText()
-                } catch {
-                    originalContent = ''
+            if (!providedOriginalContent) {
+                const pendingWrite = Array.from(this.pendingWrites.values()).find(
+                    (write) => write.toolUseId === toolUseId && write.filePath === filePath
+                )
+
+                if (pendingWrite) {
+                    originalContent = pendingWrite.originalContent
+                } else {
+                    try {
+                        const document = await vscode.workspace.openTextDocument(vscode.Uri.file(filePath))
+                        originalContent = document.getText()
+                    } catch {
+                        originalContent = ''
+                    }
                 }
             }
 
@@ -288,17 +295,7 @@ export class DiffAnimationHandler implements vscode.Disposable {
         filePath: string,
         originalContent: string
     ): Promise<void> {
-        try {
-            this.streamingSessions.set(toolUseId, {
-                toolUseId,
-                filePath,
-                originalContent,
-                startTime: Date.now(),
-            })
-            await this.streamingDiffController.openStreamingDiffView(toolUseId, filePath, originalContent)
-        } catch (error) {
-            getLogger().error(`[DiffAnimationHandler] ❌ Failed to start streaming session for ${toolUseId}: ${error}`)
-        }
+        return this.startStreamingDiffSession(toolUseId, filePath, originalContent)
     }
 
     public async streamContentUpdate(

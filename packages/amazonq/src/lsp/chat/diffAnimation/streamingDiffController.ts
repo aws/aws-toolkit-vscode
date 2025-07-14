@@ -377,6 +377,51 @@ export class StreamingDiffController implements vscode.Disposable {
     }
 
     /**
+     * Helper method to create temp file and open diff view - eliminates code duplication
+     */
+    private async createTempFileAndOpenDiff(
+        filePath: string,
+        originalContent: string,
+        toolUseId: string,
+        diffTitle: string
+    ): Promise<{ tempFilePath: string; activeDiffEditor: vscode.TextEditor }> {
+        const fileName = path.basename(filePath)
+        const tempFilePath = path.join(path.dirname(filePath), `.amazonq-temp-${toolUseId}-${fileName}`)
+        const tempFileUri = vscode.Uri.file(tempFilePath)
+
+        // Create virtual URI for original content
+        const originalUri = vscode.Uri.parse(`${diffViewUriScheme}:${fileName}`).with({
+            query: Buffer.from(originalContent).toString('base64'),
+        })
+
+        // Create temporary file with original content
+        await this.createTempFile(tempFilePath, originalContent)
+
+        // Open diff view between virtual original and temp file
+        const activeDiffEditor = await new Promise<vscode.TextEditor>((resolve, reject) => {
+            const disposable = vscode.window.onDidChangeActiveTextEditor((editor) => {
+                if (editor && editor.document.uri.fsPath === tempFilePath) {
+                    disposable.dispose()
+                    resolve(editor)
+                }
+            })
+
+            void vscode.commands.executeCommand('vscode.diff', originalUri, tempFileUri, diffTitle, {
+                preserveFocus: true,
+                preview: false,
+            })
+
+            // Timeout after 10 seconds
+            setTimeout(() => {
+                disposable.dispose()
+                reject(new Error('Failed to open diff editor within timeout'))
+            }, 10000)
+        })
+
+        return { tempFilePath, activeDiffEditor }
+    }
+
+    /**
      * Configure VSCode's diff editor settings for better focus on changed regions
      */
     private async configureDiffEditorSettings(editor: vscode.TextEditor): Promise<void> {
@@ -528,53 +573,20 @@ export class StreamingDiffController implements vscode.Disposable {
             const originalContent = originalDocument.getText()
             const fileName = path.basename(fsReplaceComplete.filePath)
 
-            // **CRITICAL FIX: Create temporary file for animation (like fsWrite)**
-            const tempFilePath = path.join(
-                path.dirname(fsReplaceComplete.filePath),
-                `.amazonq-temp-${fsReplaceComplete.toolUseId}-${fileName}`
+            // **STEP 1 & 2: Use helper method to create temp file and open diff view**
+            const { tempFilePath, activeDiffEditor } = await this.createTempFileAndOpenDiff(
+                fsReplaceComplete.filePath,
+                originalContent,
+                fsReplaceComplete.toolUseId,
+                `${fileName}: Original ↔ Amazon Q fsReplace Changes`
             )
             const tempFileUri = vscode.Uri.file(tempFilePath)
 
-            // Create virtual URI for original content
-            const originalUri = vscode.Uri.parse(`${diffViewUriScheme}:${fileName}`).with({
-                query: Buffer.from(originalContent).toString('base64'),
-            })
-
-            // **STEP 1: Create temp file with original content**
-            await this.createTempFile(tempFilePath, originalContent)
-
-            // **STEP 2: Apply all diffs to create final content**
+            // **STEP 3: Apply all diffs to create final content**
             let finalContent = originalContent
             for (const { oldStr, newStr } of structuredDiffs) {
                 finalContent = finalContent.replace(oldStr, newStr)
             }
-
-            // **STEP 3: Open diff view between original (virtual) and temp file**
-            const activeDiffEditor = await new Promise<vscode.TextEditor>((resolve, reject) => {
-                const disposable = vscode.window.onDidChangeActiveTextEditor((editor) => {
-                    if (editor && editor.document.uri.fsPath === tempFilePath) {
-                        disposable.dispose()
-                        resolve(editor)
-                    }
-                })
-
-                void vscode.commands.executeCommand(
-                    'vscode.diff',
-                    originalUri,
-                    tempFileUri,
-                    `${fileName}: Original ↔ Amazon Q fsReplace Changes`,
-                    {
-                        preserveFocus: true,
-                        preview: false,
-                    }
-                )
-
-                // Timeout after 10 seconds
-                setTimeout(() => {
-                    disposable.dispose()
-                    reject(new Error('Failed to open diff editor within timeout'))
-                }, 10000)
-            })
 
             // **STEP 4: Configure diff editor settings**
             await this.configureDiffEditorSettings(activeDiffEditor)
