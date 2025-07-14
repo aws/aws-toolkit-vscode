@@ -116,11 +116,6 @@ export class AutoDebugLspClient {
      * This uses the regular Amazon Q chat pipeline - response will appear in chat UI automatically
      */
     public async sendChatMessage(params: { message: string; triggerType: string; eventId: string }): Promise<boolean> {
-        this.logger.info('=== AutoDebugLspClient: Using real AutoDebugLspClient from amazonq package ===')
-        this.logger.info('AutoDebugLspClient: Message: %s', params.message.substring(0, 500))
-        this.logger.info('AutoDebugLspClient: TriggerType: %s', params.triggerType)
-        this.logger.info('AutoDebugLspClient: EventId: %s', params.eventId)
-
         try {
             // Get the real AutoDebugLspClient from the amazonq package
             const realAutoDebugClient = (global as any).autoDebugLspClient
@@ -140,9 +135,6 @@ export class AutoDebugLspClient {
             const result = await realAutoDebugClient.sendChatMessage(params.message, params.eventId)
 
             this.logger.info('AutoDebugLspClient: ✅ Message sent successfully using real AutoDebugLspClient')
-            this.logger.info('AutoDebugLspClient: Response will appear in Amazon Q chat UI automatically')
-            this.logger.info('AutoDebugLspClient: Language server will handle the response processing')
-
             // Return success - the chat pipeline handles everything else automatically
             return !!result
         } catch (error) {
