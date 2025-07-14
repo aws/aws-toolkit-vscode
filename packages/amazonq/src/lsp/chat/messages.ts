@@ -61,6 +61,7 @@ import {
     ruleClickRequestType,
     pinnedContextNotificationType,
     activeEditorChangedNotificationType,
+    listAvailableModelsRequestType,
     ShowOpenDialogRequestType,
     ShowOpenDialogParams,
     openFileDialogRequestType,
@@ -369,6 +370,7 @@ export function registerMessageListeners(
             case listMcpServersRequestType.method:
             case mcpServerClickRequestType.method:
             case tabBarActionRequestType.method:
+            case listAvailableModelsRequestType.method:
                 await resolveChatResponse(message.command, message.params, languageClient, webview)
                 break
             case followUpClickNotificationType.method:
