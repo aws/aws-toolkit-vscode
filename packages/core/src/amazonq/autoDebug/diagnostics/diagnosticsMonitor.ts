@@ -38,8 +38,6 @@ export class DiagnosticsMonitor implements vscode.Disposable {
     public readonly onDiagnosticsChanged = this.diagnosticsChangeEmitter.event
 
     constructor() {
-        this.logger.debug('DiagnosticsMonitor: Initializing diagnostic monitoring')
-
         // Monitor diagnostic changes from all language servers
         this.disposables.push(
             vscode.languages.onDidChangeDiagnostics((event) => {
@@ -55,8 +53,6 @@ export class DiagnosticsMonitor implements vscode.Disposable {
      * Gets current diagnostics with optional waiting for changes
      */
     public async getCurrentDiagnostics(shouldWaitForChanges: boolean = false): Promise<DiagnosticCollection> {
-        this.logger.debug('DiagnosticsMonitor: Getting current diagnostics, waitForChanges=%s', shouldWaitForChanges)
-
         const currentDiagnostics = this.collectAllDiagnostics()
 
         if (!shouldWaitForChanges) {
@@ -78,8 +74,6 @@ export class DiagnosticsMonitor implements vscode.Disposable {
      * Filters diagnostics by source (TypeScript, ESLint, etc.)
      */
     public filterBySource(diagnostics: DiagnosticCollection, sources: string[]): DiagnosticCollection {
-        this.logger.debug('DiagnosticsMonitor: Filtering diagnostics by sources: %O', sources)
-
         const filteredDiagnostics: [vscode.Uri, vscode.Diagnostic[]][] = []
 
         for (const [uri, fileDiagnostics] of diagnostics.diagnostics) {
@@ -105,8 +99,6 @@ export class DiagnosticsMonitor implements vscode.Disposable {
         diagnostics: DiagnosticCollection,
         severities: vscode.DiagnosticSeverity[]
     ): DiagnosticCollection {
-        this.logger.debug('DiagnosticsMonitor: Filtering diagnostics by severities: %O', severities)
-
         const filteredDiagnostics: [vscode.Uri, vscode.Diagnostic[]][] = []
 
         for (const [uri, fileDiagnostics] of diagnostics.diagnostics) {

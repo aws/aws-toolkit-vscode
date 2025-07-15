@@ -24,10 +24,6 @@ export class AutoDebugLspClient {
      * This uses the same method as explainIssue command which works properly
      */
     public async sendChatMessage(message: string, eventId: string): Promise<ChatResult> {
-        this.logger.info('AutoDebugLspClient: Sending message via webview postMessage')
-        this.logger.info('AutoDebugLspClient: Message: %s', message.substring(0, 500))
-        this.logger.info('AutoDebugLspClient: EventId: %s', eventId)
-
         try {
             // Get the webview provider from global storage (set during activation)
             const amazonQChatViewProvider = (global as any).amazonQChatViewProvider
@@ -36,17 +32,11 @@ export class AutoDebugLspClient {
                 this.logger.error('AutoDebugLspClient: Amazon Q Chat View Provider not found')
                 throw new Error('Amazon Q Chat View Provider not available')
             }
-
-            this.logger.info('AutoDebugLspClient: Found chat view provider, focusing panel')
-
             // Focus Amazon Q panel first using the correct function
             await focusAmazonQPanel()
 
             // Wait for panel to focus
             await new Promise((resolve) => setTimeout(resolve, 200))
-
-            this.logger.info('AutoDebugLspClient: Sending message via webview postMessage')
-
             // Send message using the same pattern as explainIssue command
             await amazonQChatViewProvider.webview?.postMessage({
                 command: 'sendToPrompt',
@@ -60,10 +50,6 @@ export class AutoDebugLspClient {
                     autoSubmit: true, // Automatically submit the message
                 },
             })
-
-            this.logger.info('AutoDebugLspClient: ✅ Message sent successfully via webview postMessage')
-            this.logger.info('AutoDebugLspClient: Response will stream to Amazon Q chat UI automatically')
-
             return {
                 type: 'answer',
                 body: 'AutoDebug message sent successfully',
@@ -74,7 +60,6 @@ export class AutoDebugLspClient {
 
             // Fallback: Show message to user for manual sending
             try {
-                this.logger.info('AutoDebugLspClient: Attempting user-assisted fallback')
                 const vscode = require('vscode')
 
                 // Focus the chat panel using the correct function

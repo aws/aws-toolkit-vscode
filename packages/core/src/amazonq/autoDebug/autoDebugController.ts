@@ -64,8 +64,6 @@ export class AutoDebugController implements vscode.Disposable {
         this.diagnosticsMonitor = new DiagnosticsMonitor()
         this.problemDetector = new ProblemDetector()
         this.errorFormatter = new ErrorContextFormatter()
-
-        // Create the core package LSP client (this delegates to the real one in amazonq package)
         this.lspClient = new AutoDebugLspClient(client, encryptionKey)
 
         this.setupEventHandlers()
@@ -75,18 +73,13 @@ export class AutoDebugController implements vscode.Disposable {
             this.onSessionStarted,
             this.onSessionEnded
         )
-
-        this.logger.debug('AutoDebugController: Initialization complete')
     }
 
     /**
      * Starts a new auto debug session
      */
     public async startSession(): Promise<AutoDebugSession> {
-        this.logger.debug('AutoDebugController: Starting new auto debug session')
-
         if (this.currentSession?.isActive) {
-            this.logger.debug('AutoDebugController: Ending previous session %s', this.currentSession.id)
             await this.endSession()
         }
 
@@ -101,8 +94,6 @@ export class AutoDebugController implements vscode.Disposable {
 
         this.currentSession = session
         this.onSessionStarted.fire(session)
-
-        this.logger.debug('AutoDebugController: Started session %s', session.id)
         return session
     }
 
@@ -111,17 +102,13 @@ export class AutoDebugController implements vscode.Disposable {
      */
     public async endSession(): Promise<void> {
         if (!this.currentSession) {
-            this.logger.debug('AutoDebugController: No active session to end')
             return
         }
-
         const sessionId = this.currentSession.id
         this.logger.debug('AutoDebugController: Ending session %s', sessionId)
 
         this.currentSession = undefined
         this.onSessionEnded.fire(sessionId)
-
-        this.logger.debug('AutoDebugController: Session %s ended', sessionId)
     }
 
     /**
@@ -135,8 +122,6 @@ export class AutoDebugController implements vscode.Disposable {
      * Manually triggers problem detection
      */
     public async detectProblems(): Promise<Problem[]> {
-        this.logger.debug('AutoDebugController: Manual problem detection triggered')
-
         if (!this.config.enabled) {
             this.logger.debug('AutoDebugController: Auto debug is disabled')
             return []
@@ -245,17 +230,6 @@ export class AutoDebugController implements vscode.Disposable {
      */
     public markAmazonQResponse(): void {
         this.logger.debug('AutoDebugController: Amazon Q response received')
-    }
-
-    /**
-     * Called when Amazon Q completes a chat session and has potentially written code
-     */
-    public markAmazonQChatComplete(hasWrittenCode: boolean = false): void {
-        if (hasWrittenCode) {
-            this.logger.debug('AutoDebugController: Amazon Q chat completed with code changes')
-        } else {
-            this.logger.debug('AutoDebugController: Amazon Q chat completed without code changes')
-        }
     }
 
     /**
@@ -402,11 +376,6 @@ export class AutoDebugController implements vscode.Disposable {
             // **DIRECT LSP APPROACH**: Send directly to language server to avoid webview routing issues
             // The previous approach was going through webview connectors which use the wrong format
 
-            if (!this.lspClient.isAvailable()) {
-                this.logger.error('AutoDebugController: LSP client not available')
-                throw new Error('LSP client not available for auto-debug chat')
-            }
-
             // Use the LSP client to send chat request directly to language server
             const success = await this.lspClient.sendChatMessage({
                 message: message,
@@ -446,16 +415,6 @@ export class AutoDebugController implements vscode.Disposable {
                 .join(', ')
         )
 
-        if (!this.lspClient.isAvailable()) {
-            this.logger.warn('AutoDebugController: Language client not available for auto-fix')
-            this.logger.debug(
-                'AutoDebugController: LSP client availability check failed - client may not be initialized or connected'
-            )
-            return false
-        }
-
-        this.logger.debug('AutoDebugController: Language client is available, proceeding with auto-fix')
-
         try {
             // Get file content
             const document = await vscode.workspace.openTextDocument(vscode.Uri.file(filePath))
@@ -484,39 +443,6 @@ export class AutoDebugController implements vscode.Disposable {
             }
 
             this.logger.debug('AutoDebugController: Generated %d fixes', fixResult.fixes.length)
-
-            // Show fixes to user and optionally apply them
-            if (autoApply) {
-                const success = await this.lspClient.applyFixes(fixResult.fixes, filePath)
-                if (success) {
-                    void vscode.window.showInformationMessage(
-                        `Applied ${fixResult.fixes.length} automatic fix${fixResult.fixes.length !== 1 ? 'es' : ''} to ${filePath}`
-                    )
-                }
-                return success
-            } else {
-                // Show fixes to user for review
-                const choice = await vscode.window.showInformationMessage(
-                    `Amazon Q generated ${fixResult.fixes.length} fix${fixResult.fixes.length !== 1 ? 'es' : ''} for ${filePath}. Apply them?`,
-                    'Apply Fixes',
-                    'Review Fixes',
-                    'Cancel'
-                )
-
-                if (choice === 'Apply Fixes') {
-                    const success = await this.lspClient.applyFixes(fixResult.fixes, filePath)
-                    if (success) {
-                        void vscode.window.showInformationMessage(
-                            `Applied ${fixResult.fixes.length} fix${fixResult.fixes.length !== 1 ? 'es' : ''} to ${filePath}`
-                        )
-                    }
-                    return success
-                } else if (choice === 'Review Fixes') {
-                    await this.showFixesForReview(fixResult.fixes, filePath, fixResult.explanation)
-                    return false
-                }
-            }
-
             return false
         } catch (error) {
             this.logger.error('AutoDebugController: Error during auto-fix: %s', error)
@@ -525,36 +451,6 @@ export class AutoDebugController implements vscode.Disposable {
             )
             return false
         }
-    }
-
-    /**
-     * Shows fixes for user review
-     */
-    private async showFixesForReview(fixes: any[], filePath: string, explanation?: string): Promise<void> {
-        const fixDescriptions = fixes
-            .map((fix, index) => `${index + 1}. ${fix.description} (Confidence: ${fix.confidence})`)
-            .join('\n')
-
-        const content = `# Auto Debug Fixes for ${filePath}
-
-${
-    explanation
-        ? `## Explanation
-${explanation}
-
-`
-        : ''
-}## Proposed Fixes
-${fixDescriptions}
-
-## Next Steps
-You can manually apply these fixes or use the "Apply Fixes" option from the notification.`
-
-        const doc = await vscode.workspace.openTextDocument({
-            content,
-            language: 'markdown',
-        })
-        await vscode.window.showTextDocument(doc)
     }
 
     private setupEventHandlers(): void {
@@ -586,9 +482,7 @@ You can manually apply these fixes or use the "Apply Fixes" option from the noti
             return
         }
 
-        // **FIX #1: Ensure session exists - create one if needed**
         if (!this.currentSession) {
-            this.logger.debug('AutoDebugController: No active session, starting new one for file event')
             await this.startSession()
         }
 

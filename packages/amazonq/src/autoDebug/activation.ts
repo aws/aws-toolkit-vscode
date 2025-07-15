@@ -14,10 +14,6 @@ const logger = getLogger('amazonqLsp')
  * This ensures perfect compatibility with the language server integration
  */
 export function activateAutoDebug(client: LanguageClient, encryptionKey: Buffer): AutoDebugLspClient {
-    logger.info('AutoDebug: Activating AutoDebug LSP client using exact inline chat pattern')
-    logger.debug('AutoDebug: Language client state: %s', client.needsStart() ? 'needs start' : 'ready')
-    logger.debug('AutoDebug: Encryption key length: %d', encryptionKey.length)
-
     // Create the AutoDebug LSP client using the normal chat pipeline
     const autoDebugClient = new AutoDebugLspClient(client)
 
@@ -25,9 +21,6 @@ export function activateAutoDebug(client: LanguageClient, encryptionKey: Buffer)
 
     // Store globally for access from the core package
     ;(global as any).autoDebugLspClient = autoDebugClient
-
-    logger.debug('AutoDebug: AutoDebug LSP client stored globally for core package access')
-
     return autoDebugClient
 }
 
