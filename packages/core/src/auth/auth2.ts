@@ -146,7 +146,7 @@ export class LanguageClientAuth {
             {
                 profileName: profileName,
                 options: {
-                    generateOnInvalidStsCredential: login,
+                    callStsOnInvalidIamCredential: login,
                 },
             } satisfies GetIamCredentialParams,
             cancellationToken
@@ -188,7 +188,7 @@ export class LanguageClientAuth {
         let profile: Profile
         if (roleArn) {
             profile = {
-                kinds: [ProfileKind.IamRoleSourceProfile],
+                kinds: [ProfileKind.IamSourceProfileProfile],
                 name: profileName,
                 settings: {
                     sso_session: '',
@@ -201,7 +201,7 @@ export class LanguageClientAuth {
             }
         } else if (accessKey && secretKey) {
             profile = {
-                kinds: [ProfileKind.IamUserProfile],
+                kinds: [ProfileKind.IamCredentialsProfile],
                 name: profileName,
                 settings: {
                     sso_session: '',

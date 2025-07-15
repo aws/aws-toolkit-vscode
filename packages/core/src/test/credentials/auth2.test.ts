@@ -110,7 +110,7 @@ describe('LanguageClientAuth', () => {
             const requestParams = client.sendRequest.firstCall.args[1]
             sinon.assert.match(requestParams.profile, {
                 name: profileName,
-                kinds: [ProfileKind.IamUserProfile],
+                kinds: [ProfileKind.IamCredentialsProfile],
             })
             sinon.assert.match(requestParams.profile.settings, {
                 aws_access_key_id: 'accessKey',

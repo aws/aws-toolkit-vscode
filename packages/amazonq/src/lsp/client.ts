@@ -32,7 +32,6 @@ import {
     updateConfigurationRequestType,
     GetMfaCodeParams,
     GetMfaCodeResult,
-    getMfaCodeRequestType,
 } from '@aws/language-server-runtimes/protocol'
 import {
     AuthUtil,
