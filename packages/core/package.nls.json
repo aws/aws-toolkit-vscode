@@ -146,7 +146,7 @@
     "AWS.command.amazonq.generateUnitTests": "Generate Tests",
     "AWS.command.amazonq.security.scan": "Run Project Review",
     "AWS.command.amazonq.security.fileScan": "Run File Review",
-    "AWS.command.amazonq.generateFix": "Generate Fix",
+    "AWS.command.amazonq.generateFix": "Fix",
     "AWS.command.amazonq.viewDetails": "View Details",
     "AWS.command.amazonq.explainIssue": "Explain",
     "AWS.command.amazonq.ignoreIssue": "Ignore Issue",

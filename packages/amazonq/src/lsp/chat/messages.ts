@@ -71,7 +71,16 @@ import { v4 as uuidv4 } from 'uuid'
 import * as vscode from 'vscode'
 import { Disposable, LanguageClient, Position, TextDocumentIdentifier } from 'vscode-languageclient'
 import { AmazonQChatViewProvider } from './webviewProvider'
-import { AuthUtil, ReferenceLogViewProvider } from 'aws-core-vscode/codewhisperer'
+import {
+    AggregatedCodeScanIssue,
+    AuthUtil,
+    CodeAnalysisScope,
+    CodeWhispererSettings,
+    initSecurityScanRender,
+    ReferenceLogViewProvider,
+    SecurityIssueTreeViewProvider,
+    CodeWhispererConstants,
+} from 'aws-core-vscode/codewhisperer'
 import { amazonQDiffScheme, AmazonQPromptSettings, messages, openUrl, isTextEditor } from 'aws-core-vscode/shared'
 import {
     DefaultAmazonQAppInitContext,
@@ -85,6 +94,7 @@ import { isValidResponseError } from './error'
 import { decryptResponse, encryptRequest } from '../encryption'
 import { getCursorState } from '../utils'
 import { focusAmazonQPanel } from './commands'
+import { ChatMessage } from '@aws/language-server-runtimes/server-interface'
 
 export function registerActiveEditorChangeListener(languageClient: LanguageClient) {
     let debounceTimer: NodeJS.Timeout | undefined
@@ -299,7 +309,8 @@ export function registerMessageListeners(
                         encryptionKey,
                         provider,
                         chatParams.tabId,
-                        chatDisposable
+                        chatDisposable,
+                        languageClient
                     )
                 } catch (e) {
                     const errorMsg = `Error occurred during chat request: ${e}`
@@ -315,7 +326,8 @@ export function registerMessageListeners(
                         encryptionKey,
                         provider,
                         chatParams.tabId,
-                        chatDisposable
+                        chatDisposable,
+                        languageClient
                     )
                 } finally {
                     chatStreamTokens.delete(chatParams.tabId)
@@ -359,7 +371,8 @@ export function registerMessageListeners(
                     encryptionKey,
                     provider,
                     message.params.tabId,
-                    quickActionDisposable
+                    quickActionDisposable,
+                    languageClient
                 )
                 break
             }
@@ -612,6 +625,12 @@ async function handlePartialResult<T extends ChatResult>(
 ) {
     const decryptedMessage = await decryptResponse<T>(partialResult, encryptionKey)
 
+    // This is to filter out the message containing findings from qCodeReview tool to update CodeIssues panel
+    decryptedMessage.additionalMessages = decryptedMessage.additionalMessages?.filter(
+        (message) =>
+            !(message.messageId !== undefined && message.messageId.endsWith(CodeWhispererConstants.findingsSuffix))
+    )
+
     if (decryptedMessage.body !== undefined) {
         void provider.webview?.postMessage({
             command: chatRequestType.method,
@@ -632,9 +651,12 @@ async function handleCompleteResult<T extends ChatResult>(
     encryptionKey: Buffer | undefined,
     provider: AmazonQChatViewProvider,
     tabId: string,
-    disposable: Disposable
+    disposable: Disposable,
+    languageClient: LanguageClient
 ) {
     const decryptedMessage = await decryptResponse<T>(result, encryptionKey)
+
+    handleSecurityFindings(decryptedMessage, languageClient)
 
     void provider.webview?.postMessage({
         command: chatRequestType.method,
@@ -647,6 +669,37 @@ async function handleCompleteResult<T extends ChatResult>(
         ReferenceLogViewProvider.instance.addReferenceLog(referenceLogText(ref))
     }
     disposable.dispose()
+}
+
+function handleSecurityFindings(
+    decryptedMessage: { additionalMessages?: ChatMessage[] },
+    languageClient: LanguageClient
+): void {
+    if (decryptedMessage.additionalMessages === undefined || decryptedMessage.additionalMessages.length === 0) {
+        return
+    }
+    for (let i = decryptedMessage.additionalMessages.length - 1; i >= 0; i--) {
+        const message = decryptedMessage.additionalMessages[i]
+        if (message.messageId !== undefined && message.messageId.endsWith(CodeWhispererConstants.findingsSuffix)) {
+            if (message.body !== undefined) {
+                try {
+                    const aggregatedCodeScanIssues: AggregatedCodeScanIssue[] = JSON.parse(message.body)
+                    for (const aggregatedCodeScanIssue of aggregatedCodeScanIssues) {
+                        for (const issue of aggregatedCodeScanIssue.issues) {
+                            issue.visible = !CodeWhispererSettings.instance
+                                .getIgnoredSecurityIssues()
+                                .includes(issue.title)
+                        }
+                    }
+                    initSecurityScanRender(aggregatedCodeScanIssues, undefined, CodeAnalysisScope.PROJECT)
+                    SecurityIssueTreeViewProvider.focus()
+                } catch (e) {
+                    languageClient.info('Failed to parse findings')
+                }
+            }
+            decryptedMessage.additionalMessages.splice(i, 1)
+        }
+    }
 }
 
 async function resolveChatResponse(
