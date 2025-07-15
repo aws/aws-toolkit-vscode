@@ -2,7 +2,7 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import * as vscode from 'vscode'
+
 import {
     CancellationToken,
     InlineCompletionContext,
@@ -46,11 +46,7 @@ import { Experiments, getLogger, sleep } from 'aws-core-vscode/shared'
 import { debounce, messageUtils } from 'aws-core-vscode/utils'
 import { showEdits } from './EditRendering/imageRenderer'
 import { ICursorUpdateRecorder } from './cursorUpdateManager'
-
-let lastDocumentDeleteEvent: vscode.TextDocumentChangeEvent | undefined = undefined
-let lastDocumentDeleteTime = 0
-
-let lastDocumentChangeEventMap: Map<string, vscode.TextDocumentChangeEvent> = new Map()
+import { DocumentEventListener } from './documentEventListener'
 
 export class InlineCompletionManager implements Disposable {
     private disposable: Disposable
@@ -62,7 +58,7 @@ export class InlineCompletionManager implements Disposable {
 
     private inlineTutorialAnnotation: InlineTutorialAnnotation
     private readonly logSessionResultMessageName = 'aws/logInlineCompletionSessionResults'
-    private documentChangeListener: Disposable
+    private documentEventListener: DocumentEventListener
 
     constructor(
         languageClient: LanguageClient,
@@ -76,27 +72,19 @@ export class InlineCompletionManager implements Disposable {
         this.lineTracker = lineTracker
         this.recommendationService = new RecommendationService(this.sessionManager, cursorUpdateRecorder)
         this.inlineTutorialAnnotation = inlineTutorialAnnotation
+        this.documentEventListener = new DocumentEventListener()
         this.inlineCompletionProvider = new AmazonQInlineCompletionItemProvider(
             languageClient,
             this.recommendationService,
             this.sessionManager,
-            this.inlineTutorialAnnotation
+            this.inlineTutorialAnnotation,
+            this.documentEventListener
         )
 
-        this.documentChangeListener = vscode.workspace.onDidChangeTextDocument((e) => {
-            if (e.contentChanges.length === 1 && e.contentChanges[0].text === '') {
-                lastDocumentDeleteEvent = e
-                lastDocumentDeleteTime = performance.now()
-            }
-            if (e.contentChanges.length > 0) {
-                lastDocumentChangeEventMap.set(e.document.uri.fsPath, e)
-            }
-        })
         this.disposable = languages.registerInlineCompletionItemProvider(
             CodeWhispererConstants.platformLanguageIds,
             this.inlineCompletionProvider
         )
-
         this.lineTracker.ready()
     }
 
@@ -109,8 +97,8 @@ export class InlineCompletionManager implements Disposable {
             this.disposable.dispose()
             this.lineTracker.dispose()
         }
-        if (this.documentChangeListener) {
-            this.documentChangeListener.dispose()
+        if (this.documentEventListener) {
+            this.documentEventListener.dispose()
         }
     }
 
@@ -216,7 +204,8 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
         private readonly languageClient: LanguageClient,
         private readonly recommendationService: RecommendationService,
         private readonly sessionManager: SessionManager,
-        private readonly inlineTutorialAnnotation: InlineTutorialAnnotation
+        private readonly inlineTutorialAnnotation: InlineTutorialAnnotation,
+        private readonly documentEventListener: DocumentEventListener
     ) {}
 
     private readonly logSessionResultMessageName = 'aws/logInlineCompletionSessionResults'
@@ -256,14 +245,11 @@ export class AmazonQInlineCompletionItemProvider implements InlineCompletionItem
         await sleep(1)
         // prevent user deletion invoking auto trigger
         // this is a best effort estimate of deletion
-        const timeDiff = Math.abs(performance.now() - lastDocumentDeleteTime)
-        if (timeDiff < 500 && lastDocumentDeleteEvent && lastDocumentDeleteEvent.document.uri === document.uri) {
+        if (this.documentEventListener.isLastEventDeletion(document.uri.fsPath)) {
             getLogger().debug('Skip auto trigger when deleting code')
             return []
         }
 
-        const event = lastDocumentChangeEventMap.get(document.uri.fsPath) || undefined
-        console.log(event)
         let logstr = `GenerateCompletion metadata:\\n`
         try {
             const t0 = performance.now()
