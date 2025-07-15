@@ -270,18 +270,8 @@ async function onLanguageServerReady(
         // Function to attempt connection
         const attemptConnection = (attempt: number = 1): void => {
             const autoDebugFeature = (global as any).autoDebugFeature as AutoDebugFeature | undefined
-            getLogger('amazonqLsp').debug(
-                'AutoDebug feature connection attempt %d: %s',
-                attempt,
-                autoDebugFeature ? 'found' : 'not found'
-            )
-
             if (autoDebugFeature) {
-                getLogger('amazonqLsp').debug('Setting language client and encryption key on AutoDebug feature')
                 autoDebugFeature.setLanguageClient(client, encryptionKey)
-                getLogger('amazonqLsp').info(
-                    'AutoDebug feature connected to language client with encryption key successfully'
-                )
             } else if (attempt < 5) {
                 // Retry up to 5 times with exponential backoff
                 const delay = Math.min(1000 * Math.pow(2, attempt - 1), 10000) // Max 10 seconds
