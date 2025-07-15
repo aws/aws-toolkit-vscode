@@ -269,6 +269,15 @@
             ]
         },
         {
+            "name": "sagemaker_deeplinkConnect",
+            "description": "Connect to SageMake Space via a deeplink",
+            "metadata": [
+                {
+                    "type": "result"
+                }
+            ]
+        },
+        {
             "name": "amazonq_didSelectProfile",
             "description": "Emitted after the user's Q Profile has been set, whether the user was prompted with a dialog, or a profile was automatically assigned after signing in.",
             "metadata": [

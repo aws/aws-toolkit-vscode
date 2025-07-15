@@ -181,7 +181,12 @@ describe('credentialMapping', () => {
             )
         })
 
-        it('throws error when app type is unsupported', async () => {
+        // TODO: Skipped due to hardcoded appSubDomain. Currently hardcoded to 'jupyterlab' due to
+        // a bug in Studio that only supports refreshing the token for both CodeEditor and JupyterLab
+        // Apps in the jupyterlab subdomain. This will be fixed shortly after NYSummit launch to
+        // support refresh URL in CodeEditor subdomain. Additionally, appType will be determined by
+        // the deeplink URI rather than the describeSpace call from the toolkit.
+        it.skip('throws error when app type is unsupported', async () => {
             sandbox.stub(DevSettings.instance, 'get').returns({})
             sandbox.stub(fs, 'existsFile').resolves(false)
 
