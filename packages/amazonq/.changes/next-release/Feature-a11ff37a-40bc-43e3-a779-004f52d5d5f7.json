@@ -1,4 +1,0 @@
-{
-	"type": "Feature",
-	"description": "Two main update about CodeIssues panel 1) Explain and Fix for any issue in CodeIssues panel will pull the experience into chat. 2) QCodeReview tool will update CodeIssues panel along with `/review` quick actions."
-}

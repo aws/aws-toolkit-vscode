@@ -787,6 +787,8 @@ def execute_input_compliant():
         })
     })
 
+    // TODO: Add integ test for generateTest
+
     describe('rejectFix', function () {
         let mockExtensionContext: vscode.ExtensionContext
         let sandbox: sinon.SinonSandbox

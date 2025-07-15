@@ -130,14 +130,15 @@ function getCommandTriggerType(data: any): string {
 }
 
 function registerGenericCommand(commandName: string, genericCommand: string, provider: AmazonQChatViewProvider) {
-    return Commands.register(commandName, async (data) => {
+    return Commands.register(commandName, (data) => {
         const triggerType = getCommandTriggerType(data)
         const selection = getSelectedText()
 
-        await focusAmazonQPanel()
-        void provider.webview?.postMessage({
-            command: 'genericCommand',
-            params: { genericCommand, selection, triggerType },
+        void focusAmazonQPanel().then(() => {
+            void provider.webview?.postMessage({
+                command: 'genericCommand',
+                params: { genericCommand, selection, triggerType },
+            })
         })
     })
 }

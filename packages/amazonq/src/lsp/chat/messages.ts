@@ -625,6 +625,7 @@ async function handlePartialResult<T extends ChatResult>(
 ) {
     const decryptedMessage = await decryptResponse<T>(partialResult, encryptionKey)
 
+    // This is to filter out the message containing findings from qCodeReview tool to update CodeIssues panel
     decryptedMessage.additionalMessages = decryptedMessage.additionalMessages?.filter(
         (message) =>
             !(message.messageId !== undefined && message.messageId.endsWith(CodeWhispererConstants.findingsSuffix))

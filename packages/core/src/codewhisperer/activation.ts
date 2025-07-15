@@ -476,7 +476,6 @@ export async function activate(context: ExtContext): Promise<void> {
                               CodeWhispererConstants.amazonqIgnoreNextLine
                           )
                 )
-                // SecurityIssueProvider.instance.cleanOldFiles()
             }),
             vscode.window.createTreeView(SecurityIssueTreeViewProvider.viewType, {
                 treeDataProvider: SecurityIssueTreeViewProvider.instance,

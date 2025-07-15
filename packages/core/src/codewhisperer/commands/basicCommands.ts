@@ -366,10 +366,6 @@ export const openSecurityIssuePanel = Commands.declare(
         const targetIssue: CodeScanIssue = issue instanceof IssueItem ? issue.issue : issue
         const targetFilePath: string = issue instanceof IssueItem ? issue.filePath : filePath
         await showSecurityIssueWebview(context.extensionContext, targetIssue, targetFilePath)
-
-        // if (targetIssue.suggestedFixes.length === 0) {
-        //     await generateFix.execute(targetIssue, targetFilePath, 'webview', true, false)
-        // }
         telemetry.codewhisperer_codeScanIssueViewDetails.emit({
             findingId: targetIssue.findingId,
             detectorId: targetIssue.detectorId,
@@ -719,13 +715,7 @@ export const rejectFix = Commands.declare(
 
 export const regenerateFix = Commands.declare(
     { id: 'aws.amazonq.security.regenerateFix' },
-    () => async (issue: CodeScanIssue | IssueItem | undefined, filePath: string, source: Component) => {
-        // const targetIssue: CodeScanIssue | undefined = issue instanceof IssueItem ? issue.issue : issue
-        // const targetFilePath: string = issue instanceof IssueItem ? issue.filePath : filePath
-        // const targetSource: Component = issue instanceof IssueItem ? 'tree' : source
-        // const updatedIssue = await rejectFix.execute(targetIssue, targetFilePath)
-        // await generateFix.execute(updatedIssue, targetFilePath, targetSource, true)
-    }
+    () => async (issue: CodeScanIssue | IssueItem | undefined, filePath: string, source: Component) => {}
 )
 
 export const explainIssue = Commands.declare(
