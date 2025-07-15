@@ -346,8 +346,8 @@ async function postStartLanguageServer(
     )
 
     // Handler for when Flare needs to assume a role with MFA code
-    client.onRequest<GetMfaCodeParams, GetMfaCodeResult>(
-        getMfaCodeRequestType.method,
+    client.onRequest(
+        auth2.notificationTypes.getMfaCode.method,
         async (params: GetMfaCodeParams): Promise<GetMfaCodeResult> => {
             const mfaCode = await vscode.window.showInputBox({ title: 'Enter MFA Code' })
             return { code: mfaCode ?? '' }
