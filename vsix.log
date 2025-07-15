@@ -1,7 +1,0 @@
-
-> amazon-q-vscode@1.83.0-g8500b1e package
-> ts-node ../../scripts/package.ts
-
-(node:48581) [DEP0147] DeprecationWarning: In future versions of Node.js, fs.rmdir(path, { recursive: true }) will be removed. Use fs.rm(path, { recursive: true }) instead
-(Use `node --trace-deprecation ...` to show where the warning was created)
-Downloading servers.zip from https://aws-language-servers.us-east-1.amazonaws.com/c9964336-5826-4350-87fb-c44b4f1cd9b3/qAgenticChatServer/mac-arm64/servers.zip ...
