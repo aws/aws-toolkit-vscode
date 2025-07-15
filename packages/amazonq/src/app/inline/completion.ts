@@ -386,6 +386,20 @@ ${itemLog}
                 return []
             }
 
+            // delay the suggestion rendeing if user is actively typing
+            // see https://github.com/aws/aws-toolkit-vscode/commit/a537602a96f498f372ed61ec9d82cf8577a9d854
+            for (let i = 0; i < 30; i++) {
+                const lastDocumentChange = this.documentEventListener.getLastDocumentChangeEvent(document.uri.fsPath)
+                if (
+                    lastDocumentChange &&
+                    performance.now() - lastDocumentChange.timestamp < CodeWhispererConstants.inlineSuggestionShowDelay
+                ) {
+                    await sleep(CodeWhispererConstants.showRecommendationTimerPollPeriod)
+                } else {
+                    break
+                }
+            }
+
             // the user typed characters from invoking suggestion cursor position to receiving suggestion position
             const typeahead = document.getText(new Range(position, editor.selection.active))
 

@@ -184,6 +184,9 @@ export const identityPoolID = 'us-east-1:70717e99-906f-4add-908c-bd9074a2f5b9'
  */
 export const inlineCompletionsDebounceDelay = 200
 
+// add 200ms more delay on top of inline default 30-50ms
+export const inlineSuggestionShowDelay = 200
+
 export const referenceLog = 'Code Reference Log'
 
 export const suggestionDetailReferenceText = (licenses: string) =>
