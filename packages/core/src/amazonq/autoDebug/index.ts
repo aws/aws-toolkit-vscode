@@ -9,8 +9,6 @@ import { AutoDebugController, AutoDebugConfig } from './autoDebugController'
 import { ContextMenuProvider } from './ide/contextMenuProvider'
 import { AutoDebugCodeActionsProvider } from './ide/codeActionsProvider'
 import { Commands } from '../../shared/vscode/commands2'
-import { focusAmazonQPanel } from '../../codewhispererChat/commands/registerCommands'
-import { placeholder } from '../../shared/vscode/commands2'
 
 /**
  * Main entry point for Amazon Q Auto Debug feature.
@@ -127,33 +125,6 @@ export class AutoDebugFeature implements vscode.Disposable {
     }
 
     /**
-     * Triggers Fix with Amazon Q - opens panel and starts the automated fixing process
-     */
-    private async triggerFixWithAmazonQ(): Promise<void> {
-        this.logger.debug('AutoDebugFeature: Triggering Fix with Amazon Q')
-
-        if (!this.autoDebugController) {
-            this.logger.warn('AutoDebugFeature: Auto debug controller not initialized')
-            return
-        }
-
-        try {
-            // Focus Amazon Q panel first
-            await focusAmazonQPanel.execute(placeholder, 'autoDebug')
-
-            // Then trigger the automated fix process
-            await this.autoDebugController.fixAllProblemsInFile(10)
-
-            this.logger.debug('AutoDebugFeature: Fix with Amazon Q process started')
-        } catch (error) {
-            this.logger.error('AutoDebugFeature: Error triggering Fix with Amazon Q: %s', error)
-            void vscode.window.showErrorMessage(
-                `Failed to start Fix with Amazon Q: ${error instanceof Error ? error.message : 'Unknown error'}`
-            )
-        }
-    }
-
-    /**
      * Sets the language client and encryption key for LSP communication
      */
     public setLanguageClient(client: any, encryptionKey?: Buffer): void {
@@ -213,98 +184,13 @@ export class AutoDebugFeature implements vscode.Disposable {
             return
         }
 
-        // Listen for problems detected
+        // Listen for problems detected (logging only, no notifications)
         this.disposables.push(
             this.autoDebugController.onProblemsDetected.event((problems) => {
                 this.logger.debug('AutoDebugFeature: Problems detected event received: %d problems', problems.length)
 
-                // **DEBUG**: Log problem severities to identify filtering issue
-                const severities = problems.map((p) => p.severity)
-                this.logger.debug('AutoDebugFeature: Problem severities: %s', severities.join(', '))
-
-                // Show notification for critical problems
                 const criticalProblems = problems.filter((p) => p.severity === 'error')
-                this.logger.debug('AutoDebugFeature: Critical problems after filtering: %d', criticalProblems.length)
-
-                if (criticalProblems.length > 0) {
-                    const message = `Amazon Q detected ${criticalProblems.length} error${criticalProblems.length !== 1 ? 's' : ''} in your code`
-                    this.logger.debug('AutoDebugFeature: About to show notification: %s', message)
-
-                    // **FIX**: Try multiple notification methods with error handling
-                    try {
-                        // Method 1: showWarningMessage with error handling
-                        Promise.resolve(vscode.window.showWarningMessage(message, 'Fix with Amazon Q', 'Dismiss'))
-                            .then((selection) => {
-                                this.logger.debug(
-                                    'AutoDebugFeature: Notification selection: %s',
-                                    selection || 'dismissed'
-                                )
-                                if (selection === 'Fix with Amazon Q') {
-                                    void this.triggerFixWithAmazonQ()
-                                }
-                            })
-                            .catch((error) => {
-                                this.logger.error('AutoDebugFeature: showWarningMessage failed: %s', error)
-                                // Fallback: Try showInformationMessage with proper button handling
-                                Promise.resolve(
-                                    vscode.window.showInformationMessage(message, 'Fix with Amazon Q', 'Dismiss')
-                                )
-                                    .then((selection) => {
-                                        this.logger.debug(
-                                            'AutoDebugFeature: Fallback notification selection: %s',
-                                            selection || 'dismissed'
-                                        )
-                                        if (selection === 'Fix with Amazon Q') {
-                                            void this.triggerFixWithAmazonQ()
-                                        }
-                                    })
-                                    .catch((fallbackError) => {
-                                        this.logger.error(
-                                            'AutoDebugFeature: Fallback showInformationMessage failed: %s',
-                                            fallbackError
-                                        )
-                                    })
-                            })
-
-                        // Method 2: Alternative - showErrorMessage (should be more visible)
-                        setTimeout(() => {
-                            this.logger.debug('AutoDebugFeature: Trying showErrorMessage as backup')
-                            Promise.resolve(
-                                vscode.window.showErrorMessage(`🔧 ${message}`, 'Fix with Amazon Q', 'Dismiss')
-                            )
-                                .then((selection) => {
-                                    this.logger.debug(
-                                        'AutoDebugFeature: Backup notification selection: %s',
-                                        selection || 'dismissed'
-                                    )
-                                    if (selection === 'Fix with Amazon Q') {
-                                        void this.triggerFixWithAmazonQ()
-                                    }
-                                })
-                                .catch((backupError) => {
-                                    this.logger.error(
-                                        'AutoDebugFeature: Backup showErrorMessage failed: %s',
-                                        backupError
-                                    )
-                                })
-                        }, 500)
-                    } catch (error) {
-                        this.logger.error('AutoDebugFeature: All notification methods failed: %s', error)
-                        // Last resort: Status bar message
-                        void vscode.window.setStatusBarMessage(
-                            `Amazon Q: ${criticalProblems.length} errors detected`,
-                            5000
-                        )
-                    }
-                } else {
-                    this.logger.debug('AutoDebugFeature: No critical problems found - likely severity mismatch!')
-                    // **TEMPORARY DEBUG**: Show notification for all problems to test VS Code API
-                    if (problems.length > 0) {
-                        const message = `Amazon Q detected ${problems.length} issue${problems.length !== 1 ? 's' : ''} in your code (debug mode)`
-                        this.logger.debug('AutoDebugFeature: Showing debug notification: %s', message)
-                        void vscode.window.showWarningMessage(message, 'Fix with Amazon Q', 'Dismiss')
-                    }
-                }
+                this.logger.debug('AutoDebugFeature: Critical problems detected: %d', criticalProblems.length)
             })
         )
 
