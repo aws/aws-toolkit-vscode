@@ -13,6 +13,8 @@ describe('Amazon Q E2E UI Test', function () {
     let webviewView: WebviewView
     let workbench: Workbench
     before(async function () {
+        /* TO-DO 
+        possibly before the workbench executes Amazon Q: Open Chat, we can make sure that all the tabs are closed first*/
         workbench = new Workbench()
         await workbench.executeCommand('Amazon Q: Open Chat')
 
@@ -62,12 +64,10 @@ describe('Amazon Q E2E UI Test', function () {
         Find all the tahs by looking for the close buttons and then close them one by one. To check if all the tabs are closed, we can check if the mynah-tabs-container is empty.
         */
         try {
-            // find all the close buttons and click them
             const closeButtons = await webviewView.findWebElements(By.css('.mynah-tabs-close-button'))
 
             for (const button of closeButtons) {
                 await button.click()
-                // small delay to ensure the tab closes properly
                 await new Promise((resolve) => setTimeout(resolve, 500))
             }
 
@@ -90,9 +90,6 @@ describe('Amazon Q E2E UI Test', function () {
         await chatInput.sendKeys('Hello, Amazon Q!')
         const sendButton = await waitForElement(webviewView, By.css('.mynah-chat-prompt-button'))
         await sendButton.click()
-
-        // await new Promise((resolve) => setTimeout(resolve, 12000))
-        // wait for response using conversation container check
         const responseReceived = await waitForChatResponse(webviewView)
         if (!responseReceived) {
             throw new Error('Chat response not received within timeout')
