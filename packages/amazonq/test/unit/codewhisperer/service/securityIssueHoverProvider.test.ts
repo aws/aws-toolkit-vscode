@@ -22,7 +22,7 @@ describe('securityIssueHoverProvider', () => {
     })
 
     function buildCommandLink(command: string, args: any[], label: string, tooltip: string): string {
-        return `[$(${command.includes('comment') ? 'comment' : 'error'}) ${label}](command:${command}?${encodeURIComponent(JSON.stringify(args))} '${tooltip}')`
+        return `[$(${command.includes('ignore') ? 'error' : 'comment'}) ${label}](command:${command}?${encodeURIComponent(JSON.stringify(args))} '${tooltip}')`
     }
 
     function buildExpectedContent(issue: any, fileName: string, description: string, severity?: string): string {
