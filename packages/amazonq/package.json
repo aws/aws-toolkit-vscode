@@ -2,7 +2,7 @@
     "name": "amazon-q-vscode",
     "displayName": "Amazon Q",
     "description": "The most capable generative AI-powered assistant for building, operating, and transforming software, with advanced capabilities for managing data and AI",
-    "version": "1.83.0-SNAPSHOT",
+    "version": "1.84.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
     ],
@@ -68,6 +68,9 @@
         "createRelease": "ts-node ../../scripts/createRelease.ts",
         "generateIcons": "ts-node ../../scripts/generateIcons.ts",
         "generateSettings": "ts-node ../../scripts/generateSettings.ts"
+    },
+    "dependencies": {
+        "aws-core-vscode": "file:../core/"
     },
     "contributesComments": {
         "configuration": {
@@ -552,6 +555,21 @@
         },
         "commands": [
             {
+                "command": "aws.amazonq.stopCmdExecution",
+                "title": "Stop Amazon Q Command Execution",
+                "category": "%AWS.amazonq.title%"
+            },
+            {
+                "command": "aws.amazonq.runCmdExecution",
+                "title": "Run Amazon Q Command Execution",
+                "category": "%AWS.amazonq.title%"
+            },
+            {
+                "command": "aws.amazonq.rejectCmdExecution",
+                "title": "Reject Amazon Q Command Execution",
+                "category": "%AWS.amazonq.title%"
+            },
+            {
                 "command": "_aws.amazonq.notifications.dismiss",
                 "title": "%AWS.generic.dismiss%",
                 "category": "%AWS.amazonq.title%",
@@ -841,6 +859,24 @@
         ],
         "keybindings": [
             {
+                "command": "aws.amazonq.stopCmdExecution",
+                "key": "ctrl+shift+backspace",
+                "mac": "cmd+shift+backspace",
+                "when": "aws.amazonq.amazonqChatLSP.isRunning"
+            },
+            {
+                "command": "aws.amazonq.runCmdExecution",
+                "key": "ctrl+shift+enter",
+                "mac": "cmd+shift+enter",
+                "when": "aws.amazonq.amazonqChatLSP.isRunning"
+            },
+            {
+                "command": "aws.amazonq.rejectCmdExecution",
+                "key": "ctrl+shift+r",
+                "mac": "cmd+shift+r",
+                "when": "aws.amazonq.amazonqChatLSP.isRunning"
+            },
+            {
                 "command": "_aws.amazonq.focusChat.keybinding",
                 "win": "win+alt+i",
                 "mac": "cmd+alt+i",
@@ -914,12 +950,12 @@
             },
             {
                 "key": "right",
-                "command": "editor.action.inlineSuggest.showNext",
+                "command": "aws.amazonq.showNext",
                 "when": "inlineSuggestionVisible && !editorReadonly && aws.codewhisperer.connected"
             },
             {
                 "key": "left",
-                "command": "editor.action.inlineSuggest.showPrevious",
+                "command": "aws.amazonq.showPrev",
                 "when": "inlineSuggestionVisible && !editorReadonly && aws.codewhisperer.connected"
             },
             {
@@ -1322,25 +1358,39 @@
                     "fontCharacter": "\\f1de"
                 }
             },
-            "aws-schemas-registry": {
+            "aws-sagemaker-code-editor": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1df"
                 }
             },
-            "aws-schemas-schema": {
+            "aws-sagemaker-jupyter-lab": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1e0"
                 }
             },
-            "aws-stepfunctions-preview": {
+            "aws-schemas-registry": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1e1"
+                }
+            },
+            "aws-schemas-schema": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\f1e2"
+                }
+            },
+            "aws-stepfunctions-preview": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\f1e3"
                 }
             }
         },
