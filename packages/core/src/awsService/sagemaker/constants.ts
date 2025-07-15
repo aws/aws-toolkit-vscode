@@ -3,6 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+export const ConnectFromRemoteWorkspaceMessage =
+    'Unable to establish new remote connection. Your last active VS Code window is connected to a remote workspace. To open a new SageMaker Studio connection, select your local VS Code window and try again.'
+
 export const InstanceTypeError = 'InstanceTypeError'
 
 export const InstanceTypeMinimum = 'ml.t3.large'

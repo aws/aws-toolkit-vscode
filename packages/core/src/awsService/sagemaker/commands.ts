@@ -18,7 +18,8 @@ import { ExtContext } from '../../shared/extensions'
 import { SagemakerClient } from '../../shared/clients/sagemaker'
 import { ToolkitError } from '../../shared/errors'
 import { showConfirmationMessage } from '../../shared/utilities/messages'
-import { InstanceTypeError } from './constants'
+import { RemoteSessionError } from '../../shared/remoteSession'
+import { ConnectFromRemoteWorkspaceMessage, InstanceTypeError } from './constants'
 
 const localize = nls.loadMessageBundle()
 
@@ -91,23 +92,21 @@ export async function deeplinkConnect(
     )
 
     if (isRemoteWorkspace()) {
-        void vscode.window.showErrorMessage(
-            'You are in a remote workspace, skipping deeplink connect. Please open from a local workspace.'
-        )
+        void vscode.window.showErrorMessage(ConnectFromRemoteWorkspaceMessage)
         return
     }
 
-    const remoteEnv = await prepareDevEnvConnection(
-        connectionIdentifier,
-        ctx.extensionContext,
-        'sm_dl',
-        session,
-        wsUrl,
-        token,
-        domain
-    )
-
     try {
+        const remoteEnv = await prepareDevEnvConnection(
+            connectionIdentifier,
+            ctx.extensionContext,
+            'sm_dl',
+            session,
+            wsUrl,
+            token,
+            domain
+        )
+
         await startVscodeRemote(
             remoteEnv.SessionProcess,
             remoteEnv.hostname,
@@ -115,10 +114,14 @@ export async function deeplinkConnect(
             remoteEnv.vscPath,
             'sagemaker-user'
         )
-    } catch (err) {
+    } catch (err: any) {
         getLogger().error(
             `sm:OpenRemoteConnect: Unable to connect to target space with arn: ${connectionIdentifier} error: ${err}`
         )
+
+        if (![RemoteSessionError.MissingExtension, RemoteSessionError.ExtensionVersionTooLow].includes(err.code)) {
+            throw err
+        }
     }
 }
 
@@ -157,6 +160,11 @@ export async function stopSpace(node: SagemakerSpaceNode, ctx: vscode.ExtensionC
 }
 
 export async function openRemoteConnect(node: SagemakerSpaceNode, ctx: vscode.ExtensionContext) {
+    if (isRemoteWorkspace()) {
+        void vscode.window.showErrorMessage(ConnectFromRemoteWorkspaceMessage)
+        return
+    }
+
     if (node.getStatus() === 'Stopped') {
         const client = new SagemakerClient(node.regionCode)
 
