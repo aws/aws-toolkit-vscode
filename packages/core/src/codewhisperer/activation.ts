@@ -494,29 +494,9 @@ export async function activate(context: ExtContext): Promise<void> {
 
         // Store the feature instance for later LSP connection
         ;(global as any).autoDebugFeature = autoDebugFeature
-        getLogger().debug('AutoDebug feature stored in global reference')
-
-        // Verify storage immediately
-        const storedFeature = (global as any).autoDebugFeature
-        if (storedFeature) {
-            getLogger().debug('AutoDebug feature verification: successfully stored in global reference')
-
-            // Additional verification - check if it has the expected methods
-            if (typeof storedFeature.setLanguageClient === 'function') {
-                getLogger().debug('AutoDebug feature verification: setLanguageClient method available')
-            } else {
-                getLogger().warn('AutoDebug feature verification: setLanguageClient method NOT available')
-            }
-        } else {
-            getLogger().error('AutoDebug feature verification: NOT found in global reference after storage attempt')
-        }
-
         // Add the feature to extension subscriptions for proper cleanup
         context.extensionContext.subscriptions.push(autoDebugFeature)
-        getLogger().debug('AutoDebug feature added to extension subscriptions')
     } catch (error) {
-        getLogger().error('Failed to activate AutoDebug feature: %s', error)
-        // Don't throw the error to prevent extension activation failure
         getLogger().warn('Continuing extension activation despite AutoDebug feature failure')
     }
 }
