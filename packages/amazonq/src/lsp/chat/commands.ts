@@ -7,7 +7,9 @@ import { Commands, globals } from 'aws-core-vscode/shared'
 import { window } from 'vscode'
 import { AmazonQChatViewProvider } from './webviewProvider'
 import { CodeScanIssue } from 'aws-core-vscode/codewhisperer'
-import { EditorContextExtractor } from 'aws-core-vscode/codewhispererChat'
+import { getLogger } from 'aws-core-vscode/shared'
+import * as vscode from 'vscode'
+import * as path from 'path'
 
 /**
  * TODO: Re-enable these once we can figure out which path they're going to live in
@@ -21,45 +23,24 @@ export function registerCommands(provider: AmazonQChatViewProvider) {
         registerGenericCommand('aws.amazonq.optimizeCode', 'Optimize', provider),
         registerGenericCommand('aws.amazonq.generateUnitTests', 'Generate Tests', provider),
 
-        Commands.register('aws.amazonq.explainIssue', async (issue: CodeScanIssue) => {
-            void focusAmazonQPanel().then(async () => {
-                const editorContextExtractor = new EditorContextExtractor()
-                const extractedContext = await editorContextExtractor.extractContextForTrigger('ContextMenu')
-                const selectedCode =
-                    extractedContext?.activeFileContext?.fileText
-                        ?.split('\n')
-                        .slice(issue.startLine, issue.endLine)
-                        .join('\n') ?? ''
-
-                // The message that gets sent to the UI
-                const uiMessage = [
-                    'Explain the ',
-                    issue.title,
-                    ' issue in the following code:',
-                    '\n```\n',
-                    selectedCode,
-                    '\n```',
-                ].join('')
-
-                // The message that gets sent to the backend
-                const contextMessage = `Explain the issue "${issue.title}" (${JSON.stringify(
-                    issue
-                )}) and generate code demonstrating the fix`
-
-                void provider.webview?.postMessage({
-                    command: 'sendToPrompt',
-                    params: {
-                        selection: '',
-                        triggerType: 'contextMenu',
-                        prompt: {
-                            prompt: uiMessage, // what gets sent to the user
-                            escapedPrompt: contextMessage, // what gets sent to the backend
-                        },
-                        autoSubmit: true,
-                    },
-                })
-            })
-        }),
+        Commands.register('aws.amazonq.explainIssue', (issue: CodeScanIssue, filePath: string) =>
+            handleIssueCommand(
+                issue,
+                filePath,
+                'Explain',
+                'Provide a small description of the issue. You must not attempt to fix the issue. You should only give a small summary of it to the user.',
+                provider
+            )
+        ),
+        Commands.register('aws.amazonq.generateFix', (issue: CodeScanIssue, filePath: string) =>
+            handleIssueCommand(
+                issue,
+                filePath,
+                'Fix',
+                'Generate a fix for the following code issue. You must not explain the issue, just generate and explain the fix. The user should have the option to accept or reject the fix before any code is changed.',
+                provider
+            )
+        ),
         Commands.register('aws.amazonq.sendToPrompt', (data) => {
             const triggerType = getCommandTriggerType(data)
             const selection = getSelectedText()
@@ -83,6 +64,58 @@ export function registerCommands(provider: AmazonQChatViewProvider) {
         registerShellCommandShortCut('aws.amazonq.rejectCmdExecution', 'reject-shell-command', provider),
         registerShellCommandShortCut('aws.amazonq.stopCmdExecution', 'stop-shell-command', provider)
     )
+}
+
+async function handleIssueCommand(
+    issue: CodeScanIssue,
+    filePath: string,
+    action: string,
+    contextPrompt: string,
+    provider: AmazonQChatViewProvider
+) {
+    await focusAmazonQPanel()
+
+    if (issue && filePath) {
+        await openFileWithSelection(issue, filePath)
+    }
+
+    const lineRange = createLineRangeText(issue)
+    const visibleMessageInChat = `_${action} **${issue.title}** issue in **${path.basename(filePath)}** at \`${lineRange}\`_`
+    const contextMessage = `${contextPrompt} Code issue - ${JSON.stringify(issue)}`
+
+    void provider.webview?.postMessage({
+        command: 'sendToPrompt',
+        params: {
+            selection: '',
+            triggerType: 'contextMenu',
+            prompt: {
+                prompt: visibleMessageInChat,
+                escapedPrompt: contextMessage,
+            },
+            autoSubmit: true,
+        },
+    })
+}
+
+async function openFileWithSelection(issue: CodeScanIssue, filePath: string) {
+    try {
+        const range = new vscode.Range(issue.startLine, 0, issue.endLine, 0)
+        const doc = await vscode.workspace.openTextDocument(filePath)
+        await vscode.window.showTextDocument(doc, {
+            selection: range,
+            viewColumn: vscode.ViewColumn.One,
+            preview: true,
+        })
+    } catch (e) {
+        getLogger().error('openFileWithSelection: Failed to open file %s with selection: %O', filePath, e)
+        void vscode.window.showInformationMessage('Failed to display file with issue.')
+    }
+}
+
+function createLineRangeText(issue: CodeScanIssue): string {
+    return issue.startLine === issue.endLine - 1
+        ? `[${issue.startLine + 1}]`
+        : `[${issue.startLine + 1}, ${issue.endLine}]`
 }
 
 function getSelectedText(): string {
