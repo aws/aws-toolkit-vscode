@@ -401,7 +401,7 @@ ${itemLog}
             for (const item of items) {
                 if (item.isInlineEdit) {
                     // Check if Next Edit Prediction feature flag is enabled
-                    if (Experiments.instance.isExperimentEnabled('amazonqLSPNEP')) {
+                    if (Experiments.instance.get('amazonqLSPNEP', true)) {
                         await showEdits(item, editor, session, this.languageClient, this)
                         const t3 = performance.now()
                         logstr = logstr + `- duration since trigger to NEP suggestion is displayed: ${t3 - t0}ms`
