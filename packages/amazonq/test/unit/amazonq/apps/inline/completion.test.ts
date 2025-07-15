@@ -28,6 +28,7 @@ import {
 } from 'aws-core-vscode/codewhisperer'
 import { LineTracker } from '../../../../../src/app/inline/stateTracker/lineTracker'
 import { InlineTutorialAnnotation } from '../../../../../src/app/inline/tutorials/inlineTutorialAnnotation'
+import { DocumentEventListener } from '../../../../../src/app/inline/documentEventListener'
 
 describe('InlineCompletionManager', () => {
     let manager: InlineCompletionManager
@@ -243,11 +244,13 @@ describe('InlineCompletionManager', () => {
             let getAllRecommendationsStub: sinon.SinonStub
             let recommendationService: RecommendationService
             let inlineTutorialAnnotation: InlineTutorialAnnotation
+            let documentEventListener: DocumentEventListener
 
             beforeEach(() => {
                 const lineTracker = new LineTracker()
                 inlineTutorialAnnotation = new InlineTutorialAnnotation(lineTracker, mockSessionManager)
                 recommendationService = new RecommendationService(mockSessionManager)
+                documentEventListener = new DocumentEventListener()
                 vsCodeState.isRecommendationsActive = false
                 mockSessionManager = {
                     getActiveSession: getActiveSessionStub,
@@ -271,7 +274,8 @@ describe('InlineCompletionManager', () => {
                         languageClient,
                         recommendationService,
                         mockSessionManager,
-                        inlineTutorialAnnotation
+                        inlineTutorialAnnotation,
+                        documentEventListener
                     )
                     const items = await provider.provideInlineCompletionItems(
                         mockDocument,
@@ -287,7 +291,8 @@ describe('InlineCompletionManager', () => {
                         languageClient,
                         recommendationService,
                         mockSessionManager,
-                        inlineTutorialAnnotation
+                        inlineTutorialAnnotation,
+                        documentEventListener
                     )
                     await provider.provideInlineCompletionItems(mockDocument, mockPosition, mockContext, mockToken)
                 }),
@@ -296,7 +301,8 @@ describe('InlineCompletionManager', () => {
                         languageClient,
                         recommendationService,
                         mockSessionManager,
-                        inlineTutorialAnnotation
+                        inlineTutorialAnnotation,
+                        documentEventListener
                     )
                     getActiveRecommendationStub.returns([
                         {
@@ -326,7 +332,8 @@ describe('InlineCompletionManager', () => {
                         languageClient,
                         recommendationService,
                         mockSessionManager,
-                        inlineTutorialAnnotation
+                        inlineTutorialAnnotation,
+                        documentEventListener
                     )
                     const expectedText = `${mockSuggestions[1].insertText}this is my text`
                     getActiveRecommendationStub.returns([
@@ -352,7 +359,8 @@ describe('InlineCompletionManager', () => {
                         languageClient,
                         recommendationService,
                         mockSessionManager,
-                        inlineTutorialAnnotation
+                        inlineTutorialAnnotation,
+                        documentEventListener
                     )
                     getActiveRecommendationStub.returns([])
                     const messageShown = new Promise((resolve) =>
@@ -385,7 +393,8 @@ describe('InlineCompletionManager', () => {
                         languageClient,
                         recommendationService,
                         mockSessionManager,
-                        inlineTutorialAnnotation
+                        inlineTutorialAnnotation,
+                        documentEventListener
                     )
                     const p1 = provider.provideInlineCompletionItems(mockDocument, mockPosition, mockContext, mockToken)
                     const p2 = provider.provideInlineCompletionItems(mockDocument, mockPosition, mockContext, mockToken)
