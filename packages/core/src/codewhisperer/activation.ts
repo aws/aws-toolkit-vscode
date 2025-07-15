@@ -488,7 +488,10 @@ export async function activate(context: ExtContext): Promise<void> {
 
     // Activate AutoDebug feature
     try {
+        getLogger().debug('Starting AutoDebug feature activation')
         const autoDebugFeature = await activateAutoDebug(context.extensionContext)
+        getLogger().info('AutoDebug feature activated successfully')
+
         // Store the feature instance for later LSP connection
         ;(global as any).autoDebugFeature = autoDebugFeature
         // Add the feature to extension subscriptions for proper cleanup
