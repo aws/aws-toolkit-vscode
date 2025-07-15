@@ -77,7 +77,7 @@ export class RegionProfileManager {
                         result: undefined,
                     },
                 },
-                { timeout: 15000, interval: 1500, truthy: true }
+                { timeout: 15000, interval: 500, truthy: true }
             )
         }
 
