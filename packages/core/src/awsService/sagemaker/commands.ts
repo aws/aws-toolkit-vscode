@@ -18,6 +18,7 @@ import { ExtContext } from '../../shared/extensions'
 import { SagemakerClient } from '../../shared/clients/sagemaker'
 import { ToolkitError } from '../../shared/errors'
 import { showConfirmationMessage } from '../../shared/utilities/messages'
+import { InstanceTypeError } from './constants'
 
 const localize = nls.loadMessageBundle()
 
@@ -158,14 +159,22 @@ export async function stopSpace(node: SagemakerSpaceNode, ctx: vscode.ExtensionC
 export async function openRemoteConnect(node: SagemakerSpaceNode, ctx: vscode.ExtensionContext) {
     if (node.getStatus() === 'Stopped') {
         const client = new SagemakerClient(node.regionCode)
-        await client.startSpace(node.spaceApp.SpaceName!, node.spaceApp.DomainId!)
-        await tryRefreshNode(node)
-        const appType = node.spaceApp.SpaceSettingsSummary?.AppType
-        if (!appType) {
-            throw new ToolkitError('AppType is undefined for the selected space. Cannot start remote connection.')
+
+        try {
+            await client.startSpace(node.spaceApp.SpaceName!, node.spaceApp.DomainId!)
+            await tryRefreshNode(node)
+            const appType = node.spaceApp.SpaceSettingsSummary?.AppType
+            if (!appType) {
+                throw new ToolkitError('AppType is undefined for the selected space. Cannot start remote connection.')
+            }
+            await client.waitForAppInService(node.spaceApp.DomainId!, node.spaceApp.SpaceName!, appType)
+            await tryRemoteConnection(node, ctx)
+        } catch (err: any) {
+            // Ignore InstanceTypeError since it means the user decided not to use an instanceType with more memory
+            if (err.code !== InstanceTypeError) {
+                throw err
+            }
         }
-        await client.waitForAppInService(node.spaceApp.DomainId!, node.spaceApp.SpaceName!, appType)
-        await tryRemoteConnection(node, ctx)
     } else if (node.getStatus() === 'Running') {
         await tryRemoteConnection(node, ctx)
     }

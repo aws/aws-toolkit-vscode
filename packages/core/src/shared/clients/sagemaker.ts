@@ -37,9 +37,17 @@ import { isEmpty } from 'lodash'
 import { sleep } from '../utilities/timeoutUtils'
 import { ClientWrapper } from './clientWrapper'
 import { AsyncCollection } from '../utilities/asyncCollection'
+import {
+    InstanceTypeError,
+    InstanceTypeMinimum,
+    InstanceTypeInsufficientMemory,
+    InstanceTypeInsufficientMemoryMessage,
+    InstanceTypeNotSelectedMessage,
+} from '../../awsService/sagemaker/constants'
 import { getDomainSpaceKey } from '../../awsService/sagemaker/utils'
 import { getLogger } from '../logger/logger'
 import { ToolkitError } from '../errors'
+import { yes, no, continueText, cancel } from '../localizedText'
 
 export interface SagemakerSpaceApp extends SpaceDetails {
     App?: AppDetails
@@ -85,7 +93,9 @@ export class SagemakerClient extends ClientWrapper<SageMakerClient> {
     }
 
     public async startSpace(spaceName: string, domainId: string) {
-        let spaceDetails
+        let spaceDetails: DescribeSpaceCommandOutput
+
+        // Get existing space details
         try {
             spaceDetails = await this.describeSpace({
                 DomainId: domainId,
@@ -95,6 +105,54 @@ export class SagemakerClient extends ClientWrapper<SageMakerClient> {
             throw this.handleStartSpaceError(err)
         }
 
+        // Get app type
+        const appType = spaceDetails.SpaceSettings?.AppType
+        if (appType !== 'JupyterLab' && appType !== 'CodeEditor') {
+            throw new ToolkitError(`Unsupported AppType "${appType}" for space "${spaceName}"`)
+        }
+
+        // Get app resource spec
+        const requestedResourceSpec =
+            appType === 'JupyterLab'
+                ? spaceDetails.SpaceSettings?.JupyterLabAppSettings?.DefaultResourceSpec
+                : spaceDetails.SpaceSettings?.CodeEditorAppSettings?.DefaultResourceSpec
+
+        let instanceType = requestedResourceSpec?.InstanceType
+
+        // Is InstanceType defined and has enough memory?
+        if (instanceType && instanceType in InstanceTypeInsufficientMemory) {
+            // Prompt user to select one with sufficient memory (1 level up from their chosen one)
+            const response = await vscode.window.showErrorMessage(
+                InstanceTypeInsufficientMemoryMessage(
+                    spaceDetails.SpaceName || '',
+                    instanceType,
+                    InstanceTypeInsufficientMemory[instanceType]
+                ),
+                yes,
+                no
+            )
+
+            if (response === no) {
+                throw new ToolkitError('InstanceType has insufficient memory.', { code: InstanceTypeError })
+            }
+
+            instanceType = InstanceTypeInsufficientMemory[instanceType]
+        } else if (!instanceType) {
+            // Prompt user to select the minimum supported instance type
+            const response = await vscode.window.showErrorMessage(
+                InstanceTypeNotSelectedMessage(spaceDetails.SpaceName || ''),
+                continueText,
+                cancel
+            )
+
+            if (response === cancel) {
+                throw new ToolkitError('InstanceType not defined.', { code: InstanceTypeError })
+            }
+
+            instanceType = InstanceTypeMinimum
+        }
+
+        // Get remote access flag
         if (!spaceDetails.SpaceSettings?.RemoteAccess || spaceDetails.SpaceSettings?.RemoteAccess === 'DISABLED') {
             try {
                 await this.updateSpace({
@@ -110,23 +168,17 @@ export class SagemakerClient extends ClientWrapper<SageMakerClient> {
             }
         }
 
-        const appType = spaceDetails.SpaceSettings?.AppType
-        if (appType !== 'JupyterLab' && appType !== 'CodeEditor') {
-            throw new ToolkitError(`Unsupported AppType "${appType}" for space "${spaceName}"`)
-        }
-
-        const requestedResourceSpec =
-            appType === 'JupyterLab'
-                ? spaceDetails.SpaceSettings?.JupyterLabAppSettings?.DefaultResourceSpec
-                : spaceDetails.SpaceSettings?.CodeEditorAppSettings?.DefaultResourceSpec
-
-        const fallbackResourceSpec: ResourceSpec = {
-            InstanceType: 'ml.t3.medium',
+        const resourceSpec: ResourceSpec = {
+            // Default values
             SageMakerImageArn: 'arn:aws:sagemaker:us-west-2:542918446943:image/sagemaker-distribution-cpu',
             SageMakerImageVersionAlias: '3.2.0',
-        }
 
-        const resourceSpec = requestedResourceSpec?.InstanceType ? requestedResourceSpec : fallbackResourceSpec
+            // The existing resource spec
+            ...requestedResourceSpec,
+
+            // The instance type user has chosen
+            InstanceType: instanceType,
+        }
 
         const cleanedResourceSpec =
             resourceSpec && 'EnvironmentArn' in resourceSpec
