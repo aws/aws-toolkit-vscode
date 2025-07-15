@@ -7,6 +7,7 @@ import { Commands, globals } from 'aws-core-vscode/shared'
 import { window } from 'vscode'
 import { AmazonQChatViewProvider } from './webviewProvider'
 import { CodeScanIssue } from 'aws-core-vscode/codewhisperer'
+import { getLogger } from 'aws-core-vscode/shared'
 import * as vscode from 'vscode'
 import * as path from 'path'
 
@@ -97,13 +98,18 @@ async function handleIssueCommand(
 }
 
 async function openFileWithSelection(issue: CodeScanIssue, filePath: string) {
-    const range = new vscode.Range(issue.startLine, 0, issue.endLine, 0)
-    const doc = await vscode.workspace.openTextDocument(filePath)
-    await vscode.window.showTextDocument(doc, {
-        selection: range,
-        viewColumn: vscode.ViewColumn.One,
-        preview: true,
-    })
+    try {
+        const range = new vscode.Range(issue.startLine, 0, issue.endLine, 0)
+        const doc = await vscode.workspace.openTextDocument(filePath)
+        await vscode.window.showTextDocument(doc, {
+            selection: range,
+            viewColumn: vscode.ViewColumn.One,
+            preview: true,
+        })
+    } catch (e) {
+        getLogger().error('openFileWithSelection: Failed to open file %s with selection: %O', filePath, e)
+        void vscode.window.showInformationMessage('Failed to display file with issue.')
+    }
 }
 
 function createLineRangeText(issue: CodeScanIssue): string {
