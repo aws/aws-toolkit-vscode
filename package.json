@@ -28,7 +28,7 @@
         "test": "npm run test -w packages/ --if-present",
         "testWeb": "npm run testWeb -w packages/ --if-present",
         "testE2E": "npm run testE2E -w packages/ --if-present",
-        "setupE2E": "cd packages/amazonq && npm run package > ../../vsix.log 2>&1 && cd ../.. && node_modules/.bin/extest install-vsix --vsix_file amazon-q-vscode-$(node scripts/get-vsix-version.js).vsix",
+        "setupUI": "cd packages/amazonq && npm run package 2>&1 | grep -o 'VSIX Version: [^ ]*' | cut -d' ' -f3 | xargs -I{} bash -c 'cd ../../ && ./node_modules/.bin/extest install-vsix --vsix_file amazon-q-vscode-{}.vsix'",
         "testUI": "npm run testCompile && node_modules/.bin/extest run-tests packages/amazonq/dist/test/e2e/amazonq/VET.test.js -u",
         "testInteg": "npm run testInteg -w packages/ --if-present",
         "package": "npm run package -w packages/toolkit -w packages/amazonq",
