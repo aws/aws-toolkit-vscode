@@ -131,7 +131,7 @@ function registerShellCommandShortCut(commandName: string, buttonId: string, pro
     return Commands.register(commandName, async () => {
         void focusAmazonQPanel().then(() => {
             void provider.webview?.postMessage({
-                command: 'executeShellCommandShortCut',
+                command: 'aws/chat/executeShellCommandShortCut',
                 params: { id: buttonId },
             })
         })
