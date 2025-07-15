@@ -135,6 +135,7 @@ describe('AuthUtil', async function () {
         it('returns credentials form for IAM credentials', async function () {
             sinon.stub(auth, 'isSsoSession').returns(false)
             sinon.stub(auth, 'isConnected').returns(true)
+            sinon.stub(auth, 'isIamSession').returns(true)
 
             const forms = await auth.getAuthFormIds()
             assert.deepStrictEqual(forms, ['credentials'])
@@ -404,6 +405,191 @@ describe('AuthUtil', async function () {
                     scopes: validProfile.scopes,
                 })
             )
+        })
+    })
+
+    describe('login_iam', function () {
+        it('creates IAM session and logs in', async function () {
+            const mockResponse = {
+                id: 'test-credential-id',
+                credentials: {
+                    accessKeyId: 'encrypted-access-key',
+                    secretAccessKey: 'encrypted-secret-key',
+                    sessionToken: 'encrypted-session-token',
+                },
+                updateCredentialsParams: {
+                    data: 'credential-data',
+                },
+            }
+            
+            const mockIamLogin = {
+                login: sinon.stub().resolves(mockResponse),
+                loginType: 'iam',
+            }
+            
+            sinon.stub(auth2, 'IamLogin').returns(mockIamLogin as any)
+            
+            const response = await auth.login_iam('accessKey', 'secretKey', 'sessionToken')
+            
+            assert.ok(mockIamLogin.login.calledOnce)
+            assert.ok(mockIamLogin.login.calledWith({
+                accessKey: 'accessKey',
+                secretKey: 'secretKey',
+                sessionToken: 'sessionToken',
+                roleArn: undefined,
+            }))
+            assert.strictEqual(response, mockResponse)
+        })
+
+        it('creates IAM session with role ARN', async function () {
+            const mockResponse = {
+                id: 'test-credential-id',
+                credentials: {
+                    accessKeyId: 'encrypted-access-key',
+                    secretAccessKey: 'encrypted-secret-key',
+                    sessionToken: 'encrypted-session-token',
+                },
+                updateCredentialsParams: {
+                    data: 'credential-data',
+                },
+            }
+            
+            const mockIamLogin = {
+                login: sinon.stub().resolves(mockResponse),
+                loginType: 'iam',
+            }
+            
+            sinon.stub(auth2, 'IamLogin').returns(mockIamLogin as any)
+            
+            const response = await auth.login_iam('accessKey', 'secretKey', 'sessionToken', 'arn:aws:iam::123456789012:role/TestRole')
+            
+            assert.ok(mockIamLogin.login.calledOnce)
+            assert.ok(mockIamLogin.login.calledWith({
+                accessKey: 'accessKey',
+                secretKey: 'secretKey',
+                sessionToken: 'sessionToken',
+                roleArn: 'arn:aws:iam::123456789012:role/TestRole',
+            }))
+            assert.strictEqual(response, mockResponse)
+        })
+    })
+
+    describe('getIamCredential', function () {
+        it('returns IAM credentials from session', async function () {
+            const mockCredentials = {
+                accessKeyId: 'test-access-key',
+                secretAccessKey: 'test-secret-key',
+                sessionToken: 'test-session-token',
+            }
+            
+            const mockSession = {
+                getCredential: sinon.stub().resolves({
+                    credential: mockCredentials,
+                    updateCredentialsParams: { data: 'test' },
+                }),
+                loginType: 'iam',
+            }
+            
+            ;(auth as any).session = mockSession
+            
+            const result = await auth.getIamCredential()
+            
+            assert.ok(mockSession.getCredential.calledOnce)
+            assert.deepStrictEqual(result, mockCredentials)
+        })
+
+        it('throws error for SSO session', async function () {
+            const mockSession = {
+                getCredential: sinon.stub().resolves({
+                    credential: 'sso-token',
+                    updateCredentialsParams: { data: 'test' },
+                }),
+                loginType: 'sso',
+            }
+            
+            ;(auth as any).session = mockSession
+            
+            try {
+                await auth.getIamCredential()
+                assert.fail('Should have thrown an error')
+            } catch (err) {
+                assert.strictEqual((err as Error).message, 'Cannot get token with SSO session')
+            }
+        })
+
+        it('throws error when not logged in', async function () {
+            ;(auth as any).session = undefined
+            
+            try {
+                await auth.getIamCredential()
+                assert.fail('Should have thrown an error')
+            } catch (err) {
+                assert.strictEqual((err as Error).message, 'Cannot get credential without logging in.')
+            }
+        })
+    })
+
+    describe('isIamSession', function () {
+        it('returns true for IAM session', function () {
+            const mockSession = { loginType: 'iam' }
+            ;(auth as any).session = mockSession
+            
+            assert.strictEqual(auth.isIamSession(), true)
+        })
+
+        it('returns false for SSO session', function () {
+            const mockSession = { loginType: 'sso' }
+            ;(auth as any).session = mockSession
+            
+            assert.strictEqual(auth.isIamSession(), false)
+        })
+
+        it('returns false when no session', function () {
+            ;(auth as any).session = undefined
+            
+            assert.strictEqual(auth.isIamSession(), false)
+        })
+    })
+
+    describe('IAM session state changes', function () {
+        let mockLspAuth: any
+
+        beforeEach(function () {
+            mockLspAuth = (auth as any).lspAuth
+        })
+
+        it('updates IAM credential when state is refreshed', async function () {
+            const mockSession = {
+                getCredential: sinon.stub().resolves({
+                    credential: { accessKeyId: 'key', secretAccessKey: 'secret' },
+                    updateCredentialsParams: { data: 'fake-data' },
+                }),
+                loginType: 'iam',
+            }
+            ;(auth as any).session = mockSession
+
+            await (auth as any).stateChangeHandler({ state: 'refreshed' })
+
+            assert.ok(mockLspAuth.updateIamCredential.called)
+            assert.strictEqual(mockLspAuth.updateIamCredential.firstCall.args[0].data, 'fake-data')
+        })
+
+        it('cleans up IAM credential when connection expires', async function () {
+            const mockSession = { loginType: 'iam' }
+            ;(auth as any).session = mockSession
+
+            await (auth as any).stateChangeHandler({ state: 'expired' })
+
+            assert.ok(mockLspAuth.deleteIamCredential.called)
+        })
+
+        it('deletes IAM credential when disconnected', async function () {
+            const mockSession = { loginType: 'iam' }
+            ;(auth as any).session = mockSession
+
+            await (auth as any).stateChangeHandler({ state: 'notConnected' })
+
+            assert.ok(mockLspAuth.deleteIamCredential.called)
         })
     })
 })
