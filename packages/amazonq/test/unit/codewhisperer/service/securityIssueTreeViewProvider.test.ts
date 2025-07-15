@@ -150,7 +150,7 @@ describe('SecurityIssueTreeViewProvider', function () {
                         item.iconPath?.toString().includes(`${item.issue.severity.toLowerCase()}.svg`)
                     )
                 )
-                assert.ok(issueItems.every((item) => item.description?.toString().startsWith('[Ln ')))
+                assert.ok(issueItems.every((item) => !item.description?.toString().startsWith('[Ln ')))
             }
         })
     })
