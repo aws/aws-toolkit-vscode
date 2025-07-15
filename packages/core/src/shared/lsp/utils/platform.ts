@@ -10,7 +10,7 @@ import { ChildProcess } from '../../utilities/processUtils'
 import { waitUntil } from '../../utilities/timeoutUtils'
 import { isDebugInstance } from '../../vscode/env'
 import { isSageMaker } from '../../extensionUtilities'
-import { getLogger } from '../../logger'
+import { getLogger } from '../../logger/logger'
 
 interface SagemakerCookie {
     authMode?: 'Sso' | 'Iam'
@@ -128,9 +128,6 @@ export function createServerOptions({
                 env.USE_IAM_AUTH = 'true'
             }
 
-            // Enable verbose logging for Mynah backend to help debug the generic error response
-            env.RUST_LOG = 'debug'
-
             // Log important environment variables for debugging
             getLogger().info(`[SageMaker Debug] Environment variables for language server:`)
             getLogger().info(`[SageMaker Debug] USE_IAM_AUTH: ${env.USE_IAM_AUTH}`)
@@ -139,7 +136,6 @@ export function createServerOptions({
             )
             getLogger().info(`[SageMaker Debug] AWS_DEFAULT_REGION: ${env.AWS_DEFAULT_REGION}`)
             getLogger().info(`[SageMaker Debug] AWS_REGION: ${env.AWS_REGION}`)
-            getLogger().info(`[SageMaker Debug] RUST_LOG: ${env.RUST_LOG}`)
         }
 
         const lspProcess = new ChildProcess(bin, args, {

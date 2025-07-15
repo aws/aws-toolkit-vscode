@@ -301,7 +301,7 @@ export function registerMessageListeners(
                                     : undefined,
                                 context: chatParams.context ? `${chatParams.context.length} context items` : undefined,
                             },
-                            null,
+                            undefined,
                             2
                         )}`
                     )
