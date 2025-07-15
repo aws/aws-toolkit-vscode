@@ -455,7 +455,7 @@
         "webpackDev": "webpack --mode development",
         "serveVue": "ts-node ./scripts/build/checkServerPort.ts && webpack serve --port 8080 --config-name vue --mode development",
         "watch": "npm run clean && npm run buildScripts && npm run compileOnly -- --watch",
-        "lint": "ts-node ./scripts/lint/testLint.ts",
+        "lint": "node --max-old-space-size=8192 -r ts-node/register ./scripts/lint/testLint.ts",
         "generateClients": "ts-node ./scripts/build/generateServiceClient.ts ",
         "generateIcons": "ts-node ../../scripts/generateIcons.ts",
         "generateTelemetry": "node ../../node_modules/@aws-toolkits/telemetry/lib/generateTelemetry.js --extraInput=src/shared/telemetry/vscodeTelemetry.json --output=src/shared/telemetry/telemetry.gen.ts"
