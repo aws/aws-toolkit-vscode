@@ -14,7 +14,6 @@ telemetryCache
 quickStart*.html
 .gitcommit
 __pycache__
-packages/amazonq/.vscodeignore
 
 # Generated if running the `depcruise` command from the documentation example
 /dependency-graph.svg
