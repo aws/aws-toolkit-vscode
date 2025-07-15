@@ -38,7 +38,6 @@ import {
     getClientId,
     extensionVersion,
     isSageMaker,
-    setContext,
 } from 'aws-core-vscode/shared'
 import { processUtils } from 'aws-core-vscode/shared'
 import { activate } from './chat/activation'
@@ -165,7 +164,6 @@ export async function startLanguageServer(
                         pinnedContextEnabled: true,
                         imageContextEnabled: true,
                         mcp: true,
-                        shortcut: true,
                         reroute: true,
                         modelSelection: true,
                         workspaceFilePath: vscode.workspace.workspaceFile?.fsPath,
@@ -250,17 +248,6 @@ async function onLanguageServerReady(
 
     if (Experiments.instance.get('amazonqChatLSP', true)) {
         await activate(client, encryptionKey, resourcePaths.ui)
-
-        await setContext('aws.amazonq.amazonqChatLSP.isRunning', true)
-        getLogger().info('Amazon Q Chat LSP context flag set on client activated')
-
-        // Add a disposable to reset the context flag when the client stops
-        toDispose.push({
-            dispose: async () => {
-                await setContext('aws.amazonq.amazonqChatLSP.isRunning', false)
-                getLogger().info('Amazon Q Chat LSP context flag reset on client disposal')
-            },
-        })
     }
 
     const refreshInterval = auth.startTokenRefreshInterval(10 * oneSecond)
